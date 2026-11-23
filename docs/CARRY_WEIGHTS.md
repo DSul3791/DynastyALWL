@@ -28,7 +28,9 @@ The game is already **more generous than reality** for a normal adult, so raisin
 | any `*nuts` (suffix) | 0.050 | 0.012 | A chestnut or walnut in shell is about 10 to 15 g. |
 | any `*acorns` (suffix) | 0.030 | 0.005 | An acorn is 3 to 8 g. |
 
-Unchanged on purpose: plant fibre 0.005, leaves 0.02, nettles 0.02, stone 1.0 (a hand stone), clay/soil/sand/gravel 0.1 (a handful, light on purpose), firewood 3.5, seeds 0.01, apples and pears (150 to 250 g is right), kits (they keep the weight of what made them).
+Unchanged on purpose: plant fibre 0.005, leaves 0.02, nettles 0.02, stone 1.0 (a hand stone), clay/soil/sand/gravel 0.1 (a handful, light on purpose), firewood 3.5, apples and pears (150 to 250 g is right), kits (they keep the weight of what made them).
+
+Seeds (Dave 23 Nov 2026: "typical seeds weigh 5-7mg so you really need to fix that for all seeds"; QA #5, #6): every seed weighs ONE real seed from its thousand-seed weight (flax and linseed 6 mg, wheat 45 mg, carrot 1.2 mg, peas 250 mg); tree seeds, stones, cones and nuts their real larger weights (acorn 4 g, walnut 11 g, hazelnut 2.5 g, beechnut 0.25 g, mango stone 30 g); made-up plants 6 mg. The seed bundle stays a bundle (30 g). Weights show in kg, g or mg with a stack total (CarryRules.weight_text).
 
 ## What a normal meadow pick weighs now (free carry 42 kg at 75 kg)
 | Load | kg |

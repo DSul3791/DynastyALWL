@@ -192,7 +192,7 @@ func show_info() -> void:
 
 	if not view._carry_cfg.is_empty():
 		var each_kg: float = CarryRules.weight_of(item_id, view._carry_cfg)
-		item_facts.append(["Weight", ("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg)])
+		item_facts.append(["Weight", CarryRules.weight_text(each_kg) + (" each, %s in all" % CarryRules.weight_text(each_kg * float(count)) if count > 1 else "")])
 
 	if int(entry.get("capacity_ml", 0)) > 0:
 		item_facts.append(["Holds", view._litres(int(entry.get("capacity_ml", 0)))])

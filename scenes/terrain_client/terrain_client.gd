@@ -2192,6 +2192,12 @@ func _stamp_walkers(now: int) -> void:
 	for n in range(mini(spots.size(), grass.trail_budget())):
 		grass.stamp(spots[n])
 
+	# The other players mat the grass as the player does (tester report #7, 23 Nov 2026), outside the walkers' budget so a herd nearby
+	# never leaves a friend without a trail. flatten, not stamp: stamp also moves the trample map's window, which follows this player only.
+	if _player_view != null:
+		for spot in _player_view.trail_points(here, grass.trail_reach_m()):
+			grass.flatten(spot, PlayerViewScript.TRAIL_RADIUS_M)
+
 
 # Placed things clear the ground around them (data/look/placed_clearing.json): grass and litter in grass_view, shrubs and small plants in
 # flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose

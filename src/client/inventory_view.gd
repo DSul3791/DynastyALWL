@@ -6477,7 +6477,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 
 	if not _carry_cfg.is_empty():
 		var each_kg: float = CarryRules.weight_of(table.id_of(number), _carry_cfg)
-		text += "\n%s each" % (("%.0f g" % (each_kg * 1000.0)) if each_kg < 0.1 else ("%.2f kg" % each_kg))
+		text += "\n%s each" % CarryRules.weight_text(each_kg) + (", %s in all" % CarryRules.weight_text(each_kg * float(count)) if count > 1 else "")
 
 	if str(entry.get("slot", "")) != "":
 		var layer: String = str(entry.get("wear_layer", "base"))

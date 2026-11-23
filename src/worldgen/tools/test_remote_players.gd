@@ -11,15 +11,19 @@ const PlayersScript := preload("res://src/stream/server_players.gd")
 const PlayerViewScript := preload("res://src/client/player_view.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const BodyModelsScript := preload("res://src/client/character/body_models.gd")
+const HeldItemScript := preload("res://src/client/held_item.gd")
 const MotionBufferScript := preload("res://src/client/motion_buffer.gd")
 
 var failures: int = 0
 
 
-func check(ok: bool, what: String) -> void:
+func check(ok: bool, what: String) -> bool:
 	if not ok:
 		failures += 1
 		print("FAIL ", what)
+
+	return ok
 
 
 class FakeItems:
@@ -186,6 +190,31 @@ func _client() -> void:
 		var clip: String = str(body["rig"].current())
 		check(clip in ["walk", "jog", "walk_torch", "jog_torch"], "walking plays a gait clip (%s)" % clip)
 
+	# Tester report #7 (23 Nov 2026): other players mat the grass. The first pass marks the start; after a walk the points run along the way,
+	# at the feet, no more than TRAIL_STEP_M apart (up to TRAIL_MOST), and none beyond the reach.
+	check(view.trail_points(node.position, 60.0).is_empty(), "the first trail pass only marks where the player is")
+	var trail_from: Vector3 = node.position
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(6.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2000]))
+	var walk_until: int = Time.get_ticks_msec() + 900
+
+	while Time.get_ticks_msec() < walk_until:
+		await process_frame
+
+	check(node.position.x - trail_from.x > 0.5, "the body walked on")
+	check(view.trail_points(node.position + Vector3(1000.0, 0.0, 0.0), 60.0).is_empty(), "nothing is stamped beyond the reach")
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(8.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2600]))
+	var walk_more: int = Time.get_ticks_msec() + 900
+
+	while Time.get_ticks_msec() < walk_more:
+		await process_frame
+
+	var before_x: float = float((view._bodies[7]["trail_at"] as Vector3).x)
+	var spots: Array = view.trail_points(node.position, 60.0)
+	var feet_y: float = node.position.y - 0.9
+	check(not spots.is_empty() and spots.size() <= PlayerViewScript.TRAIL_MOST, "a walk leaves trail points (%d)" % spots.size())
+	check(spots.all(func(p): return absf(float(p.y) - feet_y) < 0.01 and float(p.x) > before_x - 0.01), "the points are at the feet, along the way walked")
+	check(spots.size() < 2 or absf(float(spots[1].x) - float(spots[0].x)) <= PlayerViewScript.TRAIL_STEP_M + 0.01, "no more than TRAIL_STEP_M between points")
+
 	view.on_rows(PackedInt32Array(), PackedVector3Array(), PackedFloat32Array(), PackedByteArray(), PackedInt32Array(), PackedInt32Array())
 	check(view.drawn_count() == 0, "a player out of range is removed")
 	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([2 | PlayerViewScript.SWIM]), PackedInt32Array([0]), PackedInt32Array([t0 + 3000]))
@@ -199,8 +228,78 @@ func _client() -> void:
 		check(swim_clip.begins_with("swim"), "a swimming player plays the swim clip (%s)" % swim_clip)
 
 
+# Dave 23 Nov 2026 on 9257: another player's spear "floating in the air almost sticking out of his chest". Every item with a hand look, on
+# every body model, is put in a remote player's hand as the player's own third-person body holds it: under that body's hand mount (the left
+# for a bow), its middle within reach of the hand, and a spear pointing ahead along the facing (not along the fingers, as before the fix).
+func _check_holds() -> void:
+	if not DynastyBodyScript.available():
+		print("test_remote_players: the Dynasty glb is not imported here, the hold checks are skipped")
+		return
+
+	var table = ItemTableScript.load_default()
+	var numbers: Array = []
+
+	for id in table.ids():
+		var n: int = table.number_of(str(id))
+
+		if PlayerViewScript.held_model(n, table) != null:
+			numbers.append(n)
+
+	check(numbers.size() >= 10, "items with a hand look found (%d)" % numbers.size())
+	var spears: int = 0
+
+	for body in BodyModelsScript.ids():
+		if not DynastyBodyScript.available(str(body)):
+			continue
+
+		var holder: Node3D = Node3D.new()
+		holder.rotation.y = 0.7
+		get_root().add_child(holder)
+		var rig: Node3D = PlayerViewScript.make_rig(str(body), {})
+		holder.add_child(rig)
+		rig.play("idle")
+		await process_frame
+		var front: Vector3 = rig.global_basis * Vector3.FORWARD
+		front = Vector3(front.x, 0.0, front.z).normalized()
+
+		for n in numbers:
+			var made: Array = PlayerViewScript.hold_in(rig, int(n), table)
+			var id: String = table.id_of(int(n))
+
+			if not check(made.size() == 2, "%s %s: held" % [body, id]):
+				continue
+
+			var model: Node3D = made[0]
+			var mount: Node3D = model.get_parent() as Node3D
+			check(mount == rig.get("hand_mount_l" if made[1] == "bow" else "hand_mount_r"), "%s %s: in the %s hand" % [body, id, "left" if made[1] == "bow" else "right"])
+			var mesh: MeshInstance3D = model.get_child(0) as MeshInstance3D
+			var box: AABB = mesh.global_transform * mesh.get_aabb()
+			var hand: Vector3 = mount.global_position
+			var off: float = hand.distance_to(hand.clamp(box.position, box.end))
+			check(off < 0.12, "%s %s (%s): the item is in the hand, %.2f m from it" % [body, id, made[1], off])
+
+			if made[1] == "spear":
+				spears += 1
+				var point: Vector3 = -model.global_basis.z.normalized()
+				check(point.dot(front) > 0.95, "%s %s: the spear points ahead along the facing (%.2f)" % [body, id, point.dot(front)])
+				var rest: Transform3D = mount.transform
+				mount.rotate_object_local(Vector3.RIGHT, 0.6)   # the hand swings, as a walk clip moves it; the spear keeps the facing, its fist the hand
+				mount.position += Vector3(0.0, 0.0, 15.0)   # 0.15 m in the centimetre skeleton
+				PlayerViewScript.aim_spear(model, rig)
+				var fist: Node3D = model.get_node_or_null(HeldItemScript.THIRD_FIST_NAME) as Node3D
+				check(fist != null and fist.global_position.distance_to(mount.global_position) < 0.02 and fist.global_basis.z.normalized().dot(mount.global_basis.z.normalized()) > 0.99, "%s %s: the fist stays on the hand, along the fingers, as it swings" % [body, id])
+				mount.transform = rest
+
+			model.free()
+
+		holder.queue_free()
+
+	check(spears > 0, "a spear was among the held items")
+
+
 func _init() -> void:
 	_server()
 	await _client()
+	await _check_holds()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
