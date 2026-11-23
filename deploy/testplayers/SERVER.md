@@ -5,7 +5,7 @@ Dave set up the web server on 22 Nov 2026. It is Caddy in Docker on the Ubuntu g
 - Login: HTTPS and a login for the four test players are already set up there, for the whole site.
 - Site root: `/data/game-web/site/` on the host. It belongs to dave, and the container reads it as `/srv`.
 
-On 23 Nov Dave asked that people who log in land straight on the test players' page, so the front page is the site's `index.html`. The only change to the server's settings is one optional line in step 3. Nothing here touches its compose file, the login or the certificates.
+On 23 Nov Dave asked that people who log in land straight on the test players' page, so the front page is the site's `index.html`. The only changes to the server's Caddyfile are made by step 2b's install, which checks them and puts the old file back on a failure. Nothing here touches the compose file, the login or the certificates.
 
 **Status: not yet run.** These steps have not been tried on the server.
 
