@@ -731,6 +731,8 @@ func _process_body(delta: float) -> void:
 			_client.flora.set_day_sky(day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
 			FrameProbe.stop("weather look: day sky", tq)
 
+		tq = FrameProbe.start()
+
 		if _client.sea != null:
 			WaterMaterial.apply_day(_client.sea.material_override as ShaderMaterial, day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
 
@@ -743,6 +745,8 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("ground_horizon_color", day.ground_horizon)
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
 			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
+
+		FrameProbe.stop("weather look: sea and sky colours", tq)
 
 	# A rainbow as a shower passes: recent rain, the sun low and breaking through the clearing cloud.
 	_rain_memory = maxf(rain, _rain_memory - delta / RAINBOW_HOLD_S)
@@ -825,12 +829,16 @@ func _process_body(delta: float) -> void:
 	# Low down the sea check needs the ground window whatever the fog (fog_ground.gd under_land), under water too, so a dry tunnel
 	# read as sea before the window came clears once it comes.
 	if _summits_set and eye.y < FogGroundScript.SEA_ASK_BELOW_M:
+		tq = FrameProbe.start()
 		fog_ground.update(eye)
+		FrameProbe.stop("weather look: ground fog", tq)
 
 	if not _client.underwater:
 		var ground_wet: float = puddles.wet_mean      # the ground's own wetness, which dries in game hours (rain_look_design.md 3.4)
 
+		tq = FrameProbe.start()
 		haze.update(delta, float(_client.weather.get("temp_c", 10.0)), float(_s["cloud"]), rain, float(_client.weather.get("mist", 0.0)), ground_wet)
+		FrameProbe.stop("weather look: haze", tq)
 		# The weather fog is drawn by graphics preset (fog_look.gd PRESETS; Dave: full on Ultra, the distance fade only on Low).
 		var fog_shown: bool = not clear_day and FogLook.weather_drawn(_quality)
 		var mist: float = float(_s["mist"]) if fog_shown else 0.0
@@ -843,7 +851,9 @@ func _process_body(delta: float) -> void:
 		var eye_y: float = eye.y           # eye: the camera's position, read above for the night light
 
 		if _summits_set and fog_shown:          # set up with the summits, once joined; no asking for an undrawn fog
+			tq = FrameProbe.start()
 			fog_ground.update(eye)
+			FrameProbe.stop("weather look: ground fog", tq)
 
 		# The floors ease toward a new grid's values (a first read or a teleport), so the top never jumps.
 		var depth_now: float = float(_s["mist_depth_m"])
@@ -926,10 +936,14 @@ func _process_body(delta: float) -> void:
 	FrameProbe.stop("weather look: ground", tq)
 	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
+	tq = FrameProbe.start()
 	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
+	FrameProbe.stop("weather look: puddles", tq)
 
 	var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+	tq = FrameProbe.start()
 	puddles.update_wet(delta, rain, float(_s["wind"]), sun_now, Vector2(cos(heading), sin(heading)), _client.terrain.material as ShaderMaterial)
+	FrameProbe.stop("weather look: wet ground", tq)
 	# The bark takes the rock's wetness (a hard surface that sheds water) and the wind's side; sent only when it changes.
 	var bark_wet: float = snappedf(float(puddles.wet[5]), 0.02)
 	var bark_wind: Vector2 = Vector2(cos(heading), sin(heading)).snapped(Vector2(0.1, 0.1))
@@ -937,7 +951,9 @@ func _process_body(delta: float) -> void:
 	if _client.flora != null and (bark_wet != _bark_wet_sent or bark_wind != _bark_wind_sent):
 		_bark_wet_sent = bark_wet
 		_bark_wind_sent = bark_wind
+		tq = FrameProbe.start()
 		_client.flora.set_wet(bark_wet, bark_wind)
+		FrameProbe.stop("weather look: wet bark", tq)
 
 	tq = FrameProbe.start()
 	_update_summits(delta, heading)
