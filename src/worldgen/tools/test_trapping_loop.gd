@@ -250,6 +250,32 @@ func _init() -> void:
 
 	check(stray == 0, "no empty snare reads as sprung by something else after the restart (%d)" % stray)
 
+	# A catch half cut up when the server restarts is not laid again whole (its parts would come twice).
+	var cut_snare: int = -1
+
+	for id in traps_of(items, "snare_trap"):
+		if held.has(items._items[id]["pos"]) and cut_snare < 0:
+			cut_snare = id
+
+	var cut_at: Vector3 = items._items[cut_snare]["pos"]
+	var cut_carcass: int = int(items._items[cut_snare]["struct"]["catch"])
+	var inv0 = items.inventory_of(1)
+	items.give(1, items.table.number_of("stone_knife"), 1)
+	items.report_position(1, items._items[cut_carcass]["pos"])
+	items._last_process.clear()
+	items._process_carcass(1, inv0, cut_carcass, inv0.numbers.find(items.table.number_of("stone_knife")))
+	check(items._items.has(cut_carcass) and int(items._items[cut_carcass]["struct"]["blows"]) == 1, "one cut into a held catch")
+	save(items)
+	items = start(false, home)
+	var relaid: bool = false
+
+	for id in traps_of(items, "snare_trap"):
+		if items._items[id]["pos"] == cut_at:
+			relaid = items._items.has(int(items._items[id]["struct"].get("catch", 0)))
+
+	check(not relaid, "after a restart a half cut catch is not laid again whole")
+	held.erase(cut_at)
+
 	# Collected with a knife: the parts go into the pack, the snare sets itself again once the carcass is gone.
 	for id in traps_of(items, "snare_trap"):
 		if held.has(items._items[id]["pos"]):
@@ -347,6 +373,31 @@ func _init() -> void:
 		k.set_trails(int(u[0]), int(u[1]), u[2])
 
 	var level_10: float = SkillWebScript.units_for(items._skills_cfg, "tracking", float(k.trails_tracking))
+	# A save from before trap state was kept (rows without index 24) still loads its traps.
+	save(items)
+	var area_dir: String = DIR + "/world_items"
+	var stripped: int = 0
+
+	for file in DirAccess.get_files_at(area_dir):
+		if not file.ends_with(".json"):
+			continue
+
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(area_dir + "/" + file))
+
+		if typeof(parsed) != TYPE_DICTIONARY:
+			continue
+
+		for row in parsed.get("items", []):
+			if (row as Array).size() > 24 and str(row[9]) == "snare_trap":
+				(row as Array).resize(24)
+				stripped += 1
+
+		var f: FileAccess = FileAccess.open(area_dir + "/" + file, FileAccess.WRITE)
+		f.store_string(JSON.stringify(parsed))
+		f.close()
+
+	var old_save = start(false, home)
+	check(stripped == 40 and traps_of(old_save, "snare_trap").size() == 40, "an older save's snare rows (no state, %d) still load, all forty (%d)" % [stripped, traps_of(old_save, "snare_trap").size()])
 	check(k.trails_tracking == 10 and tracking(items) < level_10, "the Map draws them from Tracking %d; this trapper is not there yet (%.0f of %.0f units)" % [k.trails_tracking, tracking(items), level_10])
 	_finish()
 

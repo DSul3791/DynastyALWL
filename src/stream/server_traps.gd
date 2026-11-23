@@ -248,6 +248,12 @@ func _came_near(id: int, now: float) -> void:
 	var it: Dictionary = host._items[id]
 	var st: Dictionary = it["struct"]
 
+	if float(_of_item(it).get("test_chance", 0.0)) > 0.0:
+		check_one(id)   # the smoke knob: an imagined animal every look
+
+		if not host._items.has(id):
+			return   # broke on its catch
+
 	if not st.has("run") or now - float(st.get("away_at", now)) >= 3600.0:
 		_note_run(it)   # the places round it are worked out now that someone is near
 
@@ -260,9 +266,6 @@ func _came_near(id: int, now: float) -> void:
 		return   # broke on its catch
 
 	st["away_at"] = now
-
-	if float(_of_item(it).get("test_chance", 0.0)) > 0.0:
-		check_one(id)   # the smoke knob: an imagined animal every look
 
 
 # What a restart keeps of a set trap beyond its owner and wear (server_items world row 24, JSON; "" for nothing): how squarely it sits on
@@ -282,7 +285,7 @@ func saved_state(it: Dictionary) -> String:
 
 	var c: Dictionary = host._items.get(int(st.get("catch", 0)), {})
 
-	if str(c.get("struct", {}).get("kind", "")) == "carcass":
+	if str(c.get("struct", {}).get("kind", "")) == "carcass" and int(c["struct"].get("blows", 0)) == 0 and not c["struct"].has("parts"):   # one already being cut up is not laid again whole
 		out["held"] = [str(c["struct"].get("species", "")), float(c.get("left", 0.0))]
 
 	return "" if out.is_empty() else JSON.stringify(out)
@@ -389,7 +392,7 @@ func check_one(id: int, row: Dictionary = {}) -> bool:
 	return true
 
 
-# Quiet after a catch until a game second ("quiet", not saved).
+# Quiet after a catch until a game second ("quiet", saved with the trap: saved_state).
 func _quiet(st: Dictionary) -> bool:
 	return host._now_game_s() < float(st.get("quiet", 0.0))
 
