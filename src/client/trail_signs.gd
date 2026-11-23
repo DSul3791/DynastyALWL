@@ -531,6 +531,9 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 	elif kind == "warren":
 		size = 2.0 * float((cfg.get("warren_m", [0.6, 2.6]) as Array)[1]) + 1.0
 		long = size
+	elif kind == "latrine":
+		size = float(cfg.get("latrine_glow_m", 2.0))   # round the latrine's patch, which hides the middle
+		long = size
 	elif kind == "bed":
 		var bed: Array = cfg.get("bed_size_m", [1.5, 0.8])
 		size = float(bed[1]) + 0.4
@@ -769,7 +772,7 @@ func _spot(player: Vector3, level: int) -> void:
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
 		last_spot = where
 		FreezeWatchScript.printer.line("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
-		_glow(where, 1.6 if str(s[0]) == "prints" or str(s[0]) == "hops" else 1.0)
+		_glow(where, 1.6 if str(s[0]) == "prints" or str(s[0]) == "hops" else (float(cfg.get("latrine_glow_m", 2.0)) if str(s[0]) == "latrine" else 1.0))   # a latrine's round its 0.9 m patch
 
 		if on_spot.is_valid():
 			on_spot.call(str(s[0]), where)
