@@ -95,7 +95,7 @@ func _init() -> void:
 	w.cut_tree = func(_c, id): standing.erase(id); return true
 	w.send_notice = func(_p, _text): pass
 	var struck: Array = []
-	w.hit_animal_path = func(peer, from, to, damage): struck.append([peer, from, to, damage]); return {}
+	w.hit_animal_path = func(peer, from, to, damage, _lag): struck.append([peer, from, to, damage]); return {}
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)

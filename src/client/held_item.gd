@@ -726,6 +726,7 @@ func _loose() -> void:
 	_aim_dir = -_camera.global_transform.basis.z   # through the cross in the middle of the screen
 	var draw_ms: int = int(_draw_t * 1000.0)
 	var arrow: int = arrow_to_shoot()
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
 
 	if arrow != 0:
@@ -1402,9 +1403,17 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
+func _send_seen() -> void:
+	if seen_ms.is_valid():
+		var seen: Array = seen_ms.call()
+		_net.inventory_action.rpc_id(1, Net.ACT_SEEN, 0, int(seen[0]), int(seen[1]), Vector3.ZERO)
+
+
 func _throw() -> void:
 	_arm_play("throw", 0.8)
 	var direction: Vector3 = -_camera.global_transform.basis.z
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_THROW, held_slot, 0, 0, direction)
 	aiming = false
 	var node: Node3D = _make_spear_model()
