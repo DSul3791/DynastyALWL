@@ -8,7 +8,7 @@ Reads each run's server.log (the server runs with --robot-audit, src/server/robo
   AUDIT stuck <id> <species> <unix ms> <x> <z> <state> to <m> ahead <what>   an animal near a player with somewhere to go that kept within
                                                                             0.5 m of one spot for 6 s; what lay 1.5 m toward its target
   AUDIT stuck_end <id> <species> <unix ms> <seconds>                         it moved on, stopped wanting to, or was gone
-  AUDIT near <unix ms> <species>:<count> ...                                 the animals near a player each minute, by kind
+  AUDIT near <unix ms> <species>:<mean> ... span_s:<s>                      the mean animals near a player over each span, by kind
 Prints per kind: animal-hours watched, stuck spells, spells per game day (a game day is one real hour: src/shared/game_clock.gd RATIO
 24) per animal watched, the median and longest spell, what lay ahead, and the first few spots. Exit 0 read (also with stuck animals:
 it judges nothing, the numbers go to the animal thread), 2 nothing to read.
@@ -35,11 +35,19 @@ def read_run(d):
 			continue
 
 		if p[1] == "near":
-			for part in p[3:]:
-				sp, _, n = part.rpartition(":")
+			parts = dict(part.rpartition(":")[::2] for part in p[3:] if ":" in part)
+			span_min = 1.0
 
-				if sp and n.isdigit():
-					near[sp] = near.get(sp, 0) + int(n)
+			try:
+				span_min = float(parts.pop("span_s", "60")) / 60.0
+			except ValueError:
+				pass
+
+			for sp, n in parts.items():
+				try:
+					near[sp] = near.get(sp, 0.0) + float(n) * span_min   # animal-minutes
+				except ValueError:
+					pass
 		elif p[1] == "stuck" and len(p) >= 12:
 			spells[p[2]] = {"id": p[2], "sp": p[3], "ms": int(p[4]), "x": float(p[5]), "z": float(p[6]), "state": int(p[7]),
 				"to": float(p[9]), "ahead": p[11], "s": None}

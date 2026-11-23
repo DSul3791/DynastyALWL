@@ -109,6 +109,9 @@ func prepare(name_arg: String, args: PackedStringArray) -> void:
 		elif a.begins_with("--timeout=") and a.trim_prefix("--timeout=").is_valid_float():
 			_timeout_s = a.trim_prefix("--timeout=").to_float()   # plan roam ends a few minutes before the client's own timeout
 
+			if _timeout_s <= 0.0:
+				_timeout_s = INF   # --timeout=0 is no limit (self_timeout.gd)
+
 	# Its own character, picked before the client says hello (each robot runs with its own user data folder, tools/robots.sh).
 	var mine: String = ""
 
@@ -3314,7 +3317,7 @@ func _roam() -> void:
 			goal = here + Vector3(cos(turn), 0.0, sin(turn)) * ROAM_LEG_M
 			turn += 2.4   # a fixed turn: each leg a new direction
 
-		var got: bool = await _run_to(goal, 150.0, 4.0)
+		var got: bool = await _run_to(goal, clampf(float(end - Time.get_ticks_msec()) / 1000.0, 0.0, 150.0), 4.0)
 		var at: Vector3 = client.body.global_position
 		FreezeWatchScript.printer.line("ROBOT %s ROAM %s %s at %.0f,%.0f" % [robot_name, where, "reached" if got else "short", at.x, at.z])
 		await _wait(minf(ROAM_STAND_S, maxf(0.0, float(end - Time.get_ticks_msec()) / 1000.0)))

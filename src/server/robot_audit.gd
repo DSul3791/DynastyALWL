@@ -17,13 +17,14 @@ extends Node
 #   AUDIT where <animal id> <species> <unix ms> <x> <z> <state>   plan kind_ only, after its control command
 #   AUDIT stuck <animal id> <species> <unix ms> <x> <z> <state> to <m> ahead <wall|water|steep|animal|player|fire|none>   an animal near a
 #     player with somewhere to go (its target STUCK_TARGET_M or more off) that kept within STUCK_M of one spot for STUCK_S; AUDIT stuck_end
-#     <animal id> <species> <unix ms> <seconds> when it gets going again or is gone; AUDIT near <unix ms> <species>:<count> ...  every
-#     NEAR_EVERY_S, the animals near a player by kind (how long each kind was watched: tools/robot_stuck.py counts stuck per game day)
+#     <animal id> <species> <unix ms> <seconds> when it gets going again or is gone; AUDIT near <unix ms> <species>:<mean> ... span_s:<s>
+#     every NEAR_EVERY_S of real time, the mean number of animals near a player by kind over that span (how long each kind was watched: tools/robot_stuck.py counts stuck per game day)
 #   AUDIT control <unix ms> <command>   a robot's server_control.txt command done (plan cold): the only place this node changes the game
 # No protocol change, and with the flag off this node is never made.
 
 const RobotRules := preload("res://src/shared/robot_rules.gd")
 const AnimalContact := preload("res://src/shared/animal_contact.gd")
+const Steering := preload("res://src/shared/steering.gd")
 const SIG_EVERY_S := 0.25
 const ANIMAL_EVERY_S := 0.1
 const INSIDE_M := 0.35          # a player capsule's radius is about 0.35 m; an animal's middle this close stands inside it
@@ -33,7 +34,11 @@ const STEP_CAP_S := 1.0         # an animal steps at least once a second near a 
 const STUCK_S := 6.0            # an animal with somewhere to go that keeps within STUCK_M of one spot this long is stuck (animals thread,
 const STUCK_M := 0.5            # coordinator 23 Nov 2026: stuck against walls, fences, rocks, steep ground, water, each other, in fires)
 const STUCK_TARGET_M := 2.0
-const STILL_STATES := [5, 10, 12, 13, 16, 19]   # hidden, warning, recovering, sneaking, jaw-pop, lying: standing there is the behaviour
+# Standing there is the behaviour, with an old target kept (gate review of #1793): alert (server_animals ALERT, a grazer watching a player
+# in its alert ring), hidden, a wolf rolling or playing (server_wolves ROLL, PLAY), warning, recovering, sneaking, jaw-pop, a companion
+# sitting, lying (companions and grazers), a camp bandit sitting or asleep (server_bandits SIT, LIE).
+const STILL_STATES := [3, 5, 8, 9, 10, 12, 13, 16, 18, 19, 23, 24]
+const PACK_MOVING := ["prowl", "stalk", "rush"]   # a pack wolf's target is kept only in these phases (server_wolves.gd); waiting, feeding or guarding its den it stands
 const NEAR_EVERY_S := 60.0
 
 var items          # server_items.gd
@@ -56,7 +61,8 @@ var _where_t: float = 0.0
 const WHERE_EVERY_S := 0.5
 var _cold: bool = false            # plan cold: the weather the server's vitals read is a hard frost (control file)
 var _stuck: Dictionary = {}       # animal id -> [spot Vector3, unix ms there since, printed stuck]
-var _near_t: float = 0.0
+var _near_from: int = -1         # unix ms the AUDIT near span began
+var _near_looks: int = 0          # looks in the span (each ANIMAL_EVERY_S or a frame later)
 var _near_count: Dictionary = {}  # species name -> animals near a player at the last look
 
 
@@ -136,6 +142,7 @@ func _process(delta: float) -> void:
 			players.append([int(peer), at])
 
 	var seen: Dictionary = {}
+	_near_looks += 1
 
 	for id in animals.animals:
 		var a: Dictionary = animals.animals[id]
@@ -210,14 +217,18 @@ func _process(delta: float) -> void:
 		if not seen.has(id):
 			_end_stuck(int(id), now)
 
-	_near_t += ANIMAL_EVERY_S
+	if _near_from < 0:
+		_near_from = now
 
-	if _near_t >= NEAR_EVERY_S:
-		_near_t = 0.0
+	if now - _near_from >= int(NEAR_EVERY_S * 1000.0):
 		var parts: Array = []
 
 		for nm in _near_count:
-			parts.append("%s:%d" % [nm, int(round(float(_near_count[nm]) * ANIMAL_EVERY_S / NEAR_EVERY_S))])   # mean count over the minute
+			parts.append("%s:%.2f" % [nm, float(_near_count[nm]) / float(maxi(_near_looks, 1))])   # the mean near over the looks of that span
+
+		parts.append("span_s:%.1f" % (float(now - _near_from) / 1000.0))
+		_near_from = now
+		_near_looks = 0
 
 		print("AUDIT near %d %s" % [now, " ".join(parts)])
 		_near_count.clear()
@@ -229,7 +240,7 @@ func _stuck_look(id: int, a: Dictionary, pos: Vector3, num: int, near: bool, pla
 	var target: Vector3 = a.get("target", pos)
 	var to: Vector2 = Vector2(target.x - pos.x, target.z - pos.z)
 	var free: bool = not near or to.length() < STUCK_TARGET_M or STILL_STATES.has(int(a.get("state", 0))) or a.has("fly") \
-		or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or a.has("bound_by")
+		or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or a.has("bound_by") or not _pack_moving(a)
 	var w: Array = _stuck.get(id, [])
 
 	if free or w.is_empty() or Vector2(pos.x - w[0].x, pos.z - w[0].z).length() > STUCK_M:
@@ -246,6 +257,16 @@ func _stuck_look(id: int, a: Dictionary, pos: Vector3, num: int, near: bool, pla
 		print("AUDIT stuck %d %s %d %.2f %.2f %d to %.1f ahead %s" % [id, str(w[3]), now, pos.x, pos.z, int(a.get("state", 0)), to.length(), _ahead_of(id, a, pos, ahead, players)])
 
 
+# A pack wolf whose pack is prowling, stalking or rushing (its target kept); true for any animal not in a pack.
+func _pack_moving(a: Dictionary) -> bool:
+	var wolves = animals.get("wolves")
+
+	if not a.has("pack") or wolves == null or not (wolves.packs as Dictionary).has(a["pack"]):
+		return true
+
+	return PACK_MOVING.has(str(wolves.packs[a["pack"]].get("phase", "")))
+
+
 func _end_stuck(id: int, now: int) -> void:
 	var w: Array = _stuck.get(id, [])
 
@@ -255,7 +276,8 @@ func _end_stuck(id: int, now: int) -> void:
 	_stuck.erase(id)
 
 
-# What stands between a stuck animal and its way (the first that fits): a wall or station, deep water, a rise of over a metre, another
+# What stands between a stuck animal and its way (the first that fits): a wall or station, deep water, a rise steeper than a walker climbs
+# (Steering.MAX_SLOPE), another
 # animal or a player at its body, a fire it keeps from; "none" when nothing here explains it (a steering fault).
 func _ahead_of(id: int, a: Dictionary, pos: Vector3, ahead: Vector3, players: Array) -> String:
 	if animals.wall_between(pos, ahead):
@@ -264,7 +286,7 @@ func _ahead_of(id: int, a: Dictionary, pos: Vector3, ahead: Vector3, players: Ar
 	if animals.blocked.is_valid() and bool(animals.blocked.call(ahead.x, ahead.z)):
 		return "water"
 
-	if animals.ground_height.is_valid() and float(animals.ground_height.call(ahead.x, ahead.z)) - pos.y > 1.0:
+	if animals.ground_height.is_valid() and float(animals.ground_height.call(ahead.x, ahead.z)) - pos.y > Steering.MAX_SLOPE * 1.5:
 		return "steep"
 
 	var body: float = AnimalContact.body_m(str(a.get("sp", "")))
