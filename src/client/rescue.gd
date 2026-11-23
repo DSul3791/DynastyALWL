@@ -1,6 +1,7 @@
 extends RefCounted
 
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const NetScript := preload("res://src/stream/terrain_net.gd")
 
 # Every way the client stands the player back on the surface: inside rock, under the ground with nothing below, and floating in empty
 # space under the world. One owner (Systems) for what used to be four functions in terrain_client.gd (Willy's rock rescue 625 and
@@ -170,6 +171,11 @@ func _under_the_ground() -> bool:
 
 		if not is_nan(pocket.y):
 			to = pocket
+
+			# Stuck in a cave's rock: the server carries the player to the nearest campfire out of the rock (Dave 23 Nov 2026); until it answers,
+			# and on a server with no campfire to carry them to, they stand on the floor here.
+			if _client.get("net") != null and _client.multiplayer.has_multiplayer_peer() and not (_client.multiplayer.multiplayer_peer is OfflineMultiplayerPeer) and not _client.multiplayer.is_server():
+				_client.net.inventory_action.rpc_id(1, NetScript.ACT_STUCK, 0, 0, 0, here)
 
 	body.global_position = to
 	body.velocity = Vector3.ZERO
