@@ -28,6 +28,7 @@ const Generator := preload("res://src/client/character/body_generator.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
 const InventoryScript := preload("res://src/shared/inventory.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
 const QUIET_S := 3.0             # a pack check waits until no pack message came for this long
 const QUIET_LIMIT_S := 20.0
@@ -86,6 +87,7 @@ var _stretch_worst: float = 0.0
 var _stretch_100: int = 0
 var _stretch_500: int = 0
 var _route_lines: PackedStringArray = PackedStringArray()
+var _route_last_usec: int = 0          # the last frame's clock (_route_frame)
 
 
 func prepare(name_arg: String, args: PackedStringArray) -> void:
@@ -109,11 +111,11 @@ func prepare(name_arg: String, args: PackedStringArray) -> void:
 
 	if mine == "" or not CharacterStore.set_active(mine):
 		push_error("robot: could not make or pick the character %s" % robot_name)   # robot_check fails a run with this line
-	print("ROBOT %s step prepare: plan %s, character %s" % [robot_name, plan, mine])
+	FreezeWatchScript.printer.line("ROBOT %s step prepare: plan %s, character %s" % [robot_name, plan, mine])
 
 
 func _say(kind: String, text: String) -> void:
-	print("ROBOT %s %s" % [robot_name, text])
+	FreezeWatchScript.printer.line("ROBOT %s %s" % [robot_name, text])
 
 	if kind == "FAIL":
 		_fails += 1
@@ -345,7 +347,7 @@ func _quiet() -> void:
 func _check_pack(step: String) -> void:
 	await _quiet()
 	var inv = client.items.inventory
-	print("ROBOT %s CHECK pack %d %d %s %d %s" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), _pack_sig(), RobotRules.used(inv), step])
+	FreezeWatchScript.printer.line("ROBOT %s CHECK pack %d %d %s %d %s" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), _pack_sig(), RobotRules.used(inv), step])
 
 
 func _num(item: String) -> int:
@@ -488,7 +490,7 @@ func run() -> void:
 	if not client.body.is_on_floor():
 		_fail("landed", "join", "not on the ground 68 s after joining (at %s)" % str(client.body.global_position.round()))
 
-	print("ROBOT %s step joined: peer %d at %s" % [robot_name, client.multiplayer.get_unique_id(), str(client.body.global_position.round())])
+	FreezeWatchScript.printer.line("ROBOT %s step joined: peer %d at %s" % [robot_name, client.multiplayer.get_unique_id(), str(client.body.global_position.round())])
 	_hook_view()
 	_step = "joined"
 	await _check_pack("joined")
@@ -570,7 +572,7 @@ func _rejoin_check() -> void:
 	if saved != _pack_sig():
 		_fail("rejoin", "pack", "the pack after rejoining (%s, %d slots) is not the pack at quit (%s)" % [_pack_sig(), RobotRules.used(client.items.inventory), saved])
 	else:
-		print("ROBOT %s step rejoin: pack kept (%s)" % [robot_name, saved])
+		FreezeWatchScript.printer.line("ROBOT %s step rejoin: pack kept (%s)" % [robot_name, saved])
 
 
 func _craft(recipe: String, count: int) -> void:
@@ -597,7 +599,7 @@ func _craft(recipe: String, count: int) -> void:
 	if got < int(r["gives"][1]) * count:
 		_fail("craft", recipe, "queued %d x %s; the queue emptied but the pack shows %d more %s (wanted %d)" % [count, recipe, got, gives, int(r["gives"][1]) * count])
 	else:
-		print("ROBOT %s step %s: +%d %s" % [robot_name, _step, got, gives])
+		FreezeWatchScript.printer.line("ROBOT %s step %s: +%d %s" % [robot_name, _step, got, gives])
 
 
 func _craft_chain() -> void:
@@ -659,7 +661,7 @@ func _drop_pickup() -> void:
 	if _count("stick") != before:
 		_fail("pickup", "pick", "picked up world item %d: sticks %d, wanted %d" % [found, _count("stick"), before])
 	else:
-		print("ROBOT %s step pickup: dropped and picked up a stick" % robot_name)
+		FreezeWatchScript.printer.line("ROBOT %s step pickup: dropped and picked up a stick" % robot_name)
 
 
 # Every stance that walks, each way: keys held, the body must move. Crouched next to nothing while standing moves = the fault.
@@ -681,7 +683,7 @@ func _stances() -> void:
 					_note("obstacle", "standing, W held %.0f s, moved %.2f m of about %.1f (%s)" % [s, moved, expected, last_touch])
 
 	await _stance_to(StanceScript.STAND)
-	print("ROBOT %s step stances: done" % robot_name)
+	FreezeWatchScript.printer.line("ROBOT %s step stances: done" % robot_name)
 
 
 # The loaded trees (flora kind 0, as the chop test finds them): [[position, chunk, id], ...] within `radius` of the player.
@@ -751,7 +753,7 @@ func _forest_walk(s: float) -> void:
 		return
 
 	var there: bool = await _go_to(spot, 60.0, 4.0)
-	print("ROBOT %s step to the forest: %s, %d trees within 20 m" % [robot_name, "there" if there else "short of it", _trees_near(20.0).size()])
+	FreezeWatchScript.printer.line("ROBOT %s step to the forest: %s, %d trees within 20 m" % [robot_name, "there" if there else "short of it", _trees_near(20.0).size()])
 	_step = "forest crouch"
 	await _stance_to(StanceScript.CROUCH)
 	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
@@ -793,7 +795,7 @@ func _forest_walk(s: float) -> void:
 				break
 
 	await _stance_to(StanceScript.STAND)
-	print("ROBOT %s step forest crouch: %.0f m in %.0f s past %d trunks, %d stops" % [robot_name, total, s, visited.size(), stuck])
+	FreezeWatchScript.printer.line("ROBOT %s step forest crouch: %.0f m in %.0f s past %d trunks, %d stops" % [robot_name, total, s, visited.size(), stuck])
 
 
 # Spear in hand, after one species at a time (rabbit, then deer, then wolf: the first hours' game). Every robot picks the same animal (the lowest
@@ -873,7 +875,7 @@ func _hunt(sp: int, s: float) -> bool:
 				continue
 
 			_hits[target] = 0
-			print("ROBOT %s step hunt: after %s %d at %s" % [robot_name, SPECIES_NAME.get(sp, sp), target, str((drawn[target] as Vector3).round())])
+			FreezeWatchScript.printer.line("ROBOT %s step hunt: after %s %d at %s" % [robot_name, SPECIES_NAME.get(sp, sp), target, str((drawn[target] as Vector3).round())])
 
 		at = drawn[target]
 		var to: Vector3 = at - me
@@ -898,11 +900,11 @@ func _hunt(sp: int, s: float) -> bool:
 	await _wait(1.0)
 
 	if target < 0:
-		print("ROBOT %s HUNT %s none 0 0 0 none %d %d %.0f found none" % [robot_name, SPECIES_NAME.get(sp, sp), health_before, _health, s])
+		FreezeWatchScript.printer.line("ROBOT %s HUNT %s none 0 0 0 none %d %d %.0f found none" % [robot_name, SPECIES_NAME.get(sp, sp), health_before, _health, s])
 		return false
 
 	var down: bool = _fell.has(target)
-	print("ROBOT %s HUNT %s %d %d %d %.1f %s %d %d %.0f" % [robot_name, SPECIES_NAME.get(sp, sp), target, strikes, int(_hits.get(target, 0)),
+	FreezeWatchScript.printer.line("ROBOT %s HUNT %s %d %d %d %.1f %s %d %d %.0f" % [robot_name, SPECIES_NAME.get(sp, sp), target, strikes, int(_hits.get(target, 0)),
 		float(_hp.get(target, 1.0)), "down" if down else "up", health_before, _health, float(Time.get_ticks_msec() - start_ms) / 1000.0])
 	return true
 
@@ -994,7 +996,7 @@ func _storage() -> void:
 	if _count("twine") != twine_before or int(contents[0].count_of(_num("twine"))) != 0:
 		_fail("storage", "take", "took 2 twine back: pack twine %d (wanted %d), the basket shows %d" % [_count("twine"), twine_before, int(contents[0].count_of(_num("twine")))])
 	else:
-		print("ROBOT %s step storage: built a wicker basket (%d slots), put 2 twine in and took them out" % [robot_name, int(contents[0].slot_count)])
+		FreezeWatchScript.printer.line("ROBOT %s step storage: built a wicker basket (%d slots), put 2 twine in and took them out" % [robot_name, int(contents[0].slot_count)])
 
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, basket, 0, 0, Vector3.ZERO)
 	client.net.chest_received.disconnect(got_contents)
@@ -1015,7 +1017,7 @@ func _eat_drink() -> void:
 		if _count("wild_apples") != 1:
 			_fail("eat", "apple", "ate a wild apple: %d left of 2" % _count("wild_apples"))
 		else:
-			print("ROBOT %s step eat: hunger %d -> %d" % [robot_name, hunger_before, _hunger])
+			FreezeWatchScript.printer.line("ROBOT %s step eat: hunger %d -> %d" % [robot_name, hunger_before, _hunger])
 
 	_step = "drink"
 	var water: Vector3 = await _find_water()
@@ -1032,7 +1034,7 @@ func _eat_drink() -> void:
 		await _wait(1.0)
 
 	await _wait(1.5)
-	print("ROBOT %s step drink: %s water %.0f m away, thirst %d -> %d" % [robot_name, "at the" if there else "short of the", Vector2(water.x - client.body.global_position.x, water.z - client.body.global_position.z).length(), thirst_before, _thirst])
+	FreezeWatchScript.printer.line("ROBOT %s step drink: %s water %.0f m away, thirst %d -> %d" % [robot_name, "at the" if there else "short of the", Vector2(water.x - client.body.global_position.x, water.z - client.body.global_position.z).length(), thirst_before, _thirst])
 
 	if there and _thirst == thirst_before and thirst_before < 100:
 		_note("drink", "drank 3 times at the water's edge and thirst stayed %d" % _thirst)
@@ -1088,7 +1090,7 @@ func _quit_mid_craft() -> void:
 
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_QUEUE, int(_recipes["twine"]["number"]), 0, 6, Vector3(float(client.held.held_slot + 1), 0.0, 0.0))
 	await _wait(3.5)   # one or two of six twines made: the rest still queued
-	print("ROBOT %s step quit mid-craft: queue %d left, fibre and twine worth %d fibre" % [robot_name, _queue_left, worth])
+	FreezeWatchScript.printer.line("ROBOT %s step quit mid-craft: queue %d left, fibre and twine worth %d fibre" % [robot_name, _queue_left, worth])
 
 
 func _rejoin_mid_check() -> void:
@@ -1109,7 +1111,7 @@ func _rejoin_mid_check() -> void:
 	if worth != int(saved):
 		_fail("rejoin", "mid-craft", "quit with 6 twine queued: fibre + 3 x twine was %s, after rejoining %d (fibre %d, twine %d)" % [saved, worth, _count("plant_fibre"), _count("twine")])
 	else:
-		print("ROBOT %s step rejoin mid-craft: nothing lost (worth %d fibre)" % [robot_name, worth])
+		FreezeWatchScript.printer.line("ROBOT %s step rejoin mid-craft: nothing lost (worth %d fibre)" % [robot_name, worth])
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(MID_FILE))
 
@@ -1125,7 +1127,7 @@ func _pose_lines(delta: float) -> void:
 	_pose_t = 0.0
 	var me: Vector3 = client.body.global_position
 	var v: Vector3 = client.body.velocity
-	print("ROBOT %s POSE %d %d %d %.2f %.2f %.2f %.2f" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), client.stance.stance, me.x, me.y, me.z, Vector2(v.x, v.z).length()])
+	FreezeWatchScript.printer.line("ROBOT %s POSE %d %d %d %.2f %.2f %.2f %.2f" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), client.stance.stance, me.x, me.y, me.z, Vector2(v.x, v.z).length()])
 	var pv: Node = client._player_view
 
 	if pv == null:
@@ -1136,7 +1138,7 @@ func _pose_lines(delta: float) -> void:
 		var p: Vector3 = (b["node"] as Node3D).global_position
 		var rig: Node3D = b["rig"]
 		var clip: String = str(rig.current()) if rig.has_method("current") else ""
-		print("ROBOT %s SEES %d %d %d %.2f %.2f %.2f %s" % [robot_name, int(peer), _now_ms(), int(b["state"]) & 3, p.x, p.y, p.z, clip if clip != "" else "-"])
+		FreezeWatchScript.printer.line("ROBOT %s SEES %d %d %d %.2f %.2f %.2f %s" % [robot_name, int(peer), _now_ms(), int(b["state"]) & 3, p.x, p.y, p.z, clip if clip != "" else "-"])
 
 
 func _sleep() -> void:
@@ -1151,7 +1153,7 @@ func _sleep() -> void:
 		_fail("sleep", "wake", "still asleep 2 s after asking to wake")
 
 	await _stance_to(StanceScript.STAND)
-	print("ROBOT %s step sleep: lay down, %s, woke" % [robot_name, "slept" if slept else "never fell asleep"])
+	FreezeWatchScript.printer.line("ROBOT %s step sleep: lay down, %s, woke" % [robot_name, "slept" if slept else "never fell asleep"])
 
 
 # Lying down: full energy cannot sleep (server_items _sleep, Dave 21 Oct 2026), so an admin robot is made tired first. True once the server
@@ -1183,7 +1185,7 @@ func _fall_asleep() -> bool:
 
 func _event(kind: String, extra: String = "") -> void:
 	var p: Vector3 = client.body.global_position
-	print("ROBOT %s EVENT %s %d %.2f %.2f %.2f %s" % [robot_name, kind, _now_ms(), p.x, p.y, p.z, extra])
+	FreezeWatchScript.printer.line("ROBOT %s EVENT %s %d %.2f %.2f %.2f %s" % [robot_name, kind, _now_ms(), p.x, p.y, p.z, extra])
 
 
 func _walker() -> void:
@@ -1277,7 +1279,7 @@ func _watcher() -> void:
 					if mount != null:
 						held_d = minf(held_d, item.global_position.distance_to(mount.global_position))
 
-			print("ROBOT %s W %d %d %.3f %.3f %.3f %d %s %.3f" % [robot_name, int(peer), _now_ms(), p.x, p.y, p.z, int(b["state"]), clip if clip != "" else "-", held_d])
+			FreezeWatchScript.printer.line("ROBOT %s W %d %d %.3f %.3f %.3f %d %s %.3f" % [robot_name, int(peer), _now_ms(), p.x, p.y, p.z, int(b["state"]), clip if clip != "" else "-", held_d])
 
 	if not seen:
 		_fail("watch", "nobody", "the walker never came in sight")
@@ -1337,7 +1339,7 @@ func _strike_at(dir: Vector3) -> void:
 		if Vector2(at.x - me.x, at.z - me.z).length() < 6.0:
 			near.append("%d:%.1f,%.1f" % [int(row[0]), at.x, at.z])
 
-	print("ROBOT %s JAB %d %d me %.1f,%.1f fps %d drawn %s" % [robot_name, int(seen[0]), int(seen[1]), me.x, me.z, Engine.get_frames_per_second(), " ".join(near)])
+	FreezeWatchScript.printer.line("ROBOT %s JAB %d %d me %.1f,%.1f fps %d drawn %s" % [robot_name, int(seen[0]), int(seen[1]), me.x, me.z, Engine.get_frames_per_second(), " ".join(near)])
 
 
 func _wolves_drawn() -> Dictionary:
@@ -1485,7 +1487,7 @@ func _wolf_fight() -> void:
 	for i in range(1, bites.size()):
 		gaps.append("%.1f" % (float(bites[i] - bites[i - 1]) / 1000.0))
 
-	print("ROBOT %s WOLVES outcome %s, rush %s, %d bites (gaps s: %s), %d strikes, %d hits on wolves, most wolves within 3 m %d, nearest drawn %.2f m, health %d -> %d, %.0f s" % [
+	FreezeWatchScript.printer.line("ROBOT %s WOLVES outcome %s, rush %s, %d bites (gaps s: %s), %d strikes, %d hits on wolves, most wolves within 3 m %d, nearest drawn %.2f m, health %d -> %d, %.0f s" % [
 		robot_name, outcome, "yes" if rush_ms > 0 else "no", bites.size(), ",".join(gaps) if not gaps.is_empty() else "-", strikes, wolf_hits, most_close, closest, h0, _health,
 		float(_now_ms() - (rush_ms if rush_ms > 0 else _now_ms())) / 1000.0])
 	await _wait(3.0)
@@ -1554,7 +1556,7 @@ func _screens() -> void:
 			_fail("screen", id + "_close", "Esc did not close the %s screen" % id)
 			await _esc()
 		else:
-			print("ROBOT %s step screen %s: opened and closed" % [robot_name, id])
+			FreezeWatchScript.printer.line("ROBOT %s step screen %s: opened and closed" % [robot_name, id])
 
 	_step = "screen menu"
 	await _esc()
@@ -1587,7 +1589,7 @@ func _screens() -> void:
 		_fail("screen", "menu_pages_close", "Esc did not close the game menu after its pages")
 		await _esc()
 
-	print("ROBOT %s step menu pages: %d shown" % [robot_name, pages.size()])
+	FreezeWatchScript.printer.line("ROBOT %s step menu pages: %d shown" % [robot_name, pages.size()])
 
 	# The skills page (Dave 23 Nov 2026): every skill reads "value / cap" with the cap a band top (25, 50, 75, 100) and the value under it.
 	_step = "skills page"
@@ -1615,7 +1617,7 @@ func _screens() -> void:
 	if rows == 0:
 		_note("skills", "no \"value / cap\" rows found on the character screen")
 
-	print("ROBOT %s step skills page: %d skill rows" % [robot_name, rows])
+	FreezeWatchScript.printer.line("ROBOT %s step skills page: %d skill rows" % [robot_name, rows])
 	await _esc()
 	await _wait(0.5)
 
@@ -1653,7 +1655,7 @@ func _screens() -> void:
 		if _count("plant_fibre") != total - 1:
 			_fail("pack", "drop_one", "dropping one fibre left %d of %d" % [_count("plant_fibre"), total])
 		else:
-			print("ROBOT %s step split and drop: one stack became two, one fibre dropped" % robot_name)
+			FreezeWatchScript.printer.line("ROBOT %s step split and drop: one stack became two, one fibre dropped" % robot_name)
 
 	# A container the first hours give (the knife's Wicker basket): placed, opened, Store all, Take all, Sort, closed on Esc.
 	if admin:
@@ -1760,7 +1762,7 @@ func _build_round() -> void:
 				grew = true
 				break
 
-		print("ROBOT %s build try %s at %s" % [robot_name, r["name"], str(spot.round())])
+		FreezeWatchScript.printer.line("ROBOT %s build try %s at %s" % [robot_name, r["name"], str(spot.round())])
 
 		if grew or _notices.slice(heard).any(func(t): return str(t).begins_with("Blueprint down")):
 			placed += 1
@@ -1772,7 +1774,7 @@ func _build_round() -> void:
 		if k >= 25:
 			break
 
-	print("ROBOT %s step build: %d covered rows tried, %d placed, %d refused with words" % [robot_name, k, placed, refused.size()])
+	FreezeWatchScript.printer.line("ROBOT %s step build: %d covered rows tried, %d placed, %d refused with words" % [robot_name, k, placed, refused.size()])
 
 	for line in refused:
 		_note("build", "refused: %s" % line)
@@ -1853,7 +1855,7 @@ func _station_round(view) -> void:
 	await _go_to(here, 10.0, 1.0)
 	await _wait(1.0)
 	var kinds: Array = built.map(func(b): return str(b[1]))
-	print("ROBOT %s step stations: %d of %d put down (%s)" % [robot_name, built.size(), FIRST_STATIONS.size(), ", ".join(kinds)])
+	FreezeWatchScript.printer.line("ROBOT %s step stations: %d of %d put down (%s)" % [robot_name, built.size(), FIRST_STATIONS.size(), ", ".join(kinds)])
 
 	if built.is_empty():
 		_fail("stations", "none", "no first station could be put down")
@@ -1940,7 +1942,7 @@ func _worn_round(view) -> void:
 		if int(inv.numbers[to]) != _num("plant_fibre") or int(inv.counts[to]) != moved_n or _count("plant_fibre") != total:
 			_fail("drag", "move", "fibre dragged from slot %d to empty slot %d: slot %d now holds %d x %d, fibre in the pack %d (was %d)" % [from, to, to, int(inv.counts[to]), int(inv.numbers[to]), _count("plant_fibre"), total])
 		else:
-			print("ROBOT %s step drag: %d fibre moved from slot %d to %d" % [robot_name, moved_n, from, to])
+			FreezeWatchScript.printer.line("ROBOT %s step drag: %d fibre moved from slot %d to %d" % [robot_name, moved_n, from, to])
 	else:
 		_note("drag", "not tried: fibre in slot %d, first empty slot past the hotbar %d" % [from, to])
 
@@ -1979,7 +1981,7 @@ func _worn_round(view) -> void:
 			if _count("plant_fibre") != fibre:
 				_fail("worn", "bag_take", "Take all from the worn bag: the pack has %d fibre, had %d" % [_count("plant_fibre"), fibre])
 
-			print("ROBOT %s step worn bag: opened, stored %d fibre, took all back" % [robot_name, stored])
+			FreezeWatchScript.printer.line("ROBOT %s step worn bag: opened, stored %d fibre, took all back" % [robot_name, stored])
 			await _esc()
 			await _wait(0.6)
 
@@ -2002,7 +2004,7 @@ func _worn_round(view) -> void:
 			_fail("worn", item + "_off", "%s: taken off, but worn %s and %d in the pack (words: %s)" % [item, str(_worn_place(view, item) >= 0), _count(item), str(_notices.slice(heard2))])
 
 	await _check_pack("worn off")
-	print("ROBOT %s step worn: %s on and off" % [robot_name, ", ".join(FIRST_WORN)])
+	FreezeWatchScript.printer.line("ROBOT %s step worn: %s on and off" % [robot_name, ", ".join(FIRST_WORN)])
 
 
 # Opens the inventory and presses every recipe whose Craft button is lit and that `pick` takes (a recipe row): each must queue (then is cancelled)
@@ -2065,7 +2067,7 @@ func _press_lit(view, step: String, pick: Callable, limit_s: float) -> int:
 		elif _queue_msec == queued:
 			_fail("craft_lit", label, "%s: the Craft button is lit but nothing happened (no queue, no words)" % label)
 
-	print("ROBOT %s step %s: %d lit recipes pressed" % [robot_name, step, lit])
+	FreezeWatchScript.printer.line("ROBOT %s step %s: %d lit recipes pressed" % [robot_name, step, lit])
 	await _check_pack(step)
 	return lit
 
@@ -2152,7 +2154,7 @@ func _container_round(view) -> void:
 		_fail("container", "close", "Esc did not close the basket")
 		await _esc()
 	else:
-		print("ROBOT %s step basket: placed, opened, stored %d, took all, sorted, closed" % [robot_name, stored])
+		FreezeWatchScript.printer.line("ROBOT %s step basket: placed, opened, stored %d, took all, sorted, closed" % [robot_name, stored])
 
 	# Open again and quit with it open: the rejoin pass checks the pack.
 	view._ask_open(basket)
@@ -2222,7 +2224,7 @@ func _set_snare(tag: String, spot: Vector3) -> Dictionary:
 
 	var xp: bool = _tracking_row() != row0
 	var said: Array = _notices.slice(said_from)
-	print("ROBOT %s SNARE %s set %s at %s, tracking %s (%s -> %s)%s" % [robot_name, tag, "yes" if id >= 0 else "no", str(spot.snapped(Vector3.ONE * 0.1)),
+	FreezeWatchScript.printer.line("ROBOT %s SNARE %s set %s at %s, tracking %s (%s -> %s)%s" % [robot_name, tag, "yes" if id >= 0 else "no", str(spot.snapped(Vector3.ONE * 0.1)),
 		"trained" if xp else "not trained", str(row0), str(_tracking_row()), "" if said.is_empty() else ", said " + str(said)])
 
 	if id < 0 and said.is_empty():
@@ -2278,7 +2280,7 @@ func _snares() -> void:
 		return
 
 	var on: Vector3 = Vector3(best[1].x, me.y, best[1].y)
-	print("ROBOT %s step snares: nearest %s trail point %.0f m off at %s" % [robot_name, best[0], best_d, str(on.round())])
+	FreezeWatchScript.printer.line("ROBOT %s step snares: nearest %s trail point %.0f m off at %s" % [robot_name, best[0], best_d, str(on.round())])
 	await _run_to(on + (me - on).normalized() * 1.5, 90.0, 1.0)
 	var first: Dictionary = await _set_snare("on_trail", on)
 
@@ -2346,7 +2348,7 @@ func _snares() -> void:
 			if not d.is_empty() and client.items._smoke_row_near(d["spot"], "carcass", 3.0) >= 0:
 				caught = "by the trail snare"
 
-	print("ROBOT %s SNARE wait %.0f s: catch %s; tracking index %d, skill rows %s" % [robot_name, SNARE_WAIT_S, caught, int(client.items.get("_tracking_index")), str(client.items.skill_rows)])
+	FreezeWatchScript.printer.line("ROBOT %s SNARE wait %.0f s: catch %s; tracking index %d, skill rows %s" % [robot_name, SNARE_WAIT_S, caught, int(client.items.get("_tracking_index")), str(client.items.skill_rows)])
 
 
 # Stand and look around: the watchers keep checking the animals and players drawn.
@@ -2468,8 +2470,8 @@ func _drop(case: String) -> void:
 	saved["pos"] = [p.x, p.y, p.z]
 	_write(DROP_FILE, JSON.stringify(saved))
 	_write(_share(CONTROL_FILE), "cut")
-	print("ROBOT %s DROP %s %d link cut (%s, health %d, at %s)" % [robot_name, case, _now_ms(), saved["sig"], _health, str(p.round())])
-	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (link cut)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	FreezeWatchScript.printer.line("ROBOT %s DROP %s %d link cut (%s, health %d, at %s)" % [robot_name, case, _now_ms(), saved["sig"], _health, str(p.round())])
+	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (link cut)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	await _wait(1.0)   # the link reads its control file five times a second
 	client.frames_left = 1   # gone: the goodbye the client sends on the way out dies on the cut link
 
@@ -2513,7 +2515,7 @@ func _drop_back() -> void:
 		return
 	var was: Array = saved.get("pos", [0.0, 0.0, 0.0])
 	var moved: float = client.body.global_position.distance_to(Vector3(float(was[0]), float(was[1]), float(was[2])))
-	print("ROBOT %s BACK %s joined %.1f m from where the link died, health %d (was %d), asleep %s" % [robot_name, case, moved, _health, int(saved.get("health", -1)), str(client.items.asleep)])
+	FreezeWatchScript.printer.line("ROBOT %s BACK %s joined %.1f m from where the link died, health %d (was %d), asleep %s" % [robot_name, case, moved, _health, int(saved.get("health", -1)), str(client.items.asleep)])
 
 	if _health < int(saved.get("health", -1)) - 5:
 		_note("drop", "health %d when the link died, %d after rejoining: the body left in the world while the dead connection lasted was hurt (%s)" % [int(saved.get("health", -1)), _health, case])
@@ -2530,7 +2532,7 @@ func _drop_back() -> void:
 		if worth != int(saved.get("worth", -1)):
 			_fail("drop", "twine", "the link died with 6 twine queued: fibre + 3 x twine was %d, after rejoining %d (fibre %d, twine %d)" % [int(saved.get("worth", -1)), worth, _count("plant_fibre"), _count("twine")])
 		else:
-			print("ROBOT %s BACK twine: nothing lost (worth %d fibre, %d queued at the cut, %d now)" % [robot_name, worth, int(saved.get("queue_left", -1)), _queue_left])
+			FreezeWatchScript.printer.line("ROBOT %s BACK twine: nothing lost (worth %d fibre, %d queued at the cut, %d now)" % [robot_name, worth, int(saved.get("queue_left", -1)), _queue_left])
 	else:
 		await _check_pack("back " + case)
 
@@ -2564,7 +2566,7 @@ func _drop_back() -> void:
 			elif int(contents[0].count_of(_num("twine"))) != int(saved.get("box_twine", 0)):
 				_fail("drop", "chest", "the basket held %d twine when the link died; after rejoining it shows %d" % [int(saved.get("box_twine", 0)), int(contents[0].count_of(_num("twine")))])
 			else:
-				print("ROBOT %s BACK chest: the basket opens and still holds %d twine" % [robot_name, int(saved.get("box_twine", 0))])
+				FreezeWatchScript.printer.line("ROBOT %s BACK chest: the basket opens and still holds %d twine" % [robot_name, int(saved.get("box_twine", 0))])
 
 			client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, basket, 0, 0, Vector3.ZERO)
 	elif case == "asleep" or case == "wolf":
@@ -2579,7 +2581,7 @@ func _drop_back() -> void:
 		if m < 0.5:
 			_fail("drop", case + " stuck", "after rejoining (the link died %s), W for 2 s moved %.2f m (asleep %s, stance %d)" % [case, m, str(client.items.asleep), client.stance.stance])
 		else:
-			print("ROBOT %s BACK %s: stands and walks (%.1f m in 2 s)" % [robot_name, case, m])
+			FreezeWatchScript.printer.line("ROBOT %s BACK %s: stands and walks (%.1f m in 2 s)" % [robot_name, case, m])
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(DROP_FILE))
 
@@ -2595,12 +2597,12 @@ func _drop_freeze() -> void:
 	var before: Vector3 = client.body.global_position
 	var t0: int = _now_ms()
 	OS.delay_msec(FREEZE_MS)   # the whole client stops: no frames, no network service
-	print("ROBOT %s FREEZE over at %d" % [robot_name, _now_ms()])
+	FreezeWatchScript.printer.line("ROBOT %s FREEZE over at %d" % [robot_name, _now_ms()])
 	_key("move_forward", false)
 	await _wait(8.0)
 	var still: bool = client.multiplayer.multiplayer_peer != null and client.multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 	var after: Vector3 = client.body.global_position
-	print("ROBOT %s FREEZE %d s at %d: still connected %s, moved %.1f m across it, notices %s" % [robot_name, int(FREEZE_MS * 0.001), t0, str(still), after.distance_to(before), str(_notices.slice(said_from))])
+	FreezeWatchScript.printer.line("ROBOT %s FREEZE %d s at %d: still connected %s, moved %.1f m across it, notices %s" % [robot_name, int(FREEZE_MS * 0.001), t0, str(still), after.distance_to(before), str(_notices.slice(said_from))])
 
 	if not still:
 		return   # dropped: _on_lost said so
@@ -2623,7 +2625,7 @@ func _drop_twin(second: bool) -> void:
 
 	if second:
 		_write(flag, str(_now_ms()))
-		print("ROBOT %s TWIN second joined at %d as the same character (%s)" % [robot_name, _now_ms(), _pack_sig()])
+		FreezeWatchScript.printer.line("ROBOT %s TWIN second joined at %d as the same character (%s)" % [robot_name, _now_ms(), _pack_sig()])
 		var first_sig: String = FileAccess.get_file_as_string(_share("twin_first_pack.txt")).strip_edges() if FileAccess.file_exists(_share("twin_first_pack.txt")) else ""
 
 		if first_sig != "" and first_sig != _pack_sig():
@@ -2643,8 +2645,8 @@ func _drop_twin(second: bool) -> void:
 		await _quit()   # run() returns after this plan without its own quit
 		return
 
-	print("ROBOT %s TWIN first: the second is in, waiting to be dropped (%s)" % [robot_name, _pack_sig()])
-	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, to be dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	FreezeWatchScript.printer.line("ROBOT %s TWIN first: the second is in, waiting to be dropped (%s)" % [robot_name, _pack_sig()])
+	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, to be dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	t0 = Time.get_ticks_msec()
 
 	while Time.get_ticks_msec() - t0 < 20000:
@@ -2657,11 +2659,11 @@ func _drop_twin(second: bool) -> void:
 # The server ended this connection: said once, with the step. Expected for the first twin; a fault in the freeze plan (a 10 s hitch must not
 # cost a player the game: the main gate allows a freeze up to 24.85 s).
 func _on_lost() -> void:
-	print("ROBOT %s LOST the server at %d (step %s, notices %s)" % [robot_name, _now_ms(), _step, str(_notices.slice(-2))])
+	FreezeWatchScript.printer.line("ROBOT %s LOST the server at %d (step %s, notices %s)" % [robot_name, _now_ms(), _step, str(_notices.slice(-2))])
 
 	if plan == "drop_twin1":
-		print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
-		print("ROBOT %s TWIN first dropped by the server" % robot_name)
+		FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+		FreezeWatchScript.printer.line("ROBOT %s TWIN first dropped by the server" % robot_name)
 	elif plan == "drop_freeze":
 		_fail("freeze", "dropped", "the server dropped this client after a %d s main-thread freeze" % (int(FREEZE_MS * 0.001)))
 # Plan bear (animal thread, 23 Nov 2026: a drawn bear held at a robot, then snapped 42 m): Robot 1 sets a bear 20 m ahead of the spawn,
@@ -2761,7 +2763,7 @@ func _fight(kind: String) -> void:
 		_note("fight", "no %s came after admin_place: nothing measured" % kind)
 		return
 
-	print("ROBOT %s step fight: %s %d set, shield in the left hand %s" % [robot_name, kind, foe, str(client.held.off_id())])
+	FreezeWatchScript.printer.line("ROBOT %s step fight: %s %d set, shield in the left hand %s" % [robot_name, kind, foe, str(client.held.off_id())])
 	var end: int = Time.get_ticks_msec() + int(FIGHT_S * 1000.0)
 	var started: bool = false
 	var last_state: int = -1
@@ -2835,7 +2837,7 @@ func _fight(kind: String) -> void:
 				calm_since = now
 
 				if not hit_now:
-					print("ROBOT %s ENEMY miss %s %d warn %d charge %d gap %.2f dodge %s shield %s" % [robot_name, kind, foe, (charge_ms - warn_ms) if warn_ms > 0 else -1, now - charge_ms, closest, "yes" if dodge else "no", "up" if shield_up else "down"])
+					FreezeWatchScript.printer.line("ROBOT %s ENEMY miss %s %d warn %d charge %d gap %.2f dodge %s shield %s" % [robot_name, kind, foe, (charge_ms - warn_ms) if warn_ms > 0 else -1, now - charge_ms, closest, "yes" if dodge else "no", "up" if shield_up else "down"])
 				warn_ms = -1
 
 		if st == ST_CHARGE:
@@ -2848,7 +2850,7 @@ func _fight(kind: String) -> void:
 			hits += 1
 			hit_now = true
 			var warned: int = (charge_ms - warn_ms) if warn_ms > 0 and charge_ms > 0 else -1
-			print("ROBOT %s ENEMY hit %s %d warn %d charge %d gap %.2f dodge %s shield %s health %d -> %d state %d" % [robot_name, kind, foe, warned, (now - charge_ms) if charge_ms > 0 else -1, gap, "yes" if dodge else "no", "up" if shield_up else "down", h_before, _health, st])
+			FreezeWatchScript.printer.line("ROBOT %s ENEMY hit %s %d warn %d charge %d gap %.2f dodge %s shield %s health %d -> %d state %d" % [robot_name, kind, foe, warned, (now - charge_ms) if charge_ms > 0 else -1, gap, "yes" if dodge else "no", "up" if shield_up else "down", h_before, _health, st])
 
 			if charge_ms < 0 or now - charge_ms > 3000:
 				_fail("fight", "unwarned:%d" % hits, "a %s hit (health %d -> %d) with no charge drawn before it (drawn state %d, warning drawn %s, %.2f m)" % [kind, h_before, _health, st, "yes" if warn_ms > 0 else "no", gap])
@@ -2862,7 +2864,7 @@ func _fight(kind: String) -> void:
 
 	_release_all()
 	_shield(false)
-	print("ROBOT %s FIGHT %s: %d charges, %d hits, health %d at the end" % [robot_name, kind, charges, hits, _health])
+	FreezeWatchScript.printer.line("ROBOT %s FIGHT %s: %d charges, %d hits, health %d at the end" % [robot_name, kind, charges, hits, _health])
 
 
 # Plan bear_group (animal thread, 23 Nov 2026: two hunters 1.4 m apart, the server pushed the bear out of one and into the other): the robots
@@ -2889,7 +2891,7 @@ func _bear_group() -> void:
 	var spot: Vector3 = Vector3(58170.0, 0.0, 71360.0) + GROUP_SPOTS[n]   # beside the spawn, the same ground for every robot
 	await _go_to(spot, 30.0, 0.25)
 	_release_all()
-	print("ROBOT %s step bear group: at %s (spot %d)" % [robot_name, str(client.body.global_position), n])
+	FreezeWatchScript.printer.line("ROBOT %s step bear group: at %s (spot %d)" % [robot_name, str(client.body.global_position), n])
 	await _wait(6.0 - float(n) * 2.0 + 2.0)   # all three in place
 
 	if n == 0:
@@ -2921,7 +2923,7 @@ func _bear_group() -> void:
 
 		await get_tree().process_frame
 
-	print("ROBOT %s step bear group: bear %d %s, health %d, %.2f m from its spot" % [robot_name, bear, "gone" if bear >= 0 else "never seen", _health, Vector2(client.body.global_position.x - spot.x, client.body.global_position.z - spot.z).length()])
+	FreezeWatchScript.printer.line("ROBOT %s step bear group: bear %d %s, health %d, %.2f m from its spot" % [robot_name, bear, "gone" if bear >= 0 else "never seen", _health, Vector2(client.body.global_position.x - spot.x, client.body.global_position.z - spot.z).length()])
 
 
 func _watch(s: float) -> void:
@@ -2938,7 +2940,7 @@ func _quit_at_once() -> void:
 		f.store_string("")   # the pack is still changing: the plain rejoin compare is off for this quit
 		f.close()
 
-	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1
 
 
@@ -3005,9 +3007,9 @@ func _route() -> void:
 	_route_begin("run back to town")
 	await _run_to(start, 150.0, 8.0)
 	_route_end()
-	print("ROBOT %s ROUTE summary:" % robot_name)
+	FreezeWatchScript.printer.line("ROBOT %s ROUTE summary:" % robot_name)
 	for line in _route_lines:
-		print("ROBOT %s ROUTE = %s" % [robot_name, line])
+		FreezeWatchScript.printer.line("ROBOT %s ROUTE = %s" % [robot_name, line])
 
 
 # The wet corner of a loaded water grid nearest `from` that lies at least `beyond_m` from it and no nearer the route's last point than `from`
@@ -3055,7 +3057,7 @@ func _route_begin(stretch: String) -> void:
 	_stretch_worst = 0.0
 	_stretch_100 = 0
 	_stretch_500 = 0
-	print("ROBOT %s ROUTE begin %s at %.0f,%.0f" % [robot_name, stretch, _stretch_from.x, _stretch_from.z])
+	FreezeWatchScript.printer.line("ROBOT %s ROUTE begin %s at %.0f,%.0f" % [robot_name, stretch, _stretch_from.x, _stretch_from.z])
 
 
 func _route_end() -> void:
@@ -3063,16 +3065,21 @@ func _route_end() -> void:
 	var line: String = "%s: %.1f s, %d frames, worst %.0f ms, %d over 100 ms, %d over 500 ms, moved %.0f m, at %.0f,%.0f" % [_stretch,
 		float(Time.get_ticks_msec() - _stretch_msec) / 1000.0, _stretch_frames, _stretch_worst, _stretch_100, _stretch_500,
 		Vector2(here.x - _stretch_from.x, here.z - _stretch_from.z).length(), here.x, here.z]
-	print("ROBOT %s ROUTE %s" % [robot_name, line])
+	FreezeWatchScript.printer.line("ROBOT %s ROUTE %s" % [robot_name, line])
 	_route_lines.append(line)
 	_stretch = ""
 
 
-func _route_frame(delta: float) -> void:
+# A frame's length from the clock, not delta: Lane A's route plays (23 Nov 2026) never showed a frame over 150 ms while their FREEZE lines
+# had 1-2 s gaps, so the engine's delta is held at about 150 ms and cannot show a stall.
+func _route_frame(_delta: float) -> void:
+	var now: int = Time.get_ticks_usec()
+	var ms: float = float(now - _route_last_usec) / 1000.0 if _route_last_usec > 0 else 0.0
+	_route_last_usec = now
+
 	if _stretch == "":
 		return
 
-	var ms: float = delta * 1000.0
 	_stretch_frames += 1
 	_stretch_worst = maxf(_stretch_worst, ms)
 	_stretch_100 += 1 if ms > 100.0 else 0
@@ -3091,5 +3098,5 @@ func _quit() -> void:
 
 	await _wait(1.6)   # the last refusals get their 1.5 s for a message
 	_check_refusals(Time.get_ticks_msec() + 5000)
-	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1   # the client quits the usual way (the server keeps the character, as when a player closes the game)
