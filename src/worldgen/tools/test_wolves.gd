@@ -368,8 +368,8 @@ func _init() -> void:
 	check(stolen[0] == 0 and log_bites == 0, "a starving pack with meat never enters a fire's light (%d bites)" % log_bites)
 	fires_at = []
 
-	# 10. Pacing: a pack wolf's row carries the server time the pack brain moved it (moved_ms), and once it stops, the time it first stood
-	# (stood_ms), as every other animal's row does; before this, the pack's rows carried the time they were sent.
+	# 10. Pacing: a pack wolf's row carries the server time the pack brain moved it (moved_ms), and once it stops it counts as standing
+	# (moving false), so its row carries the send time (protocol 154), as every other animal's row does.
 	a = make()
 	players = [player(1, 0.0, 0.0)]
 	pid = a.wolves.spawn_pack(60.0, 0.0)
@@ -395,11 +395,9 @@ func _init() -> void:
 	var still: Dictionary = {"pos": Vector3(1.0, 10.0, 1.0)}
 	a.wolves.pace(still, 1000)
 	a.wolves.pace(still, 1100)
-	var first_still: int = int(still.get("stood_ms", -1))
-	a.wolves.pace(still, 1200)
-	check(int(still["moved_ms"]) == 1000 and first_still == 1100 and int(still["stood_ms"]) == 1100, "a pack wolf that stops gets the time it first stood, once (%s)" % str(still))
+	check(int(still["moved_ms"]) == 1000 and not bool(still["moving"]), "a pack wolf that stops keeps its move time and stands (%s)" % str(still))
 	still["pos"] = Vector3(2.0, 10.0, 1.0)
 	a.wolves.pace(still, 1300)
-	check(int(still["moved_ms"]) == 1300 and int(still["stood_ms"]) == 1100, "and a new move stamps again")
+	check(int(still["moved_ms"]) == 1300 and bool(still["moving"]), "and a new move stamps again")
 	print("wolves: %d failures" % failures)
 	quit(failures)

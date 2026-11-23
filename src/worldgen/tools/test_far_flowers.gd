@@ -59,7 +59,7 @@ func _init() -> void:
 	_check((view._level(Vector2i(0, 0), Vector3(-100.0, 0.0, 10.0)) & FloraView.FAR_FLOWER_BIT) != 0, "a chunk 100 m away draws its far flowers")
 	_check((view._level(Vector2i(0, 0), Vector3(-130.0, 0.0, 10.0)) & FloraView.FAR_FLOWER_BIT) == 0, "a chunk 130 m away (past full_m, no plants held) does not")
 	view.far_flower_m = FloraView.FAR_FLOWER_M[0]
-	_check((view._level(Vector2i(0, 0), Vector3(10.0, 0.0, 10.0)) & FloraView.FAR_FLOWER_BIT) == 0, "Low quality: no far flowers even in the chunk under the player")
+	_check((view._level(Vector2i(0, 0), Vector3(10.0, 0.0, 10.0)) & FloraView.FAR_FLOWER_BIT) == 0, "FAR_FLOWER_M[0] (Low; every quality while the dots are off): no far flowers even in the chunk under the player")
 	_check(FloraView.FAR_FLOWER_IN_M[1] <= view.view_m[FloraView.KIND_PLANT] + 0.01, "the dots are fully in by the time the full models stop (no pop at the hand-over)")
 	view.free()
 	print("far flowers: %d failures" % failures)
