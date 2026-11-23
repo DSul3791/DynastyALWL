@@ -97,9 +97,9 @@ func _strokes(world: Node3D, stage: SoundStage) -> void:
 	world.add_child(node)
 	node.position = Vector3(6.0, 0.5, -2.0)
 	var heard: Array = []
-	view.stroked.connect(func(at: Vector3) -> void: heard.append(at))
+	view.stroked.connect(func(where: Vector3) -> void: heard.append(where))
 	var stepped: Array = []
-	view.stepped.connect(func(at: Vector3, _gait: int, _crouched: bool) -> void: stepped.append(at))
+	view.stepped.connect(func(where: Vector3, _gait: int, _crouched: bool) -> void: stepped.append(where))
 	var cases: Array = [[2.0, 10.0, 3], [4.0, 10.0, 5], [0.3, 10.0, 0], [2.0, PlayerView.STEP_HEAR_M + 5.0, 0]]
 
 	for c in cases:
@@ -109,7 +109,7 @@ func _strokes(world: Node3D, stage: SoundStage) -> void:
 		for n in 60:                                                   # 3 s
 			view._count_steps(b, Vector3(float(c[0]), 0.0, 0.0), 0.05, float(c[1]))
 
-		var at_body: bool = heard.all(func(at: Vector3) -> bool: return at.is_equal_approx(node.global_position))
+		var at_body: bool = heard.all(func(where: Vector3) -> bool: return where.is_equal_approx(node.global_position))
 		check(heard.size() == int(c[2]) and at_body, "another player swimming %.1f m/s at %.0f m: %d strokes where they swim (heard %d)" % [c[0], c[1], c[2], heard.size()])
 
 	check(stepped.is_empty(), "and no footsteps while swimming (%d)" % stepped.size())
