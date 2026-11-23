@@ -161,15 +161,32 @@ func survey(peer: int, pos: Vector3) -> int:
 			var seen: Array = []
 
 			if not had.is_empty() and q < int(had[0]) + improve:
-				# Known ground at no better skill: its drawing stays, but its water is put right (a river or marsh the first survey of an old
-				# map could not tell apart; a dug pond): water is not accuracy, so this is no redraw and earns nothing.
+				# Known ground at no better skill: its drawing stays, but a block from a map saved before protocol 165 has its water put right
+				# once per cell (a river it called a lake, a marsh it called dry ground): water is not accuracy, so this is no redraw and earns
+				# nothing. Each old cell is looked at once; when all of a block's cells have been, the block is "water_ok" and saved so, and
+				# known ground costs no look again (gate review 23 Nov 2026: looking at every known cell on every step was 8 times the work).
+				if row.get("water_ok", false) or row.get("water_seen", {}).has(idx):
+					continue
+
 				seen = observe.call(centre.x, centre.y) if observe.is_valid() else []
 
-				if seen.size() >= 2 and int(seen[1]) != int(had[2]):
+				if seen.size() < 2:
+					continue   # not loaded: looked at on a later step
+
+				if int(seen[1]) != int(had[2]):
 					had[2] = int(seen[1])
 					row["ver"] = int(row["ver"]) + 1
-					rec["dirty"] = true
 
+				if not row.has("water_seen"):
+					row["water_seen"] = {}
+
+				row["water_seen"][idx] = true
+
+				if row["water_seen"].size() >= row["cells"].size():
+					row["water_ok"] = true
+					row.erase("water_seen")
+
+				rec["dirty"] = true
 				continue
 
 			seen = observe.call(centre.x, centre.y) if observe.is_valid() else []
@@ -178,7 +195,7 @@ func survey(peer: int, pos: Vector3) -> int:
 				continue   # that ground is not loaded yet: it is surveyed on a later step
 
 			if row.is_empty():
-				row = {"cells": {}, "ver": 0}
+				row = {"cells": {}, "ver": 0, "water_ok": true}   # a new block's water is this protocol's
 				rec["blocks"][block] = row
 
 			row["cells"][idx] = [q, float(seen[0]), int(seen[1]), _density(int(trees.get(cell, 0)))]
@@ -648,9 +665,13 @@ func _save_one(key: String) -> void:
 
 	var mark_rows: Dictionary = {}   # the landmarks and path cells of a block (Dave 23 Nov 2026); a save without them loads with none
 	var path_rows: Dictionary = {}
+	var water_ok: Array = []   # blocks whose every cell's water is this protocol's (a map saved before 165 has none: each cell is looked at once)
 
 	for block in rec["blocks"]:
 		var brow: Dictionary = rec["blocks"][block]
+
+		if brow.get("water_ok", false):
+			water_ok.append("%d,%d" % [block.x, block.y])
 
 		if not brow.get("marks", {}).is_empty():
 			mark_rows["%d,%d" % [block.x, block.y]] = brow["marks"].values()
@@ -664,7 +685,7 @@ func _save_one(key: String) -> void:
 			path_rows["%d,%d" % [block.x, block.y]] = flat
 
 	file.store_string(JSON.stringify({"version": int(cfg.get("version", 1)), "tally": int(rec.get("tally", 0)), "blocks": rows, "trails": trail_rows,
-		"marks": mark_rows, "paths": path_rows, "fish": rec.get("fish", {})}))
+		"marks": mark_rows, "paths": path_rows, "fish": rec.get("fish", {}), "water_ok": water_ok}))
 	file.close()
 
 	if DirAccess.rename_absolute(path + ".tmp", path) == OK:
@@ -695,6 +716,11 @@ func _load(key: String) -> Dictionary:
 		if at.size() == 2 and not routes.is_empty():
 			rec["trails"][Vector2i(int(at[0]), int(at[1]))] = routes
 
+	var water_ok: Variant = parsed.get("water_ok", [])
+
+	if typeof(water_ok) != TYPE_ARRAY:
+		water_ok = []
+
 	for name in parsed.get("blocks", {}):
 		var parts: PackedStringArray = str(name).split(",")
 
@@ -704,7 +730,7 @@ func _load(key: String) -> Dictionary:
 		var cells: Dictionary = Codec.decode(Marshalls.base64_to_raw(str(parsed["blocks"][name])))
 
 		if not cells.is_empty():
-			rec["blocks"][Vector2i(int(parts[0]), int(parts[1]))] = {"cells": cells, "ver": 1}
+			rec["blocks"][Vector2i(int(parts[0]), int(parts[1]))] = {"cells": cells, "ver": 1, "water_ok": (water_ok as Array).has(name)}
 
 	for name in parsed.get("marks", {}):
 		var brow: Dictionary = rec["blocks"].get(_block_name(str(name)), {})

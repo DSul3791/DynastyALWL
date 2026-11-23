@@ -582,20 +582,38 @@ func landmark_checks() -> void:
 	f.close()
 	var old: Dictionary = again._record("map-key-old")
 	check(old["blocks"].size() == 1 and old["blocks"][Vector2i(0, 0)]["cells"].size() == 2 and all_marks(again, "map-key-old").is_empty(), "a map saved before landmarks loads with its cells and no marks")
-	# A known cell's water is put right on a revisit at the same skill (a river the old map called a lake), with no redraw counted.
+	# A known cell of a map saved before protocol 165 has its water put right once on a revisit at the same skill (a river the old map called
+	# a lake), with no redraw counted; ground mapped now is never looked at again for its water.
 	var river_m = make("")
 	keys[71] = "map-key-river"
 	var wet: Array = [Codec.WATER_INLAND]
-	river_m.observe = func(_x, _z): return [5.0, wet[0]]
+	var water_looks: Array = [0]
+	river_m.observe = func(_x, _z):
+		water_looks[0] += 1
+		return [5.0, wet[0]]
 
 	for k in 3:
 		river_m.note_position(71, Vector3(float(k) * 8.0, 10.0, 0.0))
 
+	water_looks[0] = 0
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	var fresh_looks: int = water_looks[0]
+	water_looks[0] = 0
+	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	check(water_looks[0] <= fresh_looks + 2, "known ground mapped now costs no water look on a revisit (%d looks, %d for the first new step)" % [water_looks[0], fresh_looks])
+	var river_block: Dictionary = river_m._record("map-key-river")["blocks"][Vector2i(0, 0)]
+	river_block.erase("water_ok")   # as a block loaded from a map saved before 165
 	wet[0] = Codec.WATER_RIVER
 	goaled.clear()
+	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
 	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
-	var first_cell: Array = river_m._record("map-key-river")["blocks"].get(Vector2i(0, 0), {}).get("cells", {}).get(0, [])
-	check(not first_cell.is_empty() and int(first_cell[2]) == Codec.WATER_RIVER and not goaled.any(func(g): return str(g[1]) == "map_redrawn"), "a known cell's water is put right on a revisit, without a redraw (%s)" % str(first_cell))
+	var first_cell: Array = river_block.get("cells", {}).get(0, [])
+	check(not first_cell.is_empty() and int(first_cell[2]) == Codec.WATER_RIVER and not goaled.any(func(g): return str(g[1]) == "map_redrawn"), "an old map's known cell has its water put right on a revisit, without a redraw (%s)" % str(first_cell))
+	water_looks[0] = 0
+	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	check(water_looks[0] <= fresh_looks + 2, "an old cell is looked at for its water only once (%d looks)" % water_looks[0])
 	check(MapScript.water_kind(3) == Codec.WATER_RIVER and MapScript.water_kind(8) == Codec.WATER_MARSH and MapScript.water_kind(2) == Codec.WATER_INLAND and MapScript.water_kind(9) == Codec.WATER_NONE, "rivers and wetlands get their own water kinds")
 	check(Codec.decode(Codec.encode({5: [10, 1.0, Codec.WATER_MARSH, 0]}))[5][2] == Codec.WATER_MARSH, "the codec carries river and marsh")
 	# The world items a person marks (server_items.map_marks_near): a campfire, a rock started and not finished, a path and a road.

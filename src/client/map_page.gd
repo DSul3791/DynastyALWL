@@ -14,9 +14,12 @@ const LABELS_FROM_ZOOM := 1.0   # names are written from this zoom in; further o
 
 const PAPER := Color(0.86, 0.81, 0.69)
 const LABEL_FONT := "res://assets/ui/fonts/EBGaramond-Regular.ttf"
-const LABEL_PX := 14
+const LABEL_PX := 17   # Lane A pictures 23 Nov 2026: 14 px read tiny at the default zoom
+const LABEL_HALO_PX := 5   # paper round each letter, so a name over the woods' tree marks still reads (as a printed map clears ground for its names)
 const ZOOM_MIN := 0.5
-const ZOOM_MAX := 6.0
+const ZOOM_MAX := 16.0   # Dave 23 Nov 2026: "I would also like to be able to zoom in more on the map" (it was 6: a 16 m cell 24 px; now 64 px)
+const ZOOM_STEP := 1.2   # one wheel notch
+const ZOOM_EASE := 14.0  # how fast the page glides to the zoom asked for (per second): smooth steps, not jumps
 
 var knowledge = null: set = set_knowledge
 var where: Callable                 # () -> Vector3, the body's position
@@ -24,6 +27,8 @@ var tracking: Callable              # () -> the character's Tracking level: at k
 var _trails_on: bool = false
 var player_at: Vector3 = Vector3.ZERO
 var zoom: float = 1.5               # screen pixels per sketch pixel
+var _zoom_to: float = -1.0          # the zoom the wheel asked for, glided to in _process (-1: none)
+var _zoom_about: Vector2 = Vector2.ZERO   # the page point that stays put while zooming (the mouse)
 var centre: Vector2 = Vector2.ZERO  # the world sketch pixel at the middle of the page
 var follow: bool = true             # stays on the player until the page is dragged
 
@@ -93,9 +98,23 @@ func _world_to_sketch(at: Vector3) -> Vector2:
 	return Vector2(at.x * per_m, at.z * per_m)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if knowledge == null or not is_visible_in_tree():
 		return
+
+	if _zoom_to > 0.0:
+		var was: float = zoom
+		zoom = _zoom_to if absf(_zoom_to - zoom) < 0.002 * _zoom_to else lerpf(zoom, _zoom_to, 1.0 - exp(-ZOOM_EASE * delta))
+
+		if not follow:
+			# The ground under the mouse stays under the mouse.
+			var middle: Vector2 = size * 0.5
+			centre += (_zoom_about - middle) / was - (_zoom_about - middle) / zoom
+
+		if zoom == _zoom_to:
+			_zoom_to = -1.0
+
+		queue_redraw()
 
 	var trails_on: bool = tracking.is_valid() and float(tracking.call()) >= float(knowledge.trails_tracking)
 
@@ -223,7 +242,7 @@ func _draw() -> void:
 				MapMarks.draw_mark(self, str(mark[0]), spot)
 
 				if zoom >= LABELS_FROM_ZOOM and str(mark[2]) != "":
-					_write_label(str(mark[2]), spot + Vector2(0.0, 15.0), taken)
+					_write_label(str(mark[2]), spot + Vector2(0.0, 23.0), taken)
 
 	# The traps this character has set: a snare is a noose on its stake, a Bird trap a little cage.
 	for trap in knowledge.traps:
@@ -232,11 +251,33 @@ func _draw() -> void:
 		if Rect2(Vector2.ZERO, size).grow(12.0).has_point(spot):
 			_draw_trap(spot, str(trap[1]))
 
-	# Where you are: a small charcoal cross.
-	var me: Vector2 = middle + (_world_to_sketch(player_at) - centre) * zoom
-	draw_line(me + Vector2(-5, -5), me + Vector2(5, 5), Color(Sketch.INK, 0.85), 2.0)
-	draw_line(me + Vector2(-5, 5), me + Vector2(5, -5), Color(Sketch.INK, 0.85), 2.0)
+	# Where you are: a little solid black person (Dave 23 Nov 2026: "a stamp of a little person"; "it needs to be simple and obvious"; "like a
+	# little all black gingerbread shape"), the same size at every zoom, last on the page so nothing covers it.
+	_draw_person(middle + (_world_to_sketch(player_at) - centre) * zoom, 1.3)
 	_draw_legend()
+
+
+# The "you" stamp: a gingerbread figure in solid ink with a rim of paper round it, so it stands clear of woods and lines. About 26 px tall at 1.3.
+const PERSON := [Vector2(-2.0, -3.0), Vector2(-7.0, -2.0), Vector2(-7.5, 0.5), Vector2(-2.6, 0.0), Vector2(-3.0, 4.5), Vector2(-5.2, 9.6),
+	Vector2(-2.0, 10.0), Vector2(0.0, 5.6), Vector2(2.0, 10.0), Vector2(5.2, 9.6), Vector2(3.0, 4.5), Vector2(2.6, 0.0), Vector2(7.5, 0.5),
+	Vector2(7.0, -2.0), Vector2(2.0, -3.0)]
+const PERSON_HEAD := Vector2(0.0, -6.6)
+const PERSON_HEAD_R := 3.6
+
+
+func _draw_person(at: Vector2, scale_by: float) -> void:
+	var body: PackedVector2Array = PackedVector2Array()
+
+	for p in PERSON:
+		body.append(at + p * scale_by)
+
+	var rim: PackedVector2Array = body.duplicate()
+	rim.append(body[0])
+	var paper: Color = Color(PAPER, 0.95)
+	draw_polyline(rim, paper, 4.0, true)
+	draw_circle(at + PERSON_HEAD * scale_by, PERSON_HEAD_R * scale_by + 2.0, paper)
+	draw_colored_polygon(body, Sketch.INK)
+	draw_circle(at + PERSON_HEAD * scale_by, PERSON_HEAD_R * scale_by, Sketch.INK)
 
 
 # A small key in the page's lower left corner (coordinator 23 Nov 2026: what the marks mean, on the map itself). The game-trail row only shows
@@ -268,8 +309,7 @@ func _draw_legend() -> void:
 		var mark: Vector2 = Vector2(box.position.x + 16.0, y)
 		match str(rows[i][0]):
 			"you":
-				draw_line(mark + Vector2(-5, -5), mark + Vector2(5, 5), ink, 2.0)
-				draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), ink, 2.0)
+				_draw_person(mark + Vector2(0, 1), 0.75)
 			"trail":
 				draw_dashed_line(mark + Vector2(-8, 0), mark + Vector2(8, 0), Color(Sketch.INK, 0.55), 1.2, 4.0)
 			_:
@@ -288,7 +328,8 @@ func _write_label(text: String, at: Vector2, taken: Array) -> void:
 			return
 
 	taken.append(box)
-	draw_string(font, Vector2(at.x - width * 0.5, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_PX, Color(Sketch.INK, 0.85))
+	draw_string_outline(font, Vector2(at.x - width * 0.5, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_PX, LABEL_HALO_PX, Color(PAPER, 0.9))
+	draw_string(font, Vector2(at.x - width * 0.5, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_PX, Color(Sketch.INK, 0.9))
 
 
 # One trap mark at `spot`.
@@ -307,13 +348,11 @@ func _gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var button: InputEventMouseButton = event
 
-		if button.button_index == MOUSE_BUTTON_WHEEL_UP and button.pressed:
-			zoom = clampf(zoom * 1.15, ZOOM_MIN, ZOOM_MAX)
-			queue_redraw()
-			accept_event()
-		elif button.button_index == MOUSE_BUTTON_WHEEL_DOWN and button.pressed:
-			zoom = clampf(zoom / 1.15, ZOOM_MIN, ZOOM_MAX)
-			queue_redraw()
+		if (button.button_index == MOUSE_BUTTON_WHEEL_UP or button.button_index == MOUSE_BUTTON_WHEEL_DOWN) and button.pressed:
+			var from: float = _zoom_to if _zoom_to > 0.0 else zoom
+			var step: float = ZOOM_STEP if button.button_index == MOUSE_BUTTON_WHEEL_UP else 1.0 / ZOOM_STEP
+			_zoom_to = clampf(from * step, ZOOM_MIN, ZOOM_MAX)
+			_zoom_about = button.position
 			accept_event()
 		elif button.button_index == MOUSE_BUTTON_LEFT:
 			_dragging = button.pressed

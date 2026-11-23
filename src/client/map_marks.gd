@@ -9,9 +9,22 @@ extends RefCounted
 const INK := Color(0.12, 0.11, 0.10)
 
 
+const SCALE := 1.5   # Lane A pictures 23 Nov 2026: at 1.0 the pictures were too small to tell apart at the default zoom
+const PAPER := Color(0.86, 0.81, 0.69)   # map_page.gd PAPER
+
+
 static func draw_mark(canvas: CanvasItem, kind: String, at: Vector2) -> void:
 	var ink: Color = Color(INK, 0.9)
 	var base: String = kind.get_slice(":", 0)
+	# A little paper cleared under the picture, so it reads over woods (tree marks) and hill lines; then the picture drawn SCALE times its
+	# size round `at` (a point at + p lands at at + p * SCALE, and the shake still follows the place).
+	canvas.draw_circle(at, 9.0 * SCALE, Color(PAPER, 0.75))
+	canvas.draw_set_transform(at * (1.0 - SCALE), 0.0, Vector2(SCALE, SCALE))
+	_draw_kind(canvas, base, at, ink)
+	canvas.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+static func _draw_kind(canvas: CanvasItem, base: String, at: Vector2, ink: Color) -> void:
 
 	match base:
 		"campfire":
