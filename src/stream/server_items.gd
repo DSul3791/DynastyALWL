@@ -925,7 +925,7 @@ func report_held(peer: int, number: int, left: int = 0, flags: int = 0) -> void:
 	_hand_flags[peer] = flags & 15
 
 
-# The item in this player's left hand (a torch, lantern or shield; 158), 0 for none: as held_number, only while the pack holds it.
+# The item in this player's left hand (a torch, lantern or shield; 159), 0 for none: as held_number, only while the pack holds it.
 func left_hand_number(peer: int) -> int:
 	return _in_pack(peer, int(_held_left.get(peer, 0)))
 

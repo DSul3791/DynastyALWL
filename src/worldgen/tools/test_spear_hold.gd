@@ -189,7 +189,7 @@ func run() -> void:
 	held.carrying_log = false
 	held._process(0.05)
 	_check(held.held_id() == "stone_axe" and held._model != null, "the log laid down: the axe is back in hand")
-	# 157: another player's arrow and thrown spear are flown here too (flight_seen), look only.
+	# 159: another player's arrow and thrown spear are flown here too (flight_seen), look only.
 	var flying: int = held._flights.size()
 	held.add_seen_flight(table.number_of("wooden_arrow"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 2.0, -30.0), false)
 	held.add_seen_flight(table.number_of("wooden_spear"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 0.0, -15.0), true)

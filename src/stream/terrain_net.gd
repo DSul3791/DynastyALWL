@@ -40,7 +40,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 159  # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). 156 was reserved for the sound thread. Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+const PROTOCOL_VERSION := 159  # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
 # 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
 # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
@@ -408,14 +408,14 @@ func player_look(peer_id: int, char_name: String, body_model: String, code: Stri
 
 # Protocol 151 (server_players.gd): the other players within 150 m, nearest first: peer ids, positions (the body's middle), facings (rotation.y),
 # states (stance 0 stand / 1 crouch / 2 sit / 3 lie, +4 swimming, +8 a log on the shoulder), the item number in the hand (0 none) and the server
-# ms each position came in; from 157 the left-hand item (torch, lantern, shield; 0 none) and `more` (PlayersScript MORE_*: a burning torch or
+# ms each position came in; from 159 the left-hand item (torch, lantern, shield; 0 none) and `more` (PlayersScript MORE_*: a burning torch or
 # lantern, bow raised, bow drawn, shield up, on a ladder, and bits 5..7 a count of eats and drinks). About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
 @rpc("authority", "call_remote", "unreliable")
 func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray) -> void:
 	players_received.emit(ids, positions, yaws, states, held, times, left, more)
 
 
-# Another player's arrow or thrown weapon leaving the hand (157): item number, where it left (the eye), its velocity, burning or not. The
+# Another player's arrow or thrown weapon leaving the hand (159): item number, where it left (the eye), its velocity, burning or not. The
 # receiving client flies it with the server's gravity (server_items.gd THROW_GRAVITY), look only. To players within 150 m but the thrower.
 @rpc("authority", "call_remote", "unreliable")   # look only: a lost one is a missed arrow, and it never holds up the reliable channel
 func flight_seen(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
@@ -990,7 +990,7 @@ func trade(npc_id: String, kind: int, a: int, count: int) -> void:
 
 # What the player holds now (146, Dave 20 Nov 2026: goblins at a camp react to "a weapon in hand"): the item number in the hand (0 empty), sent
 # by the client when it changes, at most twice a second. The server keeps it only while that item is in the pack (server_items.gd held_number).
-# From 157 also the left-hand item (0 none, kept only while in the pack) and flags (held_item.gd HAND_*: bow raised 1, bow drawn 2,
+# From 159 also the left-hand item (0 none, kept only while in the pack) and flags (held_item.gd HAND_*: bow raised 1, bow drawn 2,
 # shield up 4, on a ladder 8), shown to the other players (server_players.gd); a flag change is sent at once, at most ten a second.
 @rpc("any_peer", "call_remote", "reliable")
 func held_item(number: int, left: int, flags: int) -> void:

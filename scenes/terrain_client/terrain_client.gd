@@ -1739,7 +1739,7 @@ func _welcome_body(info: Dictionary) -> void:
 	net.players_received.connect(_player_view.on_rows)
 	net.flight_seen_received.connect(func(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 		if held != null:
-			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 158)
+			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 159)
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk

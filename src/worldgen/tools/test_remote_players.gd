@@ -361,6 +361,21 @@ func _client() -> void:
 				hand_on += 1
 
 		check(view.drawn_count() == 6 and lights_on == PlayerViewScript.LIT_MOST and hand_on == 0, "five burning torches: the %d nearest light, one light each (%d drawn, %d lit, %d hand lights)" % [PlayerViewScript.LIT_MOST, view.drawn_count(), lights_on, hand_on])
+		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST_LOW   # the Low graphics tier
+
+		for i in range(3):
+			await process_frame
+
+		var low_on: int = 0
+
+		for lp in [7] + crowd:
+			var low_node: Node3D = view._bodies.get(lp, {}).get("left_node", null)
+
+			if low_node != null and low_node.get_node_or_null("Light") != null and (low_node.get_node("Light") as OmniLight3D).visible:
+				low_on += 1
+
+		check(low_on == PlayerViewScript.LIT_MOST_LOW, "on the Low tier only %d torch lights (%d lit)" % [PlayerViewScript.LIT_MOST_LOW, low_on])
+		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST
 		var drink_clip: String = str(view._bodies[7]["rig"].current())
 		check(drink_clip == "drink" or not view._bodies[7]["rig"].animation_player.has_animation("drink"), "a drink plays the drink clip (%s)" % drink_clip)
 
