@@ -5659,7 +5659,8 @@ func _move_player(delta: float) -> void:
 		var carried: Vector3 = _slide_carry / delta if carrying else Vector3.ZERO
 		body.velocity += carried
 		body.move_and_slide()
-		body.velocity -= carried.slide(Vector3(body.get_wall_normal().x, 0.0, body.get_wall_normal().z).normalized()) if body.is_on_wall() else carried   # the pace the animation, sounds and ice grip read stays the walker's own
+		var wall_n: Vector3 = body.get_wall_normal() if body.is_on_wall() else Vector3.ZERO
+		body.velocity -= carried.slide(Vector3(wall_n.x, 0.0, wall_n.z).normalized()) if body.is_on_wall() else carried   # the pace the animation, sounds and ice grip read stays the walker's own
 		Probe.stop("p slide", tm)
 
 		if carrying:
@@ -7917,7 +7918,7 @@ var _crouch_case: int = -1
 var _crouch_case_msec: int = 0
 var _crouch_from: Vector3 = Vector3.ZERO
 var _crouch_stuck: int = 0
-const CROUCH_WALK_TREES := 10
+const CROUCH_WALK_TREES := 5    # each from four sides, past and brushing: 40 walks
 const CROUCH_WALK_S := 3.0
 
 
