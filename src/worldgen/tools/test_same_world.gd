@@ -322,6 +322,18 @@ func _check_taken_drawn() -> void:
 	grass.take_branch(Vector3(14.4, 10.0, 19.3), 400)   # another point 0.8 m off: it takes a branch of its own
 	after = grass._cells[cell]["bufs"][layer]
 	check(absf(after[0]) < 0.001 and absf(after[32]) < 0.001 and absf(after[16] - 1.2) < 0.001, "two points near each other hide two different branches")
+	grass.clear_taken()   # gate review 2: this player's own pick hides that very branch, even beside a point another player took
+	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}
+	grass.take_branch(Vector3(13.6, 10.0, 19.3), 400)
+	grass.take_branch(Vector3(13.7, 10.0, 19.35), -1, [cell, 2])
+	after = grass._cells[cell]["bufs"][layer]
+	check(absf(after[0]) < 0.001 and absf(after[32]) < 0.001 and absf(after[16] - 1.2) < 0.001, "an own pick beside a taken point hides its own branch")
+	var next_cell: Vector2i = cell + Vector2i(1, 0)
+	grass._cells.erase(cell)   # its cell no longer drawn (walked off); the next cell is built with a branch near the point
+	grass._cells[next_cell] = {"bufs": {layer: buffer.duplicate()}}
+	grass._hide_taken(next_cell)
+	check(absf((grass._cells[next_cell]["bufs"][layer] as PackedFloat32Array)[0] - 1.2) < 0.001, "a point whose cell is not drawn hides nothing in the next cell")
+	grass._cells.erase(next_cell)
 	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}   # the cell built again with both
 	grass._hide_taken(cell)
 	after = grass._cells[cell]["bufs"][layer]
