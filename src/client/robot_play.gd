@@ -846,7 +846,7 @@ func _hunt(sp: int, s: float) -> bool:
 		_key("move_forward", false)
 		_key("run", false)
 		_face(to.normalized())
-		client.net.inventory_action.rpc_id(1, NetScript.ACT_STRIKE, 0, 0, 0, to.normalized())
+		_strike_at(to.normalized())
 		strikes += 1
 		await _wait(0.8)
 
@@ -1225,7 +1225,7 @@ func _watcher() -> void:
 
 
 # --- plan wolves: the battle ring (#1664). Robot 1 carries raw meat alone more than town_keep_m from the town, an admin pack is placed
-# 25 m off; once the rush begins it is given a spear and fights back. Robot 2 stays at the spawn (wolves_alone) or runs in 15 s into the rush
+# 25 m off; once the rush begins it is given a spear and fights back. Robot 2 stays at the spawn (wolves_alone) or waits 40 m short of it and runs in 3 s into the rush
 # (wolves) to see whether a second player breaks it. Robot 1 writes the rush to ROBOT_SHARE/wolves_rush.txt for Robot 2 (robots.sh sets it).
 const WOLF := 3
 const WOLF_FAR_M := 380.0     # beyond server_wolves town_keep_m (300 m) from the town, whose middle is near the spawn
@@ -1260,6 +1260,13 @@ func _run_to(target: Vector3, limit_s: float, near_m: float = 3.0) -> bool:
 
 	_release_all()
 	return false
+
+
+# One jab with the slot-0 item, judged where this screen drew the animals (protocol 155, held_item.gd _melee_strike): the server's lag
+# allowance, as a player's own blow gets it.
+func _strike_at(dir: Vector3) -> void:
+	var seen: Array = client._animal_view_node.seen_server_ms() if client._animal_view_node != null else [0, 0]
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_STRIKE, 0, int(seen[0]), int(seen[1]), dir)
 
 
 func _wolves_drawn() -> Dictionary:
@@ -1349,10 +1356,10 @@ func _wolf_fight() -> void:
 
 		most_close = maxi(most_close, close)
 
-		if armed and nearest != Vector3.INF and Vector2(nearest.x - me.x, nearest.z - me.z).length() < 2.2 and now - strike_ms > 800:
+		if armed and nearest != Vector3.INF and Vector2(nearest.x - me.x, nearest.z - me.z).length() < 2.8 and now - strike_ms > 800:
 			var to: Vector3 = Vector3(nearest.x - me.x, 0.0, nearest.z - me.z).normalized()
 			_face(to)
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_STRIKE, 0, 0, 0, to)
+			_strike_at(to)
 			strikes += 1
 			strike_ms = now
 
@@ -1393,6 +1400,9 @@ func _wolf_second(come: bool) -> void:
 	var end: int = Time.get_ticks_msec() + 360000
 	var path: String = _share_path()
 
+	if come:   # out after Robot 1, waiting 40 m short of it (well beyond the pack's group_m 10 m), so it can come in a few seconds into the rush
+		await _run_to(client.body.global_position + Vector3(0.0, 0.0, -(WOLF_FAR_M - 40.0)), 120.0, 6.0)
+
 	while Time.get_ticks_msec() < end and (path == "" or not FileAccess.file_exists(path)):
 		await _wait(1.0)
 
@@ -1401,7 +1411,7 @@ func _wolf_second(come: bool) -> void:
 		return
 
 	var p: PackedStringArray = FileAccess.get_file_as_string(path).split(" ")
-	await _wait(15.0)
+	await _wait(3.0)
 	_event("coming")
 	var there: bool = await _run_to(Vector3(float(p[0]), float(p[1]), float(p[2])), 90.0, 5.0)
 	_event("arrived" if there else "not_there")
