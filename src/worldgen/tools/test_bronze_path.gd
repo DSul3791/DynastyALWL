@@ -3,7 +3,7 @@ extends SceneTree
 # The bronze path runs on the live data (Steve 10 Nov 2026; rebuilt for the creator's smelting progression, GOALS-REPAIR R2, master s2.7): every
 # step through the real server, the real recipes, blueprints, structures.json smelting and boulders.json, nothing stood in. A step that
 # refuses prints what the server said.
-#   1. a Stone - Hammer by hand (stick, stone, twine; the Stone - Pickaxe recipe is retired, TREE_WOOD_TOOLS_DESIGN.md W-12);
+#   1. a Stone - Hammer by hand (stick, stone, twine; the Stone - Pickaxe is made by hand too, restored 23 Nov 2026 over W-12);
 #   2. copper ore and tin ore broken out of a copper and a tin outcrop with it (boulders.json piece share as shipped); no iron ore (iron wants a pick);
 #   3. a Primitive smithy and a Primitive smelter from their blueprints with a wooden hammer: stone, clay and logs only, no metal, Planks or Nails;
 #   4. charcoal left in a lit campfire as its firewood burns;

@@ -41,7 +41,7 @@ RATES = {
     "firewood": (24.0, "logs split (24 a log, W-3)"), "wooden_block": (6.0, "logs sawn (6 a log, W-3)"),
     "plant_fibre": (2.0, "plants picked"), "stone": (1.0, "stones picked or pick blows"), "clay": (2.0, "shovel digs"), "sand": (2.0, "shovel digs"),
     "hide": (1.5, "deer killed"), "sinew": (8.0, "deer killed"), "animal_fat": (2.0, "deer killed"), "bone": (5.5, "deer killed"),
-    "raw_meat": (7.0, "deer killed"), "fur": (1.5, "foxes or wolves killed"), "feather": (18.0, "geese killed"),
+    "raw_meat": (10.0, "deer killed"), "fur": (1.5, "foxes or wolves killed"), "feather": (18.0, "geese killed"),
     "tannin_bark": (12.0, "oaks felled"), "bark": (2.75, "trees felled (bark_chance 0.55 a log)"),
     "copper_ore": (0.5, "pick blows on a copper outcrop (or loose pieces picked)"), "tin_ore": (0.5, "pick blows on a tin outcrop (or loose pieces)"),
     "iron_ore": (0.5, "pick blows on an iron outcrop (or loose river stones)"), "bog_iron_ore": (1.0, "shovel digs in bog"),
@@ -128,7 +128,8 @@ class Effort:
         if job:
             per = float(job["out"][1])
             jobs = math.ceil(n / per)
-            tally["smelt_s"] += 20.0 * jobs
+            ingot_s = 20.0 * per / 1.3 if job.get("bellows") else 20.0 * per   # server_smelter: ingot_s an ingot; a worked bellows 1.3x (improved_smelter)
+            tally["smelt_s"] += ingot_s * jobs
             kinds = [k for k, d in self.r.structures.items() if d.get("use") == "smelt" and any(
                 self.r.smelting["jobs"].get(j) is job for j in d.get("smelt", {}).get("jobs", []))]
             if kinds and not (set(kinds) & self.built):
@@ -149,7 +150,9 @@ class Effort:
 
 def main():
     e = Effort()
-    out = ["# Progression effort (one player, each stage's kit; stations carried forward)\n"]
+    out = ["# Progression effort (one player, each stage's kit; stations carried forward)\n",
+           "Each item is made the way the reach model first reaches it, and a group need (any nails) by its first reached member: these are the"
+           " guide's routes, not the cheapest possible. Averages; travel not counted.\n"]
     for stage, kit in KITS.items():
         t = {"raw": {}, "builds": [], "craft_s": 0.0, "crafts": 0, "smelt_s": 0.0}
         for iid in kit["items"]:
