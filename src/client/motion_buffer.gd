@@ -199,3 +199,56 @@ static func speed_at(samples: Array, t: float) -> float:
 	var b: Array = samples[i]
 	var da: Vector3 = (b[0] as Vector3) - (a[0] as Vector3)
 	return Vector2(da.x, da.z).length() / maxf(float(b[2]) - float(a[2]), 0.05)
+
+
+# The body's own feet (Dave 23 Nov 2026: animals "like really bad animatronics", "they might need more freedom client side";
+# docs/design/ANIMAL_NETCODE.md, PR 2). The server keeps where an animal is and what it does, and turns and starts it at once; the drawn
+# body follows that point as a body would: a critically damped spring (the SmoothDamp form, steady at any frame rate) on the point
+# FOLLOW_S ahead along its own way, so it keeps up with a steady run, eases into a start or a stop over about FOLLOW_S, and draws a sharp
+# corner as a short curve. It stays within about FOLLOW_S of its speed of the point (0.25 m at 6 m/s); over SNAP_M it is put there.
+const FOLLOW_S := 0.15
+
+static func follow(body: Dictionary, p: Vector3, delta: float) -> Vector3:
+	if not body.has("fw_p") or (body["fw_p"] as Vector3).distance_to(p) > SNAP_M or delta <= 0.0:
+		body["fw_p"] = p
+		body["fw_v"] = Vector3.ZERO
+		body["fw_last"] = p
+		return p
+
+	var q: Vector3 = body["fw_p"]
+	var v: Vector3 = body["fw_v"]
+	var pv: Vector3 = (p - (body["fw_last"] as Vector3)) / delta   # the point's own velocity this frame
+	var goal: Vector3 = p + Vector3(pv.x, 0.0, pv.z) * FOLLOW_S
+	var omega: float = 2.0 / FOLLOW_S
+	var x: float = omega * delta
+	var ease: float = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x)
+	var change: Vector3 = Vector3(q.x - goal.x, 0.0, q.z - goal.z)
+	var pull: Vector3 = (v + change * omega) * delta
+	v = (v - pull * omega) * ease
+	var drawn: Vector3 = Vector3(goal.x, p.y, goal.z) + (change + pull) * ease   # height is the ground's, from the point
+	body["fw_p"] = drawn
+	body["fw_v"] = v
+	body["fw_last"] = p
+	return drawn
+
+
+# A body drawn without its feet this frame (a charge, animal_view AHEAD_STATES) at `p`: follow starts again from there, at the speed it had.
+static func follow_hold(body: Dictionary, p: Vector3, delta: float) -> void:
+	var v: Vector3 = (p - (body["fw_p"] as Vector3)) / maxf(delta, 0.001) if body.has("fw_p") else Vector3.ZERO
+	v.y = 0.0
+	body["fw_v"] = v.limit_length(CARRY_MPS)
+	body["fw_p"] = p
+	body["fw_last"] = p
+
+
+# The heading a body is drawn with: the way its feet go when it moves (follow's velocity), the sent heading when it stands; turned at most
+# `turn_rad_s` a second (a standing body turns on the spot, a running one in an arc), never snapped. `yaw` is the node's rotation.y now.
+static func face(body: Dictionary, yaw: float, sent_heading: float, turn_rad_s: float, delta: float) -> float:
+	var v: Vector3 = body.get("fw_v", Vector3.ZERO)
+	var want: float = -sent_heading - PI * 0.5
+
+	if Vector2(v.x, v.z).length() > 0.4:
+		want = atan2(-v.x, -v.z)   # a node faces -Z
+
+	var turn: float = angle_difference(yaw, want)
+	return yaw + clampf(turn, -turn_rad_s * delta, turn_rad_s * delta)

@@ -591,9 +591,16 @@ func _process_body(delta: float) -> void:
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
 		var t_drawn: float = present if ahead else drawn_at
 		var drawn: Array = MotionBuffer.at(b["samples"], t_drawn, (MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else -1.0)   # only a charge carries on; the others stand
-		var spot: Vector3 = AnimalContact.stop_toward(me, b.get("sm_p", before), drawn[0], AnimalContact.contact_m(str(b["kind"]))) if ahead and me != Vector3.INF else drawn[0]   # a charge carried on stops at the player, as the server's does
+		var spot: Vector3 = drawn[0]
+
+		if ahead:
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, AnimalContact.contact_m(str(b["kind"]))) if me != Vector3.INF else spot   # a charge carried on stops at the player, as the server's does
+			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
+		else:
+			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
+
 		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
-		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), AnimalContact.turn_rad_s(str(b["kind"])), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		b["spd"] = spd

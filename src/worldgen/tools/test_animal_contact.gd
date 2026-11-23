@@ -111,6 +111,28 @@ func _init() -> void:
 	var bird: Dictionary = {"sp": "crow", "pos": Vector3(0.1, 0.0, 0.0), "state": 0, "fly": true}
 	check(not a.keep_off_players(bird, Vector3(3.0, 0.0, 0.0), [Vector3.ZERO]), "a bird in the air is not held")
 
+	# A player walking into a standing animal: it steps out of them at its walking pace, away from them, and stops at the contact circle
+	# (robot play-testers 23 Nov 2026: a dog 0.02 m from a player, a deer 0.22 m, a horse 0.15 m). A bird in the air, a camp's horse stay.
+	var mw = _animals([Vector3.ZERO], [])
+	var calf: Dictionary = {"sp": "deer", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
+	var walked: bool = mw.make_way(calf, Vector3(0.0, 10.0, 0.0), 0.1)
+	var first_step: float = calf["pos"].x - 0.2
+
+	for i in 40:
+		mw.make_way(calf, Vector3(0.0, 10.0, 0.0), 0.1)
+
+	check(walked and first_step > 0.0 and first_step <= float(mw.species_def("deer").get("walk_mps", 1.5)) * 0.1 + 0.001 and absf(Vector2(calf["pos"].x, calf["pos"].z).length() - dm) < 0.01, "a deer walked into steps away at its walking pace and stands at the contact circle (first step %.2f m, ends %.2f m)" % [first_step, Vector2(calf["pos"].x, calf["pos"].z).length()])
+	check(not mw.make_way({"sp": "crow", "pos": Vector3(0.1, 10.0, 0.0), "state": 0, "fly": true}, Vector3(0.0, 10.0, 0.0), 0.1) and not mw.make_way({"sp": "horse", "pos": Vector3(0.1, 10.0, 0.0), "state": 0, "camp": 1}, Vector3(0.0, 10.0, 0.0), 0.1), "a bird in the air and a camp's tied horse stay")
+	var tp: Array = [Vector3(0.0, 10.0, 0.0)]
+	var tw = _animals(tp, [])
+	var sid: int = tw.spawn("deer", 0.3, 0.0)
+	tw.animals[sid]["state"] = 0
+
+	for i in 40:
+		tw.tick(0.05)
+
+	check(not tw.animals.has(sid) or Vector2(tw.animals[sid]["pos"].x, tw.animals[sid]["pos"].z).length() >= dm - 0.01, "in the server's own ticks, a deer spawned inside a player is out of them within 2 s (%.2f m)" % (Vector2(tw.animals[sid]["pos"].x, tw.animals[sid]["pos"].z).length() if tw.animals.has(sid) else -1.0))
+
 	# Protocol 154: a standing animal's row carries the send time, every send; a moving one keeps the time of its step.
 	var players: Array = [Vector3(0.0, 10.0, 0.0)]
 	var s = _animals(players, [])
