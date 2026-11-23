@@ -132,7 +132,8 @@ func _init() -> void:
 	w3.save()   # the event save, as the tick runs it: the files go to the writer
 	w3._async_writes = false
 	w3._start_writer()
-	check(not w3.fells_on_disk() or w3._writer == null, "while the writer writes, the removal still waits")
+	if w3._writer != null and w3._writer.is_alive():
+		check(not w3.fells_on_disk(), "while the writer writes, the removal still waits")
 	w3._finish_writer()
 	check(w3.fells_on_disk(), "the stump and logs on disk: the removal may be written now")
 
@@ -142,9 +143,7 @@ func _init() -> void:
 	flora3b.setup(FakePlacer.new(), dir3)   # its removals were never written
 	check(not flora3b.removed_in(home3).has(tree3), "(the flora alone would stand the tree up again)")
 
-	for felled in w3b.felled_flora():
-		if not flora3b.removed_in(felled[0]).has(int(felled[1])):
-			flora3b.cut(felled[0], int(felled[1]))
+	check(w3b.cut_felled_flora(flora3b) == 1 and w3b.cut_felled_flora(flora3b) == 0, "the start cuts it again, once")
 
 	var stumps3: int = 0
 	var logs_back: int = 0
@@ -156,6 +155,16 @@ func _init() -> void:
 	check(flora3b.removed_in(home3).has(tree3) and stumps3 == 1 and logs_back >= logs3.size() and logs3.size() > 0, "after the restart it is felled: cut from the flora, its stump and its %d logs there (%d stumps, %d loose)" % [logs3.size(), stumps3, logs_back])
 	var again3: Dictionary = PlacerScript.decode(flora3b.chunk_bytes(home3, true), origin3)
 	check(again3["ids"].find(tree3) < 0, "and no client is sent it standing")
+
+	# An area file that could not be written: the removal waits for the next save again.
+	w3b._fell_unsaved = false
+	w3b._save_failed.append("x")
+	w3b._retry_failed_saves()   # as the tick runs it
+	check(not w3b.fells_on_disk(), "a failed area write holds the flora's removal back until the next save")
+
+	# A planted tree's stump keeps no flora id (its tree is the items' own sapling, saved with it).
+	var stump4: int = w3b._fell_record(home3, {"name": "oak", "position": Vector3(origin3.x + 10.0, 1.0, origin3.y + 30.0), "height": 6.0, "trunk": 0.2, "id": (1 << 16) | 0xFFF0, "dynamic": true}, Vector2(0.0, 1.0))
+	check(not w3b._items[stump4]["tree"].has("flora_id"), "a planted tree's stump names no flora tree")
 
 	print("test_felled_stays_gone: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)

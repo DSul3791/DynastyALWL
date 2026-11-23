@@ -682,9 +682,7 @@ func _ready() -> void:
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
 		return
 
-	for felled in items.felled_flora():   # a stump saved before its tree's removal was (a crash between them): the tree stays cut
-		if not flora.removed_in(felled[0]).has(int(felled[1])):
-			flora.cut(felled[0], int(felled[1]))
+	items.cut_felled_flora(flora)   # a stump saved before its tree's removal was (a crash between them): the tree stays cut
 
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])

@@ -1959,9 +1959,7 @@ func tick(delta: float) -> void:
 
 	_reap_writer()
 
-	if _writer == null and not _save_failed.is_empty():
-		_save_failed.clear()
-		_dirty = true   # an area file could not be written: the next save builds it again
+	_retry_failed_saves()
 
 	_save_parts = []
 	_since_save += delta
@@ -2051,6 +2049,25 @@ func felled_flora() -> Array:
 			out.append([Vector2i(int(tree["chunk"][0]), int(tree["chunk"][1])), int(tree["flora_id"])])
 
 	return out
+
+
+# An area file the writer could not write (_save_failed) is built again by the next save, and until then a stump in it may not be on disk.
+func _retry_failed_saves() -> void:
+	if _writer == null and not _save_failed.is_empty():
+		_save_failed.clear()
+		_dirty = true   # an area file could not be written: the next save builds it again
+		_fell_unsaved = true   # the flora's removals wait for that save too (fells_on_disk)
+
+
+# At start (terrain_server): each saved stump's flora tree is cut again where the flora's removals lack it. Returns how many were cut.
+func cut_felled_flora(flora) -> int:
+	var cut: int = 0
+
+	for felled in felled_flora():
+		if not flora.removed_in(felled[0]).has(int(felled[1])) and flora.cut(felled[0], int(felled[1])):
+			cut += 1
+
+	return cut
 
 
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
@@ -10540,7 +10557,7 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	tree["crown"] = _crown_circle(spot, info, yaw, pitch)   # where its crown lands: the client flattens the grass there, the litter falls in it
 	var stump: Dictionary = {"species": tree["species"], "yaw": yaw, "pitch": pitch, "length": tree["length"], "radius": radius, "felled_at": now_s, "state": 4, "chunk": [chunk.x, chunk.y], "crown": tree["crown"], "fresh": true}
 
-	if info.has("id"):
+	if info.has("id") and not bool(info.get("dynamic", false)):   # a planted tree is the items' own (_saplings), saved with the stump
 		stump["flora_id"] = int(info["id"])   # the standing tree it was: kept cut on load if a crash wrote this stump but not the flora's removals (felled_flora)
 	var stump_id: int = _next_id
 	_items[stump_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}   # "fresh" until it lands: the client plays the fall from the stump row
