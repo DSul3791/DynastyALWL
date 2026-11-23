@@ -80,6 +80,11 @@ const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
+# Lag lane 23 Nov 2026 (cloud join, timestamped): a new player's far ground reaches the neighbour tiles (a client's coarse LOD blocks go out
+# several km), and those tiles were read only when the first such block was asked for, one after another at 1.4-2.6 s each: the ground was
+# ready 13.5 s after the welcome, 6 s of it waiting for tiles (4, 4), (3, 5) and (4, 5). Every tile within this of the spawn is now read at
+# start-up, and of a returning player's spot at the hello, each on its own worker, so the reads overlap and are mostly done before they are needed.
+const JOIN_TILE_MARGIN_M := 6000.0
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ServerAuthScript := preload("res://src/shared/server_auth.gd")
@@ -108,6 +113,7 @@ const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 15
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
+const IDLE_SAVED_SPOTS := 8            # characters' saved spots (most recent) prebuilt at start-up, with the spawn
 
 var _commit: String = GitStamp.short_commit()   # read once at start (Dave 17 Nov 2026): a server left running after a pull must name the code it runs, not the checkout now on disk, or the client's out-of-date check is fooled
 var _server_settings = ServerSettingsScript.new()
@@ -173,6 +179,7 @@ var _queue: Array = []                 # urgent [peer, key Vector4i], oldest fir
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
 var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _flora_running: int = 0            # workers making a flora chunk now (under _queue_mutex); at most _max_running - 1, so one is always free for ground
 var _key_budget: Dictionary = {}       # peer -> [keys left, msec of the last refill] (queue mutex)
 var _water_queue: Array = []           # [peer, chunk Vector2i] water to pack on a worker thread (never on the main thread), oldest first
 var _water_done: Array = []            # [peer, chunk, bytes] packed, waiting to be sent by the main thread
@@ -453,7 +460,9 @@ func _ready() -> void:
 		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
 	players = PlayersScript.new()
 	players.items = items
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more)
+	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
+	items.send_flight = players.flight
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
 	net.facing_reported.connect(players.note_report)
 	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
@@ -696,7 +705,9 @@ func _ready() -> void:
 	tribes.setup(store_dir)
 	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, stand guard at a weapon in hand, and hide from a player who struck one
 	npcs.chores = tribes.chore_plan   # and keep busy round their camp (camp life, Dave 20 Nov 2026)
-	net.held_reported.connect(items.report_held)   # the item in each player's hand (protocol 146), for "a weapon in hand"
+	net.held_reported.connect(func(peer: int, number: int, left: int, flags: int) -> void:
+		if limits.allow(peer, "held_item"):   # a client flipping its hands as fast as it can would make every client near it rebuild a torch
+			items.report_held(peer, number, left, flags))   # the item in each player's hand (protocol 146), for "a weapon in hand"
 	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	items.tribe_stock_line = tribes.stock_line   # what a goblin camp's chest and racks hold (the light version, Dave 20 Nov 2026)
 	animals = AnimalsScript.new()
@@ -973,6 +984,17 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
+		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
+			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
+				return null
+
+		var feet: Array = []
+
+		for trunk in _arrow_trunks(Vector3(camp_at.x, 0.0, camp_at.y), camp_reach):
+			feet.append([Vector2(trunk[0].x, trunk[0].z), float(trunk[1])])
+
+		return feet
 	animals.bandit_camps = bandits
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
@@ -1039,6 +1061,7 @@ func _ready() -> void:
 	# in 90 starts; this makes the first call of every placer function happen on one thread.
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)), int(floor(spawn.z / placer.chunk_m))), true)
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)) + 1, int(floor(spawn.z / placer.chunk_m))), false)
+	generator.prefetch_around(spawn.x, spawn.z, JOIN_TILE_MARGIN_M)   # the tiles the first join's far ground needs, read in parallel now, after the flora warm-up above (JOIN_TILE_MARGIN_M)
 	_link = BlockLinkScript.new()
 	_link.on_request = _on_blocks_requested
 	_link.is_peer = _is_connected_peer
@@ -1110,6 +1133,7 @@ func _ready() -> void:
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
+			generator.prefetch_around(float(resume[0]), float(resume[2]), JOIN_TILE_MARGIN_M)   # a returning player's far ground, read in parallel, started before _resume_spot's own tile read (JOIN_TILE_MARGIN_M)
 			net.start_at.rpc_id(peer, _resume_spot(Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
 
 		_slow_rpc("hello: done", t0))
@@ -1147,6 +1171,7 @@ func _ready() -> void:
 		_idle_threads = maxi(int(OS.get_environment("DYNASTY_IDLE_THREADS")), 0)
 
 	_make_idle_offsets()
+	_seed_idle_spots()
 
 	for n in range(_idle_threads):
 		var idle: Thread = Thread.new()
@@ -3585,6 +3610,11 @@ func _send(peer_id: int, batch: Array) -> void:
 	_peers[peer_id]["bytes"] += int(batch[2])
 
 
+# True while a flora chunk may take a worker: flora leaves one worker for the ground (the join, lag lane 23 Nov 2026); one worker in all takes both.
+static func flora_may_start(flora_running: int, max_running: int) -> bool:
+	return flora_running < max_running - 1 or max_running <= 1
+
+
 # Worker thread: takes the next block, urgent ones first, and makes it.
 func _worker_loop() -> void:
 	while true:
@@ -3596,8 +3626,11 @@ func _worker_loop() -> void:
 		# Order: urgent blocks, flora chunks, prefetch blocks.
 		var water_item: Array = []
 
-		if _queue.is_empty() and not _flora_queue.is_empty():
+		# Lag lane 23 Nov 2026 (cloud join, timestamped): the joining player's first flora chunks (about 1 s each) took all three workers, and
+		# urgent ground waited behind them: 3 blocks in the first 6 s after the welcome. Flora now leaves one worker for the ground.
+		if _queue.is_empty() and not _flora_queue.is_empty() and flora_may_start(_flora_running, _max_running):
 			flora_item = _flora_queue.pop_front()
+			_flora_running += 1
 		elif _queue.is_empty() and not _water_queue.is_empty():
 			water_item = _water_queue.pop_front()
 
@@ -3629,6 +3662,13 @@ func _worker_loop() -> void:
 			_done_mutex.lock()
 			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes, flora_item[2]])
 			_done_mutex.unlock()
+			_queue_mutex.lock()
+			_flora_running -= 1
+			var flora_left: bool = not _flora_queue.is_empty()
+			_queue_mutex.unlock()
+
+			if flora_left:
+				_work.post()   # a flora chunk passed over at the cap above gets a worker now
 			continue
 
 		if item.is_empty():
@@ -3698,6 +3738,20 @@ func _make_idle_offsets() -> void:
 	_idle_offsets = list.map(func(item): return [item[1], item[2], item[3]])
 
 
+# The spawn and the most recent saved spots go in as idle anchors under ids below zero (no peer has one), so the idle
+# builders make and save the ground round them with no one connected: after a TERRAIN_VERSION change threw the
+# generated ground away, the first joins find it built. With the ground already saved this is only store look-ups.
+# Each such anchor is dropped once its circle is done; players' own anchors always go first.
+func _seed_idle_spots() -> void:
+	var spots: Array = [spawn]
+	spots.append_array(items.saved_spots(IDLE_SAVED_SPOTS))
+	var id: int = -1
+
+	for spot in spots:
+		_idle_anchor[id] = Vector3i(int(floor(spot.x / 16.0)), 0, int(floor(spot.z / 16.0)))
+		id -= 1
+
+
 # Idle thread: while no player is waiting for anything, makes and saves the
 # blocks around each player, starting with the ones closest to them. Real
 # requests always go first (checked before every block).
@@ -3725,8 +3779,13 @@ func _idle_loop() -> void:
 			continue
 
 		var worked: bool = false
+		# Players in the order they asked (ids above zero), then the start-up spots, spawn first.
+		var order: Array = anchors.keys().filter(func(id): return id > 0)
+		var spots: Array = anchors.keys().filter(func(id): return id < 0)
+		spots.sort_custom(func(a, b): return a > b)
+		order.append_array(spots)
 
-		for peer in anchors:
+		for peer in order:
 			var anchor: Vector3i = anchors[peer]
 			var cursor: Array = cursors.get(peer, [Vector3i(), 0])
 
@@ -3745,6 +3804,14 @@ func _idle_loop() -> void:
 					break
 
 			cursors[peer] = cursor
+
+			if peer < 0 and cursor[1] >= _idle_offsets.size():
+				_queue_mutex.lock()
+				var dropped: bool = _idle_anchor.erase(peer)   # the other idle thread may have finished it first
+				_queue_mutex.unlock()
+
+				if dropped:
+					print("server: ground round start-up spot %d is claimed (built, found saved, or being built by the other idle thread)" % -peer)
 
 			if worked:
 				break

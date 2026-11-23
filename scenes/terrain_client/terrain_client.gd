@@ -1056,7 +1056,7 @@ func _connect() -> void:
 
 	_attach_auth()
 	multiplayer.multiplayer_peer = peer
-	print("Terrain client: connecting to %s:%d" % [_host, _port])
+	FreezeWatchScript.printer.line("Terrain client: connecting to %s:%d" % [_host, _port])
 	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
 	SoundStageScript.prewarm()   # every sound file starts loading now, not in the welcome frame (181 ms there in the 5 Nov lag run)
 
@@ -1064,7 +1064,7 @@ func _connect() -> void:
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
-	print("Terrain client: server left")
+	FreezeWatchScript.printer.line("Terrain client: server left")
 	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats(enet.get_peer(1)) if enet != null and enet.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else "gone"))
 
@@ -1095,7 +1095,7 @@ func _show_lost_notice(reason: String) -> void:
 		reason += " (" + link_bars.text() + ")"
 
 	_telemetry.event("NOTICE: connection lost, window stays open: " + reason)
-	print("Terrain client: connection lost notice shown: ", reason)
+	FreezeWatchScript.printer.line("Terrain client: connection lost notice shown: " + str(reason))
 	AudioServer.set_bus_mute(0, true)
 	_lost_layer = CanvasLayer.new()
 	_lost_layer.layer = 100
@@ -1157,7 +1157,7 @@ func _on_connection_failed() -> void:
 		get_tree().create_timer(1.0).timeout.connect(_connect)
 		return
 
-	print("Terrain client: connection failed")
+	FreezeWatchScript.printer.line("Terrain client: connection failed")
 
 	if DisplayServer.get_name() != "headless" and connected_msec > 0:
 		_show_lost_notice("the connection failed after joining")
@@ -1310,7 +1310,7 @@ func _on_join_refused(text: String, title: String = "Update required") -> void:
 		return   # already showing (the welcome's check came first)
 
 	_join_refused = text if text != "" else "The server refused this game."
-	print("Terrain client: join refused: ", _join_refused.replace("\n", " "))
+	FreezeWatchScript.printer.line("Terrain client: join refused: " + str(_join_refused.replace("\n", " ")))
 	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
 
 	if _connect_window != null:
@@ -1385,7 +1385,7 @@ func _welcome_body(info: Dictionary) -> void:
 		for file in DirAccess.get_files_at(folder):
 			DirAccess.remove_absolute(folder + "/" + file)
 
-		print("Terrain client: cleared the saved ground cache")
+		FreezeWatchScript.printer.line("Terrain client: cleared the saved ground cache")
 
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
 	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
@@ -1393,7 +1393,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if seeded > 0:
 		cache.set_revisions(info["revisions"])
-		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
+		FreezeWatchScript.printer.line("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 
 	_ask_catch_up()
 	stream = StreamScript.new()
@@ -1548,7 +1548,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_apply_quality()
 
 	if OS.get_cmdline_user_args().has("--print-tier"):
-		print("Terrain client: ", debug_hud.text())
+		FreezeWatchScript.printer.line("Terrain client: " + str(debug_hud.text()))
 	Probe.stop("welcome: environment", t5)
 	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
@@ -1737,6 +1737,9 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
+	net.flight_seen_received.connect(func(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+		if held != null:
+			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 159)
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
@@ -1863,6 +1866,8 @@ func _welcome_body(info: Dictionary) -> void:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
 	held.held_light_budget = func(): return quality >= 1
+	if _player_view != null:
+		_player_view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST if quality >= 1 else PlayerViewScript.LIT_MOST_LOW   # Low: one other player's torch lights
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
 	items.pick_hand = func(key: int): held.press_slot(key)
@@ -1959,7 +1964,7 @@ func _welcome_body(info: Dictionary) -> void:
 		held.run_net_test()
 	Probe.stop("welcome: hotbar, pickup feed and tests", tq_tail)
 	var tq_print: int = Probe.start()
-	print("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
+	FreezeWatchScript.printer.line("Terrain client: welcome after %d ms; world %s; spawn %s; cache %s (%d MB)" % [
 		connected_msec - started_msec, str(info["world_name"]), str(info["spawn"]), cache_dir, cache_mb
 	])
 	Probe.stop("welcome: welcome line printed", tq_print)
@@ -1988,7 +1993,7 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 
 	_edits_untold.clear()
 
-	print("Terrain client: tile %s is now revision %d" % [str(tile), revision])
+	FreezeWatchScript.printer.line("Terrain client: tile %s is now revision %d" % [str(tile), revision])
 
 
 # Protocol 128 (Dave 18 Nov 2026): saved tiles older than the server's are held while the server is asked for the edits since, so only
@@ -1996,7 +2001,7 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 func _ask_catch_up() -> void:
 	for ask in cache.take_catch_up():
 		net.ask_edits_since.rpc_id(1, ask[0], int(ask[1]))
-		print("Terrain client: saved ground of tile %s is at revision %d; asking for the edits since" % [str(ask[0]), int(ask[1])])
+		FreezeWatchScript.printer.line("Terrain client: saved ground of tile %s is at revision %d; asking for the edits since" % [str(ask[0]), int(ask[1])])
 
 
 func _on_edits_since(tile: Vector2i, since: int, revision: int, spheres: PackedFloat32Array, whole: bool) -> void:
@@ -2009,7 +2014,7 @@ func _on_edits_since(tile: Vector2i, since: int, revision: int, spheres: PackedF
 		stream.forget_blocks(keys)
 
 	@warning_ignore("integer_division")
-	print("Terrain client: tile %s caught up from revision %d to %d: %s" % [str(tile), since, revision, "saved ground dropped (the server could not list the edits)" if whole else "%d edits, %d blocks to fetch again" % [spheres.size() / 4, keys.size()]])
+	FreezeWatchScript.printer.line("Terrain client: tile %s caught up from revision %d to %d: %s" % [str(tile), since, revision, "saved ground dropped (the server could not list the edits)" if whole else "%d edits, %d blocks to fetch again" % [spheres.size() / 4, keys.size()]])
 
 
 var _edits_untold: Array = []   # [center, radius] of the dug / filled edits since the last tile_changed
@@ -2044,7 +2049,7 @@ func _spawn_test_step(now: int) -> void:
 
 	if _spawn_test_msec == 0:
 		if now - connected_msec > int((_spawn_test_after_s + 150.0) * 1000.0):
-			print("SPAWNTEST %s: FAILED never started, still waiting for ground 150 s after the start time (player %s)" % [_spawn_test, str(body.global_position.round())])
+			FreezeWatchScript.printer.line("SPAWNTEST %s: FAILED never started, still waiting for ground 150 s after the start time (player %s)" % [_spawn_test, str(body.global_position.round())])
 			_spawn_test = ""
 			return
 
@@ -2061,16 +2066,16 @@ func _spawn_test_step(now: int) -> void:
 			go_to_spawn()
 
 		var ground: float = _ground_below(body.global_position)
-		print("SPAWNTEST %s: from %s, first frame at %s, %s m above the ground" % [_spawn_test, str(from.round()), str(body.global_position.round()), "?" if is_nan(ground) else "%.1f" % (body.global_position.y - ground)])
+		FreezeWatchScript.printer.line("SPAWNTEST %s: from %s, first frame at %s, %s m above the ground" % [_spawn_test, str(from.round()), str(body.global_position.round()), "?" if is_nan(ground) else "%.1f" % (body.global_position.y - ground)])
 		return
 
 	if _spawn_test_msec > 0 and now - _spawn_test_msec > 60000:
-		print("SPAWNTEST %s: FAILED not standing 60 s later, player %s" % [_spawn_test, str(body.global_position.round())])
+		FreezeWatchScript.printer.line("SPAWNTEST %s: FAILED not standing 60 s later, player %s" % [_spawn_test, str(body.global_position.round())])
 		_spawn_test = ""
 		return
 
 	if _spawn_test_msec > 0 and not waiting_for_ground and body.is_on_floor():
-		print("SPAWNTEST %s: standing on the ground %.1f s later, player %s" % [_spawn_test, float(now - _spawn_test_msec) * 0.001, str(body.global_position.round())])
+		FreezeWatchScript.printer.line("SPAWNTEST %s: standing on the ground %.1f s later, player %s" % [_spawn_test, float(now - _spawn_test_msec) * 0.001, str(body.global_position.round())])
 		_spawn_test = ""
 
 
@@ -2096,13 +2101,13 @@ func _tunnel_step() -> void:
 		_tunnel_msec = now
 	elif _tunnel_test == 3 and now - _tunnel_msec > 12000:
 		var moved: float = body.global_position.distance_to(_tunnel_at + Vector3(0.0, -6.0, 0.0))
-		print("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescue.rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
+		FreezeWatchScript.printer.line("Terrain client: tunnel test: player ended %.1f m from where it was put in the tunnel (y %.1f, surface y %.1f), rescues %d, %s" % [moved, body.global_position.y, _tunnel_at.y, rescue.rescued, "STAYED" if body.global_position.y < _tunnel_at.y - 3.0 else "POPPED UP"])
 		_tunnel_test = 4
 		_tunnel_msec = now
 		body.global_position = _tunnel_at + Vector3(7.0, -12.0, 0.0)      # inside solid rock beside the dug tunnel: the rescue must lift the player
 		body.velocity = Vector3.ZERO
 	elif _tunnel_test == 4 and now - _tunnel_msec > 8000:
-		print("Terrain client: tunnel test: put inside rock beside the tunnel, ended at y %.1f (rock was y %.1f, surface y %.1f): %s" % [body.global_position.y, _tunnel_at.y - 12.0, _tunnel_at.y, "LIFTED" if body.global_position.y > _tunnel_at.y - 6.0 else "STUCK"])
+		FreezeWatchScript.printer.line("Terrain client: tunnel test: put inside rock beside the tunnel, ended at y %.1f (rock was y %.1f, surface y %.1f): %s" % [body.global_position.y, _tunnel_at.y - 12.0, _tunnel_at.y, "LIFTED" if body.global_position.y > _tunnel_at.y - 6.0 else "STUCK"])
 		_tunnel_test = 0
 
 
@@ -3392,7 +3397,7 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 
 	_spring_mouths[tile] = SpringSteam.mouths_of(streams)
 	@warning_ignore("integer_division")
-	print("Terrain client: cave streams for tile %s (%d pieces, %d pools)" % [str(tile), streams.size() / 7, CaveStreams.pools_of(streams).size()])
+	FreezeWatchScript.printer.line("Terrain client: cave streams for tile %s (%d pieces, %d pools)" % [str(tile), streams.size() / 7, CaveStreams.pools_of(streams).size()])
 
 	if sound != null:
 		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)
@@ -3443,7 +3448,7 @@ func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
 	_fine_received += 1
 
 	if _fine_received == 1 or _fine_received % 20 == 0:
-		print("Terrain client: 2 m water message %d: %d regions, %d textures%s" % [_fine_received, keys.size(), packets.size(), "" if flora != null else " (no flora yet, not drawn)"])
+		FreezeWatchScript.printer.line("Terrain client: 2 m water message %d: %d regions, %d textures%s" % [_fine_received, keys.size(), packets.size(), "" if flora != null else " (no flora yet, not drawn)"])
 
 	if flora == null:
 		return
@@ -3486,7 +3491,7 @@ func _on_fine_water(keys: PackedStringArray, packets: Array) -> void:
 				for i in range(w):
 					wet += 1 if im.get_pixel(i, j).a >= 0.05 else 0
 
-			print("Terrain client: 2 m water sheet %s, %d x %d cells at %s, %d wet cells, %d fine sheets" % [key, w, h, str(origin.round()), wet, _fine_sheets.size()])
+			FreezeWatchScript.printer.line("Terrain client: 2 m water sheet %s, %d x %d cells at %s, %d wet cells, %d fine sheets" % [key, w, h, str(origin.round()), wet, _fine_sheets.size()])
 
 		_fine_sheets[key]["shown"] = int(_fine_sheets[key]["shown"]) + 1
 
@@ -3596,7 +3601,7 @@ func _send_water_request(now: int) -> void:
 
 	if _water_quiet_asks <= 1 and not chunks.is_empty():   # "asking again for 0 chunks" (the moved water is outside every chunk held) says nothing
 		@warning_ignore("integer_division")
-		print("Terrain client: the water moved, asking again for %d chunks (next in %.0f s or more)" % [chunks.size() / 2, _water_wait_msec / 1000.0])
+		FreezeWatchScript.printer.line("Terrain client: the water moved, asking again for %d chunks (next in %.0f s or more)" % [chunks.size() / 2, _water_wait_msec / 1000.0])
 
 	if not chunks.is_empty():
 		net.request_water.rpc_id(1, chunks)
@@ -3653,7 +3658,7 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 			_recent_cuts[held][id] = Time.get_ticks_msec()
 
 	_flora_cuts += 1
-	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
+	FreezeWatchScript.printer.line("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
 
 
 var _bogs_rev: int = -1      # the inventory_view.bogs_rev last handed to the ground shader (set_bogs)
@@ -3736,7 +3741,7 @@ func _update_anchor(now: int, delta: float) -> void:
 
 	if follow:
 		if flying and _anchor_set and _anchor.distance_to(here) > 1.0:
-			print("Terrain client: stopped flying at %s, loading the ground here" % str(here.round()))
+			FreezeWatchScript.printer.line("Terrain client: stopped flying at %s, loading the ground here" % str(here.round()))
 
 		_anchor = here
 		_anchor_set = true
@@ -3783,7 +3788,7 @@ func _on_surface_received(x: float, z: float, y: float) -> void:
 	_ground_below_xz = Vector2(x, z)
 	_ground_below_y = y
 	_surface_answered_msec = Time.get_ticks_msec()
-	print("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
+	FreezeWatchScript.printer.line("Terrain client: ground under (%.0f, %.0f) is at %.1f m" % [x, z, y])
 
 	if waiting_for_ground and connected_msec > 0:
 		_join_log("JOIN: column answer %.1f s after the welcome: ground %.1f m, player %.1f m, viewer y %s" % [float(_surface_answered_msec - connected_msec) * 0.001, y, body.global_position.y, _viewer_y_text()])
@@ -3802,7 +3807,7 @@ func _set_stage_view(value: float) -> void:
 		_viewer.view_distance_vertical_ratio = STAGE_VERTICAL if value > 0.0 else 1.0
 
 	_stage_next_msec = Time.get_ticks_msec() + STAGE_STEP_MIN_MSEC
-	print("Terrain client: ground detail levels %d" % terrain.lod_count)
+	FreezeWatchScript.printer.line("Terrain client: ground detail levels %d" % terrain.lod_count)
 
 
 # Cover.at at a point, for the campfire blueprint colour.
@@ -3878,10 +3883,10 @@ func _cut_nearest_tree() -> void:
 				best = [d, chunk, items["ids"][n]]
 
 	if best.is_empty():
-		print("Terrain client: no tree to cut")
+		FreezeWatchScript.printer.line("Terrain client: no tree to cut")
 		return
 
-	print("Terrain client: asking to cut tree %d in chunk %s, %.0f m from the spawn" % [best[2], str(best[1]), best[0]])
+	FreezeWatchScript.printer.line("Terrain client: asking to cut tree %d in chunk %s, %.0f m from the spawn" % [best[2], str(best[1]), best[0]])
 	net.cut_flora.rpc_id(1, best[1], best[2])
 
 
@@ -4187,7 +4192,7 @@ func _ground_health_line() -> String:
 func _ask_clear_cache() -> void:
 	_reload_ground()
 	_menu_note.text = "Done. The ground is reloading."
-	print("Terrain client: cleared the saved ground and reloaded the terrain")
+	FreezeWatchScript.printer.line("Terrain client: cleared the saved ground and reloaded the terrain")
 
 
 # The server made its ground again from new tile files (a bake finished): drop the
@@ -4234,7 +4239,7 @@ func _on_ground_reset(tiles_stamp: String, starter_stamp: String) -> void:
 	# Owner (2026-10-19): the finished notice stays until the player moves.
 	_bake_alert_until = 1 << 62
 	_bake_alert_at = body.global_position if body != null else Vector3.ZERO
-	print("Terrain client: the tile files changed on the server; reloaded the ground and plants")
+	FreezeWatchScript.printer.line("Terrain client: the tile files changed on the server; reloaded the ground and plants")
 
 
 # The join hang (Dave, build 787): the ground never came and nothing was left to ask for. Start a new stream so everything is asked for again; the cache and
@@ -4330,7 +4335,7 @@ func _update_inspect() -> void:
 
 	if test_inspect and _inspect_label.text != _last_inspected:
 		_last_inspected = _inspect_label.text
-		print("Terrain client: inspect -> '%s'" % _last_inspected)
+		FreezeWatchScript.printer.line("Terrain client: inspect -> '%s'" % _last_inspected)
 
 
 func _set_inspect_text_from(text: String) -> void:
@@ -5221,7 +5226,7 @@ func _step_player(delta: float) -> void:
 		var cleared_ms: float = float(Time.get_ticks_usec() - cleared_t0) / 1000.0
 
 		if cleared_ms > 10.0:
-			print("client slow: grass and plant clearing %.0f ms (%d boulders, %d world items)" % [cleared_ms, items._boulders.size(), items._world.size()])
+			FreezeWatchScript.printer.line("client slow: grass and plant clearing %.0f ms (%d boulders, %d world items)" % [cleared_ms, items._boulders.size(), items._world.size()])
 
 	_fire_sync_left -= delta
 
@@ -5995,7 +6000,7 @@ func _note_after_welcome(delta: float) -> void:
 		Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0, int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
 
 	if (_after_welcome as Array).size() >= AFTER_WELCOME_FRAMES:
-		print("Terrain client: frames after the welcome: " + ", ".join(PackedStringArray(_after_welcome as Array)))
+		FreezeWatchScript.printer.line("Terrain client: frames after the welcome: " + ", ".join(PackedStringArray(_after_welcome as Array)))
 		_after_welcome = null
 
 
@@ -6066,7 +6071,7 @@ func _process(delta: float) -> void:
 
 	if OS.get_cmdline_user_args().has("--lost-notice") and link_bars != null and Time.get_ticks_msec() - _link_print_msec > 2000:
 		_link_print_msec = Time.get_ticks_msec()
-		print("Terrain client: ", link_bars.text())
+		FreezeWatchScript.printer.line("Terrain client: " + str(link_bars.text()))
 
 	if crash_report != null:
 		var tc: int = Probe.start()
@@ -6135,7 +6140,7 @@ func _process(delta: float) -> void:
 			probes.append("+%dm east: %s" % [int(east), ("ground at %.0f" % h["position"].y) if not h.is_empty() else "NO GROUND"])
 
 		@warning_ignore("integer_division")
-		print("Terrain client: probe %d s after the welcome, player at %s: %s" % [(Time.get_ticks_msec() - connected_msec) / 1000, str(body.global_position.round()), ", ".join(probes)])
+		FreezeWatchScript.printer.line("Terrain client: probe %d s after the welcome, player at %s: %s" % [(Time.get_ticks_msec() - connected_msec) / 1000, str(body.global_position.round()), ", ".join(probes)])
 
 	ground_debug.ground_check_step(Time.get_ticks_msec())
 	ground_debug.hole_probe_step(Time.get_ticks_msec())
@@ -6158,10 +6163,10 @@ func _process(delta: float) -> void:
 
 		drip_view.on_leak(PackedVector3Array([body.global_position + Vector3(0.0, 2.0, 0.0)]), PackedByteArray([200]), body.global_position)
 		drip_view.step(0.1)
-		print("Terrain client: drip view: gap %.1f m, wet here %s" % [drip_view.gap_m, str(drip_view.wet_here)])
+		FreezeWatchScript.printer.line("Terrain client: drip view: gap %.1f m, wet here %s" % [drip_view.gap_m, str(drip_view.wet_here)])
 		drip_view.step(2.0)
-		print("Terrain client: drip view after fade: gap %.1f m" % drip_view.gap_m)
-		print("Terrain client: menu test: %d pages with content of %d, panel opaque %s, layer %d" % [seen, game_menu._pages.size(), str(game_menu.root.get_child(1).get_child(0).get_theme_stylebox("panel").bg_color.a == 1.0), (game_menu.root.get_parent() as CanvasLayer).layer])
+		FreezeWatchScript.printer.line("Terrain client: drip view after fade: gap %.1f m" % drip_view.gap_m)
+		FreezeWatchScript.printer.line("Terrain client: menu test: %d pages with content of %d, panel opaque %s, layer %d" % [seen, game_menu._pages.size(), str(game_menu.root.get_child(1).get_child(0).get_theme_stylebox("panel").bg_color.a == 1.0), (game_menu.root.get_parent() as CanvasLayer).layer])
 		_set_menu(false)
 		var esc: InputEventKey = InputEventKey.new()
 		esc.keycode = KEY_ESCAPE
@@ -6177,7 +6182,7 @@ func _process(delta: float) -> void:
 			_unhandled_input(esc)
 			screen_ok = not items.screen_open() and not menu_open
 
-		print("Terrain client: esc test: opens the menu %s, closes it %s, closes an open screen first without opening the menu %s" % [str(opened), str(closed), str(screen_ok)])
+		FreezeWatchScript.printer.line("Terrain client: esc test: opens the menu %s, closes it %s, closes an open screen first without opening the menu %s" % [str(opened), str(closed), str(screen_ok)])
 
 	if test_dump and not _test_dump_done and Time.get_ticks_msec() - connected_msec > 14000:
 		_test_dump_done = true
@@ -6228,7 +6233,7 @@ func _process(delta: float) -> void:
 				WorkerThreadPool.wait_for_task_completion(_cache_task)
 
 				if _cache_removed > 0:
-					print("Terrain client: cache over %d MB, removed %d far tiles" % [cache_mb, _cache_removed])
+					FreezeWatchScript.printer.line("Terrain client: cache over %d MB, removed %d far tiles" % [cache_mb, _cache_removed])
 
 			var p: Vector3 = body.global_position
 			_cache_tile = cache.tile_of_block(Vector3i(int(floor(p.x / 16.0)), 0, int(floor(p.z / 16.0))), 0)
@@ -6286,7 +6291,7 @@ func _process(delta: float) -> void:
 			_bake_done_note = finished
 			_bake_status = "The bake is done; the ground reloads in a few seconds"
 			_menu_note.text = _bake_status
-			print("Terrain client: ", finished)
+			FreezeWatchScript.printer.line("Terrain client: " + str(finished))
 
 	if test_water_step and now - connected_msec > 12000:
 		test_water_step = false
@@ -6309,9 +6314,9 @@ func _process(delta: float) -> void:
 			@warning_ignore("integer_division")
 			var kind: String = kinds[step / moods.size()]
 			var at: Vector3 = body.global_position + Vector3(30.0, 2.0, 0.0)
-			print("Terrain client: creature test %s %s -> %s" % [kind, moods[step % moods.size()], sound.creatures.call_at(kind, at, moods[step % moods.size()])])
+			FreezeWatchScript.printer.line("Terrain client: creature test %s %s -> %s" % [kind, moods[step % moods.size()], sound.creatures.call_at(kind, at, moods[step % moods.size()])])
 		elif step < kinds.size() * moods.size() + 8:
-			print("Terrain client: creature zone test -> %s" % sound.creatures.call_in_zone(["forest", "meadow", "highland", "water"][step % 4], "idle"))
+			FreezeWatchScript.printer.line("Terrain client: creature zone test -> %s" % sound.creatures.call_in_zone(["forest", "meadow", "highland", "water"][step % 4], "idle"))
 		else:
 			test_creatures = false
 			sound.creatures.wild = true                              # then the natural far calls run on their own
@@ -6327,11 +6332,11 @@ func _process(delta: float) -> void:
 
 		if step >= levels.size():
 			test_exertion = false
-			print("Terrain client: exertion check done: %d breaths, %d heartbeats, last %s" % [sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last])
+			FreezeWatchScript.printer.line("Terrain client: exertion check done: %d breaths, %d heartbeats, last %s" % [sound.breath.breaths_played, sound.breath.beats_played, sound.breath.last])
 		else:
 			sound.breath.set_exertion(levels[step])
 			if fmod(_test_exertion_t, 5.0) < get_process_delta_time():
-				print("Terrain client: exertion %.2f: %d breaths, %d heartbeats so far" % [levels[step], sound.breath.breaths_played, sound.breath.beats_played])
+				FreezeWatchScript.printer.line("Terrain client: exertion %.2f: %d breaths, %d heartbeats so far" % [levels[step], sound.breath.breaths_played, sound.breath.beats_played])
 
 	# Headless check: hold a real torch, then rain on it, then put it away.
 	if test_flame and now - connected_msec > 18000:
@@ -6348,15 +6353,15 @@ func _process(delta: float) -> void:
 					held.select(slot)
 
 		if before < 5.0 and _test_flame_t >= 5.0:
-			print("Terrain client: flame held '%s', loops %d, last %s" % [sound.flame.held, sound.flame._loops.size(), sound.flame.last])
+			FreezeWatchScript.printer.line("Terrain client: flame held '%s', loops %d, last %s" % [sound.flame.held, sound.flame._loops.size(), sound.flame.last])
 			sound.weather.set_weather("rain", 1.0)
 
 		if before < 9.0 and _test_flame_t >= 9.0:
-			print("Terrain client: flame in rain: loops %s" % str(sound.flame._loops.keys()))
+			FreezeWatchScript.printer.line("Terrain client: flame in rain: loops %s" % str(sound.flame._loops.keys()))
 			held.select(7)
 
 		if before < 12.0 and _test_flame_t >= 12.0:
-			print("Terrain client: flame put away: held '%s', loops %d" % [sound.flame.held, sound.flame._loops.size()])
+			FreezeWatchScript.printer.line("Terrain client: flame put away: held '%s', loops %d" % [sound.flame.held, sound.flame._loops.size()])
 			test_flame = false
 
 	# Headless check: make twine (twine), a stone axe (knap) and a campfire (stack) through the panel's craft timer.
@@ -6371,11 +6376,11 @@ func _process(delta: float) -> void:
 		for at in [[2.0, 1], [6.0, 2], [11.0, 4]]:
 			if before < at[0] and _test_craft_t >= at[0]:
 				items._start_craft(at[1])
-				print("Terrain client: craft %d started, can_make %s, queue %d" % [at[1], items.recipes.can_make(at[1], items.inventory), items.craft_entries.size()])
+				FreezeWatchScript.printer.line("Terrain client: craft %d started, can_make %s, queue %d" % [at[1], items.recipes.can_make(at[1], items.inventory), items.craft_entries.size()])
 
 		for at in [5.0, 10.0, 16.0]:
 			if before < at and _test_craft_t >= at:
-				print("Terrain client: craft work sounds %d, last %s" % [sound.itemfx.work_played, sound.itemfx.last_work])
+				FreezeWatchScript.printer.line("Terrain client: craft work sounds %d, last %s" % [sound.itemfx.work_played, sound.itemfx.last_work])
 
 		if _test_craft_t > 16.5:
 			test_craft_sounds = false
@@ -6386,7 +6391,7 @@ func _process(delta: float) -> void:
 
 		for metres in [300.0, 1000.0, 2500.0]:
 			sound.weather.strike(metres)
-			print("Terrain client: thunder %s" % sound.weather.last_thunder)
+			FreezeWatchScript.printer.line("Terrain client: thunder %s" % sound.weather.last_thunder)
 
 	# Headless check: an axe in the bag is worn out client-side, then mended; the tool break and repair sounds follow.
 	if test_wear and now - connected_msec > 18000:
@@ -6410,7 +6415,7 @@ func _process(delta: float) -> void:
 
 		if _test_wear_t > 7.0:
 			test_wear = false
-			print("Terrain client: wear sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+			FreezeWatchScript.printer.line("Terrain client: wear sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
 
 	# Headless check: the tree counts around the player and the wind-in-trees loops they start.
 	if test_treewind and now - connected_msec > 18000:
@@ -6419,7 +6424,7 @@ func _process(delta: float) -> void:
 
 		for at in [4.0, 12.0, 20.0]:
 			if before_tw < at and _test_treewind_t >= at:
-				print("Terrain client: tree wind: conifer %.2f, broadleaf %.2f, wind %.2f, playing %s" % [sound.treewind._density["conifer"], sound.treewind._density["broadleaf"], sound.wind_strength, sound.treewind.summary])
+				FreezeWatchScript.printer.line("Terrain client: tree wind: conifer %.2f, broadleaf %.2f, wind %.2f, playing %s" % [sound.treewind._density["conifer"], sound.treewind._density["broadleaf"], sound.wind_strength, sound.treewind.summary])
 
 		if _test_treewind_t > 20.5:
 			test_treewind = false
@@ -6437,11 +6442,11 @@ func _process(delta: float) -> void:
 			sound.workshop.set_saws([{"id": 1, "at": at_ws, "running": true}, {"id": 2, "at": at_ws + Vector3(0.0, 0.0, 5.0), "running": false}])
 
 		if before_ws < 4.0 and _test_workshop_t >= 4.0:
-			print("Terrain client: workshop sounds %s, saw loops %d, last %s" % [str(sound.workshop.played), sound.workshop.loops_playing, sound.workshop.last])
+			FreezeWatchScript.printer.line("Terrain client: workshop sounds %s, saw loops %d, last %s" % [str(sound.workshop.played), sound.workshop.loops_playing, sound.workshop.last])
 			sound.workshop.set_saws([])
 
 		if before_ws < 9.0 and _test_workshop_t >= 9.0:
-			print("Terrain client: workshop saw loops after stop %d" % sound.workshop.loops_playing)
+			FreezeWatchScript.printer.line("Terrain client: workshop saw loops after stop %d" % sound.workshop.loops_playing)
 			test_workshop = false
 
 	# Headless check: the cooking and eating sounds play (sizzle and fuel at a spot beside the player, then each way of eating).
@@ -6461,9 +6466,9 @@ func _process(delta: float) -> void:
 		var silent_rise: int = sound.itemfx.eat_played - before_drink
 		items._drink_msec = Time.get_ticks_msec()
 		items._on_vitals(items.hunger, items.health, int(items.weight_kg * 10.0), 70, items.luck, items.fitness)
-		print("Terrain client: drink check: %d gulps without E, %d gulp after E, last %s" % [silent_rise, sound.itemfx.eat_played - before_drink - silent_rise, sound.itemfx.last])
+		FreezeWatchScript.printer.line("Terrain client: drink check: %d gulps without E, %d gulp after E, last %s" % [silent_rise, sound.itemfx.eat_played - before_drink - silent_rise, sound.itemfx.last])
 
-		print("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
+		FreezeWatchScript.printer.line("Terrain client: cooking sounds: sizzle %d, fuel %d, eaten %d, last fire %s, last item %s" % [sound.fire.cook_played, sound.fire.fuel_played, sound.itemfx.eat_played, sound.fire.last, sound.itemfx.last])
 
 	# Headless check: every placed-thing hook once, then a synthetic chest row appears and vanishes beside the player.
 	if test_placed and now - connected_msec > 18000:
@@ -6481,7 +6486,7 @@ func _process(delta: float) -> void:
 		sound.placed.watch_world({}, here)
 		sound.placed.watch_world({7: {"state": 6, "pos": here}}, here)
 		sound.placed.watch_world({}, here)
-		print("Terrain client: placed sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
+		FreezeWatchScript.printer.line("Terrain client: placed sounds %s, last %s" % [str(sound.placed.played), sound.placed.last])
 		test_structures = true
 
 	# Headless check (a few seconds after the placed hooks have finished sounding): openable structures and their world-row watcher.
@@ -6506,7 +6511,7 @@ func _process(delta: float) -> void:
 		sound.placed.watch_open({5: {"state": 90, "pos": here, "open": 0}}, here)
 		sound.placed.watch_open({5: {"state": 90, "pos": here + Vector3(200.0, 0.0, 0.0), "open": 1}}, here)
 		sound.placed.watch_open({5: {"state": 90, "pos": here + Vector3(200.0, 0.0, 0.0), "open": 0}}, here)
-		print("Terrain client: structure check: %d uses, unknown %s, lock and knock %d, played %d, watched flips %d, last %s" % [kinds_played, str(unknown_kind), lock_knock, direct, sound.interior.objects_played - objects_before, sound.interior.last])
+		FreezeWatchScript.printer.line("Terrain client: structure check: %d uses, unknown %s, lock and knock %d, played %d, watched flips %d, last %s" % [kinds_played, str(unknown_kind), lock_knock, direct, sound.interior.objects_played - objects_before, sound.interior.last])
 		sound.placed.open_kinds = {}
 
 	# Headless check: the volume sliders change the buses and reset.
@@ -6521,18 +6526,18 @@ func _process(delta: float) -> void:
 			var index: int = AudioServer.get_bus_index(bus_name)
 			report += " %s %.1f dB%s;" % [bus_name, AudioServer.get_bus_volume_db(index), " muted" if AudioServer.is_bus_mute(index) else ""]
 
-		print("Terrain client: levels set:%s" % report)
+		FreezeWatchScript.printer.line("Terrain client: levels set:%s" % report)
 
 		@warning_ignore("shadowed_variable_base_class")
 		for name in sound.levels:
 			sound.set_level(name, 1.0)
 
-		print("Terrain client: levels back to 100 %%: %s" % str(sound.levels))
+		FreezeWatchScript.printer.line("Terrain client: levels back to 100 %%: %s" % str(sound.levels))
 
 	# Headless check: place, light, grow, rain on, put out, light, remove.
 	if test_fire and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 1200
-		print("Terrain client: fire step %d: %s" % [_test_fire_step, sound_tests.fire_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
+		FreezeWatchScript.printer.line("Terrain client: fire step %d: %s" % [_test_fire_step, sound_tests.fire_step(_test_fire_step, body.global_position + Vector3(3.0, 0.0, 0.0))])
 		_test_fire_step += 1
 
 		if _test_fire_step >= 7:
@@ -6547,7 +6552,7 @@ func _process(delta: float) -> void:
 			held.select(picks[_ui_step])
 			_ui_step += 1
 		elif _ui_step == picks.size():
-			print("Terrain client: ui sounds: %d hotbar ticks, last %s" % [sound.itemfx.hotbar_played, sound.itemfx.last])
+			FreezeWatchScript.printer.line("Terrain client: ui sounds: %d hotbar ticks, last %s" % [sound.itemfx.hotbar_played, sound.itemfx.last])
 			_ui_step += 1
 
 	# Lake: still water is silent. Squares 8 to 14 m away: 10 s calm (no laps), then 10 s windy (rare laps, waits cut to a tenth);
@@ -6572,7 +6577,7 @@ func _process(delta: float) -> void:
 			var lakes: Array = [{"kind": "pond", "at": at2 + Vector3(10.0, 0.0, 0.0)}]
 			var flowing: Array = [{"kind": "river", "at": at2 + Vector3(20.0, 0.0, 0.0)}, {"kind": "brook", "at": at2 + Vector3(-8.0, 0.0, 0.0)}, {"kind": "river", "at": at2 + Vector3(0.0, 0.0, 60.0)}]
 			var kept: int = water.quiet_near_lakes(lakes, flowing, at2).size()
-			print("Terrain client: lake laps: %d laps calm, %d laps windy, last %s; brook loop %s; kinds %s; flowing near lake kept %d of 3 (silenced %d)" % [_lake_calm_laps, water.laps_played - _lake_calm_laps, water.last_lap, water.brook_tag(), table, kept, water.lake_silenced])
+			FreezeWatchScript.printer.line("Terrain client: lake laps: %d laps calm, %d laps windy, last %s; brook loop %s; kinds %s; flowing near lake kept %d of 3 (silenced %d)" % [_lake_calm_laps, water.laps_played - _lake_calm_laps, water.last_lap, water.brook_tag(), table, kept, water.lake_silenced])
 			water.test_shore = []
 
 	# Frozen pond (job 88): cold air, full ice cover and stand-in shore squares. Then groans come, no laps even in a gale,
@@ -6610,7 +6615,7 @@ func _process(delta: float) -> void:
 			_ice_report = "%s %d %d %d %s" % [str(walk_frozen), groans, laps, cracks, ice.last]
 		elif now - _ice_start_msec > 20000 and test_ice:
 			test_ice = false
-			print("Terrain client: ice: frozen walkable %s, %d groans, %d laps, %d cracks in 40 hard steps, last %s; thaw walkable %s, %d new groans, %d new laps" % [
+			FreezeWatchScript.printer.line("Terrain client: ice: frozen walkable %s, %d groans, %d laps, %d cracks in 40 hard steps, last %s; thaw walkable %s, %d new groans, %d new laps" % [
 				_ice_report.get_slice(" ", 0), int(_ice_report.get_slice(" ", 1)), int(_ice_report.get_slice(" ", 2)), int(_ice_report.get_slice(" ", 3)),
 				_ice_report.get_slice(" ", 4, ), str(ice.walkable()), ice.groans_played - int(_ice_report.get_slice(" ", 1)), water2.laps_played - int(_ice_report.get_slice(" ", 2))])
 			water2.test_shore = []
@@ -6630,11 +6635,11 @@ func _process(delta: float) -> void:
 		elif test_windhole:
 			test_windhole = false
 			hole.test_inputs = Vector3(-1.0, 0.0, 0.0)
-			print("Terrain client: wind hole: open %s, lean-to %s, mouth %s, tunnel %s, calm %s (whistle and moan dB, -80 off)" % _windhole_report)
+			FreezeWatchScript.printer.line("Terrain client: wind hole: open %s, lean-to %s, mouth %s, tunnel %s, calm %s (whistle and moan dB, -80 off)" % _windhole_report)
 
 	if test_voice_priority and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
-		print("Terrain client: voice priority: " + sound.test_priority(body))
+		FreezeWatchScript.printer.line("Terrain client: voice priority: " + sound.test_priority(body))
 
 	# Season and clock sweep: each cell is two seconds at the fast nature clock (--nature-fast).
 	if test_sweep and now - connected_msec > 18000 and now >= _test_fire_at:
@@ -6653,7 +6658,7 @@ func _process(delta: float) -> void:
 
 				_sweep_max = maxi(_sweep_max, _sweep_peak)
 				@warning_ignore("integer_division")
-				print("Terrain client: sweep cell %s %02d:00 calls %d voices %d  %s" % [seasons[done / 8], (done % 8) * 3, total, _sweep_peak, str(sound.ambient.calls_played)])
+				FreezeWatchScript.printer.line("Terrain client: sweep cell %s %02d:00 calls %d voices %d  %s" % [seasons[done / 8], (done % 8) * 3, total, _sweep_peak, str(sound.ambient.calls_played)])
 
 		if _sweep_step < cells:
 			_sweep_step += 1
@@ -6665,7 +6670,7 @@ func _process(delta: float) -> void:
 				_sweep_peak = 0
 		elif _sweep_step == cells:
 			_sweep_step += 1
-			print("Terrain client: sweep done: %d cells, peak %d of %d voices, shed %d" % [cells, _sweep_max, sound.voice_cap, sound.shed_count])
+			FreezeWatchScript.printer.line("Terrain client: sweep done: %d cells, peak %d of %d voices, shed %d" % [cells, _sweep_max, sound.voice_cap, sound.shed_count])
 
 	if test_sweep:
 		_sweep_peak = maxi(_sweep_peak, sound.voices_playing())
@@ -6692,7 +6697,7 @@ func _process(delta: float) -> void:
 			rows.append({"id": 200 + k, "kind": "hum", "loop": "hum", "at": here + Vector3(0.0, 0.0, -35.0 - float(k))})
 
 		em.sync(rows)
-		print("Terrain client: emitter test: creature wolf %s deer %s, burst %d of 6 played, %d dropped, unknown %s, 17 rows -> %d loops, %d merged" % [str(wolf), str(deer), burst, em.dropped_rate, str(nothing), em.loops_playing(), em.merged_loops])
+		FreezeWatchScript.printer.line("Terrain client: emitter test: creature wolf %s deer %s, burst %d of 6 played, %d dropped, unknown %s, 17 rows -> %d loops, %d merged" % [str(wolf), str(deer), burst, em.dropped_rate, str(nothing), em.loops_playing(), em.merged_loops])
 
 	if test_mix_levels:
 		sound.track_peaks = now - connected_msec > 20000
@@ -6700,7 +6705,7 @@ func _process(delta: float) -> void:
 		if now - connected_msec > 50000 and test_mix_levels:
 			test_mix_levels = false
 			sound.track_peaks = false
-			print("Terrain client: mix levels: " + sound.mix_table())
+			FreezeWatchScript.printer.line("Terrain client: mix levels: " + sound.mix_table())
 
 	if test_landing and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -6713,7 +6718,7 @@ func _process(delta: float) -> void:
 			sound.landing.land(body, drop)
 
 		var counts: Dictionary = sound.landing.landings
-		print("Terrain client: landing check: step %d thud %d hard %d, %d hurt signals, severity %.2f, last %s" % [int(counts.get("step", 0)), int(counts.get("thud", 0)), int(counts.get("hard", 0)), _hurts.size(), float(_hurts[0][1]) if not _hurts.is_empty() else -1.0, sound.landing.last])
+		FreezeWatchScript.printer.line("Terrain client: landing check: step %d thud %d hard %d, %d hurt signals, severity %.2f, last %s" % [int(counts.get("step", 0)), int(counts.get("thud", 0)), int(counts.get("hard", 0)), _hurts.size(), float(_hurts[0][1]) if not _hurts.is_empty() else -1.0, sound.landing.last])
 
 	if test_stepfx and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -6734,7 +6739,7 @@ func _process(delta: float) -> void:
 		for k in range(10):
 			fx.step(0, -35.0, "dirt", 0.0)
 
-		print("Terrain client: stepfx check: wet %.2f, %d squelches in 10 steps, wetness after 10 s %.2f, after 25 s %.2f, %d squelches when dry, %d cloth steps, last %s" % [wet_start, squelched, half, fx.wetness, fx.squelches - dry_before, fx.cloth_steps, fx.last])
+		FreezeWatchScript.printer.line("Terrain client: stepfx check: wet %.2f, %d squelches in 10 steps, wetness after 10 s %.2f, after 25 s %.2f, %d squelches when dry, %d cloth steps, last %s" % [wet_start, squelched, half, fx.wetness, fx.squelches - dry_before, fx.cloth_steps, fx.last])
 
 	if test_swing and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -6744,7 +6749,7 @@ func _process(delta: float) -> void:
 		for tool in sound.hits.TOOLS:
 			heard.append(sound.hits.swing(tool, body.global_position + Vector3(0.0, 1.0, -0.6)))
 
-		print("Terrain client: swing check: %d swings, unknown tool %s, last %s" % [sound.hits.swings_played - before, str(sound.hits.swing("sword", body.global_position)), sound.hits.last_swing])
+		FreezeWatchScript.printer.line("Terrain client: swing check: %d swings, unknown tool %s, last %s" % [sound.hits.swings_played - before, str(sound.hits.swing("sword", body.global_position)), sound.hits.last_swing])
 
 	if test_insects and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -6772,7 +6777,7 @@ func _process(delta: float) -> void:
 		sound.weather.rain = 0.0
 		sound.insects.level = 0.9
 		sound.insects.update(0.1)
-		print("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
+		FreezeWatchScript.printer.line("Terrain client: insect check: summer noon %s, summer 2h %s, winter noon %s, spring noon %s, sunrise edge %s, sunset edge %s, rain %s, playing %d, lake noon %s, lake 2h %s, lake day %s" % (levels + [sound.insects.voices_playing(), lake_noon, lake_night, str(lake_cricket)]))
 
 	if test_variety and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -6822,7 +6827,7 @@ func _process(delta: float) -> void:
 			small_repeats += 1 if pick3 == last_pick else 0
 			last_pick = pick3
 
-		print("Terrain client: variety check: whistle by hour %s, crow at noon %.1f, trill/crow by season %s, repeats in a minute %d, back-to-back %d, back-to-back of 3 %d" % [",".join(ratios), crow_noon, ",".join(seasons), repeats, run_repeats, small_repeats])
+		FreezeWatchScript.printer.line("Terrain client: variety check: whistle by hour %s, crow at noon %.1f, trill/crow by season %s, repeats in a minute %d, back-to-back %d, back-to-back of 3 %d" % [",".join(ratios), crow_noon, ",".join(seasons), repeats, run_repeats, small_repeats])
 
 	if test_town and now - connected_msec > 18000 and now >= _test_town_bell:
 		_test_town_bell = now + 12000
@@ -6843,7 +6848,7 @@ func _process(delta: float) -> void:
 		var meter_text: String = sound.meters_text()
 		var meter_lines: int = meter_text.split("\n").size()
 		var second: String = sound.meters_text()
-		print("Terrain client: meters check: calls before %d, %d lines, Master line %s, World line %s, latency line %s, calls after %d, repeat same size %s" % [before_calls, meter_lines, str(meter_text.contains("Master")), str(meter_text.contains("World")), str(meter_text.contains("latency")), sound.meters_calls, str(second.split("\n").size() == meter_lines)])
+		FreezeWatchScript.printer.line("Terrain client: meters check: calls before %d, %d lines, Master line %s, World line %s, latency line %s, calls after %d, repeat same size %s" % [before_calls, meter_lines, str(meter_text.contains("Master")), str(meter_text.contains("World")), str(meter_text.contains("latency")), sound.meters_calls, str(second.split("\n").size() == meter_lines)])
 
 	if test_splash and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -6910,7 +6915,7 @@ func _process(delta: float) -> void:
 		weather.rain = 0.0
 		weather.rain_heard = 0.0
 		weather.covered = 0.0
-		print("Terrain client: splash check: %d grounds played, unknown %s, burst %d of 40 (cap %d, live %d), 5 s of heavy rain %d, covered %d, roofed %d, half rain %d, rate %.1f %.1f %.1f, last %s" % [
+		FreezeWatchScript.printer.line("Terrain client: splash check: %d grounds played, unknown %s, burst %d of 40 (cap %d, live %d), 5 s of heavy rain %d, covered %d, roofed %d, half rain %d, rate %.1f %.1f %.1f, last %s" % [
 			played, str(unknown), burst, cap_now, live_now, open_drops, covered_drops, roofed_drops, half_drops, sp.rate(1.0, 0.0, 0.0, false), sp.rate(1.0, 0.0, 0.0, true), sp.rate(0.05, 0.0, 0.0, false), sp.last])
 		sound.set_quality(1)
 
@@ -6935,7 +6940,7 @@ func _process(delta: float) -> void:
 			for k in AudioServer.get_bus_effect_count(n):
 				reverbs += 1 if AudioServer.get_bus_effect(n, k) is AudioEffectReverb else 0
 
-		print("Terrain client: reverb check: %s; reverbs %d, World sends %s, Foley sends %s, Nature sends %s, World before Foley %s" % ["; ".join(rows), reverbs, AudioServer.get_bus_send(world), AudioServer.get_bus_send(AudioServer.get_bus_index("Foley")), AudioServer.get_bus_send(AudioServer.get_bus_index("Nature")), str(world < AudioServer.get_bus_index("Foley"))])
+		FreezeWatchScript.printer.line("Terrain client: reverb check: %s; reverbs %d, World sends %s, Foley sends %s, Nature sends %s, World before Foley %s" % ["; ".join(rows), reverbs, AudioServer.get_bus_send(world), AudioServer.get_bus_send(AudioServer.get_bus_index("Foley")), AudioServer.get_bus_send(AudioServer.get_bus_index("Nature")), str(world < AudioServer.get_bus_index("Foley"))])
 		sound.set_quality(1)
 		sound.cave.enclosure = 0.0
 		sound.cave._apply()
@@ -6987,7 +6992,7 @@ func _process(delta: float) -> void:
 			var index: int = AudioServer.get_bus_index(bus_name)
 			filters += AudioServer.get_bus_effect_count(index) if index >= 0 else 0
 
-		print("Terrain client: air check: open falls %s, forest falls %s, open fires %s, forest fires %s, roofed fire %s, thunder %s %s %s, hold %d up %d, filters %d, shed parent %s" % [
+		FreezeWatchScript.printer.line("Terrain client: air check: open falls %s, forest falls %s, open fires %s, forest fires %s, roofed fire %s, thunder %s %s %s, hold %d up %d, filters %d, shed parent %s" % [
 			",".join(open_buses.slice(0, 3)), ",".join(forest_buses.slice(0, 3)), ",".join(open_buses.slice(3)), ",".join(forest_buses.slice(3)), roof_fire,
 			thunder_open, thunder_mid, thunder_near, hold, hold_up, filters, AirBandsCheck.parent_of("Air_fire_2")])
 
@@ -7016,19 +7021,19 @@ func _process(delta: float) -> void:
 		@warning_ignore("unused_variable")
 		var crow: bool = amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0, "large")
 		var crow_file: String = amb.last_file
-		print("Terrain client: flush check: %d flushes, small %d, medium %d, large %d, files used %d, repeats %d, crow file %s, source %s" % [300, sizes["small"], sizes["medium"], sizes["large"], files.size(), repeats, crow_file, amb._source.get("wing_small", "?")])
+		FreezeWatchScript.printer.line("Terrain client: flush check: %d flushes, small %d, medium %d, large %d, files used %d, repeats %d, crow file %s, source %s" % [300, sizes["small"], sizes["medium"], sizes["large"], files.size(), repeats, crow_file, amb._source.get("wing_small", "?")])
 		# Flying high above the forest (Dave 2026-10-21): no take-off, no alarm, no bird calls.
 		var low_before: float = amb.low_factor()
 		amb.forced_agl = 120.0
 		amb.agl_m = 120.0
-		print("Terrain client: high birds: low factor %.2f then %.2f, flush %s, alarm %s" % [low_before, amb.low_factor(), str(amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0)), str(amb.alarm(body.global_position + Vector3(20.0, 2.0, 0.0)))])
+		FreezeWatchScript.printer.line("Terrain client: high birds: low factor %.2f then %.2f, flush %s, alarm %s" % [low_before, amb.low_factor(), str(amb.flush(body.global_position + Vector3(20.0, 2.0, 0.0), 0.0)), str(amb.alarm(body.global_position + Vector3(20.0, 2.0, 0.0)))])
 		amb.forced_agl = -1.0
 
 	if test_reject and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var first: bool = sound.itemfx.reject("far")
 		var again: bool = sound.itemfx.reject("far")
-		print("Terrain client: reject check: first %s, held key %s, played %d, last %s" % [str(first), str(again), sound.itemfx.rejects_played, sound.itemfx.last])
+		FreezeWatchScript.printer.line("Terrain client: reject check: first %s, held key %s, played %d, last %s" % [str(first), str(again), sound.itemfx.rejects_played, sound.itemfx.last])
 
 	if test_step_levels and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -7045,7 +7050,7 @@ func _process(delta: float) -> void:
 		broken.store_string("not json at all")
 		broken.close()
 		sound._load_step_levels("user://step_levels_test.json")
-		print("Terrain client: step levels: source %s, grass walk %.1f, stone run %.1f, plank walk %.1f, tweaked grass walk %.1f, after a broken file %.1f" % [source, grass_walk, stone_run, plank_walk, tweaked, sound.step_level_db("grass", 0)])
+		FreezeWatchScript.printer.line("Terrain client: step levels: source %s, grass walk %.1f, stone run %.1f, plank walk %.1f, tweaked grass walk %.1f, after a broken file %.1f" % [source, grass_walk, stone_run, plank_walk, tweaked, sound.step_level_db("grass", 0)])
 
 	if test_night and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
@@ -7066,7 +7071,7 @@ func _process(delta: float) -> void:
 		var wolf_summer: float = sound.creatures.season_factor("wolf")
 		amb._answers.append({"left": 0.0, "name": "owl_hoot", "at": body.global_position + Vector3(40.0, 0.0, 0.0), "db": -17.0})
 		amb._play_answers(1.0)
-		print("Terrain client: night check: insects summer %s, spring %s, winter %s, day %s; wolf factor winter %.1f summer %.1f; owl answers %d; wild %s" % [night_levels[0], night_levels[1], night_levels[2], night_levels[3], wolf_winter, wolf_summer, amb.answers_played, str(sound.creatures.wild)])
+		FreezeWatchScript.printer.line("Terrain client: night check: insects summer %s, spring %s, winter %s, day %s; wolf factor winter %.1f summer %.1f; owl answers %d; wild %s" % [night_levels[0], night_levels[1], night_levels[2], night_levels[3], wolf_winter, wolf_summer, amb.answers_played, str(sound.creatures.wild)])
 
 	# Stance sounds: crouch, stand, sit, stand, lie (and sit for 20 s to hear settles), stand.
 	if test_stance and now - connected_msec > 18000 and now >= _test_fire_at:
@@ -7078,7 +7083,7 @@ func _process(delta: float) -> void:
 			sound.stance.set_stance(order[_stance_step])
 			_stance_step += 1
 		elif _stance_step == order.size():
-			print("Terrain client: stance check: %d changes, %d settles, crouch step %.0f dB, last %s" % [sound.stance.changes_played, sound.stance.settles_played, sound.stance.step_db(), sound.stance.last])
+			FreezeWatchScript.printer.line("Terrain client: stance check: %d changes, %d settles, crouch step %.0f dB, last %s" % [sound.stance.changes_played, sound.stance.settles_played, sound.stance.step_db(), sound.stance.last])
 			_stance_step += 1
 
 	# Distant fires and falls merge: one near fire and six far hearths, five far falls in a valley.
@@ -7101,14 +7106,14 @@ func _process(delta: float) -> void:
 
 			falls.append({"kind": "fall", "at": base + Vector3(60.0, 0.0, 0.0), "distance": 60.0, "drop": 6.0, "speed": -1.0, "width": 4.0, "score": 0.3})
 			var out: Array = sound.water._merge_far_falls(falls, base)
-			print("Terrain client: merge check: falls 6 -> %d voices, %d merged, widest %.0f" % [out.size(), sound.water.merged_falls, out.reduce(func(m, f): return maxf(m, float(f["width"])), 0.0)])
+			FreezeWatchScript.printer.line("Terrain client: merge check: falls 6 -> %d voices, %d merged, widest %.0f" % [out.size(), sound.water.merged_falls, out.reduce(func(m, f): return maxf(m, float(f["width"])), 0.0)])
 
 		if _merge_step == 0:
 			sound.water._pick_base([{"kind": "fall", "at": base + Vector3(10.0, 0.0, 0.0), "distance": 10.0, "drop": 8.0, "width": 8.0}])
 
 		if _merge_step == 120:
-			print("Terrain client: fall base: playing %s at %.1f dB (target %.1f), drop %.0f m" % [str(sound.water._base.playing), sound.water._base.volume_db, sound.water._base_db, sound.water.base_fall_drop])
-			print("Terrain client: merge check: fires 7 -> %d loops, %d merged" % [sound.fire._loops.size(), sound.fire.merged_fires])
+			FreezeWatchScript.printer.line("Terrain client: fall base: playing %s at %.1f dB (target %.1f), drop %.0f m" % [str(sound.water._base.playing), sound.water._base.volume_db, sound.water._base_db, sound.water.base_fall_drop])
+			FreezeWatchScript.printer.line("Terrain client: merge check: fires 7 -> %d loops, %d merged" % [sound.fire._loops.size(), sound.fire.merged_fires])
 
 		_merge_step += 1
 
@@ -7136,7 +7141,7 @@ func _process(delta: float) -> void:
 					var stream: AudioStream = sound.load_for_audit(dir, file.get_basename())
 					count += 1 if stream != null else 0
 
-		print("Terrain client: sound memory audit: %d files loaded, %s, static memory +%.1f MB" % [count, sound.audit_text(), float(OS.get_static_memory_usage() - before) / 1048576.0])
+		FreezeWatchScript.printer.line("Terrain client: sound memory audit: %d files loaded, %s, static memory +%.1f MB" % [count, sound.audit_text(), float(OS.get_static_memory_usage() - before) / 1048576.0])
 
 	# Headless check: the lit and loaded cues from world-row state changes (Items fire states 8 empty, 9 loaded, 1 lit).
 	if test_fire_world and now - connected_msec > 18000 and now >= _test_fire_at:
@@ -7153,11 +7158,11 @@ func _process(delta: float) -> void:
 		var spear_materials: Array = sound.spear.MATERIALS
 
 		if _test_spear_step == 0:
-			print("Terrain client: spear jab -> %s" % sound.spear.jab(body.global_position + Vector3(1.0, 0.0, 0.0)))
+			FreezeWatchScript.printer.line("Terrain client: spear jab -> %s" % sound.spear.jab(body.global_position + Vector3(1.0, 0.0, 0.0)))
 		elif _test_spear_step <= spear_materials.size():
 			var material: String = spear_materials[_test_spear_step - 1]
 			var flight_s: float = sound.spear.throw(body.global_position + Vector3(0.0, 1.5, 0.0), body.global_position + Vector3(25.0, 1.0, 5.0), 28.0, material)
-			print("Terrain client: spear throw into %s -> flight %.2f s" % [material, flight_s])
+			FreezeWatchScript.printer.line("Terrain client: spear throw into %s -> flight %.2f s" % [material, flight_s])
 		else:
 			test_spear_sounds = false
 
@@ -7178,7 +7183,7 @@ func _process(delta: float) -> void:
 
 		if _test_interior_step > names.size() + 6:
 			test_interior = false
-			print("Terrain client: interior check: amount %.2f, enclosure %.2f, covered %.1f" % [sound.interior.amount, sound.cave.enclosure, sound.weather.covered])
+			FreezeWatchScript.printer.line("Terrain client: interior check: amount %.2f, enclosure %.2f, covered %.1f" % [sound.interior.amount, sound.cave.enclosure, sound.weather.covered])
 			sound.interior.set_inside(0.0)
 
 	# Headless check: more sounds than the tier's voice cap, then the shedding.
@@ -7191,7 +7196,7 @@ func _process(delta: float) -> void:
 
 		var before: int = sound.voices_playing()
 		sound._shed(body, maxi(before - sound.voice_cap, 0))
-		print("Terrain client: flood: %d playing before (cap %d, tier %s), shed %d, %d playing right after" % [before, sound.voice_cap, sound.Presets.NAMES[sound.tier], sound.shed_count, sound.voices_playing()])
+		FreezeWatchScript.printer.line("Terrain client: flood: %d playing before (cap %d, tier %s), shed %d, %d playing right after" % [before, sound.voice_cap, sound.Presets.NAMES[sound.tier], sound.shed_count, sound.voices_playing()])
 
 	# Headless check: the interface cues in turn.
 	if test_ui and now - connected_msec > 18000 and now >= _test_ui_next:
@@ -7220,20 +7225,20 @@ func _process(delta: float) -> void:
 
 		if hit != null:
 			net.dig.rpc_id(1, Vector3(at.x, hit.position.y, at.y), 1.5)
-			print("Terrain client: ditch dig at %.1f, %.1f, %.1f (%d left)" % [at.x, float(hit.position.y), at.y, _ditch.size()])
+			FreezeWatchScript.printer.line("Terrain client: ditch dig at %.1f, %.1f, %.1f (%d left)" % [at.x, float(hit.position.y), at.y, _ditch.size()])
 		else:
-			print("Terrain client: ditch dig at %.1f, %.1f: no ground loaded there yet" % [at.x, at.y])
+			FreezeWatchScript.printer.line("Terrain client: ditch dig at %.1f, %.1f: no ground loaded there yet" % [at.x, at.y])
 
 	if test_dig_check and now - connected_msec > 24000:
 		test_dig_check = false
 		var probe_tool: VoxelTool = terrain.get_voxel_tool()
 		var centre: Vector3 = Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)
-		print("Terrain client: dig check: ground value at the old hole %.2f (above 0 is open), 12 m away %.2f" % [probe_tool.get_voxel_f(Vector3i(centre.round())), probe_tool.get_voxel_f(Vector3i((centre + Vector3(12.0, 0.0, 0.0)).round()))])
+		FreezeWatchScript.printer.line("Terrain client: dig check: ground value at the old hole %.2f (above 0 is open), 12 m away %.2f" % [probe_tool.get_voxel_f(Vector3i(centre.round())), probe_tool.get_voxel_f(Vector3i((centre + Vector3(12.0, 0.0, 0.0)).round()))])
 
 	if frames_left > 0 and now >= _report_msec:
 		_report_msec = now + 10000
 		@warning_ignore("integer_division")
-		print("client: %d s, %d blocks loaded, %d from the server (%.1f MB), %d waiting, %d fps, at %s" % [
+		FreezeWatchScript.printer.line("client: %d s, %d blocks loaded, %d from the server (%.1f MB), %d waiting, %d fps, at %s" % [
 			(now - connected_msec) / 1000, stream.loads, stream.blocks_received,
 			float(stream.bytes_received) / 1048576.0, stream.pending(), Engine.get_frames_per_second(), str(body.global_position.round())
 		])
@@ -7283,36 +7288,36 @@ func _process(delta: float) -> void:
 
 		if frames_left == 0:
 			if test_fly and _fly_stop_msec > 0:
-				print("Terrain client: ground collider under the player %s ms after stopping (altitude %.0f)" % [str(_fly_ground_msec - _fly_stop_msec) if _fly_ground_msec > 0 else "never", body.global_position.y])
+				FreezeWatchScript.printer.line("Terrain client: ground collider under the player %s ms after stopping (altitude %.0f)" % [str(_fly_ground_msec - _fly_stop_msec) if _fly_ground_msec > 0 else "never", body.global_position.y])
 
 				for lod in range(6):
-					print("Terrain client: under the stop point, LOD %d first asked %s, loaded %s (ms after stopping)" % [
+					FreezeWatchScript.printer.line("Terrain client: under the stop point, LOD %d first asked %s, loaded %s (ms after stopping)" % [
 						lod,
 						str(stream.watch_asked[lod] - _fly_stop_msec) if stream.watch_asked.has(lod) else "never",
 						str(stream.watch_loaded[lod] - _fly_stop_msec) if stream.watch_loaded.has(lod) else "never",
 					])
 
-			print("Terrain client: last block asked for %d ms after the welcome; %d blocks loaded; %d from the server (%.2f MB, %.0f bytes each), %d from the cache, %d cache misses, %d timeouts, %d still waiting, %d prefetched blocks used" % [
+			FreezeWatchScript.printer.line("Terrain client: last block asked for %d ms after the welcome; %d blocks loaded; %d from the server (%.2f MB, %.0f bytes each), %d from the cache, %d cache misses, %d timeouts, %d still waiting, %d prefetched blocks used" % [
 				settled_msec, stream.loads, stream.blocks_received, float(stream.bytes_received) / 1048576.0,
 				float(stream.bytes_received) / maxf(float(stream.blocks_received), 1.0), cache.hits, cache.misses, stream.timeouts, stream.pending(), stream.prefetch_used
 			])
-			print("Terrain client: cache folder %.1f MB" % (float(cache.size_bytes()) / 1048576.0))
-			print("Terrain client: flora %d chunks (%.2f MB with water, last %d ms after the welcome), %d items held, %d drawn, %d colliders, %d cuts; water in %d chunks, %d cells" % [
+			FreezeWatchScript.printer.line("Terrain client: cache folder %.1f MB" % (float(cache.size_bytes()) / 1048576.0))
+			FreezeWatchScript.printer.line("Terrain client: flora %d chunks (%.2f MB with water, last %d ms after the welcome), %d items held, %d drawn, %d colliders, %d cuts; water in %d chunks, %d cells" % [
 				_flora_chunks, float(_flora_bytes) / 1048576.0, _flora_done_msec, flora.item_count(), flora.instances, flora.colliders, _flora_cuts,
 				flora.water_chunks, flora.water_cells
 			])
 			var stats: Dictionary = flora.draw_stats()
-			print("Terrain client: flora draws: %s nodes (tree, shrub, plant) for %s instances, %d nodes under 50 instances" % [str(stats["nodes"]), str(stats["instances"]), int(stats["small"])])
-			print("Terrain client: fall columns: %d meshes drawn (cap %d per chunk)" % [flora.falls_drawn, flora.fall_cap])
-			print("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
-			print("Terrain client: grass %d tufts in %d cells (radius %.0f m), %d MultiMesh draws" % [grass.tufts, grass.cells_built, grass.radius_m, grass.draw_nodes])
-			print("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
-			print("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
-			print("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
-			print("Terrain client: faint run: world muted to %.2f, heart gain down to %.2f, %d heaves, %d heartbeats, done %s, breaths while fainted %d, wake mute %.2f, bpm max %.0f, step %.2f" % [sound.breath.peak_mute, sound.breath.demo_min_gain, sound.breath.heaves_played, sound.breath.beats_played, str(sound.breath.demo_done), sound.breath.fainted_breaths, sound.breath.wake_mute_mid, sound.breath.bpm_max, sound.breath.bpm_step_max])
-			print("Terrain client: fire world: %d fuel, %d lit, %d out" % [sound.fire.fuel_played, sound.fire.lit_played, sound.fire.out_played])
-			print("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
-			print("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
+			FreezeWatchScript.printer.line("Terrain client: flora draws: %s nodes (tree, shrub, plant) for %s instances, %d nodes under 50 instances" % [str(stats["nodes"]), str(stats["instances"]), int(stats["small"])])
+			FreezeWatchScript.printer.line("Terrain client: fall columns: %d meshes drawn (cap %d per chunk)" % [flora.falls_drawn, flora.fall_cap])
+			FreezeWatchScript.printer.line("Terrain client: cover index %d tree crowns in %d chunks" % [flora.cover.trees, flora.cover.chunk_count()])
+			FreezeWatchScript.printer.line("Terrain client: grass %d tufts in %d cells (radius %.0f m), %d MultiMesh draws" % [grass.tufts, grass.cells_built, grass.radius_m, grass.draw_nodes])
+			FreezeWatchScript.printer.line("Terrain client: water sounds: %s (%d falls known)" % [sound.water.summary, flora.fall_list().size()])
+			FreezeWatchScript.printer.line("Terrain client: nature calls %s, zones %s" % [str(sound.ambient.calls_played), str(sound.ambient.weights)])
+			FreezeWatchScript.printer.line("Terrain client: tree sounds: %d falls, %d stump sprays, last %s" % [sound.trees.falls_played, sound.trees.chips_played, sound.trees.last])
+			FreezeWatchScript.printer.line("Terrain client: faint run: world muted to %.2f, heart gain down to %.2f, %d heaves, %d heartbeats, done %s, breaths while fainted %d, wake mute %.2f, bpm max %.0f, step %.2f" % [sound.breath.peak_mute, sound.breath.demo_min_gain, sound.breath.heaves_played, sound.breath.beats_played, str(sound.breath.demo_done), sound.breath.fainted_breaths, sound.breath.wake_mute_mid, sound.breath.bpm_max, sound.breath.bpm_step_max])
+			FreezeWatchScript.printer.line("Terrain client: fire world: %d fuel, %d lit, %d out" % [sound.fire.fuel_played, sound.fire.lit_played, sound.fire.out_played])
+			FreezeWatchScript.printer.line("Terrain client: fire sounds: %d lit, %d put out, %d loops, last %s" % [sound.fire.lit_played, sound.fire.out_played, sound.fire.loops_playing, sound.fire.last])
+			FreezeWatchScript.printer.line("Terrain client: item sounds %d, last %s" % [sound.itemfx.played, sound.itemfx.last])
 			var kinds: Dictionary = {}
 
 			for row_id in harvest._flora_by_id:
@@ -7322,35 +7327,35 @@ func _process(delta: float) -> void:
 					var k: String = sound.harvestfx.pick_kind(row)
 					kinds[k] = int(kinds.get(k, 0)) + 1
 
-			print("Terrain client: harvest sounds %s, last %s; plant kinds %s" % [str(sound.harvestfx.played), sound.harvestfx.last, str(kinds)])
-			print("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
-			print("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])
-			print("Terrain client: gear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last])
-			print("Terrain client: creature calls %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last])
-			print("Terrain client: sounds shed over the cap: %d" % sound.shed_count)
-			print("Terrain client: interface sounds %d played, last %s" % [sound.ui.played, sound.ui.last])
-			print("Terrain client: swim sounds %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last])
-			print("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
-			print("Terrain client: tool hits %d, last %s" % [sound.hits.hits_played, sound.hits.last_hit])
-			print("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])
-			print("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
-			print("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
-			print("Terrain client: ", sound.wind_text())
-			print("Terrain client: ", sound.heard_text(body).replace("\n", " | "))
-			print("Terrain client: ", sound.ambient_dump(body).replace("\n", " | "))
-			print("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
-			print("Terrain client: snow hush %.2f (nature bus %.1f dB, wind bus %.1f dB)" % [sound.weather.snow_hush, AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Nature")), AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Wind"))])
-			print("Terrain client: rain ground %s (weights %s)" % [sound.weather.ground_class, str(sound.weather._ground_w)])
-			print("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d; ground wet %.2f snow %.2f, covered %.1f, puddle splashes %d, leaf drips %d, roofed %.1f, loops %s" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.weather.covered, sound.puddles_played, sound.weather.drips_played, sound.weather.roofed, str(sound.weather.active_loops().map(func(entry): return entry[0]))])
-			print("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
+			FreezeWatchScript.printer.line("Terrain client: harvest sounds %s, last %s; plant kinds %s" % [str(sound.harvestfx.played), sound.harvestfx.last, str(kinds)])
+			FreezeWatchScript.printer.line("Terrain client: spear sounds %s, last %s" % [str(sound.spear.played), sound.spear.last])
+			FreezeWatchScript.printer.line("Terrain client: interior sounds: %d objects, %d creaks, last %s" % [sound.interior.objects_played, sound.interior.creaks_played, sound.interior.last])
+			FreezeWatchScript.printer.line("Terrain client: gear: worn %s, %d steps, last %s" % [str(sound.gear.worn), sound.gear.steps_played, sound.gear.last])
+			FreezeWatchScript.printer.line("Terrain client: creature calls %s, last %s" % [str(sound.creatures.calls_played), sound.creatures.last])
+			FreezeWatchScript.printer.line("Terrain client: sounds shed over the cap: %d" % sound.shed_count)
+			FreezeWatchScript.printer.line("Terrain client: interface sounds %d played, last %s" % [sound.ui.played, sound.ui.last])
+			FreezeWatchScript.printer.line("Terrain client: swim sounds %d splashes, %d strokes, %d dives, %d surfacings, last %s" % [sound.swim.splashes, sound.swim.strokes, sound.swim.dives, sound.swim.surfaces, sound.swim.last])
+			FreezeWatchScript.printer.line("Terrain client: town sounds %d loops, %d bells" % [sound.town.loops_playing, sound.town.bells_rung])
+			FreezeWatchScript.printer.line("Terrain client: tool hits %d, last %s" % [sound.hits.hits_played, sound.hits.last_hit])
+			FreezeWatchScript.printer.line("Terrain client: muffled sounds: %d filtered, %d behind hills" % [sound.occlusion.filtered, sound.occlusion.occluded])
+			FreezeWatchScript.printer.line("Terrain client: cave enclosure %.2f, drips %d" % [sound.cave.enclosure, sound.cave.drips_played])
+			FreezeWatchScript.printer.line("Terrain client: dig sounds %s, last %s" % [str(sound.dig.digs_played), sound.dig.last_dig])
+			FreezeWatchScript.printer.line("Terrain client: " + str(sound.wind_text()))
+			FreezeWatchScript.printer.line("Terrain client: " + str(sound.heard_text(body).replace("\n", " | ")))
+			FreezeWatchScript.printer.line("Terrain client: " + str(sound.ambient_dump(body).replace("\n", " | ")))
+			FreezeWatchScript.printer.line("Terrain client: sound budget: %s, %d loads refused" % [sound.budget_text(), sound.refused_loads])
+			FreezeWatchScript.printer.line("Terrain client: snow hush %.2f (nature bus %.1f dB, wind bus %.1f dB)" % [sound.weather.snow_hush, AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Nature")), AudioServer.get_bus_volume_db(AudioServer.get_bus_index("Wind"))])
+			FreezeWatchScript.printer.line("Terrain client: rain ground %s (weights %s)" % [sound.weather.ground_class, str(sound.weather._ground_w)])
+			FreezeWatchScript.printer.line("Terrain client: weather %s rain %.2f wind %.2f calls %.2f thunders %d; ground wet %.2f snow %.2f, covered %.1f, puddle splashes %d, leaf drips %d, roofed %.1f, loops %s" % [sound.weather.kind, sound.weather.rain, sound.weather.wind, sound.weather.calls, sound.weather.thunders_played, sound.weather.ground_wet, sound.weather.ground_snow, sound.weather.covered, sound.puddles_played, sound.weather.drips_played, sound.weather.roofed, str(sound.weather.active_loops().map(func(entry): return entry[0]))])
+			FreezeWatchScript.printer.line("Terrain client: sound: footsteps %s, grass swishes %d, last ground %s, gust %.2f" % [str(sound.steps_played), sound.swishes_played, sound.surface, sound.gust])
 			if _npc_view != null:
 				var near_npc: Dictionary = _npc_view.nearest(body.global_position, 100000.0)
-				print("Terrain client: npcs drawn %d (roster %d), nearest %s, player at %.0f %.0f" % [_npc_view.drawn_count(), _npc_view.roster.size(), str(near_npc.get("name", "none")) + (" %.1f m away" % Vector2(near_npc["pos"].x - body.global_position.x, near_npc["pos"].z - body.global_position.z).length() if not near_npc.is_empty() else ""), body.global_position.x, body.global_position.z])
+				FreezeWatchScript.printer.line("Terrain client: npcs drawn %d (roster %d), nearest %s, player at %.0f %.0f" % [_npc_view.drawn_count(), _npc_view.roster.size(), str(near_npc.get("name", "none")) + (" %.1f m away" % Vector2(near_npc["pos"].x - body.global_position.x, near_npc["pos"].z - body.global_position.z).length() if not near_npc.is_empty() else ""), body.global_position.x, body.global_position.z])
 
-			print("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
-			print(Probe.report())
+			FreezeWatchScript.printer.line("Terrain client: blocks waited for %d times, %.0f ms on average, worst %d ms; at most %d loader threads waiting at once; %d blocks came on the block line" % [stream.waits, float(stream.wait_msec_total) / maxf(float(stream.waits), 1.0), stream.wait_msec_worst, stream.most_waiting, link.blocks_in])
+			FreezeWatchScript.printer.line(str(Probe.report()))
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
-			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
+			FreezeWatchScript.printer.line("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)
 
 
@@ -7470,7 +7475,7 @@ func _walk_step() -> void:
 				body.global_position += Vector3(0.0, 0.0, 40.0)
 				_walk_phase = 1
 				_walk_msec = now
-				print("Terrain client: walk: dropping from %s, ground below %.1f" % [str(body.global_position.round()), _ground_below(body.global_position)])
+				FreezeWatchScript.printer.line("Terrain client: walk: dropping from %s, ground below %.1f" % [str(body.global_position.round()), _ground_below(body.global_position)])
 				_walk_stats = {"start_y": body.global_position.y, "fell_through": 0, "floor_frames": 0, "frames": 0, "lowest_gap": INF}
 		1:
 			if body.is_on_floor():
@@ -7578,7 +7583,7 @@ func _run_dig_next_test() -> void:
 			off_floor_max = maxi(off_floor_max, off_floor)
 
 	await get_tree().create_timer(4.0).timeout
-	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
+	FreezeWatchScript.printer.line("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
 
 
 # Headless check (--resume-test=logout|drop|stay|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
@@ -7595,7 +7600,7 @@ func _run_resume_test() -> void:
 	var spawn: Vector3 = world["spawn"]
 
 	if test_resume == "check":
-		print("Resume test: started %.0f m from the spawn, at %s" % [Vector2(body.global_position.x - spawn.x, body.global_position.z - spawn.z).length(), str(body.global_position.round())])
+		FreezeWatchScript.printer.line("Resume test: started %.0f m from the spawn, at %s" % [Vector2(body.global_position.x - spawn.x, body.global_position.z - spawn.z).length(), str(body.global_position.round())])
 		_finish(0)
 		return
 
@@ -7609,10 +7614,10 @@ func _run_resume_test() -> void:
 		body.global_position = spawn + Vector3(90.0, 4.0, 0.0)
 		body.velocity = Vector3.ZERO
 		await _server_caught_up()
-		print("Resume test: staying in at %s" % str(body.global_position.round()))
+		FreezeWatchScript.printer.line("Resume test: staying in at %s" % str(body.global_position.round()))
 		return
 
-	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
+	FreezeWatchScript.printer.line("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
 
 	if test_resume == "logout":
 		_say_logout()
@@ -7634,22 +7639,22 @@ func _server_caught_up() -> void:
 func _run_embed_test() -> void:
 	await get_tree().create_timer(25.0).timeout
 	var start: Vector3 = body.global_position
-	print("Embed test: embed rescues while standing %d" % rescue.embed_rescues)
+	FreezeWatchScript.printer.line("Embed test: embed rescues while standing %d" % rescue.embed_rescues)
 	var column: Array = []
 
 	for k in range(-8, 6):
 		column.append("%d:%.1f" % [k, terrain.get_voxel_tool().get_voxel_f(Vector3i((start + Vector3(0.0, float(k), 0.0)).round()))])
 
-	print("Embed test: sdf column (m from feet): ", " ".join(column))
+	FreezeWatchScript.printer.line("Embed test: sdf column (m from feet): " + str(" ".join(column)))
 	rescue.note_dig(start)      # as after a dig here: the surface rescue is off, only the embedded check can free the player
 	body.global_position = start + Vector3(0.0, -4.0, 0.0)
 	body.velocity = Vector3.ZERO
 	await get_tree().create_timer(3.0).timeout
-	print("Embed test: put at y %.1f (4 m under y %.1f), after 3 s y %.1f, embed rescues %d, %s" % [start.y - 4.0, start.y, body.global_position.y, rescue.embed_rescues, "FREED" if body.global_position.y > start.y - 1.0 else "STILL INSIDE"])
+	FreezeWatchScript.printer.line("Embed test: put at y %.1f (4 m under y %.1f), after 3 s y %.1f, embed rescues %d, %s" % [start.y - 4.0, start.y, body.global_position.y, rescue.embed_rescues, "FREED" if body.global_position.y > start.y - 1.0 else "STILL INSIDE"])
 	body.global_position = start + Vector3(0.0, -150.0, 0.0)
 	body.velocity = Vector3.ZERO
 	await get_tree().create_timer(5.0).timeout
-	print("Embed test: put in the void 150 m under, after 5 s y %.1f, %s" % [body.global_position.y, "BACK ON THE SURFACE" if body.global_position.y > start.y - 1.0 else "STILL UNDER THE WORLD"])
+	FreezeWatchScript.printer.line("Embed test: put in the void 150 m under, after 5 s y %.1f, %s" % [body.global_position.y, "BACK ON THE SURFACE" if body.global_position.y > start.y - 1.0 else "STILL UNDER THE WORLD"])
 
 
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
@@ -7934,17 +7939,17 @@ func _crouch_walk_step(now: int) -> void:
 
 	if _crouch_case >= 0 and not (Vector2(body.global_position.x - _crouch_from.x, body.global_position.z - _crouch_from.z).length() >= want * 0.6):   # NAN (no ground) counts as stuck
 		_crouch_stuck += 1
-		print("Terrain client: crouch walk: stuck at %s heading %s" % [str(body.global_position), str(_walk_dir)])
+		FreezeWatchScript.printer.line("Terrain client: crouch walk: stuck at %s heading %s" % [str(body.global_position), str(_walk_dir)])
 
 	_crouch_case += 1
 
 	if _crouch_trees.is_empty():
-		print("Terrain client: crouch walk: no trees within 120 m, nothing tested")
+		FreezeWatchScript.printer.line("Terrain client: crouch walk: no trees within 120 m, nothing tested")
 		_walk_phase = 4
 		return
 
 	if _crouch_case >= _crouch_trees.size() * 4:
-		print("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 4])
+		FreezeWatchScript.printer.line("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 4])
 		_set_stance(StanceScript.STAND)
 		_walk_dir = Vector3.ZERO
 		_walk_phase = 4
@@ -7997,7 +8002,7 @@ func _place_by_tree() -> bool:
 func _walk_report() -> void:
 	var s: Dictionary = _walk_stats
 	@warning_ignore("integer_division")
-	print("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues); waited for ground %d of %d frames, slowest frame %.0f ms" % [
+	FreezeWatchScript.printer.line("Terrain client: walk: landed %.1f s after dropping %.0f m; walked %.0f m east in 30 s, on the ground %d%% of frames, %d frames below the ground (lowest gap %.2f m); tree trunk at x %.1f, furthest reached %.1f; put 60 m under the ground, then %.1f m above it (%d rescues); waited for ground %d of %d frames, slowest frame %.0f ms" % [
 		float(s.get("landed_s", -1.0)), float(s.get("drop_m", 0.0)), float(s.get("walked_m", 0.0)),
 		100 * int(s.get("floor_frames", 0)) / maxi(int(s.get("frames", 0)), 1), int(s.get("fell_through", 0)), float(s.get("lowest_gap", 0.0)),
 		float(s.get("tree_x", NAN)), float(s.get("tree_max_x", NAN)), float(s.get("rescued_gap", NAN)), rescue.rescued,
@@ -8057,6 +8062,7 @@ func _exit_tree() -> void:
 		stream.close()
 
 	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+	FreezeWatchScript.printer.drain()   # again: lines the last server messages queued above, before the exported game's _end_now kills the process
 	# The freeze lines' context is a lambda of this script held in a static var. Left there, the engine frees it last, after this script's
 	# own code is gone: "free(): invalid pointer" / "corrupted size vs. prev_size" and an abort at every quit after joining a world
 	# (headless robot clients, 23 Nov 2026, dev 2aa2ea24; GDScript lambda freed from Callable in GDScript's cleanup). A scene change makes a new one.
@@ -8089,7 +8095,7 @@ func _end_now() -> void:
 # Asked at the moment of the key press, so it reads the state of that frame.
 func _light_block() -> String:
 	var wet: float = float(weather.get("rain", 0.0))
-	print("torch light check: rain %.2f (puts out from %.2f), eye under water %s, depth %.2f" % [wet, FlameRules.RAIN_DOUSE, str(underwater), underwater_surface - camera.global_position.y if underwater else 0.0])
+	FreezeWatchScript.printer.line("torch light check: rain %.2f (puts out from %.2f), eye under water %s, depth %.2f" % [wet, FlameRules.RAIN_DOUSE, str(underwater), underwater_surface - camera.global_position.y if underwater else 0.0])
 
 	if underwater or not FlameRules.in_rain(wet, false):
 		return FlameRules.light_block(underwater, wet, false)

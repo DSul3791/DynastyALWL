@@ -16,6 +16,7 @@ extends Node3D
 # down), and dropped with its chunk. Client only: no network traffic of its own, nothing saved, nothing the server reads.
 
 const PieceLook := preload("res://src/client/piece_look.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
 const PATCH_W_M := 4.0                  # across (coordinator 9 Nov 2026: 4 m, about 1 m past the clump on each side)
 const PATCH_L_M := 6.0                  # along the way the water leaves
@@ -204,7 +205,7 @@ func _build_near(at: Vector3) -> void:
 
 		_props[head_key] = _build(space, Vector3(head.x, ground, head.y), way[0], float(way[1]), at.y, head_key)
 		# One line a head (a handful within BUILD_M), so a rig run can show the patch was placed.
-		print("spring heads: built at %.0f, %.1f, %.0f, runnel %.1f m toward %.2f, %.2f (%s)" % [head.x, ground, head.y, float(way[1]), (way[0] as Vector2).x,
+		FreezeWatchScript.printer.line("spring heads: built at %.0f, %.1f, %.0f, runnel %.1f m toward %.2f, %.2f (%s)" % [head.x, ground, head.y, float(way[1]), (way[0] as Vector2).x,
 			(way[0] as Vector2).y, "brook cells" if from_cells else "downhill"])
 
 

@@ -188,6 +188,7 @@ var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
 const MotionExtra := preload("res://src/client/character/motion_extra.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
 const PICK_SWING_S := MotionExtra.PICK_LENGTH
 const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
@@ -429,8 +430,20 @@ func held_number() -> int:
 # Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
 # every HELD_REPORT_S; the server checks it against the pack.
 const HELD_REPORT_S := 0.5
-var _held_sent: int = -1
+# From 159 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
+# once (at most every HAND_REPORT_S), an item change at most every HELD_REPORT_S.
+const HAND_REPORT_S := 0.1
+const HAND_BOW_RAISED := 1
+const HAND_BOW_DRAWN := 2
+const HAND_SHIELD_UP := 4
+const HAND_LADDER := 8
+var _held_sent: Array = []
 var _held_wait: float = 0.0
+
+
+# Only the shield's for now: the bow and ladder bits are kept for their poses on other players (not made yet), so a bow draw costs no sends.
+func hand_flags() -> int:
+	return HAND_SHIELD_UP if blocking else 0
 
 
 func _report_held(delta: float) -> void:
@@ -439,12 +452,13 @@ func _report_held(delta: float) -> void:
 	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
 		return   # no server to tell (offline, a headless check, or this is the server)
 
-	var number: int = held_number()
+	var now: Array = [held_number(), off_number(), hand_flags()]
 
-	if number != _held_sent:
-		_held_sent = number
-		_held_wait = HELD_REPORT_S
-		_net.held_item.rpc_id(1, number)
+	if now != _held_sent:
+		var items_changed: bool = _held_sent.is_empty() or now[0] != _held_sent[0] or now[1] != _held_sent[1]
+		_held_sent = now
+		_held_wait = HELD_REPORT_S if items_changed else HAND_REPORT_S
+		_net.held_item.rpc_id(1, int(now[0]), int(now[1]), int(now[2]))
 
 
 func held_id() -> String:
@@ -1442,6 +1456,32 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
 
 
+# Another player's arrow or thrown weapon (flight_seen, protocol 159): flown here like this player's own (gravity, the ground, an arrow
+# stops in a trunk), look only. A thrown weapon (items.json kind "weapon") is drawn by its hand look, an arrow by its arrow model.
+func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	if _root == null or not _root.is_inside_tree() or _inv == null or number <= 0 or velocity.length() < 0.1:
+		return
+
+	var id: String = _inv.table.id_of(number)
+	var arrow: bool = str(_inv.table.entry(id).get("kind", "")) != "weapon"
+	var node: Node3D = _make_arrow_model(number) if arrow else (look_tool_node(id) if BasicLook.has_look(id) and HELD_LOOK_TURN.has(str(BasicLook.entry(id).get("shape", ""))) else _make_arrow_model(number))
+	_root.add_child(node)
+	node.global_position = from + velocity.normalized() * 0.8
+
+	if absf(velocity.normalized().y) < 0.99:
+		node.look_at(node.global_position + velocity, Vector3.UP)
+
+	if fire:
+		var glow: OmniLight3D = OmniLight3D.new()   # as this player's own fire arrow
+		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_energy = 1.6
+		glow.omni_range = 2.0
+		glow.shadow_enabled = false
+		node.add_child(glow)
+
+	_flights.append({"node": node, "vel": velocity, "age": 0.0, "arrow": true})
+
+
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
 	var bow_id: String = held_id()
@@ -1676,7 +1716,7 @@ func _process_body(delta: float) -> void:
 
 		if bool(flight.get("arrow", false)) and (flight["vel"] as Vector3).length() > 0.1:
 			flight["node"].look_at(flight["node"].global_position + flight["vel"], Vector3.UP)   # an arrow points along its flight
-		var ground: float = _ground_below.call(flight["node"].global_position)
+		var ground: float = _ground_below.call(flight["node"].global_position) if _ground_below.is_valid() else NAN
 
 		if flight["age"] > 6.0 or (not is_nan(ground) and flight["node"].global_position.y <= ground):
 			flight["node"].queue_free()
@@ -3578,11 +3618,17 @@ const TORCH_LEAN := 0.12      # third-person torch carry: the shaft leans this m
 # Third person, torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): the torch stands upright in the world, leaning a little forward and out
 # from the body, whatever the hand's own angle, with the grip in the fist. The arm pose that puts the hand up in front is the body's (dynasty_body.gd _torch_carry).
 func _stand_torch_upright() -> void:
-	var skel: Node3D = _avatar_rig.get("skeleton") as Node3D
-	var mount: Node3D = _avatar_rig.hand_mount_l as Node3D
+	if stand_torch(_off_model, _avatar_rig):
+		_third_fist_on(_off_model).visible = true
 
-	if skel == null or mount == null or not mount.is_inside_tree():
-		return
+
+# The same for any torch `model` in `rig`'s left hand (another player's too: player_view.gd).
+static func stand_torch(model: Node3D, rig: Node3D) -> bool:
+	var skel: Node3D = rig.get("skeleton") as Node3D if rig != null else null
+	var mount: Node3D = rig.get("hand_mount_l") as Node3D if rig != null else null
+
+	if skel == null or mount == null or model == null or not mount.is_inside_tree():
+		return false
 
 	var front: Vector3 = skel.global_basis * Vector3.BACK      # the Dynasty skeleton faces +Z, its left is +X
 	var left: Vector3 = skel.global_basis * Vector3.RIGHT
@@ -3590,16 +3636,21 @@ func _stand_torch_upright() -> void:
 	left.y = 0.0
 
 	if front.length() < 0.001 or left.length() < 0.001:
-		return
+		return false
 
 	front = front.normalized()
 	left = left.normalized()
 	var shaft: Vector3 = (Vector3.UP + front * TORCH_LEAN + left * TORCH_LEAN).normalized()
 	var across: Vector3 = shaft.cross(front).normalized()
 	var upright: Basis = Basis(across, shaft, across.cross(shaft).normalized())
-	var grip: float = float(_off_model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
-	_off_model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
-	_third_fist_on(_off_model).visible = true
+	var grip: float = float(model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
+	model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
+	var fist: Node3D = model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if fist != null:
+		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+
+	return true
 
 
 # Same grips as the right hand, on the left mount (first person arms, or the body in third person).
@@ -4272,22 +4323,22 @@ func run_net_test() -> void:
 	var net_n: int = table.number_of("shore_net")
 	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, net_n, 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(2.0).timeout
-	print("NET TEST: pack before: %s" % _net_test_pack())
+	FreezeWatchScript.printer.line("NET TEST: pack before: %s" % _net_test_pack())
 
 	for slot in range(8):
 		if _inv.inventory.numbers[slot] == net_n:
 			select(slot)
 
-	print("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
+	FreezeWatchScript.printer.line("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
 
 	for n in 4:
 		var used: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 		await get_tree().create_timer(0.3).timeout
 		mouse_button(MOUSE_BUTTON_LEFT, false)
 		await get_tree().create_timer(9.0).timeout   # the net sinks for hold_s (6 s) and is hauled back
-		print("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
+		FreezeWatchScript.printer.line("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
 
-	print("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
+	FreezeWatchScript.printer.line("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
 
 
 func _net_test_pack() -> String:
@@ -4323,14 +4374,14 @@ func run_test() -> void:
 		if _inv.inventory.numbers[slot] == table.number_of("wooden_spear"):
 			select(slot)
 
-	print("Spear test: holding %s" % held_id())
+	FreezeWatchScript.printer.line("Spear test: holding %s" % held_id())
 	var jabbed: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(0.5).timeout
 	mouse_button(MOUSE_BUTTON_RIGHT, true)
 	var aimed: bool = aiming
 	mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(5.0).timeout
-	print("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
+	FreezeWatchScript.printer.line("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
 	_net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 
@@ -4340,7 +4391,7 @@ func run_test() -> void:
 
 	var swung: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(1.0).timeout
-	print("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
+	FreezeWatchScript.printer.line("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
 	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var kit_slot: int = -1
@@ -4362,7 +4413,7 @@ func run_test() -> void:
 			lit += 1
 			states.append(_inv._world[id]["state"])
 
-	print("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
+	FreezeWatchScript.printer.line("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
 
 
 func inv_slots() -> int:

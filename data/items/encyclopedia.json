@@ -62,7 +62,7 @@
 		"banana_leaves": {
 			"name": "Banana leaves",
 			"kind": "material",
-			"description": "Broad glossy leaves of the wild banana. Good for wrapping food and shelter roofs.",
+			"description": "Broad glossy leaves of the wild banana. Good for wrapping food and shelter roofs. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -165,7 +165,7 @@
 		"brinebells": {
 			"name": "Brinebells",
 			"kind": "material",
-			"description": "Salt-loving shore flowers that ring like little bells. Chewed, they taste of the sea.",
+			"description": "Salt-loving shore flowers that ring like little bells, salty to the taste. Nothing uses it yet.",
 			"how_to_get": [
 				"Picked from brinebell (summer)"
 			],
@@ -188,7 +188,7 @@
 		"burrs": {
 			"name": "Burrs",
 			"kind": "material",
-			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener.",
+			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -196,7 +196,7 @@
 		"cactus_pads": {
 			"name": "Cactus pads",
 			"kind": "material",
-			"description": "Flat fleshy cactus pads, spines still on. Peeled and cooked they make food and water.",
+			"description": "Flat fleshy cactus pads, spines still on. Peeled and cooked they make food and water. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -325,7 +325,7 @@
 		"comfrey_roots": {
 			"name": "Comfrey roots",
 			"kind": "material",
-			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating.",
+			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -478,7 +478,7 @@
 		"elderflowers": {
 			"name": "Elderflowers",
 			"kind": "material",
-			"description": "Creamy lacy flower sprays with a sweet musky smell. Steeped as a cordial.",
+			"description": "Creamy lacy flower sprays with a sweet musky smell. Steeped as a cordial. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -712,7 +712,7 @@
 		"hawthorn_blossom": {
 			"name": "Hawthorn blossom",
 			"kind": "material",
-			"description": "White spring blossom of the hawthorn, sweet and faintly rank. A mild heart tonic.",
+			"description": "White spring blossom of the hawthorn, sweet and faintly rank. A mild heart tonic. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -897,7 +897,7 @@
 		"linseed": {
 			"name": "Linseed",
 			"kind": "material",
-			"description": "Small shiny brown flax seeds, rich in oil. Eaten or pressed.",
+			"description": "Small shiny brown flax seeds, rich in oil. Pressed for oil, or baked into cakes and bread.",
 			"how_to_get": [
 				"Picked from flax (summer)"
 			],
@@ -1041,7 +1041,7 @@
 		"oil": {
 			"name": "Oil",
 			"kind": "material",
-			"description": "A small jar of pressed plant oil. Cooks, lights lamps and keeps leather supple.",
+			"description": "A small jar of pressed plant oil. Cooks, lights lamps and keeps leather supple. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -1217,7 +1217,7 @@
 		"raspberry_leaves": {
 			"name": "Raspberry leaves",
 			"kind": "material",
-			"description": "Toothed leaves of the raspberry cane. Steeped as a soothing tea.",
+			"description": "Toothed leaves of the raspberry cane. Steeped as a soothing tea. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -1359,7 +1359,7 @@
 		"seeds": {
 			"name": "Seeds",
 			"kind": "material",
-			"description": "A handful of plant seeds. Eaten, or sown in a patch.",
+			"description": "A handful of plant seeds. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -1471,7 +1471,7 @@
 		"stillwater_seeds": {
 			"name": "Stillwater seeds",
 			"kind": "material",
-			"description": "Round seeds of the stillwater lotus. Eaten roasted; keep well.",
+			"description": "Round seeds of the stillwater lotus. Sown to grow the lotus; they keep well.",
 			"how_to_get": [
 				"Picked from stillwater lotus (summer)"
 			],
@@ -1601,7 +1601,7 @@
 		"thorny_canes": {
 			"name": "Thorny canes",
 			"kind": "material",
-			"description": "Long thorny bramble canes. Used for fencing and snares.",
+			"description": "Long thorny bramble canes. Used for fencing and snares. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -1609,7 +1609,7 @@
 		"thorny_wood": {
 			"name": "Thorny wood",
 			"kind": "material",
-			"description": "Hard dark wood of the blackthorn, covered in thorns. Makes tough tool handles.",
+			"description": "Hard dark wood of the blackthorn, covered in thorns. Makes tough tool handles. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -1875,7 +1875,7 @@
 		"withies": {
 			"name": "Withies",
 			"kind": "material",
-			"description": "Long thin willow shoots. Woven into baskets and hurdles.",
+			"description": "Long thin willow shoots. Woven into baskets and hurdles. Nothing uses it yet.",
 			"how_to_get": [
 				"From a felled willow"
 			],
@@ -2214,7 +2214,7 @@
 				"Craft: 6 Stick, 16 Stone"
 			],
 			"used_for": [
-				"Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark or tinder fungus in your pack to light it, then put wood in with F. Cooks, warms, lights."
+				"Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark, tinder fungus or amadou in your pack to light it, then put wood in with F. Cooks, warms, lights."
 			],
 			"obtainable_now": true
 		},
@@ -2355,7 +2355,7 @@
 		"tree_roots": {
 			"name": "Roots",
 			"kind": "material",
-			"description": "Roots from the base of a felled tree.",
+			"description": "Roots from the base of a felled tree. Nothing uses it yet.",
 			"how_to_get": [],
 			"used_for": [
 				"Roots from a felled tree. No use yet; planned as fibre for baskets."
@@ -4960,7 +4960,7 @@
 		"fine_leather": {
 			"name": "Fine leather",
 			"kind": "material",
-			"description": "The best of a batch of leather, soft and even.",
+			"description": "The best of a batch of leather, soft and even. Nothing uses it yet.",
 			"how_to_get": [
 				"Craft at a campfire pot: 1 Leather, 1 Animal fat"
 			],
@@ -5344,7 +5344,7 @@
 		"clay_jug": {
 			"name": "Clay jug",
 			"kind": "container",
-			"description": "A tall fired jug with a handle and a narrow mouth. Holds water, ale or mead.",
+			"description": "A tall fired jug with a handle and a narrow mouth. Holds water; ale and mead are not in the game yet.",
 			"how_to_get": [
 				"Craft at a campfire: 4 Clay"
 			],
@@ -5387,7 +5387,7 @@
 		"wicker_shield": {
 			"name": "Wicker - Shield",
 			"kind": "weapon",
-			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Blocking does not stop blows yet.",
 			"how_to_get": [
 				"Craft: 3 Stick, 2 Plant fibre"
 			],
@@ -5407,7 +5407,7 @@
 		"plank_shield": {
 			"name": "Wooden - Shield",
 			"kind": "weapon",
-			"description": "Boards bound with hide. Sturdier than wicker.",
+			"description": "Boards bound with hide. Sturdier than wicker. Blocking does not stop blows yet.",
 			"how_to_get": [
 				"Craft at a workbench: 3 Plank, 1 Hide, 1 Hide glue"
 			],
@@ -5437,7 +5437,7 @@
 		"bronze_shield": {
 			"name": "Bronze - Shield",
 			"kind": "weapon",
-			"description": "A wicker shield faced with hide, rimmed and bossed with bronze.",
+			"description": "A wicker shield faced with hide, rimmed and bossed with bronze. Blocking does not stop blows yet.",
 			"how_to_get": [
 				"Craft at a forge: 1 Wicker - Shield, 1 Bronze ingot, 1 Hide"
 			],
@@ -5467,7 +5467,7 @@
 		"iron_shield": {
 			"name": "Iron - Shield",
 			"kind": "weapon",
-			"description": "Boards held by iron bands. Hard to break.",
+			"description": "Boards held by iron bands. Hard to break. Blocking does not stop blows yet.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Plank, 2 Iron ingot"
 			],
@@ -5497,7 +5497,7 @@
 		"steel_shield": {
 			"name": "Steel - Shield",
 			"kind": "weapon",
-			"description": "A long steel-faced shield that covers shoulder to shin.",
+			"description": "A long steel-faced shield that covers shoulder to shin. Blocking does not stop blows yet.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Plank, 2 Steel ingot"
 			],
@@ -9287,7 +9287,7 @@
 		"wooden_trellis": {
 			"name": "Trellis",
 			"kind": "structure",
-			"description": "A lattice of sticks to set beside a plot for climbing plants.",
+			"description": "A lattice of sticks to set beside a plot for climbing plants. Nothing grows up it yet.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
