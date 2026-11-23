@@ -149,6 +149,16 @@ func items_cached(chunk: Vector2i) -> Dictionary:
 	return kept
 
 
+# Whether a chunk's items are in memory, an empty chunk (open sea, bare rock) too: items_cached gives {} for both an empty chunk and one not
+# made yet, so a look that must know the difference (the Map's landmarks, terrain_server _map_landmarks) asks here.
+func chunk_cached(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_items_mutex.lock()
+	var cached: bool = _items.has(Vector3i(home.x, home.y, 1)) or _trees_kept.has(Vector3i(home.x, home.y, 0))
+	_items_mutex.unlock()
+	return cached
+
+
 # Whether the chunk's full list is kept or being placed now: asking for the full form then costs no placement of its own (_placed waits).
 func full_known(chunk: Vector2i) -> bool:
 	var home: Vector2i = placer.normalize(chunk)
