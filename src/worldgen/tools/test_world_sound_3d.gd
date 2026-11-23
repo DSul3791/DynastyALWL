@@ -18,6 +18,7 @@ const SpearSounds := preload("res://src/client/spear_sounds.gd")
 const GearSounds := preload("res://src/client/gear_sounds.gd")
 const PlayerView := preload("res://src/client/player_view.gd")
 const Stance := preload("res://src/client/stance.gd")
+const SoundStage := preload("res://src/client/sound_stage.gd")
 
 # Modules allowed flat players: the listener's own body, the UI, and beds that are around the listener on purpose.
 const FLAT_OK := {
@@ -101,6 +102,7 @@ func _run() -> void:
 
 	_event_checks(world)
 	_other_steps(world)
+	await _other_step_voice(world)
 	print("world sound 3d: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -120,7 +122,13 @@ func _left_minus_right(world: Node3D, at: Vector3) -> float:
 	var right: float = 0.0
 	var phase: float = 0.0
 
-	for frame in 90:
+	var settle_until: int = Time.get_ticks_msec() + 400   # the pan settles and the old voice's tail drains first
+	var counted: int = 0
+	var frame: int = 0
+
+	while counted < 8000 and frame < 2000:      # enough mixed frames, however fast or slow the loop runs against the mixer
+		frame += 1
+
 		for n in playback.get_frames_available():
 			phase += 0.06
 			playback.push_frame(Vector2.ONE * 0.5 * sin(phase))
@@ -133,8 +141,10 @@ func _left_minus_right(world: Node3D, at: Vector3) -> float:
 
 		var buffer: PackedVector2Array = _capture.get_buffer(got)
 
-		if frame < 50:                            # the pan settles and the old voice's tail drains first
+		if Time.get_ticks_msec() < settle_until:
 			continue
+
+		counted += buffer.size()
 
 		for v in buffer:
 			left += v.x * v.x
@@ -274,3 +284,32 @@ func _other_steps(world: Node3D) -> void:
 		view._count_steps(far, Vector3(3.2, 0.0, 0.0), 0.05, PlayerView.STEP_HEAR_M + 5.0)
 
 	check(heard.is_empty(), "no steps counted past hearing (%d)" % heard.size())
+
+
+# Another player's step voice (sound_stage.gd play_other_step, other_step_room): positional at the feet, and at most OTHER_STEP_VOICES at once.
+func _other_step_voice(world: Node3D) -> void:
+	var stage = SoundStage.new()
+	world.add_child(stage)
+
+	for wind in ["_wind_low", "_wind_gust"]:                # set up by setup() in the game; its _exit_tree stops them
+		var bed: AudioStreamPlayer = AudioStreamPlayer.new()
+		stage.add_child(bed)
+		stage.set(wind, bed)
+
+	var feet: Vector3 = Vector3(-3.0, 0.0, 5.0)
+	var count: int = stage.get_child_count()
+	check(stage.other_step_room() and stage.play_other_step(feet, "dirt", [0.0, 1.0], 0, false), "another player's step plays")
+	_positional(_made(stage, count), feet, "another player's step")
+	check(stage.others_steps == 1, "counted (%d)" % stage.others_steps)
+
+	for n in range(SoundStage.OTHER_STEP_VOICES - 1):
+		stage.play_other_step(feet, "gravel", [0.0, 1.0], 2, false)
+
+	check(not stage.other_step_room(), "no room past %d other players' steps sounding" % SoundStage.OTHER_STEP_VOICES)
+
+	for child in stage.get_children():
+		if child is AudioStreamPlayer3D:
+			child.queue_free()
+
+	await process_frame
+	check(stage.other_step_room(), "room again once they end")

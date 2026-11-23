@@ -70,6 +70,7 @@ const VOICES := 6                       # footstep and swish players, reused in 
 # 6 dB per doubling past it (a walk on grass is lost by about 15 m, a run on gravel carries to 30 m or more), none past OTHER_STEP_REACH_M.
 const OTHER_STEP_UNIT_M := 2.0
 const OTHER_STEP_REACH_M := 45.0
+const OTHER_STEP_VOICES := 6           # other players' steps sounding at once (judged: three players running close by)
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
 # Soil ids (data/tables/soils.json) to footstep surfaces. Rock (MATERIAL_ROCK
@@ -145,6 +146,7 @@ const SHELTER_HITS := 16
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
 var others_steps: int = 0               # other players' footsteps played (step_at)
+var _other_step_voices: Array = []      # their voices still sounding (other_step_room)
 var swishes_played: int = 0
 var puddles_played: int = 0
 var surface: String = ""                # what the feet were last on
@@ -1067,11 +1069,22 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 func step_at(feet: Vector3, gait: int, crouched: bool = false) -> bool:
 	var depth: float = _step_depth(feet)
 
-	if depth > SWIM_M or not has_room():
+	if depth > SWIM_M or not other_step_room():
 		return false
 
 	var ground: Dictionary = step_ground(feet, depth)
-	var kind: String = str(ground["surface"])
+	return play_other_step(feet, str(ground["surface"]), ground["tune"], gait, crouched)
+
+
+# True while another player's step may start: the voice budget has room and fewer than OTHER_STEP_VOICES of them are sounding
+# (a crowd of runners would otherwise fill the budget between its 0.25 s counts and push out calls and drips).
+func other_step_room() -> bool:
+	_other_step_voices = _other_step_voices.filter(func(p) -> bool: return is_instance_valid(p) and not p.is_queued_for_deletion())
+	return has_room() and _other_step_voices.size() < OTHER_STEP_VOICES
+
+
+# The positional voice of another player's step on ground `kind` (step_ground's surface and [dB, pitch] tune).
+func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouched: bool) -> bool:
 	var sound_name: String = "step_" + kind
 	var list: Array = _variants(sound_name)
 
@@ -1084,7 +1097,6 @@ func step_at(feet: Vector3, gait: int, crouched: bool = false) -> bool:
 	if list.is_empty():
 		return false
 
-	var tune: Array = ground["tune"]
 	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", OTHER_STEP_UNIT_M, OTHER_STEP_REACH_M)
 	player.stream = list[_rng.randi_range(0, list.size() - 1)]
 	player.volume_db = step_level_db(kind, gait) + float(tune[0]) + (StanceScript.CROUCH_STEP_DB if crouched else 0.0) + _rng.randf_range(-1.5, 1.0)
@@ -1092,8 +1104,10 @@ func step_at(feet: Vector3, gait: int, crouched: bool = false) -> bool:
 	player.global_position = feet
 	player.finished.connect(player.queue_free)
 	player.play()
+	_other_step_voices.append(player)
 	others_steps += 1
 	return true
+
 
 # The water over the soles at `feet` (the sea counts below sea level), -1 on dry ground.
 func _step_depth(feet: Vector3) -> float:
