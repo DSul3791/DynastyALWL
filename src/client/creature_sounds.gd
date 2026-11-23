@@ -27,8 +27,11 @@ const RECORDED_DIR := "res://assets/audio/recorded/creatures/"
 # zones: weight of each zone the kind lives in, hours: when it calls by itself (from, to; wraps midnight),
 # every: seconds between its natural calls, cutoff: far-distance muffling (Hz).
 const KINDS := {
-	"deer": {"calls": {"idle": "deer_grunt", "alert": "deer_snort", "threat": "deer_snort"}, "db": -8.0, "dist": [25.0, 110.0], "reach": 260.0, "unit": 10.0,
+	"deer": {"calls": {"idle": "deer_grunt", "alert": "deer_snort", "threat": "deer_snort"}, "db": -2.0, "dist": [25.0, 110.0], "reach": 260.0, "unit": 10.0, "near_max": 4.0,
 		"zones": {"meadow": 1.0, "forest": 0.6, "highland": 0.2, "water": 0.3}, "hours": [4.0, 22.0], "every": [160.0, 400.0], "cutoff": 7000.0},
+	# deer db -2 (was -8, 23 Nov 2026 level pass, assets/audio/level_pass.py): a deer's alarm snort at 40 m was 9 dB under the winter forest bed; a real one carries
+	# 100 m and more. Its unit stays 10, so rain and gales still mask it like a mid-sized sound (outdoor_air.gd small_share); near_max keeps its close-in
+	# ceiling where it was (4 dB: the snort clip peaks at -7 dBFS, not -14).
 	"rabbit": {"calls": {"idle": "rabbit_thump", "alert": "rabbit_thump", "threat": "rabbit_squeak"}, "db": -14.0, "dist": [6.0, 25.0], "reach": 45.0, "unit": 3.0,
 		"zones": {"meadow": 1.0, "forest": 0.3}, "hours": [5.0, 21.0], "every": [300.0, 700.0], "cutoff": 6000.0},
 	"fox": {"calls": {"idle": "fox_bark", "alert": "fox_bark", "threat": "fox_scream"}, "db": -8.0, "dist": [40.0, 170.0], "reach": 320.0, "unit": 12.0,
@@ -146,7 +149,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.unit_size = float(info["unit"])
 	player.max_distance = float(info["reach"]) * 1.2
 	player.attenuation_filter_cutoff_hz = float(info["cutoff"])
-	player.max_db = minf(player.volume_db + NEAR_RISE_DB, NEAR_MAX_DB)
+	player.max_db = minf(player.volume_db + NEAR_RISE_DB, float(info.get("near_max", NEAR_MAX_DB)))
 	add_child(player)
 	player.add_to_group("world_sounds")
 
