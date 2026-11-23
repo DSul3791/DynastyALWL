@@ -26,12 +26,16 @@ const WornSync := preload("res://src/client/worn_sync.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
 
 const MAX_DRAWN := 31
+const CARRY_S := 0.8                   # how long a body walks on past its newest point (MotionBuffer.at: at most two report legs)
+const REPORT_S := 0.2                  # a client reports its position every 0.2 s (terrain_client.gd report_position)
 const MAKE_PER_ROWS := 2               # bodies made per rows message: a crowd coming into range is built over a few sends, not in one frame
 const FULL_M := 15.0
 const HALF_M := 40.0
 const QUARTER_M := 70.0
 const SWIM := 4
 const CARRY := 8
+const ASLEEP := 16                     # server_players.gd: asleep (the lying clip, as the player's own body)
+const SWING_SHIFT := 5                 # bits 5..7: the player's swing count; a change plays the tool's work clip once
 const CARRY_LOG_LENGTH_M := 3.0          # terrain_client.gd CARRY_LOG_LENGTH_M
 const CARRY_LOG_RADIUS_M := 0.14
 const LOG_COLOR := Color(0.32, 0.23, 0.15)
@@ -45,9 +49,8 @@ const FEET_M := 0.9                      # the sent position is the standing bod
 
 var table                            # the client's item table (id_of, entry), for worn and held items
 var _looks: Dictionary = {}          # peer -> {"name", "body", "code", "worn"}
-var _bodies: Dictionary = {}         # peer -> {"node", "rig", "samples", "row_ms", "gap", "state", "held", ...}
-var _off: float = INF                # local seconds minus server seconds (MotionBuffer.clock_off)
-var _last_ms: int = -1
+var _bodies: Dictionary = {}         # peer -> {"node", "rig", "samples", "row_ms", "state", "held", "path_p", "sm_err", ...}
+var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock (protocol 154, the animals' jitter buffer): offset, interval, holes, lateness
 
 
 func on_look(peer: int, char_name: String, body: String, code: String, worn: PackedInt32Array) -> void:
@@ -74,8 +77,9 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		newest = maxi(newest, times[i])
 
 	if newest >= 0:
-		_off = MotionBuffer.clock_off(_off, now_s, newest, _last_ms)
-		_last_ms = newest
+		if newest > int(_clock["server_ms"]) or newest < int(_clock["server_ms"]) - 2000:
+			MotionBuffer.clock_note(_clock, now_s, newest)   # the batch's newest position report (players report every 0.2 s, standing too);
+			# a batch with no newer report (a swing, a player coming in range, the 1 s resend) would read as late and deepen the delay
 
 	var seen: Dictionary = {}
 	var made: int = 0
@@ -92,14 +96,15 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 			made += 1
 
 		var b: Dictionary = _bodies[peer]
-		var last_ms: int = int(b.get("row_ms", -1))
+		var swings: int = int(states[i]) >> SWING_SHIFT
 
-		if last_ms >= 0 and times[i] > last_ms:
-			b["gap"] = lerpf(float(b["gap"]), clampf(float(times[i] - last_ms) / 1000.0, 0.05, 0.5), 0.2)
+		if b.has("swings") and int(b["swings"]) != swings:
+			b["swing_due"] = true   # a blow since the last rows (the first rows only note the count)
 
+		b["swings"] = swings
 		b["state"] = int(states[i])
 		b["held"] = int(held[i])
-		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], _off, float(b["gap"]))
+		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
 
 	for peer in _bodies.keys():
 		if not seen.has(peer):
@@ -163,24 +168,35 @@ func drawn() -> Array:
 	return out
 
 
+# How far in the past the players are drawn: the rows' jitter buffer, never under one body's own report gap plus lateness (with several
+# players near, the batches' newest time moves on more often than any one of them reports), never over MAX_DELAY_S (a hitch on this
+# computer makes `late` jump; deeper than the kept points, bodies would step from point to point).
+static func draw_delay(clock: Dictionary) -> float:
+	return minf(maxf(MotionBuffer.clock_delay(clock), REPORT_S + float(clock["late"]) + 0.05), MotionBuffer.MAX_DELAY_S)
+
+
 func _process(delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	var eye: Vector3 = camera.global_position if camera != null else Vector3.ZERO
 	var frame: int = Engine.get_process_frames()
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	var drawn_at: float = now_s - draw_delay(_clock)
 
 	for peer in _bodies:
 		var b: Dictionary = _bodies[peer]
 		var node: Node3D = b["node"]
 		var rig: Node3D = b["rig"]
-		var before: Vector3 = node.position
+		var before: Vector3 = b.get("path_p", node.position)
 
 		if not (b["samples"] as Array).is_empty():
-			var at: Array = MotionBuffer.at(b["samples"], now_s - MotionBuffer.delay_s(float(b["gap"])))
-			node.position = at[0]
+			var at: Array = MotionBuffer.at(b["samples"], drawn_at, CARRY_S)   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
+			b["path_p"] = at[0]
+			# A late batch or a lost one never jumps the body: the step beyond a normal one is eased in (MotionBuffer.smooth, as the animals).
+			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta)
 			node.rotation.y = lerp_angle(node.rotation.y, float(at[1]), clampf(delta * 12.0, 0.0, 1.0))
 
-		var moved: Vector3 = (node.position - before) / maxf(delta, 0.001)
+		# The legs follow the path's own speed, not the easing (a correction slid in is not a step).
+		var moved: Vector3 = (((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)).limit_length(MotionBuffer.CARRY_MPS)   # a carried-on point taken back is not a sprint
 		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(delta * 8.0, 0.0, 1.0))
 		b["velocity"] = velocity
 		var distance: float = eye.distance_to(node.global_position)
@@ -197,6 +213,7 @@ func _process(delta: float) -> void:
 
 		if every == 0:
 			b["owed"] = 0.0
+			b["swing_due"] = false   # a blow far off is not played when the body comes near later
 			continue
 
 		if (frame + (peer & 3)) % every != 0:
@@ -245,19 +262,33 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 	rig.set_meta("torch_in_hand", false)
 	rig.set_meta("torch_left", false)
 	var clip: String = AvatarDriver.clip_for(rig, stance, flat, node.global_transform.basis, true, pace, rig.current(), carrying, step)
-	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": false, "stance": stance, "drink_stamp": 0}, pace, step)
+	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": (state & ASLEEP) != 0, "stance": stance, "drink_stamp": 0}, pace, step)
 
 	if hook != "":
 		clip = hook
+
+	var player: AnimationPlayer = rig.get("animation_player") as AnimationPlayer
+
+	if bool(b.get("swing_due", false)):
+		b["swing_due"] = false
+		var work: String = work_clip(int(b.get("held", 0)), table)
+
+		if work != "" and not swimming and not carrying and (state & ASLEEP) == 0 and stance == StanceScript.STAND and player.has_animation(work):
+			player.play(work, 0.05)   # the blow restarts it, as the player's own body (terrain_client.gd held.swing_serial)
+			player.seek(0.0, true)
+			player.speed_scale = 1.0
+			return
+
+	if rig.is_one_shot_playing():
+		return   # a swing plays out at its own speed
 
 	if rig.has_method("set_shoulder_log") and bool(b.get("log_shown", false)) != carrying:
 		b["log_shown"] = carrying
 		rig.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LOG_COLOR)
 
-	if rig.current() != clip and not rig.is_one_shot_playing():
+	if rig.current() != clip:
 		rig.play(clip, 1.0, 0.25)
 
-	var player: AnimationPlayer = rig.get("animation_player") as AnimationPlayer
 	player.speed_scale = AvatarDriver.speed_scale(clip, pace) * AvatarDriver.backward_sign(rig, clip)
 
 
@@ -338,6 +369,20 @@ static func hold_in(rig: Node3D, number: int, item_table) -> Array:
 		HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b))
 
 	return [model, kind]
+
+
+# The clip another player's body plays for one blow with item `number` in hand (held_item.gd work_clip for an axe or pick): the overhead arc
+# for a pick axe, the jab for a spear, knife or bare hand, the wide chop for every other tool.
+static func work_clip(number: int, item_table) -> String:
+	var kind: String = held_kind(number, item_table)
+
+	if kind in ["", "spear", "knife"]:
+		return "jab"
+
+	if kind == "kit" or kind == "bow" or kind == "torch":
+		return ""
+
+	return "pick_overhead" if str(item_table.entry(item_table.id_of(number)).get("tool_class", "")) == "pick" else "chop"
 
 
 # How the player's own body holds an item (held_item.gd _mount_model's kind): from items.json weapon_class, tool_class and kind.
@@ -452,7 +497,7 @@ func _make(peer: int, at: Vector3, yaw: float) -> Dictionary:
 		player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 		rig.play("idle")
 
-	var b: Dictionary = {"peer": peer, "node": root, "rig": rig, "samples": [], "row_ms": -1, "gap": 0.2, "state": 0, "held": 0, "shown_held": 0}
+	var b: Dictionary = {"peer": peer, "node": root, "rig": rig, "samples": [], "row_ms": -1, "state": 0, "held": 0, "shown_held": 0}
 	_dress(b)
 	return b
 

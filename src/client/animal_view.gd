@@ -35,7 +35,8 @@ const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit nea
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
-const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+const VOICED_STATES := [2, 3, 7, 10, 11, 16]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning
+const ATTACK_STATES := [7, 11]                # a wolf attacking, big game charging: the one biting you (attacker_near)
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 # Drawn at the present, not a delay behind (Dave 23 Nov 2026: "battle was almost impossible"): warn, charge, recover and the jaw-pop. A charge's
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
@@ -350,6 +351,27 @@ func flinch(id: int) -> void:
 	var tween: Tween = node.create_tween()
 	tween.tween_property(node, "scale", rest * FLINCH, FLINCH_S * 0.3).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "scale", rest, FLINCH_S * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+
+# The kind and place of the nearest animal attacking or charging within `max_m` of `at` ({} when none): who bit you, for its snarl.
+func attacker_near(at: Vector3, max_m: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_m: float = max_m
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+
+		if not int(b["state"]) in ATTACK_STATES or str(b["kind"]) == "" or not is_instance_valid(b["node"]):
+			continue
+
+		var where: Vector3 = (b["node"] as Node3D).global_position
+		var d: float = where.distance_to(at)
+
+		if d <= best_m:
+			best_m = d
+			best = {"kind": str(b["kind"]), "at": where}
+
+	return best
 
 
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
