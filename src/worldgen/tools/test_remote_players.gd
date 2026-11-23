@@ -267,6 +267,8 @@ func _client() -> void:
 	if DynastyBodyScript.available() and view._bodies.has(7):
 		var swing_clip: String = str(view._bodies[7]["rig"].current())
 		check(swing_clip == "chop", "a swing with the axe plays the chop (%s)" % swing_clip)
+		var swing_player: AnimationPlayer = view._bodies[7]["rig"].get("animation_player")
+		check(swing_player.current_animation_position >= swing_player.get_animation("chop").length * HeldItemScript.HIT_AT - PlayerViewScript.SWING_LEAD_S - 0.01, "it starts just before the impact (the blow came at the impact), at %.2f s" % swing_player.current_animation_position)
 		var swing_end: int = Time.get_ticks_msec() + 1600
 
 		while Time.get_ticks_msec() < swing_end:
