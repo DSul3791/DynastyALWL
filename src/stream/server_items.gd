@@ -650,6 +650,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 		if int(other) != peer and str(_peer_key[other]) == key:
 			_peer_key.erase(other)   # its later peer_left finds no character: it saves no spot over the live one and pauses nothing
 			_peer_pos.erase(other)   # and no ghost body stays for animals and other players until the old line drops
+			_parked.erase(other)
 			_stance.erase(other)
 			replaced.append(int(other))
 
@@ -755,10 +756,10 @@ func note_logout(peer: int) -> void:
 func _note_spot(peer: int, how: String) -> void:
 	var key: String = str(_peer_key.get(peer, ""))
 
-	if key == "" or not _characters.has(key) or not _peer_pos.has(peer) or _resume_to.has(peer):
+	if key == "" or not _characters.has(key) or not (_peer_pos.has(peer) or _parked.has(peer)) or _resume_to.has(peer):
 		return
 
-	var at: Vector3 = _peer_pos[peer]
+	var at: Vector3 = _peer_pos.get(peer, _parked.get(peer, Vector3.ZERO))   # an absent player's spot is where it went quiet
 
 	if not at.is_finite():
 		return   # a broken report is never saved (JSON has no NaN: the whole characters.json would fail to load)
@@ -828,6 +829,11 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	if _parked.has(peer):
+		_peer_pos[peer] = _parked[peer]   # its spot as it went quiet: the resume spot is written from it below
+
+	_parked.erase(peer)
+	_heard_ms.erase(peer)
 	_taken_told.erase(peer)
 	_held.erase(peer)
 	_held_left.erase(peer)
@@ -982,8 +988,44 @@ func _in_pack(peer: int, number: int) -> int:
 	return 0
 
 
+# A dropped line (coordinator, 23 Nov 2026): a game the server has not heard from for ABSENT_MS (it crashed, or its line was cut, and the
+# line takes 60 to 120 s to time out, net_settings.gd) leaves the world. For the first ABSENT_MS the body stays and can be hurt, so pulling
+# the cable is no instant escape; after that it is out of _peer_pos, so animals, goblins and bandits (all read the players from it) no longer
+# find it and the other players no longer see it, and its hunger, thirst, warmth and wet stop (_vitals_tick) until its next report puts it back.
+const ABSENT_MS := 15000
+var _heard_ms: Dictionary = {}       # peer -> msec of its last position report
+var _parked: Dictionary = {}         # peer -> where it was when it went quiet (out of _peer_pos)
+var _park_check_ms: int = 0
+
+
+func is_absent(peer: int) -> bool:
+	return _parked.has(peer)
+
+
+func _park_quiet(now: int) -> void:
+	if now - _park_check_ms < 1000:
+		return
+
+	if _park_check_ms > 0 and now - _park_check_ms > 3000:
+		for peer in _heard_ms.keys():
+			_heard_ms[peer] = now   # the server itself stalled (a long save or a hitch): its own silence is no sign the players are gone
+
+	_park_check_ms = now
+
+	for peer in _peer_pos.keys():
+		if now - int(_heard_ms.get(peer, now)) > ABSENT_MS:
+			_parked[peer] = _peer_pos[peer]
+			_peer_pos.erase(peer)
+			print("Absent: peer %d not heard from for %.0f s: out of the world until it reports again" % [peer, float(now - int(_heard_ms.get(peer, now))) / 1000.0])
+
+
 func report_position(peer: int, position: Vector3) -> void:
 	if _peer_key.has(peer):
+		_heard_ms[peer] = Time.get_ticks_msec()
+
+		if _parked.erase(peer):
+			print("Absent: peer %d is back" % peer)
+
 		_peer_pos[peer] = position
 
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
@@ -1777,6 +1819,7 @@ func spyglass_reach(peer: int, admin_cfg: Dictionary) -> Array:
 
 func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
+	_park_quiet(Time.get_ticks_msec())
 	_slow_parts = []
 	_slow_prev_usec = t0
 	_throttle_mark = -1   # set by this tick's first scatter cell when a CPU quota holds the server (the slow lines)
@@ -16019,8 +16062,8 @@ func _take_from_bags(peer: int, number: int) -> int:
 func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0, mode: String = "", pen: float = 0.0, from: Vector3 = NO_FROM) -> String:
 	var v: Dictionary = vitals_of(peer)
 
-	if v.is_empty():
-		return "hurt"
+	if v.is_empty() or _parked.has(peer):
+		return "hurt"   # an absent player (a dropped line, ABSENT_MS): a blow from an attacker that still held it as its target lands on nothing
 
 	if _cold_out.has(peer):
 		return "hurt"   # passed out from cold: nothing hurts them until they wake (warmth.json pass_out)
@@ -16909,8 +16952,8 @@ func _vitals_tick(spent: float) -> void:
 	for peer in _peer_key:
 		var v: Dictionary = _vitals.get(_peer_key[peer], {})
 
-		if v.is_empty():
-			continue
+		if v.is_empty() or _parked.has(peer):
+			continue   # an absent player's body is out of the world: nothing drains or chills
 
 		var crow: Dictionary = _characters.get(_peer_key[peer], {})
 

@@ -148,6 +148,56 @@ func _init() -> void:
 	# A craft queue across a rejoin: the robots' first_hours plan quits with 6 twine queued and checks fibre + 3 x twine after the rejoin.
 	items.peer_left(5)
 
+	# 5. A dropped line (coordinator, 23 Nov 2026): for ABSENT_MS the body stays and can be hurt; after that it is out of the world for every
+	# attacker (animals and bandit fighters read peer_positions/peer_ids, wolves, big game and bandit fighters wolf_info, goblins _peer_pos,
+	# bandit camps peer_positions) and cold, hunger and wet stop, until its next report puts it back.
+	items.peer_connected_hello(6, KEY)
+	items.report_position(6, HERE)
+	items.give(6, stone, 1)
+	var now: int = Time.get_ticks_msec()
+	items._heard_ms[6] = now - 10000
+	items._park_check_ms = 0
+	items._park_quiet(now)
+	check(not items.is_absent(6) and items.peer_ids().has(6) and items.wolf_info().size() == 1, "10 s quiet: the body is still in the world and can be hurt")
+	var hp_near: float = float(items.vitals_of(6)["health"])
+	items.hurt_player(6, 5.0, false, "wolves", 25.0, "", 0.0, HERE)
+	check(float(items.vitals_of(6)["health"]) < hp_near, "a bite in those first seconds lands: pulling the cable is no escape")
+	items._heard_ms[6] = now - ItemsScript.ABSENT_MS - 5000
+	items._park_check_ms = now - 1500
+	items._park_quiet(now)
+	check(items.is_absent(6), "20 s quiet: the player is absent")
+	check(not items.peer_ids().has(6) and items.peer_positions().is_empty(), "animals and bandit fighters find no body (peer_ids, peer_positions; bandit camps too)")
+	check(items.wolf_info().is_empty(), "wolves, big game and bandit fighters find no body (wolf_info)")
+	check(not items._peer_pos.has(6) and items.position_of(6) == null, "goblins find no body (tribes.players reads _peer_pos)")
+	var hp6: float = float(items.vitals_of(6)["health"])
+	items.hurt_player(6, 30.0, false, "wolves", 25.0, "", 0.0, HERE)
+	items.hurt_player(6, 30.0, false, "bandit", 10.0, "", 0.0, HERE)
+	check(float(items.vitals_of(6)["health"]) == hp6, "a wolf or bandit that still held it as its target hurts nothing (%.0f, was %.0f)" % [float(items.vitals_of(6)["health"]), hp6])
+	var v6: Dictionary = items.vitals_of(6)
+	v6["wet"] = 0.5
+	var was: Array = [float(v6["fed"]), float(v6["wet"]), float(v6.get("warmth", 0.0)), float(v6.get("water", 0.0))]
+	clock[0] += 6.0 * 3600.0
+	items._vitals_tick(6.0 * 3600.0 / 72.0)
+	var v6b: Dictionary = items.vitals_of(6)
+	check([float(v6b["fed"]), float(v6b["wet"]), float(v6b.get("warmth", 0.0)), float(v6b.get("water", 0.0))] == was, "absent: no hunger, thirst, cold or drying (%s, was %s)" % [str([v6b["fed"], v6b["wet"], v6b.get("warmth", 0.0), v6b.get("water", 0.0)]), str(was)])
+	items._heard_ms[6] = now - 5000
+	items._park_check_ms = now - 5000
+	items._park_quiet(now)
+	check(items.is_absent(6), "a server that stalled itself parks nobody new and wakes nobody")
+	items._park_check_ms = 0
+	items.report_position(6, HERE + Vector3(1.0, 0.0, 0.0))
+	check(not items.is_absent(6) and items.peer_ids().has(6) and items.wolf_info().size() == 1, "its next report puts the body back for everyone")
+	items._vitals_tick(6.0 * 3600.0 / 72.0)
+	check(float(items.vitals_of(6)["fed"]) < float(was[0]) or float(items.vitals_of(6)["wet"]) < float(was[1]), "and its vitals run again (control: the same tick does drain a present player)")
+	items._heard_ms[6] = now - ItemsScript.ABSENT_MS - 5000
+	items._park_check_ms = 0
+	items._park_quiet(now)
+	items.peer_left(6)
+	var last6: Dictionary = items._characters[KEY].get("last", {})
+	check(not last6.is_empty() and Vector3(float(last6["pos"][0]), float(last6["pos"][1]), float(last6["pos"][2])).distance_to(HERE + Vector3(1.0, 0.0, 0.0)) < 0.1, "a line that times out while absent still writes the spot it went quiet at")
+	check(not items._parked.has(6) and not items._heard_ms.has(6), "and nothing is kept for the gone connection")
+	check(server_code.contains("animals.player_positions = npcs.player_positions") and server_code.contains("npcs.player_positions = func(): return items.peer_positions()") and server_code.contains("animals.wolves.player_info = func(): return items.wolf_info()") and server_code.contains("animals.big_game.player_info = func(): return items.wolf_info()") and server_code.contains("bandits.camp_tick(delta, items.peer_positions())") and server_code.contains("for peer in items._peer_pos:\n\t\t\trows.append({\"peer\": peer"), "every attacker reads the players from the list an absent body leaves (terrain_server.gd wiring)")
+
 	# A server that goes quiet (restarting, or a long spike): the player is told under the signal bars within SAY_SILENT_MSEC, not left
 	# with a frozen world until the line times out (60 to 120 s); the words go when the server talks again.
 	var bars = LinkBarsScript.new()
