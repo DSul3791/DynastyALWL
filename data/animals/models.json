@@ -70,6 +70,13 @@
 						"hit": "Hit_Idle_F01",
 						"die": "Death_Idle_R01",
 						"bite": "Attack_Run_01_AttackF"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_1",
+							"Idle_2",
+							"IdleHind_Idle_01"
+						]
 					}
 				},
 				{
@@ -93,6 +100,11 @@
 						"hit": "Hit_Stand_F01",
 						"die": "Death_Stand_R01",
 						"bite": "Attack_BiteForward"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_02"
+						]
 					}
 				}
 			],
@@ -238,6 +250,13 @@
 						"10": "Idle_Breathing",
 						"trot": "TrotFast_F",
 						"hit": "HitInRunHead_F"
+					},
+					"idle_variants": {
+						"0": [
+							"GrazingOnSpotB_2",
+							"GrazingOnSpotB_3",
+							"Idle_Breathing"
+						]
 					}
 				},
 				{
@@ -275,7 +294,12 @@
 						"hit": "Hit_Idle_L01",
 						"die": "Death_Idle_R01"
 					},
-					"note": "Buck (stag)"
+					"note": "Buck (stag)",
+					"idle_variants": {
+						"0": [
+							"Idle_1"
+						]
+					}
 				},
 				{
 					"scene": "res://assets/animals/deer_red_stag/SK_RedDeerMale.fbx",
@@ -332,7 +356,12 @@
 						"die": "Death_Idle_R01"
 					},
 					"length_m": 1.8,
-					"note": "Doe"
+					"note": "Doe",
+					"idle_variants": {
+						"0": [
+							"Idle_1"
+						]
+					}
 				},
 				{
 					"scene": "res://assets/animals/deer_doe_1/SK_Doe_1.fbx",
@@ -382,7 +411,12 @@
 					},
 					"size_clip": "Idle",
 					"length_m": 1.8,
-					"note": "Hind"
+					"note": "Hind",
+					"idle_variants": {
+						"0": [
+							"Idle_Breathing_01"
+						]
+					}
 				},
 				{
 					"scene": "res://assets/animals/deer_1/SK_Deer_1.fbx",
@@ -516,7 +550,15 @@
 					}
 				}
 			},
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotA_3",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -570,6 +612,12 @@
 						"trot": "trot_fwd_01",
 						"hit": "hit_hip_lft_01",
 						"bite": "attack_02"
+					},
+					"idle_variants": {
+						"0": [
+							"idle_eat_look_around_01",
+							"idle_eat_look_up_short"
+						]
 					}
 				},
 				{
@@ -597,6 +645,13 @@
 						"run": "RunFast_F",
 						"trot": "TrotFast_F",
 						"hit": "HitLegFL2RunFast_F"
+					},
+					"idle_variants": {
+						"0": [
+							"GrazingOnSpotA_2",
+							"GrazingOnSpotA_3",
+							"Idle_Breathing"
+						]
 					}
 				}
 			],
@@ -645,6 +700,11 @@
 						"6": "AlarmBark",
 						"trot": "TrotFast_F",
 						"hit": "HitLegFL2RunFast"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle"
+						]
 					}
 				},
 				{
@@ -666,6 +726,13 @@
 						"hit": "Hit_Stand_L01",
 						"die": "Death_Stand_L01",
 						"bite": "Attack_BiteForward"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle",
+							"Idle_2",
+							"Idle_3"
+						]
 					}
 				}
 			],
@@ -721,6 +788,12 @@
 						"run": "RunFast_F",
 						"10": "Bark_2x",
 						"trot": "TrotFast_F"
+					},
+					"idle_variants": {
+						"0": [
+							"GrazingOnSpotB_1",
+							"Idle"
+						]
 					}
 				},
 				{
@@ -742,6 +815,13 @@
 						"trot": "Trot",
 						"hit": "Hit_Stand_R01",
 						"die": "Death_Stand_L01"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle",
+							"Idle_3",
+							"Idle_4"
+						]
 					}
 				}
 			],
@@ -811,7 +891,17 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Horse",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"Idle_Fidget_01",
+					"Idle_Fidget_02",
+					"Idle_Fidget_03",
+					"Idle_Fidget_04",
+					"Idle_Fidget_05",
+					"Idle_03"
+				]
+			}
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
@@ -889,6 +979,16 @@
 						"walk": "Walk",
 						"run": "Gallop",
 						"trot": "Trot"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_Fidget_01",
+							"Idle_Fidget_02",
+							"Idle_Fidget_03",
+							"Idle_Fidget_04",
+							"Idle_Fidget_05",
+							"Idle_03"
+						]
 					}
 				},
 				{
@@ -949,7 +1049,13 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Lynx",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"idle_shake_01",
+					"idle_stretching_01"
+				]
+			}
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
@@ -978,7 +1084,15 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/BlackBear",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing",
+					"A_BrownBear_Sniffing5x"
+				]
+			}
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -1052,7 +1166,15 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/BighornSheep",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing",
+					"bleat"
+				]
+			}
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -1084,7 +1206,15 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/MountainGoat",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing",
+					"Idle_SecondaryMoveCalm_1"
+				]
+			}
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -1195,6 +1325,11 @@
 						]
 					}
 				}
+			},
+			"idle_variants": {
+				"0": [
+					"Idle"
+				]
 			}
 		},
 		"chamois": {
@@ -1225,7 +1360,13 @@
 					"albedo": "res://assets/animals/chamois/Textures/T_ChamoisMale.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"Idle",
+					"Idle_2"
+				]
+			}
 		},
 		"mink": {
 			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
@@ -1381,6 +1522,11 @@
 						]
 					}
 				}
+			},
+			"idle_variants": {
+				"0": [
+					"idle_shake_01"
+				]
 			}
 		},
 		"raccoon": {
@@ -1414,7 +1560,13 @@
 					"albedo": "res://assets/animals/raccoon/Textures/T_Racoon_Body.png"
 				}
 			],
-			"trot_mps": 2.0
+			"trot_mps": 2.0,
+			"idle_variants": {
+				"0": [
+					"idle eat 2",
+					"idle stretch"
+				]
+			}
 		},
 		"rat": {
 			"scene": "res://assets/animals/rat/SK_Rat.fbx",
@@ -1488,6 +1640,11 @@
 					0,
 					-25
 				]
+			},
+			"idle_variants": {
+				"0": [
+					"Look2"
+				]
 			}
 		},
 		"pheasant": {
@@ -1512,7 +1669,13 @@
 					"match": "",
 					"albedo": "res://assets/animals/pheasant/Textures/T_Pheasant.png"
 				}
-			]
+			],
+			"idle_variants": {
+				"0": [
+					"StandGrazingB",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"goose": {
 			"scene": "res://assets/animals/goose/SK_Goose.fbx",
@@ -1538,7 +1701,13 @@
 					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
 				}
 			],
-			"swim_mps": 0.8
+			"swim_mps": 0.8,
+			"idle_variants": {
+				"0": [
+					"StandGrazingB",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
@@ -1587,7 +1756,13 @@
 				],
 				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young."
 			},
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"Idle_2",
+					"Idle_3"
+				]
+			}
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -1616,7 +1791,12 @@
 					"opaque": true
 				}
 			],
-			"trot_mps": 2.5
+			"trot_mps": 2.5,
+			"idle_variants": {
+				"0": [
+					"idle"
+				]
+			}
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1664,6 +1844,13 @@
 						"run": "Run",
 						"hit": "Damage",
 						"die": "Death"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_3",
+							"Idle_4",
+							"Oneleg01"
+						]
 					}
 				}
 			]
@@ -1695,7 +1882,13 @@
 					"albedo": "res://assets/animals/cat/Textures/T_Cat.png"
 				}
 			],
-			"trot_mps": 2.0
+			"trot_mps": 2.0,
+			"idle_variants": {
+				"0": [
+					"Idle02",
+					"Idle03"
+				]
+			}
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -1743,10 +1936,22 @@
 						"walk": "walk fwd",
 						"run": "run fwd",
 						"trot": "trot fwd"
+					},
+					"idle_variants": {
+						"0": [
+							"idle shake"
+						]
 					}
 				}
 			],
-			"trot_mps": 2.5
+			"trot_mps": 2.5,
+			"idle_variants": {
+				"0": [
+					"Idle",
+					"idle_shake_01",
+					"idle_one_off_dig_01"
+				]
+			}
 		},
 		"buffalo": {
 			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
@@ -1779,7 +1984,14 @@
 					"albedo": "res://assets/animals/buffalo/Textures/T_Buffalo_Body.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Standstraight_Breathing"
+				]
+			}
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1920,7 +2132,14 @@
 				}
 			],
 			"size_clip": "Idle",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"hyena": {
 			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
@@ -1952,7 +2171,14 @@
 					"albedo": "res://assets/animals/hyena/Textures/T_Hyena.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -1988,7 +2214,14 @@
 					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Body.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_3",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
@@ -2042,6 +2275,13 @@
 						"trot": "trot_fwd_01",
 						"hit": "hit_chest_lft_01",
 						"bite": "attack_fwd_01"
+					},
+					"idle_variants": {
+						"0": [
+							"idle_shake_01",
+							"idle_stretching_01",
+							"idle_smell_01"
+						]
 					}
 				},
 				{
@@ -2065,6 +2305,11 @@
 						"19": "LyingBreathing",
 						"trot": "TrotFast_F",
 						"hit": "HitInRunHead_F"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle"
+						]
 					}
 				},
 				{
@@ -2097,7 +2342,14 @@
 						"hit": "hit_chest_lft_01",
 						"bite": "attack_fwd_01"
 					},
-					"size_clip": "Idle"
+					"size_clip": "Idle",
+					"idle_variants": {
+						"0": [
+							"idle_shake_01",
+							"idle_stretching_01",
+							"idle_smell_01"
+						]
+					}
 				}
 			],
 			"size_clip": "Idle",
@@ -2162,7 +2414,13 @@
 					"albedo": "res://assets/animals/rhino/Textures/T_Rhinoceros.png"
 				}
 			],
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"Idle_2",
+					"Idle_3"
+				]
+			}
 		},
 		"elephant": {
 			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
@@ -2199,7 +2457,13 @@
 					"match": "",
 					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Body.png"
 				}
-			]
+			],
+			"idle_variants": {
+				"0": [
+					"Idle_2",
+					"Idle_3"
+				]
+			}
 		},
 		"camel": {
 			"scene": "res://assets/animals/camel/SK_Camel.fbx",
@@ -2257,7 +2521,13 @@
 					"albedo": "res://assets/animals/guineafowl/Textures/T_Guineafowl.png"
 				}
 			],
-			"size_clip": "Idle"
+			"size_clip": "Idle",
+			"idle_variants": {
+				"0": [
+					"StandGrazingB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"honey_badger": {
 			"scene": "res://assets/animals/honey_badger/SK_HoneyBadger.fbx",
@@ -2289,7 +2559,13 @@
 					"albedo": "res://assets/animals/honey_badger/Textures/T_HoneyBadger.png"
 				}
 			],
-			"trot_mps": 2.5
+			"trot_mps": 2.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1"
+				]
+			}
 		},
 		"kangaroo": {
 			"scene": "res://assets/animals/kangaroo/SK_Kangaroo.fbx",
@@ -2328,7 +2604,13 @@
 				}
 			],
 			"flat_share": 0.25,
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"idle_eat_search_01",
+					"idle_eat_look_around_01"
+				]
+			}
 		},
 		"mammoth": {
 			"scene": "res://assets/animals/mammoth/SK_Mammoth.fbx",

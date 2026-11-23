@@ -980,6 +980,38 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
+
+		# Idle life: the row's idle_variants {role: [clip...]} are the other idle or graze clips of the file, each played once now and then
+		# between spells of the role's own clip (_idle_life). Checked like a role clip: one that lays the model flat is left out.
+		var idle: Dictionary = {}
+
+		for idle_key in (row.get("idle_variants", {}) as Dictionary):
+			if not roles.has(str(idle_key)):
+				continue
+
+			var idle_list: Array = []
+
+			for idle_name in row["idle_variants"][idle_key]:
+				var idle_full: String = _clip_full(player, row, str(idle_name))
+
+				if idle_full == "" or idle_full == str(roles[str(idle_key)]):
+					continue
+
+				var idle_anim: Animation = player.get_animation(idle_full)
+				_fit_clip_units(player, idle_anim, kind, idle_full)
+
+				if rest_h > 0.0001 and _clip_height(player, idle_anim, rig) < rest_h * float(row.get("flat_share", 0.5)):
+					_model_note(kind, "idle clip %s lays the model flat: not used" % idle_full)
+					continue
+
+				idle_anim.loop_mode = Animation.LOOP_LINEAR
+				_strip_root_drift(player, idle_anim, rig, kind, idle_full)
+				idle_list.append(idle_full)
+
+			if not idle_list.is_empty():
+				idle[str(idle_key)] = idle_list
+
+		player.set_meta("idle", idle)
 		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0); the file's clips: %s" % _clip_names(player)))
 
 	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
@@ -1823,6 +1855,11 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var gait: bool = role == "walk" or role == "trot" or role == "run"
 	clip = AnimalGait.moving_clip(roles, role) if gait else str(roles.get(role, roles.get("0", "")))
 
+	if not gait:
+		clip = _idle_life(b, player, role, clip)
+	else:
+		b.erase("idle_role")      # stopping again starts on its own clip
+
 	if gait and not roles.has(role):
 		ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
 
@@ -1837,6 +1874,38 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = AnimalGait.rate(speed, ref)
+
+
+# Idle life (Dave 23 Nov 2026: animals "like really bad animatronics"): a grazing or standing animal played one clip for minutes. Now it
+# plays its role's own clip (`base`) for IDLE_BASE_S, then one of the model's idle variants for that clip's own length (once through: a
+# shake, a look up from grazing, a fidget), then its own clip again. A change of role starts again on the own clip, after a staggered
+# first spell so a herd does not change in step. Drawing only: the server's state is untouched. Returns the clip to play.
+const IDLE_FIRST_S := [2.0, 12.0]
+const IDLE_BASE_S := [6.0, 16.0]
+const IDLE_MIN_S := 1.0        # a variant shorter than this plays through more than once
+
+
+func _idle_life(b: Dictionary, player: AnimationPlayer, role: String, base: String) -> String:
+	var pool: Array = (player.get_meta("idle", {}) as Dictionary).get(role, [])
+
+	if pool.is_empty() or base == "":
+		b.erase("idle_role")      # a role with no variants: coming back to one with variants starts on its own clip
+		return base
+
+	if str(b.get("idle_role", "")) != role or not b.has("idle_until"):
+		b["idle_role"] = role
+		b["idle_clip"] = base
+		b["idle_until"] = _t + randf_range(float(IDLE_FIRST_S[0]), float(IDLE_FIRST_S[1]))
+	elif _t >= float(b["idle_until"]):
+		if str(b["idle_clip"]) == base:
+			var pick: String = str(pool[randi() % pool.size()])
+			b["idle_clip"] = pick
+			b["idle_until"] = _t + maxf(player.get_animation(pick).length if player.has_animation(pick) else 0.0, IDLE_MIN_S)
+		else:
+			b["idle_clip"] = base
+			b["idle_until"] = _t + randf_range(float(IDLE_BASE_S[0]), float(IDLE_BASE_S[1]))
+
+	return str(b["idle_clip"])
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).
