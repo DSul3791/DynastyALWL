@@ -1515,7 +1515,10 @@ func _keep_captive(cell: Vector2i, id: int) -> void:
 	var row: Variant = _members.get(cell, {}).get(id, {}).get("captive")
 
 	if animals != null and animals.animals.has(id):
-		row = _captive_row(animals.animals[id]) if animals.animals[id].has("gave_up") else null   # living: only what he is now
+		row = null   # living: only what he is now
+
+		if animals.animals[id].has("gave_up"):
+			row = _captive_row(animals.animals[id])
 
 	if row != null and sites.has(cell):
 		var kept: Array = sites[cell].get("captives", [])
