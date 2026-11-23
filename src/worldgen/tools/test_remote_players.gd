@@ -148,7 +148,7 @@ func _server() -> void:
 	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
 	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
 	fake.asleep = {}
-	# 157: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
+	# 158: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
 	sent.clear()
 	var torch_n: int = ItemTableScript.load_default().number_of("torch")
 	fake.left = {2: torch_n}
@@ -313,7 +313,7 @@ func _client() -> void:
 		var after_clip: String = str(view._bodies[7]["rig"].current())
 		check(after_clip != "chop" and not view._bodies[7]["rig"].is_one_shot_playing(), "the chop plays out and the body goes back to its stance clip (%s)" % after_clip)
 
-		# 157: a burning torch in the left hand, with its light; put out, no light; a drink plays the drink clip.
+		# 158: a burning torch in the left hand, with its light; put out, no light; a drink plays the drink clip.
 		var torch_n: int = table.number_of("torch")
 		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3400]), PackedInt32Array([torch_n]), PackedByteArray([PlayerViewScript.MORE_LIT]))
 

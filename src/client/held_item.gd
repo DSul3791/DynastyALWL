@@ -429,7 +429,7 @@ func held_number() -> int:
 # Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
 # every HELD_REPORT_S; the server checks it against the pack.
 const HELD_REPORT_S := 0.5
-# From 157 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
+# From 158 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
 # once (at most every HAND_REPORT_S), an item change at most every HELD_REPORT_S.
 const HAND_REPORT_S := 0.1
 const HAND_BOW_RAISED := 1
@@ -739,6 +739,7 @@ func _loose() -> void:
 	_aim_dir = -_camera.global_transform.basis.z   # through the cross in the middle of the screen
 	var draw_ms: int = int(_draw_t * 1000.0)
 	var arrow: int = arrow_to_shoot()
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
 
 	if arrow != 0:
@@ -1411,9 +1412,17 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
+func _send_seen() -> void:
+	if seen_ms.is_valid():
+		var seen: Array = seen_ms.call()
+		_net.inventory_action.rpc_id(1, Net.ACT_SEEN, 0, int(seen[0]), int(seen[1]), Vector3.ZERO)
+
+
 func _throw() -> void:
 	_arm_play("throw", 0.8)
 	var direction: Vector3 = -_camera.global_transform.basis.z
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_THROW, held_slot, 0, 0, direction)
 	aiming = false
 	var node: Node3D = _make_spear_model()
@@ -1442,7 +1451,7 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
 
 
-# Another player's arrow or thrown weapon (flight_seen, protocol 157): flown here like this player's own (gravity, the ground, an arrow
+# Another player's arrow or thrown weapon (flight_seen, protocol 158): flown here like this player's own (gravity, the ground, an arrow
 # stops in a trunk), look only. A thrown weapon (items.json kind "weapon") is drawn by its hand look, an arrow by its arrow model.
 func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 	if _root == null or not _root.is_inside_tree() or _inv == null or number <= 0 or velocity.length() < 0.1:

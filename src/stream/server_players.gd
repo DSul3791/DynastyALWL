@@ -26,7 +26,7 @@ const ASLEEP := 16
 const SWING_SHIFT := 5             # bits 5..7: the player's swing count, mod 8
 const Net := preload("res://src/stream/terrain_net.gd")
 # A blow with the tool in hand (one per swing, at its impact: held_item.gd), shown to the others as a swing.
-const MORE_LIT := 1                # more byte (157): a burning torch or lantern...
+const MORE_LIT := 1                # more byte (158): a burning torch or lantern...
 const MORE_HANDS_SHIFT := 1        # ...the client's hand flags (held_item.gd HAND_*: bow raised, drawn, shield up, ladder) in bits 1..4...
 const MORE_MEAL_SHIFT := 5         # ...and bits 5..7 a count of eats and drinks, mod 8 (the others play the drink clip)
 const MEAL_ACTS := [Net.ACT_EAT, Net.ACT_DRINK]
@@ -37,7 +37,7 @@ const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Ne
 var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
 var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array, left PackedInt32Array, more PackedByteArray)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
-var send_flight: Callable          # (to peer, item number, from, velocity, burning): flight_seen (157)
+var send_flight: Callable          # (to peer, item number, from, velocity, burning): flight_seen (158)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
 
 var _looks: Dictionary = {}        # peer -> [name, body, code]
@@ -134,6 +134,11 @@ func forget(peer: int) -> void:
 
 func look_of(peer: int) -> Array:
 	return _looks.get(peer, [])
+
+
+# The body's facing (rotation.y, radians) from its last report, 0 when none (server_action_cues.gd: where its hands are).
+func yaw_of(peer: int) -> float:
+	return float(_yaw.get(peer, 0.0))
 
 
 func tick(delta: float) -> void:
