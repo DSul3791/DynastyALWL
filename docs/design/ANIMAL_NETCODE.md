@@ -118,7 +118,7 @@ client only decides how the body gets from one drawn point to the next.
 - Server: `make_way`. A standing animal a player walks into steps out of them at up to half its flee speed (its walking pace at least) (robot play-testers, 23 Nov 2026: a dog
   0.02 m from a player's middle, a deer 0.22 m, a horse 0.15 m). Birds in the air, perched or burrowed animals, swimmers and a camp's tied
   horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain, which does the same for a wolf that stood
-  this think (server_wolves `_make_way`), except in a rush. Cost: the nearest player's distance is already worked out each step; one compare.
+  this think (server_wolves `_make_way`), except in a rush. A body of `AnimalContact.BLOCK_M` or more that a player only leans on (the walker is stopped `WALK_INTO_M` inside it; `LEAN_M` or less) shifts at `LEANED_MPS` (0.5 m/s), never shoved along (robots 23 Nov 2026: two robots leaning on an idle elephant pushed it at 3 to 5 m/s); a walker held at one 2.5 s goes through (animal_view `PINNED_MS`). Cost: the nearest player's distance is already worked out each step; one compare.
 - Tests: test_animal_motion_buffer.gd (a corner run: within 0.5 m, speed eased, facing turn rate), test_animal_contact.gd (make_way).
 
 ## Fair hits (PR 3, protocol 155)

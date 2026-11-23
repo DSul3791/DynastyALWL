@@ -396,6 +396,27 @@ def test_kinds():
 		check(rk.at(one["a"][7], 99999) is None, "no drawn place long after the last row")
 
 
+def test_stuck():
+	"""robot_stuck.py: AUDIT near minutes make animal-hours; a stuck spell with its end, and one still open, counted per kind."""
+	import importlib.util
+	spec = importlib.util.spec_from_file_location("robot_stuck", os.path.join(HERE, "robot_stuck.py"))
+	rs = importlib.util.module_from_spec(spec)
+	spec.loader.exec_module(rs)
+
+	with tempfile.TemporaryDirectory() as d:
+		write(d, "server.log", ["AUDIT on: robot audit lines follow"] + ["AUDIT near %d deer:4.00 boar:2.00 span_s:60.0" % (60000 * i) for i in range(30)] + ["AUDIT near 1830000 rabbit:0.40 span_s:30.0"] + [
+			"AUDIT stuck 7 deer 1000 10.00 20.00 0 to 12.5 ahead wall", "AUDIT stuck_end 7 deer 19000 18.0",
+			"AUDIT stuck 9 boar 5000 1.00 2.00 2 to 25.0 ahead none"])
+		rows = {r["sp"]: r for r in rs.summary([rs.read_run(d)])}
+		check(abs(rows["deer"]["hours"] - 2.0) < 0.001 and abs(rows["boar"]["hours"] - 1.0) < 0.001 and abs(rows["rabbit"]["hours"] - 0.2 / 60.0) < 0.0001, "robot_stuck: 30 minutes of 4 deer and 2 boar are 2 and 1 animal-hours, spans weighed by their length, a mean under one counted")
+		check(rows["deer"]["spells"] == 1 and rows["deer"]["median_s"] == 18.0 and rows["deer"]["ahead"] == {"wall": 1} and abs(rows["deer"]["per_day"] - 0.5) < 0.001, "robot_stuck: a deer spell of 18 s at a wall, 0.5 per deer per game day")
+		check(rows["boar"]["open"] == 1 and rows["boar"]["longest_s"] is None, "robot_stuck: a boar still stuck at the end is counted open")
+		r = subprocess.run([sys.executable, os.path.join(HERE, "robot_stuck.py"), d], capture_output=True, text=True)
+		check(r.returncode == 0 and "2 stuck spells" in r.stdout, "robot_stuck: prints the table (%s)" % r.stdout.strip().splitlines()[0])
+		r = subprocess.run([sys.executable, os.path.join(HERE, "robot_stuck.py"), os.path.join(d, "none")], capture_output=True, text=True)
+		check(r.returncode == 2, "robot_stuck: nothing to read is exit 2")
+
+
 def watch_logs(d, jump=False, swing_clip="chop", still=False):
 	"""A walker that walks 3 m/s east for 4 s from x 0, stops, swings, sleeps; a watcher drawing it 300 ms late every 20 ms."""
 	ev = ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)",
@@ -482,6 +503,7 @@ if __name__ == "__main__":
 	test_twin()
 	test_kinds()
 	test_held_link()
+	test_stuck()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
 	sys.exit(1 if failures else 0)

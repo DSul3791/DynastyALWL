@@ -151,17 +151,28 @@ static func ensure_loaded() -> void:
 
 		var row: Array = _row(str(id))
 
-		var key: int = int(entry.get("key", KEY_NONE))
+		var raw_key: Variant = entry.get("key", KEY_NONE)
+
+		if typeof(raw_key) != TYPE_INT and typeof(raw_key) != TYPE_FLOAT:
+			continue   # a key that is not a number (a hand edit): the default, where int() of a list would stop the start
+		if not is_finite(float(raw_key)):
+			continue
+
+		var key: int = int(raw_key)
 		if row[2] == ADMIN_GROUP and key != KEY_NONE and _plain_refusal(str(id), key) != "":
 			continue   # Esc, a hotbar digit or a lone modifier cannot be an admin key: the default
 
-		var mods: Array = _forced(row, bool(entry.get("ctrl", false)), bool(entry.get("shift", false)))   # an old bare-G fly keeps G and gains Ctrl+Shift
+		var mods: Array = _forced(row, _true(entry.get("ctrl", false)), _true(entry.get("shift", false)))   # an old bare-G fly keeps G and gains Ctrl+Shift
 		var bind: Dictionary = {"key": key, "ctrl": mods[0], "shift": mods[1]}
 
 		if bind != default_binding(str(id)):
 			_changed[str(id)] = bind
 
 	_resolve_admin_clashes()
+
+
+static func _true(value: Variant) -> bool:
+	return typeof(value) == TYPE_BOOL and bool(value)
 
 
 # The group rule: held actions take no modifiers, Admin and debug actions always both, the rest as asked. Returns [ctrl, shift].
@@ -480,12 +491,35 @@ static func conflicts() -> Array:
 	return found
 
 
+# One line naming the actions that share a key, for a notice at the start and on Esc > Controls; "" when none do. A file from an older
+# build can hold a key that a newer action now takes by default (the shield's B, 23 Nov 2026), and both would fire on it without a word.
+static func shared_note() -> String:
+	var pairs: Array = []
+	var seen: Dictionary = {}
+
+	for pair in conflicts():
+		var both: Array = [str(pair[0]), str(pair[1])]
+		both.sort()
+
+		if seen.has(both):
+			continue
+
+		seen[both] = true
+		pairs.append("%s does both \"%s\" and \"%s\"" % [label(both[0]), label_of_action(both[0]), label_of_action(both[1])])
+
+	if pairs.is_empty():
+		return ""
+
+	return "Two actions share a key: " + "; ".join(pairs) + ". Change one in Esc > Controls."
+
+
 # Which action each key letter in the game's built-in prompt texts stands for ("Press E to gather", "hold E", "F for wood"). The server's
 # notices and hints (hints.json: "press E on nettles", "Press F at the fire") come through localize on the client too.
 # I and R for the goal hints ("Open the inventory (I)", "press R and pick Lean-to"; first-hour fixes 22 Nov 2026).
 # Tab and Shift for the first hints ("Press Tab to see Health ...", "Hold Shift to run"; client bug hunt 23 Nov 2026). A Shift that is part of
 # a fixed mouse combination ("Shift + right click") has no "Hold"/"Press" before it and is left alone.
-const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints", "Tab": "character", "Shift": "run", "M": "map"}
+# Q and Space for the log and sleep lines ("Put them down first (Q).", "hold Space to wake early"; screens and keys check 23 Nov 2026).
+const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints", "Tab": "character", "Shift": "run", "M": "map", "Q": "put_down_log", "Space": "jump"}
 const MOVE_KEYS_TEXT := "W A S D"   # the first hint's movement keys, rewritten whole to the four bound keys
 static var _prompt_regex: RegEx = null
 
@@ -499,7 +533,7 @@ static func localize(text: String) -> String:
 		return text
 
 	if _prompt_regex == null:
-		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())(Tab|Shift|[EFZHIRM])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
+		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())(Tab|Shift|Space|[EFZHIRMQ])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
 
 	if text.contains(MOVE_KEYS_TEXT):
 		text = text.replace(MOVE_KEYS_TEXT, " ".join([label("move_forward"), label("move_left"), label("move_back"), label("move_right")]))

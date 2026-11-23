@@ -18,7 +18,7 @@ extends Node
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
-# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), cold, fights, kind_<species>. --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -52,6 +52,7 @@ var client                       # terrain_client.gd
 var robot_name: String = "Robot"
 var plan: String = "first_hours"
 var admin: bool = false
+var _timeout_s: float = INF
 
 var _pack_msec: int = 0          # last pack message (full or slots) from the server
 var _notice_msec: int = 0
@@ -108,6 +109,11 @@ func prepare(name_arg: String, args: PackedStringArray) -> void:
 			plan = a.trim_prefix("--robot-plan=")
 		elif a == "--robot-admin":
 			admin = true
+		elif a.begins_with("--timeout=") and a.trim_prefix("--timeout=").is_valid_float():
+			_timeout_s = a.trim_prefix("--timeout=").to_float()   # plan roam ends a few minutes before the client's own timeout
+
+			if _timeout_s <= 0.0:
+				_timeout_s = INF   # --timeout=0 is no limit (self_timeout.gd)
 
 	# Its own character, picked before the client says hello (each robot runs with its own user data folder, tools/robots.sh).
 	var mine: String = ""
@@ -589,6 +595,8 @@ func run() -> void:
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
 		await _route()
+	elif plan == "roam":
+		await _roam()
 	else:
 		if admin:
 			await _craft_chain()
@@ -3446,6 +3454,43 @@ func _route() -> void:
 	FreezeWatchScript.printer.line("ROBOT %s ROUTE summary:" % robot_name)
 	for line in _route_lines:
 		FreezeWatchScript.printer.line("ROBOT %s ROUTE = %s" % [robot_name, line])
+
+
+# Plan roam (animals thread, coordinator 23 Nov 2026: stuck animals away from the fight): for ROAM_S, this robot goes from place to place and
+# stands ROAM_STAND_S at each while the server's AUDIT stuck lines (src/server/robot_audit.gd; tools/robot_stuck.py) count the animals near it
+# that cannot get on: the nearest water's edge, the thickest woods near, then a run of ROAM_LEG_M in a direction of its own (each robot its
+# own, so two robots watch different ground). It hunts and builds nothing: the animals go about their own day round a standing player.
+const ROAM_S := 3300.0           # at most; ROAM_QUIT_S short of the client's --timeout (tools/robots.sh ROBOT_S) when that is sooner
+const ROAM_QUIT_S := 120.0
+const ROAM_STAND_S := 240.0
+const ROAM_LEG_M := 500.0
+
+func _roam() -> void:
+	var end: int = Time.get_ticks_msec() + int(minf(ROAM_S, _timeout_s - ROAM_QUIT_S - float(Time.get_ticks_msec()) / 1000.0) * 1000.0)
+	var turn: float = float(hash(robot_name) % 360) * PI / 180.0
+	var leg: int = 0
+
+	while Time.get_ticks_msec() < end:
+		_step = "roam leg %d" % leg
+		var here: Vector3 = client.body.global_position
+		var where: String = ["water", "woods", "open"][leg % 3]
+		var goal: Vector3 = Vector3(NAN, NAN, NAN)
+
+		if where == "water":
+			goal = await _find_water()
+		elif where == "woods":
+			goal = _forest_spot()
+
+		if is_nan(goal.x):
+			where = "open"
+			goal = here + Vector3(cos(turn), 0.0, sin(turn)) * ROAM_LEG_M
+			turn += 2.4   # a fixed turn: each leg a new direction
+
+		var got: bool = await _run_to(goal, clampf(float(end - Time.get_ticks_msec()) / 1000.0, 0.0, 150.0), 4.0)
+		var at: Vector3 = client.body.global_position
+		FreezeWatchScript.printer.line("ROBOT %s ROAM %s %s at %.0f,%.0f" % [robot_name, where, "reached" if got else "short", at.x, at.z])
+		await _wait(minf(ROAM_STAND_S, maxf(0.0, float(end - Time.get_ticks_msec()) / 1000.0)))
+		leg += 1
 
 
 # The wet corner of a loaded water grid nearest `from` that lies at least `beyond_m` from it and no nearer the route's last point than `from`

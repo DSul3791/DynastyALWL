@@ -113,6 +113,17 @@ with the most trees within 8 m (within 170 m, where trees are loaded), crouches 
 2 s leg under a quarter of the crouch pace is compared with standing at the same spot (a `blocked` FAIL when standing walks on). It prints
 a TRAIL line.
 
+Plan `roam` (animals thread 23 Nov 2026, stuck animals away from the fight; `ROBOT_S=3600 tools/robots.sh 2 roam --delay-ms 120
+--jitter-ms 30 --loss 0.03`, an hour of real time is one game day): each robot goes to the nearest water's edge, the thickest woods near, then
+500 m of open ground in a direction of its own, and stands 4 min at each, round and round until 2 min before its timeout. In every plan the
+robot audit prints `AUDIT stuck <id> <species> <unix ms> <x> <z> <state> to <m> ahead <what>` for an animal within 150 m of a player that
+has somewhere to go (its target 2 m or more off; not alert, warning, recovering, sneaking, playing, sitting, lying, hidden, perched, flying or
+tied, nor a pack wolf whose pack waits, feeds or guards its den) but has kept within
+0.5 m of one spot for 6 s, with what lies 1.5 m toward its target (wall, water, steep, animal, player, fire or none), `AUDIT stuck_end` with
+the spell's length, and `AUDIT near` each minute of real time (the mean number of animals near a player by kind, and the span's length). `python3 tools/robot_stuck.py <run folder> ...` prints
+per kind the animal-hours watched, the stuck spells and their rate per animal per game day, the median and longest spell, what lay ahead and
+the first spots. It judges nothing.
+
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 

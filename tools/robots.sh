@@ -13,6 +13,8 @@
 #   ROBOT_S=260 tools/robots.sh 2 kind_moose [link]   two robots hunt one animal kind; tools/robot_kinds.py <run folder> prints the measures
 #   tools/robots.sh 1 trail [link]          crouched along a game trail under trees (stops compared with standing)
 #   ROBOT_S=800 tools/robots.sh 2 together [link]   two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other
+#   ROBOT_S=3600 tools/robots.sh 2 roam [link]   an hour (a game day) standing at water, woods and open ground; tools/robot_stuck.py <run folder>
+#                                         counts the stuck animals near them per kind (the server's AUDIT stuck lines)
 # Robot play-testers (23 Nov 2026, after build 9257's first hour on Dave's server found faults no one-machine test saw).
 # Starts a headless server with --robot-audit (src/server/robot_audit.gd) and --open-admin on a spare port, a simulated internet link in
 # front of it (tools/lossy_link.py: delay, jitter, loss), and ROBOTS real clients (headless, dummy renderer) each run by

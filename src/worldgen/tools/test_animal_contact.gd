@@ -296,8 +296,8 @@ func _init() -> void:
 		drawn_el = AnimalContact.stop_toward(presser, drawn_el, Vector3(3.0, 0.0, 0.0), em - 0.12)
 
 	check(drawn_el.distance_to(Vector3(3.0, 0.0, 0.0)) < 0.01 and absf(presser.distance_to(drawn_el) - (em - 0.1)) < 0.01, "a walker pressing into a standing elephant stops at it and its drawn body stays put (%.2f m moved)" % drawn_el.distance_to(Vector3(3.0, 0.0, 0.0)))
-	# Stopped just inside its contact distance, a standing animal the walker presses into makes way on the server (make_way), so the walker
-	# is never held by one standing in their way, without the let-through.
+	# Stopped just inside its contact distance, a standing animal the walker presses into makes way on the server (make_way), slowly
+	# (LEANED_MPS), so even without the let-through (animal_view PINNED_MS) the walker gets past one standing in their way.
 	var pass_players: Array = [Vector3(0.0, 10.0, 0.0)]
 	var ps = _animals(pass_players, [])
 	ps.cfg["senses"] = {}

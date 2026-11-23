@@ -56,6 +56,10 @@ class FakeItems:
 		return asleep.has(peer)
 
 	var down: Dictionary = {}
+	var floats: Dictionary = {}
+
+	func fishing_float(peer: int) -> Vector3:
+		return floats.get(peer, Vector3.INF)
 
 	func fainted_of(peer: int) -> bool:
 		return down.has(peer)
@@ -89,7 +93,7 @@ func _server() -> void:
 	players.items = fake
 	players.now_ms = func() -> int: return int(clock[0])
 	var flights: Array = []
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): sent.append([peer, ids, positions, yaws, states, held, times, left, more])
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more, cast): sent.append([peer, ids, positions, yaws, states, held, times, left, more, cast])
 	players.send_flight = func(peer, number, from, velocity, fire): flights.append([peer, number, from, velocity, fire])
 	players.send_look = func(to, about, char_name, body, code, worn_numbers): looks.append([to, about, char_name, body, code, worn_numbers])
 	fake.pos = {1: Vector3(100.0, 10.0, 100.0), 2: Vector3(110.0, 10.0, 100.0), 3: Vector3(100.0, 10.0, 400.0), 4: Vector3(101.0, 10.0, 100.0)}
@@ -189,6 +193,26 @@ func _server() -> void:
 	fake.left = {}
 	fake.burning = {}
 	fake.flags = {}
+	# 162: the bow aim gaits keep their gait's stride and walk backwards as the plain walk (review: the feet slid).
+	var Driver = load("res://src/client/character/avatar_driver.gd")
+	var back_rig: Node3D = Node3D.new()
+	back_rig.set_meta("backward", true)
+	check(is_equal_approx(Driver.speed_scale("walk_bow_raised", 1.0), Driver.speed_scale("walk", 1.0)) and is_equal_approx(Driver.speed_scale("walk_bow_drawn", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_bow_raised") == -1.0 and Driver.slope_tilt(true, Vector3(0.0, 0.9, 0.4), 2.0, "idle_bow_drawn") == 0.0, "an archer's walk is paced and reversed as the plain walk")
+	back_rig.free()
+	# 162: a rod's float rides beside the row as one int (cast_code), read back to the same spot within 5 cm; a new cast is news; none is 0.
+	var float_at: Vector3 = Vector3(115.5, 8.2, 96.3)
+	var float_code: int = PlayersScript.cast_code(Vector3(110.0, 10.0, 100.0), float_at)
+	check(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), float_code).distance_to(float_at) < 0.11 and PlayersScript.cast_code(Vector3.ZERO, Vector3.INF) == 0 and not PlayerViewScript.cast_point(Vector3.ZERO, 0).is_finite(), "the float's spot goes as one int and comes back (%s)" % str(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), float_code)))
+	sent.clear()
+	fake.floats = {2: float_at}
+	clock[0] = 2770
+	players.tick(0.2)
+	check(sent.size() == 1 and sent[0].size() == 10 and int(sent[0][9][0]) == float_code, "a cast is news and its float goes with player 2's row")
+	fake.floats = {}
+	sent.clear()
+	clock[0] = 2790
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][9][0]) == 0, "the line out of the water: 0")
 	# The row times are when the client sent each report, not when it arrived (note_move): a walker reporting every 0.2 s over a link
 	# that delays each report 120 +- 30 ms keeps legs of its own length, so the others draw it at its own speed (robots: 1.3 to 1.7x bursts).
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -491,6 +515,45 @@ func _client() -> void:
 		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST
 		var drink_clip: String = str(view._bodies[7]["rig"].current())
 		check(drink_clip == "drink" or not view._bodies[7]["rig"].animation_player.has_animation("drink"), "a drink plays the drink clip (%s)" % drink_clip)
+		# 162: a rod with its line in the water: a line from the rod's tip to a float on the water; out of the water, none.
+		var rod: int = table.number_of("fishing_rod")
+		var bob_at: Vector3 = at + Vector3(0.0, -1.2, -5.0)
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([rod]), PackedInt32Array([t0 + 3510]), PackedInt32Array([0]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]), PackedInt32Array([PlayersScript.cast_code(at, bob_at)]))
+
+		for i in range(3):
+			await process_frame
+
+		var line: MeshInstance3D = view._bodies[7].get("line", null)
+		var tip_world: Vector3 = (view._bodies[7]["held_node"] as Node3D).global_transform * (view._bodies[7]["tip_local"] as Vector3) if view._bodies[7].get("held_node") != null else Vector3.INF
+		check(line != null and line.visible and (line.get_node("Float") as Node3D).global_position.distance_to(bob_at) < 0.1, "another player's line in the water: the float where the cast landed")
+		check(line != null and tip_world.is_finite() and tip_world.distance_to((view._bodies[7]["held_node"] as Node3D).global_position) > 0.8, "the line leaves the rod's far end (%.2f m from the grip)" % (tip_world.distance_to((view._bodies[7]["held_node"] as Node3D).global_position) if tip_world.is_finite() else -1.0))
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([rod]), PackedInt32Array([t0 + 3520]), PackedInt32Array([0]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]), PackedInt32Array([0]))
+		await process_frame
+		check(line != null and not line.visible, "the line out of the water: nothing drawn")
+		# 162: a bow raised, then drawn: the body plays the aim clips and the bow stands upright before it with the string back; lowered, the plain clip.
+		var bow: int = table.number_of("wooden_bow")
+
+		for i in range(100):
+			if not view._bodies[7]["rig"].is_one_shot_playing():
+				break
+
+			await create_timer(0.1).timeout   # the drink before it plays out (a one-shot runs at its own time)
+
+		for flag_set in [[PlayerViewScript.MORE_BOW_RAISED, "idle_bow_raised"], [PlayerViewScript.MORE_BOW_DRAWN, "idle_bow_drawn"], [0, "idle"]]:
+			view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([bow]), PackedInt32Array([t0 + 3530]), PackedInt32Array([0]), PackedByteArray([int(flag_set[0]) | (1 << PlayerViewScript.MORE_MEAL_SHIFT)]), PackedInt32Array([0]))
+
+			view._bodies[7]["rig"].set_meta("hook_t", 0.0)   # a drink still held from the checks above is not this check's business
+
+			for i in range(100):   # a one-shot still playing plays out first, at its own time (slow on a loaded computer)
+				await create_timer(0.05).timeout
+
+				if str(view._bodies[7]["rig"].current()) == str(flag_set[1]):
+					break
+
+			var bow_node: Node3D = view._bodies[7].get("held_node", null)
+			var clip_now: String = str(view._bodies[7]["rig"].current())
+			var upright: bool = bow_node != null and bow_node.global_basis.x.normalized().dot(Vector3.UP) > 0.9
+			check(clip_now == str(flag_set[1]) and (upright == (int(flag_set[0]) != 0)), "bow flags %d: the body plays %s (%s) and the bow is %s" % [int(flag_set[0]), str(flag_set[1]), clip_now, "upright before it" if int(flag_set[0]) != 0 else "at the side"])
 
 
 # Over a real connection (the coordinator's ask, 23 Nov 2026: smooth under 100 to 150 ms and a few percent loss): rows sent every 125 ms
