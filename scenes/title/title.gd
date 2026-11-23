@@ -134,4 +134,4 @@ func _apply_saved_display() -> void:
 
 	var display = DisplaySettingsScript.new()
 	display.load_saved()
-	display.apply(get_window())
+	display.apply(get_window(), true)   # back from a world: a fullscreen or maximised window stays so

@@ -602,7 +602,7 @@ func _ready() -> void:
 	if display.quality >= 0:
 		quality = clampi(display.quality, 0, QUALITY_NAMES.size() - 1)
 
-	display.apply(get_window())
+	display.apply(get_window(), true)   # joining keeps a window the player made fullscreen or maximised on the title or server page
 
 	for shot_argument in OS.get_cmdline_user_args():
 		if shot_argument.begins_with("--shots="):
