@@ -107,6 +107,10 @@ func _display() -> void:
 	bad.load_saved()
 	check(bad.size_index == DisplaySettingsScript.DEFAULT_SIZE and not bad.fullscreen and bad.vsync_index == 0, "a list, a table and a word give the defaults")
 	check(bad.text_index == 0 and bad.idle_minutes == 60 and bad.mouse_look == 1.0 and bad.hud_text and bad.sort_index == 0, "out-of-range values are clamped; a bad switch keeps its default")
+	# The developer text (Ctrl+Shift+F4; Dave 23 Nov 2026): off in the installed game unless chosen with the key; the editor keeps what was saved.
+	check(not DisplaySettingsScript.pick_hud_text(true, false, true), "installed game: an old saved 'on' that nobody chose with the key gives no developer text")
+	check(DisplaySettingsScript.pick_hud_text(true, true, true) and not DisplaySettingsScript.pick_hud_text(false, true, true), "installed game: a choice made with the key is kept")
+	check(DisplaySettingsScript.pick_hud_text(true, false, false) and not DisplaySettingsScript.pick_hud_text(false, false, false), "editor: the saved value counts as before")
 	check(bad.quality == 99, "quality is read as saved (terrain_client clamps it to the tiers)")
 
 	# Not a settings file at all: the defaults.
