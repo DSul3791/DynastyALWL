@@ -30,18 +30,31 @@ static func smooth(was: float, raw: float, delta: float) -> float:
 	return lerpf(was, raw, 1.0 - exp(-delta / SMOOTH_S))
 
 
-# "walk", "run" or "" (standing) for an animal moving at `speed`, given the moving clip it played last frame (`was`) and the speeds its
-# walk and run clips were made at.
-static func role(speed: float, was: String, walk_mps: float, run_mps: float) -> String:
+# "walk", "trot", "run" or "" (standing) for an animal moving at `speed`, given the moving clip it played last frame (`was`) and the speeds
+# its walk, run and trot clips were made at. With no trot (trot_mps 0, or not between the walk and the run) it walks or runs only. A wolf
+# backing off at 5 m/s played its walk at the top rate (2.5 x 1.5 m/s) and slid; it trots now (Dave 23 Nov 2026: "really bad animatronics").
+static func role(speed: float, was: String, walk_mps: float, run_mps: float, trot_mps: float = 0.0) -> String:
 	if speed < (MOVE_OFF if was != "" else MOVE_ON):
 		return ""
 
-	var mid: float = (walk_mps + run_mps) * 0.5
+	if trot_mps <= walk_mps or trot_mps >= run_mps:
+		var mid: float = (walk_mps + run_mps) * 0.5
 
-	if was == "run":
-		return "run" if speed > mid * (1.0 - RUN_BAND) else "walk"
+		if was == "run":
+			return "run" if speed > mid * (1.0 - RUN_BAND) else "walk"
 
-	return "run" if speed > mid * (1.0 + RUN_BAND) else "walk"
+		return "run" if speed > mid * (1.0 + RUN_BAND) else "walk"
+
+	var high: float = (trot_mps + run_mps) * 0.5
+	var low: float = (walk_mps + trot_mps) * 0.5
+
+	if speed > high * ((1.0 - RUN_BAND) if was == "run" else (1.0 + RUN_BAND)):
+		return "run"
+
+	if speed > low * ((1.0 - RUN_BAND) if was == "trot" or was == "run" else (1.0 + RUN_BAND)):
+		return "trot"
+
+	return "walk"
 
 
 # The rate to play a moving clip made for `ref` m/s at `speed` m/s (1 with no reference).
@@ -60,14 +73,21 @@ static func stride_ok(measured: float, typed: float) -> bool:
 	return measured <= typed * TRUST_X and measured >= typed / TRUST_X
 
 
-# The clip for a moving role: the role's own, else the other moving clip, else the standing clip ("0"), else "".
+# The clip for a moving role: the role's own, else the nearest other moving clip (a trot falls back to the walk, then the run), else the
+# standing clip ("0"), else "".
 static func moving_clip(roles: Dictionary, which: String) -> String:
 	if roles.has(which):
 		return str(roles[which])
 
-	var other: String = "run" if which == "walk" else "walk"
+	var others: Array = ["trot", "walk"]      # a run with no run clip
 
-	if roles.has(other):
-		return str(roles[other])
+	if which == "trot":
+		others = ["walk", "run"]
+	elif which == "walk":
+		others = ["trot", "run"]
+
+	for other in others:
+		if roles.has(other):
+			return str(roles[other])
 
 	return str(roles.get("0", ""))

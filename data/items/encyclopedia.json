@@ -325,9 +325,11 @@
 		"comfrey_roots": {
 			"name": "Comfrey roots",
 			"kind": "material",
-			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating. Nothing uses it yet.",
+			"description": "A thick black root of comfrey, mucky and slimy inside. Ground into a poultice; not for eating.",
 			"how_to_get": [],
-			"used_for": [],
+			"used_for": [
+				"Used in Comfrey root poultice"
+			],
 			"obtainable_now": true
 		},
 		"crab_apples": {
@@ -2336,7 +2338,8 @@
 			"description": "Crushed herb leaves bound on a wound.",
 			"how_to_get": [
 				"Craft at a mortar and pestle: 3 Plantain leaves",
-				"Craft at a mortar and pestle: 2 Comfrey leaves"
+				"Craft at a mortar and pestle: 2 Comfrey leaves",
+				"Craft at a mortar and pestle: 1 Comfrey roots"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2355,10 +2358,10 @@
 		"tree_roots": {
 			"name": "Roots",
 			"kind": "material",
-			"description": "Roots from the base of a felled tree. Nothing uses it yet.",
+			"description": "Roots from the base of a felled tree. They burn in a fire like firewood.",
 			"how_to_get": [],
 			"used_for": [
-				"Roots from a felled tree. No use yet; planned as fibre for baskets."
+				"Burns in a fire like firewood"
 			],
 			"obtainable_now": true
 		},
@@ -5387,7 +5390,7 @@
 		"wicker_shield": {
 			"name": "Wicker - Shield",
 			"kind": "weapon",
-			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Blocking does not stop blows yet.",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Raised, it stops 35% of a frontal blow.",
 			"how_to_get": [
 				"Craft: 3 Stick, 2 Plant fibre"
 			],
@@ -5407,7 +5410,7 @@
 		"plank_shield": {
 			"name": "Wooden - Shield",
 			"kind": "weapon",
-			"description": "Boards bound with hide. Sturdier than wicker. Blocking does not stop blows yet.",
+			"description": "Boards bound with hide. Sturdier than wicker. Raised, it stops 45% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a workbench: 3 Plank, 1 Hide, 1 Hide glue"
 			],
@@ -5437,7 +5440,7 @@
 		"bronze_shield": {
 			"name": "Bronze - Shield",
 			"kind": "weapon",
-			"description": "A wicker shield faced with hide, rimmed and bossed with bronze. Blocking does not stop blows yet.",
+			"description": "A wicker shield faced with hide, rimmed and bossed with bronze. Raised, it stops 55% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a forge: 1 Wicker - Shield, 1 Bronze ingot, 1 Hide"
 			],
@@ -5467,7 +5470,7 @@
 		"iron_shield": {
 			"name": "Iron - Shield",
 			"kind": "weapon",
-			"description": "Boards held by iron bands. Hard to break. Blocking does not stop blows yet.",
+			"description": "Boards held by iron bands. Hard to break. Raised, it stops 65% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Plank, 2 Iron ingot"
 			],
@@ -5497,7 +5500,7 @@
 		"steel_shield": {
 			"name": "Steel - Shield",
 			"kind": "weapon",
-			"description": "A long steel-faced shield that covers shoulder to shin. Blocking does not stop blows yet.",
+			"description": "A long steel-faced shield that covers shoulder to shin. Raised, it stops 75% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Plank, 2 Steel ingot"
 			],

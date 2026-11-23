@@ -5,6 +5,8 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_pool_tasks.gd
 
 const PoolTasksScript := preload("res://src/shared/pool_tasks.gd")
+const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
+const ServerScript := preload("res://scenes/terrain_server/terrain_server.gd")
 
 var failures: int = 0
 var done: int = 0
@@ -48,6 +50,14 @@ func _init() -> void:
 
 	check(short.running() <= 2, "finished tasks leave the list (%d kept)" % short.running())
 	short.finish()
+
+	# Lag lane 23 Nov 2026 (the join): tile prefetches on the high-priority threads; flora leaves one server worker for the ground.
+	check(not PoolTasksScript.new().high_priority, "a PoolTasks starts low priority")
+	check(GeneratorScript.new()._prefetch_tasks.high_priority, "the generator's tile prefetches run high priority")
+	check(ServerScript.flora_may_start(0, 3) and ServerScript.flora_may_start(1, 3), "flora takes 2 of 3 workers")
+	check(not ServerScript.flora_may_start(2, 3), "and leaves the third for the ground")
+	check(ServerScript.flora_may_start(0, 2) and not ServerScript.flora_may_start(1, 2), "1 of 2")
+	check(ServerScript.flora_may_start(0, 1) and ServerScript.flora_may_start(1, 1), "one worker in all takes flora too")
 
 	print("test_pool_tasks: %s" % ("PASS" if failures == 0 else "%d failures" % failures))
 	quit(1 if failures > 0 else 0)

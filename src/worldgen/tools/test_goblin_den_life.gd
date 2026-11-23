@@ -45,7 +45,7 @@ func make():
 	a.lair_path = func(_x, _z): return den_path
 	a.berry_bushes = func(_p, _r): return bushes
 	a.big_game.player_info = func(): return infos
-	a.big_game.hurt_player = func(_peer, _amount, _lethal, _cause):
+	a.big_game.hurt_player = func(_peer, _amount, _lethal, _cause, _from):
 		hurts += 1
 		return "hurt"
 	a.rng.seed = 11

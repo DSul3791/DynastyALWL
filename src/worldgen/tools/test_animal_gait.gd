@@ -42,6 +42,15 @@ func _init() -> void:
 	check(AnimalGait.role(6.0, "walk", 1.4, 10.0) == "walk" and AnimalGait.role(6.0, "run", 1.4, 10.0) == "run", "at half way (5.7) the clip it has stays")
 	check(AnimalGait.role(6.5, "walk", 1.4, 10.0) == "run" and AnimalGait.role(5.0, "run", 1.4, 10.0) == "walk", "well past half way it changes")
 
+	# A trot between the walk and the run (wolf: walk 1.5, trot 4.5, run 10): a wolf backing off at 5 m/s trots, not a walk at the top rate.
+	check(AnimalGait.role(5.0, "walk", 1.5, 10.0, 4.5) == "trot" and AnimalGait.role(5.0, "run", 1.5, 10.0, 4.5) == "trot", "5 m/s with a trot clip: it trots")
+	check(AnimalGait.role(2.0, "", 1.5, 10.0, 4.5) == "walk" and AnimalGait.role(9.0, "trot", 1.5, 10.0, 4.5) == "run", "2 m/s walks, 9 m/s runs")
+	check(AnimalGait.role(3.2, "walk", 1.5, 10.0, 4.5) == "walk" and AnimalGait.role(2.8, "trot", 1.5, 10.0, 4.5) == "trot", "at the walk-trot edge (3.0) the clip it has stays")
+	check(AnimalGait.role(7.4, "trot", 1.5, 10.0, 4.5) == "trot" and AnimalGait.role(7.0, "run", 1.5, 10.0, 4.5) == "run", "at the trot-run edge (7.25) the clip it has stays")
+	check(AnimalGait.role(5.0, "walk", 1.5, 10.0, 0.0) == "walk" and AnimalGait.role(5.0, "walk", 1.5, 10.0, 12.0) == "walk", "no trot, or one not between walk and run: walk or run only")
+	check(AnimalGait.moving_clip({"0": "Idle", "walk": "W", "run": "R"}, "trot") == "W", "no trot clip: the walk stands in")
+	check(AnimalGait.moving_clip({"0": "Idle", "trot": "T", "run": "R"}, "walk") == "T", "no walk clip: the trot stands in before the run")
+
 	# Rate: past twice the clip's speed, and slow ambles still move the legs.
 	check(absf(AnimalGait.rate(12.0, 5.0) - 2.4) < 0.001, "a 12 m/s flight on a 5 m/s run clip plays at 2.4, not 2")
 	check(AnimalGait.rate(0.1, 1.5) == AnimalGait.RATE_MIN and AnimalGait.rate(3.0, 0.0) == 1.0, "slowest rate held; no reference plays at 1")

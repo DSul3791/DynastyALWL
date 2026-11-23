@@ -682,7 +682,7 @@ func _step_cave(a: Dictionary, def: Dictionary, dt: float) -> void:
 
 		if not near.is_empty() and not bool(a["hit"]) and (near["pos"] as Vector3).distance_to(a["pos"]) <= float(defend.get("hit_m", 1.0)) + 0.6 and host.big_game.hurt_player.is_valid():
 			a["hit"] = true
-			host.big_game.hurt_player.call(int(near["peer"]), float(defend.get("damage", 8.0)) * host.level_x(a, "damage"), false, str(a["sp"]))
+			host.big_game.hurt_player.call(int(near["peer"]), float(defend.get("damage", 8.0)) * host.level_x(a, "damage"), false, str(a["sp"]), a["pos"])
 
 		if bool(a["hit"]) or float(a["ran"]) >= float(defend.get("charge_m", 15.0)) or there:
 			a["state"] = host.big_game.RECOVER

@@ -26,6 +26,7 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -83,6 +84,8 @@ const FAULTS := {
 	"camp_tilted": ["ground rising across a camp piece's footprint more than a player may build on (PlacementRules.steep: a Lean-to 1.0 m, a fire 0.6 m) or, for furniture and NPC spots, 0.30 m", 0.30],
 	"camp_in_water": ["a camp piece standing in drawn water more than 0.10 m deep", 0.10],
 	"camp_overlap": ["two pieces of one camp inside each other", 0.05],
+	"walk_trap": ["ground a walking player cannot leave: every way out climbs more than a jump (1.2 m in 1 m) or a slope over 45 degrees (a swimmer: a bank over 0.6 m); severity = its area m2", 0.0],
+	"walk_trap_deep": ["a walk trap 3 m or more below the lowest ground it could climb to (a pit or a shaft, not a dip)", 3.0],
 	"far_float_lod1": ["at LOD 1 (the view past the near ring), a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod2": ["at LOD 2, a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod3": ["at LOD 3, a plant or tree base more than 0.25 m off the mesh", 0.25],
@@ -123,6 +126,7 @@ func _init() -> void:
 	var probe: Vector2 = Vector2.INF
 	var caves: bool = false
 	var camps: bool = false
+	var walk: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		var value: String = argument.get_slice("=", 1)
@@ -153,6 +157,8 @@ func _init() -> void:
 			camps = true
 		elif argument == "--caves":
 			caves = true
+		elif argument == "--walk":
+			walk = true
 		elif argument.begins_with("--probe="):
 			probe = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 
@@ -208,7 +214,11 @@ func _init() -> void:
 	for n in range(0 if caves or camps else mine.size()):
 		var c: Vector2i = mine[n][0]
 		_biome_now = str(mine[n][1])
-		_audit_chunk(c, windows, lods)
+
+		if walk:
+			_audit_walk(c)
+		else:
+			_audit_chunk(c, windows, lods)
 		print("world_audit: chunk %d/%d %s (%s) done, %.0f s" % [n + 1, mine.size(), str(c), _biome_now, float(Time.get_ticks_msec() - started) / 1000.0])
 
 	var report: Dictionary = {"counts": counts, "checked": checked, "by_biome": by_biome, "examples": examples, "chunks": mine.size()}
@@ -496,7 +506,7 @@ func _trees_of(flora: Dictionary) -> Array:
 		if sp.is_empty() or int(sp["kind"]) != PlacerScript.KIND_TREE:
 			continue
 
-		var r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n]))
+		var r: float = TreeTrunks.standing_collider(str(sp["name"]), ids[n], float(flora["heights"][n]), PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n])))
 
 		if r > 0.0 and float(flora["heights"][n]) < PlacerScript.SAPLING_M:
 			_fault("sapling_collider", PlacerScript.SAPLING_M - float(flora["heights"][n]), flora["positions"][n], "%s %.2f m tall, trunk collider r %.3f m" % [sp["name"], float(flora["heights"][n]), r])
@@ -1527,3 +1537,188 @@ func _merge(files: PackedStringArray) -> int:
 	_print_report(total)
 	print("by biome: %s" % JSON.stringify(total["by_biome"]))
 	return 0
+
+
+# ---------------------------------------------------------------- walkability (--walk)
+
+# Can a walking player leave every spot? On a 1 m grid over the chunk and WALK_PAD_M round it: the ground (surface_height), water over it
+# (a swimmer moves at the surface) and boulders (their drawn hull top, 0.7 x the radius over the ground, inventory_view _size_boulder).
+# A step to a neighbour is always possible downhill; uphill only from ground a player stands on (under 45 degrees: Godot's floor angle,
+# where a jump works) and at most WALK_JUMP_M, or from water at most WALK_BANK_M.
+# Into deep water a player wades in over its bed and swims up. Every spot that cannot reach the window's edge by such steps is trapped. Not seen: trunks (gaps are finer than the grid), caves
+# (--caves), structures and player digs.
+const WALK_PAD_M := 24
+const WALK_JUMP_M := 1.2   # a jump: 7 m/s at 20 m/s2 lifts the feet 1.22 m
+const WALK_BANK_M := 0.6
+const WALK_SWIM_M := 1.3   # water this deep is swum (swim.gd SWIM_DEPTH_M); shallower is waded
+
+
+func _audit_walk(chunk: Vector2i) -> void:
+	var o: Vector2 = placer.chunk_origin(chunk)
+	var n: int = int(placer.chunk_m) + 2 * WALK_PAD_M
+	var x0: float = o.x - float(WALK_PAD_M) + 0.5
+	var z0: float = o.y - float(WALK_PAD_M) + 0.5
+	var ground: PackedFloat32Array = PackedFloat32Array()
+	var top: PackedFloat32Array = PackedFloat32Array()   # where the player's feet are: ground, boulder top or the water's surface
+	var swim: PackedByteArray = PackedByteArray()
+	ground.resize(n * n)
+	top.resize(n * n)
+	swim.resize(n * n)
+
+	for j in n:
+		for i in n:
+			var x: float = x0 + float(i)
+			var z: float = z0 + float(j)
+			var h: float = float(generator.surface_height(x, z))
+
+			if is_nan(h):
+				h = -INF   # no ground known (an unbaked tile): a way out, never a trap
+			var level: float = _water_level(x, z)
+			ground[j * n + i] = h
+			top[j * n + i] = h
+
+			if not is_nan(level) and level - h >= WALK_SWIM_M:
+				top[j * n + i] = level
+				swim[j * n + i] = 1
+
+	var base: PackedFloat32Array = ground.duplicate()
+
+	for cz in range(int(floor((z0 - 0.5) / float(WINDOW_M))), int(floor((z0 + float(n)) / float(WINDOW_M))) + 1):
+		for cx in range(int(floor((x0 - 0.5) / float(WINDOW_M))), int(floor((x0 + float(n)) / float(WINDOW_M))) + 1):
+			var centre: Vector2 = (Vector2(cx, cz) + Vector2(0.5, 0.5)) * float(WINDOW_M)
+
+			for rock in _boulders_round(centre, float(WINDOW_M) * 0.75):   # past the cell's corners
+				var q: Vector3 = rock[0]
+				var r: float = float(rock[1])
+
+				if Vector2i(int(floor(q.x / float(WINDOW_M))), int(floor(q.z / float(WINDOW_M)))) != Vector2i(cx, cz):
+					continue   # each rock once: from its own cell
+
+				_checked("walk rocks")
+				var reach: int = int(ceil(r))
+
+				for dj in range(-reach, reach + 1):
+					for di in range(-reach, reach + 1):
+						var i: int = int(floor(q.x - x0 + 0.5)) + di
+						var j: int = int(floor(q.z - z0 + 0.5)) + dj
+
+						if i < 0 or j < 0 or i >= n or j >= n or swim[j * n + i] == 1:
+							continue
+
+						if Vector2(x0 + float(i) - q.x, z0 + float(j) - q.z).length() < r * 0.9:
+							top[j * n + i] = maxf(top[j * n + i], base[j * n + i] + r * 0.7)   # from the bare ground, so overlapping rocks do not stack
+							ground[j * n + i] = top[j * n + i]   # the rock is the floor there
+
+	var stand: PackedByteArray = PackedByteArray()   # 1: a floor a player stands and jumps on (under 45 degrees) or water
+	stand.resize(n * n)
+
+	for j in n:
+		for i in n:
+			var k: int = j * n + i
+
+			if swim[k] == 1:
+				stand[k] = 1
+				continue
+
+			# The floor's own slope (ground and rocks; a swum neighbour's water surface is not floor).
+			var gx: float = (ground[j * n + mini(i + 1, n - 1)] - ground[j * n + maxi(i - 1, 0)]) / float(mini(i + 1, n - 1) - maxi(i - 1, 0))
+			var gz: float = (ground[mini(j + 1, n - 1) * n + i] - ground[maxi(j - 1, 0) * n + i]) / float(mini(j + 1, n - 1) - maxi(j - 1, 0))
+			stand[k] = 1 if gx * gx + gz * gz <= 1.0 else 0
+
+	# Backwards from the window's edge: a spot is free when it has a step to a free spot.
+	var can_leave: PackedByteArray = PackedByteArray()
+	can_leave.resize(n * n)
+	var queue: PackedInt32Array = PackedInt32Array()
+
+	for k in n:
+		for edge in [k, (n - 1) * n + k, k * n, k * n + n - 1]:
+			if can_leave[edge] == 0:
+				can_leave[edge] = 1
+				queue.append(edge)
+
+	var head: int = 0
+	var steps: Array = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+
+	while head < queue.size():
+		var b: int = queue[head]
+		head += 1
+		var bi: int = b % n
+		var bj: int = int(float(b) / float(n))
+
+		for d in steps:
+			var ai: int = bi + d.x
+			var aj: int = bj + d.y
+
+			if ai < 0 or aj < 0 or ai >= n or aj >= n:
+				continue
+
+			var a: int = aj * n + ai
+
+			if can_leave[a] == 1:
+				continue
+
+			var rise: float = (minf(top[b], maxf(ground[b], top[a])) if swim[b] == 1 else top[b]) - top[a]   # into water: wade in from its bed, then swim up
+			var can: bool = rise <= 0.0 or (stand[a] == 1 and rise <= (WALK_BANK_M if swim[a] == 1 else WALK_JUMP_M))
+
+			if can:
+				can_leave[a] = 1
+				queue.append(a)
+
+	# The trapped spots inside the chunk, gathered into pits.
+	var seen: PackedByteArray = PackedByteArray()
+	seen.resize(n * n)
+	var trapped: int = 0
+
+	for j in range(WALK_PAD_M, n - WALK_PAD_M):
+		for i in range(WALK_PAD_M, n - WALK_PAD_M):
+			var k: int = j * n + i
+			_checked("walk spots")
+
+			if can_leave[k] == 1 or seen[k] == 1:
+				continue
+
+			var pit: PackedInt32Array = PackedInt32Array([k])
+			seen[k] = 1
+			var p_head: int = 0
+			var low: int = k
+			var rim: float = INF
+
+			while p_head < pit.size():
+				var c: int = pit[p_head]
+				p_head += 1
+
+				if top[c] < top[low]:
+					low = c
+
+				for d in steps:
+					var ni: int = c % n + d.x
+					var nj: int = int(float(c) / float(n)) + d.y
+
+					if ni < 0 or nj < 0 or ni >= n or nj >= n:
+						continue
+
+					var m: int = nj * n + ni
+
+					if can_leave[m] == 1:
+						rim = minf(rim, top[m])
+					elif seen[m] == 0:
+						seen[m] = 1
+						pit.append(m)
+
+			var inner: int = 0
+
+			for c in pit:
+				var ci: int = c % n
+				var cj: int = int(float(c) / float(n))
+				inner += 1 if ci >= WALK_PAD_M and cj >= WALK_PAD_M and ci < n - WALK_PAD_M and cj < n - WALK_PAD_M else 0
+
+			trapped += inner
+			var at: Vector3 = Vector3(x0 + float(low % n), top[low], z0 + floorf(float(low) / float(n)))
+			var note: String = "%d m2 (%d in this chunk), floor y %.1f, lowest way out y %.1f%s" % [pit.size(), inner, top[low], rim, ", water" if swim[low] == 1 else ""]
+			_fault("walk_trap", float(pit.size()), at, note)
+
+			if rim - top[low] >= float(FAULTS["walk_trap_deep"][1]):
+				_fault("walk_trap_deep", rim - top[low], at, note)
+
+	if trapped > 0:
+		_checked("walk spots trapped", trapped)

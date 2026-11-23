@@ -211,6 +211,14 @@ if looks.returncode != 0:
     for line in looks.stdout.splitlines()[1:]:
         bad("look name: " + line)
 
+clips = subprocess.run([sys.executable, "tools/model_clips.py"], capture_output=True, text=True)      # every clip models.json names is in its model file
+if clips.returncode != 0:
+    for line in clips.stdout.splitlines():
+        if line.startswith("FAIL "):
+            bad("animal clip: " + line[5:])
+    if "FAIL " not in clips.stdout:
+        bad("animal clip check crashed: " + clips.stderr[-200:])
+
 text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_output=True, text=True)
 if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
     for line in text.stdout.splitlines()[:-1]:
