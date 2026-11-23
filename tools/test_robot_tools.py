@@ -172,6 +172,9 @@ def test_check():
 		("a ROBOT FAIL line", "robot1_play.log", "ROBOT Robot 1 FAIL held remote player 9's held item is 0.8 m from its hand"),
 		("an AUDIT jump", "server.log", "AUDIT jump 4 deer 6000 9.0 0.10 (0, 0, 0) (9, 0, 0) state 2"),
 		("a SCRIPT ERROR", "server.log", "SCRIPT ERROR: Invalid call. Nonexistent function 'x'."),
+		("a hunt of 12 strikes and no hit", "robot1_play.log", "ROBOT Robot 1 HUNT deer 4 12 0 1.0 up 100 100 30"),
+		("a robot client that exited 134 (an abort)", "robot1_play.exit", "134"),
+		("an engine ERROR not on the known list", "server.log", "ERROR: Cannot open file 'res://.godot/imported/x.scn'."),
 	]
 
 	for what, name, extra in cases:
@@ -186,6 +189,26 @@ def test_check():
 
 	with tempfile.TemporaryDirectory() as d:
 		good_logs(d)
+
+		with open(os.path.join(d, "server.log"), "a") as f:
+			f.write("ERROR: 5 resources still in use at exit (run with --verbose for details).\n")
+
+		r = run_check(d)
+		check(r.returncode == 0, "robot_check lets the known exit leak notice pass")
+
+	with tempfile.TemporaryDirectory() as d:
+		good_logs(d)
+		write(d, "robot1_play.log", ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)", "ROBOT Robot 1 done: plan first_hours, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)", "ROBOT Robot 2 done: plan first_hours, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		r = run_check(d)
+		check(r.returncode == 1 and "held check never ran" in r.stdout, "robot_check fails two first_hours robots that measured no held item")
+		write(d, "robot1_play.log", ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)", "ROBOT Robot 1 done: plan light, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)", "ROBOT Robot 2 done: plan light, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		r = run_check(d)
+		check(r.returncode == 0, "robot_check does not ask a light plan for held items")
+
+	with tempfile.TemporaryDirectory() as d:
+		good_logs(d)
 		write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)"])
 		r = run_check(d)
 		check(r.returncode == 1 and "never finished" in r.stdout, "robot_check fails a robot that joined but never finished")
@@ -197,8 +220,58 @@ def test_check():
 		check(r.returncode == 2, "robot_check calls a robot that never joined a broken run (exit 2)")
 
 
+def watch_logs(d, jump=False, swing_clip="chop", still=False):
+	"""A walker that walks 3 m/s east for 4 s from x 0, stops, swings, sleeps; a watcher drawing it 300 ms late every 20 ms."""
+	ev = ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)",
+		"ROBOT Robot 1 EVENT walk 10000 0.00 0.00 0.00 1.00 0.00 walk", "ROBOT Robot 1 EVENT stop 14000 12.00 0.00 0.00 %s" % ("0.00" if still else "3.00"),
+		"ROBOT Robot 1 EVENT swing 17500 12.00 0.00 0.00", "ROBOT Robot 1 EVENT sleep_on 20000 12.00 0.00 0.00",
+		"ROBOT Robot 1 EVENT sleep_off 26000 12.00 0.00 0.00", "ROBOT Robot 1 EVENT end 30000 12.00 0.00 0.00", "ROBOT Robot 1 done: plan watch"]
+	rows = []
+
+	for ms in range(9000, 30000, 20):
+		x = 0.0 if still else min(max((ms - 10300) * 0.003, 0.0), 12.0)
+
+		if jump and 12000 <= ms < 12100:
+			x += 1.0
+
+		state = 16 if 20300 <= ms <= 26300 else 0
+		clip = swing_clip if 17800 <= ms <= 18500 else "idle"
+		rows.append("ROBOT Robot 2 W 7 %d %.3f 0.000 0.000 %d %s 0.110" % (ms, x, state, clip))
+
+	write(d, "robot1_play.log", ev)
+	write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)"] + rows)
+
+
+def test_others():
+	"""A runner at 9 m/s, pose lines 0.5 s apart, drawn on its path between them, passes; drawn 3 m off its path four times fails."""
+	for what, off, want in [("a runner drawn between its pose lines passes", 0.0, 0), ("a player drawn 3 m off its path fails", 3.0, 1)]:
+		with tempfile.TemporaryDirectory() as d:
+			good_logs(d)
+			poses = ["ROBOT Robot 2 POSE 8 %d 0 %.2f 0.00 0.00 9.00" % (1000 + 500 * i, 4.5 * i) for i in range(12)]
+			sees = ["ROBOT Robot 1 SEES 8 %d 0 %.2f 0.00 %.2f run" % (1250 + 500 * i, 4.5 * i - 2.25, off) for i in range(2, 12)]
+			poses += ["ROBOT Robot 1 POSE 7 %d 0 0.00 0.00 50.00 0.00" % (1000 + 500 * i) for i in range(12)]
+			sees += ["ROBOT Robot 2 SEES 7 %d 0 0.00 0.00 50.00 idle" % (1250 + 500 * i) for i in range(2, 12)]
+
+			with open(os.path.join(d, "robot1_play.log"), "a") as f:
+				f.write("\n".join([l for l in sees if l.startswith("ROBOT Robot 1")] + [l for l in poses if l.startswith("ROBOT Robot 1")]) + "\n")
+
+			write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)"] + [l for l in poses + sees if l.startswith("ROBOT Robot 2")] + ["ROBOT Robot 2 done: 0 fails"])
+			r = run_check(d)
+			check(r.returncode == want, "robot_check others: %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
+
+
+def test_watch():
+	for what, kw, want in [("a smooth walker passes", {}, 0), ("a 1 m jump fails", {"jump": True}, 1), ("a swing never shown fails", {"swing_clip": "idle"}, 1), ("a walker that never moved fails", {"still": True}, 1)]:
+		with tempfile.TemporaryDirectory() as d:
+			watch_logs(d, **kw)
+			r = subprocess.run([sys.executable, os.path.join(HERE, "robot_watch.py"), d], capture_output=True, text=True)
+			check(r.returncode == want, "robot_watch: %s (%s)" % (what, r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr[-200:]))
+
+
 if __name__ == "__main__":
 	test_link()
 	test_check()
+	test_others()
+	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
 	sys.exit(1 if failures else 0)
