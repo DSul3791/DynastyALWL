@@ -25,7 +25,7 @@ func _init() -> void:
 		t.on_step("deer", Vector3(2.0 + float(n) * 0.8, 1.0, 3.0), 1000 + n * 300)
 
 	check(t.shown() == 6, "a walking deer near the player leaves a print a step (%d)" % t.shown())
-	check(absf(float(t.prints[5][1])) < 0.01, "heading east along its steps (yaw %.2f)" % float(t.prints[5][1]))
+	check(absf(float(t.marks[5][1])) < 0.01, "heading east along its steps (yaw %.2f)" % float(t.marks[5][1]))
 	t.on_step("duck", Vector3(1.0, 1.0, 1.0), 3000)
 	t.on_step("deer", Vector3(float(c["draw_m"]) + 5.0, 1.0, 0.0), 3100)
 	check(t.shown() == 6, "a duck and a deer past draw_m leave nothing")

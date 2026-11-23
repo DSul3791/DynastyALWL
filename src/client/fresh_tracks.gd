@@ -1,20 +1,20 @@
 extends Node3D
 
 # Fresh tracks (hunting thread, 23 Nov 2026; Dave: "making game trails actually visible with signs of game ... extrapolate from them and see
-# what would make for a fun hunting game"): a live animal walking near the player leaves prints where its feet land, fading over life_s,
+# what would make for a fun hunting game"): a live animal walking near the player leaves marks where its feet land, fading over life_s,
 # so a hunter can follow the animal itself, not only its trail. Client only: each print comes from animal_view's `stepped` signal (a
 # footfall of a drawn animal, read only; the animals thread's hook), so there is no message, no server work and no protocol change. Every
 # client near the animal draws the same animal's steps. A higher Tracking keeps them in sight longer (life_s x up to life_mult at 100).
-# One MultiMesh per print shape (hoof, paw, hop), at most max_prints in all, rebuilt at most twice a second and only while prints change.
+# One MultiMesh per print shape (hoof, paw, hop), at most max_prints in all, rebuilt at most twice a second and only while marks change.
 
 const CONFIG := "res://data/look/fresh_tracks.json"
 const PRINT_COLOR := Color(0.17, 0.13, 0.09)
 
 var cfg: Dictionary = {}
 var shape_of: Dictionary = {}      # animal kind -> "hoof", "paw" or "hop" (data/look/fresh_tracks.json kinds)
-var prints: Array = []             # [Vector3 at, yaw, born msec, shape], oldest first
+var marks: Array = []             # [Vector3 at, yaw, born msec, shape], oldest first
 var tracking: int = 0              # the player's Tracking (terrain_client sets it each frame with the trail signs)
-var player_at: Callable            # () -> the player's position: prints farther than draw_m are not laid
+var player_at: Callable            # () -> the player's position: marks farther than draw_m are not laid
 var _last_step: Dictionary = {}    # kind -> [Vector3, msec] of its last footfall, for the heading of the next
 var _nodes: Dictionary = {}        # shape -> MultiMeshInstance3D
 var _dirty: bool = false
@@ -58,16 +58,16 @@ func on_step(kind: String, at: Vector3, now_msec: int = -1) -> void:
 		yaw = float(last[2]) if last.size() > 2 else 0.0
 
 	_last_step[kind] = [at, now, yaw]
-	var side: Vector2 = Vector2(cos(yaw), sin(yaw)).orthogonal() * float(cfg.get("side_m", 0.07)) * (1.0 if prints.size() % 2 == 0 else -1.0)
-	prints.append([Vector3(at.x + side.x, at.y, at.z + side.y), yaw, now, shape])
+	var side: Vector2 = Vector2(cos(yaw), sin(yaw)).orthogonal() * float(cfg.get("side_m", 0.07)) * (1.0 if marks.size() % 2 == 0 else -1.0)
+	marks.append([Vector3(at.x + side.x, at.y, at.z + side.y), yaw, now, shape])
 
-	if prints.size() > int(cfg.get("max_prints", 240)):
-		prints = prints.slice(prints.size() - int(cfg.get("max_prints", 240)))
+	if marks.size() > int(cfg.get("max_prints", 240)):
+		marks = marks.slice(marks.size() - int(cfg.get("max_prints", 240)))
 
 	_dirty = true
 
 
-# Called each frame: drops prints past their life and redraws, at most twice a second, only when something changed or is fading.
+# Called each frame: drops marks past their life and redraws, at most twice a second, only when something changed or is fading.
 func update(now_msec: int = -1) -> void:
 	var now: int = Time.get_ticks_msec() if now_msec < 0 else now_msec
 
@@ -76,13 +76,13 @@ func update(now_msec: int = -1) -> void:
 
 	_next_msec = now + 500
 
-	if prints.is_empty() and not _dirty:
+	if marks.is_empty() and not _dirty:
 		return
 
 	var life: float = life_s(tracking, cfg) * 1000.0
-	var kept: Array = prints.filter(func(p): return float(now - int(p[2])) < life)
-	_dirty = _dirty or kept.size() != prints.size() or not prints.is_empty()   # prints fade as they age
-	prints = kept
+	var kept: Array = marks.filter(func(p): return float(now - int(p[2])) < life)
+	_dirty = _dirty or kept.size() != marks.size() or not marks.is_empty()   # marks fade as they age
+	marks = kept
 
 	if not _dirty:
 		return
@@ -90,7 +90,7 @@ func update(now_msec: int = -1) -> void:
 	_dirty = false
 	var rows: Dictionary = {"hoof": [], "paw": [], "hop": []}
 
-	for p in prints:
+	for p in marks:
 		var age: float = float(now - int(p[2])) / life
 		(rows[str(p[3])] as Array).append([p[0], float(p[1]), clampf(1.0 - age * age, 0.0, 1.0)])   # strong while fresh, fading out at the end
 
@@ -99,7 +99,7 @@ func update(now_msec: int = -1) -> void:
 
 
 func shown() -> int:
-	return prints.size()
+	return marks.size()
 
 
 func _fill(shape: String, rows: Array) -> void:
