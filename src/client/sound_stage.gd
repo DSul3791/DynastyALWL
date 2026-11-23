@@ -76,6 +76,7 @@ const OTHER_STEP_VOICES := 6           # other players' steps sounding at once (
 const CUE_BLOW := 1
 const CUE_PICK := 2
 const CUE_CRAFT := 3
+const KNIFE_CUT_STRENGTH := 0.35       # a knife cut on a carcass: the flesh hit clip, soft (held_item.gd plays the own; other_action material 5)
 const OTHER_WORK_UNIT_M := 1.5         # craft work is as loud at 1.5 m as the own is at the own ears (item_sounds WORK_DB, flat)
 const OTHER_WORK_REACH_M := 25.0
 const OTHER_WORK_DB := -18.0
@@ -1118,8 +1119,8 @@ func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouch
 	return true
 
 
-# Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material),
-# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft began (`recipe` is its recipe row). The same clips
+# Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material; 5 a knife on a carcass),
+# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft being worked (`recipe` is its recipe row; sent again as each clip ends). The same clips
 # and levels as the own blow, pick and craft work, positional. False when nothing played (an unknown cue, no room). Counted in others_actions.
 func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}, recipe: Dictionary = {}) -> bool:
 	if not has_room() or not at.is_finite():
@@ -1133,7 +1134,9 @@ func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}
 			var tool: String = "pick" if detail / 8 == 1 else "axe"
 			var material: int = detail % 8
 
-			if material == 3:
+			if material == 5:
+				done = spear != null and spear.hit("flesh", at, KNIFE_CUT_STRENGTH)
+			elif material == 3:
 				done = hits != null and hits.hit_ground(tool, at, 1.0)
 			elif material in [0, 1, 2, 4]:
 				done = hits != null and hits.hit(tool, ["wood", "stone", "soil", "", "wood"][material], at, 0.7 if material == 4 else 1.0)

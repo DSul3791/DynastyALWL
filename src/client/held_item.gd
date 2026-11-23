@@ -1361,6 +1361,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if carcass != 0:
 				_arm_play("use", 0.6)
+
+				if _sound != null:
+					_sound.spear.hit("flesh", (_inv._world[carcass]["pos"] as Vector3) + Vector3(0.0, 0.3, 0.0), _sound.KNIFE_CUT_STRENGTH)   # the cut is heard (others hear it too: action_cue)
+
 				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # the knife in hand (protocol 117)
 				return true
 

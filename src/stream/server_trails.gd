@@ -232,8 +232,12 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 			if route_sig != (int(rec[2]) if not rec.is_empty() else _NO_ROUTES) and ranges != null and ranges.wire_count(key) > 0:
 				print("trails: block %d,%d to peer %d with %d routes (%d bytes)" % [key.x, key.y, peer, ranges.wire_count(key), routes.size()])   # once a block's routes change (a lane checks trails are sent)
 
+			var sent_routes: PackedByteArray = routes
+			if not rec.is_empty() and int(rec[2]) == route_sig:
+				sent_routes = Codec.ROUTES_SAME   # only the worn cells changed: the routes this peer has are still right, not sent again (protocol 158)
+
 			known[key] = [ver, now_msec, route_sig]
-			out.append([key.x, key.y, Codec.encode(cells), routes])
+			out.append([key.x, key.y, Codec.encode(cells), sent_routes])
 
 	_sent[peer] = known
 	return out
