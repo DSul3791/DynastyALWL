@@ -52,6 +52,11 @@ func _initialize() -> void:
 	root.add_child(page)
 	await process_frame
 	check(page.rows.is_empty() or page.rows.all(func(row): return bool(row.get("official", false))), "a new player's list holds no servers of their own")
+	var ServerPickScript = page.get_script()
+	check(ServerPickScript.add_fields("", "192.168.0.108:24600") == ["192.168.0.108:24600", ""] and ServerPickScript.add_fields(" ", "play.example.org") == ["play.example.org", ""],
+		"an address typed into the Name box with the Address box empty is used as the address")
+	check(ServerPickScript.add_fields("", "My box") == ["", "My box"] and ServerPickScript.add_fields("a.org", "b.org") == ["a.org", "b.org"], "a plain name or a filled Address box is left as typed")
+	check(page.add_server("").contains("Address box"), "an empty address says which box to fill")
 	check(page.add_server("my server here") != "" and ServerList.load_rows().is_empty(), "a bad address is named in the Add box and nothing is saved")
 	check(page.add_server("127.0.0.1:%d" % port) == "", "a working server is added")
 	check(page.add_server("127.0.0.1:%d" % (port + 50), "Old LAN box") == "", "a server with nothing on it is added, with a name")
