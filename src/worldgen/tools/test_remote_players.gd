@@ -688,6 +688,9 @@ func _check_catch_up() -> void:
 		t += dt
 
 	check(worst < 1.0, "a player breaking into a run is drawn within 1 m of its path (worst %.2f m)" % worst)
+	# After this computer's own stall (#1765, as the animals): the others are drawn where they are, and the stall's lateness is not kept.
+	var view_code: String = FileAccess.get_file_as_string("res://src/client/player_view.gd")
+	check(view_code.contains("MotionBuffer.clock_note(_clock, now_s, newest, now_s <= _settle_until)") and view_code.contains("if settle:\n\t\t\tMotionBuffer.settle(b)") and view_code.contains("_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)"), "after this computer's own stall other players are settled at their points (player_view.gd, as animal_view)")
 
 
 func _check_far_pose() -> void:
