@@ -268,8 +268,8 @@ func _pull_up() -> void:
 	check(tries_ok, "a bear a wall keeps from its foe charges again, %d times in all (2 to %d), never lands (%d blows) and then calms (state %d)" % [charges, 1 + BigGame.WALL_TRIES, landed.size(), after])
 	show_track(tries_ok)
 
-	# One 2 m wall piece, 200 m on (clear of the long wall), is no shield: each charger either lands or charges round it to an open line to
-	# the player, never through it.
+	# One 2 m wall piece, 200 m on (clear of the long wall), is no shield: each charger comes round it (a second try charges for a way round,
+	# squares up and charges home) and lands, never through it.
 	var piece: int = items.dev_place("log_wall@301.6,0.0,90")
 	var lone: Vector3 = Vector3(301.2, 10.0, 0.0)
 	wall_x = 301.6
@@ -282,8 +282,8 @@ func _pull_up() -> void:
 		var one: Dictionary = put(sp, lone.x + minf(10.8, float(animals.species_def(sp)["defend"].get("calm_m", 32.0)) - 1.0))   # inside its calm_m (a hyena 10 m)
 		animals.big_game.warn(one, lone, -1.0, true)
 		run(one, 30.0)
-		var round_ok: bool = (not landed.is_empty() or opened) and crossed == 0
-		check(round_ok, "a %s charging a player behind one 2 m wall piece lands (%d blows) or gets round it (%s), never through it (%d crossings)" % [sp, landed.size(), "round" if opened else "never round", crossed])
+		var round_ok: bool = not landed.is_empty() and crossed == 0
+		check(round_ok, "a %s charging a player behind one 2 m wall piece comes round it and lands (%d blows; %s, %d charges), never through it (%d crossings)" % [sp, landed.size(), "round" if opened else "never round", charges, crossed])
 		show_track(round_ok)
 
 	wall_x = WALL_X

@@ -148,6 +148,8 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	a["charged_s"] = 0.0
 	a["hit"] = false
 	a.erase("late")
+	a.erase("walled_start")   # a hunter's chase is not tried again at a wall
+	a.erase("round_to")
 	a["bluff"] = false
 	a["run_m"] = run_m
 	return true
@@ -231,6 +233,18 @@ func step(a: Dictionary, dt: float) -> void:
 			a["hit"] = false
 			a.erase("late")
 			a["bluff"] = _bluffs(a, def)
+			# Its foe behind a wall: on a second try it charges for a way round the wall's end (a point near the foe it can see them from,
+			# in its own sight now) instead of into the wall again, then squares up and charges home from there (_way_round).
+			a["walled_start"] = not near.is_empty() and not near.has("dog") and host.wall_between(a["pos"], near["pos"])
+			a.erase("round_to")
+
+			if bool(a["walled_start"]) and int(a.get("wall_tries", 0)) > 0 and not bool(a["bluff"]):
+				var round_to: Vector3 = _way_round(a, near["pos"])
+
+				if round_to != Vector3.INF:
+					a["round_to"] = round_to
+					a["dir"] = atan2(round_to.z - a["pos"].z, round_to.x - a["pos"].x)
+					a["heading"] = float(a["dir"])
 
 		return
 
@@ -247,8 +261,15 @@ func step(a: Dictionary, dt: float) -> void:
 		var may_land: bool = float(a["charged_s"]) >= float(def.get("strike_min_s", 0.0)) - 0.0001
 		var step_m: float = speed * dt
 
+		if a.has("round_to") and not near.is_empty() and not host.wall_between(a["pos"], near["pos"]):
+			# Round the wall's end with its foe in sight: it squares up to them (a short warning) and charges home from here.
+			a.erase("round_to")
+			a["wall_tries"] = int(a.get("wall_tries", 0)) + 1   # a try too: a foe who steps back behind the wall each time does not keep it at this forever
+			_start_warn(a, near["pos"], float(def.get("provoked_warn_s", 0.8)), bool(a.get("no_bluff", false)))
+			return
+
 		if not near.is_empty():
-			var to2: Vector3 = near["pos"]
+			var to2: Vector3 = a["round_to"] if a.has("round_to") else near["pos"]
 			var want: float = atan2(to2.z - a["pos"].z, to2.x - a["pos"].x)
 			var turn: float = clampf(angle_difference(float(a["dir"]), want), -float(def.get("turn_rad_s", 0.25)) * dt, float(def.get("turn_rad_s", 0.25)) * dt)
 			a["dir"] = float(a["dir"]) + turn
@@ -317,13 +338,15 @@ func step(a: Dictionary, dt: float) -> void:
 			a["state"] = RECOVER
 			a["timer"] = float(def.get("recover_s", 5.0))
 			a.erase("run_m")
-			a["walled"] = not bool(a["hit"]) and not near.is_empty() and not near.has("dog") and host.wall_between(a["pos"], near["pos"])   # kept from its foe by a wall
+			a["walled"] = not bool(a["hit"]) and bool(a.get("walled_start", false))   # its foe was behind a wall when it set off, and it missed
+			a.erase("round_to")
 
 		return
 
-	# RECOVER: it stands blowing, whatever happened; afterwards it is calm and will not warn again for a while. One a wall kept from its
-	# foe is still angry: it warns again (short) and charges from where it stands, sliding on along the wall, up to WALL_TRIES times while
-	# the foe stays within calm_m behind it, so one short wall piece is no shield (coordinator, 23 Nov 2026); then it calms as after any charge.
+	# RECOVER: it stands blowing, whatever happened; afterwards it is calm and will not warn again for a while. One that set off at a foe
+	# behind a wall and missed is still angry: it warns again (short) and charges again, for a way round the wall when it sees one, up to
+	# WALL_TRIES times while the foe stays within calm_m, so one short wall piece is no shield and getting round it is followed by a real
+	# attack (coordinator, 23 Nov 2026); then it calms as after any charge.
 	a["timer"] -= dt
 
 	if a["timer"] <= 0.0:
@@ -332,12 +355,40 @@ func step(a: Dictionary, dt: float) -> void:
 
 		var calm_m: float = float(def.get("calm_m", 32.0))
 
-		if not foe.is_empty() and not foe.has("dog") and int(a.get("wall_tries", 0)) < WALL_TRIES and Vector2(foe["pos"].x - a["pos"].x, foe["pos"].z - a["pos"].z).length() <= calm_m and host.wall_between(a["pos"], foe["pos"]):
+		if not foe.is_empty() and not foe.has("dog") and int(a.get("wall_tries", 0)) < WALL_TRIES and Vector2(foe["pos"].x - a["pos"].x, foe["pos"].z - a["pos"].z).length() <= calm_m:
 			a["wall_tries"] = int(a.get("wall_tries", 0)) + 1
 			_start_warn(a, foe["pos"], float(def.get("provoked_warn_s", 0.8)), bool(a.get("no_bluff", false)))
 			return
 
 		_calm(a, def)
+
+
+# A way round a wall to `foe`: the nearest point on a ring round them (contact plus 1 m, then 2 m further) from which the foe is in sight
+# (no wall between) and which is in its own sight now, not inside a wall's margin. Vector3.INF when there is none (a long wall: it slides).
+# Cost: at most 32 wall checks, once a charge that sets off at a walled foe.
+func _way_round(a: Dictionary, foe: Vector3) -> Vector3:
+	var pos: Vector3 = a["pos"]
+	var ring: float = AnimalContact.contact_m(str(a["sp"])) + 1.0
+
+	for r in [ring, ring + 2.0]:
+		var best: Vector3 = Vector3.INF
+		var best_d: float = INF
+
+		for k in 16:
+			var turn: float = TAU * float(k) / 16.0
+			var c: Vector3 = Vector3(foe.x + cos(turn) * float(r), pos.y, foe.z + sin(turn) * float(r))
+			var d: float = Vector2(c.x - pos.x, c.z - pos.z).length()
+
+			if d >= best_d or host.crosses_wall(c.x, c.z, c.x, c.z) or host.wall_between(c, foe) or host.wall_between(pos, c):
+				continue
+
+			best = c
+			best_d = d
+
+		if best != Vector3.INF:
+			return best
+
+	return Vector3.INF
 
 
 # Steering's `cross` for one charging step: the step, carried on its nose and WALL_LOOK_S of running, keeps clear of every wall, so the
@@ -428,6 +479,8 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 
 func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("walled")
+	a.erase("walled_start")
+	a.erase("round_to")
 	a.erase("wall_tries")
 	a.erase("late")
 	a.erase("foe_dog")
