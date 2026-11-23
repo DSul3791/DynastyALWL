@@ -178,7 +178,9 @@ def check():
 
         names = {c[0] for c in listed[scene]} | {c[0].replace(".", "_") for c in listed[scene]}      # a row may name Idle_Breathing.001 as Idle_Breathing_001 (the lioness row)
 
-        for role, wanted in (row.get("clips") or {}).items():
+        named = list((row.get("clips") or {}).items()) + [("idle " + k, v) for k, v in (row.get("idle_variants") or {}).items()]
+
+        for role, wanted in named:
             for clip in wanted if isinstance(wanted, list) else [wanted]:
                 checked += 1
 
