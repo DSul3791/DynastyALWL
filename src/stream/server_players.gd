@@ -103,11 +103,20 @@ const STAMP_BEHIND_MS := 250.0
 const STAMP_MIN_MPS := 0.5         # slower than this the arrival gap is used (a standing player's jitter moves nothing)
 
 
+# When its latest report arrived (server ms): news is judged on arrivals, like a swing's or a hand's, not on the earlier send stamp.
+func _arrived_ms(peer: int) -> int:
+	return int((_move[peer] as Array)[3]) if _move.has(peer) else int(_report_ms.get(peer, 0))
+
+
 func note_move(peer: int, position: Vector3, velocity: Vector3) -> void:
 	var now: int = int(now_ms.call())
 	var m: Array = _move.get(peer, [])
 
-	if m.is_empty() or not position.is_finite() or not velocity.is_finite():
+	if not position.is_finite() or not velocity.is_finite():
+		position = (m[0] if not m.is_empty() else Vector3.ZERO)
+		velocity = Vector3.ZERO   # a made-up report: timed by its arrival
+
+	if m.is_empty():
 		_move[peer] = [position, 0.0, float(now), now, now]
 		return
 
@@ -116,7 +125,8 @@ func note_move(peer: int, position: Vector3, velocity: Vector3) -> void:
 	var speed2: float = velocity.length_squared()
 
 	if speed2 >= STAMP_MIN_MPS * STAMP_MIN_MPS:
-		gap = clampf((position - (m[0] as Vector3)).dot(velocity) / speed2, arrived - STAMP_JITTER_S, arrived + STAMP_JITTER_S)
+		var moved_s: float = (position - (m[0] as Vector3)).dot(velocity) / speed2
+		gap = clampf(moved_s, arrived - STAMP_JITTER_S, arrived + STAMP_JITTER_S) if is_finite(moved_s) else arrived
 
 	var sent_s: float = float(m[1]) + maxf(gap, 0.01)
 	var off: float = minf(float(m[2]) + STAMP_CREEP_MS, float(now) - sent_s * 1000.0)
@@ -212,7 +222,7 @@ func tick(delta: float) -> void:
 			shown = [left, more, now]
 			_shown[peer] = shown
 
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(int(_report_ms[peer]), int(swing[1])), int(shown[2])), left, more]
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more]
 
 	for receiver in at:
 		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them

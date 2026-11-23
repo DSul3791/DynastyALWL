@@ -208,6 +208,23 @@ func _server() -> void:
 			worst = maxf(worst, leg_m / leg_s / real)
 
 	check(worst < 1.15 and after_arrival == 0, "a walker's legs keep their own length through 120 +- 30 ms jitter: drawn at most %.2fx its speed (want < 1.15), no stamp after its arrival (%d)" % [worst, after_arrival])
+	# A made-up report (NaN, huge numbers, a flood in one millisecond) only moves its own row's times, never ahead of the arrival nor
+	# more than STAMP_BEHIND_MS behind it, and always forward.
+	var bad: Array = [[Vector3(NAN, 0.0, 0.0), Vector3.ZERO], [Vector3(3e38, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)], [Vector3(-3e38, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)],
+			[Vector3.ZERO, Vector3(INF, 0.0, 0.0)], [Vector3(1.0, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)], [Vector3(2.0, 0.0, 0.0), Vector3(-2000.0, 0.0, 0.0)]]
+	var bad_ok: bool = true
+	var last_stamp: int = int(players._report_ms[9])
+
+	for k in range(60):
+		clock[0] += 0 if k % 3 != 0 else 7
+		var row: Array = bad[k % bad.size()]
+		players.note_move(9, row[0], row[1])
+		players.note_report(9, 0.0)
+		var st: int = int(players._report_ms[9])
+		bad_ok = bad_ok and st <= int(clock[0]) and st >= int(clock[0]) - int(PlayersScript.STAMP_BEHIND_MS) - 1 and st >= last_stamp
+		last_stamp = st
+
+	check(bad_ok and (players._move[9][0] as Vector3).is_finite(), "made-up reports keep the stamps within %d ms before their arrival, never after it, never back" % int(PlayersScript.STAMP_BEHIND_MS))
 	clock[0] = 2760
 	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
 	for i in range(8):
