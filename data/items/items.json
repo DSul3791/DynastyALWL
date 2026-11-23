@@ -8839,7 +8839,6 @@
 				"kind": "placeable",
 				"stack": 5,
 				"unstackable": true,
-				"future": true,
 				"durability": 40,
 				"repair": [
 					[
@@ -8869,7 +8868,6 @@
 				"kind": "placeable",
 				"stack": 5,
 				"unstackable": true,
-				"future": true,
 				"durability": 20,
 				"repair": [
 					[

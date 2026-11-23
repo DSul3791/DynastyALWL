@@ -250,7 +250,7 @@ func _init() -> void:
 
 	check(stray == 0, "no empty snare reads as sprung by something else after the restart (%d)" % stray)
 
-	# A catch half cut up when the server restarts is not laid again whole (its parts would come twice).
+	# A catch half cut up when the server restarts is still there half cut (its parts never come twice).
 	var cut_snare: int = -1
 
 	for id in traps_of(items, "snare_trap"):
@@ -267,13 +267,15 @@ func _init() -> void:
 	check(items._items.has(cut_carcass) and int(items._items[cut_carcass]["struct"]["blows"]) == 1, "one cut into a held catch")
 	save(items)
 	items = start(false, home)
-	var relaid: bool = false
+	var cut_blows: int = -1
 
 	for id in traps_of(items, "snare_trap"):
-		if items._items[id]["pos"] == cut_at:
-			relaid = items._items.has(int(items._items[id]["struct"].get("catch", 0)))
+		var c2: int = int(items._items[id]["struct"].get("catch", 0))
 
-	check(not relaid, "after a restart a half cut catch is not laid again whole")
+		if items._items[id]["pos"] == cut_at and items._items.has(c2):
+			cut_blows = int(items._items[c2]["struct"].get("blows", 0))
+
+	check(cut_blows == 1, "after a restart a half cut catch is still in its snare, half cut, not whole again (%d blows)" % cut_blows)
 	held.erase(cut_at)
 
 	# Collected with a knife: the parts go into the pack, the snare sets itself again once the carcass is gone.

@@ -27,6 +27,9 @@
 	"hit_send_m": 60.0,
 	"rewind_max_ms_note": "Protocol 155 (Dave 23 Nov 2026: 'battle was almost impossible'): a player's blow is judged where their screen showed the animal, at most this far back. The screen shows animals about 0.35 s behind (the row clock's delay, 0.1 to 0.8 s) plus half the ping, so 500 ms covers a normal internet game; a client claiming more is judged at 500 ms back (no hitting an animal that left long since).",
 	"rewind_max_ms": 500,
+	"dodge_view_ms_note": "A fair dodge (defend rows with fair_dodge; robots over 60 and 120 ms links with loss, 23 Nov 2026: 0 of 9 side-steps from a goblin or bandit got clear): a blow on a player is judged dodge_view_ms plus the link's round trip after the server's blow, against where the player then is, so a step the player made while their screen showed the strike counts. dodge_view_ms is how far behind the player's screen draws the server (the row clock's delay plus the trip down, about 0.35 s); dodge_late_max_ms caps it, so a slow or lying link cannot stretch it.",
+	"dodge_view_ms": 350,
+	"dodge_late_max_ms": 600,
 	"server_cap": 150,
 	"groups": {"enabled": true, "spacing_m": 3.0, "drift_m": 2.0, "scatter_deg": 25.0, "rain_bunch": 0.35, "wind_bunch": 0.25, "min_bunch": 0.5,
 		"note": "Herd groups (docs/design/HERD_GROUPS.md, MikeW 8 Nov 2026): off until gated. One leader per herd (on the ground) drifts drift_m a graze step, turned by the weather's _upwind_angle; the rest keep a spiral place round it at spacing_m (species group_spacing_m), closer in rain and wind when weather.on; on alarm they scatter up to scatter_deg either side and regroup at their places once safe."},
@@ -1145,6 +1148,8 @@
 			},
 			"defend": {
 				"strike_min_s": 0.35,
+				"fair_dodge": true,
+				"give_way": "player",
 				"strike_min_note": "A blow lands only once the charge has run this long, so it is drawn before it lands (robots over a lossy link, 23 Nov 2026). server_big_game.gd.",
 				"warn_m": 0.0,
 				"warn_s": 0.6,
@@ -4138,7 +4143,7 @@
 			"graze_s": [10.0, 30.0],
 			"flee_run_m": 30.0,
 			"flee_mps": 4.5,
-			"defend": {"strike_min_s": 0.35, "warn_m": 0.0, "warn_s": 0.8, "charge_mps": 5.0, "charge_m": 10.0, "turn_rad_s": 2.0, "hit_m": 1.6, "damage": 10.0, "recover_s": 2.0, "calm_m": 20.0, "cool_s": 4.0, "corner_m": 0.0, "corner_warn_s": 0.8, "provoked_m": 15.0, "provoked_warn_s": 0.6, "threat_m": 0.0, "threat_warn_s": 0.8},
+			"defend": {"strike_min_s": 0.35, "fair_dodge": true, "give_way": "player", "warn_m": 0.0, "warn_s": 0.8, "charge_mps": 5.0, "charge_m": 10.0, "turn_rad_s": 2.0, "hit_m": 1.6, "damage": 10.0, "recover_s": 2.0, "calm_m": 20.0, "cool_s": 4.0, "corner_m": 0.0, "corner_warn_s": 0.8, "provoked_m": 15.0, "provoked_warn_s": 0.6, "threat_m": 0.0, "threat_warn_s": 0.8},
 			"model": false
 		}
 	},

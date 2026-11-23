@@ -112,8 +112,8 @@ const DIG_COOLDOWN_MS := 700
 const DIG_RADIUS_M := 0.9
 const DIG_DEPTH_M := 0.25      # the hole is centred this far below the point struck
 const MINE_CELL_M := 8.0                 # one outcrop patch
-const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
-const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
+const MINE_STONES_PER_CELL := 6          # blows a patch takes before it rests (each breaks the tool's rate, boulders.json tools, never under 1)...
+const MINE_REGROW_S := 300.0             # ...and one blow comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
@@ -504,7 +504,7 @@ var rot_scanned: int = 0              # felled records looked at in the last rot
 var rot_removed: int = 0              # and how many rotted away in it
 var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id), pos, planted_at}
 var _flora_by_id: Dictionary = {}
-var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
+var _mined: Dictionary = {}         # Vector2i patch -> {taken blows, since msec, part: the stone fraction carried between blows}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
 var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
@@ -2257,14 +2257,23 @@ func _save_copy(id: int) -> Dictionary:
 	var out: Dictionary = _items[id].duplicate(true)
 
 	if out.has("struct") and _traps != null and _traps.is_kind(str(out["struct"].get("kind", ""))):
-		out["struct"]["trap_state"] = _traps.saved_state(_items[id])
+		out["struct"]["state_json"] = _traps.saved_state(_items[id])
+	elif out.has("struct") and _kept_transient(out["struct"]):
+		var st: Dictionary = out["struct"]
+		out["struct"]["state_json"] = JSON.stringify({"species": str(st.get("species", "")), "blows": int(st.get("blows", 0)), "parts": st.get("parts", null), "snared": bool(st.get("snared", false)), "left": float(out.get("left", CARCASS_LIFE_S))})
 
 	return out
 
 
 # Not saved in an area file: as _world_item_row skips (scatter, trunks and stumps, the showroom, the camp fire, a transient structure).
 static func _not_in_area(it: Dictionary) -> bool:
-	return it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")) or (it.has("struct") and bool(it["struct"].get("transient", false)))
+	return it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")) or (it.has("struct") and bool(it["struct"].get("transient", false)) and not _kept_transient(it["struct"]))
+
+
+# A transient structure that is saved all the same: a carcass, whole or half cut (the coordinator, 23 Nov 2026: a kill or a catch was
+# lost at every restart). Its species, blows, the parts still in it and its time left go in row 24 (_save_copy).
+static func _kept_transient(st: Dictionary) -> bool:
+	return str(st.get("kind", "")) == "carcass"
 
 
 # The hash of what a world item's saved row holds, its countdowns in AREA_STEP_S steps. The live record is changed only for the native hash and put
@@ -2514,14 +2523,14 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 	if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
 		return   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
-	if it.has("struct") and bool(it["struct"].get("transient", false)):
+	if it.has("struct") and bool(it["struct"].get("transient", false)) and not _kept_transient(it["struct"]):
 		return
 
 	if it.has("struct"):
 		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
 
-		if it["struct"].has("trap_state"):
-			(items[items.size() - 1] as Array).append(str(it["struct"]["trap_state"]))   # row 24: a set trap's state (server_traps.saved_state)
+		if it["struct"].has("state_json"):
+			(items[items.size() - 1] as Array).append(str(it["struct"]["state_json"]))   # row 24: a set trap's state (server_traps.saved_state) or a carcass's (_save_copy)
 
 		return
 
@@ -3184,7 +3193,7 @@ func drop_world_made(number: int, count: int, position: Vector3, lifetime_s: flo
 # (drops, stuck arrows, split logs), every placed structure with its contents (buildings, stations, containers, blueprint sites, tilled beds
 # and their crops, path patches, traps, carts and crates) and every campfire. Restored: felled trees stand again (trunks and stumps go, the
 # flora removals are cleared, saplings go), picked-up scatter, mined boulders and bog iron, picked plants and fruit, shore finds, nests, fish
-# and ore patches. Kept: what the server put down ("world": den piles, goblin gifts, loot), the showroom and carcasses (neither is saved), and
+# and ore patches. Kept: what the server put down ("world": den piles, goblin gifts, loot), the showroom (not saved) and carcasses (saved, they rot by themselves), and
 # every character's pack, worn gear, vitals, skills and progression - remains too: they hold a dead character's pack and purse (they expire by
 # themselves). The ground is the server scene's part (reset_terrain_edits, after this). Written to disk before it returns, so a hard stop
 # cannot bring anything back. Returns how many player-made rows went.
@@ -3598,7 +3607,7 @@ func _punch(peer: int, direction: Vector3) -> void:
 	_note_work(peer, "")   # a punch tires like any blow (BUG-001)
 
 
-# A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
+# A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Saved over a restart (_kept_transient), rots in 2 game days.
 func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 	if not _carcass_cfg.get("species", {}).has(species) or not _structures.has("carcass"):
 		return 0
@@ -6107,7 +6116,6 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (b = 1, a point 2.5 m ahead: rock_at is x/z only, so over bare rock a claimed miss still gives nothing): it tires, it breaks no stone, wears nothing, trains nothing
 		return
 
-	_wear_slot(peer, inv, tool, "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -6118,12 +6126,22 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 
 	if int(state["taken"]) >= MINE_STONES_PER_CELL:
 		_mined[patch] = state
+		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a resting patch: the swing tires, and wears nothing (it broke nothing)
 		return
 
+	# A better tool breaks more off a blow (coordinator's gathering walk, 23 Nov 2026: every pick and axe gave one stone a blow on bare rock):
+	# boulders.json tools' rate for the tool in hand, never under one stone a blow (a stone axe keeps its one), a fraction carried in the
+	# patch's "part". A patch still takes MINE_STONES_PER_CELL blows before it rests, so a better pick takes more from it, not less.
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[tool]))
+	var rate: float = maxf(float((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 1.0)), 1.0)
+	_wear_slot(peer, inv, tool, "rock")   # after reading the tool: one that breaks on this blow leaves its slot empty
+	var part: float = float(state.get("part", 0.0)) + rate
+	var stones: int = int(floor(part + 0.001))
+	state["part"] = part - float(stones)
 	state["taken"] = int(state["taken"]) + 1
 	_mined[patch] = state
 	var before: Array = _snapshot(inv)
-	_take_in(peer, inv, table.number_of("stone"), 1)
+	_take_in(peer, inv, table.number_of("stone"), stones)
 	practice(peer, "mine_rock")
 
 	_send_changes(peer, inv, before)
@@ -8301,6 +8319,24 @@ func _load_world_items() -> void:
 
 				if row.size() > 24 and typeof(row[24]) == TYPE_STRING and str(row[24]) != "":
 					_traps.restore_state(entry, str(row[24]))   # its run note, away clock and held catch (laid again by _traps.after_load)
+
+			if str(entry["struct"]["kind"]) == "carcass":
+				var body: Variant = JSON.parse_string(str(row[24])) if row.size() > 24 and typeof(row[24]) == TYPE_STRING else null
+
+				if typeof(body) != TYPE_DICTIONARY or not _carcass_cfg.get("species", {}).has(str(body.get("species", ""))):
+					continue   # a carcass row with nothing to say what it was
+
+				entry["number"] = table.number_of("carcass")
+				entry["left"] = clampf(float(body.get("left", CARCASS_LIFE_S)), 1.0, CARCASS_LIFE_S)
+				entry["struct"]["transient"] = true
+				entry["struct"]["species"] = str(body["species"])
+				entry["struct"]["blows"] = maxi(int(body.get("blows", 0)), 0)
+
+				if typeof(body.get("parts", null)) == TYPE_ARRAY:
+					entry["struct"]["parts"] = (body["parts"] as Array).map(func(p): return [str(p[0]), int(p[1])])
+
+				if bool(body.get("snared", false)):
+					entry["struct"]["snared"] = true
 
 			_load_row_of[_next_id] = row_n
 			_items[_next_id] = entry
@@ -13668,6 +13704,66 @@ func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 	return false
 
 
+# Whether a building piece rests on `base` alone: a roof panel or corner on its wall top, a ceiling on the walls round it, a door in its doorway. Each piece
+# near it and above its foot is snapped again where it stands (PlacementRules.snap, as when it was placed): held there with `base`, and not without it
+# (physical world audit round 5, 23 Nov 2026: a wall under a roof came down and left the roof in the air; only a foundation was asked). A piece that
+# still rests on something else (a panel on two walls, a ceiling on its other walls) does not hold `base` up. Rows within HOLDS_UP_ROWS_M only, so a
+# take-down reads the pieces round it, never the whole world.
+const HOLDS_UP_NEAR_M := 4.5    # a piece resting on `base` stands this close to it across the ground (a 65 panel's middle is a run off its wall top)
+const HOLDS_UP_SNAP_M := 7.0    # the rows one piece's snap reads round it (a foundation's anchors, a panel's edges, ROOF_ROW_REACH_M)
+const HOLDS_UP_ROWS_M := HOLDS_UP_NEAR_M + HOLDS_UP_SNAP_M   # the rows read at all
+
+
+func _holds_up(base: Dictionary, base_id: int) -> bool:
+	var rows: Array = []
+	var near: Array = []
+	var flat: Vector2 = Vector2(base["pos"].x, base["pos"].z)
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if not other.has("struct"):
+			continue
+
+		var apart: float = Vector2(other["pos"].x, other["pos"].z).distance_to(flat)
+
+		if apart > HOLDS_UP_ROWS_M:
+			continue
+
+		var odef: Dictionary = _structures.get(str(other["struct"]["kind"]), {})
+
+		if not (bool(odef.get("foundation", false)) or bool(odef.get("piece", false))):
+			continue
+
+		var row: Dictionary = {"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "id": int(id)}
+		rows.append(row)
+
+		# Walls and fences stand on a foundation's anchors or the ground, never on a wall: they rest on nothing a take-down of `base` can pull out.
+		if int(id) != base_id and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)) and not (str(odef.get("piece_kind", "")) in ["wall", PlacementRules.FENCE_KIND]):
+			near.append(row)
+
+	for row in near:
+		var kit: String = str(_structures[str(_items[int(row["id"])]["struct"]["kind"])]["kit"])
+		var at: Vector2 = Vector2(row["pos"].x, row["pos"].z)
+		var others: Array = rows.filter(func(r): return int(r["id"]) != int(row["id"]) and Vector2(r["pos"].x, r["pos"].z).distance_to(at) <= HOLDS_UP_SNAP_M)
+		var without: Array = others.filter(func(r): return int(r["id"]) != base_id)
+
+		for mode in [0, 1]:
+			var with_it: Array = PlacementRules.snap(_structures_cfg, kit, row["pos"], int(round(float(row["yaw"]))), others, mode)
+
+			if not bool(with_it[2]) or (with_it[0] as Vector3).distance_to(row["pos"]) > 0.05:
+				continue
+
+			var alone: Array = PlacementRules.snap(_structures_cfg, kit, row["pos"], int(round(float(row["yaw"]))), without, mode)
+
+			if not bool(alone[2]) or (alone[0] as Vector3).distance_to(row["pos"]) > 0.05:
+				return true
+
+			break
+
+	return false
+
+
 # Whether a station, furniture or a fire stands on the top of floor `base` (a foundation or a ceiling cell, structures row `def`), as PlacementRules.support_top
 # set it there: taking the floor down would leave it in the air (Dave 17 Nov 2026: stations go on foundations and upper floors).
 func _holds_station(base: Dictionary, def: Dictionary) -> bool:
@@ -13783,7 +13879,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Empty it first.")
 		return
 
-	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def):
+	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def) or (bool(def.get("piece", false)) and _holds_up(it, id)):
 		_say(peer, "Take down what stands on it first.")
 		return
 
@@ -19042,6 +19138,34 @@ func fish_stock(cell: Vector2i) -> int:
 var _schools = null     # server_fish.gd, made when the first cast needs it and the water kind hook is set
 
 
+func _fish_schools():
+	if _schools == null:
+		var has_item: Callable = func(species: String) -> bool: return table.number_of(species) != 0
+		_schools = FishSchoolsScript.new(water_kind_at, has_item, {}, float(_fishing_data().get("cell_m", 128.0)))
+
+	return _schools
+
+
+# The water kind at the first of the point and eight directions at half and full reach that is water ("" when none is).
+func _water_kind_near(pos: Vector3, reach: float) -> String:
+	for k in 17:
+		var at: Vector3 = pos
+
+		if k > 0:
+			if reach <= 0.0:
+				break
+
+			var a: float = float((k - 1) % 8) * TAU / 8.0
+			at = pos + Vector3(cos(a), 0.0, sin(a)) * (reach if k > 8 else reach * 0.5)
+
+		var kind: String = str((water_kind_at.call(at.x, at.z) as Dictionary).get("kind", ""))
+
+		if kind != "":
+			return kind
+
+	return ""
+
+
 # The best school factor for a line or net thrown from `pos` with `reach` m of reach: the stand point and eight directions at half and full reach
 # (the water is somewhere out there, the shore is under the feet). {"factor", "species", "active"}; factor 1.0 and not active when plan C has nothing to say.
 func school_hit(pos: Vector3, reach: float) -> Dictionary:
@@ -19050,10 +19174,7 @@ func school_hit(pos: Vector3, reach: float) -> Dictionary:
 	if not water_kind_at.is_valid():
 		return none
 
-	if _schools == null:
-		var has_item: Callable = func(species: String) -> bool: return table.number_of(species) != 0
-		_schools = FishSchoolsScript.new(water_kind_at, has_item, {}, float(_fishing_data().get("cell_m", 128.0)))
-
+	_fish_schools()
 	var day: int = int(floor(_now_game_s() / 86400.0))
 	var season: String = str(season_now.call()) if season_now.is_valid() else "summer"
 	var stock: Callable = func(cell: Vector2i) -> int: return fish_stock(cell)
@@ -19106,11 +19227,25 @@ func _fish_chance(peer: int, _cell: Vector2i, bait: bool, hit: Dictionary = {}) 
 	return clampf(chance, float(cfg.get("min_chance", 0.02)), float(cfg.get("max_chance", 0.93)))
 
 
-func _fish_species(cell: Vector2i, hit: Dictionary = {}) -> String:
+# The species a catch is. A school the line or net is in or near gives its own; otherwise, when the water kind hook is set, a species that lives in
+# the water at `near` (the first water among the point and eight directions at half and full `reach`, as school_hit looks): fishing outside
+# every school in the sea, a river or a brook gave pond and lake fish (23 Nov 2026, the hunting and fishing loop test). With no hook or no
+# water found, the old stream/pond/lake roll by the cell's position.
+func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3.INF, reach: float = 0.0) -> String:
 	var cfg: Dictionary = _fishing_data()
 
 	if str(hit.get("species", "")) != "":
 		return str(hit["species"])   # the school the line or net is in or near
+
+	if near.is_finite() and water_kind_at.is_valid():
+		var kind: String = _water_kind_near(near, reach)
+
+		if kind != "" and _fish_schools().has_method("species_for"):   # a test's stand-in school module may not have it
+			var by_water: String = _fish_schools().species_for(kind, str(season_now.call()) if season_now.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+
+			if by_water != "":
+				return by_water
+
 	var types: Array = cfg.get("types", ["pond"])
 	@warning_ignore("integer_division")
 	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
@@ -19272,7 +19407,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 		if fate(peer, "fish", chance):
 			_fish_stock[cell_key][0] = int(_fish_stock[cell_key][0]) - 1
-			var species: String = _fish_species(cell, hit)
+			var species: String = _fish_species(cell, hit, state.get("landed", state.get("spot", Vector3.INF)))
 			_take_in(peer, inv, table.number_of(species), 1)
 			caught.append(table.sentence_name(table.number_of(species)))
 			_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25: first catch of this kind
@@ -19354,7 +19489,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 	if fish_stock(cell) > 0 and fate(peer, "fish", chance):
 		var key: String = "%d,%d" % [cell.x, cell.y]
 		_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-		var species: String = _fish_species(cell)
+		var species: String = _fish_species(cell, {}, at)
 		_take_in(peer, inv, table.number_of(species), 1, 0, pos)
 
 		practice(peer, "fish")
@@ -19530,7 +19665,7 @@ func _fish_trap_roll(pos: Vector3, box, cfg: Dictionary) -> bool:
 	if _fate_rng.randf() >= chance:   # luck-exempt: nobody stands at a trap while it fishes
 		return false
 
-	var number: int = table.number_of(_fish_species(cell))
+	var number: int = table.number_of(_fish_species(cell, {}, pos))
 
 	if number == 0:
 		return false
@@ -19558,7 +19693,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 		return
 
 	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))})
+	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))}, state.get("spot", Vector3.INF), float(_fishing_data().get("reach_m", 8.0)))
 	_take_in(peer, inv, table.number_of(species), 1)
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
