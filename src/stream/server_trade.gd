@@ -8,6 +8,7 @@ extends RefCounted
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TradePrices := preload("res://src/shared/trade_prices.gd")   # the sums the shop window shows too
 const Attributes := preload("res://src/shared/attributes.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 const TALK_RANGE_M := 4.5
 const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
@@ -29,6 +30,9 @@ func setup(store_dir: String = "") -> void:
 	_shops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	_path = store_dir.path_join("trade_state.json") if store_dir != "" else ""
 
+	if _path != "":
+		ItemsScript.restore_missing(_path)
+
 	if _path != "" and FileAccess.file_exists(_path):
 		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
 		_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
@@ -43,11 +47,7 @@ func save() -> void:
 	if _path == "":
 		return
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "traders": _state}))
-		file.close()
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "traders": _state}))   # whole to a .tmp, then moved over: a hard stop never tears it
 
 
 func _game_s() -> float:

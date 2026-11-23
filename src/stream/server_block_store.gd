@@ -25,6 +25,7 @@ extends RefCounted
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const GroundSettle := preload("res://src/stream/ground_settle.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const BLOCK_SIZE := 16
 
@@ -100,6 +101,7 @@ func setup(terrain_generator, store_dir: String) -> String:
 		return settle_error
 
 	var path: String = store_dir + "/revisions.json"
+	ItemsScript.restore_missing(path)
 
 	if FileAccess.file_exists(path):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -760,11 +762,8 @@ func save_revisions() -> void:
 
 	if _revisions_dirty:
 		_revisions_dirty = false
-		var revisions_file: FileAccess = FileAccess.open(_store_dir + "/revisions.json", FileAccess.WRITE)
-
-		if revisions_file != null:
-			revisions_file.store_string(JSON.stringify(tile_revisions, "\t", true))
-			revisions_file.close()
+		if not ItemsScript._write_file(_store_dir + "/revisions.json", JSON.stringify(tile_revisions, "\t", true)):   # whole to a .tmp, then moved over
+			_revisions_dirty = true   # tried again at the next call
 
 	_edit_mutex.unlock()
 

@@ -6,6 +6,7 @@ extends RefCounted
 
 const StaticProvider := preload("res://src/stream/static_provider.gd")
 const Router := preload("res://src/stream/dialogue_router.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const TALK_RANGE_M := 4.5
 const PACE_MSEC := 250
@@ -35,6 +36,9 @@ func setup(store_dir: String) -> void:
 	router = Router.new()
 	router.setup(static_provider)
 	provider = router
+
+	if _dir != "":
+		ItemsScript.restore_missing(_dir + "/npc_flags.json")
 
 	if _dir != "" and FileAccess.file_exists(_dir + "/npc_flags.json"):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_dir + "/npc_flags.json"))
@@ -176,8 +180,4 @@ func _save() -> void:
 	if _dir == "":
 		return
 
-	var f: FileAccess = FileAccess.open(_dir + "/npc_flags.json", FileAccess.WRITE)
-
-	if f != null:
-		f.store_string(JSON.stringify({"version": 1, "players": _flags}))
-		f.close()
+	ItemsScript._write_file(_dir + "/npc_flags.json", JSON.stringify({"version": 1, "players": _flags}))   # whole to a .tmp, then moved over
