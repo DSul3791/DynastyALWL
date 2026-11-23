@@ -485,7 +485,7 @@ func _init() -> void:
 	rp["bite"] = {}
 	var struck_wolf: bool = false
 
-	for n in 300:
+	for _n in 300:
 		r.tick(0.1)
 
 		for id in rp["ids"]:
