@@ -115,6 +115,40 @@ func _init() -> void:
 
 	items.kill(1, "test")
 	check(not items.passed_out(1), "a death while passed out clears it")
+
+	# A cave-in while out ends that faint; still frozen, they pass out again later and are carried to shelter, never killed.
+	items.rescue_spots = func(_pos): return [[Vector3(150.0, 5.0, 0.0), "goblin"]]
+	items.report_position(1, Vector3(20.0, 5.0, 0.0))
+	v = items.vitals_of(1)
+	v["warmth"] = 0.0
+	v["health"] = 1.0
+	ticks = 0
+
+	while not items.passed_out(1) and ticks < 600:
+		items.tick(1.0)
+		ticks += 1
+
+	died.clear()
+	check(items.survive_cave_in(1, Vector3(25.0, 5.0, 0.0)) and not items.passed_out(1), "a cave-in while out ends the faint")
+	ticks = 0
+
+	while (died.is_empty() or str(died[-1][1]) != "passed out") and ticks < 600:
+		items.tick(1.0)
+		ticks += 1
+
+	check(not died.is_empty() and str(died[-1][1]) == "passed out" and float(items.vitals_of(1)["health"]) >= 1.0, "still frozen, the cold carries them to shelter after the dig-out (%s)" % str(died))
+
+	# Leaving while out clears the state.
+	v = items.vitals_of(1)
+	v["warmth"] = 0.0
+	v["health"] = 1.0
+	ticks = 0
+
+	while not items.passed_out(1) and ticks < 600:
+		items.tick(1.0)
+		ticks += 1
+
+	check(items.passed_out(1), "passed out again before leaving")
 	items.peer_left(1)
 	check(not items.passed_out(1), "leaving clears the state")
 	print("cold pass out: %d failures" % failures)
