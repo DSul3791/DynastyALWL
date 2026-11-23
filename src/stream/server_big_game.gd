@@ -262,11 +262,15 @@ func step(a: Dictionary, dt: float) -> void:
 		var step_m: float = speed * dt
 
 		if a.has("round_to") and not near.is_empty() and not host.wall_between(a["pos"], near["pos"]):
-			# Round the wall's end with its foe in sight: it squares up to them (a short warning) and charges home from here.
+			# Round the wall's end with its foe in sight: it squares up to them (a short warning) and charges home from here, pressing it
+			# home (no bluff). A try too, so a foe who steps back behind the wall each time does not keep it at this forever: with none
+			# left it charges on at them as it runs.
 			a.erase("round_to")
-			a["wall_tries"] = int(a.get("wall_tries", 0)) + 1   # a try too: a foe who steps back behind the wall each time does not keep it at this forever
-			_start_warn(a, near["pos"], float(def.get("provoked_warn_s", 0.8)), bool(a.get("no_bluff", false)))
-			return
+
+			if int(a.get("wall_tries", 0)) < WALL_TRIES:
+				a["wall_tries"] = int(a.get("wall_tries", 0)) + 1
+				_start_warn(a, near["pos"], float(def.get("provoked_warn_s", 0.8)), true)
+				return
 
 		if not near.is_empty():
 			var to2: Vector3 = a["round_to"] if a.has("round_to") else near["pos"]
@@ -338,7 +342,7 @@ func step(a: Dictionary, dt: float) -> void:
 			a["state"] = RECOVER
 			a["timer"] = float(def.get("recover_s", 5.0))
 			a.erase("run_m")
-			a["walled"] = not bool(a["hit"]) and bool(a.get("walled_start", false))   # its foe was behind a wall when it set off, and it missed
+			a["walled"] = not bool(a["hit"]) and (bool(a.get("walled_start", false)) or int(a.get("wall_tries", 0)) > 0)   # it missed a foe behind a wall, or after coming round one
 			a.erase("round_to")
 
 		return
