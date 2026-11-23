@@ -2053,6 +2053,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(td + "/" + file)
 
 	var th = make(td)
+	th._comfort_data().erase("meter")   # the thirst arithmetic alone; the comfort meter's slower drain is test_comfort's
 	var tsent: Array = []
 	var thirst_rejects: Array = []
 	th.send_vitals = func(_p, hunger, health, weight, thirst, luck, fitness): tsent.append(thirst)

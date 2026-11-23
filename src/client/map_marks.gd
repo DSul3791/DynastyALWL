@@ -3,7 +3,7 @@ extends RefCounted
 # The small inked pictures of the Map's landmarks (Dave 23 Nov 2026: "it can have writing on it like it might show a picture of a goblins
 # face and say the clans name written under it"; "fruit trees should be marked with an image and writing"). No art was made for them: each
 # is a few pen strokes drawn here, about 14 px across, in the sketch's ink, shaken a little by its place so no two look stamped. The page
-# writes the name under the picture (map_page.gd). Kinds come from server_map.gd look_round (protocol 163); a kind with no picture here
+# writes the name under the picture (map_page.gd). Kinds come from server_map.gd look_round (protocol 165); a kind with no picture here
 # gets a plain cross-in-a-circle, so a new kind on the server never draws nothing.
 
 const INK := Color(0.12, 0.11, 0.10)

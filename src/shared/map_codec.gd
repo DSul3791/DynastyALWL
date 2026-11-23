@@ -2,7 +2,7 @@ extends RefCounted
 
 # Map knowledge blocks (protocol 120, the charcoal Map; data/map.json) on the wire and in the server's maps/ files. A block holds the
 # cells one character has surveyed: {cell index: [q, height m, water, trees]}. q = Mapping skill 1..100 when the cell was seen;
-# height in whole metres; water 0 dry, 1 inland water (a lake), 2 sea, 3 river, 4 marsh (protocol 163; saves before it hold 0..2, a river
+# height in whole metres; water 0 dry, 1 inland water (a lake), 2 sea, 3 river, 4 marsh (protocol 165; saves before it hold 0..2, a river
 # or a lake then both 1); trees 0..3. Index = local_x + local_z * block_cells from the block's
 # south-west corner. Packed as [count u16][index u16, q u8, height s16, water u8, trees u8] x count, then deflated with the raw size
 # in front (u32), like trail_codec.gd.

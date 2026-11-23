@@ -17,6 +17,7 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const LayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 const LAYOUT_KEY := "layout"        # a removals file: the flora layout version the marks were made under (flora_layout.gd)
 const REMOVED_DIR := "flora_removed"    # one file per chunk with removals, <cx>_<cz>.json: {"layout", "ids"} (audit 18 Nov 2026 finding 6)
 const LEGACY_FILE := "flora_removed.json"   # the one file of every chunk before 18 Nov 2026: read once, written out per chunk, kept as .migrated
@@ -221,6 +222,10 @@ func _chunk_files() -> Array:
 
 	if not DirAccess.dir_exists_absolute(_dir):
 		return out
+
+	for file in DirAccess.get_files_at(_dir):
+		if file.ends_with(".json.tmp") or file.ends_with(".json.prev"):
+			ItemsScript.restore_missing(_dir + "/" + file.get_basename())   # a chunk file a hard stop caught between its two renames
 
 	for file in DirAccess.get_files_at(_dir):
 		var parts: PackedStringArray = file.trim_suffix(".json").split("_")
@@ -607,19 +612,14 @@ func save_removed(force: bool = false) -> void:
 		var path: String = "%s/%d_%d.json" % [_dir, chunk.x, chunk.y]
 
 		if (writes[chunk] as Array).is_empty():
-			if FileAccess.file_exists(path):
-				DirAccess.remove_absolute(path)
+			for one in [path + ".tmp", path + ".prev", path]:   # its earlier copies go too (first, so a stop between leaves nothing to put back), or the next start would put the old one back
+				if FileAccess.file_exists(one):
+					DirAccess.remove_absolute(one)
 
 			continue
 
-		var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-
-		if file == null:
+		if not ItemsScript._write_file(path, JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}), false):   # whole to a .tmp, then moved over
 			failed.append(chunk)
-			continue
-
-		file.store_string(JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}))
-		file.close()
 
 	if not failed.is_empty():
 		# Tried again at the next save; the one-file save is kept until every chunk it held is written.

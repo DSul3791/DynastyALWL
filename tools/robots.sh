@@ -4,6 +4,8 @@
 #   tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 #   tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   Robot 1 walks, stops, swings, sleeps; Robot 2 draws it (robot_watch.py)
 #   ROBOT_S=900 tools/robots.sh 1 route; ROBOT_S=900 ROBOT_CLIENT_ARGS=--quality=0 tools/robots.sh 1 route   the moving route (src/client/robot_play.gd _route) at Low quality
+#   ROBOT_S=600 tools/robots.sh 2 pack_fuzz   two robots at random in the pack, the hotbar and one shared basket (src/client/robot_pack_fuzz.gd):
+#                                         the screens match the server, nothing doubled, lost or left on the cursor
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 #   tools/robots.sh 1 drops               the link dies mid-action (6 twine queued, a basket open, asleep, in a wolf rush) and the robot comes
 #                                         straight back; a 10 s freeze; two clients as one character (about 15 min)
@@ -12,6 +14,8 @@
 #   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
 #   ROBOT_S=260 tools/robots.sh 2 kind_moose [link]   two robots hunt one animal kind; tools/robot_kinds.py <run folder> prints the measures
 #   tools/robots.sh 1 trail [link]          crouched along a game trail under trees (stops compared with standing)
+#   tools/robots.sh 2 seen [link]           Robot 2 raises and draws a bow, then fishes: Robot 1 checks the bow flags, clips and the float
+#   tools/robots.sh 2 wiggle [link]         Robot 1 runs back and forth across a spot: Robot 2 measures how far off its path it is drawn
 #   ROBOT_S=800 tools/robots.sh 2 together [link]   two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other
 #   ROBOT_S=3600 tools/robots.sh 2 roam [link]   an hour (a game day) standing at water, woods and open ground; tools/robot_stuck.py <run folder>
 #                                         counts the stuck animals near them per kind (the server's AUDIT stuck lines)
@@ -26,7 +30,7 @@
 set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 [ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
-[ "$PLAN" = "together" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
+[ "$PLAN" = "together" ] || [ "$PLAN" = "seen" ] || [ "$PLAN" = "wiggle" ] || [ "$PLAN" = "pack_fuzz" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)
@@ -103,7 +107,7 @@ drops() {
 
 START=$(date +%s)
 if [ "$PLAN" = "drops" ]; then drops; else pass "$PLAN" play; fi
-{ [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ]; } && { sleep 3; pass rejoin rejoin; }
+{ [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ] || [ "$PLAN" = "pack_fuzz" ]; } && { sleep 3; pass rejoin rejoin; }
 echo "robots: passes took $(( $(date +%s) - START )) s"
 kill $LP 2>/dev/null; sleep 1
 kill $SP 2>/dev/null; sleep 3

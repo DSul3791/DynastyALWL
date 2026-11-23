@@ -124,6 +124,17 @@ the spell's length, and `AUDIT near` each minute of real time (the mean number o
 per kind the animal-hours watched, the stuck spells and their rate per animal per game day, the median and longest spell, what lay ahead and
 the first spots. It judges nothing.
 
+Plan `seen` (two robots, players thread 23 Nov 2026, protocol 162; `tools/robots.sh 2 seen --delay-ms 120 --jitter-ms 30 --loss 0.03`):
+Robot 2 takes a Shortbow in hand and sends the held-item flags 1 (raised), 2 (drawn) and 0, 3 s each; Robot 1 must draw the more byte's
+bits 2 then 4 with the bow pose and play the bow_raised and bow_drawn clips (SEEN bow line). Then both go to the nearest water, Robot 2
+casts a fishing rod and walks 8 m off: Robot 1 must draw its float within 8 m of it, and no float 3 s after it walked away (SEEN cast line).
+
+Plan `wiggle` (two robots; `tools/robots.sh 2 wiggle [link]`): Robot 1 runs back and forth across a spot every 0.5 s for 15 s; Robot 2,
+6 m off, records where it draws Robot 1 each frame and holds it against Robot 1's own place at the same moment less the best-fitting
+draw delay (0 to 1500 ms; along a straight back-and-forth the path itself covers any overshoot, so the time is what tells). It prints a
+WIGGLE line (the delay, median, 95th, worst) and judges nothing. A bow is posed off the hand mount by design (before the body when raised
+or drawn, at the side lowered), so the held check only asks its mount to stay on the hand.
+
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 

@@ -492,7 +492,7 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# Landmarks (Dave 23 Nov 2026 play test, protocol 163): what is seen near goes on the map in surveyed cells only, one mark a kind within merge_m,
+# Landmarks (Dave 23 Nov 2026 play test, protocol 165): what is seen near goes on the map in surveyed cells only, one mark a kind within merge_m,
 # gone when it is gone (but a good fishing spot stays), names grow with what is seen, paths and rivers, the save keeps them and an old save
 # loads, and the world items a person would mark come from server_items.
 func landmark_checks() -> void:

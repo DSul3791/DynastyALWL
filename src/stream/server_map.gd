@@ -473,7 +473,7 @@ func cell_rows(cells: Dictionary) -> Dictionary:
 
 
 # The blocks to send this peer now, [[bx, bz, bytes, marks, paths], ...] (marks: the block's [kind, x, z, label] rows; paths: index * 4 +
-# 1 path or 2 road, protocol 163): every block of its character's record that it has not been sent at its
+# 1 path or 2 road, protocol 165): every block of its character's record that it has not been sent at its
 # current version, at most send_per_pass a call (a joining character gets its whole map over a few passes); a block it already has
 # goes again at most every resend_s, so walking about in one block does not deflate it on every survey.
 func updates_for(peer: int, at_msec: int = -1) -> Array:

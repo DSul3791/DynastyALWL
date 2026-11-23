@@ -717,7 +717,7 @@ func tracking_checks() -> void:
 
 
 # Spotting a trail sign (protocol 153; Dave 23 Nov 2026): Tracking once per sign per character; not again for the same sign, not for a
-# spot far from the player or off any trail, not below the level the first signs show from. The admin skill set (look rig --shot-skill).
+# spot far from the player or off any trail; from the first level (signs are there for everyone). The admin skill set (look rig --shot-skill).
 func sign_checks() -> void:
 	var items = make("user://test_traps_signs", true)
 	items.run_distance = func(x, _z, _kind): return 1.0 if x < 1000.0 else 10.0
@@ -725,13 +725,11 @@ func sign_checks() -> void:
 	var fresh: Callable = func() -> void: items._last_practice.clear()
 	var at: Vector3 = Vector3(100.0, 10.0, 0.0)
 	items.report_position(1, at)
-	check(not items.sign_spotted(1, Vector2(103.0, 0.0)), "untrained, spotting a sign trains nothing (the first signs show from trail_signs.json see_level)")
+	var p0: float = pts.call()
+	check(items.sign_spotted(1, Vector2(103.0, 0.0)) and pts.call() > p0, "untrained, a sign spotted trains Tracking (Dave 23 Nov 2026: signs are there for everyone; %.1f -> %.1f)" % [p0, pts.call()])
 	var names: Array = (items._skills_cfg["skills"] as Dictionary).keys()
 	items.admin_set_skill(1, names.find("tracking"), 6)
 	check(absf(items.working_level(1, "tracking") - 6.0) < 0.6, "the admin skill set puts Tracking at 6 (%.2f)" % items.working_level(1, "tracking"))
-	var p0: float = pts.call()
-	fresh.call()
-	check(items.sign_spotted(1, Vector2(103.0, 0.0)) and pts.call() > p0, "with the Tracking to see it, a sign spotted trains it (%.1f -> %.1f)" % [p0, pts.call()])
 	var p1: float = pts.call()
 	fresh.call()
 	check(not items.sign_spotted(1, Vector2(103.5, 0.5)) and is_equal_approx(pts.call(), p1), "the same sign again trains nothing")

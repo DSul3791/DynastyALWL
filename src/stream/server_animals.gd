@@ -944,6 +944,61 @@ static func _deeper_in(to: Vector3, from: Vector3, players: Array, m: float) -> 
 	return false
 
 
+# How far `pos` is inside the players of `players` (feet or infos), summed: m less its distance from each one closer than m and level with it.
+static func _inside_sum(pos: Vector3, players: Array, m: float) -> float:
+	var sum: float = 0.0
+
+	for p in players:
+		var at: Vector3 = Vector3.INF
+
+		if p is Vector3:
+			at = p
+		else:
+			at = (p as Dictionary)["pos"]
+
+		var d: float = Vector2(pos.x - at.x, pos.z - at.z).length()
+
+		if d < m and absf(pos.y - at.y) <= 2.0:
+			sum += m - d
+
+	return sum
+
+
+# Where `pos` goes when it is inside two or more of `players` at once: the step of `reach` metres, of 16 ways round, that leaves it least
+# inside them all (sideways out from between two players, where each one's push alone goes into the other). Vector3.INF when it is inside
+# fewer than two, or no way is better than standing. Cost: 16 x the players, only while inside two at once.
+static func _out_of_all(pos: Vector3, players: Array, m: float, reach: float) -> Vector3:
+	var inside: int = 0
+
+	for p in players:
+		var at: Vector3 = Vector3.INF
+
+		if p is Vector3:
+			at = p
+		else:
+			at = (p as Dictionary)["pos"]
+
+		if Vector2(pos.x - at.x, pos.z - at.z).length() < m and absf(pos.y - at.y) <= 2.0:
+			inside += 1
+
+	if inside < 2:
+		return Vector3.INF
+
+	var best: Vector3 = Vector3.INF
+	var best_sum: float = _inside_sum(pos, players, m) - 0.01
+
+	for k in 16:
+		var turn: float = TAU * float(k) / 16.0
+		var to: Vector3 = pos + Vector3(cos(turn), 0.0, sin(turn)) * reach
+		var sum: float = _inside_sum(to, players, m)
+
+		if sum < best_sum:
+			best = to
+			best_sum = sum
+
+	return best
+
+
 # An animal a player at `at` has walked or run into steps out of their body at up to half its flee speed (its walking pace at least; a
 # goblin or bandit, defend give_way "player", at the player's pace), `dt` s of it, away from them; not into ground it cannot walk on. Birds
 # in the air or on a perch, animals in a burrow or cave, a bandit camp's tied horses and a bandit who gave up stay. True when it moved.
@@ -961,7 +1016,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if swims(def) and in_water(def, a["pos"]):
 		return false
 
-	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
+	var m: float = AnimalContact.contact_m(str(a["sp"]))
+	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, m)
 	# At up to half its flee speed (robots 23 Nov 2026: a dog a running player chased stayed 0.1 to 0.3 m inside them for 0.66 s at walking pace).
 	var pace_mps: float = maxf(float(def.get("walk_mps", 1.5)), 0.5 * float(def.get("flee_mps", 0.0)))
 
@@ -975,6 +1031,12 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	elif AnimalContact.body_m(str(a["sp"])) >= AnimalContact.BLOCK_M and Vector2(out.x - a["pos"].x, out.z - a["pos"].z).length() <= AnimalContact.LEAN_M:
 		pace_mps = minf(pace_mps, AnimalContact.LEANED_MPS)   # a walker stopped at its body leans on it (animal_view walker_stop): it shifts, never shoved along
 	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
+	# Inside two players at once (robots 23 Nov 2026: a rhino between two hunters 2 to 4 m apart, pushed out of each straight into the other,
+	# was refused both ways and stood inside one, the two screens drawing it 2.7 m apart): the way out of them all, sideways.
+	var all_out: Vector3 = _out_of_all(a["pos"], others, m, pace_mps * dt)
+
+	if all_out != Vector3.INF:
+		step = Vector3(all_out.x - a["pos"].x, 0.0, all_out.z - a["pos"].z)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):
 		return false
@@ -984,8 +1046,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if ground_height.is_valid():
 		to.y = float(ground_height.call(to.x, to.z))
 
-	if _deeper_in(to, a["pos"], others, AnimalContact.contact_m(str(a["sp"]))):
-		return false   # not out of one player into another beside them (`others`: every player's feet or infos)
+	if all_out == Vector3.INF and _deeper_in(to, a["pos"], others, m):
+		return false   # not out of one player into another beside them (`others`: every player's feet or infos); the way out of them all is less inside them all
 
 	if wall_between(a["pos"], to):
 		return false   # not through a wall or a shut door: a player who pins it against one does not push it out the other side
@@ -2322,6 +2384,51 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 	return false
 
 
+# A send pass (terrain_server _send_npcs, 20 times a second): the animals are filed into a PASS_CELL_M grid once, and each animal's row is
+# built once, for the first player near it, then reused for every other player near it in the same pass. Load test 23 Nov 2026
+# (docs/design/SERVER_SCALE.md): every player looked at every animal and built its row again, 69 ms a second at 64 players. Nothing moves
+# an animal inside a pass. Outside a pass (tests, the spyglass readout) rows_near looks at every animal as before.
+const PASS_CELL_M := 64.0
+var _in_pass: bool = false
+var _pass_rows: Dictionary = {}   # animal id -> its row, this pass
+var _pass_grid: Dictionary = {}   # Vector2i cell -> [animal ids], this pass
+
+
+func begin_send_pass() -> void:
+	_in_pass = true
+	_pass_rows = {}
+	_pass_grid = {}
+
+	for id in animals:
+		var pos: Vector3 = animals[id]["pos"]
+		var cell: Vector2i = Vector2i(floori(pos.x / PASS_CELL_M), floori(pos.z / PASS_CELL_M))
+
+		if not _pass_grid.has(cell):
+			_pass_grid[cell] = []
+
+		_pass_grid[cell].append(id)
+
+
+func end_send_pass() -> void:
+	_in_pass = false
+	_pass_rows = {}
+	_pass_grid = {}
+
+
+# The ids in the grid cells that touch the square round `point` of half-side `radius` (rows_near still checks each distance).
+func _pass_ids_near(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for cx in range(floori((point.x - radius) / PASS_CELL_M), floori((point.x + radius) / PASS_CELL_M) + 1):
+		for cz in range(floori((point.z - radius) / PASS_CELL_M), floori((point.z + radius) / PASS_CELL_M) + 1):
+			var ids: Variant = _pass_grid.get(Vector2i(cx, cz))
+
+			if ids != null:
+				out.append_array(ids)
+
+	return out
+
+
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
 # An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
 # the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
@@ -2330,11 +2437,18 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 	var radius: float = radius_m if radius_m > 0.0 else float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
 
-	for id in animals:
+	for id in (_pass_ids_near(point, radius) if _in_pass else animals.keys()):
+		if not animals.has(id):
+			continue   # gone since the pass filed it
+
 		var a: Dictionary = animals[id]
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
+			if _in_pass and _pass_rows.has(id):
+				found.append([d, _pass_rows[id]])   # built once this send pass, for the first player near it (the same row for all)
+				continue
+
 			# Field 5 (protocol 147): the server milliseconds it was at this position: its step's time (tick), or now for a move made
 			# elsewhere (the pack brain, a companion). The client draws each animal on these times, not on when the rows came (Dave 21 Nov
 			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 154 (Dave 23 Nov 2026, the real server):
@@ -2353,6 +2467,9 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 
 			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
 				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float
+
+			if _in_pass:
+				_pass_rows[id] = row
 
 			found.append([d, row])
 
