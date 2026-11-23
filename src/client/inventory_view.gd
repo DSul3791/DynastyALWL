@@ -2643,8 +2643,10 @@ func faint_state() -> Array:
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int, new_fitness: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
-	if ate and _eat_item != "" and eat_event.is_valid():
-		eat_event.call(_eat_item)   # a medicine's sound; food is silent (ItemSounds.eat_kind)
+	var drank: bool = new_thirst > thirst + 3   # something from the pack that quenches (water in a container, juice, tea, soup): its gulp
+
+	if (ate or drank) and _eat_item != "" and eat_event.is_valid():
+		eat_event.call("drink" if drank else _eat_item)   # a gulp, or a medicine's sound; solid food is silent (ItemSounds.eat_kind; no chewing clip yet)
 		_eat_item = ""
 
 	# A mouthful at the water's edge (drink()) took effect: the gulp sound (Dave 2026-10-21: no sound when drinking).

@@ -10,6 +10,9 @@ extends RefCounted
 #   CUE_PICK  detail = the flora species id (flora id >> 16): a plant gathered by hand or cut by a sickle or scythe
 #   CUE_CRAFT detail = the recipe number: a craft is being worked, sent again every CRAFT_EVERY_MS while it goes on, as the crafter's own work
 #             sound repeats (knapping, twine, carving and the rest; item_sounds.gd work_type)
+#   CUE_STORE detail = op + 4 when the store has a lid (a chest kind): op 0 opened, 1 closed, 2 something put in, 3 taken out (STORE_*), at
+#             the container (23 Nov 2026, the coordinator's silent-sounds pass: only the one at a chest heard its lid and its contents). A
+#             client from before CUE_STORE plays nothing for a cue it does not know (sound_stage.gd other_action), so no protocol change.
 # Digging, filling and the hoe are heard already (every client hears the ground edits: dig_sounds.gd), as are animal hits (animal_hit,
 # protocol 96), the chopping block, the saws and the bellows (world state). A swing at nothing makes no sound for its own player either.
 # Cost: one distance test per connected player per cue, a few cues a second per working player.
@@ -19,8 +22,14 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const CUE_BLOW := 1
 const CUE_PICK := 2
 const CUE_CRAFT := 3
+const CUE_STORE := 4
+const STORE_OPEN := 0
+const STORE_CLOSE := 1
+const STORE_PUT := 2
+const STORE_TAKE := 3
+const STORE_LID := 4                                              # added to the op: a chest's lid creaks open and shut; a barrel, crate, basket or station store only sounds its contents
 const MATERIALS := ["wood", "stone", "soil", "ground", "brush", "flesh"]   # ground: the client hears rock or soil under the point; brush: a bush (wood, softer); flesh: a knife on a carcass
-const HEAR_M := {CUE_BLOW: 60.0, CUE_PICK: 30.0, CUE_CRAFT: 25.0}   # hit_sounds unit 8 m (a blow at 60 m is about 18 dB under one at 8 m); harvest 40 m reach; craft work is quiet
+const HEAR_M := {CUE_BLOW: 60.0, CUE_PICK: 30.0, CUE_CRAFT: 25.0, CUE_STORE: 25.0}   # hit_sounds unit 8 m (a blow at 60 m is about 18 dB under one at 8 m); harvest 40 m reach; craft work and a chest are quiet
 const GAP_MS := 120                                               # at most about eight cues a second from one player
 const CRAFT_EVERY_MS := 4500                                      # a craft work clip lasts about 4.5 s (item_sounds.gd watch starts the next as one ends)
 const HANDS_UP_M := 0.3                                           # position_of is the body's middle; the hands work a little above it
@@ -35,16 +44,33 @@ var sent: int = 0                  # cues sent (one per receiver), for checks
 
 var _last_ms: Dictionary = {}      # peer -> ms of its last cue
 var _craft: Dictionary = {}        # peer -> [recipe, ms of its last craft cue]
+var _store: Dictionary = {}        # peer -> the world id of the container it last opened (ACT_CHEST_CLOSE names none)
 
 
 # A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
 func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3) -> void:
-	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE] or not _due(peer):
+	if kind == Net.ACT_CHEST_OPEN:
+		_store[peer] = a   # kept even when the cue is held back, so the close is heard where it was opened
+
+	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE, Net.ACT_CHEST_OPEN, Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE, Net.ACT_CHEST_CLOSE] or not _due(peer):
 		return   # nothing to hear, or too soon after its last cue: no pack scan for a flood
 
 	var material: String = ""
 
 	match kind:
+		Net.ACT_CHEST_OPEN:
+			_store_cue(peer, a, STORE_OPEN)
+			return
+		Net.ACT_CHEST_CLOSE:
+			_store_cue(peer, int(_store.get(peer, -1)), STORE_CLOSE)
+			_store.erase(peer)
+			return
+		Net.ACT_CHEST_PUT:
+			_store_cue(peer, b, STORE_PUT)
+			return
+		Net.ACT_CHEST_TAKE:
+			_store_cue(peer, b, STORE_TAKE)
+			return
 		Net.ACT_HIT:
 			material = "stone" if b == Net.HIT_BOULDER else "wood"
 		Net.ACT_PROCESS:
@@ -72,6 +98,22 @@ func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3)
 		return   # a client may not set a blow ringing anywhere it likes
 
 	cue(peer, CUE_BLOW, tool_of(peer) * 8 + MATERIALS.find(material), point)
+
+
+# A container opened, shut, filled or emptied by `peer`: heard at the container when it is a placed one near the player (a worn bag, id
+# below 0, is the player's own back: nothing for others).
+func _store_cue(peer: int, id: int, op: int) -> void:
+	if id < 0 or items == null:
+		return
+
+	var kind: String = str(items.struct_kind_of(id))
+	var lies: Variant = items.item_pos_of(id)
+	var here: Variant = items.position_of(peer)
+
+	if kind == "" or lies == null or here == null or (lies as Vector3).distance_to(here) > MINE_POINT_M:
+		return   # not a placed container, or not beside the player (a client may not set a lid creaking anywhere)
+
+	cue(peer, CUE_STORE, op + (STORE_LID if kind.contains("chest") else 0), (lies as Vector3) + Vector3(0.0, HANDS_UP_M, 0.0))
 
 
 # The tool the blow was made with (0 axe, 1 pick): a pick rings as a pick, anything else as an axe (held_item.gd _hit_tool).
@@ -140,3 +182,4 @@ func _due(peer: int) -> bool:
 func forget(peer: int) -> void:
 	_last_ms.erase(peer)
 	_craft.erase(peer)
+	_store.erase(peer)

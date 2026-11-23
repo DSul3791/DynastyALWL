@@ -113,6 +113,8 @@ const BURNT_OUT_DB := -10.0
 const BURNT_OUT_PITCH := 0.7
 const FUEL_HEARD_M := 25.0
 const FUEL_DEDUP_MSEC := 1500
+const STATION_COALS := 0.3              # a lit kiln, smelter or smithy at rest: the small crackle (station_fire)
+const STATION_ROAR := 0.75              # its bellows worked or a smithy's flare: mostly the large layer
 var _world_states: Dictionary = {}      # fire id -> last seen row state
 var _last_fuel_msec: int = -100000
 
@@ -138,8 +140,31 @@ func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41], "ashes": int(row["state"]) in [8, 76],
 			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
 
+	for id in world:
+		var size: float = station_fire(world[id])
+
+		if size > 0.0 and not states.has(id):
+			fires.append({"id": id, "at": world[id]["pos"], "size": size, "lit": true, "ashes": false, "open": false})   # under its own hood or dome: no rain sizzle
+
 	_world_states = states
 	set_fires(fires)
+
+
+# A station's own fire (inventory_view._note_store: a kiln, smelter, oven or bloomery store row says "lit", a smithy says "forge" 1 red coals or
+# 2 the flare, "bellows" while someone works them): the size of its crackle, 0 for none. Until 23 Nov 2026 a lit kiln, smelter or forge made no
+# sound at all (the coordinator's silent-sounds pass); only the bellows strokes sounded. Glowing coals crackle small, worked bellows or the flare
+# roar up (Dave: forges and kilns glowing coals, smelters keep flames).
+static func station_fire(row: Dictionary) -> float:
+	if not row.has("fill") and not row.has("forge"):
+		return 0.0   # not a station store row (a lantern's "lit" is not a fire to hear)
+
+	var forge: int = int(row.get("forge", -1))
+	var lit: bool = bool(row.get("lit", false)) or forge >= 1
+
+	if not lit:
+		return 0.0
+
+	return STATION_ROAR if forge == 2 or int(row.get("bellows", 0)) > 0 else STATION_COALS
 
 
 func light(at: Vector3) -> void:

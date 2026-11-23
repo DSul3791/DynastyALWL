@@ -25,9 +25,12 @@ const DIVE_DB := -13.0
 const SURFACE_DB := -11.0
 const HUM_DB := -24.0
 const HUM_FADE_DB_PER_SEC := 30.0
+const OTHER_STROKE_UNIT_M := 2.0        # another player's stroke (stroke_at), as their footsteps (sound_stage OTHER_STEP_UNIT_M)
+const OTHER_STROKE_REACH_M := 45.0
 
 var splashes: int = 0
 var strokes: int = 0
+var others_strokes: int = 0             # other players' strokes played (stroke_at), for checks
 var dives: int = 0
 var surfaces: int = 0
 var last: String = ""                   # HUD: the last event and file
@@ -184,6 +187,28 @@ func splash(speed: float) -> void:
 	var power: float = clampf(speed / 8.0, 0.0, 1.0)
 	_event(sound_name, SPLASH_DB + linear_to_db(0.45 + 0.55 * power))
 	splashes += 1
+
+
+# Another player's swimming stroke where they swim (player_view.gd stroked; 23 Nov 2026, the coordinator's silent-sounds pass: a player
+# swimming by made no sound, their steps stop in deep water). Positional, from the shared other-step room so a crowd cannot fill the budget.
+func stroke_at(at: Vector3) -> bool:
+	if not _stage.other_step_room():
+		return false
+
+	var list: Array = _variants("swim_stroke")
+
+	if list.is_empty():
+		return false
+
+	var player: AudioStreamPlayer3D = SoundStage.Sound3D.make(self, "Foley", OTHER_STROKE_UNIT_M, OTHER_STROKE_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = STROKE_DB + _rng.randf_range(-1.5, 1.0)
+	player.pitch_scale = _rng.randf_range(0.95, 1.05)
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+	others_strokes += 1
+	return true
 
 
 func voices_playing() -> int:

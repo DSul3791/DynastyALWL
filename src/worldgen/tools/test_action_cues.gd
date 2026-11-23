@@ -14,6 +14,8 @@ const HitSounds := preload("res://src/client/hit_sounds.gd")
 const HarvestSounds := preload("res://src/client/harvest_sounds.gd")
 const ItemSounds := preload("res://src/client/item_sounds.gd")
 const SpearSounds := preload("res://src/client/spear_sounds.gd")
+const PlacedSounds := preload("res://src/client/placed_sounds.gd")
+const InteriorSounds := preload("res://src/client/interior_sounds.gd")
 
 var failures: int = 0
 
@@ -73,7 +75,7 @@ func _server_checks() -> void:
 	var items: StubItems = StubItems.new()
 	items.pos = {1: Vector3(0, 1, 0), 2: Vector3(10, 1, 0), 3: Vector3(100, 1, 0), 4: Vector3(0, 1, 28)}
 	items.held = {1: 12}
-	items.kinds = {77: "carcass", 78: "log"}
+	items.kinds = {77: "carcass", 78: "log", 79: "iron_chest", 80: "wooden_barrel"}
 	var cues = Cues.new()
 	cues.items = items
 	var clock: Array = [1000]
@@ -149,6 +151,35 @@ func _server_checks() -> void:
 	clock[0] += 200
 	got.clear()
 	check(not cues.cue(1, Cues.CUE_PICK, 1, Vector3(NAN, 0, 0)) and got.is_empty(), "a point that is not a number sends nothing")
+
+	# A container (23 Nov 2026), heard within 25 m (player 2, not 4 at 27 m): a chest's lid opening and shutting, things put in and taken out, at the container; a barrel only its contents.
+	var lid_at: Vector3 = Vector3(1, Cues.HANDS_UP_M, 1)
+	var store_cases: Array = [
+		[Net.ACT_CHEST_OPEN, 79, 0, Cues.STORE_OPEN + Cues.STORE_LID, "a chest opened: its lid"],
+		[Net.ACT_CHEST_PUT, 4, 79, Cues.STORE_PUT + Cues.STORE_LID, "something put in the chest"],
+		[Net.ACT_CHEST_TAKE, 0, 79, Cues.STORE_TAKE + Cues.STORE_LID, "something taken out"],
+		[Net.ACT_CHEST_CLOSE, 0, 0, Cues.STORE_CLOSE + Cues.STORE_LID, "the chest shut (the close names no container: the one opened)"],
+		[Net.ACT_CHEST_PUT, 2, 80, Cues.STORE_PUT, "something put in a barrel: no lid"],
+	]
+
+	for c in store_cases:
+		clock[0] += 200
+		got.clear()
+		cues.note_action(1, int(c[0]), int(c[1]), int(c[2]), 1, Vector3.ZERO)
+		check(got.size() == 1 and int(got[0][0]) == 2 and int(got[0][2]) == Cues.CUE_STORE and int(got[0][3]) == int(c[3]) and (got[0][4] as Vector3).is_equal_approx(lid_at), "%s (%s)" % [c[4], str(got)])
+
+	for c in [[Net.ACT_CHEST_OPEN, -3, 0, "a worn bag (the player's own back)"], [Net.ACT_CHEST_OPEN, 55, 0, "an id that is not a placed thing"], [Net.ACT_CHEST_CLOSE, 0, 0, "a close with nothing open"]]:
+		clock[0] += 200
+		got.clear()
+		cues.note_action(1, int(c[0]), int(c[1]), int(c[2]), 1, Vector3.ZERO)
+		check(got.is_empty(), "%s: nothing (%d)" % [c[3], got.size()])
+
+	items.pos[1] = Vector3(30, 1, 0)                     # walked off: a chest 29 m away is not this player's to open
+	clock[0] += 200
+	got.clear()
+	cues.note_action(1, Net.ACT_CHEST_OPEN, 79, 0, 1, Vector3.ZERO)
+	check(got.is_empty(), "a chest far from the player is not heard opening (%d)" % got.size())
+	items.pos[1] = Vector3(0, 1, 0)
 	cues.forget(1)
 	check(cues.cue(1, Cues.CUE_PICK, 1, Vector3.ZERO), "forgotten on leaving")
 
@@ -176,6 +207,12 @@ func _client_checks() -> void:
 	stage.spear = SpearSounds.new()
 	stage.add_child(stage.spear)
 	stage.spear.setup(stage)
+	stage.interior = InteriorSounds.new()
+	stage.add_child(stage.interior)
+	stage.interior.setup(stage)
+	stage.placed = PlacedSounds.new()
+	stage.add_child(stage.placed)
+	stage.placed.setup(stage)
 	var at: Vector3 = Vector3(5.0, 1.0, -4.0)
 
 	var cases: Array = [
@@ -185,6 +222,10 @@ func _client_checks() -> void:
 		[Cues.CUE_PICK, 3, {"name": "blueberry", "yields": ["blueberries"], "shape": "bush"}, {}, stage.harvestfx, "a berry pick"],
 		[Cues.CUE_BLOW, Cues.MATERIALS.find("flesh"), {}, {}, stage.spear, "a knife on a carcass"],
 		[Cues.CUE_CRAFT, 2, {}, {"id": "stone_axe"}, stage, "a craft's work"],
+		[Cues.CUE_STORE, Cues.STORE_OPEN + Cues.STORE_LID, {}, {}, stage.interior, "a chest's lid opening"],
+		[Cues.CUE_STORE, Cues.STORE_CLOSE + Cues.STORE_LID, {}, {}, stage.interior, "a chest's lid shutting"],
+		[Cues.CUE_STORE, Cues.STORE_PUT, {}, {}, stage.placed, "something put in a barrel"],
+		[Cues.CUE_STORE, Cues.STORE_TAKE + Cues.STORE_LID, {}, {}, stage.placed, "something taken out of a chest"],
 	]
 
 	for c in cases:
@@ -201,4 +242,6 @@ func _client_checks() -> void:
 
 	check(stage.others_actions == cases.size(), "counted (%d)" % stage.others_actions)
 	check(not stage.other_action(9, 0, at) and not stage.other_action(Cues.CUE_CRAFT, 1, at), "an unknown cue or a recipe not known plays nothing")
-	check(Cues.CUE_BLOW == SoundStage.CUE_BLOW and Cues.CUE_PICK == SoundStage.CUE_PICK and Cues.CUE_CRAFT == SoundStage.CUE_CRAFT, "the client reads the server's cue numbers")
+	check(not stage.other_action(Cues.CUE_STORE, Cues.STORE_OPEN, at), "a barrel opening has no sound of its own")
+	check(Cues.CUE_BLOW == SoundStage.CUE_BLOW and Cues.CUE_PICK == SoundStage.CUE_PICK and Cues.CUE_CRAFT == SoundStage.CUE_CRAFT and Cues.CUE_STORE == SoundStage.CUE_STORE,
+			"the client reads the server's cue numbers")
