@@ -241,6 +241,7 @@ func _init() -> void:
 	v["health"] = 100.0
 	var low_fed: float = 2400.0
 	var low_health: float = 100.0
+	var low_weight: float = 75.0   # make() sets 75 kg on every restart, so the lowest is read each day, not only at the end
 	var eaten: int = 0
 	var start_food: int = food_total()
 
@@ -249,6 +250,7 @@ func _init() -> void:
 			items.tick(DAY_S / 6.0)
 			low_fed = minf(low_fed, float(v["fed"]))
 			low_health = minf(low_health, float(v["health"]))
+			low_weight = minf(low_weight, float(v["weight"]))
 
 			while float(v["fed"]) < 2000.0:
 				var took: bool = false
@@ -292,13 +294,15 @@ func _init() -> void:
 
 				eaten += 1
 
+		low_weight = minf(low_weight, float(v["weight"]))
+
 		if day % 30 == 29:
 			restart("winter day %d" % (day + 1))
 			v = items.vitals_of(1)
 			inv = items.inventory_of(1)
 
 	check(eaten > 91 and low_fed > 0.0, "a winter of 91 days eaten from the stores (%d items, %d left of %d): the stomach never empties (lowest %.0f kcal)" % [eaten, food_total(), start_food, low_fed])
-	check(low_health >= 99.0 and float(v["weight"]) >= 75.0 - 0.01, "and the body never burns its own weight for want of food (%.2f kg; health lowest %.1f)" % [float(v["weight"]), low_health])
+	check(low_health >= 99.0 and low_weight >= 75.0 - 0.01, "and the body never burns its own weight for want of food (lowest %.2f kg; health lowest %.1f)" % [low_weight, low_health])
 	check(food_total() * 2 > start_food, "the stores outlast the winter with more than half left")
 
 	items._finish_writer()
