@@ -19,6 +19,8 @@ Prints one "LINK" line at the start and a "LINK totals" line every 30 s and on e
 With --control FILE the link reads FILE five times a second; when it says "cut", every connection open at that moment goes dead both ways
 (UDP dropped, the block line silent but not closed), as when a player's internet drops, and the file is set to "done". Clients that connect
 later pass as usual, so the same player can rejoin at once while the server still holds the dead connection (robot plan drops).
+"hold PORT SECONDS" instead drops only the UDP packets of the client on that local port, both ways, for that long, and keeps its
+connection: a stalled route that comes back (robot plan together). The block line is not held.
 
 Standard library only (Python 3.8+), so it runs in the cloud, on Lane B and on Dave's PC alike.
 """
@@ -102,7 +104,7 @@ class Upstream(asyncio.DatagramProtocol):
 		self.transport = transport
 
 	def datagram_received(self, data, addr):
-		if self.cut:
+		if self.cut or self.relay.held(self.client_addr):
 			return
 
 		self.relay.stats.packets += 1
@@ -141,7 +143,7 @@ class UdpRelay(asyncio.DatagramProtocol):
 			self.stats.clients += 1
 			spawn(self.loop, self._open(entry, addr))
 
-		if entry.get("cut"):
+		if entry.get("cut") or self.held(addr):
 			return
 
 		self.stats.packets += 1
@@ -166,6 +168,22 @@ class UdpRelay(asyncio.DatagramProtocol):
 			later(self.loop, at, proto.transport.sendto, data)
 
 		entry["pending"].clear()
+
+	def held(self, addr):
+		"""A client held (hold PORT SECONDS): its packets are dropped both ways until then, its connection kept, as a stalled route."""
+		entry = self.clients.get(addr)
+		return entry is not None and time.monotonic() < entry.get("hold_until", 0.0)
+
+	def hold(self, port, seconds):
+		"""Every client address on that local port is held for `seconds`; returns how many."""
+		n = 0
+
+		for addr, entry in self.clients.items():
+			if addr[1] == port:
+				entry["hold_until"] = time.monotonic() + seconds
+				n += 1
+
+		return n
 
 	def cut_all(self):
 		"""Every client address seen so far goes dead both ways; a new address (a client started again) is a new connection."""
@@ -241,7 +259,7 @@ async def main():
 	p.add_argument("--loss", type=float, default=0.02, help="share of UDP packets dropped, each direction (0.02 = 2%%)")
 	p.add_argument("--reorder", action="store_true", help="let jitter reorder packets")
 	p.add_argument("--seed", type=int, default=1)
-	p.add_argument("--control", default="", help='a file: "cut" in it makes every connection open now go dead both ways')
+	p.add_argument("--control", default="", help='a file: "cut" in it makes every connection open now go dead both ways; "hold PORT SECONDS" drops one client\'s UDP both ways for that long')
 	p.add_argument("--seconds", type=float, default=0.0, help="quit after this long (0 = run until killed)")
 	args = p.parse_args()
 	loop = asyncio.get_running_loop()
@@ -284,7 +302,22 @@ async def main():
 		except asyncio.TimeoutError:
 			pass
 
-		if args.control and read_control(args.control) == "cut":
+		said = read_control(args.control) if args.control else ""
+
+		if said.startswith("hold "):
+			parts = said.split()
+			try:
+				n = relay.hold(int(parts[1]), float(parts[2])) if len(parts) == 3 else 0
+			except ValueError:
+				n = 0   # "hold 25001 abc": held no one, the link keeps going
+
+			with open(args.control, "w") as f:
+				f.write("done")
+
+			print("LINK hold %d: udp port %s, %s s, %d clients held (packets dropped both ways, the connection kept)" % (
+				int(time.time() * 1000), parts[1] if len(parts) > 1 else "?", parts[2] if len(parts) > 2 else "?", n), flush=True)
+
+		if said == "cut":
 			n = relay.cut_all()
 
 			for line in lines:

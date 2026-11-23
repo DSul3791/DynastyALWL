@@ -11,6 +11,8 @@
 #   ROBOT_S=200 tools/robots.sh 1 fight_goblin|fight_bandit [link]   a charging foe: shield at the warning, side-steps, jabs
 #   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
 #   ROBOT_S=260 tools/robots.sh 2 kind_moose [link]   two robots hunt one animal kind; tools/robot_kinds.py <run folder> prints the measures
+#   tools/robots.sh 1 trail [link]          crouched along a game trail under trees (stops compared with standing)
+#   ROBOT_S=800 tools/robots.sh 2 together [link]   two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other
 #   ROBOT_S=3600 tools/robots.sh 2 roam [link]   an hour (a game day) standing at water, woods and open ground; tools/robot_stuck.py <run folder>
 #                                         counts the stuck animals near them per kind (the server's AUDIT stuck lines)
 # Robot play-testers (23 Nov 2026, after build 9257's first hour on Dave's server found faults no one-machine test saw).
@@ -24,6 +26,7 @@
 set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 [ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
+[ "$PLAN" = "together" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)
