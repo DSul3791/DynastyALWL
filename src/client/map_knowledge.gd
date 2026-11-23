@@ -86,7 +86,7 @@ func surveyed_trail_steps(view: Rect2 = Rect2()) -> Array:
 	var side: float = TrailCodec.ROUTE_BLOCK_M
 
 	for block in trails:
-		if view.has_area() and not view.intersects(Rect2(Vector2(block) * side, Vector2(side, side))):
+		if view.has_area() and not view.grow(side).intersects(Rect2(Vector2(block) * side, Vector2(side, side))):  # routes spill past their block side
 			continue
 
 		if not _steps.has(block):
