@@ -82,6 +82,8 @@ What the game takes from this:
   "names": ["Ash", "Grey", "Storm", "Fang", "Shadow", "Wren", "Thorn", "Echo"]}}
 ```
 
+The food list above is the first one. Since 23 Nov 2026 it is the dog's list (`dog_companion_design.md` section 10): every catchable fish, and raw, roast, seal and smoked meat and jerky.
+
 The `tame` row sketched in `wolf_pup_taming_design.md` section 4 becomes this `companion` block, the same shape as the dog's.
 
 ## 7. Systems touched (code, stacked on #613)

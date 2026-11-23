@@ -1210,7 +1210,7 @@ func _ready() -> void:
 			cues.after_action(peer, kind, a, b, cue_before)   # after: a container, a drink or a pickup is heard only when the server let it through
 
 		if players != null:
-			players.note_action(peer, kind))
+			players.note_action(peer, kind, count))
 	@warning_ignore("confusable_local_declaration")
 	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000

@@ -187,6 +187,23 @@ func _init() -> void:
 		dog_worst = minf(dog_worst, Vector2(dog["pos"].x - runner.x, dog["pos"].z - runner.z).length())
 
 	check(dog_worst >= dog_m - 0.01, "a dog a player jogs into at 4 m/s keeps out of them (nearest %.2f m, contact %.2f m)" % [dog_worst, dog_m])
+	# A walker stopped at a big body leans on it (animal_view walker_stop, WALK_INTO_M inside): it shifts aside slowly, never shoved along at
+	# half its flee speed (robots 23 Nov 2026: two robots pressing an elephant pushed it about at 3 to 5 m/s, drawn 2 to 5 m off the server).
+	var el_m: float = AnimalContact.contact_m("elephant")
+	var leaned: Dictionary = {"sp": "elephant", "pos": Vector3(el_m - AnimalContact.WALK_INTO_M, 10.0, 0.0), "state": 0}
+	var leaner: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var leaned_moved: float = 0.0
+
+	for i in 20:
+		var was_el: Vector3 = leaned["pos"]
+		mw.make_way(leaned, leaner, 0.1)
+		leaned_moved += Vector2(leaned["pos"].x - was_el.x, leaned["pos"].z - was_el.z).length()
+		leaner.x = leaned["pos"].x - (el_m - AnimalContact.WALK_INTO_M)   # the walker follows, held at its body
+
+	check(leaned_moved > 0.0 and leaned_moved <= AnimalContact.LEANED_MPS * 2.0 + 0.001, "an elephant a walker leans on for 2 s shifts %.2f m, at most %.1f m/s" % [leaned_moved, AnimalContact.LEANED_MPS])
+	var deep_el: Dictionary = {"sp": "elephant", "pos": Vector3(el_m - 1.0, 10.0, 0.0), "state": 0}
+	mw.make_way(deep_el, Vector3(0.0, 10.0, 0.0), 0.1)
+	check(deep_el["pos"].x - (el_m - 1.0) > AnimalContact.LEANED_MPS * 0.1 + 0.01, "an elephant a player is well inside (a late line) still steps out at its own pace (%.2f m in 0.1 s)" % (deep_el["pos"].x - (el_m - 1.0)))
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))
@@ -291,7 +308,7 @@ func _init() -> void:
 	ps.cfg["species"]["cow"].erase("defend")
 	var cow: int = ps.spawn("cow", 3.0, 0.0)
 	ps.animals[cow]["pos"] = Vector3(3.0, 10.0, 0.0)
-	var cm: float = AnimalContact.contact_m("cow") - 0.1   # animal_view WALK_INTO_M
+	var cm: float = AnimalContact.contact_m("cow") - AnimalContact.WALK_INTO_M
 	var walker: Vector3 = Vector3(0.0, 10.0, 0.0)
 	var passed_s: float = INF
 

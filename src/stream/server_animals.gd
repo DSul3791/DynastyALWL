@@ -191,12 +191,13 @@ func species_def(sp: String) -> Dictionary:
 	return cfg.get("species", {}).get(sp, {})
 
 
-# Admin and tests: put an animal down at once (x, z; the ground gives y). Returns its id or 0.
-func spawn(sp: String, x: float, z: float) -> int:
+# Admin and tests: put an animal down at once (x, z; the ground gives y). Returns its id or 0. over_cap: a player's own companion made
+# beside them (server_companions._make_live) is never refused by server_cap; it still counts toward it, so the wild ones make room.
+func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 	var def: Dictionary = species_def(sp)
 	_here = Vector3(x, 0.0, z)   # young in its own row's season
 
-	if def.is_empty() or animals.size() >= int(cfg.get("server_cap", 150)):
+	if def.is_empty() or (animals.size() >= int(cfg.get("server_cap", 150)) and not over_cap):
 		return 0
 
 	var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else 0.0
@@ -931,6 +932,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 		var push: Vector2 = player_velocity_at(at)
 		pace_mps = maxf(pace_mps, push.length() + 1.0)
 		out = AnimalContact.keep_off(a["pos"], at + Vector3(push.x, 0.0, push.y) * dt, AnimalContact.contact_m(str(a["sp"])))
+	elif AnimalContact.body_m(str(a["sp"])) >= AnimalContact.BLOCK_M and Vector2(out.x - a["pos"].x, out.z - a["pos"].z).length() <= AnimalContact.LEAN_M:
+		pace_mps = minf(pace_mps, AnimalContact.LEANED_MPS)   # a walker stopped at its body leans on it (animal_view walker_stop): it shifts, never shoved along
 	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):

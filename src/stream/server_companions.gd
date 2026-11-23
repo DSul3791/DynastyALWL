@@ -207,7 +207,9 @@ func _beside(r: Dictionary) -> Vector3:
 
 func _make_live(r: Dictionary, owner: Dictionary) -> void:
 	var at: Vector3 = owner["pos"] + _beside(r)
-	var id: int = host.spawn(str(r["species"]), at.x, at.z)
+	# shortcut: over the cap without a limit of its own. One dog and one wolf a player by species, but claimed horses are not limited
+	# (claim()): a player with many camps cleared adds that many over server_cap. Cap companions per player if that is ever seen.
+	var id: int = host.spawn(str(r["species"]), at.x, at.z, true)   # a full world still has room for a player's own companion
 
 	if id == 0:
 		return
@@ -299,6 +301,9 @@ func _step_orphan(a: Dictionary, dt: float) -> void:
 		if p["key"] == "" or has_companion(p["key"], str(a["sp"])):
 			continue
 
+		if int(rec.get("trust", {}).get(p["key"], {}).get("day", -1)) == _today():
+			continue   # one meal a game day from each player: the rest of what they left waits for tomorrow
+
 		var ate: String = _eat_from(a, p["key"], p["pos"], float(c.get("smell_m", 10.0)), dt)
 
 		if ate == "going":
@@ -309,12 +314,10 @@ func _step_orphan(a: Dictionary, dt: float) -> void:
 				rec["trust"] = {}
 
 			var row: Dictionary = rec["trust"].get(p["key"], {"trust": 0.0, "day": -1})
-
-			if int(row["day"]) != _today():
-				row["trust"] = float(row["trust"]) + 1.0   # one meal a game day counts
-				row["day"] = _today()
-				rec["trust"][p["key"]] = row
-				host.wolves._dens_dirty = true
+			row["trust"] = float(row["trust"]) + 1.0   # one meal a game day counts (a player fed today is skipped above)
+			row["day"] = _today()
+			rec["trust"][p["key"]] = row
+			host.wolves._dens_dirty = true
 
 			if float(row["trust"]) >= float(c.get("trust_to_follow", 3)):
 				host.wolves.orphan_gone(a)
@@ -371,16 +374,15 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 	var stray: Dictionary = c.get("stray", {})
 	var p: Dictionary = _player(key)
 	var p_pos: Vector3 = p["pos"] if not p.is_empty() else Vector3.INF
-	var ate: String = _eat_from(a, key, p_pos, float(stray.get("smell_m", 15.0)), dt)
+	var fed_today: bool = int(strays.get(key, {}).get("day", -1)) == _today()   # one meal a game day: a stack left for it is not all eaten at once
+	var ate: String = "" if fed_today else _eat_from(a, key, p_pos, float(stray.get("smell_m", 15.0)), dt)
 
 	if ate == "ate":
 		var row: Dictionary = strays.get(key, {"trust": 0.0, "day": -1})
-
-		if int(row["day"]) != _today():
-			row["trust"] = float(row["trust"]) + 1.0   # one meal a game day counts
-			row["day"] = _today()
-			strays[key] = row
-			_dirty = true
+		row["trust"] = float(row["trust"]) + 1.0   # one meal a game day counts (fed_today stops a second)
+		row["day"] = _today()
+		strays[key] = row
+		_dirty = true
 
 		if float(row["trust"]) >= float(c.get("trust_to_follow", 3)):
 			_adopt(a, key, c)
@@ -479,7 +481,7 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 	if d <= NEAR_M:
 		r["near_s"] = float(r["near_s"]) + dt
 
-	var ate: String = _eat_from(a, str(r["owner_key"]), Vector3.INF, 8.0, dt)
+	var ate: String = "" if int(r["fed_day"]) == _today() else _eat_from(a, str(r["owner_key"]), Vector3.INF, 8.0, dt)   # one meal a game day: food its owner set down is not all eaten
 
 	if ate == "ate":
 		r["fed_day"] = _today()

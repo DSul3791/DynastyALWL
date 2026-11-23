@@ -125,6 +125,13 @@ CLIENTS = [
     ("leanto", ["--leanto"], 4000, [
         ("roof gives cover", r"cover under it " + NUM, 0.9, 1.0),
     ]),
+    ("screenaudit", ["--screenaudit"], 9000, [   # every screen at every text size (coordinator 23 Nov 2026): nothing off the screen, cut off or under another
+        ("self test catches every kind", r"Screen audit self test: (\d+) of 5 kinds caught", 5, 5),
+        ("screens audited", r"Screen audit: \d+ problems on (\d+) screens", 20, 400),
+        ("no layout problems", r"Screen audit: (\d+) problems on \d+ screens", 0, 0),
+        ("canvas is 1920 wide", r"Screen audit: \d+ problems on \d+ screens \(canvas (\d+)x", 1920, 1920),
+        ("canvas is 1080 high", r"Screen audit: \d+ problems on \d+ screens \(canvas \d+x(\d+)", 1080, 1080),
+    ]),
     ("texttest", ["--texttest"], 3000, [
         ("slot buttons stay valid", r"all valid (true)", None, None),
         ("every item still shown", r"every item shown (true)", None, None),
