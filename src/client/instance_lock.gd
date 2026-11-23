@@ -52,16 +52,16 @@ static func release(path: String = PATH, own_pid: int = OS.get_process_id()) -> 
 
 # Rewrites the note every EVERY_S for as long as this copy runs (a tree timer: it outlives every page and runs while the game is paused).
 # The first call also leaves a node under the root whose leaving (the game closing) releases the note.
-static func keep_fresh(tree: SceneTree) -> void:
-	claim()
+static func keep_fresh(tree: SceneTree, path: String = PATH) -> void:
+	claim(path)
 
 	if not tree.root.has_node("InstanceLockNote"):
 		var watcher: Node = Node.new()
 		watcher.name = "InstanceLockNote"
-		watcher.tree_exiting.connect(func() -> void: release())
+		watcher.tree_exiting.connect(func() -> void: release(path))
 		tree.root.add_child.call_deferred(watcher)
 
-	tree.create_timer(EVERY_S, true).timeout.connect(keep_fresh.bind(tree))
+	tree.create_timer(EVERY_S, true).timeout.connect(keep_fresh.bind(tree, path))
 
 
 # Whether the launcher keeps the note at all for these command-line flags and display (a restart, --to-servers, keeps it but does not ask).

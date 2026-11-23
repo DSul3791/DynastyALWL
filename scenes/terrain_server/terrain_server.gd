@@ -1164,6 +1164,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key, build):
 		var t0: int = Time.get_ticks_usec()
+
+		if _peers.has(peer) and _peers[peer].has("refused"):
+			return   # refused once: a later hello from the same connection is never let in while it is being closed
+
 		var refused: String = BuildStamp.refusal(_stamped_build, build)
 
 		if refused != "":
@@ -1461,6 +1465,8 @@ func _publish_status() -> void:
 func _drop_replaced(old_peer: int) -> void:
 	if not _peers.has(old_peer):
 		return
+
+	_peers[old_peer].erase("player")   # its character is the new connection's now: it no longer counts towards a full server
 
 	net.join_refused.rpc_id(old_peer, "This character joined the server again from another game window or computer, so this one was closed. Nothing was lost.")
 	await get_tree().create_timer(1.0).timeout

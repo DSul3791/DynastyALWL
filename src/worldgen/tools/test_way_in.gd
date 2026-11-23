@@ -54,8 +54,16 @@ func _initialize() -> void:
 	InstanceLock.claim(TEMP, me, now)
 	InstanceLock.release(TEMP, me)
 	check(not FileAccess.file_exists(TEMP), "closing takes this copy's own note away, so starting again at once is not asked about")
-	var lock_src: String = FileAccess.get_file_as_string("res://src/client/instance_lock.gd")
-	check(lock_src.contains("watcher.tree_exiting.connect(func() -> void: release())"), "the note is released when the game closes")
+	InstanceLock.keep_fresh(self, TEMP)
+	await process_frame
+	var watcher: Node = root.get_node_or_null("InstanceLockNote")
+	check(watcher != null and FileAccess.file_exists(TEMP), "an open copy keeps its note, with a watcher under the root")
+
+	if watcher != null:
+		root.remove_child(watcher)   # what closing the game does to every node under the root
+		watcher.free()
+
+	check(not FileAccess.file_exists(TEMP), "the watcher leaving (the game closing) takes the note away")
 	var server_full_src: String = server_src.substr(server_src.find("func _full_for("), 700)
 	check(server_full_src.contains("not _peers[other].has(\"player\")") and server_full_src.contains("items.key_of(other) == store"), "only players let in count, and the same character coming back is never full")
 	check(InstanceLock.should_ask(PackedStringArray(), "Windows") and not InstanceLock.should_ask(PackedStringArray(["--test"]), "Windows") and not InstanceLock.should_ask(PackedStringArray(), "headless"), "asked in a real window only, never in tests or headless")
