@@ -10,9 +10,9 @@ The ground a player stands on is the LOD 0 Transvoxel mesh of the generator's ow
 
 ## Running it
 ```
-godot --headless --path . --script res://src/worldgen/tools/world_audit.gd -- --per-biome=30 --near=3 --border=30 --windows=4 --part=0/4 --out=/tmp/p0.json
-# ... parts 1/4 to 3/4 in parallel, then:
-godot --headless --path . --script res://src/worldgen/tools/world_audit.gd -- --merge=/tmp/p0.json,/tmp/p1.json,/tmp/p2.json,/tmp/p3.json
+godot --headless --path . --script res://src/worldgen/tools/world_audit.gd -- --per-biome=30 --near=3 --border=30 --windows=4 --part=0/4 --out=p0.json
+# ... parts 1/4 to 3/4 in parallel (reports go to user://, the Godot user folder), then:
+godot --headless --path . --script res://src/worldgen/tools/world_audit.gd -- --merge=p0.json,p1.json,p2.json,p3.json
 godot --headless --path . --script res://src/worldgen/tools/world_audit.gd -- --probe=58141,71397   # one reported spot
 ```
 The chunks are seeded: every land biome by its centre biome (`--per-biome`), the block round the starter town (`--near`; sampled because players are there, no rule keys on it) and chunks on tile borders (`--border`). 307 chunks with 4 windows take about 2 minutes on 4 cloud CPUs. Fault names, meanings and limits are the `FAULTS` table at the top of the tool; the report gives counts, the denominators (`checked`), counts by biome and the worst examples with coordinates.

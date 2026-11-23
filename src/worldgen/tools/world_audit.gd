@@ -12,7 +12,8 @@ extends SceneTree
 #     --windows=N      32 m mesh windows per chunk (default 3; each window is one 32 m scatter cell)
 #     --lods=0,1,2,3   levels to mesh (default 0,1,2: LOD 1 and up are only for the far-look counts)
 #     --part=I/N       run every N-th chunk from I (several processes in parallel)
-#     --out=FILE       JSON report (default user://world_audit.json); --merge=F1,F2,... merges part reports and prints the total
+#     --out=NAME       JSON report, always under user:// (default world_audit.json); --merge=N1,N2,... merges those part reports, prints
+#                      the total and writes user://world_audit_total.json
 #     --examples=N     worst examples kept per fault (default 12)
 #
 # Nothing is written to the world; the tool reads the tiles, the placer, the water grid and the server's scatter layout.
@@ -48,7 +49,7 @@ const FAULTS := {
 	"plant_floats": ["a small plant's base more than 0.10 m above the mesh", 0.10],
 	"plant_buried": ["a plant or shrub sunk under the mesh by more than half its height (and 0.25 m)", 0.25],
 	"flora_in_water": ["a non-water plant, shrub or tree standing in drawn water more than 0.15 m deep", 0.15],
-	"sapling_collider": ["a young tree whose trunk collider is thinner than 5 cm (an invisible 3 m pole on a sapling a player should push through)", 0.05],
+	"sapling_collider": ["a sapling (under flora_placer.SAPLING_M) with a trunk collider: an invisible 3 m pole a player should push through", 0.0],
 	"trunks_overlap": ["two tree trunk colliders inside each other", 0.0],
 	"trunk_squeeze": ["two trunks closer than a player's width (0.70 m gap): not a fault alone, a trap if many", 0.0],
 	"flora_in_trunk": ["a shrub or plant rooted inside a tree trunk", 0.0],
@@ -120,7 +121,7 @@ func _init() -> void:
 		elif argument.begins_with("--part="):
 			part = Vector2i(int(value.get_slice("/", 0)), int(value.get_slice("/", 1)))
 		elif argument.begins_with("--out="):
-			out = value
+			out = "user://" + value.trim_prefix("user://").get_file()   # reports only under user:// (the tool writes nothing else)
 		elif argument.begins_with("--examples="):
 			keep_examples = int(value)
 		elif argument.begins_with("--merge="):
@@ -180,6 +181,12 @@ func _init() -> void:
 
 	var report: Dictionary = {"counts": counts, "checked": checked, "by_biome": by_biome, "examples": examples, "chunks": mine.size()}
 	var file: FileAccess = FileAccess.open(out, FileAccess.WRITE)
+
+	if file == null:
+		push_error("world_audit: cannot write " + out)
+		quit(2)
+		return
+
 	file.store_string(JSON.stringify(report, "\t"))
 	file.close()
 	_print_report(report)
@@ -454,8 +461,8 @@ func _trees_of(flora: Dictionary) -> Array:
 
 		var r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n]))
 
-		if r > 0.0 and r < float(FAULTS["sapling_collider"][1]):
-			_fault("sapling_collider", float(FAULTS["sapling_collider"][1]) - r, flora["positions"][n], "%s %.2f m tall, trunk collider r %.3f m" % [sp["name"], float(flora["heights"][n]), r])
+		if r > 0.0 and float(flora["heights"][n]) < PlacerScript.SAPLING_M:
+			_fault("sapling_collider", PlacerScript.SAPLING_M - float(flora["heights"][n]), flora["positions"][n], "%s %.2f m tall, trunk collider r %.3f m" % [sp["name"], float(flora["heights"][n]), r])
 		elif r > 0.0:
 			out.append([flora["positions"][n], r, str(sp["name"])])
 
@@ -904,7 +911,7 @@ func _merge(files: PackedStringArray) -> int:
 	var total: Dictionary = {"counts": {}, "checked": {}, "by_biome": {}, "examples": {}, "chunks": 0}
 
 	for path in files:
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("user://" + path.trim_prefix("user://").get_file()))
 
 		if not parsed is Dictionary:
 			push_error("world_audit: cannot read " + path)
@@ -934,8 +941,10 @@ func _merge(files: PackedStringArray) -> int:
 		_trim(total["examples"][f])
 
 	var out: FileAccess = FileAccess.open("user://world_audit_total.json", FileAccess.WRITE)
-	out.store_string(JSON.stringify(total, "\t"))
-	out.close()
+
+	if out != null:
+		out.store_string(JSON.stringify(total, "\t"))
+		out.close()
 	_print_report(total)
 	print("by biome: %s" % JSON.stringify(total["by_biome"]))
 	return 0

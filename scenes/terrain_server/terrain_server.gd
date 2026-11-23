@@ -2132,7 +2132,7 @@ func _berries_near_cached(point: Vector3, radius: float) -> PackedVector3Array:
 # flora stream (a worker) has made it.
 const TREE_LISTS_KEPT := 200
 const TREE_CELL_M := 16.0
-var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name]
+var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name, trunk collider radius, height]
 var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
 
 

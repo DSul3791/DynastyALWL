@@ -1143,8 +1143,8 @@ static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int
 
 
 # The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker and the tree is SAPLING_M
-# or taller (saplings have no collider, as planted ones: decision of 20 Oct 2026; before 23 Nov every seedling had an invisible 3 m pole a
-# few mm wide, 41% of all trunk colliders, tools world_audit.gd "sapling_collider"). Shrubs and plants: none, whatever their height (Dave
+# or taller (no collider for saplings: the approved felling design amendment 3, docs/mirror/tech/DECISIONS.md 2026-10-20; before 23 Nov every
+# seedling had an invisible 3 m pole a few mm wide, 38% of all trunk colliders, world_audit.gd "sapling_collider"). Shrubs and plants: none, whatever their height (Dave
 # 5 Nov 2026: bushes, ferns and sticks never stop the player; walking through them is louder instead, server_flora.in_undergrowth and
 # server_animals senses.undergrowth_noise).
 static func collider_radius(kind: int, trunk_m: float, size_scale: float, height: float) -> float:
