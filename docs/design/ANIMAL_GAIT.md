@@ -51,7 +51,14 @@ Dave 23 Nov 2026: the animals looked "like really bad animatronics". Two causes 
   names a clip that is not in its file. It found the donkey's G0_Walk and G3_Gallop, which were not in the file, so the donkey played
   whatever clip the name search found.
 
-Still to do: a one-shot clip on a bite, on a hit and at death (they need non-looping play), and a look at the wind-up tell on screen.
+**One-shot clips.** A model row may name a `bite`, `hit` and `die` clip. Each plays once, from a non-looping copy, so a looping role
+that names the same clip keeps looping. While one plays (capped: hit 0.9 s, bite 1.2 s, death 3 s), the state's clip does not take
+over; then the state's clip blends back.
+- The hit plays when a blow lands (`flinch`), on a body slower than 1 m/s, or at any speed when the clip is a hit taken on the run
+  (its name has "run": HitInRunHead_F, HitLegFL2RunFast).
+- The bite plays when an attack state ends (a wolf's lunge 7, big game's charge 11). The plain wolf file has no bite clip, so only
+  the second wolf look bites.
+- A killed animal with a death clip falls where it is drawn and goes 0.6 s after the clip ends; one without goes at once, as before.
 
 ## How to confirm (Lane A)
 

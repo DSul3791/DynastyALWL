@@ -1,0 +1,87 @@
+extends SceneTree
+
+# One-shot clips (Dave 23 Nov 2026: animals "like really bad animatronics"; docs/design/ANIMAL_GAIT.md): a hit, a bite or a death plays
+# once and is cut at its cap; while it plays the state's clip does not take over, then it does; a standing hit clip is not played on a
+# running body, a hit taken on the run is; a killed animal with a death clip stays drawn until the clip ends; a model with no clip for
+# the role plays nothing.
+#   godot --headless --path . --script res://src/worldgen/tools/test_animal_once.gd
+
+const AnimalViewScript := preload("res://src/client/animal_view.gd")
+
+var failures: int = 0
+
+
+func check(ok: bool, what: String) -> void:
+	print(("ok   " if ok else "FAIL ") + what)
+
+	if not ok:
+		failures += 1
+
+
+# A drawn body with an AnimationPlayer whose roles name the clips given ({role: [clip, seconds]}).
+func body(v: Node3D, id: int, roles: Dictionary) -> Dictionary:
+	var node: Node3D = Node3D.new()
+	var player: AnimationPlayer = AnimationPlayer.new()
+	var lib: AnimationLibrary = AnimationLibrary.new()
+	var by_role: Dictionary = {}
+
+	for role in roles:
+		var anim: Animation = Animation.new()
+		anim.length = float(roles[role][1])
+		anim.loop_mode = Animation.LOOP_NONE if role in AnimalViewScript.ONCE_ROLES else Animation.LOOP_LINEAR
+		lib.add_animation(StringName(roles[role][0]), anim)
+		by_role[role] = str(roles[role][0])
+
+	player.add_animation_library("", lib)
+	player.set_meta("roles", by_role)
+	node.add_child(player)
+	node.set_meta("player", player)
+	node.set_meta("model_row", {"clips": {"0": by_role.get("0", "")}})
+	v.add_child(node)
+	var b: Dictionary = {"node": node, "state": 0, "spd": 0.0, "id": id, "target": Vector3.ZERO, "kind": "deer"}
+	v._bodies[id] = b
+	return b
+
+
+func _init() -> void:
+	var v: Node3D = AnimalViewScript.new()
+	root.add_child(v)
+
+	# A hit on a standing body: the clip plays, cut at HIT_MAX_S (the clip is 2.9 s), and the state's clip waits until then.
+	var b: Dictionary = body(v, 1, {"0": ["Idle", 4.0], "hit": ["Hit_Idle_F01_once", 2.9]})
+	var player: AnimationPlayer = (b["node"] as Node3D).get_meta("player")
+	v.flinch(1)
+	check(absf(float(b.get("once_until", -1.0)) - (v._t + AnimalViewScript.HIT_MAX_S)) < 0.001, "a standing hit plays until its cap (%.2f s)" % (float(b.get("once_until", -1.0)) - v._t))
+	check(player.assigned_animation == "Hit_Idle_F01_once", "the hit clip is the one playing (%s)" % player.assigned_animation)
+	v._animate_model(b["node"], b, 0, 0.0, 0.016)
+	check(player.assigned_animation == "Hit_Idle_F01_once", "while it plays, the state's clip does not take over")
+	v._t += AnimalViewScript.HIT_MAX_S + 0.01
+	v._animate_model(b["node"], b, 0, 0.0, 0.016)
+	check(player.assigned_animation == "Idle", "after its cap the state's clip is back (%s)" % player.assigned_animation)
+
+	# A running body: a standing hit clip is not played (it would slide), a hit taken on the run is.
+	var runner: Dictionary = body(v, 2, {"0": ["Idle", 4.0], "hit": ["Hit_Idle_F01_once", 2.9]})
+	runner["spd"] = 6.0
+	v.flinch(2)
+	check(not runner.has("once_until"), "a standing hit clip is not played on a body running 6 m/s")
+	var on_run: Dictionary = body(v, 3, {"0": ["Idle", 4.0], "hit": ["HitInRunHead_F_once", 1.3]})
+	on_run["spd"] = 6.0
+	v.flinch(3)
+	check(on_run.has("once_until"), "a hit taken on the run plays on a running body")
+
+	# No clip for the role: nothing plays, nothing waits.
+	var plain: Dictionary = body(v, 4, {"0": ["Idle", 4.0]})
+	check(not v._play_once(plain, "bite", AnimalViewScript.BITE_MAX_S) and not plain.has("once_until"), "a model with no bite clip plays none")
+
+	# A bite shorter than its cap plays its own length.
+	var biter: Dictionary = body(v, 5, {"0": ["Idle", 4.0], "bite": ["attack_02_once", 0.4]})
+	check(v._play_once(biter, "bite", AnimalViewScript.BITE_MAX_S) and absf(float(biter["once_until"]) - v._t - 0.4) < 0.001, "a 0.4 s bite plays 0.4 s")
+
+	# A death: the body stays drawn while the clip plays; with no death clip it goes at once (false).
+	var dying: Dictionary = body(v, 6, {"0": ["Idle", 4.0], "die": ["Death_Idle_R01_once", 1.5]})
+	check(v._die(dying) and is_instance_valid(dying["node"]) and not (dying["node"] as Node3D).is_queued_for_deletion(), "a killed body with a death clip is still drawn as it falls")
+	check(not v._die(plain), "with no death clip the body goes at once")
+
+	v.queue_free()
+	print("test_animal_once: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
+	quit(1 if failures > 0 else 0)
