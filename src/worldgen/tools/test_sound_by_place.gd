@@ -16,7 +16,8 @@ const GameClock := preload("res://src/shared/game_clock.gd")
 class Stage:
 	extends RefCounted
 	var interior: Dictionary = {"amount": 0.0}
-	var _flora = null
+	@warning_ignore("unused_private_class_variable")
+	var _flora = null   # weather_sounds reads _stage._flora
 	var cave: Dictionary = {"rock_enclosure": 0.0, "enclosure": 0.0}
 
 	func under_cover(_body) -> float:
@@ -137,7 +138,8 @@ func seasons() -> void:
 class NoCaveStage:
 	extends RefCounted
 	var interior: Dictionary = {"amount": 0.0}
-	var _flora = null
+	@warning_ignore("unused_private_class_variable")
+	var _flora = null   # weather_sounds reads _stage._flora
 
 	func under_cover(_body) -> float:
 		return 0.0
