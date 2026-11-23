@@ -25,6 +25,18 @@ func _init() -> void:
 	_check((mask >> 7 & 1) == 0 and (mask >> 63 & 1) == 0, "cells farther than 40 m are not")
 	_check(view._close_masks(Vector2i(5, 5), Vector3(16.0, 0.0, 16.0)).is_empty(), "a far chunk has no mask, so it is not redrawn as the player moves")
 
+	# Low and Medium thin the shrubs, but never within SHRUB_KEEP_M (client bug hunt 23 Nov 2026: at Low 6 in 10 berry bushes at arm's length
+	# were invisible but still there to pick).
+	var thin = FloraView.new()
+	thin.chunk_m = 256.0
+	_check(not thin._close_masks(Vector2i(0, 0), Vector3(16.0, 0.0, 16.0)).has(FloraView.SHRUB_KEEP_M), "High and Ultra (no thinning) ask for no shrub keep mask, so they re-plan no more often")
+	thin.shrub_share = 0.4
+	var keep: Dictionary = thin._close_masks(Vector2i(0, 0), Vector3(16.0, 0.0, 16.0))
+	_check(thin._shrub_kept(keep, Vector3(18.0, 0.0, 14.0)) and thin._shrub_kept(keep, Vector3(40.0, 0.0, 10.0)), "at Low every shrub in the player's cell and the next one is kept (drawn)")
+	_check(not thin._shrub_kept(keep, Vector3(200.0, 0.0, 200.0)), "a shrub 250 m off is thinned as before")
+	_check(not thin._shrub_kept(thin._close_masks(Vector2i(5, 5), Vector3(16.0, 0.0, 16.0)), Vector3(1300.0, 0.0, 1300.0)), "a far chunk keeps none")
+	thin.free()
+
 	# Distance thinning (Dave 3 Nov 2026, the grass rule in data/look/grass_far.json): full out to fade_start of the view distance, then down to far_share at the edge.
 	_check(is_equal_approx(FloraView.far_share_at(100.0, 450.0, 0.5, 0.3), 1.0) and is_equal_approx(FloraView.far_share_at(225.0, 450.0, 0.5, 0.3), 1.0), "every tree is drawn out to half the view distance")
 	var band: int = FloraView.far_band_of(100.0, -1)
