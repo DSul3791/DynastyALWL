@@ -3562,7 +3562,8 @@ func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
 # The name of a placed thing a dig at `centre` would take the ground from under (`fill` false: the sphere reaches within EDIT_UNDER_M under its
 # foot, inside its footprint) or a fill would bury (`fill` true: the sphere rises over its foot there), "" when none. Fires, stations, chests,
 # torches, buildings and every other placed piece count; stacks, remains, patches and hung things (attach_to) do not: they follow the ground or a wall.
-func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
+# `buildings` false: foundations and building pieces do not count (the hoe's strokes).
+func _edit_blocker(centre: Vector3, radius: float, fill: bool, buildings: bool = true) -> String:
 	for id in _ids_near(centre, radius + FLOOR_ROWS_REACH_M + 1.0):
 		if not _items.has(id):
 			continue
@@ -3580,6 +3581,9 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
 
 			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
 				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
+
+			if not buildings and (bool(def.get("foundation", false)) or bool(def.get("piece", false))):
+				continue   # the hoe levels round foundations and building pieces on purpose (LEVEL_BELOW_PIECE_M)
 
 			yaw = float(it["struct"].get("yaw", 0.0))
 			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
@@ -5028,6 +5032,8 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			_say(peer, "Not enough soil to raise the low ground: dig some, or carry it or leave it nearby.")
 		elif _level_refused and dig_refusal.is_valid():
 			_say(peer, str(dig_refusal.call()))
+		elif _level_skipped:
+			_say(peer, "Only ground under placed things is left: take them up to level it.")
 		else:
 			_say(peer, "The ground here is already level with where you stand.")
 
@@ -5127,6 +5133,7 @@ func _edited_height(x: float, z: float, edits: Array, base: float = NAN) -> floa
 # Returns the edits made, -1 when a spot is not loaded.
 var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
 var _level_unpaid: bool = false    # the last _level_ground left low ground unfilled for want of soil
+var _level_skipped: bool = false   # the last _level_ground left a spot under a chest, fire or station as it was
 
 
 # `targets` and `radii` (a garden: till_garden), when given, are each spot's own height and sphere size.
@@ -5136,6 +5143,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 	var grid: Dictionary = _edit_buckets(edits) if spots.size() > 64 else {}   # a garden's hundreds of spots read only the edits near each
 	_level_refused = false
 	_level_unpaid = false
+	_level_skipped = false
 
 	while worked < max_ops:
 		var best: Vector3 = Vector3.ZERO
@@ -5176,6 +5184,12 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 			continue
 
 		var centre: Vector3 = Vector3(best.x, best.y - depth + sphere, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - sphere, best.z)
+
+		if _edit_blocker(centre, sphere, best_off < 0.0, false) != "":
+			skip[best_n] = true   # a chest, fire or station stands there: the stroke leaves its ground and levels the rest (coordinator 23 Nov 2026)
+			_level_skipped = true
+			continue
+
 		var done: Variant = dig_ground.call(centre, sphere) if best_off > 0.0 else fill_ground.call(centre, sphere, int(FILL_SOIL["soil"]))
 
 		if typeof(done) == TYPE_BOOL and not bool(done):
@@ -5605,6 +5619,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 				continue
 
 			var depth: float = minf(absf(h - target), ROAD_DEPTH_M)
+			var road_at: Vector3 = Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y) if h > target else Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y)
+
+			if _edit_blocker(road_at, SMOOTH_SPHERE_M, h <= target, false) != "":
+				continue   # the road leaves the ground under a chest, fire or station as it is
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
@@ -5711,6 +5729,10 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
 		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
+
+		if _edit_blocker(sphere_at, SMOOTH_SPHERE_M, d <= 0.0, false) != "":
+			continue   # a chest, fire or station stands there: the stroke grades round it
+
 		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 		dug = true
 
