@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suggest an idea</title>
+<!-- The tester site's idea form (deploy/testersite). Same boxes as the QA repo's idea.yml issue form; the report service files it there. -->
+<link rel="stylesheet" href="/css/dynasty.css">
+<script src="/js/tester.js" defer></script>
+</head>
+<body>
+  <div class="who"></div>
+  <div class="hero short"><img src="/images/hero.jpg" alt="" width="1330" height="760"></div>
+  <main>
+    <section class="panel">
+      <a class="back" href="/">&larr; Front page</a>
+      <p class="kicker">Play-test</p>
+      <h1>Suggest an idea</h1>
+      <p class="note">Something you would like to see in Dynasty, or a change that would make it better. It goes to the team's idea list under your name and counts on the high-score table.</p>
+      <form data-kind="idea" style="margin-top:18px">
+        <div class="row2">
+          <div class="field">
+            <label for="build">Build</label>
+            <span class="hint">The build you play.</span>
+            <input type="text" id="build" name="build" placeholder="Build 9250" maxlength="200">
+          </div>
+          <div class="field">
+            <label for="title">Short title</label>
+            <span class="hint">A few words, like "Let me name my horse".</span>
+            <input type="text" id="title" name="title" maxlength="120">
+          </div>
+        </div>
+        <div class="field">
+          <label for="idea">Your idea <span class="req">*</span></label>
+          <textarea id="idea" name="idea" required maxlength="20000" style="min-height:150px"></textarea>
+        </div>
+        <div class="field">
+          <label for="why">Why would it help?</label>
+          <span class="hint">What it would make better or easier.</span>
+          <textarea id="why" name="why" maxlength="20000"></textarea>
+        </div>
+        <div class="actions">
+          <button class="button" type="submit" data-label="Send the idea">Send the idea</button>
+        </div>
+      </form>
+      <div class="result" id="result" role="status"></div>
+    </section>
+    <footer><span class="mark">Dynasty &middot; A Life Well Lived</span>Thank you for testing.</footer>
+  </main>
+</body>
+</html>
