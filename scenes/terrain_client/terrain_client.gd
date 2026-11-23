@@ -1116,7 +1116,7 @@ func _show_lost_notice(reason: String) -> void:
 	box.add_child(label)
 	var note: Label = Label.new()
 	@warning_ignore("integer_division")
-	note.text = "At %s, after %d min in this session.\nReason: %s.\n%s" % [Time.get_time_string_from_system(), (Time.get_ticks_msec() - connected_msec) / 60000, reason, "Retry joins again. If the server has stopped or restarts, Back to servers shows when it answers again." if _remote else "Retry joins again. If the server has stopped, Quit and press Play."]
+	note.text = "At %s, after %d min in this session.\nReason: %s.\n%s" % [Time.get_time_string_from_system(), (Time.get_ticks_msec() - connected_msec) / 60000, reason, "Retry joins again. If the server has stopped, Back to servers opens the server list, which shows when it answers again." if _remote else "Retry joins again. If the server has stopped, Quit and press Play."]
 	note.add_theme_font_size_override("font_size", 20)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.custom_minimum_size = Vector2(640.0, 0.0)
@@ -1126,7 +1126,7 @@ func _show_lost_notice(reason: String) -> void:
 	var choices: Array = [["Retry", func(): AudioServer.set_bus_mute(0, false); get_tree().paused = false; get_tree().reload_current_scene()]]
 
 	if _remote:
-		choices.append(["Back to servers", func(): AudioServer.set_bus_mute(0, false); _back_to_servers()])   # a joined player is never left with only Retry or Quit
+		choices.append(["Back to servers", _back_to_servers])   # a joined player is never left with only Retry or Quit
 
 	choices.append(["Quit", func(): _finish(1)])
 
@@ -1315,8 +1315,8 @@ func _on_auth_failed(_peer: int) -> void:
 		_on_join_refused("The server at %s:%d answered but does not speak this game's way of joining: it runs an older or newer build of the game. Update the game, or ask whoever runs the server to update it." % [_host, _port], "Different version")
 		return
 
-	if _remote and _connect_window != null and connected_msec <= 0:
-		_cannot_reach("The server at %s:%d answered, then dropped this join without saying why. It may be restarting or full. Wait a minute and try again." % [_host, _port])
+	if _remote and _connect_window != null and connected_msec <= 0 and Time.get_ticks_msec() >= _wait_until_msec:   # within a --wait it is tried again (_on_connection_failed)
+		_cannot_reach("The server at %s:%d answered, then dropped this join without saying why. It may be restarting. Wait a minute and try again." % [_host, _port])
 		return
 
 	_on_connection_failed()
