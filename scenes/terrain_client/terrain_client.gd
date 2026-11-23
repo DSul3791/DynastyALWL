@@ -452,6 +452,7 @@ var test_eat: bool = false
 var test_quickkeys: bool = false
 var test_texttest: bool = false
 var test_screen_audit: bool = false    # --screenaudit: every screen at every text size, laid out headless and checked (screen_audit.gd)
+var test_screen_shots: String = ""     # --screenshots=DIR with --screenaudit in a real window: a picture of each audited screen (tools/screen_shots.sh)
 var test_plantpick: bool = false
 var test_embed: bool = false
 var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn), =stay (then 90 m, and stay in) or =check (say where the game starts)
@@ -818,6 +819,8 @@ func _ready() -> void:
 			test_texttest = true
 		elif argument == "--screenaudit":
 			test_screen_audit = true
+		elif argument.begins_with("--screenshots="):
+			test_screen_shots = argument.get_slice("=", 1)
 		elif argument == "--quickkeys":
 			test_quickkeys = true
 		elif argument == "--eat":
@@ -4315,6 +4318,14 @@ func _run_screen_audit() -> void:
 
 			var problems: PackedStringArray = ScreenAudit.audit(get_tree().root, view)
 			FreezeWatchScript.printer.line("Screen audit: %s at %s: %d problems" % [show[0], scale_name, problems.size()])
+
+			if test_screen_shots != "" and DisplayServer.get_name() != "headless":
+				await RenderingServer.frame_post_draw
+				var picture: Image = get_viewport().get_texture().get_image()
+				var file_name: String = ("%s_%s.png" % [show[0], scale_name]).replace(" ", "_").replace(",", "")
+				DirAccess.make_dir_recursive_absolute(test_screen_shots)
+				var saved: int = picture.save_png(test_screen_shots.path_join(file_name)) if picture != null else ERR_CANT_CREATE
+				FreezeWatchScript.printer.line("Screen audit: picture %s %s (window %s)" % [file_name, "saved" if saved == OK else "FAILED", str(get_window().size)])
 
 			for line in problems:
 				FreezeWatchScript.printer.line("Screen audit:   " + line)
