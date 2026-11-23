@@ -90,7 +90,7 @@ Together these should put about 100 to 150 clustered players on one main thread.
   `DYNASTY_SERVER_CPUS` (compose.yaml, default 4; `--cpus=N` wins) is that setting (deploy/server/SERVER.md, CPUs). Today it sizes the ground makers
   and idle builders; the plan is that every later job moved off the main thread sizes itself from it too.
 - **Prebuilt ground.** "The generator part should prebuild our entire world or the parts we are working with right now. The server
-  doesn't build anything; it just serves the prebuilt stuff up to the clients." The region for now is the starting nine tiles (Dave: "the starting 9 chunks good enough, then we will look at expanding"). The
+  doesn't build anything; it just serves the prebuilt stuff up to the clients." The region for now is the starting nine tiles (Dave: "the starting 9 chunks good enough then we will look at expanding in the future"). The
   plan is in "Prebuilt ground for the nine tiles" below.
 
 ## Prebuilt ground for the nine tiles (plan, not built)
