@@ -6,6 +6,7 @@ extends RefCounted
 # prices every deal itself.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const TradePrices := preload("res://src/shared/trade_prices.gd")   # the sums the shop window shows too
 const Attributes := preload("res://src/shared/attributes.gd")
 const TALK_RANGE_M := 4.5
 const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
@@ -231,14 +232,11 @@ func _note_sale(npc_id: String, item_id: String, count: int) -> void:
 
 
 func price_to_pay(value: int, mult: float) -> int:
-	return maxi(int(ceil(float(value) * mult - 0.0001)), 1) if value > 0 else 0
+	return TradePrices.lot_to_pay(value, mult)
 
 
 func price_to_get(value: int, mult: float, life: float = 1.0) -> int:
-	if value <= 0 or life <= 0.0:
-		return 0
-
-	return maxi(int(floor(float(value) * mult * life + 0.0001)), 1)
+	return TradePrices.lot_to_get(value, mult, life)
 
 
 # The trader's window: the player is close enough to talk and the NPC trades.
@@ -334,7 +332,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 			return ""
 
 		var number: int = items.table.number_of(str(ids[a]))
-		var each: int = price_to_pay(int(items.table.entry(str(ids[a])).get("value", 0)), float(m["pay"]) * supply(npc_id, str(ids[a])))
+		var row: Dictionary = items.table.entry(str(ids[a]))
+		var each: int = price_to_pay(int(row.get("value", 0)), float(m["pay"]) * supply(npc_id, str(ids[a])))   # a lot's price (one unit for most goods)
+		var shelf_lot: int = TradePrices.shelf_lot(row)   # cheap goods are sold by the lot, as he buys them (coordinator ruling for Dave, 23 Nov 2026)
 		var shelf: int = stock_of(npc_id, str(ids[a]))
 
 		if shelf <= 0:
@@ -346,13 +346,15 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		if count <= 0:
 			return "You cannot carry any more."
 
-		if items.coins_of(peer) < each * count:
+		var cost: int = TradePrices.total_to_pay(each, shelf_lot, count)
+
+		if items.coins_of(peer) < cost:
 			return "You cannot afford that."
 
-		items.take_coins(peer, each * count)
+		items.take_coins(peer, cost)
 		var st: Dictionary = _refresh(npc_id)
 		st["stock"][str(ids[a])] = float(st["stock"][str(ids[a])]) - float(count)
-		st["purse"] = minf(float(st["purse"]) + float(each * count), _purse_cap(npc_id))   # the coin goes into his till
+		st["purse"] = minf(float(st["purse"]) + float(cost), _purse_cap(npc_id))   # the coin goes into his till
 		save()
 		items._gain_source = "trade"
 		items.give(peer, number, count)
@@ -361,7 +363,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 		if dealt.is_valid():
 			dealt.call(peer, npc_id)
-		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
+		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(cost)]
 
 	if a < 0 or a >= inv.slot_count or inv.numbers[a] == 0:
 		return ""
@@ -392,13 +394,12 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	count = mini(count, inv.counts[a])
 	var item_id: String = items.table.id_of(number2)
-	var value: int = int(round(float(entry.get("value", 0)) * SmithingRules.value_mult(inv.inst_of(a))))   # craftsmanship raises it (master s2.9 item 3)
-	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
 	var brule: Dictionary = _buy_rule(npc_id, item_id)
+	var terms: Array = TradePrices.sell_terms(entry, brule, SmithingRules.value_mult(inv.inst_of(a)))   # craftsmanship raises it (master s2.9 item 3); a lot (Dave 1 Nov: sell_lot, one price per lot, a single stone pays nothing) or his own buy rule
+	var lot: int = int(terms[0])
+	var value: int = int(terms[1])
 
-	if not brule.is_empty():   # this trader's own price and daily limit for the item (shops.json buy_rules)
-		lot = maxi(int(brule.get("lot", lot)), 1)
-		value = int(brule.get("lot_value", value))
+	if not brule.is_empty():   # this trader's daily limit for the item (shops.json buy_rules)
 		count = mini(count, buy_room(npc_id, item_id))
 
 		if count <= 0:

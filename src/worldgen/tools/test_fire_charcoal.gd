@@ -198,11 +198,14 @@ func _init() -> void:
 	var fp_burn: float = items.light_burn_s(items._structures["fireplace"])
 	var br_burn: float = items.light_burn_s(items._structures["stone_brazier"])
 
-	for _i in range(int(ceil(fp_burn / 10.0))):   # the Fireplace burns one of its two Firewood; the brazier and the torch burn all they were lit with (twice one fuel)
+	for _i in range(int(ceil(fp_burn / 10.0))):   # the Fireplace burns one of its two Firewood; the torch burns all it was lit with (twice one fuel)
 		items._lights_tick(10.0)
 
 	check(charcoal_near(items._items[fireplace]["pos"], 1.0) == int(round(per_firewood)), "a Fireplace that burned a Firewood leaves %d Charcoal at its foot (%d)" % [int(round(per_firewood)), charcoal_near(items._items[fireplace]["pos"], 1.0)])
-	check(br_burn * 2.0 <= fp_burn and charcoal_near(items._items[brazier]["pos"], 1.0) == int(round(per_log * 2.0)), "a Stone brazier that burned its two logs leaves %d Charcoal (%d)" % [int(round(per_log * 2.0)), charcoal_near(items._items[brazier]["pos"], 1.0)])
+	for _i in range(int(ceil(maxf(br_burn * 2.0 - fp_burn, 0.0) / 10.0))):   # a brazier burns a log as long as a campfire (3 h, the floor): on to its second log's end
+		items._lights_tick(10.0)
+
+	check(not bool(items._items[brazier]["struct"].get("lit", false)) and charcoal_near(items._items[brazier]["pos"], 1.0) == int(round(per_log * 2.0)), "a Stone brazier that burned its two logs leaves %d Charcoal (%d)" % [int(round(per_log * 2.0)), charcoal_near(items._items[brazier]["pos"], 1.0)])
 	check(charcoal_near(items._items[torch]["pos"], 1.0) == 0, "a Wall torch (sticks) leaves none")
 
 	# 7. No campfire recipe.
