@@ -8,7 +8,7 @@ reported, ideas, total score, sortable by any column. Testers need no GitHub acc
 
 **Status: tested in the cloud only** (`tools/test_tester_site_caddy.sh`: a copy of the server's set-up with Caddy, the login and a fake GitHub). Not yet run on Dave's server.
 
-The rest of the site (the game zip, `/download/`, `images/hero.jpg`, `fonts/`, `latest.json`) comes from the packaging side: `tools/make_testplayers_site.ps1` and `deploy/testplayers/SERVER.md`, from the packaging thread's PR (not in dev at the time of writing). Without `latest.json` the Build box is simply empty and the tester types it.
+The rest of the site (the game zip, `/download/`, `images/hero.jpg`, `fonts/`, `latest.json`) comes from the packaging side: `tools/make_testplayers_site.ps1` builds the whole site folder, these pages included, and writes `latest.json`; `deploy/testplayers/SERVER.md` copies it up and runs this install once (#1621). Without `latest.json` the Build box is simply empty and the tester types it.
 
 ## How it works
 
