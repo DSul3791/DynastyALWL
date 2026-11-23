@@ -1983,6 +1983,9 @@ func _ghost_clean(node: Node) -> void:
 
 # The red ghost's reason in words; a door's carries the shape of the doorway it is aimed at (_door_shape).
 func _reason() -> String:
+	if blueprint_state == "water_say":
+		return water_say.trim_suffix(".").left(1).to_lower() + water_say.trim_suffix(".").substr(1)   # the server's sentence, in the caption's lower-case style
+
 	return PlacementRules.reason_text(blueprint_state, _door_shape)
 
 
@@ -2208,6 +2211,8 @@ func _update_blueprint() -> void:
 
 	if blueprint_state == "" and PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water"):
 		blueprint_state = _wheel_state(kit)
+	elif blueprint_state == "" and _carries_water(kit):
+		blueprint_state = _water_piece_state(kit)
 
 	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.water_short(_placement, kit, _blueprint_at, water_depth_at):
 		blueprint_state = "shallow"   # a fish trap off the water or in too little of it, as the server refuses
@@ -2261,10 +2266,16 @@ var _wheel_asked_at: Vector3 = Vector3(INF, INF, INF)
 var _wheel_asked_yaw: int = -1
 var _wheel_asked_msec: int = -100000
 var _wheel_answer: Array = []            # [at, yaw degrees, percent, why] of the last answer
+var _wheel_asked_kit: String = ""       # the kit the last ask was for: another kit at the same spot asks again (a water piece's answer is not a sawmill's)
 var wheel_note: String = ""               # the ghost's caption line for a sawmill: "Sawmill: 62 %", or "" (tests read it)
 
 
 func _wheel_state(kit: String) -> String:
+	if kit != _wheel_asked_kit:
+		_wheel_asked_kit = kit
+		_wheel_asked_at = Vector3(INF, INF, INF)
+		_wheel_answer = []   # the last answer was another piece's
+
 	var moved: bool = _wheel_asked_at.distance_to(_blueprint_at) > WHEEL_MOVE_M or _wheel_asked_yaw != _blueprint_yaw
 
 	if moved and Time.get_ticks_msec() - _wheel_asked_msec >= WHEEL_ASK_MS and _net != null:
@@ -2275,8 +2286,8 @@ func _wheel_state(kit: String) -> String:
 
 	wheel_note = ""
 
-	if _wheel_answer.is_empty() or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
-		return ""   # no answer for this spot yet
+	if _wheel_answer.is_empty() or int(_wheel_answer[2]) == -1 or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
+		return ""   # no answer for this spot yet (a -1 answer is a water piece's)
 
 	if str(_wheel_answer[3]) != "":
 		return "wheel_" + str(_wheel_answer[3])
@@ -2287,6 +2298,28 @@ func _wheel_state(kit: String) -> String:
 
 func _on_wheel_share(at: Vector3, yaw_deg: int, percent: int, why: String) -> void:
 	_wheel_answer = [at, yaw_deg, percent, why]
+
+
+# A water piece's ghost (a barrel, tank, well, trough...): the server's own refusal for this spot (a loop, too many sources, no ground water to
+# reach) comes back as a wheel_share with percent -1 and the words; asked and kept exactly as the wheel's (_wheel_state). Until the answer for
+# this spot comes the ghost keeps its other colour. Pipes laid from the hand have their own line (pipe_lay), not this ghost.
+var water_say: String = ""   # the server's words for the red ghost ("water_say"), or ""
+
+
+func _carries_water(kit: String) -> bool:
+	var block: Variant = PlacementRules.structure_of_kit(_placement, kit).get("water", {})
+	return typeof(block) == TYPE_DICTIONARY and not (block as Dictionary).is_empty()
+
+
+func _water_piece_state(kit: String) -> String:
+	_wheel_state(kit)   # the ask and the answer's spot check are the wheel's
+	wheel_note = ""
+
+	if _wheel_answer.is_empty() or int(_wheel_answer[2]) != -1 or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
+		return ""
+
+	water_say = str(_wheel_answer[3])
+	return "water_say" if water_say != "" else ""
 
 
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with

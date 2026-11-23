@@ -891,6 +891,32 @@ static func glyph_shapes(glyph_name: String) -> Array:
 			return [["poly", 0.5, 0.08, 0.72, 0.4, 0.7, 0.66, 0.5, 0.74, 0.3, 0.66, 0.28, 0.4], ["line", 0.12, 0.92, 0.88, 0.72, 0.08], ["line", 0.12, 0.72, 0.88, 0.92, 0.08]]
 		"clay_hearth", "oven":
 			return [["chord", 0.1, 0.18, 0.9, 1.3, 180, 360], ["rect", 0.1, 0.72, 0.9, 0.9], ["chord-", 0.32, 0.5, 0.68, 0.98, 180, 360]]
+		# The status strip beside the hotbar (src/client/status_icons.gd, Dave 23 Nov 2026): drawn on the open world with no plate under
+		# them, so their holes are only ever inside the shape (the strip paints them dark). Placeholders until painted art comes.
+		"crescent":   # tired: a moon without the hole that reaches outside it
+			return [["poly", 0.74, 0.21, 0.62, 0.14, 0.48, 0.12, 0.34, 0.16, 0.22, 0.24, 0.15, 0.36, 0.12, 0.50, 0.15, 0.64, 0.22, 0.76, 0.34, 0.84, 0.48, 0.88,
+				0.62, 0.86, 0.74, 0.79, 0.68, 0.75, 0.62, 0.70, 0.58, 0.64, 0.55, 0.57, 0.55, 0.50, 0.55, 0.43, 0.58, 0.36, 0.62, 0.30, 0.68, 0.25]]
+		"leg":        # an injured leg: thigh, shin and foot with a break across the shin
+			return [["poly", 0.34, 0.04, 0.6, 0.04, 0.6, 0.46, 0.58, 0.76, 0.88, 0.8, 0.9, 0.94, 0.34, 0.94, 0.38, 0.46],
+				["line-", 0.3, 0.52, 0.46, 0.58, 0.05], ["line-", 0.46, 0.58, 0.42, 0.64, 0.05], ["line-", 0.42, 0.64, 0.66, 0.7, 0.05]]
+		"weight":     # a heavy load: a market weight with its ring
+			return [["poly", 0.22, 0.4, 0.78, 0.4, 0.92, 0.92, 0.08, 0.92], ["ring", 0.33, 0.08, 0.67, 0.44, 0.09]]
+		"snowflake":  # cold
+			return [["line", 0.5, 0.06, 0.5, 0.94, 0.08], ["line", 0.12, 0.28, 0.88, 0.72, 0.08], ["line", 0.12, 0.72, 0.88, 0.28, 0.08],
+				["line", 0.38, 0.1, 0.5, 0.2, 0.06], ["line", 0.62, 0.1, 0.5, 0.2, 0.06], ["line", 0.38, 0.9, 0.5, 0.8, 0.06], ["line", 0.62, 0.9, 0.5, 0.8, 0.06]]
+		"soaked":     # wet through: a cloud over falling rain
+			return [["ell", 0.08, 0.2, 0.46, 0.54], ["ell", 0.3, 0.06, 0.76, 0.5], ["ell", 0.56, 0.22, 0.92, 0.56], ["rect", 0.24, 0.36, 0.76, 0.56],
+				["line", 0.3, 0.66, 0.22, 0.9, 0.07], ["line", 0.52, 0.66, 0.44, 0.9, 0.07], ["line", 0.74, 0.66, 0.66, 0.9, 0.07]]
+		"sick":       # unwell: a round face with a wavering mouth
+			return [["ring", 0.12, 0.12, 0.88, 0.88, 0.08], ["ell", 0.32, 0.34, 0.42, 0.46], ["ell", 0.58, 0.34, 0.68, 0.46],
+				["line", 0.3, 0.68, 0.4, 0.62, 0.06], ["line", 0.4, 0.62, 0.5, 0.68, 0.06], ["line", 0.5, 0.68, 0.6, 0.62, 0.06], ["line", 0.6, 0.62, 0.7, 0.68, 0.06]]
+		"bubble":     # air under water
+			return [["ring", 0.12, 0.12, 0.88, 0.88, 0.08], ["ell", 0.3, 0.26, 0.42, 0.38]]
+		"cart":       # pulling a handcart
+			return [["rect", 0.06, 0.28, 0.7, 0.6], ["line", 0.7, 0.34, 0.94, 0.18, 0.07], ["ring", 0.22, 0.56, 0.5, 0.84, 0.08]]
+		"snow_walk":  # snow underfoot: a boot over drifts
+			return [["poly", 0.3, 0.04, 0.56, 0.04, 0.56, 0.42, 0.82, 0.5, 0.86, 0.66, 0.22, 0.66, 0.26, 0.42],
+				["chord", 0.04, 0.72, 0.4, 1.0, 180, 360], ["chord", 0.32, 0.7, 0.68, 1.0, 180, 360], ["chord", 0.6, 0.72, 0.96, 1.0, 180, 360]]
 		"search":
 			return [["ring", 0.1, 0.1, 0.66, 0.66, 0.1], ["line", 0.58, 0.58, 0.9, 0.9, 0.12]]
 		"sort":

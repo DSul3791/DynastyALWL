@@ -27,9 +27,11 @@
 	"hit_send_m": 60.0,
 	"rewind_max_ms_note": "Protocol 155 (Dave 23 Nov 2026: 'battle was almost impossible'): a player's blow is judged where their screen showed the animal, at most this far back. The screen shows animals about 0.35 s behind (the row clock's delay, 0.1 to 0.8 s) plus half the ping, so 500 ms covers a normal internet game; a client claiming more is judged at 500 ms back (no hitting an animal that left long since).",
 	"rewind_max_ms": 500,
-	"dodge_view_ms_note": "A fair dodge (defend rows with fair_dodge; robots over 60 and 120 ms links with loss, 23 Nov 2026: 0 of 9 side-steps from a goblin or bandit got clear): a blow on a player is judged dodge_view_ms plus the link's round trip after the server's blow, against where the player then is, so a step the player made while their screen showed the strike counts. dodge_view_ms is how far behind the player's screen draws the server (the row clock's delay plus the trip down, about 0.35 s); dodge_late_max_ms caps it, so a slow or lying link cannot stretch it.",
+	"dodge_view_ms_note": "A fair dodge (defend rows with fair_dodge; robots over 60 and 120 ms links with loss, 23 Nov 2026: 0 of 9 side-steps from a goblin or bandit got clear): a blow on a player is judged dodge_view_ms plus the link's round trip after the server's blow, against where the player then is, so a step the player made while their screen showed the strike counts. Every animal that defends itself has it too since 23 Nov 2026 (coordinator for Dave: fights must be fair and playable; test_animal_fights.gd: with the rows as they were, a player who stepped aside as soon as the warning showed dodged no moose, buffalo, rhino, elephant, lion, tiger or alligator charge at all, even on a 0 ms link; with it, nearly every one). dodge_view_ms is how far behind the player's screen draws the server (the row clock's delay plus the trip down, about 0.35 s); dodge_late_max_ms caps it, so a slow or lying link cannot stretch it.",
 	"dodge_view_ms": 350,
 	"strike_min_s": 0.35,
+	"warn_min_s": 1.0,
+	"warn_min_s_note": "Every charge is warned for at least this long, a growl and the head-down stand (Dave 23 Nov 2026: animals growl before attacking; coordinator: about 1 s, long enough to hear, turn and react). A player running off or a blow during the warning shortens a warning to no less; a hunter's chase of a runner has no stand, it roars as it sets off. server_big_game.gd.",
 	"strike_min_s_note": "A charge's blow lands only once the charge has run this long (a defend row's own strike_min_s wins), so every screen draws the lunge before the blow (robots over 120 ms, 23 Nov 2026: a warthog charging from 1 m hit 0.18 s in, drawn 1.7 to 2.8 m short of the player). server_big_game.gd.",
 	"dodge_late_max_ms": 600,
 	"server_cap": 150,
@@ -153,7 +155,7 @@
 			},
 			"note_active": "D-TRAP-2 (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md): night 0.2 -> 0.5. Bucks are bedded 64% of the day but 47% of the night, feeding 39% (Mississippi State).",
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -290,7 +292,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 20.0,
 				"warn_s": 2.2,
 				"charge_mps": 11.0,
@@ -415,7 +417,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -502,7 +504,7 @@
 			"spawn_share": 0.5,
 			"health": 60.0,
 			"walk_mps": 1.6,
-			"flee_mps": 14.0,
+			"flee_mps": 13.7,
 			"graze_s": [
 				6.0,
 				22.0
@@ -555,7 +557,7 @@
 				"night": 0.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a wild horse runs from a player at spook_m but kicks one who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -600,7 +602,7 @@
 			"target_per_player": 2,
 			"health": 40.0,
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "MikeW 2026-11-02, ANIMAL_SPEC.md 'boar: armed defence, reuse the moose defend block'. protective_share 0: a boar never stands its ground at a passing player; it fights only when cornered or hit. Shorter, weaker charge than the moose.",
 				"warn_m": 12.0,
 				"warn_s": 1.8,
@@ -961,7 +963,7 @@
 				"range_m": 80.0,
 				"fish_share": 0.5
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 12.0,
@@ -1261,7 +1263,7 @@
 				"night": 0.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 7 Nov 2026 (add donkeys): like the horse, a donkey runs from a player at spook_m but kicks one who gets within threat_m or corners it. Calmer than a horse: shorter spook, more often curious.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -1343,7 +1345,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -1377,7 +1379,7 @@
 			"spawn_share": 0.3,
 			"health": 90.0,
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 10.0,
@@ -1522,7 +1524,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.0,
 				"charge_mps": 10.0,
@@ -1633,7 +1635,7 @@
 				"night": 0.05
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -1730,7 +1732,7 @@
 				"night": 0.05
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -1878,7 +1880,7 @@
 				"night": 0.05
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -1934,7 +1936,7 @@
 			"spawn_share": 0.35,
 			"health": 6.0,
 			"walk_mps": 1.0,
-			"flee_mps": 6.0,
+			"flee_mps": 5.2,
 			"graze_s": [
 				4.0,
 				14.0
@@ -1972,7 +1974,7 @@
 				"night": 0.9
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2053,7 +2055,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2086,7 +2088,7 @@
 			"target_per_player": 3,
 			"health": 2.0,
 			"walk_mps": 0.8,
-			"flee_mps": 4.0,
+			"flee_mps": 3.0,
 			"graze_s": [
 				3.0,
 				10.0
@@ -2335,7 +2337,7 @@
 				"night": 0.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a wild horse runs from a player at spook_m but kicks one who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2422,7 +2424,7 @@
 				"night": 0.2
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2555,7 +2557,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2639,7 +2641,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2707,7 +2709,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 20.0,
 				"warn_s": 2.2,
 				"charge_mps": 11.0,
@@ -2812,7 +2814,7 @@
 				"night": 0.9
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2896,7 +2898,7 @@
 				"night": 0.1
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -2951,7 +2953,7 @@
 			"target_per_player": 2,
 			"health": 35.0,
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "MikeW 2026-11-02, ANIMAL_SPEC.md 'boar: armed defence, reuse the moose defend block'. protective_share 0: a boar never stands its ground at a passing player; it fights only when cornered or hit. Shorter, weaker charge than the moose.",
 				"warn_m": 12.0,
 				"warn_s": 1.8,
@@ -3082,7 +3084,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -3163,7 +3165,7 @@
 				"night": 0.2
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -3255,7 +3257,7 @@
 				"night": 0.9
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 18.0,
 				"warn_s": 1.5,
@@ -3330,7 +3332,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -3401,7 +3403,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 20.0,
 				"warn_s": 2.2,
 				"charge_mps": 11.0,
@@ -3465,7 +3467,7 @@
 			"spawn_share": 0.1,
 			"health": 300.0,
 			"walk_mps": 1.2,
-			"flee_mps": 10.0,
+			"flee_mps": 6.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -3498,10 +3500,10 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 20.0,
 				"warn_s": 2.2,
-				"charge_mps": 11.0,
+				"charge_mps": 6.5,
 				"charge_m": 24.0,
 				"turn_rad_s": 0.25,
 				"hit_m": 3.0,
@@ -3616,7 +3618,7 @@
 				"night": 0.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a wild horse runs from a player at spook_m but kicks one who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -3664,7 +3666,7 @@
 			"target_per_player": 3,
 			"health": 6.0,
 			"walk_mps": 1.5,
-			"flee_mps": 7.5,
+			"flee_mps": 6.3,
 			"graze_s": [
 				3.0,
 				10.0
@@ -3755,7 +3757,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -3828,7 +3830,7 @@
 				"night": 0.5
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -3881,7 +3883,7 @@
 			"spawn_share": 0.1,
 			"health": 300.0,
 			"walk_mps": 1.2,
-			"flee_mps": 10.0,
+			"flee_mps": 6.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -3914,10 +3916,10 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 20.0,
 				"warn_s": 2.2,
-				"charge_mps": 11.0,
+				"charge_mps": 6.5,
 				"charge_m": 24.0,
 				"turn_rad_s": 0.25,
 				"hit_m": 3.0,
@@ -4017,7 +4019,7 @@
 				"night": 1.0
 			},
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"note": "Dave 6 Nov 2026 threat range: a fox runs, but bites a player who gets within threat_m or corners it. protective_share 0.",
 				"warn_m": 0.0,
 				"warn_s": 1.0,
@@ -4056,7 +4058,7 @@
 			"spawn_share": 0.2,
 			"health": 110.0,
 			"protective_share": 0.0,
-			"defend": {
+			"defend": {"fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 0.4,
 				"charge_mps": 9.0,
@@ -4199,6 +4201,9 @@
 		"heat_hours": [11.0, 16.0], "fog": {"note": "Steve 8 Nov 2026 (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md). Always on with the weather rules (Dave 8 Nov: no flags). Since 14 Nov 2026 (Dave's fog instruction: fog cuts sight, not hearing; docs/design/FOG_PLAN.md part 3) the fog at a point is Weather.fog_shape, the depth fog the client draws, over the cold-air floor (fog_ground.gd) and the sea fog over the land; V is where it takes 95 %: about 2.8 km clear, 460 m in heavy rain, 52 m deep in full fog. Sight: all of a player while the fog takes under sight_full_fog of the view, none once it takes sight_gone_fog (Jamie's V/4 and V/2 for exponential fog, the same contrasts: about 31 and 42 m in full fog), then only hearing and smell (senses.blind_factor). Wolves shadow at min(stalk_m, max(V/2, wolf_min_m)). Under sit_below_m (100: fog of strength 0.85 and up, the old 250 m threshold's fog) perched birds stay up and birds and sit_species wander bird_wander_x as far. Under deer_v_m (1400: fog of strength 0.17 and up, as the old 1000 m) deer keep dusk hours deer_late_h past 08:00 and try edge_tries hops for open ground with crowns within edge_m; stock and deer herd_pull_m and wander x herd_x.", "sight_full_fog": 0.53, "sight_gone_fog": 0.78, "wolf_min_m": 10.0, "sit_below_m": 100.0, "bird_wander_x": 0.15, "sit_species": ["goose", "duck", "seabird"], "deer_v_m": 1400.0, "deer_late_h": 1.5, "edge_tries": 3, "edge_m": 15.0, "herd_x": 0.5}
 	},
 	"reactions": {
+		"startle_s": [0.5, 1.75],
+		"startle_close_m": 3.0,
+		"startle_note": "Dave 23 Nov 2026: animals look up and stare at the player before running away. One grazing or walking that a player comes within its flee distance of stares at them first: startle_s[1] seconds for a player at the flee distance, down to startle_s[0] as they come nearer or run at it; within startle_close_m, hurt, or already watching, it bolts at once. A species row may set its own startle_s. server_animals.gd _stares.",
 		"note": "PROVISIONAL RX-1 (Dave 19 Nov 2026 play test: animals must react to a nearby player from reasonable distances; values for his review, docs/design/ANIMAL_REACTIONS.md). Every species' reaction distances in one place, [notice_m, flee_m, safe_m]: within notice_m an animal stops and watches (alert_m), within flee_m it runs (spook_m), and it runs until safe_m away. These are distances to a standing player in the open on a calm day; the senses block stretches or shrinks them (wind, stance, trees, ground between, noise, a running player). server_animals.setup copies them into each species row as alert_m, spook_m and safe_m. Changed 19 Nov from the old rows: deer 50/30/60 to 60/35/70, elk 55/35/70 to 70/40/80.",
 		"notice_flee_safe_m": {
 			"rabbit": [24.0, 14.0, 35.0],
@@ -4275,9 +4280,10 @@
 		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
 	},
 	"blood": {
+		"note_drops": "max_drops 40 -> 400 and max_total 200 -> 600 (coordinator for Dave, 23 Nov 2026: \"I love the idea the animal is bleeding and if they bleed enough they die eventually\"; test_animal_fights.gd): an elk hurt by one spear blow walked on 21 m past its fortieth drop before it died, so its trail stopped short of the body. Each drop still fades after life_s, so the trail is the last few minutes of its walk.",
 		"every_m": 3.0,
-		"max_drops": 40,
-		"max_total": 200,
+		"max_drops": 400,
+		"max_total": 600,
 		"life_s": 240.0,
 		"max_sent": 80,
 		"bleed_hp_per_s": 0.15

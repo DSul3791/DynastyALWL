@@ -362,6 +362,8 @@ var rain_hours_at: Callable   # (pos, max_h) -> game hours since it last rained 
 var weather_at: Callable            # (pos) -> the weather over that spot, its own tile row and height, as the player's client works it out (terrain_server _weather_here); unset: weather_now
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset, insulation_worn is used (tests set it)
 var send_warmth: Callable           # (peer, warmth percent 0..100)
+var send_soak: Callable             # (peer, soak percent in steps of 10, soaked in the wind) for the status strip (protocol 165)
+var _soak_sent: Dictionary = {}     # peer -> the last soak code sent (percent, plus 1000 when windy)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
 var _wet_wind: Dictionary = {}      # peer -> true while soaked in the wind (warmth_target; body_703 wet_wind_say_*), for the line that says why
@@ -710,6 +712,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
 	_sync_warmth(peer, true)
+	_sync_soak(peer, true)
 	_sync_remains(peer, true)
 	_sync_sick(peer, true)
 	_sync_limp(peer, true)
@@ -930,6 +933,7 @@ func peer_left(peer: int) -> void:
 	_torch_seen.erase(peer)
 	_cave_pool.erase(peer)
 	_soak.erase(peer)
+	_soak_sent.erase(peer)
 	_overheat.erase(peer)
 	_by_fire.erase(peer)
 	_comfort_goal.erase(peer)
@@ -1840,6 +1844,7 @@ var water_flow_at: Callable             # set by the server: (Vector3) -> float,
 var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
 var cave_floor: Callable                # set by the server: (Vector3) -> the floor of the cave air at a point (a passage, chamber or a mouth's cut), NAN outside one; ground_height does not know the caves
 var edits_near: Callable                # set by the server: (point, radius) -> [[kind 0 dig / 1 fill, centre, radius]], the saved ground edits near a point, oldest first (ground_ops.gd); ground_height does not know them
+var ground_now: Callable               # set by the server: (x, z) -> the ground as dug and filled (edited_ground.height; the top of the highest solid span); unset: ground_height
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
@@ -2087,6 +2092,8 @@ func cut_felled_flora(flora) -> int:
 
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
 func _event_save_due() -> bool:
+	if not _event_save and ground_edits.is_valid() and int(ground_edits.call()) != _digs_written:
+		_event_save = true   # a dig or fill (a player's, an admin's, a tunnel's collapse, a reset): saved within seconds, so a hard stop drops seconds of them, not 30
 	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
 
 
@@ -2110,6 +2117,9 @@ var load_failures: Array = []
 func save() -> void:
 	if _dir != "" and not _dirty and load_failures.is_empty() and not _water_kind.is_empty():
 		_dirty = _water_tanks_save() != _tanks_written   # a tank's litres moved (rain, a pump, a pipe) and nothing else changed (restart drill 23 Nov 2026)
+
+	if not _dirty and ground_edits.is_valid() and int(ground_edits.call()) != _digs_written:
+		_dirty = true   # a dig or fill that changed no item still moves the header's "digs": unsaved, the next start would drop it
 
 	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
@@ -2142,6 +2152,13 @@ func save() -> void:
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
 	_write_atomic("tracking_marks.json", _traps.saved_marks())   # the trail signs and snare spots that already trained each character's Tracking
+
+	for name in set_extras:   # other systems' files that must land in the same whole save as the packs (trade_state.json: a shelf and the pack it paid)
+		var extra: Variant = (set_extras[name] as Callable).call()
+
+		if extra is Dictionary:
+			_write_atomic(str(name), extra)
+
 	_save_item_files(_item_job())
 	_set_gen = 0
 
@@ -2176,6 +2193,19 @@ var _save_gen: int = 0             # the save count, kept in the header: an area
 # the header's is from a save that never finished and is read from its .prev, the save before. A file with no gen (written outside save(),
 # or by a build before this) is read as it is.
 var _set_gen: int = 0              # while save() runs: the gen its files carry; 0 outside a save
+# Files of other systems written in every save, in the same whole save as the packs (name -> Callable returning the file's Dictionary):
+# terrain_server registers trade_state.json, so a hard stop never keeps a trader's shelf from one save and the pack that paid from another.
+var set_extras: Dictionary = {}
+# () -> int: how many ground edits (digs.dat records) the world holds now. Saved in the header as "digs", so a hard stop drops the digs
+# and fills after the last whole save along with the pack changes they made (server_block_store.gd setup, ground_ops.gd open).
+var ground_edits: Callable
+var _digs_written: int = -1
+
+
+func _digs_now() -> int:
+	_digs_written = int(ground_edits.call()) if ground_edits.is_valid() else -1
+	return _digs_written
+
 var _set_lost_file: bool = false   # a file of the save running now (written on the tick, not the writer) could not be written
 var _set_written: Array = []       # the files of the save running now written so far on the tick (rolled back when it loses one)
 var _head_gen: int = -2            # the gen of the header on disk, read once at load (-1: no header, or one with no gen; -2: not read yet)
@@ -2268,7 +2298,8 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed, "kiln_lit_by": _kiln_lit_by.duplicate(),
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true,
+			"digs": _digs_now()}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2291,6 +2322,30 @@ func _save_item_files(job: Dictionary) -> void:
 
 # Writes a job's files: tree_states, lights, kilns, the areas that changed, then the header, then takes away the files of areas left empty.
 # Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
+# A power cut (not a process kill: the files are then in the system's cache and still land) could lose what was written but not yet on the
+# disk, in any order. Before a save's header and after it the store's file system is flushed to the disk (coreutils `sync -f`, syncfs: one
+# call, with digs.dat and every set file), so the header never names files that are not on the disk. Linux servers only (the server image
+# is Ubuntu); DYNASTY_SAVE_SYNC=0 turns it off for a comparison. sync_ms adds up the time it took (save timing, the long run).
+static var sync_saves: bool = OS.get_environment("DYNASTY_SAVE_SYNC") != "0" and OS.get_name() == "Linux"   # coreutils' sync -f (BSD sync takes no file)
+static var sync_ms: float = 0.0
+static var syncs: int = 0
+
+
+static func _sync_store(dir: String) -> void:
+	if not sync_saves:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var code: int = OS.execute("sync", ["-f", ProjectSettings.globalize_path(dir)])
+
+	if code != 0:
+		push_error("server save: could not flush the store to the disk (sync -f exit %d): saves go on, but a power cut may lose the last one" % code)
+		sync_saves = false   # said once; a process kill still loses nothing
+
+	sync_ms += float(Time.get_ticks_usec() - t0) / 1000.0
+	syncs += 1
+
+
 static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	var dir: String = str(job["dir"])
 	var items: Dictionary = job["items"]
@@ -2348,9 +2403,13 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	world["areas"] = listed
 	world["gen"] = gen
 
+	_sync_store(dir)   # every other file of the save (and digs.dat) on the disk before the header that names it: a power cut keeps one whole save
+
 	if not _write_file(dir + "/world_items.json", JSON.stringify(world)):
 		_skip_item_job(job, done)   # the header itself: the store stays the save before, and what this save wrote goes back
 		return
+
+	_sync_store(dir)   # and the header too, so a power cut loses no more than the save being written
 
 	for key in sums.keys():
 		if not listed.has(key):
@@ -3970,7 +4029,7 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 		practice(hunter, "hunt", float(_carcass_cfg["species"][species].get("hunt_difficulty", 1.0)))
 		practice(hunter, "track", 0.5)   # following the game to the kill; Tracking also trains from the trail-reading event when it exists
 
-	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else pos.y
+	var ground: float = _ground_under(pos + Vector3(0.0, 0.3, 0.0))   # the ground the animal fell on, a pit's floor or a fill's top too
 	var spot: Vector3 = Vector3(pos.x, ground if not is_nan(ground) else pos.y, pos.z)
 	var id: int = _next_id
 	_next_id += 1
@@ -4240,14 +4299,21 @@ func _arrow_fly(delta: float) -> void:
 					at_foot = not stuck
 					at = from.lerp(to, into)
 
-			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
+			var knows: bool = ground_height.is_valid() or ground_now.is_valid()
+			var down: Vector3 = _landing(from, to) if knows else Vector3.INF
 
-			if at_foot and not is_nan(ground):
-				at.y = float(ground_height.call(at.x, at.z))
+			if at_foot and knows:
+				var foot: float = _ground_under(at)
+				at.y = foot if not is_nan(foot) else at.y
 
-			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
+			if not landed and (down.x != INF or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
 				landed = true
-				at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
+
+				if down.x != INF:
+					at = down
+				else:   # out of range or time in the air: down on the ground under it
+					var ground: float = _ground_under(to) if knows else -1000000.0
+					at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
 
 			ar["pos"] = to
 
@@ -4327,18 +4393,20 @@ func _fly(delta: float) -> void:
 			if not hit.is_empty():
 				var at: Vector3 = hit["at"]
 				hit_number(int(flight["peer"]), at, throw_damage)
-				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+				var below: float = _ground_under(at) if ground_height.is_valid() or ground_now.is_valid() else at.y
 				_land_thrown(flight, Vector3(at.x, below if not is_nan(below) else at.y, at.z))
 				_flights.erase(flight)
 				continue
 
-		var ground: float = float(ground_height.call(flight["pos"].x, flight["pos"].z)) if ground_height.is_valid() else -1000000.0
+		var knows: bool = ground_height.is_valid() or ground_now.is_valid()
+		var down: Vector3 = _landing(from, flight["pos"]) if knows else Vector3.INF
 
-		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
-			var spot: Vector3 = flight["pos"]
+		if down.x != INF or flight["age"] >= THROW_MAX_S:
+			var spot: Vector3 = down if down.x != INF else flight["pos"]
 
-			if not is_nan(ground):
-				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
+			if down.x == INF and knows:   # out of time in the air: not under the ground
+				var ground: float = _ground_under(spot)
+				spot.y = maxf(ground, spot.y) if not is_nan(ground) else spot.y
 
 			if animal_alarm.is_valid():
 				if _bow == null:
@@ -6647,6 +6715,66 @@ const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placem
 const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot (as terrain_generator and server_carts CAVE_PROBE_UP_M)
 
 
+# Where a thing let go at `p` comes to rest (round 7, 23 Nov 2026: a carcass or a regrown plant kept to the generated ground, floating over a
+# dug pit or buried in a fill): the ground as dug and filled, or under it (in a cave or a dug tunnel) the floor of the air `p` is in. Cheap
+# above that top (edited_ground keeps its cells); floor_below, a scan of the edits near, only under it. floor_below from inside rock answers
+# at once just over the point (terrain_generator.floor_below): `p` is not in an open space, so the top.
+func _ground_under(p: Vector3) -> float:
+	var top: float = _ground_top(p.x, p.z)
+
+	if is_nan(top) or p.y >= top - 0.05 or not floor_below.is_valid():
+		return top
+
+	var under: float = float(floor_below.call(p))
+	return top if is_nan(under) or under > p.y + 0.05 else under
+
+
+# Where a flight stepping from `from` to `to` comes down (round 7: arrows and thrown things kept to the generated ground, so over a pit they
+# stopped in the air, in a fill they went in, and in a tunnel or a cave they came out on the hill above): Vector3.INF while it is still in
+# the air (or there is no ground to know). From the open air over its own column it strikes the ground as dug and filled where it is (a pit's
+# floor, a fill's top, a hillside), unless it went in at a tunnel's or a cave's mouth (open air under the top there). From under its column's top (a tunnel, a cave) it comes down to the floor of the open column under it,
+# or, struck into the rock (a wall or the roof), to the floor where it last was in the open. A flight is only looked at after the step that
+# took it into the rock, so the open air is read from `from`, never `to`.
+func _landing(from: Vector3, to: Vector3) -> Vector3:
+	var top: float = _ground_top(to.x, to.z)
+
+	if is_nan(top) or to.y > top:
+		return Vector3.INF
+
+	var own: float = _ground_top(from.x, from.z)
+
+	if not floor_below.is_valid() or is_nan(own) or from.y >= own - 0.05:
+		if floor_below.is_valid() and to.y < top - 0.05:   # under the top from the open air: into a tunnel's or a cave's mouth, or into the rock
+			var inside: float = float(floor_below.call(to))
+
+			if not is_nan(inside) and inside <= to.y + 0.05:
+				return Vector3(to.x, inside, to.z) if to.y <= inside else Vector3.INF
+
+		return Vector3(to.x, top, to.z)   # from the open air: it struck the ground
+
+	var under: float = float(floor_below.call(Vector3(to.x, from.y, to.z)))   # down to's column from the height it was last in the air
+
+	if not is_nan(under) and under <= from.y + 0.05:
+		if to.y <= under:
+			return Vector3(to.x, under, to.z)
+
+		var here: float = float(floor_below.call(to))
+
+		if not is_nan(here) and here <= to.y + 0.05:
+			return Vector3.INF   # still in the open air
+
+	var floor_y: float = float(floor_below.call(from))   # struck into the rock: down where it last was in the open
+	return Vector3(from.x, floor_y, from.z) if not is_nan(floor_y) and floor_y <= from.y + 0.05 else Vector3(to.x, top, to.z)
+
+
+# The ground as dug and filled at (x, z), the top of its highest solid span; the generated ground where the server has not given it.
+func _ground_top(x: float, z: float) -> float:
+	if ground_now.is_valid():
+		return float(ground_now.call(x, z))
+
+	return float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+
 # The ground under a spot: the cave floor when the spot is under the generated surface `surface` and in a cave's air, else `surface`.
 func _cave_ground(at: Vector3, surface: float) -> float:
 	if not cave_floor.is_valid() or is_nan(surface) or at.y >= surface - 0.05:
@@ -6904,6 +7032,16 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 	var def: Dictionary = _structure_of_kit(table.id_of(kit_number))
 
+	# A water piece's ghost (a barrel, a tank, a well...) asks the same way: the answer is placing's own refusal (_water_refusal: a loop, too many
+	# sources, no ground water), percent -1, so a green ghost always places (hands-on screens, 23 Nov 2026: these showed green and were refused).
+	if not def.has("needs_running_water") and send_wheel_share.is_valid() and not water_piece(def, at, float(posmod(yaw_deg, 360))).is_empty():
+		if not at.is_finite() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+			return   # only where it could be placed (placing refuses farther first): no far reads of the ground water for a moving ghost
+
+		var judged: Array = _water_ghost_spot(def, at, yaw_deg)
+		send_wheel_share.call(peer, at, yaw_deg, -1, _water_refusal(def, judged[0], int(judged[1])))
+		return
+
 	if not def.has("needs_running_water") or not water_wheel.is_valid() or not send_wheel_share.is_valid():
 		return
 
@@ -6915,6 +7053,38 @@ func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 		why = "along" if bool(wheel.get("along", false)) else "weak"
 
 	send_wheel_share.call(peer, at, yaw_deg, 0 if why != "" else int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), why)
+
+
+# Where placing judges a water piece the ghost stands at (`at`, turned `yaw_deg`): snapped as _place snaps it, set down on the lowest ground under
+# it (seated_ground over the dug and filled ground) unless it stands on a foundation, then onto a pipe's end or joint (_tank_spot_on_pipe), as
+# _place_structure does before _water_refusal. [spot, yaw]. shortcut: in a cave the ghost's own height (the cave floor it stands on) is kept,
+# not seated over the cave floor's corners as _place does; keep this beside _place's own steps if they change.
+var _ghost_rows: Array = []          # the foundation rows the water ghost snaps to, read at most every GHOST_ROWS_MS (a whole-world walk)
+var _ghost_rows_msec: int = -100000
+const GHOST_ROWS_MS := 1000
+
+
+func _water_ghost_spot(def: Dictionary, at: Vector3, yaw_deg: int) -> Array:
+	var kit_id: String = str(def.get("kit", ""))
+
+	if Time.get_ticks_msec() - _ghost_rows_msec >= GHOST_ROWS_MS:
+		_ghost_rows = _foundation_rows()
+		_ghost_rows_msec = Time.get_ticks_msec()
+
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _ghost_rows, 0)
+	var spot: Vector3 = on_grid[0]
+	var yaw: int = int(on_grid[1])
+
+	if not bool(on_grid[2]) and ground_height.is_valid():
+		var site_edits: Array = (edits_near.call(spot, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
+		var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
+		var ground: float = float(surface.call(spot.x, spot.z))
+		var generated: float = float(ground_height.call(spot.x, spot.z))
+
+		if not is_nan(ground) and _cave_ground(spot, generated) == generated:   # in a cave the hill's ground is not under it
+			spot.y = PlacementRules.seated_ground(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw)), surface, ground)
+
+	return [_tank_spot_on_pipe(str(def.get("kind", "")), spot, yaw), yaw]
 
 
 const WHEEL_SAYS := {
@@ -9106,6 +9276,34 @@ func _note_save_part(name: String, t0: int) -> void:
 # One write at a time: the background writer and a save from anywhere else (shutdown, a test's last save) used the same path.tmp, and the second rename failed with an error
 # line ("Error calling utility function", exit 1 or 139 in the gates, 31 Oct 2026). The lock makes the files land in order.
 static var _file_lock: Mutex = Mutex.new()
+
+
+# A file another system saves through set_extras, read as the save set reads its own (a file from a save that stopped before its header
+# is read from its .prev). Null when it is missing or cannot be read.
+func read_set_file(name: String, version: int) -> Variant:
+	var failures: int = load_failures.size()
+	var parsed: Variant = _read_json_version(name, version)
+
+	if load_failures.size() > failures:
+		load_failures.resize(failures)   # read after the start's check: that system starts empty (as it did before) rather than stopping every save
+		return null
+
+	return parsed
+
+
+# The number of ground edits the last whole save held (the header's "digs", or its .prev's when the header is damaged), -1 when the store
+# has no such header (a new store, or one saved before #1822's follow-up): then the edit log is kept whole. Read before the items load.
+static func header_digs(dir: String) -> int:
+	var path: String = dir + "/world_items.json"
+	restore_missing(path)
+
+	for one in [path, path + ".prev"]:
+		var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(one)) if FileAccess.file_exists(one) else null
+
+		if typeof(head) == TYPE_DICTIONARY:
+			return int(head.get("digs", -1)) if head.has("areas") and head.has("gen") else -1
+
+	return -1
 
 
 # A save file that is missing while its .tmp or .prev is there is put back before it is read (22 Nov 2026, the #1597/#1598 reviews). On Windows
@@ -11805,8 +12003,8 @@ func _seed_litter(id: int, tree: Dictionary, fallback: Vector3) -> Array:
 		var far: float = sqrt(rng.randf()) * float(circle[2]) * 0.5   # luck-exempt: where it lands, no player
 		spot = Vector3(float(circle[0]) + cos(angle) * far, fallback.y, float(circle[1]) + sin(angle) * far)
 
-		if ground_height.is_valid():
-			var ground: float = float(ground_height.call(spot.x, spot.z))
+		if ground_height.is_valid() or ground_now.is_valid():
+			var ground: float = _ground_top(spot.x, spot.z)   # a pit's floor, a fill's top (a tree's litter never lands in a tunnel)
 			spot.y = ground + 0.1 if not is_nan(ground) else spot.y
 
 	return [[int(seeds[0]), int(seeds[1]), spot]]
@@ -11897,8 +12095,8 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 			var z: float = float(circle[1]) + sin(angle) * far
 			var y: float = at.y
 
-			if ground_height.is_valid():   # on the ground where it lands, not at the stump's height (a slope)
-				var ground: float = float(ground_height.call(x, z))
+			if ground_height.is_valid() or ground_now.is_valid():   # on the ground where it lands, not at the stump's height (a slope), as dug and filled
+				var ground: float = _ground_top(x, z)
 				y = ground + 0.1 if not is_nan(ground) else y
 
 			rows.append([number, floori(float(total) / float(heaps)) + (1 if k < total % heaps else 0), Vector3(x, y, z)])
@@ -12023,7 +12221,7 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, at: Ve
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. The dice come from the seed and the spot,
 # so a restart gives the same answer.
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
-	if not standing_near.is_valid() or not ground_height.is_valid():
+	if not standing_near.is_valid() or not (ground_height.is_valid() or ground_now.is_valid()):
 		return
 
 	var tree: Dictionary = stump["tree"]
@@ -12040,7 +12238,7 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 
 	var angle: float = rng.randf() * TAU   # luck-exempt: world regrowth, no player
 	var spot: Vector3 = near[0] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, RESPAWN_PLACE_M)   # luck-exempt: world regrowth, no player
-	var ground: float = float(ground_height.call(spot.x, spot.z))
+	var ground: float = _ground_top(spot.x, spot.z)   # in a dug pit or on a fill, not in the air over it
 	var species_entry: Dictionary = _flora_by_name.get(str(tree["species"]), {})
 
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
@@ -18901,6 +19099,7 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 		_say(peer, str(body.get("say_wet_wind", "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.")))
 
 	_sync_warmth(peer, false)
+	_sync_soak(peer, false)
 
 
 # The air in a cave at this point (docs/design/cave_climate_design.md; Jamie #709, coordinator 8 Nov 2026): {"air_c", "wind" (0..1, the mouth's
@@ -19004,6 +19203,21 @@ func _update_soak(peer: int, game_s: float) -> void:
 
 	if not v.is_empty() and (soak > 0.0 or v.has("soak")):
 		v["soak"] = soak   # saved with the vitals (vitals.json)
+
+
+# How soaked the clothes are, for the status strip (Dave 23 Nov 2026: the player is told why the cold bites): the soak in steps of 10 percent
+# and whether the wind cuts through it (_wet_wind), sent only when one of them changes, from the slow vitals tick.
+func _sync_soak(peer: int, force: bool) -> void:
+	if not send_soak.is_valid():
+		return
+
+	var percent: int = int(round(clampf(float(_soak.get(peer, vitals_of(peer).get("soak", 0.0))), 0.0, 1.0) * 10.0)) * 10
+	var windy: bool = percent > 0 and bool(_wet_wind.get(peer, false))
+	var code: int = percent + (1000 if windy else 0)
+
+	if force or int(_soak_sent.get(peer, -1)) != code:
+		_soak_sent[peer] = code
+		send_soak.call(peer, percent, windy)
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
@@ -19373,6 +19587,7 @@ func kill(peer: int, cause: String) -> bool:
 	_death_cause.erase(peer)
 	_energy_sent.erase(peer)
 	_warmth_sent.erase(peer)
+	_soak_sent.erase(peer)
 	_sick_sent.erase(peer)
 	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
@@ -19824,8 +20039,9 @@ func _step_to_station(peer: int, station_id: int) -> Vector3:
 			spot = candidate
 			break
 
-	if ground_height.is_valid():
-		spot.y = float(ground_height.call(spot.x, spot.z))
+	if ground_height.is_valid() or ground_now.is_valid():
+		var stand: float = _ground_under(spot + Vector3(0.0, 0.5, 0.0))   # a station on a fill or in a dug floor: stood on that ground, not inside it
+		spot.y = stand if not is_nan(stand) else spot.y
 
 	_peer_pos[peer] = spot
 	var look: Vector3 = centre - spot

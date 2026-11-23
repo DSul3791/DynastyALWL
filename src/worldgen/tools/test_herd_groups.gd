@@ -81,7 +81,7 @@ func _init() -> void:
 	# A player walks up: the herd scatters, fanning out.
 	var mid: Vector3 = a.animals[lead_id]["pos"]
 	players[0] = mid + Vector3(-12.0, 0.0, 0.0)
-	run(a, 1.5)
+	run(a, 2.5)   # each stares first (reactions.startle_s)
 	var heads: Array = []
 
 	for i in a._herds[77]:

@@ -13,7 +13,7 @@ on, times it against docker's stop_grace_period (deploy/server/compose.yaml) and
 
 Never point it at a live server or its volume: it makes its own store under --out. Exit 0 = every round held; 1 = a round broke a rule.
 """
-import argparse, json, os, random, subprocess, sys, tarfile, tempfile, time
+import argparse, json, os, random, re, subprocess, sys, tarfile, tempfile, time
 
 GRACE_S = 90.0   # deploy/server/compose.yaml stop_grace_period
 
@@ -98,6 +98,7 @@ def main():
     print("crash_drill: %d rounds, %d bots, store %s" % (a.rounds, a.bots, store), flush=True)
     broke = []
     rows = []
+    expect_digs = None
     for r in range(a.rounds):
         last = r == a.rounds - 1
         mode = "clean stop" if last else ("save" if r % 3 != 2 else "random")
@@ -106,6 +107,12 @@ def main():
             broke.append("round %d: the server did not start on the store (see server.log)" % r)
             proc.kill()
             break
+        if r > 0 and expect_digs is not None and expect_digs >= 0:
+            with open(slog, errors="replace") as f:
+                text = f.read()
+            m = re.findall(r"server: (\d+) ground edits loaded from digs.dat", text[text.rfind("===== server start"):])
+            if not m or int(m[-1]) != expect_digs:
+                broke.append("round %d: the server kept %s ground edits, the last whole save covers %d" % (r, m[-1] if m else "?", expect_digs))
         bots = start_bots(a.godot, port, a.bots, 400, blog, 1 + r * 100)
         warm = random.uniform(25, 60)
         time.sleep(warm)
@@ -134,16 +141,19 @@ def main():
         bots.kill()
         bots.wait()
         state, rc = check_store(a.godot, store, clog)
+        expect_digs = state.get("header_digs")
         row = {"round": r, "mode": mode, "start_s": round(took, 1), "killed_while": hit, "stop_s": round(t_stop, 1),
-               "header_gen": state.get("header_gen"), "past_header": state.get("past_header"), "load_failures": state.get("load_failures"),
+               "header_gen": state.get("header_gen"), "header_digs": state.get("header_digs"), "digs_in_log": state.get("digs_in_log"), "past_header": state.get("past_header"), "load_failures": state.get("load_failures"),
                "players": state.get("players"), "chests": state.get("chests"), "world_items": state.get("world_items"),
                "items": sum(int(v) for v in state.get("totals", {}).values()), "store_kb": int(subprocess.run(["du", "-sk", store], capture_output=True, text=True).stdout.split()[0])}
         rows.append(row)
-        print("round %d %-10s start %5.1fs  killed while %-34s header %s  players %s chests %s items %s  %s" % (
-            r, mode, took, hit or "-", row["header_gen"], row["players"], row["chests"], row["items"],
+        print("round %d %-10s start %5.1fs  killed while %-34s header %s  digs %s/%s  players %s chests %s items %s  %s" % (
+            r, mode, took, hit or "-", row["header_gen"], row["header_digs"], row["digs_in_log"], row["players"], row["chests"], row["items"],
             ("stop %.1fs" % t_stop) if last else ""), flush=True)
         if rc != 0:
             broke.append("round %d: the store does not read as one whole save: %s" % (r, json.dumps(state)[:600]))
+        if last and state.get("header_digs", -1) >= 0 and state.get("header_digs") != state.get("digs_in_log"):
+            broke.append("round %d: after the clean stop the header covers %s ground edits, the log holds %s" % (r, state.get("header_digs"), state.get("digs_in_log")))
         if last and t_stop > GRACE_S:
             broke.append("round %d: the clean stop took %.1f s, past docker's %d s" % (r, t_stop, GRACE_S))
     with open(slog, errors="replace") as f:

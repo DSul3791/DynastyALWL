@@ -42,6 +42,7 @@ UNITS = [
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
     ("cold pass out", "src/worldgen/tools/test_cold_pass_out.gd"),
     ("cave rescue", "src/worldgen/tools/test_cave_rescue.gd"),
+    ("ground landing", "src/worldgen/tools/test_ground_landing.gd"),
     ("skills", "src/worldgen/tools/test_skills.gd"),
     ("sickness", "src/worldgen/tools/test_sickness.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
