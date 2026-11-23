@@ -272,6 +272,7 @@ func _init() -> void:
 	infos = [at(2, 5.0, 0.0), at(1, 300.0, 0.0)]
 	look(a)
 	check(live_of(a, dog_id).size() == 1, "a full world still has room for Dave's own dog")
+	check(a.animals.size() == cap + 1, "the dog still counts: the world holds the cap and Dave's dog (%d)" % a.animals.size())
 	check(a.spawn("rabbit", x, 2000.0) == 0, "a full world takes no new wild animal")
 	var wild: Array = []
 
@@ -455,6 +456,30 @@ func _init() -> void:
 		step_n(a, s4, 80)
 		check(loose.size() == 4 and int(a.companions.strays.get("other", {}).get("trust", 0)) == 1, "a stray eats one piece of five on a day (%d left)" % loose.size())
 
+	loose.clear()
+
+	# An orphan pup at its den: one piece a game day from each player. Dave's stack is left after his one meal, and the other player's
+	# food is still eaten the same day (each player's trust is their own).
+	a.wolves.game_seconds = func(): return now
+	a.wolves.player_info = func(): return infos
+	a.wolves.fires = func(): return []
+	var pup2_id: int = a.spawn("wolf", 400.0, 0.0)
+	var pup2: Dictionary = a.animals.get(pup2_id, {})
+	a.wolves.dens["test_den"] = {"rest_until_s": 0.0, "orphan": {"den": [400.0, GROUND, 0.0], "pups": 2, "since_s": now, "trust": {}}}
+	pup2["orphan"] = "test_den"
+	infos = [at(1, 400.0, 25.0), at(2, 425.0, 0.0)]
+
+	for k in 5:
+		drop(Vector3(403.0 + 0.2 * k, GROUND, 0.0), "dave")
+
+	step_n(a, pup2, 80)
+	var den_trust: Dictionary = a.wolves.dens["test_den"]["orphan"]["trust"]
+	check(loose.size() == 4 and int(den_trust.get("dave", {}).get("day", -1)) == a.companions._today(), "an orphan pup eats one piece of Dave's five on a day (%d left)" % loose.size())
+	var o_meal: int = drop(Vector3(400.0, GROUND, -3.0), "other")
+	step_n(a, pup2, 80)
+	check(not loose.has(o_meal) and loose.size() == 4, "the same day it still eats the other player's food, and not more of Dave's (%d left)" % loose.size())
+	a.animals.erase(pup2_id)
+	a.wolves.dens.erase("test_den")
 	loose.clear()
 
 	# 11. What a player brings: every fish they can catch (fish_schools.json) and every meat a carcass gives is food the stray and the
