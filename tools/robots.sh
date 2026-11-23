@@ -43,9 +43,10 @@ pass() {
 	local plan=$1 tag=$2 pids=()
 	for i in $(seq 1 $ROBOTS); do
 		mkdir -p "$D/r$i/data" "$D/r$i/cache"
-		XDG_DATA_HOME="$D/r$i/data" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
+		( XDG_DATA_HOME="$D/r$i/data" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
 			res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$LINK --block-port=$((LINK + 1)) \
-			--cache="$D/r$i/cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin > "$D/robot${i}_$tag.log" 2>&1 &
+			--cache="$D/r$i/cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin > "$D/robot${i}_$tag.log" 2>&1
+		  echo $? > "$D/robot${i}_$tag.exit" ) &   # the client's exit code: 0 after a clean quit (134 was the quit abort, fixed by #1647)
 		pids+=($!)
 		sleep 2
 	done

@@ -132,6 +132,11 @@ def main():
 				if sig not in ok:
 					findings.append("pack %s: after %s the client's pack is %s, the server's is %s (peer %d)" % (name, step, sig, before[-1][1], peer))
 
+		exit_path = path[:-4] + ".exit"
+
+		if os.path.exists(exit_path) and open(exit_path).read().strip() not in ("0", ""):
+			findings.append("robot %s: the client exited with code %s (0 after a clean quit; 134 is an abort, 124 the time limit)" % (name, open(exit_path).read().strip()))
+
 		if not joined:
 			broke.append("%s never joined" % name)
 		elif not done:
