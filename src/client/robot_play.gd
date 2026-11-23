@@ -283,6 +283,10 @@ func _check_held(pv: Node) -> void:
 			continue
 
 		var hand: Vector3 = (skel.global_transform * skel.get_bone_global_pose(bone)).origin
+
+		if mount is BoneAttachment3D:
+			(mount as BoneAttachment3D).on_skeleton_update()   # the attachment follows the skeleton's deferred update, later in the frame: bring it to this pose first (players thread, 23 Nov 2026)
+
 		var d: float = mount.global_position.distance_to(hand)
 		_held_looks += 1
 
