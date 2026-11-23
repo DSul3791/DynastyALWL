@@ -66,12 +66,6 @@ var failed_tiles: int = 0              # times a tile file existed but failed to
 var _mutex: Mutex = Mutex.new()
 var _prefetching: Dictionary = {}       # Vector2i -> true while a worker thread reads that tile
 var _prefetch_tasks = preload("res://src/shared/pool_tasks.gd").new()   # the prefetch tasks, waited for by finish_tasks() at exit
-
-# Lag lane 23 Nov 2026: tile prefetches run on the pool's high-priority threads. As low-priority tasks they shared one thread (of 4 in the cloud)
-# with the island resource build (about 6 s at start-up), so the tiles a first join needs were read one after another after it.
-func _init() -> void:
-	_prefetch_tasks.high_priority = true
-
 var _loading: Dictionary = {}           # Vector2i -> true while one thread reads that tile in get_tile; the others wait for it
 var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
 var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
@@ -92,6 +86,12 @@ var _wet_look: PackedByteArray = PackedByteArray()   # water class id -> its wet
 var _marble: int = 9
 var _granite: int = 5
 var _basalt: int = 7
+
+
+# Lag lane 23 Nov 2026: tile prefetches run on the pool's high-priority threads. As low-priority tasks they shared one thread (of 4 in the cloud)
+# with the island resource build (about 6 s at start-up), so the tiles a first join needs were read one after another after it.
+func _init() -> void:
+	_prefetch_tasks.high_priority = true
 
 
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.

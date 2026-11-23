@@ -1117,8 +1117,8 @@ func _ready() -> void:
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
+			generator.prefetch_around(float(resume[0]), float(resume[2]), JOIN_TILE_MARGIN_M)   # a returning player's far ground, read in parallel, started before _resume_spot's own tile read (JOIN_TILE_MARGIN_M)
 			net.start_at.rpc_id(peer, _resume_spot(Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
-			generator.prefetch_around(float(resume[0]), float(resume[2]), JOIN_TILE_MARGIN_M)   # a returning player's far ground, read in parallel (JOIN_TILE_MARGIN_M)
 
 		_slow_rpc("hello: done", t0))
 	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
@@ -3594,6 +3594,11 @@ func _send(peer_id: int, batch: Array) -> void:
 
 
 # Worker thread: takes the next block, urgent ones first, and makes it.
+# True while a flora chunk may take a worker: flora leaves one worker for the ground (the join, lag lane 23 Nov 2026); one worker in all takes both.
+static func flora_may_start(flora_running: int, max_running: int) -> bool:
+	return flora_running < max_running - 1 or max_running <= 1
+
+
 func _worker_loop() -> void:
 	while true:
 		_work.wait()
@@ -3606,7 +3611,7 @@ func _worker_loop() -> void:
 
 		# Lag lane 23 Nov 2026 (cloud join, timestamped): the joining player's first flora chunks (about 1 s each) took all three workers, and
 		# urgent ground waited behind them: 3 blocks in the first 6 s after the welcome. Flora now leaves one worker for the ground.
-		if _queue.is_empty() and not _flora_queue.is_empty() and (_flora_running < _max_running - 1 or _max_running <= 1):
+		if _queue.is_empty() and not _flora_queue.is_empty() and flora_may_start(_flora_running, _max_running):
 			flora_item = _flora_queue.pop_front()
 			_flora_running += 1
 		elif _queue.is_empty() and not _water_queue.is_empty():
