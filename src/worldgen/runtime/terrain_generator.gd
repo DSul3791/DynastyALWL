@@ -499,8 +499,27 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var last_data = null
 	var h_min: float = INF
 	var h_max: float = -INF
+	var wet: PackedFloat64Array = PackedFloat64Array()   # wet_at of each column, when one tile holds them all
+	var one_tile = null
 
-	for k in range(nz + 2):
+	if heights_gridded:
+		var first: Vector2i = Vector2i(int(floor(wx[0] / tile_size_m)), int(floor(wz[0] / tile_size_m)))
+
+		# Columns that do not cross the world's wrap (rising) and start and end on the same tile all lie on it.
+		if wx[row - 1] > wx[0] and wz[nz + 1] > wz[0] and first == Vector2i(int(floor(wx[row - 1] / tile_size_m)), int(floor(wz[nz + 1] / tile_size_m))):
+			one_tile = get_tile(first)
+
+			if one_tile.placeholder:
+				one_tile = null
+
+	if one_tile != null:
+		var inner: PackedFloat64Array = PackedFloat64Array()
+		hs = one_tile.heights_grid(wx, wz, wet, inner)
+		column_tile.fill(one_tile)
+		h_min = inner[0]
+		h_max = inner[1]
+
+	for k in range(nz + 2 if one_tile == null else 0):
 		var tz: int = int(floor(wz[k] / tile_size_m))
 
 		for i in range(nx + 2):
@@ -538,7 +557,7 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 				if grid.is_empty():
 					extra = _detail_at(data, wx[i], wz[k], sf)
 				elif not data.placeholder:
-					extra = grid[index] * (1.0 - data.wet_at(wx[i], wz[k]))
+					extra = grid[index] * (1.0 - (wet[index] if one_tile != null else data.wet_at(wx[i], wz[k])))
 
 				var h: float = hs[index] + extra
 				hs[index] = h
@@ -591,6 +610,21 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 			if lookups_shared and not data.placeholder:
 				sample = data.nearest(wx[i + 1], wz[k + 1])
+
+				# Bedrock up through the block's top: the rock fill below writes every voxel's material,
+				# so the surface look is not worked out (the soil is not used either).
+				if buried_columns_skipped:
+					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
+
+					if int(floor((h - cover_m - oy) / sf)) >= ny - 1:
+						offset_m = data.offset_at(wx[i + 1], wz[k + 1])
+						_fill_rock_column(buffer, data, block_bodies.get(data.tile, []), i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, sample, -1, cover_m, offset_m)
+
+						if has_ore:
+							_fill_ore_column(buffer, data, ore_set, i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, origin, sample, cover_m, offset_m)
+
+						continue
+
 				soil_id = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
 
 				if soil_id <= 0 or h >= oy:
@@ -641,6 +675,12 @@ func _ground_soil(data, sample: int, h: float, x: float, z: float) -> int:
 	var tx: float = fx - float(i0)
 	var tz: float = fz - float(j0)
 	var near: PackedByteArray = data.near_water()
+	var k0: int = j0 * side + i0
+
+	# No water within a sample of any of the four: the loop below would find no nearness either.
+	if dry_soil_shortcut and near[k0] == 0 and near[k0 + 1] == 0 and near[k0 + side] == 0 and near[k0 + side + 1] == 0:
+		return soil
+
 	var water_w: float = 0.0
 	var level_sum: float = 0.0
 	var near_w: float = 0.0
@@ -893,6 +933,9 @@ var buried_bodies_skipped: bool = true
 var ore_columns_skipped: bool = true
 var bodies_prepared: bool = true
 var lookups_shared: bool = true       # a column's cover, layer offset, nearest sample and ground soil are read once, not once per fill step
+var buried_columns_skipped: bool = true   # a column whose bedrock reaches the block's top gets no surface look (the rock fill writes all its material)
+var heights_gridded: bool = true      # a block on one tile reads its heights through heights_grid (indices and weights once per row and column)
+var dry_soil_shortcut: bool = true    # a column with no water near its four samples keeps its baked soil without the bank loop
 
 # A body's numbers read once for the block as an array (indices B_*): the per-column loop in
 # _fill_rock_column was reading a dozen dictionary keys per column and body.
