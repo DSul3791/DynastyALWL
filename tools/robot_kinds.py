@@ -196,7 +196,11 @@ def report(d):
 		r = by_peer.get(h["peer"])
 		line = "  hit %s on %s: server gap %.2f, result %s" % (h["cause"], r["name"] if r else h["peer"], h["gap"], h["result"])
 
-		if r:
+		kind = (r["kind"] or "").split(" ")[0] if r else ""
+
+		if r and kind and h["cause"].split("/")[0] != kind:
+			line += ", another kind (not the run's %s): its places are not drawn in A lines, so not measured" % kind
+		elif r:
 			best = None
 
 			for aid, rows in r["a"].items():
