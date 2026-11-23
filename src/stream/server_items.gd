@@ -808,7 +808,9 @@ func _safe_resume(peer: int, spot: Vector3) -> Vector3:
 	if not is_nan(top) and spot.y < top + SwimRules.BODY_HEIGHT_M * 0.5 and spot.y > top - SwimRules.BODY_HEIGHT_M * 0.5:
 		spot.y = top + SwimRules.BODY_HEIGHT_M * 0.5   # the slab laid through the body; one above a tunnel or cellar leaves them there
 
-	if not structure_blocks(spot.x, spot.z, RESUME_CLEAR_M):
+	var drawn: Array = _drawn_solids_near(spot)
+
+	if not structure_blocks(spot.x, spot.z, RESUME_CLEAR_M) and not _in_drawn_solid(drawn, spot):
 		return spot
 
 	for ring in range(1, int(RESUME_SEARCH_M / 0.5) + 1):
@@ -816,10 +818,33 @@ func _safe_resume(peer: int, spot: Vector3) -> Vector3:
 			var a: float = TAU * float(n) / 16.0
 			var at: Vector3 = spot + Vector3(cos(a), 0.0, sin(a)) * (0.5 * float(ring))
 
-			if not structure_blocks(at.x, at.z, RESUME_CLEAR_M):
+			if not structure_blocks(at.x, at.z, RESUME_CLEAR_M) and not _in_drawn_solid(drawn, at):
 				return at
 
 	return rest_point_for(peer, spot)
+
+
+# The pieces near `spot` that are solid where they are drawn but not in the walking grid (structures.json "solid_drawn": the rock pile, widened in
+# round 5, 23 Nov 2026): a character saved where an old pile's wider solid now stands resumes beside it, as one inside a wall does. [def, row] pairs.
+func _drawn_solids_near(spot: Vector3) -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() > RESUME_SEARCH_M + 2.0 or absf(float(it["pos"].y) - spot.y) > 1.5:
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if bool(def.get("solid_drawn", false)) and not it["struct"].has("site"):
+			out.append([def, {"pos": it["pos"], "yaw": float(it["struct"].get("yaw", 0.0))}])
+
+	return out
+
+
+func _in_drawn_solid(drawn: Array, at: Vector3) -> bool:
+	return drawn.any(func(pair): return PlacementRules.holds(pair[0], pair[1], at))
 
 
 # The server is closing with players still in (an admin stop, a reset, the window of a hosted game): their spots now, as a disconnect (DECISIONS collapse-offline 5).
