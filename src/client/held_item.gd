@@ -2266,10 +2266,16 @@ var _wheel_asked_at: Vector3 = Vector3(INF, INF, INF)
 var _wheel_asked_yaw: int = -1
 var _wheel_asked_msec: int = -100000
 var _wheel_answer: Array = []            # [at, yaw degrees, percent, why] of the last answer
+var _wheel_asked_kit: String = ""       # the kit the last ask was for: another kit at the same spot asks again (a water piece's answer is not a sawmill's)
 var wheel_note: String = ""               # the ghost's caption line for a sawmill: "Sawmill: 62 %", or "" (tests read it)
 
 
 func _wheel_state(kit: String) -> String:
+	if kit != _wheel_asked_kit:
+		_wheel_asked_kit = kit
+		_wheel_asked_at = Vector3(INF, INF, INF)
+		_wheel_answer = []   # the last answer was another piece's
+
 	var moved: bool = _wheel_asked_at.distance_to(_blueprint_at) > WHEEL_MOVE_M or _wheel_asked_yaw != _blueprint_yaw
 
 	if moved and Time.get_ticks_msec() - _wheel_asked_msec >= WHEEL_ASK_MS and _net != null:
@@ -2280,8 +2286,8 @@ func _wheel_state(kit: String) -> String:
 
 	wheel_note = ""
 
-	if _wheel_answer.is_empty() or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
-		return ""   # no answer for this spot yet
+	if _wheel_answer.is_empty() or int(_wheel_answer[2]) == -1 or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
+		return ""   # no answer for this spot yet (a -1 answer is a water piece's)
 
 	if str(_wheel_answer[3]) != "":
 		return "wheel_" + str(_wheel_answer[3])

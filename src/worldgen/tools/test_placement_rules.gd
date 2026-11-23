@@ -64,7 +64,7 @@ func _init() -> void:
 	var server_src: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")
 	check(Rules.reason_text("wet") != "" and held_src.contains("terrain < PlacementRules.WET_GROUND_M") and server_src.contains("if ground < PlacementRules.WET_GROUND_M:"), "low wet ground is red on the ghost by the server's own limit")
 	# A water piece's ghost asks the server (its own _water_refusal) and shows the words; percent -1 marks the answer as a water piece's.
-	check(held_src.contains("blueprint_state = _water_piece_state(kit)") and held_src.contains("int(_wheel_answer[2]) != -1") and server_src.contains("send_wheel_share.call(peer, at, yaw_deg, -1, _water_refusal(def, at, yaw_deg))"), "a barrel or tank ghost is red with the server's refusal where placing would refuse it")
+	check(held_src.contains("blueprint_state = _water_piece_state(kit)") and held_src.contains("int(_wheel_answer[2]) != -1") and server_src.contains("send_wheel_share.call(peer, at, yaw_deg, -1, _water_refusal(def, judged[0], int(judged[1])))") and held_src.contains("if kit != _wheel_asked_kit:"), "a barrel or tank ghost is red with the server's refusal where placing would refuse it")
 
 	var crowded: Array = []
 

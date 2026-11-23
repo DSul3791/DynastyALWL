@@ -101,7 +101,11 @@ func _init() -> void:
 	var answers: Array = []
 	items.send_wheel_share = func(_p, at, yaw, percent, why): answers.append([at, yaw, percent, why])
 	items._structures["test_spring"]["kit"] = "stick"   # a kit the item table knows, for the ask's item number
+	items._peer_pos[1] = Vector3(112.0, 10.0, 110.0)
+	items._wheel_ask(1, 0, items.table.number_of("stick"), Vector3(160.0, 10.0, 110.0))   # out of reach: no answer (placing refuses that first)
+	items._peer_pos[1] = Vector3(110.0, 10.0, 112.0)
 	items._wheel_ask(1, 0, items.table.number_of("stick"), Vector3(110.0, 10.0, 110.0))
+	items._peer_pos[1] = Vector3(300.0, 10.0, 112.0)
 	items._wheel_ask(1, 0, items.table.number_of("stick"), Vector3(300.0, 10.0, 110.0))
 	items._structures["test_spring"]["kit"] = "test_spring_kit"
 	check(answers.size() == 2 and int(answers[0][2]) == -1 and str(answers[0][3]) == "Too many water sources stand here already.", "the ghost's ask gets placing's refusal (%s)" % str(answers))
