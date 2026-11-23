@@ -623,6 +623,7 @@ func setup(item_table, store_dir: String) -> void:
 	_rebuild_supports(true)
 	_load_trees()
 	_index_after_load(loaded_next)
+	_count_old_seeds()   # a 9257 store: its seeds and linseed counted in today's units, once
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
@@ -2197,7 +2198,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed, "kiln_lit_by": _kiln_lit_by.duplicate(),
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -8256,6 +8257,8 @@ func _load_world_items() -> void:
 
 	if parsed == null:
 		return
+
+	_seeds_in_pinches = bool(parsed.get("seed_pinch", false))   # false: saved before seeds were counted one by one (build 9257 and older)
 
 	if parsed.has("areas"):   # version 4: the rows are in the area files the header names (an older file holds them itself)
 		_save_gen = int(parsed.get("gen", 0))
@@ -20204,6 +20207,7 @@ const TILLED_STATE := 47
 var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
+var _seeds_in_pinches: bool = true   # the store counts seeds one by one (world_items.json "seed_pinch"); false only while loading an older one
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
 var _crops_file_extra: Dictionary = {}   # crops.json "worm": {"item", "chance"}: a ripe garden crop taken gives a worm this often
 var _plot_water: Dictionary = {}         # _bed_key -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
@@ -20213,6 +20217,140 @@ const WET_THROUGH_PCT := 99.0            # a bed this wet takes no more poured w
 const MOIST_STEP_PCT := 5                # the moisture a bed's world row carries, in these steps: a row is sent again only when it moves a step
 const PlotWater := preload("res://src/shared/plot_water.gd")
 
+
+
+# Seeds have been counted one by one since 23 Nov 2026 (#1628): a planting spot takes a pinch (crops.json sow_seeds: 50 wheat seeds, 5 nettle
+# seeds) and the recipes take linseed by the hundred. A store saved before then (build 9257, the live world) counted one seed per spot and
+# linseed by the old recipes, so each of its seeds is worth today's pinch: every stack is multiplied once (crops.json "old_seed_units"), in
+# packs, worn and held bags, stores (chests, crates, carts, kilns, remains), craft queues and on the ground, and the store is marked so it
+# never happens twice. Nothing vanishes: what a full slot cannot hold goes to a free slot, a full store's rest lies by it, a full bag's in the pack.
+# A dev store saved between #1628 and this marker is multiplied once too (test stores only; the live world never ran that code).
+func _count_old_seeds() -> void:
+	if _seeds_in_pinches:
+		return
+
+	_seeds_in_pinches = true
+	var per: Dictionary = {}   # item number -> today's units in one old seed
+
+	for crop in _crop_table():
+		var row: Dictionary = _crop_table()[crop]
+		var n: int = table.number_of(str(row.get("seed", "")))
+
+		if n > 0 and int(row.get("sow_seeds", 1)) > 1:
+			per[n] = int(row["sow_seeds"])
+
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+	var extra: Dictionary = parsed.get("old_seed_units", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	for id in extra:
+		if not str(id).begins_with("_") and table.number_of(str(id)) > 0:
+			per[table.number_of(str(id))] = int(extra[id])
+
+	var moved: int = 0
+
+	for key in _inventories:
+		moved += _old_seeds_in(_inventories[key], per, [])
+
+		for w in _characters.get(key, {}).get("worn", []):
+			if w is Array and (w as Array).size() > 3 and w[3] is Dictionary and (w[3] as Dictionary).has("bag"):
+				moved += _old_seeds_in_bag(w[3], per, _inventories[key])
+
+	for uid in _chests:
+		var over: Array = []
+		moved += _old_seeds_in(_chests[uid], per, over)
+
+		if not over.is_empty():
+			var at: Vector3 = Vector3.INF
+
+			for id in _items:
+				if int(_items[id].get("struct", {}).get("uid", 0)) == int(uid):
+					at = _items[id]["pos"]
+					break
+
+			for row in over:
+				if at != Vector3.INF:
+					drop_in_world(int(row[0]), int(row[1]), at + Vector3(0.0, 0.0, 1.0))
+
+	for key in _craft_queues:
+		for entry in _craft_queues[key]["entries"]:
+			for need in entry[2]:
+				if per.has(int(need[0])):
+					need[1] = int(need[1]) * int(per[int(need[0])])
+
+					for unit in (need[2] if need.size() > 2 else []):
+						unit[3] = int(unit[3]) * int(per[int(need[0])])   # what it took, given back at today's count if the craft is cancelled
+					moved += 1
+
+			for part in entry[3]:
+				if per.has(int(part[0])):
+					part[1] = int(part[1]) * int(per[int(part[0])])
+
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if per.has(int(it.get("number", 0))) and not it.has("struct"):
+			var total: int = int(it["count"]) * int(per[int(it["number"])])
+			it["count"] = mini(total, ItemTableScript.COUNT_MAX)
+			moved += 1
+
+			if total > ItemTableScript.COUNT_MAX:
+				drop_in_world(int(it["number"]), total - ItemTableScript.COUNT_MAX, it["pos"] + Vector3(0.3, 0.0, 0.0))
+
+		if it.get("inst", {}) is Dictionary and (it.get("inst", {}) as Dictionary).has("bag"):
+			moved += _old_seeds_in_bag(it["inst"], per, null)
+
+	_dirty = true
+	print("server items: a store from before seeds were counted one by one: %d stacks of seeds counted again in today's units" % moved)
+
+
+# One store's seeds multiplied (see _count_old_seeds); what a slot cannot hold goes to the store's free slots, the rest into `over` as [number, count].
+func _old_seeds_in(inv, per: Dictionary, over: Array) -> int:
+	var rest: Array = []
+	var n: int = 0
+
+	for s in inv.slot_count:
+		var number: int = inv.numbers[s]
+
+		if per.has(number) and inv.counts[s] > 0:
+			var total: int = inv.counts[s] * int(per[number])
+			inv.counts[s] = mini(total, ItemTableScript.COUNT_MAX)
+			n += 1
+
+			if total > ItemTableScript.COUNT_MAX:
+				rest.append([number, total - ItemTableScript.COUNT_MAX, inv.wear[s]])
+
+		if not (inv.inst_of(s) as Dictionary).is_empty() and inv.inst_of(s).has("bag"):
+			n += _old_seeds_in_bag(inv.inst_of(s), per, inv)
+
+	for row in rest:
+		var left: int = int(row[1])
+
+		while left > 0:
+			var put: int = mini(left, ItemTableScript.COUNT_MAX)
+			var not_in: int = inv.add(int(row[0]), put, int(row[2]))
+			left -= put
+
+			if not_in > 0:
+				over.append([int(row[0]), not_in + left])
+				break
+
+	return n
+
+
+# A bag's rows ([number, count, wear, ...]) multiplied; a full bag's rest goes into `pack` (the wearer's or holder's) when there is one.
+func _old_seeds_in_bag(inst: Dictionary, per: Dictionary, pack) -> int:
+	var n: int = 0
+
+	for row in inst["bag"]:
+		if row is Array and (row as Array).size() >= 2 and per.has(int(row[0])) and int(row[1]) > 0:
+			var total: int = int(row[1]) * int(per[int(row[0])])
+			row[1] = mini(total, ItemTableScript.COUNT_MAX)
+			n += 1
+
+			if total > ItemTableScript.COUNT_MAX and pack != null:
+				pack.add(int(row[0]), total - ItemTableScript.COUNT_MAX)
+
+	return n
 
 func _crop_table() -> Dictionary:
 	if not _crops_loaded:

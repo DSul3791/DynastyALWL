@@ -185,10 +185,41 @@ func differences(a: Variant, b: Variant, path: String, out: Array) -> void:
 		out.append("changed %s: %s -> %s" % [path, str(a).left(120), str(b).left(120)])
 
 
+# Seeds are counted one by one since 23 Nov 2026 (#1628): a 9257 seed comes back as today's pinch (crops.json sow_seeds, old_seed_units),
+# once, so what 9257 read is put in today's units before it is compared (test_save_9257_life.gd checks the counting itself).
+func in_todays_seeds(snap: Dictionary, table) -> void:
+	var crops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+	var per: Dictionary = {}
+
+	for crop in crops["crops"]:
+		if int(crops["crops"][crop].get("sow_seeds", 1)) > 1:
+			per[str(crops["crops"][crop].get("seed", ""))] = int(crops["crops"][crop]["sow_seeds"])
+
+	for id in crops.get("old_seed_units", {}):
+		if not str(id).begins_with("_"):
+			per[str(id)] = int(crops["old_seed_units"][id])
+
+	for k in snap["ground"]:
+		snap["ground"][k] = float(snap["ground"][k]) * float(per.get(str(k), 1))
+
+	for part in ["packs", "stores"]:
+		for k in snap[part]:
+			var rows: Array = []
+
+			for row in snap[part][k]:
+				var id: String = str(row).get_slice(" x", 0)
+				var count: int = int(str(row).get_slice(" x", 1).get_slice(" ", 0))
+				rows.append("%s x%d %s" % [id, count * int(per.get(id, 1)), str(row).get_slice(" ", str(row).get_slice_count(" ") - 1)] if per.has(id) else row)
+
+			rows.sort()
+			snap[part][k] = rows
+
+
 func _init() -> void:
 	copy_fixture()
 	var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE + "/expected_snapshot.json"))
 	var items = boot()
+	in_todays_seeds(expected, items.table)
 	var got: Dictionary = snapshot(items)
 	var out: Array = []
 	differences(expected, got, "", out)
