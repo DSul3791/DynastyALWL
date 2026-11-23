@@ -55,6 +55,11 @@ class FakeItems:
 	func sleeping_of(peer: int) -> bool:
 		return asleep.has(peer)
 
+	var down: Dictionary = {}
+
+	func fainted_of(peer: int) -> bool:
+		return down.has(peer)
+
 	var left: Dictionary = {}
 	var flags: Dictionary = {}
 	var burning: Dictionary = {}
@@ -148,6 +153,21 @@ func _server() -> void:
 	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
 	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
 	fake.asleep = {}
+	# A fight blow, a hammer blow on a building, a rod's cast and a split on the chopping block are swings too; any other use of a building is not.
+	sent.clear()
+	players.note_action(2, NetScript.ACT_STRIKE)
+	players.note_action(2, NetScript.ACT_REPAIR_STRUCT)
+	players.note_action(2, NetScript.ACT_FISH)
+	players.note_action(2, NetScript.ACT_USE_STRUCT, 3)
+	players.note_action(2, NetScript.ACT_USE_STRUCT, 0)
+	fake.down = {2: true}
+	fake.swim[2] = true
+	clock[0] = 2720
+	players.tick(0.2)
+	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 5, "a strike, a hammer blow, a cast and a split are four more swings (count %d of 5)" % ((int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) if sent.size() == 1 else -1))
+	check(sent.size() == 1 and (int(sent[0][4][0]) & 3) == 3 and (int(sent[0][4][0]) & PlayersScript.SWIM) == 0, "a fainted or passed-out player is drawn lying, not swimming, even in water (state %d)" % (int(sent[0][4][0]) if sent.size() == 1 else -1))
+	fake.down = {}
+	fake.swim.erase(2)
 	# 159: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
 	sent.clear()
 	var torch_n: int = ItemTableScript.load_default().number_of("torch")
@@ -227,9 +247,10 @@ func _server() -> void:
 	check(bad_ok and (players._move[9][0] as Vector3).is_finite(), "made-up reports keep the stamps within %d ms before their arrival, never after it, never back" % int(PlayersScript.STAMP_BEHIND_MS))
 	clock[0] = 2760
 	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
+	var swings_before: int = int(players._swings[2][0])
 	for i in range(8):
 		players.note_action(2, NetScript.ACT_MINE)
-	check((int(players._swings[2][0])) == 1, "the swing count wraps at 8")
+	check((int(players._swings[2][0])) == swings_before, "the swing count wraps at 8")
 	clock[0] = 2800
 
 	looks.clear()
