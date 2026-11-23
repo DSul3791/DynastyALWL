@@ -978,6 +978,17 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
+		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
+			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
+				return null
+
+		var feet: Array = []
+
+		for trunk in _arrow_trunks(Vector3(camp_at.x, 0.0, camp_at.y), camp_reach):
+			feet.append([Vector2(trunk[0].x, trunk[0].z), float(trunk[1])])
+
+		return feet
 	animals.bandit_camps = bandits
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away

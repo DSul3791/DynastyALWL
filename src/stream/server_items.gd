@@ -14662,8 +14662,16 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 
 # The whole load: the pack (with the bags in it) and what the worn bags hold (worn pieces themselves weigh nothing, as before).
 func carried_kg_of(peer: int) -> float:
+	if _in_vitals and _kg_cache.has(peer):
+		return float(_kg_cache[peer])
+
 	var inv = inventory_of(peer)
-	return (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+	var kg: float = (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+
+	if _in_vitals:
+		_kg_cache[peer] = kg   # the carry notice and the load ratio both weigh the pack each tick (load test 23 Nov: 15 ms a second at 32 players)
+
+	return kg
 
 
 func _worn_bags_kg(peer: int) -> float:
@@ -14771,6 +14779,22 @@ func effort_of(peer: int) -> float:
 # How far into the hindering band the load is: 0 up to 80 percent of the limit, 1 at the limit.
 var _load_cache: Dictionary = {}     # peer -> load ratio, valid only during one _vitals_tick (it asks four times per player)
 var _in_vitals: bool = false
+var _kg_cache: Dictionary = {}       # peer -> carried kg, valid only during one _vitals_tick
+var _cover_cache: Dictionary = {}    # position -> cover_at, valid only during one _vitals_tick (warmth and soak asked three times per player)
+
+
+# cover_at at `pos`, worked out once per position during a _vitals_tick. Nothing that changes cover (building, felling) runs inside it.
+func _vitals_cover(pos: Vector3) -> float:
+	if not cover_at.is_valid():
+		return 0.0
+
+	if not _in_vitals:
+		return float(cover_at.call(pos))
+
+	if not _cover_cache.has(pos):
+		_cover_cache[pos] = float(cover_at.call(pos))
+
+	return float(_cover_cache[pos])
 
 
 func _load_ratio(peer: int) -> float:
@@ -16372,6 +16396,8 @@ func _vitals_tick(spent: float) -> void:
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var game_s: float = spent * GAME_RATE
 	_load_cache.clear()
+	_kg_cache.clear()
+	_cover_cache.clear()
 	_lit_valid = false
 	_in_vitals = true
 
@@ -17109,12 +17135,12 @@ func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
-	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var covered: bool = _vitals_cover(pos) > 0.5
 	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
 	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
 	# at sea level, so the height is taken off here.
 	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
-	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
+	var roofed: bool = _vitals_cover(pos) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 
 	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
@@ -17364,7 +17390,7 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
-	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 	var soak: float = float(_soak.get(peer, 0.0))
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
