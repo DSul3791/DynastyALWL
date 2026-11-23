@@ -12,6 +12,9 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const SkillWebScript := preload("res://src/shared/skill_web.gd")
+const RangesScript := preload("res://src/stream/server_ranges.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 
 var passes: int = 0
 var failures: int = 0
@@ -278,6 +281,8 @@ func _init() -> void:
 	wiring_checks()
 	tracking_checks()
 	sign_checks()
+	sent_trail_checks()
+	gap_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -741,3 +746,92 @@ func sign_checks() -> void:
 	fresh.call()
 	items.practice(1, "track_follow")   # a trail-following look just before
 	check(items.sign_spotted(1, Vector2(100.0, 8.0)), "and a sign spotted just after a trail-following look still trains (its own cooldown)")
+
+
+# A snare set on a trail the player was sent always reads a trail (the robots, 23 Nov 2026: one at 57911.9, 71133.1 on a deer trail read
+# 0.00, so it never caught nor trained Tracking). Only the 3 x 3 blocks round a player are worked out; a trail in the ring of that 3 x 3
+# read "not known" while a block beyond it was not. Every sent route point of every block, round players in blocks far apart.
+func sent_trail_checks() -> void:
+	var items = make("user://test_traps_sent", true)
+	var r = RangesScript.new()
+	r.setup()
+	r.world_seed = 11
+	r.ground_height = func(x, z): return 10.0 + 1.5 * sin(x * 0.01) + 1.2 * cos(z * 0.013)
+	r.blocked = func(_x, _z): return false
+	r.no_spawn = func(_x, _z): return false
+	r.cfg["budget_ms"] = 1000.0
+	items.run_distance = func(x, z, kind): return r.route_distance(x, z, kind)
+	strength = 0.0
+	var points: int = 0
+	var off: int = 0
+	var worst: String = ""
+
+	for c in [Vector2i(0, 0), Vector2i(7, -3), Vector2i(-5, 9), Vector2i(226, 278)]:
+		var at: Vector3 = Vector3((float(c.x) + 0.5) * TrailCodec.ROUTE_BLOCK_M, 10.0, (float(c.y) + 0.5) * TrailCodec.ROUTE_BLOCK_M)
+
+		for k in 80:
+			r.tick([at], 1000 + k)
+
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var key: Vector2i = c + Vector2i(dx, dz)
+
+				for route in TrailCodec.decode_routes(r.wire(key, 1000), key, TrailCodec.ROUTE_BLOCK_M):
+					var pts: PackedVector2Array = route[1]
+
+					for i in range(0, pts.size(), 3):
+						if absi(r.block_of(pts[i].x, pts[i].y).x - c.x) > 1 or absi(r.block_of(pts[i].x, pts[i].y).y - c.y) > 1:
+							continue   # spilled past the 3 x 3: never near this player
+
+						points += 1
+						var t: float = items._traps.trail_at(Vector3(pts[i].x, 10.0, pts[i].y))
+
+						if t <= 0.0:
+							off += 1
+							worst = "%.1f,%.1f in block %s (kind %d)" % [pts[i].x, pts[i].y, str(key), int(route[0])]
+
+	check(points > 2000 and off == 0, "a snare on any sent trail point reads a trail (%d of %d points off%s)" % [off, points, ("; e.g. " + worst) if worst != "" else ""])
+	var pts_of: Callable = func() -> float: return float(items._skill_records(1).get("tracking", {}).get("p", 0.0))
+	var before: float = pts_of.call()
+	var ring: Array = TrailCodec.decode_routes(r.wire(Vector2i(225, 277), 1000), Vector2i(225, 277), TrailCodec.ROUTE_BLOCK_M)
+	var spot: Vector2 = (ring[0][1] as PackedVector2Array)[0]
+	items.report_position(1, Vector3(spot.x, 10.0, spot.y))
+	items._last_practice.clear()
+	lay(items, Vector3(spot.x, 10.0, spot.y))
+	check(pts_of.call() > before, "and set there it trains Tracking (%.1f -> %.1f)" % [before, pts_of.call()])
+
+	# Snares set at a place's home and its stops (the robots: one by a deer's water stop dropped the deer's trails, so it read no trail):
+	# a trap never settles the ground, so the trails stay and the snare still reads one.
+	r.no_spawn = func(x, z): return items.spawn_blocked(x, z)
+	var key0: Vector2i = Vector2i(226, 278)
+	var count0: int = TrailCodec.decode_routes(r.wire(key0, 50000), key0, TrailCodec.ROUTE_BLOCK_M).size()
+	var set_at: int = 0
+
+	for place in r.blocks[key0]["places"]:
+		for q in [place["home"]] + (place["outs"] as Array):
+			var sid: int = lay(items, Vector3(q.x, 10.0, q.y))
+			items._spawn_zones.add(sid, q.x, q.y)
+			set_at += 1
+
+	var count1: int = TrailCodec.decode_routes(r.wire(key0, 70000), key0, TrailCodec.ROUTE_BLOCK_M).size()
+	var some: Dictionary = r.blocks[key0]["places"][0]
+	check(set_at > 3 and count0 > 0 and count1 == count0 and items._traps.trail_at(Vector3(some["home"].x, 10.0, some["home"].y)) > 0.0, "snares at %d homes and stops settle nothing: the trails stay (%d -> %d routes)" % [set_at, count0, count1])
+	var hut: int = lay(items, Vector3(some["home"].x, 10.0, some["home"].y), "lean_to")
+	items._spawn_zones.add(hut, some["home"].x, some["home"].y)
+	check(items.spawn_blocked(some["home"].x, some["home"].y), "but a shelter there does")
+
+
+# Snares and bird traps (Dave 22 and 23 Nov 2026: no limit): 60 cm apart is enough, nearer says why plainly, and a chunk takes any number.
+func gap_checks() -> void:
+	var items = make("user://test_traps_gap", true)
+	var cfg: Dictionary = items._structures_cfg
+	var state: int = int(cfg["structures"]["snare_trap"]["state"])
+	var rows: Array = [{"pos": Vector3(10.0, 10.0, 10.0), "state": state, "yaw": 0.0}]
+	check(PlacementRules.blocked(cfg, "snare", Vector3(11.0, 10.0, 10.0), rows) == "", "a second snare 1 m from the first goes down (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(11.0, 10.0, 10.0), rows))
+	var near: String = PlacementRules.blocked(cfg, "snare", Vector3(10.3, 10.0, 10.0), rows)
+	check(near == "spaced" and PlacementRules.reason_text(near).contains("60 cm"), "30 cm away it is refused, saying how far apart (%s: %s)" % [near, PlacementRules.reason_text(near)])
+
+	for n in 40:
+		rows.append({"pos": Vector3(1.0 + float(n % 8), 10.0, 1.0 + float(n >> 3)), "state": state, "yaw": 0.0})
+
+	check(PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows) == "", "forty snares in one chunk, and room for another (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows))

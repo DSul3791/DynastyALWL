@@ -1445,6 +1445,7 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const SEEN_ARROW_RANGE_M := 200.0   # another player's arrow: its bow is not known here, so it is flown until it lands (the 6 s cap)
 const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
 
 
@@ -1481,6 +1482,18 @@ func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) 
 
 	_flights.append({"node": node, "vel": velocity, "age": 0.0, "arrow": true})
 
+	# Heard as well as seen (23 Nov 2026, the coordinator's silent-sounds pass: another player's shot or throw made no sound): the bow's
+	# twang where it was loosed and the thunk where it comes down, or a thrown weapon's heave, its flight and its landing, as this
+	# player's own. A hit on an animal thuds through animal_hit for everyone already.
+	if _sound != null:
+		if arrow:
+			_sound.slots.play("bow_loose", from)
+			var landed: Array = _arrow_landing(node.global_position, velocity, SEEN_ARROW_RANGE_M)
+			_sound.spear.arrow(landed[0], landed[1], landed[2])
+		else:
+			var landing: Vector3 = _predict_landing(node.global_position, velocity)
+			_sound.spear.throw(node.global_position, landing, velocity.length(), "wood" if _tree_near.is_valid() and not _tree_near.call(landing).is_empty() else "soil")
+
 
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
@@ -1502,11 +1515,17 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	if _sound == null:
 		return
 
-	var at: Vector3 = _camera.global_position
+	var landed: Array = _arrow_landing(_camera.global_position, v, BowAim.bow_range_m(_bow_cfg, bow_id))
+	_sound.spear.arrow(landed[0], landed[1], landed[2])
+
+
+# Where and when an arrow flown from `from` at `velocity` comes down (within range_m of flight, 6 s at most), and what it thunks into:
+# [point, seconds, "wood" or "soil"]. Something upright on the way (a trunk's collider, a wall) stops it as wood.
+func _arrow_landing(from: Vector3, velocity: Vector3, range_m: float) -> Array:
+	var at: Vector3 = from
+	var v: Vector3 = velocity
 	var flown: float = 0.0
 	var t: float = 0.0
-	var range_m: float = BowAim.bow_range_m(_bow_cfg, bow_id)
-
 	var into_wood: bool = false
 
 	while t < 6.0 and flown < range_m:
@@ -1528,7 +1547,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 			at.y = ground
 			break
 
-	_sound.spear.arrow(at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil")
+	return [at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil"]
 
 
 # The shot's power from the draw time, as the server works it out (bow.json): a draw under draw_min_ms is weak_power, then
@@ -2097,6 +2116,12 @@ func _update_blueprint() -> void:
 		var ground_at: Vector3 = _blueprint_at
 		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
 		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
+
+		if blueprint_state == "" and PlacementRules.seats_low(_placement, kit):   # shown where the server sets it: at the lowest ground under its footprint
+			var middle: float = float(probe.call(_blueprint_at.x, _blueprint_at.z))
+
+			if not is_nan(middle):
+				_blueprint.global_position.y = PlacementRules.seated_ground(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe, middle)
 
 	if blueprint_state == "":
 		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0

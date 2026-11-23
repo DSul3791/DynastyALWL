@@ -462,7 +462,7 @@ func _note_run(it: Dictionary) -> void:
 
 	var d: float = float(host.run_distance.call(it["pos"].x, it["pos"].z, int(_of_item(it).get("away_run_kind", 0))))
 
-	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted
+	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted. shortcut: a trail found while a nearer one's block is not worked out notes the farther one (a lower share) until the player walks on; narrow, and only ever fewer catches
 		it["struct"]["run"] = _share(d)
 
 		if host.fox_near.is_valid():   # a fox earth near enough that its rounds pass the runs here (TR-10)

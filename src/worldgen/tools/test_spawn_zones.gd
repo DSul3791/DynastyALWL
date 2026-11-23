@@ -40,6 +40,8 @@ func _init() -> void:
 		if ZonesScript.counts(rows[id]):
 			zones.add(id, rows[id]["pos"].x, rows[id]["pos"].z)
 
+	check(not ZonesScript.counts({"pos": Vector3.ZERO, "struct": {"kind": "snare_trap", "yaw": 0.0}}) and not ZonesScript.counts({"pos": Vector3.ZERO, "struct": {"kind": "fish_trap_set", "yaw": 0.0}}), "a trap never blocks spawning (it is set for the animals)")
+
 	check(zones.blocked(119.0, 100.0, rows) and zones.blocked(100.0, 81.5, rows) and zones.blocked(114.0, 114.0, rows), "a structure blocks out to 20 m all round")
 	check(not zones.blocked(121.0, 100.0, rows) and not zones.blocked(115.0, 115.0, rows), "past 20 m it does not")
 	check(zones.blocked(310.0, 300.0, rows), "a fire blocks too")

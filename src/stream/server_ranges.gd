@@ -915,7 +915,7 @@ func places_near(sp: String, at: Vector3, reach: float) -> Array:
 	return found.map(func(f): return f[1])
 
 
-# Settled: a player has put something down within no_spawn_m of the place's home or any out spot; the animals leave it.
+# Settled: a player has put something down (not a trap, spawn_zones.gd TRAP_KINDS) within no_spawn_m of the place's home or any out spot; the animals leave it.
 func settled(place: Dictionary) -> bool:
 	if not no_spawn.is_valid():
 		return false
@@ -960,16 +960,16 @@ func wire_count(key: Vector2i) -> int:
 	return int(rec[2]) if rec.size() > 2 else 0
 
 
-# The distance from a point to the nearest trail of a kind (-1 any) that is not on settled ground: INF while the block round the point, or a
-# neighbour whose trails could come this near, is not worked out, `reach` when no trail is nearer. Each route keeps a bounding box, so only the routes that pass near are measured.
+# The distance from a point to the nearest trail of a kind (-1 any) that is not on settled ground, `reach` when no trail is nearer. A trail
+# found in the blocks worked out is a true answer even while a neighbour is not (a nearer one could only make it closer): a snare set on a
+# trail the player was sent always reads it (only the 3 x 3 round a player is worked out, so a trail in the ring round them would otherwise
+# read INF; the robots, 23 Nov 2026). INF only when no trail is found and a block whose trails could come this near (the one round the
+# point too) is not worked out. Each route keeps a bounding box, so only the routes that pass near are measured.
 func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> float:
 	var p: Vector2 = Vector2(x, z)
 	var centre: Vector2i = block_of(x, z)
-
-	if not is_ready(centre):
-		return INF
-
 	var best: float = reach
+	var unknown: bool = false
 
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
@@ -979,7 +979,7 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 				var m: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 
 				if Rect2(Vector2(key) * m, Vector2(m, m)).grow(reach + REACH_OUT_M).has_point(p):
-					return INF   # a neighbour whose runs could pass this near is not worked out yet: not known, rather than off a run
+					unknown = true   # a block whose runs could pass this near is not worked out yet
 
 				continue
 
@@ -1003,7 +1003,7 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 					for i in range(1, pts.size()):
 						best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, pts[i - 1], pts[i])))
 
-	return best
+	return INF if unknown and best >= reach else best   # none found and some not worked out: not known, rather than off a run
 
 
 # Whether a fox earth lies within m of a point, in worked-out blocks (a snare there may take a fox while nobody is near, TR-10).

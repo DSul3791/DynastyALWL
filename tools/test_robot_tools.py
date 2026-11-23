@@ -260,6 +260,20 @@ def test_others():
 			check(r.returncode == want, "robot_check others: %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
 
 
+def test_solo():
+	"""One robot, a play pass and a rejoin pass (two peers, one name), no SEES lines: not a failed others check."""
+	with tempfile.TemporaryDirectory() as d:
+		good_logs(d)
+
+		with open(os.path.join(d, "robot1_play.log"), "a") as f:
+			f.write("ROBOT Robot 1 POSE 7 2000 0 0.00 0.00 0.00 0.00\n")
+
+		write(d, "robot1_rejoin.log", ["ROBOT Robot 1 step joined: peer 9 at (0, 0, 0)", "ROBOT Robot 1 POSE 9 9600 0 0.00 0.00 0.00 0.00", "ROBOT Robot 1 done: 0 fails"])
+		write(d, "server.log", ["AUDIT on: robot audit lines follow", "AUDIT pack 7 1000 aaaa 0", "AUDIT pack 7 5000 bbbb 2", "AUDIT pack 7 9500 cccc 3"])
+		r = run_check(d)
+		check("others:" not in r.stdout, "robot_check: a solo robot's play and rejoin passes are not two robots (%s)" % r.stdout.strip().splitlines()[-1])
+
+
 def test_watch():
 	for what, kw, want in [("a smooth walker passes", {}, 0), ("a 1 m jump fails", {"jump": True}, 1), ("a swing never shown fails", {"swing_clip": "idle"}, 1), ("a walker that never moved fails", {"still": True}, 1)]:
 		with tempfile.TemporaryDirectory() as d:
@@ -272,6 +286,7 @@ if __name__ == "__main__":
 	test_link()
 	test_check()
 	test_others()
+	test_solo()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
 	sys.exit(1 if failures else 0)

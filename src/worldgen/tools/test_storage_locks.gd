@@ -11,6 +11,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CuesScript := preload("res://src/stream/server_action_cues.gd")
 const DIR := "user://test_storage_locks"
 
 var failures: int = 0
@@ -24,6 +25,9 @@ var stone: int = 0
 var flint: int = 0
 var stick: int = 0
 var log_n: int = 0
+var cues                           # server_action_cues.gd on this real server: a container heard by the others only when let through
+var cue_clock: Array = [1000]
+var cue_sent: Array = []           # [receiver, cue, detail]
 
 
 func check(ok: bool, what: String) -> void:
@@ -66,6 +70,16 @@ func join(peer: int, key: String, at: Vector3) -> void:
 
 func act(peer: int, kind: int, a: int, b: int = 0, count: int = 0) -> void:
 	items.action(peer, kind, a, b, count, Vector3.ZERO)
+
+
+# One container action as terrain_server.gd runs it (store_before, the action, store_after): the cues the other players were sent.
+func cued(peer: int, kind: int, a: int, b: int = 0, count: int = 0) -> Array:
+	cue_clock[0] += 500
+	cue_sent.clear()
+	var before: Array = cues.store_before(peer, kind, b)
+	act(peer, kind, a, b, count)
+	cues.store_after(peer, kind, a, b, before)
+	return cue_sent.duplicate()
 
 
 func lock(peer: int, id: int, op: int, code: int = 0) -> void:
@@ -137,6 +151,10 @@ func _init() -> void:
 	join(1, keys[1], Vector3(0.0, 10.0, 1.0))
 	join(2, keys[2], Vector3(0.0, 10.0, 2.5))
 	join(3, keys[3], Vector3(0.0, 10.0, 40.0))
+	cues = CuesScript.new()
+	cues.items = items
+	cues.now_ms = func() -> int: return int(cue_clock[0])
+	cues.send_cue = func(receiver: int, _about: int, cue: int, detail: int, _at: Vector3) -> void: cue_sent.append([receiver, cue, detail])
 
 	# The data: the sixteen rows are live, the chests and crates lockable, the views have radii and a desk outranks a sign.
 	for kind in ["large_wooden_chest", "wardrobe", "dresser", "bookcase", "apothecary_cabinet", "bottle_and_jar_rack", "tool_cabinet", "open_storage_bin", "firewood_rack", "log_rack", "board_rack", "masons_pallet", "ore_and_metal_rack", "storage_sign", "warehouse_crate", "warehouse_desk"]:
@@ -173,6 +191,24 @@ func _init() -> void:
 	act(2, Net.ACT_CHEST_PUT, slot_of(2, stick), crate, 3)
 	act(2, Net.ACT_CHEST_TAKE, 0, crate, 8)
 	check(box(crate).count_of(stone) == 8 and box(crate).count_of(stick) == 0 and items.inventory_of(2).count_of(stone) == 2, "a stranger can neither put into nor take from it")
+	check(cued(2, Net.ACT_CHEST_OPEN, crate).is_empty() and cued(2, Net.ACT_CHEST_PUT, slot_of(2, stick), crate, 1).is_empty() and cued(2, Net.ACT_CHEST_TAKE, 0, crate, 1).is_empty(),
+			"and none of it is heard by the others (sound cue only once the server lets it through)")
+	var heard_crate: int = place("wooden_crate@0,0,0.5", 1)   # a crate of its own, taken away after, so the checks below see what they saw before
+	check(cued(1, Net.ACT_CHEST_OPEN, heard_crate).is_empty(), "the owner opening a crate: a crate has no lid to hear")
+	items.inventory_of(1).add(log_n, 2)
+	var put_heard: Array = cued(1, Net.ACT_CHEST_PUT, slot_of(1, log_n), heard_crate, 2)
+	check(put_heard == [[2, CuesScript.CUE_STORE, CuesScript.STORE_PUT]] and box(heard_crate).count_of(log_n) == 2, "the owner's put is heard by the player beside them, not by one 40 m off (%s)" % str(put_heard))
+	check(cued(1, Net.ACT_CHEST_PUT, slot_of(1, log_n), heard_crate, 2).is_empty(), "a put with nothing left to put moves nothing and is not heard")
+	act(1, Net.ACT_CHEST_CLOSE, 0)
+	items._chests.erase(int(items._items[heard_crate]["struct"]["uid"]))
+	items._items.erase(heard_crate)
+	var lid: int = place("chest@0,0,1.5", 1)
+	lock(1, lid, ItemsScript.LOCK_SET, 9)
+	check(cued(2, Net.ACT_CHEST_OPEN, lid).is_empty(), "a stranger at a locked chest: its lid is not heard")
+	check(cued(1, Net.ACT_CHEST_OPEN, lid) == [[2, CuesScript.CUE_STORE, CuesScript.STORE_OPEN + CuesScript.STORE_LID]], "the owner opens it: the lid is heard")
+	check(cued(1, Net.ACT_CHEST_CLOSE, 0) == [[2, CuesScript.CUE_STORE, CuesScript.STORE_CLOSE + CuesScript.STORE_LID]], "and shut")
+	items._chests.erase(int(items._items[lid]["struct"]["uid"]))
+	items._items.erase(lid)
 	items._chest_viewer[2] = crate
 	act(2, Net.ACT_BULK, 0)
 	check(box(crate).count_of(stone) == 8, "Take all does not pass the lock")

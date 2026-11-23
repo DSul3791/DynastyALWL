@@ -13,6 +13,7 @@ extends Node3D
 # foot, the player's own stride lengths, sent to the sounds as `stepped` (sound_stage.step_at plays it where the foot lands).
 
 signal stepped(at: Vector3, gait: int, crouched: bool)
+signal stroked(at: Vector3)               # another player's swimming stroke, where they swim (swim_sounds.gd stroke_at)
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -55,6 +56,7 @@ const STEP_M := [1.2, 3.0]               # terrain_client.gd STEP_M: metres per 
 const RUN_FROM_MPS := 6.0                # drawn pace from which a player counts as running (walk 3.2, run 9.0 m/s)
 const STEP_FROM_MPS := 1.0               # slower than this makes no steps (terrain_client.gd _update_bob)
 const STEP_HEAR_M := 45.0                # sound_stage.gd OTHER_STEP_REACH_M: farther steps are not counted
+const STROKE_FROM_MPS := 0.5             # swim_sounds.gd STROKE_MIN_MPS: slower than this makes no strokes
 const FEET_M := 0.9                      # the sent position is the standing body's middle
 
 var table                            # the client's item table (id_of, entry), for worn and held items
@@ -258,11 +260,24 @@ func _process(delta: float) -> void:
 
 
 
-# A step each stride of drawn ground travel, for a player on foot (not swimming, sitting or lying) within hearing.
+# A step each stride of drawn ground travel, for a player on foot (not sitting or lying) within hearing; a swimmer's strokes instead (stroked).
 func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: float) -> void:
 	var state: int = int(b["state"])
 	var stance: int = state & 3
 	var pace: float = Vector2(velocity.x, velocity.z).length()
+
+	if (state & SWIM) != 0 and pace >= STROKE_FROM_MPS and distance <= STEP_HEAR_M:
+		var left: float = float(b.get("stroke", 0.2)) - delta   # one pull every 1.4 s slow to 0.6 s fast, as the own strokes (swim_sounds.gd)
+
+		if left <= 0.0:
+			left = lerpf(1.4, 0.6, clampf(pace / 4.0, 0.0, 1.0))
+			stroked.emit((b["node"] as Node3D).global_position)
+
+		b["stroke"] = left
+		b["stride"] = 0.0
+		return
+
+	b["stroke"] = 0.2
 
 	if (state & SWIM) != 0 or stance >= StanceScript.SIT or pace < STEP_FROM_MPS or distance > STEP_HEAR_M:
 		b["stride"] = 0.0
