@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 158  # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
+const PROTOCOL_VERSION := 159  # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+# 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
 # 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
 # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
 # 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
@@ -101,7 +102,7 @@ signal cave_dens_received(tile: Vector2i, dens: PackedVector3Array)
 signal cave_dressing_received(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array)
 signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
-signal held_reported(peer_id: int, number: int)
+signal held_reported(peer_id: int, number: int, left: int, flags: int)
 signal purse_received(counts: PackedInt32Array)
 signal carry_received(item_id: String)
 signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray)
@@ -145,7 +146,8 @@ signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal player_look_received(peer_id: int, char_name: String, body: String, code: String, worn: PackedInt32Array)
 signal action_cue_received(peer_id: int, cue: int, detail: int, at: Vector3)
-signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array)
+signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray)
+signal flight_seen_received(number: int, from: Vector3, velocity: Vector3, fire: bool)
 signal animals_received(rows: Array, server_ms: int)
 signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
@@ -406,10 +408,18 @@ func player_look(peer_id: int, char_name: String, body_model: String, code: Stri
 
 # Protocol 151 (server_players.gd): the other players within 150 m, nearest first: peer ids, positions (the body's middle), facings (rotation.y),
 # states (stance 0 stand / 1 crouch / 2 sit / 3 lie, +4 swimming, +8 a log on the shoulder), the item number in the hand (0 none) and the server
-# ms each position came in. About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
+# ms each position came in; from 159 the left-hand item (torch, lantern, shield; 0 none) and `more` (PlayersScript MORE_*: a burning torch or
+# lantern, bow raised, bow drawn, shield up, on a ladder, and bits 5..7 a count of eats and drinks). About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
 @rpc("authority", "call_remote", "unreliable")
-func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array) -> void:
-	players_received.emit(ids, positions, yaws, states, held, times)
+func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray) -> void:
+	players_received.emit(ids, positions, yaws, states, held, times, left, more)
+
+
+# Another player's arrow or thrown weapon leaving the hand (159): item number, where it left (the eye), its velocity, burning or not. The
+# receiving client flies it with the server's gravity (server_items.gd THROW_GRAVITY), look only. To players within 150 m but the thrower.
+@rpc("authority", "call_remote", "unreliable")   # look only: a lost one is a missed arrow, and it never holds up the reliable channel
+func flight_seen(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	flight_seen_received.emit(number, from, velocity, fire)
 
 
 # Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material; material 5 a knife cut on a carcass),
@@ -980,10 +990,12 @@ func trade(npc_id: String, kind: int, a: int, count: int) -> void:
 
 # What the player holds now (146, Dave 20 Nov 2026: goblins at a camp react to "a weapon in hand"): the item number in the hand (0 empty), sent
 # by the client when it changes, at most twice a second. The server keeps it only while that item is in the pack (server_items.gd held_number).
+# From 159 also the left-hand item (0 none, kept only while in the pack) and flags (held_item.gd HAND_*: bow raised 1, bow drawn 2,
+# shield up 4, on a ladder 8), shown to the other players (server_players.gd); a flag change is sent at once, at most ten a second.
 @rpc("any_peer", "call_remote", "reliable")
-func held_item(number: int) -> void:
+func held_item(number: int, left: int, flags: int) -> void:
 	if multiplayer.is_server():
-		held_reported.emit(multiplayer.get_remote_sender_id(), number)
+		held_reported.emit(multiplayer.get_remote_sender_id(), number, left, flags)
 
 
 # Game trails (protocol 65): one block of worn grass, compressed (src/shared/trail_codec.gd decode() gives {cell index: strength 0..1};

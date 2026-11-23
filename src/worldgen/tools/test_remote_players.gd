@@ -55,6 +55,19 @@ class FakeItems:
 	func sleeping_of(peer: int) -> bool:
 		return asleep.has(peer)
 
+	var left: Dictionary = {}
+	var flags: Dictionary = {}
+	var burning: Dictionary = {}
+
+	func left_hand_number(peer: int) -> int:
+		return int(left.get(peer, 0))
+
+	func hand_flags(peer: int) -> int:
+		return int(flags.get(peer, 0))
+
+	func torch_burning(peer: int) -> bool:
+		return burning.has(peer)
+
 	func held_number(peer: int) -> int:
 		return int(held.get(peer, 0))
 
@@ -70,7 +83,9 @@ func _server() -> void:
 	var looks: Array = []
 	players.items = fake
 	players.now_ms = func() -> int: return int(clock[0])
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): sent.append([peer, ids, positions, yaws, states, held, times])
+	var flights: Array = []
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): sent.append([peer, ids, positions, yaws, states, held, times, left, more])
+	players.send_flight = func(peer, number, from, velocity, fire): flights.append([peer, number, from, velocity, fire])
 	players.send_look = func(to, about, char_name, body, code, worn_numbers): looks.append([to, about, char_name, body, code, worn_numbers])
 	fake.pos = {1: Vector3(100.0, 10.0, 100.0), 2: Vector3(110.0, 10.0, 100.0), 3: Vector3(100.0, 10.0, 400.0), 4: Vector3(101.0, 10.0, 100.0)}
 	fake.stance = {2: 1}
@@ -133,6 +148,27 @@ func _server() -> void:
 	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
 	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
 	fake.asleep = {}
+	# 159: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
+	sent.clear()
+	var torch_n: int = ItemTableScript.load_default().number_of("torch")
+	fake.left = {2: torch_n}
+	fake.burning = {2: true}
+	fake.flags = {2: 1 | 8}   # bow raised, on a ladder
+	players.note_action(2, NetScript.ACT_DRINK)
+	clock[0] = 2750
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][7][0]) == torch_n, "the left hand's torch goes with the row")
+	var more_byte: int = int(sent[0][8][0]) if sent.size() == 1 else 0
+	check((more_byte & PlayersScript.MORE_LIT) != 0 and ((more_byte >> PlayersScript.MORE_HANDS_SHIFT) & 15) == 9 and (more_byte >> PlayersScript.MORE_MEAL_SHIFT) == 1, "burning, the hand flags and one drink in the more byte (%d)" % more_byte)
+	sent.clear()
+	clock[0] = 2760
+	players.tick(0.2)
+	check(sent.is_empty(), "no news, nothing sent within the second")
+	players.flight(2, 77, Vector3(110.0, 11.6, 100.0), Vector3(30.0, 2.0, 0.0), true)
+	check(flights.size() == 1 and int(flights[0][0]) == 1 and int(flights[0][1]) == 77 and bool(flights[0][4]), "an arrow loosed by player 2 is sent to player 1 (near, with a look), not to the thrower, not to 3 (300 m off)")
+	fake.left = {}
+	fake.burning = {}
+	fake.flags = {}
 	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
 	for i in range(8):
 		players.note_action(2, NetScript.ACT_MINE)
@@ -276,6 +312,72 @@ func _client() -> void:
 
 		var after_clip: String = str(view._bodies[7]["rig"].current())
 		check(after_clip != "chop" and not view._bodies[7]["rig"].is_one_shot_playing(), "the chop plays out and the body goes back to its stance clip (%s)" % after_clip)
+
+		# 159: a burning torch in the left hand, with its light; put out, no light; a drink plays the drink clip.
+		var torch_n: int = table.number_of("torch")
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3400]), PackedInt32Array([torch_n]), PackedByteArray([PlayerViewScript.MORE_LIT]))
+
+		for i in range(3):
+			await process_frame
+
+		var lit_torch: Node3D = view._bodies[7].get("left_node", null)
+		check(lit_torch != null and lit_torch.get_parent() == view._bodies[7]["rig"].hand_mount_l and lit_torch.get_node_or_null("Light") != null and (lit_torch.get_node("Light") as OmniLight3D).visible, "a burning torch in the other player's left hand, casting its light")
+		check(str(view._bodies[7].get("left_kind", "")) == "torch" and bool(view._bodies[7]["rig"].get_meta("torch_left", false)), "the arm carries it up (torch_left)")
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3500]), PackedInt32Array([torch_n]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]))
+
+		for i in range(3):
+			await process_frame
+
+		var out_torch: Node3D = view._bodies[7].get("left_node", null)
+		check(out_torch != null and out_torch.get_node_or_null("Light") == null, "the torch gone out: no light")
+		# Five other players with burning torches: only the LIT_MOST nearest cast light, one light each (no hand light).
+		var crowd: Array = [21, 22, 23, 24, 25]
+
+		for cp in crowd:
+			view.on_look(cp, "Torch %d" % cp, "body_1", "", PackedInt32Array())
+
+		for round_n in range(4):   # MAKE_PER_ROWS bodies a message
+			var ids: PackedInt32Array = PackedInt32Array([7] + crowd)
+			var crowd_at: PackedVector3Array = PackedVector3Array([at])
+			for k in range(crowd.size()):
+				crowd_at.append(at + Vector3(2.0 + k, 0.0, 0.0))
+			view.on_rows(ids, crowd_at, PackedFloat32Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT, 0, 0, 0, 0, 0]), PackedInt32Array([axe, 0, 0, 0, 0, 0]), PackedInt32Array([t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100]), PackedInt32Array([torch_n, torch_n, torch_n, torch_n, torch_n, torch_n]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT, 1, 1, 1, 1, 1]))
+			await process_frame
+
+		for i in range(3):
+			await process_frame
+
+		var lights_on: int = 0
+		var hand_on: int = 0
+
+		for cp in crowd:
+			var torch_node: Node3D = view._bodies.get(cp, {}).get("left_node", null)
+
+			if torch_node != null and (torch_node.get_node("Light") as OmniLight3D).visible:
+				lights_on += 1
+				check(is_equal_approx((torch_node.get_node("Light") as OmniLight3D).light_energy, HeldItemScript.FlameRules.TORCH_LIGHT_ENERGY), "another player's torch is as bright as one's own")
+
+			if torch_node != null and torch_node.get_node_or_null("HandLight") != null and (torch_node.get_node("HandLight") as OmniLight3D).visible:
+				hand_on += 1
+
+		check(view.drawn_count() == 6 and lights_on == PlayerViewScript.LIT_MOST and hand_on == 0, "five burning torches: the %d nearest light, one light each (%d drawn, %d lit, %d hand lights)" % [PlayerViewScript.LIT_MOST, view.drawn_count(), lights_on, hand_on])
+		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST_LOW   # the Low graphics tier
+
+		for i in range(3):
+			await process_frame
+
+		var low_on: int = 0
+
+		for lp in [7] + crowd:
+			var low_node: Node3D = view._bodies.get(lp, {}).get("left_node", null)
+
+			if low_node != null and low_node.get_node_or_null("Light") != null and (low_node.get_node("Light") as OmniLight3D).visible:
+				low_on += 1
+
+		check(low_on == PlayerViewScript.LIT_MOST_LOW, "on the Low tier only %d torch lights (%d lit)" % [PlayerViewScript.LIT_MOST_LOW, low_on])
+		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST
+		var drink_clip: String = str(view._bodies[7]["rig"].current())
+		check(drink_clip == "drink" or not view._bodies[7]["rig"].animation_player.has_animation("drink"), "a drink plays the drink clip (%s)" % drink_clip)
 
 
 # Over a real connection (the coordinator's ask, 23 Nov 2026: smooth under 100 to 150 ms and a few percent loss): rows sent every 125 ms
