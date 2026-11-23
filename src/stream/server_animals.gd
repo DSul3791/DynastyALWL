@@ -794,13 +794,21 @@ func report_hit(id: int, zone: int, at: Vector3) -> void:
 
 # A loud noise: every animal within `radius` of the point that is not already running bolts away from it.
 func alarm_near(point: Vector3, radius: float) -> void:
+	var kept: Array = [_wx, _wind_s, _wind_dir, _storm_ahead]   # called between ticks: each bolts by the sky over itself, then the one weather again
+
 	for id in animals:
 		var a: Dictionary = animals[id]
 
 		if int(a["state"]) == HIDDEN or int(a["state"]) == FLEE or int(a["state"]) >= WARN or a["pos"].distance_to(point) > radius or a.has("pack"):
 			continue
 
+		_weather_for(a["pos"])   # a flushed bird flies by the wind and rain where it sits (server_flight)
 		_bolt(a, point, species_def(str(a["sp"])))
+
+	_wx = kept[0]
+	_wind_s = kept[1]
+	_wind_dir = kept[2]
+	_storm_ahead = kept[3]
 
 
 # One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
@@ -1068,6 +1076,10 @@ func tick(delta: float) -> void:
 	var storm_all: bool = _storm_ahead
 	_fog_ground_tick(players)
 	_thunder_tick(players)
+	_wx = wx_all   # the thunder's flushed birds took the sky over themselves (_weather_for): the one weather until the animals' steps
+	_wind_s = wind_all
+	_wind_dir = dir_all
+	_storm_ahead = storm_all
 	_dogs = _dog_presences()
 	_sample_noise(players, delta)
 	_fire_cache = []

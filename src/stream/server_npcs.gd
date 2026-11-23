@@ -215,7 +215,8 @@ func package_of(npc: Dictionary, hour: float) -> String:
 	var planned: String = str(table[int(floor(fposmod(hour + float(npc["jitter_h"]), 24.0))) % 24])
 
 	# Rain sends outdoor packages to the nearest roofed marker; the day goes on when it stops.
-	var rain: float = float(rain_at.call(npc.get("pos", Vector3.ZERO))) if rain_at.is_valid() else (float(rain_now.call()) if rain_now.is_valid() else 0.0)   # the rain where they are
+	var at: Vector3 = npc["pos"] if bool(npc.get("placed", true)) else (npc["home"] if npc.get("home", Vector3.INF) != Vector3.INF else npc["pos"])   # not yet placed: its home, not the world's origin
+	var rain: float = float(rain_at.call(at)) if rain_at.is_valid() else (float(rain_now.call()) if rain_now.is_valid() else 0.0)   # the rain where they are
 
 	if rain >= float(cfg.get("shelter_rain", 0.35)) and cfg.get("shelter_from", []).has(planned):
 		return "shelter"

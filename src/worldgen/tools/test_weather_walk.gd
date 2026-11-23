@@ -217,6 +217,7 @@ func _init() -> void:
 	npcs.player_positions = func(): return []
 	npcs.setup("")
 	var hob: Dictionary = npcs.npcs["hob"]
+	hob["placed"] = true
 	hob["pos"] = COAST
 	check(npcs.package_of(hob, 10.0) == "shelter", "the rain over the town sends Hob under cover, whatever the starter row's sky")
 	hob["pos"] = PEAK
@@ -254,6 +255,20 @@ func _init() -> void:
 	check(an._storm_ahead, "a storm due on a far row is felt by the animals in that row only")
 	an._weather_for(COAST)
 	check(not an._storm_ahead, "and not back at the coast")
+	# The server's own air (terrain_server air_at: the row's zone and season at the animal's height) gives the same peak air.
+	an.air_at = func(pos): return Weather.air_c(clock_s, "temperate", maxf(pos.y, 0.0), SEED, ROW, 0)
+	an._weather_for(PEAK)
+	check(absf(an._air_c(deer_peak) - float(drawn_peak["temp_c"])) < 0.1, "with the server's air_at too (%.2f C)" % an._air_c(deer_peak))
+	# A whole tick with a deer on the peak and one at the coast: each steps by its own sky, and the one weather is back afterwards.
+	an.wind = func(): return {"rain": 0.0, "wind": 0.1, "wind_dir": 0.0}
+	an.player_positions = func(): return [PEAK, COAST]
+	an.spawn("deer", PEAK.x, PEAK.z)
+	an.spawn("deer", COAST.x, COAST.z)
+	for n in 5:
+		an.tick(0.2)
+	check(float(an._wx.get("rain", 1.0)) == 0.0 and float(an._wx.get("snow", 1.0)) == 0.0 and absf(an._wind_s - 0.1) < 0.001 and not an._storm_ahead, "after a tick the one weather is back (rain %.2f, snow %.2f, wind %.2f)" % [float(an._wx.get("rain", 1.0)), float(an._wx.get("snow", 1.0)), an._wind_s])
+	an.alarm_near(PEAK, 50.0)
+	check(float(an._wx.get("rain", 1.0)) == 0.0 and float(an._wx.get("snow", 1.0)) == 0.0, "and after an alarm between ticks")
 
 	print("test_weather_walk: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)

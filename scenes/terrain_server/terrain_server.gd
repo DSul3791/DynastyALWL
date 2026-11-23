@@ -779,7 +779,9 @@ func _ready() -> void:
 		return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 	animals.row_of = func(pos): return floori(pos.z / float(settings.tile_size_m))
 	animals.canopy = func(point): return flora.covered(point)
-	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
+	animals.air_at = func(pos):   # Weather.air_c at the animal (#620): its own row's zone and season (across the equator too) and its height
+		var row: int = floori(pos.z / float(settings.tile_size_m))
+		return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(row), maxf(pos.y, 0.0), int(settings.master_seed), row, settings.equator_tile_row)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
 	animals.ice_moat_at = items.ice_moat_at     # and the same open moat in a thaw
 	animals.game_seconds = func(): return game_clock.seconds
@@ -1880,7 +1882,7 @@ func _rain_hours_at(pos: Vector3, max_h: float) -> float:
 	if _rain_hours_cache.has(key):
 		return float(_rain_hours_cache[key])
 
-	var ago: float = WeatherScript.rain_hours_ago(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, row, settings.equator_tile_row, float(look))
+	var ago: float = WeatherScript.rain_hours_ago(settings.master_seed, float(hour) * 3600.0, settings.get_zone_group_for_row(row), height, row, settings.equator_tile_row, float(look))
 	_rain_hours_cache[key] = ago
 	return ago
 
