@@ -775,8 +775,11 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 # A standing animal a player at `at` has walked into steps out of their body at its walking pace, `dt` s of it, away from them; not into
 # ground it cannot walk on. Birds in the air or on a perch, animals in a burrow or cave and a bandit camp's tied horses stay. True when it moved.
 func make_way(a: Dictionary, at: Vector3, dt: float) -> bool:
-	if at == Vector3.INF or a.has("fly") or a.has("camp") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) in [HIDDEN, WARN, 11, 12, 16]:
-		return false   # a warning, charging or recovering animal stands its ground (big game; the client's AHEAD_STATES)
+	if at == Vector3.INF or a.has("fly") or a.has("camp") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
+		return false
+
+	# Big game warning, charging or recovering is stepped out too (Lane B 23 Nov 2026: a deer that warned at a player it stood inside struck
+	# from inside them and stayed there): it is then on the contact circle, where a charge's stop_at holds it, so it does not flap.
 
 	var def: Dictionary = species_def(str(a["sp"]))
 

@@ -112,6 +112,6 @@ client only decides how the body gets from one drawn point to the next.
 - Every drawn body, not only a charge, is held out of the local player (`stop_toward`): the spring eases a little past a wolf's or dog's stop.
 - Server: `make_way`. A standing animal a player walks into steps out of them at its walking pace (robot play-testers, 23 Nov 2026: a dog
   0.02 m from a player's middle, a deer 0.22 m, a horse 0.15 m). Birds in the air, perched or burrowed animals, swimmers and a camp's tied
-  horses stay, and so does big game warning, charging or recovering. Pack wolves move in the pack brain and are not covered (a resting
+  horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain and are not covered (a resting
   pack wolf a player walks into stays; a known gap). Cost: the nearest player's distance is already worked out each step; one compare.
 - Tests: test_animal_motion_buffer.gd (a corner run: within 0.5 m, speed eased, facing turn rate), test_animal_contact.gd (make_way).

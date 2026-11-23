@@ -293,12 +293,17 @@ func _init() -> void:
 
 	lp -= Vector3(3.0, 0, 0)
 	var lb_worst: float = 0.0
+	var lb_move: float = 0.0
+	var lb_was: Vector3 = lb["fw_p"]
 
 	for i in 120:
 		lp += Vector3(6.0, 0, 0) / 60.0
 		var lq: Vector3 = MotionBuffer.follow(lb, lp, 1.0 / 60.0)
 		lb_worst = maxf(lb_worst, Vector2(lq.x - lp.x, lq.z - lp.z).length())
+		lb_move = maxf(lb_move, lq.distance_to(lb_was))
+		lb_was = lq
 
+	check(lb_move < 0.5, "and it never moves more than 0.5 m in a frame doing so (worst %.2f m; a model gives 0.17)" % lb_move)
 	check(lb_worst < 3.05, "a 3 m jump back of the point is followed, never farther from it than the jump (worst %.2f m; a model gives 2.92)" % lb_worst)
 	var fs: Dictionary = {}
 	MotionBuffer.follow(fs, Vector3.ZERO, 1.0 / 60.0)
