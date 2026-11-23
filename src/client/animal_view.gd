@@ -1855,10 +1855,10 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var gait: bool = role == "walk" or role == "trot" or role == "run"
 	clip = AnimalGait.moving_clip(roles, role) if gait else str(roles.get(role, roles.get("0", "")))
 
-	if not gait:
+	if not gait and state == GRAZE:
 		clip = _idle_life(b, player, role, clip)
 	else:
-		b.erase("idle_role")      # stopping again starts on its own clip
+		b.erase("idle_role")      # moving or any other state (warn, alert, lie): the next stop starts on its own clip
 
 	if gait and not roles.has(role):
 		ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
