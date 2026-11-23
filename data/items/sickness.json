@@ -1,5 +1,5 @@
 {
-	"note": "Sickness from rotten food (Dave 2026-10-21): you are sick for about 1 game day (24 game hours, one real hour). Vomiting and diarrhoea: exertion cannot fall below exertion_floor (0.5) while it lasts, and every symptom_every_s real seconds one symptom costs some food and water. It fades faster asleep (sleep_mult times as fast) and by medicine (vitals.json medicines, cure_h game hours each). Shown as Sick on the inventory and Tab screens, never on the main screen. This is separate from water: clean and dirty water do not exist (Dave).",
+	"note": "Sickness from rotten food (Dave 2026-10-21): you are sick for about 1 game day (24 game hours, one real hour). Vomiting and diarrhoea: exertion cannot fall below exertion_floor (0.5) while it lasts, and every symptom_every_s real seconds one symptom costs some food and water. It fades faster asleep (sleep_mult times as fast) and by medicine (vitals.json medicines, cure_h game hours each). Shown as Sick on the inventory and Tab screens, and (Dave 23 Nov 2026, the status strip) as the Sick symbol left of the hotbar. This is separate from water: clean and dirty water do not exist (Dave).",
 	"duration_h": 24.0,
 	"exertion_floor": 0.5,
 	"sleep_mult": 4.0,
