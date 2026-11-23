@@ -97,7 +97,7 @@ func _init() -> void:
 
 	check(same, "one 1 s frame: every player looked at once with the whole second, the same as the old tick")
 
-	# Someone who leaves is dropped from the turn; someone who joins joins it.
+	# Someone who leaves is dropped from the turn.
 	long.peer_left(3)
 	long._vitals_spread(0.25)
 	check(not long._vit_spent.has(3), "a player who left is dropped from the vitals turn")
@@ -105,8 +105,24 @@ func _init() -> void:
 	# The goals: a share each frame, every player about 4 times a second.
 	var goals = make("user://test_vitals_spread_goals")
 
+	var goal_looks: Dictionary = {}
+	var real_check: Callable = func(peer: int) -> void: goal_looks[peer] = int(goal_looks.get(peer, 0)) + 1
+	goals.goal_check_seen = real_check
+
 	for _frame in 240:
 		goals._goals_spread(1.0 / 60.0)
+
+	var fewest_goals: int = 1 << 30
+
+	for n in PLAYERS:
+		fewest_goals = mini(fewest_goals, int(goal_looks.get(n + 1, 0)))
+
+	check(goal_looks.size() == PLAYERS and fewest_goals >= 15, "every player's goals looked at about 4 times a second (fewest %d in 4 s)" % fewest_goals)
+
+	# Someone who joins mid-run joins the vitals turn from then on.
+	spread.peer_connected_hello(PLAYERS + 1, "spreadkeylate")
+	spread._vitals_spread(1.0 / 60.0)
+	check(spread._vit_spent.has(PLAYERS + 1), "a player who joins mid-run is in the vitals turn")
 
 	var real_owed: float = goals._goal_owed
 

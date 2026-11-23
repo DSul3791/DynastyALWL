@@ -7283,6 +7283,7 @@ func _fires(delta: float) -> void:
 				fire["state"] = 9
 				it["left"] = FIRE_LAID_S
 				_dirty = true
+				_lit_valid = false   # out: the vitals' fire list is kept a quarter second now (_vitals_spread)
 
 
 # Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage, and a fire still holding charcoal (_fire_expire).
@@ -12660,6 +12661,7 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 
 	if fire_is_lit(state) and state != FIRE_STATE_SURVIVAL and float(wood[_fire_class_of_state(state)]) <= 0.0:
 		fire["state"] = _fire_best_state(fire)
+		_lit_valid = false   # a smaller fire, or out: the vitals' fire list is kept a quarter second now (_vitals_spread)
 
 
 # --- Charcoal left by burning wood (Dave 17 Nov 2026: "anything that burns wood should leave behind charcoal"; cooking.json charcoal_left) ---
@@ -25178,6 +25180,7 @@ func _send_goal_progress(peer: int, counts: Dictionary) -> void:
 var _goal_owed: float = 0.0
 var _goal_turn: int = 0
 var _goals_spread_usec: int = 0   # the time spent since the last slow tick, for its detail line
+var goal_check_seen: Callable      # tests (test_vitals_spread): told of each player whose goals the spread looks at
 
 
 func _goals_spread(delta: float) -> void:
@@ -25204,6 +25207,9 @@ func _goals_spread(delta: float) -> void:
 
 		if _peer_key.has(peer):
 			_goals_check(peer)
+
+			if goal_check_seen.is_valid():
+				goal_check_seen.call(peer)
 
 	_goals_spread_usec += Time.get_ticks_usec() - tg
 
