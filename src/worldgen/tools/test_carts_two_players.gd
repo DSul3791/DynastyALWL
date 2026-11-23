@@ -5,7 +5,7 @@ extends SceneTree
 # payload, the pace drops at the next step, the second player cannot take the handle or take the cart apart. The puller's connection drops
 # mid-pull: the cart parks, the second player takes the handle and pulls on, the first rejoins and finds it held. A puller cannot pick a log
 # up onto the shoulder (both hands are on the handle, as a log on the shoulder keeps the handle out of reach), and logs carried on the
-# shoulder come back after a dropped connection.
+# shoulder come back after a dropped connection and a server restart.
 #   godot --headless --path . --script res://src/worldgen/tools/test_carts_two_players.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -137,31 +137,31 @@ func _one_vehicle(kind: String, x: float) -> void:
 	# Player 2 loads the store while it moves (stones; the sled takes only wood, so firewood).
 	var takes: Array = items._structures[kind].get("takes", [])
 	var load_id: String = "stone" if takes.is_empty() else "firewood"
-	var load: int = items.table.number_of(load_id)
+	var cargo: int = items.table.number_of(load_id)
 	var each: float = CarryRules.weight_of(load_id, items._carry_cfg)
-	items.give(2, load, 40)
-	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(load), cart, 40, Vector3.ZERO)
-	check(box(cart).count_of(load) == 40, "%s: player 2 puts 40 %s (%.0f kg) in its store while player 1 pulls (%d in)" % [kind, load_id, 40.0 * each, box(cart).count_of(load)])
+	items.give(2, cargo, 40)
+	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(cargo), cart, 40, Vector3.ZERO)
+	check(box(cart).count_of(cargo) == 40, "%s: player 2 puts 40 %s (%.0f kg) in its store while player 1 pulls (%d in)" % [kind, load_id, 40.0 * each, box(cart).count_of(cargo)])
 	walk_north(4.0)
-	check(pulling(1) == cart and pos(cart).z > at_0.z + 2.0, "%s: player 1 pulls on with the load (z %.1f)" % [kind, pos(cart).z])
-	box(cart).add(load, int(floor((max_kg - 10.0) / each)) - 40)   # about 10 kg short of the payload
+	check(pulling(1) == cart and pos(cart).z > at_0.z + 2.0, "%s: player 1 pulls on with the cargo (z %.1f)" % [kind, pos(cart).z])
+	box(cart).add(cargo, int(floor((max_kg - 10.0) / each)) - 40)   # about 10 kg short of the payload
 	walk_north(2.0)
 	check(int(pulls[1][1]) < pace_empty, "%s: near full, the pace drops at the next steps (%.1f against %.1f m/s)" % [kind, float(pulls[1][1]) / 10.0, float(pace_empty) / 10.0])
 	empty_pack(2)
 	var more: int = int(ceil(30.0 / each))
-	items.give(2, load, more)
+	items.give(2, cargo, more)
 	var room: float = items._carts.room_kg(cart)
-	var before: int = box(cart).count_of(load)
-	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(load), cart, more, Vector3.ZERO)
-	var went: int = box(cart).count_of(load) - before
-	check(went == int(floor(room / each + 0.0001)) and went < more and items.inventory_of(2).count_of(load) == more - went, "%s: %d more, only the %.1f kg left of its %d kg payload go in (%d went, the rest stay in the pack)" % [kind, more, room, int(max_kg), went])
-	check(items._carts.load_kg(cart) <= max_kg + 0.01, "%s: the load stays within the payload (%.1f kg)" % [kind, items._carts.load_kg(cart)])
+	var before: int = box(cart).count_of(cargo)
+	items.action(2, Net.ACT_CHEST_PUT, items.inventory_of(2).numbers.find(cargo), cart, more, Vector3.ZERO)
+	var went: int = box(cart).count_of(cargo) - before
+	check(went == int(floor(room / each + 0.0001)) and went < more and items.inventory_of(2).count_of(cargo) == more - went, "%s: %d more, only the %.1f kg left of its %d kg payload go in (%d went, the rest stay in the pack)" % [kind, more, room, int(max_kg), went])
+	check(items._carts.load_kg(cart) <= max_kg + 0.01, "%s: the cargo stays within the payload (%.1f kg)" % [kind, items._carts.load_kg(cart)])
 
 	# Player 2 cannot take the handle or take the cart apart.
 	cart_act(2, Carts.OP_GRAB, cart)
 	check(pulling(2) == 0 and pulling(1) == cart and str(said.get(2, "")) == "Someone else has the handle.", "%s: player 2 cannot take the held handle" % kind)
 	items.action(2, Net.ACT_PICKUP, cart, 0, 0, Vector3.ZERO)
-	check(items._items.has(cart) and box(cart).count_of(load) == before + went, "%s: nor take player 1's %s apart (%s)" % [kind, noun, str(said.get(2, ""))])
+	check(items._items.has(cart) and box(cart).count_of(cargo) == before + went, "%s: nor take player 1's %s apart (%s)" % [kind, noun, str(said.get(2, ""))])
 
 	# The puller's connection drops mid-pull: the cart parks; player 2 pulls on; player 1 rejoins to find it held.
 	walk_north(2.0)
@@ -180,7 +180,7 @@ func _one_vehicle(kind: String, x: float) -> void:
 		clock[0] += 0.2
 		items.report_position(2, here)
 
-	check(pos(cart).z > parked.z + 2.0 and box(cart).count_of(load) == before + went, "%s: and pulls it on, its load kept (z %.1f)" % [kind, pos(cart).z])
+	check(pos(cart).z > parked.z + 2.0 and box(cart).count_of(cargo) == before + went, "%s: and pulls it on, its cargo kept (z %.1f)" % [kind, pos(cart).z])
 	join(1, pos(cart) + Vector3(-1.2, 0.0, 0.0))
 	cart_act(1, Carts.OP_GRAB, cart)
 	check(pulling(1) == 0 and pulling(2) == cart, "%s: player 1 rejoins and finds the handle held" % kind)
@@ -216,3 +216,9 @@ func _shoulder_logs() -> void:
 	items.peer_left(1)
 	join(1, Vector3(200.0, 10.0, 0.0))
 	check(items.shoulder_count(1) == 2 and items.shoulder_of(1) == "log_birch", "after a dropped connection, both logs are still on the shoulder")
+	items.peer_left(1)
+	items.save()
+	items._finish_writer()
+	items = make_server()   # a server restart: the character is read back from disk
+	join(1, Vector3(200.0, 10.0, 0.0))
+	check(items.shoulder_count(1) == 2 and items.shoulder_of(1) == "log_birch", "and after a server restart too")
