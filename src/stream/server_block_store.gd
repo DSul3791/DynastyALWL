@@ -94,6 +94,10 @@ func setup(terrain_generator, store_dir: String) -> String:
 		return ops_error
 
 	print("server: %d ground edits loaded from digs.dat" % ops.count)
+
+	if not ops.dropped.is_empty():
+		_drop_settled()   # copies made with the cut edits in them: a later log that grows past their number again must not take them
+
 	_purge_old_settled()
 	var settle_error: String = _open_settle()
 
@@ -144,7 +148,8 @@ func _load_revisions(path: String) -> void:
 				_count_unsaved_edits(int(parsed[OPS_KEY]))
 
 
-# Round 7 (physical world audit, 23 Nov 2026: a hard stop in the middle of digging loses nothing, and two players see the same ground).
+# Round 7 (physical world audit, 23 Nov 2026: a hard stop in the middle of digging loses nothing, and two players see the same ground). Since the
+# #1822 follow-up a hard stop drops the edits after the last whole world save (saved within seconds of an edit) with the pack changes they made.
 const OPS_KEY := "_ops"   # in revisions.json: how many edits of the log the revisions counted when written
 
 
@@ -232,6 +237,16 @@ func _write(path: String, text: String) -> void:
 	if file != null:
 		file.store_string(text)
 		file.close()
+
+
+# The settled copies are a cache made from the edit log (ground_settle.gd): after the log was cut back they may hold edits it no longer has,
+# so they are all thrown away and remade from the log as blocks get busy again.
+func _drop_settled() -> void:
+	var folder: String = ProjectSettings.globalize_path(_store_dir)
+
+	for file in DirAccess.get_files_at(folder):
+		if file.begins_with("settled_g"):
+			DirAccess.remove_absolute(folder + "/" + file)
 
 
 func _settled_stem() -> String:

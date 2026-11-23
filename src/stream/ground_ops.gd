@@ -58,6 +58,11 @@ func open(path: String, keep: int = -1) -> String:
 	var head: int = MAGIC.length()
 	dropped = []
 
+	# Windows: Godot's rename removes the old file before it moves the new one over it, so a stop in _cut_to's rename leaves only digs.dat.tmp
+	# (whole: it was closed first). It is put back, never an empty log started over the players' edits.
+	if not FileAccess.file_exists(path) and FileAccess.file_exists(path + ".tmp") and FileAccess.get_file_as_bytes(path + ".tmp").slice(0, head).get_string_from_ascii() == MAGIC:
+		DirAccess.rename_absolute(path + ".tmp", path)
+
 	if FileAccess.file_exists(path):
 		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path)
 
@@ -86,12 +91,12 @@ func open(path: String, keep: int = -1) -> String:
 					_append(bytes.decode_u8(at + 4), bytes.decode_u16(at + 6), centre, bytes.decode_float(at + 20))
 
 			if not dropped.is_empty():
-				var cut: String = _cut_to(bytes.slice(0, head + count * RECORD_BYTES), bytes)
+				var aside: String = _cut_to(bytes.slice(0, head + count * RECORD_BYTES), bytes)
 
-				if cut != "":
-					return cut
+				if aside == "":
+					return "cannot cut %s back to the last whole save (%d edits): the log is left whole" % [path, count]
 
-				push_error("server ground: %d digs and fills after the last whole save (%d kept) were dropped with the pack changes they made; the whole log is kept as %s.unfinished" % [dropped.size(), count, path])
+				push_error("server ground: %d digs and fills after the last whole save (%d kept) were dropped with the pack changes they made; the whole log is kept as %s" % [dropped.size(), count, aside])
 
 			# Reopen for appending, cutting off a torn last record.
 			_file = FileAccess.open(path, FileAccess.READ_WRITE)
@@ -109,27 +114,42 @@ func open(path: String, keep: int = -1) -> String:
 	return _rewrite()
 
 
-# The log cut back to `kept` (its first records): the whole one is kept as digs.dat.unfinished, the cut one written to a .tmp and moved
-# over it, so a stop here leaves either log whole (the next start cuts it again).
+# The log cut back to `kept` (its first records): the whole one is first kept beside it (digs.dat.unfinished, or .unfinished.<n> when an
+# earlier one is there), the cut one written to a .tmp and moved over it, so a stop here leaves either log whole (the next start cuts it
+# again; on Windows only the .tmp, which open() puts back). Returns the kept copy's path, or "" when nothing was changed.
 func _cut_to(kept: PackedByteArray, whole: PackedByteArray) -> String:
-	var aside: FileAccess = FileAccess.open(_path + ".unfinished", FileAccess.WRITE)
+	var aside_path: String = _path + ".unfinished"
+	var n: int = 1
 
-	if aside != null:
-		aside.store_buffer(whole)
-		aside.close()
+	while FileAccess.file_exists(aside_path):
+		aside_path = "%s.unfinished.%d" % [_path, n]
+		n += 1
+
+	var aside: FileAccess = FileAccess.open(aside_path, FileAccess.WRITE)
+
+	if aside == null:
+		return ""
+
+	aside.store_buffer(whole)
+	aside.close()
+
+	if FileAccess.get_file_as_bytes(aside_path).size() != whole.size():
+		DirAccess.remove_absolute(aside_path)
+		return ""   # no whole copy of the dropped edits: nothing is cut
 
 	var tmp: FileAccess = FileAccess.open(_path + ".tmp", FileAccess.WRITE)
 
 	if tmp == null:
-		return "cannot write %s.tmp" % _path
+		return ""
 
 	tmp.store_buffer(kept)
 	tmp.close()
 
-	if DirAccess.rename_absolute(_path + ".tmp", _path) != OK:
-		return "cannot move %s.tmp over %s" % [_path, _path]
+	if FileAccess.get_file_as_bytes(_path + ".tmp").size() != kept.size() or DirAccess.rename_absolute(_path + ".tmp", _path) != OK:
+		DirAccess.remove_absolute(_path + ".tmp")
+		return ""
 
-	return ""
+	return aside_path
 
 
 # Writes the whole log afresh (header and every record) and keeps it open for appending.

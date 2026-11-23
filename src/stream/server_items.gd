@@ -2080,6 +2080,8 @@ func cut_felled_flora(flora) -> int:
 
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
 func _event_save_due() -> bool:
+	if not _event_save and ground_edits.is_valid() and int(ground_edits.call()) != _digs_written:
+		_event_save = true   # a dig or fill (a player's, an admin's, a tunnel's collapse, a reset): saved within seconds, so a hard stop drops seconds of them, not 30
 	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
 
 
@@ -2310,9 +2312,9 @@ func _save_item_files(job: Dictionary) -> void:
 # Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
 # A power cut (not a process kill: the files are then in the system's cache and still land) could lose what was written but not yet on the
 # disk, in any order. Before a save's header and after it the store's file system is flushed to the disk (coreutils `sync -f`, syncfs: one
-# call, with digs.dat and every set file), so the header never names files that are not on the disk. Linux and macOS servers only (the
-# server image is Ubuntu); DYNASTY_SAVE_SYNC=0 turns it off for a comparison. sync_ms adds up the time it took (save timing, the long run).
-static var sync_saves: bool = OS.get_environment("DYNASTY_SAVE_SYNC") != "0" and OS.get_name() in ["Linux", "macOS", "FreeBSD"]
+# call, with digs.dat and every set file), so the header never names files that are not on the disk. Linux servers only (the server image
+# is Ubuntu); DYNASTY_SAVE_SYNC=0 turns it off for a comparison. sync_ms adds up the time it took (save timing, the long run).
+static var sync_saves: bool = OS.get_environment("DYNASTY_SAVE_SYNC") != "0" and OS.get_name() == "Linux"   # coreutils' sync -f (BSD sync takes no file)
 static var sync_ms: float = 0.0
 static var syncs: int = 0
 

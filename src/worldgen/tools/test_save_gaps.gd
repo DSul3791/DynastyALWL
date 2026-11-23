@@ -11,8 +11,23 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const TradeScript := preload("res://src/stream/server_trade.gd")
+const BlockStore := preload("res://src/stream/server_block_store.gd")
 const DIR := "user://test_save_gaps"
 const KEY := "savegapskey0001"
+
+class FlatWorld:
+	extends RefCounted
+	var tile_size_m: float = 1000.0
+	var world_min_m: float = -1.0e7
+	var period_m: float = 2.0e7
+	var tiles_dir: String = ""
+
+	func tile_of(x: float, z: float) -> Vector2i:
+		return Vector2i(floori(x / tile_size_m), floori(z / tile_size_m))
+
+	func wrap_x(x: float) -> float:
+		return x
+
 
 var failures: int = 0
 var edits: int = 0   # the stand-in for store.ops.count
@@ -81,6 +96,39 @@ func _init() -> void:
 	ops = GroundOps.new()
 	ops.open(log_path, 10)
 	check(ops.count == 4 and ops.dropped.is_empty(), "a header that counts more edits than the log holds (a ground reset since) cuts nothing")
+
+	# Windows: a stop in the cut's rename left only digs.dat.tmp; it is put back, not an empty log started.
+	DirAccess.rename_absolute(log_path, log_path + ".tmp")
+	ops = GroundOps.new()
+	ops.open(log_path)
+	check(ops.count == 4 and FileAccess.file_exists(log_path), "only digs.dat.tmp left (a stop mid-rename on Windows): it is put back whole (%d)" % ops.count)
+
+	# A second cut keeps the first set-aside log and names its own.
+	ops = GroundOps.new()
+	ops.open(log_path, 2)
+	check(ops.count == 2 and FileAccess.file_exists(log_path + ".unfinished") and FileAccess.file_exists(log_path + ".unfinished.1"), "a second cut keeps the first set-aside log (digs.dat.unfinished.1 beside it)")
+
+	# The block store's start: a cut throws away the settled copies (they may hold the cut edits).
+	wipe(dir)
+	ops = GroundOps.new()
+	ops.open(log_path)
+
+	for n in 4:
+		ops.add(GroundOps.KIND_DIG, 0, Vector3(500.0 + 10.0 * n, 8.0, 500.0), 1.0)
+
+	ops = null
+	var head_file: FileAccess = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
+	head_file.store_string(JSON.stringify({"version": 4, "gen": 3, "areas": {}, "digs": 2}))
+	head_file.close()
+	FileAccess.open(dir + "/settled_g0.idx", FileAccess.WRITE).store_buffer(PackedByteArray([1, 2, 3]))
+	DirAccess.make_dir_recursive_absolute(dir + "/tiles")
+	var world = FlatWorld.new()
+	world.tiles_dir = dir + "/tiles"
+	var store = BlockStore.new()
+	var problem: String = store.setup(world, DIR)
+	check(problem == "" and store.ops.count == 2 and store.ops.dropped.size() == 2 and FileAccess.get_file_as_bytes(dir + "/settled_g0.idx").size() == 0 and store.revision_of(Vector2i(0, 0)) > BlockStore.CATCH_UP_MAX,
+		"the server's start cuts the log to the header's 2, drops the settled copies and lifts the cut edits' tile (%s, %d edits, revision %d)" % [problem, store.ops.count, store.revision_of(Vector2i(0, 0))])
+	store = null
 
 	# The header's "digs", and a dig that changed no item still saves.
 	wipe(dir)
