@@ -63,6 +63,7 @@ func _client_side() -> void:
 	var thirst_cell: Control = strip.cell_of("thirst")
 	check(is_equal_approx(thirst_cell.position.x + thirst_cell.size.x, strip.size.x) and is_equal_approx(thirst_cell.size.y, float(ArtKit.HOT)), "thirst sits next to the hotbar at full height")
 
+	strip._quiet_until_msec = 0   # the join's first state is in
 	state["limp"] = 0.5
 	strip.tick(0.1)
 	check(strip.shown() == ["hunger", "thirst"], "a read is not asked again within a quarter second")

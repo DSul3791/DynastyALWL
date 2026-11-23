@@ -26,6 +26,7 @@ const LEFT_PX := 24.0
 const RIGHT_PX := ArtKit.HOTBAR_TRAY.position.x - 14.0              # ends 14 px short of the hotbar's leather tray
 const GLYPH_SHARE := 0.68                                           # with a value, the glyph takes the top of the cell and the value the rest
 const NOTE_S := 4.0
+const QUIET_MSEC := 5000                                          # after the strip is made: the hello state arrives in this time
 const TONES := [ArtKit.CREAM, Color("#F2B84B"), Color("#E85A45")]   # plain, warning, danger
 const MAX_ICONS := 24
 
@@ -33,7 +34,7 @@ var spec: Dictionary = {}                 # data row id -> row
 var _entries: Dictionary = {}             # id -> {"read": Callable, "texture": Texture2D, "cell": Control, "state": Dictionary, "opacity": float}
 var _order: Array = []
 var _since: float = 0.0
-var _ticked: bool = false                 # the first look after joining shows the symbols without their name notes
+var _quiet_until_msec: int = 0            # no name notes until the join's first state has come in (the strip is made before it)
 
 
 func _init() -> void:
@@ -41,6 +42,7 @@ func _init() -> void:
 	position = Vector2(LEFT_PX, ArtKit.HOTBAR_STRIP.position.y)
 	size = Vector2(RIGHT_PX - LEFT_PX, CELL)
 	spec = load_spec()
+	_quiet_until_msec = Time.get_ticks_msec() + QUIET_MSEC
 
 
 static func load_spec() -> Dictionary:
@@ -130,7 +132,7 @@ func tick(delta: float, force: bool = false) -> void:
 			cell.visible = show_it
 			moved = true
 
-			if show_it and _ticked and not bool(row_of(id).get("always", false)):
+			if show_it and Time.get_ticks_msec() >= _quiet_until_msec and not bool(row_of(id).get("always", false)):
 				_note(id)
 
 		if show_it and state != entry["state"]:
@@ -139,8 +141,6 @@ func tick(delta: float, force: bool = false) -> void:
 			cell.queue_redraw()
 		elif not show_it:
 			entry["state"] = {}
-
-	_ticked = true
 
 	if moved:
 		_layout()
@@ -161,7 +161,7 @@ func tip_of(id: String) -> String:
 	var state: Dictionary = _entries[id]["state"] if _entries.has(id) else {}
 	var tone: String = str(int(state.get("tone", 0)))
 	var lines: Dictionary = row.get("lines", {})
-	var text: String = str(lines.get(tone, row.get("line", ""))) if typeof(lines) == TYPE_DICTIONARY else str(row.get("line", ""))
+	var text: String = str(lines.get(tone, lines.get("0", row.get("line", "")))) if typeof(lines) == TYPE_DICTIONARY else str(row.get("line", ""))
 	var vars: Dictionary = state.get("vars", {})
 	return text.format(vars) if not vars.is_empty() else text
 
@@ -227,9 +227,14 @@ static func draw_symbol(ci: CanvasItem, glyph_name: String, rect: Rect2, colour:
 
 # The name above a symbol that has just appeared, fading after NOTE_S seconds (the injured leg nobody saw, Dave 23 Nov 2026).
 func _note(id: String) -> void:
+	for old in get_children():
+		if old is Label and old.has_meta("for") and str(old.get_meta("for")) == id:
+			old.queue_free()   # shown again quickly: one note, not two on top of each other
+
 	var cell: Control = _entries[id]["cell"]
 	var label: Label = Label.new()
 	label.name = "StatusNote"
+	label.set_meta("for", id)
 	label.text = str(row_of(id).get("name", id))
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
@@ -242,7 +247,7 @@ func _note(id: String) -> void:
 	# Over its symbol once the row has settled, and kept on the canvas.
 	var place: Callable = func() -> void:
 		if is_instance_valid(label) and is_instance_valid(cell):
-			label.position = Vector2(clampf(cell.position.x + cell.size.x * 0.5 - label.size.x * 0.5, -position.x, RIGHT_PX - LEFT_PX - label.size.x), -label.size.y - 4.0)
+			label.position = Vector2(clampf(cell.position.x + cell.size.x * 0.5 - label.size.x * 0.5, -position.x, RIGHT_PX - LEFT_PX - label.size.x), cell.position.y - label.size.y - 4.0)
 	place.call_deferred()
 	var fade: Tween = label.create_tween()
 	fade.tween_interval(NOTE_S)

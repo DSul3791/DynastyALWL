@@ -1665,7 +1665,6 @@ func _welcome_body(info: Dictionary) -> void:
 	_water_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_water_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_water_label)
-	_setup_status_strip(layer)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
 	var tq_menu: int = Probe.start()
@@ -1772,6 +1771,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	_setup_status_strip(layer)   # after items.setup: its reads use the vitals data the view loads there
 	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
 	_player_view.name = "Players"
 	_player_view.table = items.table
