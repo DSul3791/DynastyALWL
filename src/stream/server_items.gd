@@ -24574,7 +24574,8 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		if bool(recipe.get("locked", false)):
 			_say(peer, "Nobody knows how to make %s yet" % table.in_sentence(str(recipe.get("name", "that"))))
 		else:
-			_say(peer, "You have not worked out how to make %s yet: carry what it needs in your pack, then try again" % table.in_sentence(str(recipe.get("name", "that"))))
+			var at_station: String = (", standing at the %s" % _station_name(str(recipe["station"]))) if str(recipe.get("station", "")) != "" else ""
+			_say(peer, "You have not worked out how to make %s yet: carry what it needs in your pack%s, then try again" % [table.in_sentence(str(recipe.get("name", "that"))), at_station])
 		return
 
 	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder

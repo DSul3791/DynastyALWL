@@ -837,6 +837,11 @@ func _screens() -> void:
 	client.game_menu.show_page("main")
 	await _esc()
 	await _wait(0.5)
+
+	if client.game_menu.root.visible:
+		_fail("screen", "menu_pages_close", "Esc did not close the game menu after its pages")
+		await _esc()
+
 	print("ROBOT %s step menu pages: %d shown" % [robot_name, pages.size()])
 
 	# The skills page (Dave 23 Nov 2026): every skill reads "value / cap" with the cap a band top (25, 50, 75, 100) and the value under it.
@@ -874,6 +879,7 @@ func _screens() -> void:
 	await _tap("inventory")
 	await _wait(1.5)
 	var lit: int = 0
+	var craft_end: int = Time.get_ticks_msec() + 180000
 
 	for number in view.recipes.numbers():
 		var r: Dictionary = view.recipes.recipe(number)
@@ -881,8 +887,15 @@ func _screens() -> void:
 		if r.is_empty() or not view.station_makes(r) or not (view._can_craft(number) and view._station_ok(r)):
 			continue
 
+		if not bool(r.get("known", false)) and not view._free_craft():
+			continue   # the list hides recipes this character does not know (recipe_list.gd): a player cannot press them
+
+		if Time.get_ticks_msec() > craft_end:
+			_note("craft_lit", "stopped after %d lit recipes: out of time" % lit)
+			break
+
 		lit += 1
-		var name: String = str(r.get("id", r.get("name", number)))
+		var label: String = str(r.get("name", number))
 		var heard: int = _notices.size()
 		var queued: int = _queue_msec
 		view._start_craft(number, 1)
@@ -891,8 +904,14 @@ func _screens() -> void:
 		while Time.get_ticks_msec() < end and _queue_msec == queued and _notices.size() == heard:
 			await get_tree().process_frame
 
+		await _wait(0.4)   # the queue and a notice can come a frame apart: classify once both had time to land, the queue first
+		var words: Array = _notices.slice(heard).filter(func(t): return not str(t).begins_with("You work out how to make"))
+
 		if _queue_msec != queued and _queue_left > 0:
-			while _queue_left > 0:
+			var tries: int = 0
+
+			while _queue_left > 0 and tries < 20:
+				tries += 1
 				client.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 				var was: int = _queue_msec
 				var stop: int = Time.get_ticks_msec() + 2000
@@ -901,10 +920,14 @@ func _screens() -> void:
 					await get_tree().process_frame
 
 				await _wait(0.15)
-		elif _notices.size() > heard:
-			_fail("craft_lit", name, "%s: the Craft button is lit but the server said: %s" % [name, str(_notices.back())])
+
+			if _queue_left > 0:
+				_fail("craft_lit", label + "_cancel", "%s: queued, but 20 cancels left %d entries" % [label, _queue_left])
+		elif not words.is_empty():
+			# A lit Craft button is a promise: any refusal words for it are a fault (the yellow-but-won't-craft class, Dave).
+			_fail("craft_lit", label, "%s: the Craft button is lit but the server said: %s" % [label, str(words.back())])
 		elif _queue_msec == queued:
-			_fail("craft_lit", name, "%s: the Craft button is lit but nothing happened (no queue, no words)" % name)
+			_fail("craft_lit", label, "%s: the Craft button is lit but nothing happened (no queue, no words)" % label)
 
 	print("ROBOT %s step craft lit: %d lit recipes pressed" % [robot_name, lit])
 	await _check_pack("craft lit")
@@ -942,12 +965,105 @@ func _screens() -> void:
 		else:
 			print("ROBOT %s step split and drop: one stack became two, one fibre dropped" % robot_name)
 
+	# A container the first hours give (the knife's Wicker basket): placed, opened, Store all, Take all, Sort, closed on Esc.
+	if admin:
+		await _container_round(view)
+
 	# Quit with the screen open: the rejoin pass checks the pack came back.
 	_step = "quit with the screen open"
 
-	if not view.open:
+	if not view.open and not view.chest_mode:
 		await _tap("inventory")
 		await _wait(0.8)
+
+
+func _container_round(view) -> void:
+	_step = "basket place"
+
+	if view.open:
+		await _esc()
+		await _wait(0.5)
+
+	# The knife's blueprint (blueprints.json 157, Dave 21 Nov 2026: the knife makes the Wicker basket; the old kit is retired).
+	_give("stone_knife", 1)
+	_give("twine", 4)
+	_give("stick", 8)
+	await _check_pack("basket given")
+
+	var fwd: Vector3 = -client.body.global_transform.basis.z
+	var spot: Vector3 = client.body.global_position + Vector3(fwd.x, 0.0, fwd.z).normalized() * 1.6
+	spot.y = client.body.global_position.y - 0.9
+	var before: Dictionary = {}
+
+	for id in view._world:
+		before[id] = true
+
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, 157, 0, 0, spot)
+	await _check_pack("basket placed")
+	var basket: int = -1
+	var best: float = 4.0
+
+	for id in view._world:
+		if not before.has(id) and view._is_chest(int(view._world[id].get("state", -1))) and (view._world[id]["pos"] as Vector3).distance_to(spot) < best:
+			best = (view._world[id]["pos"] as Vector3).distance_to(spot)
+			basket = int(id)
+
+	if basket < 0:
+		var new_rows: Array = []
+
+		for id in view._world:
+			if not before.has(id):
+				new_rows.append([id, view._world[id].get("number", 0), view._world[id].get("state", -1), view._world[id].get("pos", Vector3.ZERO)])
+
+		_note("container", "new world rows after placing: %s; last words: %s; world rows %d" % [str(new_rows), str(_notices.slice(maxi(_notices.size() - 3, 0))), view._world.size()])
+
+	if basket < 0:
+		_fail("container", "place", "the Wicker basket placed from its blueprint never showed in the world")
+		return
+
+	_step = "basket open"
+	view._ask_open(basket)
+	var end: int = Time.get_ticks_msec() + 4000
+
+	while not view.chest_mode and Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+
+	if not view.chest_mode:
+		_fail("container", "open", "the Wicker basket did not open")
+		return
+
+	var fibre: int = _count("plant_fibre")
+	view.bulk(1)   # Store all
+	await _check_pack("basket store all")
+	var stored: int = view.chest_inv.count_of(_num("plant_fibre")) if view.chest_inv != null else 0
+
+	if _count("plant_fibre") + stored != fibre:
+		_fail("container", "store_all", "Store all: %d fibre became %d in the pack and %d in the basket" % [fibre, _count("plant_fibre"), stored])
+
+	view.bulk(0)   # Take all
+	await _check_pack("basket take all")
+
+	if _count("plant_fibre") != fibre:
+		_fail("container", "take_all", "Take all: the pack has %d fibre, had %d" % [_count("plant_fibre"), fibre])
+
+	view.bulk(3)   # Sort
+	await _check_pack("basket sort")
+
+	if _count("plant_fibre") != fibre:
+		_fail("container", "sort", "Sort changed the fibre: %d, had %d" % [_count("plant_fibre"), fibre])
+
+	await _esc()
+	await _wait(0.6)
+
+	if view.chest_mode or view.screen_open():
+		_fail("container", "close", "Esc did not close the basket")
+		await _esc()
+	else:
+		print("ROBOT %s step basket: placed, opened, stored %d, took all, sorted, closed" % [robot_name, stored])
+
+	# Open again and quit with it open: the rejoin pass checks the pack.
+	view._ask_open(basket)
+	await _wait(1.5)
 
 
 # Stand and look around: the watchers keep checking the animals and players drawn.

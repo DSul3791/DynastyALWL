@@ -294,7 +294,7 @@ func _init() -> void:
 	give(lock_it, "stick", 10)
 	give(lock_it, "twine", 4)
 	queue(lock_it, 390, 1)   # recipes.json fish_trap
-	check(entries(lock_it).is_empty() and said.any(func(t): return t.begins_with("Nobody knows how to make")), "a locked recipe says why it cannot be made (%s)" % str(said))
+	check(entries(lock_it).is_empty() and said.size() == 1 and said[0].begins_with("Nobody knows how to make"), "a locked recipe says why it cannot be made, once (%s)" % str(said))
 
 	print("auto craft tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
