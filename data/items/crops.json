@@ -518,7 +518,7 @@
 					180
 				]
 			],
-			"seed_source": "wild parsnip (seed heads, late summer)",
+			"seed_source": "wild carrot (seed heads, summer and autumn: drops.json seed_drops; coordinator 23 Nov 2026, it had no source)",
 			"biomes": [
 				"temperate_grassland",
 				"mixed_forest"

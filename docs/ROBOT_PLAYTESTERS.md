@@ -79,6 +79,19 @@ Plans `fight_goblin` / `fight_bandit`: the shield goes up at the drawn warning o
 capture the mouse) and is lowered if the warning never becomes a charge; even charges are a side-step (every other one at run speed). Each
 blow prints `ENEMY hit|miss` (warning lead, gap, dodge, shield, facing); the server prints `AUDIT enemy_hit` with its own gap and shield.
 
+Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30
+--loss 0.03`, any species name in data/animals/animals.json; a wolf is a pack): Robot 1 places one 15 m ahead and both hunt it with spears,
+two rounds of 70 s. Each robot prints a KIND line (the largest drawn step a frame against the kind's top speed, steps over 1 m, frames drawn
+inside the other robot), a SLIDE line (feet against ground: only with the bought models, so on Lane A, `LANE_A_SLIDES.md` in project files;
+cloud clones leave the models out), A lines every 100 ms (each drawn body of the kind) and P lines (itself), and BITTEN at each health drop.
+`python3 tools/robot_kinds.py <run folder>` prints the measures: jumps, slides, shoved (the robot's own body faster than a player runs over
+half-second windows), agree (the two clients' drawn places of the same animal at the same moment), each server blow (`AUDIT enemy_hit`)
+with where the struck robot drew the animal against where the server had it, and the bites with their drawn state. Robot 1 also writes `where <species
+number>` to the server's control file, and the robot audit then prints `AUDIT where <id> <species> <unix ms> <x> <z> <state>` every 0.5 s
+for that species: robot_kinds.py holds each robot's drawn places against the server's own between blows, and near the robot the server's
+gap to it against the drawn gap. Drawn against server numbers include the client's draw delay (it draws the past by design), not only a
+real error. It judges nothing; the FAILs are robot_check's as in every plan.
+
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 

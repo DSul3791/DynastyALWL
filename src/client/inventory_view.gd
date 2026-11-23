@@ -3144,6 +3144,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 	_forget_near()   # stations and logs may have come or gone
 
+	if chest_mode and chest_id >= 0 and removed.has(chest_id):
+		_close_chest()   # the open container went (another player took it down, or it is out of sight): its window shows nothing stale
+
 	for id in removed:
 		_forget(id)
 

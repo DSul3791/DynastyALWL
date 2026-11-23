@@ -199,9 +199,11 @@ func wild_part(seed_drops: Dictionary, harvest: Dictionary, by_species: Dictiona
 	for crop_id in crops:
 		var seed_id: String = str((crops[crop_id] as Dictionary).get("seed", ""))
 
-		if str(crop_id).begins_with("_") or bool(items.table.entry(seed_id).get("future", false)):   # a crop whose seed item is future (parsnip) is not offered yet
+		if str(crop_id).begins_with("_"):
 			continue
 
+		# Every crop in crops.json can be started from the wild (coordinator 23 Nov 2026: parsnip had no source at all; wild carrot gives it now).
+		check(not bool(items.table.entry(seed_id).get("future", false)), "crop %s: its seed %s is still a future item" % [crop_id, seed_id])
 		check(wild_seeds.has(seed_id), "crop %s: its seed %s comes from nothing live in the world" % [crop_id, seed_id])
 
 	return n
