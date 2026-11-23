@@ -42,6 +42,8 @@ var _level: int = -1
 var _next_msec: int = 0
 var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "mound", "halo" -> MultiMeshInstance3D
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
+var _logged: String = ""          # the last rebuild line, printed only when it changes
+var _told_loading: bool = false
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
 # a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
@@ -80,6 +82,10 @@ func set_routes(block_x: int, block_z: int, block_routes: Array) -> void:
 
 # Called each frame; does work at most twice a second, and only once the player has ground (loading false).
 func update(player: Vector3, tracking: int, loading: bool) -> void:
+	if loading and not _told_loading:
+		_told_loading = true
+		FreezeWatchScript.printer.line("trail signs: waiting for the world to load before any sign is worked out")
+
 	if loading or Time.get_ticks_msec() < _next_msec:
 		return
 
@@ -104,6 +110,11 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 		if reach > 0.0 and trunks_near.is_valid():
 			_signs.append_array(rubs_for(near, trunks_near, cfg))
 		_draw(player, tracking)
+		var line: String = "trail signs: %d route blocks held, %d near, %d signs worked out, %d pieces drawn, Tracking %d, reach %.0f m" % [routes.size(), near.size(), _signs.size(), shown, tracking, reach]
+
+		if line != _logged:
+			_logged = line
+			FreezeWatchScript.printer.line(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane tells "no routes came" from "nothing drawn" (Lane A 23 Nov: signs not seen)
 
 	_spot(player, tracking)
 
