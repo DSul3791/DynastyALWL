@@ -25,6 +25,9 @@ var _sig: Dictionary = {}        # peer -> last printed signature
 var _sig_t: float = 0.0
 var _animal_t: float = 0.0
 var _last: Dictionary = {}       # animal id -> [pos, unix ms]
+var _trail: Dictionary = {}      # animal id -> its last few looks "ms:x,z:state" (printed with a jump, and the looks after it)
+var _after: Dictionary = {}      # animal id -> looks still to print after a jump
+var _frame_max: float = 0.0      # the longest server frame since the last animal look
 var _top_mps: Dictionary = {}    # species number -> fastest _mps in animals.json
 var _names: Dictionary = {}      # species number -> name
 var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
@@ -69,6 +72,7 @@ func _process(delta: float) -> void:
 				print("AUDIT pack %d %d %s %d" % [int(peer), RobotRules.now_ms(), sig, RobotRules.used(inv)])
 
 	_animal_t += delta
+	_frame_max = maxf(_frame_max, delta)
 
 	if animals == null or _animal_t < ANIMAL_EVERY_S:
 		return
@@ -116,12 +120,34 @@ func _process(delta: float) -> void:
 
 			if near and step > maxf(allowed, JUMP_FLOOR_M) and int(a.get("state", 0)) != animals.HIDDEN:
 				print("AUDIT jump %d %s %d %.1f %.2f %s %s state %d" % [int(id), str(_names.get(num, num)), now, step, dt, str(was[0].round()), str(pos.round()), int(a.get("state", 0))])
+				# For the animals thread: the looks before (every ANIMAL_EVERY_S, server unix ms:x,z:state), its accumulated step time (acc),
+				# the longest server frame since the last look, and (AUDIT jump_after) the next three looks.
+				print("AUDIT jump_detail %d before %s acc %.3f moved_ms %d longest frame %.0f ms" % [int(id), " ".join(_trail.get(id, [])), float(a.get("acc", -1.0)),
+					int(a.get("moved_ms", -1)), _frame_max * 1000.0])
+				_after[id] = 3
 
 			_last[id] = [pos, now]
+
+		var look: String = "%d:%.1f,%.1f:%d" % [now, pos.x, pos.z, int(a.get("state", 0))]
+		var tr: Array = _trail.get(id, [])
+		tr.append(look)
+
+		while tr.size() > 3:
+			tr.pop_front()
+
+		_trail[id] = tr
+
+		if int(_after.get(id, 0)) > 0:
+			_after[id] = int(_after[id]) - 1
+			print("AUDIT jump_after %d %s acc %.3f" % [int(id), look, float(a.get("acc", -1.0))])
+
+	_frame_max = 0.0
 
 	for id in _last.keys():
 		if not seen.has(id):
 			_last.erase(id)
+			_trail.erase(id)
+			_after.erase(id)
 
 
 # Each wolf pack's phase and target when it changes (server_wolves.gd: prowl, stalk, rush, wait, feed, den_guard): the robots' wolf fight
