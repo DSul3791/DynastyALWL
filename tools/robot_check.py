@@ -89,6 +89,8 @@ def main():
 		findings.append("errors %s: %d x %s" % (where, n, text))
 
 	checks = 0
+	held_looks = 0
+	play_logs = 0
 
 	for path in robot_logs:
 		name = os.path.basename(path)
@@ -102,6 +104,9 @@ def main():
 				joined = True
 			elif " done:" in line:
 				done = True
+				m = re.search(r"(\d+) remote held items measured", line)
+				held_looks += int(m.group(1)) if m else 0
+				play_logs += 1 if "_play" in name else 0
 			elif " FAIL " in line:
 				findings.append("robot %s: %s" % (name, line.strip()))
 			elif " CHECK pack " in line:
@@ -124,6 +129,9 @@ def main():
 			broke.append("%s never joined" % name)
 		elif not done:
 			findings.append("robot %s: joined but never finished its plan (stuck, crashed or timed out)" % name)
+
+	if play_logs >= 2 and held_looks == 0:
+		findings.append("held: %d robots played together and no robot measured another's held item (the held check never ran)" % play_logs)
 
 	for b in broke:
 		print("BROKE " + b)

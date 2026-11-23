@@ -154,15 +154,34 @@ class UdpRelay(asyncio.DatagramProtocol):
 
 
 async def pipe(reader, writer, shaper, stats, loop):
+	"""One direction of a block-line connection: a reader stamps each chunk with its due time, a writer sends each when due, so the
+	delays overlap (one chunk's wait never holds the next chunk's read: the line keeps its full rate, only later)."""
+	queue = asyncio.Queue()
+
+	async def read():
+		try:
+			while True:
+				data = await reader.read(65536)
+
+				if not data:
+					break
+
+				stats.tcp_bytes += len(data)
+				queue.put_nowait((shaper.due(), data))
+		except (ConnectionError, OSError):
+			pass
+
+		queue.put_nowait((None, None))
+
+	spawn(loop, read())
+
 	try:
 		while True:
-			data = await reader.read(65536)
+			at, data = await queue.get()
 
-			if not data:
+			if data is None:
 				break
 
-			stats.tcp_bytes += len(data)
-			at = shaper.due()
 			await asyncio.sleep(max(0.0, at - time.monotonic()))
 			writer.write(data)
 			await writer.drain()

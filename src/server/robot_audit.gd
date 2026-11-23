@@ -5,7 +5,6 @@ extends Node
 # the pack not updating after a queued craft. With this flag the server prints what it believes, so tools/robot_check.py can hold each
 # robot client's view against it:
 #   AUDIT pack <peer> <unix ms> <signature> <slots used>   the pack's signature each time it changes (looked at every 0.25 s)
-#   AUDIT sent <peer> <unix ms> full|slots                   each pack message sent
 #   AUDIT reject <peer> <unix ms> <reason>                   each refusal sent (reject())
 #   AUDIT jump <animal id> <species> <unix ms> <metres> <seconds> <from> <to>   an animal that moved farther in one step than its top speed allows
 #   AUDIT inside <animal id> <species> <peer> <unix ms> <metres>   an animal's middle inside a player's capsule (closer than INSIDE_M, level with them)
@@ -16,7 +15,8 @@ const SIG_EVERY_S := 0.25
 const ANIMAL_EVERY_S := 0.1
 const INSIDE_M := 0.35          # a player capsule's radius is about 0.35 m; an animal's middle this close stands inside it
 const JUMP_SLACK := 1.6         # an animal step may run this much over its top speed (a lunge, a server hitch) before it counts as a jump
-const JUMP_FLOOR_M := 2.5       # steps shorter than this never count (a turn, a settle onto the ground)
+const JUMP_FLOOR_M := 2.5
+const STEP_CAP_S := 1.0         # an animal steps at least once a second near a player (hz_mid 3); a longer still spell gives no allowance       # steps shorter than this never count (a turn, a settle onto the ground)
 
 var items          # server_items.gd
 var animals        # server_animals.gd
@@ -42,15 +42,7 @@ func setup(server_items, server_animals) -> void:
 			_top_mps[int(row.get("number", 0))] = top
 			_names[int(row.get("number", 0))] = str(sp)
 
-	var full: Callable = items.send_full
-	var slots: Callable = items.send_slots
 	var reject: Callable = items.send_reject
-	items.send_full = func(peer, bytes):
-		full.call(peer, bytes)
-		print("AUDIT sent %d %d full" % [int(peer), RobotRules.now_ms()])
-	items.send_slots = func(peer, bytes):
-		slots.call(peer, bytes)
-		print("AUDIT sent %d %d slots" % [int(peer), RobotRules.now_ms()])
 	items.send_reject = func(peer, reason):
 		reject.call(peer, reason)
 		print("AUDIT reject %d %d %d" % [int(peer), RobotRules.now_ms(), int(reason)])
@@ -115,7 +107,7 @@ func _process(delta: float) -> void:
 			_last[id] = [pos, now]
 		elif pos != _last[id][0]:
 			var was: Array = _last[id]
-			var dt: float = maxf(float(now - int(was[1])) / 1000.0, ANIMAL_EVERY_S)
+			var dt: float = clampf(float(now - int(was[1])) / 1000.0, ANIMAL_EVERY_S, STEP_CAP_S)   # capped: a rest is not credit for a jump
 			var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 			var allowed: float = float(_top_mps.get(num, 15.0)) * dt * JUMP_SLACK
 

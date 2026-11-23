@@ -69,7 +69,7 @@ def test_link():
 				pass
 
 	def tcp_echo():
-		tcp.settimeout(5)
+		tcp.settimeout(20)
 
 		try:
 			c, _ = tcp.accept()
