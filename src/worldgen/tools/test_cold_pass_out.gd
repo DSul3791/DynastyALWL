@@ -169,7 +169,13 @@ func _init() -> void:
 	var reach: float = float(cfg["off_fire_m"]) + float(cfg["wake_search_m"])
 
 	for fire in NpcCamp.fires():
-		check(reach <= float(tiers[str(fire["wood"])]["heat_radius_m"]), "%s fire (%s): waking %.1f m off it is inside its %.1f m of heat" % [str(fire["owner"]), str(fire["wood"]), reach, float(tiers[str(fire["wood"])]["heat_radius_m"])])
+		var reach_3d: float = sqrt(reach * reach + 4.0)   # the wake spot is set 2 m over the ground (terrain_server _rescue_ground)
+		check(reach_3d <= float(tiers[str(fire["wood"])]["heat_radius_m"]), "%s fire (%s): waking %.1f m off it (%.2f m from the flames while set down) is inside its %.1f m of heat" % [str(fire["owner"]), str(fire["wood"]), reach, reach_3d, float(tiers[str(fire["wood"])]["heat_radius_m"])])
+
+	var tribe_rows: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(NpcCamp.TRIBES_PATH)).get("tribes", {})
+
+	for tribe in tribe_rows:
+		check(((tribe_rows[tribe] as Dictionary).get("camp", {}).get("fire", {}) as Dictionary).has("x"), "the %s camp has a fire to wake by (a camp without one is never a rescue place)" % str(tribe))
 
 	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
 	check(server.contains("var town: Vector2 = NpcCampScript.fire_spot()"), "the town's wake spot is Edda and Hob's fire, not the square (a source check: the scene is not run here)")

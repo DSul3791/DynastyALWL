@@ -4021,14 +4021,14 @@ func _exit_tree() -> void:
 # off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
 # [[Vector3, "goblin" | "bandit" | "town"]], or [] when there is none. Not on the tick: only when someone passes out.
 func _rescue_spots(near: Vector3) -> Array:
-	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 4.0))
+	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
 	var out: Array = []
 
 	for tribe in tribes.tribes():
 		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
-		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+		var at: Dictionary = camp.get("fire", {})   # only a camp with a fire: a cave mouth alone has no warmth to wake in
 
-		if not at.is_empty():
+		if at.has("x"):
 			out.append([Vector2(float(at.get("x", 0.0)) + off_m, float(at.get("z", 0.0))), "goblin"])
 
 	for cell in bandits.sites:
@@ -4065,8 +4065,13 @@ func _rescue_spots(near: Vector3) -> Array:
 # A step off a tree or wet ground stays within search_m (warmth.json pass_out wake_search_m) of the spot, so the player still wakes in the fire's warmth.
 func _rescue_ground(at: Vector2) -> Vector3:
 	var search_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("wake_search_m", 1.5))
-	var clear: Vector2 = SpawnPointScript.clear_of(at, _trunks_near(at, 32.0), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)),
-		func(x: float, z: float) -> bool: return _baked_wet(x, z), {"search_m": search_m, "ring_m": 0.5, "clear_m": 1.0})
+	var trunks: PackedVector2Array = _trunks_near(at, 32.0)
+	var ground_at: Callable = func(x: float, z: float) -> float: return float(generator.surface_height(x, z))
+	var wet_at: Callable = func(x: float, z: float) -> bool: return _baked_wet(x, z)
+	var clear: Vector2 = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at, {"search_m": search_m, "ring_m": 0.5, "clear_m": 1.3})
+
+	if clear == at and not SpawnPointScript._trunk_free(at, trunks, 1.3):
+		clear = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at)   # a thicket round the fire: out of a tree first, the warmth second
 	return Vector3(clear.x, maxf(generator.surface_height(clear.x, clear.y), 0.0) + 2.0, clear.y)
 
 

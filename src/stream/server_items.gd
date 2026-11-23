@@ -1377,7 +1377,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				if _cone_radius_of(number, int(near["count"])) > WIDE_PILE_M:
 					_wide_piles[id] = true
 
-				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
+				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, maxf(lifetime_s, float(near["left"]) if float(near["left"]) > 1.0e8 else 0.0))   # a never-expiring heap (crafted overflow, a cleared piece's leavings) stays so
 				_tick_ageing(id)   # a kept pile can start ageing here
 
 				if by != "":
@@ -7299,7 +7299,7 @@ func _take_from(id: int, n: int) -> void:
 	else:
 		it["count"] = left
 
-		if left >= PILE_MIN:
+		if left >= PILE_MIN and float(it["left"]) <= 1.0e8:   # a never-expiring heap stays so when some is taken
 			it["left"] = PILE_LIFETIME_S
 			_tick_ageing(id)
 

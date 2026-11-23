@@ -101,6 +101,20 @@ func _init() -> void:
 
 	items._expire_items(float(ItemsScript.WORLD_ITEM_LIFETIME_S) * 10.0)
 	check(wheel_id >= 0 and items._items.has(wheel_id), "the wheel put down at the bench never despawns: it is still there ten drop lifetimes later")
+	# A stackable crafted heap stays for good too when someone drops more of it there or takes some away.
+	var bricks: int = n("brick")
+	var heap_at: Vector3 = Vector3(20.0, 10.0, 20.0)
+	items.drop_in_world(bricks, 10, heap_at, 0, ItemsScript.CLEARED_LIFETIME_S)
+	items.drop_in_world(bricks, 2, heap_at)
+	var heap: int = -1
+
+	for id in items._items:
+		if int(items._items[id].get("number", 0)) == bricks and (items._items[id]["pos"] as Vector3).distance_to(heap_at) < 1.0:
+			heap = id
+
+	items._take_from(heap, 3)
+	items._expire_items(float(ItemsScript.PILE_LIFETIME_S) * 10.0)
+	check(heap >= 0 and items._items.has(heap) and int(items._items[heap]["count"]) >= 9, "a crafted heap of bricks keeps after more is dropped on it and some taken (%s left)" % (str(items._items[heap]["count"]) if items._items.has(heap) else "none"))
 	check(items._chest_of(1, chest).count_of(n("lumber")) == 0 and items.inventory_of(1).count_of(n("nails")) == 0, "every ingredient used once")
 	check(items._stock_of(1)["near"].size() >= 1, "and it counts as crafting stock where it lies")
 
