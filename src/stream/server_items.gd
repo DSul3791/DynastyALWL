@@ -3257,8 +3257,8 @@ const BOULDER_TOP_SHARE := 0.7   # a boulder's drawn top over its spot, as a sha
 
 # The highest building floor top (a foundation's, or a floor piece's: the storey above's floor) or boulder top over `at` at most 5 cm above it, NAN
 # where none: only the records near it (`near`, else _ids_near), never a walk of every record. A stack dropped standing on a boulder lay inside the
-# rock. A blueprint site holds nothing up (as everywhere else): a stack there lies on the ground.
-func _floor_top_below(at: Vector3, near: Array = []) -> float:
+# rock. A blueprint site holds nothing up (as everywhere else): a stack there lies on the ground. `rocks` false: building floors only.
+func _floor_top_below(at: Vector3, near: Array = [], rocks: bool = true) -> float:
 	var best: float = NAN
 
 	for id in (near if not near.is_empty() else _ids_near(at, FLOOR_ROWS_REACH_M)):
@@ -3267,8 +3267,11 @@ func _floor_top_below(at: Vector3, near: Array = []) -> float:
 
 		var it: Dictionary = _items[id]
 
+		if it.has("boulder") and not rocks:
+			continue
+
 		if it.has("boulder"):   # a boulder's drawn top (inventory_view _size_boulder: its hull rises BOULDER_TOP_SHARE x its radius over its spot), rounded off to its edge
-			var r: float = BoulderWear.radius_now(float(it["boulder"]["radius"]), int(it["count"]), int(it["boulder"]["total"]))
+			var r: float = BoulderWear.radius_now(float(it["boulder"].get("radius", 0.0)), int(it["count"]), int(it["boulder"].get("total", it["count"])))
 			var d: float = Vector2(at.x - it["pos"].x, at.z - it["pos"].z).length()
 
 			if r > 0.0 and d < r:
@@ -4024,10 +4027,10 @@ func _log_supported(it: Dictionary) -> bool:
 		return false
 
 	var rest: float = float(_drops.get("rolling", {}).get("rest_m", 0.6))
-	var floor_top: float = _floor_top_below(at + Vector3(0.0, 0.1, 0.0))
+	var floor_top: float = _floor_top_below(at + Vector3(0.0, 0.1, 0.0), [], false)
 
 	if not is_nan(floor_top) and floor_top > ground + 0.05 and at.y - floor_top < 0.15:
-		return false   # lying on a building floor or a boulder: the rolling world has only the ground, so it would roll down through them
+		return false   # lying on a building floor: the rolling world has only the ground (and boulders, which push a log off), so it would roll through the slab
 
 	if absf(at.y - ground) <= rest:
 		return true
