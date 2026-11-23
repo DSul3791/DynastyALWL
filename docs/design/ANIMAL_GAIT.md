@@ -81,6 +81,15 @@ whatever clip plays). Client drawing only: the server still owns where the body 
   keeps its clip's head.
 Test: `src/worldgen/tools/test_head_look.gd`.
 
+## Server speeds the legs can play (23 Nov 2026)
+
+A run clip plays at most `RATE_MAX` (2.5) times the speed it was made at. A species the server runs faster than that slides on its
+legs. Lane A's slides at d937f0be5 found the elephant's only run clip at 2.46 m/s (legs top out at 6.2 m/s) under a flee of 10 and a
+charge of 11 m/s: feet off on about 560 of 1,900 moving samples. Coordinator ruling (Dave's rule: real behaviour, no sliding; real
+elephants top out near 7 m/s): elephant and mammoth flee at 6.0 m/s and charge at 6.5 m/s. Same ruling for the other kinds over
+their clips' top: rat flees at 3.0 (clip 1.19), mink 5.2 (clip 2.09; its charge stays 5), guineafowl 6.3 (clip 2.52), horse 13.7 (clip
+5.5). Left as they are: the dog's bloodhound look (clip 3.66 under a flee of 10, one look of two) and the duck (its 14 m/s is flight).
+
 ## How to confirm (Lane A)
 
 - The creature check or the game log lists `feet move X m/s` or `feet measured X m/s, too far from the row's Y` for each walk and run.

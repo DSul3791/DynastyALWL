@@ -680,6 +680,7 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+	items.ground_edits = func(): return store.ops.count   # the header's "digs": a hard stop drops the digs and fills after the last whole save (store.setup)
 
 	if not items.load_failures.is_empty():
 		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
@@ -748,6 +749,7 @@ func _ready() -> void:
 	edited_ground.ops = store.ops
 	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
 	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	items.ground_now = edited_ground.height   # where carcasses, arrows, thrown things, litter and regrown plants come down (round 7)
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
@@ -990,6 +992,7 @@ func _ready() -> void:
 	trade.npcs = npcs
 	trade.game_seconds = func(): return game_clock.seconds
 	trade.setup(store_dir)
+	trade.in_save_set(items)   # shelves land in the same whole save as the packs that paid
 	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
@@ -1486,6 +1489,10 @@ func _event_state() -> String:
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	queued += ", " + _pool_summary()
+	# What the memory holds (the long run, 23 Nov 2026: is a slow rise what players added or a leak): engine objects, nodes, resources, world
+	# items, ground edits and animals.
+	queued += ", objects %d nodes %d resources %d, world items %d, ground edits %d, animals %d" % [int(Performance.get_monitor(Performance.OBJECT_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), items.world_item_count() if items != null else 0, store.ops.count, animals.animals.size() if animals != null else 0]
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
@@ -4288,6 +4295,7 @@ func _exit_tree() -> void:
 		items.note_spots_on_close()   # players still in: where they stand now, not the last 10 s note
 		items.save()
 		items._finish_writer()   # a save with nothing new returns early: the last autosave's files and log lines still finish before the exit
+		print("server save: %d flushes to the disk, %.1f ms each on average (sync -f before and after each header)" % [ItemsScript.syncs, ItemsScript.sync_ms / maxf(1.0, float(ItemsScript.syncs))])
 
 	_bury_mutex.lock()
 	_bury_queue.clear()

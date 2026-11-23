@@ -63,6 +63,29 @@ func watches(dist: float) -> bool:
 	return int(a.animals[id]["state"]) == AnimalsScript.ALERT
 
 
+# A grazing `sp` (a deer) at the origin and a standing player `dist` m along x: how long it stares (ALERT, facing them) before it bolts, within 4 s.
+# [seconds staring before the bolt (-1 when it never bolted), whether it faced the player while staring].
+func stare(dist: float, sp: String = "deer") -> Array:
+	var a = make([Vector3(dist, 10.0, 0.0)], {"wind": 0.0, "wind_dir": 0.0})
+	var id: int = a.spawn(sp, 0.0, 0.0)
+	a.animals[id]["timer"] = 100.0
+	a.animals[id]["protective"] = false
+	var stared: float = 0.0
+	var faced: bool = true
+
+	for n in 80:
+		a.tick(0.05)
+
+		if int(a.animals[id]["state"]) == AnimalsScript.FLEE or int(a.animals[id]["state"]) == AnimalsScript.HIDDEN:   # a rabbit by its burrow goes to ground
+			return [stared, faced]
+
+		if int(a.animals[id]["state"]) == AnimalsScript.ALERT:
+			stared += 0.05
+			faced = faced and absf(angle_difference(float(a.animals[id]["heading"]), 0.0)) < 0.1
+
+	return [-1.0, faced]
+
+
 func _init() -> void:
 	var calm: Dictionary = {"wind": 0.0, "wind_dir": 0.0}
 	var from_deer: Dictionary = {"wind": 0.6, "wind_dir": 0.0}   # blows toward +x: from the deer to the player, so the deer is upwind of them
@@ -88,6 +111,41 @@ func _init() -> void:
 	check(bolts(38.0, 0.0, from_deer), "upwind of the player in a wind it still runs at 38 m")
 	check(not bolts(45.0, 3.2, calm), "a walking player at 45 m is not run from")
 	check(bolts(45.0, 9.0, calm), "a running player at 45 m is (35 x 1.5)")
+
+	# It looks up and stares before it runs (Dave 23 Nov 2026), long for a player at its flee distance, short for one close; within
+	# startle_close_m it bolts at once.
+	var span: Array = a.cfg["reactions"]["startle_s"]
+	var far: Array = stare(32.0)
+	check(far[0] >= float(span[1]) * 0.75 and far[1], "a deer a player comes within 32 m of stares at them %.2f s before it bolts (facing them: %s)" % [float(far[0]), str(far[1])])
+	var near: Array = stare(6.0)
+	check(near[0] >= float(span[0]) - 0.1 and near[0] < float(far[0]), "one 6 m off stares shorter (%.2f s) before it bolts" % float(near[0]))
+	var under: Array = stare(2.0, "rabbit")
+	check(under[0] >= 0.0 and under[0] <= 0.2, "a rabbit 2 m off bolts at once (%.2f s staring)" % float(under[0]))
+
+	# A walk blocked short of its target ends in a short pause with no old way kept, then another pick (Lane B's roam rerun, 23 Nov 2026:
+	# stuck spells a whole graze long, in graze with the target far off). Steering turns round anything with a free side, so the rabbit is
+	# shut in a pen 8 cm across where no step is free.
+	var w = make([Vector3(-50.0, 10.0, 0.0)], calm)   # a player 50 m off keeps it ticked, beyond its notice
+	w.blocked = func(x, z): return absf(x - 2.75) > 0.04 or absf(z) > 0.04
+	var bid: int = w.spawn("rabbit", 2.75, 0.0)
+	var b: Dictionary = w.animals[bid]
+	b["state"] = AnimalsScript.HOP
+	b["target"] = Vector3(12.0, 10.0, 0.0)
+	var stopped: bool = false
+	var picks: int = 0
+
+	for _n in 100:
+		var was: int = int(b["state"])
+		w.tick(0.05)
+
+		if not stopped and was == AnimalsScript.HOP and int(b["state"]) == AnimalsScript.GRAZE:
+			stopped = true
+			check(Vector2(b["target"].x - b["pos"].x, b["target"].z - b["pos"].z).length() < 0.01 and float(b["timer"]) <= AnimalsScript.BLOCKED_PAUSE_S + 0.001,
+				"a rabbit blocked at x %.2f stops with no old way kept and pauses %.2f s, not a whole graze" % [float(b["pos"].x), float(b["timer"])])
+		elif stopped and was == AnimalsScript.GRAZE and int(b["state"]) == AnimalsScript.HOP:
+			picks += 1
+
+	check(stopped and picks >= 1, "it is blocked (%s) and picks another way within 4 s (%d picks)" % [str(stopped), picks])
 
 	print("test_animal_reactions: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)

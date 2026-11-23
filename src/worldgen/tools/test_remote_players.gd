@@ -198,6 +198,9 @@ func _server() -> void:
 	var back_rig: Node3D = Node3D.new()
 	back_rig.set_meta("backward", true)
 	check(is_equal_approx(Driver.speed_scale("walk_bow_raised", 1.0), Driver.speed_scale("walk", 1.0)) and is_equal_approx(Driver.speed_scale("walk_bow_drawn", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_bow_raised") == -1.0 and Driver.slope_tilt(true, Vector3(0.0, 0.9, 0.4), 2.0, "idle_bow_drawn") == 0.0, "an archer's walk is paced and reversed as the plain walk")
+	check(is_equal_approx(Driver.speed_scale("walk_shield_up", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_shield_up") == -1.0, "a walk with the shield up is paced and reversed as the plain walk")
+	check(PlayerViewScript.arm_pose({"left_kind": "shield", "more": PlayerViewScript.MORE_SHIELD_UP}) == "shield_up" and PlayerViewScript.arm_pose({"left_kind": "shield", "more": 0}) == ""
+		and PlayerViewScript.arm_pose({"left_kind": "torch", "more": PlayerViewScript.MORE_SHIELD_UP}) == "", "the shield-up gait only with a shield raised in the left hand")
 	back_rig.free()
 	# 162: a rod's float rides beside the row as one int (cast_code), read back to the same spot within 5 cm; a new cast is news; none is 0.
 	var float_at: Vector3 = Vector3(115.5, 8.2, 96.3)
@@ -858,6 +861,78 @@ func _check_catch_up() -> void:
 	check(view_code.contains("MotionBuffer.clock_note(_clock, now_s, newest, now_s <= _settle_until)") and view_code.contains("if settle:\n\t\t\tMotionBuffer.settle(b)") and view_code.contains("_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)"), "after this computer's own stall other players are settled at their points (player_view.gd, as animal_view)")
 
 
+# Lane A pictures, 23 Nov 2026: a hammer blow and a rod cast were drawn bent double (the chop's impact was the source's sledge into the ground),
+# the rod with the chop, and a raised shield hung at the hip.
+func _check_tool_poses() -> void:
+	var table = ItemTableScript.load_default()
+	var rod: int = -1
+	var hammer: int = -1
+	var shield: int = -1
+
+	for id in table.ids():
+		var tool_class: String = str(table.entry(str(id)).get("tool_class", ""))
+
+		if tool_class == "rod" and rod < 0:
+			rod = table.number_of(str(id))
+		elif tool_class == "hammer" and hammer < 0:
+			hammer = table.number_of(str(id))
+		elif tool_class == "shield" and shield < 0:
+			shield = table.number_of(str(id))
+
+	check(rod > 0 and PlayerViewScript.work_clip(rod, table) == "throw" and hammer > 0 and PlayerViewScript.work_clip(hammer, table) == "chop", "a rod casts (throw), a hammer chops")
+
+	if not DynastyBodyScript.available():
+		return
+
+	var view: Node3D = PlayerViewScript.new()
+	view.table = table
+	get_root().add_child(view)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	view.on_look(9, "Tools", "body_1", "", PackedInt32Array())
+	var spear: int = table.number_of("wooden_spear")
+
+	for i in 4:
+		view.on_rows(PackedInt32Array([9]), PackedVector3Array([Vector3.ZERO]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([spear]), PackedInt32Array([1000 + i * 200]), PackedInt32Array([shield]), PackedByteArray([PlayerViewScript.MORE_SHIELD_UP]))
+		await process_frame
+
+	for i in 30:
+		await process_frame
+
+	var b: Dictionary = view._bodies.get(9, {})
+	check(not b.is_empty(), "the shield bearer is drawn")
+
+	if b.is_empty():
+		view.queue_free()
+		camera.queue_free()
+		return
+
+	var rig = b["rig"]
+	var skel: Skeleton3D = rig.skeleton
+	var at_bone: Callable = func(bone: String) -> Vector3: return (skel.global_transform * skel.get_bone_global_pose(skel.find_bone("mixamorig_" + bone))).origin
+	var fist: Vector3 = at_bone.call("LeftHand")
+	var chest: Vector3 = at_bone.call("Spine2")
+	check(str(rig.current()) == "idle_shield_up" and fist.z < chest.z - 0.25 and absf(fist.y - chest.y) < 0.15, "a raised shield is held before the chest (%s, the fist %.2f m ahead, %.2f m off the chest's height)" % [rig.current(), chest.z - fist.z, fist.y - chest.y])
+	view.set_process(false)
+	var player: AnimationPlayer = rig.get("animation_player")
+	player.play("idle")
+	player.seek(0.0, true)
+	var standing: float = (at_bone.call("Head") as Vector3).y
+	var lowest: float = INF
+
+	for k in 20:
+		player.play("chop")
+		player.seek(player.get_animation("chop").length * float(k) / 19.0, true)
+		lowest = minf(lowest, (at_bone.call("Head") as Vector3).y)
+
+	check(standing - lowest < 0.45, "a chop or hammer blow leans into it, never bent double (the head %.2f m below standing at its lowest)" % (standing - lowest))
+	view.queue_free()
+	camera.queue_free()
+	await process_frame
+
+
 func _check_far_pose() -> void:
 	if not DynastyBodyScript.available():
 		return
@@ -936,6 +1011,7 @@ func _init() -> void:
 	await _check_holds()
 	await _check_hand_follows()
 	await _check_far_pose()
+	await _check_tool_poses()
 	_check_catch_up()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
