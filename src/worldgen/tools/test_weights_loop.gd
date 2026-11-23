@@ -197,16 +197,16 @@ func _stack_and_limit() -> void:
 	act(Net.ACT_PICKUP, stick_pile)
 	var sticks: int = int(round((load_of(1) - before) / kg("stick")))
 	check(sticks == spare and spare > 0 and spare < 10 and said.any(func(t): return str(t) == "Too heavy: you took %d of 10" % sticks), "a batch of sticks at the limit takes %d and says so (%s)" % [sticks, str(said)])
-	# The HUD line (CarryRules.load_line, the pack window's words use the same thresholds), shown with the pack shut so a slow walk always has its reason on screen (carry feel, 23 Nov 2026).
+	# How the load reads (CarryRules.load_state: the pack window's words; carry feel, 23 Nov 2026).
 	var comfort: float = CarryRules.comfort_kg(body, cfg)
-	check(CarryRules.load_line(comfort, body, cfg) == "" and CarryRules.speed_factor(comfort, body, cfg) == 1.0, "up to the comfortable load: full pace and no line")
-	check(str(CarryRules.load_line(comfort + 1.0, body, cfg)).begins_with("Heavy load") and CarryRules.speed_factor(comfort + 1.0, body, cfg) < 1.0, "past it: slower, and the HUD says \"%s\"" % CarryRules.load_line(comfort + 1.0, body, cfg))
-	check(str(CarryRules.load_line(load_of(1), body, cfg)).begins_with("At your carry limit"), "filled by pick-ups: \"%s\"" % CarryRules.load_line(load_of(1), body, cfg))
-	check(str(CarryRules.load_line(cap + 2.0, body, cfg)).begins_with("Over your carry limit"), "over it: \"%s\"" % CarryRules.load_line(cap + 2.0, body, cfg))
+	check(CarryRules.load_state(comfort, body, cfg) == 0 and CarryRules.speed_factor(comfort, body, cfg) == 1.0, "up to the comfortable load: full pace, nothing said")
+	check(CarryRules.load_state(comfort + 1.0, body, cfg) == 1 and CarryRules.speed_factor(comfort + 1.0, body, cfg) < 1.0, "past it: slower, and it reads heavy")
+	check(CarryRules.load_state(load_of(1), body, cfg) == 2, "filled by pick-ups, it reads at the limit")
+	check(CarryRules.load_state(cap + 2.0, body, cfg) == 3, "over the limit, it reads over")
 	var steps: Array = []
 	var worst: float = 0.0
 
-	for i in 101:   # the slowdown ramps: no step of 1 percent of the slowing band (comfort to limit) cuts the pace by more than 4 percent of full pace
+	for i in 101:   # the slowdown ramps: no step of 1 percent of the slowing band (comfort to limit) cuts the pace by more than 2 percent of full pace
 		steps.append(CarryRules.speed_factor(comfort + (cap - comfort) * float(i) / 100.0, body, cfg))
 
 	for i in range(1, steps.size()):

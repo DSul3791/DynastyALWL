@@ -2221,9 +2221,6 @@ func _flush_refresh() -> void:
 	_refresh_queued = false
 	_refresh()
 
-	if _vitals_back != null:
-		_place_vitals()   # the load line follows the pack at once: a drop clears "heavy load" with the pack shut
-
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
 
@@ -2260,11 +2257,6 @@ func _place_vitals() -> void:
 		lines.append("You are parched: you do not recover")
 	elif thirst <= warn_thirst:
 		lines.append("You are low on water")
-
-	var load_line: String = load_warning()
-
-	if load_line != "":
-		lines.append(load_line)
 
 	_vitals_warning.text = "\n".join(lines)
 
@@ -2546,15 +2538,10 @@ func _refresh_weight() -> void:
 		_carry_bar.get_theme_stylebox("fill").bg_color = InventoryLook.carry_color(fraction)
 
 
-# The HUD line for a load that slows you (carry feel, 23 Nov 2026): shown with the pack shut, so a slow walk always has its reason on screen.
-func load_warning() -> String:
-	return CarryRules.load_line(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else ""
-
-
 func _load_text() -> String:
 	var load_kg: float = carried_kg()
 	var limit: float = CarryRules.cap_kg(carry_body_kg(), _carry_cfg)
-	var state: String = ["", "   (heavy: you move slower)", "   (at the limit)", "   (over the limit: put something down)"][CarryRules.load_state(load_kg, carry_body_kg(), _carry_cfg)]   # the HUD line's own thresholds
+	var state: String = ["", "   (heavy: you move slower)", "   (at the limit)", "   (over the limit: put something down)"][CarryRules.load_state(load_kg, carry_body_kg(), _carry_cfg)]   # CarryRules.load_state, the thresholds the HUD load symbol uses too
 	return "Carrying %.1f kg of %.1f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays one down)" % _carried_names() if shoulder_id != "" else "")
 
 
@@ -6111,9 +6098,7 @@ func _on_worn(numbers: PackedInt32Array, insts: PackedByteArray = PackedByteArra
 	if worn_event.is_valid():
 		worn_event.call(changed, ids)
 
-	if _vitals_back != null:
-		_place_vitals()   # a backpack off moves the limit: the HUD load line follows at once (it refreshes the pack's weight too)
-	elif _weight_label != null:
+	if _weight_label != null:
 		_refresh_weight()
 
 	if _character != null:

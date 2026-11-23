@@ -7901,19 +7901,19 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	var over: int = inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {}))   # what the pack had no slot for (at MAX_SLOTS)
-	var took: int = fits - over
+	var got: int = fits - over
 
-	if took == 0:
+	if got == 0:
 		_say(peer, "Your pack is full")
 		_reject(peer, 2)
 		return
 
 	if over > 0:
-		_say(peer, "Your pack is full: you took %d of %d" % [took, want])
+		_say(peer, "Your pack is full: you took %d of %d" % [got, want])
 	elif fits < want:   # the carry limit stops it part way: say so, as a take from a store does (weights loop, 23 Nov 2026)
-		_say(peer, "Too heavy: you took %d of %d" % [took, want])
+		_say(peer, "Too heavy: you took %d of %d" % [got, want])
 
-	var left: int = int(it["count"]) - took
+	var left: int = int(it["count"]) - got
 
 	if it.has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
 		_goal_got(peer, int(it["number"]), int(it["count"]) - left)

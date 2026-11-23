@@ -152,7 +152,7 @@ const MIN_EACH_KG := 0.0005
 const SLACK_KG := 0.000001
 
 
-# How the load feels (carry feel, 23 Nov 2026), one set of thresholds for the HUD line and the pack window: 0 comfortable, 1 heavy (slower),
+# How the load feels (carry feel, 23 Nov 2026), one set of thresholds for the pack window and anything on the HUD: 0 comfortable, 1 heavy (slower),
 # 2 at the limit (within 2 percent: the slowest walk), 3 over it (past the client's rounding of the body, up to 35 g).
 static func load_state(load_kg: float, body_kg: float, cfg: Dictionary) -> int:
 	var limit: float = cap_kg(body_kg, cfg)
@@ -164,13 +164,6 @@ static func load_state(load_kg: float, body_kg: float, cfg: Dictionary) -> int:
 		return 3
 
 	return 2 if load_kg >= limit * 0.98 else 1
-
-
-# The HUD line for that state, "" when comfortable: shown with the pack shut, so a slow walk always has its reason on screen.
-static func load_line(load_kg: float, body_kg: float, cfg: Dictionary) -> String:
-	var limit: float = cap_kg(body_kg, cfg)
-	return ["", "Heavy load (%.1f of %.1f kg): you move slower" % [load_kg, limit], "At your carry limit (%.1f kg): you move slowly" % limit,
-		"Over your carry limit (%.1f of %.1f kg): put something down" % [load_kg, limit]][load_state(load_kg, body_kg, cfg)]
 
 
 # How many of `count` more of an item fit before the hard cap. Never more than fit: the floor of the division is checked
