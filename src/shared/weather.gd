@@ -142,6 +142,15 @@ const SEA_FOG_TOP_MAX_M := 200.0
 # and the starter calendar's declination, calendar_sign() x 23.44 sin(2 pi phase), as day_cycle.gd draws them.
 const SUN_TILT_DEG := 23.44
 
+# The server's height for a spot's weather (terrain_server._weather_here): the nearest HEIGHT_BAND_M, never under sea level. Within a band
+# the lapse moves the air 0.07 C at most, so the snow line moves no further; the client reads its own exact height.
+const HEIGHT_BAND_M := 10.0
+
+
+static func band_height(y: float) -> float:
+	return float(int(round(maxf(y, 0.0) / HEIGHT_BAND_M))) * HEIGHT_BAND_M
+
+
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
 	var days: float = float(GameClockScript.DAYS_PER_YEAR)

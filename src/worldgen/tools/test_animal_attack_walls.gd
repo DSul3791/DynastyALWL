@@ -7,13 +7,18 @@ extends SceneTree
 #      player standing hard behind the wall; the animal never goes through it (running round its end is allowed);
 #   2. a hunter's chase (a puma at a runner) the same;
 #   3. a player who pins an animal against the wall does not push it out through the other side (make_way), nor does keeping a step
-#      off them (keep_off_players).
+#      off them (keep_off_players);
+#   4. a charge meeting a wall turns along it its nose and WALL_LOOK_S of running short of it, so the client, which draws a charge carried on
+#      past its newest point, never draws it inside the wall; it gets round one short wall piece and hits (no shield); one at a player standing
+#      with their back to the wall still comes home and hits.
 # The wolves' bites and kills: test_wolves 6b and 5c, test_wolf_pups 5b. Shut doors and gates: test_animal_gates (the same hook).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_attack_walls.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const BigGame := preload("res://src/stream/server_big_game.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")
 
 const DIR := "user://test_animal_attack_walls"
 const DT := 0.05
@@ -28,6 +33,13 @@ var animals
 var landed: Array = []
 var track: PackedStringArray = PackedStringArray()
 var crossed: int = 0
+var drawn_in: int = 0           # charging steps whose line, carried on carry_m (the client's drawing past the newest point), enters a wall
+var carry_m: float = 0.0
+var wall_x: float = WALL_X
+var wall_half: float = WALL_HALF_M
+var foe_at: Vector3 = Vector3.INF    # when set: `opened` is whether, while charging, it ever had an open line to this point
+var opened: bool = false
+var charges: int = 0                 # times it went into a charge
 
 
 func check(ok: bool, what: String) -> void:
@@ -84,6 +96,7 @@ func _init() -> void:
 	_charges()
 	_chase()
 	_pinned()
+	_pull_up()
 
 	items._finish_writer()
 	print("test_animal_attack_walls: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
@@ -117,6 +130,10 @@ func run(a: Dictionary, seconds: float) -> float:
 	var was: Vector3 = a["pos"]
 	track.clear()
 	crossed = 0
+	drawn_in = 0
+	opened = false
+	charges = 0
+	var was_state: int = int(a["state"])
 
 	for k in int(round(seconds / DT)):
 		animals.tick(DT)
@@ -126,10 +143,24 @@ func run(a: Dictionary, seconds: float) -> float:
 			var now: Vector3 = at["pos"]
 			closest = minf(closest, float(now.x))
 
-			if (was.x - WALL_X) * (now.x - WALL_X) < 0.0 or (now.x == WALL_X and was.x != WALL_X):
-				var z: float = lerpf(was.z, now.z, (WALL_X - was.x) / (now.x - was.x)) if now.x != was.x else now.z
+			if int(at["state"]) == BigGame.CHARGE and was_state != BigGame.CHARGE:
+				charges += 1
 
-				if absf(z) <= WALL_HALF_M:
+			was_state = int(at["state"])
+
+			if foe_at != Vector3.INF and int(at["state"]) == BigGame.CHARGE and not animals.wall_between(now, foe_at):
+				opened = true
+
+			var on: Vector3 = Vector3(now.x - was.x, 0.0, now.z - was.z)
+
+			if carry_m > 0.0 and int(at["state"]) == BigGame.CHARGE and on.length() > 0.001 and animals.wall_between(now, now + on.normalized() * carry_m):
+				drawn_in += 1
+				track.append("  DRAWN INTO THE WALL from x %.2f z %.2f" % [now.x, now.z])
+
+			if (was.x - wall_x) * (now.x - wall_x) < 0.0:
+				var z: float = lerpf(was.z, now.z, (wall_x - was.x) / (now.x - was.x))
+
+				if absf(z) <= wall_half:
 					crossed += 1
 					track.append("  CROSSED at z %.2f" % z)
 
@@ -200,3 +231,62 @@ func _pinned() -> void:
 	animals.keep_off_players(stepper, Vector3(102.03, 10.0, 1.2), [player])
 	check(float(stepper["pos"].x) > face, "a step kept off a player is never put out through the wall behind it (x %.2f)" % float(stepper["pos"].x))
 
+
+# 4. A charge meeting a wall turns along it its nose and WALL_LOOK_S of running short of it, so its newest leg carried on (as the client
+# draws it) never enters the wall; it runs on round a short wall and charges home (one wall piece is no shield); one at a player standing
+# with their back to the wall still comes home and hits.
+func _pull_up() -> void:
+	var face: float = WALL_X + 0.125
+
+	for sp in ["bear", "lion", "elephant"]:
+		var speed: float = float(animals.species_def(sp)["defend"].get("charge_mps", 11.0))
+		stand(BEHIND)
+		var behind: Dictionary = put(sp, 112.0)
+		animals.big_game.warn(behind, BEHIND, -1.0, true)
+		carry_m = AnimalContact.body_m(sp) + speed * BigGame.WALL_LOOK_S
+		var closest: float = run(behind, 10.0)
+		var ok: bool = drawn_in == 0 and crossed == 0 and landed.is_empty() and closest < 106.0
+		check(ok, "%s: charging at a player behind the long wall, no step's line carried on %.2f m enters it (%d did), it runs up to it (nearest x %.2f) and never through" % [sp, carry_m, drawn_in, closest])
+		show_track(ok)
+
+		stand(Vector3(face + 1.0, 10.0, 0.0))
+		var backed: Dictionary = put(sp, 112.0)
+		animals.big_game.warn(backed, Vector3(face + 1.0, 10.0, 0.0), -1.0, true)
+		run(backed, 10.0)
+		check(not landed.is_empty(), "%s: one standing with their back to the wall is still charged home and hit (%d blows)" % [sp, landed.size()])
+
+	carry_m = 0.0
+
+	# Kept from its foe by the long wall, it is still angry: it warns and charges again from where it stands (WALL_TRIES times), never landing,
+	# then calms.
+	stand(BEHIND)
+	var angry: Dictionary = put("bear", 106.0)
+	animals.big_game.warn(angry, BEHIND, -1.0, true)
+	run(angry, 45.0)
+	var after: int = int(animals.animals[int(angry["id"])]["state"]) if animals.animals.has(int(angry["id"])) else -1
+	var tries_ok: bool = charges >= 2 and charges <= 1 + BigGame.WALL_TRIES and landed.is_empty() and crossed == 0 and not (after in [BigGame.WARN, BigGame.CHARGE, BigGame.RECOVER, BigGame.WARN_POP])
+	check(tries_ok, "a bear a wall keeps from its foe charges again, %d times in all (2 to %d), never lands (%d blows) and then calms (state %d)" % [charges, 1 + BigGame.WALL_TRIES, landed.size(), after])
+	show_track(tries_ok)
+
+	# One 2 m wall piece, 200 m on (clear of the long wall), is no shield: each charger comes round it (a second try charges for a way round,
+	# squares up and charges home) and lands, never through it.
+	var piece: int = items.dev_place("log_wall@301.6,0.0,90")
+	var lone: Vector3 = Vector3(301.2, 10.0, 0.0)
+	wall_x = 301.6
+	wall_half = 1.0
+	foe_at = lone
+	check(piece != 0, "one 2 m log wall piece stands at x 301.6")
+
+	for sp in ["bear", "boar", "lion", "moose", "hyena"]:
+		stand(lone)
+		var one: Dictionary = put(sp, lone.x + minf(10.8, float(animals.species_def(sp)["defend"].get("calm_m", 32.0)) - 1.0))   # inside its calm_m (a hyena 10 m)
+		animals.big_game.warn(one, lone, -1.0, true)
+		run(one, 30.0)
+		var round_ok: bool = not landed.is_empty() and crossed == 0
+		check(round_ok, "a %s charging a player behind one 2 m wall piece comes round it and lands (%d blows; %s, %d charges), never through it (%d crossings)" % [sp, landed.size(), "round" if opened else "never round", charges, crossed])
+		show_track(round_ok)
+
+	wall_x = WALL_X
+	wall_half = WALL_HALF_M
+	foe_at = Vector3.INF
+	carry_m = 0.0
