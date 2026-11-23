@@ -451,6 +451,7 @@ var test_chest: bool = false
 var test_eat: bool = false
 var test_quickkeys: bool = false
 var test_texttest: bool = false
+var test_screen_audit: bool = false    # --screenaudit: every screen at every text size, laid out headless and checked (screen_audit.gd)
 var test_plantpick: bool = false
 var test_embed: bool = false
 var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn), =stay (then 90 m, and stay in) or =check (say where the game starts)
@@ -815,6 +816,8 @@ func _ready() -> void:
 			test_dig_next = true
 		elif argument == "--texttest":
 			test_texttest = true
+		elif argument == "--screenaudit":
+			test_screen_audit = true
 		elif argument == "--quickkeys":
 			test_quickkeys = true
 		elif argument == "--eat":
@@ -1670,6 +1673,8 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_views: int = Probe.start()   # the windowed lag run (5 Nov) froze 0.8 to 1.3 s "after welcome: menu", before "welcome: items view": these pieces were not timed
 	hud = Label.new()
 	hud.position = Vector2(8.0, 48.0)   # below the link bars (top left)
+	hud.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # a long "playing:" line wraps instead of running off the right edge (screen audit, 23 Nov 2026)
+	hud.size = Vector2(1900.0, 0.0)
 	hud.visible = display.hud_text
 	hud.add_theme_font_size_override("font_size", 34)
 	hud.add_theme_constant_override("outline_size", 5)
@@ -1970,6 +1975,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	if test_texttest:
 		items.run_text_test(self)
+
+	if test_screen_audit:
+		_run_screen_audit()
 
 	if test_plantpick:
 		items.run_plant_test(self)
@@ -4240,6 +4248,57 @@ func _build_menu() -> void:
 	_menu = game_menu.root
 	_menu_note = game_menu.note
 	_quality_buttons = game_menu.quality_buttons
+
+
+# --screenaudit: the HUD, the inventory, the character screen, every Journal page and every Esc menu page, at each text size, checked by
+# screen_audit.gd. Prints "Screen audit: <screen> at <size>: N problems" with a line per problem, then "Screen audit: N problems on M screens".
+const ScreenAudit := preload("res://src/client/screen_audit.gd")
+
+
+func _run_screen_audit() -> void:
+	await get_tree().create_timer(4.0).timeout
+	var view: Rect2 = get_viewport().get_visible_rect()
+	var total: int = 0
+	var screens: int = 0
+	var saved_text: int = display.text_index
+
+	for text_index in range(display.TEXT_SCALES.size()):
+		items.set_text_scale(display.TEXT_SCALES[text_index])
+		var scale_name: String = display.TEXT_NAMES[text_index]
+		var shows: Array = [["HUD", func() -> void: pass, func() -> void: pass],
+			["inventory", func() -> void: items.toggle(), func() -> void: items.toggle()],
+			["character", func() -> void: items.toggle_character(), func() -> void: items.toggle_character()]]
+
+		for journal_page in [items.journal.INDEX, items.journal.GOALS, items.journal.MAP]:
+			shows.append(["journal " + journal_page, func() -> void: items.journal.show_page(journal_page), func() -> void: items.journal.close()])
+
+		for menu_page in game_menu._pages.keys():
+			shows.append(["menu " + str(menu_page), func() -> void:
+				_set_menu(true)
+				_show_menu_page(str(menu_page)), func() -> void: _set_menu(false)])
+
+		for show in shows:
+			(show[1] as Callable).call()
+
+			for n in range(4):
+				await get_tree().process_frame
+
+			var problems: PackedStringArray = ScreenAudit.audit(get_tree().root, view)
+			FreezeWatchScript.printer.line("Screen audit: %s at %s: %d problems" % [show[0], scale_name, problems.size()])
+
+			for line in problems:
+				FreezeWatchScript.printer.line("Screen audit:   " + line)
+
+			total += problems.size()
+			screens += 1
+			(show[2] as Callable).call()
+
+			for n in range(2):
+				await get_tree().process_frame
+
+	items.set_text_scale(display.TEXT_SCALES[saved_text])
+	FreezeWatchScript.printer.line("Screen audit: %d problems on %d screens (canvas %dx%d)" % [total, screens, int(view.size.x), int(view.size.y)])
+	frames_left = 1
 
 
 func _show_menu_page(page_name: String) -> void:

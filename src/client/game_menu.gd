@@ -28,6 +28,7 @@ var _c
 var _pages: Dictionary = {}
 var _column: VBoxContainer
 var _sound_scroll: ScrollContainer     # Settings > Sound, scrolls when the window is short
+var _admin_scroll: ScrollContainer     # the Admin page, taller than the canvas
 var _test_scroll: ScrollContainer      # Settings > Sound > Sound test list
 var _vsync_switch
 var _clear_day_switch
@@ -167,6 +168,9 @@ func show_page(page_name: String) -> void:
 
 	if _test_scroll != null:
 		_test_scroll.custom_minimum_size = Vector2(BUTTON_W + 150.0, room)
+
+	if _admin_scroll != null:
+		_admin_scroll.custom_minimum_size = Vector2(BUTTON_W + 30.0, room)
 
 	if note != null:
 		note.text = ""
@@ -439,7 +443,13 @@ func _build_sound_test() -> void:
 
 
 func _build_admin() -> void:
-	var admin: VBoxContainer = _page("admin")
+	# The Admin page is taller than the canvas (screen audit 23 Nov 2026: its Back button sat at y 1088 of 1080): it scrolls like the sound pages.
+	_admin_scroll = ScrollContainer.new()
+	_admin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_page("admin").add_child(_admin_scroll)
+	var admin: VBoxContainer = VBoxContainer.new()
+	admin.add_theme_constant_override("separation", 7)
+	_admin_scroll.add_child(admin)
 	_heading(admin, "Admin")
 	_admin_mode_switch = _switch_row(admin, "Admin mode (crafting is free)", func(on: bool):
 		if _c.items != null:
