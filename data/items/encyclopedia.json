@@ -3923,7 +3923,7 @@
 			"kind": "food",
 			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
 			"how_to_get": [
-				"Craft at a clay hearth: 3 Chestnuts, 1 Honey, 1 Linseed"
+				"Craft at a clay hearth: 3 Chestnuts, 1 Honey, 100 Linseed"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3983,7 +3983,7 @@
 			"kind": "food",
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Linseed, 2 Hazelnuts, 1 Animal fat"
+				"Craft at a campfire: 200 Linseed, 2 Hazelnuts, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8824,7 +8824,7 @@
 			"description": "Oil from herring, linseed or walnuts. Burns three game days in an iron lantern.",
 			"how_to_get": [
 				"Craft at a campfire pot: 3 Herring",
-				"Craft at an oil press: 4 Linseed",
+				"Craft at an oil press: 400 Linseed",
 				"Craft at an oil press: 4 Walnuts"
 			],
 			"used_for": [
