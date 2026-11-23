@@ -6152,6 +6152,9 @@ func _note_after_welcome(delta: float) -> void:
 # judges the blow from where we stand: server_items strike_origin).
 func send_position_now() -> void:
 	var now: int = Time.get_ticks_msec()
+
+	if now - _aim_msec < 20:
+		return   # one went this moment: fresh enough
 	var here: Vector3 = _anchor
 	var seconds: float = maxf(float(now - _aim_msec) / 1000.0, 0.02)
 

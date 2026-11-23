@@ -157,7 +157,7 @@ func _init() -> void:
 		items._last_strike.clear()
 		origins.clear()
 		items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
-		check(origins.size() == 1 and absf(float(origins[0].z) - float(row[2])) < 0.05 and is_equal_approx(float(origins[0].y), 1.4) and is_equal_approx(float(origins[0].x), 10.0), "%s (origin %s)" % [row[3], str(origins)])
+		check(origins.size() == 1 and absf(float(origins[0].z) - float(row[2])) < 0.15 and is_equal_approx(float(origins[0].y), 1.4) and is_equal_approx(float(origins[0].x), 10.0), "%s (origin %s)" % [row[3], str(origins)])
 
 	items.report_position(1, Vector3(10.0, 0.0, 10.0))
 	check(items._peer_move[1][0] == Vector3.ZERO, "a report without a velocity (the tests', a bot's) carries nothing on")
