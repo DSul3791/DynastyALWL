@@ -13,6 +13,7 @@ tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot 
 tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
 tools/robots.sh 2 wolves           # the same, and the second robot comes in 3 s into the rush
 ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, along it and off it; the server prints each one's trail share
+tools/robots.sh 1 drops            # the link dies mid-action and the robot comes straight back; a 10 s freeze; two clients as one character; about 15 min
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
 ```
@@ -50,7 +51,18 @@ Plan `snares`: given 7 snares, the robot runs to the nearest dry game-trail poin
 it and four more along trails within 80 m, one 4 m beside the first (no second Tracking practice within 15 m), and one 40 m from every
 trail; then waits 150 s 20 m off for a catch. Each set prints a `SNARE` line (set or not, Tracking trained or not, any words), and the
 server an `AUDIT snare` line with its trail share (server_traps trail_at; a catch needs on_trail_min 0.1, practice snare_min 0.5). A
-snare that neither appears nor is refused in words fails, so does a second practice beside the first or one off every trail. Plan `light` (walk,
+snare that neither appears nor is refused in words fails, so does a second practice beside the first or one off every trail. 
+
+Plan `drops` (one robot, players thread 23 Nov 2026): for each case the robot sets up an action (6 twine queued; a wicker basket open with 2
+twine put in; asleep; bitten once in a wolf rush 380 m out), saves what must come back, and writes "cut" to the link's control file
+(`lossy_link.py --control`): every connection open then goes dead both ways with no goodbye, as when a player's internet drops. robots.sh
+starts the same robot again at once (`drop_back`), while the server may still hold the dead connection: it must get in (else a FAIL, and one
+more try after 35 s), and find the fibre-plus-twine worth, the pack, the basket (opens, still 2 twine) and a body that stands and walks.
+`drop_freeze` stalls the client's main thread 10 s while walking: being dropped for it is a FAIL (the main gate allows a 24.85 s freeze), and
+the pack must not change. `drop_twin1`/`drop_twin2`: a second client joins with the same user data (the same character) 30 s after the
+first; the server must drop the older one (terrain_server.gd "the older connection is dropped") within 20 s. No rejoin pass follows.
+
+Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
 ## Invariants

@@ -168,6 +168,7 @@ func _hook() -> void:
 		_thirst = int(th)
 		_health = int(health)
 		_lowest_health = mini(_lowest_health, int(health)))
+	client.multiplayer.server_disconnected.connect(_on_lost)
 	client.net.died_received.connect(func(cause, _spawn):
 		_died += 1
 		_fail("died", str(_died), "the robot died (%s): the game does not want a player dead unless they do something deliberately stupid" % str(cause)))
@@ -504,6 +505,18 @@ func run() -> void:
 		await _watch(30.0)
 	elif plan == "screens":
 		await _screens()
+	elif plan == "drop_back":
+		await _drop_back()
+	elif plan == "drop_freeze":
+		await _drop_freeze()
+	elif plan == "drop_twin1" or plan == "drop_twin2":
+		await _drop_twin(plan == "drop_twin2")
+
+		if plan == "drop_twin1":
+			return
+	elif plan.begins_with("drop_"):
+		await _drop(plan.trim_prefix("drop_"))
+		return
 	else:
 		if admin:
 			await _craft_chain()
@@ -879,8 +892,8 @@ const WICKER_BASKET_BP := 157   # data/items/blueprints.json wicker_basket: 8 st
 
 
 # Build a wicker basket with the knife in hand, put twine in, take it out: the pack, the basket's contents and the server agree each time.
-func _storage() -> void:
-	_step = "storage"
+# Builds a wicker basket beside the robot with the knife (gifts its sticks and twine): its world item id, or -1 (said why).
+func _build_basket() -> int:
 	_give("stick", 8)
 	_give("twine", 4)
 	await _check_pack("storage given")
@@ -888,7 +901,7 @@ func _storage() -> void:
 
 	if knife < 0:
 		_note("storage", "no knife")
-		return
+		return -1
 
 	if knife != 0:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, knife, 0, 0, Vector3.ZERO)
@@ -923,6 +936,14 @@ func _storage() -> void:
 		else:
 			_note("storage", "the basket was refused at %s: %s" % [str(spot.round()), str(said)])   # a spot the rules refuse (a tree, a slope), said in words
 
+	return basket
+
+
+func _storage() -> void:
+	_step = "storage"
+	var basket: int = await _build_basket()
+
+	if basket < 0:
 		return
 
 	var contents: Array = [null]
@@ -2022,8 +2043,8 @@ func _snares() -> void:
 	if not first.is_empty() and not bool(first.get("xp", false)):
 		_note("snares", "a snare set on a %s trail point trained no Tracking (the server's worn-trail strength there may be under snare_min 0.5)" % best[0])
 
-	if bool(again.get("xp", false)):
-		_fail("snare", "again", "a second snare 2 m from the first trained Tracking again (snare_spot_m 15 should stop it)")
+	if bool(again.get("xp", false)) and bool(first.get("xp", false)):   # only when the first trained: a spotted sign or a first under snare_min is not this fault
+		_fail("snare", "again", "a second snare 4 m from the first trained Tracking again (snare_spot_m 15 should stop it)")
 
 	# Off any trail: 40 m or more from every route point, on one of eight bearings from the trail spot.
 	var off: Vector3 = Vector3.INF
@@ -2064,6 +2085,280 @@ func _snares() -> void:
 
 
 # Stand and look around: the watchers keep checking the animals and players drawn.
+# --- plans drop_<case>, drop_back, drop_freeze, drop_twin: the connection dies mid-action (players thread, 23 Nov 2026) -----------------------
+# drop_<case> sets up the action (twine: 6 twine queued; chest: a basket open with 2 twine put in; asleep; wolf: in a wolf pack's rush),
+# saves what must come back in DROP_FILE, and writes "cut" to the link's control file (tools/lossy_link.py --control): the link goes dead both
+# ways with no goodbye, as when a player's internet drops, and the robot closes. tools/robots.sh then starts the same robot again at once
+# (drop_back) while the server may still hold the dead connection: it must join, and get back what DROP_FILE says. drop_freeze stalls the
+# main thread 10 s while walking (a hitch on a slow PC). drop_twin: two clients with one character (tools/robots.sh starts the second
+# with the same user data 30 s after the first): the server keeps one and drops the other, never both in the world.
+const DROP_FILE := "user://robot_drop.json"
+const CONTROL_FILE := "link_control.txt"   # in ROBOT_SHARE, read by tools/lossy_link.py --control
+const TWIN_FILE := "twin_second_joined.txt"
+const FREEZE_MS := 10000
+
+
+func _share(file: String) -> String:
+	return OS.get_environment("ROBOT_SHARE").path_join(file) if OS.get_environment("ROBOT_SHARE") != "" else ""
+
+
+func _write(path: String, text: String) -> void:
+	var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if f != null:
+		f.store_string(text)
+		f.close()
+
+
+func _drop(case: String) -> void:
+	_step = "drop " + case
+
+	if not admin:
+		_note("drop", "the drop plans need --robot-admin (gifts and the wolf pack): nothing done")
+		await _quit()
+		return
+
+	if _share(CONTROL_FILE) == "":
+		_fail("drop", "share", "no ROBOT_SHARE folder: the link's control file cannot be reached (run through tools/robots.sh)")
+		await _quit()
+		return
+
+	var saved: Dictionary = {"case": case}
+
+	if case == "twine":
+		_give("plant_fibre", 18)
+		await _check_pack("drop twine given")
+		saved["worth"] = _count("plant_fibre") + 3 * _count("twine")
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_QUEUE, int(_recipes["twine"]["number"]), 0, 6, Vector3(float(client.held.held_slot + 1), 0.0, 0.0))
+		await _wait(3.5)   # one or two made, the rest queued
+		saved["queue_left"] = _queue_left
+	elif case == "chest":
+		if _slot_of("stone_knife") < 0:
+			_give("stone_knife", 1)
+
+		var basket: int = await _build_basket()
+
+		if basket < 0:
+			await _quit()
+			return
+
+		var contents: Array = [null]
+		var got := func(id: int, bytes: PackedByteArray) -> void:
+			if id == basket:
+				var inv = InventoryScript.new(client.items.table)
+				inv.from_bytes(bytes)
+				contents[0] = inv
+		client.net.chest_received.connect(got)
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_OPEN, basket, 0, 0, Vector3.ZERO)
+		await _wait(1.5)
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, _slot_of("twine"), basket, 2, Vector3.ZERO)
+		await _check_pack("drop chest put")
+		client.net.chest_received.disconnect(got)
+
+		if contents[0] == null or int(contents[0].count_of(_num("twine"))) != 2:
+			_note("drop", "the basket did not show 2 twine after putting them in: the chest case is not measured")
+			await _quit()
+			return
+
+		saved["basket"] = basket
+		saved["box_twine"] = 2
+	elif case == "asleep":
+		await _stance_to(StanceScript.LIE)
+
+		if not await _fall_asleep():
+			await _quit()
+			return
+	elif case == "wolf":
+		if not await _into_rush():
+			await _quit()
+			return
+
+	saved["sig"] = _pack_sig()
+	saved["health"] = _health
+	var p: Vector3 = client.body.global_position
+	saved["pos"] = [p.x, p.y, p.z]
+	_write(DROP_FILE, JSON.stringify(saved))
+	_write(_share(CONTROL_FILE), "cut")
+	print("ROBOT %s DROP %s %d link cut (%s, health %d, at %s)" % [robot_name, case, _now_ms(), saved["sig"], _health, str(p.round())])
+	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (link cut)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	await _wait(1.0)   # the link reads its control file five times a second
+	client.frames_left = 1   # gone: the goodbye the client sends on the way out dies on the cut link
+
+
+# Run out past the town's keep, set a wolf pack, and stand still until the rush has bitten once (or 60 s). True when bitten.
+func _into_rush() -> bool:
+	_give("raw_meat", 3)
+	await _check_pack("drop wolf meat")
+	var start: Vector3 = client.body.global_position
+	await _run_to(start + Vector3(0.0, 0.0, -WOLF_FAR_M), 120.0, 6.0)
+	await _wait(2.0)
+	client.net.admin_place.rpc_id(1, "animal", client.body.global_position - client.body.global_transform.basis.z * 25.0, "wolf")
+	var h0: int = _health
+	var end: int = Time.get_ticks_msec() + 60000
+
+	while Time.get_ticks_msec() < end:
+		if _health < h0:
+			return true
+
+		await get_tree().process_frame
+
+	_note("drop", "no wolf bite in 60 s after setting the pack: the wolf case is not measured")
+	return false
+
+
+func _drop_back() -> void:
+	_step = "drop back"
+	var text: String = FileAccess.get_file_as_string(DROP_FILE) if FileAccess.file_exists(DROP_FILE) else ""
+	var saved = JSON.parse_string(text) if text != "" else null
+
+	if not (saved is Dictionary):
+		_fail("drop", "back", "no %s from the drop pass to compare with" % DROP_FILE)
+		return
+
+	var case: String = str(saved.get("case", ""))
+	_step = "back from " + case
+	var was: Array = saved.get("pos", [0.0, 0.0, 0.0])
+	var moved: float = client.body.global_position.distance_to(Vector3(float(was[0]), float(was[1]), float(was[2])))
+	print("ROBOT %s BACK %s joined %.1f m from where the link died, health %d (was %d), asleep %s" % [robot_name, case, moved, _health, int(saved.get("health", -1)), str(client.items.asleep)])
+
+	if case == "twine":
+		var limit: int = Time.get_ticks_msec() + 40000
+
+		while _queue_left > 0 and Time.get_ticks_msec() < limit:
+			await get_tree().process_frame
+
+		await _check_pack("back twine")
+		var worth: int = _count("plant_fibre") + 3 * _count("twine")
+
+		if worth != int(saved.get("worth", -1)):
+			_fail("drop", "twine", "the link died with 6 twine queued: fibre + 3 x twine was %d, after rejoining %d (fibre %d, twine %d)" % [int(saved.get("worth", -1)), worth, _count("plant_fibre"), _count("twine")])
+		else:
+			print("ROBOT %s BACK twine: nothing lost (worth %d fibre, %d queued at the cut, %d now)" % [robot_name, worth, int(saved.get("queue_left", -1)), _queue_left])
+	else:
+		await _check_pack("back " + case)
+
+		if _pack_sig() != str(saved.get("sig", "")):
+			_fail("drop", case + " pack", "the pack after the link died (%s) and rejoining is %s" % [str(saved.get("sig", "")), _pack_sig()])
+
+	if case == "chest":
+		var basket: int = int(saved.get("basket", -1))
+		var limit: int = Time.get_ticks_msec() + 15000
+
+		while not client.items._world.has(basket) and Time.get_ticks_msec() < limit:
+			await get_tree().process_frame
+
+		if not client.items._world.has(basket):
+			_fail("drop", "chest gone", "the basket (world item %d) open when the link died is not in the world after rejoining" % basket)
+		else:
+			var contents: Array = [null]
+			var said_from: int = _notices.size()
+			var got := func(id: int, bytes: PackedByteArray) -> void:
+				if id == basket:
+					var inv = InventoryScript.new(client.items.table)
+					inv.from_bytes(bytes)
+					contents[0] = inv
+			client.net.chest_received.connect(got)
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_OPEN, basket, 0, 0, Vector3.ZERO)
+			await _wait(2.0)
+			client.net.chest_received.disconnect(got)
+
+			if contents[0] == null:
+				_fail("drop", "chest open", "the basket open when the link died does not open after rejoining (%s)" % (str(_notices.slice(said_from)) if _notices.size() > said_from else "no words"))
+			elif int(contents[0].count_of(_num("twine"))) != int(saved.get("box_twine", 0)):
+				_fail("drop", "chest", "the basket held %d twine when the link died; after rejoining it shows %d" % [int(saved.get("box_twine", 0)), int(contents[0].count_of(_num("twine")))])
+			else:
+				print("ROBOT %s BACK chest: the basket opens and still holds %d twine" % [robot_name, int(saved.get("box_twine", 0))])
+
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, basket, 0, 0, Vector3.ZERO)
+	elif case == "asleep" or case == "wolf":
+		if _health <= 0:
+			_fail("drop", case + " health", "back with health %d after the link died" % _health)
+
+		await _stance_to(StanceScript.STAND)
+		var from: Vector3 = client.body.global_position
+		await _walk_for(Vector3.FORWARD, 2.0)
+		var m: float = client.body.global_position.distance_to(from)
+
+		if m < 0.5:
+			_fail("drop", case + " stuck", "after rejoining (the link died %s), W for 2 s moved %.2f m (asleep %s, stance %d)" % [case, m, str(client.items.asleep), client.stance.stance])
+		else:
+			print("ROBOT %s BACK %s: stands and walks (%.1f m in 2 s)" % [robot_name, case, m])
+
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(DROP_FILE))
+
+
+# Walking, then the main thread stalls 10 s (a long hitch): the server must keep this player, or drop it with words; nothing in the pack moves.
+func _drop_freeze() -> void:
+	_step = "freeze"
+	await _check_pack("before the freeze")
+	var sig: String = _pack_sig()
+	var said_from: int = _notices.size()
+	_key("forward", true)
+	await _wait(2.0)
+	var before: Vector3 = client.body.global_position
+	var t0: int = _now_ms()
+	OS.delay_msec(FREEZE_MS)   # the whole client stops: no frames, no network service
+	print("ROBOT %s FREEZE over at %d" % [robot_name, _now_ms()])
+	_key("forward", false)
+	await _wait(8.0)
+	var still: bool = client.multiplayer.multiplayer_peer != null and client.multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+	var after: Vector3 = client.body.global_position
+	print("ROBOT %s FREEZE %d s at %d: still connected %s, moved %.1f m across it, notices %s" % [robot_name, FREEZE_MS / 1000, t0, str(still), after.distance_to(before), str(_notices.slice(said_from))])
+
+	if not still:
+		return   # dropped: _on_lost said so
+
+	await _check_pack("after the freeze")
+
+	if _pack_sig() != sig:
+		_fail("freeze", "pack", "the pack changed across a 10 s freeze: %s -> %s" % [sig, _pack_sig()])
+
+
+# Two clients, one character (tools/robots.sh starts drop_twin1, then drop_twin2 with the same user data folder 30 s later): the server must
+# drop the older connection with words (terrain_server.gd "the older connection is dropped"), never keep two bodies for one character.
+func _drop_twin(second: bool) -> void:
+	_step = "twin"
+	var flag: String = _share(TWIN_FILE)
+
+	if flag == "":
+		_fail("twin", "share", "no ROBOT_SHARE folder")
+		return
+
+	if second:
+		_write(flag, str(_now_ms()))
+		print("ROBOT %s TWIN second joined at %d as the same character (%s)" % [robot_name, _now_ms(), _pack_sig()])
+		await _wait(25.0)
+		return
+
+	var t0: int = Time.get_ticks_msec()
+
+	while not FileAccess.file_exists(flag) and Time.get_ticks_msec() - t0 < 150000:
+		await get_tree().process_frame
+
+	if not FileAccess.file_exists(flag):
+		_note("twin", "the second client never joined: nothing measured")
+		return
+
+	print("ROBOT %s TWIN first: the second is in, waiting to be dropped (%s)" % [robot_name, _pack_sig()])
+	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, to be dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	t0 = Time.get_ticks_msec()
+
+	while Time.get_ticks_msec() - t0 < 20000:
+		await get_tree().process_frame
+
+	_fail("twin", "both", "still connected 20 s after a second client joined as the same character: two bodies for one character")
+	client.frames_left = 1
+
+
+# The server ended this connection: said once, with the step. Expected for the first twin; a fault in the freeze plan (a 10 s hitch must not
+# cost a player the game: the main gate allows a freeze up to 24.85 s).
+func _on_lost() -> void:
+	print("ROBOT %s LOST the server at %d (step %s, notices %s)" % [robot_name, _now_ms(), _step, str(_notices.slice(-2))])
+
+	if plan == "drop_twin1" and _step == "twin":
+		print("ROBOT %s TWIN first dropped by the server" % robot_name)
+	elif plan == "drop_freeze":
+		_fail("freeze", "dropped", "the server dropped this client after a %d s main-thread freeze" % (FREEZE_MS / 1000))
 func _watch(s: float) -> void:
 	_step = "watch"
 	await _wait(s)
