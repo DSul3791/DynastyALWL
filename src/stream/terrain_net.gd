@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 156  # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
+const PROTOCOL_VERSION := 157  # 157 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
+# 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
 # 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 154 (23 Nov 2026, Dave on the real server: animals "teleporting and jumping right through us"): a standing animal's row carries the send time; ENet never drops unreliable packets on purpose (data/network.json packet_throttle_*); see PROTOCOL.md. Client and server must be updated together.
 # 153 (23 Nov 2026, Dave: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"): sign_spotted(x, z), client to server, a trail sign this player has just spotted; the server checks it and trains Tracking (server_traps sign_found). Client and server must be updated together.
@@ -987,6 +988,7 @@ func held_item(number: int) -> void:
 # index = local_x + local_z * 64 from the block's south-west corner; block = 256 m, cell = 4 m, see data/animals/trails.json).
 # Sent for the 3 x 3 blocks around the player when they enter a block and when a block changes (at most every 30 s a block).
 # routes (protocol 149): the block's trails between animal places, trail_codec.gd decode_routes (empty while not worked out).
+# routes is trail_codec.gd ROUTES_SAME (protocol 157) when this peer already has the block's routes and only the cells changed.
 @rpc("authority", "call_remote", "reliable")
 func trails(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 	trails_received.emit(block_x, block_z, bytes, routes)

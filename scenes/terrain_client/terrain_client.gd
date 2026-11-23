@@ -1694,6 +1694,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
+
+		if routes == TrailCodec.ROUTES_SAME:
+			return   # only the worn cells changed (protocol 157): the routes kept are right, nothing to decode, rebuild or log
 		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M)
 		grass.set_trail_routes(bx, bz, decoded)   # the trails between animal places (protocol 149)
 		trail_signs.set_routes(bx, bz, decoded)
