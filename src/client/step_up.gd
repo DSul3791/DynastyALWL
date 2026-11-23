@@ -28,31 +28,33 @@ static func try(body: CharacterBody3D, motion: Vector3, step: float) -> float:
 	if not body.test_move(origin, motion):
 		return 0.0
 
-	if body.test_move(origin, Vector3(0.0, step, 0.0)):
-		return 0.0   # no room above
-
-	# The landing just past the edge first (a stair's tread), then further on (a ledge: the near look lands on its corner, too steep a contact).
 	# Where the body stands now: a landing's contact no higher than `step` above it (a ledge's top edge, not the round foot's touch on a taller
 	# ledge's corner: the hop's level hold would creep up a 0.6 m ledge on it).
 	var below: KinematicCollision3D = KinematicCollision3D.new()
 	var ground_y: float = below.get_position().y if body.test_move(origin, Vector3(0.0, -0.2, 0.0), below) else NAN
 
-	for look in [NEAR_M, AHEAD_M]:
-		var lift: float = _landing(body, origin, motion.normalized() * maxf(motion.length(), look), step, ground_y)
+	# The full step first, then lower lifts (robots 23 Nov 2026: a doorway stands on a foundation's edge, its lintel 2 m over the top; a walker on
+	# the ground below, lifted the full 0.5 m, met the lintel as it moved in, so the 0.3 m step up into the doorway stood).
+	for raise in [step, step * 0.7, step * 0.45]:
+		if body.test_move(origin, Vector3(0.0, raise, 0.0)):
+			continue   # no room above for this lift
 
-		if lift > 0.0:
-			body.global_position.y += lift + 0.01
-			return lift + 0.01
+		for look in [NEAR_M, AHEAD_M]:   # just past the edge first (a stair's tread), then further on (a ledge: the near look lands on its corner)
+			var lift: float = _landing(body, origin, motion.normalized() * maxf(motion.length(), look), raise, step, ground_y)
+
+			if lift > 0.0:
+				body.global_position.y += lift + 0.01
+				return lift + 0.01
 
 	return 0.0
 
 
-# The way ahead free once raised (a little further than this frame, so a step is not started against a wall), then the raised body moved
+# The way ahead free once raised by `raise` (a little further than this frame, so a step is not started against a wall), then the raised body moved
 # `ahead` and swept down: where it lands is the top of the step, its contact no more than `step` over `ground_y` (where it stands; NAN: not
 # known). The height to lift, or 0.
-static func _landing(body: CharacterBody3D, origin: Transform3D, ahead: Vector3, step: float, ground_y: float) -> float:
+static func _landing(body: CharacterBody3D, origin: Transform3D, ahead: Vector3, raise: float, step: float, ground_y: float) -> float:
 	var raised: Transform3D = origin
-	raised.origin.y += step
+	raised.origin.y += raise
 
 	if body.test_move(raised, ahead):
 		return 0.0
@@ -60,14 +62,14 @@ static func _landing(body: CharacterBody3D, origin: Transform3D, ahead: Vector3,
 	raised.origin += ahead
 	var result: KinematicCollision3D = KinematicCollision3D.new()
 
-	if not body.test_move(raised, Vector3(0.0, -step - 0.05, 0.0), result) or result.get_normal().y < 0.7:
+	if not body.test_move(raised, Vector3(0.0, -raise - 0.05, 0.0), result) or result.get_normal().y < 0.7:
 		return 0.0
 
 	if not is_nan(ground_y) and result.get_position().y - ground_y > step:
 		return 0.0   # the touch is higher than a step over where it stands
 
-	var lift: float = step + result.get_travel().y
-	return lift if lift > MIN_LIFT_M and lift <= step else 0.0
+	var lift: float = raise + result.get_travel().y
+	return lift if lift > MIN_LIFT_M and lift <= raise else 0.0
 
 
 # The level hold after a hop (terrain_client._step_up): the metres still to go once this frame moved the body on from `from`; 0 when it stands
