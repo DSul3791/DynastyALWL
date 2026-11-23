@@ -37,6 +37,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const VERSION := 4                       # world_items.json: 4 (18 Nov 2026, audit finding 2) is a header naming the area files in world_items/ (AREA_M squares, each with its own rows; only the areas that changed are written); 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const CHARACTERS_VERSION := 2           # characters.json: 2 (19 Nov 2026) has attributes on the 0 to 100 scale; a version 1 file's -10 to +10 values (and fitness training) are converted once at load
+const OLD_FLOOR_OVER_CAP := 5           # skills.json floor_over_cap until 23 Nov 2026 (build 9257): a character saved then keeps those floors (SkillWeb.keep_old_floors)
 const ATTRIBUTE_KEYS := ["luck", "fitness", "strength", "memory", "dexterity", "perception", "charisma"]
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
@@ -672,7 +673,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key] = {"train": 0.0, "skills_v": 3, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_characters[key].merge(_new_attributes())
 		_dirty = true
 
@@ -26382,12 +26383,18 @@ func _load_characters() -> void:
 		if bool(parsed["players"][key].get("dead", false)):   # real death (death.json real_death): a dead character stays dead across a restart
 			_characters[str(key)]["dead"] = true
 
-		if int(parsed["players"][key].get("skills_v", 1)) < 2:
+		var skills_v: int = int(parsed["players"][key].get("skills_v", 1))
+
+		if skills_v < 2:
 			migrate_old_skills(str(key), parsed["players"][key])
-			_characters[str(key)]["skills_v"] = 2
 			_dirty = true
-		else:
-			_characters[str(key)]["skills_v"] = 2
+
+		# Build 9257 and before (skills_v 2): trainings gave a floor 5 over the band; the character keeps what its skills read then.
+		if skills_v < 3 and not _skills_cfg.is_empty():
+			if SkillWeb.keep_old_floors(_skills_cfg, _characters[str(key)]["skills"], OLD_FLOOR_OVER_CAP) > 0:
+				_dirty = true
+
+		_characters[str(key)]["skills_v"] = 3
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.
