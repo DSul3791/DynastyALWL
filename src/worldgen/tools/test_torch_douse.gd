@@ -100,6 +100,7 @@ func _light_burn_checks(items) -> void:
 	check(bool(items._items[910001]["struct"].get("lit", false)) and is_equal_approx(float(items._items[910001]["struct"]["fuel_left"]), 3600.0), "E with a candle lights the lantern for a game day")
 	check(bool(items._items[910002]["struct"].get("lit", false)) and is_equal_approx(float(items._items[910002]["struct"]["fuel_left"]), 1800.0), "a stick lights the torch post for half a game day")
 	check(items._lit_fires().has(post_at) and is_equal_approx(items.fire_protect_m(post_at), 8.0), "the lit torch post keeps wolves off 8 m")
+	check(items.fire_spots().any(func(spot): return (spot[0] as Vector3).is_equal_approx(post_at) and is_equal_approx(float(spot[1]), 8.0)), "the animals' fire spots hold the post with the same 8 m")
 	check(not items._lit_fires().has(lantern_at), "a lantern with no protect_m does not")
 	items._lights_tick(600.0)
 	check(is_equal_approx(float(items._items[910001]["struct"]["fuel_left"]), 3000.0), "the fuel burns down in real seconds")

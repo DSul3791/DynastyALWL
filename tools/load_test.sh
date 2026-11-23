@@ -13,7 +13,8 @@ PORT=$((7800 + RANDOM % 400)); mkdir -p "$OUT/store"
 $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$OUT/store" \
 	--open-admin --profile=10 --timeout=$(( SECS + 400 )) $SERVER_FLAGS > "$OUT/server.log" 2>&1 &
 SP=$!
-trap 'kill $SP $PIDS 2>/dev/null' EXIT INT TERM   # an aborted run leaves no server or swarm behind
+trap 'kill $SP $PIDS 2>/dev/null' EXIT   # an aborted run leaves no server or swarm behind
+trap 'exit 130' INT TERM
 PIDS=""
 for _ in $(seq 1 180); do grep -q "server listening on port" "$OUT/server.log" 2>/dev/null && break; kill -0 $SP 2>/dev/null || break; sleep 1; done
 if ! grep -q "server listening on port $PORT" "$OUT/server.log" 2>/dev/null; then
