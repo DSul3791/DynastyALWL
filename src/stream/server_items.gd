@@ -3244,10 +3244,10 @@ func _settled(position: Vector3) -> Vector3:
 
 # A loose stack let go at `position` comes down onto what is under it: the ground (_settled), a building floor or a boulder, whichever is higher (physical world
 # audit 23 Nov 2026: a stack dropped on a foundation came down to the ground under it, 0.3 m inside the slab where nobody saw it, and one dropped
-# upstairs fell through the ceiling to the ground floor). Only lowers it, as _settled.
-func _settled_loose(position: Vector3) -> Vector3:
+# upstairs fell through the ceiling to the ground floor). Only lowers it, as _settled. `near`: the ids to look through (_ids_near round it), else looked up.
+func _settled_loose(position: Vector3, near: Array = []) -> Vector3:
 	var rest: Vector3 = _settled(position)
-	var top: float = _floor_top_below(position)
+	var top: float = _floor_top_below(position, near)
 	return Vector3(position.x, top, position.z) if not is_nan(top) and top > rest.y and top < position.y + 0.05 else rest
 
 
@@ -3256,12 +3256,16 @@ const BOULDER_TOP_SHARE := 0.7   # a boulder's drawn top over its spot, as a sha
 
 
 # The highest building floor top (a foundation's, or a floor piece's: the storey above's floor) or boulder top over `at` at most 5 cm above it, NAN
-# where none: only the records near it (_ids_near), never a walk of every record. A stack dropped standing on a boulder lay inside the rock.
-func _floor_top_below(at: Vector3) -> float:
+# where none: only the records near it (`near`, else _ids_near), never a walk of every record. A stack dropped standing on a boulder lay inside the
+# rock. A blueprint site holds nothing up (as everywhere else): a stack there lies on the ground.
+func _floor_top_below(at: Vector3, near: Array = []) -> float:
 	var best: float = NAN
 
-	for id in _ids_near(at, FLOOR_ROWS_REACH_M):
-		var it: Dictionary = _items.get(id, {})
+	for id in (near if not near.is_empty() else _ids_near(at, FLOOR_ROWS_REACH_M)):
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
 
 		if it.has("boulder"):   # a boulder's drawn top (inventory_view _size_boulder: its hull rises BOULDER_TOP_SHARE x its radius over its spot), rounded off to its edge
 			var r: float = BoulderWear.radius_now(float(it["boulder"]["radius"]), int(it["count"]), int(it["boulder"]["total"]))
@@ -3275,7 +3279,7 @@ func _floor_top_below(at: Vector3) -> float:
 
 			continue
 
-		if not it.has("struct"):
+		if not it.has("struct") or it["struct"].has("site"):
 			continue
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
@@ -3316,8 +3320,10 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 	return spot.y if is_nan(rest) else rest
 
 
-# After a dig or fill: loose items near it come down (or stay) onto what the ground is now.
+# After a dig or fill: loose items near it come down (or stay) onto what the ground is now (boulders first, so a stack on one follows it down).
 func settle_loose_near(centre: Vector3, radius: float) -> void:
+	var loose: Array = []
+
 	for id in _items:
 		var it: Dictionary = _items[id]
 
@@ -3340,8 +3346,41 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 			continue
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
-			it["pos"] = _settled_loose(it["pos"])
-			_wake_log(id)   # a log on ground that was dug or filled under it may roll
+			loose.append(id)
+
+	if loose.is_empty():
+		return
+
+	var near: Array = _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M)   # the floors and boulders round the dig, looked up once
+
+	for id in loose:
+		_items[id]["pos"] = _settled_loose(_items[id]["pos"], near)
+		_wake_log(id)   # a log on ground that was dug or filled under it may roll
+		_dirty = true
+
+
+# A floor, foundation or boulder under loose stacks went (taken down, retired) or shrank (mined): the stacks within `reach` of `at` come down onto
+# what is under them now, so none is left in the air. Only the records near it.
+func _resettle_on(at: Vector3, reach: float) -> void:
+	var near: Array = _ids_near(at, reach + FLOOR_ROWS_REACH_M)
+
+	for id in near:
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("showroom") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+			continue
+
+		if Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() > reach:
+			continue
+
+		var rest: Vector3 = _settled_loose(it["pos"], near)
+
+		if rest != it["pos"]:
+			it["pos"] = rest
+			_wake_log(id)
 			_dirty = true
 
 
@@ -3985,6 +4024,10 @@ func _log_supported(it: Dictionary) -> bool:
 		return false
 
 	var rest: float = float(_drops.get("rolling", {}).get("rest_m", 0.6))
+	var floor_top: float = _floor_top_below(at + Vector3(0.0, 0.1, 0.0))
+
+	if not is_nan(floor_top) and floor_top > ground + 0.05 and at.y - floor_top < 0.15:
+		return false   # lying on a building floor or a boulder: the rolling world has only the ground, so it would roll down through them
 
 	if absf(at.y - ground) <= rest:
 		return true
@@ -8097,6 +8140,10 @@ func _clear_retired_pieces() -> void:
 		_items.erase(id)
 		_load_row_of.erase(id)
 		_dirty = true
+		var gone_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if bool(gone_def.get("foundation", false)) or str(gone_def.get("piece_kind", "")) == "floor":
+			_resettle_on(at, FLOOR_ROWS_REACH_M)   # what lay on it comes down
 
 		var kinds: Dictionary = (it["struct"]["site"] as Dictionary).get("kinds", {}) if it["struct"].has("site") else it["struct"].get("kinds", {})
 
@@ -9637,6 +9684,9 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	if int(it["count"]) <= 0:
 		_boulder_drops.erase([peer, it["scatter"]])
 		_items.erase(id)
+
+	if taken > 0:
+		_resettle_on(it["pos"], size_now)   # a stack on the rock comes down as it shrinks or goes
 
 
 # How many stones of rock one ore piece `id` takes out of a boulder: its own weight in stones of `stone_kg`, at least one (ore by weight, PLAN.md 3c).
@@ -13440,6 +13490,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+	if bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor":
+		_resettle_on(it["pos"], FLOOR_ROWS_REACH_M)   # what lay on it comes down
 
 	if _is_plot_kind(str(it["struct"]["kind"])):
 		for cell in _bed_cells(it):

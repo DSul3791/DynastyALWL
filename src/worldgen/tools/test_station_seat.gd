@@ -28,6 +28,14 @@ func _init() -> void:
 	var base: String = _kit(cfg, "foundation_section")
 	check(Rules.seats_low(cfg, crate) and Rules.seats_low(cfg, bench), "a crate and a workbench are set down by the station rule")
 	check(not Rules.seats_low(cfg, base) and not Rules.seats_low(cfg, "campfire_kit"), "a foundation and the campfire keep their own rules")
+	var pot: String = _kit(cfg, "campfire_pot")
+	check(not Rules.seats_low(cfg, pot) and is_equal_approx(Rules.rise_limit(cfg, pot), float(cfg.get("max_rise_m", 1.0))), "a pot set on its fire (attach_to) keeps the file's limit: any fire's ground takes it")
+
+	# The station rule's own drop counts in the wall-line check: a 2 m table sat at its lowest corner on a slope is still in a wall it stands in.
+	var wall: Dictionary = cfg["structures"]["wall_section"]
+	var table_def: Dictionary = cfg["structures"]["woodworking_table"]
+	var wall_at: Vector3 = Vector3(200.0, 10.0, 200.0)
+	check(Rules._stands_in(table_def, wall_at - Vector3(0.0, 0.65, 0.0), wall, wall_at, 0.0), "a 2 m table seated 0.65 m under a wall's foot is still standing in its line")
 	check(absf(Rules.rise_limit(cfg, crate) - 0.28) < 0.001, "a 0.8 m crate may stand across 0.28 m of rise (%.2f), not 1.0 m" % Rules.rise_limit(cfg, crate))
 	check(absf(Rules.rise_limit(cfg, bench) - 0.525) < 0.001, "a 1.5 m workbench across 0.525 m (%.3f)" % Rules.rise_limit(cfg, bench))
 	check(is_equal_approx(Rules.rise_limit(cfg, forge), float(cfg.get("max_rise_m", 1.0))), "a 3 m forge keeps the file's 1.0 m at most")

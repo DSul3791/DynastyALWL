@@ -984,7 +984,13 @@ static func _stands_in(free: Dictionary, free_pos: Vector3, line: Dictionary, li
 	var box: Array = _box(line, line_pos, line_yaw)
 
 	# The foot can be lower than the piece's own spot on a slope (a wall stands where its ends rise up to max_rise_m): only its top bounds it from above.
-	if free_pos.y < float(box[3]) - maxf(float(line.get("max_rise_m", 0.0)), OVERLAP_SLACK_M) or free_pos.y > float(box[4]) - OVERLAP_SLACK_M:
+	# A station sits at its lowest corner (seated_ground), up to its own rise under the ground at its middle: that counts too.
+	var low: float = maxf(float(line.get("max_rise_m", 0.0)), OVERLAP_SLACK_M)
+
+	if _seats_low_def(free):
+		low = maxf(low, _station_rise(free))
+
+	if free_pos.y < float(box[3]) - low or free_pos.y > float(box[4]) - OVERLAP_SLACK_M:
 		return false
 
 	var apart: Vector2 = Vector2(free_pos.x, free_pos.z) - (box[0] as Vector2)
@@ -1241,7 +1247,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 # "steep" when the ground under the kit is not level enough to stand it on, else "" (design 10.1: the outline is red until the
 # terrain is a reasonable shape; leveling comes with blueprints later). The ground is sampled at the middle and the corners of the
 # footprint turned by `yaw` (radians, the camera's), or on a ring of 0.8 m for a campfire; `height` is Callable(x, z) -> float
-# (NAN where unknown). The allowed rise from lowest to highest sample is rise_limit.
+# (NAN where unknown). The allowed rise from lowest to highest sample is rise_limit: a structure's own max_rise_m, else the file's, else for a
+# station or furniture (seats_low) one that grows with its size (23 Nov 2026).
 static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable) -> String:
 	var samples: PackedFloat32Array = ground_samples(cfg, kit_id, spot, yaw, height)
 
@@ -1295,10 +1302,19 @@ const STATION_RISE_PER_M := 0.35
 const STATION_RISE_MIN_M := 0.15
 
 
-# Whether a kit is set down by the station rule: a structure that is neither a foundation nor a building piece and has no max_rise_m of its own.
+# Whether a kit is set down by the station rule: a structure that is neither a foundation nor a building piece, is not set on something else
+# (attach_to: a pot on its fire, a door in its doorway) and has no max_rise_m of its own.
 static func seats_low(cfg: Dictionary, kit_id: String) -> bool:
-	var def: Dictionary = structure_of_kit(cfg, kit_id)
-	return not def.is_empty() and not bool(def.get("foundation", false)) and not bool(def.get("piece", false)) and not def.has("max_rise_m")
+	return _seats_low_def(structure_of_kit(cfg, kit_id))
+
+
+static func _seats_low_def(def: Dictionary) -> bool:
+	return not def.is_empty() and not bool(def.get("foundation", false)) and not bool(def.get("piece", false)) and not def.has("attach_to") and not def.has("max_rise_m")
+
+
+# A station's own rise limit (before the file's max_rise_m caps it): STATION_RISE_PER_M of its longer side, at least STATION_RISE_MIN_M.
+static func _station_rise(def: Dictionary) -> float:
+	return maxf(STATION_RISE_MIN_M, STATION_RISE_PER_M * maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))))
 
 
 # How much higher the highest ground sample may be than the lowest (steep).
@@ -1310,8 +1326,8 @@ static func rise_limit(cfg: Dictionary, kit_id: String) -> float:
 
 	var limit: float = float(def.get("max_rise_m", cfg.get("max_rise_m", 1.0)))
 
-	if seats_low(cfg, kit_id):
-		limit = minf(limit, maxf(STATION_RISE_MIN_M, STATION_RISE_PER_M * maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))))
+	if _seats_low_def(def):
+		limit = minf(limit, _station_rise(def))
 
 	return limit
 
