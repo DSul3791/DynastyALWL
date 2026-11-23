@@ -542,8 +542,13 @@ func _client() -> void:
 		for flag_set in [[PlayerViewScript.MORE_BOW_RAISED, "idle_bow_raised"], [PlayerViewScript.MORE_BOW_DRAWN, "idle_bow_drawn"], [0, "idle"]]:
 			view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([bow]), PackedInt32Array([t0 + 3530]), PackedInt32Array([0]), PackedByteArray([int(flag_set[0]) | (1 << PlayerViewScript.MORE_MEAL_SHIFT)]), PackedInt32Array([0]))
 
-			for i in range(4):
-				await process_frame
+			view._bodies[7]["rig"].set_meta("hook_t", 0.0)   # a drink still held from the checks above is not this check's business
+
+			for i in range(100):   # a one-shot still playing plays out first, at its own time (slow on a loaded computer)
+				await create_timer(0.05).timeout
+
+				if str(view._bodies[7]["rig"].current()) == str(flag_set[1]):
+					break
 
 			var bow_node: Node3D = view._bodies[7].get("held_node", null)
 			var clip_now: String = str(view._bodies[7]["rig"].current())
