@@ -11,7 +11,7 @@
 5. **Bones are not the skin.** A bird's feathers reach twice past its bones; set its `length_m` to the bone length. A skinned mesh's box must be read through its bind, not its node (the goblins were 85 times too big).
 6. **A texture's alpha is not always a cut-out.** The goat's alpha is nearly all zero; drawn as a cut-out it was invisible. Mark that material entry `"opaque": true`.
 7. **Never install a `.blend` beside the `.fbx`.** With one there, the headless import writes no `.import` at all. The install tool skips them.
-8. **Model files never go in git** (public repo). `/assets/animals/` is ignored; the install tool copies them from the pack on each machine.
+8. **Model files are in git through Git LFS** (Dave 22-23 Nov 2026: "we can keep the bought models in the github with all other models because even though its public nobody knows about it", then "we are able to move the files to the github now"; this replaces "never in git", decision 83). Clones that do not need them run `tools/skip_models.sh`; `tools/install_animal_models.py` is only for adding new ones from the pack.
 
 ## How ours works
 - Install: `python tools/install_animal_models.py --pack "<pack>" [--kinds=...]` (row `pack` folder; also each variant's and `young_model`'s own pack).

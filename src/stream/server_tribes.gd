@@ -61,6 +61,8 @@ func setup(store_dir: String = "") -> void:
 
 	_path = store_dir.path_join(FILE) if store_dir != "" else ""
 
+	ItemsScript.restore_missing(_path)
+
 	if _path != "" and FileAccess.file_exists(_path):
 		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
 

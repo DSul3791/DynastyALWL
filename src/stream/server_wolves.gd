@@ -1215,6 +1215,9 @@ func save_dens() -> void:
 
 
 func load_dens() -> void:
+	if store_dir != "":
+		ItemsScript.restore_missing(store_dir + "/" + DENS_FILE)
+
 	if store_dir == "" or not FileAccess.file_exists(store_dir + "/" + DENS_FILE):
 		return
 

@@ -6,6 +6,10 @@
 #      this PC: the test install would take over that install's uninstall entry)
 #   2. two short starts of the installed game (1200 frames each, a window opens): the default driver, then --rendering-driver d3d12;
 #      FAIL when a start has no driver line or used another driver than asked
+#   Every game run is judged by what it left, not by its exit code: the exported Windows game ends with OS.kill, which gives exit 0
+#   on every path (Z5 review C2; the short starts quit through the engine, so their exit code still counts). A run fails when Windows logged an Application Error for Dynasty.exe while it ran (a crash, also
+#   one in the engine's teardown after the game's own quit), and the cold play also fails when its log never reaches the game's
+#   "EXIT:" line (it did not quit by its own path, or the log was not flushed before the process ended: Z5 review C3).
 #   3. server package: docker load of dynasty-server-build-<N>.tar, then its compose.yaml up as a throwaway project (dynasty-firstrun,
 #      host ports 24700/24701, its own volume), waits until the server is running
 #   4. cold play: the installed game (fresh profile, Vulkan, 1920x1080 windowed) joins that server by itself (--test: no title or
@@ -56,8 +60,20 @@ function Run-Limited([string]$file, [string]$arguments, [int]$limit, [string]$wh
 	return $p.ExitCode
 }
 
+# Windows' Application Error events (event 1000, the crash dialog's record) for Dynasty.exe since $since; WER writes them a moment after
+# the crash, so this waits a few seconds first. Each one found is a FAIL with its first lines.
+function Check-Crashes([string]$what, [datetime]$since) {
+	Start-Sleep -Seconds 5
+	$events = @(Get-WinEvent -FilterHashtable @{ LogName = "Application"; ProviderName = "Application Error"; StartTime = $since } -ErrorAction SilentlyContinue |
+		Where-Object { $_.Message -match "Dynasty\.exe" -and $_.Message -like "*$install*" })   # this run's install only, not another Dynasty on this PC
+	foreach ($e in $events) {
+		Fail "$what crashed: Windows Application Error at $($e.TimeCreated.ToString('HH:mm:ss')): $((($e.Message -split "`r?`n") | Select-Object -First 3) -join ' | ')"
+	}
+	if ($events.Count -eq 0) { Write-Host "   no Application Error event for Dynasty.exe" }
+}
+
 # The game with a fresh APPDATA, LOCALAPPDATA and TEMP (a first launch on a friend's PC: no shader cache, settings or characters).
-function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$want, [int]$limit) {
+function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$want, [int]$limit, [switch]$NeedExit) {
 	$home_dir = Join-Path $runs "$name-profile"
 	if (Test-Path -LiteralPath $home_dir) { Remove-Item -LiteralPath $home_dir -Recurse -Force }
 	foreach ($d in "Roaming", "Local", "Temp") { New-Item -ItemType Directory -Force -Path (Join-Path $home_dir $d) | Out-Null }
@@ -70,19 +86,31 @@ function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$wan
 		# Engine options first, the game's own after "--". Start-Process joins the arguments as they are, so the quotes are written in.
 		$arguments = "$engine --log-file `"$log`"" + $(if ($game) { " -- $game" } else { "" })
 		Write-Host "== $name : Dynasty.exe $arguments (at most $limit s)"
+		$since = Get-Date
 		$code = Run-Limited $exe $arguments $limit $name
 	}
 	finally {
 		$env:APPDATA = $saved[0]; $env:LOCALAPPDATA = $saved[1]; $env:TEMP = $saved[2]; $env:TMP = $saved[3]
 	}
 	Write-Host "   exit $code, log $log"
+	Check-Crashes $name $since
+	if ($NeedExit) {
+		$quit = $null
+		if (Test-Path -LiteralPath $log) { $quit = Select-String -LiteralPath $log -Pattern "^EXIT: " | Select-Object -Last 1 }
+		if ($null -eq $quit) {
+			Fail "the log never reaches the game's EXIT: line (no quit by its own path, or the log was cut off); its tail:"
+			if (Test-Path -LiteralPath $log) { Get-Content -LiteralPath $log -Tail 8 | ForEach-Object { Write-Host "      $_" } }
+		}
+		else { Write-Host "   $($quit.Line)" }
+	}
 	$line = $null
 	if (Test-Path -LiteralPath $log) { $line = Select-String -LiteralPath $log -Pattern "Using Device" | Select-Object -First 1 }
 	if ($null -eq $line) { Fail "no driver line (no log, or the game did not start its renderer)"; return $log }
 	Write-Host "   $($line.Line)"
 	# The game may fall back to the other driver by itself (project.godot fallback_to_*), so the line must name the one asked for.
 	if ($want -and $line.Line -notmatch $want) { Fail "asked for $want, the game used another driver" }
-	elseif ($code -ne 0 -and $code -ne -1) { Fail "exit $code" }
+	# A short start quits through the engine (--quit-after), so its exit code is real; the cold play ends with OS.kill (exit 0 always).
+	elseif (-not $NeedExit -and $code -ne 0 -and $code -ne -1) { Fail "exit $code" }
 	return $log
 }
 
@@ -179,7 +207,7 @@ try {
 		Write-Host "   server running"
 
 		# 4. cold play: joins by itself and quits after 150 s by the clock (--timeout); --frames is only a backstop
-		$log = Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "--test --server=127.0.0.1 --port=$port --timeout=150 --frames=200000" "Vulkan" 420
+		$log = Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "--test --server=127.0.0.1 --port=$port --timeout=150 --frames=200000" "Vulkan" 420 -NeedExit
 		$ground = Select-String -LiteralPath $log -Pattern "JOIN: ground ready" -ErrorAction SilentlyContinue | Select-Object -First 1
 		if ($ground) { Write-Host "   $($ground.Line)" } else { Fail "the cold play never logged JOIN: ground ready (did not join or land)" }
 		$worst = 0

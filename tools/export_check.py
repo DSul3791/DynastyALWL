@@ -59,7 +59,7 @@ DEVELOPER = DEVELOPER_FOLDERS + ["*.md", "*.py", "*.sh", "*.bat", "*.ps1", "*.lo
 # Files a machine keeps for itself (gitignored): the real admin keys, the generator's setup cache, export settings with passwords.
 LOCAL = ["data/admin.json", "worlds/*/setup_cache/*", "export.cfg", "export_credentials.cfg", ".godot/*"]
 # Untracked files that belong in a pack (--disk reports any other untracked file a pack would carry): the build stamp, the
-# installer's server address (step A2) and the bought animal models (gitignored by licence, decision 83).
+# installer's server address (step A2) and the bought animal models (copied in on clones of commits before they were in Git LFS, 23 Nov 2026).
 UNTRACKED_OK = ["build_stamp.json", "client_config.json", "assets/animals/*"]
 SERVER_NEEDS = ["worlds/base_world/world.json", "worlds/base_world/plan/tile_rules.json", "worlds/base_world/erosion_delta_v2.bin"]
 STAMP = "build_stamp.json"   # tools/build_stamp.py writes it before an export (step A1); untracked, so checked against the filter

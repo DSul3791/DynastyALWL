@@ -13,6 +13,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           fetch-depth: 0
+          # The bought animal models (Git LFS) are not needed here: no LFS download and no assets/animals in the checkout (tools/skip_models.sh).
+          lfs: false
+          sparse-checkout: |
+            /*
+            !/assets/animals/
+          sparse-checkout-cone-mode: false
       - name: Run merge guard against the commit before this push
         env:
           BEFORE: ${{ github.event.before }}
