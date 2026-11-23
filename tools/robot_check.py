@@ -5,6 +5,10 @@
 
 Invariants (src/client/robot_play.gd prints the client side, src/server/robot_audit.gd the server side):
   pack      every robot pack check (ROBOT ... CHECK pack) equals the server's pack for that peer at that moment (AUDIT pack)
+  chest     every robot container check (ROBOT ... CHECK chest) equals the server's contents of it (AUDIT chest) when the server has held
+            them unchanged for CHEST_STEADY_MS (a look while another player is changing it is counted, not judged)
+  total     plan pack_fuzz: the counted items (AUDIT total: every pack, container and loose item) never more than were there plus what the
+            robots were given (ROBOT ... GAVE), and exactly that at the end; twine counts as its 3 plant fibre
   robot     every ROBOT ... FAIL line (craft, pickup, jump, inside, held, blocked, refusal, rejoin)
   server    every AUDIT jump (an animal moved farther in a step than its top speed allows) and AUDIT inside (an animal inside a player)
   errors    no SCRIPT ERROR, and no engine ERROR line outside tools/robot_known_errors.txt, in any log
@@ -24,6 +28,7 @@ import sys
 OTHERS_M = 1.5          # a drawn player this far from everywhere the real one was in the last second is off its track
 OTHERS_REPEAT = 4       # ... this many times for one pair before it is a finding (one late packet is not)
 STEADY_MS = 2000        # a stance held this long must be the stance the others draw
+CHEST_STEADY_MS = 1500  # a container the server has held unchanged this long must look the same in every client that has it open
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -45,6 +50,47 @@ def known_errors():
 	return pats
 
 
+# Plan pack_fuzz: nothing doubled or lost. Twine is made of 3 plant fibre, so the two count together.
+def conserved(totals, gave):
+	if not totals:
+		return ["total: robots were given counted items, but the server printed no AUDIT total"] if gave else []
+
+	def weigh(row):
+		out = dict(row)
+		out["plant_fibre"] = out.get("plant_fibre", 0) + 3 * out.pop("twine", 0)
+		return out
+
+	base = weigh(totals[0][1])
+	expected = dict(base)
+
+	for _, item, n in gave:
+		weight = 3 if item == "twine" else 1
+		item = "plant_fibre" if item == "twine" else item
+		expected[item] = expected.get(item, 0) + n * weight
+
+	out = []
+	over = {}
+
+	for ms, row in totals:
+		for item, n in weigh(row).items():
+			if n > expected.get(item, 0) and item not in over:
+				over[item] = (ms, n)
+
+	for item, (ms, n) in sorted(over.items()):
+		out.append("total: %s reached %d at %d, more than the %d there plus given: doubled" % (item, n, ms, expected.get(item, 0)))
+
+	last = weigh(totals[-1][1])
+
+	for item in sorted(expected):
+		if last.get(item, 0) != expected[item]:
+			out.append("total: %s ends at %d, the %d there plus given would be %d: %s" % (item, last.get(item, 0), base.get(item, 0), expected[item], "lost" if last.get(item, 0) < expected[item] else "doubled"))
+
+	if not out:
+		print("total: every counted item kept (%s)" % ", ".join("%s %d" % kv for kv in sorted(expected.items())))
+
+	return out
+
+
 def main():
 	if len(sys.argv) < 2 or not os.path.isdir(sys.argv[1]):
 		print(__doc__)
@@ -61,6 +107,8 @@ def main():
 	findings = []
 	broke = []
 	server_pack = collections.defaultdict(list)   # peer -> [(ms, sig)]
+	server_chest = collections.defaultdict(list)  # world id -> [(ms, sig)]
+	totals = []                                   # [(ms, {item: count})]
 	server_faults = collections.Counter()
 	server_examples = {}
 	audit_on = False
@@ -71,6 +119,12 @@ def main():
 		elif line.startswith("AUDIT pack "):
 			p = line.split()
 			server_pack[int(p[2])].append((int(p[3]), p[4]))
+		elif line.startswith("AUDIT chest "):
+			p = line.split()
+			server_chest[int(p[2])].append((int(p[3]), p[4]))
+		elif line.startswith("AUDIT total "):
+			p = line.split()
+			totals.append((int(p[2]), {k: int(v) for k, v in (x.split(":") for x in p[3:])}))
 		elif line.startswith("AUDIT jump ") or line.startswith("AUDIT inside "):
 			p = line.split()
 			key = "%s %s" % (p[1], p[3])   # kind, species
@@ -109,6 +163,9 @@ def main():
 		findings.append("errors %s: %d x %s" % (where, n, text))
 
 	checks = 0
+	gave = []   # [(ms, item, count)]
+	chest_racing = 0   # container checks taken while another player was still changing it (not judged)
+	fuzz_end = 0   # plan pack_fuzz: the first "fuzz both done" check: every robot's actions are over by then; after it a robot quits and its pack stops counting
 	held_looks = 0
 	play_logs = 0
 
@@ -129,10 +186,26 @@ def main():
 				play_logs += 1 if "plan first_hours" in line else 0   # only that plan holds items in view of the others
 			elif " FAIL " in line:
 				findings.append("robot %s: %s" % (name, line.strip()))
+			elif " GAVE " in line:
+				p = line.split(" GAVE ")[1].split()
+				gave.append((int(p[2]), p[0], int(p[1])))
+			elif " CHECK chest " in line:
+				p = line.split(" CHECK chest ")[1].split()
+				cid, ms, sig, step = int(p[0]), int(p[1]), p[2], " ".join(p[4:])
+				checks += 1
+				before = [x for x in server_chest.get(cid, []) if x[0] <= ms]
+
+				if before and ms - before[-1][0] < CHEST_STEADY_MS:
+					chest_racing += 1   # another player changed it just now: its last change may still be on the way, so this look is not judged
+					continue
+
+				if not before or sig != before[-1][1]:
+					findings.append("chest %s: after %s the client shows container %d as %s, the server holds %s" % (name, step, cid, sig, before[-1][1] if before else "nothing printed"))
 			elif " CHECK pack " in line:
 				p = line.split(" CHECK pack ")[1].split()
 				peer, ms, sig, step = int(p[0]), int(p[1]), p[2], " ".join(p[4:])
 				checks += 1
+				fuzz_end = (ms if fuzz_end == 0 else min(fuzz_end, ms)) if step == "fuzz both done" else fuzz_end
 				before = [s for s in server_pack.get(peer, []) if s[0] <= ms]
 
 				if not before:
@@ -165,6 +238,7 @@ def main():
 	if play_logs >= 2 and held_looks == 0:
 		findings.append("held: %d robots played together and no robot measured another's held item (the held check never ran)" % play_logs)
 
+	findings += conserved([t for t in totals if fuzz_end == 0 or t[0] <= fuzz_end], gave)
 	findings += held_link(d, robot_logs)
 	findings += others(robot_logs)
 	findings += hunts(robot_logs)
@@ -175,8 +249,8 @@ def main():
 	for f in findings:
 		print("FAIL " + f)
 
-	print("robot_check: %d robot logs, %d pack checks, %d findings, %d broken%s" % (
-		len(robot_logs), checks, len(findings), len(broke), "" if findings or broke else ": every invariant held"))
+	print("robot_check: %d robot logs, %d pack and container checks (%d container looks during another player's change, not judged), %d findings, %d broken%s" % (
+		len(robot_logs), checks, chest_racing, len(findings), len(broke), "" if findings or broke else ": every invariant held"))
 	return 2 if broke else (1 if findings else 0)
 
 
