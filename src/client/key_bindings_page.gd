@@ -14,6 +14,7 @@ var _menu
 var _capture: Control
 var _status: Label
 var _conflict_row: HBoxContainer
+var _shared_note: Label               # names the actions that share a key (an older file, or a new action's default)
 var _reset_all_button: Button
 var _reset_all_armed: bool = false
 var _key_buttons: Dictionary = {}     # action id -> Button showing its key
@@ -37,6 +38,13 @@ func build(menu, page: VBoxContainer) -> void:
 	_status.custom_minimum_size = Vector2(900.0, 0.0)
 	_status.add_theme_font_size_override("font_size", 20)
 	page.add_child(_status)
+	_shared_note = Label.new()
+	_shared_note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_shared_note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_shared_note.custom_minimum_size = Vector2(900.0, 0.0)
+	_shared_note.add_theme_font_size_override("font_size", 20)
+	_shared_note.add_theme_color_override("font_color", Color(1.0, 0.55, 0.4))
+	page.add_child(_shared_note)
 	_conflict_row = HBoxContainer.new()
 	_conflict_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	_conflict_row.visible = false
@@ -129,10 +137,24 @@ func _add_row(list: VBoxContainer, row: Array) -> void:
 
 
 func refresh() -> void:
+	var shared: Dictionary = {}
+
+	for pair in KeyBindings.conflicts():
+		shared[str(pair[0])] = true
+		shared[str(pair[1])] = true
+
 	for id in _key_buttons:
 		var button: Button = _key_buttons[id]
-		button.text = "Press a key..." if id == _waiting_id else KeyBindings.label(id)
+		button.text = "Press a key..." if id == _waiting_id else KeyBindings.label(id) + (" (shared)" if shared.has(id) else "")
 		_reset_buttons[id].disabled = KeyBindings.is_default(id)
+
+		if shared.has(id):   # two actions on one key both fire: marked until one changes
+			button.add_theme_color_override("font_color", Color(1.0, 0.55, 0.4))
+		else:
+			button.remove_theme_color_override("font_color")
+
+	_shared_note.text = KeyBindings.shared_note()
+	_shared_note.visible = _shared_note.text != ""
 
 	_reset_all_button.text = "Click again to reset all" if _reset_all_armed else "Reset all to defaults"
 

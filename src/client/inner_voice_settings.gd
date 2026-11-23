@@ -1,5 +1,7 @@
 extends RefCounted
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # Esc > Settings > Inner voice (Dave 24 Oct): hints on/off and inner dialogue on/off, saved per player on this PC. Both default on (also when the file is missing).
 # The server still sends every line (protocol 38); the client drops the lines of a switched-off class before the subtitle and the sound (inventory_view._on_thought).
 # The symptom message of a sickness is not a line of the voice and is never filtered. Which class a kind belongs to: data/items/inner_voice_classes.json.
@@ -21,8 +23,8 @@ func _init(path: String = CONFIG, classes_path: String = CLASSES_PATH) -> void:
 	var file: ConfigFile = ConfigFile.new()
 
 	if file.load(_path) == OK:
-		hints = bool(file.get_value("inner_voice", "hints", true))
-		dialogue = bool(file.get_value("inner_voice", "dialogue", true))
+		hints = SettingsRead.flag(file, "inner_voice", "hints", true)
+		dialogue = SettingsRead.flag(file, "inner_voice", "dialogue", true)
 
 
 # "hint" or "dialogue" for a line kind.

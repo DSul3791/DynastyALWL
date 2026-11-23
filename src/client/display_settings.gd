@@ -1,5 +1,7 @@
 extends RefCounted
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # Window and display choices that are saved between runs (owner, 2026-10-20): the 3D
 # resolution (16:9 sizes, 1920x1080 the highest), windowed or fullscreen windowed, VSync
 # and the quality tier. Esc > Settings changes them; the file is user://display_settings.cfg.
@@ -50,21 +52,21 @@ func load_saved() -> void:
 	if file.load(path) != OK:
 		return
 
-	size_index = clampi(int(file.get_value("display", "size", DEFAULT_SIZE)), 0, SIZES.size() - 1)
-	fullscreen = bool(file.get_value("display", "fullscreen", false))
-	vsync_index = clampi(int(file.get_value("display", "vsync", 0)), 0, VSYNC_MODES.size() - 1)
-	quality = int(file.get_value("display", "quality", -1))
-	text_index = clampi(int(file.get_value("display", "text", 1)), 0, TEXT_SCALES.size() - 1)
-	hud_text = bool(file.get_value("display", "hud_text", true))
-	cave_dark = bool(file.get_value("display", "cave_dark", true))
-	damage_numbers = bool(file.get_value("display", "damage_numbers", true))
-	idle_minutes = clampi(int(file.get_value("display", "idle_minutes", 60)), 60, 120)
-	fahrenheit = bool(file.get_value("display", "fahrenheit", false))
-	reduce_motion = bool(file.get_value("display", "reduce_motion", false))
-	mouse_look = clampf(float(file.get_value("display", "mouse_look", 1.0)), MOUSE_LOOK_MIN, MOUSE_LOOK_MAX)
+	size_index = clampi(SettingsRead.whole(file, "display", "size", DEFAULT_SIZE), 0, SIZES.size() - 1)
+	fullscreen = SettingsRead.flag(file, "display", "fullscreen", false)
+	vsync_index = clampi(SettingsRead.whole(file, "display", "vsync", 0), 0, VSYNC_MODES.size() - 1)
+	quality = SettingsRead.whole(file, "display", "quality", -1)
+	text_index = clampi(SettingsRead.whole(file, "display", "text", 1), 0, TEXT_SCALES.size() - 1)
+	hud_text = SettingsRead.flag(file, "display", "hud_text", true)
+	cave_dark = SettingsRead.flag(file, "display", "cave_dark", true)
+	damage_numbers = SettingsRead.flag(file, "display", "damage_numbers", true)
+	idle_minutes = clampi(SettingsRead.whole(file, "display", "idle_minutes", 60), 60, 120)
+	fahrenheit = SettingsRead.flag(file, "display", "fahrenheit", false)
+	reduce_motion = SettingsRead.flag(file, "display", "reduce_motion", false)
+	mouse_look = clampf(SettingsRead.number(file, "display", "mouse_look", 1.0), MOUSE_LOOK_MIN, MOUSE_LOOK_MAX)
 	# Saved choices from before the six-way list: 2 weight and 3 value were highest first; they map to descending.
-	var saved_sort: int = int(file.get_value("display", "sort", 0))
-	var sort_version: int = int(file.get_value("display", "sort_version", 1))
+	var saved_sort: int = SettingsRead.whole(file, "display", "sort", 0)
+	var sort_version: int = SettingsRead.whole(file, "display", "sort_version", 1)
 	sort_index = clampi(saved_sort, 0, SORT_NAMES.size() - 1)
 
 	if sort_version < 2:

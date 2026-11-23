@@ -1,5 +1,7 @@
 extends RefCounted
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # Auto pickup (Dave 24 Oct): key P switches it on and off. When on, the client asks the server for the loose items within reach, one at a time, four a
 # second (the server's weight, tool and ownership rules still decide). A client-only setting in user://input_settings.cfg, default OFF.
 
@@ -26,7 +28,7 @@ func _init(path: String = SETTINGS_PATH) -> void:
 	var file: ConfigFile = ConfigFile.new()
 
 	if file.load(_path) == OK:
-		enabled = bool(file.get_value("input", "auto_pickup", false))
+		enabled = SettingsRead.flag(file, "input", "auto_pickup", false)
 
 
 # P pressed: flip it, remember it, and return the words to show above the middle of the screen.
