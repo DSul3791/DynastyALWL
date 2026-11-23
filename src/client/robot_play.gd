@@ -3684,10 +3684,9 @@ func _seen() -> void:
 		_write(_share("seen_cast.txt"), "%.2f %.2f %s" % [client.body.global_position.x, client.body.global_position.z, str(_notices.slice(said_from))])
 		var from: Vector3 = client.body.global_position
 		var away: Vector3 = Vector3(from.x - water.x, 0.0, from.z - water.z).normalized()
-		var walked: float = 0.0
 
 		for _n in 4:
-			walked += await _walk_for(away if away.length() > 0.5 else Vector3.FORWARD, 1.5)
+			var _m: float = await _walk_for(away if away.length() > 0.5 else Vector3.FORWARD, 1.5)
 
 			if Vector2(client.body.global_position.x - from.x, client.body.global_position.z - from.z).length() >= SEEN_AWAY_M:
 				break
@@ -3788,8 +3787,8 @@ func _wiggle() -> void:
 
 		trial.sort()
 
-		if not trial.is_empty() and float(trial[trial.size() / 2]) < best_med:
-			best_med = float(trial[trial.size() / 2])
+		if not trial.is_empty() and float(trial[trial.size() >> 1]) < best_med:
+			best_med = float(trial[trial.size() >> 1])
 			best_shift = shift
 			offs = trial
 
@@ -3801,7 +3800,7 @@ func _wiggle() -> void:
 		return
 
 	FreezeWatchScript.printer.line("ROBOT %s WIGGLE Robot 1 ran back and forth every %.1f s for %.0f s: drawn against its own place %d ms before (the best-fitting draw delay) median %.2f m, 95th %.2f m, worst %.2f m (%d frames)" % [
-		robot_name, WIGGLE_LEG_S, WIGGLE_S, best_shift, float(offs[offs.size() / 2]), float(offs[int(offs.size() * 0.95)]), float(offs[-1]), offs.size()])
+		robot_name, WIGGLE_LEG_S, WIGGLE_S, best_shift, float(offs[offs.size() >> 1]), float(offs[int(offs.size() * 0.95)]), float(offs[-1]), offs.size()])
 
 
 # Robot 1's own place at unix ms `ms` from its path lines [ms, x, z] (in time order), straight between them; INF outside the path's span.
@@ -3813,7 +3812,7 @@ static func _wiggle_at(pts: Array, ms: int) -> Vector2:
 	var hi: int = pts.size() - 1
 
 	while hi - lo > 1:
-		var mid: int = (lo + hi) / 2
+		var mid: int = (lo + hi) >> 1
 
 		if int(pts[mid][0]) <= ms:
 			lo = mid
