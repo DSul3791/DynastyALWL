@@ -33,6 +33,7 @@ const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or tall
 const BRUSH_CHUNKS := 64              # chunks kept in the undergrowth index (oldest dropped first; a dropped one is made again on a worker)
 
 var placer
+var pack = null                             # prebuilt plants (flora_pack.gd), read before the placer; null = none
 var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
 var chunks_made: int = 0
 var layout_cleared: bool = false            # true when setup dropped saved removals because the flora layout changed
@@ -80,7 +81,8 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 # full one: spring cover shrubs make room before trees in the full list), so far chunks streamed past do not push near ones out.
 # One placement per chunk and form at a time: a second asker waits for the first instead of placing it again (a join at the spawn placed
 # 11 to 13 of its 36 chunk lists twice side by side, Dave's PC and David4, 15 Nov 2026; flora_pool_profile.gd).
-# shortcut: a kept list does not follow later live water (sim_snapshot) until new tiles clear it, as items_of already did; a chunk dropped
+# shortcut: a kept list does not follow later live water (sim_snapshot) until new tiles clear it, as items_of already did (prebuilt lists,
+# flora_pack.gd, are placed over the baked water and never follow it); a chunk dropped
 # from a store is placed again on its next change, as before. Revisit if either shows in play.
 func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
@@ -111,7 +113,12 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 		OS.delay_msec(5)
 
 	# Taken untyped: a script error inside the placer returns null, and the key must still be freed or every later asker would wait forever.
-	var got = placer.chunk_items(home, trees_only)
+	var prebuilt = pack   # read once: the main thread drops it when the tiles change
+	var got = prebuilt.items(home, trees_only) if prebuilt != null else null   # prebuilt by the generator (flora_pack.gd); null = not in it
+
+	if got == null:
+		got = placer.chunk_items(home, trees_only)
+
 	var made: Dictionary = got if got is Dictionary else {}
 	_items_mutex.lock()
 
