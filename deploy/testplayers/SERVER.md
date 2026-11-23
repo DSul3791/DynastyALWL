@@ -1,6 +1,6 @@
 # The test players' page on Dave's web server
 
-Dave set up the web server on 22 Nov 2026. It is Caddy in Docker on the Ubuntu game server **dell-gameserver-01**, the same computer as David4.
+Dave set up the web server on 22 Nov 2026. It is Caddy in Docker on the Ubuntu game server **dell-gameserver-01** (LAN address 192.168.0.108; the name does not resolve from Dave's PC, so the copy commands use the address), the same computer as David4.
 - Address: https://hannibalshouse.duckdns.org/
 - Login: HTTPS and a login for the four test players are already set up there, for the whole site.
 - Site root: `/data/game-web/site/` on the host. It belongs to dave, and the container reads it as `/srv`.
@@ -30,10 +30,10 @@ All the page's links start with `/`. File names have no spaces.
 
 ## 2. Copy it up (Dave, one paste in PowerShell on his PC)
 
-The site script prints this line with the right folder and every top-level item of the site; paste that one. The line below is the same for a site without the testers' own pages. If the name `dell-gameserver-01` does not resolve from the PC, put the server's LAN address there instead. Type the password when scp asks, or use your SSH key. No password goes in any file.
+The site script prints this line with the right folder and every top-level item of the site; paste that one. The line below is the same for a site without the testers' own pages. Type the password when scp asks, or use your SSH key. No password goes in any file.
 
 ```
-$build = "<N>"; $server = "dell-gameserver-01"
+$build = "<N>"; $server = "192.168.0.108"
 Set-Location "E:\Software\godotDev\dynasty_export\build-$build\site"; scp -r index.html latest.json files.sha256 download css images fonts downloads "dave@${server}:/data/game-web/site/"
 ```
 

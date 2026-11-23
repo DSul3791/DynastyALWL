@@ -101,4 +101,4 @@ Write-Host "  index.html, download\, css\, images\, fonts\, latest.json, files.s
 Write-Host "  copy it up (deploy\testplayers\SERVER.md step 2; type the password when scp asks):"
 # Every top-level file and folder the site has (the testers' own pages add more when they are in the checkout), in one scp.
 $top = (Get-ChildItem -LiteralPath $site | Sort-Object Name | ForEach-Object { $_.Name }) -join " "
-Write-Host "  Set-Location `"$site`"; scp -r $top `"dave@dell-gameserver-01:/data/game-web/site/`""
+Write-Host "  Set-Location `"$site`"; scp -r $top `"dave@192.168.0.108:/data/game-web/site/`""
