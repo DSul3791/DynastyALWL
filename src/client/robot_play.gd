@@ -3853,7 +3853,7 @@ func _together() -> void:
 		_fail("together", "held", "Robot 1 put 3 more twine in while Robot 2 was held: twine over both packs, the basket and the ground %d, wanted %d" % [held_total, twine_all + 3])
 
 	await _tg_go("after_hold")
-	await _tg_window("after_hold")
+	_tg_window("after_hold")
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, _tg_chest_id, 0, 0, Vector3.ZERO)
 	await _tg_site()
 	await _tg_door()
@@ -4251,7 +4251,7 @@ func _tg_after(step: String, number: int, before: int, what: String) -> void:
 	if robot_name.ends_with("1") and total != before:
 		_fail("together", step, "%s: %s over both packs, the basket and the ground went %d -> %d" % [what, client.items.table.id_of(number), before, total])
 
-	await _tg_window(step)
+	_tg_window(step)
 
 
 func _tg_window(step: String) -> void:
