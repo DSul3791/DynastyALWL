@@ -102,6 +102,7 @@ const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ClimateScript := preload("res://src/shared/climate.gd")
 const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
 const CellReadsScript := preload("res://src/stream/cell_reads.gd")   # a scatter cell's ground, water and ore reads bound to its tile (one generator lock a cell)
 const ThunderScript := preload("res://src/shared/thunder.gd")
@@ -792,7 +793,8 @@ func _ready() -> void:
 	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.player_loud = func(): return cues.loud_kinds()   # a blow, a cry or craft work carries farther to animals (hearing-range pass)
 	animals.hour_now = func(): return game_clock.hour()
-	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
+	animals.sun_row_m = float(settings.tile_size_m)
+	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
 	animals.season_now = func(): return game_clock.season()
 	var biome_names: Dictionary = {}
 

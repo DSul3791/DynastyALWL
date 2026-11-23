@@ -607,6 +607,7 @@ func setup(item_table, store_dir: String) -> void:
 	_lift_out_of_slabs()   # stacks dropped on a foundation before 23 Nov 2026 lay inside it: onto its top, written at the first save
 	_carts.after_load()
 	_traps.after_load()   # each trap's held catch laid again by it
+	_traps.load_marks(_read_json_version("tracking_marks.json", 1))
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
@@ -2082,6 +2083,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _tanks_written, "wells": _wells_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
+	_write_atomic("tracking_marks.json", _traps.saved_marks())   # the trail signs and snare spots that already trained each character's Tracking
 	_save_item_files(_item_job())
 
 

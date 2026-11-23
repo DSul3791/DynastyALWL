@@ -26,9 +26,9 @@ var _fine: Dictionary = {}         # Vector2i FINE_M cell -> Array of set trap i
 var _marks_cache: Dictionary = {}  # owner key -> [game-free ms it was made, rows]: marks_of is asked every send, rebuilt at most every marks_refresh_s
 
 var _follow_at: Dictionary = {}    # peer -> where it stood at the last check_s look (Tracking: following a trail)
-var _sign_xp: Dictionary = {}      # owner key -> [[x, z, game s], ...]: the trail signs that character found (Tracking), kept sign_spot_s
+var _sign_xp: Dictionary = {}      # owner key -> [[x, z, game s], ...]: the trail signs that character found (Tracking), kept sign_spot_s; saved (tracking_marks.json)
 var _sign_levels: Dictionary = {}  # data/look/trail_signs.json, read once: the level a sign shows from
-var _snare_xp: Dictionary = {}     # owner key -> [[x, z, game s], ...]: where a snare set on a trail last trained its Tracking
+var _snare_xp: Dictionary = {}     # owner key -> [[x, z, game s], ...]: where a snare set on a trail last trained its Tracking; saved too
 const GRID_M := 32.0               # the sweeps round players
 const FINE_M := 4.0                # passes: a step reads the few 4 m cells round it
 const PASS_LOOK_MAX := 16          # at most this many trap ids read per step, however many are packed into the cells round it
@@ -858,6 +858,23 @@ func _follow_checks() -> void:
 
 		if last != p and trail_at(p) >= float(tc.get("follow_min", 0.5)):
 			host.practice(int(peer), "track_follow")
+
+
+# What a restart keeps of Tracking's memory (server_items writes it as tracking_marks.json): the signs each character found and where their
+# snares trained it, so a restart never trains the same sign or snare spot again before its time is up.
+func saved_marks() -> Dictionary:
+	return {"version": 1, "signs": _sign_xp, "snares": _snare_xp}
+
+
+func load_marks(parsed: Variant) -> void:
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	for key in (parsed.get("signs", {}) as Dictionary):
+		_sign_xp[str(key)] = parsed["signs"][key]
+
+	for key in (parsed.get("snares", {}) as Dictionary):
+		_snare_xp[str(key)] = parsed["snares"][key]
 
 
 # A trail sign the player at `peer` has just spotted (protocol 153; Dave 23 Nov 2026, "spotting animal markings should highlight the
