@@ -10,6 +10,7 @@ extends SceneTree
 #            --body=body_1   the body model (body_1 = Body A, body_2 = Body B)
 #            --walk=M_PER_S  walks north (-Z) at this speed (0 = standing, 1.6 = walk, 4 = jog, 6 = run); the camera keeps pace
 #            --stance=N      0 standing, 1 crouched, 2 sitting, 3 lying (stance.gd; the state byte)
+#            --left=ID       the item in the left hand (torch, lantern, shield); --lit: a torch burning; --night: dark sky, no sun (to see its light)
 #            --asleep        the asleep bit (with --stance=3: a sleeping player)
 #            --swing         a blow before each picture (the swing count moves on), taken SWING_LEAD_S into the remote clip: the impact
 #            --angles="name:deg:dist;..."  camera deg round the body from its front (0 front, 90 its left, -90 its right, 180 behind), dist m away;
@@ -35,6 +36,8 @@ var _walk: float = 0.0
 var _stance: int = 0
 var _held: int = 0
 var _asleep: bool = false
+var _left: int = 0
+var _lit: bool = false
 var _swings: int = 0
 
 
@@ -45,6 +48,8 @@ func _init() -> void:
 	var prefix: String = ""
 	var body: String = "body_1"
 	var swing: bool = false
+	var night: bool = false
+	var left_id: String = ""
 	var settle: float = 2.5
 	var angles_text: String = "right:-90:2.4;left:90:2.4;front:0:2.4;hand:-90:1.0"
 
@@ -61,6 +66,12 @@ func _init() -> void:
 			_walk = float(a.trim_prefix("--walk="))
 		elif a.begins_with("--stance="):
 			_stance = clampi(int(a.trim_prefix("--stance=")), 0, 3)
+		elif a.begins_with("--left="):
+			left_id = a.trim_prefix("--left=")
+		elif a == "--lit":
+			_lit = true
+		elif a == "--night":
+			night = true
 		elif a == "--asleep":
 			_asleep = true
 		elif a == "--swing":
@@ -85,6 +96,14 @@ func _init() -> void:
 			quit(2)
 			return
 
+	if left_id != "":
+		_left = int(table.number_of(left_id))
+
+		if _left <= 0:
+			print("shot remote: FAIL no item %s" % left_id)
+			quit(2)
+			return
+
 	if prefix == "":
 		prefix = "remote_" + (item if item != "" else "hand")
 
@@ -97,13 +116,17 @@ func _init() -> void:
 	env.background_mode = Environment.BG_COLOR
 	env.background_color = Color(0.62, 0.78, 0.92)
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.ambient_light_color = Color(0.62, 0.64, 0.68)
+	env.ambient_light_color = Color(0.62, 0.64, 0.68) if not night else Color(0.04, 0.05, 0.08)
+
+	if night:
+		env.background_color = Color(0.01, 0.015, 0.03)
 	var world_env: WorldEnvironment = WorldEnvironment.new()
 	world_env.environment = env
 	vp.add_child(world_env)
 	var sun: DirectionalLight3D = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-45, 35, 0)
 	sun.shadow_enabled = true
+	sun.visible = not night
 	vp.add_child(sun)
 	var floor_mesh: MeshInstance3D = MeshInstance3D.new()
 	var plane: PlaneMesh = PlaneMesh.new()
@@ -214,4 +237,4 @@ func _init() -> void:
 func _send_row() -> void:
 	_server_ms += ROW_MS
 	_at += Vector3(0.0, 0.0, -_walk * float(ROW_MS) / 1000.0)
-	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]))
+	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]), PackedInt32Array([_left]), PackedByteArray([PlayerViewScript.MORE_LIT if _lit else 0]))

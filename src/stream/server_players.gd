@@ -26,13 +26,18 @@ const ASLEEP := 16
 const SWING_SHIFT := 5             # bits 5..7: the player's swing count, mod 8
 const Net := preload("res://src/stream/terrain_net.gd")
 # A blow with the tool in hand (one per swing, at its impact: held_item.gd), shown to the others as a swing.
+const MORE_LIT := 1                # more byte (157): a burning torch or lantern...
+const MORE_HANDS_SHIFT := 1        # ...the client's hand flags (held_item.gd HAND_*: bow raised, drawn, shield up, ladder) in bits 1..4...
+const MORE_MEAL_SHIFT := 5         # ...and bits 5..7 a count of eats and drinks, mod 8 (the others play the drink clip)
+const MEAL_ACTS := [Net.ACT_EAT, Net.ACT_DRINK]
 # Not ACT_TILL_GARDEN: the hoe's grid preview sends it as a check-only poll about once a second.
 const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Net.ACT_FILL, Net.ACT_TILL, Net.ACT_HIT_SHRUB,
 		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_ICEHOLE]
 
-var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, sleeping_of
-var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array)
+var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
+var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array, left PackedInt32Array, more PackedByteArray)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
+var send_flight: Callable          # (to peer, item number, from, velocity, burning): flight_seen (157)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
 
 var _looks: Dictionary = {}        # peer -> [name, body, code]
@@ -42,6 +47,8 @@ var _worn_sent: Dictionary = {}    # peer -> the worn numbers last told to every
 var _look_ms: Dictionary = {}      # peer -> server ms of its last accepted look
 var _sent: Dictionary = {}         # receiver -> [newest row ms sent, ids sent, ms sent]
 var _swings: Dictionary = {}       # peer -> [swing count mod 8, server ms of the latest]
+var _meals: Dictionary = {}        # peer -> eats and drinks mod 8
+var _shown: Dictionary = {}        # peer -> [left, more] as last worked out, and the server ms it changed: a change is news
 var _t: float = 0.0
 
 
@@ -90,13 +97,33 @@ func worn_changed(peer: int, numbers: PackedInt32Array) -> void:
 
 # A pack action came in (server_items action): a blow with the tool in hand counts a swing, so the others see it (the next rows).
 func note_action(peer: int, kind: int) -> void:
+	if kind in MEAL_ACTS:
+		_meals[peer] = (int(_meals.get(peer, 0)) + 1) & 7
+
 	if kind in SWING_ACTS:
 		var count: int = int((_swings.get(peer, [0, 0]) as Array)[0])
 		_swings[peer] = [(count + 1) & 7, int(now_ms.call())]
 
 
+# An arrow or thrown weapon left `thrower`'s hand (server_items.gd _shoot, _throw): every other player within NEAR_M with a look sees it fly.
+func flight(thrower: int, number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	if items == null or not send_flight.is_valid():
+		return
+
+	for peer in items.peer_ids():
+		if peer == thrower or not _looks.has(peer):
+			continue
+
+		var at: Variant = items.position_of(peer)
+
+		if at != null and (at as Vector3).distance_to(from) <= NEAR_M:
+			send_flight.call(peer, number, from, velocity, fire)
+
+
 func forget(peer: int) -> void:
 	_swings.erase(peer)
+	_meals.erase(peer)
+	_shown.erase(peer)
 	_looks.erase(peer)
 	_yaw.erase(peer)
 	_report_ms.erase(peer)
@@ -135,7 +162,15 @@ func tick(delta: float) -> void:
 		var swing: Array = _swings.get(peer, [0, 0])
 		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0) \
 				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(int(_report_ms[peer]), int(swing[1]))]
+		var left: int = int(items.left_hand_number(peer))
+		var more: int = (MORE_LIT if items.torch_burning(peer) else 0) | ((int(items.hand_flags(peer)) & 15) << MORE_HANDS_SHIFT) | (int(_meals.get(peer, 0)) << MORE_MEAL_SHIFT)
+		var shown: Array = _shown.get(peer, [])
+
+		if shown.is_empty() or int(shown[0]) != left or int(shown[1]) != more:
+			shown = [left, more, now]
+			_shown[peer] = shown
+
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(int(_report_ms[peer]), int(swing[1])), int(shown[2])), left, more]
 
 	for receiver in at:
 		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
@@ -160,6 +195,8 @@ func tick(delta: float) -> void:
 		var states: PackedByteArray = PackedByteArray()
 		var held: PackedInt32Array = PackedInt32Array()
 		var times: PackedInt32Array = PackedInt32Array()
+		var lefts: PackedInt32Array = PackedInt32Array()
+		var mores: PackedByteArray = PackedByteArray()
 
 		for row in rows:
 			var one: Array = info[row[0]]
@@ -168,8 +205,10 @@ func tick(delta: float) -> void:
 			states.append(int(one[1]))
 			held.append(int(one[2]))
 			times.append(int(one[3]))
+			lefts.append(int(one[5]))
+			mores.append(int(one[6]))
 
-		send_rows.call(receiver, ids, positions, yaws, states, held, times)
+		send_rows.call(receiver, ids, positions, yaws, states, held, times, lefts, mores)
 
 	for gone in _sent.keys():
 		if not peers.has(gone):

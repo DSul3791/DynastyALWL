@@ -441,7 +441,9 @@ func _ready() -> void:
 		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
 	players = PlayersScript.new()
 	players.items = items
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more)
+	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
+	items.send_flight = players.flight
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
 	net.facing_reported.connect(players.note_report)
 	net.look_reported.connect(players.set_look)

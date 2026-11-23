@@ -429,8 +429,21 @@ func held_number() -> int:
 # Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
 # every HELD_REPORT_S; the server checks it against the pack.
 const HELD_REPORT_S := 0.5
-var _held_sent: int = -1
+# From 157 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
+# once (at most every HAND_REPORT_S), an item change at most every HELD_REPORT_S.
+const HAND_REPORT_S := 0.1
+const HAND_BOW_RAISED := 1
+const HAND_BOW_DRAWN := 2
+const HAND_SHIELD_UP := 4
+const HAND_LADDER := 8
+var _held_sent: Array = []
 var _held_wait: float = 0.0
+var on_ladder: bool = false                 # set by terrain_client.gd while the player holds on to a ladder (ladder_climb.gd climbing)
+
+
+func hand_flags() -> int:
+	var state: String = bow_state()
+	return (HAND_BOW_RAISED if state == "raised" else 0) | (HAND_BOW_DRAWN if state == "drawn" else 0) | (HAND_SHIELD_UP if blocking else 0) | (HAND_LADDER if on_ladder else 0)
 
 
 func _report_held(delta: float) -> void:
@@ -439,12 +452,13 @@ func _report_held(delta: float) -> void:
 	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
 		return   # no server to tell (offline, a headless check, or this is the server)
 
-	var number: int = held_number()
+	var now: Array = [held_number(), off_number(), hand_flags()]
 
-	if number != _held_sent:
-		_held_sent = number
-		_held_wait = HELD_REPORT_S
-		_net.held_item.rpc_id(1, number)
+	if now != _held_sent:
+		var items_changed: bool = _held_sent.is_empty() or now[0] != _held_sent[0] or now[1] != _held_sent[1]
+		_held_sent = now
+		_held_wait = HELD_REPORT_S if items_changed else HAND_REPORT_S
+		_net.held_item.rpc_id(1, int(now[0]), int(now[1]), int(now[2]))
 
 
 func held_id() -> String:
@@ -1429,6 +1443,32 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
 
 
+# Another player's arrow or thrown weapon (flight_seen, protocol 157): flown here like this player's own (gravity, the ground, an arrow
+# stops in a trunk), look only. A thrown weapon (items.json kind "weapon") is drawn by its hand look, an arrow by its arrow model.
+func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	if _root == null or not _root.is_inside_tree() or _inv == null or number <= 0 or velocity.length() < 0.1:
+		return
+
+	var id: String = _inv.table.id_of(number)
+	var arrow: bool = str(_inv.table.entry(id).get("kind", "")) != "weapon"
+	var node: Node3D = _make_arrow_model(number) if arrow else (look_tool_node(id) if BasicLook.has_look(id) and HELD_LOOK_TURN.has(str(BasicLook.entry(id).get("shape", ""))) else _make_arrow_model(number))
+	_root.add_child(node)
+	node.global_position = from + velocity.normalized() * 0.8
+
+	if absf(velocity.normalized().y) < 0.99:
+		node.look_at(node.global_position + velocity, Vector3.UP)
+
+	if fire:
+		var glow: OmniLight3D = OmniLight3D.new()   # as this player's own fire arrow
+		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_energy = 1.6
+		glow.omni_range = 2.0
+		glow.shadow_enabled = false
+		node.add_child(glow)
+
+	_flights.append({"node": node, "vel": velocity, "age": 0.0, "arrow": true})
+
+
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
 	var bow_id: String = held_id()
@@ -1663,7 +1703,7 @@ func _process_body(delta: float) -> void:
 
 		if bool(flight.get("arrow", false)) and (flight["vel"] as Vector3).length() > 0.1:
 			flight["node"].look_at(flight["node"].global_position + flight["vel"], Vector3.UP)   # an arrow points along its flight
-		var ground: float = _ground_below.call(flight["node"].global_position)
+		var ground: float = _ground_below.call(flight["node"].global_position) if _ground_below.is_valid() else NAN
 
 		if flight["age"] > 6.0 or (not is_nan(ground) and flight["node"].global_position.y <= ground):
 			flight["node"].queue_free()

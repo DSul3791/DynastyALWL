@@ -1726,6 +1726,9 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
+	net.flight_seen_received.connect(func(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+		if held != null:
+			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 157)
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
@@ -5558,8 +5561,12 @@ func _move_player(delta: float) -> void:
 	elif _hold_bed():
 		pass
 	elif _climb_ladder(delta, strain_cap):
-		pass
+		if held != null:
+			held.on_ladder = true   # the others see the climb (protocol 157)
 	else:
+		if held != null:
+			held.on_ladder = false
+
 		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null or shot_run) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh

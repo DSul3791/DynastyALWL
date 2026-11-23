@@ -36,6 +36,13 @@ const QUARTER_M := 70.0
 const SWIM := 4
 const CARRY := 8
 const ASLEEP := 16                     # server_players.gd: asleep (the lying clip, as the player's own body)
+const MORE_LIT := 1                   # server_players.gd more byte (157): a burning torch or lantern...
+const MORE_BOW_RAISED := 2             # ...the hand flags (held_item.gd HAND_* << 1)...
+const MORE_BOW_DRAWN := 4
+const MORE_SHIELD_UP := 8
+const MORE_LADDER := 16
+const MORE_MEAL_SHIFT := 5             # ...and bits 5..7 eats and drinks (a change plays the drink clip)
+const LIT_MOST := 4                    # at most this many other players' torches and lanterns cast light, the nearest (each light costs every pixel it reaches)
 const SWING_SHIFT := 5                 # bits 5..7: the player's swing count; a change plays the tool's work clip once
 const CARRY_LOG_LENGTH_M := 3.0          # terrain_client.gd CARRY_LOG_LENGTH_M
 const CARRY_LOG_RADIUS_M := 0.14
@@ -69,7 +76,7 @@ func on_look(peer: int, char_name: String, body: String, code: String, worn: Pac
 		_dress(_bodies[peer])
 
 
-func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array) -> void:
+func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray()) -> void:
 	var n: int = mini(ids.size(), mini(positions.size(), mini(yaws.size(), mini(states.size(), mini(held.size(), times.size())))))
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	var newest: int = -1
@@ -104,6 +111,8 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 
 		b["swings"] = swings
 		b["state"] = int(states[i])
+		b["left"] = int(left[i]) if i < left.size() else 0
+		b["more"] = int(more[i]) if i < more.size() else 0
 		b["held"] = int(held[i])
 		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
 
@@ -182,6 +191,7 @@ func _process(delta: float) -> void:
 	var frame: int = Engine.get_process_frames()
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	var drawn_at: float = now_s - draw_delay(_clock)
+	_light_pass()
 
 	for peer in _bodies:
 		var b: Dictionary = _bodies[peer]
@@ -204,6 +214,7 @@ func _process(delta: float) -> void:
 		_count_steps(b, velocity, delta, distance)
 		_far_check(b, distance, delta)
 		_show_held(b)
+		_show_left(b, distance)
 		var player: AnimationPlayer = rig.get("animation_player") as AnimationPlayer
 
 		if player == null:
@@ -260,10 +271,10 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 	var carrying: bool = (state & CARRY) != 0 and stance == StanceScript.STAND
 	var flat: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	var pace: float = flat.length()
-	rig.set_meta("torch_in_hand", false)
-	rig.set_meta("torch_left", false)
+	rig.set_meta("torch_in_hand", str(b.get("held_kind", "")) == "torch")
+	rig.set_meta("torch_left", str(b.get("left_kind", "")) in ["torch", "lantern"])   # the arm carries it up in front (dynasty_body.gd _torch_carry)
 	var clip: String = AvatarDriver.clip_for(rig, stance, flat, node.global_transform.basis, true, pace, rig.current(), carrying, step)
-	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": (state & ASLEEP) != 0, "stance": stance, "drink_stamp": 0}, pace, step)
+	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": (state & ASLEEP) != 0, "stance": stance, "drink_stamp": 1 + (int(b.get("more", 0)) >> MORE_MEAL_SHIFT)}, pace, step)
 
 	if hook != "":
 		clip = hook
@@ -342,6 +353,154 @@ func _show_held(b: Dictionary) -> void:
 	if not made.is_empty():
 		b["held_node"] = made[0]
 		b["held_kind"] = made[1]
+
+
+# The left hand (157): a torch, lantern or shield made by the player's own held_item.gd makers, so it looks the same; a torch burns (its
+# flame and light) only while the server says it does, a lantern by its kind (wooden_lantern lit, _dark not). Lights: only the LIT_MOST
+# nearest (_light_pass). The torch stands up out of the fist and the lantern hangs, as the player's own third-person body holds them.
+func _show_left(b: Dictionary, distance: float) -> void:
+	var number: int = int(b.get("left", 0))
+	var lit: bool = (int(b.get("more", 0)) & MORE_LIT) != 0
+	var shown: int = number * 2 + (1 if lit else 0)
+	b["distance"] = distance
+
+	if shown != int(b.get("shown_left", 0)):
+		b["shown_left"] = shown
+		var old: Node3D = b.get("left_node", null) as Node3D
+
+		if old != null and is_instance_valid(old):
+			old.queue_free()
+
+		b["left_node"] = null
+		b["left_kind"] = ""
+		var made: Array = left_in(b["rig"], number, lit, table, maker())
+
+		if not made.is_empty():
+			b["left_node"] = made[0]
+			b["left_kind"] = made[1]
+
+	var model: Node3D = b.get("left_node", null) as Node3D
+
+	if model == null or not is_instance_valid(model) or not model.is_inside_tree():
+		return
+
+	var kind: String = str(b.get("left_kind", ""))
+
+	if kind == "lantern":
+		model.global_basis = Basis.IDENTITY   # hangs straight down by its bail
+	elif kind == "torch":
+		stand_torch(model, b["rig"])
+	elif kind == "shield":
+		model.rotation = Vector3(0.0, 0.0, 0.0) if (int(b.get("more", 0)) & MORE_SHIELD_UP) == 0 else Vector3(deg_to_rad(-70.0), 0.0, 0.0)   # B held: up before the body
+
+
+var _maker = null   # one HeldItem, never in the tree, for its torch, lantern and shield makers (they read only _inv.table and _root)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE and _maker != null and is_instance_valid(_maker):
+		_maker.free()
+
+
+# The HeldItem whose makers draw the left-hand items (made once).
+func maker():
+	if _maker == null:
+		_maker = HeldItem.new()
+		_maker._inv = MakerTable.new()
+		_maker._inv.table = table
+		_maker._root = self
+
+	return _maker
+
+
+class MakerTable:
+	extends RefCounted
+	var table
+
+
+# [model, kind ("torch", "lantern", "shield")] in `rig`'s left hand for item `number`, or [] for nothing.
+static func left_in(rig: Node3D, number: int, lit: bool, item_table, made_by) -> Array:
+	if number <= 0 or item_table == null or rig == null:
+		return []
+
+	var mount: Node3D = rig.get("hand_mount_l") as Node3D
+
+	if mount == null:
+		return []
+
+	var id: String = item_table.id_of(number)
+	var row: Dictionary = item_table.entry(id)
+	var tool_class: String = str(row.get("tool_class", ""))
+
+	var model: Node3D
+	var kind: String
+
+	if tool_class == "shield":
+		model = made_by._make_shield_model()
+		kind = "shield"
+	elif tool_class in ["lantern", "lantern_dark"]:
+		model = made_by._make_lantern_model(id)
+		kind = "lantern"
+	elif tool_class == "torch":
+		model = made_by._make_torch_model(id, not lit)
+		kind = "torch"
+	else:
+		return []
+
+	mount.add_child(model)
+
+	if kind == "torch":
+		model.set_meta("grip_y", float(HeldItem.GRIP_ALONG_Y["torch"]))
+		var skin: Variant = rig.get("_skin_material")
+		var tint: Color = (skin as BaseMaterial3D).albedo_color if skin is BaseMaterial3D else Color.WHITE
+		HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b))
+
+	return [model, kind]
+
+
+# The torch upright out of the left fist, leaning a little forward and out (held_item.gd _stand_torch_upright).
+static func stand_torch(model: Node3D, rig: Node3D) -> void:
+	var skel: Node3D = rig.get("skeleton") as Node3D
+	var mount: Node3D = model.get_parent() as Node3D
+
+	if skel == null or mount == null:
+		return
+
+	var front: Vector3 = skel.global_basis * Vector3.BACK
+	var left: Vector3 = skel.global_basis * Vector3.RIGHT
+	front.y = 0.0
+	left.y = 0.0
+
+	if front.length() < 0.001 or left.length() < 0.001:
+		return
+
+	front = front.normalized()
+	left = left.normalized()
+	var shaft: Vector3 = (Vector3.UP + front * HeldItem.TORCH_LEAN + left * HeldItem.TORCH_LEAN).normalized()
+	var across: Vector3 = shaft.cross(front).normalized()
+	model.global_transform = Transform3D(Basis(across, shaft, across.cross(shaft).normalized()), mount.global_position + shaft * float(model.get_meta("grip_y", 0.0)) * HeldItem.THIRD_CHOKE)
+	var fist: Node3D = model.get_node_or_null(HeldItem.THIRD_FIST_NAME) as Node3D
+
+	if fist != null:
+		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(HeldItem.THIRD_FIST_SCALE), Vector3.ZERO)
+
+
+# Only the LIT_MOST nearest other players' torches and lanterns cast light (once a frame, a few bodies at most).
+func _light_pass() -> void:
+	var lit: Array = []
+
+	for peer in _bodies:
+		var model: Node3D = _bodies[peer].get("left_node", null) as Node3D
+
+		if model != null and is_instance_valid(model) and model.get_node_or_null("Light") != null:
+			lit.append([float(_bodies[peer].get("distance", 0.0)), model])
+
+	lit.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
+
+	for i in range(lit.size()):
+		for child in (lit[i][1] as Node3D).get_children():
+			if child is OmniLight3D:
+				(child as OmniLight3D).visible = i < LIT_MOST
 
 
 # Puts the held model of item `number` in `rig`'s hand as the player's own third-person body holds it: [model, kind], or [] for nothing.
