@@ -6054,7 +6054,6 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (b = 1, a point 2.5 m ahead: rock_at is x/z only, so over bare rock a claimed miss still gives nothing): it tires, it breaks no stone, wears nothing, trains nothing
 		return
 
-	_wear_slot(peer, inv, tool, "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -6065,12 +6064,22 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 
 	if int(state["taken"]) >= MINE_STONES_PER_CELL:
 		_mined[patch] = state
+		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a resting patch: the swing tires, and wears nothing (it broke nothing)
 		return
 
+	# A better tool breaks more off a blow (coordinator's gathering walk, 23 Nov 2026: every pick and axe gave one stone a blow on bare rock):
+	# boulders.json tools' rate for the tool in hand, never under one stone a blow (a stone axe keeps its one), a fraction carried in the
+	# patch's "part". A patch still takes MINE_STONES_PER_CELL blows before it rests, so a better pick takes more from it, not less.
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[tool]))
+	var rate: float = maxf(float((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 1.0)), 1.0)
+	_wear_slot(peer, inv, tool, "rock")   # after reading the tool: one that breaks on this blow leaves its slot empty
+	var part: float = float(state.get("part", 0.0)) + rate
+	var stones: int = int(floor(part + 0.001))
+	state["part"] = part - float(stones)
 	state["taken"] = int(state["taken"]) + 1
 	_mined[patch] = state
 	var before: Array = _snapshot(inv)
-	_take_in(peer, inv, table.number_of("stone"), 1)
+	_take_in(peer, inv, table.number_of("stone"), stones)
 	practice(peer, "mine_rock")
 
 	_send_changes(peer, inv, before)
