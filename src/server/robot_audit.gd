@@ -133,13 +133,13 @@ func _process(delta: float) -> void:
 			_last[id] = [pos, now, int(a.get("moved_ms", -1))]
 
 		var look: String = "%d:%.1f,%.1f:%d" % [now, pos.x, pos.z, int(a.get("state", 0))]
-		var tr: Array = _trail.get(id, [])
-		tr.append(look)
+		var looks: Array = _trail.get(id, [])
+		looks.append(look)
 
-		while tr.size() > 3:
-			tr.pop_front()
+		while looks.size() > 3:
+			looks.pop_front()
 
-		_trail[id] = tr
+		_trail[id] = looks
 
 		if int(_after.get(id, 0)) > 0:
 			_after[id] = int(_after[id]) - 1
