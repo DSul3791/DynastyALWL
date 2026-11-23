@@ -364,7 +364,7 @@ func _lost_fight() -> void:
 	var low: float = 100.0
 	var results: Dictionary = {}
 
-	for round in 40:
+	for charge in 40:
 		var id: int = enemy("bandit", 4.0, 5)
 		animals.big_game.warn(animals.animals[id], Vector3(0.0, 10.0, 0.0), -1.0, true)
 
