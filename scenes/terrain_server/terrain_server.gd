@@ -14,6 +14,7 @@ extends Node
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: usable CPUs - 1; cpu_budget.gd counts a container's CPU limit)
 #   --quit-after=S  stop after S seconds (headless checks)
+#   --profile=S     (load tests, tools/load_test.sh) every S seconds a PROFILE line of each frame step's time, and every telemetry line also on stdout
 #   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
 #                      if nobody joins (the "play" launcher's own server)
@@ -281,6 +282,9 @@ func _ready() -> void:
 			_dedicated = true
 		elif argument.begins_with("--dev-reset-world="):
 			_dev_reset_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--dev-reset-world=")) * 1000.0)
+		elif argument.begins_with("--profile="):
+			_events.profile_every_msec = int(float(argument.trim_prefix("--profile=")) * 1000.0)   # load tests: PROFILE lines (event_log.gd)
+			_events.profile_frame_phase = "clock"
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
 
@@ -1018,6 +1022,9 @@ func _ready() -> void:
 		_on_blocks_requested(peer_id, keys, urgent)
 		_slow_rpc("blocks_requested", t0))
 	net.dig_requested.connect(_on_dig_requested)
+	net.sign_spotted_requested.connect(func(peer_id, x, z) -> void:   # a trail sign spotted (153): Tracking, once per sign (server_traps sign_found)
+		if is_finite(float(x)) and is_finite(float(z)):
+			items.sign_spotted(int(peer_id), Vector2(float(x), float(z))))
 	net.edits_since_requested.connect(func(peer_id, tile, since) -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_edits_since_requested(peer_id, tile, since)

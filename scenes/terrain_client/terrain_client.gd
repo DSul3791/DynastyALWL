@@ -1470,6 +1470,12 @@ func _welcome_body(info: Dictionary) -> void:
 	trail_signs.name = "TrailSigns"
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
+	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
+		if sound != null:
+			sound.slots.play("sign_spot", at)
+
+		if net != null and multiplayer.has_multiplayer_peer():
+			net.sign_spotted.rpc_id(1, at.x, at.z)
 	root.add_child(trail_signs)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
@@ -5163,6 +5169,7 @@ func _step_player(delta: float) -> void:
 			sound.fire.sync_world(items._world, _cover_here)
 
 		sound.placed.quiet = _world_loading()
+		sound.workshop.quiet = sound.placed.quiet
 		sound.placed.watch_world(items._world, body.global_position)
 		sound.placed.watch_open(items._world, body.global_position)
 
