@@ -179,7 +179,7 @@ func _init() -> void:
 	check(float(clock["late"]) < late_then and float(clock["late"]) > late_then * 0.9, "and an on-time one lowers it only slowly (%.3f)" % float(clock["late"]))
 	check(MotionBuffer.clock_delay({"interval": 5.0, "hole": 1.0, "late": 5.0}) == MotionBuffer.MAX_DELAY_S and MotionBuffer.clock_delay({"interval": 0.0, "hole": 0.0, "late": 0.0}) == MotionBuffer.MIN_DELAY_S, "the delay stays within %.1f to %.1f s" % [MotionBuffer.MIN_DELAY_S, MotionBuffer.MAX_DELAY_S])
 
-	# smooth: a target that jumps 3 m in a frame is not drawn there at once; a standing body walks the rest at 1 m/s (CATCH_X of the 2 m/s
+	# smooth: a target that jumps 3 m in a frame is not drawn there at once; a standing body walks the rest at 0.9 m/s (CATCH_MIN_MPS, the
 	# floor), so it is caught up within 4 s; a 40 m jump is shown at once.
 	var sm: Dictionary = {}
 	MotionBuffer.smooth(sm, Vector3.ZERO, 0.0, 1.0 / 60.0)
@@ -191,8 +191,8 @@ func _init() -> void:
 
 	check(first.x < 0.1 and absf(later.x - 3.0) < 0.05, "a 3 m jump of the target: drawn %.2f m on in that frame, %.2f m 4 s later" % [first.x, later.x])
 	check(MotionBuffer.smooth(sm, Vector3(45, 0, 0), 0.0, 1.0 / 60.0).is_equal_approx(Vector3(45, 0, 0)), "a 40 m jump is shown at once")
-	# A leg between two rows stamped nearly together reads as hundreds of m/s: the drawn body still never moves more than 0.55 m a frame
-	# (at the 15 m/s cap: 1.5 frames of room plus half a frame of catch-up, 0.51 m).
+	# A leg between two rows stamped nearly together reads as hundreds of m/s: the drawn body still never moves more than 0.35 m a frame
+	# (at the 15 m/s cap: 1.05 frames of the leg's speed plus 0.3 of it in catch-up, 0.34 m: never over 1.3 times its speed, robots 23 Nov 2026).
 	var fast: Dictionary = {}
 	MotionBuffer.smooth(fast, Vector3.ZERO, 0.0, 1.0 / 60.0)
 	var fast_worst: float = 0.0
@@ -203,7 +203,7 @@ func _init() -> void:
 		fast_worst = maxf(fast_worst, fp.distance_to(fast_was))
 		fast_was = fp
 
-	check(fast_worst < 0.55 and fast_was.distance_to(Vector3(4, 0, 0)) < 0.05, "a 4 m correction with an absurd leg speed is eased in, never over 0.55 m a frame (worst %.2f m)" % fast_worst)
+	check(fast_worst < 0.35 and fast_was.distance_to(Vector3(4, 0, 0)) < 0.05, "a 4 m correction with an absurd leg speed is eased in, never over 0.35 m a frame (worst %.2f m)" % fast_worst)
 
 	# A run that stops (gate review of PR #1631): the stop row is the newest point while the body, drawn 0.35 s behind, is still on the run's
 	# legs. smooth takes the speed of the leg being drawn, so the body keeps its 10 m/s to the stop instead of slowing to a crawl short of it.
