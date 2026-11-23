@@ -117,6 +117,22 @@ func _init() -> void:
 		within += 1 if SignsScript.shows(str(sg[0]), 80, c) and (sg[1] as Vector2).distance_to(target) <= float(c["spot_m"]) else 0
 
 	check(found.size() == 1 and view.get_children().any(func(n): return str(n.name).begins_with("TrailSignGlow")), "standing on a sign it is spotted and glows (%d of %d within spot_m)" % [found.size(), within])
+	check(view.last_spot.distance_to(found[0][1]) < 0.01 if not found.is_empty() else false, "the spotted sign is kept (last_spot, the rig aims there)")
+
+	# The look (Lane A Job S, 23 Nov 2026: the first tiny pellets under the litter did not show): a latrine is 30 to 50 pellets on one bare
+	# patch, all lifted over the ground; a glow kept lit for the rig stays at its peak.
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": []}
+	view._lay("latrine", Vector2(10.0, 10.0), 0.0, rows)
+	var lifted: bool = true
+
+	for r in rows["pellet"]:
+		lifted = lifted and (r[0] as Vector3).y >= 5.0 + view.PELLET_LIFT_M - 0.001
+
+	check((rows["latrine_bed"] as Array).size() == 1 and (rows["pellet"] as Array).size() >= int(c["latrine_pellets"][0]) and (rows["pellet"] as Array).size() <= int(c["latrine_pellets"][1]) and lifted, "a latrine is %d pellets on one bare patch, over the litter" % (rows["pellet"] as Array).size())
+	view.ground_height = func(x, _z): return 5.0 + x * 0.4   # a bank
+	check(absf(view._heap_ground(Vector2(10.0, 10.0)) - 9.0) < 0.001, "on a bank a heap sits on the ground at its middle, not buried under the lowest probe (%.2f)" % view._heap_ground(Vector2(10.0, 10.0)))
+	view.ground_height = func(_x, _z): return 5.0
+
 	view._next_msec = 0
 	view.update(stand, 80, false)
 	check(found.size() == 1, "the next one waits spot_gap_s (the server's practice cooldown)")

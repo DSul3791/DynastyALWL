@@ -850,6 +850,12 @@ func _ready() -> void:
 		animals.report_hit(int(found["id"]), int(found.get("zone", 0)), found.get("point", found["at"]))   # every player near sees which animal and where (hunt_feedback_server.md)
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+
+	if OS.get_cmdline_user_args().has("--robot-audit"):   # the robot play-testers' server lines (src/server/robot_audit.gd, tools/robots.sh); testing only
+		var audit: Node = preload("res://src/server/robot_audit.gd").new()
+		add_child(audit)
+		audit.setup(items, animals)
+
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)

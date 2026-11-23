@@ -456,6 +456,8 @@ var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
+var robot: Node = null                 # --robot=NAME: a robot play-tester drives this client by key presses (src/client/robot_play.gd, tools/robots.sh)
+var _block_port_override: int = 0      # --block-port=N: the block line connects here instead of the port the server named (a test relay, tools/lossy_link.py)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
@@ -829,6 +831,11 @@ func _ready() -> void:
 			test_chop = true
 		elif argument == "--lag-run":
 			lag_run = preload("res://src/client/lag_run.gd").new()
+		elif argument.begins_with("--robot="):
+			robot = preload("res://src/client/robot_play.gd").new()
+			robot.prepare(argument.trim_prefix("--robot="), OS.get_cmdline_user_args())   # makes and picks its own character before hello
+		elif argument.begins_with("--block-port="):
+			_block_port_override = int(argument.trim_prefix("--block-port="))
 		elif argument == "--shoot":
 			test_shoot = true
 		elif argument == "--place-foundation":
@@ -1392,7 +1399,8 @@ func _welcome_body(info: Dictionary) -> void:
 	stream.drop_xz = Vector2(float(info["spawn"].x), float(info["spawn"].z)) if test_start.is_finite() == false else Vector2(test_start.x, test_start.z)
 	link = BlockLinkScript.new()
 	link.stream = stream
-	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else int(info.get("block_port", 0)), multiplayer.get_unique_id())
+	var block_port: int = _block_port_override if _block_port_override > 0 else int(info.get("block_port", 0))   # --block-port: a test relay's port (tools/lossy_link.py)
+	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else block_port, multiplayer.get_unique_id())
 	stream.link = link
 	var root: Node3D = Node3D.new()
 	root.name = "World"
@@ -1912,6 +1920,11 @@ func _welcome_body(info: Dictionary) -> void:
 		lag_run.client = self
 		add_child(lag_run)
 		lag_run.run()
+
+	if robot != null and robot.get_parent() == null:
+		robot.client = self
+		add_child(robot)
+		robot.run()
 
 	if test_shoot:
 		items.run_shoot_test(self)

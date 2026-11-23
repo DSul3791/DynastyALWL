@@ -97,3 +97,21 @@ changed. The play-test write-ups for Dave are in the project files (animal-motio
   second, roughly 5 KB/s a player at the 30-row cap (the probe measures it). Moving animals already made every batch differ.
 - Tests: test_animal_motion_buffer.gd (the row clock, smooth, the whole path at 0 to 50% loss: no frame jump over 0.5 m; the old path
   jumps); test_animal_contact.gd (charges at 20 and 2 steps a second never enter the player; keep_off; standing rows stamped).
+
+## The body's own feet (PR 2; no protocol change)
+
+Dave's "more freedom client side". The server still owns where every animal is, what it does, a charge's locked line and every hit; the
+client only decides how the body gets from one drawn point to the next.
+- `MotionBuffer.follow`: a critically damped spring (the SmoothDamp form, steady at any frame rate) on the drawn point `FOLLOW_S` (0.15 s)
+  ahead along its own way. A start or stop eases over about 0.15 s, a sharp server corner (the steering's instant turns and fixed detour
+  angles) is drawn as a short curve, and a steady run is not lagged. It stays within about 0.25 m of the point at 6 m/s. Charges, warns
+  and recovers (drawn at the present) skip it and keep their exact line (`follow_hold`), so the contact stop and hits stay where the server has them.
+- `MotionBuffer.face`: the body faces the way its feet go when it moves, its sent heading when it stands, turned at most
+  `AnimalContact.draw_turn_rad_s` (a full turn in 0.5 s plus its body size: wolf 5.7 rad/s, elephant 2.3) and never snapped. The old facing
+  lerped 10 a second toward each row's heading, so a row heading that spun 200+ rad/s (the probe) spun the body.
+- Every drawn body, not only a charge, is held out of the local player (`stop_toward`): the spring eases a little past a wolf's or dog's stop.
+- Server: `make_way`. A standing animal a player walks into steps out of them at its walking pace (robot play-testers, 23 Nov 2026: a dog
+  0.02 m from a player's middle, a deer 0.22 m, a horse 0.15 m). Birds in the air, perched or burrowed animals, swimmers and a camp's tied
+  horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain and are not covered (a resting
+  pack wolf a player walks into stays; a known gap). Cost: the nearest player's distance is already worked out each step; one compare.
+- Tests: test_animal_motion_buffer.gd (a corner run: within 0.5 m, speed eased, facing turn rate), test_animal_contact.gd (make_way).
