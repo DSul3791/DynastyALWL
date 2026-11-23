@@ -190,7 +190,7 @@ func _init() -> void:
 	check(not items._items.has(chest), "player A takes it down")
 	check(_total(items, stone) == all, "its stones are kept, once (%d, was %d)" % [_total(items, stone), all])
 	check(int(items._chest_viewer.get(2, 0)) != chest, "player B's window on it is let go (nothing more pushed; the client closes it as the row goes)")
-	var client_code: String = FileAccess.get_file_as_string("res://src/client/inventory_view.gd")
+	var client_code: String = FileAccess.get_file_as_string("res://src/client/inventory_view.gd").replace("\r\n", "\n")   # a Windows checkout ends lines with CRLF: the multi-line checks below read LF
 	check(client_code.contains("if chest_mode and chest_id >= 0 and removed.has(chest_id):\n\t\t_close_chest()"), "the client closes an open container's window when it goes from the world (inventory_view.gd)")
 	items.action(2, Net.ACT_CHEST_TAKE, 0, chest, 5, Vector3.ZERO)
 	check(_total(items, stone) == all, "a take on the gone chest makes nothing (%d, was %d)" % [_total(items, stone), all])
