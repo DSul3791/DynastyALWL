@@ -88,6 +88,11 @@ const FAULTS := {
 	"cave_item_on_pool": ["a cave stone or boulder laid over a spring pool's water (hangs over it or sits on it)", 0.0],
 	"cave_prop_off": ["cave floor dressing (bones, goblin litter or fire, den droppings or bedding) more than 0.15 m off the floor mesh (looks)", 0.15],
 	"cave_item_buried": ["a cave stone or mine leftover more than 0.15 m under the floor mesh", 0.15],
+	"cave_sky_hole": ["a patch of cave air open to the sky (LOD 0 voxels, flooded from the passages) that does not reach within 12 m of a mouth, a den mouth or a mouth's opened ground: a hole in the hill", 0.0],
+	"cave_sky_hole_far": ["as cave_sky_hole on the LOD 1 voxels (2 m): a hole in the hill seen from farther off, where the roof is thinner than the coarse voxels", 0.0],
+	"cave_open_run": ["a cave's way in that lies open to the sky (LOD 0) more than 20 m in from its mouth, outside the mouth's opened ground: a trench, not a cave", 20.0],
+	"cave_open_run_far": ["as cave_open_run on the LOD 1 voxels: seen from farther off", 20.0],
+	"cave_air_missing": ["a passage's or chamber's middle under the ground that is rock in the voxels (LOD 0 or 1, in the note): a wall across the cave", 0.0],
 	"camp_in_trunk": ["a camp piece (town marker, camp fire, spawn, goblin camp prop, bandit Lean-to, seat or tether) overlapping a tree trunk collider", 0.05],
 	"camp_in_flora": ["a shrub, or a plant taller than 0.5 m, rooted inside a camp piece (grows through a fire, a seat, a bed or a Lean-to)", 0.0],
 	"camp_on_boulder": ["a camp piece overlapping a boulder or ore rock", 0.05],
@@ -1183,6 +1188,10 @@ func _audit_caves(part: Vector2i) -> Array:
 			for capsule in cave["capsules"]:
 				_walk_line(capsule["a"] - Vector3(0.0, capsule["rh"], 0.0), capsule["b"] - Vector3(0.0, capsule["rh"], 0.0), "", 0.0)   # cave shapes are in world metres
 
+		for cave in data.caves:
+			_check_cave_air(data, cave, 0)
+			_check_cave_air(data, cave, 1)
+
 		for k in data.cave_dens.size():
 			_check_den(data.cave_dens[k], "den")
 
@@ -1223,6 +1232,182 @@ func _audit_caves(part: Vector2i) -> Array:
 		print("world_audit: caves of tile %s done (%d caves)" % [str(tile), data.caves.size()])
 
 	return done
+
+
+const SKY_KNOWN_M := 12.0          # cave air open to the sky this close to a mouth or a den mouth (or in a mouth's opened ground) is its way in
+const SKY_RUN_M := 20.0            # a way in open to the sky farther in than this from its mouth (outside the mouth's opened ground) is noted
+const SKY_CELL_M := 4.0            # openings are counted once per 4 m square
+const CAVE_AIR_MAX_VOXELS := 8000000
+
+
+# The air of one cave as the voxels carve it at `lod`, flooded from its passages' and chambers' middles through every air voxel under the
+# ground (a voxel over the generated surface + 1 m is open sky: noted, not flooded on). Air reaching the sky away from the cave's ways in is a
+# hole in the hill (players see daylight, rain falls in); a middle that is rock is a wall across the passage.
+func _check_cave_air(data, cave: Dictionary, lod: int) -> void:
+	var s: int = 1 << lod
+	var box: AABB = (cave["aabb"] as AABB).grow(4.0)
+	var top: float = box.end.y
+
+	for gz in range(int(box.position.z), int(box.end.z) + 1, 4):
+		for gx in range(int(box.position.x), int(box.end.x) + 1, 4):
+			top = maxf(top, generator.surface_height(float(gx), float(gz)) + 3.0)
+
+	var origin: Vector3i = Vector3i(int(floor(box.position.x / s)) * s, int(floor(box.position.y / s)) * s, int(floor(box.position.z / s)) * s)
+	var n: Vector3i = Vector3i(int(ceil((box.end.x - origin.x) / s)) + 2, int(ceil((top - origin.y) / s)) + 2, int(ceil((box.end.z - origin.z) / s)) + 2)
+
+	if n.x * n.y * n.z > CAVE_AIR_MAX_VOXELS:
+		print("world_audit: cave %s too large to flood at LOD %d (%s voxels)" % [str(cave["id"]), lod, str(n)])
+		return
+
+	var buffer: VoxelBuffer = Layout.make_buffer(1)
+	buffer.create(n.x, n.y, n.z)
+	generator.generate(buffer, origin, lod)
+	var sky: PackedFloat32Array = PackedFloat32Array()
+	sky.resize(n.x * n.z)
+
+	for k in range(n.z):
+		for i in range(n.x):
+			sky[k * n.x + i] = generator.surface_height(float(origin.x + i * s), float(origin.z + k * s)) + 1.0
+
+	var seen: PackedByteArray = PackedByteArray()
+	seen.resize(n.x * n.y * n.z)
+	var queue: PackedInt32Array = PackedInt32Array()
+	var middles: Array = []
+
+	for capsule in cave["capsules"]:
+		middles.append((capsule["a"] + capsule["b"]) * 0.5)
+
+	for chamber in cave["chambers"]:
+		middles.append(chamber["center"])
+
+	for m in middles:
+		var c: Vector3i = Vector3i(roundi((m.x - origin.x) / s), roundi((m.y - origin.y) / s), roundi((m.z - origin.z) / s))
+		_checked("cave middles" if lod == 0 else "cave middles, LOD 1")
+
+		if c.x < 0 or c.y < 0 or c.z < 0 or c.x >= n.x or c.y >= n.y or c.z >= n.z:
+			continue
+
+		if buffer.get_voxel_f(c.x, c.y, c.z, Layout.CHANNEL_SDF) <= 0.0:
+			if generator.surface_height(m.x, m.z) > m.y + 1.0:   # under the ground (a mouth's middle may stand in the open cut)
+				_fault("cave_air_missing", 1.0, m, "cave %s: a passage or chamber middle is rock at LOD %d" % [str(cave["id"]), lod])
+
+			continue
+
+		var key: int = (c.y * n.z + c.z) * n.x + c.x
+
+		if seen[key] == 0:
+			seen[key] = 1
+			queue.append(key)
+
+	var openings: Dictionary = {}   # 4 m square -> [count, first voxel's position]
+	var head: int = 0
+
+	while head < queue.size():
+		var key: int = queue[head]
+		head += 1
+		var i: int = key % n.x
+		@warning_ignore("integer_division")
+		var k: int = (key / n.x) % n.z
+		@warning_ignore("integer_division")
+		var j: int = key / (n.x * n.z)
+		var w: Vector3 = Vector3(origin.x + i * s, origin.y + j * s, origin.z + k * s)
+
+		if w.y > sky[k * n.x + i]:
+			var cell: Vector2i = Vector2i(int(floor(w.x / SKY_CELL_M)), int(floor(w.z / SKY_CELL_M)))
+
+			if not openings.has(cell):
+				openings[cell] = [0, w]
+
+			openings[cell][0] += 1
+			continue
+
+		for step in [Vector3i(1, 0, 0), Vector3i(-1, 0, 0), Vector3i(0, 1, 0), Vector3i(0, -1, 0), Vector3i(0, 0, 1), Vector3i(0, 0, -1)]:
+			var a: int = i + step.x
+			var b: int = j + step.y
+			var c: int = k + step.z
+
+			if a < 0 or b < 0 or c < 0 or a >= n.x or b >= n.y or c >= n.z:
+				continue
+
+			var next: int = (b * n.z + c) * n.x + a
+
+			if seen[next] == 0 and buffer.get_voxel_f(a, b, c, Layout.CHANNEL_SDF) > 0.0:
+				seen[next] = 1
+				queue.append(next)
+
+	_checked("cave air voxels" if lod == 0 else "cave air voxels, LOD 1", head)
+
+	# The openings joined into patches (4 m squares touching, corners too): a patch with a square at a way in (a mouth, a den mouth, a mouth's
+	# opened ground) is that way in, however far it runs (a spring cave's mouth is as wide as its river); any other is a hole.
+	var done: Dictionary = {}
+
+	for start in openings:
+		if done.has(start):
+			continue
+
+		var patch: Array = [start]
+		done[start] = true
+		var at: int = 0
+
+		while at < patch.size():
+			var here: Vector2i = patch[at]
+			at += 1
+
+			for dz in range(-1, 2):
+				for dx in range(-1, 2):
+					var next: Vector2i = here + Vector2i(dx, dz)
+
+					if openings.has(next) and not done.has(next):
+						done[next] = true
+						patch.append(next)
+
+		var way_in: bool = false
+		var voxels: int = 0
+		var worst: Vector3 = openings[start][1]
+		var near: float = INF
+
+		for cell in patch:
+			var w: Vector3 = openings[cell][1]
+			voxels += int(openings[cell][0])
+			var d: float = _way_in_distance(data, w)
+
+			if d < near:
+				near = d
+				worst = w
+
+			if d <= SKY_KNOWN_M or data.in_cave_opening(w.x, w.z):
+				way_in = true
+
+		_checked("cave sky patches" if lod == 0 else "cave sky patches, LOD 1")
+		var far: float = 0.0
+		var far_at: Vector3 = worst
+
+		for cell in patch:
+			var d2: float = _way_in_distance(data, openings[cell][1])
+
+			if d2 > far and not data.in_cave_opening(openings[cell][1].x, openings[cell][1].z):
+				far = d2
+				far_at = openings[cell][1]
+
+		if way_in and far > SKY_RUN_M:
+			_fault("cave_open_run" if lod == 0 else "cave_open_run_far", far, far_at, "cave %s: its way in lies open to the sky %.0f m in from the mouth (%d air voxels over %d m2)" % [str(cave["id"]), far, voxels, int(patch.size() * SKY_CELL_M * SKY_CELL_M)])
+
+		if not way_in:
+			_fault("cave_sky_hole" if lod == 0 else "cave_sky_hole_far", float(voxels), worst, "cave %s: %d air voxels open to the sky over %d m2, %.0f m from its nearest way in" % [str(cave["id"]), voxels, int(patch.size() * SKY_CELL_M * SKY_CELL_M), near])
+
+
+# How far (flat) a point is from the nearest way into the caves of its tile: a mouth's entrance node or an animal den mouth.
+func _way_in_distance(data, w: Vector3) -> float:
+	var near: float = INF
+
+	for mouth in data.cave_mouths:
+		near = minf(near, Vector2(w.x - mouth[0].x, w.z - mouth[0].z).length())
+
+	for sp in data.animal_den_mouths:
+		for den_mouth in data.animal_den_mouths[sp]:
+			near = minf(near, Vector2(w.x, w.z).distance_to(den_mouth))
+
+	return near
 
 
 # A walking line from a to b (floor points), sampled every metre: floor where the skeleton says, headroom and slope.
