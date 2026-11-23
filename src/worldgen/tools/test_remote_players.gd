@@ -133,6 +133,7 @@ func _server() -> void:
 	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
 	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
 	fake.asleep = {}
+	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
 	for i in range(8):
 		players.note_action(2, NetScript.ACT_MINE)
 	check((int(players._swings[2][0])) == 1, "the swing count wraps at 8")
@@ -289,27 +290,51 @@ func _check_lossy() -> void:
 	get_root().add_child(camera)
 	camera.position = at + Vector3(0.0, 1.6, 6.0)
 	camera.make_current()
-	view.on_look(9, "Lossy", "body_1", "", PackedInt32Array())
+	var peers: Array = [9, 10, 11]
+	var phase: Array = [0, 70, 140]   # each client reports on its own 0.2 s beat
+
+	for peer in peers:
+		view.on_look(peer, "Lossy", "body_1", "", PackedInt32Array())
+
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 1523
 	var start_ms: int = Time.get_ticks_msec()
 	var walk_ms: int = 3000
 	var end_ms: int = 4600
-	var queue: Array = []   # [deliver at ms, server ms, position]
+	var queue: Array = []   # [deliver at ms, [server ms per peer], [position per peer]]
+	var sent_ms: Array = [-1, -1, -1]
+	var last_send: int = -1000
 
+	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report stamped when it reached the server.
 	for send in range(0, end_ms, 125):
-		var report: int = send - send % 200   # the newest 0.2 s report the server has at this send
-		var walked: float = 3.0 * float(mini(report, walk_ms)) / 1000.0
+		var times: Array = []
+		var spots: Array = []
+		var news: bool = send - last_send >= 1000
+
+		for i in range(peers.size()):
+			var beat: int = send - int(phase[i])
+			var report: int = maxi(beat - posmod(beat, 200), 0) + int(phase[i])
+			var stamp: int = 20000 + report + (posmod(hash([i, report]), 61) if report > 0 else 0)   # the report's own trip up, with its wobble, once per report
+			var walked: float = 3.0 * float(mini(report, walk_ms)) / 1000.0
+			times.append(stamp)
+			spots.append(at + Vector3(walked, 0.0, 3.0 * i))
+			news = news or report > int(sent_ms[i])
+			sent_ms[i] = maxi(int(sent_ms[i]), report)
+
+		if not news:
+			continue
+
+		last_send = send
 
 		if rng.randf() < 0.05 or (send >= 1750 and send < 2250):
 			continue   # lost (ENet drops unreliable packets when the ping wobbles), and once four in a row (a throttle burst)
 
-		queue.append([send + rng.randi_range(100, 260), 20000 + report, at + Vector3(walked, 0.0, 0.0)])
+		queue.append([send + rng.randi_range(100, 260), times, spots])
 
-	queue.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
+	queue.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
 	var worst_step: float = 0.0
 	var still_frames: int = 0
-	var last_p: Variant = null
+	var last_p: Dictionary = {}
 	var last_t: int = Time.get_ticks_usec()
 
 	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + 800:
@@ -317,16 +342,9 @@ func _check_lossy() -> void:
 
 		while not queue.is_empty() and int(queue[0][0]) <= now:
 			var row: Array = queue.pop_front()
-			view.on_rows(PackedInt32Array([9]), PackedVector3Array([row[2]]), PackedFloat32Array([-PI * 0.5]), PackedByteArray([0]), PackedInt32Array([0]), PackedInt32Array([row[1]]))
+			view.on_rows(PackedInt32Array(peers), PackedVector3Array(row[2]), PackedFloat32Array([-PI * 0.5, -PI * 0.5, -PI * 0.5]), PackedByteArray([0, 0, 0]), PackedInt32Array([0, 0, 0]), PackedInt32Array(row[1]))
 
 		await process_frame
-		var b: Dictionary = view._bodies.get(9, {})
-
-		if b.is_empty():
-			last_t = Time.get_ticks_usec()
-			continue
-
-		var p: Vector3 = (b["node"] as Node3D).position
 		var dt: float = float(Time.get_ticks_usec() - last_t) / 1.0e6
 
 		if dt < 0.05:
@@ -334,21 +352,32 @@ func _check_lossy() -> void:
 
 		last_t = Time.get_ticks_usec()
 
-		if last_p != null:
-			var step: float = p.distance_to(last_p) / dt
-			# while it walks (past the first second and before the stop reaches the drawn moment)
-			if now > 1200 and now < walk_ms + 100:
+		for peer in peers:
+			var b: Dictionary = view._bodies.get(peer, {})
+
+			if b.is_empty():
+				continue
+
+			var p: Vector3 = (b["node"] as Node3D).position
+
+			if last_p.has(peer) and now > 1200 and now < walk_ms + 100:   # while it walks (past the first second, before the stop is drawn)
+				var step: float = p.distance_to(last_p[peer]) / dt
 				worst_step = maxf(worst_step, step)
 
 				if step < 0.3:
 					still_frames += 1
 
-		last_p = p
+			last_p[peer] = p
 
-	var final_x: float = float((view._bodies[9]["node"] as Node3D).position.x) - at.x if view._bodies.has(9) else -1.0
+	var rest_ok: bool = true
+
+	for peer in peers:
+		rest_ok = rest_ok and view._bodies.has(peer) and absf(float((view._bodies[peer]["node"] as Node3D).position.x) - at.x - 9.0) < 0.15
+
+	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
 	check(worst_step < 3.0 * 1.5, "no jump on a lossy, late link: the fastest drawn speed %.1f m/s for a 3 m/s walk" % worst_step)
-	check(still_frames == 0, "the body keeps walking through lost and late batches (%d still 50 ms windows)" % still_frames)
-	check(absf(final_x - 9.0) < 0.15, "it comes to rest at the last point, not past it (%.2f m of 9.0)" % final_x)
+	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
+	check(rest_ok, "each comes to rest at its last point, not past it")
 	view.queue_free()
 	camera.queue_free()
 	await process_frame

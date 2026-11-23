@@ -22,6 +22,8 @@ const WornSync := preload("res://src/client/worn_sync.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
 
 const MAX_DRAWN := 31
+const CARRY_S := 0.8                   # how long a body walks on past its newest point (MotionBuffer.at: at most two report legs)
+const REPORT_S := 0.2                  # a client reports its position every 0.2 s (terrain_client.gd report_position)
 const MAKE_PER_ROWS := 2               # bodies made per rows message: a crowd coming into range is built over a few sends, not in one frame
 const FULL_M := 15.0
 const HALF_M := 40.0
@@ -66,7 +68,9 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		newest = maxi(newest, times[i])
 
 	if newest >= 0:
-		MotionBuffer.clock_note(_clock, now_s, newest)   # the batch's newest position report: players report every 0.2 s, standing too
+		if newest > int(_clock["server_ms"]) or newest < int(_clock["server_ms"]) - 2000:
+			MotionBuffer.clock_note(_clock, now_s, newest)   # the batch's newest position report (players report every 0.2 s, standing too);
+			# a batch with no newer report (a swing, a player coming in range, the 1 s resend) would read as late and deepen the delay
 
 	var seen: Dictionary = {}
 	var made: int = 0
@@ -160,7 +164,9 @@ func _process(delta: float) -> void:
 	var eye: Vector3 = camera.global_position if camera != null else Vector3.ZERO
 	var frame: int = Engine.get_process_frames()
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)   # one delay for every player: the batch's jitter buffer
+	# One delay for every player: the batches' jitter buffer, but never less than one body's own report gap (with several players near
+	# the batches' newest time moves on more often than any one of them reports).
+	var drawn_at: float = now_s - maxf(MotionBuffer.clock_delay(_clock), REPORT_S + float(_clock["late"]) + 0.05)
 
 	for peer in _bodies:
 		var b: Dictionary = _bodies[peer]
@@ -169,7 +175,7 @@ func _process(delta: float) -> void:
 		var before: Vector3 = b.get("path_p", node.position)
 
 		if not (b["samples"] as Array).is_empty():
-			var at: Array = MotionBuffer.at(b["samples"], drawn_at)
+			var at: Array = MotionBuffer.at(b["samples"], drawn_at, CARRY_S)   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
 			b["path_p"] = at[0]
 			# A late batch or a lost one never jumps the body: the step beyond a normal one is eased in (MotionBuffer.smooth, as the animals).
 			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta)
