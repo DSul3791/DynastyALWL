@@ -221,11 +221,11 @@ static func follow(body: Dictionary, p: Vector3, delta: float) -> Vector3:
 	var goal: Vector3 = p + Vector3(pv.x, 0.0, pv.z) * FOLLOW_S
 	var omega: float = 2.0 / FOLLOW_S
 	var x: float = omega * delta
-	var ease: float = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x)
+	var damp: float = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x)
 	var change: Vector3 = Vector3(q.x - goal.x, 0.0, q.z - goal.z)
 	var pull: Vector3 = (v + change * omega) * delta
-	v = (v - pull * omega) * ease
-	var drawn: Vector3 = Vector3(goal.x, p.y, goal.z) + (change + pull) * ease   # height is the ground's, from the point
+	v = (v - pull * omega) * damp
+	var drawn: Vector3 = Vector3(goal.x, p.y, goal.z) + (change + pull) * damp   # height is the ground's, from the point
 	body["fw_p"] = drawn
 	body["fw_v"] = v
 	body["fw_last"] = p

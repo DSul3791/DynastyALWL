@@ -277,8 +277,8 @@ func _init() -> void:
 	var fs: Dictionary = {}
 	MotionBuffer.follow(fs, Vector3.ZERO, 1.0 / 60.0)
 	check(MotionBuffer.follow(fs, Vector3(40, 0, 0), 1.0 / 60.0).is_equal_approx(Vector3(40, 0, 0)), "a move farther than SNAP_M is put there at once")
-	var still: Dictionary = {}
-	var yaw_still: float = MotionBuffer.face(still, 0.0, 0.0, 100.0, 1.0)
+	var standing: Dictionary = {}
+	var yaw_still: float = MotionBuffer.face(standing, 0.0, 0.0, 100.0, 1.0)
 	check(is_equal_approx(yaw_still, -PI * 0.5), "a standing body turns to its sent heading (heading 0, east, is rotation -PI/2)")
 
 	print("test_animal_motion_buffer: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
