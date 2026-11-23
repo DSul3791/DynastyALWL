@@ -1,0 +1,31 @@
+# The tester site's report service (deploy/testersite/INSTALL.md), beside Caddy (container game-web) on Dave's game server.
+# It has no port of its own on the server: only Caddy reaches it, on Caddy's Docker network, so every request has passed the login.
+# install.sh writes .env (WEB_NETWORK = Caddy's network, TESTERS = the login names) and github_token next to this file.
+#   sudo docker compose up -d        start, and after a change
+#   sudo docker logs --tail 50 dynasty-reports
+name: dynasty-reports
+
+services:
+  reports:
+    image: python:3.12-alpine
+    container_name: dynasty-reports
+    restart: unless-stopped
+    command: ["python", "-u", "/app/reports.py"]
+    environment:
+      GITHUB_REPO: DSul3791/DynastyALWL-QA
+      GITHUB_TOKEN_FILE: /run/secrets/github_token
+      GITHUB_API: ${GITHUB_API:-https://api.github.com}
+      DATA_DIR: /data
+      SITE_URL: https://hannibalshouse.duckdns.org
+      TESTERS: ${TESTERS:-}
+    volumes:
+      - ./reports.py:/app/reports.py:ro
+      - ./github_token:/run/secrets/github_token:ro
+      - ./data:/data              # reports.db and the pictures; never inside the web site folder
+    networks:
+      - web
+
+networks:
+  web:
+    external: true
+    name: ${WEB_NETWORK:?run install.sh first}
