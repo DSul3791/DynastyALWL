@@ -3,7 +3,7 @@
 	"uses": {
 		"campfire_kit": "Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark, tinder fungus or amadou in your pack to light it, then put wood in with F. Cooks, warms, lights.",
 		"seed_bundle": "Eaten raw, or cooked into flatbread, hearty pottage and honey loaf. Planting waits on the farming code.",
-		"tree_roots": "Roots from a felled tree. No use yet; planned as fibre for baskets.",
+		"tree_roots": "Roots from a felled tree. They burn in a fire like firewood (cooking.json fuel).",
 		"driftwood": "Dry fuel for a fire; burns fast.",
 		"soil": "Dug earth. Dig and fill the ground with it.",
 		"gravel": "Dug gravel. Dig and fill the ground with it; planned for paths and cobble floors.",
