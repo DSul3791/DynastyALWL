@@ -81,6 +81,7 @@ func run() -> void:
 	view.inventory.counts.fill(0)
 	view.inventory.numbers[0] = table.number_of("wooden_spear")
 	view.inventory.numbers[1] = table.number_of("stone_axe")
+	view.inventory.numbers[2] = table.number_of("iron_pike")
 	root.add_child(view)
 	var camera: Camera3D = Camera3D.new()
 	view.add_child(camera)
@@ -157,6 +158,17 @@ func run() -> void:
 	_check(held._model.get_parent() == rig.hand_mount_r, "third person: the spear is in the body's right hand")
 	_check(tip.normalized().dot(facing) > 0.999 and absf(up - HeldItem.SPEAR_LIFT_DEG) < 0.5, "third person: it points the way the body faces, %.0f degrees up (%.1f)" % [HeldItem.SPEAR_LIFT_DEG, up])
 	_check(held._model.global_position.distance_to(rig.hand_mount_r.global_position - held._model.global_basis.z * HeldItem.SPEAR_GRIP_Z) < 0.001, "third person: the fist is on the shaft")
+	# A pike (a "shaft" look, not a spear weapon class) is held the same way: it sat 0.15 to 0.27 m off the hand before (23 Nov 2026).
+	held.press_slot(2)
+	held._process(0.05)
+	held._process(0.05)
+	tip = -held._model.global_basis.z.normalized()
+	tip.y = 0.0
+	_check(held.held_id() == "iron_pike" and held._model.get_parent() == rig.hand_mount_r, "third person: the pike is in the body's right hand")
+	_check(tip.normalized().dot(facing) > 0.999, "third person: the pike points the way the body faces")
+	_check(held._model.global_position.distance_to(rig.hand_mount_r.global_position - held._model.global_basis.z * HeldItem.SPEAR_GRIP_Z) < 0.001, "third person: the fist is on the pike's shaft")
+	held.press_slot(0)
+	held._process(0.05)
 	held.set_first_person(true)
 
 	# TEST-010: a log on the shoulder puts the right-hand tool away; laid down, it comes back.

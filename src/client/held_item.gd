@@ -823,6 +823,13 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
 
 
+# Held the way a spear is held (placement only; the jab and throw stay the spear's): a spear, or any "shaft" look (pike, lance, quarterstaff),
+# whose mesh lies point to -Z, not handle to head along +Y. Laid along the fingers like a tool they sat 0.15-0.27 m off the hand (23 Nov 2026,
+# the check in test_remote_players found it on other players; the player's own body had the same).
+func _held_as_shaft() -> bool:
+	return _is_spear() or str(BasicLook.entry(held_id()).get("shape", "")) == "shaft"
+
+
 # The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
 func _is_fish_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "fish_spear"
@@ -3278,7 +3285,7 @@ func _mount_model() -> void:
 
 	if third_fist != null:
 		third_fist.visible = false      # shown again by _mount_model_third
-	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
+	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _held_as_shaft() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
 		_camera.add_child(_model)
@@ -3374,7 +3381,7 @@ const SPEAR_REST_DOWN_DEG := 35.0
 
 
 func _aim_spear() -> void:
-	if _model == null or not _mounted or not _is_spear() or not _model.is_inside_tree():
+	if _model == null or not _mounted or not _held_as_shaft() or not _model.is_inside_tree():
 		return
 
 	var mount: Node3D = _model.get_parent() as Node3D
