@@ -72,13 +72,13 @@ func act(peer: int, kind: int, a: int, b: int = 0, count: int = 0) -> void:
 	items.action(peer, kind, a, b, count, Vector3.ZERO)
 
 
-# One container action as terrain_server.gd runs it (store_before, the action, store_after): the cues the other players were sent.
+# One container action as terrain_server.gd runs it (before_action, the action, after_action): the cues the other players were sent.
 func cued(peer: int, kind: int, a: int, b: int = 0, count: int = 0) -> Array:
 	cue_clock[0] += 500
 	cue_sent.clear()
-	var before: Array = cues.store_before(peer, kind, b)
+	var before: Array = cues.before_action(peer, kind, a, b)
 	act(peer, kind, a, b, count)
-	cues.store_after(peer, kind, a, b, before)
+	cues.after_action(peer, kind, a, b, before)
 	return cue_sent.duplicate()
 
 
@@ -209,6 +209,18 @@ func _init() -> void:
 	check(cued(1, Net.ACT_CHEST_CLOSE, 0) == [[2, CuesScript.CUE_STORE, CuesScript.STORE_CLOSE + CuesScript.STORE_LID]], "and shut")
 	items._chests.erase(int(items._items[lid]["struct"]["uid"]))
 	items._items.erase(lid)
+	items.hurt_heard = cues.hurt
+	cue_sent.clear()
+	items.hurt_player(1, 10.0, false, "wolves")
+	check(cue_sent == [[2, CuesScript.CUE_HURT, 10]], "a bite on the owner: the gasp heard by the player beside them (%s)" % str(cue_sent))
+	items.hurt_heard = Callable()
+	items.vitals_of(1)["health"] = 100.0
+	var dropped_ids: Array = items._items.keys()
+	items.drop_in_world(flint, 1, Vector3(0.5, 10.0, 1.0))
+	var dropped: Array = items._items.keys().filter(func(id: int) -> bool: return not dropped_ids.has(id))
+	var picked: Array = cued(1, Net.ACT_PICKUP, int(dropped[0])) if dropped.size() == 1 else []
+	check(picked == [[2, CuesScript.CUE_PICKUP, flint]] and not items._items.has(int(dropped[0])), "a flint picked up off the ground: heard by the player beside them (%s)" % str(picked))
+	items.inventory_of(1).remove(flint, 1)
 	items._chest_viewer[2] = crate
 	act(2, Net.ACT_BULK, 0)
 	check(box(crate).count_of(stone) == 8, "Take all does not pass the lock")

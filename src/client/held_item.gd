@@ -1360,6 +1360,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_dig_here()
 			elif str(_inv.table.entry(held_id()).get("tool_class", "")) == "rod":
 				_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 4.0)
+				_cast_at = _camera.global_position - _camera.global_transform.basis.z * 4.0   # where the line went in (the server's cast point)
+				_cast_msec = Time.get_ticks_msec()
 
 				if _sound != null:
 					_sound.slots.play("net_cast", _camera.global_position - _camera.global_transform.basis.z * 2.0)   # shortcut: the shore-net throw clip stands in for the rod cast until a line-cast clip exists (Jason, 2 Nov 2026; to hear)
@@ -1417,6 +1419,15 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Where the rod's float sits, for the bite's splash (23 Nov 2026: it sounded 1.5 m in front of the angler): the last cast's point, at the
+# feet's height (the water's face, near enough), while it is recent and near the angler at `feet_near`; INF otherwise.
+func float_point(feet_near: Vector3) -> Vector3:
+	if not _cast_at.is_finite() or Time.get_ticks_msec() - _cast_msec > CAST_KEEP_MS or Vector2(_cast_at.x - feet_near.x, _cast_at.z - feet_near.z).length() > CAST_NEAR_M:
+		return Vector3.INF
+
+	return Vector3(_cast_at.x, feet_near.y - 0.8, _cast_at.z)
+
+
 # Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
 func _send_seen() -> void:
 	if seen_ms.is_valid():
@@ -1445,6 +1456,10 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const CAST_KEEP_MS := 180000        # a rod cast this long ago is still where the float is (float_point)
+const CAST_NEAR_M := 8.0             # and only while the angler stands by it
+var _cast_at: Vector3 = Vector3.INF
+var _cast_msec: int = 0
 const SEEN_ARROW_RANGE_M := 200.0   # another player's arrow: its bow is not known here, so it is flown until it lands (the 6 s cap)
 const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
 

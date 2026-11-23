@@ -475,6 +475,7 @@ func _ready() -> void:
 	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
 	items.craft_working = cues.craft_working
+	items.hurt_heard = cues.hurt   # an attack on a player: the gasp for the others near
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -1158,16 +1159,16 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
-		var store_was: Array = []
+		var cue_before: Array = []
 
 		if cues != null:
 			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
-			store_was = cues.store_before(peer, kind, b)
+			cue_before = cues.before_action(peer, kind, a, b)
 
 		items.action(peer, kind, a, b, count, at)
 
-		if cues != null and not store_was.is_empty():
-			cues.store_after(peer, kind, a, b, store_was)   # after: a container is heard only when the server let the open, close, put or take through
+		if cues != null and not cue_before.is_empty():
+			cues.after_action(peer, kind, a, b, cue_before)   # after: a container, a drink or a pickup is heard only when the server let it through
 
 		if players != null:
 			players.note_action(peer, kind))
