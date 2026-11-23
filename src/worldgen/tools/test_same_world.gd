@@ -71,7 +71,7 @@ func _init() -> void:
 	var spot: int = 0
 
 	for kit_id in kits:
-		var at: Vector3 = HERE + Vector3(-60.0 + float(spot % 20) * 6.0, 0.0, -60.0 + float(spot / 20) * 6.0)
+		var at: Vector3 = HERE + Vector3(-60.0 + float(spot % 20) * 6.0, 0.0, -60.0 + floor(float(spot) / 20.0) * 6.0)
 		spot += 1
 		items.report_position(1, at + Vector3(0.0, 0.0, 2.0))
 		items.place_piece(1, kit_id, at)
