@@ -688,7 +688,7 @@ func _ring_turns(pack: Dictionary, members: Array, p: Vector3, dt: float) -> voi
 
 	for m in members:
 		if not ring.has(int(m["id"])):
-			ring[int(m["id"])] = atan2(m["pos"].z - p.z, m["pos"].x - p.x)   # from the side it came: no wolf runs round the player to its place
+			ring[int(m["id"])] = atan2(m["pos"].z - p.z, m["pos"].x - p.x)   # from the side it came (then spread evenly in that order)
 			fresh = true
 
 	if fresh:   # spread evenly in the order they stand round the player
@@ -751,10 +751,11 @@ func _ring_step(pack: Dictionary, m: Dictionary, p: Vector3, speed: float, dt: f
 		m["moving"] = false
 		m["heading"] = face
 
-		if float(t["t"]) >= float(w.get("windup_s", 0.6)):
-			pack["turn"][id] = {"step": "lunge", "t": 0.0}
+		if float(t["t"]) < float(w.get("windup_s", 0.6)):
+			return false
 
-		return false
+		t = {"step": "lunge", "t": 0.0}   # wound up: the lunge starts this same step (state 7 at once, no step of lag)
+		pack["turn"][id] = t
 
 	if str(t["step"]) == "lunge":
 		m["lunge"] = true
@@ -785,6 +786,9 @@ func _retreat(pack: Dictionary, members: Array, c: Vector3, from: Vector3, wait_
 	pack["hurt"] = false
 	pack.erase("ring")   # a fresh ring, from where they stand, when they come back
 	pack.erase("turn")
+
+	for m in members:
+		m["lunge"] = false
 
 	if not keep_target:
 		pack["target"] = -1

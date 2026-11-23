@@ -489,7 +489,7 @@ func _init() -> void:
 		r.tick(0.1)
 
 		for id in rp["ids"]:
-			if not struck_wolf and str(rp.get("turn", {}).get(id, {}).get("step", "")) == "lunge" and Vector2(r.animals[id]["pos"].x, r.animals[id]["pos"].z).length() < 3.0:
+			if not struck_wolf and str(rp.get("turn", {}).get(id, {}).get("step", "")) == "lunge":
 				r.damage(id, 5.0, 1)   # the player's jab as it comes in
 				struck_wolf = true
 
