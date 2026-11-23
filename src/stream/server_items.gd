@@ -3558,10 +3558,10 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 # left every fire, chest, station, torch and young plant over it in the air.
 const EDIT_SETTLES := ["remains", "carcass", "snare_trap"]   # placed things that lie on the ground and follow it (the walkover ones too)
 const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a placed thing's foot
-const EDIT_LIFT_M := 0.3
+const EDIT_LIFT_M := 0.3   # how far over a fill's top the ground under a buried stack is looked for
 const HOE_EDGE_SLOPE := 0.6   # the hoe leaves ground falling or rising from a placed thing's footprint no steeper than this (m per m; Steering.MAX_SLOPE 0.9)
 const HOE_EDGE_FACE_M := 1.5   # ...and within this of the footprint a cut's or fill's face is no steeper than 1.5 times that
-const EDIT_ON_BASE_M := 0.15   # a thing whose foot is this far over the ground at its middle stands on a foundation or floor (the hoe's strokes)    # how far over a fill's top the ground under a buried stack is looked for
+const EDIT_ON_BASE_M := 0.15   # a thing whose foot is this far over the ground at its middle stands on a foundation or floor (the hoe's strokes)
 
 
 # A placed kind that lies on the ground and follows it into a dig and onto a fill.
@@ -3648,16 +3648,11 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool, buildings: bool =
 		if absf(dy) >= radius:
 			continue
 
-		if not buildings and edits_near.is_valid() and ground_height.is_valid():
-			var p: Vector3 = it["pos"]
-			var ground: float = _edited_height(p.x, p.z, edits_near.call(p, 3.0))
-
-			if not is_nan(ground) and float(box[3]) > ground + EDIT_ON_BASE_M:
-				continue   # it stands on a foundation or a floor, not on the ground: the hoe levels round the house as before
-
 		var apart: Vector2 = Vector2(centre.x, centre.z) - (box[0] as Vector2)
 		var half: Vector2 = box[1]
-		var off: Vector2 = Vector2(maxf(absf(apart.dot(PlacementRules._side(box, 0))) - half.x, 0.0), maxf(absf(apart.dot(PlacementRules._side(box, 1))) - half.y, 0.0))
+		var ax: Vector2 = PlacementRules._side(box, 0)
+		var az: Vector2 = PlacementRules._side(box, 1)
+		var off: Vector2 = Vector2(maxf(absf(apart.dot(ax)) - half.x, 0.0), maxf(absf(apart.dot(az)) - half.y, 0.0))
 
 		if buildings:
 			if off.length() < sqrt(radius * radius - dy * dy):
@@ -3668,8 +3663,26 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool, buildings: bool =
 		# The hoe: the ground may fall or rise from the footprint's edge no steeper than HOE_EDGE_SLOPE, so no step is left at the edge for a foot
 		# or a cart wheel. Over the sphere's plan on a 9 by 9 grid: where the sphere cuts through that slope (or the foot inside it), it is refused.
 		var plane: float = float(box[3])   # from the foot itself, so no drop is left at the edge
-		var ax: Vector2 = PlacementRules._side(box, 0)
-		var az: Vector2 = PlacementRules._side(box, 1)
+
+		if off.length() - radius >= maxf(HOE_EDGE_FACE_M, (absf(plane - centre.y) + radius) / HOE_EDGE_SLOPE):
+			continue   # too far off for the slope or the face rule to reach (most things near a garden): no samples
+
+		if edits_near.is_valid() and ground_height.is_valid():
+			var p: Vector3 = it["pos"]
+			var ground: float = _edited_height(p.x, p.z, edits_near.call(p, 3.0))
+
+			if not is_nan(ground) and plane > ground + EDIT_ON_BASE_M:
+				continue   # it stands on a foundation or a floor, not on the ground: the hoe levels round the house as before
+
+		# The footprint's point nearest the sphere's middle, where a cut goes deepest under it (a fill highest over it): exact for a thin fence.
+		var inner: Vector2 = (box[0] as Vector2) + ax * clampf(apart.dot(ax), -half.x, half.x) + az * clampf(apart.dot(az), -half.y, half.y)
+		var inner_flat: float = inner.distance_squared_to(Vector2(centre.x, centre.z))
+
+		if inner_flat < radius * radius:
+			var inner_v: float = sqrt(radius * radius - inner_flat)
+
+			if centre.y - inner_v < plane and plane < centre.y + inner_v:
+				return name
 
 		for i in 9:
 			for j in 9:

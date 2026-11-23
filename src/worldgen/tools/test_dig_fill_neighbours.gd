@@ -307,7 +307,7 @@ func _init() -> void:
 		var under: Vector2 = height_span(spot, half, lv)
 		check(lv.size() > 0 and items._items.has(thing), "a hoe %s round a %s levels the ground round it (%d edits)" % [job[1], kit, lv.size()])
 		check(items._level_skipped, "  and the last stroke says it left ground under a placed thing")
-		check(under.x >= 9.85 and under.y <= 10.15, "  the ground under the %s is left as it was: %.2f to %.2f" % [kit, under.x, under.y])
+		check(under.x >= 9.95 and under.y <= 10.05, "  the ground under the %s is left as it was: %.2f to %.2f" % [kit, under.x, under.y])
 		var slope: Vector2 = steepest_out(spot, half, lv)
 		check(slope.x <= 0.9, "  from the %s's edge out the ground slopes at most 0.9 m per m (steepest %.2f), out to %.2f" % [kit, slope.x, slope.y])
 
