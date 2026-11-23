@@ -6005,8 +6005,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
 	_zone_add(_next_id)
 	var laid_fire: Dictionary = _items[_next_id]["fire"]
-	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
-	var start_sticks: int = maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))   # a fresh fire holds its first sticks in its store, where Dave sees them
+	var start_sticks: int = _fire_start_sticks()   # a fresh fire holds its first sticks in its store, where Dave sees them
 	_fire_store(laid_fire).add(table.number_of("stick"), start_sticks)
 	_fire_apply_store(laid_fire, _fire_store(laid_fire))
 	_next_id += 1
@@ -7041,8 +7040,9 @@ func _put_out_fire(peer: int, id: int) -> void:
 	_dirty = true
 
 
-# Hold E on a fire that is not burning picks it up again as a campfire kit (Dave 2 Nov 2026). Refused with a reason while it burns, while a pot hangs
-# on it, or while its wood and food store (F) still holds anything.
+# Hold E on a fire that is not burning picks it up again (Dave 2 Nov 2026): as a campfire kit while its store holds just its first sticks, as the
+# kit's parts less those sticks once it is empty (_give_kit_parts). Refused with a reason while it burns, while a pot hangs on it, or while its
+# wood and food store (F) holds anything else.
 func _pick_up_fire(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -7064,20 +7064,69 @@ func _pick_up_fire(peer: int, inv, id: int) -> void:
 		return
 
 	var box = _chests.get(int(fire.get("uid", 0)))
+	var stick: int = table.number_of("stick")
+	var start: int = _fire_start_sticks()
+	var kit: int = table.number_of("campfire_kit")
+	var whole: bool = box != null and box.count_of(stick) == start and _box_holds_only(box, stick)   # its first sticks are still in it: they go back into the kit
 
-	if box != null and not box.is_empty():
-		_say(peer, "Empty it first.")
+	if box != null and not box.is_empty() and not whole:
+		_say(peer, "Empty it first, or leave just its %d Sticks to pack it as a Campfire kit." % start)
 		return
 
-	var kit: int = table.number_of("campfire_kit")
-
-	if _fit(peer, inv, kit, 1) == 0 or inv.add(kit, 1) > 0:
-		_say(peer, "Too heavy to carry any more")
+	if whole:
+		if _fit(peer, inv, kit, 1) == 0 or inv.add(kit, 1) > 0:
+			_say(peer, "Too heavy to carry any more")
+			return
+	elif not _give_kit_parts(peer, inv, kit, start):
 		return
 
 	_chests.erase(int(fire.get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+
+# The sticks a freshly laid fire holds in its store (_place): its kit's first fuel, start_burn_game_s of burning.
+func _fire_start_sticks() -> int:
+	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
+	return maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))
+
+
+func _box_holds_only(box, number: int) -> bool:
+	for i in box.slot_count:
+		if box.numbers[i] != 0 and box.numbers[i] != number:
+			return false
+
+	return true
+
+
+# An empty fire picked up (its first sticks taken out or burnt): what the Campfire kit was made of, less those sticks, comes back, never a whole
+# kit, which would give its sticks again on the next laying (to-do sweep 23 Nov 2026: lay, take the sticks, pick up, lay again made sticks
+# without end). All or nothing; false (and the player told) when it does not fit.
+func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
+	var makers: Array = recipes.makers_of(kit) if recipes != null else []
+	var parts: Array = []
+
+	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
+		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
+
+		if count > 0:
+			parts.append([int(need[0]), count])
+
+	if parts.is_empty():   # no recipe makes the kit (retired or renamed): the fire stays, never lost for nothing
+		_say(peer, "Empty it first.")
+		return false
+
+	var trial = inv.copy()
+
+	for pair in parts:
+		if _fit(peer, trial, int(pair[0]), int(pair[1])) < int(pair[1]) or trial.add(int(pair[0]), int(pair[1])) > 0:
+			_say(peer, "Too heavy to carry any more")
+			return false
+
+	for pair in parts:
+		inv.add(int(pair[0]), int(pair[1]))
+
+	return true
 
 
 func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
