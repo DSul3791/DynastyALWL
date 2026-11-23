@@ -1054,10 +1054,19 @@ func report_position(peer: int, position: Vector3, velocity: Vector3 = Vector3.Z
 	if _peer_key.has(peer):
 		_heard_ms[peer] = Time.get_ticks_msec()
 
-		if _parked.erase(peer):
-			print("Absent: peer %d is back" % peer)
-
+		var was_parked: bool = _parked.erase(peer)
 		_peer_pos[peer] = position
+
+		if was_parked:
+			print("Absent: peer %d is back" % peer)
+			var open_id: int = int(_chest_viewer.get(peer, 0))
+
+			if open_id > 0 and _items.has(open_id):
+				var open_box = _chest_of(peer, open_id)
+
+				if open_box != null:
+					_push_box(open_id, open_box)   # what the others put in or took out while it was away: its open window shows the truth again
+
 		_peer_move[peer] = [velocity if velocity.is_finite() else Vector3.ZERO, Time.get_ticks_msec()]
 
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
@@ -14020,6 +14029,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+	for viewer in _chest_viewer.keys():
+		if int(_chest_viewer[viewer]) == id:
+			_chest_viewer.erase(viewer)   # another player who had it open: nothing more is pushed for it (its window closes as the row goes)
 
 	if bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor":
 		_resettle_on(it["pos"], FLOOR_ROWS_REACH_M)   # what lay on it comes down

@@ -1069,6 +1069,9 @@ func _connect() -> void:
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
+	if quitting:
+		return   # this game closed its own line as it quits (_close_line)
+
 	FreezeWatchScript.printer.line("Terrain client: server left")
 	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats(enet.get_peer(1)) if enet != null and enet.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else "gone"))
@@ -8197,7 +8200,15 @@ func _finish(code: int) -> void:
 
 	_telemetry.drain()   # its lines are written on a worker
 	quitting = true
+	_close_line()
 	get_tree().quit(code)
+
+
+# The game connection is closed as the game quits, so the server hears it at once (robots, 23 Nov 2026: a quit game's connection stayed up
+# 15 s and more, until the server's 15 s absent rule took the body out, and its line's timeout 60 to 120 s later).
+func _close_line() -> void:
+	if multiplayer.multiplayer_peer != null and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer) and multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_DISCONNECTED:
+		multiplayer.multiplayer_peer.close()
 
 
 # Worker thread: writes pending blocks and keeps the cache folder inside its size limit.
@@ -8233,6 +8244,10 @@ func _exit_tree() -> void:
 	# own code is gone: "free(): invalid pointer" / "corrupted size vs. prev_size" and an abort at every quit after joining a world
 	# (headless robot clients, 23 Nov 2026, dev 2aa2ea24; GDScript lambda freed from Callable in GDScript's cleanup). A scene change makes a new one.
 	Probe.context = Callable()
+
+	if quitting:
+		_close_line()   # the window's X comes here without _finish()
+
 	if _ends_at_exit_tree():
 		_end_now()
 

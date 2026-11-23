@@ -353,9 +353,12 @@ func _client() -> void:
 	check(node.position.x - trail_from.x > 0.5, "the body walked on")
 	check(view.trail_points(node.position + Vector3(1000.0, 0.0, 0.0), 60.0).is_empty(), "nothing is stamped beyond the reach")
 	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(8.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2600]))
-	var walk_more: int = Time.get_ticks_msec() + 900
+	var walk_more: int = Time.get_ticks_msec() + 3000
+	var stamped_x: float = float((view._bodies[7]["trail_at"] as Vector3).x)
 
-	while Time.get_ticks_msec() < walk_more:
+	# Until the body has walked a metre past the last stamp (3 s at most), not a fixed 0.9 s: on a loaded machine (a full test run) the
+	# body can still be within half a metre of it at 0.9 s, and a pass under 0.5 m stamps nothing (dev, 23 Nov 2026, trapping thread).
+	while Time.get_ticks_msec() < walk_more and node.position.x - stamped_x < 1.0:
 		await process_frame
 
 	var before_x: float = float((view._bodies[7]["trail_at"] as Vector3).x)
