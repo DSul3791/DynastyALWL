@@ -92,7 +92,7 @@ func _init() -> void:
 	check(last.is_empty() or Vector3(float(last["pos"][0]), float(last["pos"][1]), float(last["pos"][2])).distance_to(HERE) > 1.0, "the stale connection leaving writes no old spot over the live one")
 	check(_count(items.inventory_of(2), stone) == 5 and _count(items.inventory_of(2), oak) == 1, "the live connection still has the stones and the log")
 	var server_code: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
-	check(server_code.contains("_drop_replaced(old_peer)") and server_code.contains("joined the server again from another game window"), "the replaced connection is told why on its screen before it is closed (terrain_server.gd _drop_replaced)")
+	check(server_code.contains("_drop_replaced(old_peer)") and server_code.contains("joined the server again from another game window") and server_code.contains("_on_peer_disconnected(old_peer)   # forgotten now") and server_code.contains("if not _peers.has(peer_id):\n\t\treturn   # forgotten already"), "the replaced connection is told why on its screen, then forgotten at once, not at its line's timeout (terrain_server.gd _drop_replaced)")
 
 	# 2. Asleep when the line drops: back awake on rejoin, with the energy it had.
 	items._stance[2] = 3

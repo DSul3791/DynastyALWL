@@ -1407,6 +1407,7 @@ func _drop_replaced(old_peer: int) -> void:
 
 	if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
 		multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+		_on_peer_disconnected(old_peer)   # forgotten now: a dead line never answers the close, so it stayed in the lists (and was sent to, 2,540 send errors in 6 min) until its 60 to 120 s timeout (robots 23 Nov 2026); the engine's own leave later finds nothing (a force close would skip that leave and keep the peer in the engine's list)
 
 
 func _refuse_join(peer: int, build: int, text: String) -> void:
@@ -1553,6 +1554,9 @@ func _is_connected_peer(peer_id: int) -> bool:
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
+	if not _peers.has(peer_id):
+		return   # forgotten already (_drop_replaced): the engine's own leave of that line, a minute or two later
+
 	var info: Dictionary = _peers.get(peer_id, {})
 	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
