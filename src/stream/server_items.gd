@@ -3456,10 +3456,13 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 
 
 # After a dig or fill: loose items near it come down (or stay) onto what the ground is now (boulders first, so a stack on one follows it down).
-func settle_loose_near(centre: Vector3, radius: float) -> void:
+func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> void:
 	var loose: Array = []
 
-	for id in _items:
+	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 2 m), never a walk of every record
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 
 		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
@@ -3477,9 +3480,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 			continue
 
-		var follows: bool = it.has("struct") and (EDIT_SETTLES.has(str(it["struct"].get("kind", ""))) or bool(_structures.get(str(it["struct"].get("kind", "")), {}).get("walkover", false)))
-
-		if follows:
+		if it.has("struct") and _follows_ground(str(it["struct"].get("kind", ""))) and not it["struct"].has("site"):
 			pass   # remains, a carcass, a snare and the hoe's patches lie on the ground like a stack: they follow it down into a dig and up onto a fill
 		elif it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
 			continue
@@ -3487,7 +3488,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 		if it["pos"].distance_to(centre) <= radius + 1.5:
 			loose.append(id)
 
-	_settle_saplings(centre, radius)
+	_settle_saplings(centre, radius, fill)
 
 	if loose.is_empty():
 		return
@@ -3495,7 +3496,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 	var near: Array = _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M)   # the floors and boulders round the dig, looked up once
 
 	for id in loose:
-		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near)
+		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near, fill)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
 
@@ -3507,12 +3508,18 @@ const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a p
 const EDIT_LIFT_M := 0.3    # how far over a fill's top the ground under a buried stack is looked for
 
 
+# A placed kind that lies on the ground and follows it into a dig and onto a fill.
+func _follows_ground(kind: String) -> bool:
+	return EDIT_SETTLES.has(kind) or bool(_structures.get(kind, {}).get("walkover", false))
+
+
 # Where a stack (or remains, a patch) at `at` rests once the ground round an edit at `centre` changed: down onto what is under it (_settled_loose), or,
-# buried by a fill, up onto the fill's top over it (looked for from just above the sphere: never through a cave roof or into rock over it).
-func _edit_rest(at: Vector3, centre: Vector3, radius: float, near: Array) -> Vector3:
+# `fill` and buried inside the fill's sphere, up onto its top over it (looked for from just above the sphere: a stack on a tunnel floor under the
+# edit is outside it and stays).
+func _edit_rest(at: Vector3, centre: Vector3, radius: float, near: Array, fill: bool) -> Vector3:
 	var flat_sq: float = (at.x - centre.x) * (at.x - centre.x) + (at.z - centre.z) * (at.z - centre.z)
 
-	if floor_below.is_valid() and flat_sq < radius * radius:
+	if fill and floor_below.is_valid() and flat_sq < radius * radius and at.y > centre.y - sqrt(radius * radius - flat_sq) - 0.1:
 		var over: Vector3 = Vector3(at.x, centre.y + sqrt(radius * radius - flat_sq) + EDIT_LIFT_M, at.z)
 
 		if over.y > at.y:
@@ -3525,14 +3532,19 @@ func _edit_rest(at: Vector3, centre: Vector3, radius: float, near: Array) -> Vec
 
 
 # Young plants and planted bushes (_saplings) round an edit come to rest on the ground as it is now, as a stack does.
-func _settle_saplings(centre: Vector3, radius: float) -> void:
+func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
+	var home: Vector2i = Vector2i(int(floor(centre.x / FLORA_CHUNK_M)), int(floor(centre.z / FLORA_CHUNK_M)))
+
 	for sapling in _saplings:
+		if absi(int(sapling["chunk"][0]) - home.x) > 1 or absi(int(sapling["chunk"][1]) - home.y) > 1:
+			continue   # the chunks round the edit only (the cheap test first)
+
 		var p: Vector3 = sapling["pos"]
 
 		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 0.5:
 			continue
 
-		var rest: Vector3 = _edit_rest(p, centre, radius, [])
+		var rest: Vector3 = _edit_rest(p, centre, radius, [], fill)
 
 		if absf(rest.y - p.y) > 0.02:
 			sapling["pos"] = Vector3(p.x, rest.y, p.z)
@@ -3561,11 +3573,11 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
 			var kind: String = str(it["struct"].get("kind", ""))
 			def = _structures.get(kind, {})
 
-			if def.is_empty() or EDIT_SETTLES.has(kind) or bool(def.get("walkover", false)) or def.has("attach_to"):
-				continue
+			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
+				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
 
 			yaw = float(it["struct"].get("yaw", 0.0))
-			name = "The " + (table.in_sentence(table.name_of(int(it["number"]))) if int(it["number"]) > 0 else kind.replace("_", " "))
+			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
 		else:
 			continue
 
@@ -4689,13 +4701,12 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
 
+	_last_dig[peer] = now   # a refused dig waits out the stroke too (no notice and look-up per packet)
 	var standing: String = _edit_blocker(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach, false)
 
 	if standing != "":
 		_say(peer, "%s stands on that ground: take it up before you dig under it." % standing)
 		return
-
-	_last_dig[peer] = now
 
 	for n in maxi(1, int(round(reach))):
 		_wear_slot(peer, inv, shovel, "dig")
@@ -4766,13 +4777,12 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	var heap_r: float = FILL_RADIUS_M * pow(float(mini(_shovel_pieces(inv, shovel), inv.count_of(table.number_of(material_item)))), 1.0 / 3.0)   # the largest heap this fill can make
+	_last_dig[peer] = now
 	var buried: String = _edit_blocker(at + Vector3(0.0, FILL_UP_M, 0.0), maxf(heap_r, FILL_RADIUS_M), true)
 
 	if buried != "":
 		_say(peer, "%s stands there: the fill would bury it." % buried)
 		return
-
-	_last_dig[peer] = now
 	var pieces: int = 0
 
 	for n in _shovel_pieces(inv, shovel):
@@ -4795,7 +4805,7 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
 		_gain_source = was_src
 	else:
-		settle_loose_near(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0))   # stacks, remains and young plants under the heap come up onto it
+		settle_loose_near(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), true)   # stacks, remains and young plants under the heap come up onto it
 
 	_dirty = true
 
@@ -5174,6 +5184,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
+		settle_loose_near(centre, sphere, best_off < 0.0)   # stacks, remains, patches and young plants follow the levelled ground (round 7)
 
 		if spots.size() > 64:
 			_bucket_add(grid, edits[-1])
@@ -5592,8 +5603,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
+				settle_loose_near(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
 			else:
 				fill_ground.call(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+				settle_loose_near(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, true)
 
 			edits += 1
 
@@ -5692,11 +5705,13 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			continue
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		var done: Variant = dig_ground.call(Vector3(x, h - depth + SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(Vector3(x, h + depth - SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
+		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 		dug = true
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
+			settle_loose_near(sphere_at, SMOOTH_SPHERE_M, d <= 0.0)
 
 	if not dug:
 		_say(peer, "The ground here is already on the line.")
@@ -6096,7 +6111,7 @@ func _silt_hole(hole: Array) -> void:
 		print("Bog hole at (%.1f, %.1f) left open: its silting would reach open ground under it" % [float(hole[0]), float(hole[2])])
 		return
 	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
-	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
+	settle_loose_near(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, true)   # the refill sphere itself: what lay in the hole comes up onto it
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many

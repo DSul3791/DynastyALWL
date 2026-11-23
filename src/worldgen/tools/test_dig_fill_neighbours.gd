@@ -214,5 +214,29 @@ func _init() -> void:
 	fill(beside + Vector3(0.0, 0.0, 0.4))
 	check(said.is_empty() and edits.size() == 2, "a dig and a fill 2.2 m from a chest go ahead (%s, %d edits)" % [str(said), edits.size()])
 
+	# A stack on a tunnel floor 2 m under a dig and under a fill stays on that floor (it is not inside either sphere).
+	edits.clear()
+	var tunnel: Vector3 = Vector3(400.0, 7.0, 0.0)
+	edits.append([0, tunnel + Vector3(0.0, 1.0, 0.0), 1.0])   # the tunnel: air from 7 to 9 under ground at 10
+	var before_t: int = items._next_id
+	items.report_position(1, tunnel + Vector3(0.5, 0.0, 0.0))
+	items.give_to(1, "stone", 2)
+	items.action(1, Net.ACT_DROP, items.inventory_of(1).numbers.find(items.table.number_of("stone")), 0, 1, tunnel)
+	var low: int = int(newest(before_t).back())
+	var low_y: float = float(items._items[low]["pos"].y)
+	dig(Vector3(400.0, 10.0, 0.0))
+	fill(Vector3(400.0, 10.0, 0.3))
+	check(absf(float(items._items[low]["pos"].y) - low_y) < 0.05, "a stack on a tunnel floor under a dig and a fill stays there (%.2f, was %.2f)" % [float(items._items[low]["pos"].y), low_y])
+
+	# A blueprint site holds nothing up and is not buried: digs and fills on it go ahead.
+	edits.clear()
+	var site_id: int = 990001
+	items._items[site_id] = {"number": items.table.number_of("foundation_section_kit"), "count": 1, "pos": Vector3(420.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0, "site": {}}}
+	said.clear()
+	dig(Vector3(420.0, 10.0, 0.0))
+	fill(Vector3(420.0, 10.0, 0.5))
+	check(said.is_empty() and edits.size() == 2, "on a blueprint site the shovel digs and fills (%s)" % str(said))
+	items._items.erase(site_id)
+
 	print("test_dig_fill_neighbours: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)
