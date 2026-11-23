@@ -124,7 +124,12 @@ func _store_cue(peer: int, id: int, op: int) -> void:
 	if kind == "" or lies == null or here == null or (lies as Vector3).distance_to(here) > MINE_POINT_M:
 		return   # not a placed container, or not beside the player (a client may not set a lid creaking anywhere)
 
-	cue(peer, CUE_STORE, op + (STORE_LID if kind.contains("chest") else 0), (lies as Vector3) + Vector3(0.0, HANDS_UP_M, 0.0))
+	var lid: bool = kind.contains("chest")
+
+	if not lid and op <= STORE_CLOSE:
+		return   # a barrel, crate or station store opening makes no sound of its own: nothing to send
+
+	cue(peer, CUE_STORE, op + (STORE_LID if lid else 0), (lies as Vector3) + Vector3(0.0, HANDS_UP_M, 0.0))
 
 
 # The tool the blow was made with (0 axe, 1 pick): a pick rings as a pick, anything else as an axe (held_item.gd _hit_tool).

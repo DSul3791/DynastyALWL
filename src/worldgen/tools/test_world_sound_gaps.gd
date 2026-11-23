@@ -122,6 +122,13 @@ func _strokes(world: Node3D, stage: SoundStage) -> void:
 	var made: Array = swim.get_children().slice(count).filter(func(n: Node) -> bool: return n is AudioStreamPlayer3D)
 	check(made.size() == 1 and (made[0] as AudioStreamPlayer3D).global_position.is_equal_approx(at) and (made[0] as AudioStreamPlayer3D).is_in_group("world_sounds")
 			and (made[0] as AudioStreamPlayer3D).max_distance == SwimSounds.OTHER_STROKE_REACH_M, "positional, where they swim, with a reach")
+	var played: int = 1
+
+	while stage.other_step_room() and played < 50:
+		played += int(swim.stroke_at(at))
+
+	check(not stage.other_step_room() and not swim.stroke_at(at) and played == SoundStage.OTHER_STEP_VOICES,
+			"strokes count with the other players' steps: at most %d at once (%d)" % [SoundStage.OTHER_STEP_VOICES, played])
 
 
 func _drinks() -> void:
