@@ -3595,12 +3595,12 @@ func _send(peer_id: int, batch: Array) -> void:
 	_peers[peer_id]["bytes"] += int(batch[2])
 
 
-# Worker thread: takes the next block, urgent ones first, and makes it.
 # True while a flora chunk may take a worker: flora leaves one worker for the ground (the join, lag lane 23 Nov 2026); one worker in all takes both.
 static func flora_may_start(flora_running: int, max_running: int) -> bool:
 	return flora_running < max_running - 1 or max_running <= 1
 
 
+# Worker thread: takes the next block, urgent ones first, and makes it.
 func _worker_loop() -> void:
 	while true:
 		_work.wait()
