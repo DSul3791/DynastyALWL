@@ -21024,7 +21024,7 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 	var stock: Dictionary = _stock_of(peer)
 	var per_spot: int = maxi(int(_crop_table().get(crop_id, {}).get("sow_seeds", 1)), 1) if kind == "seed" else 1   # seeds sown in one spot (crops.json sow_seeds: a pinch, not one grain)
 	var held_n: int = _stock_have(inv, number, stock)
-	var have: int = floori(float(held_n) / float(per_spot))   # the spots it sows
+	var have: int = ceili(float(held_n) / float(per_spot))   # the spots it sows: the last one takes what is left (a seed saved before pinches, 23 Nov 2026, still sows; no gatekeeping)
 	var cells: PackedByteArray = PackedByteArray()
 	var ok_spots: Array = []   # [point index, spot, bed, crop key]
 	var used: Dictionary = {}
@@ -21048,22 +21048,31 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 		cells[int(ok_spots[k][0])] = 2
 
 	if check:
-		reply.call(1 if not ok_spots.is_empty() and have > 0 else 0, first_why if ok_spots.is_empty() else (_none_to_plant(item_id, per_spot, held_n) if have <= 0 else ""), cells)
+		reply.call(1 if not ok_spots.is_empty() and have > 0 else 0, first_why if ok_spots.is_empty() else ("You have none to plant." if have <= 0 else ""), cells)
 		return 0
 
 	if ok_spots.is_empty() or have <= 0:
-		reply.call(0, first_why if ok_spots.is_empty() else _none_to_plant(item_id, per_spot, held_n), cells)
+		reply.call(0, first_why if ok_spots.is_empty() else "You have none to plant.", cells)
 		return 0
 
 	var before: Array = _snapshot(inv)
 	var planted: int = 0
+	var seeds_used: int = 0
 
 	for spot in ok_spots:
 		if planted >= have:
-			break   # every whole spot's sowing is used (a part sowing stays in the pack)
+			break   # every spot's sowing is used
 
-		if (kind != "seed" and _sapling_refusal(item_id, spot[1]) != "") or _stock_take(inv, number, per_spot, stock) < per_spot:
+		var want: int = mini(per_spot, held_n - seeds_used)   # a pinch, or what is left for the last spot
+
+		if want <= 0 or (kind != "seed" and _sapling_refusal(item_id, spot[1]) != ""):
 			continue   # a point the last plant made too close, or the supplies ran out
+
+		var took: int = _stock_take(inv, number, want, stock)
+		seeds_used += took
+
+		if took < want:
+			continue
 
 		if kind == "seed":
 			_sow_cell(peer, spot[2], str(spot[3]), crop_id)
@@ -21087,7 +21096,8 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 	var what: String = table.name_of(number).to_lower()
 
 	if per_spot > 1:   # a spot takes a pinch of seed (crops.json sow_seeds)
-		_say(peer, "Sowed %d spots with %d %s." % [planted, planted * per_spot, what] if planted >= ok_spots.size() else "Sowed %d spots with %d %s: not enough for more." % [planted, planted * per_spot, what])
+		var spots: String = "1 spot" if planted == 1 else "%d spots" % planted
+		_say(peer, "Sowed %s with %d %s." % [spots, seeds_used, what] if planted >= ok_spots.size() else "Sowed %s with %d %s: no more to sow." % [spots, seeds_used, what])
 	else:
 		_say(peer, "Planted %d %s." % [planted, what] if planted >= ok_spots.size() else "Planted %d: no more %s to plant." % [planted, what])
 
@@ -21177,14 +21187,6 @@ func _season_refusal(seed_id: String) -> String:
 		return "The ground is frozen hard: nothing can be sown in winter. Sow %s in %s." % [table.in_sentence(str(def.get("name", crop_id))), when]
 
 	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
-
-
-# Why nothing is planted when the pack holds too few: none at all, or fewer than one spot's sowing (crops.json sow_seeds).
-func _none_to_plant(item_id: String, per_spot: int, held_n: int) -> String:
-	if held_n <= 0:
-		return "You have none to plant."
-
-	return "You need %d %s to sow one spot." % [per_spot, str(table.entry(item_id).get("name", item_id)).to_lower()]
 
 
 # The crop record of a seed just sown (the seed already taken).
