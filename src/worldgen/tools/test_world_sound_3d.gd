@@ -19,6 +19,7 @@ const GearSounds := preload("res://src/client/gear_sounds.gd")
 const PlayerView := preload("res://src/client/player_view.gd")
 const Stance := preload("res://src/client/stance.gd")
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const AnimalView := preload("res://src/client/animal_view.gd")
 
 # Modules allowed flat players: the listener's own body, the UI, and beds that are around the listener on purpose.
 const FLAT_OK := {
@@ -100,7 +101,9 @@ func _run() -> void:
 	check(thirty <= -3.5, "a sound 30 degrees right leans right clearly (%.1f dB)" % thirty)
 	check(right < before - 10.0, "the ears at the eye pan harder than the drawn camera behind (%.1f against %.1f dB)" % [right, before])
 
+	await _rear_checks(world, ears)
 	_event_checks(world)
+	_animal_checks(world)
 	_other_steps(world)
 	await _other_step_voice(world)
 	print("world sound 3d: %d failures" % failures)
@@ -109,27 +112,40 @@ func _run() -> void:
 
 # Plays a steady mono tone at `at` and returns the level of the left ear minus the right, in dB (NAN when nothing was mixed).
 func _left_minus_right(world: Node3D, at: Vector3) -> float:
+	var heard: Vector3 = await _mix(world, at, "Master", false)
+
+	if heard.x + heard.y <= 0.0:
+		return NAN
+
+	return 10.0 * log(maxf(heard.x, 1e-12) / maxf(heard.y, 1e-12)) / log(10.0)
+
+
+# Plays a steady mono tone at `at` on `bus` (with `bright` a high one mixed in) through the mixer; returns the energy of the left ear,
+# the right ear and of the change between samples (the top of the sound) as x, y, z. Waits for enough mixed frames, however fast or
+# slow the loop runs against the mixer.
+func _mix(world: Node3D, at: Vector3, bus: String, bright: bool) -> Vector3:
 	var player: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
 	var tone: AudioStreamGenerator = AudioStreamGenerator.new()
 	tone.mix_rate = 44100.0
 	player.stream = tone
 	player.unit_size = 10.0
+	player.bus = bus
 	world.add_child(player)
 	player.global_position = at
 	player.play()
 	var playback: AudioStreamGeneratorPlayback = player.get_stream_playback()
-	var left: float = 0.0
-	var right: float = 0.0
+	var heard: Vector3 = Vector3.ZERO
 	var phase: float = 0.0
-
+	var last: float = 0.0
 	var settle_until: int = Time.get_ticks_msec() + 400   # the pan settles and the old voice's tail drains first
 	var give_up: int = Time.get_ticks_msec() + 4000
 	var counted: int = 0
 
-	while counted < 8000 and Time.get_ticks_msec() < give_up:      # enough mixed frames, however fast or slow the loop runs against the mixer
+	while counted < 8000 and Time.get_ticks_msec() < give_up:
 		for n in playback.get_frames_available():
-			phase += 0.06
-			playback.push_frame(Vector2.ONE * 0.5 * sin(phase))
+			phase += 1.0
+			var sample: float = 0.5 * sin(phase * 0.06) if not bright else 0.25 * sin(phase * 0.06) + 0.25 * sin(phase * 1.4)   # 420 Hz, and 9.8 kHz
+			playback.push_frame(Vector2.ONE * sample)
 
 		await process_frame
 		var got: int = _capture.get_frames_available()
@@ -145,16 +161,45 @@ func _left_minus_right(world: Node3D, at: Vector3) -> float:
 		counted += buffer.size()
 
 		for v in buffer:
-			left += v.x * v.x
-			right += v.y * v.y
+			heard.x += v.x * v.x
+			heard.y += v.y * v.y
+			heard.z += (v.x - last) * (v.x - last)
+			last = v.x
 
 	player.queue_free()
 	await process_frame
+	return heard
 
-	if left + right <= 0.0:
-		return NAN
 
-	return 10.0 * log(maxf(left, 1e-12) / maxf(right, 1e-12)) / log(10.0)
+# Behind the ears (Sound3D.place_rear): the same sound 5 m straight behind comes out a little softer and darker than 5 m ahead, and the
+# choice holds across the hysteresis.
+func _rear_checks(world: Node3D, ears: AudioListener3D) -> void:
+	var at_ears: Transform3D = ears.global_transform
+	check(is_zero_approx(Sound3D.rear_share(at_ears, at_ears.origin + Vector3(0.0, 0.0, -5.0))), "ahead: rear share 0")
+	check(is_zero_approx(Sound3D.rear_share(at_ears, at_ears.origin + Vector3(5.0, 0.0, 0.0))), "beside: rear share 0")
+	check(is_equal_approx(Sound3D.rear_share(at_ears, at_ears.origin + Vector3(0.0, 2.0, 5.0)), 1.0), "behind (and above): rear share 1")
+
+	if AudioServer.get_bus_index("Foley") < 0:
+		AudioServer.add_bus()
+		AudioServer.set_bus_name(AudioServer.bus_count - 1, "Foley")
+
+	var probe: AudioStreamPlayer3D = AudioStreamPlayer3D.new()
+	probe.bus = "Foley"
+	check(not Sound3D.place_rear(probe, 0.45) and String(probe.bus) == "Foley", "0.45 behind from the front: stays on Foley")
+	check(Sound3D.place_rear(probe, 0.6) and String(probe.bus) == "Rear_Foley", "0.6 behind: on Rear_Foley")
+	check(Sound3D.place_rear(probe, 0.45) and String(probe.bus) == "Rear_Foley", "back to 0.45: still behind (hysteresis)")
+	check(not Sound3D.place_rear(probe, 0.2) and String(probe.bus) == "Foley", "0.2: back on Foley")
+	probe.bus = "Master"
+	check(not Sound3D.place_rear(probe, 1.0) and String(probe.bus) == "Master", "a voice on another bus (a bed, a band) is left alone")
+	probe.free()
+
+	var front: Vector3 = await _mix(world, at_ears.origin + Vector3(0.0, 0.0, -5.0), "Foley", true)
+	var back: Vector3 = await _mix(world, at_ears.origin + Vector3(0.0, 0.0, 5.0), Sound3D.rear_bus("Foley"), true)
+	var level_db: float = 10.0 * log(maxf(back.x + back.y, 1e-12) / maxf(front.x + front.y, 1e-12)) / log(10.0)
+	var top_db: float = 10.0 * log(maxf(back.z / maxf(back.x, 1e-12), 1e-12) / maxf(front.z / maxf(front.x, 1e-12), 1e-12)) / log(10.0)
+	print("behind against ahead: level %.1f dB, top of the sound %.1f dB more down" % [level_db, top_db])
+	check(level_db <= -1.0 and level_db >= -5.0, "behind is a little softer, not hidden (%.1f dB)" % level_db)
+	check(top_db <= -1.5 and top_db >= -8.0, "behind is darker, not muffled (top %.1f dB)" % top_db)
 
 
 # A world voice: positional at `at`, falls off with distance, ends somewhere, cover can muffle it.
@@ -311,3 +356,61 @@ func _other_step_voice(world: Node3D) -> void:
 
 	await process_frame
 	check(stage.other_step_room(), "room again once they end")
+
+
+# A fight is heard from the animal: a wolf's attack and a black bear's or an elk's warning call (stand-in clips), close calls keep getting
+# louder (max_db), and attacker_near finds who is biting.
+func _animal_checks(world: Node3D) -> void:
+	check(7 in AnimalView.VOICED_STATES and 16 in AnimalView.VOICED_STATES, "a wolf's attack (7) and the jaw-pop warning (16) are voiced")
+	var stage: StubStage = StubStage.new()
+	world.add_child(stage)
+	var creatures = CreatureSounds.new()
+	stage.add_child(creatures)
+	creatures.setup(stage)
+
+	for kind in ["black_bear", "elk", "wolf"]:
+		var count: int = creatures.get_child_count()
+		var at: Vector3 = Vector3(3.0, 0.0, -4.0)
+		check(creatures.call_at(kind, at, "threat"), "%s's threat call plays" % kind)
+		_positional(_made(creatures, count), at, "%s's threat call" % kind)
+		var made: Array = _made(creatures, count)
+		var voice: AudioStreamPlayer3D = made[0] if not made.is_empty() else null
+		check(voice != null and voice.max_db > 3.5 and voice.max_db <= CreatureSounds.NEAR_MAX_DB and is_equal_approx(voice.max_db, minf(voice.volume_db + CreatureSounds.NEAR_RISE_DB, CreatureSounds.NEAR_MAX_DB)), "%s's call keeps rising close by (max_db %.1f)" % [kind, voice.max_db if voice != null else 0.0])
+		creatures._threat_until.clear()
+
+	for child in creatures.get_children():
+		child.free()
+
+	# A pack rush: five wolves to attack at once make at most THREAT_VOICES growls, and the same kind not again within THREAT_EVERY_MS.
+	var before: int = creatures.get_child_count()
+	var growls: int = 0
+
+	for n in 5:
+		growls += 1 if creatures.call_at("wolf", Vector3(float(n), 0.0, -6.0), "threat") else 0
+
+	check(growls == 1, "a pack's attack in one row: one growl, the rest within the cooldown (%d)" % growls)
+	creatures._threat_until.clear()
+
+	for child in creatures.get_children():
+		child.free()
+
+	for n in 5:
+		creatures.call_at(["wolf", "bear", "moose", "black_bear", "elk"][n], Vector3(float(n), 0.0, -6.0), "threat")
+		creatures._threat_until.clear()
+
+	var live: int = _made(creatures, before).filter(func(v) -> bool: return v.has_meta("keep")).size()
+	check(live == CreatureSounds.THREAT_VOICES, "at most %d threat calls sound at once (%d new)" % [CreatureSounds.THREAT_VOICES, live])
+
+	var view = AnimalView.new()
+	world.add_child(view)
+	var wolf: Node3D = Node3D.new()
+	world.add_child(wolf)
+	wolf.global_position = Vector3(2.0, 0.0, 0.0)
+	var deer: Node3D = Node3D.new()
+	world.add_child(deer)
+	deer.global_position = Vector3(1.0, 0.0, 0.0)
+	view._bodies = {1: {"node": wolf, "state": 7, "kind": "wolf"}, 2: {"node": deer, "state": 2, "kind": "deer"}}
+	var who: Dictionary = view.attacker_near(Vector3.ZERO, 5.0)
+	check(str(who.get("kind", "")) == "wolf" and (who["at"] as Vector3).is_equal_approx(wolf.global_position), "the biting wolf is found, not the nearer fleeing deer (%s)" % str(who))
+	check(view.attacker_near(Vector3(20.0, 0.0, 0.0), 5.0).is_empty(), "no attacker past 5 m")
+	view._bodies = {}

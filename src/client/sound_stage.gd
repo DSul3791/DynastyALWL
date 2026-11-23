@@ -789,7 +789,7 @@ func _shed(body: CharacterBody3D, count: int) -> void:
 func _shed_rank(player: AudioStreamPlayer3D, body: CharacterBody3D) -> float:
 	var distance: float = player.global_position.distance_to(body.global_position)
 	var rank: float = distance - player.volume_db * 4.0              # far and quiet sorts last
-	var bus: String = AirBands.parent_of(String(player.bus))
+	var bus: String = AirBands.parent_of(String(player.bus).trim_prefix(Sound3D.REAR_PREFIX))   # a voice behind the ears ranks as its own bus
 
 	if bus in AMBIENT_BUSES:
 		rank += 1000.0
@@ -1302,7 +1302,7 @@ func loudest_text(bus_name: String) -> String:
 	voices.append_array(find_children("*", "AudioStreamPlayer", true, false))
 
 	for player in voices:
-		if not is_instance_valid(player) or not player.playing or player.stream == null or str(player.bus) != bus_name:
+		if not is_instance_valid(player) or not player.playing or player.stream == null or str(player.bus).trim_prefix(Sound3D.REAR_PREFIX) != bus_name:
 			continue
 
 		var db: float = player.volume_db
@@ -1987,6 +1987,7 @@ func _exit_tree() -> void:
 	_later.clear()
 
 	AirBands.remove_all()
+	Sound3D.remove_rear_buses()
 
 	for sound_name in ["Wind", "Surf", "Foley", "Nature", "Weather", "World"]:
 		var index: int = AudioServer.get_bus_index(sound_name)
