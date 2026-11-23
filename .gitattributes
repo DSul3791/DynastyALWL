@@ -7,3 +7,6 @@ tools/godot text eol=lf
 Dockerfile text eol=lf
 *.dockerignore text eol=lf
 *.yaml text eol=lf
+assets/animals/**/*.fbx filter=lfs diff=lfs merge=lfs -text
+assets/animals/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+assets/animals/**/*.png filter=lfs diff=lfs merge=lfs -text
