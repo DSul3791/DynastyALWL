@@ -10,6 +10,7 @@ extends Node3D
 # grass, tall grass patches). Cells are built a few rays per frame so walking never stalls.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: lines printed on a worker (D-LAG-1)
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
@@ -490,7 +491,8 @@ func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 	_run_dirty = true
 
 	if not routes.is_empty():
-		print("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
+		# On a worker (lag lane 23 Nov 2026: in the PC standing plays each main-thread line here was followed by a 0.8-1.3 s freeze, D-LAG-1).
+		FreezeWatchScript.printer.line("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
 
 
 # Lays the trails within the run map round the player: each route stepped every half metre (a texel), a footprint of the texels round each
@@ -565,7 +567,7 @@ func _rebuild_runs(player: Vector3) -> void:
 	if line != _run_logged and Time.get_ticks_msec() >= _run_log_msec:
 		_run_logged = line
 		_run_log_msec = Time.get_ticks_msec() + 10000
-		print(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass (at most one line in 10 s)
+		FreezeWatchScript.printer.line(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass (at most one line in 10 s; on a worker, D-LAG-1)
 
 	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
 	_run_texture.update(_run_image)
