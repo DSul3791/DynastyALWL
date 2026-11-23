@@ -28,6 +28,10 @@ const CATCH_MIN_MPS := 0.9      # so a drawn body never goes over 1.3 times its 
 const AHEAD_CARRY_S := 0.8      # a body drawn at the present (a committed charge, animal_view AHEAD_STATES) carries on this long past its newest point
 const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 12 m/s); smooth() eases a body at most this fast (a 16-18 m/s
                                 # flush or pronghorn flight is drawn at 15 and settles a few tenths of a metre behind its point; any excess is eased in, not jumped)
+const LUNGE_MPS := 12.0         # a charge's lunge shorter than a row gap reaches the client already done (the charge row stood where the warning
+                                # stood, the recover row at its end): its body is eased onto it at the fastest charge's pace, not walked there at
+                                # CATCH_MIN_MPS (robots 23 Nov 2026, boar: a 3.6 m lunge drawn over 2.5 s, the first blow of each fight drawn 2.7 to
+                                # 4 m from where the server had it). animal_view LUNGE_STATES
 
 
 # Local seconds minus server seconds (`off` so far, INF for none): the smallest seen, the batch that came fastest, so a point's time plus

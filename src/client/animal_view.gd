@@ -23,6 +23,7 @@ const GRAZE := 0
 const HOP := 1
 const FLEE := 2
 const CHARGE := 11                    # server_big_game.CHARGE: a locked charge (AHEAD_STATES)
+const LUNGE_STATES := [11, 12]         # charge and recover: a lunge that came already done is eased on at MotionBuffer.LUNGE_MPS
 const DRINK := 21                     # server_animals.DRINK: standing at the bank drinking (docs/design/animals_at_water_server.md)
 const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
@@ -758,7 +759,10 @@ func _process_body(delta: float) -> void:
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
 
-		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
+		if int(b["state"]) in LUNGE_STATES:
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.LUNGE_MPS, delta, 1.05, 1.0)
+		else:
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
 		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)

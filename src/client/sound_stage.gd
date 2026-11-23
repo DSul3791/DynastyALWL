@@ -1,5 +1,7 @@
 extends Node
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # The first sound stage (client only; DESIGN_IDEAS Section 6.17, budget in
 # ARCHITECTURE_BUDGET Section 9). Three things for now:
 #
@@ -1556,11 +1558,11 @@ func _load_settings() -> void:
 
 	if file.load(SETTINGS_PATH) == OK:
 		for group in MIX_GROUPS:
-			var old_step: int = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)   # the old 100/75/50/25/off steps
-			mix_level[group] = clampf(float(file.get_value("mixer_level", group, VOLUME_STEPS[old_step])), 0.0, 1.0)
+			var old_step: int = clampi(SettingsRead.whole(file, "mixer", group, 0), 0, VOLUME_STEPS.size() - 1)   # the old 100/75/50/25/off steps
+			mix_level[group] = clampf(SettingsRead.number(file, "mixer_level", group, VOLUME_STEPS[old_step]), 0.0, 1.0)
 
 		for sound_name in levels:
-			levels[sound_name] = clampf(float(file.get_value("levels", sound_name, 1.0)), 0.0, 1.0)
+			levels[sound_name] = clampf(SettingsRead.number(file, "levels", sound_name, 1.0), 0.0, 1.0)
 
 	_apply_buses()
 

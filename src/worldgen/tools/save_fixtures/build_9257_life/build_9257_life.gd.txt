@@ -1,0 +1,244 @@
+extends SceneTree
+
+# Builds a 9257-era store of a returning player's life (run on the 9257 code, main a27c98df):
+#   godot --headless --path . --script res://build_9257b.gd -- --store=DIR
+# Two characters: one hurt, hungry, thirsty, cold, sick and limping, with two logs on the shoulder, seeds in the pack, a worn bag and a chest,
+# a bed set as the spawn point, a craft queue half done at a workbench; the other pulling a handcart with a crate on it and cargo in its store.
+# A lit kiln with logs, a lit smelter with ore and charcoal, a snare holding a catch, a lit campfire burning down, seeds on the ground,
+# a tilled bed with a crop, and the remains of a third character holding seeds.
+
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
+const Carts := preload("res://src/stream/server_carts.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")
+
+const BASE := Vector3(58300.0, 6.0, 71300.0)
+var items
+var store: String = ""
+var log_lines: Array = []
+var clock: Array = [8700000.0]
+
+
+func note(s: String) -> void:
+	print(s)
+	log_lines.append(s)
+
+
+func n(id: String) -> int:
+	return items.table.number_of(id)
+
+
+func act(peer: int, kind: int, a: int, b: int = 0, count: int = 0, at: Vector3 = Vector3.ZERO) -> void:
+	items.action(peer, kind, a, b, count, at)
+
+
+func place(peer: int, spec: String) -> int:
+	var id: int = items.dev_place(spec)
+
+	if id > 0 and items._items[id].has("struct"):
+		items._items[id]["struct"]["owner"] = items._peer_key[peer]
+
+	note("placed %s -> %d" % [spec, id])
+	return id
+
+
+func recipe_number(id: String) -> int:
+	for r in items.recipes.numbers():
+		if str(items.recipes.recipe(int(r)).get("id", "")) == id:
+			return int(r)
+
+	return 0
+
+
+func _init() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--store="):
+			store = a.trim_prefix("--store=")
+
+	DirAccess.make_dir_recursive_absolute(store)
+	items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	items.send_notice = func(_p, t): log_lines.append("  said: " + str(t))
+	items.ground_height = func(_x, _z): return BASE.y
+	items.game_seconds = func(): return clock[0]
+	items.unix_now = func(): return clock[0]
+	items.setup(ItemTableScript.load_default(), store)
+	items.admin_mode_on = func(_p): return false
+	var a: int = 201
+	var b: int = 202
+	var c: int = 203
+	items.peer_connected_hello(a, "fixture9257l01")
+	items.peer_connected_hello(b, "fixture9257l02")
+	items.peer_connected_hello(c, "fixture9257l03")
+
+	for p in [a, b, c]:
+		items._characters[items._peer_key[p]]["grace_s"] = 0.0
+		var inv = items.inventory_of(p)
+
+		for s in inv.slot_count:
+			inv.clear_slot(s)
+
+	items.report_position(a, BASE)
+	items.report_position(b, BASE + Vector3(20.0, 0.0, 0.0))
+	items.report_position(c, BASE + Vector3(-20.0, 0.0, 0.0))
+
+	# A's pack: tools, seeds, linseed, food, two logs on the shoulder.
+	items.give(a, n("stone_axe"), 1)
+	items.give(a, n("stone_knife"), 1)
+
+	for pair in [["wheat_seeds", 7], ["flax_seeds", 3], ["carrot_seeds", 2], ["linseed", 9], ["nettle_seed", 4], ["raw_meat", 3], ["hazelnuts", 6], ["fiddleheads", 5]]:
+		items.give(a, n(str(pair[0])), int(pair[1]))
+
+
+	# A worn bag holding seeds.
+	for number in range(1, 5000):
+		var id: String = items.table.id_of(number)
+
+		if id != "" and items._place_of(number) >= 0 and (id.contains("backpack") or id.contains("satchel") or id.contains("pouch")):
+			items.give(a, number, 1)
+			var ws: int = items.inventory_of(a).numbers.find(number)
+
+			if ws >= 0:
+				act(a, Net.ACT_WEAR, ws)
+
+			break
+
+	for w in range(items.worn_slots_of(a).size()):
+		var bag = items._worn_bag(a, w)
+
+		if bag != null:
+			bag.add(n("barley_seeds"), 5)
+			bag.add(n("stick"), 2)
+			note("A worn bag at %d holds barley seeds" % w)
+			break
+
+	# A's vitals: hurt, hungry, thirsty, cold, sick, limping.
+	var v: Dictionary = items.vitals_of(a)
+	v["health"] = 37.0
+	v["fed"] = 420.0
+	v["wet"] = 900.0
+	v["warmth"] = 33.0
+	v["sick"] = 5000.0
+	v["weight"] = 74.0
+
+	if v.has("limp") or true:
+		v["limp"] = 300.0
+
+	# A's bed and spawn point, under a lean-to.
+	var lean: int = place(a, "lean_to@%.1f,%.1f" % [BASE.x + 6.0, BASE.z + 6.0])
+	var bed: int = place(a, "rough_bed@%.1f,%.1f" % [BASE.x + 6.0, BASE.z + 6.0])
+	items.report_position(a, BASE + Vector3(6.0, 0.0, 5.0))
+	note("spawn bed set: %s" % str(items.set_spawn_bed(a, bed)))
+
+	# A chest of A's with seeds and linseed.
+	var chest: int = place(a, "chest@%.1f,%.1f" % [BASE.x - 4.0, BASE.z + 2.0])
+
+	if chest > 0:
+		var box = items._chests[int(items._items[chest]["struct"]["uid"])]
+		box.add(n("wheat_seeds"), 12)
+		box.add(n("linseed"), 30)
+		box.add(n("cabbage_seeds"), 4)
+		box.add(n("stone"), 9)
+
+	# Seeds on the ground.
+	items.drop_in_world(n("oats_seeds"), 6, BASE + Vector3(-2.0, 0.0, -3.0))
+	items.drop_in_world(n("linseed"), 5, BASE + Vector3(-2.5, 0.0, -3.0))
+
+	# A craft queue half done at a log workbench: two Wooden cart wheels.
+	var bench: int = place(a, "log_workbench@%.1f,%.1f" % [BASE.x, BASE.z + 12.0])
+	items.report_position(a, BASE + Vector3(0.0, 0.0, 10.0))
+	items.give(a, n("lumber"), 8)
+	items.give(a, n("wooden_pin"), 16)
+	items.give(a, n("iron_band"), 3)
+	var wheel: int = recipe_number("wooden_cart_wheel")
+	items._last_queue_act.clear()
+	act(a, Net.ACT_CRAFT_QUEUE, wheel, 0, 2, CraftHand.at(items, a, wheel))
+
+	for s in range(25):
+		items.tick(1.0)
+
+	note("craft queue: %s" % JSON.stringify(items._craft_queues.get(items._peer_key[a], {})))
+	items.report_position(a, BASE + Vector3(6.0, 0.0, 5.0))
+
+
+	# A lit kiln and a lit campfire.
+	place(a, "kiln@%.1f,%.1f,0,lit" % [BASE.x + 14.0, BASE.z - 8.0])
+	place(a, "campfire@%.1f,%.1f,0,firewood" % [BASE.x + 2.0, BASE.z - 10.0])
+
+	# A smelter with ore and charcoal in it, lit.
+	var smelter: int = place(a, "smelter@%.1f,%.1f" % [BASE.x + 20.0, BASE.z - 8.0])
+
+	if smelter > 0:
+		items.report_position(a, items._items[smelter]["pos"] + Vector3(0.0, 0.0, -1.5))
+		items.give(a, n("charcoal"), 10)
+		items.give(a, n("copper_ore"), 6)
+		act(a, Net.ACT_CHEST_OPEN, smelter)
+		act(a, Net.ACT_CHEST_PUT, items.inventory_of(a).numbers.find(n("charcoal")), smelter, 10)
+		act(a, Net.ACT_CHEST_PUT, items.inventory_of(a).numbers.find(n("copper_ore")), smelter, 6)
+		act(a, Net.ACT_CHEST_CLOSE, 0)
+		items.give(a, n("fire_starter") if n("fire_starter") > 0 else n("flint"), 1)
+		act(a, Net.ACT_USE_STRUCT, smelter, 0)
+		note("smelter state: %s" % JSON.stringify(items._smelters.saved_state() if items._smelters.has_method("saved_state") else {}))
+
+	items.report_position(a, BASE + Vector3(6.0, 0.0, 5.0))
+
+	items.give(a, n("log_birch"), 1)
+	items.give(a, n("log_birch"), 1)
+	note("A shoulder logs %d" % items.shoulder_count(a))
+
+	# A snare holding a catch.
+	var snare: int = place(a, "snare_trap@%.1f,%.1f" % [BASE.x - 12.0, BASE.z - 12.0])
+
+	if snare > 0:
+		items._traps.on_placed(a, snare)
+		items._traps._lay_catch(snare, "rabbit", items._traps.of("snare_trap"))
+		note("snare %d catch %d" % [snare, int(items._items[snare]["struct"].get("catch", 0))])
+
+	# A tilled bed with wheat growing.
+	var plot: int = place(a, "tilled_bed@%.1f,%.1f" % [BASE.x - 8.0, BASE.z + 14.0])
+
+	if plot > 0:
+		for cell in items._bed_cells(items._items[plot]):
+			items._crops[items._bed_key(cell)] = {"crop": "wheat", "sown": 300, "age": 20.0, "wet": 3, "day": 360, "compost": false}
+
+	# B pulls a handcart with a crate on it, cargo in its store, then their line drops mid-pull.
+	var cart: int = place(b, "handcart@%.1f,%.1f" % [BASE.x + 20.0, BASE.z + 4.0])
+	var crate: int = place(b, "wooden_crate@%.1f,%.1f" % [BASE.x + 22.0, BASE.z + 4.0])
+
+	if cart > 0 and crate > 0:
+		items._chests[int(items._items[cart]["struct"]["uid"])].add(n("stone"), 20)
+		items._chests[int(items._items[cart]["struct"]["uid"])].add(n("rye_seeds"), 8)
+		items._chests[int(items._items[crate]["struct"]["uid"])].add(n("peas_seeds"), 6)
+		items._chests[int(items._items[crate]["struct"]["uid"])].add(n("raw_meat"), 2)
+		items.report_position(b, BASE + Vector3(21.0, 0.0, 5.5))
+		act(b, Net.ACT_CART, crate, Carts.OP_LOAD)
+		items.report_position(b, items._items[cart]["pos"] + Vector3(0.0, 0.0, 1.7))
+		act(b, Net.ACT_CART, cart, Carts.OP_GRAB)
+		var here: Vector3 = items._peer_pos[b]
+
+		for i in 15:
+			here.z += 0.4
+			clock[0] += 0.2
+			items.report_position(b, here)
+
+		note("cart at %s, crate on %s, pulled %s" % [str(items._items[cart]["pos"]), str(items._items[crate]["struct"].get("on", 0)), str(items._carts.puller_of.get(b, 0))])
+
+	items.give(b, n("emmer_wheat_seeds") if n("emmer_wheat_seeds") > 0 else n("wheat_seeds"), 3)
+	items.peer_left(b)
+
+	# C dies holding seeds and a knife: the remains keep them.
+	items.give(c, n("radish_seeds"), 11)
+	items.give(c, n("stone_knife"), 1)
+	note("C killed: %s" % str(items.kill(c, "test")))
+	items.peer_left(c)
+	items.peer_left(a)
+	items.save()
+	items._finish_writer()
+	var f: FileAccess = FileAccess.open(store + "/fixture_build_log.txt", FileAccess.WRITE)
+	f.store_string("\n".join(log_lines))
+	f.close()
+	quit(0)
