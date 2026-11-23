@@ -5867,9 +5867,10 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 
 # Dave 23 Nov 2026, crouched "like I was against an invisible wall but if I stood up I could walk": on the voxel terrain under Jolt a
 # move_and_slide of only a few millimetres on the floor (a slow crouch, a loaded or tired walker) often goes nowhere at all, though nothing
-# but the floor is touched, and the same at a wall or trunk it is sliding along. When a floor move made under 30% of the asked headway, the
-# asked move (against a wall only the part along it) is carried into the next frame's, so the body moves in steps of a centimetre or two
-# instead of standing still. Walking straight into a wall carries nothing (it stops you as before); SLIDE_CARRY_MAX_M caps it.
+# but the floor is touched, and the same at a wall or trunk it is sliding along. The part of the asked move (against a wall only the part along
+# it) that a frame did not make, measured against what the floor's slope lets it make, is carried into the next frame's when it is over 30%
+# of the move, so the body moves in steps of a centimetre or two instead of standing still, and a slope stays as slow as it was. Walking
+# straight into a wall carries nothing (it stops you as before); SLIDE_CARRY_MAX_M caps it.
 const SLIDE_CARRY_MAX_M := 0.05
 
 
@@ -5878,7 +5879,7 @@ func _carry_slide(from: Vector3, asked: Vector3) -> void:
 
 	if body.is_on_wall() and asked.length_squared() >= 0.00000001:
 		# Against a wall or a trunk only the move along it counts (robots 23 Nov 2026: crouched, sliding along a tree trunk went nowhere while standing
-		# slid past), however small: walking nearly head on into a round trunk slides round it as the standing walk does (robots, later the same
+		# slid past), however small (from 0.1 mm a frame): walking nearly head on into a round trunk slides round it as the standing walk does (robots, later the same
 		# day: crouched it stopped dead there). Straight into a wall nothing is along it, nothing is carried and the wall stops you.
 		var wall: Vector3 = Vector3(body.get_wall_normal().x, 0.0, body.get_wall_normal().z).normalized()
 		asked = asked.slide(wall)
@@ -5891,12 +5892,18 @@ func _carry_slide(from: Vector3, asked: Vector3) -> void:
 		_slide_carry = Vector3.ZERO
 		return
 
-	if got >= want.length() * 0.3:
-		# It moved: what of the asked headway it did not make is kept, not dropped (round a trunk nearly head on the moves along it are under
-		# a millimetre, Jolt makes one in a few, and dropping the rest crept round at a fraction of the standing pace).
+	# What the floor lets the move make across the ground: on a slope move_and_slide goes along it, so less (cos squared of the slope) than asked.
+	# Measured against that, a slope is never sped up to the flat pace.
+	var floor_move: Vector3 = want.slide(body.get_floor_normal()) if body.is_on_floor() else want
+	var can: Vector3 = Vector3(floor_move.x, 0.0, floor_move.z)
+
+	if got >= can.length() * 0.3:
+		# It moved: what of the headway it could make and did not is kept, not dropped (round a trunk nearly head on the moves along it are under
+		# a millimetre, Jolt makes one in a few, and dropping the rest crept round at a fraction of the standing pace). A move pushed backwards
+		# (the body set out of the trunk) leaves more than the move to make up, still within SLIDE_CARRY_MAX_M.
 		var moved: Vector3 = Vector3(body.global_position.x - from.x, 0.0, body.global_position.z - from.z)
-		var short: float = want.length() - moved.dot(want.normalized())
-		_slide_carry = want.normalized() * minf(short, SLIDE_CARRY_MAX_M) if short > want.length() * 0.3 else Vector3.ZERO
+		var short: float = can.length() - moved.dot(can.normalized())
+		_slide_carry = want.normalized() * minf(short, SLIDE_CARRY_MAX_M) if short > can.length() * 0.3 else Vector3.ZERO
 		return
 
 	_slide_carry = want.limit_length(SLIDE_CARRY_MAX_M)
@@ -8057,8 +8064,9 @@ func _ground_below(p: Vector3) -> float:
 # --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side (clear of the trunk), 0.35 m (brushing it) and 0.12 m (nearly head on, about 10 degrees off), a crouched walk
 # at the crouch pace (or --runspeed) up beside it from four sides, 3 s each. A walk past or brushing that covers under 60 percent of its distance is stuck. Nearly head
 # on the walker starts already against the trunk (as the robots were: a stop leaves you there) and has to slide round it, slowly at first, so it is stuck under a
-# quarter of its distance (the robots' stop: 0.03 m in 2 s); a standing walk at walking pace goes from there first, and when that stops too the trunk is a real
-# obstacle and the crouched walk is not counted. Prints "crouch walk: N of M stuck" and ends the walk test.
+# quarter of its distance (the robots' stop: 0.03 m in 2 s); a standing walk (at walking pace, or --runspeed) goes from there first, and when that covers under
+# a quarter of its own distance too, the trunk is a real obstacle and the crouched walk is not counted; nor is either when the walker did not reach the trunk.
+# Prints "crouch walk: N of M stuck, K head on" and ends the walk test.
 var _crouch_trees: Array = []
 var _crouch_case: int = -1
 var _crouch_case_msec: int = 0
@@ -8066,6 +8074,8 @@ var _crouch_from: Vector3 = Vector3.ZERO
 var _crouch_stuck: int = 0
 var _crouch_counted: int = 0
 var _crouch_stand_ok: Array = [false, false, false, false]   # per side: the standing head-on walk got past
+var _crouch_placed: bool = false   # this head-on walk started against the trunk
+var _crouch_head_on: int = 0       # head-on crouched walks counted
 const CROUCH_WALK_TREES := 4    # each from four sides, past, brushing, head on standing and head on crouched: 64 walks
 const CROUCH_WALK_S := 3.0
 
@@ -8101,9 +8111,10 @@ func _crouch_walk_step(now: int) -> void:
 		var moved: float = Vector2(body.global_position.x - _crouch_from.x, body.global_position.z - _crouch_from.z).length()
 
 		if kind == 2:
-			_crouch_stand_ok[_crouch_case % 4] = moved >= (run_speed if run_speed > 0.0 else WALK_SPEED) * CROUCH_WALK_S * 0.6
-		elif kind < 2 or _crouch_stand_ok[_crouch_case % 4]:
+			_crouch_stand_ok[_crouch_case % 4] = _crouch_placed and moved >= (run_speed if run_speed > 0.0 else WALK_SPEED) * CROUCH_WALK_S * 0.25
+		elif kind < 2 or (_crouch_placed and _crouch_stand_ok[_crouch_case % 4]):
 			_crouch_counted += 1
+			_crouch_head_on += 1 if kind == 3 else 0
 
 			if not (moved >= want * (0.6 if kind < 2 else 0.25)):   # NAN (no ground) counts as stuck
 				_crouch_stuck += 1
@@ -8117,7 +8128,7 @@ func _crouch_walk_step(now: int) -> void:
 		return
 
 	if _crouch_case >= _crouch_trees.size() * 16:
-		FreezeWatchScript.printer.line("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_counted])
+		FreezeWatchScript.printer.line("Terrain client: crouch walk: %d of %d stuck, %d head on" % [_crouch_stuck, _crouch_counted, _crouch_head_on])
 		_set_stance(StanceScript.STAND)
 		_walk_dir = Vector3.ZERO
 		_walk_phase = 4
@@ -8134,11 +8145,13 @@ func _crouch_walk_step(now: int) -> void:
 	body.velocity = Vector3.ZERO
 	_slide_carry = Vector3.ZERO
 	body.rotation.y = atan2(-toward.x, -toward.z)
-	_set_stance(StanceScript.STAND if kind_now == 2 else StanceScript.CROUCH)   # out in the open: room to stand
+	_set_stance(StanceScript.STAND if kind_now == 2 else StanceScript.CROUCH)   # 2 m out from the trunk (a stand refused for lack of room: the walk is not placed below)
+	_crouch_placed = kind_now < 2
 
 	if kind_now >= 2:
 		body.move_and_collide(Vector3.UP * 0.1)
-		body.move_and_collide(toward * 2.0)   # up against the trunk
+		var hit: KinematicCollision3D = body.move_and_collide(toward * 2.0)   # up against the trunk
+		_crouch_placed = hit != null and hit.get_normal().y < 0.5 and (kind_now == 3 or stance.stance == StanceScript.STAND)   # a trunk, not a rise of the ground
 	_crouch_from = body.global_position
 	_crouch_case_msec = now
 	_walk_dir = toward
