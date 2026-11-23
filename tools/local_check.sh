@@ -15,7 +15,7 @@ fail() { echo "FAIL  $1"; FAIL=1; }
 
 if [ "$1" = "--update-baseline" ]; then
 	NEWBASE=$(mktemp)
-	bash tools/check_warnings.sh > "$NEWBASE"; WRC=$?
+	bash tools/check_warnings.sh --counts > "$NEWBASE"; WRC=$?
 	if [ $WRC -ne 0 ]; then echo "baseline NOT written: the warning check failed (exit $WRC)"; rm -f "$NEWBASE"; exit 1; fi
 	grep -v "^scripts checked" "$NEWBASE" > "$BASE"; rm -f "$NEWBASE"
 	echo "baseline written: $(awk '{s+=$1} END{print s}' "$BASE") warnings in $(wc -l < "$BASE") files"
@@ -60,7 +60,7 @@ fi
 
 # The warning check must finish and every script must parse; a run that stopped early prints nothing and is not a pass.
 CUR=$(mktemp)
-bash tools/check_warnings.sh > "$CUR"; WRC=$?
+bash tools/check_warnings.sh --counts > "$CUR"; WRC=$?   # --counts: the comparison is below
 if [ $WRC -ne 0 ]; then
 	fail "warning check did not pass (exit $WRC: 2 did not finish, 3 a script does not parse; reasons above)"
 else
