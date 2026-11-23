@@ -31,6 +31,7 @@ extends Node
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const WaterAreas := preload("res://src/shared/water_areas.gd")
 const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # a blow reaches an animal's body, not its middle (hit_animal)
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const IceMoatScript := preload("res://src/shared/ice_moat.gd")
@@ -947,7 +948,7 @@ func _ready() -> void:
 		var seen: Array = items.strike_seen.get(peer, [-1, -1])   # protocol 155: judged where the player saw the animals, at most rewind_max_ms back
 		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
-		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() if target != 0 else INF
+		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() - AnimalContact.body_m(str(animals.animals[target]["sp"])) if target != 0 else INF   # to its body, as target_along
 
 		if member != "" and member_d <= animal_d:   # a blow at a goblin tribe member (the nearer one) hurts nobody: the tribe turns on that player (server_tribes.gd harm)
 			tribes.harm(peer, member)

@@ -156,6 +156,10 @@ Small; give them to a related thread rather than a thread of their own.
 - Tests (Tyler): the `items_check.py` client entry for camp bench and drink; the bot budget of 70; the creator preview lighting look; a numeric check of the erosion model (only if numpy is available, as Tyler noted).
 - Sound (Jason 2, 3): done. Stone, brick and thatch pieces have their own place sounds (placed_sounds.gd `place`); the shovel fill scoop sounds stone or soil by what it fills with (#1638).
 
+### Piece 0e. Caves (physical world audit round 6, 23 Nov 2026; details in docs/design/WORLD_AUDIT.md)
+- **Animals never enter caves.** They walk the hill heights over a cave; a den's animal waits at its doorstep. Making animals walk inside is a design question for Dave.
+- **Small gaps, not fixed yet:** remains of a death in a cave and bushes planted there sit at the hill height (`server_items._remains_surface`, `_plant_bush`); an animal on the hill over a shallow passage may reach a player under it (bite height check 2.5 m); the cost of the carts' cave probes is not measured.
+
 ### Piece 13. Housekeeping (lists only; nothing is deleted without permission)
 - The stray branches in section 1, all in dev. The repository has 1,260 branches in all; a thread with delete permission can remove the fully merged ones.
 - Old Lane A clones `testlane_a4` and `testlane_a6` on Dave's PC (E:\Software\godotDev). **Dave only**: delete them, or allow Lane A to.
