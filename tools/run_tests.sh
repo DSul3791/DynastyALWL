@@ -111,7 +111,7 @@ for c in $CHECKS; do
 		warnings) CUR="$OUT/warnings.txt"; [ -f tools/warning_baseline.txt ] || { FAIL=$((FAIL + 1)); echo "FAILED check warnings: tools/warning_baseline.txt is missing"; continue; }
 			PATH="$PWD/tools:$PATH" bash tools/check_warnings.sh --counts > "$CUR" 2>"$OUT/warnings.err"; WRC=$?   # tools/godot: the shim local_check.sh puts on PATH too (GODOT_EXE wins)
 			if [ $WRC -ne 0 ]; then FAIL=$((FAIL + 1)); echo "FAILED check warnings: tools/check_warnings.sh exit $WRC (2 did not finish, 3 a script does not parse)"; tail -5 "$OUT/warnings.err" | sed 's/^/    /'
-			else NEW=$(grep -v "^scripts checked" "$CUR" | awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "    %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' tools/warning_baseline.txt -)
+			else NEW=$(grep -v "^scripts checked" "$CUR" | awk 'FILENAME==ARGV[1]{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "    %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' tools/warning_baseline.txt -)
 				if [ -z "$NEW" ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check warnings: new warnings against tools/warning_baseline.txt"; echo "$NEW"; fi; fi;;
 		*) NOT_RUN="$NOT_RUN $c";;
 	esac

@@ -86,8 +86,8 @@ case "$1" in
 		else
 			NOW_TOTAL=$(echo "$COUNTS" | awk '{s+=$1} END{print s+0}')
 			BASE_TOTAL=$(awk '{s+=$1} END{print s+0}' "$BASE")
-			OVER=$(echo "$COUNTS" | awk 'NR==FNR{b[$2]=$1; next} NF==2 && $1 > b[$2]+0 {printf "  %s: %d now, %d in the baseline\n", $2, $1, b[$2]+0}' "$BASE" -)
-			UNDER=$(echo "$COUNTS" | awk 'NR==FNR && NF==2 {n[$2]=$1; next} $1 > n[$2]+0 {c++} END{print c+0}' - "$BASE")
+			OVER=$(echo "$COUNTS" | awk 'FILENAME==ARGV[1]{b[$2]=$1; next} NF==2 && $1 > b[$2]+0 {printf "  %s: %d now, %d in the baseline\n", $2, $1, b[$2]+0}' "$BASE" -)
+			UNDER=$(echo "$COUNTS" | awk 'FILENAME==ARGV[1] {if (NF==2) n[$2]=$1; next} $1 > n[$2]+0 {c++} END{print c+0}' - "$BASE")
 
 			if [ -n "$OVER" ]; then
 				echo "check_warnings: FAIL, new warnings ($NOW_TOTAL now, $BASE_TOTAL in the baseline); files over their baseline count:" >&2

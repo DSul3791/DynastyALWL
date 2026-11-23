@@ -65,7 +65,7 @@ if [ $WRC -ne 0 ]; then
 	fail "warning check did not pass (exit $WRC: 2 did not finish, 3 a script does not parse; reasons above)"
 else
 	grep -v "^scripts checked" "$CUR" > "$CUR.n"; mv "$CUR.n" "$CUR"
-	NEW=$(awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "  %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' "$BASE" "$CUR")
+	NEW=$(awk 'FILENAME==ARGV[1]{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "  %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' "$BASE" "$CUR")
 	if [ -z "$NEW" ]; then pass "no new warnings against baseline ($(awk '{s+=$1} END{print s+0}' "$CUR") total)"; else fail "new warnings:"; echo "$NEW"; fi
 fi
 rm -f "$CUR"

@@ -92,6 +92,12 @@ mv "$STUB/baseline.keep" "$STUB/baseline.txt"
 stub 'echo "scripts checked: 2, warnings: 0"; exit 0'
 OUTPUT=$(PATH="$STUB:$PATH" CHECK_WARNINGS_TIMEOUT=20 WARNING_BASELINE="$STUB/baseline.empty" bash tools/check_warnings.sh 2> "$ERR"); RC=$?
 check $([ $RC -eq 0 ] && echo "$OUTPUT" | grep -q "no new warnings: 0 now, 0 in the baseline"; echo $?) "an empty baseline means zero allowed: a clean run passes (exit $RC)"
+stub 'echo "WARN src/a.gd:3: UNUSED_VARIABLE x"; echo "scripts checked: 2, warnings: 1"; exit 0'
+OUTPUT=$(PATH="$STUB:$PATH" CHECK_WARNINGS_TIMEOUT=20 WARNING_BASELINE="$STUB/baseline.empty" bash tools/check_warnings.sh 2> "$ERR"); RC=$?
+check $([ $RC -eq 4 ] && grep -q "src/a.gd: 1 now, 0 in the baseline" "$ERR"; echo $?) "an empty baseline: one new warning exits 4 and is named (exit $RC)"
+stub 'echo "scripts checked: 2, warnings: 0"; exit 0'
+run
+check $([ $RC -eq 0 ] && echo "$OUTPUT" | grep -q "files below their baseline count: 2"; echo $?) "zero warnings now: the baseline's files read as below it (exit $RC)"
 
 # 5. tools/local_check.sh turns a warning check that did not finish into FAIL (before: PASS "0 total").
 stub 'case "$*" in *check_addons*) echo ADDON_OK;; *validate_items*) echo "validate: 0 errors";; *check_warnings*) exit 0;; esac'
