@@ -3199,8 +3199,8 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			groups[proxy_key].append(n)
 
-		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: walk-through, louder instead), only long fallen
-		# logs within the shrub model range (level bit 32).
+		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: undergrowth is walk-through, louder instead), except long
+		# fallen logs and the standing dead tree (a snag, a trunk not undergrowth: coordinator 23 Nov 2026) within the shrub model range (level bit 32).
 		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))

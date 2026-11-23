@@ -989,7 +989,8 @@ func _ready() -> void:
 	bandits.animals = animals
 	TreeTrunks.warm()   # the trunk collider table (_cached_trees), read once at start
 	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
-		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
+		var made: float = camp_reach + TreeTrunks.widest_m()   # a wide trunk (everember) is listed from its root, up to widest_m beyond the camp
+		for corner in [Vector2(-made, -made), Vector2(made, -made), Vector2(-made, made), Vector2(made, made)]:
 			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
 				return null
 

@@ -93,9 +93,9 @@ static func is_snag(entry: Dictionary) -> bool:
 	return str(entry.get("model", "")) == "fallen_log" and str((TreeBuilder.FALLEN_LOGS.get(str(entry.get("name", "")), {}) as Dictionary).get("kind", "")) == "snag"
 
 
-# The snag's collider before the table (its model's own butt radius, tree_builder _snag, built at `reference` m), for `height` m: standing_collider's fallback.
-static func snag_fallback(reference: float, height: float) -> float:
-	return clampf(reference * 0.035, 0.12, 0.3) * 1.25 * height / reference if reference > 0.0 else 0.0
+# The snag's collider before the table (its model's own butt radius, tree_builder _snag, built at `built_m` m), for `height` m: standing_collider's fallback.
+static func snag_fallback(built_m: float, height: float) -> float:
+	return clampf(built_m * 0.035, 0.12, 0.3) * 1.25 * height / built_m if built_m > 0.0 else 0.0
 
 
 # Every tree species' drawn trunk radius per variant (make_tree_trunks.gd, test_tree_trunks.gd).
