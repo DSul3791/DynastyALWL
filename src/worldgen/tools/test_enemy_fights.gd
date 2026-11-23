@@ -110,6 +110,7 @@ func _init() -> void:
 	_reach_and_walls()
 	_armour_and_shield()
 	_lost_fight()
+	_fair_dodge()
 
 	# 6. A wild goblin that stole something drops it when it is killed.
 	var g: int = animals.spawn("goblin", 1.2, 0.0)
@@ -445,3 +446,52 @@ func _lost_fight() -> void:
 	check(landed.size() >= 30, "%d blows landed in 40 charges" % landed.size())
 	check(low >= 10.0 - 0.01 and not results.has("dead"), "health never falls under the floor of 10 and nobody dies (lowest %.1f; %s)" % [low, str(results)])
 	check(results.has("maimed") and float(v.get("limp", 0.0)) > 0.0 and said.any(func(t): return str(t).contains("badly hurt")), "the beaten player is told they are badly hurt and limps")
+
+
+# 7. A fair dodge over the link (robots 23 Nov 2026, 60 and 120 ms with loss: 0 of 9 side-steps got clear). The player's screen draws the
+# server dodge_view_ms behind and their step comes back a round trip later, so here the player starts stepping that long after the server's
+# charge began, as their reports would reach it. The blow is judged that long after it would land, against where the player then is.
+func _fair_dodge() -> void:
+	var rtt: int = 240   # a 120 ms link each way
+	animals.big_game.ping_ms = func(_peer): return rtt
+	var late: float = (float(animals.cfg.get("dodge_view_ms", 350)) + float(rtt)) / 1000.0
+	check(absf(animals.big_game.late_s(animals.species_def("goblin")["defend"], 1) - minf(late, float(animals.cfg.get("dodge_late_max_ms", 600)) / 1000.0)) < 0.001, "a goblin's blow is judged %.2f s late on a %d ms round trip" % [late, rtt])
+	late = animals.big_game.late_s(animals.species_def("goblin")["defend"], 1)
+
+	for sp in ["goblin", "bandit"]:
+		for style in [[0.0, 1.4], [3.2, 1.4], [9.0, 1.4], [3.2, 6.0]]:   # stand, walk aside, run aside; from 1.4 m (a fight) and 6 m
+			fresh_player()
+			var id: int = enemy(sp, float(style[1]))
+			animals.big_game.warn(animals.animals[id], Vector3(0.0, 10.0, 0.0), -1.0, true)
+			var charge_at: float = -1.0
+			var off: float = 0.0
+			var closest: float = INF
+			var held: bool = false
+
+			for k in int(6.0 / DT):
+				if animals.animals.has(id) and charge_at < 0.0 and int(animals.animals[id]["state"]) == BigGame.CHARGE:
+					charge_at = clock
+
+				if charge_at >= 0.0 and clock - charge_at >= late and float(style[0]) > 0.0 and off < 3.0:
+					off += float(style[0]) * DT   # stepping aside, as the server hears it
+					items.report_position(1, Vector3(0.0, 10.0, off))
+
+				tick(DT)
+
+				if animals.animals.has(id):
+					held = held or animals.animals[id].has("late")
+					var p: Vector3 = items.position_of(1)
+					closest = minf(closest, Vector2(animals.animals[id]["pos"].x - p.x, animals.animals[id]["pos"].z - p.z).length())
+
+			var what: String = "hit" if not landed.is_empty() else "dodged"
+			print("  %s from %.1f m, the step aside at %.1f m/s starting %.2f s into the server's charge: %s" % [sp, float(style[1]), float(style[0]), late, what])
+
+			if float(style[0]) == 0.0:
+				check(landed.size() == 1 and held, "a %s's blow on a player who stands still lands, once, after the fair-dodge wait" % sp)
+				check(landed.size() == 1 and float(landed[0][0]) - charge_at >= late - 0.001, "and it lands %.2f s after the charge began (the wait %.2f s)" % [float(landed[0][0]) - charge_at if not landed.is_empty() else -1.0, late])
+			elif sp == "goblin" or float(style[0]) > 5.0:
+				check(landed.is_empty(), "a %s's charge from %.1f m is dodged by a step aside at %.1f m/s begun when the player's screen showed the charge" % [sp, float(style[1]), float(style[0])])
+
+			check(closest >= 0.3, "and it never stands inside the player meanwhile (nearest %.2f m)" % closest)
+
+	animals.big_game.ping_ms = Callable()
