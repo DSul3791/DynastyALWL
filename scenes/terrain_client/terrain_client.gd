@@ -3433,6 +3433,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		_flow_tex.update(im)
 
 	_liquid.show_window(im, origin, cell_m, _flow_tex)
+	flora.set_liquid_live_image(im, origin, cell_m)   # wading and swimming read the water this window draws (flora_view water_surface_at)
 	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in (told only when the window moves).
 	var hole: Rect2 = Rect2(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m)
 

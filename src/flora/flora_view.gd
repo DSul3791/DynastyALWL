@@ -669,6 +669,18 @@ var _liquid_hole_inset: float = 8.0
 var _liquid_live: Texture2D = null         # the live window's texture: chunk sheets give way only where it draws water
 
 
+var _live_image: Image = null              # the live window's image as last published (water_surface_at reads the water it draws)
+var _live_corner: Vector2 = Vector2.ZERO    # its texel (0, 0) centre
+var _live_cell_m: float = 0.0
+
+
+# The live window's image, its texel (0, 0) centre and cell size, each publish (terrain_client _on_water_flow), for water_surface_at.
+func set_liquid_live_image(im: Image, corner: Vector2, cell_m: float) -> void:
+	_live_image = im
+	_live_corner = corner
+	_live_cell_m = cell_m
+
+
 func set_liquid_live(texture: Texture2D) -> void:
 	_liquid_live = texture
 
@@ -1915,22 +1927,37 @@ func water_level_nearest(x: float, z: float) -> float:
 	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
 	return float(grid["levels"][j * count + i])
 
-# The water surface at a point for footsteps: the wet corners of the square,
-# blended by distance (bilinear weights over the wet corners only), NAN when
-# half the square or less is wet. Unlike water_level_at (the highest wet corner, which the
-# underwater check needs), it does not lift a dry bank to the level of
-# higher water beside it.
+# The water surface at a point (wading, swimming, drinking, footsteps, the view under water): the water a player sees there. The live window's sheet where
+# it draws water, else this chunk's liquid sheet where it draws (LiquidSurface.drawn_surface: the same image and the same least depth as the shader),
+# NAN where neither draws. The 8 m wet corners alone (the old rule, kept where a chunk has no sheet image) disagreed with the drawing at shores: a
+# lake 4.5 m deep beside its shore points was dry to the player, who walked on the bed under the drawn water (x 65012 z 82328), and a thin steep brook
+# blended into 1.9 m of water a player swam in with nothing drawn (x 54264 z 72300) (physical world audit, 23 Nov 2026, world_audit --shores). The
+# sheet is drawn under the ground where the water ends, so a caller sets this against the ground (depth = surface - ground) as before.
 func water_surface_at(x: float, z: float) -> float:
-	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
-	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+	var live: float = LiquidSurface.drawn_surface(_live_image, _live_corner, _live_cell_m, x, z)
 
+	if not is_nan(live):
+		return live
+
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	return grid_surface_at(_chunks.get(chunk, {}).get("grid", {}), Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), x, z)
+
+
+# A chunk's water surface at (x, z) from its grid (`corner` the chunk's world x, z): its liquid sheet where that draws, else (no sheet image: the old
+# look, a preview) the wet corners of the 8 m square blended, NAN when half the square or less is wet. world_audit --shores reads it too.
+static func grid_surface_at(grid: Dictionary, corner: Vector2, x: float, z: float) -> float:
 	if int(grid.get("wet", 0)) == 0:
 		return NAN
 
 	var spacing: float = float(grid["spacing"])
 	var count: int = int(grid["count"])
-	var fx: float = (x - float(chunk.x) * chunk_m) / spacing
-	var fz: float = (z - float(chunk.y) * chunk_m) / spacing
+	var sheet: Image = grid.get("liquid_image") if LIQUID_CHUNKS else null
+
+	if sheet != null:
+		return LiquidSurface.drawn_surface(sheet, corner, spacing * float(count - 1) / float(maxi(sheet.get_width() - 1, 1)), x, z)
+
+	var fx: float = (x - corner.x) / spacing
+	var fz: float = (z - corner.y) / spacing
 	var i0: int = clampi(int(floor(fx)), 0, count - 2)
 	var j0: int = clampi(int(floor(fz)), 0, count - 2)
 	var tx: float = clampf(fx - float(i0), 0.0, 1.0)
