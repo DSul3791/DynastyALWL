@@ -1266,10 +1266,21 @@ func _run_to(target: Vector3, limit_s: float, near_m: float = 3.0) -> bool:
 
 
 # One jab with the slot-0 item, judged where this screen drew the animals (protocol 155, held_item.gd _melee_strike): the server's lag
-# allowance, as a player's own blow gets it.
+# allowance, as a player's own blow gets it. Prints `JAB <seen> <present> me x z` and each animal drawn within 6 m (id:x,z) to set beside
+# the server's AUDIT strike line of the same seen time.
 func _strike_at(dir: Vector3) -> void:
 	var seen: Array = client._animal_view_node.seen_server_ms() if client._animal_view_node != null else [0, 0]
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_STRIKE, 0, int(seen[0]), int(seen[1]), dir)
+	var me: Vector3 = client.body.global_position
+	var near: PackedStringArray = PackedStringArray()
+
+	for row in client._animal_view_node.drawn_positions():
+		var at: Vector3 = row[1]
+
+		if Vector2(at.x - me.x, at.z - me.z).length() < 6.0:
+			near.append("%d:%.1f,%.1f" % [int(row[0]), at.x, at.z])
+
+	print("ROBOT %s JAB %d %d me %.1f,%.1f fps %d drawn %s" % [robot_name, int(seen[0]), int(seen[1]), me.x, me.z, Engine.get_frames_per_second(), " ".join(near)])
 
 
 func _wolves_drawn() -> Dictionary:
@@ -1365,7 +1376,7 @@ func _wolf_fight() -> void:
 
 		var gap: float = Vector2(nearest.x - me.x, nearest.z - me.z).length() if nearest != Vector3.INF else INF
 
-		if armed and gap < 4.0 and now - strike_ms > 800:
+		if armed and gap < 4.0 and now - strike_ms > 1000:   # the spear recovers (server_items recover_ms): a faster jab is dropped unheard
 			strike_ms = now   # as a player would: a step in when it is just out of reach, then the jab
 			var to: Vector3 = Vector3(nearest.x - me.x, 0.0, nearest.z - me.z).normalized()
 			_face(to)
