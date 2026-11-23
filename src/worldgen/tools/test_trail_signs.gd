@@ -203,6 +203,36 @@ func _init() -> void:
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown > 20 and view.get_child_count() >= 2, "once loaded the signs near the player are drawn (%d pieces)" % view.shown)
 	var drawn: int = view.shown
+
+	# Lane A 23 Nov: standing still where the far ground had no collision yet, no sign was ever drawn. Signs with no ground are counted and
+	# worked out again soon, though the player has not moved, and drawn once the ground is there; tries stop after ground_retries.
+	var late = SignsScript.new()
+	var ground_now: Dictionary = {"ready": false}
+	late.ground_height = func(_x, _z): return 5.0 if ground_now["ready"] else NAN
+	late.wet = wet
+	get_root().add_child(late)
+	late.set_routes(0, 0, routes)
+	late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	check(late.shown == 0 and late.unplaced > 0 and late._retry_msec > 0, "signs with no ground yet are not drawn but are tried again (%d waiting)" % late.unplaced)
+	ground_now["ready"] = true
+	late._next_msec = 0
+	late._retry_msec = 1
+	late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	check(late.shown == drawn and late.unplaced == 0 and late._retry_msec == 0, "once the ground is there they are drawn without moving (%d of %d)" % [late.shown, drawn])
+	ground_now["ready"] = false
+	late._built_at = Vector3.INF
+	late._next_msec = 0
+	late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	var tries: int = 0
+
+	while late._retry_msec > 0 and tries < 100:
+		late._next_msec = 0
+		late._retry_msec = 1
+		late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+		tries += 1
+
+	check(tries == int(c["ground_retries"]), "with no ground at all the tries stop (%d)" % tries)
+	late.queue_free()
 	# Spotting: standing on a sign, the signs within spot_m are spotted one at a time (one every spot_gap_s), each once, and glow.
 	var target: Vector2 = Vector2.INF
 

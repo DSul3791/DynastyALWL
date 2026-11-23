@@ -44,6 +44,9 @@ var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "sc
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
 var _logged: String = ""          # the last rebuild line, printed only when it changes
 var _told_loading: bool = false
+var unplaced: int = 0              # signs in reach whose ground had no collision yet at the last rebuild (they are worked out again soon)
+var _retry_msec: int = 0           # when unplaced > 0: rebuild again at this time, though the player has not moved (Lane A 23 Nov: none drawn)
+var _retries: int = 0              # such tries since the player last moved (at most ground_retries, so a spot with no ground costs nothing for long)
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
 # a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
@@ -98,8 +101,12 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 
 	var moved: bool = _built_at == Vector3.INF or Vector2(player.x - _built_at.x, player.z - _built_at.z).length() > float(cfg.get("rebuild_move_m", 8.0))
 
-	if _dirty or moved or tracking != _level:
+	var retry: bool = _retry_msec > 0 and Time.get_ticks_msec() >= _retry_msec
+
+	if _dirty or moved or retry or tracking != _level:
 		_dirty = false
+		_retry_msec = 0
+		_retries = _retries + 1 if retry and not moved else 0
 		_built_at = player
 		_level = tracking
 		var reach: float = reach_m(tracking, cfg)
@@ -110,7 +117,10 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 		if reach > 0.0 and trunks_near.is_valid():
 			_signs.append_array(rubs_for(near, trunks_near, cfg))
 		_draw(player, tracking)
-		var line: String = "trail signs: %d route blocks held, %d near, %d signs worked out, %d pieces drawn, Tracking %d, reach %.0f m" % [routes.size(), near.size(), _signs.size(), shown, tracking, reach]
+
+		if unplaced > 0 and _retries < int(cfg.get("ground_retries", 15)):
+			_retry_msec = Time.get_ticks_msec() + int(float(cfg.get("ground_retry_s", 2.0)) * 1000.0)   # the ground there may not have collision yet: try again
+		var line: String = "trail signs: %d route blocks held, %d near, %d signs worked out, %d pieces drawn, %d waiting for ground, Tracking %d, reach %.0f m" % [routes.size(), near.size(), _signs.size(), shown, unplaced, tracking, reach]
 
 		if line != _logged:
 			_logged = line
@@ -388,11 +398,16 @@ func _draw(player: Vector3, level: int) -> void:
 	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "hop": [], "rub": [], "mound": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 	var halo: float = halo_alpha(level, cfg)
+	unplaced = 0
 
 	for s in _signs:
 		var spot: Vector2 = s[1]
 
 		if reach <= 0.0 or spot.distance_to(at) > reach or not shows(str(s[0]), level, cfg) or not ground_height.is_valid():
+			continue
+
+		if is_nan(_heap_ground(spot)):
+			unplaced += 1   # no collision under it yet (far terrain loads after the ground under the player): update tries again
 			continue
 
 		_lay(str(s[0]), spot, float(s[2]), rows)
