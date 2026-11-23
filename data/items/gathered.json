@@ -1001,6 +1001,7 @@
 		},
 		"henbane_seeds": {
 			"number": 1073,
+			"value": 0,
 			"name": "Henbane seeds",
 			"kind": "material",
 			"stack": 20,
@@ -1154,6 +1155,7 @@
 		},
 		"linseed": {
 			"number": 1085,
+			"value": 0,
 			"name": "Linseed",
 			"kind": "material",
 			"stack": 20,
@@ -1719,6 +1721,7 @@
 		},
 		"seeds": {
 			"number": 1126,
+			"value": 0,
 			"name": "Seeds",
 			"kind": "material",
 			"stack": 20,
@@ -1873,6 +1876,7 @@
 		},
 		"stillwater_seeds": {
 			"number": 1137,
+			"value": 0,
 			"name": "Stillwater seeds",
 			"kind": "material",
 			"stack": 20,

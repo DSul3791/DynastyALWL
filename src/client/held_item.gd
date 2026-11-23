@@ -823,6 +823,19 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
 
 
+# Held the way a spear is held (placement only; the jab, throw and crosshair stay the spear's): a spear, or in third person any "shaft" look
+# (pike, lance, quarterstaff, halberd, javelin), whose mesh lies point to -Z, not handle to head along +Y. Laid along the fingers like a tool
+# they sat 0.15-0.27 m off the hand (23 Nov 2026, the check in test_remote_players found it on other players; the player's own body had the
+# same). First person keeps the hand clip's hold: a long shaft hung down from the view would swing its butt up past the eye.
+func _held_as_shaft() -> bool:
+	return _is_spear() or (not _first_person and not (_is_placeable() or _is_look_item()) and shaft_look(held_id()))
+
+
+# A "shaft" look (looks.json shape): one rule for the player's own body and other players (player_view.gd held_kind).
+static func shaft_look(item_id: String) -> bool:
+	return str(BasicLook.entry(item_id).get("shape", "")) == "shaft"
+
+
 # The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
 func _is_fish_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) == "fish_spear"
@@ -3160,7 +3173,28 @@ func _fill_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
 
 	if _sound != null:
-		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
+		_sound.placed.shovel_load(fill_is_stony(_fill_order(), func(n: String) -> int: return _inv.inventory.count_of(_inv.table.number_of(n))), hit["position"])   # played when the click is sent (the server may still refuse)
+
+
+const STONY_FILL := ["gravel", "stone"]   # these scoop with the stone sound, soil, sand and clay with the soil one
+var _fill_names: Array = []
+
+
+# What the server fills with: the first of digging.json "fill" the pack holds (server_items._fill takes the same order).
+static func fill_is_stony(order: Array, count_of: Callable) -> bool:
+	for item in order:
+		if int(count_of.call(str(item))) > 0:
+			return STONY_FILL.has(str(item))
+
+	return false
+
+
+func _fill_order() -> Array:
+	if _fill_names.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
+		_fill_names = (parsed.get("fill", []) as Array) if typeof(parsed) == TYPE_DICTIONARY else []
+
+	return _fill_names
 
 
 var raise_mode: bool = false              # the shovel raises ground (Dave 2026-10-22); false digs
@@ -3278,7 +3312,7 @@ func _mount_model() -> void:
 
 	if third_fist != null:
 		third_fist.visible = false      # shown again by _mount_model_third
-	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
+	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _held_as_shaft() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
 		_camera.add_child(_model)
@@ -3374,7 +3408,7 @@ const SPEAR_REST_DOWN_DEG := 35.0
 
 
 func _aim_spear() -> void:
-	if _model == null or not _mounted or not _is_spear() or not _model.is_inside_tree():
+	if _model == null or not _mounted or not _held_as_shaft() or not _model.is_inside_tree():
 		return
 
 	var mount: Node3D = _model.get_parent() as Node3D

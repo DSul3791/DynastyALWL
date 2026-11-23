@@ -88,7 +88,7 @@ func crops_part(crops: Dictionary) -> int:
 		items.report_position(1, Vector3(0.0, 10.0, 0.0))
 		season[0] = str(sow_seasons[0])
 		rain[0] = 0.5
-		give(seed_id, 1)
+		give(seed_id, maxi(int(def.get("sow_seeds", 1)), 1))   # one spot's pinch of seed (crops.json sow_seeds)
 		items._last_dig.clear()
 		items._hoe_check_ms.clear()
 		var hoe: int = HeldTool.slot_of(items, "hoe")
