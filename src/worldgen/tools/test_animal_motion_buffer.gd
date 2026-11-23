@@ -191,6 +191,18 @@ func _init() -> void:
 
 	check(first.x < 0.1 and absf(later.x - 3.0) < 0.05, "a 3 m jump of the target: drawn %.2f m on in that frame, %.2f m 4 s later" % [first.x, later.x])
 	check(MotionBuffer.smooth(sm, Vector3(45, 0, 0), 0.0, 1.0 / 60.0).is_equal_approx(Vector3(45, 0, 0)), "a 40 m jump is shown at once")
+	# A leg between two rows stamped nearly together reads as hundreds of m/s: the drawn body still never moves more than 0.5 m a frame.
+	var fast: Dictionary = {}
+	MotionBuffer.smooth(fast, Vector3.ZERO, 0.0, 1.0 / 60.0)
+	var fast_worst: float = 0.0
+	var fast_was: Vector3 = Vector3.ZERO
+
+	for i in 120:
+		var fp: Vector3 = MotionBuffer.smooth(fast, Vector3(4, 0, 0), 400.0, 1.0 / 60.0)
+		fast_worst = maxf(fast_worst, fp.distance_to(fast_was))
+		fast_was = fp
+
+	check(fast_worst < 0.5 and fast_was.distance_to(Vector3(4, 0, 0)) < 0.05, "a 4 m correction with an absurd leg speed is eased in, never over 0.5 m a frame (worst %.2f m)" % fast_worst)
 
 	# A run that stops (gate review of PR #1631): the stop row is the newest point while the body, drawn 0.35 s behind, is still on the run's
 	# legs. smooth takes the speed of the leg being drawn, so the body keeps its 10 m/s to the stop instead of slowing to a crawl short of it.

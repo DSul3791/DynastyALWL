@@ -160,7 +160,7 @@ static func clock_delay(c: Dictionary) -> float:
 # blended away (SMOOTH_HALF_S, at most CATCH_X of its speed faster). A late batch, a hole bridged too far, a step past a player held
 # back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
 static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> Vector3:
-	var v: float = maxf(speed, 2.0)
+	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
 	var err: Vector3 = body.get("sm_err", Vector3.ZERO)
 
 	if body.has("sm_p"):
