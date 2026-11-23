@@ -475,6 +475,7 @@ func _ready() -> void:
 	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
 	items.craft_working = cues.craft_working
+	items.hurt_heard = cues.hurt   # an attack on a player: the gasp for the others near
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -913,6 +914,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
+
+		if member != "" and animals.wall_between(origin, npcs.npcs[member]["pos"]):
+			member = ""   # a tribe member behind a wall is out of reach of the blow, as an animal is (server_animals.target_along)
+
 		var seen: Array = items.strike_seen.get(peer, [-1, -1])   # protocol 155: judged where the player saw the animals, at most rewind_max_ms back
 		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
@@ -1050,6 +1055,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = server_peer
 	# Every client passes the join handshake before it counts as connected: an open server lets it straight through, a server with a password
 	# checks it first (server_auth.gd). Until then the client gets no welcome and none of its calls are heard.
+	_auth.protocol = NetScript.PROTOCOL_VERSION   # a client of another protocol is told why at the first word (161), before any call it would misread
 	_auth.password_hash = _server_settings.password_hash
 	_auth.salt = _server_settings.salt
 	_auth.address_of = func(peer: int) -> String: return server_peer.get_peer(peer).get_remote_address() if server_peer.get_peer(peer) != null else "?"
@@ -1158,10 +1164,16 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		var cue_before: Array = []
+
 		if cues != null:
 			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+			cue_before = cues.before_action(peer, kind, a, b)
 
 		items.action(peer, kind, a, b, count, at)
+
+		if cues != null and not cue_before.is_empty():
+			cues.after_action(peer, kind, a, b, cue_before)   # after: a container, a drink or a pickup is heard only when the server let it through
 
 		if players != null:
 			players.note_action(peer, kind))

@@ -1360,6 +1360,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_dig_here()
 			elif str(_inv.table.entry(held_id()).get("tool_class", "")) == "rod":
 				_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 4.0)
+				_cast_at = _camera.global_position - _camera.global_transform.basis.z * 4.0   # where the line went in (the server's cast point)
+				_cast_msec = Time.get_ticks_msec()
 
 				if _sound != null:
 					_sound.slots.play("net_cast", _camera.global_position - _camera.global_transform.basis.z * 2.0)   # shortcut: the shore-net throw clip stands in for the rod cast until a line-cast clip exists (Jason, 2 Nov 2026; to hear)
@@ -1417,6 +1419,15 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Where the rod's float sits, for the bite's splash (23 Nov 2026: it sounded 1.5 m in front of the angler): the last cast's point, at the
+# feet's height (the water's face, near enough), while it is recent and near the angler at `feet_near`; INF otherwise.
+func float_point(feet_near: Vector3) -> Vector3:
+	if not _cast_at.is_finite() or Time.get_ticks_msec() - _cast_msec > CAST_KEEP_MS or Vector2(_cast_at.x - feet_near.x, _cast_at.z - feet_near.z).length() > CAST_NEAR_M:
+		return Vector3.INF
+
+	return Vector3(_cast_at.x, feet_near.y - 0.8, _cast_at.z)
+
+
 # Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
 func _send_seen() -> void:
 	if seen_ms.is_valid():
@@ -1445,6 +1456,11 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const CAST_KEEP_MS := 180000        # a rod cast this long ago is still where the float is (float_point)
+const CAST_NEAR_M := 8.0             # and only while the angler stands by it
+var _cast_at: Vector3 = Vector3.INF
+var _cast_msec: int = 0
+const SEEN_ARROW_RANGE_M := 200.0   # another player's arrow: its bow is not known here, so it is flown until it lands (the 6 s cap)
 const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
 
 
@@ -1481,6 +1497,18 @@ func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) 
 
 	_flights.append({"node": node, "vel": velocity, "age": 0.0, "arrow": true})
 
+	# Heard as well as seen (23 Nov 2026, the coordinator's silent-sounds pass: another player's shot or throw made no sound): the bow's
+	# twang where it was loosed and the thunk where it comes down, or a thrown weapon's heave, its flight and its landing, as this
+	# player's own. A hit on an animal thuds through animal_hit for everyone already.
+	if _sound != null:
+		if arrow:
+			_sound.slots.play("bow_loose", from)
+			var landed: Array = _arrow_landing(node.global_position, velocity, SEEN_ARROW_RANGE_M)
+			_sound.spear.arrow(landed[0], landed[1], landed[2])
+		else:
+			var landing: Vector3 = _predict_landing(node.global_position, velocity)
+			_sound.spear.throw(node.global_position, landing, velocity.length(), "wood" if _tree_near.is_valid() and not _tree_near.call(landing).is_empty() else "soil")
+
 
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
@@ -1502,11 +1530,17 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	if _sound == null:
 		return
 
-	var at: Vector3 = _camera.global_position
+	var landed: Array = _arrow_landing(_camera.global_position, v, BowAim.bow_range_m(_bow_cfg, bow_id))
+	_sound.spear.arrow(landed[0], landed[1], landed[2])
+
+
+# Where and when an arrow flown from `from` at `velocity` comes down (within range_m of flight, 6 s at most), and what it thunks into:
+# [point, seconds, "wood" or "soil"]. Something upright on the way (a trunk's collider, a wall) stops it as wood.
+func _arrow_landing(from: Vector3, velocity: Vector3, range_m: float) -> Array:
+	var at: Vector3 = from
+	var v: Vector3 = velocity
 	var flown: float = 0.0
 	var t: float = 0.0
-	var range_m: float = BowAim.bow_range_m(_bow_cfg, bow_id)
-
 	var into_wood: bool = false
 
 	while t < 6.0 and flown < range_m:
@@ -1528,7 +1562,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 			at.y = ground
 			break
 
-	_sound.spear.arrow(at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil")
+	return [at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil"]
 
 
 # The shot's power from the draw time, as the server works it out (bow.json): a draw under draw_min_ms is weak_power, then

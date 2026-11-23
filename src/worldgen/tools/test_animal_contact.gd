@@ -7,6 +7,7 @@ extends SceneTree
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const AnimalContact := preload("res://src/shared/animal_contact.gd")
+const MotionBuffer := preload("res://src/client/motion_buffer.gd")
 
 var failures: int = 0
 
@@ -87,8 +88,41 @@ func _init() -> void:
 	# side; one the player walked into may move off, not nearer.
 	var held: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-2.0, 0, 0), Vector3(1.5, 0, 0), m)
 	check(held.is_equal_approx(Vector3(-2.0, 0, 0)), "a carried charge going past the player stays on the near side (%s)" % str(held))
-	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-1.5, 0, 0), m).is_equal_approx(Vector3(-1.5, 0, 0)) and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-0.5, 0, 0), m).is_equal_approx(Vector3(-1.0, 0, 0)), "one already inside moves off but not nearer")
-	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.9999, 0, 0), Vector3(4, 0, 0), m).x < 0.0 and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-0.5, 0, 0), Vector3(3, 0, 0), m).is_equal_approx(Vector3(-0.5, 0, 0)), "one just inside the circle, carried to the far side, stays on its own side")
+	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-1.5, 0, 0), m).is_equal_approx(Vector3(-2.0, 0, 0)) and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-0.5, 0, 0), m).is_equal_approx(Vector3(-2.0, 0, 0)), "one the player walked into steps out to the edge on its own side, never nearer")
+	var round1: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.9999, 0, 0), Vector3(4, 0, 0), m)
+	var round2: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-0.5, 0, 0), Vector3(3, 0, 0), m)
+	check(round1.x < 0.0 and absf(Vector2(round1.x, round1.z).length() - m) < 0.01 and absf(round1.z) > 0.3, "one on the circle whose animal is already past goes round the player, not through (%s)" % str(round1))
+	check(round2.x < 0.0 and Vector2(round2.x, round2.z).length() > 0.5 and absf(round2.z) > 0.1, "one the player walked into, its animal past: out and round, never across (%s)" % str(round2))
+
+	# Robot run ClZm (23 Nov 2026): a bear held at the player's edge while the server's bear ran on, then a 42 m jump when let go. Now the
+	# drawn body goes round the player and follows. The game's own loop (animal_view): stop_toward from the last spot (sm_p) with the
+	# drawing's room as its reach, then MotionBuffer.smooth; at 30, 60 and 144 frames a second, the bear running at 12 m/s past the player
+	# at 1 m and straight through them: never inside, never faster than smooth's catch-up allows, and with the server's bear at the end.
+	for fps in [30.0, 60.0, 144.0]:
+		for goal in [Vector3(40.0, 0, 30.0), Vector3(40.0, 0, 1.0), Vector3(40.0, 0, 0)]:
+			var dt: float = 1.0 / fps
+			var body: Dictionary = {}
+			var real: Vector3 = Vector3(-2.5, 0, 0)
+			var shown: Vector3 = real
+			var nearest: float = INF
+			var fastest: float = 0.0
+
+			for frame in int(6.0 * fps):
+				real = real.move_toward(goal, 12.0 * dt)      # the server's bear runs past the player and on
+				var reach: float = 12.0 * dt * 1.05
+				var spot: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, body.get("sm_p", real), real, m, reach)
+				var next: Vector3 = MotionBuffer.smooth(body, spot, 12.0, dt)
+				fastest = maxf(fastest, next.distance_to(shown) / dt)
+				shown = next
+				nearest = minf(nearest, Vector2(shown.x, shown.z).length())
+
+			var what: String = "%d fps, toward %s" % [int(fps), str(goal)]
+			check(shown.distance_to(real) < 0.5, "%s: the drawn bear ends with the server's (%.2f m apart)" % [what, shown.distance_to(real)])
+			check(nearest > m - 0.05, "%s: never inside the player (nearest %.2f m, circle %.1f)" % [what, nearest, m])
+			check(fastest < 12.0 * 1.5, "%s: never a jump (fastest %.1f m/s for a 12 m/s bear; smooth catches up at most 1.3 times plus its slack)" % [what, fastest])
+
+	# A charge carried on past the player (go_round false) is still held on its own side until its next row.
+	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-2.0, 0, 0), Vector3(2.5, 0, 0), m, INF, false).is_equal_approx(Vector3(-2.0, 0, 0)), "a charge carried past the player waits on its own side")
 
 	# A real charge (full ticks): it hits, and never comes inside the player, at 20 steps a second and with a server stepping only twice a second.
 	for sp in ["elephant", "mammoth", "rhino", "buffalo", "moose", "bear", "boar", "deer"]:
@@ -110,6 +144,17 @@ func _init() -> void:
 	check(a.keep_off_players(wolf, Vector3(0.0, 0.0, wm), [{"peer": 1, "pos": Vector3.ZERO}]) and wolf["pos"].is_equal_approx(Vector3(0.0, 0.0, wm)), "a wolf rushing in from the contact circle is held there, standing (%s)" % str(wolf["pos"]))
 	var bird: Dictionary = {"sp": "crow", "pos": Vector3(0.1, 0.0, 0.0), "state": 0, "fly": true}
 	check(not a.keep_off_players(bird, Vector3(3.0, 0.0, 0.0), [Vector3.ZERO]), "a bird in the air is not held")
+	# Two players side by side (robot bear hunt 23 Nov 2026, dev 74c4a4e8: hunters 1.4 m apart, a bear charging through the nearer one was
+	# put out of it onto its far side, inside the other, 0.22 m from their middle): out of one is never into the other; it stays where it was.
+	var bm: float = AnimalContact.contact_m("bear")
+	var pair: Array = [Vector3(2.75, 0.0, 0.0), Vector3(1.36, 0.0, 0.0)]
+	var bear: Dictionary = {"sp": "bear", "pos": Vector3(2.6, 0.0, 0.0), "state": 11}
+	a.keep_off_players(bear, Vector3.ZERO, pair)
+	var bear_near: float = minf(Vector2(bear["pos"].x - pair[0].x, bear["pos"].z).length(), Vector2(bear["pos"].x - pair[1].x, bear["pos"].z).length())
+	check(bear_near >= bm - 0.02, "a bear stepping between two players is inside neither (nearest %.2f m, contact %.2f m, at %s)" % [bear_near, bm, str(bear["pos"])])
+	var squeezed: Dictionary = {"sp": "deer", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
+	var beside: Array = [Vector3(0.0, 10.0, 0.0), Vector3(dm + 0.3, 10.0, 0.0)]
+	check(not a.make_way(squeezed, beside[0], 0.1, beside) and squeezed["pos"].is_equal_approx(Vector3(0.2, 10.0, 0.0)), "a deer a player walked into does not step out into a second player beside them")
 
 	# A player walking into a standing animal: it steps out of them at up to half its flee speed, away from them, and stops at the contact circle
 	# (robot play-testers 23 Nov 2026: a dog 0.02 m from a player, a deer 0.22 m, a horse 0.15 m). A bird in the air, a camp's horse stay.

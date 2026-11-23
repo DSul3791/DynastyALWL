@@ -10,6 +10,13 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
+
+
+# A tree's trunk as the placer keeps plants out of it: the species trunk scaled, or the drawn trunk of its model variant where wider (round 4).
+func trunk_r(sp: Dictionary, id: int, height: float) -> float:
+	var own: float = float(sp["trunk"]) * height / float(sp["height_ref"])
+	return maxf(own, TreeTrunks.standing_collider(str(sp["name"]), id, height, PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), height / float(sp["height_ref"]), height)))
 
 var failures: int = 0
 
@@ -73,7 +80,7 @@ func _init() -> void:
 			var sp: Dictionary = placer.species_of(before["ids"][n])
 
 			if int(sp["kind"]) == PlacerScript.KIND_TREE:
-				trunks_before.append([before["positions"][n], float(sp["trunk"]) * float(before["heights"][n]) / float(sp["height_ref"])])
+				trunks_before.append([before["positions"][n], trunk_r(sp, before["ids"][n], float(before["heights"][n]))])
 
 		for n in range((before["ids"] as PackedInt32Array).size()):
 			if now.has(before["ids"][n]):
@@ -95,7 +102,7 @@ func _init() -> void:
 			var sp: Dictionary = placer.species_of(after["ids"][n])
 
 			if int(sp["kind"]) == PlacerScript.KIND_TREE:
-				trees.append([after["positions"][n], float(sp["trunk"]) * float(after["heights"][n]) / float(sp["height_ref"])])
+				trees.append([after["positions"][n], trunk_r(sp, after["ids"][n], float(after["heights"][n]))])
 
 		for n in range((after["ids"] as PackedInt32Array).size()):
 			var sp: Dictionary = placer.species_of(after["ids"][n])

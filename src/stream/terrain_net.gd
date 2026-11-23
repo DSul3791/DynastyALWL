@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 160  # 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
+const PROTOCOL_VERSION := 161  # 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
+# 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
 # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
 # 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
@@ -433,7 +434,9 @@ func ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array)
 
 
 # Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material; material 5 a knife cut on a carcass),
-# 2 a plant gathered (detail = the flora species id), 3 a craft being worked, again every 4.5 s while it goes on (detail = the recipe number). Sent only to players within its earshot.
+# 2 a plant gathered (detail = the flora species id), 3 a craft being worked, again every 4.5 s while it goes on (detail = the recipe number), 4 a container
+# opened, shut, filled or emptied (detail = op 0 to 3 + 4 for a chest's lid), 5 the player hurt by an attack (detail = health lost), 6 a mouthful of water,
+# 7 a thing picked up off the ground (detail = its item number); 4 to 7 added 23 Nov 2026 without a new number: an older client plays nothing for a cue it does not know. Sent only to players within its earshot.
 @rpc("authority", "call_remote", "unreliable")
 func action_cue(peer_id: int, cue: int, detail: int, at: Vector3) -> void:
 	action_cue_received.emit(peer_id, cue, detail, at)

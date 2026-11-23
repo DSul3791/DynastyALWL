@@ -209,6 +209,7 @@ var ground_open: Callable         # (points: Array of Vector3) -> bool: any of t
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
+var hurt_heard: Callable          # (peer, health lost): an attack landed on a player (hurt_player), for the others' ears (server_action_cues.gd)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
@@ -599,7 +600,9 @@ func setup(item_table, store_dir: String) -> void:
 	var loaded_next: int = _next_id
 	_load_changed = {}
 	_split_old_barrels()   # after the reset: the barrels it turns are written to their area files at the first save
+	_lift_out_of_slabs()   # stacks dropped on a foundation before 23 Nov 2026 lay inside it: onto its top, written at the first save
 	_carts.after_load()
+	_traps.after_load()   # each trap's held catch laid again by it
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
@@ -1380,7 +1383,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 					_wide_piles[id] = true
 
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, maxf(lifetime_s, float(near["left"]) if float(near["left"]) > 1.0e8 else 0.0))   # a never-expiring heap (crafted overflow, a cleared piece's leavings) stays so
-				_tick_ageing(id)   # a kept pile can start ageing here
+				_tick_ageing(id)   # a kept pile passes here too and stays kept (left over 1e8, so _expire_items skips it); the call only lists it
 
 				if by != "":
 					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
@@ -2088,14 +2091,14 @@ func _item_job() -> Dictionary:
 
 			for id in _area_ids[key]:
 				if _items.has(id):
-					copy[id] = _items[id].duplicate(true)
+					copy[id] = _save_copy(id)
 					ids.append(id)
 
 			areas[key] = ids
 
 	for id in _save_side:
 		if _items.has(id) and not copy.has(id):
-			copy[id] = _items[id].duplicate(true)
+			copy[id] = _save_copy(id)
 
 	_area_dirty = {}
 	_note_save_part("world item copy", t0)
@@ -2203,6 +2206,17 @@ static func saved_world_rows(dir: String) -> Array:
 
 static func area_key_of(x: float, z: float) -> String:
 	return "%d_%d" % [int(floor(x / AREA_M)), int(floor(z / AREA_M))]
+
+
+# A world item as the writer saves it: a set trap also carries what a restart keeps of its state (server_traps.saved_state: its run note,
+# away clock and the catch it holds), worked out here on the main thread since the writer cannot read the other items.
+func _save_copy(id: int) -> Dictionary:
+	var out: Dictionary = _items[id].duplicate(true)
+
+	if out.has("struct") and _traps != null and _traps.is_kind(str(out["struct"].get("kind", ""))):
+		out["struct"]["trap_state"] = _traps.saved_state(_items[id])
+
+	return out
 
 
 # Not saved in an area file: as _world_item_row skips (scatter, trunks and stumps, the showroom, the camp fire, a transient structure).
@@ -2462,6 +2476,10 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 
 	if it.has("struct"):
 		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
+
+		if it["struct"].has("trap_state"):
+			(items[items.size() - 1] as Array).append(str(it["struct"]["trap_state"]))   # row 24: a set trap's state (server_traps.saved_state)
+
 		return
 
 	var at: Vector3 = it["pos"]
@@ -4099,6 +4117,19 @@ func _log_surround() -> void:
 				elif not _logs.has(sid):
 					keep["i%d" % sid] = true   # on a floor or a deck: in the way, never moved
 					_log_static("i%d" % sid, _log_capsule(_log_r(other)), _log_xf(other), true)
+			elif other.has("struct") and not other["struct"].has("site") and _is_floor_def(_structures.get(str(other["struct"]["kind"]), {})):
+				# A foundation or floor piece (physical world audit 23 Nov 2026: a log rolled off the ground through a foundation's slab): a box of its
+				# footprint from its top down (a foundation's to under the ground, the wheel's lift with it), so a rolling log meets its edge or rides on it.
+				var key: String = "f%d" % sid
+				keep[key] = true
+
+				if not _logs.has_static(key):
+					var def: Dictionary = _structures[str(other["struct"]["kind"])]
+					var top: float = PlacementRules.anchor_top(def)
+					var deep: float = top + (PlacementRules.LIFT_MAX_STEPS * PlacementRules.LIFT_STEP_M + 0.5 if bool(def.get("foundation", false)) else 0.0)
+					var slab: BoxShape3D = BoxShape3D.new()
+					slab.size = Vector3(float(def.get("footprint_x", 4.0)), deep, float(def.get("footprint_z", 4.0)))
+					_log_static(key, slab, Transform3D(Basis(Vector3.UP, deg_to_rad(float(other["struct"].get("yaw", 0.0)))), other["pos"] + Vector3(0.0, top - deep * 0.5, 0.0)))
 			elif other.has("boulder") or other.has("tree"):
 				# A boulder's key carries its stones left: a worked rock that has shrunk (BoulderWear) gets a new, smaller ball and trim_statics drops the old one.
 				var static_key: String = "i%d:%d" % [sid, int(other["count"])] if other.has("boulder") else "i%d" % sid
@@ -6583,7 +6614,7 @@ func _showroom_retry(delta: float) -> void:
 #   fires:  every item with a fire (laid, lit, coals, warm ash, cold, kept for its charcoal), whatever its state;
 #   lit:    every structure of a kind that can be lit (a light, a kiln, a smelter, anything with a fuel) and any with a "lit" field, lit or not;
 #   pots:   every structure that hangs over a fire;
-#   ageing: every fire, every item with a lifetime, and an item given one in place (a kept pile: _tick_ageing).
+#   ageing: every fire and every item with a lifetime (a kept pile never gains one in place since 23 Nov 2026; _tick_ageing stays as a guard).
 # The lists are sorted from every item once every TICK_INDEX_TICKS slow ticks, and items made since (world ids only grow) are sorted in on each
 # tick from their ids alone. Each part checks the item again, as the full walk did. Outside the tick (tests, a placement) _tick_list is every id,
 # as before. test_tick_lists runs the old walk and the lists side by side and compares every item after each tick.
@@ -6647,7 +6678,7 @@ func _sort_into(index: Dictionary, id) -> void:
 		index["ageing"][id] = true
 
 
-# An item given a lifetime in place (a kept pile added to or taken from) ages from this tick on.
+# An item given a lifetime in place ages from this tick on. A kept pile added to or taken from stays kept (23 Nov 2026), so today only a guard.
 func _tick_ageing(id) -> void:
 	if not _tick_index_kept.is_empty() and _items.has(id) and not _items[id].has("scatter"):
 		_tick_index_kept["ageing"][id] = true
@@ -7959,6 +7990,78 @@ func _split_old_barrels() -> void:
 			_load_changed[id] = true
 
 
+# A foundation or a floor piece (the storey above's floor): what a stack or log can lie on.
+func _is_floor_def(def: Dictionary) -> bool:
+	return bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor"
+
+
+# Before 23 Nov 2026 a stack dropped on a foundation came down to the ground under it, inside the slab where nobody could see or reach it (physical
+# world audit, PR #1709; coordinator 23 Nov 2026: the live world is loaded by the next build). At every load each loose stack whose spot is inside
+# a finished foundation's slab (over its footprint, under its top and no more than LIFT_SLAB_M under it) is lifted onto that top. Only its height
+# changes: nothing is made, merged or removed, and a stack already on a top is left, so a second load does nothing. One pass over the records.
+const LIFT_SLAB_M := 1.5   # how far under a foundation's top a buried stack may lie: the slab (top_m) and the wheel's lift (1.0 m), with room
+var lifted_at_load: int = 0   # stacks _lift_out_of_slabs lifted at the last load (the load line, tests)
+
+
+func _lift_out_of_slabs() -> void:
+	lifted_at_load = 0
+	var slabs: Dictionary = {}   # 4 m cell -> [[pos, def, yaw], ...] of the finished foundations over it
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or it["struct"].has("site"):
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if not bool(def.get("foundation", false)):
+			continue
+
+		var reach: float = 0.5 * Vector2(float(def.get("footprint_x", 4.0)), float(def.get("footprint_z", 4.0))).length()
+
+		for cx in range(int(floor((it["pos"].x - reach) / 4.0)), int(floor((it["pos"].x + reach) / 4.0)) + 1):
+			for cz in range(int(floor((it["pos"].z - reach) / 4.0)), int(floor((it["pos"].z + reach) / 4.0)) + 1):
+				var cell: Vector2i = Vector2i(cx, cz)
+
+				if not slabs.has(cell):
+					slabs[cell] = []
+
+				slabs[cell].append([it["pos"], def, float(it["struct"].get("yaw", 0.0))])
+
+	if slabs.is_empty():
+		return
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("showroom") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("tilt") or it.has("fall"):
+			continue
+
+		var cell: Vector2i = Vector2i(int(floor(it["pos"].x / 4.0)), int(floor(it["pos"].z / 4.0)))
+
+		if not slabs.has(cell):
+			continue
+
+		var y: float = float(it["pos"].y)
+		var best: float = NAN
+
+		for slab in slabs[cell]:
+			var top: float = float(slab[0].y) + PlacementRules.anchor_top(slab[1])
+
+			if y < top - 0.02 and y >= top - LIFT_SLAB_M and PlacementRules.holds(slab[1], {"pos": slab[0], "yaw": slab[2]}, it["pos"]) and (is_nan(best) or top > best):
+				best = top
+
+		if not is_nan(best):
+			it["pos"] = Vector3(it["pos"].x, best, it["pos"].z)
+			_load_changed[id] = true
+			_dirty = true
+			lifted_at_load += 1
+
+	if lifted_at_load > 0:
+		print("server_items: lifted %d stacks out of foundations onto their tops" % lifted_at_load)
+
+
 func _load_world_items() -> void:
 	_wide_piles.clear()
 	_wide_piles_built = false   # the first drop after the load files the loaded cone piles
@@ -8138,6 +8241,9 @@ func _load_world_items() -> void:
 				entry["struct"]["seq"] = float(row[12])
 				_next_uid = maxi(_next_uid, int(row[12]) + 1)
 				entry["wear"] = int(row[8])
+
+				if row.size() > 24 and typeof(row[24]) == TYPE_STRING and str(row[24]) != "":
+					_traps.restore_state(entry, str(row[24]))   # its run note, away clock and held catch (laid again by _traps.after_load)
 
 			_load_row_of[_next_id] = row_n
 			_items[_next_id] = entry
@@ -9974,6 +10080,9 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, used: 
 # tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:
 # sticks mostly under and around tree crowns and rarely on bare rock; stones on slopes, on bare rock and gravel, and
 # in hollows at the foot of a rise, with a few left in open ground. The odds are in data/items/drops.json.
+const SCATTER_SLOPE_M := 0.5   # _scatter_spot: the slope under a loose stone or stick is read this far either side
+
+
 func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, stone: bool) -> Vector3:
 	var cfg: Dictionary = _drops.get("ground_scatter", {})
 	var tries: int = int(cfg.get("spot_tries", 4))
@@ -9985,6 +10094,14 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 		var y: float = float(ground_height.call(x, z))
 
 		if is_nan(y) or y < 1.0:
+			continue
+
+		# Not on ground steeper than a player stands on (45 degrees over 0.5 m): world audit round 4 (23 Nov 2026) found 1 in 5 loose stones and sticks
+		# on such faces, 376 of them out of every player's reach. Nothing would rest there; the next try looks again.
+		var fall_x: float = float(ground_height.call(x + SCATTER_SLOPE_M, z)) - float(ground_height.call(x - SCATTER_SLOPE_M, z))
+		var fall_z: float = float(ground_height.call(x, z + SCATTER_SLOPE_M)) - float(ground_height.call(x, z - SCATTER_SLOPE_M))
+
+		if not (Vector2(fall_x, fall_z).length() < 2.0 * SCATTER_SLOPE_M):
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
@@ -15902,6 +16019,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	var before: float = float(v["health"])
 	v["health"] = before - amount
 
+	if hurt_heard.is_valid():
+		hurt_heard.call(peer, amount)   # the others near hear the blow land (server_action_cues.gd hurt)
+
 	if lethal and bool(_death_cfg.get("stop_at_1", false)):
 		lethal = false   # nothing kills (death.json stop_at_1, Dave 23 Nov 2026): a lethal blow stops at 1 and counts as crippling again
 		floor_hp = 1.0
@@ -16446,6 +16566,44 @@ func peer_ids() -> Array:
 
 func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
+
+
+# A loose thing lying on the ground (not a structure, fire, tree or boulder): [number, count, where], [] for none (server_action_cues.gd: a
+# pickup is heard only when the thing went).
+func loose_item_of(id: int) -> Array:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+		return []
+
+	return [int(it["number"]), int(it["count"]), it["pos"]]
+
+
+# The water in `peer`'s body (vitals "wet", millilitres), -1 when not known (server_action_cues.gd: a drink is heard only when it went down).
+func body_water_of(peer: int) -> float:
+	var v: Dictionary = vitals_of(peer)
+	return float(v.get("wet", -1.0)) if not v.is_empty() else -1.0
+
+
+# The world id of the container `peer` has open, 0 for none, below 0 a worn bag (server_action_cues.gd: a store cue only once the open was let in).
+func open_store_of(peer: int) -> int:
+	return int(_chest_viewer.get(peer, 0))
+
+
+# How many things a placed container holds, all slots counted, -1 when `id` is not one (server_action_cues.gd: a put or take that moved nothing
+# is not heard).
+func store_total(id: int) -> int:
+	var box = _chests.get(int((_items.get(id, {}) as Dictionary).get("struct", {}).get("uid", 0)))
+
+	if box == null:
+		return -1
+
+	var total: int = 0
+
+	for i in box.slot_count:
+		total += int(box.counts[i]) if box.numbers[i] != 0 else 0
+
+	return total
 
 
 # Where a world item lies, null for none (server_action_cues.gd: a knife cut on a carcass is heard there).

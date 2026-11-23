@@ -10,6 +10,7 @@ const MAX_DRAWN := 30
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a body comes to the player (data/animals/contact.json)
@@ -47,6 +48,10 @@ const AIR_STATES := [15]                      # a flock in the air (takes off, f
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
 var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
+var look_points: Callable        # () -> Array of Vector3: the players' heads (this one and the others drawn), for head tracking; unset in tests
+var _look_points: Array = []     # this frame's look_points, fetched the first time an animal looks in a frame
+var _look_frame: int = -1        # the _t-frame _look_points was fetched in
+var _frame: int = 0              # counts _process_body calls
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
@@ -397,6 +402,10 @@ func _die(b: Dictionary) -> bool:
 		return false
 
 	var node: Node3D = b["node"]
+
+	if node.has_meta("head_look"):
+		(node.get_meta("head_look") as SkeletonModifier3D).active = false      # the death clip's own head (head tracking stops)
+
 	get_tree().create_timer(float(b["once_until"]) - _t + DIE_HOLD_S).timeout.connect(node.queue_free)
 	return true
 
@@ -668,6 +677,7 @@ func _process_body(delta: float) -> void:
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
 	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
+	_frame += 1
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -687,7 +697,10 @@ func _process_body(delta: float) -> void:
 			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
 
 		if me != Vector3.INF:
-			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]))   # never drawn into the local player: a carried charge, or the feet's ease past a wolf's stop
+			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
+			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
+			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]), reach, int(b["state"]) != CHARGE)
 
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
@@ -870,6 +883,15 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 			if not missing.is_empty():
 				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
+
+	# The head turns to watch a player (head_look.gd); a row with "head_look": false keeps its clip's head.
+	var head_bone: Array = BreathLook.head_bone_of(inst) if bool(row.get("head_look", true)) else []
+
+	if not head_bone.is_empty():
+		var look: SkeletonModifier3D = HeadLookScript.new()
+		look.setup(head_bone[0], int(head_bone[1]), root)
+		(head_bone[0] as Skeleton3D).add_child(look)
+		root.set_meta("head_look", look)
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -915,6 +937,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					break
 
 				var anim: Animation = player.get_animation(anim_name)
+				var refuse_as: String = anim_name
 
 				# clip_loop {role: [t0, t1, blend_s]}: a file with no looping clip for a role (the mink has only start clips) loops a
 				# window of another one; tools/find_loop.gd finds the window whose ends are most alike, and the last blend_s seconds
@@ -927,11 +950,14 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					if player.has_animation_library("") and not player.has_animation(loop_name):
 						player.get_animation_library("").add_animation(loop_name, _loop_copy(anim, float(loop_spec[0]), float(loop_spec[1]), float(loop_spec[2]) if (loop_spec as Array).size() > 2 else 0.1))
 
+					refuse_as = anim_name      # a refused loop copy refuses its source clip, so the next clip for the role is tried
 					anim_name = loop_name
 					anim = player.get_animation(anim_name)
 					_model_note(kind, "role %s loops %s from %.3f to %.3f s" % [str(key), anim_name, float(loop_spec[0]), float(loop_spec[1])])
 
-				_fit_clip_units(player, anim, kind, anim_name)
+				if not _fit_clip_units(player, anim, kind, anim_name):
+					refused[refuse_as] = true
+					continue
 
 				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
@@ -940,7 +966,14 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
 				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
-					refused[anim_name] = true
+					refused[refuse_as] = true
+					continue
+
+				# A clip that throws the model far taller than it stands (the elephant's Hit_Head_Right-IP stood 4 times its height and
+				# drew nothing on screen: Lane A one-shot check, 23 Nov 2026) is broken the other way: the next clip for the role is tried.
+				if rest_h > 0.0001 and clip_h > rest_h * TALL_SHARE:
+					_model_note(kind, "clip %s throws the model up (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
+					refused[refuse_as] = true
 					continue
 
 				# A bite, a hit or a death plays once (_play_once) from its own copy, so a looping role naming the same clip keeps looping.
@@ -998,10 +1031,13 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					continue
 
 				var idle_anim: Animation = player.get_animation(idle_full)
-				_fit_clip_units(player, idle_anim, kind, idle_full)
+				if not _fit_clip_units(player, idle_anim, kind, idle_full):
+					continue
 
-				if rest_h > 0.0001 and _clip_height(player, idle_anim, rig) < rest_h * float(row.get("flat_share", 0.5)):
-					_model_note(kind, "idle clip %s lays the model flat: not used" % idle_full)
+				var idle_h: float = _clip_height(player, idle_anim, rig)
+
+				if rest_h > 0.0001 and (idle_h < rest_h * float(row.get("flat_share", 0.5)) or idle_h > rest_h * TALL_SHARE):
+					_model_note(kind, "idle clip %s lays the model flat or throws it up: not used" % idle_full)
 					continue
 
 				idle_anim.loop_mode = Animation.LOOP_LINEAR
@@ -1179,6 +1215,7 @@ static func _lie_change(bare: String) -> bool:
 	return false
 
 
+const TALL_SHARE := 3.0       # a clip taller than this many times the standing height is a broken one (a standing animal's clips stay well under 2)
 const LIE_FLAT_SHARE := 0.2   # a lying clip lower than this share of the standing height is a broken one (the bear's legless tube)
 
 
@@ -1445,18 +1482,24 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 	return out
 
 
+const UNIT_FIT_MAX := 1500.0   # a clip further off its skeleton than this is not in other units but broken
+
+
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
 # played as they are, every bone falls into the body. The middle ratio of rest length to the clip's first key over the
-# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it. Once per clip.
-func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> void:
+# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it; beyond UNIT_FIT_MAX the clip is
+# broken, not in other units: false, and the caller does not use it. Once per clip.
+
+
+func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> bool:
 	if anim.has_meta("units_fitted"):
-		return
+		return not anim.has_meta("units_broken")
 
 	anim.set_meta("units_fitted", true)
 	var base: Node = player.get_node_or_null(player.root_node)
 
 	if base == null:
-		return
+		return true
 
 	var ratios: Array = []
 	var tracks: Array = []
@@ -1484,19 +1527,29 @@ func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, ani
 			ratios.append(rest_len / key_len)
 
 	if ratios.size() < 3:
-		return
+		return true
 
 	ratios.sort()
 	var k: float = float(ratios[int(ratios.size() * 0.5)])
 
 	if k > 0.2 and k < 5.0:
-		return
+		return true
+
+	# No real unit is a thousand times off (centimetres, inches, millimetres are 100, 39, 1000): a clip whose positions are nearly all
+	# zero (the elephant's hit clips, about a millionth of the skeleton) is broken. Scaled up it stood four times the elephant's height
+	# (Lane A tall check, 23 Nov 2026); played with its turns only it crumpled the elephant into a ball floating a body-height up (Lane A
+	# one-shot check of #1712). It is not used.
+	if k > UNIT_FIT_MAX or k < 1.0 / UNIT_FIT_MAX:
+		anim.set_meta("units_broken", true)
+		_model_note(kind, "clip %s bone positions about x%.0f off the skeleton: broken, not used" % [anim_name, k])
+		return false
 
 	for t in tracks:
 		for i in anim.track_get_key_count(t):
 			anim.track_set_key_value(t, i, (anim.track_get_key_value(t, i) as Vector3) * k)
 
 	_model_note(kind, "clip %s bone positions rescaled x%.4f to the skeleton" % [anim_name, k])
+	return true
 
 
 # Some clips carry the animal forward themselves (root motion). In the WildMesh files the travel sits on the RigRoot node above
@@ -1820,8 +1873,12 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		return
 
 	var player: AnimationPlayer = node.get_meta("player")
+	var once: bool = _t < float(b.get("once_until", -1.0))
 
-	if _t < float(b.get("once_until", -1.0)):
+	if node.has_meta("head_look"):
+		_steer_head(node, b, state, speed, once, delta)
+
+	if once:
 		return      # a bite, hit or death clip is playing once (_play_once)
 
 	var roles: Dictionary = player.get_meta("roles", {})
@@ -1906,6 +1963,51 @@ func _idle_life(b: Dictionary, player: AnimationPlayer, role: String, base: Stri
 			b["idle_until"] = _t + randf_range(float(IDLE_BASE_S[0]), float(IDLE_BASE_S[1]))
 
 	return str(b["idle_clip"])
+
+
+# Head tracking (head_look.gd): an animal on watch (alert, stalking, warning, recovering, sneaking, or a drinker looking up) follows
+# the nearest player's head within LOOK_WATCH_M; a calm one (grazing, standing, lying) only one within LOOK_CALM_M, and less strongly (LOOK_CALM_STRENGTH);
+# moving faster than LOOK_STILL_MPS, an attack, a charge or a one-shot clip: it looks where it goes (the clip's own head).
+const LOOK_WATCH_STATES := [3, 6, 10, 12, 13, 16]
+const LOOK_CALM_STATES := [GRAZE, LIE]
+const LOOK_WATCH_M := 30.0
+const LOOK_CALM_M := 8.0
+const LOOK_CALM_STRENGTH := 0.6
+const LOOK_STILL_MPS := 1.5
+
+
+static func look_strength(state: int, speed: float, once: bool, drink_up: bool) -> Vector2:
+	if once or speed > LOOK_STILL_MPS:
+		return Vector2.ZERO
+
+	if state in LOOK_WATCH_STATES or (state == DRINK and drink_up):
+		return Vector2(1.0, LOOK_WATCH_M)
+
+	if state in LOOK_CALM_STATES:
+		return Vector2(LOOK_CALM_STRENGTH, LOOK_CALM_M)
+
+	return Vector2.ZERO
+
+
+func _steer_head(node: Node3D, b: Dictionary, state: int, speed: float, once: bool, delta: float) -> void:
+	var look = node.get_meta("head_look")      # head_look.gd (untyped: its own fields are read)
+
+	if not is_instance_valid(look):
+		return
+
+	var how: Vector2 = look_strength(state, speed, once, state == DRINK and drink_looking(int(b.get("id", 0)), _t))
+	var want: Vector3 = Vector3.ZERO
+
+	if how.x > 0.0 and _look_frame != _frame:
+		_look_frame = _frame
+		_look_points = look_points.call() if look_points.is_valid() else []
+
+	if how.x > 0.0 and not _look_points.is_empty():
+		var sk: Skeleton3D = look.get_skeleton()
+		var at: Vector3 = sk.global_transform * sk.get_bone_global_pose(int(look.head)).origin if sk != null else node.global_position
+		want = HeadLookScript.goal(at, node.global_transform.basis, _look_points, how.y, how.x)
+
+	look.steer(want, delta)
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).

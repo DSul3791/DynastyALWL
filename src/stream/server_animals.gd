@@ -131,6 +131,12 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 	return walls.is_valid() and bool(walls.call(x0, z0, x1, z1, float(cfg.get("wall_margin_m", 0.3))))
 
 
+# True when a wall or heavy station stands on the straight line between two points (no body margin): a blow never lands through one,
+# either way (an enemy's charge at a player behind a wall, a player's jab at an animal behind one; coordinator's fight walk, 23 Nov 2026).
+func wall_between(from: Vector3, to: Vector3) -> bool:
+	return walls.is_valid() and bool(walls.call(from.x, from.z, to.x, to.z, 0.0))
+
+
 func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
@@ -645,7 +651,7 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 		var to: Vector2 = Vector2(at.x - origin.x, at.z - origin.z)
 		var d: float = to.length()
 
-		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5:
+		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
 			best_d = d
 			best = id
 
@@ -829,16 +835,40 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 			a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)
 			kept = true
 
+	# One player at a time can push it out of one body into another standing beside them (robot bear hunt 23 Nov 2026: two hunters 1.4 m
+	# apart, a charging bear put on the second one's circle, inside the first, 0.22 m from their middle): ending inside anyone and nearer them
+	# than it was, it stays where it was.
+	if kept and _deeper_in(a["pos"], was, players, m):
+		a["pos"] = was
+
 	if kept and Vector2(a["pos"].x - was.x, a["pos"].z - was.z).length() < 0.05:
 		a["pos"] = was   # held at the player: it stands there, not a few centimetres to and fro
 
 	return kept
 
 
+# Whether `to` is inside one of `players` (closer than `m` on the ground, within 2 m up or down) and nearer them than `from` was.
+static func _deeper_in(to: Vector3, from: Vector3, players: Array, m: float) -> bool:
+	for p in players:
+		var at: Vector3 = Vector3.INF
+
+		if p is Vector3:
+			at = p
+		else:
+			at = (p as Dictionary)["pos"]
+
+		var d: float = Vector2(to.x - at.x, to.z - at.z).length()
+
+		if d < m - 0.01 and d < Vector2(from.x - at.x, from.z - at.z).length() - 0.01 and absf(to.y - at.y) <= 2.0:
+			return true
+
+	return false
+
+
 # An animal a player at `at` has walked or run into steps out of their body at up to half its flee speed (its walking pace at least), `dt` s
 # of it, away from them; not into
 # ground it cannot walk on. Birds in the air or on a perch, animals in a burrow or cave and a bandit camp's tied horses stay. True when it moved.
-func make_way(a: Dictionary, at: Vector3, dt: float) -> bool:
+func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool:
 	if at == Vector3.INF or a.has("fly") or a.has("camp") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
 		return false
 
@@ -862,6 +892,9 @@ func make_way(a: Dictionary, at: Vector3, dt: float) -> bool:
 
 	if ground_height.is_valid():
 		to.y = float(ground_height.call(to.x, to.z))
+
+	if _deeper_in(to, a["pos"], others, AnimalContact.contact_m(str(a["sp"]))):
+		return false   # not out of one player into another beside them (`others`: every player's feet or infos)
 
 	a["pos"] = to   # its sent heading stays; the client draws it facing the way it steps while it steps. Tick stamps it moving (moved_ms) as for any step
 	return true
@@ -1093,9 +1126,9 @@ func tick(delta: float) -> void:
 			keep_off_players(a, was, players)   # never into a player's body (Dave 23 Nov 2026: "jumping right through us")
 
 			if near_p != Vector3.INF and Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).length() < AnimalContact.contact_m(str(a["sp"])) - 0.01:
-				make_way(a, near_p, dt)   # a grazer's small step a player ran into is kept by keep_off: it still steps out of them (gate review of #1670)
+				make_way(a, near_p, dt, players)   # a grazer's small step a player ran into is kept by keep_off: it still steps out of them (gate review of #1670)
 		elif animals.has(id) and near_d < AnimalContact.contact_m(str(a["sp"])):
-			make_way(a, near_p, dt)   # a player walked into it standing: it steps aside (robot play-testers 23 Nov 2026: a dog 0.02 m from a player)
+			make_way(a, near_p, dt, players)   # a player walked into it standing: it steps aside (robot play-testers 23 Nov 2026: a dog 0.02 m from a player)
 
 		if animals.has(id) and a["pos"] != was:
 			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline

@@ -14,6 +14,9 @@ const HitSounds := preload("res://src/client/hit_sounds.gd")
 const HarvestSounds := preload("res://src/client/harvest_sounds.gd")
 const ItemSounds := preload("res://src/client/item_sounds.gd")
 const SpearSounds := preload("res://src/client/spear_sounds.gd")
+const PlacedSounds := preload("res://src/client/placed_sounds.gd")
+const SlotSounds := preload("res://src/client/slot_sounds.gd")
+const InteriorSounds := preload("res://src/client/interior_sounds.gd")
 
 var failures: int = 0
 
@@ -27,10 +30,15 @@ func check(ok: bool, what: String) -> void:
 
 class StubTable extends RefCounted:
 	func id_of(number: int) -> String:
-		return {11: "stone_pickaxe", 12: "stone_axe"}.get(number, "")
+		return {11: "stone_pickaxe", 12: "stone_axe", 13: "waterskin", 14: "blueberries"}.get(number, "")
 
 	func entry(id: String) -> Dictionary:
-		return {"stone_pickaxe": {"tool_class": "pick"}, "stone_axe": {"tool_class": "axe"}}.get(id, {})
+		return {"stone_pickaxe": {"tool_class": "pick"}, "stone_axe": {"tool_class": "axe"}, "waterskin": {"capacity_ml": 1000}}.get(id, {})
+
+
+class StubPack extends RefCounted:
+	var slot_count: int = 2
+	var numbers: Array = [13, 14]   # a waterskin, berries
 
 
 class StubItems extends RefCounted:
@@ -50,6 +58,28 @@ class StubItems extends RefCounted:
 
 	func struct_kind_of(id: int) -> String:
 		return str(kinds.get(id, ""))
+
+	var water: Dictionary = {}    # peer -> body water ml
+	var loose: Dictionary = {}    # world id -> [number, count, pos]
+	var packs: Dictionary = {}    # peer -> StubPack
+
+	func body_water_of(peer: int) -> float:
+		return float(water.get(peer, -1.0))
+
+	func loose_item_of(id: int) -> Array:
+		return loose.get(id, [])
+
+	func inventory_of(peer: int):
+		return packs.get(peer, null)
+
+	var open: Dictionary = {}     # peer -> container open (server_items _chest_viewer)
+	var totals: Dictionary = {}   # container id -> things in it
+
+	func open_store_of(peer: int) -> int:
+		return int(open.get(peer, 0))
+
+	func store_total(id: int) -> int:
+		return int(totals.get(id, -1))
 
 	func item_pos_of(id: int) -> Variant:
 		if kinds.has(id):
@@ -73,7 +103,7 @@ func _server_checks() -> void:
 	var items: StubItems = StubItems.new()
 	items.pos = {1: Vector3(0, 1, 0), 2: Vector3(10, 1, 0), 3: Vector3(100, 1, 0), 4: Vector3(0, 1, 28)}
 	items.held = {1: 12}
-	items.kinds = {77: "carcass", 78: "log"}
+	items.kinds = {77: "carcass", 78: "log", 79: "iron_chest", 80: "wooden_barrel", 81: "stone_wall"}
 	var cues = Cues.new()
 	cues.items = items
 	var clock: Array = [1000]
@@ -149,8 +179,109 @@ func _server_checks() -> void:
 	clock[0] += 200
 	got.clear()
 	check(not cues.cue(1, Cues.CUE_PICK, 1, Vector3(NAN, 0, 0)) and got.is_empty(), "a point that is not a number sends nothing")
+
+	# A container (23 Nov 2026), heard within 25 m (player 2, not 4 at 27 m) and only once the server let the action through: a chest's lid
+	# opening and shutting, things put in and taken out, at the container; a barrel only its contents.
+	var lid_at: Vector3 = Vector3(1, Cues.HANDS_UP_M, 1)
+	items.totals = {79: 3, 80: 0}
+	var store_cases: Array = [
+		[Net.ACT_CHEST_OPEN, 79, 0, true, Cues.STORE_OPEN + Cues.STORE_LID, "a chest opened: its lid"],
+		[Net.ACT_CHEST_OPEN, 79, 0, true, -1, "the window already open asked again: no second creak"],
+		[Net.ACT_CHEST_PUT, 4, 79, true, Cues.STORE_PUT + Cues.STORE_LID, "something put in the chest"],
+		[Net.ACT_CHEST_TAKE, 0, 79, true, Cues.STORE_TAKE + Cues.STORE_LID, "something taken out"],
+		[Net.ACT_CHEST_PUT, 4, 79, false, -1, "a put the server refused (a take-only store, an empty slot): nothing moved, nothing heard"],
+		[Net.ACT_CHEST_CLOSE, 0, 0, true, Cues.STORE_CLOSE + Cues.STORE_LID, "the chest shut (the close names no container: the one opened)"],
+		[Net.ACT_CHEST_CLOSE, 0, 0, true, -1, "a close with nothing open"],
+		[Net.ACT_CHEST_PUT, 2, 80, true, Cues.STORE_PUT, "something put in a barrel: no lid"],
+		[Net.ACT_CHEST_OPEN, 79, 0, false, -1, "an open the server refused (locked, too far, broken): no lid"],
+		[Net.ACT_CHEST_PUT, 4, 81, true, -1, "a put naming a wall or any other thing that is no container"],
+		[Net.ACT_CHEST_OPEN, -3, 0, true, -1, "a worn bag (the player's own back)"],
+	]
+
+	for c in store_cases:
+		clock[0] += 200
+		got.clear()
+		_store_act(cues, items, int(c[0]), int(c[1]), int(c[2]), bool(c[3]))
+
+		if int(c[4]) < 0:
+			check(got.is_empty(), "%s: nothing (%s)" % [c[5], str(got)])
+		else:
+			check(got.size() == 1 and int(got[0][0]) == 2 and int(got[0][2]) == Cues.CUE_STORE and int(got[0][3]) == int(c[4]) and (got[0][4] as Vector3).is_equal_approx(lid_at), "%s (%s)" % [c[5], str(got)])
+
+	items.open.erase(1)
+	items.pos[1] = Vector3(30, 1, 0)                     # however it came through, a chest 29 m off is not this player's
+	clock[0] += 200
+	got.clear()
+	_store_act(cues, items, Net.ACT_CHEST_OPEN, 79, 0, true)
+	check(got.is_empty(), "a chest far from the player is not heard opening (%d)" % got.size())
+	items.pos[1] = Vector3(0, 1, 0)
+	check(cues.before_action(1, Net.ACT_HIT, 0, 0).is_empty(), "any other action takes no store look")
+
+	# What only the doer heard (23 Nov 2026): a blow landing on the player, a mouthful of water, a thing picked up off the ground.
+	var mouth: Vector3 = Vector3(0, 1.0 + Cues.HEAD_UP_M, 0)
+	clock[0] += 200
+	got.clear()
+	cues.cue(1, Cues.CUE_PICK, 1, Vector3.ZERO)          # a pick just now: the gap would hold back a client's next cue
+	got.clear()
+	cues.hurt(1, 12.0)
+	check(got.size() == 2 and int(got[0][2]) == Cues.CUE_HURT and int(got[0][3]) == 12 and (got[0][4] as Vector3).is_equal_approx(mouth), "a bite on the player: the gasp at the head, even right after another cue (%s)" % str(got))
+	got.clear()
+	cues.hurt(1, 2.0)
+	check(got.is_empty(), "a small loss is a drain, not a blow: nothing")
+	items.water[1] = 1000.0
+	items.packs[1] = StubPack.new()
+	items.pos[2] = Vector3(8, 1, 0)                      # a gulp is a close sound: heard within 10 m
+	var drinks: Array = [[Net.ACT_DRINK, -1, 300.0, true, "a mouthful at the water's edge"], [Net.ACT_DRINK, -1, 0.0, false, "a drink refused (no water near, full): nothing"],
+		[Net.ACT_EAT, 0, 300.0, true, "a mouthful from a waterskin"], [Net.ACT_EAT, 1, 0.0, false, "berries: eating is silent (Dave 17 Nov 2026)"]]
+
+	for c in drinks:
+		clock[0] += 200
+		got.clear()
+		var before: Array = cues.before_action(1, int(c[0]), int(c[1]), 0)
+		items.water[1] = float(items.water[1]) + float(c[2])
+		cues.after_action(1, int(c[0]), int(c[1]), 0, before)
+		var heard_drink: bool = got.size() == 1 and int(got[0][2]) == Cues.CUE_DRINK and (got[0][4] as Vector3).is_equal_approx(mouth)
+		check(heard_drink == bool(c[3]), "%s (%s)" % [c[4], str(got)])
+
+	items.pos[2] = Vector3(10, 1, 0)
+
+	items.loose = {90: [14, 3, Vector3(1, 0, 1)]}
+	clock[0] += 200
+	got.clear()
+	var lying: Array = cues.before_action(1, Net.ACT_PICKUP, 90, 0)
+	items.loose.erase(90)
+	cues.after_action(1, Net.ACT_PICKUP, 90, 0, lying)
+	check(got.size() == 1 and int(got[0][2]) == Cues.CUE_PICKUP and int(got[0][3]) == 14 and (got[0][4] as Vector3).is_equal_approx(Vector3(1, 0, 1)), "a thing picked up: heard where it lay, naming it (%s)" % str(got))
+	items.loose = {91: [14, 3, Vector3(1, 0, 1)]}
+	clock[0] += 200
+	got.clear()
+	lying = cues.before_action(1, Net.ACT_PICKUP, 91, 0)
+	cues.after_action(1, Net.ACT_PICKUP, 91, 0, lying)
+	check(got.is_empty(), "a pickup the server refused (too far, too heavy): nothing")
+	check(cues.before_action(1, Net.ACT_PICKUP, 92, 0).is_empty(), "a placed thing or nothing there: no look (its taking down is heard by the world rows)")
 	cues.forget(1)
 	check(cues.cue(1, Cues.CUE_PICK, 1, Vector3.ZERO), "forgotten on leaving")
+
+
+# One container action as terrain_server.gd runs it: the store looked at, the server's action (let through or refused), then the cue.
+func _store_act(cues, items: StubItems, kind: int, a: int, b: int, let_through: bool) -> void:
+	var before: Array = cues.before_action(1, kind, a, b)
+
+	if let_through:
+		match kind:
+			Net.ACT_CHEST_OPEN:
+				if a > 0 and items.kinds.has(a):
+					items.open[1] = a
+			Net.ACT_CHEST_CLOSE:
+				items.open.erase(1)
+			Net.ACT_CHEST_PUT:
+				if items.totals.has(b):
+					items.totals[b] += 1
+			Net.ACT_CHEST_TAKE:
+				if items.totals.has(b):
+					items.totals[b] -= 1
+
+	cues.after_action(1, kind, a, b, before)
 
 
 func _client_checks() -> void:
@@ -176,6 +307,15 @@ func _client_checks() -> void:
 	stage.spear = SpearSounds.new()
 	stage.add_child(stage.spear)
 	stage.spear.setup(stage)
+	stage.interior = InteriorSounds.new()
+	stage.add_child(stage.interior)
+	stage.interior.setup(stage)
+	stage.slots = SlotSounds.new()
+	stage.add_child(stage.slots)
+	stage.slots.setup(stage)
+	stage.placed = PlacedSounds.new()
+	stage.add_child(stage.placed)
+	stage.placed.setup(stage)
 	var at: Vector3 = Vector3(5.0, 1.0, -4.0)
 
 	var cases: Array = [
@@ -185,12 +325,19 @@ func _client_checks() -> void:
 		[Cues.CUE_PICK, 3, {"name": "blueberry", "yields": ["blueberries"], "shape": "bush"}, {}, stage.harvestfx, "a berry pick"],
 		[Cues.CUE_BLOW, Cues.MATERIALS.find("flesh"), {}, {}, stage.spear, "a knife on a carcass"],
 		[Cues.CUE_CRAFT, 2, {}, {"id": "stone_axe"}, stage, "a craft's work"],
+		[Cues.CUE_STORE, Cues.STORE_OPEN + Cues.STORE_LID, {}, {}, stage.interior, "a chest's lid opening"],
+		[Cues.CUE_STORE, Cues.STORE_CLOSE + Cues.STORE_LID, {}, {}, stage.interior, "a chest's lid shutting"],
+		[Cues.CUE_STORE, Cues.STORE_PUT, {}, {}, stage.placed, "something put in a barrel"],
+		[Cues.CUE_STORE, Cues.STORE_TAKE + Cues.STORE_LID, {}, {}, stage.placed, "something taken out of a chest"],
+		[Cues.CUE_HURT, 20, {}, {}, stage.slots, "another player bitten: the gasp"],
+		[Cues.CUE_DRINK, 0, {}, {}, stage.itemfx, "another player's mouthful of water"],
+		[Cues.CUE_PICKUP, 0, {}, {}, stage.itemfx, "another player picking up a stone"],
 	]
 
 	for c in cases:
 		var host: Node = c[4]
 		var before: Array = host.get_children()
-		var played: bool = stage.other_action(int(c[0]), int(c[1]), at, c[2], c[3])
+		var played: bool = stage.other_action(int(c[0]), int(c[1]), at, c[2], c[3], "stone" if int(c[0]) == Cues.CUE_PICKUP else "")
 		var made: Array = host.get_children().filter(func(n: Node) -> bool: return n is AudioStreamPlayer3D and not before.has(n))
 		check(played and made.size() >= 1, "%s plays (%s, %d voices)" % [c[5], str(played), made.size()])
 
@@ -201,4 +348,8 @@ func _client_checks() -> void:
 
 	check(stage.others_actions == cases.size(), "counted (%d)" % stage.others_actions)
 	check(not stage.other_action(9, 0, at) and not stage.other_action(Cues.CUE_CRAFT, 1, at), "an unknown cue or a recipe not known plays nothing")
-	check(Cues.CUE_BLOW == SoundStage.CUE_BLOW and Cues.CUE_PICK == SoundStage.CUE_PICK and Cues.CUE_CRAFT == SoundStage.CUE_CRAFT, "the client reads the server's cue numbers")
+	check(not stage.other_action(Cues.CUE_STORE, Cues.STORE_OPEN, at), "a barrel opening has no sound of its own")
+	check(not stage.other_action(Cues.CUE_PICKUP, 0, at), "a pickup naming no item plays nothing")
+	check(Cues.CUE_BLOW == SoundStage.CUE_BLOW and Cues.CUE_PICK == SoundStage.CUE_PICK and Cues.CUE_CRAFT == SoundStage.CUE_CRAFT and Cues.CUE_STORE == SoundStage.CUE_STORE
+			and Cues.CUE_HURT == SoundStage.CUE_HURT and Cues.CUE_DRINK == SoundStage.CUE_DRINK and Cues.CUE_PICKUP == SoundStage.CUE_PICKUP,
+			"the client reads the server's cue numbers")

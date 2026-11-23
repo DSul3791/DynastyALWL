@@ -13,6 +13,8 @@ extends Node3D
 # foot, the player's own stride lengths, sent to the sounds as `stepped` (sound_stage.step_at plays it where the foot lands).
 
 signal stepped(at: Vector3, gait: int, crouched: bool)
+signal stroked(at: Vector3)               # another player's swimming stroke, where they swim (swim_sounds.gd stroke_at)
+signal drew(at: Vector3)                  # another player drew their bow (the more byte's bow-drawn flag came on): the creak at their shoulder
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -55,6 +57,8 @@ const STEP_M := [1.2, 3.0]               # terrain_client.gd STEP_M: metres per 
 const RUN_FROM_MPS := 6.0                # drawn pace from which a player counts as running (walk 3.2, run 9.0 m/s)
 const STEP_FROM_MPS := 1.0               # slower than this makes no steps (terrain_client.gd _update_bob)
 const STEP_HEAR_M := 45.0                # sound_stage.gd OTHER_STEP_REACH_M: farther steps are not counted
+const DRAW_UP_M := 0.5                   # the bow's string at the shoulder, above the body's middle
+const STROKE_FROM_MPS := 0.5             # swim_sounds.gd STROKE_MIN_MPS: slower than this makes no strokes
 const FEET_M := 0.9                      # the sent position is the standing body's middle
 
 var table                            # the client's item table (id_of, entry), for worn and held items
@@ -114,7 +118,12 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		b["swings"] = swings
 		b["state"] = int(states[i])
 		b["left"] = int(left[i]) if i < left.size() else 0
-		b["more"] = int(more[i]) if i < more.size() else 0
+		var more_now: int = int(more[i]) if i < more.size() else 0
+
+		if b.has("more") and (more_now & MORE_BOW_DRAWN) != 0 and (int(b["more"]) & MORE_BOW_DRAWN) == 0:
+			drew.emit((b["node"] as Node3D).global_position + Vector3(0.0, DRAW_UP_M, 0.0))   # the string pulled back (the first rows only note it)
+
+		b["more"] = more_now
 		b["held"] = int(held[i])
 		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
 
@@ -228,7 +237,20 @@ func _process(delta: float) -> void:
 		if every == 0:
 			b["owed"] = 0.0
 			b["swing_due"] = false   # a blow far off is not played when the body comes near later
+			var pose: int = int(b["state"]) & (3 | ASLEEP | SWIM)
+
+			if int(b.get("far_pose", -1)) != pose:   # far off the body is not animated, but it still lies, sits or swims when the player does (robots 23 Nov 2026: a far player lying down was drawn standing)
+				b["far_pose"] = pose
+				var far_stance: int = pose & 3
+				var far_clip: String = "swim_idle" if (pose & SWIM) != 0 else AvatarDriver.choose_clip(far_stance, 0.0, "", (int(b["state"]) & CARRY) != 0 and far_stance == StanceScript.STAND)
+
+				if rig.has_method("play") and player.has_animation(far_clip):
+					rig.play(far_clip, 1.0, 0.0)   # no one-shot (a wake-up would hold its first frame): the resting pose
+					player.advance(0.0)
+
 			continue
+
+		b.erase("far_pose")
 
 		if (frame + (peer & 3)) % every != 0:
 			continue
@@ -245,11 +267,24 @@ func _process(delta: float) -> void:
 
 
 
-# A step each stride of drawn ground travel, for a player on foot (not swimming, sitting or lying) within hearing.
+# A step each stride of drawn ground travel, for a player on foot (not sitting or lying) within hearing; a swimmer's strokes instead (stroked).
 func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: float) -> void:
 	var state: int = int(b["state"])
 	var stance: int = state & 3
 	var pace: float = Vector2(velocity.x, velocity.z).length()
+
+	if (state & SWIM) != 0 and pace >= STROKE_FROM_MPS and distance <= STEP_HEAR_M:
+		var left: float = float(b.get("stroke", 0.2)) - delta   # one pull every 1.4 s slow to 0.6 s fast, as the own strokes (swim_sounds.gd)
+
+		if left <= 0.0:
+			left = lerpf(1.4, 0.6, clampf(pace / 4.0, 0.0, 1.0))
+			stroked.emit((b["node"] as Node3D).global_position)
+
+		b["stroke"] = left
+		b["stride"] = 0.0
+		return
+
+	b["stroke"] = 0.2
 
 	if (state & SWIM) != 0 or stance >= StanceScript.SIT or pace < STEP_FROM_MPS or distance > STEP_HEAR_M:
 		b["stride"] = 0.0
@@ -465,6 +500,27 @@ static func left_in(rig: Node3D, number: int, lit: bool, item_table, made_by) ->
 		HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b))
 
 	return [model, kind]
+
+
+# Where other players carry a burning torch or lantern (the more byte's lit flag, the left or right hand's kind), within `max_m` of `from`,
+# nearest first: [[point, "torch" or "lantern"], ...] (flame_sounds.gd others: the flame heard at their hand). Look only, a few bodies.
+func flames_near(from: Vector3, max_m: float) -> Array:
+	var out: Array = []
+
+	for peer in _bodies:
+		var b: Dictionary = _bodies[peer]
+
+		if (int(b.get("more", 0)) & MORE_LIT) == 0 or not (b.get("node") is Node3D):
+			continue
+
+		var kind: String = "lantern" if "lantern" in [str(b.get("left_kind", "")), str(b.get("held_kind", ""))] else "torch"
+		var at: Vector3 = (b["node"] as Node3D).global_position + Vector3(0.0, DRAW_UP_M, 0.0)
+
+		if at.distance_to(from) <= max_m:
+			out.append([at, kind])
+
+	out.sort_custom(func(p: Array, q: Array) -> bool: return (p[0] as Vector3).distance_squared_to(from) < (q[0] as Vector3).distance_squared_to(from))
+	return out
 
 
 # Only the LIT_MOST nearest other players' torches and lanterns cast light (once a frame, a few bodies at most).

@@ -76,6 +76,10 @@ const OTHER_STEP_VOICES := 6           # other players' steps sounding at once (
 const CUE_BLOW := 1
 const CUE_PICK := 2
 const CUE_CRAFT := 3
+const CUE_STORE := 4                    # server_action_cues.gd: detail = op (0 open, 1 close, 2 put, 3 take) + 4 for a chest's lid
+const CUE_HURT := 5                     # detail = the health lost: the gasp at the head
+const CUE_DRINK := 6                    # a mouthful of water at the mouth
+const CUE_PICKUP := 7                   # detail = the item number (terrain_client passes its id): picked up off the ground where it lay
 const KNIFE_CUT_STRENGTH := 0.35       # a knife cut on a carcass: the flesh hit clip, soft (held_item.gd plays the own; other_action material 5)
 const OTHER_WORK_UNIT_M := 1.5         # craft work is as loud at 1.5 m as the own is at the own ears (item_sounds WORK_DB, flat)
 const OTHER_WORK_REACH_M := 25.0
@@ -1114,15 +1118,22 @@ func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouch
 	player.global_position = feet
 	player.finished.connect(player.queue_free)
 	player.play()
-	_other_step_voices.append(player)
+	count_other_step(player)
 	others_steps += 1
 	return true
 
 
+# Another player's step or swimming stroke now sounding: other_step_room counts it against OTHER_STEP_VOICES.
+func count_other_step(player: AudioStreamPlayer3D) -> void:
+	_other_step_voices.append(player)
+
+
 # Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material; 5 a knife on a carcass),
-# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft being worked (`recipe` is its recipe row; sent again as each clip ends). The same clips
+# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft being worked (`recipe` is its recipe row; sent again as each clip ends),
+# 4 a container opened, shut, filled or emptied (a chest's lid creaks), 5 the player hurt (the own gasp, louder for a bigger blow), 6 a mouthful
+# of water, 7 a thing picked up off the ground (`item_id` its id, for the material). The same clips
 # and levels as the own blow, pick and craft work, positional. False when nothing played (an unknown cue, no room). Counted in others_actions.
-func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}, recipe: Dictionary = {}) -> bool:
+func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}, recipe: Dictionary = {}, item_id: String = "") -> bool:
 	if not has_room() or not at.is_finite():
 		return false
 
@@ -1144,6 +1155,19 @@ func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}
 			done = harvestfx != null and harvestfx.pick(flora_row, at)
 		CUE_CRAFT:
 			done = _other_work(recipe, at)
+		CUE_STORE:
+			var op: int = detail % 4
+
+			if placed != null and op <= 1:
+				done = detail >= 4 and placed.chest(op == 0, at)   # a lid; a barrel or crate opening makes no sound of its own (nor for the one opening it)
+			elif placed != null and op <= 3:
+				done = placed.container(op == 2, at)
+		CUE_HURT:
+			done = slots != null and slots.play("player_hurt", at, Vector3.INF, clampf(float(detail) / 25.0, 0.4, 1.0))
+		CUE_DRINK:
+			done = itemfx != null and itemfx.other_at("", at)
+		CUE_PICKUP:
+			done = itemfx != null and item_id != "" and itemfx.other_at(item_id, at)
 
 	if done:
 		others_actions += 1

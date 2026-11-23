@@ -104,7 +104,7 @@ func snapshot(it, ids: Dictionary) -> Dictionary:
 				out["fire_firewood"] = snappedf(float(fire["wood"]["firewood"]), 0.1)
 				out["fire_left"] = snappedf(float(it._items[found].get("left", -1.0)), 1.0)
 			"snare":
-				out["snare_owner"] = str(it._items[found]["struct"].get("owner", ""))   # set_at and away_at are not saved: nothing reads set_at, and away_at restarts at the next look (the hours a server was off are not game time)
+				out["snare_owner"] = str(it._items[found]["struct"].get("owner", ""))   # set_at is not saved (nothing reads it); away_at is, with the run note (server_traps saved_state)
 
 	it.peer_left(1)
 	return out

@@ -168,6 +168,10 @@ func _ready() -> void:
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	# Every server runs the join handshake (server_auth.gd); --password= answers a server that has one, once.
 	_auth = ServerAuthScript.new()
+	_auth.protocol = NetScript.PROTOCOL_VERSION   # said first (161): a 161 server waits for it
+	_auth.outdated.connect(func(text: String) -> void:
+		print("BOT %s: %s" % [_name, text.replace("\n", " ")])
+		_finish())
 	_auth.password_needed.connect(func(_left: int, wrong: bool) -> void:
 		if wrong or _password == "":
 			print("BOT %s: the server wants a password%s" % [_name, " (wrong)" if wrong else ""])
