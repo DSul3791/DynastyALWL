@@ -10,13 +10,15 @@ extends SceneTree
 #   - fixture9257l03: died; the remains hold radish seeds and a knife.
 # Today's code must give every one of them back as it was: nothing vanishes, moves, doubles or changes meaning. Seeds changed meaning on
 # 23 Nov 2026 (#1628: one seed is one grain and a spot takes a pinch; linseed recipes x100), so each old seed comes back as today's pinch,
-# once (server_items.gd _count_old_seeds), and a second load does not multiply again.
+# once (server_items.gd _count_old_seeds), and a second load does not multiply again; slots past 65,535 lose nothing, the bandits' stashes
+# are counted too, and a crash between the files of the first save counts nothing twice (_overflow_and_crash).
 #   godot --headless --path . --script res://src/worldgen/tools/test_save_9257_life.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const FIXTURE := "res://src/worldgen/tools/save_fixtures/build_9257_life"
 const DIR := "user://test_save_9257_life"
 const A := "fixture9257l01"
@@ -329,5 +331,113 @@ func _init() -> void:
 	out = diff_counts(held, only(held_now(again), per), table)
 	check(out.is_empty(), "loaded again, every stack is the same: no seed multiplied twice (%s)" % str(out.slice(0, 6)))
 	again._finish_writer()
+	_overflow_and_crash()
 	print("save 9257 life: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func write_json(name: String, data: Dictionary) -> void:
+	var f: FileAccess = FileAccess.open(DIR + "/" + name, FileAccess.WRITE)
+	f.store_string(JSON.stringify(data))
+	f.close()
+
+
+# Big old stacks (2,000 old wheat seeds are 100,000 today, past a slot's 65,535) in a pack, a worn bag, a store and on the ground, and a bandit
+# stash: every seed comes back, the rest of a slot in a free slot or beside it. Then a crash in the first save: the pack, chest and
+# character files are written (and marked), the world items are not: the next load counts the ground once and the rest not again.
+func _overflow_and_crash() -> void:
+	copy_fixture()
+	var wheat: int = 338
+	var inv: Dictionary = raw("inventories.json")
+	inv["inventories"][A][24] = [wheat, 2000, 0]
+	write_json("inventories.json", inv)
+	var chars: Dictionary = raw("characters.json")
+
+	for w in chars["players"][A]["worn"]:
+		if int(w[0]) != 0 and w[3] is Dictionary and w[3].has("bag"):
+			w[3]["bag"][0] = [339, 2000, 0]   # barley
+
+	write_json("characters.json", chars)
+	var chests: Dictionary = raw("chests.json")
+
+	for i in chests["chests"]["1"].size():   # the chest: every free slot filled with stone, so the rest must lie beside it
+		if int(chests["chests"]["1"][i][0]) == 0:
+			chests["chests"]["1"][i] = [1, 5, 0]
+
+	chests["chests"]["1"][0] = [wheat, 2000, 0]
+	write_json("chests.json", chests)
+	var area: Dictionary = raw("world_items/455_557.json")
+
+	for row in area["items"]:
+		if int(row[0]) == 380:   # the oats seeds on the ground
+			row[1] = 2000
+
+	write_json("world_items/455_557.json", area)
+	write_json("bandit_sites.json", {"version": 1, "dormant": {}, "stretches": {}, "sites": {"580,713": {"x": 58050.0, "z": 71350.0, "levels": [], "stage": 3, "stash": [{"id": "wheat_seeds", "count": 4, "wear": 0}, {"id": "stone_knife", "count": 1, "wear": 3}]}}, "stash_left": {"580,713": [{"id": "linseed", "count": 2, "wear": 0}]}})
+	var then: Dictionary = {}
+	var items = boot()
+	var per: Dictionary = old_units(items.table)
+	var old_held: Dictionary = {}
+	var f_inv: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/inventories.json"))
+
+	for key in f_inv["inventories"]:
+		add_rows(old_held, f_inv["inventories"][key])
+
+	for key in chars["players"]:
+		for w in chars["players"][key].get("worn", []):
+			if (w as Array).size() > 3 and w[3] is Dictionary and (w[3] as Dictionary).has("bag"):
+				add_rows(old_held, w[3]["bag"])
+
+	for uid in chests["chests"]:
+		add_rows(old_held, chests["chests"][uid])
+
+	for file in DirAccess.get_files_at(DIR + "/world_items"):
+		var rows: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/world_items/" + file))
+
+		for row in rows["items"]:
+			if (row as Array).size() == 9 and int(row[6]) == 0:
+				old_held[int(row[0])] = int(old_held.get(int(row[0]), 0)) + int(row[1])
+
+	for n in old_held:
+		then[n] = int(old_held[n]) * int(per.get(n, 1))
+
+	var now: Dictionary = held_now(items)
+	var out: Array = diff_counts(only(then, per), only(now, per), items.table)
+	check(out.is_empty() and int(now.get(wheat, 0)) == int(then[wheat]) and int(then[wheat]) > 200000, "slots past 65,535 once counted: every seed comes back, the rest in free slots or beside the store (%d wheat seeds; %s)" % [int(now.get(wheat, 0)), str(out.slice(0, 5))])
+	var chest_id: int = struct_of(items, "chest")
+	var beside: int = 0
+
+	for id in items._items:
+		if int(items._items[id].get("number", 0)) == wheat and not items._items[id].has("struct") and (items._items[id]["pos"] as Vector3).distance_to(items._items[chest_id]["pos"]) < 2.0:
+			beside += int(items._items[id]["count"])
+
+	check(box(items, chest_id).count_of(wheat) == 65535 and beside == 100000 - 65535, "the full chest holds 65,535 and the other %d lie beside it" % beside)
+	var bandits = BanditsScript.new()
+	bandits.setup(DIR)
+	var stash: Array = bandits.sites.values()[0].get("stash", []) if not bandits.sites.is_empty() else []
+	var left: Array = bandits.stash_left.values()[0] if not bandits.stash_left.is_empty() else []
+	check(stash.size() == 2 and int(stash[0]["count"]) == 4 * 50 and int(stash[1]["count"]) == 1 and left.size() == 1 and int(left[0]["count"]) == 200, "a bandit stash is counted too: 4 old wheat seeds are 200, the knife 1, 2 old linseed 200 (%s %s)" % [str(stash), str(left)])
+	bandits.save()
+	var again = BanditsScript.new()
+	again.setup(DIR)
+	check(not again.sites.is_empty() and int(again.sites.values()[0]["stash"][0]["count"]) == 200, "and saved and read again it is not counted twice")
+
+	# The crash: the first save writes every file, then the world items are put back as the 9257 save had them (the header and area files).
+	items.save()
+	items._finish_writer()
+
+	for sub in ["", "/world_items"]:
+		for file in DirAccess.get_files_at(DIR + sub):
+			if (sub != "" or file.begins_with("world_items")) and file.ends_with(".json"):
+				DirAccess.remove_absolute(DIR + sub + "/" + file)
+
+	write_json("world_items.json", raw("world_items.json"))
+	write_json("world_items/455_556.json", raw("world_items/455_556.json"))
+	write_json("world_items/455_557.json", area)
+	var after = boot()
+	now = held_now(after)
+	var want: Dictionary = only(then, per)
+	want[wheat] = int(want[wheat]) - (100000 - 65535)   # the rest by the chest was on the ground, which the crash put back as it was
+	out = diff_counts(want, only(now, per), after.table)
+	check(out.is_empty(), "after a crash between the files the ground is counted once and the packs, bags and stores not again (%s)" % str(out.slice(0, 5)))
+	after._finish_writer()

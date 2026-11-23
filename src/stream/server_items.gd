@@ -2074,7 +2074,7 @@ func save() -> void:
 	for key in _inventories:
 		invs[key] = _inventories[key].to_json_array()
 
-	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
+	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs, "seed_pinch": true})
 	_save_chests()
 	_save_vitals()
 	_save_characters()
@@ -8134,6 +8134,8 @@ func _load_inventories() -> void:
 	if parsed == null:
 		return
 
+	_old_seed_files["packs"] = not bool(parsed.get("seed_pinch", false))   # each file carries its own mark: a crash between two files never counts one twice
+
 	for key in parsed["inventories"]:
 		var inv = InventoryScript.pack(table)
 		inv.from_json_array(parsed["inventories"][key])
@@ -8258,7 +8260,7 @@ func _load_world_items() -> void:
 	if parsed == null:
 		return
 
-	_seeds_in_pinches = bool(parsed.get("seed_pinch", false))   # false: saved before seeds were counted one by one (build 9257 and older)
+	_old_seed_files["ground"] = not bool(parsed.get("seed_pinch", false))   # the header and the area files it names are read as one save (_read_area)
 
 	if parsed.has("areas"):   # version 4: the rows are in the area files the header names (an older file holds them itself)
 		_save_gen = int(parsed.get("gen", 0))
@@ -15292,7 +15294,7 @@ func _save_chests() -> void:
 	for uid in _chests:
 		rows[str(uid)] = _chests[uid].to_json_array()
 
-	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows})
+	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows, "seed_pinch": true})
 
 
 # A kit item that was dropped from the game: kits are gone, only the rough bed and the campfire are still made in the pack (Dave 4 Nov 2026).
@@ -15313,6 +15315,7 @@ func _load_chests() -> void:
 	if parsed == null:
 		return
 
+	_old_seed_files["stores"] = not bool(parsed.get("seed_pinch", false))
 	_next_uid = int(parsed.get("next_uid", 1))
 
 	for key in parsed.get("chests", {}):
@@ -20207,7 +20210,7 @@ const TILLED_STATE := 47
 var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
-var _seeds_in_pinches: bool = true   # the store counts seeds one by one (world_items.json "seed_pinch"); false only while loading an older one
+var _old_seed_files: Dictionary = {}   # "packs", "worn", "stores", "queues", "ground" -> true while that file, as loaded, counts seeds the old way (no "seed_pinch")
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
 var _crops_file_extra: Dictionary = {}   # crops.json "worm": {"item", "chance"}: a ripe garden crop taken gives a worm this often
 var _plot_water: Dictionary = {}         # _bed_key -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
@@ -20221,91 +20224,130 @@ const PlotWater := preload("res://src/shared/plot_water.gd")
 
 # Seeds have been counted one by one since 23 Nov 2026 (#1628): a planting spot takes a pinch (crops.json sow_seeds: 50 wheat seeds, 5 nettle
 # seeds) and the recipes take linseed by the hundred. A store saved before then (build 9257, the live world) counted one seed per spot and
-# linseed by the old recipes, so each of its seeds is worth today's pinch: every stack is multiplied once (crops.json "old_seed_units"), in
-# packs, worn and held bags, stores (chests, crates, carts, kilns, remains), craft queues and on the ground, and the store is marked so it
-# never happens twice. Nothing vanishes: what a full slot cannot hold goes to a free slot, a full store's rest lies by it, a full bag's in the pack.
-# A dev store saved between #1628 and this marker is multiplied once too (test stores only; the live world never ran that code).
+# linseed by the old recipes, so each of its seeds is worth today's pinch: every stack is multiplied once (old_seed_units). Each save file
+# carries its own "seed_pinch" mark (inventories, characters for worn bags, chests for every store, craft queues, the world items header for
+# the ground), so a crash between two files never counts one twice; a file read from its .prev is counted from that copy's own mark.
+# Nothing vanishes: what a pack, store or bag slot cannot hold (u16) goes to its free slots after every stack is counted, and the rest lies
+# on the ground there (a ground pile has no such cap). The bandits' stashes do the same from their own file (server_bandits.gd).
+# A dev store saved between #1628 and the mark is counted once too (test stores only; the live world never ran that code).
 func _count_old_seeds() -> void:
-	if _seeds_in_pinches:
+	if not _old_seed_files.values().has(true):
 		return
 
-	_seeds_in_pinches = true
 	var per: Dictionary = {}   # item number -> today's units in one old seed
 
-	for crop in _crop_table():
-		var row: Dictionary = _crop_table()[crop]
-		var n: int = table.number_of(str(row.get("seed", "")))
+	for id in old_seed_units():
+		if table.number_of(str(id)) > 0:
+			per[table.number_of(str(id))] = int(old_seed_units()[id])
 
-		if n > 0 and int(row.get("sow_seeds", 1)) > 1:
-			per[n] = int(row["sow_seeds"])
-
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
-	var extra: Dictionary = parsed.get("old_seed_units", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
-
-	for id in extra:
-		if not str(id).begins_with("_") and table.number_of(str(id)) > 0:
-			per[table.number_of(str(id))] = int(extra[id])
-
+	var later: Array = []   # [inventory or null, number, count, wear, where on the ground if it does not fit]: placed after every stack is counted
 	var moved: int = 0
 
 	for key in _inventories:
-		moved += _old_seeds_in(_inventories[key], per, [])
+		var at: Vector3 = _last_spot_of(str(key))
 
-		for w in _characters.get(key, {}).get("worn", []):
-			if w is Array and (w as Array).size() > 3 and w[3] is Dictionary and (w[3] as Dictionary).has("bag"):
-				moved += _old_seeds_in_bag(w[3], per, _inventories[key])
+		if _old_seed_files.get("packs", false):
+			moved += _old_seeds_in(_inventories[key], per, later, at)   # and the bags held in it (the pack's own file)
 
-	for uid in _chests:
-		var over: Array = []
-		moved += _old_seeds_in(_chests[uid], per, over)
+		if _old_seed_files.get("worn", false):
+			for w in _characters.get(key, {}).get("worn", []):
+				if w is Array and (w as Array).size() > 3 and w[3] is Dictionary and (w[3] as Dictionary).has("bag"):
+					moved += _old_seeds_in_bag(w[3], per, later, _inventories[key], at)
 
-		if not over.is_empty():
-			var at: Vector3 = Vector3.INF
+	if _old_seed_files.get("stores", false):
+		var where: Dictionary = {}   # uid -> the structure's spot
 
-			for id in _items:
-				if int(_items[id].get("struct", {}).get("uid", 0)) == int(uid):
-					at = _items[id]["pos"]
-					break
+		for id in _items:
+			if _items[id].has("struct") and _items[id]["struct"].has("uid"):
+				where[int(_items[id]["struct"]["uid"])] = _items[id]["pos"]
 
-			for row in over:
-				if at != Vector3.INF:
-					drop_in_world(int(row[0]), int(row[1]), at + Vector3(0.0, 0.0, 1.0))
+		for uid in _chests:
+			moved += _old_seeds_in(_chests[uid], per, later, where.get(int(uid), Vector3.INF))
 
-	for key in _craft_queues:
-		for entry in _craft_queues[key]["entries"]:
-			for need in entry[2]:
-				if per.has(int(need[0])):
-					need[1] = int(need[1]) * int(per[int(need[0])])
+	if _old_seed_files.get("queues", false):
+		for key in _craft_queues:
+			for entry in _craft_queues[key]["entries"]:
+				for need in entry[2]:
+					if per.has(int(need[0])):
+						need[1] = int(need[1]) * int(per[int(need[0])])
 
-					for unit in (need[2] if need.size() > 2 else []):
-						unit[3] = int(unit[3]) * int(per[int(need[0])])   # what it took, given back at today's count if the craft is cancelled
-					moved += 1
+						for unit in (need[2] if need.size() > 2 else []):
+							unit[3] = int(unit[3]) * int(per[int(need[0])])   # what it took, given back at today's count if the craft is cancelled
 
-			for part in entry[3]:
-				if per.has(int(part[0])):
-					part[1] = int(part[1]) * int(per[int(part[0])])
+						moved += 1
 
-	for id in _items.keys():
-		var it: Dictionary = _items[id]
+				for part in entry[3]:
+					if per.has(int(part[0])):
+						part[1] = int(part[1]) * int(per[int(part[0])])
 
-		if per.has(int(it.get("number", 0))) and not it.has("struct"):
-			var total: int = int(it["count"]) * int(per[int(it["number"])])
-			it["count"] = mini(total, ItemTableScript.COUNT_MAX)
-			moved += 1
+	if _old_seed_files.get("ground", false):
+		for id in _items.keys():
+			var it: Dictionary = _items[id]
 
-			if total > ItemTableScript.COUNT_MAX:
-				drop_in_world(int(it["number"]), total - ItemTableScript.COUNT_MAX, it["pos"] + Vector3(0.3, 0.0, 0.0))
+			if it.has("struct") or it.has("fire") or it.has("tree"):
+				continue
 
-		if it.get("inst", {}) is Dictionary and (it.get("inst", {}) as Dictionary).has("bag"):
-			moved += _old_seeds_in_bag(it["inst"], per, null)
+			var counted: bool = false
 
+			if per.has(int(it.get("number", 0))):
+				it["count"] = mini(int(it["count"]) * int(per[int(it["number"])]), PILE_CAP)   # a pile holds up to PILE_CAP
+				counted = true
+				moved += 1
+
+			if it.get("inst", {}) is Dictionary and (it.get("inst", {}) as Dictionary).has("bag"):
+				var n: int = _old_seeds_in_bag(it["inst"], per, later, null, it["pos"])
+				counted = counted or n > 0
+				moved += n
+
+			if counted:
+				_area_recovered[area_key_of(it["pos"].x, it["pos"].z)] = true   # its area file is written again at the first save, with the mark
+
+	for row in later:   # nothing above adds or drops, so nothing placed here is counted twice
+		var left: int = int(row[2])
+
+		if row[0] != null:
+			left = row[0].add(int(row[1]), left, int(row[3]))
+
+		if left > 0 and row[4] != Vector3.INF:
+			drop_in_world(int(row[1]), left, row[4], int(row[3]))
+		elif left > 0:
+			push_error("server items: %d of item %d had nowhere to go (a store with no structure)" % [left, int(row[1])])
+
+	_old_seed_files.clear()
 	_dirty = true
 	print("server items: a store from before seeds were counted one by one: %d stacks of seeds counted again in today's units" % moved)
 
 
-# One store's seeds multiplied (see _count_old_seeds); what a slot cannot hold goes to the store's free slots, the rest into `over` as [number, count].
-func _old_seeds_in(inv, per: Dictionary, over: Array) -> int:
-	var rest: Array = []
+# Today's units in one seed of a store saved before 23 Nov 2026, by item id: each crop's seed its crops.json sow_seeds (a spot's pinch), and
+# the items in crops.json "old_seed_units" (linseed: its recipes grew by 100). Read by server_bandits.gd for the stolen stashes too.
+static func old_seed_units() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+	var out: Dictionary = {}
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return out
+
+	for crop in parsed.get("crops", {}):
+		var row: Dictionary = parsed["crops"][crop]
+
+		if str(row.get("seed", "")) != "" and int(row.get("sow_seeds", 1)) > 1:
+			out[str(row["seed"])] = int(row["sow_seeds"])
+
+	for id in parsed.get("old_seed_units", {}):
+		if not str(id).begins_with("_"):
+			out[str(id)] = int(parsed["old_seed_units"][id])
+
+	return out
+
+
+# Where a character's things go when their pack cannot hold them: where they last stood (characters.json "last").
+func _last_spot_of(key: String) -> Vector3:
+	var p: Array = _characters.get(key, {}).get("last", {}).get("pos", [])
+	return Vector3(float(p[0]), float(p[1]), float(p[2])) if p.size() == 3 else Vector3.INF
+
+
+# One store's seeds multiplied (see _count_old_seeds), and the bags held in it; what a slot cannot hold goes to `later` for this store.
+func _old_seeds_in(inv, per: Dictionary, later: Array, at: Vector3) -> int:
 	var n: int = 0
 
 	for s in inv.slot_count:
@@ -20317,28 +20359,16 @@ func _old_seeds_in(inv, per: Dictionary, over: Array) -> int:
 			n += 1
 
 			if total > ItemTableScript.COUNT_MAX:
-				rest.append([number, total - ItemTableScript.COUNT_MAX, inv.wear[s]])
+				later.append([inv, number, total - ItemTableScript.COUNT_MAX, inv.wear[s], at])
 
-		if not (inv.inst_of(s) as Dictionary).is_empty() and inv.inst_of(s).has("bag"):
-			n += _old_seeds_in_bag(inv.inst_of(s), per, inv)
-
-	for row in rest:
-		var left: int = int(row[1])
-
-		while left > 0:
-			var put: int = mini(left, ItemTableScript.COUNT_MAX)
-			var not_in: int = inv.add(int(row[0]), put, int(row[2]))
-			left -= put
-
-			if not_in > 0:
-				over.append([int(row[0]), not_in + left])
-				break
+		if number != 0 and inv.inst_of(s).has("bag"):
+			n += _old_seeds_in_bag(inv.inst_of(s), per, later, inv, at)
 
 	return n
 
 
-# A bag's rows ([number, count, wear, ...]) multiplied; a full bag's rest goes into `pack` (the wearer's or holder's) when there is one.
-func _old_seeds_in_bag(inst: Dictionary, per: Dictionary, pack) -> int:
+# A bag's rows ([number, count, wear, ...]) multiplied; a row's rest goes to `later` for the store holding the bag (or the ground at `at`).
+func _old_seeds_in_bag(inst: Dictionary, per: Dictionary, later: Array, holder, at: Vector3) -> int:
 	var n: int = 0
 
 	for row in inst["bag"]:
@@ -20347,8 +20377,8 @@ func _old_seeds_in_bag(inst: Dictionary, per: Dictionary, pack) -> int:
 			row[1] = mini(total, ItemTableScript.COUNT_MAX)
 			n += 1
 
-			if total > ItemTableScript.COUNT_MAX and pack != null:
-				pack.add(int(row[0]), total - ItemTableScript.COUNT_MAX)
+			if total > ItemTableScript.COUNT_MAX:
+				later.append([holder, int(row[0]), total - ItemTableScript.COUNT_MAX, int(row[2]) if (row as Array).size() > 2 else 0, at])
 
 	return n
 
@@ -26529,7 +26559,7 @@ func _save_craft_queues() -> void:
 		if not _craft_queues[key]["entries"].is_empty():
 			rows[key] = _craft_queues[key]
 
-	_write_atomic("craft_queues.json", {"version": 1, "players": rows})
+	_write_atomic("craft_queues.json", {"version": 1, "players": rows, "seed_pinch": true})
 
 
 func _load_craft_queues() -> void:
@@ -26537,6 +26567,8 @@ func _load_craft_queues() -> void:
 
 	if parsed == null:
 		return
+
+	_old_seed_files["queues"] = not bool(parsed.get("seed_pinch", false))
 
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
@@ -27165,7 +27197,7 @@ func fate(peer: int, kind: String, p: float) -> bool:
 
 
 func _save_characters() -> void:
-	_write_atomic("characters.json", {"version": CHARACTERS_VERSION, "players": _characters})
+	_write_atomic("characters.json", {"version": CHARACTERS_VERSION, "players": _characters, "seed_pinch": true})
 
 
 # Fitness (Dave 2026-10-21), see data/items/fitness.json: scales how fast exertion rises, a whole number min..max.
@@ -27345,6 +27377,7 @@ func _load_characters() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY or typeof((parsed as Dictionary).get("players", {})) != TYPE_DICTIONARY:
 		return
 
+	_old_seed_files["worn"] = not bool(parsed.get("seed_pinch", false))
 	var old_scale: bool = int(parsed.get("version", 1)) < 2   # attributes saved on the -10 to +10 scale: converted once here, written back as version 2 on the next save
 
 	if old_scale:
