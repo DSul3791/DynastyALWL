@@ -213,7 +213,7 @@ func _init() -> void:
 	give("stone", 3)
 	give("twine", 2)
 	craft("stone_hammer", 1, 60)
-	check(have("stone_hammer") == 1 and recipe_number("stone_pickaxe") == 0, "1. a Stone - Hammer is made by hand (the Stone - Pickaxe recipe is retired)")
+	check(have("stone_hammer") == 1 and recipe_number("stone_pickaxe") > 0, "1. a Stone - Hammer is made by hand (the Stone - Pickaxe is made by hand too: restored 23 Nov 2026)")
 
 	# The amounts follow the live data: the bronze job (1 Copper ore + 1 Tin ore -> 2 Bronze ingots) and the pick's recipe.
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("bronze", {})
