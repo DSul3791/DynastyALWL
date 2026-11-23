@@ -1231,6 +1231,14 @@ func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = 
 
 		return 0
 
+	if _carts.puller_of.has(peer):   # both hands are on the handle: as a log on the shoulder keeps a cart's handle out of reach (server_carts _grab)
+		_say(peer, "Both hands are on the %s: let go of it first." % _carts.noun_for(int(_carts.puller_of[peer])))
+
+		if drop_rest:
+			drop_in_world(number, count, here, 0, 0.0, NAN, NAN, "", item_inst)
+
+		return 0
+
 	var before: Array = _snapshot(inv)
 	var took: int = 1 if _fit(peer, inv, number, 1, item_inst) > 0 and inv.add(number, 1, 0, item_inst) == 0 else 0
 	_send_changes(peer, inv, before)
