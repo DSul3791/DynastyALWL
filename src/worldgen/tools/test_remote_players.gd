@@ -578,6 +578,12 @@ func _client() -> void:
 			var clip_now: String = str(view._bodies[7]["rig"].current())
 			var upright: bool = bow_node != null and _upright_m(bow_node) > 1.2   # the bow's own limbs, measured in the world (Lane A S8, 23 Nov 2026: the holder was upright and the bow lay flat)
 			check(clip_now == str(flag_set[1]) and (upright == (int(flag_set[0]) != 0)), "bow flags %d: the body plays %s (%s) and the bow is %s" % [int(flag_set[0]), str(flag_set[1]), clip_now, "upright before it" if int(flag_set[0]) != 0 else "at the side"])
+			var bow_mesh: Node3D = bow_node.get_child(0) as Node3D if bow_node != null and bow_node.get_child_count() > 0 else null
+			var nock_z: float = float((bow_mesh.get_meta("nock", Vector3.ZERO) as Vector3).z) if bow_mesh != null else 0.0
+			var nocked: Node3D = bow_mesh.get_node_or_null("NockedArrow") as Node3D if bow_mesh != null else null
+
+			if int(flag_set[0]) == PlayerViewScript.MORE_BOW_DRAWN:
+				check(bow_mesh != null and bow_mesh.get_node_or_null("StringTop") != null and nock_z < -0.3 and nocked != null and nocked.visible, "a drawn bow shows its string back (%.2f m) and an arrow on it" % nock_z)
 
 
 # Over a real connection (the coordinator's ask, 23 Nov 2026: smooth under 100 to 150 ms and a few percent loss): rows sent every 125 ms

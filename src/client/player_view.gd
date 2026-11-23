@@ -643,8 +643,8 @@ func _pose_bow(b: Dictionary, distance: float) -> void:
 	var held: Node3D = b.get("held_node", null) as Node3D
 	var pose: String = bow_pose(b)
 
-	if held == null or not is_instance_valid(held) or not held.is_inside_tree():
-		return
+	if (pose == "" and not b.has("bow_rest")) or held == null or not is_instance_valid(held) or not held.is_inside_tree():
+		return   # nothing to pose or put back (every body, every frame: no child walk)
 
 	# The bow's own mesh (limbs along its x, as the player's own held_item.gd _pose_bow poses it), not the holder that turns it for the
 	# hand mount: posing the holder pointed the limbs at the target, the bow lying flat (Lane A S8, 23 Nov 2026).
@@ -922,7 +922,17 @@ static func held_model(number: int, item_table) -> Node3D:
 	if id == "" or not HeldItem.BasicLook.has_look(id) or not HeldItem.HELD_LOOK_TURN.has(shape):
 		return null
 
-	return HeldItem.look_tool_node(id)
+	var node: Node3D = HeldItem.look_tool_node(id)
+
+	if shape == "bow" and node.get_child_count() == 1 and node.get_child(0) is MeshInstance3D:
+		# The hand's bow, as the player's own (held_item.gd _make_look_tool_model): no string in its mesh, two cords to the nock point and the
+		# nocked arrow, so another player's drawn bow shows its string back and an arrow (review of the S8 fix, 23 Nov 2026: they were never made).
+		var def: Dictionary = HeldItem.BasicLook.entry(id)
+		var bow: MeshInstance3D = node.get_child(0) as MeshInstance3D
+		bow.mesh = HeldItem.BasicLook.mesh("bow", Color.html(str(def.get("color", "#a8804a"))), float(def.get("size", 1.0)), (def.get("bits", []) as Array) + ["held"])
+		HeldItem.add_bow_parts(bow)
+
+	return node
 
 
 # The spear's place each frame, as held_item.gd _aim_spear in third person: its point (model -Z) along the body's facing lifted SPEAR_LIFT_DEG,
