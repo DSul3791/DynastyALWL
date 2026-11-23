@@ -217,11 +217,9 @@ void fragment() {
 	ROUGHNESS = 1.0;
 }
 """
-# OFF at every quality for now (23 Nov 2026, coordinator for Dave, bug fixes first): with the dots on, a player standing still got a 120-150 ms
-# hitch about every 10 s on Vulkan (Lane A, b192ce14 17-25 hitches a play; e51873ab with the dots off 5-7, all at the join). The hitch has no
-# script or physics time and no re-plan, so the cost is on the GPU/driver side and cannot be measured in the cloud. Was [0, 110, 150, 150];
-# put a reach back only with a Lane A standing-play run showing no periodic hitch.
-const FAR_FLOWER_M := [0.0, 0.0, 0.0, 0.0]   # far flower reach by quality (Low, Medium, High, Ultra); 0 draws none; never past full_m (_far_flower_reach)
+# Back on 23 Nov 2026 (lag lane): the standing hitch blamed on them was main-thread log prints (#1671, #1675). Lane A at 1b6dd01e, High,
+# dots on: 5/4/5 hitches, all at the join, standing clean, the same as a dots-off control (7).
+const FAR_FLOWER_M := [0.0, 110.0, 150.0, 150.0]   # far flower reach by quality (Low, Medium, High, Ultra); 0 draws none; never past full_m (_far_flower_reach)
 const FAR_FLOWER_IN_M := [45.0, 60.0]   # dots dither in over this, under the full models (view_m.plant), so the hand-over does not pop
 const FAR_FLOWER_OUT_M := 30.0          # and out over the last this much of the reach
 const FAR_FLOWER_MIN_PX := 2.0          # a dot is never smaller than this on the screen
@@ -574,7 +572,7 @@ var part_m: Array = PART_M            # the size of the square one shrub or plan
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
 var shadow_m: float = 60.0
-var far_flower_m: float = 0.0        # far flower dots reach (set_quality, FAR_FLOWER_M); 0 = none
+var far_flower_m: float = 150.0       # far flower dots reach (set_quality, FAR_FLOWER_M); 0 = none
 var _far_flower_material: ShaderMaterial = null
 var _far_flower_mesh: QuadMesh = null
 var instances: int = 0                 # items drawn now
