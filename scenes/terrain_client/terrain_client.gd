@@ -1664,6 +1664,7 @@ func _welcome_body(info: Dictionary) -> void:
 	npc_view.goblin_maker = animal_view.make_goblin   # goblin tribe members wear the wild goblin's model (data/creatures/goblin_tribes.json)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	animal_view.player_at = func() -> Vector3: return body.global_position if body != null and body.is_inside_tree() else Vector3.INF   # the capsule's middle, about 1 m above the feet the server uses: only its xz matters (stop_toward's 2 m height gate is that much looser): a charge is never drawn inside the player
+	animal_view.look_points = func() -> Array: return _look_points()      # head tracking: an animal watches the nearest player (head_look.gd)
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
@@ -3257,6 +3258,21 @@ func _warmth_cfg() -> Dictionary:
 const SNARL_M := 5.0
 const SNARL_EVERY_MS := 1500
 var _snarl_ms: int = 0
+
+
+# The players' heads for head tracking (animal_view.look_points): this player's (the capsule's middle is about 1 m up, the head 0.6 m
+# above it) and each other player drawn (player_view.drawn: the feet).
+func _look_points() -> Array:
+	var out: Array = []
+
+	if body != null and body.is_inside_tree():
+		out.append(body.global_position + Vector3(0.0, 0.6, 0.0))
+
+	if _player_view != null:
+		for who in _player_view.drawn():
+			out.append((who["pos"] as Vector3) + Vector3(0.0, 1.6, 0.0))
+
+	return out
 
 
 func _attacker_snarl() -> void:
