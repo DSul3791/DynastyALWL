@@ -9,6 +9,10 @@ extends Node3D
 # in the right hand and its name above. A player who leaves or goes out of range is removed.
 # Nothing collides with these bodies and nothing can hit them (no collider): player-versus-player rules are Dave's.
 # Animation by distance, as npc_view.gd: every frame to 15 m, every 2nd to 40 m, every 4th to 70 m, a held pose beyond.
+# Footsteps (Dave 23 Nov 2026, sound hard to pinpoint; other players made no step sound at all): a step every stride of drawn travel on
+# foot, the player's own stride lengths, sent to the sounds as `stepped` (sound_stage.step_at plays it where the foot lands).
+
+signal stepped(at: Vector3, gait: int, crouched: bool)
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -33,6 +37,11 @@ const CARRY_LOG_RADIUS_M := 0.14
 const LOG_COLOR := Color(0.32, 0.23, 0.15)
 const NAME_HEIGHT_M := 2.05
 const NO_NAME := "Traveller"
+const STEP_M := [1.2, 3.0]               # terrain_client.gd STEP_M: metres per step walking, running
+const RUN_FROM_MPS := 6.0                # drawn pace from which a player counts as running (walk 3.2, run 9.0 m/s)
+const STEP_FROM_MPS := 1.0               # slower than this makes no steps (terrain_client.gd _update_bob)
+const STEP_HEAR_M := 45.0                # sound_stage.gd OTHER_STEP_REACH_M: farther steps are not counted
+const FEET_M := 0.9                      # the sent position is the standing body's middle
 
 var table                            # the client's item table (id_of, entry), for worn and held items
 var _looks: Dictionary = {}          # peer -> {"name", "body", "code", "worn"}
@@ -175,6 +184,7 @@ func _process(delta: float) -> void:
 		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(delta * 8.0, 0.0, 1.0))
 		b["velocity"] = velocity
 		var distance: float = eye.distance_to(node.global_position)
+		_count_steps(b, velocity, delta, distance)
 		_far_check(b, distance, delta)
 		_show_held(b)
 		var player: AnimationPlayer = rig.get("animation_player") as AnimationPlayer
@@ -200,6 +210,27 @@ func _process(delta: float) -> void:
 		if str(b.get("held_kind", "")) == "spear":
 			aim_spear(b["held_node"] as Node3D, b["rig"])   # after the pose: the spear keeps the facing, not the hand bone's angle
 
+
+
+# A step each stride of drawn ground travel, for a player on foot (not swimming, sitting or lying) within hearing.
+func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: float) -> void:
+	var state: int = int(b["state"])
+	var stance: int = state & 3
+	var pace: float = Vector2(velocity.x, velocity.z).length()
+
+	if (state & SWIM) != 0 or stance >= StanceScript.SIT or pace < STEP_FROM_MPS or distance > STEP_HEAR_M:
+		b["stride"] = 0.0
+		return
+
+	var running: bool = pace >= RUN_FROM_MPS
+	var length: float = float(STEP_M[1 if running else 0])
+	var travelled: float = float(b.get("stride", 0.0)) + pace * delta
+
+	if travelled >= length:
+		travelled = fmod(travelled, length)
+		stepped.emit((b["node"] as Node3D).global_position - Vector3(0.0, FEET_M, 0.0), 2 if running else 0, stance == StanceScript.CROUCH)
+
+	b["stride"] = travelled
 
 # The clip, its speed and the shoulder log, by the player's own rules (avatar_driver.gd), from the drawn speed and the sent state.
 func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
