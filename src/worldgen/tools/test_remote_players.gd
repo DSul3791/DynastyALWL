@@ -251,11 +251,11 @@ func _check_holds() -> void:
 		if not DynastyBodyScript.available(str(body)):
 			continue
 
-		var root: Node3D = Node3D.new()
-		root.rotation.y = 0.7
-		get_root().add_child(root)
+		var holder: Node3D = Node3D.new()
+		holder.rotation.y = 0.7
+		get_root().add_child(holder)
 		var rig: Node3D = PlayerViewScript.make_rig(str(body), {})
-		root.add_child(rig)
+		holder.add_child(rig)
 		rig.play("idle")
 		await process_frame
 		var front: Vector3 = rig.global_basis * Vector3.FORWARD
@@ -284,7 +284,7 @@ func _check_holds() -> void:
 
 			model.free()
 
-		root.queue_free()
+		holder.queue_free()
 
 	check(spears > 0, "a spear was among the held items")
 
