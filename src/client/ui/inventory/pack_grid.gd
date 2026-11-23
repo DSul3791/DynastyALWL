@@ -203,7 +203,7 @@ func show_info() -> void:
 	var kcal: int = VitalsRules.food_value(item_id, view._vitals_cfg)
 
 	if kcal > 0:
-		item_facts.append(["Food", "%d kcal" % kcal])
+		item_facts.append(["Food", "%d kcal" % VitalsRules.eaten_kcal(kcal, view.table.freshness(number, wear))])   # what eating it gives now (the Fresh row below says why it is less)
 
 	if view.table.shelf_units(number) > 0:
 		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, wear) * 100.0)])

@@ -6299,6 +6299,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground is too steep there.")
 		return
 
+	if trunks_near.is_valid() and PlacementRules.over_trunk(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), trunks_near.call(spot, PlacementRules.footprint_reach(_structures_cfg, kit_id))):
+		_say(peer, "A tree is in the way: fell it first.")
+		return
+
 	if kit_id != "campfire_kit":
 		var placed_def: Dictionary = _structure_of_kit(kit_id)
 
@@ -10076,13 +10080,14 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, used: 
 		_next_id += 1
 
 
-# Where in a cell a loose stone or stick lies (Dave 2026-10-20: place them appropriately). A few random spots are
-# tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:
-# sticks mostly under and around tree crowns and rarely on bare rock; stones on slopes, on bare rock and gravel, and
-# in hollows at the foot of a rise, with a few left in open ground. The odds are in data/items/drops.json.
 const SCATTER_SLOPE_M := 0.5   # _scatter_spot: the slope under a loose stone or stick is read this far either side
 
 
+# Where in a cell a loose stone or stick lies (Dave 2026-10-20: place them appropriately). A few random spots are
+# tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:
+# sticks mostly under and around tree crowns and rarely on bare rock; stones on slopes, on bare rock and gravel, and
+# in hollows at the foot of a rise, with a few left in open ground. The odds are in data/items/drops.json. A spot on
+# ground over 45 degrees is never taken (round 4, 23 Nov 2026), so a cell that is all cliff gets fewer.
 func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, stone: bool) -> Vector3:
 	var cfg: Dictionary = _drops.get("ground_scatter", {})
 	var tries: int = int(cfg.get("spot_tries", 4))
@@ -26405,7 +26410,7 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 
 	_last_eat[peer] = now
 	_warm_bite(v, item_id)
-	kcal = int(round(float(kcal) * (0.5 + 0.5 * table.freshness(inv.numbers[slot], inv.wear[slot]))))   # stale food feeds less
+	kcal = VitalsRules.eaten_kcal(kcal, table.freshness(inv.numbers[slot], inv.wear[slot]))   # stale food feeds less (the tooltip shows the same)
 	inv.take_from_slot(slot, 1)
 	var total: float = float(v["fed"]) + float(kcal)
 
