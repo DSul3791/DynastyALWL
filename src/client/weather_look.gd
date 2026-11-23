@@ -707,7 +707,7 @@ func _process_body(delta: float) -> void:
 	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
 		_day_next_msec = now_msec + DAY_STEP_MSEC
 		tq = FrameProbe.start()
-		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)
+		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)   # starter-calendar: the calendar day sets the sun's declination, the same for all; the row's latitude (sky_row_latitude) its height
 		FrameProbe.stop("weather look: day cycle", tq)
 
 		if _client._sun != null:
@@ -731,7 +731,7 @@ func _process_body(delta: float) -> void:
 
 		if not _sky_hour_said and _client.get("game_clock") != null:
 			_sky_hour_said = true
-			FreezeWatchScript.printer.line("weather look: first sky step at game hour %.2f, day %d of the year" % [_client.game_clock.hour(), _client.game_clock.day_of_year()])
+			FreezeWatchScript.printer.line("weather look: first sky step at game hour %.2f, day %d of the year" % [_client.game_clock.hour(), _client.game_clock.day_of_year()])   # starter-calendar: a log line
 
 		if _client.flora != null:
 			tq = FrameProbe.start()
@@ -1264,7 +1264,8 @@ func _update_summits(delta: float, heading: float) -> void:
 
 	_summit_next_msec = now + 1000
 	var top: Vector3 = summits.highest_near(eye, SUMMIT_NEAR_M)
-	var phase: float = WeatherRules.year_phase(float(_client.game_clock.seconds)) * 4.0 - 0.5
+	var row: int = int(_client.get("_row_here")) if _client.get("_row_here") != null else WeatherRules.STARTER_ROW   # starter-calendar: a client with no row yet
+	var phase: float = WeatherRules.year_phase_at(float(_client.game_clock.seconds), row, int(_client.get("_eq_row")) if _client.get("_eq_row") != null else 0) * 4.0 - 0.5   # the row's own year
 	var from: int = posmod(int(floor(phase)), 4)
 	var share: float = lerpf(float(SUMMIT_SNOW_SHARE[from]), float(SUMMIT_SNOW_SHARE[(from + 1) % 4]), smoothstep(0.0, 1.0, phase - floor(phase)))
 	var want: Vector2 = Vector2(top.y, share)

@@ -197,9 +197,10 @@ static func fill_per_h(k: int, rain: float) -> float:
 	return maxf(rain_mm_h(rain) - float(SOAK_MM_H[k]), 0.0) * CATCH_SHARE / FULL_MM
 
 
-# 0 in high summer .. 1 in deep winter, for a game time in seconds (day 0 the spring equinox).
-static func winter_share(seconds: float) -> float:
-	var phase: float = fposmod(seconds / GameClock.SECONDS_PER_DAY, float(GameClock.DAYS_PER_YEAR)) / float(GameClock.DAYS_PER_YEAR)
+# 0 in high summer .. 1 in deep winter, for a game time in seconds (day 0 the spring equinox) on tile row `row` (its own year: half a
+# year on across the equator; the starter's by default).
+static func winter_share(seconds: float, row: int = Ice.Weather.STARTER_ROW, equator_row: int = 0) -> float:
+	var phase: float = Ice.Weather.year_phase_at(seconds, row, equator_row)
 	return 0.5 - 0.5 * cos(TAU * (phase - WARMEST_PHASE))
 
 
@@ -216,7 +217,7 @@ static func drain_hours(k: int, winter: float) -> float:
 func update(delta: float, rain: float, wind: float, wind_dir: Vector2, cave_open: float, material: ShaderMaterial) -> void:
 	var hours: float = delta * GameClock.RATIO / 3600.0
 	var frozen: bool = ice >= 0.5
-	var winter: float = winter_share(float(_client.game_clock.seconds)) if _client != null and _client.get("game_clock") != null else 0.0
+	var winter: float = winter_share(float(_client.game_clock.seconds), int(_client.get("_row_here")), int(_client.get("_eq_row"))) if _client != null and _client.get("game_clock") != null and _client.get("_row_here") != null else 0.0
 
 	for k in range(level.size()):
 		if PRONE[k] <= 0.0:
@@ -341,14 +342,14 @@ func update_wet(delta: float, rain: float, wind: float, sun: float, wind_dir: Ve
 		material.set_shader_parameter("wet_wind", Vector2(drawn[7], drawn[8]))
 
 
-func set_ice_from(game_s: float, zone_group: String, altitude_m: float) -> void:
+func set_ice_from(game_s: float, zone_group: String, altitude_m: float, row: int = Ice.Weather.STARTER_ROW, equator_row: int = 0) -> void:
 	var now: int = Time.get_ticks_msec()
 
 	if now < _ice_next_msec or _held >= 0.0:
 		return
 
 	_ice_next_msec = now + int(ICE_EVERY_S * 1000.0)
-	_ice_cover = Ice.cover(game_s, zone_group, maxf(altitude_m, 0.0), ICE_DEPTH_M)
+	_ice_cover = Ice.cover(game_s, zone_group, maxf(altitude_m, 0.0), ICE_DEPTH_M, 0, row, equator_row)
 	set_ice(_ice_cover)
 
 
