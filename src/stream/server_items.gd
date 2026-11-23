@@ -1612,6 +1612,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			vitals_of(peer)["energy"] = clampf(float(count), 0.0, 100.0)
 
+	elif kind == Net.ACT_ADMIN_SKILL:
+		if admin_ok.is_valid() and admin_ok.call(peer):
+			admin_set_skill(peer, a, count)
+
 	elif kind == Net.ACT_NEW_PLAYER:
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			_become_new_player(peer)
@@ -2859,7 +2863,7 @@ func working_level(peer: int, skill: String) -> float:
 
 # One verified success at `action` (a skills.json action): practice for its skill (80 percent) and the parent group (20 percent).
 # Nothing for trivial work, a cooldown per skill, a soft cap per game day; returns the points the skill gained.
-func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
+func practice(peer: int, action_name: String, difficulty: float = 1.0, own_cooldown: bool = false) -> float:
 	var def: Dictionary = _skills_cfg.get("actions", {}).get(action_name, {})
 	var records: Dictionary = _skill_records(peer)
 
@@ -2875,10 +2879,12 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	var now: int = Time.get_ticks_msec()
 	var last: Dictionary = _last_practice.get(peer, {})
 
-	if float(now - int(last.get(skill, -100000))) < float(system.get("cooldown_s", 2.0)) * 1000.0:
+	var gate: String = skill + ":" + action_name if own_cooldown else skill   # own_cooldown: the action keeps its own (a sign spotted beside a trail-following look)
+
+	if float(now - int(last.get(gate, -100000))) < float(system.get("cooldown_s", 2.0)) * 1000.0:
 		return 0.0
 
-	last[skill] = now
+	last[gate] = now
 	_last_practice[peer] = last
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	var base: float = difficulty * float(def.get("difficulty", 1.0))
@@ -2946,6 +2952,23 @@ func npc_train(peer: int, skill: String, max_level: int, cost_id: String = "", c
 		take_from(peer, cost_id, cost_n, true)
 
 	return train_skill(peer, skill, -1)
+
+
+# Admin (tests and the look rig's --shot-skill): sets the skill at place `index` in skills.json "skills" to `value` (its practice units).
+func admin_set_skill(peer: int, index: int, value: int) -> void:
+	var names: Array = (_skills_cfg.get("skills", {}) as Dictionary).keys()
+	var records: Dictionary = _skill_records(peer)
+
+	if index < 0 or index >= names.size() or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var skill: String = str(names[index])
+	var record: Dictionary = records.get(skill, {})
+	record["p"] = SkillWeb.units_for(_skills_cfg, skill, clampf(float(value), 1.0, float(SkillWeb.cap_of(_skills_cfg, skill, records))))
+	record["peak"] = maxf(float(record.get("peak", 0.0)), float(record["p"]))
+	records[skill] = record
+	_dirty = true
+	_sync_skills(peer, true)
 
 
 func _sync_skills(peer: int, force: bool) -> void:
@@ -15055,6 +15078,11 @@ func wolf_info() -> Array:
 			"meat": carried_count(peer, "raw_meat") > 0, "meat_cooked": carried_count(peer, "roast_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
 
 	return out
+
+
+# A trail sign the player spotted (protocol 153): Tracking once per sign (server_traps.gd sign_found).
+func sign_spotted(peer: int, at: Vector2) -> bool:
+	return _traps.sign_found(peer, at)
 
 
 # An animal near a player stepped from `from` to `to` (server_animals.gd snare_pass): a set trap it has just come up to may take it.

@@ -17,6 +17,7 @@ extends Node
 #                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
 #                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
 #   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
+#   --shot-skill=SKILL:VALUE  an admin skill set 6 s after connecting (look rig --skill): e.g. tracking:5 to see the trail signs (data/look/trail_signs.json)
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
@@ -105,6 +106,8 @@ var _fell_trunk: int = 0
 var _fell_stump: int = 0
 var _fell_extra: Dictionary = {}   # the fallen tree's stump extra (yaw, length, radius), kept
 var _fell_up: Vector2 = Vector2.ZERO
+var skill_set: String = ""      # --shot-skill=SKILL:VALUE: an admin skill set 6 s after connecting (e.g. tracking:5 for the trail signs)
+var _skill_sent: bool = false
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
 var _stance_msec: int = 0
@@ -310,6 +313,8 @@ func setup(owner_client, args: Array) -> void:
 			if give_item.contains(":"):
 				give_count = int(give_item.get_slice(":", 1))
 				give_item = give_item.get_slice(":", 0)
+		elif argument.begins_with("--shot-skill="):
+			skill_set = argument.trim_prefix("--shot-skill=")
 		elif argument == "--shot-piece-views":
 			piece_views = true
 		elif argument.begins_with("--shot-shadow-bias="):
@@ -424,6 +429,13 @@ func _process(delta: float) -> void:
 	if ready_held and _given and not _selected and _give_tries < 3 and now - _give_msec > 5000 and client.items.inventory != null and not client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
 		_given = false
 		print("shot runner: %s not in the pack %.1f s after the give; giving again" % [give_item, float(now - _give_msec) / 1000.0])
+
+	if skill_set.contains(":") and not _skill_sent and client.items.inventory != null and now - client.connected_msec > 6000:
+		_skill_sent = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
+		var index: int = ((parsed.get("skills", {}) as Dictionary).keys() if typeof(parsed) == TYPE_DICTIONARY else []).find(skill_set.get_slice(":", 0))
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_SKILL, index, 0, int(skill_set.get_slice(":", 1)), Vector3.ZERO)
+		print("shot runner: skill %s set (skill %d)" % [skill_set, index])
 
 	if give_item != "" and not _given and (now - client.connected_msec > 8000 or (ready_held and client.items.inventory != null and now - client.connected_msec > 1500)):
 		_given = true
