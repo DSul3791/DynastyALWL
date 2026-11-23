@@ -75,19 +75,67 @@ static func stop_at(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
 
 # The client's form (animal_view: a charge drawn at the present, carried on past its newest point): the body drawn last frame at `a0` goes
 # toward `a1`, the local player at `p`. It stops where it would enter them (stop_at), on the side it came from, never sliding through to the far
-# side; already that near (the player walked into it), it may move off but not nearer.
+# side; already that near (the player walked into it), it steps out to the edge on its own side. When the animal itself is already past them (a1 outside
+# the circle, on the far side: it ran by, or the server's player stood elsewhere), the body goes ROUND the player toward it (round_toward)
+# instead of waiting at the edge: held there, it stood in the player while the animal ran on, then jumped 42 m when let go (robot run ClZm,
+# 23 Nov 2026: a bear inside the capsule, then gone in one frame).
 static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
 	if absf(a1.y - p.y) > 2.0:
 		return a1
 
 	var d0: float = Vector2(a0.x - p.x, a0.z - p.z).length()
+	var to: Vector2 = Vector2(a1.x - p.x, a1.z - p.z)
 
-	if d0 < m:
-		var from: Vector2 = Vector2(a0.x - p.x, a0.z - p.z)
-		var to: Vector2 = Vector2(a1.x - p.x, a1.z - p.z)
-		return a1 if to.length() >= d0 and to.dot(from) > 0.0 else a0   # off, on its own side only: never across the player (gate review)
+	if to.length() < m:
+		# The animal is at the player itself (a charge's carry ending in them, or the player walked into it): it waits at the edge, and one
+		# drawn inside steps out to the edge on its own side (never across: gate review of PR #1631). Held where it was, a player walking
+		# into a standing bear stood inside it (robot run TLcL, 23 Nov 2026: 0.24 m from the player's middle).
+		if d0 < m:
+			var from: Vector2 = Vector2(a0.x - p.x, a0.z - p.z)
 
-	return stop_at(p, a0, a1, m)
+			if from.length() < 0.01:
+				from = to if to.length() >= 0.01 else Vector2.RIGHT
+
+			var edge: Vector2 = from.normalized() * m
+			return Vector3(p.x + edge.x, a0.y, p.z + edge.y)
+
+		return stop_at(p, a0, a1, m)
+
+	if _nearest(p, a0, a1) >= minf(d0, m) - 0.01:
+		return a1      # a straight way there that comes no nearer the player
+
+	if d0 > m + 0.05:
+		return stop_at(p, a0, a1, m)      # still coming to the edge
+
+	return round_toward(p, a0, a1, m)
+
+
+# How near the stretch a0 -> a1 comes to p (across the ground).
+static func _nearest(p: Vector3, a0: Vector3, a1: Vector3) -> float:
+	var seg: Vector2 = Vector2(a1.x - a0.x, a1.z - a0.z)
+	var rel: Vector2 = Vector2(p.x - a0.x, p.z - a0.z)
+	var f: float = clampf(rel.dot(seg) / seg.length_squared(), 0.0, 1.0) if seg.length_squared() > 0.000001 else 0.0
+	return (rel - seg * f).length()
+
+
+const ROUND_RAD := 0.2      # the most a body goes round the player in one frame (its chord stays outside the circle: 2 cm in at 2 m)
+
+
+# One frame of going round the player at `p` (circle `m`) from `a0` toward `a1`: along the circle at the body's own step (|a1 - a0|, at most
+# ROUND_RAD of turn), and out to the circle if the player had walked into it. Once round, stop_at lets it go on in a straight line.
+static func round_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
+	var from: Vector2 = Vector2(a0.x - p.x, a0.z - p.z)
+	var to: Vector2 = Vector2(a1.x - p.x, a1.z - p.z)
+
+	if from.length() < 0.01:
+		from = to.normalized() * 0.01      # drawn on the player's middle: out on the animal's side
+
+	var step: float = Vector2(a1.x - a0.x, a1.z - a0.z).length()
+	var r: float = maxf(move_toward(from.length(), m, step), from.length())
+	var gap: float = wrapf(to.angle() - from.angle(), -PI, PI)
+	var turn: float = signf(gap) * minf(absf(gap), minf(step / maxf(r, 0.1), ROUND_RAD))
+	var out: Vector2 = Vector2.from_angle(from.angle() + turn) * r
+	return Vector3(p.x + out.x, lerpf(a0.y, a1.y, 0.5), p.z + out.y)
 
 
 # How fast the client turns a drawn body of species `sp` (MotionBuffer.face; not big game's defend turn_rad_s, the charge's own steering), radians a second: a full turn in half a second plus its body

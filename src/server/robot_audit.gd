@@ -103,18 +103,25 @@ func _process(delta: float) -> void:
 
 		# Measured from its last change of place, not from the last look: an animal farther off, or one the tick budget skipped, steps
 		# less often and further each time (server_animals.gd hz_near, hz_mid, tick_budget_ms).
+		# The step's own time is the animal's moved_ms (stamped when it lands, server_animals.gd), not when this look saw it: a look every
+		# ANIMAL_EVERY_S sees a step up to that late, so two steps 0.25 s apart could look 0.1 s apart (robot runs 23 Nov 2026: donkey,
+		# buffalo and horse "jumps" at 0.10 s while fleeing).
+		var moved: int = int(a.get("moved_ms", -1))
+
 		if not _last.has(id):
-			_last[id] = [pos, now]
+			_last[id] = [pos, now, moved]
 		elif pos != _last[id][0]:
 			var was: Array = _last[id]
-			var dt: float = clampf(float(now - int(was[1])) / 1000.0, ANIMAL_EVERY_S, STEP_CAP_S)   # capped: a rest is not credit for a jump
+			var seen_s: float = float(now - int(was[1])) / 1000.0
+			var step_s: float = float(moved - int(was[2])) / 1000.0 if moved >= 0 and int(was[2]) >= 0 and moved > int(was[2]) else seen_s
+			var dt: float = clampf(step_s, 0.02, STEP_CAP_S)   # capped: a rest is not credit for a jump
 			var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 			var allowed: float = float(_top_mps.get(num, 15.0)) * dt * JUMP_SLACK
 
 			if near and step > maxf(allowed, JUMP_FLOOR_M) and int(a.get("state", 0)) != animals.HIDDEN:
-				print("AUDIT jump %d %s %d %.1f %.2f %s %s state %d" % [int(id), str(_names.get(num, num)), now, step, dt, str(was[0].round()), str(pos.round()), int(a.get("state", 0))])
+				print("AUDIT jump %d %s %d %.1f %.2f %s %s state %d (seen %.2f s apart, %.1f m/s against top %.1f)" % [int(id), str(_names.get(num, num)), now, step, dt, str(was[0].round()), str(pos.round()), int(a.get("state", 0)), seen_s, step / dt, float(_top_mps.get(num, 15.0))])
 
-			_last[id] = [pos, now]
+			_last[id] = [pos, now, moved]
 
 	for id in _last.keys():
 		if not seen.has(id):

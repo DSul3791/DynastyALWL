@@ -87,8 +87,30 @@ func _init() -> void:
 	# side; one the player walked into may move off, not nearer.
 	var held: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-2.0, 0, 0), Vector3(1.5, 0, 0), m)
 	check(held.is_equal_approx(Vector3(-2.0, 0, 0)), "a carried charge going past the player stays on the near side (%s)" % str(held))
-	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-1.5, 0, 0), m).is_equal_approx(Vector3(-1.5, 0, 0)) and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-0.5, 0, 0), m).is_equal_approx(Vector3(-1.0, 0, 0)), "one already inside moves off but not nearer")
-	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.9999, 0, 0), Vector3(4, 0, 0), m).x < 0.0 and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-0.5, 0, 0), Vector3(3, 0, 0), m).is_equal_approx(Vector3(-0.5, 0, 0)), "one just inside the circle, carried to the far side, stays on its own side")
+	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-1.5, 0, 0), m).is_equal_approx(Vector3(-2.0, 0, 0)) and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-0.5, 0, 0), m).is_equal_approx(Vector3(-2.0, 0, 0)), "one the player walked into steps out to the edge on its own side, never nearer")
+	var round1: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.9999, 0, 0), Vector3(4, 0, 0), m)
+	var round2: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-0.5, 0, 0), Vector3(3, 0, 0), m)
+	check(round1.x < 0.0 and absf(Vector2(round1.x, round1.z).length() - m) < 0.01 and absf(round1.z) > 0.3, "one on the circle whose animal is already past goes round the player, not through (%s)" % str(round1))
+	check(round2.x < 0.0 and Vector2(round2.x, round2.z).length() > 0.5 and absf(round2.z) > 0.1, "one the player walked into, its animal past: out and round, never across (%s)" % str(round2))
+
+	# Robot run ClZm (23 Nov 2026): a bear held at the player's edge while the server's bear ran on, then a 42 m jump when let go. Now the
+	# drawn body goes round the player and follows: frame by frame (eased at 12 m/s, as smooth() caps it), never inside, never a jump.
+	var drawn_at: Vector3 = Vector3(-2.5, 0, 0)
+	var real: Vector3 = Vector3(-2.5, 0, 0)
+	var worst_in: float = INF
+	var worst_step: float = 0.0
+
+	for frame in 240:
+		real = real.move_toward(Vector3(40.0, 0, 30.0), 12.0 / 60.0)      # the server's bear runs straight past the player and on
+		var spot: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, drawn_at, real, m)
+		var next: Vector3 = drawn_at.move_toward(spot, 12.0 * 1.3 / 60.0)
+		worst_step = maxf(worst_step, next.distance_to(drawn_at))
+		drawn_at = next
+		worst_in = minf(worst_in, Vector2(drawn_at.x, drawn_at.z).length())
+
+	check(drawn_at.distance_to(real) < 1.0, "the drawn bear catches up with the server's (%.1f m behind after 4 s)" % drawn_at.distance_to(real))
+	check(worst_in > m - 0.1, "it never came inside the player (nearest %.2f m, circle %.1f)" % [worst_in, m])
+	check(worst_step < 0.3, "and never jumped (largest frame step %.2f m)" % worst_step)
 
 	# A real charge (full ticks): it hits, and never comes inside the player, at 20 steps a second and with a server stepping only twice a second.
 	for sp in ["elephant", "mammoth", "rhino", "buffalo", "moose", "bear", "boar", "deer"]:
