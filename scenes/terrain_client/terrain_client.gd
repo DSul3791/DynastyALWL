@@ -1699,6 +1699,9 @@ func _welcome_body(info: Dictionary) -> void:
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
+	animal_view.took_off.connect(func(kind: String, at: Vector3) -> void:
+		if sound != null and sound.creatures != null:
+			sound.creatures.took_off(kind, at))      # a grouse, pheasant or guineafowl bursts up with a whirr of wings, a crow caws and flaps off
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position)      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 		if weather_look != null and weather_look.puddles != null and weather_look.puddles.shown > 0.001:
@@ -1785,6 +1788,9 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view.stroked.connect(func(at: Vector3) -> void:
 		if sound != null and sound.swim != null:
 			sound.swim.stroke_at(at))   # and their strokes where they swim
+	_player_view.landed.connect(func(at: Vector3, drop_m: float) -> void:
+		if sound != null and sound.landing != null:
+			sound.landing.land_at(at, drop_m))   # and their landing from a fall, where their feet came down
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -6299,11 +6305,14 @@ func _process(delta: float) -> void:
 	_update_weather()
 	Probe.stop("clock, weather", tp)
 
+	# The world's sounds keep the season where the player is (the row's, across the equator half a year on), not the starter island's calendar.
+	var season_here: String = _drink_season if _drink_season != "" else game_clock.season()
+
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
-		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
+		sound.ambient.set_conditions(game_clock.hour(), season_here)
 
 	if critters != null and body != null and sound != null and sound.ambient != null:
-		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
+		critters.update(delta, body.global_position, sound.ambient.weights, season_here, game_clock.hour(), float(weather.get("rain", 0.0)))
 
 	_flame_wet(delta)
 

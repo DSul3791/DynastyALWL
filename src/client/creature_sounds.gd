@@ -267,6 +267,38 @@ func _main_zone() -> String:
 	return best
 
 
+# A bird bursting up into flight (animal_view.took_off, the server's FLY state), heard where it rose: the game birds' whirr of wings
+# (ambient_life.flush, medium wings; the big slow flaps only after a crow's alarm, Dave 3 Nov 2026), a crow caws its alarm and flaps off.
+# Birds with no flight of their own (ducks, geese, gulls, hens run) and every other animal: nothing. False when nothing played.
+# Heard within TAKE_OFF_REACH_M, while the voice budget has room, one kind at most every TAKE_OFF_EVERY_MS (a covey flushing together is one whirr).
+const TAKE_OFF := {"grouse": "medium", "pheasant": "medium", "guineafowl": "medium", "crow": "crow"}
+const TAKE_OFF_REACH_M := 80.0
+const TAKE_OFF_EVERY_MS := 1500
+var _take_off_until: Dictionary = {}     # kind -> msec before which its next take-off is not heard
+
+
+func took_off(kind: String, at: Vector3) -> bool:
+	if not TAKE_OFF.has(kind) or _stage == null or _stage.get("ambient") == null or not at.is_finite() or not _stage.has_room():
+		return false
+
+	var camera: Camera3D = get_viewport().get_camera_3d() if get_viewport() != null else null
+
+	if camera != null and camera.global_position.distance_to(at) > TAKE_OFF_REACH_M:
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < int(_take_off_until.get(kind, 0)):
+		return false
+
+	var played: bool = _stage.ambient.alarm(at) if str(TAKE_OFF[kind]) == "crow" else _stage.ambient.flush(at, 0.0, str(TAKE_OFF[kind]))
+
+	if played:
+		_take_off_until[kind] = now + TAKE_OFF_EVERY_MS   # only a take-off heard holds the next one back
+
+	return played
+
+
 func _bird(at: Vector3, mood: String) -> bool:
 	if mood == "idle":
 		return _stage.ambient.call_named(BIRD_IDLE[_rng.randi_range(0, BIRD_IDLE.size() - 1)], at)
