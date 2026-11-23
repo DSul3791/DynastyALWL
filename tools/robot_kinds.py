@@ -14,6 +14,8 @@ on one machine, so their unix ms share a clock. Measures:
   slides  per robot, the SLIDE line: samples of a bought-model body moving over 0.5 m/s with a standing clip, its rate held at the top or
           bottom, or its feet off the drawn ground speed by over a third (none without the models: cloud clones leave them out)
   shoved  per robot, its own body faster than SHOVE_MPS over half-second windows: a body pushing the player along (a player runs at 9 m/s: terrain_client RUN_SPEED)
+  server  per robot, its drawn places against the server's own (AUDIT where every 0.5 s, plan kind_ asks for it), and near the robot the
+          server's gap to it against the drawn gap (a drawn body pulled toward or round the robot, or a stale place)
   inside  FAIL inside lines (a body in this robot) and the KIND line's inside_other (a body in the other drawn robot), in frames
 Exit 0 read, 2 nothing to read. It judges nothing: the numbers go to the animal thread.
 """
@@ -65,16 +67,24 @@ def read_run(d):
 		robots[r["name"]] = r
 
 	hits = []
+	where = {}   # animal id -> [(unix ms, x, z, state)] where the server had it (AUDIT where, every 0.5 s)
 	server = os.path.join(d, "server.log")
 
 	if os.path.exists(server):
 		for line in open(server, encoding="utf-8", errors="replace"):
+			w = re.match(r"AUDIT where (\d+) (\d+) (\d+) ([-\d.]+) ([-\d.]+) (-?\d+)", line)
+
+			if w:
+				where.setdefault(int(w[1]), []).append((int(w[3]), float(w[4]), float(w[5]), int(w[6])))
+				continue
+
 			m = re.match(r"AUDIT enemy_hit (\d+) (\d+) (\S+) from ([-\d.]+),([-\d.]+) player ([-\d.]+),([-\d.]+) gap (\S+) result (\S+)", line)
 
 			if m:
 				hits.append({"peer": int(m[1]), "ms": int(m[2]), "cause": m[3], "from": (float(m[4]), float(m[5])), "player": (float(m[6]), float(m[7])),
 					"gap": float(m[8]), "result": m[9]})
 
+	robots["_where"] = where
 	return robots, hits
 
 
@@ -102,6 +112,7 @@ def pct(xs, q):
 
 def report(d):
 	robots, hits = read_run(d)
+	where = robots.pop("_where", {})
 
 	if not robots:
 		print("%s: no robot logs" % d)
@@ -151,6 +162,33 @@ def report(d):
 				sum(1 for x in diffs if x > 1.0)))
 		else:
 			print("  agree: the two robots never drew the same animal at the same moment")
+
+	for name, r in robots.items():
+		off, near_drawn, near_server = [], [], []
+
+		for aid, rows in where.items():
+			drawn = r["a"].get(aid)
+
+			if not drawn:
+				continue
+
+			for ms, x, z, _st in rows:
+				p = at(drawn, ms)
+				me = at([(q[0], q[1], q[2], 0) for q in r["p"]], ms)
+
+				if p is None:
+					continue
+
+				off.append(math.hypot(p[0] - x, p[1] - z))
+
+				if me is not None and math.hypot(x - me[0], z - me[1]) < 10.0:
+					near_server.append(math.hypot(x - me[0], z - me[1]))
+					near_drawn.append(math.hypot(p[0] - me[0], p[1] - me[1]))
+
+		if off:
+			print("  server %s: drawn against the server's own place (AUDIT where): %d moments, median %.2f m, 95th %.2f m, worst %.2f m%s" % (name, len(off),
+				statistics.median(off), pct(off, 0.95), max(off), "" if not near_server else "; within 10 m of this robot: server gap median %.2f m, drawn gap median %.2f m (%d moments)" % (
+				statistics.median(near_server), statistics.median(near_drawn), len(near_server))))
 
 	by_peer = {r["peer"]: r for r in robots.values() if r["peer"] is not None}
 

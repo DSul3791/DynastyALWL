@@ -204,7 +204,7 @@ func _hook() -> void:
 # After joining (the animal view is made then): an animal that went down from a hit (animal_view.gd fell, sent with its last row's place).
 func _hook_view() -> void:
 	var view: Node = client._animal_view_node
-	view.fell.connect(func(_kind, at, _small):
+	view.fell.connect(func(_what, at, _small):
 		for id in view._bodies:
 			if (view._bodies[id]["target"] as Vector3).distance_to(at) < 0.01:
 				_fell[int(id)] = true)
@@ -3335,6 +3335,9 @@ func _kind(kind_name: String) -> void:
 		return
 
 	_kind_sp = sp
+
+	if robot_name.ends_with("1") and _share(SERVER_CONTROL) != "":
+		_write(_share(SERVER_CONTROL), "where %d" % sp)   # the server's own place of the kind every 0.5 s (AUDIT where; robot_kinds.py)
 	_give("spear", 1)
 	await _check_pack("kind spear")
 	var spear: int = _slot_of("spear")

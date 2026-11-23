@@ -86,8 +86,11 @@ inside the other robot), a SLIDE line (feet against ground: only with the bought
 cloud clones leave the models out), A lines every 100 ms (each drawn body of the kind) and P lines (itself), and BITTEN at each health drop.
 `python3 tools/robot_kinds.py <run folder>` prints the measures: jumps, slides, shoved (the robot's own body faster than a player runs over
 half-second windows), agree (the two clients' drawn places of the same animal at the same moment), each server blow (`AUDIT enemy_hit`)
-with where the struck robot drew the animal against where the server had it, and the bites with their drawn state. It judges nothing; the
-FAILs are robot_check's as in every plan.
+with where the struck robot drew the animal against where the server had it, and the bites with their drawn state. Robot 1 also writes `where <species
+number>` to the server's control file, and the robot audit then prints `AUDIT where <id> <species> <unix ms> <x> <z> <state>` every 0.5 s
+for that species: robot_kinds.py holds each robot's drawn places against the server's own between blows, and near the robot the server's
+gap to it against the drawn gap. Drawn against server numbers include the client's draw delay (it draws the past by design), not only a
+real error. It judges nothing; the FAILs are robot_check's as in every plan.
 
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
