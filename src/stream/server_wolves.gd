@@ -329,7 +329,16 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 			_make_way(m, infos, dt)   # a resting or prowling wolf a player walked into steps out of them (robot play-testers 23 Nov 2026)
 
 		pace(m, now_ms)
-		m["state"] = (ATTACK if bool(m.get("lunge", false)) else STALK) if pack["phase"] == "rush" else (ATTACK if pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false)) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
+		if pack["phase"] == "rush":
+			m["state"] = ATTACK if bool(m.get("lunge", false)) else STALK   # the battle ring: only the lunging wolf attacks, the rest circle
+		elif pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false)):
+			m["state"] = ATTACK
+		elif pack["phase"] in ["stalk", "den_guard"]:
+			m["state"] = STALK
+		elif float(m.get("play", 0.0)) > 0.0:
+			m["state"] = int(m["play_kind"])
+		else:
+			m["state"] = 1 if moved else 0
 
 
 # A pack wolf standing this think with a player inside its contact distance steps out (ServerAnimals.make_way; the pack brain moves wolves,
