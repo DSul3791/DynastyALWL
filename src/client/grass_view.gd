@@ -1174,19 +1174,25 @@ var today: int = 0                     # the game day (terrain_client sets it): 
 var _taken_branches: Dictionary = {}   # Vector2i grass cell -> [[point, game day], ...]
 
 
-func take_branch(at: Vector3, day: int = -1) -> void:
+func take_branch(at: Vector3, day: int = -1, drawn: Array = []) -> void:
 	var cell: Vector2i = _cell_at(at)
 	var list: Array = (_taken_branches.get(cell, []) as Array).filter(func(r): return int(r[1]) >= today)
 
-	for row in list:
-		if (row[0] as Vector3).distance_to(at) <= TAKEN_SAME_M:
-			_taken_branches[cell] = list
-			return   # told again (a resend as this player walks): that point is in hand already
+	if drawn.is_empty():
+		for row in list:
+			if (row[0] as Vector3).distance_to(at) <= TAKEN_SAME_M:
+				_taken_branches[cell] = list
+				return   # told again (a resend as this player walks): that point is in hand already
 
 	var row: Array = [at, today if day < 0 else day, []]
 	list.append(row)
 	_taken_branches[cell] = list
-	_take_one(row)
+
+	if drawn.is_empty():
+		_take_one(row)
+	else:   # this player's own pick: that very branch ([grass cell, record]), even when another taken point lies within TAKEN_SAME_M
+		hide_branch(drawn[0], int(drawn[1]))
+		row[2] = drawn
 
 
 # An admin world reset: every branch is back (the cells redraw as they are next built).
@@ -1224,6 +1230,8 @@ func _take_one(row: Array) -> void:
 
 			if o0 + 2 < had_buffer.size() and Vector2(had_buffer[o0], had_buffer[o0 + 2]).length() < 0.01:
 				return   # its branch is still hidden
+		else:
+			return   # its cell is not drawn now (out of range): the row waits for that cell to be built again, not a branch of the next cell
 
 	var home: Vector2i = _cell_at(at)
 	var best: Array = []
