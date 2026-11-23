@@ -6820,8 +6820,13 @@ func _fire_expire(it: Dictionary) -> bool:
 
 
 # A fire that goes (cold too long, or laid and never lit) leaves what its store still held beside it: food left cooking and spare wood are never
-# deleted with it. The store itself goes with the fire.
+# deleted with it. The store itself goes with the fire. A player's fire leaves its Campfire kit's parts too, as an empty fire picked up does
+# (_kit_parts: 16 stones, 2 sticks; coordinator 23 Nov 2026: the kit vanished with it); a camp's pit was never a kit.
 func _fire_spill_store(it: Dictionary) -> void:
+	if not it["fire"].has("camp") and int(it.get("number", 0)) == table.number_of("campfire_kit"):
+		for pair in _kit_parts(int(it["number"]), _fire_start_sticks()):
+			drop_in_world(int(pair[0]), int(pair[1]), it["pos"] + Vector3(-0.6, 0.0, 0.0))
+
 	var uid: int = int(it["fire"].get("uid", 0))
 	var box = _chests.get(uid)
 
@@ -7127,14 +7132,7 @@ func _box_holds_only(box, number: int) -> bool:
 # kit, which would give its sticks again on the next laying (to-do sweep 23 Nov 2026: lay, take the sticks, pick up, lay again made sticks
 # without end). All or nothing; false (and the player told) when it does not fit.
 func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
-	var makers: Array = recipes.makers_of(kit) if recipes != null else []
-	var parts: Array = []
-
-	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
-		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
-
-		if count > 0:
-			parts.append([int(need[0]), count])
+	var parts: Array = _kit_parts(kit, start)
 
 	if parts.is_empty():   # no recipe makes the kit (retired or renamed): the fire stays, never lost for nothing
 		_say(peer, "Empty it first.")
@@ -7151,6 +7149,20 @@ func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
 		inv.add(int(pair[0]), int(pair[1]))
 
 	return true
+
+
+# What a Campfire kit was made of less its first sticks (in the fire's store, or burnt): [[number, count], ...], empty when no recipe makes it.
+func _kit_parts(kit: int, start: int) -> Array:
+	var makers: Array = recipes.makers_of(kit) if recipes != null else []
+	var parts: Array = []
+
+	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
+		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
+
+		if count > 0:
+			parts.append([int(need[0]), count])
+
+	return parts
 
 
 func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
