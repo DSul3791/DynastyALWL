@@ -45,7 +45,7 @@ const AIR_STATES := [15]                      # a flock in the air (takes off, f
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
 var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
-var player_at: Callable          # () -> Vector3: the local player's feet, so a charge is never drawn inside them (AnimalContact.keep_off); unset in tests
+var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
@@ -589,9 +589,10 @@ func _process_body(delta: float) -> void:
 
 		var before: Vector3 = node.position
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
-		var drawn: Array = MotionBuffer.at(b["samples"], present, MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else MotionBuffer.at(b["samples"], drawn_at)   # only a charge carries on; the others stand
-		var spot: Vector3 = AnimalContact.keep_off(drawn[0], me, AnimalContact.contact_m(str(b["kind"])), before) if ahead else drawn[0]   # a charge carried on stops at the player, as the server's does
-		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_of(b["samples"]), delta)
+		var t_drawn: float = present if ahead else drawn_at
+		var drawn: Array = MotionBuffer.at(b["samples"], t_drawn, (MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else -1.0)   # only a charge carries on; the others stand
+		var spot: Vector3 = AnimalContact.stop_toward(me, before, drawn[0], AnimalContact.contact_m(str(b["kind"]))) if ahead and me != Vector3.INF else drawn[0]   # a charge carried on stops at the player, as the server's does
+		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
 		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)

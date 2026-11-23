@@ -160,7 +160,7 @@ class Probe:
 			if old_draw:
 				d = MotionBuffer.at(b["samples"], now_s - MotionBuffer.delay_s(gap))[0]
 			else:
-				d = MotionBuffer.smooth(b, MotionBuffer.at(b["samples"], now_s - MotionBuffer.clock_delay(clock))[0], MotionBuffer.speed_of(b["samples"]), frame)
+				d = MotionBuffer.smooth(b, MotionBuffer.at(b["samples"], now_s - MotionBuffer.clock_delay(clock))[0], MotionBuffer.speed_at(b["samples"], now_s - MotionBuffer.clock_delay(clock)), frame)
 
 			if b["drawn"] != Vector3.INF:
 				var mv: float = Vector2(d.x - b["drawn"].x, d.z - b["drawn"].z).length()

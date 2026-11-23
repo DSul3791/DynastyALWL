@@ -192,10 +192,42 @@ func _init() -> void:
 	check(first.x < 0.1 and absf(later.x - 3.0) < 0.05, "a 3 m jump of the target: drawn %.2f m on in that frame, %.2f m 4 s later" % [first.x, later.x])
 	check(MotionBuffer.smooth(sm, Vector3(45, 0, 0), 0.0, 1.0 / 60.0).is_equal_approx(Vector3(45, 0, 0)), "a 40 m jump is shown at once")
 
+	# A run that stops (gate review of PR #1631): the stop row is the newest point while the body, drawn 0.35 s behind, is still on the run's
+	# legs. smooth takes the speed of the leg being drawn, so the body keeps its 10 m/s to the stop instead of slowing to a crawl short of it.
+	var halt: Dictionary = {"samples": []}
+	var halt_rows: Array = []
+
+	for k in 11:
+		halt_rows.append([k * 100, Vector3(float(k), 0.0, 0.0)])
+
+	halt_rows.append([1250, Vector3(10.0, 0.0, 0.0)])   # standing: the send time (protocol 153)
+	var slowest: float = INF
+	var halt_was: Vector3 = Vector3.INF
+	var halt_end: Vector3 = Vector3.ZERO
+
+	for f in 100:
+		var now_h: float = 0.4 + float(f) / 60.0
+
+		while not halt_rows.is_empty() and float(halt_rows[0][0]) / 1000.0 <= now_h:
+			var hr: Array = halt_rows.pop_front()
+			MotionBuffer.push_row(halt, hr[1], 0.0, int(hr[0]), 0.0, INF)
+
+		var t_h: float = now_h - 0.35
+		var p_h: Vector3 = MotionBuffer.smooth(halt, MotionBuffer.at(halt["samples"], t_h)[0], MotionBuffer.speed_at(halt["samples"], t_h), 1.0 / 60.0)
+
+		if halt_was != Vector3.INF and p_h.x < 9.0 and t_h > 0.1:
+			slowest = minf(slowest, (p_h.x - halt_was.x) * 60.0)
+
+		halt_was = p_h
+		halt_end = p_h
+
+	check(slowest > 7.0 and absf(halt_end.x - 10.0) < 0.05, "a 10 m/s run drawn to its stop: never under 7 m/s before it (%.1f), ends at the stop (%.2f)" % [slowest, halt_end.x])
+
 	# The whole path, as the client gets it from a real server: an animal stepped ten times a second runs 3 s at 10 m/s (turning 40 degrees
 	# either way every 1.2 s), stands 2 s, again; rows every 0.25 s; 40 to 70 ms on the way; a share of the batches lost. The old way (a stand
 	# guessed from arrival gaps, a delay of one arrival gap plus 0.15 s, no smoothing, stood_ms once) jumped over half a metre in a frame
-	# 3 times in 30 s at 10% loss and 9 at 30%; now none, also at 50% (scratch model, same numbers: gdmirror.py).
+	# 3 times in 30 s at 10% loss and 9 at 30%; now none, also at 50% (scratch model, same numbers: gdmirror.py). The old way here is a model
+	# of the code before protocol 153 written into this test (_connection_jumps), not that code itself.
 	check(_connection_jumps(false, 0.3) >= 3, "the old way at 30%% loss jumps (%d frames over 0.5 m in 30 s)" % _connection_jumps(false, 0.3))
 
 	for loss in [0.0, 0.1, 0.3, 0.5]:
@@ -297,7 +329,7 @@ func _connection_jumps(fixed: bool, loss: float, seconds: float = 30.0) -> int:
 		var d: Vector3
 
 		if fixed:
-			d = MotionBuffer.smooth(body, MotionBuffer.at(body["samples"], now - MotionBuffer.clock_delay(c))[0], MotionBuffer.speed_of(body["samples"]), frame)
+			d = MotionBuffer.smooth(body, MotionBuffer.at(body["samples"], now - MotionBuffer.clock_delay(c))[0], MotionBuffer.speed_at(body["samples"], now - MotionBuffer.clock_delay(c)), frame)
 		else:
 			d = MotionBuffer.at(body["samples"], now - MotionBuffer.delay_s(gap))[0]
 

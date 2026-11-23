@@ -974,6 +974,7 @@ func tick(delta: float) -> void:
 
 		if near_d > active_r and not kept:
 			a["acc"] = 0.0
+			a["moving"] = false   # standing while frozen: rows_near (the spyglass sends out to 300 m) stamps it with the send time
 			continue   # frozen: nothing runs until a player comes within active_radius_m
 
 		if a.has("pack"):

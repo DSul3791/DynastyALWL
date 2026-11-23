@@ -25,6 +25,7 @@ const MAX_DELAY_S := 0.8
 const SMOOTH_HALF_S := 0.1      # a correction (smooth) is blended away with this half-life...
 const CATCH_X := 0.5            # ...catching up at most this share of the body's own speed faster than it moves
 const AHEAD_CARRY_S := 0.8      # a body drawn at the present (a committed charge, animal_view AHEAD_STATES) carries on this long past its newest point
+const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 14 m/s)
 
 
 # Local seconds minus server seconds (`off` so far, INF for none): the smallest seen, the batch that came fastest, so a point's time plus
@@ -84,7 +85,8 @@ static func push(samples: Array, pos: Vector3, heading: float, t: float, gap: fl
 
 
 # [position, heading] to draw at time `t`: between the two sent points either side of it; past the newest one, on along the last leg for
-# up to that leg's time (CARRY_S at most), or for `carry_s` when given (a body drawn at the present: AHEAD_CARRY_S), then held.
+# up to that leg's time (CARRY_S at most), or for `carry_s` when given (a body drawn at the present: AHEAD_CARRY_S; at most two legs' time and
+# at CARRY_MPS at most), then held.
 static func at(samples: Array, t: float, carry_s: float = -1.0) -> Array:
 	var first: Array = samples[0]
 
@@ -102,8 +104,13 @@ static func at(samples: Array, t: float, carry_s: float = -1.0) -> Array:
 	var newest: Array = samples[samples.size() - 1]
 	var before: Array = samples[samples.size() - 2]
 	var leg: float = maxf(float(newest[2]) - float(before[2]), 0.001)
-	var on: float = minf(t - float(newest[2]), minf(leg, CARRY_S) if carry_s < 0.0 else carry_s)
-	return [(newest[0] as Vector3) + ((newest[0] as Vector3) - (before[0] as Vector3)) * (on / leg), newest[1]]
+	var on: float = minf(t - float(newest[2]), minf(leg, CARRY_S) if carry_s < 0.0 else minf(carry_s, leg * 2.0))
+	var step: Vector3 = (newest[0] as Vector3) - (before[0] as Vector3)
+
+	if carry_s >= 0.0:
+		step = step.limit_length(CARRY_MPS * leg)   # a short leg (a charge out of a stand stamped at the send time) is not a launch
+
+	return [(newest[0] as Vector3) + step * (on / leg), newest[1]]
 
 
 # How far in the past bodies are drawn, from the recent gap between rows: a point reaches this computer up to one gap after the server
@@ -175,12 +182,19 @@ static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> 
 	return p + err
 
 
-# The ground speed between a body's two newest points (m/s), for smooth.
-static func speed_of(samples: Array) -> float:
-	if samples.size() < 2:
+# The ground speed (m/s) of the leg the drawn moment `t` is on, for smooth: past the newest point the last leg's, before the first none.
+# Not the newest leg's: the body is drawn a delay behind, so when a run's stop row has come it is still running on the legs before it
+# (gate review of PR #1631: the newest leg's speed of 0 slowed every runner to a crawl short of its stop).
+static func speed_at(samples: Array, t: float) -> float:
+	if samples.size() < 2 or t <= float(samples[0][2]):
 		return 0.0
 
-	var a: Array = samples[samples.size() - 2]
-	var b: Array = samples[samples.size() - 1]
+	var i: int = 1
+
+	while i < samples.size() - 1 and t >= float(samples[i][2]):
+		i += 1
+
+	var a: Array = samples[i - 1]
+	var b: Array = samples[i]
 	var da: Vector3 = (b[0] as Vector3) - (a[0] as Vector3)
 	return Vector2(da.x, da.z).length() / maxf(float(b[2]) - float(a[2]), 0.05)

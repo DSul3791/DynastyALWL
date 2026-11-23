@@ -13,7 +13,7 @@ extends RefCounted
 # her young. A row without these keys behaves as before: one warning, every charge real.
 
 
-const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a charge comes to a player (stop_at)
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a charge comes to a player (AnimalContact.stop_at)
 
 const WARN := 10
 const CHARGE := 11
@@ -239,7 +239,7 @@ func step(a: Dictionary, dt: float) -> void:
 
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and hurt_player.is_valid():
 					a["hit"] = true
-					a["pos"] = stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
+					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
 					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"])))   # a higher-level animal hits harder
 
 					if struck.is_valid():
@@ -267,31 +267,6 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 	var rel: Vector2 = Vector2(p.x - a0.x, p.z - a0.z)
 	var f: float = clampf(rel.dot(seg) / seg.length_squared(), 0.0, 1.0) if seg.length_squared() > 0.000001 else 0.0
 	return (rel - seg * f).length()
-
-
-# Where a charge from a0 to a1 stops when it reaches a player at `p`: the first point of the stretch `m` (the species' contact distance)
-# from them on the ground, so it stands against the player, not inside or past them (Dave 23 Nov 2026, the real server: animals were
-# "jumping right through us"). The start when it was already that close (a player under it); a1 when the stretch never comes that close.
-static func stop_at(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
-	var seg: Vector2 = Vector2(a1.x - a0.x, a1.z - a0.z)
-	var rel: Vector2 = Vector2(p.x - a0.x, p.z - a0.z)
-
-	if rel.length_squared() <= m * m:
-		return a0
-
-	var len_sq: float = seg.length_squared()
-
-	if len_sq < 0.000001:
-		return a1
-
-	var f: float = rel.dot(seg) / len_sq
-	var miss_sq: float = (rel - seg * f).length_squared()
-
-	if miss_sq >= m * m:
-		return a1
-
-	var enter: float = clampf(f - sqrt(m * m - miss_sq) / sqrt(len_sq), 0.0, 1.0)
-	return a0.lerp(a1, enter)
 
 
 func _calm(a: Dictionary, def: Dictionary) -> void:

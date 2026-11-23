@@ -42,3 +42,47 @@ static func keep_off(pos: Vector3, at: Vector3, m: float, from: Vector3 = Vector
 
 	off = off.normalized() * m
 	return Vector3(at.x + off.x, pos.y, at.z + off.y)
+
+
+# Where a charge from a0 to a1 stops when it reaches a player at `p`: the first point of the stretch `m` (the species' contact distance)
+# from them on the ground, so it stands against the player, not inside or past them (Dave 23 Nov 2026, the real server: animals were
+# "jumping right through us"). The start when it was already that close (a player under it); a1 when the stretch never comes that close.
+static func stop_at(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
+	var seg: Vector2 = Vector2(a1.x - a0.x, a1.z - a0.z)
+	var rel: Vector2 = Vector2(p.x - a0.x, p.z - a0.z)
+
+	if rel.length_squared() <= m * m:
+		return a0
+
+	var len_sq: float = seg.length_squared()
+
+	if len_sq < 0.000001:
+		return a1
+
+	var f: float = rel.dot(seg) / len_sq
+	var miss_sq: float = (rel - seg * f).length_squared()
+
+	if miss_sq >= m * m:
+		return a1
+
+	var half: float = sqrt(m * m - miss_sq) / sqrt(len_sq)
+
+	if f - half > 1.0 or f + half < 0.0:
+		return a1   # the stretch ends before the circle, or goes away from it
+
+	return a0.lerp(a1, f - half)
+
+
+# The client's form (animal_view: a charge drawn at the present, carried on past its newest point): the body drawn last frame at `a0` goes
+# toward `a1`, the local player at `p`. It stops where it would enter them (stop_at), on the side it came from, never sliding through to the far
+# side; already that near (the player walked into it), it may move off but not nearer.
+static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
+	if absf(a1.y - p.y) > 2.0:
+		return a1
+
+	var d0: float = Vector2(a0.x - p.x, a0.z - p.z).length()
+
+	if d0 < m:
+		return a1 if Vector2(a1.x - p.x, a1.z - p.z).length() >= d0 else a0
+
+	return stop_at(p, a0, a1, m)

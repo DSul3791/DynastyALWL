@@ -6,7 +6,6 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_contact.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
-const BigGame := preload("res://src/stream/server_big_game.gd")
 const AnimalContact := preload("res://src/shared/animal_contact.gd")
 
 var failures: int = 0
@@ -74,11 +73,18 @@ func _init() -> void:
 
 	# stop_at: the first point of the stretch at the contact distance; the start when already that near; the end when it passes wide.
 	var m: float = 2.0
-	check(BigGame.stop_at(Vector3(0, 0, 0), Vector3(-10, 0, 0), Vector3(10, 0, 0), m).is_equal_approx(Vector3(-2, 0, 0)), "a charge straight through stops 2 m short")
-	check(BigGame.stop_at(Vector3(0, 0, 0), Vector3(-1, 0, 0), Vector3(10, 0, 0), m).is_equal_approx(Vector3(-1, 0, 0)), "one already against the player stays where it was")
-	check(BigGame.stop_at(Vector3(0, 0, 3), Vector3(-10, 0, 0), Vector3(10, 0, 0), m).is_equal_approx(Vector3(10, 0, 0)), "one passing 3 m wide runs on")
-	var side: Vector3 = BigGame.stop_at(Vector3(0, 0, 1), Vector3(-10, 0, 0), Vector3(10, 0, 0), m)
+	check(AnimalContact.stop_at(Vector3(0, 0, 0), Vector3(-10, 0, 0), Vector3(10, 0, 0), m).is_equal_approx(Vector3(-2, 0, 0)), "a charge straight through stops 2 m short")
+	check(AnimalContact.stop_at(Vector3(0, 0, 0), Vector3(-1, 0, 0), Vector3(10, 0, 0), m).is_equal_approx(Vector3(-1, 0, 0)), "one already against the player stays where it was")
+	check(AnimalContact.stop_at(Vector3(0, 0, 3), Vector3(-10, 0, 0), Vector3(10, 0, 0), m).is_equal_approx(Vector3(10, 0, 0)), "one passing 3 m wide runs on")
+	check(AnimalContact.stop_at(Vector3(0, 0, 0), Vector3(3, 0, 0), Vector3(5, 0, 0), m).is_equal_approx(Vector3(5, 0, 0)) and AnimalContact.stop_at(Vector3(0, 0, 0), Vector3(-8, 0, 0), Vector3(-5, 0, 0), m).is_equal_approx(Vector3(-5, 0, 0)), "one going away, or stopping short of the circle, goes on")
+	var side: Vector3 = AnimalContact.stop_at(Vector3(0, 0, 1), Vector3(-10, 0, 0), Vector3(10, 0, 0), m)
 	check(absf(Vector2(side.x, side.z - 1.0).length() - m) < 0.001 and side.x < 0.0, "one passing 1 m wide stops on the circle, on the near side (%s)" % str(side))
+
+	# The client's stop_toward (gate review of PR #1631): a charge carried on past the player is held on the near side, never flipped to the far
+	# side; one the player walked into may move off, not nearer.
+	var held: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-2.0, 0, 0), Vector3(1.5, 0, 0), m)
+	check(held.is_equal_approx(Vector3(-2.0, 0, 0)), "a carried charge going past the player stays on the near side (%s)" % str(held))
+	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-1.5, 0, 0), m).is_equal_approx(Vector3(-1.5, 0, 0)) and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-0.5, 0, 0), m).is_equal_approx(Vector3(-1.0, 0, 0)), "one already inside moves off but not nearer")
 
 	# A real charge (full ticks): it hits, and never comes inside the player, at 20 steps a second and with a server stepping only twice a second.
 	for sp in ["elephant", "mammoth", "rhino", "buffalo", "moose", "bear", "boar", "deer"]:
