@@ -33,8 +33,30 @@ Dave has not played those fixes yet.
 - Trade-off of the easing: after a hard stop from 10 m/s the legs run on for about half a second (0.15 s x ln(10 / 0.25)).
 - A flock's footstep count goes up once a frame, not once for each bird.
 
+## Trot and the clip for every state (23 Nov 2026)
+
+Dave 23 Nov 2026: the animals looked "like really bad animatronics". Two causes on the client:
+
+- **Gait.** Between the walk and the run there was nothing. A wolf backing off at 5 m/s played its walk clip at the 2.5 cap (3.75 m/s
+  of legs) and slid. A row with a `trot` clip and a `trot_mps` now trots. With walk W, trot T and run R, the walk to trot switch sits
+  10% either side of (W + T) / 2, and the trot to run switch sits 10% either side of (T + R) / 2. The trot clip's speed is measured from
+  its feet like the walk and run (`feet move X m/s`). A row with no trot, or a trot speed not between its walk and run, walks or runs as
+  before. 31 species and their looks have a trot.
+- **Missing state clips.** A state with no clip fell back to role 0, the grazing clip. So a deer giving its warning (10) stood
+  grazing, and a cow lying down (19) played Idle_to_Lying over and over. models.json now names a clip for the warning (10), lying (19)
+  and drinking (21) where the file has one, plus the wolf's wind-up tell (6, AlarmBark). The fixes go into every look of a species,
+  because a look's own `clips` replace the species' clips.
+- **The clip list.** `data/animals/model_clips.json` lists every clip in every model file, with its length, read from the FBX without
+  Godot (`python3 tools/model_clips.py --scan`). `python3 tools/model_clips.py`, which merge_check also runs, fails when models.json
+  names a clip that is not in its file. It found the donkey's G0_Walk and G3_Gallop, which were not in the file, so the donkey played
+  whatever clip the name search found.
+
+Still to do: a one-shot clip on a bite, on a hit and at death (they need non-looping play), and a look at the wind-up tell on screen.
+
 ## How to confirm (Lane A)
 
 - The creature check or the game log lists `feet move X m/s` or `feet measured X m/s, too far from the row's Y` for each walk and run.
   The lynx, guineafowl, kangaroo and rabbit lines should now be near their row speeds or rejected.
 - Watch a fleeing deer, rabbit, lynx and elephant: the legs keep pace with the ground and the clip does not flick to idle.
+- Creature check strips for the wolf, deer, cow, chamois and fox (`--kinds=wolf,deer,cow,chamois,fox`): the warn and lying roles show
+  a standing, alert pose and a lying pose, not grazing. A wolf backing off after a bite trots.

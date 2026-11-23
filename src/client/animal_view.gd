@@ -891,12 +891,12 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				anim.loop_mode = Animation.LOOP_LINEAR
 				_strip_root_drift(player, anim, rig, kind, anim_name)
 
-				# An in-place walk or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
-				if (str(key) == "walk" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
+				# An in-place walk, trot or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
+				if (str(key) == "walk" or str(key) == "trot" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
 					anim.set_meta("stride_measured", true)
 					var stride_mps: float = _measure_stride(player, anim, rig)
 
-					var typed_mps: float = float(row.get(str(key) + "_mps", 0.0))   # walk_mps or run_mps: the speed the row says this clip was made at
+					var typed_mps: float = float(row.get(str(key) + "_mps", 0.0))   # walk_mps, trot_mps or run_mps: the speed the row says this clip was made at
 
 					if stride_mps >= 0.2 and stride_mps <= 25.0 and AnimalGait.stride_ok(stride_mps, typed_mps):
 						anim.set_meta("travel_mps", stride_mps)
@@ -1700,14 +1700,16 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var clip: String = str(clips.get(str(state), clips.get("0", "")))
 	var walk_mps: float = float(row.get("walk_mps", 1.5))
 	var run_mps: float = float(row.get("run_mps", 7.0))
+	var trot_mps: float = float(row.get("trot_mps", 0.0)) if clips.has("trot") else 0.0      # a row with a trot clip trots between the walk and the run
+	var typed: Dictionary = {"walk": walk_mps, "trot": trot_mps, "run": run_mps}
 	var ref: float = 0.0
-	# Standing, walking or running, with a margin either side so the clip does not flick at the edge (AnimalGait.role).
-	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps) if state != 10 and state != 12 and state != WARN_POP else ""
+	# Standing, walking, trotting or running, with a margin either side so the clip does not flick at the edge (AnimalGait.role).
+	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps, trot_mps) if state != 10 and state != 12 and state != WARN_POP else ""
 	b["gait_role"] = moving
 
 	if moving != "":
 		clip = str(clips.get(moving, clip))
-		ref = run_mps if moving == "run" else walk_mps
+		ref = float(typed[moving])
 
 	if count_gait:
 		b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
@@ -1744,13 +1746,15 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = 0.0
 
 	# A moving animal plays a moving clip: a model with a walk but no run (or the other way) uses the one it has, not its idle pose.
-	clip = AnimalGait.moving_clip(roles, role) if role == "walk" or role == "run" else str(roles.get(role, roles.get("0", "")))
+	var gait: bool = role == "walk" or role == "trot" or role == "run"
+	clip = AnimalGait.moving_clip(roles, role) if gait else str(roles.get(role, roles.get("0", "")))
 
-	if (role == "walk" or role == "run") and not roles.has(role):
-		if roles.has("walk") or roles.has("run"):
-			ref = walk_mps if role == "run" else run_mps      # the other moving clip stands in: played by its own speed
-		else:
-			ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
+	if gait and not roles.has(role):
+		ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
+
+		for other in typed:
+			if roles.has(other) and str(roles[other]) == clip:
+				ref = float(typed[other])      # another moving clip stands in: played by its own speed
 
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)

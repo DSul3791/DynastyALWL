@@ -2,7 +2,7 @@ extends SceneTree
 
 # Creature check (MikeW, 7 Nov 2026): one creature model at a time, built by the game's own animal view (src/client/animal_view.gd
 # _make_model), so what it shows is what the game draws. It writes a report and one picture strip per creature:
-#   rest pose, then every role the model row names (graze 0, alert 3, warn 10, charge 11, recover 12, walk, run), each paused 40% into its clip,
+#   rest pose, then every role the model row names (graze 0, alert 3, wind-up 6, warn 10, charge 11, recover 12, lie 19, drink 21, walk, trot, run), each paused 40% into its clip,
 #   side view on a ground plane with a 1 m grid, so size, facing, feet on the ground and a broken clip (a tube, a body in the floor) show at once.
 # The report lists, per creature: file found, drawn from the model or the code body, length, the clip picked for each role, how tall
 # the skeleton stands in each role against its rest pose, and the animal view's own notes (skin rebuilt, clip rescaled, clip refused).
@@ -14,8 +14,8 @@ extends SceneTree
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
-const ROLE_ORDER := ["rest", "0", "3", "10", "11", "12", "15", "walk", "run", "swim"]
-const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "swim": "swim", "walk": "walk", "run": "run"}
+const ROLE_ORDER := ["rest", "0", "3", "6", "10", "11", "12", "15", "19", "21", "walk", "trot", "run", "swim"]
+const ROLE_NAMES := {"rest": "rest pose", "0": "graze", "3": "alert", "6": "wind-up", "10": "warn", "11": "charge", "12": "recover", "15": "fly", "19": "lie", "21": "drink", "swim": "swim", "walk": "walk", "trot": "trot", "run": "run"}
 
 
 func _init() -> void:
