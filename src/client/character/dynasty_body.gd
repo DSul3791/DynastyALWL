@@ -361,6 +361,13 @@ func _build_animations() -> void:
 				_torch_carry(carry, skeleton)
 				library.add_animation(game_name + "_torch", carry)
 
+			# The bow raised and drawn (protocol 162, other players' archers looked idle): the same gait, both arms held in the aim.
+			if game_name in BOW_AIM_CLIPS:
+				for pose in ["bow_raised", "bow_drawn"]:
+					var aim: Animation = made.duplicate(true)
+					_bow_aim(aim, skeleton, pose == "bow_drawn")
+					library.add_animation(game_name + "_" + pose, aim)
+
 		_libraries[model] = library
 		FreezeWatchScript.printer.line("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
 
@@ -658,6 +665,38 @@ static func _torch_carry(anim: Animation, skel: Skeleton3D) -> void:
 
 		for k in range(1, anim.track_get_key_count(wrist)):
 			anim.track_set_key_value(wrist, k, still)
+
+
+# The bow in the aim (no bow clip in Dave's file; 23 Nov 2026, so another player's archer no longer looks idle): the LEFT arm straight out ahead at
+# shoulder height holding the grip, the RIGHT hand on the string, before the chest while raised, back at the jaw with the elbow high behind
+# at full draw. Skeleton space (left +X, up +Y, front +Z) on the clip's first key, as _torch_carry; the wrists held still.
+const BOW_AIM_CLIPS := ["idle", "walk"]
+const BOW_LEFT_UPPER := Vector3(0.2, 0.05, 0.98)
+const BOW_LEFT_FORE := Vector3(0.12, 0.05, 0.99)
+const BOW_RIGHT_UPPER_RAISED := Vector3(-0.35, -0.35, 0.87)
+const BOW_RIGHT_FORE_RAISED := Vector3(0.55, 0.3, 0.78)
+const BOW_RIGHT_UPPER_DRAWN := Vector3(-0.6, 0.12, -0.79)
+const BOW_RIGHT_FORE_DRAWN := Vector3(0.55, 0.2, 0.81)
+
+
+static func _bow_aim(anim: Animation, skel: Skeleton3D, drawn: bool) -> void:
+	if skel == null:
+		return
+
+	var spine: Array = ["Hips", "Spine", "Spine1", "Spine2"]
+	_aim_bone(anim, skel, spine + ["LeftShoulder", "LeftArm"], "LeftForeArm", BOW_LEFT_UPPER)
+	_aim_bone(anim, skel, spine + ["LeftShoulder", "LeftArm", "LeftForeArm"], "LeftHand", BOW_LEFT_FORE)
+	_aim_bone(anim, skel, spine + ["RightShoulder", "RightArm"], "RightForeArm", BOW_RIGHT_UPPER_DRAWN if drawn else BOW_RIGHT_UPPER_RAISED)
+	_aim_bone(anim, skel, spine + ["RightShoulder", "RightArm", "RightForeArm"], "RightHand", BOW_RIGHT_FORE_DRAWN if drawn else BOW_RIGHT_FORE_RAISED)
+
+	for wrist_bone in ["LeftHand", "RightHand"]:
+		var wrist: int = _rot_track(anim, wrist_bone)
+
+		if wrist >= 0 and anim.track_get_key_count(wrist) > 0:
+			var still: Variant = anim.track_get_key_value(wrist, 0)
+
+			for k in range(1, anim.track_get_key_count(wrist)):
+				anim.track_set_key_value(wrist, k, still)
 
 
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).
