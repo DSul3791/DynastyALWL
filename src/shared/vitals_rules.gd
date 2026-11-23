@@ -11,6 +11,12 @@ static func load_config() -> Dictionary:
 	return parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 
 
+# What a bite of food worth `kcal` fresh really feeds at `freshness` (0 rotten to 1 fresh): stale food feeds less, down to half. The server's eat
+# and the item tooltip both use it, so the tooltip's kcal is what eating it gives.
+static func eaten_kcal(kcal: int, freshness: float) -> int:
+	return int(round(float(kcal) * (0.5 + 0.5 * clampf(freshness, 0.0, 1.0))))
+
+
 # Hunger points one item gives (0 = not food).
 static func food_value(item_id: String, cfg: Dictionary) -> int:
 	var food: Dictionary = cfg.get("food", {})

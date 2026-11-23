@@ -6593,7 +6593,8 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 		text += "\nEaten raw it ruins your health for a day. Cook it at a fire first."
 
 	if kcal > 0:
-		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal
+		var fed: int = VitalsRules.eaten_kcal(kcal, table.freshness(number, fill_ml))   # what eating it gives now: stale food feeds less (server_items._eat)
+		text += "\n%d kcal%s  (right click when held, or Eat / use)" % [fed, " (%d fresh)" % kcal if fed < kcal else ""]
 
 	if heal > 0:
 		text += "\nrestores %d health  (right click when held, or Eat / use)" % heal
