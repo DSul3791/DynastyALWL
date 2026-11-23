@@ -129,9 +129,9 @@ func _init() -> void:
 	for p in p1:
 		for link in p.get("links", []):
 			var pts: PackedVector2Array = link
-			var a: Vector2 = pts[0].snapped(Vector2(0.01, 0.01))
-			var b: Vector2 = pts[pts.size() - 1].snapped(Vector2(0.01, 0.01))
-			var k: String = str([a, b]) if a < b else str([b, a])
+			var e0: Vector2 = pts[0].snapped(Vector2(0.01, 0.01))
+			var e1: Vector2 = pts[pts.size() - 1].snapped(Vector2(0.01, 0.01))
+			var k: String = str([e0, e1]) if e0 < e1 else str([e1, e0])
 			twice += 1 if ends.has(k) else 0
 			ends[k] = true
 
