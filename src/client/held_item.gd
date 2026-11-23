@@ -966,13 +966,15 @@ var _melee_cfg: Dictionary = {}
 
 
 func _animal_in_reach() -> bool:
-	if not animal_aim_rows.is_valid() or _camera == null or not holding or held_number() == 0 or _inv.is_broken(held_slot):
+	var bare: bool = held_number() == 0   # empty hands punch (melee.json bare_hand, Dave 23 Nov 2026)
+
+	if not animal_aim_rows.is_valid() or _camera == null or carrying_log or (not bare and _inv.is_broken(held_slot)):
 		return false
 
 	if _melee_cfg.is_empty():
 		_melee_cfg = MeleeRules.load_config()
 
-	var reach: float = float(MeleeRules.blow(_inv.table.entry(held_id()), _melee_cfg)["reach_m"])
+	var reach: float = float((_melee_cfg.get("bare_hand", {}) as Dictionary).get("reach_m", 1.8)) if bare else float(MeleeRules.blow(_inv.table.entry(held_id()), _melee_cfg)["reach_m"])
 	var eye: Vector3 = _camera.global_position
 	var look: Vector3 = -_camera.global_transform.basis.z
 	var flat: Vector2 = Vector2(look.x, look.z).normalized()
@@ -989,7 +991,7 @@ func _animal_in_reach() -> bool:
 
 # One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
 func _melee_strike() -> void:
-	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot if held_number() != 0 else -1, 0, 0, -_camera.global_transform.basis.z)   # -1: a bare-handed punch
 
 
 func _is_axe() -> bool:

@@ -2866,7 +2866,11 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	if def.is_empty() or not _characters.has(_peer_key.get(peer, "")):
 		return 0.0
 
-	var skill: String = str(def.get("skill", ""))
+	var skill: String = SkillWeb.trainable(_skills_cfg, str(def.get("skill", "")), records)   # a locked skill's practice goes to its nearest unlocked parent
+
+	if skill == "":
+		return 0.0
+
 	var system: Dictionary = _skills_cfg.get("system", {})
 	var now: int = Time.get_ticks_msec()
 	var last: Dictionary = _last_practice.get(peer, {})
@@ -3238,7 +3242,11 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 # food or a stone weakly; PROVISIONAL MELEE-1). The item is the slot the client names as in hand, checked first (Dave 13 Nov 2026); a broken one
 # does nothing, and logs on the shoulder leave no hand free.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+	if slot >= inv.slot_count or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+		return
+
+	if slot < 0 or inv.numbers[slot] == 0:
+		_punch(peer, direction)
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -3263,6 +3271,8 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var skill_action: String = _blow_action(table.id_of(inv.numbers[slot]), entry)
+	damage *= blow_skill_mult(peer, skill_action)   # exactly 1.0 at skill 1, so a new player's blows are as before
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)   # {"at": where it struck} from the server (or true from older hooks), {} or false for a miss
 	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
@@ -3273,8 +3283,70 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		var at: Vector3 = (answer as Dictionary).get("at", ahead) if answer is Dictionary else ahead
 		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
 		_wear_slot(peer, inv, slot, "strike")
+		practice(peer, skill_action)
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+# What a fighting skill does to a blow: its factor over the factor this character would have at skill 1, so a blow at skill 1 is exactly
+# as before whatever the attributes (the trait effect shows only as the skill grows), up to about max_factor at 100.
+func blow_skill_mult(peer: int, action_name: String) -> float:
+	var skill: String = str(_skills_cfg.get("actions", {}).get(action_name, {}).get("skill", ""))
+
+	if skill == "" or skill_level.is_valid():
+		return 1.0
+
+	return skill_factor(peer, action_name) / maxf(SkillWeb.factor(_skills_cfg, skill, 1.0, attributes_of(peer)), 0.01)
+
+
+# The skills.json action a blow with this item trains (the design's web: Fighting -> Brawling (Hand to hand), Swordplay, Spear, ...; Knives;
+# Swordplay -> Rapier, Broadswords; Knives -> Daggers). Anything else in hand (a mace, a club, an axe, a stone) trains Fighting. PROVISIONAL.
+static func _blow_action(id: String, entry: Dictionary) -> String:
+	var weapon: String = str(entry.get("weapon_class", ""))
+
+	if weapon == "sword":
+		if id.contains("rapier"):
+			return "strike_rapier"
+
+		if id.contains("greatsword") or id.contains("broadsword") or id.contains("longsword"):
+			return "strike_broadsword"
+
+		return "strike_sword"
+
+	if id.contains("dagger"):
+		return "strike_dagger"
+
+	if weapon in ["spear", "javelin", "fish_spear"]:
+		return "strike_spear"
+
+	if str(entry.get("tool_class", "")) == "knife":
+		return "strike_knife"
+
+	return "strike_fighting"
+
+
+# A bare-handed blow (Dave 23 Nov 2026: punching "should be a basic thing ... a skill like hand to hand"): melee.json bare_hand's damage times the
+# Hand to hand skill factor (skills.json action punch), at the animal in front within its reach; one that lands trains the skill. PROVISIONAL.
+func _punch(peer: int, direction: Vector3) -> void:
+	var row: Dictionary = _melee_cfg.get("bare_hand", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_strike.get(peer, -100000)) < float(row.get("recover_ms", STRIKE_COOLDOWN_MS)):
+		return
+
+	_last_strike[peer] = now
+	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var damage: float = maxf(float(row.get("damage", 2.0)) * blow_skill_mult(peer, "punch"), 0.5)
+	var reach: float = float(row.get("reach_m", 1.8))
+	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)
+	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
+
+	if hit:
+		var at: Vector3 = (answer as Dictionary).get("at", eye + direction.normalized() * minf(reach, 1.5)) if answer is Dictionary else eye + direction.normalized() * minf(reach, 1.5)
+		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
+		practice(peer, "punch")
+
+	_note_work(peer, "")   # a punch tires like any blow (BUG-001)
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
