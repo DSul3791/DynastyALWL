@@ -599,6 +599,7 @@ func setup(item_table, store_dir: String) -> void:
 	var loaded_next: int = _next_id
 	_load_changed = {}
 	_split_old_barrels()   # after the reset: the barrels it turns are written to their area files at the first save
+	_lift_out_of_slabs()   # stacks dropped on a foundation before 23 Nov 2026 lay inside it: onto its top, written at the first save
 	_carts.after_load()
 	_traps.after_load()   # each trap's held catch laid again by it
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
@@ -4115,6 +4116,19 @@ func _log_surround() -> void:
 				elif not _logs.has(sid):
 					keep["i%d" % sid] = true   # on a floor or a deck: in the way, never moved
 					_log_static("i%d" % sid, _log_capsule(_log_r(other)), _log_xf(other), true)
+			elif other.has("struct") and not other["struct"].has("site") and _is_floor_def(_structures.get(str(other["struct"]["kind"]), {})):
+				# A foundation or floor piece (physical world audit 23 Nov 2026: a log rolled off the ground through a foundation's slab): a box of its
+				# footprint from its top down (a foundation's to under the ground, the wheel's lift with it), so a rolling log meets its edge or rides on it.
+				var key: String = "f%d" % sid
+				keep[key] = true
+
+				if not _logs.has_static(key):
+					var def: Dictionary = _structures[str(other["struct"]["kind"])]
+					var top: float = PlacementRules.anchor_top(def)
+					var deep: float = top + (PlacementRules.LIFT_MAX_STEPS * PlacementRules.LIFT_STEP_M + 0.5 if bool(def.get("foundation", false)) else 0.0)
+					var slab: BoxShape3D = BoxShape3D.new()
+					slab.size = Vector3(float(def.get("footprint_x", 4.0)), deep, float(def.get("footprint_z", 4.0)))
+					_log_static(key, slab, Transform3D(Basis(Vector3.UP, deg_to_rad(float(other["struct"].get("yaw", 0.0)))), other["pos"] + Vector3(0.0, top - deep * 0.5, 0.0)))
 			elif other.has("boulder") or other.has("tree"):
 				# A boulder's key carries its stones left: a worked rock that has shrunk (BoulderWear) gets a new, smaller ball and trim_statics drops the old one.
 				var static_key: String = "i%d:%d" % [sid, int(other["count"])] if other.has("boulder") else "i%d" % sid
@@ -7973,6 +7987,78 @@ func _split_old_barrels() -> void:
 		elif it["struct"].has("autoload"):
 			it["struct"].erase("autoload")   # a Water barrel does not autoload
 			_load_changed[id] = true
+
+
+# A foundation or a floor piece (the storey above's floor): what a stack or log can lie on.
+func _is_floor_def(def: Dictionary) -> bool:
+	return bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor"
+
+
+# Before 23 Nov 2026 a stack dropped on a foundation came down to the ground under it, inside the slab where nobody could see or reach it (physical
+# world audit, PR #1709; coordinator 23 Nov 2026: the live world is loaded by the next build). At every load each loose stack whose spot is inside
+# a finished foundation's slab (over its footprint, under its top and no more than LIFT_SLAB_M under it) is lifted onto that top. Only its height
+# changes: nothing is made, merged or removed, and a stack already on a top is left, so a second load does nothing. One pass over the records.
+const LIFT_SLAB_M := 1.5   # how far under a foundation's top a buried stack may lie: the slab (top_m) and the wheel's lift (1.0 m), with room
+var lifted_at_load: int = 0   # stacks _lift_out_of_slabs lifted at the last load (the load line, tests)
+
+
+func _lift_out_of_slabs() -> void:
+	lifted_at_load = 0
+	var slabs: Dictionary = {}   # 4 m cell -> [[pos, def, yaw], ...] of the finished foundations over it
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or it["struct"].has("site"):
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if not bool(def.get("foundation", false)):
+			continue
+
+		var reach: float = 0.5 * Vector2(float(def.get("footprint_x", 4.0)), float(def.get("footprint_z", 4.0))).length()
+
+		for cx in range(int(floor((it["pos"].x - reach) / 4.0)), int(floor((it["pos"].x + reach) / 4.0)) + 1):
+			for cz in range(int(floor((it["pos"].z - reach) / 4.0)), int(floor((it["pos"].z + reach) / 4.0)) + 1):
+				var cell: Vector2i = Vector2i(cx, cz)
+
+				if not slabs.has(cell):
+					slabs[cell] = []
+
+				slabs[cell].append([it["pos"], def, float(it["struct"].get("yaw", 0.0))])
+
+	if slabs.is_empty():
+		return
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("showroom") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("tilt") or it.has("fall"):
+			continue
+
+		var cell: Vector2i = Vector2i(int(floor(it["pos"].x / 4.0)), int(floor(it["pos"].z / 4.0)))
+
+		if not slabs.has(cell):
+			continue
+
+		var y: float = float(it["pos"].y)
+		var best: float = NAN
+
+		for slab in slabs[cell]:
+			var top: float = float(slab[0].y) + PlacementRules.anchor_top(slab[1])
+
+			if y < top - 0.02 and y >= top - LIFT_SLAB_M and PlacementRules.holds(slab[1], {"pos": slab[0], "yaw": slab[2]}, it["pos"]) and (is_nan(best) or top > best):
+				best = top
+
+		if not is_nan(best):
+			it["pos"] = Vector3(it["pos"].x, best, it["pos"].z)
+			_load_changed[id] = true
+			_dirty = true
+			lifted_at_load += 1
+
+	if lifted_at_load > 0:
+		print("server_items: lifted %d stacks out of foundations onto their tops" % lifted_at_load)
 
 
 func _load_world_items() -> void:
