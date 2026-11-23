@@ -4353,8 +4353,15 @@ func _run_screen_audit() -> void:
 				items.toggle_character()
 				_unfill_character_worst()]]
 
-		for journal_page in [items.journal.INDEX, items.journal.GOALS, items.journal.MAP]:
+		for journal_page in [items.journal.INDEX, items.journal.GOALS, items.journal.SKILLS, items.journal.MAP]:
 			shows.append(["journal " + journal_page, func() -> void: items.journal.show_page(journal_page), func() -> void: items.journal.close()])
+
+		shows.append(["journal skills, everything shown", func() -> void:   # every skill listed, each at a class top with every note
+			_fill_character_worst()
+			items.journal.skill_selected = "broadswords"
+			items.journal.show_page(items.journal.SKILLS), func() -> void:
+			items.journal.close()
+			_unfill_character_worst()])
 
 		for menu_page in game_menu._pages.keys():
 			shows.append(["menu " + str(menu_page), func() -> void:

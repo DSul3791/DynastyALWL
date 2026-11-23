@@ -1,7 +1,7 @@
 extends RefCounted
 
 # The Journal (docs/design/PLAYER_JOURNAL_GOALS_UI.md decisions 1, 2, 4, 5 and 6; GA-87): one window in the Inventory/Crafting look (the same backdrop,
-# leather panels, brass title plates, raised rows and fonts, art_kit.gd), with three pages: the Index (its home, a table of contents), Goals and Map.
+# leather panels, brass title plates, raised rows and fonts, art_kit.gd), with four pages: the Index (its home, a table of contents), Goals, Skills and Map.
 # J opens the Index, G opens Goals, M opens Map; in the Journal J goes back to the Index and, from the Index, closes it; Esc closes. The Index entries
 # are buttons that go to the same pages. One window: a page change swaps the panels' contents, never opens a second window.
 # Goals: every goal in the authored order, done and not done, in a scrolling list; selecting one shows its how-to, its reward (coins as the purse shows
@@ -9,14 +9,20 @@ extends RefCounted
 # is shown: goals track and pay on the server whether or not they are looked at (decision 4). Back steps through the goals looked at.
 # Map: the charcoal sketch of only the land this character has surveyed (PLAYER_CARTOGRAPHY_MAP_DESIGN.md; map_page.gd draws map_knowledge.gd, which
 # the server fills, protocol 120). One map page lives as long as the Journal, so its drawn blocks are kept between openings.
+# Skills (Dave 23 Nov 2026): a table of every skill, Name, Skill level and Class (Basic 1-24, Advanced 25-49, Expert 50-74, Master 75-100), in
+# alphabetical order at first; clicking a heading sorts by it, again the other way (skill_table.gd). The table scrolls. Selecting a row shows
+# that skill on the right: its level and cap, what it needs next (training, with who teaches it, or the skill that opens it) and the four classes.
+# It has no key of its own: the Index opens it.
 
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const MapPageScript := preload("res://src/client/map_page.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
+const SkillTable := preload("res://src/client/ui/goals/skill_table.gd")
 const INDEX := "index"
 const GOALS := "goals"
+const SKILLS := "skills"
 const MAP := "map"
 const LEFT := Rect2(24, 24, 690, 908)                  # the Pack panel's place and size
 const RIGHT := Rect2(736, 24, 1160, 908)               # the You and Craft panels' span
@@ -39,6 +45,11 @@ var _whole: VBoxContainer
 var _list_scroll: ScrollContainer
 var map_knowledge = null                                # MapKnowledge (terrain_client.gd sets it): what this character has surveyed
 var _map_page: MapPageScript                            # made at the first look and kept
+var skill_sort: String = SkillTable.NAME                # the Skills table's column, and which way (view only)
+var skill_descending: bool = false
+var skill_selected: String = ""                         # the skill whose details show
+var _skills_cfg: Dictionary = {}                        # skills.json, read at the first look
+var _skill_scroll: ScrollContainer
 
 
 class JournalFrame extends Control:
@@ -157,6 +168,8 @@ func _column(panel: Rect2) -> VBoxContainer:
 func _show() -> void:
 	_build()
 	_root.visible = true
+	var kept_scroll: int = _skill_scroll.scroll_vertical if page == SKILLS and _skill_scroll != null and is_instance_valid(_skill_scroll) else -1
+	_skill_scroll = null
 
 	for column in [_left, _right, _whole]:
 		for child in column.get_children():
@@ -173,6 +186,10 @@ func _show() -> void:
 		_frame.panels = [[LEFT, "GOALS"], [RIGHT, "HOW TO"]]
 		_show_goal_list()
 		_show_details()
+	elif page == SKILLS:
+		_frame.panels = [[LEFT, "SKILLS"], [RIGHT, "SKILL"]]
+		_show_skill_table()
+		_show_skill_details()
 	elif page == MAP:
 		_frame.panels = [[WHOLE, "MAP"]]
 		_show_map()
@@ -180,7 +197,19 @@ func _show() -> void:
 		_frame.panels = [[LEFT, "JOURNAL"], [RIGHT, "INDEX"]]
 		_show_index()
 
+	if kept_scroll > 0 and _skill_scroll != null:   # a refresh (the server's skills message) keeps the place in the table
+		var scroll: ScrollContainer = _skill_scroll
+		_layer.get_tree().process_frame.connect(func() -> void:
+			if is_instance_valid(scroll):
+				scroll.scroll_vertical = kept_scroll, CONNECT_ONE_SHOT)
+
 	_frame.queue_redraw()
+
+
+# The skills message arrived (inventory_view.gd _on_skills): a Skills page on show reads the new levels.
+func refresh_skills() -> void:
+	if open and page == SKILLS:
+		_show()
 
 
 func _text(text: String, px: int, colour: Color, face: String = "garamond") -> Label:
@@ -256,14 +285,14 @@ func _link(text: String, on_press: Callable) -> Button:
 func _show_index() -> void:
 	_left.add_child(_section("Contents"))
 
-	for entry in [[GOALS, "Goals", "G"], [MAP, "Map", "M"]]:
+	for entry in [[GOALS, "Goals", KeyBindings.label("goals")], [SKILLS, "Skills", ""], [MAP, "Map", KeyBindings.label("map")]]:
 		var which: String = entry[0]
-		_left.add_child(_row("%s      %s" % [entry[1], entry[2]], false, true, null, func() -> void: show_page(which)))
+		_left.add_child(_row(("%s      %s" % [entry[1], entry[2]]).strip_edges(), false, true, null, func() -> void: show_page(which)))
 
 	var filler: Control = Control.new()
 	filler.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_left.add_child(filler)
-	_left.add_child(_text("J  Index      G  Goals      M  Map      Esc  Close", 18, ArtKit.DIM))
+	_left.add_child(_text(_keys_line([["journal", "Index"], ["goals", "Goals"], ["map", "Map"]]), 18, ArtKit.DIM))
 	_right.add_child(_section("Goals"))
 	var total: int = _book.rows.size()
 	_right.add_child(_text("%d of %d goals done." % [_book.done_count(), total] if total > 0 else "No goals have arrived yet.", 24, ArtKit.CREAM))
@@ -275,6 +304,9 @@ func _show_index() -> void:
 			history.clear()
 			show_page(GOALS)))
 
+	_right.add_child(_section("Skills"))
+	var best: Array = SkillTable.sorted(_skill_cfg(), SkillTable.rows(_skill_cfg(), _items.skill_rows), SkillTable.LEVEL, true)
+	_right.add_child(_text("Best: %s %d, %s." % [best[0]["name"], int(best[0]["level"]), best[0]["class"]] if not best.is_empty() and int(best[0]["level"]) > 1 else "Nothing practised yet: you learn by doing.", 24, ArtKit.CREAM))
 	_right.add_child(_section("Map"))
 	_right.add_child(_text("Not drawn yet: see the Map page.", 24, ArtKit.CREAM))
 
@@ -395,4 +427,197 @@ func _show_map() -> void:
 
 	_map_page.follow = true   # each opening starts on where you stand
 	_whole.add_child(_map_page)
-	_whole.add_child(_text("Wheel  Zoom      Drag  Move      J  Index      G  Goals      Esc  Close", 18, ArtKit.DIM))
+	_whole.add_child(_text("Wheel  Zoom      Drag  Move      " + _keys_line([["journal", "Index"], ["goals", "Goals"]]), 18, ArtKit.DIM))
+
+
+# The key line at a page's foot, with the player's own keys: "J  Index      G  Goals      Esc  Close".
+func _keys_line(actions: Array) -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for action in actions:
+		parts.append("%s  %s" % [KeyBindings.label(str(action[0])), str(action[1])])
+
+	parts.append("Esc  Close")
+	return "      ".join(parts)
+
+
+func _skill_cfg() -> Dictionary:
+	if _skills_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
+		_skills_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"skills": {}, "system": {}}
+
+	return _skills_cfg
+
+
+# A heading press: sort by that column; the column already sorted by turns the other way.
+func sort_skills(column: String) -> void:
+	skill_descending = not skill_descending if column == skill_sort else false
+	skill_sort = column
+	_show()
+
+
+func select_skill(id: String) -> void:
+	skill_selected = id
+	_show()
+
+
+# The three cells of a table line, the name taking the room left; the level and class columns are as wide at every text size as their text needs.
+func _cells(controls: Array) -> HBoxContainer:
+	var line: HBoxContainer = HBoxContainer.new()
+	line.add_theme_constant_override("separation", _items.text_px(12))
+
+	for i in controls.size():
+		var cell: Control = controls[i]
+		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL if i == 0 else Control.SIZE_SHRINK_END
+		cell.custom_minimum_size.x = 0.0 if i == 0 else float(_items.text_px(130 if i == 1 else 140))
+		line.add_child(cell)
+
+	return line
+
+
+func _show_skill_table() -> void:
+	var cfg: Dictionary = _skill_cfg()
+	var rows: Array = SkillTable.sorted(cfg, SkillTable.rows(cfg, _items.skill_rows), skill_sort, skill_descending)
+
+	if skill_selected == "" or not rows.any(func(r): return str(r["id"]) == skill_selected):
+		skill_selected = str(rows[0]["id"]) if not rows.is_empty() else ""
+
+	# The headings: buttons that sort, the sorted one marked with which way.
+	var heads: Array = []
+
+	for column in [[SkillTable.NAME, "Name"], [SkillTable.LEVEL, "Skill level"], [SkillTable.CLASS, "Class"]]:
+		var which: String = column[0]
+		var head: Button = Button.new()
+		head.flat = true
+		head.focus_mode = Control.FOCUS_NONE
+		head.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		head.text = str(column[1]) + ((" ▼" if skill_descending else " ▲") if which == skill_sort else "")
+		head.tooltip_text = "Sort by %s (click again for the other way)" % str(column[1]).to_lower()
+		head.add_theme_font_override("font", ArtKit.font("cinzel"))
+		head.add_theme_font_size_override("font_size", _items.text_px(20))
+		head.add_theme_color_override("font_color", ArtKit.HEADING)
+		head.add_theme_color_override("font_hover_color", ArtKit.GOLD_BRIGHT)
+		head.pressed.connect(func() -> void: sort_skills(which))
+		heads.append(head)
+
+	var heading: HBoxContainer = _cells(heads)
+	heading.name = "SkillHeadings"
+	_left.add_child(heading)
+	_skill_scroll = ScrollContainer.new()
+	_skill_scroll.name = "SkillTable"
+	_skill_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_left.add_child(_skill_scroll)
+	var list: VBoxContainer = VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 3)
+	_skill_scroll.add_child(list)
+
+	for r in rows:
+		list.add_child(_skill_line(r))
+
+	if rows.is_empty():
+		list.add_child(_text("No skills yet. What you learn by doing will be listed here.", 22, ArtKit.CREAM))
+
+	_left.add_child(_text(_keys_line([["journal", "Index"]]), 18, ArtKit.DIM))
+
+
+# One table line: a raised row (gold-edged when chosen) holding the three cells. A locked skill is dim and shows what opens it; a skill at the
+# top of its class shows its level in blue, with "needs training to go further" in the tooltip and the details.
+func _skill_line(r: Dictionary) -> Button:
+	var id: String = str(r["id"])
+	var lit: bool = str(r["locked"]) == ""
+	var entry: Button = _row("", id == skill_selected, lit, null, func() -> void: select_skill(id))
+	entry.name = "Skill_" + id
+	entry.clip_text = false
+	entry.tooltip_text = _skill_note(r)
+	var px: int = 22
+	var name_cell: Label = _text(str(r["name"]), px, ArtKit.CREAM if lit else ArtKit.DIM, "garamond_semibold")
+	var level_cell: Label = _text(str(int(r["level"])) if lit else "locked", px, (Color(0.6, 0.85, 1.0) if bool(r["wall"]) else ArtKit.CREAM) if lit else ArtKit.DIM, "garamond_semibold")
+	var class_cell: Label = _text(str(r["class"]) if lit else "", px, ArtKit.CREAM, "garamond_semibold")
+	var cells: HBoxContainer = _cells([name_cell, level_cell, class_cell])
+
+	for cell in [name_cell, level_cell, class_cell]:
+		(cell as Label).autowrap_mode = TextServer.AUTOWRAP_OFF
+		(cell as Label).vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		(cell as Label).mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	cells.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cells.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cells.offset_left = float(_items.text_px(14))
+	cells.offset_right = -float(_items.text_px(10))
+	entry.add_child(cells)
+	entry.custom_minimum_size.y = maxf(entry.custom_minimum_size.y, float(_items.text_px(px)) * 1.7)
+	return entry
+
+
+# What a skill needs next, in a few words: the tooltip of its line and the first line under its name.
+func _skill_note(r: Dictionary) -> String:
+	if bool(r["planned"]):
+		return "Planned: nothing practises it yet."
+
+	if str(r["locked"]) != "":
+		return "Locked: needs %s." % str(r["locked"])
+
+	if bool(r["wall"]):
+		var who: Array = SkillTable.teachers_of(str(r["id"]))
+		return "Needs training to go further" + (" (ask " + ", ".join(who) + ")." if not who.is_empty() else ".")
+
+	if int(r["level"]) >= int(r["cap"]):
+		return "At the top."
+
+	return "Rises by use, up to %d." % (int(r["cap"]) - 1)
+
+
+func _show_skill_details() -> void:
+	var cfg: Dictionary = _skill_cfg()
+	var rows: Array = SkillTable.rows(cfg, _items.skill_rows)
+	var found: Array = rows.filter(func(r): return str(r["id"]) == skill_selected)
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_right.add_child(scroll)
+	var card: VBoxContainer = VBoxContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_constant_override("separation", 10)
+	scroll.add_child(card)
+
+	if not found.is_empty():
+		var r: Dictionary = found[0]
+		card.add_child(_text(str(r["name"]), 34, ArtKit.HEADING, "cinzel_bold"))
+
+		if str(r["locked"]) == "":
+			card.add_child(_text("Skill level %d of %d, %s." % [int(r["level"]), int(cfg.get("system", {}).get("max_value", 100)), str(r["class"])], 24, ArtKit.CREAM))
+
+		card.add_child(_text(_skill_note(r), 22, Color(0.6, 0.85, 1.0) if bool(r["wall"]) else ArtKit.CREAM))
+		var more: PackedStringArray = PackedStringArray()
+
+		if str(r["locked"]) == "" and not bool(r["planned"]) and int(r["to_next"]) >= 0 and int(r["level"]) < int(r["cap"]) - 1:
+			more.append("%d%% of the way to %d." % [int(r["to_next"]), int(r["level"]) + 1])
+
+		if int(r["trained"]) > 0:
+			more.append("Trained %d time%s." % [int(r["trained"]), "" if int(r["trained"]) == 1 else "s"])
+
+		if bool(r["today"]):
+			more.append("Practised today" + (", %d%% of the day's gain left." % int(r["day_left"]) if int(r["day_left"]) >= 0 else "."))
+
+		if bool(r["rusty"]):
+			more.append("Rusty: unused for a while. Practice brings it back quickly.")
+
+		for line in more:
+			card.add_child(_text(line, 22, ArtKit.CREAM))
+
+		var lessons: Array = SkillTable.lessons_of(str(r["id"]))
+
+		if not lessons.is_empty():
+			card.add_child(_section("Lessons"))
+
+			for lesson in lessons:
+				card.add_child(_text(str(lesson), 22, ArtKit.CREAM))
+
+	card.add_child(_section("Classes"))
+
+	for line in SkillTable.class_lines(cfg):
+		card.add_child(_text(line, 22, ArtKit.CREAM))
+
+	card.add_child(_text("Training before the top of a class takes you to the start of the next.", 22, ArtKit.DIM))

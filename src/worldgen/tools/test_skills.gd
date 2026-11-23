@@ -123,6 +123,32 @@ func _init() -> void:
 		at += 4.0 * 86400.0
 
 	check(Web.train_problem(cfg, "woodcutting", bands, at) == "already at the top", "no fourth training")
+
+	# The four classes (Dave 23 Nov 2026): every skill 1 to 100, Basic 1-24, Advanced 25-49, Expert 50-74, Master 75-100. Use stays in Basic;
+	# each training starts the next class; the classes line up with the caps.
+	var named: Array = []
+
+	for value in [1, 24, 25, 49, 50, 74, 75, 100]:
+		named.append(Web.class_of(cfg, float(value)))
+
+	check(named == ["Basic", "Basic", "Advanced", "Advanced", "Expert", "Expert", "Master", "Master"], "classes by value: 1 %s, 24 %s, 25 %s, 49 %s, 50 %s, 74 %s, 75 %s, 100 %s" % named)
+	check(Web.class_of(cfg, 24.99) == "Basic" and Web.class_of(cfg, top) == "Basic", "a year of use stays Basic (%.6f)" % top)
+	check(Web.class_of(cfg, Web.effective(cfg, "woodcutting", bands)) == "Master" and int(cfg["system"]["max_value"]) == 100, "three trainings reach Master, and the top is 100")
+	var master_day: float = at
+
+	for d in 900:
+		for n in 100:
+			Web.practice(cfg, "woodcutting", {}, bands, 1.0, master_day + float(d) * 86400.0 + float(n))
+
+	var master_top: float = Web.effective(cfg, "woodcutting", bands)
+	check(int(master_top) == 100 and Web.class_of(cfg, master_top) == "Master", "in Master, use goes all the way to 100 (%.2f)" % master_top)
+	check(Web.gain(cfg, "woodcutting", {}, bands, 1.0, master_day + 901.0 * 86400.0) == 0.0, "and adds nothing past it")
+	check(Web.class_rank(cfg, "Basic") == 0 and Web.class_rank(cfg, "Master") == 3 and Web.class_rank(cfg, "") == -1, "classes sort Basic, Advanced, Expert, Master")
+	bad = cfg.duplicate(true)
+	bad["system"]["classes"][2]["from"] = 51
+	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("does not start at 50")), "a class that does not start where its training starts is reported")
+	bad["system"]["classes"].pop_back()
+	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("do not cover")), "classes that do not reach 100 are reported")
 	var idle: Dictionary = {}
 	Web.train(cfg, "woodcutting", idle, day0)
 	idle["woodcutting"]["p"] = 1.0   # months idle: practice decayed far under the floor

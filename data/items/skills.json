@@ -28,7 +28,14 @@
 		"train_near_cap": 25,
 		"train_cooldown_days": 3.0,
 		"teacher_margin": 10,
-		"send_every_s": 5.0
+		"send_every_s": 5.0,
+		"classes_note": "Dave 23 Nov 2026: every skill runs 1 to 100 in four classes. A class starts at its value; use rises inside it, a trainer opens the next (docs/design/SKILL_TRAINING.md). Each class after the first starts at step x its place.",
+		"classes": [
+			{"name": "Basic", "from": 1},
+			{"name": "Advanced", "from": 25},
+			{"name": "Expert", "from": 50},
+			{"name": "Master", "from": 75}
+		]
 	},
 	"traits": [
 		"strength",
