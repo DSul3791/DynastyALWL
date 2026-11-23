@@ -397,7 +397,7 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 	var pace: float = flat.length()
 	rig.set_meta("torch_in_hand", str(b.get("held_kind", "")) == "torch")
 	rig.set_meta("torch_left", str(b.get("left_kind", "")) == "torch")
-	rig.set_meta("bow_pose", bow_pose(b))   # the bow raised or drawn (162): both arms in the aim (dynasty_body.gd _bow_aim)   # the arm carries it up in front (dynasty_body.gd _torch_carry), as held_item.gd torch_in_left
+	rig.set_meta("bow_pose", arm_pose(b))   # the bow raised or drawn (162): both arms in the aim (dynasty_body.gd _bow_aim)   # the arm carries it up in front (dynasty_body.gd _torch_carry), as held_item.gd torch_in_left
 	var clip: String = AvatarDriver.clip_for(rig, stance, flat, node.global_transform.basis, true, pace, rig.current(), carrying, step)
 	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": (state & ASLEEP) != 0, "stance": stance, "drink_stamp": 1 + (int(b.get("more", 0)) >> MORE_MEAL_SHIFT)}, pace, step)
 
@@ -413,7 +413,7 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 		if work != "" and not swimming and not carrying and (state & ASLEEP) == 0 and stance == StanceScript.STAND and player.has_animation(work):
 			player.play(work, 0.05)   # the blow restarts it, as the player's own body (terrain_client.gd held.swing_serial)
 			# The server hears of a blow at its impact: started SWING_LEAD_S before the impact frame, the drawn blow lands close to now.
-			var share: float = HeldItem.PICK_HIT_AT if work == "pick_overhead" else (HeldItem.HIT_AT if work == "chop" else 0.0)
+			var share: float = HeldItem.PICK_HIT_AT if work == "pick_overhead" else (HeldItem.HIT_AT if work == "chop" else (CAST_RELEASE_AT if work == "throw" else 0.0))
 			player.seek(maxf(player.get_animation(work).length * share - SWING_LEAD_S, 0.0), true)
 			player.speed_scale = 1.0
 			return
@@ -489,6 +489,7 @@ const LINE_POINTS := 10
 const LINE_SAG := 0.12              # metres of sag per metre of line
 const FLOAT_R := 0.035
 const CAST_ON := 1 << 24            # server_players.gd cast_code
+const CAST_RELEASE_AT := 0.8           # the cast (throw clip, Charged_Spell_Cast): the forward flick from the hands high overhead; started SWING_LEAD_S before it, past the clip's early bow
 const CAST_STEP_M := 0.12
 
 
@@ -590,6 +591,16 @@ static func tip_of(model: Node3D) -> Vector3:
 	return best
 
 
+# The arms' held pose for the gait (avatar_driver.gd clip_for): the bow's, else "shield_up" while a shield in the left hand is raised, else "".
+static func arm_pose(b: Dictionary) -> String:
+	var bow: String = bow_pose(b)
+
+	if bow != "":
+		return bow
+
+	return "shield_up" if str(b.get("left_kind", "")) == "shield" and (int(b.get("more", 0)) & MORE_SHIELD_UP) != 0 else ""
+
+
 # "bow_raised", "bow_drawn" or "" (the bow down, or not a bow in hand): the more byte's bow flags (the client's held_item.gd hand_flags, 162).
 static func bow_pose(b: Dictionary) -> String:
 	if str(b.get("held_kind", "")) != "bow":
@@ -674,7 +685,10 @@ func _show_left(b: Dictionary, distance: float) -> void:
 	elif kind == "torch":
 		HeldItem.stand_torch(model, b["rig"])
 	elif kind == "shield":
-		model.rotation = Vector3(0.0, 0.0, 0.0) if (int(b.get("more", 0)) & MORE_SHIELD_UP) == 0 else Vector3(deg_to_rad(-70.0), 0.0, 0.0)   # B held: up before the body
+		if (int(b.get("more", 0)) & MORE_SHIELD_UP) == 0:
+			model.rotation = Vector3.ZERO
+		else:
+			model.global_basis = (b["node"] as Node3D).global_basis.orthonormalized()   # B held: the arm across the chest (the shield_up gait), its face and boss ahead (-Z), upright
 
 
 var lit_most: Callable = func() -> int: return LIT_MOST
@@ -826,7 +840,12 @@ static func work_clip(number: int, item_table) -> String:
 	if kind == "kit" or kind == "bow" or kind == "torch":
 		return ""
 
-	return "pick_overhead" if str(item_table.entry(item_table.id_of(number)).get("tool_class", "")) == "pick" else "chop"
+	var tool_class: String = str(item_table.entry(item_table.id_of(number)).get("tool_class", ""))
+
+	if tool_class == "rod":
+		return "throw"   # the cast: arms up and over, then forward (the chop read as a stoop with the rod along the ground: Lane A S7, 23 Nov 2026)
+
+	return "pick_overhead" if tool_class == "pick" else "chop"
 
 
 # How the player's own body holds an item (held_item.gd _mount_model's kind): from items.json weapon_class, tool_class and kind.
