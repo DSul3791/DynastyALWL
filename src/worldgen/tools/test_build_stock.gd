@@ -43,6 +43,16 @@ func _on_ground(id: String) -> int:
 	return n
 
 
+func _last_clay(clay_n: int) -> int:
+	var last: int = 0
+
+	for k in items._items:
+		if int(items._items[k].get("number", 0)) == clay_n and not items._items[k].has("struct"):
+			last = maxi(last, int(k))
+
+	return last
+
+
 func _walls() -> int:
 	var n: int = 0
 
@@ -236,6 +246,16 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 	var memo_again: Array = items._site_view(1, items._items[site])
 	items._site_memo = null
 	check(memo_first == view and memo_again == view, "during a sync the site's list is the same as outside it (%s, %s)" % [str(memo_first), str(view)])
+	items.drop_in_world(clay_n, 2, site_spot + Vector3(1.0, 0.0, 1.0))   # loose stock beside the builder, found through the sync's cells
+	var walked: Array = items._site_view(1, items._items[site])
+	items._site_memo = {}
+	items._file_site_cells(false)
+	var celled: Array = items._site_view(1, items._items[site])
+	items._site_memo = null
+	items._site_cells = {}
+	check(celled.any(func(row): return str(row[0]) == "mortar" and int(row[2]) >= 2), "the clay beside the builder counts as mortar on hand through the cells (%s)" % str(celled))
+	check(not walked.is_empty() and celled == walked, "the sync's cells find the same stock as a walk over every record (%s, %s)" % [str(celled), str(walked)])
+	items._take_from(_last_clay(clay_n), 2)
 	items._sync_world_items()
 	check(items._site_memo == null, "the sync drops its on-hand counts when it ends")
 	_give("clay", 1)

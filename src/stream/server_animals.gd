@@ -3666,6 +3666,10 @@ func _thunder_cfg() -> Dictionary:
 	return cfg.get("thunder", {})
 
 
+const THUNDER_ASK_MS := 250
+var _thunder_asked_ms: int = -THUNDER_ASK_MS
+
+
 func _thunder_tick(players: Array) -> void:
 	var tc: Dictionary = _thunder_cfg()
 
@@ -3675,8 +3679,11 @@ func _thunder_tick(players: Array) -> void:
 	var now_g: float = float(game_seconds.call())
 	var now_ms: int = Time.get_ticks_msec()
 	var flush_m: float = float(tc.get("flush_m", 800.0))
+	# The strikes are asked for THUNDER_ASK_MS apart, over the whole game time since the last ask (none is missed; a clap starts up to that much
+	# later): asking for every player every frame took an eighth of the server's main thread at 16 players (load test 23 Nov 2026).
+	var ask: bool = now_ms - _thunder_asked_ms >= THUNDER_ASK_MS
 
-	if not is_nan(_thunder_t) and now_g > _thunder_t:
+	if ask and not is_nan(_thunder_t) and now_g > _thunder_t:
 		var seen: Dictionary = {}
 
 		for p in players:
@@ -3687,7 +3694,10 @@ func _thunder_tick(players: Array) -> void:
 					seen[key] = true
 					_claps.append([s[0], now_ms, {}])
 
-	_thunder_t = now_g
+	if ask:
+		_thunder_t = now_g
+		_thunder_asked_ms = now_ms
+
 	var kept: Array = []
 	var sound_mps: float = float(tc.get("sound_mps", 343.0))
 
