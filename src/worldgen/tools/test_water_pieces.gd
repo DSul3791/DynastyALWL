@@ -110,6 +110,12 @@ func _init() -> void:
 	items._structures["test_spring"]["kit"] = "test_spring_kit"
 	check(answers.size() == 2 and int(answers[0][2]) == -1 and str(answers[0][3]) == "Too many water sources stand here already.", "the ghost's ask gets placing's refusal (%s)" % str(answers))
 	check(answers.size() == 2 and int(answers[1][2]) == -1 and str(answers[1][3]) == "", "and an empty answer where it may go")
+	# Judged where placing sets it: on the lowest ground under its footprint, not at the ghost's ray height (a well on a slope).
+	var flat: Callable = items.ground_height
+	items.ground_height = func(x, _z): return 10.0 + 0.5 * (x - 400.0)
+	var seated: Array = items._water_ghost_spot(items._structures["test_well"].merged({"kind": "test_well"}), Vector3(400.0, 13.0, 400.0), 0)
+	items.ground_height = flat
+	check(absf((seated[0] as Vector3).y - 13.0) > 0.5 and (seated[0] as Vector3).y <= 10.01, "the ghost's spot is seated on the ground under it, as placing seats it (%s)" % str(seated))
 
 	# A ring of level channels: the fourth would close a loop.
 	put("test_level_channel", Vector3(201.0, 10.0, 200.0), 0.0)

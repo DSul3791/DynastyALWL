@@ -6929,11 +6929,21 @@ func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 
 # Where placing judges a water piece the ghost stands at (`at`, turned `yaw_deg`): snapped as _place snaps it, set down on the lowest ground under
 # it (seated_ground over the dug and filled ground) unless it stands on a foundation, then onto a pipe's end or joint (_tank_spot_on_pipe), as
-# _place_structure does before _water_refusal. [spot, yaw]. shortcut: the cave floor _place reads in a cave is not read here (a well in a cave
-# is judged from the hill's ground); keep this beside _place's own steps if they change.
+# _place_structure does before _water_refusal. [spot, yaw]. shortcut: in a cave the ghost's own height (the cave floor it stands on) is kept,
+# not seated over the cave floor's corners as _place does; keep this beside _place's own steps if they change.
+var _ghost_rows: Array = []          # the foundation rows the water ghost snaps to, read at most every GHOST_ROWS_MS (a whole-world walk)
+var _ghost_rows_msec: int = -100000
+const GHOST_ROWS_MS := 1000
+
+
 func _water_ghost_spot(def: Dictionary, at: Vector3, yaw_deg: int) -> Array:
 	var kit_id: String = str(def.get("kit", ""))
-	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows(), 0)
+
+	if Time.get_ticks_msec() - _ghost_rows_msec >= GHOST_ROWS_MS:
+		_ghost_rows = _foundation_rows()
+		_ghost_rows_msec = Time.get_ticks_msec()
+
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _ghost_rows, 0)
 	var spot: Vector3 = on_grid[0]
 	var yaw: int = int(on_grid[1])
 
@@ -6941,8 +6951,9 @@ func _water_ghost_spot(def: Dictionary, at: Vector3, yaw_deg: int) -> Array:
 		var site_edits: Array = (edits_near.call(spot, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
 		var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
 		var ground: float = float(surface.call(spot.x, spot.z))
+		var generated: float = float(ground_height.call(spot.x, spot.z))
 
-		if not is_nan(ground):
+		if not is_nan(ground) and _cave_ground(spot, generated) == generated:   # in a cave the hill's ground is not under it
 			spot.y = PlacementRules.seated_ground(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw)), surface, ground)
 
 	return [_tank_spot_on_pipe(str(def.get("kind", "")), spot, yaw), yaw]
