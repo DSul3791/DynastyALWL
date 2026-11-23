@@ -18,8 +18,10 @@ const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
 const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out too (a route's print spacing starts at its home)
-const HEAP_PROBE_M := 0.6        # a heap's ground is the lowest of three probes this far apart (a trunk or boulder under one is skipped)
+const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
 const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
+const PELLET_LIFT_M := 0.02      # pellets sit this far up: on top of the leaf litter and the latrine's bare patch, not under them
+const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)
 
 var cfg: Dictionary = {}
 var ground_height: Callable        # (x, z) -> the ground's height there, NAN when not known
@@ -39,6 +41,8 @@ var on_spot: Callable              # (kind: String, spot: Vector3) when a sign i
 var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
 var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
 var _glow_texture: Texture2D = null
+var last_spot: Vector3 = Vector3.INF   # the last sign spotted, on the ground (the look rig aims its views there)
+var glow_keep: bool = false        # the look rig (--skill tracking:N): the glow stays lit for the pictures instead of fading
 var _spot_msec: int = 0            # the next spot not before this: one sign every spot_gap_s, the server's practice cooldown (skills.json cooldown_s 2 s)
 
 
@@ -252,7 +256,7 @@ static func shows(kind: String, level: int, c: Dictionary) -> bool:
 
 func _draw(player: Vector3, level: int) -> void:
 	var reach: float = reach_m(level, cfg)
-	var rows: Dictionary = {"pellet": [], "deer_pellet": [], "scrape": [], "print": []}
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 
 	for s in _signs:
@@ -282,10 +286,15 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 			if is_nan(y):
 				return
 
+			var spread: float = float(cfg.get("heap_m", 0.22))
+
+			if kind == "latrine":   # a latrine lies on a patch the rabbits scratch bare (a dark earth patch, over litter and short grass)
+				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.5, spot.y), TAU * _h01(spot, 7), 1.0])
+
 			for n in count:
-				var r: float = 0.18 * sqrt(_h01(spot, 30 + n))
+				var r: float = spread * sqrt(_h01(spot, 30 + n))
 				var a: float = TAU * _h01(spot, 60 + n)
-				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y, spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
+				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y + PELLET_LIFT_M, spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
 		"scrape":
 			var y2: float = _heap_ground(spot)
 
@@ -312,17 +321,22 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 					(rows["print"] as Array).append(piece)   # yaw: the direction on the ground (x, z) the print's long side lies along
 
 
-# The ground under a small heap: the lowest of the spot and two probes HEAP_PROBE_M either side, NAN when none is known.
+# The ground under a small heap: the middle of the spot and two probes HEAP_PROBE_M either side (so one probe on a trunk or boulder
+# is passed over, and on a slope the heap sits on the ground at its centre, not buried by the lowest), NAN when none is known.
 func _heap_ground(spot: Vector2) -> float:
-	var low: float = NAN
+	var ys: Array = []
 
 	for d in [Vector2.ZERO, Vector2(HEAP_PROBE_M, 0.0), Vector2(-HEAP_PROBE_M * 0.5, HEAP_PROBE_M)]:
 		var y: float = float(ground_height.call(spot.x + d.x, spot.y + d.y))
 
-		if not is_nan(y) and (is_nan(low) or y < low):
-			low = y
+		if not is_nan(y):
+			ys.append(y)
 
-	return low
+	if ys.is_empty():
+		return NAN
+
+	ys.sort()
+	return float(ys[(ys.size() - 1) >> 1])   # the middle one (the lower of two)
 
 
 func _fill(layer: String, rows: Array) -> void:
@@ -356,13 +370,23 @@ func _mesh(layer: String) -> Mesh:
 	match layer:
 		"pellet", "deer_pellet":
 			var sphere: SphereMesh = SphereMesh.new()
-			sphere.radius = 0.008
-			sphere.height = 0.014
+			sphere.radius = 0.011   # a little over a real pellet (about 1 cm across), so a heap reads from standing height
+			sphere.height = 0.018
 			sphere.radial_segments = 6
 			sphere.rings = 3
 			material.albedo_color = PELLET_COLOR if layer == "pellet" else DEER_PELLET_COLOR
 			sphere.material = material
 			return sphere
+		"latrine_bed":
+			var bed: CylinderMesh = CylinderMesh.new()
+			bed.top_radius = 0.3
+			bed.bottom_radius = 0.34
+			bed.height = 0.015
+			bed.radial_segments = 10
+			bed.rings = 1
+			material.albedo_color = LATRINE_BED_COLOR
+			bed.material = material
+			return bed
 		"scrape":
 			var patch: BoxMesh = BoxMesh.new()
 			patch.size = Vector3(0.3, 0.006, 0.2)
@@ -401,7 +425,9 @@ func _spot(player: Vector3, level: int) -> void:
 		spotted += 1
 		_spot_msec = Time.get_ticks_msec() + int(float(cfg.get("spot_gap_s", 2.2)) * 1000.0)   # the next one of a cluster after the server can train again
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
-		_glow(where, 1.6 if str(s[0]) == "prints" else 0.9)
+		last_spot = where
+		print("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
+		_glow(where, 1.6 if str(s[0]) == "prints" else 1.0)
 
 		if on_spot.is_valid():
 			on_spot.call(str(s[0]), where)
@@ -427,7 +453,7 @@ func _glow(at: Vector3, size: float) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(size, size)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.roughness = 1.0   # lit like the ground round it: lighter by day, as dark as the rest at night (no glowing marker)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_texture = _glow_texture
 	var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
@@ -439,9 +465,14 @@ func _glow(at: Vector3, size: float) -> void:
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	node.position = at + Vector3(0.0, 0.03, 0.0)
 	add_child(node)
-	var glow_s: float = float(cfg.get("glow_s", 1.6))
-	var peak: float = float(cfg.get("glow_alpha", 0.3))
+	var glow_s: float = float(cfg.get("glow_s", 4.0))
+	var peak: float = float(cfg.get("glow_alpha", 0.45))
 	var tween: Tween = node.create_tween()
-	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.3)
-	tween.tween_property(material, "albedo_color:a", 0.0, glow_s * 0.7)
+	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.15)
+
+	if glow_keep:
+		return
+
+	tween.tween_interval(glow_s * 0.55)
+	tween.tween_property(material, "albedo_color:a", 0.0, glow_s * 0.3)
 	tween.tween_callback(node.queue_free)

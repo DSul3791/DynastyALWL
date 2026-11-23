@@ -435,7 +435,10 @@ func _process(delta: float) -> void:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
 		var index: int = ((parsed.get("skills", {}) as Dictionary).keys() if typeof(parsed) == TYPE_DICTIONARY else []).find(skill_set.get_slice(":", 0))
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_SKILL, index, 0, int(skill_set.get_slice(":", 1)), Vector3.ZERO)
-		print("shot runner: skill %s set (skill %d)" % [skill_set, index])
+		print("shot runner: skill %s set (skill %d)" % [skill_set, index])   # skill N: its place in skills.json "skills" (the admin action's index)
+
+		if skill_set.begins_with("tracking") and client.trail_signs != null:
+			client.trail_signs.glow_keep = true   # a spotted sign's glow stays lit for the pictures
 
 	if give_item != "" and not _given and (now - client.connected_msec > 8000 or (ready_held and client.items.inventory != null and now - client.connected_msec > 1500)):
 		_given = true
@@ -1862,6 +1865,14 @@ func _run_view(now: int) -> void:
 		_hide_other_items()
 
 	if _view_msec == 0:
+		if not _subject_set and skill_set.begins_with("tracking") and client.trail_signs != null and client.trail_signs.last_spot != Vector3.INF:
+			_subject = client.trail_signs.last_spot   # --skill tracking:N: the views look at the sign the player spotted (its glow kept lit)
+			_subject_set = true
+			print("shot runner: views aimed at the spotted sign at %s" % str(_subject))
+
+		if not _subject_set and skill_set.begins_with("tracking"):
+			print("shot runner: WARNING no sign spotted yet (none within spot_m of the player, or the settle was short): the views look 4 m north as usual")
+
 		if not _subject_set:
 			var p: Vector3 = client.body.global_position
 			_subject = Vector3(p.x, _ground(p.x, p.z - 4.0), p.z - 4.0)
