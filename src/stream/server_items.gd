@@ -1754,6 +1754,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
 var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
+var cave_floor: Callable                # set by the server: (Vector3) -> the floor of the cave air at a point (a passage, chamber or a mouth's cut), NAN outside one; ground_height does not know the caves
 var edits_near: Callable                # set by the server: (point, radius) -> [[kind 0 dig / 1 fill, centre, radius]], the saved ground edits near a point, oldest first (ground_ops.gd); ground_height does not know them
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
@@ -4871,8 +4872,8 @@ func _piece_under(feet: Vector3) -> bool:
 
 # The ground height at a column with the saved edits laid over the generated surface, oldest first: a dig sphere the surface passes through lowers it to the
 # sphere's bottom, a fill sphere that reaches the surface raises it to the sphere's top (a pocket under the surface or a blob in the air leaves it). NAN where not loaded.
-func _edited_height(x: float, z: float, edits: Array) -> float:
-	var surface: float = float(ground_height.call(x, z))
+func _edited_height(x: float, z: float, edits: Array, base: float = NAN) -> float:
+	var surface: float = float(ground_height.call(x, z)) if is_nan(base) else base   # base: the ground before the edits, when it is not the generated surface (a cave floor)
 
 	if is_nan(surface):
 		return NAN
@@ -6223,6 +6224,18 @@ func _foundation_rows() -> Array:
 const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placement: the widest footprint and a 65 roof panel's run, with the edit spheres
 
 
+const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot
+
+
+# The ground under a spot: the cave floor when the spot is under the generated surface `surface` and in a cave's air, else `surface`.
+func _cave_ground(at: Vector3, surface: float) -> float:
+	if not cave_floor.is_valid() or is_nan(surface) or at.y >= surface - 0.05:
+		return surface
+
+	var floor_y: float = float(cave_floor.call(at + Vector3(0.0, CAVE_PROBE_UP_M, 0.0)))
+	return surface if is_nan(floor_y) else floor_y
+
+
 func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0, blueprint: Dictionary = {}) -> void:
 	var number: int = 0
 	var kit_id: String = ""
@@ -6321,6 +6334,18 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	# read as the old ground and a foundation on it was "too far above or below the ground". Every height check below reads the saved digs and fills too.
 	var site_edits: Array = (edits_near.call(at, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
 	var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
+
+	# In a cave the ground under the piece is the cave floor (physical world audit round 6, 23 Nov 2026: the generated surface is the hill over it, so
+	# every piece in a cave was refused as "too far above or below the ground" while the ghost showed it fits). A corner off the cave's air (in its
+	# wall) reads the hill and the piece is refused as too steep, as on a rock face.
+	var generated: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else NAN
+
+	if not on_base and not is_nan(generated) and _cave_ground(at, generated) != generated:
+		var cave_y: float = at.y
+		surface = func(x: float, z: float) -> float:
+			var floor_y: float = float(cave_floor.call(Vector3(x, cave_y + CAVE_PROBE_UP_M, z)))
+			return _edited_height(x, z, site_edits) if is_nan(floor_y) else _edited_height(x, z, site_edits, floor_y)
+
 	var ground: float = float(surface.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
 	if is_nan(ground):
@@ -12543,7 +12568,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 	var spot: Vector3 = at
 
 	if not on_wall:
-		var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+		var ground: float = _cave_ground(at, float(ground_height.call(at.x, at.z))) if ground_height.is_valid() else at.y   # a torch in a cave goes into the cave floor
 
 		if is_nan(ground) or absf(ground - at.y) > 0.6:
 			_say(peer, "Push it into the ground.")
