@@ -20,7 +20,6 @@ const GameClock := preload("res://src/shared/game_clock.gd")
 const DIR := "user://test_weather_walk"
 const SEED := 574716103
 const ROW := 4
-const BAND_M := 10.0                                   # terrain_server WEATHER_BAND_M
 const COAST := Vector3(0.0, 10.0, 71360.0)
 const PEAK := Vector3(400.0, 900.0, 71360.0)
 
@@ -38,9 +37,9 @@ func client_sky(t: float, pos: Vector3) -> Dictionary:
 	return Weather.state(SEED, t, "temperate", pos.y, 0.0, ROW, 0)
 
 
-# What the server reads for a spot (terrain_server._weather_here: one answer per BAND_M of height).
+# What the server reads for a spot (terrain_server._weather_here: Weather.band_height, the same helper).
 func server_sky(t: float, pos: Vector3) -> Dictionary:
-	return Weather.state(SEED, t, "temperate", float(int(round(maxf(pos.y, 0.0) / BAND_M))) * BAND_M, 0.0, ROW, 0)
+	return Weather.state(SEED, t, "temperate", Weather.band_height(pos.y), 0.0, ROW, 0)
 
 
 func make(key: String):
@@ -123,6 +122,7 @@ func _init() -> void:
 
 	check(split_hours > 30 and split_t > 0.0, "up the mountain it snows while it rains at the coast on about %d hours of the year" % (split_hours * 3))
 	check(band_off * 1000 <= hours * spots.size(), "the server's 10 m height bands call rain or snow as the client's own height does on all but %d of %d spot-hours" % [band_off, hours * spots.size()])
+	check(Weather.band_height(904.9) == 900.0 and Weather.band_height(905.1) == 910.0 and Weather.band_height(-3.0) == 0.0, "the server's height bands: the nearest 10 m, never under the sea")
 	check(season_off == 0, "the calendar's season (crops, items) is the starter sky's season every hour (%d off)" % season_off)
 	var summer_rise: float = Weather.sunrise_hour(0.375 * 365.0)
 	var winter_rise: float = Weather.sunrise_hour(0.875 * 365.0)
@@ -171,7 +171,6 @@ func _init() -> void:
 		f._fires(1.0)
 
 	check(lit(f, peak_fire), "and the snow still does not put it out")
-	clock_s = -1.0
 
 	# A coast hour of rain then reaches the peak only when it rains up there too: find a later hour with rain on the peak.
 	var wet_t: float = split_t

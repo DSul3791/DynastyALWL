@@ -12454,7 +12454,10 @@ func _rain_here(pos: Vector3) -> float:
 	if weather_at.is_valid():
 		return float((weather_at.call(pos) as Dictionary).get("rain", 0.0))
 
-	return float(rain_now.call()) if rain_now.is_valid() else 0.0
+	if rain_now.is_valid():
+		return float(rain_now.call())
+
+	return float((weather_now.call() as Dictionary).get("rain", 0.0)) if weather_now.is_valid() else 0.0
 
 
 # The air (C) at a spot from its weather (_weather_here): weather_at's temp_c is at the spot's own height already; weather_now's is at sea
@@ -17765,7 +17768,7 @@ func warmth_target(peer: int) -> float:
 
 	if bool(_swimming.get(peer, false)):
 		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
-		var sea_air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0))))
+		var sea_air: float = float((weather_now.call() if weather_now.is_valid() else weather).get("temp_c", float(cfg.get("comfort_c", 15.0))))   # the one sea-level weather, as the design says (not the spot's height)
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
 
 		if bool(_cave_pool.get(peer, false)):
@@ -17981,7 +17984,7 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * hours, 0.0)
 	elif in_cave:
 		# Cave air past the mouth is 98 to 100% wet: only a fire dries you there (#664); a winter mouth's dry incoming air dries at half (#709).
-		var outside: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+		var outside: float = _air_here(pos, weather, float(cfg.get("comfort_c", 15.0)))   # the height in once (weather_at's temp_c carries it)
 		var share: float = float(_cave_mouth_air(pos, outside).get("dry_share", 0.0))
 		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
@@ -19129,7 +19132,7 @@ func _fish_chance(peer: int, _cell: Vector2i, bait: bool, hit: Dictionary = {}) 
 			tod = float(band[2])
 
 	chance *= tod
-	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var weather: Dictionary = _weather_here(_peer_pos.get(peer, Vector3.ZERO))   # the fisher's own sky (a mountain lake in snow is not the coast's rain)
 
 	if float(weather.get("storm", 0.0)) > 0.3:
 		chance *= float(cfg.get("storm_mult", 0.4))
@@ -19395,7 +19398,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 	_wear_slot(peer, inv, slot, "fish")
 	var cell: Vector2i = _fish_cell(pos)
 	var chance: float = float(cfg.get("base_chance", 0.2)) * skill_factor(peer, "fish")
-	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var weather: Dictionary = _weather_here(pos)
 
 	if float(weather.get("storm", 0.0)) > 0.3 or float(weather.get("rain", 0.0)) > float(cfg.get("rain_over", 0.4)):
 		chance *= float(cfg.get("murky_mult", 0.5))
@@ -20034,7 +20037,7 @@ func _plots_tick() -> void:
 		var factor: float = float(_structures.get(str(it["struct"]["kind"]), {}).get("moisture_factor", 1.0))
 		var dt_days: float = maxf(now_s - float(row[1]), 0.0) / PlotWater.DAY_S
 		var weather: Dictionary = _weather_here(it["pos"])   # the bed's own sky: rain or snow, and the air at its height
-		var rain: float = _rain_here(it["pos"])
+		var rain: float = float(weather.get("rain", 0.0)) if weather_at.is_valid() else _rain_here(it["pos"])
 		_plot_water[key] = [PlotWater.step(_moisture_cfg, float(row[0]), dt_days, float(weather.get("temp_c", 15.0)), float(weather.get("wind", 0.0)), rain, factor), now_s]
 		seen[key] = true
 

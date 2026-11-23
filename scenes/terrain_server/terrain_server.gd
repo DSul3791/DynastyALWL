@@ -152,7 +152,6 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
 var _weather_here_msec: int = -100000
-const WEATHER_BAND_M := 10.0               # heights within this share one answer (0.07 C of lapse; the snow line moves no further)
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
@@ -1817,7 +1816,7 @@ func _weather_at(pos: Vector3) -> Dictionary:
 # The weather over a spot as the player's client there works it out (terrain_client._update_weather: the zone of its row, its height), so
 # what the server does to a player (warmth, wet clothes, a fire or torch put out by rain, sleep, drinking) follows the sky that player
 # sees: up a mountain it snows (no rain cooling, no fire put out) while it rains at the coast (weather and seasons walk, 23 Nov 2026).
-# One answer per row and WEATHER_BAND_M of height a second, so many fires and players cost a few noise reads.
+# One answer per row and Weather.HEIGHT_BAND_M of height (band_height) a second, so many fires and players cost a few noise reads.
 func _weather_here(pos: Vector3) -> Dictionary:
 	var now: int = Time.get_ticks_msec()
 
@@ -1826,11 +1825,11 @@ func _weather_here(pos: Vector3) -> Dictionary:
 		_weather_here_msec = now
 
 	var row: int = floori(pos.z / float(settings.tile_size_m))
-	var band: int = int(round(maxf(pos.y, 0.0) / WEATHER_BAND_M))
-	var key := Vector2i(row, band)
+	var height: float = WeatherScript.band_height(pos.y)
+	var key := Vector2i(row, int(round(height)))
 
 	if not _weather_here_cache.has(key):
-		_weather_here_cache[key] = WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), float(band) * WEATHER_BAND_M, 0.0, row, settings.equator_tile_row)
+		_weather_here_cache[key] = WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, 0.0, row, settings.equator_tile_row)
 
 	return _weather_here_cache[key]
 
