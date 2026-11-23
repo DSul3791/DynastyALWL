@@ -11,6 +11,7 @@ extends Node
 #   AUDIT inside <animal id> <species> <peer> <unix ms> <metres>   an animal's middle inside a player's capsule (closer than INSIDE_M, level with them)
 # Nothing changes in the game itself: no protocol change, and with the flag off this node is never made.
 
+const RobotRules := preload("res://src/shared/robot_rules.gd")
 const SIG_EVERY_S := 0.25
 const ANIMAL_EVERY_S := 0.1
 const INSIDE_M := 0.35          # a player capsule's radius is about 0.35 m; an animal's middle this close stands inside it
@@ -28,51 +29,6 @@ var _top_mps: Dictionary = {}    # species number -> fastest _mps in animals.jso
 var _names: Dictionary = {}      # species number -> name
 
 
-static func signature(inv) -> String:
-	if inv == null:
-		return "none"
-
-	var parts: PackedStringArray = PackedStringArray()
-
-	for s in range(inv.numbers.size()):
-		if int(inv.numbers[s]) != 0:
-			parts.append("%d:%d:%d:%d" % [s, int(inv.numbers[s]), int(inv.counts[s]), int(inv.wear[s]) if s < inv.wear.size() else 0])
-
-	return "%08x" % (",".join(parts).hash() & 0xffffffff)
-
-
-static func used(inv) -> int:
-	var n: int = 0
-
-	if inv != null:
-		for s in range(inv.numbers.size()):
-			n += 1 if int(inv.numbers[s]) != 0 else 0
-
-	return n
-
-
-# A species row's fastest speed: every *_mps value in it and in its blocks one level down (a flight block's fly_mps).
-static func top_speed(row: Dictionary) -> float:
-	var top: float = 0.0
-
-	for k in row:
-		if str(k).ends_with("_mps") and (row[k] is float or row[k] is int):
-			top = maxf(top, float(row[k]))
-		elif row[k] is Dictionary:
-			top = maxf(top, top_speed(row[k]))
-
-	return top
-
-
-# A young animal comes as its species number + 100 (server_animals.gd YOUNG_NUM).
-static func species_of(num: int) -> int:
-	return num - 100 if num >= 100 else num
-
-
-static func now_ms() -> int:
-	return int(Time.get_unix_time_from_system() * 1000.0)
-
-
 func setup(server_items, server_animals) -> void:
 	items = server_items
 	animals = server_animals
@@ -81,7 +37,7 @@ func setup(server_items, server_animals) -> void:
 	if cfg is Dictionary:
 		for sp in cfg.get("species", {}):
 			var row: Dictionary = cfg["species"][sp]
-			var top: float = top_speed(row)
+			var top: float = RobotRules.top_speed(row)
 
 			_top_mps[int(row.get("number", 0))] = top
 			_names[int(row.get("number", 0))] = str(sp)
@@ -91,13 +47,13 @@ func setup(server_items, server_animals) -> void:
 	var reject: Callable = items.send_reject
 	items.send_full = func(peer, bytes):
 		full.call(peer, bytes)
-		print("AUDIT sent %d %d full" % [int(peer), now_ms()])
+		print("AUDIT sent %d %d full" % [int(peer), RobotRules.now_ms()])
 	items.send_slots = func(peer, bytes):
 		slots.call(peer, bytes)
-		print("AUDIT sent %d %d slots" % [int(peer), now_ms()])
+		print("AUDIT sent %d %d slots" % [int(peer), RobotRules.now_ms()])
 	items.send_reject = func(peer, reason):
 		reject.call(peer, reason)
-		print("AUDIT reject %d %d %d" % [int(peer), now_ms(), int(reason)])
+		print("AUDIT reject %d %d %d" % [int(peer), RobotRules.now_ms(), int(reason)])
 	print("AUDIT on: robot audit lines follow (src/server/robot_audit.gd)")
 
 
@@ -112,11 +68,11 @@ func _process(delta: float) -> void:
 
 		for peer in items.peer_ids():
 			var inv = items.inventory_of(int(peer))
-			var sig: String = signature(inv)
+			var sig: String = RobotRules.signature(inv)
 
 			if _sig.get(peer, "") != sig:
 				_sig[peer] = sig
-				print("AUDIT pack %d %d %s %d" % [int(peer), now_ms(), sig, used(inv)])
+				print("AUDIT pack %d %d %s %d" % [int(peer), RobotRules.now_ms(), sig, RobotRules.used(inv)])
 
 	_animal_t += delta
 
@@ -124,7 +80,7 @@ func _process(delta: float) -> void:
 		return
 
 	_animal_t = 0.0
-	var now: int = now_ms()
+	var now: int = RobotRules.now_ms()
 	var players: Array = []
 
 	for peer in items.peer_ids():
@@ -138,7 +94,7 @@ func _process(delta: float) -> void:
 	for id in animals.animals:
 		var a: Dictionary = animals.animals[id]
 		var pos: Vector3 = a["pos"]
-		var num: int = species_of(int(a.get("num", 0)))
+		var num: int = RobotRules.species_of(int(a.get("num", 0)))
 		seen[id] = true
 
 		# Only the animals near a player matter (the far ones are moved in big coarse steps by design).

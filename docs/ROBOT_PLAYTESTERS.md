@@ -19,7 +19,7 @@ Needs `godot` (the voxel build, see the cloud recipe) and python3. Exit 0 = ever
 |---|---|
 | `tools/lossy_link.py` | UDP and TCP relay in front of the server: delay, jitter and loss each way (the block line too, through the client's test flag `--block-port=`). Standard library only. |
 | `src/client/robot_play.gd` | The real client, headless, driven by key presses (`--robot=NAME`, `--robot-plan=`, `--robot-admin`). Prints `ROBOT` lines. |
-| `src/server/robot_audit.gd` | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump or stand inside a player. Prints `AUDIT` lines. No protocol change. |
+| `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump or stand inside a player. Prints `AUDIT` lines. No protocol change. |
 | `tools/robots.sh` | Server, link, the robots at one spawn (so they meet the same animals and see each other), then a rejoin pass. |
 | `tools/robot_check.py` | Reads the logs and fails the run on a broken invariant. `tools/robot_known_errors.txt` lists engine ERROR lines allowed (none yet). |
 

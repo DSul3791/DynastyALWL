@@ -24,7 +24,7 @@ const StanceScript := preload("res://src/client/stance.gd")
 const CharacterStore := preload("res://src/client/character/character_store.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
-const RobotAudit := preload("res://src/server/robot_audit.gd")
+const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
 
 const QUIET_S := 3.0             # a pack check waits until no pack message came for this long
 const QUIET_LIMIT_S := 20.0
@@ -116,7 +116,7 @@ func _wait(s: float) -> void:
 
 
 func _now_ms() -> int:
-	return RobotAudit.now_ms()
+	return RobotRules.now_ms()
 
 
 # --- the watchers, every frame --------------------------------------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ func _ready() -> void:
 	if cfg is Dictionary:
 		for sp in cfg.get("species", {}):
 			var row: Dictionary = cfg["species"][sp]
-			var top: float = RobotAudit.top_speed(row)
+			var top: float = RobotRules.top_speed(row)
 
 			_top_mps[int(row.get("number", 0))] = top
 
@@ -145,7 +145,7 @@ func _hook() -> void:
 	client.net.craft_queue_received.connect(func(entries, _ms): _queue_left = entries.size(); _queue_msec = Time.get_ticks_msec())
 	client.net.animals_received.connect(func(rows, _ms):
 		for r in rows:
-			_species[int(r[0])] = RobotAudit.species_of(int(r[1])))
+			_species[int(r[0])] = RobotRules.species_of(int(r[1])))
 
 
 func _process(delta: float) -> void:
@@ -273,7 +273,7 @@ func _check_refusals(now: int) -> void:
 # --- pack checks ----------------------------------------------------------------------------------------------------------------------------
 
 func _pack_sig() -> String:
-	return RobotAudit.signature(client.items.inventory)
+	return RobotRules.signature(client.items.inventory)
 
 
 func _quiet() -> void:
@@ -290,7 +290,7 @@ func _quiet() -> void:
 func _check_pack(step: String) -> void:
 	await _quiet()
 	var inv = client.items.inventory
-	print("ROBOT %s CHECK pack %d %d %s %d %s" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), _pack_sig(), RobotAudit.used(inv), step])
+	print("ROBOT %s CHECK pack %d %d %s %d %s" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), _pack_sig(), RobotRules.used(inv), step])
 
 
 func _num(item: String) -> int:
@@ -460,7 +460,7 @@ func _rejoin_check() -> void:
 		return
 
 	if saved != _pack_sig():
-		_fail("rejoin", "pack", "the pack after rejoining (%s, %d slots) is not the pack at quit (%s)" % [_pack_sig(), RobotAudit.used(client.items.inventory), saved])
+		_fail("rejoin", "pack", "the pack after rejoining (%s, %d slots) is not the pack at quit (%s)" % [_pack_sig(), RobotRules.used(client.items.inventory), saved])
 	else:
 		print("ROBOT %s step rejoin: pack kept (%s)" % [robot_name, saved])
 
