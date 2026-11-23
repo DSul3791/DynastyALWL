@@ -634,12 +634,19 @@ func _cave_player(a: Dictionary, def: Dictionary) -> Dictionary:
 
 
 # Walk along the path toward `goal` (metres from the mouth). Returns true when it got there.
-func _walk(a: Dictionary, goal: float, speed: float, dt: float) -> bool:
+# walls: a step through a wall or heavy station is not taken (a lunge stops at a wall built across the passage; host.crosses_wall).
+func _walk(a: Dictionary, goal: float, speed: float, dt: float, walls: bool = false) -> bool:
 	var at: float = float(a["cave_at"])
 	var step_m: float = speed * dt
 	var next: float = goal if absf(goal - at) <= step_m else at + signf(goal - at) * step_m
 	var path: PackedVector3Array = a["cave_path"]
 	var from: Vector3 = a["pos"]
+
+	if walls:
+		var to: Vector3 = point_at(path, next)
+
+		if host.crosses_wall(from.x, from.z, to.x, to.z):
+			return true   # stopped against it: the lunge ends there
 	a["cave_at"] = next
 	a["pos"] = point_at(path, next)
 
@@ -677,10 +684,11 @@ func _step_cave(a: Dictionary, def: Dictionary, dt: float) -> void:
 	if state == host.big_game.CHARGE:
 		var goal: float = float(near["s"]) if not near.is_empty() else float(a["cave_at"])
 		var from: float = float(a["cave_at"])
-		var there: bool = _walk(a, goal, float(defend.get("charge_mps", 5.0)), dt)
+		var there: bool = _walk(a, goal, float(defend.get("charge_mps", 5.0)), dt, true)
 		a["ran"] = float(a["ran"]) + absf(float(a["cave_at"]) - from)
 
-		if not near.is_empty() and not bool(a["hit"]) and (near["pos"] as Vector3).distance_to(a["pos"]) <= float(defend.get("hit_m", 1.0)) + 0.6 and host.big_game.hurt_player.is_valid():
+		# Never through a wall (a player who walled off the den passage): the same rule as the big game charge (host.wall_between).
+		if not near.is_empty() and not bool(a["hit"]) and (near["pos"] as Vector3).distance_to(a["pos"]) <= float(defend.get("hit_m", 1.0)) + 0.6 and not host.wall_between(a["pos"], near["pos"]) and host.big_game.hurt_player.is_valid():
 			a["hit"] = true
 			host.big_game.hurt_player.call(int(near["peer"]), float(defend.get("damage", 8.0)) * host.level_x(a, "damage"), false, str(a["sp"]), a["pos"])
 
