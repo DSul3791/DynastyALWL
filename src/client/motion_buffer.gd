@@ -248,6 +248,16 @@ static func follow(body: Dictionary, p: Vector3, delta: float) -> Vector3:
 # there. Every body on the screen jumped with the stall anyway; eased, it would drain a jump of the stall's length (13 m for a moose at
 # 6 m/s after a 2 s hitch) at 1.3 times its speed, drawn 10 to 15 m off where the other players and the server have it for 10 s and more
 # (robots 23 Nov 2026, the kinds sweep: the two clients 16 m apart on one moose).
+# The end of the settle window after this computer's own stall: a gap since the bodies were last drawn (frame_s, -1 before the first) or this
+# frame's own step over stall_s opens it for stall_s more; otherwise `until` as it was. Bodies are settled, and rows leave the lateness, while
+# now_s <= the result: it covers the frame after the stall too, whichever of the two the rows and the drawing land in.
+static func stall_until(now_s: float, frame_s: float, until: float, step_s: float, stall_s: float) -> float:
+	if (frame_s >= 0.0 and now_s - frame_s > stall_s) or step_s > stall_s:
+		return now_s + stall_s
+
+	return until
+
+
 static func settle(body: Dictionary) -> void:
 	body.erase("sm_p")
 	body.erase("sm_err")

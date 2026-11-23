@@ -489,7 +489,8 @@ func seen_server_ms() -> Array:
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-	MotionBuffer.clock_note(_clock, now_s, server_ms, _stalled(now_s))
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
+	MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -674,19 +675,11 @@ func _process(delta: float) -> void:
 	FrameProbe.stop("animals", t)
 
 
-# This computer's frame stalled (over STALL_S since the bodies were last drawn, or this frame's own step that long): rows read now came late
-# because nobody read them. The window covers the frame after too, whichever of the two the rows and the drawing land in.
-func _stalled(now_s: float) -> bool:
-	if (_frame_s >= 0.0 and now_s - _frame_s > STALL_S) or get_process_delta_time() > STALL_S:
-		_settle_until = now_s + STALL_S
-
-	return now_s <= _settle_until
-
-
 func _process_body(delta: float) -> void:
 	_t += delta
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-	var settle: bool = _stalled(now_s) or delta > STALL_S
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall: rows read now came late because nobody read them
+	var settle: bool = now_s <= _settle_until
 	_frame_s = now_s
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
 	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
