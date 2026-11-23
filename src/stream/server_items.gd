@@ -2863,7 +2863,7 @@ func working_level(peer: int, skill: String) -> float:
 
 # One verified success at `action` (a skills.json action): practice for its skill (80 percent) and the parent group (20 percent).
 # Nothing for trivial work, a cooldown per skill, a soft cap per game day; returns the points the skill gained.
-func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
+func practice(peer: int, action_name: String, difficulty: float = 1.0, own_cooldown: bool = false) -> float:
 	var def: Dictionary = _skills_cfg.get("actions", {}).get(action_name, {})
 	var records: Dictionary = _skill_records(peer)
 
@@ -2879,10 +2879,12 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	var now: int = Time.get_ticks_msec()
 	var last: Dictionary = _last_practice.get(peer, {})
 
-	if float(now - int(last.get(skill, -100000))) < float(system.get("cooldown_s", 2.0)) * 1000.0:
+	var gate: String = skill + ":" + action_name if own_cooldown else skill   # own_cooldown: the action keeps its own (a sign spotted beside a trail-following look)
+
+	if float(now - int(last.get(gate, -100000))) < float(system.get("cooldown_s", 2.0)) * 1000.0:
 		return 0.0
 
-	last[skill] = now
+	last[gate] = now
 	_last_practice[peer] = last
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	var base: float = difficulty * float(def.get("difficulty", 1.0))

@@ -798,7 +798,7 @@ func sign_found(peer: int, at: Vector2) -> bool:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json"))
 		_sign_levels = parsed if typeof(parsed) == TYPE_DICTIONARY else {"see_level": 5}
 
-	if host.working_level(peer, "tracking") < float(_sign_levels.get("see_level", 5)):
+	if host.working_level(peer, "tracking") < float(_sign_levels.get("see_level", 5)) - 0.5:   # the client shows the whole level; a little rust does not refuse it
 		return false
 
 	if float(host.run_distance.call(at.x, at.y, -1)) > float(tc.get("sign_trail_m", 6.0)):
@@ -814,7 +814,7 @@ func sign_found(peer: int, at: Vector2) -> bool:
 			kept.append(spot)
 			known = known or Vector2(float(spot[0]), float(spot[1])).distance_to(at) < float(tc.get("sign_same_m", 2.0))
 
-	var trained: bool = not known and host.practice(peer, "track_sign") > 0.0
+	var trained: bool = not known and host.practice(peer, "track_sign", 1.0, true) > 0.0   # its own 2 s cooldown: a follow or snare look just before does not eat it
 
 	if trained:
 		kept.append([at.x, at.y, now])

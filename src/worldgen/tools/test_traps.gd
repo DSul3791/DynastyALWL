@@ -738,3 +738,6 @@ func sign_checks() -> void:
 	items.report_position(1, at)
 	fresh.call()
 	check(items.sign_spotted(1, Vector2(96.0, 4.0)), "another sign does")
+	fresh.call()
+	items.practice(1, "track_follow")   # a trail-following look just before
+	check(items.sign_spotted(1, Vector2(100.0, 8.0)), "and a sign spotted just after a trail-following look still trains (its own cooldown)")

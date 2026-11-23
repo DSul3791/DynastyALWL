@@ -98,20 +98,38 @@ func _init() -> void:
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown > 20 and view.get_child_count() >= 2, "once loaded the signs near the player are drawn (%d pieces)" % view.shown)
 	var drawn: int = view.shown
-	var near_sign: bool = false
+	# Spotting: standing on a sign, the signs within spot_m are spotted one at a time (one every spot_gap_s), each once, and glow.
+	var target: Vector2 = Vector2.INF
 
 	for sg in view._signs:
-		near_sign = near_sign or (sg[1] as Vector2).distance_to(Vector2(120.0, 110.0)) <= float(c["spot_m"])
+		if target.x == INF and SignsScript.shows(str(sg[0]), 80, c) and (sg[1] as Vector2).distance_to(Vector2(120.0, 110.0)) <= 20.0:
+			target = sg[1]
 
-	check(found.size() == (1 if near_sign else 0) and view.spotted == found.size(), "a sign within spot_m is spotted, one a look (%d)" % found.size())
-	if near_sign:
-		check(view.get_children().any(func(n): return str(n.name).begins_with("TrailSignGlow")), "and glows")
+	check(target.x != INF, "there is a sign near the test spot to stand on")
+	var stand: Vector3 = Vector3(target.x, 5.0, target.y)
+	var within: int = 0
+	found.clear()
+	view._spot_msec = 0
+	view._next_msec = 0
+	view.update(stand, 80, false)
+
+	for sg in view._signs:
+		within += 1 if SignsScript.shows(str(sg[0]), 80, c) and (sg[1] as Vector2).distance_to(target) <= float(c["spot_m"]) else 0
+
+	check(found.size() == 1 and view.get_children().any(func(n): return str(n.name).begins_with("TrailSignGlow")), "standing on a sign it is spotted and glows (%d of %d within spot_m)" % [found.size(), within])
+	view._next_msec = 0
+	view.update(stand, 80, false)
+	check(found.size() == 1, "the next one waits spot_gap_s (the server's practice cooldown)")
+
+	for n in within + 3:
+		view._spot_msec = 0
 		view._next_msec = 0
-		view.update(Vector3(120.0, 5.0, 110.0), 80, false)
-		var before: int = found.size()
-		view._next_msec = 0
-		view.update(Vector3(120.0, 5.0, 110.0), 80, false)
-		check(found.size() <= before + 1 and found.map(func(f): return str(f[1])).size() == found.size() and _unique(found), "a spotted sign is never spotted again this session")
+		view.update(stand, 80, false)
+
+	check(found.size() == within and _unique(found), "each sign within reach is spotted once, never again this session (%d of %d)" % [found.size(), within])
+	view._built_at = Vector3.INF   # back where the drawn count was taken
+	view._next_msec = 0
+	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), see - 1, false)
 	check(view.shown == 0, "a player without the skill sees none (%d)" % view.shown)

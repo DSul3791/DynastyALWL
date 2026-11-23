@@ -39,6 +39,7 @@ var on_spot: Callable              # (kind: String, spot: Vector3) when a sign i
 var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
 var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
 var _glow_texture: Texture2D = null
+var _spot_msec: int = 0            # the next spot not before this: one sign every spot_gap_s, the server's practice cooldown (skills.json cooldown_s 2 s)
 
 
 func _init() -> void:
@@ -381,7 +382,7 @@ func _spot(player: Vector3, level: int) -> void:
 	var near_m: float = minf(float(cfg.get("spot_m", 6.0)), reach_m(level, cfg))
 	var at: Vector2 = Vector2(player.x, player.z)
 
-	if near_m <= 0.0 or not ground_height.is_valid():
+	if near_m <= 0.0 or not ground_height.is_valid() or Time.get_ticks_msec() < _spot_msec:
 		return
 
 	for s in _signs:
@@ -398,6 +399,7 @@ func _spot(player: Vector3, level: int) -> void:
 
 		_spotted[key] = true
 		spotted += 1
+		_spot_msec = Time.get_ticks_msec() + int(float(cfg.get("spot_gap_s", 2.2)) * 1000.0)   # the next one of a cluster after the server can train again
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
 		_glow(where, 1.6 if str(s[0]) == "prints" else 0.9)
 

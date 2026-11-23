@@ -1,7 +1,8 @@
 {
 	"note": "Stage 2d (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, TR-13): signs along the trails, worked out on each client from the routes it already has (same spots for every player, no server cost). Rabbits leave pellet latrines by the warren and at the grazing end of a run and dig scrapes where runs of different warrens meet; deer leave prints where a trail crosses wet ground and droppings by the bed (Ziege et al. 2016, BMC Ecology, rabbit latrines; onX and Idaho Fish and Game on deer sign). A player sees them from Tracking skill see_level (latrines and droppings) and fine_level (scrapes and prints; 5 and 25 from 23 Nov 2026, coordinator pick for Dave's review: the first signs early, richer ones at the untrained cap), within draw_m (min at see_level, max at 100). Nothing is made before the player has ground (the first-join window). Provisional.",
-	"spot_note": "Spotting (Dave 23 Nov 2026: 'spotting animal markings should highlight the markings, make a slight sound and give xp for finding them'): a shown sign the player first comes within spot_m of glows for glow_s (a soft pale patch, glow_color, up to glow_alpha), the slight sound sign_spot plays there (batch3_slots.json) and the server trains Tracking once per sign (traps.json tracking sign_*).",
+	"spot_note": "Spotting (Dave 23 Nov 2026: 'spotting animal markings should highlight the markings, make a slight sound and give xp for finding them'): a shown sign the player first comes within spot_m of glows for glow_s (a soft pale patch, glow_color, up to glow_alpha), the slight sound sign_spot plays there (batch3_slots.json) and the server trains Tracking once per sign (traps.json tracking sign_*); one sign every spot_gap_s, so each of a cluster is trained (the practice cooldown is 2 s).",
 	"spot_m": 6.0,
+	"spot_gap_s": 2.2,
 	"glow_s": 1.6,
 	"glow_alpha": 0.3,
 	"glow_color": [0.95, 0.9, 0.72],
