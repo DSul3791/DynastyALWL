@@ -76,8 +76,13 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
-var sunrise_now: Callable          # () -> today's sunrise hour (weather.gd sunrise_hour, the sun the sky draws); unset keeps the fixed hours of period_of
-var _sun: Array = [-1, 6.0]        # [msec read, sunrise hour]: the sunrise moves a few minutes a game day, read again every 5 s
+var sunrise_now: Callable          # (z) -> today's sunrise hour at that ground row (weather.gd sunrise_hour, the sun the sky there draws; NAN z: the
+                                   # starter row's); unset keeps the fixed hours of period_of
+var _sun: Dictionary = {}          # ground row (NO_ROW for NAN) -> [msec read, sunrise hour]: the sunrise moves a few minutes a game day, read again every 5 s
+var sun_z: float = NAN             # the z of the animal (or player) being thought about now: its periods and trips go by the sun of its own row
+                                   # (south of the equator the seasons are the other way round). Set by the tick before each step and the top-up per player.
+const NO_ROW := -2147483648       # the _sun key for "no place given" (the starter row's sun)
+var sun_row_m: float = 15360.0     # the tile rows the sun is read by (world.json tile_size_m, set by the server): one sunrise a row, as the sky draws a row's
 var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var no_spawn: Callable                # (x, z) -> bool: true within no_spawn_m of something a player put down (server_items.spawn_blocked; Dave 17 Nov 2026): no animal is made there
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
@@ -1098,6 +1103,7 @@ func tick(delta: float) -> void:
 		var id: int = int(ids[(k + _tick_no * 7) % count])
 		var a: Dictionary = animals[id]
 		a["acc"] += delta
+		sun_z = float(a["pos"].z)   # its periods by the sun of its own row
 
 		if (id + _tick_no) % STAGGER != 0:
 			continue
@@ -1190,6 +1196,7 @@ func tick(delta: float) -> void:
 		if snare_pass.is_valid() and animals.has(id) and a["pos"] != was and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			snare_pass.call(id, str(a["sp"]), was, a["pos"])
 
+	sun_z = NAN   # the steps are done: what follows goes by the starter row's sun unless it says its own
 	_wx = wx_all   # the one weather again after the animals' own steps
 	_wind_s = wind_all
 	_wind_dir = dir_all
@@ -1227,6 +1234,7 @@ func tick(delta: float) -> void:
 		_top_idx = (_top_idx + 1) % players.size()
 		_weather_for(players[_top_idx])   # who turns up round a player (wind, storm) by the sky over that player
 		_top_up(players, _top_idx)
+		sun_z = NAN
 
 	_wx = wx_all   # the one weather again for what reads it between ticks (alarms, hits)
 	_wind_s = wind_all
@@ -1711,6 +1719,7 @@ func _top_up(players: Array, only: int) -> void:
 	var never: float = float(cfg.get("never_within_m", 60.0))
 
 	for p in [players[only]]:
+		sun_z = p.z   # what turns up now goes by the sun of the player's row
 		# One pass over the animals counts them all near this player, by species (it was one pass per species: 22 species x 150
 		# animals each top-up once species 17 to 22 came in, Tyler 7 Nov 2026: tick 1.89 -> 2.14 ms).
 		var spawn_max_sq: float = pow(float(cfg.get("spawn_max_m", 250.0)), 2.0)
@@ -2022,10 +2031,12 @@ func sunrise_hour() -> float:
 	if not sunrise_now.is_valid():
 		return 6.0
 
-	if _sun[0] < 0 or Time.get_ticks_msec() - int(_sun[0]) > 5000:
-		_sun = [Time.get_ticks_msec(), float(sunrise_now.call())]
+	var row: int = NO_ROW if is_nan(sun_z) else floori(sun_z / sun_row_m)
 
-	return float(_sun[1])
+	if not _sun.has(row) or Time.get_ticks_msec() - int(_sun[row][0]) > 5000:
+		_sun[row] = [Time.get_ticks_msec(), float(sunrise_now.call(NAN if row == NO_ROW else (float(row) + 0.5) * sun_row_m))]
+
+	return float(_sun[row][1])
 
 
 # An animal's period on the real sun (stage 2a, D-TRAP-3; docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md): dawn from an hour before
@@ -2056,12 +2067,17 @@ func activity_chance(def: Dictionary) -> float:
 	return clampf(float((def["active"] as Dictionary).get(fog_period(def, float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
 
 
-# The same at a given game hour (a snare's time away, server_traps.gd check_away): the row's "active" value for that hour's period.
-func activity_at(def: Dictionary, hour: float) -> float:
+# The same at a given game hour (a snare's time away, server_traps.gd check_away) and ground z (NAN: the starter row): the row's "active"
+# value for that hour's period on that row's sun.
+func activity_at(def: Dictionary, hour: float, z: float = NAN) -> float:
 	if not def.has("active"):
 		return clampf(weather_activity_x(def), 0.0, 1.0)
 
-	return clampf(float((def["active"] as Dictionary).get(fog_period(def, hour), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+	var was: float = sun_z
+	sun_z = z
+	var out: float = clampf(float((def["active"] as Dictionary).get(fog_period(def, hour), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+	sun_z = was
+	return out
 
 
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
@@ -2277,6 +2293,14 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 
 # The state an animal is sent with: GRAZE shows as DRINK at its drinking place, HUNCH standing out the rain.
 func _wire_state(a: Dictionary) -> int:
+	var was: float = sun_z
+	sun_z = float(a["pos"].z)   # sent (rows_near, the spyglass) outside the tick: its lying goes by its own row's sun, as its step does
+	var out: int = _wire_state_now(a)
+	sun_z = was
+	return out
+
+
+func _wire_state_now(a: Dictionary) -> int:
 	if a["state"] == GRAZE and bool(a.get("drinking", false)):
 		return DRINK
 
@@ -3668,7 +3692,12 @@ func _drink_wander(a: Dictionary, def: Dictionary) -> bool:
 # Where a prowling wolf pack wanders: at dawn and dusk, wait_m back from the water nearest its home within wolf_water_m (the prey's drinking
 # place); otherwise its home. Vector3.INF when there is no such water or the rule is off.
 func wolf_wait_point(home: Vector3) -> Vector3:
-	if not drink_on() or not _twilight():
+	var was: float = sun_z
+	sun_z = home.z   # the pack's dusk is its own row's, as the deer drinking there keep it (wolves think after the steps, outside the tick's window)
+	var dusk: bool = _twilight()
+	sun_z = was
+
+	if not drink_on() or not dusk:
 		return Vector3.INF
 
 	var dc: Dictionary = _drink_cfg()
