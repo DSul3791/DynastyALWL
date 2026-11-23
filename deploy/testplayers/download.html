@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Download Dynasty</title>
+<meta name="description" content="Download the Dynasty: A Life Well Lived play-test, build {{BUILD}}.">
+<!-- The download page (/download/) of the testers' site on Dave's web server: the zip, how to install, join and report.
+     tools/make_testplayers_site.ps1 fills in the fields in double braces; the look is /css/site.css (deploy/testplayers/site.css). No scripts. -->
+<link rel="stylesheet" href="/css/site.css">
+</head>
+
+<body>
+  <div class="who" data-user="{{USER}}"></div>
+  <div class="hero short"><img src="/images/hero.jpg" alt="Dynasty: A Life Well Lived" width="1330" height="760"></div>
+
+  <main class="narrow">
+    <div class="get">
+      <p class="kicker">Play-test</p>
+      <h1>Build {{BUILD}}</h1>
+      <p class="meta">{{DATE}} &middot; <span class="nowrap">Windows 10 or 11, 64-bit</span></p>
+      <a class="button" href="/downloads/{{ZIP}}" download>Download the game<small>{{ZIP}} &middot; {{SIZE_MB}} MB</small></a>
+      <p class="check">SHA-256 <code>{{SHA256}}</code></p>
+    </div>
+
+    <div class="steps">
+      <section>
+        <h2>Install</h2>
+        <ol>
+          <li>Open the zip and take out <strong>DynastySetup-{{BUILD}}.exe</strong> (right-click the zip, Extract All).</li>
+          <li>Run it. If Windows says <em>Windows protected your PC</em>, click <strong>More info</strong>, then <strong>Run anyway</strong>. The game is not signed yet, so Windows does not know it.</li>
+          <li>It installs just for you, with no administrator needed, and adds Dynasty to the Start menu.</li>
+        </ol>
+      </section>
+
+      <section>
+        <h2>Play</h2>
+        <ul>
+          <li>On the server page, the first row is <strong>Hannibal's House</strong> (hannibalshouse.duckdns.org). Pick it and press Join. If it asks for a password, use the one Dave sent you.</li>
+          <li>Everyone plays on the same build. When a new one is out, install it over this one; your characters are kept.</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Report</h2>
+        <ul>
+          <li>Use <strong>Submit a bug</strong> or <strong>Suggest an idea</strong> on the <a href="/">home page</a>.</li>
+          <li>Put <strong>{{BUILD}}</strong> in the Build box and drag in your game log: <span class="path">%APPDATA%\Godot\app_userdata\Dynasty a life well lived\logs\godot.log</span></li>
+          <li>A list of everything that felt wrong helps as much as one big report.</li>
+        </ul>
+      </section>
+    </div>
+
+    <a class="back" href="/">&larr; Back</a>
+
+    <footer>
+      <span class="mark">Dynasty &middot; A Life Well Lived</span>
+      Thank you for testing. To uninstall: Windows Settings &gt; Apps &gt; Dynasty.
+    </footer>
+  </main>
+</body>
+</html>

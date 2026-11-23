@@ -1,4 +1,5 @@
-"""Copy bought animal models into the project (they are never committed: /assets/animals/ is ignored).
+"""Copy bought animal models into the project. Since 23 Nov 2026 the models are in the repository through Git LFS (Dave), so this is only for
+adding a new kind from the pack; commit what it copies.
 
 For every row in data/animals/models.json with a "pack" folder, the folder's files (the .fbx and its Textures) are copied
 into the folder of the row's scene. .blend files are skipped: a headless import cannot read them, and with one beside the

@@ -36,7 +36,7 @@ def bad(msg):
 
 # 1. conflict markers in code and data (not in .md, which may quote them)
 for f in sh("git", "ls-files").splitlines():
-    if f.endswith((".md", ".png", ".ogg", ".wav", ".glb", ".dat", ".sqlite", ".idx", ".json.gz")) or not os.path.isfile(f):
+    if f.endswith((".md", ".png", ".ogg", ".wav", ".glb", ".dat", ".sqlite", ".idx", ".json.gz")) or f.startswith("assets/animals/") or not os.path.isfile(f):   # the models: 2.6 GB of LFS binaries
         continue
     try:
         txt = open(f, encoding="utf-8", errors="ignore").read()
@@ -44,6 +44,14 @@ for f in sh("git", "ls-files").splitlines():
         continue
     if re.search(r"^(<<<<<<< |>>>>>>> )", txt, re.M) or re.search(r"^=======$", txt, re.M) and "<<<<<<<" in txt:
         bad("conflict marker in %s" % f)
+
+# 1b. the animal models (Git LFS) are real files or absent, never LFS pointer stubs: Godot would see a model that cannot load
+for f in sh("git", "ls-files", "assets/animals").splitlines():
+    if not f.endswith(".import") and os.path.isfile(f) and os.path.getsize(f) < 1024:
+        with open(f, "rb") as stub:
+            if stub.read(40).startswith(b"version https://git-lfs"):
+                bad("%s is a Git LFS pointer, not the model: run git lfs pull, or leave the models out with tools/skip_models.sh" % f)
+                break
 
 # 2. JSON parses, with no key twice in one object (the later one silently wins in Godot and Python: a doubled wild_rose seed, PR #1569)
 def _no_twice(pairs, where):

@@ -29,7 +29,7 @@ $sizeMb = [int][Math]::Round((Get-Item -LiteralPath $zip).Length / 1MB)
 $date = (Get-Date).ToString("d MMMM yyyy", [Globalization.CultureInfo]::InvariantCulture)
 
 $html = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $template).ProviderPath)
-$html = $html.Replace("{{BUILD}}", "$build").Replace("{{ZIP}}", $zipName).Replace("{{SHA256}}", $hash).Replace("{{SIZE_MB}}", "$sizeMb").Replace("{{DATE}}", $date)
+$html = $html.Replace("{{BUILD}}", "$build").Replace("{{ZIP}}", $zipName).Replace("{{SHA256}}", $hash).Replace("{{SIZE_MB}}", "$sizeMb").Replace("{{DATE}}", $date).Replace("{{USER}}", "")
 if ($html.Contains("{{")) { throw "make_testplayers_page: the page still has a {{...}} field the script does not fill" }
 [IO.File]::WriteAllText((Join-Path $page "index.html"), $html)   # UTF-8 without a byte order mark
 # The page's picture (cropped from the title painting) and the menu fonts with their licence (SIL OFL 1.1 travels with them).
