@@ -560,7 +560,17 @@ func _client() -> void:
 # carrying 0.2 s position reports, each delivered 100 to 260 ms late (a random wobble), one in twenty lost and once four in a row, for a walk at 3 m/s, then a
 # stop. The drawn body must never jump (no frame step over a normal one plus the easing's catch-up), keep moving through the walk (no stand
 # then jump at a lost batch), and come to rest near the last point without running past and back.
+# Run at a player's 60 frames a second, on rows timed as the server times them (23 Nov 2026: the 1.5 times limit failed 3 to 4 runs in 10
+# under load, on dev before protocol 162 and after alike: headless runs near 1000 fps and a loaded computer near 100, and the test stamped
+# rows by their arrival, a wobble the server takes out: server_players note_move). No frame may move more than 1.5 frames of the walk plus
+# the 3 m/s catch-up (player_view SMOOTH_*: 0.125 m at 60 fps, so any jump fails), and no 50 ms window over 1.5 times the walk.
+const LOSSY_FPS := 60
+const LOSSY_FRAME_MPS := 3.0 * PlayerViewScript.SMOOTH_ROOM_X + PlayerViewScript.SMOOTH_CATCH_MIN_MPS
+
+
 func _check_lossy(burst_ms: int, tail_ms: int) -> void:
+	var fps_was: int = Engine.max_fps
+	Engine.max_fps = LOSSY_FPS
 	var table = ItemTableScript.load_default()
 	var view: Node3D = PlayerViewScript.new()
 	view.table = table
@@ -585,7 +595,29 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var sent_ms: Array = [-1, -1, -1]
 	var last_send: int = -1000
 
-	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report stamped when it reached the server.
+	# The row times as the server stamps them (server_players note_move: the client's send time, from its moved gap), each report arriving
+	# with its own trip's wobble (0 to 60 ms, a later one can come first).
+	var stamper = PlayersScript.new()
+	var stamp_clock: Array = [0]
+	stamper.now_ms = func() -> int: return int(stamp_clock[0])
+	var arrivals: Array = []   # [arrives ms, peer index, report ms]
+
+	for i in range(peers.size()):
+		for report in range(int(phase[i]), end_ms + 400, 200):
+			arrivals.append([20000 + report + posmod(hash([i, report]), 61), i, report])
+
+	arrivals.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var stamp_of: Dictionary = {}   # [peer index, report ms] -> the row time
+
+	for a in arrivals:
+		var r: int = int(a[2])
+		var moving: bool = r > 0 and r <= walk_ms
+		stamp_clock[0] = int(a[0])
+		stamper.note_move(int(peers[int(a[1])]), at + Vector3(3.0 * float(mini(r, walk_ms)) / 1000.0, 0.0, 3.0 * int(a[1])), Vector3(3.0 if moving else 0.0, 0.0, 0.0))
+		stamper.note_report(int(peers[int(a[1])]), 0.0)
+		stamp_of[[int(a[1]), r]] = int(stamper._report_ms[int(peers[int(a[1])])])
+
+	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report with its row time from stamp_of above.
 	for send in range(0, end_ms, 125):
 		var times: Array = []
 		var spots: Array = []
@@ -594,7 +626,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		for i in range(peers.size()):
 			var beat: int = send - int(phase[i])
 			var report: int = maxi(beat - posmod(beat, 200), 0) + int(phase[i])
-			var stamp: int = 20000 + report + (posmod(hash([i, report]), 61) if report > 0 else 0)   # the report's own trip up, with its wobble, once per report
+			var stamp: int = int(stamp_of.get([i, report], 20000 + report))
 			var walked: float = 3.0 * float(mini(report, walk_ms)) / 1000.0
 			times.append(stamp)
 			spots.append(at + Vector3(walked, 0.0, 3.0 * i))
@@ -617,6 +649,10 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var last_p: Dictionary = {}
 	var past: float = 0.0   # the farthest any body went beyond its last point (9 m)
 	var last_t: int = Time.get_ticks_usec()
+	var frame_t: int = Time.get_ticks_usec()
+	var frame_p: Dictionary = {}
+	var worst_frame: float = 0.0   # the most any body moved in one frame (m)
+	var worst_frame_allowed: float = 1.0   # that frame's own bound (m)
 
 	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + tail_ms:
 		var now: int = Time.get_ticks_msec() - start_ms
@@ -626,6 +662,28 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 			view.on_rows(PackedInt32Array(peers), PackedVector3Array(row[2]), PackedFloat32Array([-PI * 0.5, -PI * 0.5, -PI * 0.5]), PackedByteArray([0, 0, 0]), PackedInt32Array([0, 0, 0]), PackedInt32Array(row[1]))
 
 		await process_frame
+		var frame_s: float = float(Time.get_ticks_usec() - frame_t) / 1.0e6
+		frame_t = Time.get_ticks_usec()
+
+		for peer in peers:
+			var fb: Dictionary = view._bodies.get(peer, {})
+
+			if fb.is_empty():
+				continue
+
+			var fp: Vector3 = (fb["node"] as Node3D).position
+			var now_f: int = Time.get_ticks_msec() - start_ms
+
+			if frame_p.has(peer) and now_f > 1200 and now_f < walk_ms + 100:
+				var moved_f: float = fp.distance_to(frame_p[peer])
+				var allowed: float = LOSSY_FRAME_MPS * maxf(frame_s, 1.0 / float(LOSSY_FPS)) + 0.01
+
+				if moved_f / allowed > worst_frame / worst_frame_allowed:
+					worst_frame = moved_f
+					worst_frame_allowed = allowed
+
+			frame_p[peer] = fp
+
 		var dt: float = float(Time.get_ticks_usec() - last_t) / 1.0e6
 
 		if dt < 0.05:
@@ -657,7 +715,8 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		rest_ok = rest_ok and view._bodies.has(peer) and absf(float((view._bodies[peer]["node"] as Node3D).position.x) - at.x - 9.0) < 0.15
 
 	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
-	check(worst_step < 3.0 * 1.5, "no jump on a lossy, late link: the fastest drawn speed %.1f m/s for a 3 m/s walk" % worst_step)
+	check(worst_frame <= worst_frame_allowed, "no jump on a lossy, late link: the most drawn in one frame %.3f m (%.3f m allowed at 60 fps)" % [worst_frame, worst_frame_allowed])
+	check(worst_step < 3.0 * 1.5, "no rush on a lossy, late link: the fastest drawn speed %.1f m/s over 50 ms for a 3 m/s walk" % worst_step)
 	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
 	check(rest_ok, "each comes to rest at its last point (burst at %d ms)" % burst_ms)
 	check(past <= 3.0 * PlayerViewScript.CARRY_S + 0.3, "no body walks on more than %.1f m past its stop (%.2f m)" % [3.0 * PlayerViewScript.CARRY_S, past])
@@ -667,6 +726,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	check(PlayerViewScript.draw_delay(MotionBufferScript.clock_new()) >= PlayerViewScript.REPORT_S, "and never under one report gap")
 	view.queue_free()
 	camera.queue_free()
+	Engine.max_fps = fps_was
 	await process_frame
 
 

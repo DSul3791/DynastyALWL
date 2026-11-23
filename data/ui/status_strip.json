@@ -37,6 +37,8 @@
 			"lines": {"0": "Health {n} of {max}. It comes back slowly while you have food, water and warmth.",
 				"1": "Badly hurt: health {n} of {max}. It comes back slowly while you have food, water and warmth.",
 				"2": "Close to collapse: health {n} of {max}. Rest by a fire with food and water."}},
+		{"id": "comfort", "name": "Comfort", "glyph": "flame", "always": true,
+			"line": "Comfort: the meter (src/client/ui/comfort_badge.gd) draws itself and shows the server's own hover list of what counts."},
 		{"id": "hunger", "name": "Food", "glyph": "bread", "always": true,
 			"lines": {"0": "Food {n}%. Your stomach empties as you work and walk; eat before it runs out.",
 				"1": "Food {n}%: you are low on food. Eat soon.",

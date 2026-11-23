@@ -3,12 +3,13 @@ extends SceneTree
 # The status strip left of the hotbar (Dave 23 Nov 2026; src/client/status_icons.gd, data/ui/status_strip.json): every data row has a glyph
 # the art kit draws and words for each tone; symbols show and hide from their reads, line up right-aligned against the hotbar, never reach
 # its tray or leave the canvas even with every symbol at once; the hover words fill in their numbers; a symbol that appears names itself,
-# the always-shown hunger and thirst do not; the older add_icon still works. On the server, soak (protocol 163) is sent at hello, again
+# the always-shown hunger and thirst do not; the older add_icon still works. On the server, soak (protocol 165) is sent at hello, again
 # when the clothes get wetter in steps of 10, and not while nothing changes.
 #   godot --headless --path . --script res://src/worldgen/tools/test_status_strip.gd
 
 const StatusIcons := preload("res://src/client/status_icons.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
+const ComfortBadge := preload("res://src/client/ui/comfort_badge.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 
@@ -81,6 +82,13 @@ func _client_side() -> void:
 	strip.tick(0.0, true)
 	check(strip.shown().has("inspection"), "add_icon still shows a picture while its test says so")
 
+	# The comfort meter draws itself: the strip takes it into the row, just left of hunger and thirst.
+	var badge: Control = ComfortBadge.new()
+	strip.add_control("comfort", badge, func() -> Dictionary: return {"tone": 0})
+	strip.tick(0.0, true)
+	var order: Array = strip.shown()
+	check(badge.get_parent() == strip and order.slice(order.size() - 3) == ["comfort", "hunger", "thirst"], "the comfort meter sits in the row before hunger and thirst (%s)" % str(order))
+
 	# Every symbol at once: all of them stay between the canvas edge and the hotbar's tray, none on another; past one row they wrap upward.
 	state["limp"] = 0.5
 	for id in spec:
@@ -94,8 +102,8 @@ func _client_side() -> void:
 
 	for id in ids:
 		var cell: Control = strip.cell_of(id)
-		var rect: Rect2 = Rect2(strip.position + cell.position, cell.size)
-		inside = inside and rect.position.x >= 0.0 and rect.end.x <= ArtKit.HOTBAR_TRAY.position.x and rect.position.y >= 0.0 and rect.end.y <= ArtKit.HOTBAR_STRIP.end.y and cell.size.x >= StatusIcons.MIN_CELL
+		var rect: Rect2 = Rect2(strip.position + cell.position, cell.size * cell.scale)
+		inside = inside and rect.position.x >= 0.0 and rect.end.x <= ArtKit.HOTBAR_TRAY.position.x and rect.position.y >= 0.0 and rect.end.y <= ArtKit.HOTBAR_STRIP.end.y and cell.size.x * cell.scale.x >= StatusIcons.MIN_CELL - 0.01
 
 		for other in rects:
 			inside = inside and not (other as Rect2).intersects(rect)

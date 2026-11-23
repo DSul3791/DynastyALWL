@@ -81,10 +81,7 @@ func add(id: String, read: Callable, texture: Texture2D = null, opacity: float =
 		add_child(cell)
 		_entries[id] = {"cell": cell, "state": {}}
 		_order.append(id)
-		_order.sort_custom(func(a: String, b: String) -> bool:
-			var ra: int = int(row_of(a).get("rank", 999))
-			var rb: int = int(row_of(b).get("rank", 999))
-			return ra < rb if ra != rb else a < b)
+		_sort()
 
 	var entry: Dictionary = _entries[id]
 	entry["read"] = read
@@ -92,9 +89,32 @@ func add(id: String, read: Callable, texture: Texture2D = null, opacity: float =
 	entry["opacity"] = opacity
 
 
+# A control that draws itself (the comfort meter, src/client/ui/comfort_badge.gd: its flame eases and has its own hover) taken into the row
+# as the symbol `id`: the strip places and scales it like its own symbols; `read` says when it shows ({} hides it).
+func add_control(id: String, control: Control, read: Callable) -> void:
+	if _entries.has(id):
+		remove(id)
+
+	if control.get_parent() != null:
+		control.get_parent().remove_child(control)
+
+	control.visible = false
+	add_child(control)
+	_entries[id] = {"cell": control, "state": {}, "read": read, "hosted": true}
+	_order.append(id)
+	_sort()
+
+
 # The first status row (owner, 2026-10-20): a picture shown while `active` says so. Kept for callers that have no words yet.
 func add_icon(icon_name: String, texture: Texture2D, active: Callable, opacity: float = 0.85) -> void:
 	add(icon_name, func() -> Dictionary: return {"tone": 0} if bool(active.call()) else {}, texture, opacity)
+
+
+func _sort() -> void:
+	_order.sort_custom(func(a: String, b: String) -> bool:
+		var ra: int = int(row_of(a).get("rank", 999))
+		var rb: int = int(row_of(b).get("rank", 999))
+		return ra < rb if ra != rb else a < b)
 
 
 func remove(id: String) -> void:
@@ -137,8 +157,10 @@ func tick(delta: float, force: bool = false) -> void:
 
 		if show_it and state != entry["state"]:
 			entry["state"] = state
-			cell.tooltip_text = tip_of(id)
-			cell.queue_redraw()
+
+			if not bool(entry.get("hosted", false)):   # a hosted control keeps its own hover and drawing
+				cell.tooltip_text = tip_of(id)
+				cell.queue_redraw()
 		elif not show_it:
 			entry["state"] = {}
 
@@ -184,9 +206,13 @@ func _layout() -> void:
 		var row: int = floori(float(from_end) / float(per_row))
 		var col: int = from_end % per_row                     # columns counted leftward from the strip's right end
 		var cell: Control = _entries[ids[i]]["cell"]
-		cell.size = Vector2(cell_px, cell_px)
 		cell.position = Vector2(width - float(col + 1) * cell_px - float(col) * GAP, (CELL - cell_px) - float(row) * (cell_px + GAP))
-		cell.queue_redraw()
+
+		if bool(_entries[ids[i]].get("hosted", false)):
+			cell.scale = Vector2.ONE * (cell_px / maxf(cell.size.x, 1.0))   # it draws at its own size: scaled to the row's
+		else:
+			cell.size = Vector2(cell_px, cell_px)
+			cell.queue_redraw()
 
 
 func _draw_cell(id: String) -> void:
