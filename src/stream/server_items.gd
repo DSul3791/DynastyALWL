@@ -22381,7 +22381,7 @@ func _plant_point(peer: int, kind: String, item_id: String, flat: Vector2, grid:
 	var why: String = _sow_refusal(key, item_id)
 
 	if why == "season":
-		why = _season_refusal(item_id, spot)
+		why = _season_refusal(item_id, _bed_key_pos(key))
 
 	if why == "":
 		used[key] = true

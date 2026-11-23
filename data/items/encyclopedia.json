@@ -10488,6 +10488,7 @@
 			"kind": "material",
 			"description": "Seeds for sowing parsnip. Plant in a tilled bed.",
 			"how_to_get": [
+				"Picked from wild carrot (summer/autumn)",
 				"From a ripe parsnip in a garden"
 			],
 			"used_for": [

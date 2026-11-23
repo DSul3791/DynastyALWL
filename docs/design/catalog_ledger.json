@@ -11856,28 +11856,28 @@
    "number": 810,
    "name": "Parsnip",
    "category": "material",
-   "catalog": "FUTURE",
+   "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "FUTURE-GATED",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "Live 23 Nov 2026: parsnip had no seed source; wild carrot gives parsnip seed (coordinator ruling for Dave, recorded in the coordinator log ANSWERED_FOR_DAVE). test_every_plant, test_garden_loop."
   },
   {
    "key": "parsnip_seeds",
    "number": 811,
    "name": "Parsnip seeds",
    "category": "material",
-   "catalog": "FUTURE",
+   "catalog": "KEEP",
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "FUTURE-GATED",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "Live 23 Nov 2026: parsnip had no seed source; wild carrot gives parsnip seed (coordinator ruling for Dave, recorded in the coordinator log ANSWERED_FOR_DAVE). test_every_plant, test_garden_loop."
   },
   {
    "key": "mug",

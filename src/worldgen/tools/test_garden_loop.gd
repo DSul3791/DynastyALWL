@@ -339,7 +339,7 @@ func weather_part() -> void:
 	check(wet_bed != 0 and dry_bed != 0, "two beds 21 m apart, one under rain and one under a dry sky")
 	check(sow_at(wet_pos, "carrot_seeds") == 1 and sow_at(dry_pos, "carrot_seeds") == 1, "both are sown with carrot")
 	var grow: int = int(crops()["carrot"]["grow_days"])
-	days(grow / 2)
+	days(floori(grow * 0.5))
 	check(items.plot_moisture(wet_pos) > 70.0, "the rained-on bed is wet (%.0f percent)" % items.plot_moisture(wet_pos))
 	check(items.plot_moisture(dry_pos) < 25.0, "the bed under a dry sky has dried out (%.0f percent)" % items.plot_moisture(dry_pos))
 	var wet_age: float = float(crop_at(wet_pos)["age"])
@@ -351,10 +351,9 @@ func weather_part() -> void:
 	restart()
 	var back: Array = [crop_row(wet_pos), crop_row(dry_pos), snappedf(items.plot_moisture(wet_pos), 0.01), snappedf(items.plot_moisture(dry_pos), 0.01)]
 	check(str(back) == str(keep), "a restart half way keeps both crops (age, wet days) and their beds' moisture (%s -> %s)" % [str(keep), str(back)])
-	wet_bed = bed_near(wet_pos)
 	dry_bed = bed_near(dry_pos)
 
-	days(grow - grow / 2 + 1)
+	days(grow - floori(grow * 0.5) + 1)
 	check(items.crop_stage(crop_at(wet_pos)) == 3, "the rained-on carrot is ripe on time")
 	check(items.crop_stage(crop_at(dry_pos)) < 3, "the dry one is not (age %.1f of %d days, %d wet days)" % [float(crop_at(dry_pos)["age"]), grow, int(crop_at(dry_pos)["wet"])])
 	notes.clear()
@@ -411,7 +410,7 @@ func two_players_part() -> void:
 
 	check(items.crop_stage(crop_at(a_cell)) == 3 and items.crop_stage(crop_at(b_cell)) == 3, "watered by both in turn, both lettuces are ripe")
 	restart()
-	plot = bed_near(cells[0]) if bed_near(cells[0]) != 0 else _plot_by_kind("wooden_garden_plot")
+	plot = _plot_by_kind("wooden_garden_plot")
 	check(plot != 0 and items.crop_stage(crop_at(a_cell)) == 3 and items.crop_stage(crop_at(b_cell)) == 3, "a restart keeps the shared plot's two ripe crops")
 	items.report_position(1, a_cell + Vector3(0.5, 0.0, 0.0))
 	items.report_position(2, b_cell + Vector3(0.5, 0.0, 0.0))
@@ -466,3 +465,19 @@ func hemisphere_part() -> void:
 	season[0] = "autumn"   # spring across the equator
 	days(int(crops()["rye"]["grow_days"]) + 1)
 	check(not crop_at(rye_pos).is_empty() and items.crop_stage(crop_at(rye_pos)) == 3, "after a restart and that side's spring the rye ripens")
+
+	# A tree's seed in open ground goes by the place's season too: refused in that side's winter (calendar summer), planted in its summer.
+	var by_species: Dictionary = ((items._drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
+	check(not by_species.is_empty(), "there are tree seeds to plant")
+
+	if by_species.is_empty():
+		return
+
+	var tree_seed: String = str(by_species.values()[0])
+	give(tree_seed, 2)
+	var spot: Vector3 = Vector3(300.5, 10.0, ACROSS_Z + 300.5)
+	season[0] = "summer"
+	notes.clear()
+	check(sow_at(spot, tree_seed) == 0 and notes.any(func(t): return str(t).begins_with("The ground is frozen hard")), "the %s is not planted where it is winter while the calendar says summer (%s)" % [tree_seed, str(notes)])
+	season[0] = "winter"
+	check(sow_at(spot, tree_seed) == 1, "and is planted there in that side's summer while the calendar says winter")
