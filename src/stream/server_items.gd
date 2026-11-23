@@ -10920,7 +10920,14 @@ func _repair(peer: int, inv, slot: int) -> void:
 		return
 
 	if bench != "" and not station_near(peer, bench):
-		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+		# Beside a worn-out or unfuelled smithy the player is told what is wrong with it, as a craft there is (ore loop, 23 Nov 2026).
+		if _broken_station_near(peer, bench):
+			_say(peer, "Needs repair")
+		elif _unfuelled_smithy_near(peer, bench):
+			_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % _station_name(bench))
+		else:
+			_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+
 		return
 
 	# The tool's own slot must not be spent as material. A cost is filled like a recipe's (ingredient groups: an Iron chunk mends what asks
