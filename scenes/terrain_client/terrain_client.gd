@@ -7910,7 +7910,7 @@ func _crouch_walk_step(now: int) -> void:
 		_walk_phase = 4
 		return
 
-	var tree: Vector3 = _crouch_trees[_crouch_case / 4][1]
+	var tree: Vector3 = _crouch_trees[floori(_crouch_case / 4.0)][1]
 	var ang: float = deg_to_rad(90.0 * (_crouch_case % 4))
 	var toward: Vector3 = Vector3(-sin(ang), 0.0, -cos(ang))
 	var start: Vector3 = tree - toward * 2.0 + Vector3(toward.z, 0.0, -toward.x) * 0.8
