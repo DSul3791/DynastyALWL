@@ -4,7 +4,7 @@ extends SceneTree
 # roof reads 2.0). A Refined house on a 4 m foundation: walls alone keep no rain off; a 45 gable roof of four panels on the two long walls
 # covers the whole floor, its open gable ends too (cover is straight down); a flat ceiling on the walls covers the room under it (it had no
 # cover box, so rain fell through every ceiling: structures.json half_x, half_z, height and cover_below_m on each ceiling kind). Under a roof the wind drops to warmth.json covered_wind_share,
-# so a cold windy night feels warmer inside than out. Two builders (coordinator ruling, 23 Nov 2026): anyone may build on a foundation, and its
+# so a cold windy night feels warmer inside than out. A second storey on the ceiling, under its own gable, keeps both floors dry. Two builders (coordinator ruling, 23 Nov 2026): anyone may build on a foundation, and its
 # owner may take down what another player built there; what it gives back lies on that floor for its builder, never in the owner's pack.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shelter_walk.gd
 
@@ -130,6 +130,31 @@ func _init() -> void:
 
 	check(open.is_empty(), "under a flat ceiling the room is covered (ceiling at %.2f m above the floor; open at %s)" % [ceiling_y - floor_y, str(open)])
 	check(not covered(items, Vector3(120.0, ceiling_y + 0.2, 100.0)), "standing on the ceiling (the upper storey's floor) is open to the sky")
+
+	# A second storey on the ceiling under its own gable (#1792): both floors are covered.
+	for a in [[-1, -2, 0], [1, -2, 0], [-1, 2, 0], [1, 2, 0], [-2, -1, 90], [-2, 1, 90], [2, -1, 90], [2, 1, 90]]:
+		put(items, "wall_section_kit", Vector3(120.0 + float(a[0]), ceiling_y + 0.12, 100.0 + float(a[1])), int(a[2]))
+
+	var upper: Array = []
+
+	for id in items._items:
+		if str(items._items[id].get("struct", {}).get("kind", "")) == "wall_section" and float(items._items[id]["pos"].y) > floor_y + 2.0 and absf(float(items._items[id]["pos"].x) - 120.0) < 3.0:
+			upper.append(id)
+
+	var upper_top: float = float(items._items[upper[0]]["pos"].y) + 2.4 if not upper.is_empty() else ceiling_y + 2.5
+
+	for x in [-1.0, 1.0]:
+		put(items, "roof_section_kit", Vector3(120.0 + x, upper_top, 100.0 - 1.9), 180, 0)
+		put(items, "roof_section_kit", Vector3(120.0 + x, upper_top, 100.0 + 1.9), 0, 0)
+
+	var top_panels: int = 0
+
+	for id in items._items:
+		if str(items._items[id].get("struct", {}).get("kind", "")) == "roof_section" and absf(float(items._items[id]["pos"].x) - 120.0) < 3.0:
+			top_panels += 1
+
+	check(upper.size() == 8 and top_panels == 4, "a second storey of eight walls stands on the ceiling under its own gable (%d walls, %d panels; %s)" % [upper.size(), top_panels, str(said.slice(-1))])
+	check(covered(items, Vector3(120.0, feet, 100.0)) and covered(items, Vector3(120.0, ceiling_y + 0.2, 100.0)) and covered(items, Vector3(121.8, ceiling_y + 1.6, 98.2)), "the ground floor and the upper floor are both covered")
 
 	_two_builders(items)
 	print("shelter walk: %d failures" % failures)
