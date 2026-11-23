@@ -47,6 +47,7 @@ func setup(server_items, server_animals) -> void:
 	items.send_reject = func(peer, reason):
 		reject.call(peer, reason)
 		print("AUDIT reject %d %d %d" % [int(peer), RobotRules.now_ms(), int(reason)])
+	_wrap_hits.call_deferred()   # items.hit_animal is set after this setup (terrain_server.gd)
 	print("AUDIT on: robot audit lines follow (src/server/robot_audit.gd)")
 
 
@@ -138,3 +139,24 @@ func _wolf_packs(now: int) -> void:
 		if _pack_phase.get(pid, "") != said:
 			_pack_phase[pid] = said
 			print("AUDIT wolfpack %d %d %s %d wolves" % [int(pid), now, said, (pack.get("ids", []) as Array).size()])
+
+
+# Every melee blow at an animal and what it struck: `AUDIT strike <peer> <ms> <reach> <seen ms> <target id or 0> <its distance then>`.
+func _wrap_hits() -> void:
+	var hit: Callable = items.hit_animal
+
+	if not hit.is_valid():
+		return
+
+	items.hit_animal = func(peer, origin, dir, reach, amount):
+		var seen: Array = items.strike_seen.get(peer, [-1, -1])
+		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
+		var answer: Variant = hit.call(peer, origin, dir, reach, amount)
+		var near: float = INF
+
+		for id in animals.animals:
+			var at: Vector3 = animals.animals[id]["pos"]
+			near = minf(near, Vector2(at.x - origin.x, at.z - origin.z).length())
+
+		print("AUDIT strike %d %d %.1f %d %d %s nearest now %.2f" % [int(peer), RobotRules.now_ms(), float(reach), int(seen[0]), target, "hit" if (answer is Dictionary and not (answer as Dictionary).is_empty()) or (answer is bool and answer) else "miss", near])
+		return answer
