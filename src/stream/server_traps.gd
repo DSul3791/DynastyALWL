@@ -166,7 +166,7 @@ func chance_at(at: Vector3, row: Dictionary, baited: bool, c: Dictionary = {}) -
 	if is_night(use):
 		p *= float(use.get("night_mult", 1.0))
 
-	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(use.get("storm_rain", 0.6)):
+	if host._rain_here(at) >= float(use.get("storm_rain", 0.6)):   # the rain over the snare itself (not the starter row's)
 		p *= float(use.get("storm_mult", 1.0))
 
 	return clampf(p, 0.0, 1.0)
@@ -628,7 +628,7 @@ func check_away(id: int) -> bool:
 	if bait >= 0:
 		mult *= float(c.get("bait_mult", 2.0))
 
-	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(c.get("storm_rain", 0.6)):
+	if host._rain_here(it["pos"]) >= float(c.get("storm_rain", 0.6)):   # the rain over the snare itself
 		mult *= float(c.get("storm_mult", 1.0))
 
 	# Each game hour of the time away (the latest away_max_hours) at that hour's activity of the rabbits (and the fox): worked out once,
