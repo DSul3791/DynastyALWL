@@ -13,6 +13,7 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
+const SkillTable := preload("res://src/client/ui/goals/skill_table.gd")
 
 var open: bool = false
 
@@ -26,8 +27,6 @@ var _attributes: VBoxContainer
 var _skills_box: VBoxContainer
 var _skill_search: LineEdit
 var _rep_box: VBoxContainer
-var _lessons: Dictionary = {}                # skill id -> lesson lines "Hob: up to level 40, 3 stone"
-var _teachers: Dictionary = {}               # skill id -> NPC names whose dialogue offers a lesson in it (read from data/npcs/dialogue)
 var _remains_box: VBoxContainer
 var _skills_cfg: Dictionary = {}              # data/items/skills.json: names and order of the skills
 var _phase: float = 0.0
@@ -388,7 +387,7 @@ func refresh() -> void:
 			var soon: Label = _label("planned: nothing practises it yet", BODY_PX - 4)
 			soon.modulate = Color(0.75, 0.75, 0.75)
 			notes.add_child(soon)
-		elif unmet == "" and row.size() > 7 and effective < cap - 1:   # the last point under a cap is never reached by use (skills.json slow_last): no "% to" it
+		elif unmet == "" and row.size() > 7 and effective < (cap if cap >= 100 else cap - 1):   # the last point under a cap is never reached by use (skills.json slow_last): no "% to" it; in Master use reaches 100
 			var next_level: Label = _label("%d%% to %d" % [int(row[7]), effective + 1], BODY_PX - 4)
 			next_level.modulate = Color(0.8, 0.8, 0.8)
 			notes.add_child(next_level)
@@ -437,55 +436,13 @@ func refresh() -> void:
 		_skills_box.add_child(none)
 
 
-# The NPCs who teach a skill: any dialogue node with a can_train condition on it, found once in the shipped dialogue files.
+# The NPCs who teach a skill and their lesson lines, read once from the shipped dialogue (skill_table.gd, shared with the Journal's Skills page).
 func _teachers_of(skill: String) -> Array:
-	if _teachers.is_empty():
-		_teachers["_"] = []
-		var names: Dictionary = {}
-		var roster: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/npcs.json"))
-
-		if typeof(roster) == TYPE_DICTIONARY:
-			for npc in roster.get("npcs", []):
-				names[str(npc.get("id", ""))] = str(npc.get("name", npc.get("id", "")))
-
-		for file in DirAccess.get_files_at("res://data/npcs/dialogue"):
-			var tree: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/dialogue/" + file)) if file.ends_with(".json") else null
-
-			if typeof(tree) != TYPE_DICTIONARY:
-				continue
-
-			for node in tree.get("nodes", {}).values():
-				for choice in node.get("choices", []):
-					var cond: Dictionary = choice.get("if", {})
-
-					if cond.has("can_train"):
-						var taught: String = str(cond["can_train"][0])
-
-						if not _teachers.has(taught):
-							_teachers[taught] = []
-
-						var who: String = str(names.get(str(tree.get("npc", "")), tree.get("npc", "")))
-
-						if not _teachers[taught].has(who):
-							_teachers[taught].append(who)
-
-						var can: Array = cond["can_train"]
-						var price: String = "%d %s" % [int(can[3]), str(can[2]).replace("_", " ")] if can.size() > 3 and int(can[3]) > 0 else "free"
-						var lesson: String = "%s: up to level %d, %s" % [who, int(can[1]), price]
-
-						if not _lessons.has(taught):
-							_lessons[taught] = []
-
-						if not _lessons[taught].has(lesson):
-							_lessons[taught].append(lesson)
-
-	return _teachers.get(skill, [])
+	return SkillTable.teachers_of(skill)
 
 
-# Lesson lines for a skill ("Hob: up to level 40, 3 stone"); empty when nobody teaches it.
 func _lessons_of(skill: String) -> Array:
-	_teachers_of(skill)
-	return _lessons.get(skill, [])
+	return SkillTable.lessons_of(skill)
 
 
 # Roots first, each followed by its descendants (a family tree read top down), in file order within a level.
@@ -517,14 +474,7 @@ func _walk_family(id: String, defs: Dictionary, out: Array, seen: Dictionary) ->
 
 # The first unmet unlock need of a skill as "Swordplay 15" ("" when open), from the values the server sent.
 func _unmet_need(def: Dictionary, by_id: Dictionary, defs: Dictionary) -> String:
-	for need in def.get("needs", []):
-		var row: Array = by_id.get(str(need["skill"]), [])
-		var have: int = int(row[6]) if row.size() > 6 else 1
-
-		if have < int(need["value"]):
-			return "%s %d" % [str(defs.get(str(need["skill"]), {}).get("name", need["skill"])), int(need["value"])]
-
-	return ""
+	return SkillTable.unmet_need(def, by_id, defs)
 
 
 # How many parents deep a skill sits (the family tree row), by its first parent.
