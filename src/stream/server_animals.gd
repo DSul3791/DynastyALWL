@@ -131,6 +131,12 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 	return walls.is_valid() and bool(walls.call(x0, z0, x1, z1, float(cfg.get("wall_margin_m", 0.3))))
 
 
+# True when a wall or heavy station stands on the straight line between two points (no body margin): a blow never lands through one,
+# either way (an enemy's charge at a player behind a wall, a player's jab at an animal behind one; coordinator's fight walk, 23 Nov 2026).
+func wall_between(from: Vector3, to: Vector3) -> bool:
+	return walls.is_valid() and bool(walls.call(from.x, from.z, to.x, to.z, 0.0))
+
+
 func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
@@ -645,7 +651,7 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 		var to: Vector2 = Vector2(at.x - origin.x, at.z - origin.z)
 		var d: float = to.length()
 
-		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5:
+		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
 			best_d = d
 			best = id
 
@@ -826,7 +832,13 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 		var now_d: float = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length()
 
 		if now_d < m and now_d < Vector2(was.x - at.x, was.z - at.z).length():
-			a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)
+			# A long step (a charge, a server that stepped late) can carry it across the player's middle: put on the circle on the far side
+			# it went through them. It stops where it came to them instead (gate review of #1716).
+			if absf(a["pos"].y - at.y) <= 2.0 and Vector2(a["pos"].x - at.x, a["pos"].z - at.z).dot(Vector2(was.x - at.x, was.z - at.z)) < 0.0:      # not under one on a ledge (keep_off leaves those too)
+				a["pos"] = AnimalContact.stop_at(at, was, a["pos"], m)
+			else:
+				a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)
+
 			kept = true
 
 	# One player at a time can push it out of one body into another standing beside them (robot bear hunt 23 Nov 2026: two hunters 1.4 m
