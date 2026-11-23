@@ -2410,7 +2410,7 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 		return
 
 	if it.has("struct"):
-		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0))])
+		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
 		return
 
 	var at: Vector3 = it["pos"]
@@ -7826,6 +7826,15 @@ func _load_world_items() -> void:
 				if typeof(saved_site) == TYPE_DICTIONARY:
 					entry["struct"]["site"] = {"bp": int((saved_site as Dictionary).get("bp", 0)), "have": (saved_site as Dictionary).get("have", {})}
 
+					if typeof((saved_site as Dictionary).get("kinds", null)) == TYPE_DICTIONARY:
+						entry["struct"]["site"]["kinds"] = saved_site["kinds"]   # which items went in (_note_kinds); a 9257 site has none
+
+			if row.size() > 23 and str(row[23]) != "":
+				var saved_kinds: Variant = JSON.parse_string(str(row[23]))
+
+				if typeof(saved_kinds) == TYPE_DICTIONARY:
+					entry["struct"]["kinds"] = saved_kinds   # a built piece's materials as they went in (_finish_site); a 9257 row has 23 values
+
 			if row.size() > 12 and _traps != null and _traps.is_kind(str(row[9])):
 				entry["struct"]["owner"] = str(row[11])
 				entry["struct"]["seq"] = float(row[12])
@@ -7966,14 +7975,15 @@ func _clear_retired_pieces() -> void:
 		_load_row_of.erase(id)
 		_dirty = true
 
-		for item_id in give_back:
-			var number: int = _refund_number(table.number_of(str(item_id)))
+		var kinds: Dictionary = (it["struct"]["site"] as Dictionary).get("kinds", {}) if it["struct"].has("site") else it["struct"].get("kinds", {})
 
-			if number <= 0:
+		for item_id in give_back:
+			if table.number_of(str(item_id)) <= 0:
 				push_error("cleared %s: no item %s to give back" % [str(it["struct"]["kind"]), str(item_id)])
 				continue
 
-			drop_in_world(number, int(give_back[item_id]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
+			for pair in _kinds_back(str(item_id), int(give_back[item_id]), kinds):   # what went in (_note_kinds); a 9257 piece: a group's lowest member
+				drop_in_world(int(pair[0]), int(pair[1]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
 
 
 # An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.
@@ -12329,11 +12339,10 @@ func _tools_for(tool_class: String, tier_needed: int) -> String:
 # All the materials back into the pack, or none (with a word) when they do not fit.
 # A blueprint's materials back in the pack, all or nothing. `taken_down`: the piece stood, so what it burned is gone (blueprints.json "spent", [item,
 # count], also counted in "cost": a lantern's candle or lamp oil; coordinator ruling 10 Nov 2026) and only the rest comes back.
-func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false) -> bool:
+func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false, kinds: Dictionary = {}) -> bool:   # kinds: the built piece's struct["kinds"] (_note_kinds)
 	var given: Array = []
 
 	for need in row["cost"]:
-		var number: int = table.number_of(str(need[0]))
 		var count: int = int(need[1])
 
 		if taken_down:
@@ -12344,9 +12353,12 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 		if count <= 0:
 			continue
 
-		number = _refund_number(number)   # a group cost gives back its lowest member (we do not record which member was used)
-		var left: int = inv.add(number, count)
-		given.append([number, count - left])
+		var left: int = 0
+
+		for pair in _kinds_back(str(need[0]), count, kinds):   # what was put in; a piece from before kinds were kept: a group cost's lowest member
+			var short: int = inv.add(int(pair[0]), int(pair[1]))
+			given.append([int(pair[0]), int(pair[1]) - short])
+			left += short
 
 		if left > 0:
 			for put in given:
@@ -12779,6 +12791,47 @@ func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 # "have": {item id: count}}; taking a site down gives back what was put in.
 
 
+# Which items a site's materials really were (site["kinds"] = {cost item id: {item id: count}}, kept on the built piece as struct["kinds"]), so a
+# take-down gives those back, not the cheapest member of a group cost (to-do sweep 23 Nov 2026: Bronze nails put in came back as Copper nails).
+# A site or piece from before (build 9257) has none: what it holds comes back as before.
+func _note_kinds(site: Dictionary, need_id: String, taken: Array) -> void:
+	if table.spend_order(table.number_of(need_id)).is_empty():
+		return   # a plain cost comes back as itself anyway: only a group cost is noted, so saves stay small
+
+	if not site.has("kinds"):
+		site["kinds"] = {}
+
+	var row: Dictionary = site["kinds"].get(need_id, {})
+
+	for unit in taken:
+		if (unit[1] as Dictionary).has("liquid_ml") or int(unit[3]) <= 0:
+			continue
+
+		var member: String = table.id_of(int(unit[0]))
+		row[member] = int(row.get(member, 0)) + int(unit[3])
+
+	site["kinds"][need_id] = row
+
+
+# `count` of the cost item `need_id` back as the items they were (`kinds`, from _note_kinds), any rest as its cheapest member: [[number, count], ...].
+func _kinds_back(need_id: String, count: int, kinds: Dictionary) -> Array:
+	var out: Array = []
+	var row: Dictionary = kinds.get(need_id, {}) if typeof(kinds.get(need_id, {})) == TYPE_DICTIONARY else {}
+
+	for member in row:
+		var number: int = table.number_of(str(member))
+		var n: int = mini(count, int(row[member]))
+
+		if n > 0 and number > 0:
+			out.append([table.current_number(number), n])
+			count -= n
+
+	if count > 0:
+		out.append([_refund_number(table.number_of(need_id)), count])
+
+	return out
+
+
 func _site_of(it: Dictionary) -> Dictionary:
 	if it.has("struct") and it["struct"].has("site"):
 		return it["struct"]["site"]
@@ -12936,8 +12989,9 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 		var number: int = table.number_of(str(need[0]))
 		var fills: PackedInt32Array = inv.fills_of(number)
 		var put: int = mini(left, inv.count_fill(number, true))   # building takes plain units only
+		var taken: Array = []   # [number, inst, wear, count] rows of what came out of the pack and the containers: the members, for a refund
 
-		if put > 0 and not inv.remove_fill(number, put, [], true):
+		if put > 0 and not inv.remove_fill(number, put, taken, true):
 			put = 0
 
 		for src in _spend_sorted(sources, number, func(s): return int(_items[s[1]]["number"]) if not bool(s[2]) and _items.has(s[1]) and fills.has(int(_items[s[1]]["number"])) else 0):
@@ -12948,13 +13002,14 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 				var box = _chests[int(_items[src[1]]["struct"]["uid"])]
 				var from_box: int = mini(left - put, box.count_fill(number, true))
 
-				if from_box > 0 and box.remove_fill(number, from_box, [], true):
+				if from_box > 0 and box.remove_fill(number, from_box, taken, true):
 					put += from_box
 					_push_box(int(src[1]), box)
 			elif _items.has(src[1]) and fills.has(int(_items[src[1]]["number"])) and not _items[src[1]].has("inst"):
 				var g: Dictionary = _items[src[1]]
 				var from_ground: int = mini(left - put, int(g["count"]))
 				put += from_ground
+				taken.append([int(g["number"]), {}, 0, from_ground])
 
 				if from_ground >= int(g["count"]):
 					if g.has("scatter"):
@@ -12966,6 +13021,7 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 
 		if put > 0:
 			have[str(need[0])] = int(have.get(str(need[0]), 0)) + put
+			_note_kinds(site, str(need[0]), taken)
 			pulled.append("%d %s" % [put, _item_name_lower(str(need[0]))])
 
 	var missing: PackedStringArray = []
@@ -12996,6 +13052,10 @@ func _item_name_lower(item_id: String) -> String:
 # Every material is in: the site becomes the real piece.
 func _finish_site(peer: int, id: int) -> void:
 	var it: Dictionary = _items[id]
+
+	if not (it["struct"]["site"] as Dictionary).get("kinds", {}).is_empty():
+		it["struct"]["kinds"] = it["struct"]["site"]["kinds"]   # a take-down gives back what was put in (_refund_blueprint)
+
 	it["struct"].erase("site")
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 	_grid_add(id, it)
@@ -13022,7 +13082,10 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 		if count > 0:
 			var was_src: String = _gain_source
 			_gain_source = SRC_RETURN
-			give(peer, _refund_number(table.number_of(str(item_id))), count)
+
+			for pair in _kinds_back(str(item_id), count, _site_of(it).get("kinds", {})):
+				give(peer, int(pair[0]), int(pair[1]))
+
 			_gain_source = was_src
 
 	_items.erase(id)
@@ -13236,7 +13299,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true, it["struct"].get("kinds", {})):
 			return
 	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
 		_say(peer, "Make room in your pack first.")
