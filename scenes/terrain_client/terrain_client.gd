@@ -1166,7 +1166,7 @@ func _on_connection_failed() -> void:
 		return
 
 	if _remote:
-		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection." % [_host, _port])
+		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection. A full server (%d players) also turns new players away: if the server pick page showed it full, try again when someone leaves." % [_host, _port, 32])   # 32: terrain_server.gd MAX_PLAYERS (ENet turns the 33rd away before any message, so the game cannot tell "full" from "down")
 		return
 
 	_finish(1)
