@@ -3112,9 +3112,13 @@ func _send_npcs(delta: float) -> void:
 
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])
+			map_knowledge.note_trails(peer, Vector2i(block[0], block[1]), block[3])   # kept for the Map's trails (protocol 152)
 
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
+
+		for block in map_knowledge.trail_updates_for(peer):
+			net.map_trails.rpc_id(peer, block[0], block[1], block[2])
 
 		var marks_sig: int = items.trap_marks_sig(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150): sent when they change
 

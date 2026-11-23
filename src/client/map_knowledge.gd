@@ -5,9 +5,11 @@ extends RefCounted
 # The Journal's Map page (map_page.gd) draws from here and redraws only the blocks this says changed.
 
 const Codec := preload("res://src/shared/map_codec.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")
 
 signal block_changed(block: Vector2i)
 signal traps_changed
+signal trails_changed
 
 const TRAP_KINDS := ["snare_trap", "bird_trap_set"]   # the kinds the Map page has a mark for (data/animals/traps.json)
 
@@ -15,6 +17,9 @@ var cell_m: float = 16.0
 var block_cells: int = 32
 var blocks: Dictionary = {}   # Vector2i block -> {cell index: [q, height, water, trees]}
 var traps: Array = []         # [[Vector2 world x/z, kind], ...]: the traps this character has set (protocol 150, net.trap_marks_received)
+var trails: Dictionary = {}   # Vector2i trail block -> [[kind, PackedVector2Array world x/z], ...]: game trails this character was near (protocol 152)
+var trails_tracking: int = 10 # the Tracking level from which the Map draws them (data/map.json trails_tracking)
+var _steps: Dictionary = {}   # Vector2i trail block -> its surveyed steps (surveyed_trail_steps), dropped when its routes or a map block over it change
 
 
 func _init() -> void:
@@ -23,6 +28,7 @@ func _init() -> void:
 	if typeof(parsed) == TYPE_DICTIONARY:
 		cell_m = float(parsed.get("cell_m", cell_m))
 		block_cells = int(parsed.get("block_cells", block_cells))
+		trails_tracking = int(parsed.get("trails_tracking", trails_tracking))
 
 
 # net.map_block_received: a block replaces what was held for it.
@@ -35,6 +41,14 @@ func set_block(block: Vector2i, cells: Dictionary) -> void:
 		blocks.erase(block)
 	else:
 		blocks[block] = cells
+
+	# Trail blocks whose routes may run over this map block (a route can reach a block side past its own) are worked out again.
+	var side: float = TrailCodec.ROUTE_BLOCK_M
+	var area: Rect2 = Rect2(Vector2(block) * cell_m * float(block_cells), Vector2.ONE * cell_m * float(block_cells)).grow(side)
+
+	for trail_block in _steps.keys():
+		if area.intersects(Rect2(Vector2(trail_block) * side, Vector2(side, side))):
+			_steps.erase(trail_block)
 
 	block_changed.emit(block)
 
@@ -49,6 +63,49 @@ func set_traps(rows: Array) -> void:
 
 	traps = kept
 	traps_changed.emit()
+
+
+# net.map_trails_received: one trail block's routes replace what was held for it.
+func set_trails(block_x: int, block_z: int, routes: PackedByteArray) -> void:
+	var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(block_x, block_z), TrailCodec.ROUTE_BLOCK_M)
+
+	if decoded.is_empty():
+		trails.erase(Vector2i(block_x, block_z))
+	else:
+		trails[Vector2i(block_x, block_z)] = decoded
+
+	_steps.erase(Vector2i(block_x, block_z))
+
+	trails_changed.emit()
+
+
+# The trail pieces the Map draws: [[a, b], ...] world x/z, each step of a route whose middle lies in a cell this character has surveyed;
+# only trail blocks touching `view` (world x/z) when it has a size. Worked out once per trail block and kept until it changes.
+func surveyed_trail_steps(view: Rect2 = Rect2()) -> Array:
+	var out: Array = []
+	var side: float = TrailCodec.ROUTE_BLOCK_M
+
+	for block in trails:
+		if view.has_area() and not view.grow(side).intersects(Rect2(Vector2(block) * side, Vector2(side, side))):  # routes spill past their block side
+			continue
+
+		if not _steps.has(block):
+			var steps: Array = []
+
+			for route in trails[block]:
+				var pts: PackedVector2Array = route[1]
+
+				for i in range(1, pts.size()):
+					var mid: Vector2 = (pts[i - 1] + pts[i]) * 0.5
+
+					if not cell_at(Vector2i(floori(mid.x / cell_m), floori(mid.y / cell_m))).is_empty():
+						steps.append([pts[i - 1], pts[i]])
+
+			_steps[block] = steps
+
+		out.append_array(_steps[block])
+
+	return out
 
 
 # A cell by its world cell coordinate (any block), [] where nothing is known.

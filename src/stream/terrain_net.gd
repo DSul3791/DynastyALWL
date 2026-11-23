@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 151  # 151 (22 Nov 2026, the friends' play test: players could not see each other): report_position gains yaw (the body's facing); new my_look (client to server: the character's name, body model and body code), player_look (server to client: another player's look and worn pieces) and players (server to client, unreliable, about 8 a second: the other players within 150 m), src/stream/server_players.gd and src/client/player_view.gd. Client and server must be updated together.
+const PROTOCOL_VERSION := 152  # 152 (23 Nov 2026, Dave: game trails "auto added to the map once you get to a certain skill level"): map_trails(block_x, block_z, routes), the game trails of a 256 m trail block this character has been near, kept in its map record (server_map.gd note_trails) and sent on joining and when new; the Map page draws them inside the surveyed cells at Tracking data/map.json trails_tracking and up. Client and server must be updated together.
+# 151 (22 Nov 2026, the friends' play test: players could not see each other): report_position gains yaw (the body's facing); new my_look (client to server: the character's name, body model and body code), player_look (server to client: another player's look and worn pieces) and players (server to client, unreliable, about 8 a second: the other players within 150 m), src/stream/server_players.gd and src/client/player_view.gd. Client and server must be updated together.
 # 150 (22 Nov 2026, Dave: "if you place a snare it will mark on your map"): trap_marks(rows), the snares and Bird traps this character has set, [[x, z, kind], ...] oldest first (server_traps.gd marks_of), sent when they change; the Journal Map page marks them. Client and server must be updated together.
 # 149 (22 Nov 2026, Dave: game trails "where animals might travel occassionally and we could set traps or snares"): trails(block_x, block_z, bytes, routes), routes the block's trails between animal places (src/shared/trail_codec.gd decode_routes: [kind, world points]), drawn as matted grass. Client and server must be updated together.
 # 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
@@ -142,6 +143,7 @@ signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
 signal burrows_received(points: PackedVector3Array)
 signal trap_marks_received(rows: Array)
+signal map_trails_received(block_x: int, block_z: int, routes: PackedByteArray)
 signal nests_received(points: PackedVector3Array, kinds: PackedByteArray)
 signal ice_holes_received(points: PackedVector3Array, untils: PackedFloat32Array)
 signal far_fires_received(points: PackedVector3Array, tiers: PackedByteArray)
@@ -722,6 +724,13 @@ func blood(points: PackedVector3Array) -> void:
 @rpc("authority", "call_remote", "reliable")
 func trap_marks(rows: Array) -> void:
 	trap_marks_received.emit(rows)
+
+
+# The Map's game trails (protocol 152, server_map.gd note_trails): one 256 m trail block's routes (trail_codec.gd decode_routes) this
+# character has been near; map_knowledge.gd keeps them for the Map page.
+@rpc("authority", "call_remote", "reliable")
+func map_trails(block_x: int, block_z: int, routes: PackedByteArray) -> void:
+	map_trails_received.emit(block_x, block_z, routes)
 
 
 # Animal burrows (protocol 87, MikeW 3 Nov): ground positions of the burrows of living animals within 120 m, nearest 40, sent

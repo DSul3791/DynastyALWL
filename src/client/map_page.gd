@@ -16,6 +16,8 @@ const ZOOM_MAX := 6.0
 
 var knowledge = null: set = set_knowledge
 var where: Callable                 # () -> Vector3, the body's position
+var tracking: Callable              # () -> the character's Tracking level: at knowledge.trails_tracking and up the game trails are drawn
+var _trails_on: bool = false
 var player_at: Vector3 = Vector3.ZERO
 var zoom: float = 1.5               # screen pixels per sketch pixel
 var centre: Vector2 = Vector2.ZERO  # the world sketch pixel at the middle of the page
@@ -46,6 +48,9 @@ func set_knowledge(store) -> void:
 	if knowledge != null and knowledge.traps_changed.is_connected(queue_redraw):
 		knowledge.traps_changed.disconnect(queue_redraw)
 
+	if knowledge != null and knowledge.trails_changed.is_connected(queue_redraw):
+		knowledge.trails_changed.disconnect(queue_redraw)
+
 	knowledge = store
 	_textures.clear()
 	_dirty.clear()
@@ -54,6 +59,7 @@ func set_knowledge(store) -> void:
 	if knowledge != null:
 		knowledge.block_changed.connect(_on_block_changed)
 		knowledge.traps_changed.connect(queue_redraw)
+		knowledge.trails_changed.connect(queue_redraw)
 
 		for block in knowledge.blocks:
 			_dirty[block] = true
@@ -81,6 +87,12 @@ func _world_to_sketch(at: Vector3) -> Vector2:
 func _process(_delta: float) -> void:
 	if knowledge == null or not is_visible_in_tree():
 		return
+
+	var trails_on: bool = tracking.is_valid() and float(tracking.call()) >= float(knowledge.trails_tracking)
+
+	if trails_on != _trails_on:
+		_trails_on = trails_on
+		queue_redraw()
 
 	if where.is_valid():
 		var at: Vector3 = where.call()
@@ -160,6 +172,20 @@ func _draw() -> void:
 		var text: String = "Nothing mapped yet. Explore to fill this page."
 		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
 		draw_string(font, middle - Vector2(width * 0.5, 0.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Sketch.INK, 0.6))
+
+	# Game trails (Dave 23 Nov 2026), once Tracking reaches knowledge.trails_tracking: a thin dashed charcoal line, only where surveyed.
+	if _trails_on:
+		var page: Rect2 = Rect2(Vector2.ZERO, size).grow(8.0)
+
+		var per_m: float = float(Sketch.PX) / knowledge.cell_m
+		var view: Rect2 = Rect2((centre - middle / zoom) / per_m, size / zoom / per_m)   # the page in world metres
+
+		for step in knowledge.surveyed_trail_steps(view):
+			var a: Vector2 = middle + (_world_to_sketch(Vector3(step[0].x, 0.0, step[0].y)) - centre) * zoom
+			var b: Vector2 = middle + (_world_to_sketch(Vector3(step[1].x, 0.0, step[1].y)) - centre) * zoom
+
+			if page.has_point(a) or page.has_point(b):
+				draw_dashed_line(a, b, Color(Sketch.INK, 0.55), 1.2, 4.0)
 
 	# The traps this character has set: a snare is a noose on its stake, a Bird trap a little cage.
 	for trap in knowledge.traps:

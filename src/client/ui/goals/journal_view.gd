@@ -388,6 +388,7 @@ func _show_map() -> void:
 		_map_page.name = "MapPage"
 		_map_page.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		_map_page.where = _items._player_position
+		_map_page.tracking = func() -> float: return float(_items.skill_level_of("tracking"))
 
 	if _map_page.knowledge != map_knowledge:
 		_map_page.knowledge = map_knowledge

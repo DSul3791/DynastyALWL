@@ -16,5 +16,7 @@
 	"jump_steps": 4.0,
 	"max_speed_mps": 30.0,
 	"bank_practices": 2,
-	"save_every_s": 120.0
+	"save_every_s": 120.0,
+	"trails_tracking": 10,
+	"trails_note": "Dave 23 Nov 2026: game trails are \"auto added to the map once you get to a certain skill level\". From Tracking trails_tracking (placeholder 10, Dave to set) the Map draws the game trails of every trail block this character has been near (kept in its map record, protocol 152), as a thin dashed line, only inside the cells it has surveyed."
 }
