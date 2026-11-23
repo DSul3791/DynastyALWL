@@ -263,8 +263,19 @@ def consumers(r):
     return used
 
 
+# Uses the code or a source file gives that consumers() cannot see; each with its reason.
+CODE_USES = {
+    "compost": "spread on a tilled bed (server_items.gd crop compost)",
+    "fishing_bait": "bait for the rod (fishing.json)",
+    "copper_pipe": "laid from the hand (PLUMBING_DESIGN s9)", "copper_tap": "laid from the hand (PLUMBING_DESIGN s9)",
+    "copper_drip_head": "laid from the hand (PLUMBING_DESIGN s9)",
+    "agate": "sold", "amethyst": "sold", "garnet": "sold", "gold_nugget": "sold", "silver_ore": "sold",   # sell-only finds (#1469)
+    "claw": "sold", "soap": "sold",
+}
+
+
 def unused(r):
-    used = consumers(r)
+    used = consumers(r) | set(CODE_USES)
     notes = er.read("item_uses.json").get("uses", {})
     out = []
     for iid, it in sorted(r.all.items()):
