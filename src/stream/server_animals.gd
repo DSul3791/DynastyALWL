@@ -1046,8 +1046,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if ground_height.is_valid():
 		to.y = float(ground_height.call(to.x, to.z))
 
-	if _deeper_in(to, a["pos"], others, m) and _inside_sum(to, others, m) >= _inside_sum(a["pos"], others, m) - 0.01:
-		return false   # not out of one player into another beside them unless it is less inside them all (`others`: every player's feet or infos)
+	if all_out == Vector3.INF and _deeper_in(to, a["pos"], others, m):
+		return false   # not out of one player into another beside them (`others`: every player's feet or infos); the way out of them all is less inside them all
 
 	if wall_between(a["pos"], to):
 		return false   # not through a wall or a shut door: a player who pins it against one does not push it out the other side

@@ -314,7 +314,7 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		# A charge at a dog: the dog is hit when it is within hit_m (a player in the way is still hit below).
-		if may_land and not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
+		if not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):   # no strike_min_s wait for a dog: no screen's own body, and it is not held at (gate review of #1818)
 			var dog_at: Vector3 = host.animals[int(near["dog"])]["pos"]
 
 			if _off_path(dog_at, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and not host.wall_between(a["pos"], dog_at):
