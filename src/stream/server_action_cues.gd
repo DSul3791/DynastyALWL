@@ -5,7 +5,7 @@ extends RefCounted
 # blows, picks and craft work at once; until now nobody else heard them. The server sends one small unreliable action_cue
 # (who, cue, detail, where) to the other players within the cue's earshot. One player's cues are spaced at least GAP_MS apart (a sickle
 # swing naming 40 grasses gives one cue), so a hostile or hitching client cannot flood its neighbours.
-#   CUE_BLOW  detail = tool * 8 + material (TOOLS, MATERIALS below): an axe or pick blow on a tree, log, stump, bush, boulder or the ground
+#   CUE_BLOW  detail = tool * 8 + material (tool 0 axe, 1 pick: held_item.gd _hit_tool; MATERIALS below): an axe or pick blow on a tree, log, stump, bush, boulder or the ground
 #   CUE_PICK  detail = the flora species id (flora id >> 16): a plant gathered by hand or cut by a sickle or scythe
 #   CUE_CRAFT detail = the recipe number: one craft of the queue began (knapping, twine, carving and the rest; item_sounds.gd work_type)
 # Digging, filling and the hoe are heard already (every client hears the ground edits: dig_sounds.gd), as are animal hits (animal_hit,
@@ -17,12 +17,12 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const CUE_BLOW := 1
 const CUE_PICK := 2
 const CUE_CRAFT := 3
-const TOOLS := ["axe", "pick"]                                    # hit_sounds.gd TOOLS, the two a swing can be (held_item.gd _hit_tool)
 const MATERIALS := ["wood", "stone", "soil", "ground", "brush"]   # ground: the client hears rock or soil under the point; brush: a bush (wood, softer)
 const HEAR_M := {CUE_BLOW: 60.0, CUE_PICK: 30.0, CUE_CRAFT: 25.0}   # hit_sounds unit 8 m (a blow at 60 m is about 18 dB under one at 8 m); harvest 40 m reach; craft work is quiet
 const GAP_MS := 120                                               # at most about eight cues a second from one player
 const HANDS_UP_M := 0.3                                           # position_of is the body's middle; the hands work a little above it
 const HANDS_OUT_M := 0.8                                          # and in front
+const MINE_POINT_M := 6.0                                         # a blow on the ground farther than this from the player is not its own (server_items MINE_REACH_M 4.5, plus the drift between reports)
 
 var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of
 var yaw_of: Callable = func(_peer: int) -> float: return 0.0      # the body's facing (server_players.gd), for a blow with no point of its own
@@ -35,6 +35,9 @@ var _last_ms: Dictionary = {}      # peer -> ms of its last cue
 
 # A pack action came in (terrain_server.gd, after items.action): a blow names its cue from what it struck.
 func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3) -> void:
+	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE] or not _due(peer):
+		return   # nothing to hear, or too soon after its last cue: no pack scan for a flood
+
 	var material: String = ""
 
 	match kind:
@@ -54,9 +57,10 @@ func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3)
 			return
 
 	var point: Variant = at if kind == Net.ACT_MINE else _hands(peer)
+	var here: Variant = items.position_of(peer) if items != null else null
 
-	if point == null:
-		return
+	if point == null or here == null or (kind == Net.ACT_MINE and (not at.is_finite() or (here as Vector3).distance_to(at) > MINE_POINT_M)):
+		return   # a client may not set a blow ringing anywhere it likes
 
 	cue(peer, CUE_BLOW, tool_of(peer) * 8 + MATERIALS.find(material), point)
 
@@ -94,12 +98,10 @@ func cue(peer: int, kind: int, detail: int, at: Vector3) -> bool:
 	if not send_cue.is_valid() or items == null or not HEAR_M.has(kind) or not at.is_finite():
 		return false
 
-	var now: int = int(now_ms.call())
-
-	if now - int(_last_ms.get(peer, -100000)) < GAP_MS:
+	if not _due(peer):
 		return false
 
-	_last_ms[peer] = now
+	_last_ms[peer] = int(now_ms.call())
 	var reach: float = float(HEAR_M[kind])
 
 	for other in items.peer_ids():
@@ -113,6 +115,11 @@ func cue(peer: int, kind: int, detail: int, at: Vector3) -> bool:
 			sent += 1
 
 	return true
+
+
+# Whether `peer` may send a cue now (GAP_MS since its last).
+func _due(peer: int) -> bool:
+	return int(now_ms.call()) - int(_last_ms.get(peer, -100000)) >= GAP_MS
 
 
 func forget(peer: int) -> void:

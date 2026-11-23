@@ -1113,13 +1113,13 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		if cues != null:
+			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+
 		items.action(peer, kind, a, b, count, at)
 
 		if players != null:
-			players.note_action(peer, kind)
-
-		if cues != null:
-			cues.note_action(peer, kind, a, b, count, at))
+			players.note_action(peer, kind))
 	@warning_ignore("confusable_local_declaration")
 	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
@@ -2477,8 +2477,7 @@ func _pick_flora(peer_id: int, chunk: Vector2i, id: int, near_m: float = -1.0) -
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
 	if gave and cues != null:
-		var spot: Vector3 = Vector3(all["positions"][at].x, all["positions"][at].y, all["positions"][at].z)
-		cues.cue(peer_id, CuesScript.CUE_PICK, id >> 16, spot + Vector3(0.0, minf(float(all["heights"][at]) * 0.5, 1.5), 0.0))   # the others nearby hear it picked (protocol 156; a swath's many plants give one: the cue gap)
+		cues.cue(peer_id, CuesScript.CUE_PICK, id >> 16, all["positions"][at] + Vector3(0.0, minf(float(all["heights"][at]) * 0.5, 1.5), 0.0))   # the others nearby hear it picked (protocol 156; a swath's many plants give one: the cue gap)
 
 	if gave and fruit_tree:
 		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).

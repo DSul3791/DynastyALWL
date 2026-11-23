@@ -2,7 +2,7 @@ extends SceneTree
 
 # Other players' work is heard where it happens (protocol 156, src/stream/server_action_cues.gd; Dave 23 Nov 2026: sound "very broad and hard
 # to pinpoint"). Server: a blow, a pick and a craft each send one cue to the other players within its earshot (never the one who did it),
-# at the point struck or the hands in front of the body, naming the tool; a miss, a knife on a carcass and a second cue within GAP_MS send
+# at the point struck or the hands in front of the body, naming the tool; a miss, a knife on a carcass, a ground point out of reach and a second cue within GAP_MS send
 # nothing. Client: SoundStage.other_action plays the cue as a positional voice there (the own clips: hit_sounds, harvest_sounds, the craft work).
 #   godot --headless --path . --script res://src/worldgen/tools/test_action_cues.gd
 
@@ -98,6 +98,10 @@ func _server_checks() -> void:
 	got.clear()
 	cues.note_action(1, Net.ACT_MINE, 1, 0, 0, Vector3(2, 0.5, 3))
 	check(got.size() == 2 and int(got[0][3]) == 8 + Cues.MATERIALS.find("ground") and (got[0][4] as Vector3).is_equal_approx(Vector3(2, 0.5, 3)), "a blow on the ground is at the point struck (%s)" % str(got))
+	clock[0] += 200
+	got.clear()
+	cues.note_action(1, Net.ACT_MINE, 1, 0, 0, Vector3(10, 1, 0))
+	check(got.is_empty(), "a blow on the ground far from the player (beside another) is not sent (%d)" % got.size())
 	clock[0] += 200
 	got.clear()
 	cues.note_action(1, Net.ACT_MINE, 1, 1, 0, Vector3(2, 0.5, 3))
