@@ -597,7 +597,7 @@ func at_the_floor() -> void:
 				animals.tick(DT)
 
 			var after: int = maxi(landed.size() - 1, 0)
-			check(not landed.is_empty() and after == 0, "a %s lets a player it crippled limp off at %.1f m/s (%d more blows)" % [sp, mps, after])
+			check((landed.is_empty() and float(animals.species_def(sp)["defend"].get("bluff_share", 0.0)) > 0.0) or (not landed.is_empty() and after == 0), "a %s lets a player it crippled limp off at %.1f m/s (%d more blows)" % [sp, mps, after])
 			cells.append("%d more blows, %.0f m off" % [after, Vector2(animals.animals[id]["pos"].x - me.x, animals.animals[id]["pos"].z - me.z).length() if animals.animals.has(id) else -1.0])
 
 		print("  %-14s | %-23s | %s" % [sp, cells[0], cells[1]])

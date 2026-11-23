@@ -25,6 +25,7 @@ const WALL_LOOK_S := 0.2        # each charging step keeps this far (at its spee
                                 # when slower (ServerAnimals STAGGER: 0.13 s at 30 fps): two of them are covered with the nose and the 0.3 m wall
                                 # margin. shortcut: a 20 fps server (0.2 s legs) or a far-band charge (3 Hz) can still be drawn a little way in.
 const WALL_TRIES := 3           # charges again after one a wall kept from its foe, before it calms
+const CLOSE_PACE_X := 0.3       # a charge set off close runs no slower than this share of its charge_mps (paced to land at strike_min_s)
 
 var host                        # ServerAnimals
 var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list the wolves read)
@@ -271,12 +272,22 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		var speed: float = float(def.get("charge_mps", 11.0))
+		var full_mps: float = speed   # a paced close charge still keeps its wall look at full speed (_charge_cross: the client may draw it on that far)
 		# strike_min_s (a defend row's, else the animals' own): a blow lands only once the charge has run this long, so every client draws the
 		# strike before it lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step,
 		# still drawn warning; robots over 120 ms, 23 Nov 2026: a warthog's charge from 1 m hit 0.18 s after it began, so its first blow was drawn
 		# 1.7 to 2.8 m short of the player, the lunge only starting on screen as the blow came).
 		a["charged_s"] = float(a.get("charged_s", 0.0)) + dt
-		var may_land: bool = float(a["charged_s"]) >= float(def.get("strike_min_s", host.cfg.get("strike_min_s", 0.0))) - 0.0001
+		var strike_min: float = float(def.get("strike_min_s", host.cfg.get("strike_min_s", 0.0)))
+		var may_land: bool = float(a["charged_s"]) >= strike_min - 0.0001
+
+		# A charge that sets off close runs at the pace that brings it to the player as the blow may land, not at full speed into a hold
+		# beside them (robots over 120 ms, 23 Nov 2026: a rhino's charge from 3.6 m struck 0.33 s in, the charge row drawn 0.1 s after
+		# the blow; standing at the player, it ran on the spot). Never slower than CLOSE_PACE_X of its charge.
+		if not may_land and not near.is_empty() and not near.has("dog") and not a.has("run_m"):   # a chase of a runner keeps its full speed (HB-2)
+			var gap: float = Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length() - AnimalContact.contact_m(str(a["sp"]))
+			speed = clampf(gap / maxf(strike_min - float(a["charged_s"]), dt), speed * CLOSE_PACE_X, speed)
+
 		var step_m: float = speed * dt
 
 		if a.has("round_to") and not near.is_empty() and not host.wall_between(a["pos"], near["pos"]):
@@ -311,7 +322,7 @@ func step(a: Dictionary, dt: float) -> void:
 			ground_for = func(x: float, z: float) -> float: return host.swim_height(species, x, z)
 			blocked_for = Callable()
 
-		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), _charge_cross(a, near, speed))
+		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), _charge_cross(a, near, full_mps))
 		a["heading"] = float(a["dir"])
 		var start: Vector3 = a["pos"]   # the charge hits whoever is within hit_m of the ground it covered this step, the start included (a player under it)
 
