@@ -91,7 +91,36 @@ Together these should put about 100 to 150 clustered players on one main thread.
   and idle builders; the plan is that every later job moved off the main thread sizes itself from it too.
 - **Prebuilt ground.** "The generator part should prebuild our entire world or the parts we are working with right now. The server
   doesn't build anything; it just serves the prebuilt stuff up to the clients." The region for now is the starting nine tiles. The
-  plan for that is in its own section below once measured.
+  plan is in "Prebuilt ground for the nine tiles" below.
+
+## Prebuilt ground for the nine tiles (plan, not built)
+
+Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client
+asks for, surface blocks only), two 1 km squares: one round the starter town, one in open country.
+
+| | per km2 | one tile (236 km2) | nine tiles (2,123 km2) |
+|---|---|---|---|
+| Build time, 3 threads | 35-41 s | 2.3-2.7 h | about 22 h |
+| Build time, 11 threads (a guess for Dave's PC, not measured) | about 10 s | about 40 min | about 6 h |
+| Disk, as the server keeps it | 26-42 MB | 6-10 GB | 55-90 GB |
+| Gzipped for the copy | 10-16 MB | 2.5-4 GB | 20-35 GB |
+
+Three quarters of the blocks are the finest level (16 m), so leaving out far levels saves little.
+
+How it would work:
+1. A builder on Dave's PC makes the server's generated-ground file (`generated_gN.sqlite`) for a chosen area from the committed
+   tiles and writes the stamp beside it (terrain version + tile fingerprint, the same `terrain_version.txt` the store checks).
+2. Install, with the server stopped: copy the file in as the store's next generation. The store already keeps player changes
+   apart (`edits.sqlite`, `digs.dat`), so digs and fills stay. A stamp that does not match the server's tiles is refused.
+3. The server serves blocks from the file. A block not in it is still made the old way, so nobody at the edge is stranded;
+   a count of such blocks in the server log shows where the area must grow.
+4. Trees and plants are not stored today (the server places them from the tiles on each visit; only removals are saved).
+   Prebuilding those is a second step, not measured yet.
+
+Recommendation: start with the starter tile (3,4) only, about 40 minutes on Dave's PC and 2.5-4 GB to copy, then the other
+eight. Not for the Wednesday package: the builder and install step are new and must first be tried on a copy of the 9257 world
+(test_save_9257 and a restart with the new file). A new generation drops the store's "settled" copies; those are a cache remade
+from the edit log, so no player change is lost, but the first visits after install remake them.
 
 ## Rules kept
 
