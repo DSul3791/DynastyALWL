@@ -54,7 +54,7 @@ pass() {
 
 START=$(date +%s)
 pass "$PLAN" play
-[ "$PLAN" = "first_hours" ] && { sleep 3; pass rejoin rejoin; }
+{ [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ]; } && { sleep 3; pass rejoin rejoin; }
 echo "robots: passes took $(( $(date +%s) - START )) s"
 kill $LP 2>/dev/null; sleep 1
 kill $SP 2>/dev/null; sleep 3

@@ -287,5 +287,14 @@ func _init() -> void:
 	var tool_missing: Dictionary = Planner.plan(fake, table, 4, 1, {"have": func(i): return 5 if i == a else 0, "station_ok": func(_r): return true, "free": false})
 	check(not bool(tool_missing["ok"]), "a missing kept tool is never made for you")
 
+	# A locked recipe (Fish trap) pressed with its parts in the pack is refused out loud, never silently (the screens robot, 23 Nov 2026).
+	var lock_it = fresh("user://test_auto_craft_locked")
+	var said: Array = []
+	lock_it.send_notice = func(_p, text): said.append(str(text))
+	give(lock_it, "stick", 10)
+	give(lock_it, "twine", 4)
+	queue(lock_it, 390, 1)   # recipes.json fish_trap
+	check(entries(lock_it).is_empty() and said.any(func(t): return t.begins_with("Nobody knows how to make")), "a locked recipe says why it cannot be made (%s)" % str(said))
+
 	print("auto craft tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

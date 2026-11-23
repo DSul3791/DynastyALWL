@@ -14,7 +14,8 @@ extends Node
 # inside (a drawn animal's middle inside this player's capsule), held (a remote player's hand mount away from its hand bone), blocked (keys held,
 # no movement, in a stance where standing at the same spot moves), rejoin (the pack after
 # quit and rejoin is not the pack before).
-# Plans (--robot-plan=): first_hours (default: craft, drop and pick up, stances, forest crouch walk, hunt, sleep, quit), rejoin (join, check
+# Plans (--robot-plan=): first_hours (default: craft, drop and pick up, stances, forest crouch walk, hunt, sleep, quit), screens (every
+# screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
@@ -437,6 +438,8 @@ func run() -> void:
 		await _stances()
 		await _forest_walk(40.0)
 		await _watch(30.0)
+	elif plan == "screens":
+		await _screens()
 	else:
 		if admin:
 			await _craft_chain()
@@ -765,6 +768,186 @@ func _sleep() -> void:
 	await _wait(2.0)
 	await _stance_to(StanceScript.STAND)
 	print("ROBOT %s step sleep: lay down, slept, woke" % robot_name)
+
+
+# --- screens (23 Nov 2026: the client side a tester touches in the first hours) --------------------------------------------------------------
+
+func _esc() -> void:
+	for down in [true, false]:
+		var ev: InputEventKey = InputEventKey.new()
+		ev.keycode = KEY_ESCAPE
+		ev.physical_keycode = KEY_ESCAPE
+		ev.pressed = down
+		Input.parse_input_event(ev)
+		await get_tree().process_frame
+		await get_tree().process_frame
+
+
+func _screens() -> void:
+	var view = client.items
+
+	if admin:
+		_step = "screens kit"
+		for kit in [["plant_fibre", 60], ["stick", 30], ["stone", 20], ["firewood", 10], ["rock", 6]]:
+			_give(str(kit[0]), int(kit[1]))
+
+		await _check_pack("given")
+
+	# Each screen opens on its key and closes on Esc, and nothing is left open.
+	for id in ["inventory", "character", "journal", "goals", "map"]:
+		_step = "screen " + id
+		await _tap(id)
+		await _wait(1.0)
+
+		if not view.screen_open():
+			_fail("screen", id, "the %s key opened no screen" % id)
+
+		await _esc()
+		await _wait(0.6)
+
+		if view.screen_open():
+			_fail("screen", id + "_close", "Esc did not close the %s screen" % id)
+			await _esc()
+		else:
+			print("ROBOT %s step screen %s: opened and closed" % [robot_name, id])
+
+	_step = "screen menu"
+	await _esc()
+	await _wait(0.8)
+
+	if not client.game_menu.root.visible:
+		_fail("screen", "menu", "Esc in the world opened no game menu")
+
+	await _esc()
+	await _wait(0.6)
+
+	if client.game_menu.root.visible:
+		_fail("screen", "menu_close", "Esc did not close the game menu")
+
+	# Every page of the game menu (Settings, Display, Sound, Controls, ...) builds and shows without a script error.
+	_step = "menu pages"
+	await _esc()
+	await _wait(0.5)
+	var pages: Array = client.game_menu._pages.keys()
+
+	for page in pages:
+		client.game_menu.show_page(str(page))
+		await _wait(0.3)
+
+	client.game_menu.show_page("main")
+	await _esc()
+	await _wait(0.5)
+	print("ROBOT %s step menu pages: %d shown" % [robot_name, pages.size()])
+
+	# The skills page (Dave 23 Nov 2026): every skill reads "value / cap" with the cap a band top (25, 50, 75, 100) and the value under it.
+	_step = "skills page"
+	await _tap("character")
+	await _wait(1.5)
+	var rows: int = 0
+	var shape: RegEx = RegEx.create_from_string("^(\\d+) / (\\d+)$")
+	var pending: Array = [view._character._panel] if view._character != null and view._character._panel != null else []
+
+	while not pending.is_empty():
+		var n: Node = pending.pop_back()
+		pending.append_array(n.get_children())
+
+		if n is Label:
+			var m: RegExMatch = shape.search((n as Label).text)
+
+			if m != null:
+				rows += 1
+				var value: int = int(m.get_string(1))
+				var cap: int = int(m.get_string(2))
+
+				if not cap in [25, 50, 75, 100] or value > cap or (cap == 25 and value > 24):
+					_fail("skills", (n as Label).text, "the skills page shows %s: the cap is not a band top or the value is over it" % (n as Label).text)
+
+	if rows == 0:
+		_note("skills", "no \"value / cap\" rows found on the character screen")
+
+	print("ROBOT %s step skills page: %d skill rows" % [robot_name, rows])
+	await _esc()
+	await _wait(0.5)
+
+	# Every recipe whose Craft button is lit, pressed through the screen: it must queue, or the server must say why not.
+	_step = "craft lit"
+	await _tap("inventory")
+	await _wait(1.5)
+	var lit: int = 0
+
+	for number in view.recipes.numbers():
+		var r: Dictionary = view.recipes.recipe(number)
+
+		if r.is_empty() or not view.station_makes(r) or not (view._can_craft(number) and view._station_ok(r)):
+			continue
+
+		lit += 1
+		var name: String = str(r.get("id", r.get("name", number)))
+		var heard: int = _notices.size()
+		var queued: int = _queue_msec
+		view._start_craft(number, 1)
+		var end: int = Time.get_ticks_msec() + 2500
+
+		while Time.get_ticks_msec() < end and _queue_msec == queued and _notices.size() == heard:
+			await get_tree().process_frame
+
+		if _queue_msec != queued and _queue_left > 0:
+			while _queue_left > 0:
+				client.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+				var was: int = _queue_msec
+				var stop: int = Time.get_ticks_msec() + 2000
+
+				while _queue_msec == was and Time.get_ticks_msec() < stop:
+					await get_tree().process_frame
+
+				await _wait(0.15)
+		elif _notices.size() > heard:
+			_fail("craft_lit", name, "%s: the Craft button is lit but the server said: %s" % [name, str(_notices.back())])
+		elif _queue_msec == queued:
+			_fail("craft_lit", name, "%s: the Craft button is lit but nothing happened (no queue, no words)" % name)
+
+	print("ROBOT %s step craft lit: %d lit recipes pressed" % [robot_name, lit])
+	await _check_pack("craft lit")
+
+	# Split and drop through the screen.
+	_step = "split"
+	var slot: int = _slot_of("plant_fibre")
+
+	if slot >= 0 and client.items.inventory.counts[slot] >= 2:
+		var total: int = _count("plant_fibre")
+		var stacks: int = 0
+
+		for k in client.items.inventory.slot_count:
+			stacks += 1 if client.items.inventory.numbers[k] == _num("plant_fibre") else 0
+
+		view._selected = slot
+		view._split_selected()
+		await _check_pack("split")
+		var after: int = 0
+
+		for k in client.items.inventory.slot_count:
+			after += 1 if client.items.inventory.numbers[k] == _num("plant_fibre") else 0
+
+		if _count("plant_fibre") != total or after != stacks + 1:
+			_fail("pack", "split", "split: %d fibre in %d stacks became %d in %d" % [total, stacks, _count("plant_fibre"), after])
+
+		_step = "drop one"
+		total = _count("plant_fibre")
+		view._selected = _slot_of("plant_fibre")
+		view._drop_selected(false)
+		await _check_pack("drop one")
+
+		if _count("plant_fibre") != total - 1:
+			_fail("pack", "drop_one", "dropping one fibre left %d of %d" % [_count("plant_fibre"), total])
+		else:
+			print("ROBOT %s step split and drop: one stack became two, one fibre dropped" % robot_name)
+
+	# Quit with the screen open: the rejoin pass checks the pack came back.
+	_step = "quit with the screen open"
+
+	if not view.open:
+		await _tap("inventory")
+		await _wait(0.8)
 
 
 # Stand and look around: the watchers keep checking the animals and players drawn.
