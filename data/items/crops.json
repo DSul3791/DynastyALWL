@@ -26,14 +26,15 @@
 					4
 				]
 			],
+			"sow_seeds": 50,
 			"seeds_back": [
 				"wheat_seeds",
 				[
-					2,
-					4
+					150,
+					300
 				]
 			],
-			"seed_source": "wild tall grass in grassland, late summer (1 to 3 seeds)",
+			"seed_source": "wild tall grass in grassland, late summer (plenty of seeds)",
 			"biomes": [
 				"temperate_grassland",
 				"mixed_forest"
@@ -63,11 +64,12 @@
 					3
 				]
 			],
+			"sow_seeds": 50,
 			"seeds_back": [
 				"barley_seeds",
 				[
-					2,
-					4
+					150,
+					300
 				]
 			],
 			"seed_source": "wild tall grass, late summer",
@@ -98,11 +100,12 @@
 					3
 				]
 			],
+			"sow_seeds": 50,
 			"seeds_back": [
 				"oats_seeds",
 				[
-					2,
-					4
+					150,
+					300
 				]
 			],
 			"seed_source": "wild grass on heath and boreal edges",
@@ -134,11 +137,12 @@
 					5
 				]
 			],
+			"sow_seeds": 50,
 			"seeds_back": [
 				"rye_seeds",
 				[
-					2,
-					4
+					150,
+					300
 				]
 			],
 			"seed_source": "wild grass in dry grassland, autumn",
@@ -167,11 +171,12 @@
 					5
 				]
 			],
+			"sow_seeds": 30,
 			"seeds_back": [
 				"carrot_seeds",
 				[
-					2,
-					4
+					90,
+					180
 				]
 			],
 			"seed_source": "wild carrot (seed heads, summer)",
@@ -199,11 +204,12 @@
 					6
 				]
 			],
+			"sow_seeds": 10,
 			"seeds_back": [
 				"potato_seeds",
 				[
-					2,
-					4
+					30,
+					60
 				]
 			],
 			"seed_source": "dig a wild tuber with a shovel",
@@ -231,11 +237,12 @@
 					5
 				]
 			],
+			"sow_seeds": 30,
 			"seeds_back": [
 				"turnip_seeds",
 				[
-					2,
-					4
+					90,
+					180
 				]
 			],
 			"seed_source": "wild turnip or radish, spring",
@@ -265,11 +272,12 @@
 					3
 				]
 			],
+			"sow_seeds": 30,
 			"seeds_back": [
 				"cabbage_seeds",
 				[
-					2,
-					4
+					90,
+					180
 				]
 			],
 			"seed_source": "wild sea cabbage on beaches, summer",
@@ -298,11 +306,12 @@
 					5
 				]
 			],
+			"sow_seeds": 30,
 			"seeds_back": [
 				"onion_seeds",
 				[
-					2,
-					4
+					90,
+					180
 				]
 			],
 			"seed_source": "wild garlic and wild leek bulbs, spring (nearest wild source)",
@@ -331,11 +340,12 @@
 					5
 				]
 			],
+			"sow_seeds": 20,
 			"seeds_back": [
 				"peas_seeds",
 				[
-					2,
-					4
+					60,
+					120
 				]
 			],
 			"seed_source": "wild vetch pods, summer (stand-in)",
@@ -363,11 +373,12 @@
 					4
 				]
 			],
+			"sow_seeds": 20,
 			"seeds_back": [
 				"beet_seeds",
 				[
-					2,
-					4
+					60,
+					120
 				]
 			],
 			"seed_source": "wild beet on coasts, summer",
@@ -399,11 +410,12 @@
 					8
 				]
 			],
+			"sow_seeds": 100,
 			"seeds_back": [
 				"flax_seeds",
 				[
-					2,
-					4
+					300,
+					600
 				]
 			],
 			"seed_source": "wild flax, summer (already a plant here)",
@@ -435,11 +447,12 @@
 					6
 				]
 			],
+			"sow_seeds": 20,
 			"seeds_back": [
 				"radish_seeds",
 				[
-					2,
-					4
+					60,
+					120
 				]
 			],
 			"seed_source": "wild radish on coasts and verges, summer",
@@ -468,11 +481,12 @@
 					4
 				]
 			],
+			"sow_seeds": 30,
 			"seeds_back": [
 				"lettuce_seeds",
 				[
-					2,
-					4
+					90,
+					180
 				]
 			],
 			"seed_source": "wild prickly lettuce on dry verges, summer",
@@ -496,11 +510,12 @@
 					2
 				]
 			],
+			"sow_seeds": 30,
 			"seeds_back": [
 				"parsnip_seeds",
 				[
-					1,
-					3
+					90,
+					180
 				]
 			],
 			"seed_source": "wild parsnip (seed heads, late summer)",
@@ -531,14 +546,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"fern_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild bracken picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild bracken picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"mixed_forest",
@@ -575,14 +591,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"heather_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild heather picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild heather picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"heath"
@@ -616,14 +633,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"reeds_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild common reed picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild common reed picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"mangrove",
@@ -660,14 +678,15 @@
 					4
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"nettle_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild nettle picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild nettle picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"mixed_forest",
@@ -694,11 +713,12 @@
 					12
 				]
 			],
+			"sow_seeds": 1,
 			"seeds_back": [
 				"hazelnuts",
 				[
-					1,
-					2
+					3,
+					6
 				]
 			],
 			"seed_source": "hazelnuts from a wild hazel (the nut is its seed)",
@@ -727,14 +747,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"bramble_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild bramble picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild bramble picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"mixed_forest",
@@ -762,14 +783,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"juniper_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild juniper picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild juniper picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"boreal_forest",
@@ -805,14 +827,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"gorse_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild gorse picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild gorse picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"temperate_grassland"
@@ -841,14 +864,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"dwarf_birch_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild dwarf birch picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild dwarf birch picked late in its season (plenty of seeds)",
 			"biomes": [
 				"tundra"
 			],
@@ -880,14 +904,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"saltbush_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild saltbush picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild saltbush picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"hot_desert"
@@ -920,14 +945,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"cactus_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild barrel cactus picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild barrel cactus picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"hot_desert"
@@ -956,14 +982,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"raspberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild raspberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild raspberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"mixed_forest",
@@ -989,14 +1016,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"elder_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild elder picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild elder picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"marsh",
@@ -1026,14 +1054,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"blackthorn_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild blackthorn picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild blackthorn picked late in its season (plenty of seeds)",
 			"biomes": [
 				"temperate_forest",
 				"temperate_grassland"
@@ -1058,14 +1087,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"hawthorn_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild hawthorn picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild hawthorn picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest",
@@ -1092,14 +1122,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"sea_buckthorn_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild sea buckthorn picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sea buckthorn picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"dry_scrub"
@@ -1124,14 +1155,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"rosemary_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild rosemary picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild rosemary picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"savanna"
@@ -1160,14 +1192,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"wild_banana_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild wild banana picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild wild banana picked late in its season (plenty of seeds)",
 			"biomes": [
 				"tropical_forest"
 			],
@@ -1195,14 +1228,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"prickly_pear_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild prickly pear picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild prickly pear picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"hot_desert",
@@ -1229,14 +1263,15 @@
 					6
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"drakethorn_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild drakethorn picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild drakethorn picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"heath",
@@ -1262,14 +1297,15 @@
 					8
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"sunberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sunberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sunberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"savanna",
@@ -1299,14 +1335,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"hagwillow_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild hag willow picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild hag willow picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh"
 			],
@@ -1338,14 +1375,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"honeyspindle_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild honeyspindle picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild honeyspindle picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"mixed_forest",
@@ -1371,14 +1409,15 @@
 					8
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"sleetberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sleetberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sleetberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"boreal_forest",
@@ -1405,14 +1444,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"sunsilver_vine_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sunsilver vine picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sunsilver vine picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest",
@@ -1442,14 +1482,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"cotton_grass_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild cotton grass picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild cotton grass picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"tundra"
@@ -1474,14 +1515,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"alpine_flowers_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild mountain avens picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild mountain avens picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow"
 			],
@@ -1505,14 +1547,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"blueberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild blueberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild blueberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"heath",
@@ -1539,14 +1582,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"lingonberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild lingonberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild lingonberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"heath",
@@ -1572,14 +1616,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"cranberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild cranberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild cranberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"marsh",
@@ -1605,14 +1650,15 @@
 					3
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"cloudberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild cloudberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild cloudberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"marsh",
@@ -1638,14 +1684,15 @@
 					10
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wild_strawberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild strawberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild strawberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"mixed_forest",
@@ -1672,14 +1719,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"crowberry_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild crowberry picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild crowberry picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"heath",
@@ -1709,14 +1757,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wild_garlic_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild garlic picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild garlic picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest"
@@ -1741,14 +1790,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wild_thyme_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild thyme picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild thyme picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"dry_scrub",
@@ -1777,14 +1827,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wild_mint_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild water mint picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild water mint picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"temperate_forest",
@@ -1811,14 +1862,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"sorrel_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sorrel picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sorrel picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"temperate_grassland"
@@ -1852,14 +1904,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"dandelion_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild dandelion picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild dandelion picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"beach",
@@ -1889,14 +1942,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"watercress_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild watercress picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild watercress picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"temperate_forest",
@@ -1924,14 +1978,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"samphire_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild samphire picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild samphire picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"mangrove",
@@ -1957,14 +2012,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wild_marjoram_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild marjoram picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild marjoram picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"temperate_grassland"
@@ -1989,14 +2045,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wild_sage_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sage picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sage picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"savanna"
@@ -2023,14 +2080,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"lavender_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild lavender picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild lavender picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"temperate_grassland"
@@ -2055,14 +2113,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"yarrow_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild yarrow picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild yarrow picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"heath",
@@ -2090,14 +2149,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"plantain_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild ribwort plantain picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild ribwort plantain picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"temperate_grassland"
@@ -2124,14 +2184,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"chamomile_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild chamomile picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild chamomile picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"mixed_forest",
@@ -2158,14 +2219,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"comfrey_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild comfrey picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild comfrey picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"temperate_forest",
@@ -2193,14 +2255,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"st_johns_wort_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild St John's wort picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild St John's wort picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"mixed_forest",
@@ -2227,14 +2290,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"valerian_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild valerian picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild valerian picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"mixed_forest",
@@ -2260,14 +2324,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"meadowsweet_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild meadowsweet picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild meadowsweet picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"temperate_grassland"
@@ -2292,14 +2357,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"feverfew_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild feverfew picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild feverfew picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"temperate_grassland"
@@ -2324,14 +2390,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"burdock_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild burdock picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild burdock picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"temperate_forest",
@@ -2357,14 +2424,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"mugwort_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild mugwort picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild mugwort picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"dry_scrub",
@@ -2390,14 +2458,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"arnica_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild arnica picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild arnica picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"heath"
@@ -2422,14 +2491,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"angelica_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild angelica picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild angelica picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"boreal_forest",
@@ -2455,14 +2525,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"aloe_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild aloe picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild aloe picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"hot_desert",
@@ -2492,14 +2563,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"foxglove_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild foxglove picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild foxglove picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"mixed_forest",
@@ -2529,14 +2601,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"belladonna_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild deadly nightshade picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild deadly nightshade picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest"
@@ -2562,14 +2635,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wolfsbane_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild wolfsbane picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild wolfsbane picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"boreal_forest",
@@ -2595,14 +2669,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"henbane_seeds",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild henbane picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild henbane picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"dry_scrub",
@@ -2628,14 +2703,15 @@
 					5
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"owlpetal_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild owlpetal picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild owlpetal picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest"
@@ -2660,14 +2736,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"staunchmoss_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild staunchmoss picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild staunchmoss picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"boreal_forest",
@@ -2699,14 +2776,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"emberroot_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild emberroot picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild emberroot picked late in its season (plenty of seeds)",
 			"biomes": [
 				"dry_scrub",
 				"heath",
@@ -2734,14 +2812,15 @@
 					5
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"wispbloom_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild wispbloom picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild wispbloom picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh"
 			],
@@ -2766,14 +2845,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"hushfern_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild hushfern picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild hushfern picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest",
@@ -2800,14 +2880,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"heartroot_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild heartroot picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild heartroot picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"mixed_forest",
@@ -2834,14 +2915,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"tideglass_weed_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild tideglass weed picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild tideglass weed picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"mangrove"
@@ -2870,14 +2952,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"gloomthistle_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild gloomthistle picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild gloomthistle picked late in its season (plenty of seeds)",
 			"biomes": [
 				"bare_rock",
 				"heath",
@@ -2903,14 +2986,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"dewlantern_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild dewlantern picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild dewlantern picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest",
@@ -2937,14 +3021,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"marrowroot_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild marrowroot picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild marrowroot picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"savanna",
@@ -2974,14 +3059,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"riverbraid_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild riverbraid picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild riverbraid picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"marsh",
@@ -3010,14 +3096,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"brinebell_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild brinebell picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild brinebell picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"mangrove",
@@ -3043,14 +3130,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"quenchbell_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild quenchbell picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild quenchbell picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"bare_rock",
@@ -3076,14 +3164,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"whisperfern_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild whisperfern picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild whisperfern picked late in its season (plenty of seeds)",
 			"biomes": [
 				"boreal_forest",
 				"mixed_forest",
@@ -3114,14 +3203,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"duskmallow_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild duskmallow picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild duskmallow picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"marsh",
@@ -3152,14 +3242,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"tanglewort_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild tanglewort picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild tanglewort picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mixed_forest",
 				"temperate_forest",
@@ -3189,14 +3280,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"stormreed_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild stormreed picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild stormreed picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh"
 			],
@@ -3221,14 +3313,15 @@
 					12
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"truthsage_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild truthsage picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild truthsage picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"heath"
@@ -3253,14 +3346,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"echo_moss_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild echo moss picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild echo moss picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"bare_rock",
@@ -3290,14 +3384,15 @@
 					3
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"nightcrown_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild nightcrown picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild nightcrown picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"tundra"
@@ -3322,14 +3417,15 @@
 					4
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"mournbloom_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild mournbloom picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild mournbloom picked late in its season (plenty of seeds)",
 			"biomes": [
 				"bare_rock",
 				"boreal_forest",
@@ -3359,14 +3455,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"pilgrims_cup_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild Pilgrim's cup picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild Pilgrim's cup picked late in its season (plenty of seeds)",
 			"biomes": [
 				"mangrove",
 				"marsh",
@@ -3392,14 +3489,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"frostglass_orchid_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild frostglass orchid picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild frostglass orchid picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"tundra"
@@ -3429,14 +3527,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"sevenyear_lily_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sevenyear lily picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sevenyear lily picked late in its season (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"marsh",
@@ -3462,14 +3561,15 @@
 					2
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"stillwater_seeds",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild stillwater lotus picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild stillwater lotus picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh",
 				"mixed_forest",
@@ -3496,14 +3596,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"gloaming_star_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild gloaming star picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild gloaming star picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"heath",
@@ -3533,14 +3634,15 @@
 					2
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"tidecrown_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild tidecrown picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild tidecrown picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"mangrove"
@@ -3565,14 +3667,15 @@
 					10
 				]
 			],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"thatch_grass_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild thatching grass picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild thatching grass picked late in its season (plenty of seeds)",
 			"biomes": [
 				"alpine_meadow",
 				"boreal_forest",
@@ -3602,14 +3705,15 @@
 			"water_per_day": 0.3,
 			"soil": "any garden soil",
 			"yields": [],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"dune_grass_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild dune grass picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild dune grass picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach",
 				"temperate_grassland"
@@ -3631,14 +3735,15 @@
 			"water_per_day": 0.6,
 			"soil": "any garden soil",
 			"yields": [],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"cattail_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild cattail picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild cattail picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh"
 			],
@@ -3658,14 +3763,15 @@
 			"water_per_day": 0.6,
 			"soil": "any garden soil",
 			"yields": [],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"tussock_sedge_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild tussock sedge picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild tussock sedge picked late in its season (plenty of seeds)",
 			"biomes": [
 				"marsh"
 			],
@@ -3685,14 +3791,15 @@
 			"water_per_day": 0.6,
 			"soil": "any garden soil",
 			"yields": [],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"moss_hummock_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild bog moss hummock picked in summer (1 to 2 spores)",
+			"seed_source": "a wild bog moss hummock picked in summer (plenty of spores)",
 			"biomes": [
 				"marsh"
 			],
@@ -3713,14 +3820,15 @@
 			"water_per_day": 0.3,
 			"soil": "any garden soil",
 			"yields": [],
+			"sow_seeds": 5,
 			"seeds_back": [
 				"sea_holly_seed",
 				[
-					1,
-					2
+					15,
+					30
 				]
 			],
-			"seed_source": "a wild sea holly picked late in its season (1 to 2 seeds)",
+			"seed_source": "a wild sea holly picked late in its season (plenty of seeds)",
 			"biomes": [
 				"beach"
 			],
@@ -3744,14 +3852,15 @@
 					12
 				]
 			],
+			"sow_seeds": 2,
 			"seeds_back": [
 				"wild_rose_seed",
 				[
-					1,
-					2
+					6,
+					12
 				]
 			],
-			"seed_source": "a wild rose's hips picked in autumn (1 to 2 seeds)",
+			"seed_source": "a wild rose's hips picked in autumn (plenty of seeds)",
 			"biomes": [
 				"heath",
 				"mixed_forest",

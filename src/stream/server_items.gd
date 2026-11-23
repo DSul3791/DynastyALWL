@@ -2574,7 +2574,8 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(roll_amount(peer, rng, int(row[1]), int(row[2]))) * more))))
 
 	if natural != "":
-		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, 1, 3)) * more))))
+		var span: Array = ((_drops.get("plant_yield", {}) as Dictionary).get("counts", {}) as Dictionary).get(natural, [1, 3])   # seeds and nuts by the dozen (drops.json plant_yield)
+		give(peer, table.number_of(natural), maxi(1, int(round(float(roll_amount(peer, rng, int(span[0]), int(span[1]))) * more))))
 		_goal_event(peer, "foraged_new", natural, true)   # ADD-24: a plant's own yield picked by hand (not the fixed sticks and fibre, not seeds)
 
 	for row in seed_rows:
@@ -20958,7 +20959,9 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 			beds.append(it)
 
 	var stock: Dictionary = _stock_of(peer)
-	var have: int = _stock_have(inv, number, stock)
+	var per_spot: int = maxi(int(_crop_table().get(crop_id, {}).get("sow_seeds", 1)), 1) if kind == "seed" else 1   # seeds sown in one spot (crops.json sow_seeds: a pinch, not one grain)
+	var held_n: int = _stock_have(inv, number, stock)
+	var have: int = floori(float(held_n) / float(per_spot))   # the spots it sows
 	var cells: PackedByteArray = PackedByteArray()
 	var ok_spots: Array = []   # [point index, spot, bed, crop key]
 	var used: Dictionary = {}
@@ -20982,18 +20985,21 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 		cells[int(ok_spots[k][0])] = 2
 
 	if check:
-		reply.call(1 if not ok_spots.is_empty() and have > 0 else 0, first_why if ok_spots.is_empty() else ("You have none to plant." if have <= 0 else ""), cells)
+		reply.call(1 if not ok_spots.is_empty() and have > 0 else 0, first_why if ok_spots.is_empty() else (_none_to_plant(item_id, per_spot, held_n) if have <= 0 else ""), cells)
 		return 0
 
 	if ok_spots.is_empty() or have <= 0:
-		reply.call(0, first_why if ok_spots.is_empty() else "You have none to plant.", cells)
+		reply.call(0, first_why if ok_spots.is_empty() else _none_to_plant(item_id, per_spot, held_n), cells)
 		return 0
 
 	var before: Array = _snapshot(inv)
 	var planted: int = 0
 
 	for spot in ok_spots:
-		if (kind != "seed" and _sapling_refusal(item_id, spot[1]) != "") or _stock_take(inv, number, 1, stock) < 1:
+		if planted >= have:
+			break   # every whole spot's sowing is used (a part sowing stays in the pack)
+
+		if (kind != "seed" and _sapling_refusal(item_id, spot[1]) != "") or _stock_take(inv, number, per_spot, stock) < per_spot:
 			continue   # a point the last plant made too close, or the supplies ran out
 
 		if kind == "seed":
@@ -21015,7 +21021,13 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 	_send_changes(peer, inv, before)
 	_dirty = true
 	reply.call(2, "", cells)
-	_say(peer, "Planted %d %s." % [planted, table.name_of(number).to_lower()] if planted >= ok_spots.size() else "Planted %d: no more %s to plant." % [planted, table.name_of(number).to_lower()])
+	var what: String = table.name_of(number).to_lower()
+
+	if per_spot > 1:   # a spot takes a pinch of seed (crops.json sow_seeds)
+		_say(peer, "Sowed %d spots with %d %s." % [planted, planted * per_spot, what] if planted >= ok_spots.size() else "Sowed %d spots with %d %s: not enough for more." % [planted, planted * per_spot, what])
+	else:
+		_say(peer, "Planted %d %s." % [planted, what] if planted >= ok_spots.size() else "Planted %d: no more %s to plant." % [planted, what])
+
 	return planted
 
 
@@ -21105,6 +21117,14 @@ func _season_refusal(seed_id: String) -> String:
 
 
 # The crop record of a seed just sown (the seed already taken).
+# Why nothing is planted when the pack holds too few: none at all, or fewer than one spot's sowing (crops.json sow_seeds).
+func _none_to_plant(item_id: String, per_spot: int, held_n: int) -> String:
+	if held_n <= 0:
+		return "You have none to plant."
+
+	return "You need %d %s to sow one spot." % [per_spot, str(table.entry(item_id).get("name", item_id)).to_lower()]
+
+
 func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void:
 	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false}
 

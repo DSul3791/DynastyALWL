@@ -53,8 +53,21 @@ func count(id: String) -> int:
 	return items.inventory_of(1).count_of(items.table.number_of(id))
 
 
+# The seeds one planting spot takes (crops.json sow_seeds; 23 Nov 2026: a pinch, not one grain).
+func spot(seed_id: String) -> int:
+	for crop in items._crop_table().values():
+		if str((crop as Dictionary).get("seed", "")) == seed_id:
+			return maxi(int(crop.get("sow_seeds", 1)), 1)
+
+	return 1
+
+
 func give(id: String, n: int) -> void:
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, n, Vector3.ZERO)
+	var left: int = n
+
+	while left > 0:   # an admin give is at most 100 at a time
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, mini(left, 100), Vector3.ZERO)
+		left -= 100
 
 
 func slot_of(id: String) -> int:
@@ -185,7 +198,7 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	notes.clear()
 	sow(bed, "bronze_sickle")
 	check(not items._crops.has(key) and count("bronze_sickle") == 1 and notes.has("That cannot be planted."), "a wrong seed (a sickle) is refused: nothing sown, nothing used, the player told (%s)" % str(notes))
-	give("flax_seeds", 1)
+	give("flax_seeds", spot("flax_seeds"))
 	var seeds_held: int = count("flax_seeds")
 	notes.clear()
 	check(not sow(bed, "flax_seeds", Vector3.ZERO, -1) and not items._crops.has(key) and count("flax_seeds") == seeds_held, "seeds with no hoe in hand sow nothing (Dave play test 19 Nov 2026)")
@@ -213,8 +226,8 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	items._items.erase(920004)
 
 	# Flax, from the wild seed the gather above gave to a harvest.
-	if count("flax_seeds") == 0:
-		give("flax_seeds", 1)
+	if count("flax_seeds") < spot("flax_seeds"):
+		give("flax_seeds", spot("flax_seeds"))
 
 	var flax_seeds: int = count("flax_seeds")
 	var flax_seasons: Array = crops["flax"].get("sow_seasons", [crops["flax"].get("sow_season", "spring")])   # the season comes from the data, as the matrix below does
@@ -230,7 +243,7 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds, "sowing a bed out of reach is refused")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	sow(bed, "flax_seeds")
-	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "flax" and count("flax_seeds") == flax_seeds - 1, "in %s flax is sown with the hoe's Plant grid and the seed is used" % in_season)
+	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "flax" and count("flax_seeds") == flax_seeds - spot("flax_seeds"), "in %s flax is sown with the hoe's Plant grid and the seed is used" % in_season)
 	var extra: Dictionary = row_extra(bed)
 	check(extra.get("crop", "") == "flax" and int(extra.get("stage", -1)) == 0, "the bed's world row now says flax, stage 0 (%s)" % str(extra))
 
@@ -296,11 +309,11 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 
 		for s in ["spring", "summer", "autumn", "winter"]:
 			season[0] = s
-			give(seed_id, 1)
+			give(seed_id, spot(seed_id))
 			var seeds: int = count(seed_id)
 			sow(bed, seed_id)
 			var sown: bool = items._crops.has(key)
-			var right: bool = sown == seasons.has(s) and (count(seed_id) == seeds - 1 if sown else count(seed_id) == seeds)
+			var right: bool = sown == seasons.has(s) and (count(seed_id) == seeds - spot(seed_id) if sown else count(seed_id) == seeds)
 			items._crops.erase(key)
 			inv.remove(items.table.number_of(seed_id), count(seed_id))
 			sowable += 1 if sown else 0
@@ -325,7 +338,7 @@ func _plot_takedown_checks() -> void:
 	items._items[920002] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
 	var key: String = items._bed_key(items._bed_cells(items._items[920002])[0])   # a Medium plot's first square metre (it holds 4 crops)
 	season[0] = "spring"
-	give("barley_seeds", 1)
+	give("barley_seeds", spot("barley_seeds"))
 	sow(920002, "barley_seeds")
 	check(items._crops.has(key) and str(items.crop_row_extra(items._items[920002])["cells"][0][0]) == "barley", "barley is sown in a garden plot's first square metre")
 	check(str(items.crop_row_extra(items._items[920002]).get("crop", "")) == "barley", "a part-planted plot's row names its crop, so E waters it (an empty square metre is the hoe's to sow)")
@@ -364,7 +377,7 @@ func _plot_cell_checks() -> void:
 	check(cells.size() == 4 and items._bed_cells(items._items[920031]).size() == 9 and items._bed_cells({"pos": spot, "struct": {"kind": "stone_planter"}}).size() == 1, "a Medium plot has 4 square metres, a Large 9, a planter 1")
 	check(cells.any(func(c): return c.is_equal_approx(Vector3(-1.5, 10.0, -1.5))) and cells.any(func(c): return c.is_equal_approx(Vector3(-0.5, 10.0, -0.5))), "the Medium plot's square metres are its four quarters (%s)" % str(cells))
 	season[0] = "spring"
-	give("barley_seeds", 5)
+	give("barley_seeds", 5 * spot("barley_seeds"))
 
 	for n in 4:
 		sow(920030, "barley_seeds")
@@ -432,7 +445,8 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	season[0] = "autumn"
 	items._last_gather.clear()
 	items.gather(1, "wild_thyme", "plant", "0,0,901", 901, Vector3(501.0, 70.0, 500.0))
-	check(count("wild_thyme_seed") >= 1 and count("wild_thyme_seed") <= 2, "late in its season it has gone to seed: 1 to 2 Wild thyme seeds (%d)" % count("wild_thyme_seed"))
+	var thyme_row: Array = items._drops["seed_drops"]["wild_thyme"]["rows"][0]
+	check(count("wild_thyme_seed") >= int(thyme_row[1]) and count("wild_thyme_seed") <= int(thyme_row[2]), "late in its season it has gone to seed: %d to %d Wild thyme seeds, plenty (%d)" % [int(thyme_row[1]), int(thyme_row[2]), count("wild_thyme_seed")])
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var spot: Vector3 = Vector3(2.5, 10.0, 2.5)
 	items._items[920004] = {"number": items.table.number_of("stone_planter"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "stone_planter", "yaw": 0.0}}
@@ -676,13 +690,14 @@ func _garden_till_checks() -> void:
 	season[0] = "spring"
 	var seed_n: int = items.table.number_of("wheat_seeds")
 	inv.remove(seed_n, inv.count_of(seed_n))
-	items.action(1, Net.ACT_ADMIN_GIVE, seed_n, 0, 1, Vector3.ZERO)
-	items._items[920031] = {"number": seed_n, "count": 1, "pos": Vector3(199.5, 10.0, 199.5), "left": 1.0e9}
+	var pinch: int = spot("wheat_seeds")   # one spot's sowing (crops.json sow_seeds)
+	give("wheat_seeds", pinch)
+	items._items[920031] = {"number": seed_n, "count": pinch, "pos": Vector3(199.5, 10.0, 199.5), "left": 1.0e9}
 	items._hoe_check_ms.clear()
 	verdicts.clear()
 	items.plant_grid(1, inv, hoe, seed_n, 10000000 + 301, Vector3(201.5, 10.0, 200.5))
 	var cells: PackedByteArray = verdicts[0][5] if not verdicts.is_empty() else PackedByteArray()
-	check(bed_a != 0 and bed_b != 0 and cells.size() == 3 and cells[0] == 1 and cells[1] == 1 and cells[2] == 0 and inv.count_of(seed_n) == 1, "the planting preview: the two beds green, open ground red for a crop, nothing taken (%s)" % str(cells))
+	check(bed_a != 0 and bed_b != 0 and cells.size() == 3 and cells[0] == 1 and cells[1] == 1 and cells[2] == 0 and inv.count_of(seed_n) == pinch, "the planting preview: the two beds green, open ground red for a crop, nothing taken (%s)" % str(cells))
 	items._last_dig.clear()
 	notes.clear()
 	check(items.plant_grid(1, inv, hoe, seed_n, 301, Vector3(201.5, 10.0, 200.5)) == 2 and inv.count_of(seed_n) == 0 and not items._items.has(920031), "one click sows both beds: the seed in the pack and the one on the ground (%s)" % str(notes))
@@ -768,12 +783,12 @@ func _init() -> void:
 
 	# Sow: wheat sows in spring and autumn (winter wheat), not in summer.
 	var bed: int = bed_id()
-	give("wheat_seeds", 3)
+	give("wheat_seeds", 3 * spot("wheat_seeds"))
 	season[0] = "summer"
-	check(not sow(bed, "wheat_seeds") and count("wheat_seeds") == 3, "wheat is refused out of season and the seed is kept")
+	check(not sow(bed, "wheat_seeds") and count("wheat_seeds") == 3 * spot("wheat_seeds"), "wheat is refused out of season and the seed is kept")
 	season[0] = "spring"
-	check(sow(bed, "wheat_seeds") and count("wheat_seeds") == 2, "in spring the sowing works and uses one seed")
-	check(not sow(bed, "wheat_seeds", items._items[bed]["pos"]) and count("wheat_seeds") == 2, "a bed with a crop takes no second seed")
+	check(sow(bed, "wheat_seeds") and count("wheat_seeds") == 2 * spot("wheat_seeds"), "in spring the sowing works and uses one spot's pinch of seed (crops.json sow_seeds)")
+	check(not sow(bed, "wheat_seeds", items._items[bed]["pos"]) and count("wheat_seeds") == 2 * spot("wheat_seeds"), "a bed with a crop takes no second seed")
 	var key: String = items._bed_key(items._items[bed]["pos"])
 	check(items.crop_stage(items._crops[key]) == 0 and not items.harvest(1, items.inventory_of(1), bed), "a seedling is not ripe: harvest refused")
 
@@ -820,12 +835,12 @@ func _init() -> void:
 	check(items._crops.has(key) and items.crop_stage(items._crops[key]) == 0, "a wheat seedling (overwinters) sits out the frost")
 	items._crops.erase(key)
 	season[0] = "spring"
-	give("barley_seeds", 1)
+	give("barley_seeds", spot("barley_seeds"))
 	check(sow(bed, "barley_seeds"), "barley is sown")
 	season[0] = "winter"
 	days(1)
 	check(not items._crops.has(key), "a barley seedling does not survive winter frost")
-	give("turnip_seeds", 2)
+	give("turnip_seeds", 2 * spot("turnip_seeds"))
 	notes.clear()
 	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring, summer and autumn)")
 	check(notes.any(func(n): return str(n).begins_with("The ground is frozen hard")), "and the winter refusal says the ground is frozen (%s)" % str(notes))
@@ -882,7 +897,7 @@ func _init() -> void:
 	season[0] = "spring"
 	give("bucket", 1)
 	items.inventory_of(1).wear[slot_of("bucket")] = 8000   # a filled bucket (the fill and the pour scaling: test_liquid_ingredient)
-	give("barley_seeds", 1)
+	give("barley_seeds", spot("barley_seeds"))
 	sow(bed, "barley_seeds")
 	items._plot_water[key] = [20.0, clock[0]]   # a dry bed
 	check(items.water_bed(1, items.inventory_of(1), bed) and absf(items.plot_moisture(items._items[bed]["pos"]) - 52.0) < 0.01, "a bucket of water pours on the dry bed")
@@ -899,7 +914,7 @@ func _init() -> void:
 
 	# Save and restart: a barley crop grown to a stage keeps its crop, its age and its stage (the world save, not a hand-written file).
 	season[0] = "spring"
-	give("barley_seeds", 1)
+	give("barley_seeds", spot("barley_seeds"))
 	sow(bed, "barley_seeds")
 	check(items._crops.has(key) and str(items._crops[key]["crop"]) == "barley", "barley is sown again for the save")
 	season[0] = "summer"
