@@ -330,6 +330,27 @@ func _server() -> void:
 
 	var rows: Array = PlayersScript.rows_for(0, many)
 	check(rows.size() == PlayersScript.MAX_ROWS and int(rows[0][0]) == 1 and int(rows[rows.size() - 1][0]) == PlayersScript.MAX_ROWS, "at most %d rows, nearest first" % PlayersScript.MAX_ROWS)
+	check(PlayersScript.rows_for(0, many, PlayersScript.grid_of(many)) == rows, "found by grid: the same rows")
+
+	# Scattered over cell edges (load test 23 Nov 2026: the grid replaced every-player-with-every-player): the grid answer is the plain one.
+	var scatter: RandomNumberGenerator = RandomNumberGenerator.new()
+	scatter.seed = 7
+	var spread: Dictionary = {}
+
+	for i in range(300):
+		spread[i] = Vector3(scatter.randf_range(-600.0, 600.0), 0.0, scatter.randf_range(-600.0, 600.0))
+
+	var spread_grid: Dictionary = PlayersScript.grid_of(spread)
+	var same: bool = true
+
+	for i in spread:
+		var plain: Array = PlayersScript.rows_for(i, spread).map(func(r): return int(r[0]))
+		var by_grid: Array = PlayersScript.rows_for(i, spread, spread_grid).map(func(r): return int(r[0]))
+		plain.sort()
+		by_grid.sort()
+		same = same and plain == by_grid
+
+	check(same, "300 players over 1.2 km: each one's rows by grid are the same players as by looking at all")
 
 
 func _client() -> void:

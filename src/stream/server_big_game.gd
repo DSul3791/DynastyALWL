@@ -114,8 +114,8 @@ func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
 		a["foe_peer"] = int(hurter.get("peer", 0))
 
 	if state == WARN or state == WARN_POP:
-		a["timer"] = 0.0
-		a["no_bluff"] = true   # hurt, it presses home
+		a["timer"] = minf(float(a["timer"]), warn_left(a))   # hurt, it presses home once it has growled warn_min_s
+		a["no_bluff"] = true
 		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 		return true
 
@@ -141,6 +141,7 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	else:
 		a.erase("foe_peer")
 
+	# No warning stand: the player is already running, and the chase's start is its roar (the client voices the charge as a threat call).
 	a["state"] = CHARGE
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["dir"] = a["heading"]
@@ -155,9 +156,23 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	return true
 
 
+# The least warning any warned charge gets (animals.json warn_min_s; Dave 23 Nov 2026: animals growl before they attack): a player running
+# off or a blow during the warning shortens it to no less. A hunter's chase of a runner has no stand: it roars as it sets off. Goblins and
+# bandits (defend give_way "player", fighters with their own short squaring-up) keep their own warn_s. `def`: the species' defend row.
+func warn_min_s(def: Dictionary) -> float:
+	return 0.0 if str(def.get("give_way", "")) == "player" else float(host.cfg.get("warn_min_s", 0.0))
+
+
+# How much of the least warning is still owed (0 once warn_min_s has gone by).
+func warn_left(a: Dictionary) -> float:
+	return maxf(warn_min_s(host.species_def(a["sp"]).get("defend", {})) - float(a.get("warned_s", 0.0)), 0.0)
+
+
 func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
 	a.erase("run_m")   # a warned charge runs the species' own charge_m
+	a["warned_s"] = 0.0
+	warn_s = maxf(warn_s, warn_min_s(def))
 	a.erase("walled")   # set again by the charge this warning ends in (a bluff never sets it)
 	a["state"] = WARN
 	a["timer"] = warn_s
@@ -213,8 +228,10 @@ func step(a: Dictionary, dt: float) -> void:
 		# or running in and stopping, gets the whole warning.
 		var away: Vector2 = Vector2(to.x - a["pos"].x, to.z - a["pos"].z).normalized()
 
+		a["warned_s"] = float(a.get("warned_s", 0.0)) + dt
+
 		if def.has("run_trigger_mps") and host.player_velocity_at(to).dot(away) > float(def["run_trigger_mps"]):
-			a["timer"] = 0.0
+			a["timer"] = minf(float(a["timer"]), warn_left(a))   # the growl is never cut below warn_min_s
 			a["no_bluff"] = true
 
 		if state == WARN and a["timer"] > 0.0 and a["timer"] <= float(a.get("huff_s", 0.0)):
