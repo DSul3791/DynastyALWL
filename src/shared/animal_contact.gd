@@ -96,6 +96,22 @@ static func walker_stop(before: Vector3, after: Vector3, bodies: Array) -> Vecto
 	return first - after if first != Vector3.INF else Vector3.ZERO
 
 
+# The walker held at bodies (walker_stop stopped them) for `pinned_ms` on end lets them through: a herd round them, one standing in a doorway
+# or a cave passage that will not make way, never shuts them in. `held` is [since ms (-1 when free), last held ms]; `stopped` whether this
+# frame's move was stopped short (most of it taken off: not a slide round the body). A hold broken for over `gap_ms` starts again. Returns [since, last, let through].
+static func walker_held(held: Array, now: int, stopped: bool, pinned_ms: int, gap_ms: int) -> Array:
+	var since: int = int(held[0])
+	var last: int = int(held[1])
+
+	if not stopped:
+		return [-1 if now - last > gap_ms else since, last, false]
+
+	if since < 0:
+		since = now
+
+	return [since, now, now - since > pinned_ms]
+
+
 # Where a charge from a0 to a1 stops when it reaches a player at `p`: the first point of the stretch `m` (the species' contact distance)
 # from them on the ground, so it stands against the player, not inside or past them (Dave 23 Nov 2026, the real server: animals were
 # "jumping right through us"). The start when it was already that close (a player under it); a1 when the stretch never comes that close.

@@ -45,6 +45,9 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
 const WALKER_BLOCK_M := 0.6                   # a body this big (body_m) stops the local walker (walker_stop)
+const WALK_INTO_M := 0.1                      # the walker is stopped this far inside an animal's contact distance: the server then has it make way (server_animals make_way), at its walking pace
+const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
+const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
@@ -55,6 +58,8 @@ var _look_points: Array = []     # this frame's look_points, fetched the first t
 var _look_frame: int = -1        # the _t-frame _look_points was fetched in
 var _frame: int = 0              # counts _process_body calls
 var _frame_s: float = -1.0       # when _process_body last ran (s, the ticks clock)
+var _held_since_ms: int = -1     # walker_stop: when the walker was first held at bodies this time, -1 when free
+var _held_last_ms: int = -100000 # and the last frame it was held
 var _settle_until: float = -1.0  # after this computer's own stall: until then bodies are drawn where their points are (MotionBuffer.settle)
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
@@ -462,13 +467,20 @@ func walker_stop(before: Vector3, after: Vector3) -> Vector3:
 		if AnimalContact.body_m(str(b["kind"])) < WALKER_BLOCK_M:
 			continue
 
-		var m: float = float(b["contact_m"])
+		var m: float = float(b["contact_m"]) - WALK_INTO_M
 		var at: Vector3 = (b["node"] as Node3D).global_position
 
 		if Vector2(at.x - after.x, at.z - after.z).length() < m + 1.0:
 			bodies.append([at, m])
 
-	return AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
+	var stop: Vector3 = AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
+	var wanted: float = Vector2(after.x - before.x, after.z - before.z).length()
+	var made: float = Vector2(after.x + stop.x - before.x, after.z + stop.z - before.z).length()
+	var pinned: bool = stop.length() >= 0.001 and made < wanted * 0.3   # held, not sliding round it
+	var held: Array = AnimalContact.walker_held([_held_since_ms, _held_last_ms], Time.get_ticks_msec(), pinned, PINNED_MS, HELD_GAP_MS)
+	_held_since_ms = int(held[0])
+	_held_last_ms = int(held[1])
+	return Vector3.ZERO if bool(held[2]) else stop   # held so long they go through: a walker is never shut in
 
 
 # [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
