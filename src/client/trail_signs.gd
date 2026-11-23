@@ -12,6 +12,7 @@ extends Node3D
 
 const CONFIG := "res://data/look/trail_signs.json"
 const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
+const BurrowView := preload("res://src/client/burrow_view.gd")   # its mound mesh: a warren's holes look like the live rabbits' burrows
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
@@ -39,13 +40,17 @@ var _dirty: bool = false
 var _built_at: Vector3 = Vector3.INF
 var _level: int = -1
 var _next_msec: int = 0
-var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "halo" -> MultiMeshInstance3D
+var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "mound", "halo" -> MultiMeshInstance3D
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
 # a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
 # slight sound there and tells the server, which trains Tracking once per sign). One a look, so a cluster comes one by one.
 var on_spot: Callable              # (kind: String, spot: Vector3) when a sign is spotted
+# A place of interest found (Dave wants what a player finds on the map): a warren or a deer's bedding place, the first time one of its
+# signs is spotted this session. The map listens; its own record keeps it. [kind "warren" or "bed", Vector3 on the ground].
+signal place_found(kind: String, at: Vector3)
+var found_places: Array = []       # the same, in the order found this session
 var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
 var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
 var _glow_texture: Texture2D = null
@@ -122,7 +127,7 @@ static func routes_near(by_block: Dictionary, at: Vector2, m: float) -> Dictiona
 	return out
 
 
-# The signs of a set of routes: [kind, spot, yaw, size, lead, toward] with kind "latrine", "scrape", "prints", "droppings" or "bed"; lead is a
+# The signs of a set of routes: [kind, spot, yaw, size, lead, toward] with kind "latrine", "scrape", "prints", "hops", "droppings", "bed" or "warren"; lead is a
 # point the trail goes to from the sign (INF when none) and toward what lies there ("grazing", "warren", "feeding", "" along the trail), for
 # reading the sign. The same routes give the same signs.
 static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> Array:
@@ -153,6 +158,16 @@ static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> 
 				_prints_on(pts, wet_at, c, out)
 
 	_junctions(runs, c, out)
+	var homes: Dictionary = {}   # a warren's runs all start at it: one warren sign each (Dave 23 Nov 2026: "so rabbit warrens actually have a model")
+
+	for run in runs:
+		var home: Vector2 = run[0]
+		var tag: Vector2i = Vector2i(roundi(home.x), roundi(home.y))
+
+		if not homes.has(tag):
+			homes[tag] = true
+			out.append(["warren", home, 0.0, 0.0, Vector2.INF, ""])
+
 	return out
 
 
@@ -359,7 +374,7 @@ static func shows(kind: String, level: int, c: Dictionary) -> bool:
 
 func _draw(player: Vector3, level: int) -> void:
 	var reach: float = reach_m(level, cfg)
-	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "hop": [], "rub": [], "halo": []}
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "hop": [], "rub": [], "mound": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 	var halo: float = halo_alpha(level, cfg)
 
@@ -465,6 +480,9 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 	elif kind == "prints":
 		var most: Array = cfg.get("prints", [4, 6])
 		long = maxf(size, float(most[1]) * float(cfg.get("print_step_m", 0.6)))
+	elif kind == "warren":
+		size = 2.0 * float((cfg.get("warren_m", [0.6, 2.6]) as Array)[1]) + 1.0
+		long = size
 	elif kind == "bed":
 		var bed: Array = cfg.get("bed_size_m", [1.5, 0.8])
 		size = float(bed[1]) + 0.4
@@ -508,6 +526,19 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 
 			if not is_nan(y2):
 				(rows["scrape"] as Array).append([Vector3(spot.x, y2, spot.y), TAU * _h01(spot, 5), 1.0])
+		"warren":   # the holes of a warren: warren_holes mounds of dug earth within warren_m of its home, each its own size and heading
+			var holes: Array = cfg.get("warren_holes", [3, 6])
+			var count4: int = int(holes[0]) + int(_h01(spot, 23) * float(int(holes[1]) - int(holes[0]) + 1))
+			var spread_m: Array = cfg.get("warren_m", [0.6, 2.6])
+
+			for n in count4:
+				var a2: float = TAU * (float(n) + 0.6 * _h01(spot, 24 + n)) / float(count4)
+				var at3: Vector2 = spot + Vector2(cos(a2), sin(a2)) * lerpf(float(spread_m[0]), float(spread_m[1]), _h01(spot, 34 + n))
+				var y6: float = _heap_ground(at3)
+
+				if not is_nan(y6):
+					var big2: float = 0.85 + 0.35 * _h01(spot, 44 + n)
+					(rows["mound"] as Array).append([Vector3(at3.x, y6 - BurrowView.SINK, at3.y), a2 + PI, Vector3(big2, big2, big2)])   # the hole faces out from the warren's middle
 		"hops":   # a rabbit's hop in mud: the two long hind feet side by side ahead, the two small fore feet one behind the other
 			var sets: Array = cfg.get("hop_sets", [3, 4])
 			var count3: int = int(sets[0]) + int(_h01(spot, 22) * float(int(sets[1]) - int(sets[0]) + 1))
@@ -604,6 +635,8 @@ func _mesh(layer: String) -> Mesh:
 	material.roughness = 1.0
 
 	match layer:
+		"mound":
+			return BurrowView.build_mesh()
 		"halo":
 			var plane: PlaneMesh = PlaneMesh.new()
 			plane.size = Vector2(1.0, 1.0)
@@ -688,6 +721,17 @@ func _spot(player: Vector3, level: int) -> void:
 
 		if on_spot.is_valid():
 			on_spot.call(str(s[0]), where)
+
+		if str(s[0]) == "warren" or str(s[0]) == "bed":
+			var place: String = str(s[0])
+			var fresh: bool = true
+
+			for known in found_places:   # a deer place has 2-3 beds: one find for them all
+				fresh = fresh and not (str(known[0]) == place and (known[1] as Vector3).distance_to(where) < 8.0)
+
+			if fresh:
+				found_places.append([place, where])
+				place_found.emit(place, where)
 
 		return
 

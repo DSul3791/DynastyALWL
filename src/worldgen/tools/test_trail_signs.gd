@@ -66,6 +66,33 @@ func _init() -> void:
 	check(count(signs, "droppings") == 1, "deer droppings by the bed")
 	var muddy: Array = SignsScript.signs_for({Vector2i(0, 0): [[0, line(Vector2(110.0, 300.0), Vector2(150.0, 300.0))]]}, wet, c).filter(func(s): return str(s[0]) == "hops")
 	check(muddy.size() == 1 and (muddy[0][1] as Vector2).x > 120.0 and (muddy[0][1] as Vector2).x < 140.0, "a rabbit run through the mud leaves one line of hop prints there (%d)" % muddy.size())
+	var warrens: Array = signs.filter(func(s): return str(s[0]) == "warren")
+	check(warrens.size() == 2 and warrens.any(func(s): return (s[1] as Vector2).distance_to(w1) < 0.01) and warrens.any(func(s): return (s[1] as Vector2).distance_to(w2) < 0.01), "one warren sign at each warren home, however many runs leave it (%d)" % warrens.size())
+	var mound_rows: Dictionary = {"mound": []}
+	var mound_view = SignsScript.new()
+	mound_view.ground_height = func(_x, _z): return 5.0
+	mound_view._lay("warren", w1, 0.0, mound_rows)
+	var near_w: bool = (mound_rows["mound"] as Array).size() >= int(c["warren_holes"][0]) and (mound_rows["mound"] as Array).size() <= int(c["warren_holes"][1])
+
+	for m in mound_rows["mound"]:
+		near_w = near_w and Vector2((m[0] as Vector3).x, (m[0] as Vector3).z).distance_to(w1) <= float(c["warren_m"][1]) + 0.01
+
+	check(near_w, "a warren is %d mounds within warren_m of its home" % (mound_rows["mound"] as Array).size())
+	mound_view.free()
+	var finder = SignsScript.new()
+	finder.ground_height = func(_x, _z): return 5.0
+	finder.wet = wet
+	finder.set_routes(0, 0, [routes[0], routes[2]])   # two runs of one warren
+	var heard: Array = []
+	finder.place_found.connect(func(kind: String, at: Vector3) -> void: heard.append([kind, at]))
+
+	for step in 6:   # standing at the warren while each sign there is spotted, one a look
+		finder._next_msec = 0
+		finder._spot_msec = 0
+		finder.update(Vector3(w1.x, 5.0, w1.y), 1, false)
+
+	check(heard.size() == 1 and str(heard[0][0]) == "warren" and finder.found_places.size() == 1, "finding a warren tells the map once (%s)" % str(heard))
+	finder.free()
 	var hop_rows: Dictionary = {"hop": []}
 	var hop_view = SignsScript.new()
 	hop_view.ground_height = func(_x, _z): return 5.0
@@ -137,7 +164,7 @@ func _init() -> void:
 	check(way.begins_with(plain) and (way.contains("south-east") or way.contains("south")) and way.contains("grazing"), "at read_way_level it says which way the run goes, toward the grazing (%s)" % way)
 	check(SignsScript.read_text(home_latrine, int(c["read_habit_level"]), c).ends_with(str(c["read"]["latrine"]["habit"])), "at read_habit_level it says when rabbits use it")
 	check(SignsScript.compass(Vector2(0.0, -1.0)) == "north" and SignsScript.compass(Vector2(1.0, 0.0)) == "east", "+z is south, +x east")
-	for kind in ["latrine", "scrape", "prints", "hops", "droppings", "bed", "rub"]:
+	for kind in ["latrine", "scrape", "prints", "hops", "droppings", "bed", "rub", "warren"]:
 		check((c["read"] as Dictionary).has(kind), "every kind of sign has a reading (%s)" % kind)
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
 	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.

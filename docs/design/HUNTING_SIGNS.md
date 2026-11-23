@@ -30,6 +30,10 @@ Find sign, read it, follow the trail, spot the animal (trails end at beds and wa
   stupid, so warn); from Tracking 10 which way it was heading. A dog's never warns.
 - **Rabbit prints in mud**: where a run crosses wet ground, 3-4 hops of four marks (two long hind feet ahead, two small fore feet
   behind), one line per 30 m, like the deer prints.
+- **Warrens always drawn** (Dave 23 Nov 2026: "so rabbit warrens actually have a model or image"): 3-6 burrow mounds (burrow_view's
+  mound) within 0.6-2.6 m of every warren home, from the routes; a sign to spot and read. Live rabbits' burrows still come from the server.
+- **For the map**: trail_signs `place_found(kind, at)` and `found_places` (session only) fire the first time a warren or deer bedding
+  place is spotted; the map keeps its own record.
 - Left out on purpose: "fresh or old" on trail signs (it would repeat the habit line and could claim an animal that is dead), browsed
   plants (need shrub model changes), predator sign at dens (the client does not know den spots), a wind or noise display (no written design).
 
