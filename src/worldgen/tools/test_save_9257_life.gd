@@ -259,9 +259,9 @@ func _init() -> void:
 	var crate: int = struct_of(items, "wooden_crate")
 	check(cart != 0 and crate != 0 and int(items._items[crate]["struct"].get("on", 0)) == int(items._items[cart]["struct"]["uid"]) and items._carts.pulls.is_empty(), "the handcart is parked with the crate riding on it, nobody on the handle")
 
-	# The snare: a held catch is a carcass, which no build saves (9257 neither): the snare stays and fishes again.
+	# The snare: its catch was a carcass, which 9257 did not save (dev keeps carcasses since c433cc5ba, a 9257 store has none): the snare stays and fishes again.
 	var snare: int = struct_of(items, "snare_trap")
-	check(snare != 0 and is_equal_approx(float(items._items[snare].get("wear", 0)), 1.0), "the snare stands, its one catch counted in its wear (the rabbit, a carcass, was never saved: 9257 the same)")
+	check(snare != 0 and is_equal_approx(float(items._items[snare].get("wear", 0)), 1.0), "the snare stands, its one catch counted in its wear (the rabbit, a carcass, was not saved by 9257)")
 
 	# A comes back: their body, their load, their bed.
 	var v_then: Dictionary = raw("vitals.json")["players"][A]

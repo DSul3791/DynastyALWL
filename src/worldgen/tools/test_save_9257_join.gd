@@ -110,7 +110,7 @@ func _init() -> void:
 	var sent: Array = []
 	players.items = items
 	players.now_ms = func() -> int: return int(clock[0])
-	players.send_rows = func(to, ids, _positions, _yaws, _states, _held, _times, _left, _more): sent.append([to, ids])
+	players.send_rows = func(to, ids, _positions, _yaws, _states, _held, _times, _left, _more, _cast): sent.append([to, ids])
 	players.send_flight = func(_p, _n, _f, _v, _b): pass
 	players.send_look = func(_to, _about, _n, _b, _c, _w): pass
 	var a: int = peer - 2

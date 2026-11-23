@@ -116,7 +116,7 @@ static func moon_light_phase(phase: float) -> float:
 
 # The sky's latitude in degrees, south negative: the player's tile row's (the starter row's until terrain_client sets it).
 static func sky_latitude_deg() -> float:
-	return Climate.latitude_of_row(Climate.STARTER_ROW) if is_nan(sky_row_latitude) else sky_row_latitude
+	return Climate.latitude_of_row(Climate.STARTER_ROW) if is_nan(sky_row_latitude) else sky_row_latitude   # starter-calendar: only before the client's first weather step sets the row
 
 
 # The sun's declination (radians) at a year phase: zero at the spring equinox (phase 0), and at phase 0.25 the summer's: -23.44 degrees

@@ -5,7 +5,7 @@ Steve, 8 Nov 2026. This is the first build step of `goblin_ally_design.md` (#586
 ## 1. Rules in this step
 
 - **The band** is the goblins of one cave: the mouth's lair key (`"x,z"`, already on each goblin). Trust is held per band and per player character (`server_items.key_of(peer)`).
-- **A gift:** a thing a player dropped (`by`, the dropper's character key, now kept on the loose item while the server runs) that a goblin of the band takes in the dark. Stealing and taking a gift are the same act (`goblin_stealing_design.md`).
+- **A gift:** a thing a player dropped (`by`, the dropper's character key, kept on the loose item and, since 23 Nov 2026, saved with it in the area files' `by_rows`, so a gift, a Known player's tool and the band's own return gift keep their dropper over a restart; a store from before has none and its items load with no dropper) that a goblin of the band takes in the dark. Stealing and taking a gift are the same act (`goblin_stealing_design.md`).
   - It counts **once per game night**, per band and player: +1 trust.
   - A night runs from noon to noon, so a night that crosses midnight counts once.
 - **Steps:**
@@ -33,7 +33,7 @@ Steve, 8 Nov 2026. This is the first build step of `goblin_ally_design.md` (#586
 |---|---|
 | `server_goblin_trust.gd` (new) | the trust records: gift, harm, step, wary, load and save |
 | `server_goblins.gd` | the Known filter on stealing (food only), Tolerated and wary spook distances, the gift count on a take, the return gift after a watch |
-| `server_items.gd` | `by` on a player's drop (kept in memory, not saved); `stealable_near` rows carry `by` and the item kind |
+| `server_items.gd` | `by` on a player's drop (saved in the area files' `by_rows`, 23 Nov 2026); `stealable_near` rows carry `by` and the item kind |
 | `server_animals.gd` | harm in `damage()`; the trust module's tick |
 | `terrain_server.gd` | wiring: `key_of`, game seconds, the store folder, `drop_in_world` for return gifts |
 

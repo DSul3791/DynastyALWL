@@ -362,6 +362,8 @@ var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes 
 var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
+var _wet_wind: Dictionary = {}      # peer -> true while soaked in the wind (warmth_target; body_703 wet_wind_say_*), for the line that says why
+var _wet_wind_told: Dictionary = {}   # peer -> true once that line was said this cold spell (cleared when warm again)
 var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _wood_in: float = 0.0           # real seconds since the last wet-wood step (_wood_tick)
 var _wood_acc: float = 0.0          # unspent fraction of a drying unit (a tenth of a game hour)
@@ -463,7 +465,8 @@ var _flora_by_name: Dictionary = {}   # flora table rows by species name (yields
 var _picked: Dictionary = {}          # "cx,cz,id" -> game seconds when last picked
 var _fruit: Dictionary = {}           # fruit trees: chunk key -> {tree id -> [season stamp, pieces taken this season]} (drops.json "fruit_tree"); saved with the world items
 var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
-var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
+var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season (the calendar's: a fallback)
+var season_stamp_at: Callable         # (position) -> the same count for that place's own seasons (Weather.season_stamp_at); unset: season_stamp
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
 var swath_mult: float = 0.0           # set round gather() by a sickle or scythe swing (swath_swing): its yield factor; 0 is a pick by hand (no change, the hand pace applies)
 var _swath_ms: Dictionary = {}        # peer -> msec of the last sickle or scythe swing
@@ -872,6 +875,8 @@ func peer_left(peer: int) -> void:
 	_cold_out.erase(peer)
 	_out_water.erase(peer)
 	_water_hint_at.erase(peer)
+	_wet_wind.erase(peer)
+	_wet_wind_told.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -1479,7 +1484,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				_tick_ageing(id)   # a kept pile passes here too and stays kept (left over 1e8, so _expire_items skips it); the call only lists it
 
 				if by != "":
-					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
+					near["by"] = by   # the last player to add to it (goblin gifts, a stray's food; saved, by_rows)
 
 				_dirty = true
 				count -= added
@@ -1513,7 +1518,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 		_items[_next_id]["inst"] = item_inst.duplicate(true)
 
 	if by != "":
-		_items[_next_id]["by"] = by   # who dropped it (goblin gifts; kept while the server runs, not saved)
+		_items[_next_id]["by"] = by   # who dropped it (goblin gifts, a stray's food; saved in the area files' by_rows, 23 Nov 2026)
 
 	if not is_nan(girth):
 		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
@@ -2110,7 +2115,7 @@ func save() -> void:
 const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
 const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countdowns (an item's lifetime, a fire's burn) in steps this long, so an area
                                    # where only a fire burns or a drop ages is written about every 10 minutes, not every save; a clean shutdown writes exactly
-const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
+const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices, "by_rows": row index -> who dropped it}
 var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
 # A save is one set of files (coordinator 23 Nov 2026, the live save): save() writes inventories, chests, vitals, characters, craft queues,
@@ -2263,11 +2268,11 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
-		var rows: Array = [[], []]
+		var rows: Array = [[], [], {}]
 
 		for id in job["areas"][key]:
 			if items.has(id):
-				_world_item_row(items[id], id, kinds, job["tilt_y"], rows[0], rows[1])
+				_world_item_row(items[id], id, kinds, job["tilt_y"], rows[0], rows[1], rows[2])
 
 		if not (rows[0] as Array).is_empty():
 			areas[key] = rows
@@ -2277,7 +2282,7 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 			listed[key] = int(sums[key])   # not dirty: its file stands as written
 
 	for key in areas:
-		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1]})
+		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1], "by_rows": areas[key][2]})
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
@@ -2600,8 +2605,9 @@ func _reindex_save() -> void:
 	save_check_now()
 
 
-# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down), or nothing for what is never saved.
-static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array) -> void:
+# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down, and who dropped a loose one to `by_rows`),
+# or nothing for what is never saved.
+static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array, by_rows: Dictionary) -> void:
 	if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
 		return   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
@@ -2654,6 +2660,9 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 
 	if it.has("world"):
 		world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
+
+	if str(it.get("by", "")) != "":
+		by_rows[str(items.size())] = str(it["by"])   # who dropped it (a goblin's gift, food for a stray or a dog): kept over a restart (23 Nov 2026)
 
 	items.append(row)
 
@@ -2743,13 +2752,15 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 	rng.seed = hash(flora_id) ^ int(now_s / REGROW_GAME_S) ^ 0x5bd1e995
 	var entry: Dictionary = _flora_by_name.get(species_name, {})
 
-	if not entry.is_empty() and season_now.is_valid() and not GatherRules.in_season(entry, str(season_now.call())):
+	var plant_season: String = _plant_season(flora_key) if season_now.is_valid() or season_at.is_valid() else ""
+
+	if not entry.is_empty() and plant_season != "" and not GatherRules.in_season(entry, plant_season):
 		return false   # out of season: nothing to pick (the client shows no prompt either); refused quietly, no item and no tool wear
 	var natural: String = ""
 
 	if not entry.is_empty() and not entry["yields"].is_empty():
 		var seasons: Array = entry["season"]
-		var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+		var season: String = plant_season if plant_season != "" else "all"
 
 		if seasons.has("all") or seasons.has(season):
 			var usable: Array = []
@@ -2778,7 +2789,7 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 				_reject(peer, 1)
 				return false   # the plant is not picked at all: its seeds come with the roots or bark it is taken for, so it stays for when the tool is there (Dave 2026-10-20: roots need a shovel)
 
-	var seed_rows: Array = _seed_rows(species_name)
+	var seed_rows: Array = _seed_rows(species_name, flora_key)
 
 	if rows.is_empty() and natural == "" and seed_rows.is_empty():
 		return false
@@ -2805,13 +2816,13 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 
 # Wild seeds a plant gives in this season (drops.json seed_drops), [] when none.
-func _seed_rows(species_name: String) -> Array:
+func _seed_rows(species_name: String, flora_key: String = "") -> Array:
 	var def: Dictionary = (_drops.get("seed_drops", {}) as Dictionary).get(species_name, {})
 
 	if def.is_empty():
 		return []
 
-	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	var season: String = (_plant_season(flora_key) if flora_key != "" else _season()) if season_now.is_valid() or season_at.is_valid() else "all"   # starter-calendar: the fallback with no plant key
 	return def.get("rows", []) if (def.get("seasons", []) as Array).has(season) else []
 
 
@@ -2832,7 +2843,7 @@ func fruit_max(species_name: String, flora_id: int, plant_height: float) -> int:
 # Pieces taken from a tree this season (0 when none, or from an older season).
 func fruit_taken(flora_key: String) -> int:
 	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var stamp: int = _stamp_at(_chunk_middle(parts[0]))
 	var record: Array = (_fruit.get(parts[0], {}) as Dictionary).get(int(parts[1]), [])
 	return int(record[1]) if record.size() == 2 and int(record[0]) == stamp else 0
 
@@ -2841,7 +2852,7 @@ func fruit_taken(flora_key: String) -> int:
 func fruit_state(chunk_key: String) -> Array:
 	var ids: PackedInt32Array = PackedInt32Array()
 	var taken: PackedInt32Array = PackedInt32Array()
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var stamp: int = _stamp_at(_chunk_middle(chunk_key))
 
 	for tree in (_fruit.get(chunk_key, {}) as Dictionary):
 		var record: Array = _fruit[chunk_key][tree]
@@ -2856,7 +2867,7 @@ func fruit_state(chunk_key: String) -> Array:
 # Pieces of fruit left on a tree this season (a new season starts it full again).
 func fruit_left(species_name: String, flora_key: String, flora_id: int, plant_height: float) -> int:
 	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var stamp: int = _stamp_at(_chunk_middle(parts[0]))
 	var record: Array = (_fruit.get(parts[0], {}) as Dictionary).get(int(parts[1]), [])
 	var taken: int = int(record[1]) if record.size() == 2 and int(record[0]) == stamp else 0
 	return maxi(fruit_max(species_name, flora_id, plant_height) - taken, 0)
@@ -2866,14 +2877,14 @@ func fruit_left(species_name: String, flora_key: String, flora_id: int, plant_he
 # Partial picks leave the rest on the tree; the last piece strips the tree (the existing bare-plant mark: no prompt, drawn bare) until the next season.
 func _gather_fruit_tree(peer: int, species_name: String, flora_key: String, plant_height: float, flora_id: int) -> bool:
 	var entry: Dictionary = _flora_by_name.get(species_name, {})
-	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	var season: String = _plant_season(flora_key) if season_now.is_valid() or season_at.is_valid() else "all"
 
 	if not GatherRules.in_season(entry, season):
 		return false
 
 	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
 	var plant: int = int(parts[1])
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var stamp: int = _stamp_at(_chunk_middle(parts[0]))
 	var left: int = fruit_left(species_name, flora_key, flora_id, plant_height)
 
 	if left <= 0:
@@ -2922,7 +2933,7 @@ func _gather_fruit_tree(peer: int, species_name: String, flora_key: String, plan
 func _gather_berries(peer: int, species_name: String, flora_key: String, berry: Dictionary, plant_height: float) -> bool:
 	var entry: Dictionary = _flora_by_name.get(species_name, {})
 	var seasons: Array = entry.get("season", [])
-	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	var season: String = _plant_season(flora_key) if season_now.is_valid() or season_at.is_valid() else "all"
 
 	if not (seasons.is_empty() or seasons.has("all") or seasons.has(season)):
 		_say(peer, "Not in season")
@@ -2930,7 +2941,7 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 
 	var parts: PackedStringArray = flora_key.rsplit(",", true, 1)
 	var plant: int = int(parts[1])
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var stamp: int = _stamp_at(_chunk_middle(parts[0]))
 
 	if int((_stripped.get(parts[0], {}) as Dictionary).get(plant, -1)) == stamp:
 		_say(peer, "Nothing left to pick this season")
@@ -2956,7 +2967,7 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 	var seed_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	seed_rng.seed = hash(flora_key) ^ stamp ^ 0x2545f491
 
-	for row in _seed_rows(species_name):   # wild seeds beside the harvest (drops.json seed_drops, e.g. wild carrot)
+	for row in _seed_rows(species_name, flora_key):   # wild seeds beside the harvest (drops.json seed_drops, e.g. wild carrot)
 		give(peer, table.number_of(str(row[0])), roll_amount(peer, seed_rng, int(row[1]), int(row[2])))
 
 	if not _stripped.has(parts[0]):
@@ -2971,7 +2982,7 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 # The ids of a chunk's plants that are bare this season ("cx,cz" is the chunk's home key); for a joining client's chunk.
 func stripped_ids(chunk_key: String) -> PackedInt32Array:
 	var out: PackedInt32Array = PackedInt32Array()
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+	var stamp: int = _stamp_at(_chunk_middle(chunk_key))
 
 	for plant in _stripped.get(chunk_key, {}):
 		if int(_stripped[chunk_key][plant]) == stamp:
@@ -2982,10 +2993,9 @@ func stripped_ids(chunk_key: String) -> PackedInt32Array:
 
 # Fruit stores of this season only (an older stamp means the tree is full again).
 func _fruit_now() -> Dictionary:
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
-
 	for chunk_key in _fruit.keys():
 		var trees: Dictionary = _fruit[chunk_key]
+		var stamp: int = _stamp_at(_chunk_middle(chunk_key))
 
 		for tree in trees.keys():
 			if int((trees[tree] as Array)[0]) != stamp:
@@ -2999,10 +3009,9 @@ func _fruit_now() -> Dictionary:
 
 # Only this season's bare plants are kept (and saved): an older stamp means the bush bears again.
 func _stripped_now() -> Dictionary:
-	var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
-
 	for chunk_key in _stripped.keys():
 		var ids: Dictionary = _stripped[chunk_key]
+		var stamp: int = _stamp_at(_chunk_middle(chunk_key))
 
 		for plant in ids.keys():
 			if int(ids[plant]) != stamp:
@@ -3483,10 +3492,13 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 
 
 # After a dig or fill: loose items near it come down (or stay) onto what the ground is now (boulders first, so a stack on one follows it down).
-func settle_loose_near(centre: Vector3, radius: float) -> void:
+func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> void:
 	var loose: Array = []
 
-	for id in _items:
+	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 2 m), never a walk of every record
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 
 		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
@@ -3504,11 +3516,15 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 			continue
 
-		if it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+		if it.has("struct") and _follows_ground(str(it["struct"].get("kind", ""))) and not it["struct"].has("site"):
+			pass   # remains, a carcass, a snare and the hoe's patches lie on the ground like a stack: they follow it down into a dig and up onto a fill
+		elif it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
 			continue
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
 			loose.append(id)
+
+	_settle_saplings(centre, radius, fill)
 
 	if loose.is_empty():
 		return
@@ -3516,9 +3532,105 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 	var near: Array = _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M)   # the floors and boulders round the dig, looked up once
 
 	for id in loose:
-		_items[id]["pos"] = _settled_loose(_items[id]["pos"], near)
+		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near, fill)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
+
+
+# Round 7 (physical world audit, 23 Nov 2026: what players change in the ground): a fill left every stack, chest and fire under it buried and a dig
+# left every fire, chest, station, torch and young plant over it in the air.
+const EDIT_SETTLES := ["remains", "carcass", "snare_trap"]   # placed things that lie on the ground and follow it (the walkover ones too)
+const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a placed thing's foot
+const EDIT_LIFT_M := 0.3    # how far over a fill's top the ground under a buried stack is looked for
+
+
+# A placed kind that lies on the ground and follows it into a dig and onto a fill.
+func _follows_ground(kind: String) -> bool:
+	return EDIT_SETTLES.has(kind) or bool(_structures.get(kind, {}).get("walkover", false))
+
+
+# Where a stack (or remains, a patch) at `at` rests once the ground round an edit at `centre` changed: down onto what is under it (_settled_loose), or,
+# `fill` and buried inside the fill's sphere, up onto its top over it (looked for from just above the sphere: a stack on a tunnel floor under the
+# edit is outside it and stays).
+func _edit_rest(at: Vector3, centre: Vector3, radius: float, near: Array, fill: bool) -> Vector3:
+	var flat_sq: float = (at.x - centre.x) * (at.x - centre.x) + (at.z - centre.z) * (at.z - centre.z)
+
+	if fill and floor_below.is_valid() and flat_sq < radius * radius and at.y > centre.y - sqrt(radius * radius - flat_sq) - 0.1:
+		var over: Vector3 = Vector3(at.x, centre.y + sqrt(radius * radius - flat_sq) + EDIT_LIFT_M, at.z)
+
+		if over.y > at.y:
+			var top: Vector3 = _settled_loose(over, near)
+
+			if top.y > at.y + 0.05 and top.y < over.y - 0.01:
+				return top   # it was under the ground: up onto it
+
+	return _settled_loose(at, near)
+
+
+# Young plants and planted bushes (_saplings) round an edit come to rest on the ground as it is now, as a stack does.
+func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
+	var home: Vector2i = Vector2i(int(floor(centre.x / FLORA_CHUNK_M)), int(floor(centre.z / FLORA_CHUNK_M)))
+
+	for sapling in _saplings:
+		if absi(int(sapling["chunk"][0]) - home.x) > 1 or absi(int(sapling["chunk"][1]) - home.y) > 1:
+			continue   # the chunks round the edit only (the cheap test first)
+
+		var p: Vector3 = sapling["pos"]
+
+		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 0.5:
+			continue
+
+		var rest: Vector3 = _edit_rest(p, centre, radius, [], fill)
+
+		if absf(rest.y - p.y) > 0.02:
+			sapling["pos"] = Vector3(p.x, rest.y, p.z)
+			_dirty = true
+
+			if flora_changed.is_valid():
+				flora_changed.call(Vector2i(int(sapling["chunk"][0]), int(sapling["chunk"][1])))
+
+
+# The name of a placed thing a dig at `centre` would take the ground from under (`fill` false: the sphere reaches within EDIT_UNDER_M under its
+# foot, inside its footprint) or a fill would bury (`fill` true: the sphere rises over its foot there), "" when none. Fires, stations, chests,
+# torches, buildings and every other placed piece count; stacks, remains, patches and hung things (attach_to) do not: they follow the ground or a wall.
+func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
+	for id in _ids_near(centre, radius + FLOOR_ROWS_REACH_M + 1.0):
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+		var def: Dictionary = {}
+		var yaw: float = 0.0
+		var name: String = "The campfire"
+
+		if it.has("fire"):
+			def = {"footprint_x": 1.2, "footprint_z": 1.2, "height_m": 0.6}
+		elif it.has("struct"):
+			var kind: String = str(it["struct"].get("kind", ""))
+			def = _structures.get(kind, {})
+
+			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
+				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
+
+			yaw = float(it["struct"].get("yaw", 0.0))
+			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
+		else:
+			continue
+
+		var box: Array = PlacementRules._box(def, it["pos"], yaw)
+		var dy: float = float(box[3]) + (0.05 if fill else -EDIT_UNDER_M) - centre.y
+
+		if absf(dy) >= radius:
+			continue
+
+		var apart: Vector2 = Vector2(centre.x, centre.z) - (box[0] as Vector2)
+		var half: Vector2 = box[1]
+		var off: Vector2 = Vector2(maxf(absf(apart.dot(PlacementRules._side(box, 0))) - half.x, 0.0), maxf(absf(apart.dot(PlacementRules._side(box, 1))) - half.y, 0.0))
+
+		if off.length() < sqrt(radius * radius - dy * dy):
+			return name
+
+	return ""
 
 
 # A floor, foundation or boulder under loose stacks went (taken down, retired) or shrank (mined): the stacks within `reach` of `at` come down onto
@@ -4625,7 +4737,12 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
 
-	_last_dig[peer] = now
+	_last_dig[peer] = now   # a refused dig waits out the stroke too (no notice and look-up per packet)
+	var standing: String = _edit_blocker(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach, false)
+
+	if standing != "":
+		_say(peer, "%s stands on that ground: take it up before you dig under it." % standing)
+		return
 
 	for n in maxi(1, int(round(reach))):
 		_wear_slot(peer, inv, shovel, "dig")
@@ -4695,7 +4812,13 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_say(peer, "Nothing to fill with: dig some soil, sand or gravel first")
 		return
 
+	var heap_r: float = FILL_RADIUS_M * pow(float(mini(_shovel_pieces(inv, shovel), inv.count_of(table.number_of(material_item)))), 1.0 / 3.0)   # the largest heap this fill can make
 	_last_dig[peer] = now
+	var buried: String = _edit_blocker(at + Vector3(0.0, FILL_UP_M, 0.0), maxf(heap_r, FILL_RADIUS_M), true)
+
+	if buried != "":
+		_say(peer, "%s stands there: the fill would bury it." % buried)
+		return
 	var pieces: int = 0
 
 	for n in _shovel_pieces(inv, shovel):
@@ -4717,6 +4840,8 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_gain_source = SRC_RETURN
 		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
 		_gain_source = was_src
+	else:
+		settle_loose_near(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), true)   # stacks, remains and young plants under the heap come up onto it
 
 	_dirty = true
 
@@ -5095,6 +5220,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
+		settle_loose_near(centre, sphere, best_off < 0.0)   # stacks, remains, patches and young plants follow the levelled ground (round 7)
 
 		if spots.size() > 64:
 			_bucket_add(grid, edits[-1])
@@ -5513,8 +5639,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
+				settle_loose_near(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
 			else:
 				fill_ground.call(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+				settle_loose_near(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, true)
 
 			edits += 1
 
@@ -5613,11 +5741,13 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			continue
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		var done: Variant = dig_ground.call(Vector3(x, h - depth + SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(Vector3(x, h + depth - SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
+		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 		dug = true
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
+			settle_loose_near(sphere_at, SMOOTH_SPHERE_M, d <= 0.0)
 
 	if not dug:
 		_say(peer, "The ground here is already on the line.")
@@ -6017,7 +6147,7 @@ func _silt_hole(hole: Array) -> void:
 		print("Bog hole at (%.1f, %.1f) left open: its silting would reach open ground under it" % [float(hole[0]), float(hole[2])])
 		return
 	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
-	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
+	settle_loose_near(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, true)   # the refill sphere itself: what lay in the hole comes up onto it
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
@@ -8295,6 +8425,7 @@ func _load_world_items() -> void:
 		_save_gen = int(parsed.get("gen", 0))
 		var all_rows: Array = []
 		var all_world: Array = []
+		var all_by: Dictionary = {}
 
 		_load_row_area = []
 
@@ -8309,10 +8440,17 @@ func _load_world_items() -> void:
 			for n in area.get("world_rows", []):
 				all_world.append(base + int(n))
 
+			var by_area: Variant = area.get("by_rows", {})   # added 23 Nov 2026: an older area file has none (its loose items load with no dropper, as before)
+
+			if typeof(by_area) == TYPE_DICTIONARY:
+				for n in by_area:
+					all_by[str(base + int(n))] = str(by_area[n])
+
 			all_rows.append_array(area.get("items", []))
 
 		parsed["items"] = all_rows
 		parsed["world_rows"] = all_world
+		parsed["by_rows"] = all_by
 
 	_next_id = int(parsed.get("next_id", 1))
 
@@ -8377,6 +8515,8 @@ func _load_world_items() -> void:
 
 	for n in parsed.get("world_rows", []):
 		world_rows[int(n)] = true
+
+	var by_rows: Dictionary = parsed.get("by_rows", {}) if typeof(parsed.get("by_rows", {})) == TYPE_DICTIONARY else {}   # who dropped each loose item (added 23 Nov 2026)
 
 	for row in parsed["items"]:
 		row_n += 1
@@ -8578,6 +8718,9 @@ func _load_world_items() -> void:
 
 		if world_rows.has(row_n):
 			entry["world"] = true
+
+		if by_rows.has(str(row_n)):
+			entry["by"] = str(by_rows[str(row_n)])
 
 		_load_row_of[_next_id] = row_n
 		_items[_next_id] = entry
@@ -11530,7 +11673,7 @@ func _crown_leafy(tree: Dictionary, cfg: Dictionary, at: Vector3) -> bool:
 	if ((cfg.get("crown_leaves", {}) as Dictionary).get("fixed", []) as Array).has(species):
 		return false
 
-	return not (CoverScript.is_deciduous(species) and CoverScript.leafless_for(str(season_at.call(at)) if season_at.is_valid() else _season()))
+	return not (CoverScript.is_deciduous(species) and CoverScript.leafless_for(str(season_at.call(at)) if season_at.is_valid() else _season()))   # starter-calendar: the fallback with no season_at (tests)
 
 
 # A felled crown's sticks and leaves (Dave 10 Nov 2026: "drop like 30 sticks and a hundred leaves all over the forest floor in that circle"), as
@@ -17537,7 +17680,7 @@ func _vitals_tick(spent: float) -> void:
 	_lit_valid = false
 	_in_vitals = true
 
-	if weather_now.is_valid() and float((weather_now.call() as Dictionary).get("rain", 0.0)) > 0.05:
+	if weather_now.is_valid() and float((weather_now.call() as Dictionary).get("rain", 0.0)) > 0.05:   # starter-calendar: the fallback rain memory when no rain_hours_at is set (tests)
 		_last_rain_s = _now_game_s()
 
 	for peer in _peer_key:
@@ -18351,6 +18494,8 @@ func warmth_target(peer: int) -> float:
 		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
 		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
+	_wet_wind[peer] = not body.is_empty() and soak >= float(body.get("wet_wind_say_soak", 0.5)) and wind >= float(body.get("wet_wind_say_wind", 0.3)) and not roofed and not bool(_swimming.get(peer, false))   # under a roof the line would send them where they are
+
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 
 	if not body.is_empty():
@@ -18359,7 +18504,7 @@ func warmth_target(peer: int) -> float:
 
 	if bool(_swimming.get(peer, false)):
 		# In the water the cold follows the WATER's temperature, not the air's (Tyler): a lagged, damped copy of the air at sea level.
-		var sea_air: float = float((weather_now.call() if weather_now.is_valid() else weather).get("temp_c", float(cfg.get("comfort_c", 15.0))))   # the one sea-level weather, as the design says (not the spot's height)
+		var sea_air: float = float((_weather_here(Vector3(pos.x, 0.0, pos.z)) if weather_at.is_valid() else (weather_now.call() if weather_now.is_valid() else weather)).get("temp_c", float(cfg.get("comfort_c", 15.0))))   # the sea-level weather of the swimmer's own row, as the design says (not the spot's height)
 		var water_c: float = maxf(float(cfg.get("water_base_c", 6.0)) + float(cfg.get("water_follow", 0.5)) * (sea_air - float(cfg.get("water_base_c", 6.0))), 1.0)
 
 		if bool(_cave_pool.get(peer, false)):
@@ -18417,6 +18562,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
 	_strain_sent.erase(peer)
 	_peer_pos[peer] = to
@@ -18442,6 +18588,37 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 		_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
 
 	print("%s: peer %d woke at the %s at %s" % ["Water" if water else "Cold", peer, kind, str(to)])
+
+
+# Where a rod's float sits while its line is in the water (waiting or biting), INF otherwise: the others draw the line and the float
+# (server_players.gd cast_code, protocol 162). Look only.
+func fishing_float(peer: int) -> Vector3:
+	var state: Dictionary = _fishing.get(peer, {})
+
+	if not (str(state.get("phase", "")) in ["wait", "bite"]) or not state.has("float"):
+		return Vector3.INF
+
+	return state["float"]
+
+
+# The float's spot for a cast from `from` toward `at` (the client's cast point, 4 m ahead of the eye): at most `reach` m off level, on the
+# water's face there (the nearest lake or river surface; the sea's 0 m; else a metre under the body's middle, about the feet).
+func _float_spot(from: Vector3, at: Vector3, reach: float) -> Vector3:
+	var flat: Vector2 = Vector2(at.x - from.x, at.z - from.z)
+
+	if not at.is_finite() or flat.length() < 0.5:
+		flat = Vector2(0.0, -3.0)
+
+	flat = flat.limit_length(minf(reach, 12.0))
+	var spot: Vector3 = Vector3(from.x + flat.x, from.y - 1.0, from.z + flat.y)
+	var y: float = float(fresh_water_y.call(spot, 6.0)) if fresh_water_y.is_valid() else NAN
+
+	if is_finite(y) and absf(y - spot.y) < 12.0:
+		spot.y = y
+	elif water_kind_at.is_valid() and str((water_kind_at.call(spot.x, spot.z) as Dictionary).get("kind", "")).begins_with("sea") and absf(spot.y) < 12.0:
+		spot.y = 0.0
+
+	return spot
 
 
 func passed_out(peer: int) -> bool:
@@ -18531,6 +18708,12 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	elif level == 1 and w >= float(cfg.get("cold_clear", 52.0)):
 		_cold_level[peer] = 0
 		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
+		_wet_wind_told.erase(peer)
+
+	# Why the clothes do not help (coordinator 23 Nov 2026): soaked in the wind, said once a cold spell beside the cold lines.
+	if int(_cold_level.get(peer, 0)) > 0 and bool(_wet_wind.get(peer, false)) and not _wet_wind_told.has(peer) and not body.is_empty():
+		_wet_wind_told[peer] = true
+		_say(peer, str(body.get("say_wet_wind", "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.")))
 
 	_sync_warmth(peer, false)
 
@@ -18651,12 +18834,13 @@ func _sync_warmth(peer: int, force: bool) -> void:
 # Age lives in the slot's wear field (tenths of a game hour), so nothing about saves or the wire changes: old stacks read as
 # fresh. One slow step every tick_s ages every pack, chest, remains and loose item; a stack at its shelf life becomes rotten food.
 
-func _spoil_units(place: String, base_units: float, season_mult: float) -> int:
+# `key` keeps its own running fraction (a place in another season than the calendar's: "chest|winter"); `place` names the place_mult row (default: key).
+func _spoil_units(key: String, base_units: float, season_mult: float, place: String = "") -> int:
 	var cfg: Dictionary = table.spoilage()
-	var mult: float = float(cfg.get("place_mult", {}).get(place, 1.0)) * season_mult
-	_spoil_acc[place] = float(_spoil_acc.get(place, 0.0)) + base_units * mult
-	var whole: int = int(_spoil_acc[place])
-	_spoil_acc[place] -= float(whole)
+	var mult: float = float(cfg.get("place_mult", {}).get(key if place == "" else place, 1.0)) * season_mult
+	_spoil_acc[key] = float(_spoil_acc.get(key, 0.0)) + base_units * mult
+	var whole: int = int(_spoil_acc[key])
+	_spoil_acc[key] -= float(whole)
 	return whole
 
 
@@ -18740,35 +18924,63 @@ func _spoil_tick(spent: float) -> void:
 	var steps: int = int(_spoil_in / every)
 	_spoil_in -= float(steps) * every
 	var base: float = float(steps) * every * GAME_RATE / 3600.0 / float(cfg.get("unit_h", 0.1))
-	var season_mult: float = float(cfg.get("season_mult", {}).get(str(season_now.call()), 1.0)) if season_now.is_valid() else 1.0
-	var pack_units: int = _spoil_units("pack", base, season_mult)
+	# Each place spoils by its own season (half a year on across the equator): a pack where its player is (or last was), a chest where it
+	# stands, a thing on the ground where it lies. Places in the calendar's season keep the old running fractions ("pack", "chest", ...).
+	var season_bands: Dictionary = {}  # 1 km band of z -> season, for this tick (a season changes only at the equator's row edge, far wider)
+	var units_of: Dictionary = {}       # "place|season" -> units this tick
+	var calendar: String = _season()   # starter-calendar: the calendar's season keeps the old running keys
+	var season_for: Callable = func(pos: Vector3) -> String:
+		if not season_at.is_valid() or not pos.is_finite():
+			return calendar
+
+		var band: int = floori(pos.z / 1000.0)   # shortcut: the band holding the equator row's edge reads one season for up to 1 km of it
+
+		if not season_bands.has(band):
+			season_bands[band] = _season_of(pos)
+
+		return str(season_bands[band])
+	var units_at: Callable = func(place: String, pos: Vector3) -> int:
+		var here: String = season_for.call(pos) if season_now.is_valid() or season_at.is_valid() else ""
+		var key: String = place if here == calendar or here == "" else place + "|" + here
+
+		if not units_of.has(key):
+			var mult: float = float(cfg.get("season_mult", {}).get(here, 1.0)) if here != "" else 1.0
+			units_of[key] = _spoil_units(key, base, mult, place)
+
+		return int(units_of[key])
 	var peer_of_key: Dictionary = {}
 
 	for peer in _peer_key:
 		peer_of_key[_peer_key[peer]] = peer
 
-	if pack_units > 0:
-		for key in _inventories:
-			var peer: int = int(peer_of_key.get(key, 0))
-			var before: Array = _snapshot(_inventories[key]) if peer != 0 else []
+	for key in _inventories:
+		var peer: int = int(peer_of_key.get(key, 0))
+		var last: Array = (_characters.get(key, {}).get("last", {}) as Dictionary).get("pos", [])
+		var at: Vector3 = _peer_pos.get(peer, Vector3(float(last[0]), float(last[1]), float(last[2])) if last.size() == 3 else Vector3.INF)
+		var pack_units: int = units_at.call("pack", at)
 
-			if _spoil_inventory(_inventories[key], pack_units):
+		if pack_units <= 0:
+			continue
+
+		var before: Array = _snapshot(_inventories[key]) if peer != 0 else []
+
+		if _spoil_inventory(_inventories[key], pack_units):
+			_dirty = true
+
+			if peer != 0:
+				_send_changes(peer, _inventories[key], before)
+
+		var worn: Array = _characters.get(key, {}).get("worn", [])
+
+		for i in worn.size():   # a worn bag's food spoils as in the pack
+			var aged: Array = []
+
+			if typeof(worn[i]) == TYPE_ARRAY and (worn[i] as Array).size() > 3 and _spoil_bag(int(worn[i][0]), worn[i][3], pack_units, aged):
+				worn[i] = [int(worn[i][0]), 1, int(worn[i][2]), aged[0]]
 				_dirty = true
 
 				if peer != 0:
-					_send_changes(peer, _inventories[key], before)
-
-			var worn: Array = _characters.get(key, {}).get("worn", [])
-
-			for i in worn.size():   # a worn bag's food spoils as in the pack
-				var aged: Array = []
-
-				if typeof(worn[i]) == TYPE_ARRAY and (worn[i] as Array).size() > 3 and _spoil_bag(int(worn[i][0]), worn[i][3], pack_units, aged):
-					worn[i] = [int(worn[i][0]), 1, int(worn[i][2]), aged[0]]
-					_dirty = true
-
-					if peer != 0:
-						_sync_worn(peer, false)
+					_sync_worn(peer, false)
 
 	var kind_of_uid: Dictionary = {}
 	var pos_of_uid: Dictionary = {}
@@ -18802,40 +19014,42 @@ func _spoil_tick(spent: float) -> void:
 				if not place_units.has(kind):
 					place_units[kind] = _spoil_units(kind, base * cold_mult, 1.0)
 
-		if not place_units.has(kind):
-			place_units[kind] = _spoil_units(kind, base, season_mult)
+		var units: int = int(place_units[kind]) if place_units.has(kind) else units_at.call(kind, pos_of_uid.get(uid, Vector3.INF))
 
-		if int(place_units[kind]) > 0 and _spoil_inventory(_chests[uid], int(place_units[kind])):
+		if units > 0 and _spoil_inventory(_chests[uid], units):
 			_dirty = true
 
-	var ground_units: int = _spoil_units("ground", base, season_mult)
 	var rotten_n: int = table.number_of(str(cfg.get("rotten_item", "rotten_food")))
 
-	if ground_units > 0:
-		for id in _items:
-			var it: Dictionary = _items[id]
+	for id in _items:
+		var it: Dictionary = _items[id]
 
-			if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
-				continue
+		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+			continue
 
-			var aged: Array = []
+		var ground_units: int = units_at.call("ground", it["pos"])
 
-			if _spoil_bag(int(it["number"]), it.get("inst", {}), ground_units, aged):   # a bag on the ground keeps its contents, and they age
-				it["inst"] = aged[0]
-				_dirty = true
+		if ground_units <= 0:
+			continue
 
-			var life: int = table.shelf_units(int(it["number"]))
+		var aged: Array = []
 
-			if life <= 0:
-				continue
-
-			it["wear"] = int(it.get("wear", 0)) + ground_units
+		if _spoil_bag(int(it["number"]), it.get("inst", {}), ground_units, aged):   # a bag on the ground keeps its contents, and they age
+			it["inst"] = aged[0]
 			_dirty = true
 
-			if int(it["wear"]) >= life:
-				it["number"] = rotten_n
-				it["wear"] = 0
-				it.erase("inst")
+		var life: int = table.shelf_units(int(it["number"]))
+
+		if life <= 0:
+			continue
+
+		it["wear"] = int(it.get("wear", 0)) + ground_units
+		_dirty = true
+
+		if int(it["wear"]) >= life:
+			it["number"] = rotten_n
+			it["wear"] = 0
+			it.erase("inst")
 
 
 # --- Death and remains (Dave: DESIGN_IDEAS.md 6.1; data/items/death.json) ---
@@ -18976,6 +19190,7 @@ func kill(peer: int, cause: String) -> bool:
 	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
 	if not novice_grace(peer):
@@ -19761,7 +19976,7 @@ func school_hit(pos: Vector3, reach: float) -> Dictionary:
 
 	_fish_schools()
 	var day: int = int(floor(_now_game_s() / 86400.0))
-	var season: String = str(season_now.call()) if season_now.is_valid() else "summer"
+	var season: String = _season_of(pos) if season_now.is_valid() or season_at.is_valid() else "summer"   # the water's own season
 	var stock: Callable = func(cell: Vector2i) -> int: return fish_stock(cell)
 	var best: Dictionary = none
 	var memo: Dictionary = {}
@@ -19826,7 +20041,7 @@ func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3
 		var kind: String = _water_kind_near(near, reach)
 
 		if kind != "" and _fish_schools().has_method("species_for"):   # a test's stand-in school module may not have it
-			var by_water: String = _fish_schools().species_for(kind, str(season_now.call()) if season_now.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
 
 			if by_water != "":
 				return by_water
@@ -19901,7 +20116,7 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var bites: bool = fish_stock(cell) > 0 and fate(peer, "fish", chance)
 	var wait_s: Array = cfg.get("wait_s", [6.0, 22.0])
 	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
-	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", ""))}
+	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", "")), "float": _float_spot(_peer_pos[peer], at, float(cfg.get("reach_m", 8.0)))}
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
@@ -20429,7 +20644,7 @@ func gather_edge(peer: int, inv) -> bool:
 
 	var day: int = _game_day()
 	var hour: float = fmod(float(game_seconds.call()) if game_seconds.is_valid() else 0.0, 86400.0) / 3600.0
-	var node: Dictionary = shore_node_at(here, day, hour, _season())
+	var node: Dictionary = shore_node_at(here, day, hour, _season_of(here))   # the shore's own season
 	var key: String = "%d,%d" % [int(floor(here.x / float(cfg.get("cell_m", 8.0)))), int(floor(here.z / float(cfg.get("cell_m", 8.0))))]
 
 	if node.is_empty():
@@ -20500,7 +20715,7 @@ func take_nest(peer: int, inv) -> bool:
 	var id: String = str(nest["id"])
 	var day: int = _game_day()
 
-	if not (_season() in row.get("seasons", [])):
+	if not (_season_of(_peer_pos[peer]) in row.get("seasons", [])):   # the laying season where the nest is
 		_say(peer, str(cfg.get("say_season", "")))
 		return false
 
@@ -20803,13 +21018,37 @@ func _game_day() -> int:
 
 
 func _season() -> String:
-	return str(season_now.call()) if season_now.is_valid() else "spring"
+	return str(season_now.call()) if season_now.is_valid() else "spring"   # starter-calendar: the fallback when no season_at is set (tests)
 
 
 # The season at a place (Weather.season_at: half a year on across the equator from the starter's hemisphere), else the one calendar season. Sowing,
 # planting and a crop's winter go by the bed's own season (Dave: nothing is based on where spawn is; the hoe's list reads the player's, terrain_client).
 func _season_of(pos: Vector3) -> String:
-	return str(season_at.call(pos)) if season_at.is_valid() else _season()
+	return str(season_at.call(pos)) if season_at.is_valid() else _season()   # starter-calendar: the fallback with no season_at (tests)
+
+
+# The season count (game year x 4 + season) at a place: "taken this season" and "a new season" go by the place's own seasons. On the starter's
+# side of the equator it is the calendar's count, so saved stamps there keep their meaning.
+func _stamp_at(pos: Vector3) -> int:
+	if season_stamp_at.is_valid():
+		return int(season_stamp_at.call(pos))
+
+	return int(season_stamp.call()) if season_stamp.is_valid() else 0   # starter-calendar: the fallback when no season_stamp_at is set (tests)
+
+
+# The middle of a flora chunk ("cx,cz" home key, FLORA_CHUNK_M): where its plants' seasons are read.
+func _chunk_middle(chunk_key: String) -> Vector3:
+	var parts: PackedStringArray = chunk_key.split(",")
+
+	if parts.size() < 2:
+		return Vector3.ZERO
+
+	return Vector3((float(parts[0]) + 0.5) * FLORA_CHUNK_M, 0.0, (float(parts[1]) + 0.5) * FLORA_CHUNK_M)
+
+
+# The season and season count of a plant by its flora key ("cx,cz,id"): its chunk's.
+func _plant_season(flora_key: String) -> String:
+	return _season_of(_chunk_middle(flora_key.rsplit(",", true, 1)[0]))
 
 
 # A bed key's ground position (the _bed_key steps back to metres), for its season.
@@ -24045,16 +24284,17 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _fruit_trees_near(_peer_pos[peer], 8.0, true) >= 1
 		"near_orchard":   # four or more fruit trees within 25 m
 			return _fruit_trees_near(_peer_pos[peer], 25.0, false) >= 4
-		"season_changes":   # the season stamp is not the one this player last saw (the first look only records it)
-			var stamp: int = int(season_stamp.call()) if season_stamp.is_valid() else 0
+		"season_changes":   # the season stamp is not the one this player last saw (the first look only records it): their own place's seasons
+			var stamp: int = _stamp_at(_peer_pos.get(peer, Vector3.ZERO))
 			var seen: int = int(st.get("season_seen", -1))
 			st["season_seen"] = stamp
 			return seen >= 0 and seen != stamp
 		"autumn_end":   # the last quarter of autumn
-			if not season_now.is_valid() or str(season_now.call()) != "autumn" or not game_seconds.is_valid():
+			if not (season_now.is_valid() or season_at.is_valid()) or _season_of(_peer_pos.get(peer, Vector3.ZERO)) != "autumn" or not game_seconds.is_valid():
 				return false
 
-			var day: int = int(floorf(float(game_seconds.call()) / 86400.0)) % 365
+			# The part of the season gone is the same on both sides of the equator (a row's year is half a year, two whole seasons, on).
+			var day: int = int(floorf(float(game_seconds.call()) / 86400.0)) % 365   # starter-calendar: only the part of the season gone, the same on both sides
 			return fmod(float(day) * 4.0 / 365.0, 1.0) >= 0.75
 
 	return false
@@ -24063,7 +24303,7 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 # Fruit trees (drops.json "fruit_tree") standing within r metres of the point; in_fruit_only counts only those whose flora row is in season.
 func _fruit_trees_near(pos: Vector3, r: float, in_fruit_only: bool) -> int:
 	var fruit: Dictionary = _drops.get("fruit_tree", {})
-	var season: String = str(season_now.call()) if season_now.is_valid() else "all"
+	var season: String = _season_of(pos) if season_now.is_valid() or season_at.is_valid() else "all"
 	var count: int = 0
 
 	for tree in _standing_trees(pos, r):
@@ -27857,7 +28097,7 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 
 	var weather: Dictionary = _weather_here(pos)
 	var rain_h: float = float(rain_hours_at.call(pos, maxf(float(cfg.get("rain_memory_h", 24.0)), float(cfg.get("flash_memory_h", 6.0))))) if rain_hours_at.is_valid() else (_now_game_s() - _last_rain_s) / 3600.0
-	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": rain_h, "raining": float(weather.get("rain", 0.0)) > 0.05,
+	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": rain_h, "raining": float(weather.get("rain", 0.0)) > 0.05,   # starter-calendar: the fallback with no season_at (tests)
 		"air_c": _air_here(pos, weather, 10.0), "wind": float(weather.get("wind", 0.0))}
 	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
 

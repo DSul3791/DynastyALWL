@@ -84,6 +84,9 @@ var sun_z: float = NAN             # the z of the animal (or player) being thoug
                                    # (south of the equator the seasons are the other way round). Set by the tick before each step and the top-up per player.
 const NO_ROW := -2147483648       # the _sun key for "no place given" (the starter row's sun)
 var sun_row_m: float = 15360.0     # the tile rows the sun is read by (world.json tile_size_m, set by the server): one sunrise a row, as the sky draws a row's
+var equator_row: int = 0            # the world's equator tile row (with row_of: a row's own day of the year, server_wolves.pup_season)
+var season_at: Callable             # (position) -> the season there (Weather.season_at: half a year on across the equator); unset: season_now
+var _here: Vector3 = Vector3.INF    # the animal (or player) whose step, spawn or hit is being worked out: its own row's season (_weather_for)
 var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var no_spawn: Callable                # (x, z) -> bool: true within no_spawn_m of something a player put down (server_items.spawn_blocked; Dave 17 Nov 2026): no animal is made there
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
@@ -206,6 +209,7 @@ func species_def(sp: String) -> Dictionary:
 # beside them (server_companions._make_live) is never refused by server_cap; it still counts toward it, so the wild ones make room.
 func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 	var def: Dictionary = species_def(sp)
+	_here = Vector3(x, 0.0, z)   # young in its own row's season
 
 	if def.is_empty() or (animals.size() >= int(cfg.get("server_cap", 150)) and not over_cap):
 		return 0
@@ -297,7 +301,16 @@ func _spawn_young(mother: int) -> void:
 
 # Whether young are about in the current season (young.seasons; every season without a clock).
 func _young_season(def: Dictionary) -> bool:
-	return not season_now.is_valid() or str(season_now.call()) in def["young"].get("seasons", ["spring", "summer"])
+	var season: String = _season_here()
+	return season == "" or season in def["young"].get("seasons", ["spring", "summer"])
+
+
+# The season where the animal being worked out is (_here: its row's own, across the equator half a year on), else the calendar's; "" with no clock.
+func _season_here() -> String:
+	if season_at.is_valid() and _here.is_finite():
+		return str(season_at.call(_here))
+
+	return str(season_now.call()) if season_now.is_valid() else ""   # starter-calendar: the fallback with no place or no season_at (tests)
 
 
 # A mother's living young (ids still in the map), or [].
@@ -338,10 +351,12 @@ func _temper_row(a: Dictionary) -> Dictionary:
 
 # The species' change for this season ({threat_x, spook_x}), e.g. a bear hungry after its winter sleep is bolder in spring.
 func _season_row(def: Dictionary) -> Dictionary:
-	if not def.has("seasons") or not season_now.is_valid():
+	var season: String = _season_here()
+
+	if not def.has("seasons") or season == "":
 		return {}
 
-	return def["seasons"].get(str(season_now.call()), {})
+	return def["seasons"].get(season, {})
 
 
 # Whether this animal may attack at all (server_big_game.warn asks). The young never do; passive and friendly animals only when
@@ -567,6 +582,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		return false
 
 	var a: Dictionary = animals[id]
+	_here = a["pos"]   # its seasons where it is (a hungry spring bear's threat)
 
 	if companions != null and companions.owned_by(a, source_peer):
 		return false   # its owner's blow does nothing to their own companion
@@ -2662,6 +2678,8 @@ func _wx_on() -> bool:
 # at sea level, weather and seasons walk 23 Nov 2026): Weather.state's own dictionary, read as _wx (the same keys), and its wind. Without
 # weather_at (tests) the tick's one weather stays. Cost: one cached lookup an animal step.
 func _weather_for(pos: Vector3) -> void:
+	_here = pos   # its row's own season too (_season_here; its sun goes by sun_z)
+
 	if not weather_at.is_valid():
 		return
 
