@@ -27,7 +27,10 @@ const PELLET_LIFT_M := 0.02      # pellets sit this far up: on top of the leaf l
 const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)
 
 var cfg: Dictionary = {}
-var ground_height: Callable        # (x, z) -> the ground's height there, NAN when not known
+var ground_height: Callable:       # (x, z) -> the ground's height there, NAN when not known (a new one forgets the heights kept)
+	set(value):
+		ground_height = value
+		_ground_cache.clear()
 var wet: Callable                  # (x, z) -> water or wet ground within wet_m
 var trunks_near: Callable          # (point: Vector3, radius) -> [[root Vector3, trunk radius m, height m], ...] of the loaded standing trees (rubs)
 var routes: Dictionary = {}        # Vector2i block -> [[kind, PackedVector2Array], ...]

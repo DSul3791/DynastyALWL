@@ -95,7 +95,7 @@ func _init() -> void:
 	trees.append([Vector3(150.0, 5.0, 230.0), 0.05, 3.0])
 	var trunks_at: Callable = func(p: Vector3, r: float) -> Array: return trees.filter(func(t): return Vector2(t[0].x - p.x, t[0].z - p.z).length() <= r + float(t[1]))
 	var rubs: Array = SignsScript.rubs_for({Vector2i(0, 0): routes}, trunks_at, c)
-	var thin: bool = rubs.size() >= 4 and rubs.size() <= int(200.0 / float(c["rub_every_m"])) + 1
+	var thin: bool = rubs.size() >= 3 and rubs.size() <= int(200.0 / float(c["rub_every_m"])) + 1
 
 	for r2 in rubs:
 		var foot: Vector2 = (r2[1] as Vector2) - Vector2(cos(float(r2[2])), sin(float(r2[2]))) * (float(r2[3]) + float(c["rub_out_m"]))
