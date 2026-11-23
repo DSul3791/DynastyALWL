@@ -31,6 +31,7 @@ extends Node
 const LookSettings := preload("res://src/client/look_settings.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const CanopyMapScript := preload("res://src/client/canopy_map.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: lines printed on a worker (D-LAG-1)
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
@@ -730,7 +731,7 @@ func _process_body(delta: float) -> void:
 
 		if not _sky_hour_said and _client.get("game_clock") != null:
 			_sky_hour_said = true
-			print("weather look: first sky step at game hour %.2f, day %d of the year" % [_client.game_clock.hour(), _client.game_clock.day_of_year()])
+			FreezeWatchScript.printer.line("weather look: first sky step at game hour %.2f, day %d of the year" % [_client.game_clock.hour(), _client.game_clock.day_of_year()])
 
 		if _client.flora != null:
 			tq = FrameProbe.start()
