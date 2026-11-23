@@ -17,7 +17,8 @@ extends Node
 # Plans (--robot-plan=): first_hours (default: craft, drop and pick up, stances, forest crouch walk, hunt, sleep, quit), screens (every
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
-# nothing in the world). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
+# out; docs/ROBOT_PLAYTESTERS.md), cold, fights, kind_<species>. --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -37,7 +38,8 @@ const JUMP_FLOOR_M := 1.5
 const PLAYER_TOP_MPS := 9.5      # terrain_client RUN_SPEED 9.0
 const FRESH_S := 1.5             # a body just drawn may still settle onto its first samples
 const INSIDE_M := 0.3
-const RESPAWN_M := 20.0          # a drawn player farther than this in one frame was moved on purpose (respawn, the cold's rescue 38 m off), not a jump: a runner covers it in 2 s
+const RESPAWN_M := 40.0          # a drawn player farther than this in one frame was moved on purpose (respawn, rescue), not a jump
+const RESCUE_FILE := "rescued.txt"   # ROBOT_SHARE: "<peer> <unix ms>" per line, written by a robot the cold moved to a rescue spot
 const HAND_M := 0.25             # the hand mount this far from the hand bone (it sits about 0.11 m off it) has come loose
 const SAVED_FILE := "user://robot_last_pack.txt"
 const MID_FILE := "user://robot_mid_craft.txt"
@@ -194,6 +196,11 @@ func _hook() -> void:
 		if str(cause) == "passed out":   # the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
 			_woke_at = spawn
 			FreezeWatchScript.printer.line("ROBOT %s step passed out at %d: moved to %s" % [robot_name, _now_ms(), str(spawn)])   # tools/robot_check.py: drawn lying before it is no wrong stance
+			if _share(RESCUE_FILE) != "":   # the others' jump check: this move is the rescue's
+				var f := FileAccess.open(_share(RESCUE_FILE), FileAccess.READ_WRITE) if FileAccess.file_exists(_share(RESCUE_FILE)) else FileAccess.open(_share(RESCUE_FILE), FileAccess.WRITE)
+				if f != null:
+					f.seek_end()
+					f.store_line("%d %d" % [client.multiplayer.get_unique_id(), _now_ms()])
 			return
 
 		_died += 1
@@ -279,7 +286,7 @@ func _process(delta: float) -> void:
 				var was: Array = _seen_player[peer]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 
-				if step > RESPAWN_M:
+				if step > RESPAWN_M or (step > JUMP_FLOOR_M and _rescued(peer)):
 					was[1] = now   # a respawn or a rescue moves a player far on purpose: treat it as a fresh body
 				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * delta * JUMP_SLACK, JUMP_FLOOR_M):
 					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, delta * 1000.0, str(was[0].round()), str(pos.round())])
@@ -3684,7 +3691,7 @@ func _tg_place(bp: int, offsets: Array, file: String) -> int:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, bp, 0, 0, spot)
 		var until: int = Time.get_ticks_msec() + 6000
 
-		while id < 0 and Time.get_ticks_msec() < until and not _notices.slice(heard).any(func(t): return not str(t).begins_with("Blueprint down")):   # a refusal moves on
+		while id < 0 and Time.get_ticks_msec() < until and not _notices.slice(heard).any(func(t): return str(t).contains("in the way")):   # a spot refused moves on; any other word waits the 6 s out
 			for w in client.items._world:
 				if not known.has(w) and Vector2(client.items._world[w]["pos"].x - spot.x, client.items._world[w]["pos"].z - spot.z).length() < 1.5:
 					id = int(w)
@@ -3796,6 +3803,20 @@ func _tg_seen() -> void:
 		_fail("together", "seen_stand", "Robot 2 woke; Robot 1 still draws stance %d for it 8 s later (wanted standing, 0; -1: not drawn)" % standing)
 
 
+# Whether a robot wrote that the cold moved `peer` to a rescue spot in the last 5 s (RESCUE_FILE): read only after a big drawn step.
+func _rescued(peer: int) -> bool:
+	if _share(RESCUE_FILE) == "" or not FileAccess.file_exists(_share(RESCUE_FILE)):
+		return false
+
+	for line in FileAccess.get_file_as_string(_share(RESCUE_FILE)).split("\n"):
+		var p: PackedStringArray = line.split(" ")
+
+		if p.size() == 2 and int(p[0]) == peer and absi(_now_ms() - int(p[1])) < 5000:
+			return true
+
+	return false
+
+
 # A share file's text now ("" when it is not there yet).
 func _tg_read_now(file: String) -> String:
 	var f := FileAccess.open(_share(file), FileAccess.READ)
@@ -3851,7 +3872,7 @@ func _tg_site() -> void:
 	var wood_all: int = await _tg_total("site_wood", lumber)
 	var nails_all: int = await _tg_total("site_nails", nails)
 	var site: int = await _tg_place(TG_CRATE_BP, TG_SPOTS, "tg_site.txt") if one else -1
-	var said: String = await _tg_read("tg_site.txt", 30.0)
+	var said: String = await _tg_read("tg_site.txt", 60.0)   # Robot 1 may try all six spots (6 s each)
 	site = int(said) if said != "" else -1
 
 	if site < 0:
@@ -4030,7 +4051,12 @@ func _tg_after(step: String, number: int, before: int, what: String) -> void:
 
 func _tg_window(step: String) -> void:
 	var server: String = ""
-	var text: String = FileAccess.get_file_as_string(_share("server.log")) if FileAccess.file_exists(_share("server.log")) else ""
+	var text: String = ""
+	var log_file := FileAccess.open(_share("server.log"), FileAccess.READ) if FileAccess.file_exists(_share("server.log")) else null
+
+	if log_file != null:   # the tail only: the newest AUDIT chest line is near the end, and a whole log read is a hitch
+		log_file.seek(maxi(0, log_file.get_length() - 400000))
+		text = log_file.get_buffer(log_file.get_length() - log_file.get_position()).get_string_from_utf8()
 
 	for line in text.split("\n"):
 		if line.begins_with("AUDIT chest %d " % _tg_chest_id):

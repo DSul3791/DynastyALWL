@@ -22,7 +22,8 @@
 # Exit 0 = every invariant held; 1 = a FAIL (listed); 2 = the run itself broke (a robot never joined, the server died).
 set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
-[ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
+[ "$PLAN" = "cold" ] && ROBOTS=1
+[ "$PLAN" = "together" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part   # the frost and the control file are for one robot
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)

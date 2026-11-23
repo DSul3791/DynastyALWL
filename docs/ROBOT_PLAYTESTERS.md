@@ -103,7 +103,9 @@ each with part of its cost (exactly 5 lumber and 8 nails must go in), and both u
 it began), then each in turn: both must draw the site and the door the same. Last, Robot 1 watches Robot 2: Robot 2 swings 4 times and
 Robot 1's rows must show its swing count change; then Robot 2 is passed out by the cold (`cold <peer>` to the server control file) and
 Robot 1 must draw it lying (stance 3) and standing again after it wakes. While a robot is passed out its own stance stays standing, so
-robot_check does not count it drawn lying in the minute before the rescue as a wrong stance.
+robot_check does not count it drawn lying in the 20 s before the rescue as a wrong stance; the rescued robot writes `rescued.txt` in
+ROBOT_SHARE so the watcher's jump check takes the rescue's move as deliberate. robot_check also fails a held step when link.log has no
+`LINK hold` line with a client held. robots.sh runs this plan with exactly 2 robots.
 
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).

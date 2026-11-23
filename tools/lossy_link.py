@@ -302,7 +302,10 @@ async def main():
 
 		if said.startswith("hold "):
 			parts = said.split()
-			n = relay.hold(int(parts[1]), float(parts[2])) if len(parts) == 3 and parts[1].isdigit() else 0
+			try:
+				n = relay.hold(int(parts[1]), float(parts[2])) if len(parts) == 3 else 0
+			except ValueError:
+				n = 0   # "hold 25001 abc": held no one, the link keeps going
 
 			with open(args.control, "w") as f:
 				f.write("done")
