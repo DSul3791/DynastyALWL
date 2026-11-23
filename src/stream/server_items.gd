@@ -12325,7 +12325,6 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 	var given: Array = []
 
 	for need in row["cost"]:
-		var number: int = table.number_of(str(need[0]))
 		var count: int = int(need[1])
 
 		if taken_down:
