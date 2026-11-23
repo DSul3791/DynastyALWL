@@ -6195,39 +6195,30 @@ func _on_sick(hours: int) -> void:
 		_character.refresh()
 
 
-# The comfort line (protocol 80): "Comfort 7" and, while the buff runs, "Rested 38 min", small at the top right; hidden at comfort 0 with no buff.
-var comfort_level: int = 0
-var rested_level: int = 0
-var rested_minutes: int = 0
-var _comfort_label: Label
+# The comfort meter (protocol 164, src/client/ui/comfort_badge.gd): one small borderless flame and its level, left of the hotbar; hover for the tooltip.
+const ComfortBadgeScript := preload("res://src/client/ui/comfort_badge.gd")
+var comfort_level: int = 0       # the whole level shown, 0..10
+var comfort_tenths: int = 0      # the meter in tenths, 0..100
+var comfort_target: int = 0      # the level it heads for
+var comfort_trend: int = 0       # -1 falling, 0 steady, 1 rising
 var comfort_tip: String = ""
+var comfort_badge: Control       # the status strip beside the hotbar may reparent it into its row
 
 
-func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String = "") -> void:
-	comfort_level = level
-	rested_level = rested_tier_level
-	rested_minutes = minutes
+func _on_comfort(tenths: int, target: int, trend: int, tip: String = "") -> void:
+	comfort_tenths = clampi(tenths, 0, 100)
+	comfort_level = ComfortBadgeScript.level_of(comfort_tenths)
+	comfort_target = target
+	comfort_trend = trend
 
-	if _comfort_label == null:
-		_comfort_label = Label.new()
-		_comfort_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		_comfort_label.anchor_left = 1.0
-		_comfort_label.anchor_right = 1.0
-		_comfort_label.offset_left = -420.0
-		_comfort_label.offset_right = -20.0
-		_comfort_label.offset_top = 18.0
-		_comfort_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_comfort_label.add_theme_font_size_override("font_size", 26)
-		_comfort_label.add_theme_constant_override("outline_size", 6)
-		_comfort_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-		_comfort_label.mouse_filter = Control.MOUSE_FILTER_STOP   # hover it (inventory open, cursor free) for the tooltip
-		_layer.add_child(_comfort_label)
+	if tip != "":
+		comfort_tip = tip
 
-	_comfort_label.text = comfort_text(level, rested_tier_level, minutes)
-	_comfort_label.tooltip_text = tip
-	comfort_tip = tip
-	_comfort_label.visible = _comfort_label.text != ""
-	_comfort_label.self_modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
+	if comfort_badge == null:
+		comfort_badge = ComfortBadgeScript.new()
+		_layer.add_child(comfort_badge)
+
+	comfort_badge.set_meter(comfort_tenths, target, trend, tip)
 
 
 # Goals (protocol 119; docs/design/PLAYER_JOURNAL_GOALS_UI.md): the server's list and completions feed one book; the upper-right Goals box sits on the HUD
@@ -6255,19 +6246,6 @@ func _setup_goals() -> void:
 	goal_placard.setup(self, goal_book)
 	journal = JournalScript.new()
 	journal.setup(self, _layer, goal_book)
-
-
-# The words of the comfort line: "" when there is nothing to say.
-static func comfort_text(level: int, rested_tier_level: int, minutes: int) -> String:
-	var parts: PackedStringArray = PackedStringArray()
-
-	if level > 0:
-		parts.append("Comfort %d" % level)
-
-	if rested_tier_level > 0 and minutes > 0:
-		parts.append("Rested %d min" % minutes)
-
-	return "   ".join(parts)
 
 
 func _on_warmth(percent: int) -> void:
