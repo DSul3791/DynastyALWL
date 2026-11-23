@@ -245,7 +245,7 @@ func _process(delta: float) -> void:
 
 
 
-# A step each stride of drawn ground travel, for a player on foot (not swimming, sitting or lying) within hearing.
+# A step each stride of drawn ground travel, for a player on foot (not sitting or lying) within hearing; a swimmer's strokes instead (stroked).
 func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: float) -> void:
 	var state: int = int(b["state"])
 	var stance: int = state & 3

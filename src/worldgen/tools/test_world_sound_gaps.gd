@@ -5,7 +5,8 @@ extends SceneTree
 # - a lit kiln, smelter or smithy crackles where it stands (fire_sounds.gd station_fire, sync_world); its bellows or a smithy's flare roar up;
 # - an iron or steel piece set in place clanks as metal (placed_sounds.gd "metal"), not the soft thump;
 # - another player swimming by is heard stroking where they swim (player_view.gd stroked, swim_sounds.gd stroke_at);
-# - a drink from a water container in the pack gulps (inventory_view.gd _on_vitals: thirst rose after the item), as a mouthful at the water.
+# - a drink eaten from the pack (fruit juice, a tea, a soup) gulps (inventory_view.gd _on_vitals: thirst rose after the item), as a mouthful
+#   at the water or from a waterskin does; one gulp when both would.
 #   godot --headless --path . --script res://src/worldgen/tools/test_world_sound_gaps.gd
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
@@ -127,7 +128,7 @@ func _drinks() -> void:
 	var view = VitalsOnly.new()
 	var said: Array = []
 	view.eat_event = func(what: String) -> void: said.append(what)
-	var cases: Array = [["waterskin", 50, 50, 50, 62, ["drink"], "a mouthful from a waterskin gulps"],
+	var cases: Array = [["fruit_juice", 50, 50, 50, 62, ["drink"], "fruit juice gulps"],
 		["blueberries", 50, 60, 50, 50, ["blueberries"], "berries are eaten as before (silent: no chewing clip)"],
 		["", 50, 50, 50, 62, [], "thirst rising with nothing eaten from the pack is not a gulp here (the water's edge has its own)"]]
 
@@ -138,5 +139,12 @@ func _drinks() -> void:
 		view.thirst = int(c[3])
 		view._on_vitals(int(c[2]), view.health, 0, int(c[4]), 0, 0)
 		check(said == c[5], "%s (%s)" % [c[6], str(said)])
+
+	said.clear()
+	view._eat_item = "fruit_juice"
+	view._drink_msec = Time.get_ticks_msec()             # a mouthful at the water just before
+	view.thirst = 50
+	view._on_vitals(view.hunger, view.health, 0, 62, 0, 0)
+	check(said == ["drink"], "a drink from the pack and a mouthful at the water in one rise: one gulp (%s)" % str(said))
 
 	view.free()

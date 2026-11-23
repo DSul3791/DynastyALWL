@@ -16128,6 +16128,27 @@ func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
 
 
+# The world id of the container `peer` has open, 0 for none, below 0 a worn bag (server_action_cues.gd: a store cue only once the open was let in).
+func open_store_of(peer: int) -> int:
+	return int(_chest_viewer.get(peer, 0))
+
+
+# How many things a placed container holds, all slots counted, -1 when `id` is not one (server_action_cues.gd: a put or take that moved nothing
+# is not heard).
+func store_total(id: int) -> int:
+	var box = _chests.get(int((_items.get(id, {}) as Dictionary).get("struct", {}).get("uid", 0)))
+
+	if box == null:
+		return -1
+
+	var total: int = 0
+
+	for i in box.slot_count:
+		total += int(box.counts[i]) if box.numbers[i] != 0 else 0
+
+	return total
+
+
 # Where a world item lies, null for none (server_action_cues.gd: a knife cut on a carcass is heard there).
 func item_pos_of(id: int) -> Variant:
 	return (_items.get(id, {}) as Dictionary).get("pos", null)

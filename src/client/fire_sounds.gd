@@ -127,6 +127,11 @@ func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 		var row: Dictionary = world[id]
 
 		if not int(row["state"]) in FIRE_STATES:
+			var station: float = station_fire(row)
+
+			if station > 0.0:
+				fires.append({"id": id, "at": row["pos"], "size": station, "lit": true, "ashes": false, "open": false})   # under its own hood or dome: no rain sizzle
+
 			continue
 
 		var at: Vector3 = row["pos"]
@@ -139,12 +144,6 @@ func sync_world(world: Dictionary, cover_at: Callable = Callable()) -> void:
 			fuel(at)
 		fires.append({"id": id, "at": at, "size": FIRE_SIZE * (0.6 if int(row["state"]) == 40 else (1.5 if int(row["state"]) == 41 else 1.0)), "lit": int(row["state"]) in [1, 40, 41], "ashes": int(row["state"]) in [8, 76],
 			"open": not (cover_at.is_valid() and bool(cover_at.call(at)))})
-
-	for id in world:
-		var size: float = station_fire(world[id])
-
-		if size > 0.0 and not states.has(id):
-			fires.append({"id": id, "at": world[id]["pos"], "size": size, "lit": true, "ashes": false, "open": false})   # under its own hood or dome: no rain sizzle
 
 	_world_states = states
 	set_fires(fires)

@@ -1115,9 +1115,14 @@ func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouch
 	player.global_position = feet
 	player.finished.connect(player.queue_free)
 	player.play()
-	_other_step_voices.append(player)
+	count_other_step(player)
 	others_steps += 1
 	return true
+
+
+# Another player's step or swimming stroke now sounding: other_step_room counts it against OTHER_STEP_VOICES.
+func count_other_step(player: AudioStreamPlayer3D) -> void:
+	_other_step_voices.append(player)
 
 
 # Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material; 5 a knife on a carcass),

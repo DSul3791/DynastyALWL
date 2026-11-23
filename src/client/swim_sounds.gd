@@ -207,6 +207,7 @@ func stroke_at(at: Vector3) -> bool:
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
+	_stage.count_other_step(player)   # counted with the other players' steps against OTHER_STEP_VOICES
 	others_strokes += 1
 	return true
 

@@ -36,7 +36,7 @@ const HANDS_UP_M := 0.3                                           # position_of 
 const HANDS_OUT_M := 0.8                                          # and in front
 const MINE_POINT_M := 6.0                                         # a blow on the ground farther than this from the player is not its own (server_items MINE_REACH_M 4.5, plus the drift between reports)
 
-var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of, item_pos_of
+var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of, item_pos_of, open_store_of, store_total
 var yaw_of: Callable = func(_peer: int) -> float: return 0.0      # the body's facing (server_players.gd), for a blow with no point of its own
 var send_cue: Callable             # (to peer, about peer, cue, detail, at)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
@@ -44,33 +44,16 @@ var sent: int = 0                  # cues sent (one per receiver), for checks
 
 var _last_ms: Dictionary = {}      # peer -> ms of its last cue
 var _craft: Dictionary = {}        # peer -> [recipe, ms of its last craft cue]
-var _store: Dictionary = {}        # peer -> the world id of the container it last opened (ACT_CHEST_CLOSE names none)
 
 
 # A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
 func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3) -> void:
-	if kind == Net.ACT_CHEST_OPEN:
-		_store[peer] = a   # kept even when the cue is held back, so the close is heard where it was opened
-
-	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE, Net.ACT_CHEST_OPEN, Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE, Net.ACT_CHEST_CLOSE] or not _due(peer):
+	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE] or not _due(peer):
 		return   # nothing to hear, or too soon after its last cue: no pack scan for a flood
 
 	var material: String = ""
 
 	match kind:
-		Net.ACT_CHEST_OPEN:
-			_store_cue(peer, a, STORE_OPEN)
-			return
-		Net.ACT_CHEST_CLOSE:
-			_store_cue(peer, int(_store.get(peer, -1)), STORE_CLOSE)
-			_store.erase(peer)
-			return
-		Net.ACT_CHEST_PUT:
-			_store_cue(peer, b, STORE_PUT)
-			return
-		Net.ACT_CHEST_TAKE:
-			_store_cue(peer, b, STORE_TAKE)
-			return
 		Net.ACT_HIT:
 			material = "stone" if b == Net.HIT_BOULDER else "wood"
 		Net.ACT_PROCESS:
@@ -98,6 +81,34 @@ func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3)
 		return   # a client may not set a blow ringing anywhere it likes
 
 	cue(peer, CUE_BLOW, tool_of(peer) * 8 + MATERIALS.find(material), point)
+
+
+# A container action (terrain_server.gd, around items.action): what the store was before it, [] for any other action. store_after hears
+# only what the server let through: an open of a locked or far chest, a put into a take-only store or a wall, a put or take that moved
+# nothing, are refused there and heard as nothing.
+func store_before(peer: int, kind: int, b: int) -> Array:
+	if kind not in [Net.ACT_CHEST_OPEN, Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE, Net.ACT_CHEST_CLOSE] or items == null:
+		return []
+
+	return [int(items.open_store_of(peer)), int(items.store_total(b)) if kind in [Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE] else -1]
+
+
+func store_after(peer: int, kind: int, a: int, b: int, before: Array) -> void:
+	if before.is_empty() or items == null:
+		return
+
+	var open_now: int = int(items.open_store_of(peer))
+
+	match kind:
+		Net.ACT_CHEST_OPEN:
+			if a > 0 and open_now == a and int(before[0]) != a:
+				_store_cue(peer, a, STORE_OPEN)   # let in (a second open of the window already open is no new creak)
+		Net.ACT_CHEST_CLOSE:
+			if int(before[0]) > 0 and open_now != int(before[0]):
+				_store_cue(peer, int(before[0]), STORE_CLOSE)
+		Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE:
+			if b > 0 and int(before[1]) >= 0 and int(items.store_total(b)) != int(before[1]):
+				_store_cue(peer, b, STORE_PUT if kind == Net.ACT_CHEST_PUT else STORE_TAKE)
 
 
 # A container opened, shut, filled or emptied by `peer`: heard at the container when it is a placed one near the player (a worn bag, id
@@ -182,4 +193,3 @@ func _due(peer: int) -> bool:
 func forget(peer: int) -> void:
 	_last_ms.erase(peer)
 	_craft.erase(peer)
-	_store.erase(peer)
