@@ -10,9 +10,11 @@ extends Node
 # THE DAMAGE CALL POINT: from `HURT_M` (6 m for now) `hurt` is emitted with the drop and a severity 0..1. The Items
 # thread's fall damage hooks in there (connect to `sound.landing.hurt`, or later replace HURT_M with the server's
 # number); nothing else changes, the hard landing already sounds right. Skipped silently when flying (admin).
+# Another player's fall is heard too (`land_at`, from player_view.landed): the thud or hard landing where their feet came down.
 # Sounds: generated in assets/audio/landing/ (make_landing.py); recordings in assets/audio/recorded/landing/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")
 const GENERATED_DIR := "res://assets/audio/landing/"
 const RECORDED_DIR := "res://assets/audio/recorded/landing/"
 
@@ -27,6 +29,7 @@ const HARD_DB := -8.0
 signal hurt(drop_m: float, severity: float)
 
 var landings: Dictionary = {}           # class name -> count
+var others_landed: int = 0              # other players heard landing from a fall (land_at)
 var last: String = ""                   # HUD
 var _stage                              # SoundStage (footstep, gear, voice budget)
 var _streams: Dictionary = {}
@@ -53,6 +56,34 @@ func land(body: CharacterBody3D, drop_m: float) -> void:
 
 	if drop_m >= HURT_M:
 		hurt.emit(drop_m, clampf((drop_m - HURT_M) / (FULL_HURT_M - HURT_M), 0.0, 1.0))
+
+
+# Another player lands from a fall (player_view.landed): their step, louder by the drop, and the thud or the hard landing, where their feet
+# came down, positional at the other players' step reach. Counted in others_landed (tests, HUD).
+func land_at(feet: Vector3, drop_m: float) -> bool:
+	var kind: int = 2 if drop_m >= HARD_FROM_M else (1 if drop_m >= THUD_FROM_M else 0)
+
+	if kind == 0 or not feet.is_finite() or not _stage.has_room():
+		return false
+
+	_stage.step_at(feet, 2)
+	var sound_name: String = "land_hard" if kind == 2 else "land_thud"
+	var list: Array = _variants(sound_name)
+	others_landed += 1
+	last = "another player: %s from %.1f m" % [sound_name, drop_m]
+
+	if list.is_empty():
+		return true
+
+	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", SoundStage.OTHER_STEP_UNIT_M, SoundStage.OTHER_STEP_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = (HARD_DB if kind == 2 else THUD_DB) + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = _rng.randf_range(0.96, 1.04)
+	player.global_position = feet
+	player.finished.connect(player.queue_free)
+	player.play()
+	_stage.count_other_step(player)   # within the other players' step voices (OTHER_STEP_VOICES)
+	return true
 
 
 func _play(sound_name: String, volume_db: float) -> bool:
