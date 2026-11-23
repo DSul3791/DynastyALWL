@@ -197,23 +197,22 @@ func _stack_and_limit() -> void:
 	act(Net.ACT_PICKUP, stick_pile)
 	var sticks: int = int(round((load_of(1) - before) / kg("stick")))
 	check(sticks == spare and spare > 0 and spare < 10 and said.any(func(t): return str(t) == "Too heavy: you took %d of 10" % sticks), "a batch of sticks at the limit takes %d and says so (%s)" % [sticks, str(said)])
-	# The HUD line (inventory_view load_line), shown with the pack shut so a slow walk always has its reason on screen (carry feel, 23 Nov 2026).
-	var View := load("res://src/client/inventory_view.gd")
+	# The HUD line (CarryRules.load_line, the pack window's words use the same thresholds), shown with the pack shut so a slow walk always has its reason on screen (carry feel, 23 Nov 2026).
 	var comfort: float = CarryRules.comfort_kg(body, cfg)
-	check(View.load_line(comfort, body, cfg) == "" and CarryRules.speed_factor(comfort, body, cfg) == 1.0, "up to the comfortable load: full pace and no line")
-	check(str(View.load_line(comfort + 1.0, body, cfg)).begins_with("Heavy load") and CarryRules.speed_factor(comfort + 1.0, body, cfg) < 1.0, "past it: slower, and the HUD says \"%s\"" % View.load_line(comfort + 1.0, body, cfg))
-	check(str(View.load_line(load_of(1), body, cfg)).begins_with("At your carry limit"), "filled by pick-ups: \"%s\"" % View.load_line(load_of(1), body, cfg))
-	check(str(View.load_line(cap + 2.0, body, cfg)).begins_with("Over your carry limit"), "over it: \"%s\"" % View.load_line(cap + 2.0, body, cfg))
+	check(CarryRules.load_line(comfort, body, cfg) == "" and CarryRules.speed_factor(comfort, body, cfg) == 1.0, "up to the comfortable load: full pace and no line")
+	check(str(CarryRules.load_line(comfort + 1.0, body, cfg)).begins_with("Heavy load") and CarryRules.speed_factor(comfort + 1.0, body, cfg) < 1.0, "past it: slower, and the HUD says \"%s\"" % CarryRules.load_line(comfort + 1.0, body, cfg))
+	check(str(CarryRules.load_line(load_of(1), body, cfg)).begins_with("At your carry limit"), "filled by pick-ups: \"%s\"" % CarryRules.load_line(load_of(1), body, cfg))
+	check(str(CarryRules.load_line(cap + 2.0, body, cfg)).begins_with("Over your carry limit"), "over it: \"%s\"" % CarryRules.load_line(cap + 2.0, body, cfg))
 	var steps: Array = []
 	var worst: float = 0.0
 
-	for i in 101:   # the slowdown ramps: no step of 1 percent of the limit cuts the pace by more than 4 percent of full pace
+	for i in 101:   # the slowdown ramps: no step of 1 percent of the slowing band (comfort to limit) cuts the pace by more than 4 percent of full pace
 		steps.append(CarryRules.speed_factor(comfort + (cap - comfort) * float(i) / 100.0, body, cfg))
 
 	for i in range(1, steps.size()):
 		worst = maxf(worst, float(steps[i - 1]) - float(steps[i]))
 
-	check(worst <= 0.04 and near(float(steps[100]), float(cfg["min_speed"])) and CarryRules.speed_factor(cap + 5.0, body, cfg) == float(steps[100]), "the slowdown eases from full pace to %.2f with no jump (worst step %.3f), and stays there past the limit" % [float(cfg["min_speed"]), worst])
+	check(worst <= 0.02 and near(float(steps[100]), float(cfg["min_speed"])) and CarryRules.speed_factor(cap + 5.0, body, cfg) == float(steps[100]), "the slowdown eases from full pace to %.2f with no jump (worst step %.3f), and stays there past the limit" % [float(cfg["min_speed"]), worst])
 	# Over the limit without picking anything up (the body grows lighter, a backpack comes off): told once.
 	said.clear()
 	items.vitals_of(1)["weight"] = 60.0

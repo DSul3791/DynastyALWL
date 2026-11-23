@@ -2548,30 +2548,14 @@ func _refresh_weight() -> void:
 
 # The HUD line for a load that slows you (carry feel, 23 Nov 2026): shown with the pack shut, so a slow walk always has its reason on screen.
 func load_warning() -> String:
-	return load_line(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else ""
-
-
-static func load_line(load_kg: float, body_kg: float, cfg: Dictionary) -> String:
-	var limit: float = CarryRules.cap_kg(body_kg, cfg)
-
-	if load_kg <= CarryRules.comfort_kg(body_kg, cfg):
-		return ""
-
-	if load_kg > limit + 0.05:   # past the client's rounding of the body (up to 35 g, weights review)
-		return "Over your carry limit (%.1f of %.0f kg): put something down" % [load_kg, limit]
-
-	if load_kg >= limit * 0.98:   # within 2 percent: at the slowest walk, and little more will go in
-		return "At your carry limit (%.0f kg): you move slowly" % limit
-
-	return "Heavy load (%.1f of %.0f kg): you move slower" % [load_kg, limit]
+	return CarryRules.load_line(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else ""
 
 
 func _load_text() -> String:
 	var load_kg: float = carried_kg()
-	var free: float = CarryRules.comfort_kg(carry_body_kg(), _carry_cfg)
 	var limit: float = CarryRules.cap_kg(carry_body_kg(), _carry_cfg)
-	var state: String = "" if load_kg <= free else ("   (heavy: you move slower)" if load_kg < limit else "   (at the limit)")
-	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays one down)" % _carried_names() if shoulder_id != "" else "")
+	var state: String = ["", "   (heavy: you move slower)", "   (at the limit)", "   (over the limit: put something down)"][CarryRules.load_state(load_kg, carry_body_kg(), _carry_cfg)]   # the HUD line's own thresholds
+	return "Carrying %.1f kg of %.1f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays one down)" % _carried_names() if shoulder_id != "" else "")
 
 
 func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
@@ -6127,7 +6111,9 @@ func _on_worn(numbers: PackedInt32Array, insts: PackedByteArray = PackedByteArra
 	if worn_event.is_valid():
 		worn_event.call(changed, ids)
 
-	if _weight_label != null:
+	if _vitals_back != null:
+		_place_vitals()   # a backpack off moves the limit: the HUD load line follows at once (it refreshes the pack's weight too)
+	elif _weight_label != null:
 		_refresh_weight()
 
 	if _character != null:
