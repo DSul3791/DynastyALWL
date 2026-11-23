@@ -154,6 +154,7 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
 	a.erase("run_m")   # a warned charge runs the species' own charge_m
+	a.erase("walled")   # set again by the charge this warning ends in (a bluff never sets it)
 	a["state"] = WARN
 	a["timer"] = warn_s
 	a["huff_s"] = float(a["timer"]) * (1.0 - float(def.get("huff_share", 1.0)))   # the jaw-pop starts when this much warning is left
@@ -326,7 +327,9 @@ func step(a: Dictionary, dt: float) -> void:
 		var foe: Dictionary = _foe(a) if bool(a.get("walled", false)) else {}
 		a.erase("walled")
 
-		if not foe.is_empty() and not foe.has("dog") and int(a.get("wall_tries", 0)) < WALL_TRIES and host.wall_between(a["pos"], foe["pos"]):
+		var calm_m: float = float(def.get("calm_m", 32.0))
+
+		if not foe.is_empty() and not foe.has("dog") and int(a.get("wall_tries", 0)) < WALL_TRIES and Vector2(foe["pos"].x - a["pos"].x, foe["pos"].z - a["pos"].z).length() <= calm_m and host.wall_between(a["pos"], foe["pos"]):
 			a["wall_tries"] = int(a.get("wall_tries", 0)) + 1
 			_start_warn(a, foe["pos"], float(def.get("provoked_warn_s", 0.8)), bool(a.get("no_bluff", false)))
 			return
