@@ -1478,6 +1478,12 @@ func _welcome_body(info: Dictionary) -> void:
 	trail_signs.name = "TrailSigns"
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
+	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
+		if sound != null:
+			sound.slots.play("sign_spot", at)
+
+		if net != null and multiplayer.has_multiplayer_peer():
+			net.sign_spotted.rpc_id(1, at.x, at.z)
 	root.add_child(trail_signs)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
@@ -1653,6 +1659,7 @@ func _welcome_body(info: Dictionary) -> void:
 	npc_view.goblin_called.connect(func(at: Vector3, mood: String) -> void: sound.creatures.call_at("goblin", at, mood))   # a camp goblin squaring up to a weapon (Dave 20 Nov 2026: "make angry sounds")
 	npc_view.goblin_maker = animal_view.make_goblin   # goblin tribe members wear the wild goblin's model (data/creatures/goblin_tribes.json)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
+	animal_view.player_at = func() -> Vector3: return body.global_position if body != null and body.is_inside_tree() else Vector3.INF   # the capsule's middle, about 1 m above the feet the server uses: only its xz matters (stop_toward's 2 m height gate is that much looser): a charge is never drawn inside the player
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
@@ -2198,6 +2205,12 @@ func _stamp_walkers(now: int) -> void:
 
 	for n in range(mini(spots.size(), grass.trail_budget())):
 		grass.stamp(spots[n])
+
+	# The other players mat the grass as the player does (tester report #7, 23 Nov 2026), outside the walkers' budget so a herd nearby
+	# never leaves a friend without a trail. flatten, not stamp: stamp also moves the trample map's window, which follows this player only.
+	if _player_view != null:
+		for spot in _player_view.trail_points(here, grass.trail_reach_m()):
+			grass.flatten(spot, PlayerViewScript.TRAIL_RADIUS_M)
 
 
 # Placed things clear the ground around them (data/look/placed_clearing.json): grass and litter in grass_view, shrubs and small plants in
@@ -5170,6 +5183,7 @@ func _step_player(delta: float) -> void:
 			sound.fire.sync_world(items._world, _cover_here)
 
 		sound.placed.quiet = _world_loading()
+		sound.workshop.quiet = sound.placed.quiet
 		sound.placed.watch_world(items._world, body.global_position)
 		sound.placed.watch_open(items._world, body.global_position)
 

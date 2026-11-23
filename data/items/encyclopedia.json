@@ -233,7 +233,8 @@
 			"description": "Alder wood fit for burning down to charcoal. Hotter and cleaner than a wood fire.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"cherries": {
 			"name": "Cherries",
@@ -254,7 +255,8 @@
 			"description": "Reddish close-grained wood of the wild cherry. Takes a polish; makes fine small work.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"chestnuts": {
 			"name": "Chestnuts",
@@ -497,7 +499,8 @@
 			"description": "Needles of the everember tree, dark green and resinous. They smoulder rather than burn.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"everember_sap": {
 			"name": "Everember sap",
@@ -505,7 +508,8 @@
 			"description": "A sticky amber sap that smells of warm spice. Burns slowly.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"everember_wood": {
 			"name": "Everember wood",
@@ -513,7 +517,8 @@
 			"description": "Dense dark wood of the everember, slow to burn and warm to hold.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"feverfew": {
 			"name": "Feverfew",
@@ -653,7 +658,8 @@
 			"description": "Sticky tree gum, hardened in lumps. Chewed, or used as glue.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"hagwillow_bark": {
 			"name": "Hagwillow bark",
@@ -733,7 +739,8 @@
 			"description": "Heavy logs of the hearthwood tree, said to burn all night and never spit.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"heartroots": {
 			"name": "Heartroots",
@@ -967,7 +974,8 @@
 			"description": "Smooth silver bark that gleams like a mirror in sunlight. Peels in bright sheets.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"mirrorbark_wood": {
 			"name": "Mirrorbark wood",
@@ -975,7 +983,8 @@
 			"description": "Fine pale wood from the mirrorbark tree. Takes a bright polish.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"mirrorcap_caps": {
 			"name": "Mirrorcap caps",
@@ -1053,7 +1062,8 @@
 			"description": "Long woody fronds. Woven into mats and roofs.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"palm_wood": {
 			"name": "Palm wood",
@@ -1061,7 +1071,8 @@
 			"description": "Fibrous trunk wood of palms. Soft to cut, poor for fuel.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"pilgrims_cup_pitchers": {
 			"name": "Pilgrim's cup pitchers",
@@ -1332,7 +1343,8 @@
 			"description": "Sweet watery sap tapped from a tree. Boils down to syrup.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"sea_buckthorn_berries": {
 			"name": "Sea buckthorn berries",
@@ -1549,7 +1561,7 @@
 			"kind": "material",
 			"description": "Bark rich in tannin. Used for tanning hides.",
 			"how_to_get": [
-				"Harvested from English oak"
+				"Felled oaks: 12 in the heap beside the logs, once a tree"
 			],
 			"used_for": [
 				"Used in Heavy leather",
@@ -1695,7 +1707,8 @@
 			"description": "Green-black husks of the walnut. Stain the hands brown; used as dye.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"walnuts": {
 			"name": "Walnuts",
@@ -1717,7 +1730,8 @@
 			"description": "Sweet clean resin of the wardpine, believed to keep ill luck away.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"wardpine_wood": {
 			"name": "Wardpine wood",
@@ -1725,7 +1739,8 @@
 			"description": "Straight clean wood of the wardpine, light and strongly scented.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"water": {
 			"name": "Water",
@@ -1873,7 +1888,8 @@
 			"description": "Deep-furrowed bark of the witness tree, said to carry old marks and scars.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"witness_leaves": {
 			"name": "Witness leaves",
@@ -1881,7 +1897,8 @@
 			"description": "Dark leathery leaves of the old witness tree. Not for eating.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"wolfsbane_roots": {
 			"name": "Wolfsbane roots",
@@ -3906,7 +3923,7 @@
 			"kind": "food",
 			"description": "Flat cakes of chestnut, honey and linseed. Good travelling food.",
 			"how_to_get": [
-				"Craft at a clay hearth: 3 Chestnuts, 1 Honey, 1 Linseed"
+				"Craft at a clay hearth: 3 Chestnuts, 1 Honey, 100 Linseed"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3966,7 +3983,7 @@
 			"kind": "food",
 			"description": "Dense seed and nut loaves. Barely spoils.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Linseed, 2 Hazelnuts, 1 Animal fat"
+				"Craft at a campfire: 200 Linseed, 2 Hazelnuts, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5121,8 +5138,7 @@
 				"Craft: 2 Stick, 3 Stone, 2 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sickle": {
 			"name": "Stone - Sickle",
@@ -8807,7 +8823,7 @@
 			"description": "Oil from herring, linseed or walnuts. Burns three game days in an iron lantern.",
 			"how_to_get": [
 				"Craft at a campfire pot: 3 Herring",
-				"Craft at an oil press: 4 Linseed",
+				"Craft at an oil press: 400 Linseed",
 				"Craft at an oil press: 4 Walnuts"
 			],
 			"used_for": [

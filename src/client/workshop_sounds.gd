@@ -28,6 +28,7 @@ const SCAN_SEC := 0.5
 var loops_playing: int = 0              # HUD
 var played: Dictionary = {}             # one-shot name -> count
 var last: String = ""
+var quiet: bool = false                 # set with PlacedSounds.quiet while the world first loads: a worked smelter's strokes wait (BugsList 115 known limit)
 
 var _stage                              # SoundStage (voice budget, tier)
 var _saws: Array = []
@@ -51,6 +52,9 @@ func plank_drop(at: Vector3) -> bool:
 
 
 func bellows(at: Vector3) -> bool:
+	if quiet:
+		return false
+
 	return _once("bellows_blow", at)
 
 

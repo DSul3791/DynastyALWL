@@ -7,12 +7,12 @@ internet link, and check what they see against what the server believes.
 
 ## Run
 ```
-tools/robots.sh                    # 3 robots, plan first_hours, 60 ms +- 25 ms each way, 2% loss; about 7 minutes in the cloud
+tools/robots.sh                    # 3 robots, plan first_hours, 60 ms +- 25 ms each way, 2% loss; about 6.5 minutes on 4 CPUs
 tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
 ```
-Needs `godot` (the voxel build, see the cloud recipe) and python3. Exit 0 = every invariant held, 1 = a finding, 2 = the run broke.
+Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `ai-team/TEST_GATES.md` and the coordinator: cloud Godot runs only under Dave's 22 Nov 2026 permission (to Wed 25 Nov 2026, recipe in the coordinator's CLOUD_TESTS.md); otherwise Lane B. Never Dave's PC while he plays. Exit 0 = every invariant held, 1 = a finding, 2 = the run broke.
 
 ## Pieces
 | File | What it does |
@@ -28,7 +28,7 @@ Join; given 45 plant fibre, 14 sticks and 10 stones (admin, local server only); 
 spear, stone spear, snare, stone knife; drop a stick and pick it up; walk each way standing and crouched; walk to the thickest trees within
 150 m and crouch from trunk to trunk; spear in hand, chase the nearest ground game (rabbit, deer, wolf first) and strike, with the other
 robots after the same animal; lie down, sleep, wake; quit. Then rejoin (plan `rejoin`) and check the pack came back. Plan `light` (walk,
-stances, forest, watch) changes nothing in the world, for a live server.
+stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
 ## Invariants
 - **pack**: after every action, once quiet, the client's pack equals the server's (`CHECK pack` against `AUDIT pack`).
@@ -36,14 +36,15 @@ stances, forest, watch) changes nothing in the world, for a live server.
 - **jump**: no drawn animal or player moves farther in one frame than its top speed allows (client); no animal steps farther than its top
   speed allows (server).
 - **inside**: no animal's middle inside a player's capsule (client and server).
-- **held**: a remote player's held item stays within 0.35 m of its right hand bone.
+- **held**: a remote player's held item hangs on its right hand mount, and the mount stays within 0.25 m of the hand bone (it sits about 0.11 m off it); a run where robots played together and none measured a held item fails too.
 - **blocked**: keys held crouched and no movement where standing at the same spot moves freely.
-- **refusal**: no server refusal without a message to the player.
 - **rejoin**: the pack after quit and rejoin is the pack at quit.
+- **refusals**: each refusal is listed as a NOTE, with or without words (many are a sound only, by design).
 - **errors**: no SCRIPT ERROR (or unlisted engine ERROR) in any log; every robot joined and finished.
 
-## Where it fits (proposal for the coordinator; the gate rules themselves are in `ai-team/TEST_GATES.md`)
-About 7 minutes on 4 CPUs, no GPU: a cloud job (until the cloud runs end) or Lane B, never Dave's PC. Proposed as a main gate job beside
-the server smokes, on the exact candidate, and as a change-plan extra for PRs touching `src/stream`, `src/client/animal_view.gd`,
-`src/client/player_view.gd`, `src/client/motion_buffer.gd`, `src/server`, the movement code in `terrain_client.gd` or the pack screens.
-A finding is filed with the coordinator like any other fault, with the robot's line (what, where, how to reproduce).
+## Where it fits (an unapproved proposal for the coordinator; the gate rules are only those in `ai-team/TEST_GATES.md`)
+About 6.5 minutes on 4 CPUs, no GPU, so it never needs Dave's PC: Lane B, or the cloud while Dave's cloud permission lasts. Proposed, not
+adopted: a main gate job beside the server smokes on the exact candidate, and a change-plan extra for PRs touching `src/stream`,
+`src/client/animal_view.gd`, `src/client/player_view.gd`, `src/client/motion_buffer.gd`, `src/server`, the movement code in
+`terrain_client.gd` or the pack screens. A finding goes to the coordinator like any other fault, with the robot's line (what, where, how to
+reproduce).

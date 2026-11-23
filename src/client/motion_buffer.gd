@@ -14,12 +14,19 @@ extends RefCounted
 # own beat, while the rows go out four times a second, and a frame hitch here holds rows back and hands over two at once: on arrival times
 # a running animal covered two steps in one interval and none in the next, so it jumped, stood and jumped.
 
-const KEEP := 4                 # points kept per body
+const KEEP := 6                 # points kept per body: enough for the deepest row-clock delay (MAX_DELAY_S) at four rows a second
 const SNAP_M := 25.0            # farther than this between two sends: the body is put there, not slid there
 const CARRY_S := 0.3            # the longest a body carries on past its newest point
 const LEAD_S := 0.15            # how far behind the rows' newest moment bodies are drawn, beyond one gap between rows (delay_s)
 const REANCHOR_S := 10.0        # a clock offset this much above the smallest is a new server clock (a reconnect to another): start again
 const CREEP_S := 0.0005         # the smallest offset rises this much a batch, so one freak fast delivery does not hold it low for ever
+const MIN_DELAY_S := 0.1        # the row clock's delay (clock_delay) stays within these
+const MAX_DELAY_S := 0.8
+const SMOOTH_HALF_S := 0.1      # a correction (smooth) is blended away with this half-life...
+const CATCH_X := 0.5            # ...catching up at most this share of the body's own speed faster than it moves
+const AHEAD_CARRY_S := 0.8      # a body drawn at the present (a committed charge, animal_view AHEAD_STATES) carries on this long past its newest point
+const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 12 m/s); smooth() eases a body at most this fast (a 16-18 m/s
+                                # flush or pronghorn flight still moves under its 1.5 frames of room; any excess is eased in, not jumped)
 
 
 # Local seconds minus server seconds (`off` so far, INF for none): the smallest seen, the batch that came fastest, so a point's time plus
@@ -79,8 +86,9 @@ static func push(samples: Array, pos: Vector3, heading: float, t: float, gap: fl
 
 
 # [position, heading] to draw at time `t`: between the two sent points either side of it; past the newest one, on along the last leg for
-# up to that leg's time (CARRY_S at most), then held.
-static func at(samples: Array, t: float) -> Array:
+# up to that leg's time (CARRY_S at most), or for `carry_s` when given (a body drawn at the present: AHEAD_CARRY_S; at most two legs' time and
+# at CARRY_MPS at most), then held.
+static func at(samples: Array, t: float, carry_s: float = -1.0) -> Array:
 	var first: Array = samples[0]
 
 	if samples.size() == 1 or t <= float(first[2]):
@@ -97,8 +105,13 @@ static func at(samples: Array, t: float) -> Array:
 	var newest: Array = samples[samples.size() - 1]
 	var before: Array = samples[samples.size() - 2]
 	var leg: float = maxf(float(newest[2]) - float(before[2]), 0.001)
-	var on: float = minf(t - float(newest[2]), minf(leg, CARRY_S))
-	return [(newest[0] as Vector3) + ((newest[0] as Vector3) - (before[0] as Vector3)) * (on / leg), newest[1]]
+	var on: float = minf(t - float(newest[2]), minf(leg, CARRY_S) if carry_s < 0.0 else minf(carry_s, leg * 2.0))
+	var step: Vector3 = (newest[0] as Vector3) - (before[0] as Vector3)
+
+	if carry_s >= 0.0:
+		step = step.limit_length(CARRY_MPS * leg)   # a short leg (a charge out of a stand stamped at the send time) is not a launch
+
+	return [(newest[0] as Vector3) + step * (on / leg), newest[1]]
 
 
 # How far in the past bodies are drawn, from the recent gap between rows: a point reaches this computer up to one gap after the server
@@ -106,3 +119,83 @@ static func at(samples: Array, t: float) -> Array:
 # the arrival-time drawing was (the bow aims at what is drawn).
 static func delay_s(gap: float) -> float:
 	return clampf(gap + LEAD_S, 0.1, 0.7)
+
+
+# The row clock of one stream of timed rows (the animals, protocol 154; Dave 23 Nov 2026, first game on the real server over the internet:
+# "animals were still teleporting and jumping right through us"). On a real connection rows come late by a varying amount and some never
+# come (ENet drops unreliable packets on purpose when the ping wobbles: data/network.json packet_throttle). The draw delay was one row gap
+# plus a fixed 0.15 s, measured from arrival gaps, so a lost or late batch ran the body past its newest point and it stood, then jumped.
+# Now the clock keeps, from the server times of the batches that came: `interval` the server seconds between batches (a hole, one
+# missing, is not counted in it), `hole` the recent share of holes, and `late` how late the recent latest batch came beyond the fastest
+# one (fast up, slow down). The delay (clock_delay) is one interval, one more as holes grow, plus that lateness: a jitter buffer as deep
+# as the connection needs, no deeper. See docs/design/ANIMAL_NETCODE.md.
+static func clock_new() -> Dictionary:
+	return {"off": INF, "server_ms": -1, "interval": 0.25, "late": 0.05, "hole": 0.0}
+
+
+static func clock_note(c: Dictionary, now_s: float, server_ms: int) -> void:
+	var last: int = int(c["server_ms"])
+
+	if last >= 0 and server_ms > last:
+		var span: float = float(server_ms - last) / 1000.0
+		var hole: bool = span >= float(c["interval"]) * 1.5
+
+		if not hole:
+			c["interval"] = lerpf(float(c["interval"]), clampf(span, 0.05, 0.5), 0.1)
+
+		c["hole"] = lerpf(float(c["hole"]), 1.0 if hole else 0.0, 0.05)
+
+	c["off"] = clock_off(float(c["off"]), now_s, server_ms, last)
+	c["server_ms"] = server_ms if server_ms > last or server_ms < last - 2000 else last
+	var late: float = maxf(now_s - (float(server_ms) / 1000.0 + float(c["off"])), 0.0)
+	c["late"] = late if late > float(c["late"]) else lerpf(float(c["late"]), late, 0.02)
+
+
+# How far behind the rows' clock bodies are drawn (see clock_new).
+static func clock_delay(c: Dictionary) -> float:
+	return clampf(float(c["interval"]) * (1.0 + minf(float(c["hole"]) * 4.0, 1.0)) + float(c["late"]) + 0.05, MIN_DELAY_S, MAX_DELAY_S)
+
+
+# Where to draw a body this frame: `p` where its points put it now (at), `speed` its recent ground speed. A frame's move of the target
+# beyond a normal one (1.5 times its speed, at least 2 m/s) is not shown at once: it goes into the body's correction (sm_err), which is then
+# blended away (SMOOTH_HALF_S, at most CATCH_X of its speed faster). A late batch, a hole bridged too far, a step past a player held
+# back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
+static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> Vector3:
+	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
+	var err: Vector3 = body.get("sm_err", Vector3.ZERO)
+
+	if body.has("sm_p"):
+		var jump: Vector3 = p - (body["sm_p"] as Vector3)
+		var room: float = v * delta * 1.5 + 0.01
+
+		if jump.length() > SNAP_M:
+			err = Vector3.ZERO
+		elif jump.length() > room:
+			err -= jump - jump.normalized() * room
+
+		var size: float = err.length()
+
+		if size > 0.0:
+			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), v * CATCH_X * delta), size)
+
+	body["sm_p"] = p
+	body["sm_err"] = err
+	return p + err
+
+
+# The ground speed (m/s) of the leg the drawn moment `t` is on, for smooth: past the newest point the last leg's, before the first none.
+# Not the newest leg's: the body is drawn a delay behind, so when a run's stop row has come it is still running on the legs before it
+# (gate review of PR #1631: the newest leg's speed of 0 slowed every runner to a crawl short of its stop).
+static func speed_at(samples: Array, t: float) -> float:
+	if samples.size() < 2 or t <= float(samples[0][2]):
+		return 0.0
+
+	var i: int = 1
+
+	while i < samples.size() - 1 and t >= float(samples[i][2]):
+		i += 1
+
+	var a: Array = samples[i - 1]
+	var b: Array = samples[i]
+	var da: Vector3 = (b[0] as Vector3) - (a[0] as Vector3)
+	return Vector2(da.x, da.z).length() / maxf(float(b[2]) - float(a[2]), 0.05)

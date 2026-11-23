@@ -11,8 +11,8 @@ extends Node
 #   ROBOT <name> NOTE <kind> <details>     worth a look, not a failure (an obstacle, a refusal that came with a message)
 #   ROBOT <name> step <name> <details>     progress
 # Kinds: craft (a finished craft is not in the pack), pickup, jump (a drawn animal or player moved farther in a frame than it can),
-# inside (a drawn animal's middle inside this player's capsule), held (a remote player's held item away from its hand), blocked (keys held,
-# no movement, in a stance where standing at the same spot moves), refusal (the server refused with no message), rejoin (the pack after
+# inside (a drawn animal's middle inside this player's capsule), held (a remote player's hand mount away from its hand bone), blocked (keys held,
+# no movement, in a stance where standing at the same spot moves), rejoin (the pack after
 # quit and rejoin is not the pack before).
 # Plans (--robot-plan=): first_hours (default: craft, drop and pick up, stances, forest crouch walk, hunt, sleep, quit), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
@@ -34,7 +34,8 @@ const JUMP_FLOOR_M := 1.5
 const PLAYER_TOP_MPS := 9.5      # terrain_client RUN_SPEED 9.0
 const FRESH_S := 1.5             # a body just drawn may still settle onto its first samples
 const INSIDE_M := 0.3
-const HAND_M := 0.35             # a held item's origin this far from the hand bone is floating
+const RESPAWN_M := 40.0          # a drawn player farther than this in one frame was moved on purpose (respawn, rescue), not a jump
+const HAND_M := 0.25             # the hand mount this far from the hand bone (it sits about 0.11 m off it) has come loose
 const SAVED_FILE := "user://robot_last_pack.txt"
 const MID_FILE := "user://robot_mid_craft.txt"
 const SPECIES_NAME := {1: "rabbit", 2: "deer", 3: "wolf"}
@@ -44,7 +45,6 @@ var client                       # terrain_client.gd
 var robot_name: String = "Robot"
 var plan: String = "first_hours"
 var admin: bool = false
-var seconds: float = 600.0
 
 var _pack_msec: int = 0          # last pack message (full or slots) from the server
 var _notice_msec: int = 0
@@ -85,8 +85,6 @@ func prepare(name_arg: String, args: PackedStringArray) -> void:
 			plan = a.trim_prefix("--robot-plan=")
 		elif a == "--robot-admin":
 			admin = true
-		elif a.begins_with("--robot-seconds="):
-			seconds = float(a.trim_prefix("--robot-seconds="))
 
 	# Its own character, picked before the client says hello (each robot runs with its own user data folder, tools/robots.sh).
 	var mine: String = ""
@@ -98,7 +96,8 @@ func prepare(name_arg: String, args: PackedStringArray) -> void:
 	if mine == "":
 		mine = CharacterStore.add(robot_name, Generator.encode(Generator.make_genome()))
 
-	CharacterStore.set_active(mine)
+	if mine == "" or not CharacterStore.set_active(mine):
+		push_error("robot: could not make or pick the character %s" % robot_name)   # robot_check fails a run with this line
 	print("ROBOT %s step prepare: plan %s, character %s" % [robot_name, plan, mine])
 
 
@@ -232,7 +231,9 @@ func _process(delta: float) -> void:
 				var was: Array = _seen_player[peer]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 
-				if now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * delta * JUMP_SLACK, JUMP_FLOOR_M):
+				if step > RESPAWN_M:
+					was[1] = now   # a respawn or a rescue moves a player far on purpose: treat it as a fresh body
+				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * delta * JUMP_SLACK, JUMP_FLOOR_M):
 					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, delta * 1000.0, str(was[0].round()), str(pos.round())])
 
 				was[0] = pos
@@ -253,8 +254,8 @@ func _process(delta: float) -> void:
 	_pose_lines(delta)
 
 
-# A remote player's held item (player_view.gd _show_held) hangs from the right hand mount; the mount follows the hand bone. Measured from the
-# item's origin to the hand bone's place in the drawn skeleton.
+# A remote player's held item (player_view.gd _show_held) is a child of the right hand mount, so it can only float if the mount does: the mount
+# must stay at the hand bone (dynasty_body.gd puts it GRIP_FROM_WRIST_M, about 0.11 m, from the wrist). Measured mount to hand bone.
 func _check_held(pv: Node) -> void:
 	for peer in pv._bodies:
 		var b: Dictionary = pv._bodies[peer]
@@ -266,8 +267,9 @@ func _check_held(pv: Node) -> void:
 
 		var rig: Node3D = b["rig"]
 		var skel: Skeleton3D = rig.get("skeleton") as Skeleton3D
+		var mount: Node3D = rig.get("hand_mount_r") as Node3D
 
-		if skel == null:
+		if skel == null or mount == null:
 			continue
 
 		var bone: int = skel.find_bone("RightHand")
@@ -279,15 +281,15 @@ func _check_held(pv: Node) -> void:
 			continue
 
 		var hand: Vector3 = (skel.global_transform * skel.get_bone_global_pose(bone)).origin
+		var d: float = mount.global_position.distance_to(hand)
 		_held_looks += 1
-		var d: float = item.global_position.distance_to(hand)
 
-		if d > HAND_M:
+		if d > HAND_M or item.get_parent() != mount:
 			_held_bad[peer] = int(_held_bad.get(peer, 0)) + 1
 
 			if int(_held_bad[peer]) >= 4:   # two seconds running: not one frame of a swing
-				_fail("held", "player%d" % peer, "remote player %d's held item (number %d) is %.2f m from its right hand bone (hand %s, item %s)" % [
-					peer, int(b.get("held", 0)), d, str(hand.snapped(Vector3.ONE * 0.01)), str(item.global_position.snapped(Vector3.ONE * 0.01))])
+				_fail("held", "player%d" % peer, "remote player %d's held item (number %d): its hand mount is %.2f m from the right hand bone%s (hand %s, mount %s)" % [
+					peer, int(b.get("held", 0)), d, "" if item.get_parent() == mount else ", and the item is not on the mount", str(hand.snapped(Vector3.ONE * 0.01)), str(mount.global_position.snapped(Vector3.ONE * 0.01))])
 		else:
 			_held_bad.erase(peer)
 
@@ -302,7 +304,7 @@ func _check_refusals(now: int) -> void:
 		if told:
 			_note("refusal", "refused (%s) with a message: %s" % [why, _notices.back() if not _notices.is_empty() else ""])
 		else:
-			_fail("refusal", "%s:%s" % [r[2], why], "the server refused (%s) during %s with no message to the player" % [why, r[2]])
+			_note("refusal", "the server refused (%s) during %s with only the refusal sound, no words" % [why, r[2]])   # a cue is the design for many refusals (inventory_view refuse_cue): listed, not failed
 
 
 # --- pack checks ----------------------------------------------------------------------------------------------------------------------------

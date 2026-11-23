@@ -16,14 +16,21 @@ LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitte
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-420}   # one robot pass at most (the plan itself takes about 5 min)
 cd "$(git rev-parse --show-toplevel)"
-if [ ! -f .godot/global_script_class_cache.cfg ]; then echo "robots: importing once (about 1.5 min)"; $GODOT --headless --path . --import >/dev/null 2>&1; fi
+# A fresh checkout has no import cache. The import can crash part way (seen 23 Nov 2026: a segfault left fonts and body models
+# unimported, and every robot logged "Cannot open file" errors): try twice, and stop as a broken run if it never finishes.
+if [ ! -f .godot/global_script_class_cache.cfg ] || [ ! -f .godot/robots_import_ok ]; then
+	echo "robots: importing (about 1.5 min)"
+	for try in 1 2; do $GODOT --headless --path . --import >/dev/null 2>&1 && { touch .godot/robots_import_ok; break; }; echo "robots: import try $try failed"; done
+	[ -f .godot/robots_import_ok ] || { echo "robots: the import never finished"; exit 2; }
+fi
 PORT=$((21000 + RANDOM % 9000)); LINK=$((PORT + 10))
 D=$(mktemp -d /tmp/robots_XXXX); mkdir -p "$D/store"
 echo "robots: $ROBOTS robots, plan $PLAN, server port $PORT, link port $LINK, logs in $D"
 $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$D/store" \
 	--quit-after=$(( ROBOT_S * 2 + 400 )) --open-admin --robot-audit > "$D/server.log" 2>&1 &
 SP=$!
-cleanup() { kill $LP 2>/dev/null; kill $SP 2>/dev/null; }
+LP=""
+cleanup() { [ -n "$LP" ] && kill $LP 2>/dev/null; [ -n "$SP" ] && kill $SP 2>/dev/null; }
 trap cleanup EXIT
 for i in $(seq 1 120); do grep -q "^Terrain server listening" "$D/server.log" && break; kill -0 $SP 2>/dev/null || break; sleep 1; done
 if ! grep -q "^Terrain server listening" "$D/server.log"; then echo "robots: the server never came up"; tail -20 "$D/server.log"; exit 2; fi
