@@ -136,6 +136,11 @@
 			"goal": "fish"
 		},
 		{
+			"id": "map",
+			"trigger": "walked_far",
+			"text": "Press M for your map. It fills in as you explore."
+		},
+		{
 			"id": "berries",
 			"trigger": "hungry",
 			"text": "Pick berries or fruit with E and eat them. Put raw meat in the fire with F.",

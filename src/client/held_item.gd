@@ -152,7 +152,7 @@ var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the f
 var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 2026: right mouse held): seconds since it went up, -1 when it is down
 var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the middle of the view, which the sway and the pull turn (bow_view_turn)
 var _reticle = null                       # BowReticle: the cross while the bow is up
-var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
+var animal_aim_rows: Callable = Callable()   # () -> [[position, heading, body_m], ...] of the animals drawn near; set by the client scene (aim assist)
 var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
 var rig_keep_dark: bool = false            # the shot runner (look rig only), given a dark torch or lantern without --shot-lit: selecting it does not light it
 var rig_lit: bool = false                  # the shot runner's --shot-lit (look rig only): the held flame's light stays on beside a fire light at Low
@@ -453,8 +453,13 @@ func hand_flags() -> int:
 func _report_held(delta: float) -> void:
 	_held_wait -= delta
 
-	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
-		return   # no server to tell (offline, a headless check, or this is the server)
+	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree():
+		return
+
+	var line: MultiplayerPeer = _net.multiplayer.multiplayer_peer
+
+	if line == null or line.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED or _net.multiplayer.get_unique_id() == 1:
+		return   # no server to tell (offline, a headless check, a line closed on quitting, or this is the server)
 
 	var now: Array = [held_number(), off_number(), hand_flags()]
 
@@ -1016,7 +1021,9 @@ func _animal_in_reach() -> bool:
 		var at: Vector3 = row[0]
 		var to: Vector2 = Vector2(at.x - eye.x, at.z - eye.z)
 
-		if to.length() <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
+		var body: float = float(row[2]) if (row as Array).size() > 2 else 0.0   # a blow reaches the body, not its middle (server_animals.target_along)
+
+		if to.length() - body <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
 			return true
 
 	return false
