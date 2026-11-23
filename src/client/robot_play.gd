@@ -1029,7 +1029,7 @@ func _build_round() -> void:
 	for r in rows:
 		_step = "build " + str(r["name"])
 		if k > 0:
-			var stepped: float = await _walk_for(side if (k / 6) % 2 == 0 else -side, 1.2)
+			var stepped: float = await _walk_for(side if floori(k / 6.0) % 2 == 0 else -side, 1.2)
 
 			if stepped < 1.0:
 				_note("build", "stepping aside between pieces moved only %.2f m" % stepped)
