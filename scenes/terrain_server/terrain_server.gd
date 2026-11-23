@@ -1483,21 +1483,21 @@ func _drop_replaced(old_peer: int) -> void:
 const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
 
 
-# Whether a hello from `peer` (character `store`) finds the server full: only connections whose hello was let in count (not the ones still
-# at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
-func _full_for(peer: int, store: String) -> bool:
-	var players: int = 0
+# Whether a hello from `peer` (character `store_key`) finds the server full: only connections whose hello was let in count (not the ones
+# still at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
+func _full_for(peer: int, store_key: String) -> bool:
+	var let_in: int = 0
 
 	for other in _peers:
 		if other == peer or not _peers[other].has("player") or _peers[other].has("refused"):
 			continue
 
-		if items.key_of(other) == store:
+		if items.key_of(other) == store_key:
 			return false
 
-		players += 1
+		let_in += 1
 
-	return players >= max_players
+	return let_in >= max_players
 
 
 func _refuse_join(peer: int, build: int, text: String) -> void:
