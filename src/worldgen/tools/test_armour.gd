@@ -167,6 +167,7 @@ func _init() -> void:
 	items.send_notice = func(_p, text): said.append(str(text))
 	items.ground_height = func(_x, _z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
+	items._comfort_data().erase("meter")   # the armour arithmetic alone; the comfort meter's half harm is test_comfort's
 	items.admin_mode_on = func(_p): return false
 	items.skill_level = func(_p, _s): return 1.0
 	items.peer_connected_hello(1, KEY)
