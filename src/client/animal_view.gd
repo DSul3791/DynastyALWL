@@ -1479,9 +1479,15 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 	return out
 
 
+const UNIT_FIT_MAX := 1500.0   # a clip further off its skeleton than this is not in other units but broken
+
+
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
 # played as they are, every bone falls into the body. The middle ratio of rest length to the clip's first key over the
-# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it. Once per clip.
+# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it; beyond UNIT_FIT_MAX the clip is
+# broken, not in other units, and keeps only its turns. Once per clip.
+
+
 func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> void:
 	if anim.has_meta("units_fitted"):
 		return
@@ -1524,6 +1530,18 @@ func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, ani
 	var k: float = float(ratios[int(ratios.size() * 0.5)])
 
 	if k > 0.2 and k < 5.0:
+		return
+
+	# No real unit is a thousand times off (centimetres, inches, millimetres are 100, 39, 1000): a clip whose positions are nearly all
+	# zero (the elephant's hit clips, about a millionth of the skeleton: Lane A tall check, 23 Nov 2026) is played with its turns only,
+	# each bone at its rest position, instead of being blown up to four times the elephant's height.
+	if k > UNIT_FIT_MAX or k < 1.0 / UNIT_FIT_MAX:
+		tracks.reverse()
+
+		for t in tracks:
+			anim.remove_track(t)
+
+		_model_note(kind, "clip %s bone positions about x%.0f off the skeleton: its positions are left out, its turns kept" % [anim_name, k])
 		return
 
 	for t in tracks:

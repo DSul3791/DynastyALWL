@@ -1051,6 +1051,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = server_peer
 	# Every client passes the join handshake before it counts as connected: an open server lets it straight through, a server with a password
 	# checks it first (server_auth.gd). Until then the client gets no welcome and none of its calls are heard.
+	_auth.protocol = NetScript.PROTOCOL_VERSION   # a client of another protocol is told why at the first word (161), before any call it would misread
 	_auth.password_hash = _server_settings.password_hash
 	_auth.salt = _server_settings.salt
 	_auth.address_of = func(peer: int) -> String: return server_peer.get_peer(peer).get_remote_address() if server_peer.get_peer(peer) != null else "?"

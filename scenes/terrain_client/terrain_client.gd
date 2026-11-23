@@ -1192,6 +1192,12 @@ func _attach_auth() -> void:
 
 	_password_arg = AppConfig.get_command_line_value("password", "")
 	_auth = ServerAuthScript.new()
+	_auth.protocol = NetScript.PROTOCOL_VERSION   # said first in the handshake (161): a server of another protocol answers with why
+	_auth.outdated.connect(func(text: String) -> void:
+		_on_join_refused(text, "Update required")
+
+		if multiplayer.multiplayer_peer != null:
+			multiplayer.multiplayer_peer.close())   # nothing further: the two do not speak the same calls
 	_auth.remembered = func(salt_hex: String) -> String:
 		var rows: Array = ServerListScript.load_rows()
 		var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
