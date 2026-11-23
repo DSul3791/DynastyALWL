@@ -7895,7 +7895,7 @@ func _end_now() -> void:
 		link.close()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()   # the server sees a disconnect now, not a timeout
-	print("EXIT: process ends after exit_tree (exported Windows game)")
+	printerr("EXIT: process ends after exit_tree (exported Windows game)")   # an error-level line: the log file is flushed before the kill (release_first_run.ps1 reads it)
 	OS.kill(OS.get_process_id())   # Windows: TerminateProcess with exit code 0
 
 

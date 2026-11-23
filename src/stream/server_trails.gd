@@ -260,6 +260,8 @@ func load_file() -> void:
 	blocks.clear()
 	pblocks.clear()
 
+	ItemsScript.restore_missing(_path)
+
 	if _path == "" or not FileAccess.file_exists(_path):
 		return
 
