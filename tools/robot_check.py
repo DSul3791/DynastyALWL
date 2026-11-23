@@ -166,6 +166,10 @@ def lines(robot_logs, tag):
 				yield os.path.basename(path), line.split(" %s " % tag, 1)[0][6:], line.split(" %s " % tag, 1)[1].split()
 
 
+# One-shot clips (avatar_driver.gd HOOK_CLIPS) play over any stance: waking plays while the body still lies, drinking while it crouches.
+ONE_SHOTS = {"wake_up", "drink", "sit_down", "stand_up"}
+
+
 def others(robot_logs):
 	pose = collections.defaultdict(list)   # peer -> [(ms, stance, x, z, speed)]
 	names = {}
@@ -184,7 +188,8 @@ def others(robot_logs):
 	for _, who, p in lines(robot_logs, "SEES"):
 		peer, ms, stance, x, z, clip = int(p[0]), int(p[1]), int(p[2]), float(p[3]), float(p[5]), p[6]
 		track = [q for q in pose.get(peer, []) if ms - 1000 <= q[0] <= ms]
-		before = [q for q in pose.get(peer, []) if ms - STEADY_MS <= q[0] <= ms]
+		# steady from STEADY_MS before the look to one pose line after it: a stance taken and left between two pose lines is not steady
+		before = [q for q in pose.get(peer, []) if ms - STEADY_MS <= q[0] <= ms + 600]
 
 		if not track:
 			continue
@@ -203,7 +208,7 @@ def others(robot_logs):
 			if stance != real:
 				stance_bad[key] += 1
 				example.setdefault(("stance",) + key, "drawn in stance %d while it had been in stance %d for %d s" % (stance, real, STEADY_MS // 1000))
-			elif clip != "-":
+			elif clip != "-" and clip not in ONE_SHOTS:
 				family = {1: "crouch", 2: "sit", 3: "lie"}.get(real, "")
 				wrong = (family and family not in clip) or (not family and any(f in clip for f in ("crouch", "sit", "lie")))
 
