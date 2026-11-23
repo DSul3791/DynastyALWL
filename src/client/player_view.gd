@@ -14,6 +14,7 @@ extends Node3D
 
 signal stepped(at: Vector3, gait: int, crouched: bool)
 signal stroked(at: Vector3)               # another player's swimming stroke, where they swim (swim_sounds.gd stroke_at)
+signal landed(at: Vector3, drop_m: float)  # another player came down from a fall of drop_m (2.5 m or more): the thud where their feet land (landing_sounds.gd land_at)
 signal drew(at: Vector3)                  # another player drew their bow (the more byte's bow-drawn flag came on): the creak at their shoulder
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
@@ -62,6 +63,11 @@ const NO_NAME := "Traveller"
 const STEP_M := [1.2, 3.0]               # terrain_client.gd STEP_M: metres per step walking, running
 const RUN_FROM_MPS := 6.0                # drawn pace from which a player counts as running (walk 3.2, run 9.0 m/s)
 const STEP_FROM_MPS := 1.0               # slower than this makes no steps (terrain_client.gd _update_bob)
+const FALL_FROM_MPS := 3.0              # sinking this fast, and steeper than the flat pace (no walk down a slope does both), is a fall
+const GRAVITY_MPS2 := 9.8
+const SINK_MPS := 0.5                  # sinking slower than this is standing or walking level: a fall ends
+const SNAP_MPS := 40.0                 # a drawn leg faster than this is no fall (a fall of 80 m lands at 40 m/s): a teleport or an unstuck
+const LAND_FROM_M := 2.5               # landing_sounds.gd THUD_FROM_M: a smaller drop lands as a step
 const STEP_HEAR_M := 45.0                # sound_stage.gd OTHER_STEP_REACH_M: farther steps are not counted
 const DRAW_UP_M := 0.5                   # the bow's string at the shoulder, above the body's middle
 const STROKE_FROM_MPS := 0.5             # swim_sounds.gd STROKE_MIN_MPS: slower than this makes no strokes
@@ -236,11 +242,17 @@ func _process(delta: float) -> void:
 			node.rotation.y = lerp_angle(node.rotation.y, float(at[1]), clampf(delta * 12.0, 0.0, 1.0))
 
 		# The legs follow the path's own speed, not the easing (a correction slid in is not a step).
-		var moved: Vector3 = (((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)).limit_length(MotionBuffer.CARRY_MPS)   # a carried-on point taken back is not a sprint
+		var path_v: Vector3 = ((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)   # the drawn path's own speed, uncapped
+		var path_dt: float = drawn_at - float(b.get("fall_t", drawn_at - delta))   # how far the drawn moment moved on (a late batch steps it back)
+		b["fall_t"] = drawn_at
+		var moved: Vector3 = path_v.limit_length(MotionBuffer.CARRY_MPS)   # a carried-on point taken back is not a sprint
 		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(delta * 8.0, 0.0, 1.0))
 		b["velocity"] = velocity
 		var distance: float = eye.distance_to(node.global_position)
 		_count_steps(b, velocity, delta, distance)
+		var samples: Array = b["samples"]
+		var carried: bool = fall_carried(samples, drawn_at, path_dt, delta) or settle
+		_count_fall(b, path_v * delta / maxf(path_dt, 0.001), carried, delta, distance)   # the fall by the drawn moment's own steps
 		_far_check(b, distance, delta)
 		_show_held(b)
 		_show_left(b, distance)
@@ -317,6 +329,58 @@ func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: floa
 		stepped.emit((b["node"] as Node3D).global_position - Vector3(0.0, FEET_M, 0.0), 2 if running else 0, stance == StanceScript.CROUCH)
 
 	b["stride"] = travelled
+
+# A frame the fall counter skips: past the newest sent point (a lost report carries the body on: a guess, later taken back), too few
+# points, or the drawn moment not moving on by about the frame (the lateness rose with a late batch and stepped it back or held it).
+static func fall_carried(samples: Array, drawn_at: float, path_dt: float, delta: float) -> bool:
+	if samples.size() < 2 or drawn_at > float((samples[samples.size() - 1] as Array)[2]):
+		return true
+
+	return path_dt <= 0.0 or absf(path_dt - delta) > 0.5 * delta
+
+
+# A fall, from the drawn path between sent points (`path_v`, its own speed this frame): every frame the body sinks faster than SINK_MPS
+# the drop adds up; it is a fall once the sinking reached FALL_FROM_MPS and was steeper than 45 degrees (no walk down a slope does both),
+# so the first slow metre of a fall and a running leap count from the edge. When the sinking stops a fall of LAND_FROM_M or more is a
+# landing, heard at the feet within hearing. Not counted: frames drawn past the newest sent point (a lost report carries the body on,
+# then it is taken back) or after this computer's stall (`carried`: held, neither added nor ended); a leg faster than any fall (SNAP_MPS:
+# a teleport, an unstuck); going into water (a dive is a splash, not a thud) or swimming.
+func _count_fall(b: Dictionary, path_v: Vector3, carried: bool, delta: float, distance: float) -> void:
+	if carried:
+		return
+
+	var sink: float = -path_v.y
+	var flat: float = Vector2(path_v.x, path_v.z).length()
+
+	if (int(b["state"]) & SWIM) != 0 or path_v.length() > SNAP_MPS:
+		b["drop"] = 0.0
+		b["falling"] = false
+		return
+
+	if sink > SINK_MPS:
+		var drop_now: float = float(b.get("drop", 0.0)) + sink * delta
+
+		if sink >= FALL_FROM_MPS and sink > flat:
+			b["falling"] = true
+		elif not bool(b.get("falling", false)):
+			# Not yet a fall: no more than a body falling free drops before it sinks this steeply (a leap off at a run counts from the
+			# edge; a long walk down a slope before a ledge does not add up).
+			# shortcut: a runner braking hard on ground steeper than 45 degrees could start a fall with up to this capped drop (rare: such
+			# ground is not walkable); a landing then reads a little high.
+			var steep_at: float = maxf(FALL_FROM_MPS, flat)
+			drop_now = minf(drop_now, steep_at * steep_at / (2.0 * GRAVITY_MPS2))
+
+		b["drop"] = drop_now
+		return
+
+	var drop: float = float(b.get("drop", 0.0))
+	var fell: bool = bool(b.get("falling", false))
+	b["drop"] = 0.0
+	b["falling"] = false
+
+	if fell and drop >= LAND_FROM_M and distance <= STEP_HEAR_M:
+		landed.emit((b["node"] as Node3D).global_position - Vector3(0.0, FEET_M, 0.0), drop)
+
 
 # The clip, its speed and the shoulder log, by the player's own rules (avatar_driver.gd), from the drawn speed and the sent state.
 func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:

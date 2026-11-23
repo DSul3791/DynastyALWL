@@ -759,6 +759,57 @@ func _forest_spot() -> Vector3:
 	return Vector3(NAN, NAN, NAN) if most == 0 else Vector3((float(best.x) + 0.5) * 16.0, client.body.global_position.y, (float(best.y) + 0.5) * 16.0)
 
 
+# The middle of the thickest 8 m patch of hazel or elder (flora.json ids 11 and 34) within `radius` m, with its count, or [NAN spot, 0] when
+# none is loaded (the bug thread, 23 Nov 2026: #1740 draws every shrub within 16 m at Low and Medium, so a thicket is the worst case there).
+const THICKET_SPECIES := [11, 34]
+
+func _thicket_spot(radius: float) -> Array:
+	var cells: Dictionary = {}
+	var here: Vector3 = client.body.global_position
+
+	for chunk in client.flora._chunks:
+		var held: Dictionary = client.flora._chunks[chunk].get("items", {})
+
+		for n in range(held.get("ids", []).size()):
+			if not (int(held["ids"][n]) >> 16) in THICKET_SPECIES:
+				continue
+
+			var p: Vector3 = held["positions"][n]
+
+			if Vector2(p.x - here.x, p.z - here.z).length() < radius:
+				var c: Vector2i = Vector2i(floori(p.x / 8.0), floori(p.z / 8.0))
+				cells[c] = int(cells.get(c, 0)) + 1
+
+	var best: Vector2i = Vector2i.ZERO
+	var most: int = 0
+
+	for c in cells:
+		if int(cells[c]) > most:
+			most = int(cells[c])
+			best = c
+
+	return [Vector3(NAN, NAN, NAN) if most == 0 else Vector3((float(best.x) + 0.5) * 8.0, here.y, (float(best.y) + 0.5) * 8.0), most]
+
+
+# Through the thickest hazel or elder near the route, standing, back and forth across it for `s` seconds.
+func _thicket_walk(s: float) -> void:
+	var found: Array = _thicket_spot(250.0)
+	var spot: Vector3 = found[0]
+
+	if is_nan(spot.x):
+		_note("thicket", "no hazel or elder loaded within 250 m")
+		return
+
+	var there: bool = await _run_to(spot, 60.0, 3.0)
+	FreezeWatchScript.printer.line("ROBOT %s step thicket: %s, %d hazel or elder in its 8 m square" % [robot_name, "there" if there else "short of it", int(found[1])])
+	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
+	var turn: int = 0
+
+	while Time.get_ticks_msec() < end:
+		await _walk_for(Vector3(1.0, 0.0, 0.0).rotated(Vector3.UP, PI * 0.5 * float(turn % 4)), 3.0)
+		turn += 1
+
+
 # Walks (keys held, facing the target) until within `near_m` or `limit_s` runs out; sidesteps a quarter turn when stuck. True when there.
 func _go_to(target: Vector3, limit_s: float, near_m: float = 2.0) -> bool:
 	var end: int = Time.get_ticks_msec() + int(limit_s * 1000.0)
@@ -3175,6 +3226,10 @@ func _route() -> void:
 
 	_route_begin("woods")
 	await _forest_walk(30.0)
+	_route_end()
+
+	_route_begin("thicket")
+	await _thicket_walk(25.0)
 	_route_end()
 
 	_route_begin("to the river")

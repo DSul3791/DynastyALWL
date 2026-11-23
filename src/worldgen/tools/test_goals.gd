@@ -412,6 +412,10 @@ func _init() -> void:
 		hinter._goals_tick()
 
 	check(said.has("Press Tab to see Health, Food, Water, Temperature and Energy."), "moving 5 m brings the next hint (%s)" % str(said.slice(-2)))
+	check(not hinter._hint_trigger_true(1, hinter._goal_state_of(1), "walked_far"), "6 m from the start is not far enough for the map hint")
+	hinter.report_position(1, Vector3(151.0, 10.0, 0.0))
+	check(hinter._hint_trigger_true(1, hinter._goal_state_of(1), "walked_far"), "151 m from the start brings the map hint's trigger")
+	hinter.report_position(1, Vector3(6.0, 10.0, 0.0))
 	hinter.action(1, Net.ACT_ADMIN_GIVE, hinter.table.number_of("stick"), 0, 9, Vector3.ZERO)
 
 	for n in range(4):
