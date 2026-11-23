@@ -1,5 +1,7 @@
 extends RefCounted
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # Experiment switches (Steve's bisect, Dave 2026-10-21): Esc > Advanced turns each suspect feature off on its own, so a crash or stall can be
 # tried with one thing off at a time. Default on, remembered between runs in user://test_switches.cfg.
 
@@ -20,7 +22,7 @@ func _init() -> void:
 	var loaded: bool = file.load(PATH) == OK
 
 	for entry in KEYS:
-		_on[entry[0]] = bool(file.get_value("switches", entry[0], true)) if loaded else true
+		_on[entry[0]] = SettingsRead.flag(file, "switches", entry[0], true) if loaded else true
 
 
 func on(key: String) -> bool:

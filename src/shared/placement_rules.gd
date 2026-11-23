@@ -176,6 +176,8 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 				if piece_kind == "floor" and bool(base.get("foundation", false)):
 					heights.append_array(wall_tops_by(cfg, at, rows))
+				elif piece_kind == "wall" and bool(base.get("foundation", false)):
+					heights.append_array(storey_tops_at(cfg, at, rows))   # a wall over a wall: on the lower wall's top or the ceiling on it
 
 				for h in heights:
 					var here: Vector3 = Vector3(at.x, float(h), at.z)
@@ -228,6 +230,47 @@ static func wall_tops_by(cfg: Dictionary, cell: Vector3, rows: Array) -> Array:
 			continue   # measured to the nearest point of its run: a 4 m double doorway's middle is 1.4 m from either cell it closes
 
 		var top: float = snappedf(float(row["pos"].y) + float(def.get("height_m", WALL_HEIGHT_M)), 0.001)
+
+		if not out.has(top):
+			out.append(top)
+
+	return out
+
+
+# Where a wall on a foundation's edge point `at` may stand above the foundation: on the top of each wall whose run holds it and on each ceiling whose edge
+# runs through it (its top). A second storey of walls was refused: snap offered only the foundation's own height, inside the lower wall (shelter walk,
+# 23 Nov 2026; Dave 17 Nov 2026 puts stations "on top of ceilings like on the second floor"). The cursor's height picks one (ANCHOR_TIE_M).
+const CEILING_EDGE_REACH_M := 0.3   # an edge point on a ceiling's rim, the 2 m cells snapped to the foundation's own points
+
+
+static func storey_tops_at(cfg: Dictionary, at: Vector3, rows: Array) -> Array:
+	var out: Array = []
+
+	for row in rows:
+		if float(row["pos"].y) < at.y - 0.05 or Vector2(at.x - float(row["pos"].x), at.z - float(row["pos"].z)).length() > DOUBLE_WALL_HALF_M + CEILING_EDGE_REACH_M:
+			continue   # below the point, or too far across the ground (the cheap test first: the ghost asks this every frame)
+
+		var def: Dictionary = structure_of_state(cfg, int(row["state"]))
+		var kind: String = str(def.get("piece_kind", ""))
+
+		if kind != "wall" and kind != "floor":
+			continue
+
+		var local: Vector2 = local_of(row, at)
+		var hx: float = float(def.get("footprint_x", 2.0)) * 0.5
+		var hz: float = float(def.get("footprint_z", 2.0)) * 0.5
+		var top: float
+
+		if kind == "wall":
+			if absf(local.x) > hx + CEILING_EDGE_REACH_M or absf(local.y) > CEILING_EDGE_REACH_M:
+				continue   # the point on this wall's own run (a wall round the corner does not hold one up: take-down asks this too)
+
+			top = snappedf(float(row["pos"].y) + float(def.get("height_m", WALL_HEIGHT_M)), 0.001)
+		else:
+			if float(row["pos"].y) < at.y + 0.05 or absf(local.x) > hx + CEILING_EDGE_REACH_M or absf(local.y) > hz + CEILING_EDGE_REACH_M:
+				continue   # a floor laid on the foundation itself is not a storey: the ground floor's walls stand on the foundation (test_placement_rules)
+
+			top = snappedf(float(row["pos"].y) + anchor_top(def), 0.001)
 
 		if not out.has(top):
 			out.append(top)
