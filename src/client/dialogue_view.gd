@@ -441,7 +441,7 @@ func _refresh_shop() -> void:
 			_sell_all_total += each * floori(float(items.inventory.counts[slot]) / float(lot2))   # whole lots only, as the server pays
 
 		var number2: int = items.inventory.numbers[slot]
-		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s%s." % [items.coin_text(each), _lot_note(lot2)], slot, 1, true, each, _lot_note(lot2), lot2)
+		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s%s." % [items.coin_text(each), _lot_note(lot2)], slot, 1, items.inventory.counts[slot] >= lot2, each, _lot_note(lot2), lot2)
 
 	if bool(_shop_repairs):
 		for slot in items.inventory.numbers.size():

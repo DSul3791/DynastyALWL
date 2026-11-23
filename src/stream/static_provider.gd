@@ -169,7 +169,8 @@ func choose(npc_id: String, node: String, choice: int, map: Array, ctx: Dictiona
 
 
 # Whether a choice leading to `goto` on node `node_id` is still offered now: a choice's `if` is checked again when it is picked, not only when
-# the line was shown (a reward for goods the player no longer holds was paid otherwise).
+# the line was shown (a reward for goods the player no longer holds was paid otherwise). The node's own effects have been applied by then, so a
+# node must not offer a choice whose condition its own effects turn false (a set_flag X beside an if flag_not X): it would be refused when picked.
 func _still_open(npc_id: String, node_id: String, goto: String, ctx: Dictionary) -> bool:
 	var node: Dictionary = trees.get(npc_id, {}).get("nodes", {}).get(node_id, {})
 

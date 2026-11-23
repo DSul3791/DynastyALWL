@@ -5,7 +5,8 @@ extends RefCounted
 # sell_lot: 60 stones pay 1 copper, Dave 1 and 19 Nov 2026), both ways: the trader sells them by the lot too, so a stack bought off his shelf
 # costs its share of the lot's price, never a copper a stone. A trader's own buy rule (shops.json buy_rules: lot, lot_value) sets the lot and
 # its value for what he buys. Charged prices round up and paid prices down, and what is charged is never under what is paid for the same
-# goods (coins.json min_sell x supply_min above max_buy), so nothing is bought and sold straight back at a gain.
+# goods: the cheapest a shelf charges (min_sell x supply_min, 0.8925 of value) stays above the most any reachable standing is paid (top rank,
+# charisma and luck: 0.87), so nothing is bought and sold straight back at a gain. The margin is small; test_town_trade_loop guards it.
 
 
 # The lot and the value of one lot for the trader buying `entry` (an items.json row) under his buy rule `rule` (shops.json buy_rules, or {}),

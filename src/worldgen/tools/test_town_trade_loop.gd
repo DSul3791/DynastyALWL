@@ -241,14 +241,18 @@ func no_gain_part() -> void:
 
 	check(checked > 100 and gains.is_empty(), "no stack of any stocked good sells back for more than it cost (%d stacks; gains: %s)" % [checked, str(gains.slice(0, 5))])
 
-	# And for real at Hob: buy a lot of stones from a full shelf at the top standing and sell it straight back.
+	# And for real at Hob, at the top standing: a lot of sticks (60, so the shelf is topped up past its 40 first) and a rope, bought from a
+	# full shelf and sold straight back.
 	near(1, "hob")
 	items.add_coins(1, 500)
-	var before: int = coins()
-	var got_said: String = buy(1, "hob", "stone", 40)
-	check(count("stone") > 0, "at the top standing a stack of stones is bought (%s)" % got_said)
-	sell(1, "hob", "stone", count("stone"))
-	check(coins() <= before, "bought and sold straight back, the purse is not fuller (%d -> %d)" % [before, coins()])
+
+	for good in [["stick", 60], ["rope", 1]]:
+		trade._refresh("hob")["stock"][good[0]] = float(good[1]) + 1.0   # a full shelf: the cheapest it charges
+		var before: int = coins()
+		var got_said: String = buy(1, "hob", str(good[0]), int(good[1]))
+		var sold_said: String = sell(1, "hob", str(good[0]), int(good[1]))
+		check(count(str(good[0])) == 0 and got_said.begins_with("Bought") and sold_said.begins_with("Sold"), "%d %s bought and sold back (%s / %s)" % [good[1], good[0], got_said, sold_said])
+		check(coins() <= before, "and the purse is not fuller (%d -> %d)" % [before, coins()])
 	empty_pack()
 	items.take_coins(1, coins())
 	items._characters[key]["luck"] = 50
