@@ -79,7 +79,7 @@ static func stop_at(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
 # the circle, on the far side: it ran by, or the server's player stood elsewhere), the body goes ROUND the player toward it (round_toward)
 # instead of waiting at the edge: held there, it stood in the player while the animal ran on, then jumped 42 m when let go (robot run ClZm,
 # 23 Nov 2026: a bear inside the capsule, then gone in one frame).
-static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
+static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float, reach: float = INF, go_round: bool = true) -> Vector3:
 	if absf(a1.y - p.y) > 2.0:
 		return a1
 
@@ -104,10 +104,10 @@ static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vecto
 	if _nearest(p, a0, a1) >= minf(d0, m) - 0.01:
 		return a1      # a straight way there that comes no nearer the player
 
-	if d0 > m + 0.05:
-		return stop_at(p, a0, a1, m)      # still coming to the edge
+	if d0 > m + 0.05 or not go_round:
+		return stop_at(p, a0, a1, m)      # still coming to the edge; or a committed charge carried past them, held on its own side until its next row
 
-	return round_toward(p, a0, a1, m)
+	return round_toward(p, a0, a1, m, reach)
 
 
 # How near the stretch a0 -> a1 comes to p (across the ground).
@@ -118,19 +118,20 @@ static func _nearest(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 	return (rel - seg * f).length()
 
 
-const ROUND_RAD := 0.2      # the most a body goes round the player in one frame (its chord stays outside the circle: 2 cm in at 2 m)
+const ROUND_RAD := 0.2      # the most a body goes round the player in one frame (its chord then dips about 1 cm inside the circle at 2 m)
 
 
-# One frame of going round the player at `p` (circle `m`) from `a0` toward `a1`: along the circle at the body's own step (|a1 - a0|, at most
-# ROUND_RAD of turn), and out to the circle if the player had walked into it. Once round, stop_at lets it go on in a straight line.
-static func round_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vector3:
+# One frame of going round the player at `p` (circle `m`) from `a0` toward `a1`: along the circle, at most `reach` metres a frame (the caller
+# passes the drawn body's own room, so the drawing (MotionBuffer.smooth) keeps up with the turn instead of cutting across it) and at most
+# ROUND_RAD of turn; out to the circle if the player had walked into it. Once round, it goes on in a straight line.
+static func round_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float, reach: float = INF) -> Vector3:
 	var from: Vector2 = Vector2(a0.x - p.x, a0.z - p.z)
 	var to: Vector2 = Vector2(a1.x - p.x, a1.z - p.z)
 
 	if from.length() < 0.01:
 		from = to.normalized() * 0.01      # drawn on the player's middle: out on the animal's side
 
-	var step: float = Vector2(a1.x - a0.x, a1.z - a0.z).length()
+	var step: float = minf(Vector2(a1.x - a0.x, a1.z - a0.z).length(), reach)
 	var r: float = maxf(move_toward(from.length(), m, step), from.length())
 	var gap: float = wrapf(to.angle() - from.angle(), -PI, PI)
 	var turn: float = signf(gap) * minf(absf(gap), minf(step / maxf(r, 0.1), ROUND_RAD))

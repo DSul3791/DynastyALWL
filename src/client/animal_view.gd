@@ -697,7 +697,10 @@ func _process_body(delta: float) -> void:
 			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
 
 		if me != Vector3.INF:
-			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]))   # never drawn into the local player: a carried charge, or the feet's ease past a wolf's stop
+			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
+			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
+			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]), reach, int(b["state"]) != CHARGE)
 
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
