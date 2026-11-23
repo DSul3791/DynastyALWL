@@ -56,6 +56,7 @@ const OCCUPANCY_CELL := 12.0   # also the widest gap kept between two trees
 const SHRUB_DENSITY := 3.0   # shrubs three times the table figures: ground cover under the woods (owner, 2026-10-18)
 const SeedUtil := preload("res://src/worldgen/settings/worldgen_seed.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")   # the drawn trunk of each tree (plants kept out of it)
 const SPRING_BASE := 40960           # spring cover item numbers (_spring_cover): SPRING_BASE + spring x SPRING_MAX_PLANTS + plant, below STAND_BASE
 const SPRING_MAX_PLANTS := 16
 const SPRING_MAX_COUNT := 512        # springs per tile with room for their numbers: (STAND_BASE - SPRING_BASE) / SPRING_MAX_PLANTS
@@ -729,7 +730,10 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 			if not trunks.has(tkey):
 				trunks[tkey] = []
 
-			trunks[tkey].append([x, z, float(item["trunk"]) * height / float(item["height_ref"])])
+			# As wide as the trunk is drawn and collides (TreeTrunks, the model variant): the species trunk alone left 2,343 plants inside the drawn
+			# bark of wide variants (world audit round 4, 23 Nov 2026).
+			var own: float = float(item["trunk"]) * height / float(item["height_ref"])
+			trunks[tkey].append([x, z, maxf(own, TreeTrunks.standing_collider(str(item["name"]), (int(f[1]) << 16) | int(f[2]), height, collider_radius(KIND_TREE, float(item["trunk"]), height / float(item["height_ref"]), height)))])
 
 		if f[2] >= RIPARIAN_BASE and f[2] < SPRING_BASE:
 			@warning_ignore("integer_division")

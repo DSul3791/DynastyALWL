@@ -10060,6 +10060,9 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, used: 
 # tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:
 # sticks mostly under and around tree crowns and rarely on bare rock; stones on slopes, on bare rock and gravel, and
 # in hollows at the foot of a rise, with a few left in open ground. The odds are in data/items/drops.json.
+const SCATTER_SLOPE_M := 0.5   # _scatter_spot: the slope under a loose stone or stick is read this far either side
+
+
 func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, stone: bool) -> Vector3:
 	var cfg: Dictionary = _drops.get("ground_scatter", {})
 	var tries: int = int(cfg.get("spot_tries", 4))
@@ -10071,6 +10074,14 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 		var y: float = float(ground_height.call(x, z))
 
 		if is_nan(y) or y < 1.0:
+			continue
+
+		# Not on ground steeper than a player stands on (45 degrees over 0.5 m): world audit round 4 (23 Nov 2026) found 1 in 5 loose stones and sticks
+		# on such faces, 376 of them out of every player's reach. Nothing would rest there; the next try looks again.
+		var fall_x: float = float(ground_height.call(x + SCATTER_SLOPE_M, z)) - float(ground_height.call(x - SCATTER_SLOPE_M, z))
+		var fall_z: float = float(ground_height.call(x, z + SCATTER_SLOPE_M)) - float(ground_height.call(x, z - SCATTER_SLOPE_M))
+
+		if not (Vector2(fall_x, fall_z).length() < 2.0 * SCATTER_SLOPE_M):
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
