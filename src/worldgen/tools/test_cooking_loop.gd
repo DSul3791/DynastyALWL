@@ -3,8 +3,8 @@ extends SceneTree
 # The cooking and preserving loop, over server restarts (the coordinator, 23 Nov 2026): every live food recipe is made at its station from
 # live inputs and gives what its row says; what it gives feeds what its tooltip says (VitalsRules.food_value, as the server's eat) and, for a
 # dish, its dishes.json kcal (kcal foods are eaten; drinks, medicines and energy aids are only checked to do something); every raw food the
-# campfire cooks roasts into its cooks_into row on the fire and in the fire's store, and keeps longer than it did raw; raw animal food makes
-# you sick later and rotten food at once, cooked food not at all; raw meat ages slower in a chest and slower still in a root cellar than in
+# campfire cooks roasts into its cooks_into row on the fire (raw meat also in the fire's store) and keeps longer than it did raw; raw meat
+# makes you sick later and rotten food at once, roast meat not at all; raw meat ages slower in a chest and slower still in a root cellar than in
 # the pack; a craft half done at a station (with its progress), the fire's store and food ages carry over a restart; two players' crafts at
 # one station both finish, each from their own pack. A year of rot by container is test_winter_stores'; the jar's maturing is test_goal_events'.
 #   godot --headless --path . --script res://src/worldgen/tools/test_cooking_loop.gd
