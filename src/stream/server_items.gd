@@ -362,6 +362,8 @@ var rain_hours_at: Callable   # (pos, max_h) -> game hours since it last rained 
 var weather_at: Callable            # (pos) -> the weather over that spot, its own tile row and height, as the player's client works it out (terrain_server _weather_here); unset: weather_now
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset, insulation_worn is used (tests set it)
 var send_warmth: Callable           # (peer, warmth percent 0..100)
+var send_soak: Callable             # (peer, soak percent in steps of 10, soaked in the wind) for the status strip (protocol 165)
+var _soak_sent: Dictionary = {}     # peer -> the last soak code sent (percent, plus 1000 when windy)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
 var _wet_wind: Dictionary = {}      # peer -> true while soaked in the wind (warmth_target; body_703 wet_wind_say_*), for the line that says why
@@ -435,6 +437,8 @@ var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
 var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool, bool]: whether a path patch, and a road patch, lies within range_m (looked up at most once a second)
+var map_look: Callable               # (peer, position) -> void: the Map's marks right there are looked at again (a blow on a rock, the rock gone; server_map look_now)
+var fish_caught: Callable            # (peer, position) -> void: a fish this character caught from there (server_map note_catch: good fishing spots)
 var road_trip: Callable              # (peer, position, kind "road" / "path" / "cart", or "" off every path) -> void: bandit site traffic (server_bandits.gd), set by the server scene
 var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
@@ -710,6 +714,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 	_sync_vitals(peer, true)
 	_sync_energy(peer, true)
 	_sync_warmth(peer, true)
+	_sync_soak(peer, true)
 	_sync_remains(peer, true)
 	_sync_sick(peer, true)
 	_sync_limp(peer, true)
@@ -930,6 +935,7 @@ func peer_left(peer: int) -> void:
 	_torch_seen.erase(peer)
 	_cave_pool.erase(peer)
 	_soak.erase(peer)
+	_soak_sent.erase(peer)
 	_overheat.erase(peer)
 	_by_fire.erase(peer)
 	_comfort_goal.erase(peer)
@@ -7033,6 +7039,16 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 	var def: Dictionary = _structure_of_kit(table.id_of(kit_number))
 
+	# A water piece's ghost (a barrel, a tank, a well...) asks the same way: the answer is placing's own refusal (_water_refusal: a loop, too many
+	# sources, no ground water), percent -1, so a green ghost always places (hands-on screens, 23 Nov 2026: these showed green and were refused).
+	if not def.has("needs_running_water") and send_wheel_share.is_valid() and not water_piece(def, at, float(posmod(yaw_deg, 360))).is_empty():
+		if not at.is_finite() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+			return   # only where it could be placed (placing refuses farther first): no far reads of the ground water for a moving ghost
+
+		var judged: Array = _water_ghost_spot(def, at, yaw_deg)
+		send_wheel_share.call(peer, at, yaw_deg, -1, _water_refusal(def, judged[0], int(judged[1])))
+		return
+
 	if not def.has("needs_running_water") or not water_wheel.is_valid() or not send_wheel_share.is_valid():
 		return
 
@@ -7044,6 +7060,38 @@ func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 		why = "along" if bool(wheel.get("along", false)) else "weak"
 
 	send_wheel_share.call(peer, at, yaw_deg, 0 if why != "" else int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), why)
+
+
+# Where placing judges a water piece the ghost stands at (`at`, turned `yaw_deg`): snapped as _place snaps it, set down on the lowest ground under
+# it (seated_ground over the dug and filled ground) unless it stands on a foundation, then onto a pipe's end or joint (_tank_spot_on_pipe), as
+# _place_structure does before _water_refusal. [spot, yaw]. shortcut: in a cave the ghost's own height (the cave floor it stands on) is kept,
+# not seated over the cave floor's corners as _place does; keep this beside _place's own steps if they change.
+var _ghost_rows: Array = []          # the foundation rows the water ghost snaps to, read at most every GHOST_ROWS_MS (a whole-world walk)
+var _ghost_rows_msec: int = -100000
+const GHOST_ROWS_MS := 1000
+
+
+func _water_ghost_spot(def: Dictionary, at: Vector3, yaw_deg: int) -> Array:
+	var kit_id: String = str(def.get("kit", ""))
+
+	if Time.get_ticks_msec() - _ghost_rows_msec >= GHOST_ROWS_MS:
+		_ghost_rows = _foundation_rows()
+		_ghost_rows_msec = Time.get_ticks_msec()
+
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _ghost_rows, 0)
+	var spot: Vector3 = on_grid[0]
+	var yaw: int = int(on_grid[1])
+
+	if not bool(on_grid[2]) and ground_height.is_valid():
+		var site_edits: Array = (edits_near.call(spot, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
+		var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
+		var ground: float = float(surface.call(spot.x, spot.z))
+		var generated: float = float(ground_height.call(spot.x, spot.z))
+
+		if not is_nan(ground) and _cave_ground(spot, generated) == generated:   # in a cave the hill's ground is not under it
+			spot.y = PlacementRules.seated_ground(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw)), surface, ground)
+
+	return [_tank_spot_on_pipe(str(def.get("kind", "")), spot, yaw), yaw]
 
 
 const WHEEL_SAYS := {
@@ -8171,7 +8219,20 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		_reject(peer, 2)
 		return
 
-	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {})) + (want - fits)
+	var over: int = inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {}))   # what the pack had no slot for (at MAX_SLOTS)
+	var got: int = fits - over
+
+	if got == 0:
+		_say(peer, "Your pack is full")
+		_reject(peer, 2)
+		return
+
+	if over > 0:
+		_say(peer, "Your pack is full: you took %d of %d" % [got, want])
+	elif fits < want:   # the carry limit stops it part way: say so, as a take from a store does (weights loop, 23 Nov 2026)
+		_say(peer, "Too heavy: you took %d of %d" % [got, want])
+
+	var left: int = int(it["count"]) - got
 
 	if it.has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
 		_goal_got(peer, int(it["number"]), int(it["count"]) - left)
@@ -8237,6 +8298,11 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 	heaps.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var wanted: int = fits
 	var taken: int = 0
+	var full: bool = false
+	var lying: int = 0   # how many lie in reach: more than `fits` there means the carry limit, not the heaps, cut the take
+
+	for heap in heaps:
+		lying += int(_items[heap[1]]["count"])
 
 	for heap in heaps:
 		if wanted <= 0:
@@ -8253,10 +8319,17 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		wanted -= share - over
 
 		if over > 0:
+			full = true
 			break   # the pack is at MAX_SLOTS
 
 	if taken == 0:
+		if full:
+			_say(peer, "Your pack is full")
 		_reject(peer, 2)
+	elif full:
+		_say(peer, "Your pack is full: you took %d" % taken)
+	elif fits < mini(batch, table.COUNT_MAX) and lying > fits:   # held E on sticks at the limit: say why it stopped, as a single pick-up does
+		_say(peer, "Too heavy: you took %d of %d" % [taken, mini(batch, mini(lying, table.COUNT_MAX))])
 
 
 # `fresh` empty: the full sync (every SYNC_EVERY_S), which files every record in the grid. Otherwise a road's quick sync (_road_tick, every
@@ -10987,7 +11060,17 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 # stays (a record in _items with a "tree" entry, saved in tree_states.json) and the tree comes down in its logs (_fell_record).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if chunk.x == Net.HIT_BOULDER:
+		var rock: Dictionary = _items.get(tree_id, {})
+		var rock_spot: Variant = rock.get("pos", null)
+		var ore_rock: bool = (rock.get("boulder", {}) as Dictionary).has("ore")
+		var hit_before: int = int(_last_hit.get(peer, -100000))
 		_hit_boulder(peer, inv, tree_id, chunk.y - 1)   # a boulder blow's count is the held pack slot plus one
+
+		# Only a blow the rock took (past the cooldown, reach and tool checks, which set _last_hit) on a rock with ore: a rock started is marked
+		# on the Map, and the mark goes with its last stone. A refused or spammed blow costs nothing here and shows nothing the player cannot see.
+		if ore_rock and rock_spot != null and int(_last_hit.get(peer, -100000)) != hit_before and map_look.is_valid():
+			map_look.call(peer, rock_spot)
+
 		return
 
 	if not _peer_pos.has(peer) or not tree_info.is_valid() or not cut_tree.is_valid():
@@ -17911,6 +17994,40 @@ func _note_road_trip(peer: int, position: Vector3) -> void:
 	road_trip.call(peer, position, "cart" if pulling else ("road" if bool(_on_path_cache[peer][2]) else "path"))
 
 
+# What of the world items round `at` a person would mark on a map (server_map.gd landmarks, Dave 23 Nov 2026): [kind, x, z, label] rows.
+# A campfire (not a camp's own fire or a bandit camp's signs); a rock with ore in it (or a fallen star) started and not finished, as
+# "ore_rock:<ore>"; and every path patch as "path", or "road" for a surveyed road. The NEAR_M grid of the last world sync: no scan of the world.
+func map_marks_near(at: Vector3, r: float) -> Array:
+	var out: Array = []
+
+	for id in _ids_near(at, r):
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() > r:
+			continue
+
+		if it.has("fire"):
+			if not it["fire"].has("camp") and not it["fire"].has("marks"):
+				out.append(["campfire", it["pos"].x, it["pos"].z, ""])
+		elif it.has("boulder"):
+			var info: Dictionary = it["boulder"]
+
+			if info.has("ore") and int(it["count"]) < int(info.get("total", 0)) and int(it["count"]) > 0 and MAP_ORE_LABELS.has(str(info["ore"])):
+				out.append(["ore_rock:" + str(info["ore"]), it["pos"].x, it["pos"].z, MAP_ORE_LABELS[str(info["ore"])]])
+		elif it.has("struct") and str(it["struct"].get("kind", "")) == "path_patch":
+			out.append(["road" if bool(it["struct"].get("road", false)) else "path", it["pos"].x, it["pos"].z, ""])
+
+	return out
+
+
+const MAP_ORE_LABELS := {"copper": "Copper", "tin": "Tin", "iron": "Iron", "coal": "Coal", "salt": "Salt", "meteorite": "Meteorite"}   # boulders.json ore items
+
+
+func _map_catch(peer: int, from: Variant) -> void:
+	if fish_caught.is_valid() and from is Vector3:
+		fish_caught.call(peer, from)   # good fishing spots on the Map (server_map note_catch)
+
+
 # Metres from a spot to the nearest surveyed road patch within r, or INF (a bandit site stands off a road).
 func road_distance(at: Vector3, r: float) -> float:
 	var near: Vector3 = road_point(at, r)
@@ -19124,6 +19241,7 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 		_say(peer, str(body.get("say_wet_wind", "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.")))
 
 	_sync_warmth(peer, false)
+	_sync_soak(peer, false)
 
 
 # The air in a cave at this point (docs/design/cave_climate_design.md; Jamie #709, coordinator 8 Nov 2026): {"air_c", "wind" (0..1, the mouth's
@@ -19227,6 +19345,21 @@ func _update_soak(peer: int, game_s: float) -> void:
 
 	if not v.is_empty() and (soak > 0.0 or v.has("soak")):
 		v["soak"] = soak   # saved with the vitals (vitals.json)
+
+
+# How soaked the clothes are, for the status strip (Dave 23 Nov 2026: the player is told why the cold bites): the soak in steps of 10 percent
+# and whether the wind cuts through it (_wet_wind), sent only when one of them changes, from the slow vitals tick.
+func _sync_soak(peer: int, force: bool) -> void:
+	if not send_soak.is_valid():
+		return
+
+	var percent: int = int(round(clampf(float(_soak.get(peer, vitals_of(peer).get("soak", 0.0))), 0.0, 1.0) * 10.0)) * 10
+	var windy: bool = percent > 0 and bool(_wet_wind.get(peer, false))
+	var code: int = percent + (1000 if windy else 0)
+
+	if force or int(_soak_sent.get(peer, -1)) != code:
+		_soak_sent[peer] = code
+		send_soak.call(peer, percent, windy)
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
@@ -19596,6 +19729,7 @@ func kill(peer: int, cause: String) -> bool:
 	_death_cause.erase(peer)
 	_energy_sent.erase(peer)
 	_warmth_sent.erase(peer)
+	_soak_sent.erase(peer)
 	_sick_sent.erase(peer)
 	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
@@ -20725,6 +20859,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")
+	_map_catch(peer, state.get("spot", null))
 	var line: String = "You haul in %s." % ", ".join(caught)
 
 	if fish_stock(cell) < int(_fishing_data().get("hint_below", 3)):
@@ -20795,6 +20930,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 		practice(peer, "fish")
 		_goal_event(peer, "fish_caught")
 		_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25
+		_map_catch(peer, _peer_pos.get(peer, null))
 		_say(peer, str(cfg.get("say_hit", "")) % table.sentence_name(table.number_of(species)))
 		_dirty = true
 	else:
@@ -20984,6 +21120,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
 	_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25: first catch of this kind
+	_map_catch(peer, state.get("spot", null))
 	var landed: String = "You land a %s." % table.sentence_name(table.number_of(species))
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):

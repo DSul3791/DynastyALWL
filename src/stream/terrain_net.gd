@@ -40,7 +40,10 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 164  # 164 (23 Nov 2026, Dave: the comfort meter): comfort(tenths, target, trend, tip) replaces comfort(level, rested level, rested minutes, tip): the always-on meter 0..10 in tenths, the level it heads for, rising or falling, and the tooltip ("" = unchanged). Client and server must be updated together. 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
+const PROTOCOL_VERSION := 166  # 166 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
+# 165 (23 Nov 2026, the status strip beside the hotbar: a player slowed or chilled saw nothing saying why): soak(percent, windy), how rain-soaked the clothes are in steps of 10 and whether the wind cuts through them, at hello and when either changes. Client and server must be updated together.
+# 164 (23 Nov 2026, Dave: the comfort meter): comfort(tenths, target, trend, tip) replaces comfort(level, rested level, rested minutes, tip): the always-on meter 0..10 in tenths, the level it heads for, rising or falling, and the tooltip ("" = unchanged). Client and server must be updated together.
+# 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
 # 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
 # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
@@ -108,7 +111,7 @@ signal held_reported(peer_id: int, number: int, left: int, flags: int)
 signal purse_received(counts: PackedInt32Array)
 signal carry_received(item_id: String)
 signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray)
-signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray)
+signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
@@ -141,6 +144,7 @@ signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
 signal limp_received(percent: int)
+signal soak_received(percent: int, windy: bool)
 signal body_received(bpm: int, eta_s: int, phase: int)
 signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array, insts: PackedByteArray)
@@ -270,7 +274,7 @@ const ACT_CRAFT_STOCK := 65      # ask for craft_stock: what a craft may use bes
 const ACT_BULK := 66             # a = 0 Take all, 1 Store all (the open container), 2 Stack to nearby (own chests within 12 m holding the item), 3 Sort (the pack and an open chest; b = the sort key: 1 name, 2/3 weight, 4/5 value, 0 name); favourites and pack slots 1 to 10 never move; answered with bulk_done (protocol 99)
 const ACT_FAVOURITE := 67        # a = pack slot, b = 1 favourite, 0 not: bulk buttons and Sort leave a favourite where it is; answered with favourites (protocol 99)
 const ACT_SPYGLASS := 69         # a = 1 looking through the admin spyglass, 0 not; b = the watched animal id (0 none). Admin only: the server sends animals out to the spyglass radius and animal_info for the watched one; a non-admin gets animal_info(-1, {}). a = 2 (10 Nov 2026): looking through the spyglass item in pack slot `count` (no admin; the tier's radius, data/items/spyglass.json; refused without one)
-const ACT_WHEEL_ASK := 70        # at = the sawmill ghost's spot, a = its turn in degrees, b = the kit's item number: what would its water wheel give there? Answered with wheel_share (protocol 105)
+const ACT_WHEEL_ASK := 70        # at = the sawmill ghost's spot, a = its turn in degrees, b = the kit's item number: what would its water wheel give there? Answered with wheel_share (protocol 105); a water piece's ghost (a structure with a water block) asks the same and gets percent -1 with placing's refusal words, or "" (23 Nov 2026, no protocol change: an older server does not answer, and the ghost keeps its colour)
 const ACT_CHEST_LOCK := 71       # a = container world id, b = 0 set the code, 1 take the lock off, 2 enter a code, 3 let the player beside it in, 4 withdraw every grant; count = the code 0 to 9999 (four digits, leading zeros: 42 is "0042") for 0 and 2. Owner only but 2; answered with chest_lock (protocol 108)
 const ACT_VIEW_OPEN := 72        # a = world id of a Storage sign or Warehouse desk within reach: answered with storage_view, the totals of the nearby containers this player may open (protocol 108)
 const ACT_VIEW_TAKE := 73        # a = view world id, b = item number, count = how many: taken from those containers into the pack, nearest first; answered with storage_view (protocol 108)
@@ -860,6 +864,13 @@ func limp(percent: int) -> void:
 	limp_received.emit(percent)
 
 
+# Rain-soaked clothes (protocol 165, warmth.json soak_*, for the status strip): the soak in steps of 10 percent and whether the wind
+# cuts through it (body_703 wet_wind_say_*). At hello and on change, from the server's slow vitals tick.
+@rpc("authority", "call_remote", "reliable")
+func soak(percent: int, windy: bool) -> void:
+	soak_received.emit(percent, windy)
+
+
 # The heart in the ears and the wake timer (protocol 59, sleep.json and exertion.json): beats per minute (0 when awake), real
 # seconds until the sleeper or fainted player is awake again (steps of 5), and the phase: 0 awake, 1 falling asleep, 2 out
 # (asleep or fainted), 3 waking. Sent whenever one of them changes.
@@ -1094,9 +1105,10 @@ func notice(text: String) -> void:
 # compressed (src/shared/map_codec.gd decode() gives {cell index: [q, height m, water, trees]}; index = local_x + local_z * 32, cells
 # 16 m, data/map.json). Heights come rounded to the step of each cell's own Mapping skill q. Sent to the character's own connection
 # only: every block on joining (a few a pass), then each block a survey changes. Nothing is ever sent for ground it has not surveyed.
+# marks: the landmarks this character has seen in the block, [kind, x, z, label] (protocol 166); paths: its path cells, index * 4 + 1 path / 2 road.
 @rpc("authority", "call_remote", "reliable")
-func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray) -> void:
-	map_block_received.emit(block_x, block_z, bytes)
+func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array) -> void:
+	map_block_received.emit(block_x, block_z, bytes, marks, paths)
 
 
 # Protocol 128 (Dave 18 Nov 2026, ground missing for minutes after a join): the client's saved copy of `tile` is at revision `since`; the

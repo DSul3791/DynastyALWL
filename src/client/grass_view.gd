@@ -328,6 +328,7 @@ var _run_laid: bool = false                   # a route has been laid on the run
 var _run_laid_origin: Vector2 = Vector2.ZERO  # the corner the run map texture was last laid at
 var _worn_cfg: Dictionary = {}
 var _run_dirty: bool = false
+var _sign_patches: Array = []        # [[Vector2 spot, radius m], ...] round the trail signs (set_sign_patches), pressed like the beds
 var _run_msec: int = 0
 var _flora
 var _tables
@@ -497,6 +498,12 @@ func set_trail_block(block_x: int, block_z: int, cells: Dictionary) -> void:
 
 # One block's trails between animal places (protocol 149, trail_codec.gd decode_routes): [[kind, world points], ...]. Kept per block;
 # the run map is laid from the blocks round the player.
+# The short, pale patches round the trail signs (trail_signs.gd patches_for: latrines, droppings, warrens), [[Vector2, radius m], ...].
+func set_sign_patches(patches: Array) -> void:
+	_sign_patches = patches
+	_run_dirty = true
+
+
 func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 	_run_routes[Vector2i(block_x, block_z)] = routes
 	_run_dirty = true
@@ -576,6 +583,7 @@ func _rebuild_runs(player: Vector3) -> void:
 			if int(route[0]) == 1 and pts.size() >= 2 and window.has_point(pts[0]):
 				texels += _press_beds(pts, data)
 
+	texels += press_patches(_sign_patches, data, _run_origin)
 	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
 
 	if line != _run_logged and Time.get_ticks_msec() >= _run_log_msec:
@@ -594,6 +602,36 @@ func _rebuild_runs(player: Vector3) -> void:
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("run_origin", _run_origin)
+
+
+# Round patches pressed into the run map, full inside and fading over the outer quarter, the stronger kept. Returns new texels.
+static func press_patches(patches: Array, data: PackedByteArray, origin: Vector2) -> int:
+	var added: int = 0
+
+	for patch in patches:
+		var centre: Vector2 = patch[0]
+		var radius: float = float(patch[1])
+		var span: int = int(ceil(radius / RUN_TEXEL_M)) + 1
+		var tx0: int = int(floor((centre.x - origin.x) / RUN_TEXEL_M))
+		var tz0: int = int(floor((centre.y - origin.y) / RUN_TEXEL_M))
+
+		for dz in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var x: int = tx0 + dx
+				var z: int = tz0 + dz
+
+				if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
+					continue
+
+				var e: float = (origin + Vector2(float(x) + 0.5, float(z) + 0.5) * RUN_TEXEL_M).distance_to(centre) / radius
+				var v: int = int(round(255.0 * (1.0 - smoothstep(0.75, 1.0, e))))
+				var at: int = x + z * RUN_TEXELS
+
+				if v > data[at]:
+					added += 1 if data[at] == 0 else 0
+					data[at] = v
+
+	return added
 
 
 # The beds by a deer trail's home (trail_signs.gd beds_for, the same spots the signs use) pressed into the run map as ovals of bed_size_m,

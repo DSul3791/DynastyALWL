@@ -64,6 +64,41 @@ func _init() -> void:
 
 	check(on_wet and print_lines.size() == 1, "deer prints only on the wet crossing, one line per 30 m (%d)" % print_lines.size())
 	check(count(signs, "droppings") == 1, "deer droppings by the bed")
+	var muddy: Array = SignsScript.signs_for({Vector2i(0, 0): [[0, line(Vector2(110.0, 300.0), Vector2(150.0, 300.0))]]}, wet, c).filter(func(s): return str(s[0]) == "hops")
+	check(muddy.size() == 1 and (muddy[0][1] as Vector2).x > 120.0 and (muddy[0][1] as Vector2).x < 140.0, "a rabbit run through the mud leaves one line of hop prints there (%d)" % muddy.size())
+	var warrens: Array = signs.filter(func(s): return str(s[0]) == "warren")
+	check(warrens.size() == 2 and warrens.any(func(s): return (s[1] as Vector2).distance_to(w1) < 0.01) and warrens.any(func(s): return (s[1] as Vector2).distance_to(w2) < 0.01), "one warren sign at each warren home, however many runs leave it (%d)" % warrens.size())
+	var mound_rows: Dictionary = {"mound": []}
+	var mound_view = SignsScript.new()
+	mound_view.ground_height = func(_x, _z): return 5.0
+	mound_view._lay("warren", w1, 0.0, mound_rows)
+	var near_w: bool = (mound_rows["mound"] as Array).size() >= int(c["warren_holes"][0]) and (mound_rows["mound"] as Array).size() <= int(c["warren_holes"][1])
+
+	for m in mound_rows["mound"]:
+		near_w = near_w and Vector2((m[0] as Vector3).x, (m[0] as Vector3).z).distance_to(w1) <= float(c["warren_m"][1]) + 0.01
+
+	check(near_w, "a warren is %d mounds within warren_m of its home" % (mound_rows["mound"] as Array).size())
+	mound_view.free()
+	var finder = SignsScript.new()
+	finder.ground_height = func(_x, _z): return 5.0
+	finder.wet = wet
+	finder.set_routes(0, 0, [routes[0], routes[2]])   # two runs of one warren
+	var heard: Array = []
+	finder.place_found.connect(func(kind: String, at: Vector3) -> void: heard.append([kind, at]))
+
+	for step in 6:   # standing at the warren while each sign there is spotted, one a look
+		finder._next_msec = 0
+		finder._spot_msec = 0
+		finder.update(Vector3(w1.x, 5.0, w1.y), 1, false)
+
+	check(heard.size() == 1 and str(heard[0][0]) == "warren" and finder.found_places.size() == 1, "finding a warren tells the map once (%s)" % str(heard))
+	finder.free()
+	var hop_rows: Dictionary = {"hop": []}
+	var hop_view = SignsScript.new()
+	hop_view.ground_height = func(_x, _z): return 5.0
+	hop_view._lay("hops", Vector2(10.0, 10.0), 0.0, hop_rows)
+	check((hop_rows["hop"] as Array).size() >= 4 * int(c["hop_sets"][0]) and (hop_rows["hop"] as Array).size() % 4 == 0, "each hop is four marks (%d)" % (hop_rows["hop"] as Array).size())
+	hop_view.free()
 	# Deer beds (pressed ovals by a deer trail's home, the grass view presses the same spots) and rubbed trees along the trail.
 	var bed_span: Array = c["bed_count"]
 	var beds: Array = signs.filter(func(s): return str(s[0]) == "bed")
@@ -79,6 +114,14 @@ func _init() -> void:
 	run_map.fill(0)
 	var origin: Vector2 = Vector2(0.0, 150.0)
 	var pressed: int = GrassScript.press_beds(routes[3][1], run_map, origin, c)
+	# Lane A 23 Nov: latrines, droppings and warrens sit on grass pressed short round them; other signs press nothing.
+	var patches: Array = SignsScript.patches_for([["latrine", Vector2(20.0, 160.0), 0.0], ["prints", Vector2(40.0, 160.0), 0.0], ["warren", Vector2(60.0, 170.0), 0.0]], c)
+	check(patches.size() == 2 and is_equal_approx(float(patches[1][1]), float(c["patch_m"]["warren"])), "a latrine and a warren get a pressed patch, prints none")
+	var patch_map: PackedByteArray = PackedByteArray()
+	patch_map.resize(GrassScript.RUN_TEXELS * GrassScript.RUN_TEXELS)
+	var patch_new: int = GrassScript.press_patches(patches, patch_map, origin)
+	var mid_t: int = 40 + 20 * GrassScript.RUN_TEXELS   # (20, 160) from the origin (0, 150) at half a metre a texel
+	check(patch_new > 0 and patch_map[mid_t] == 255 and patch_map[mid_t + 6] == 0, "a latrine's grass is pressed full in the middle, none past its radius")
 	var all_pressed: bool = pressed > 0
 
 	for b in beds:
@@ -129,7 +172,7 @@ func _init() -> void:
 	check(way.begins_with(plain) and (way.contains("south-east") or way.contains("south")) and way.contains("grazing"), "at read_way_level it says which way the run goes, toward the grazing (%s)" % way)
 	check(SignsScript.read_text(home_latrine, int(c["read_habit_level"]), c).ends_with(str(c["read"]["latrine"]["habit"])), "at read_habit_level it says when rabbits use it")
 	check(SignsScript.compass(Vector2(0.0, -1.0)) == "north" and SignsScript.compass(Vector2(1.0, 0.0)) == "east", "+z is south, +x east")
-	for kind in ["latrine", "scrape", "prints", "droppings", "bed", "rub"]:
+	for kind in ["latrine", "scrape", "prints", "hops", "droppings", "bed", "rub", "warren"]:
 		check((c["read"] as Dictionary).has(kind), "every kind of sign has a reading (%s)" % kind)
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
 	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.
@@ -145,7 +188,7 @@ func _init() -> void:
 
 	# Tracking (Dave 23 Nov 2026: "signs should just be there and if you have a higher tracking skill maybe they get highlighted or glow
 	# a little"): every kind shows to everyone; skill reaches farther and, from halo_from, lays a faint steady highlight that grows.
-	for kind in ["latrine", "droppings", "scrape", "prints"]:
+	for kind in ["latrine", "droppings", "scrape", "prints", "hops"]:
 		check(SignsScript.shows(kind, 0, c) and SignsScript.shows(kind, 1, c), "%s shows untrained" % kind)
 	check(SignsScript.reach_m(0, c) >= 15.0 - 0.01 and SignsScript.reach_m(1, c) >= 15.0 - 0.01, "untrained, signs show within 15 m")
 	var from: int = int(c["halo_from"])
@@ -168,6 +211,36 @@ func _init() -> void:
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown > 20 and view.get_child_count() >= 2, "once loaded the signs near the player are drawn (%d pieces)" % view.shown)
 	var drawn: int = view.shown
+
+	# Lane A 23 Nov: standing still where the far ground had no collision yet, no sign was ever drawn. Signs with no ground are counted and
+	# worked out again soon, though the player has not moved, and drawn once the ground is there; tries stop after ground_retries.
+	var late = SignsScript.new()
+	var ground_now: Dictionary = {"ready": false}
+	late.ground_height = func(_x, _z): return 5.0 if ground_now["ready"] else NAN
+	late.wet = wet
+	get_root().add_child(late)
+	late.set_routes(0, 0, routes)
+	late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	check(late.shown == 0 and late.unplaced > 0 and late._retry_msec > 0, "signs with no ground yet are not drawn but are tried again (%d waiting)" % late.unplaced)
+	ground_now["ready"] = true
+	late._next_msec = 0
+	late._retry_msec = 1
+	late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	check(late.shown == drawn and late.unplaced == 0 and late._retry_msec == 0, "once the ground is there they are drawn without moving (%d of %d)" % [late.shown, drawn])
+	ground_now["ready"] = false
+	late._built_at = Vector3.INF
+	late._next_msec = 0
+	late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	var tries: int = 0
+
+	while late._retry_msec > 0 and tries < 100:
+		late._next_msec = 0
+		late._retry_msec = 1
+		late.update(Vector3(120.0, 5.0, 110.0), 80, false)
+		tries += 1
+
+	check(tries == int(c["ground_retries"]), "with no ground at all the tries stop (%d)" % tries)
+	late.queue_free()
 	# Spotting: standing on a sign, the signs within spot_m are spotted one at a time (one every spot_gap_s), each once, and glow.
 	var target: Vector2 = Vector2.INF
 

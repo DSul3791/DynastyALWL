@@ -102,6 +102,7 @@ const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezin
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
 const StatusIconsScript := preload("res://src/client/status_icons.gd")
+const CarryRulesScript := preload("res://src/shared/carry_rules.gd")   # the status strip's heavy-load symbol
 const DebugHudScript := preload("res://src/client/debug_hud.gd")
 const SoundPanelScript := preload("res://src/client/sound_panel.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
@@ -240,7 +241,6 @@ var terrain: VoxelLodTerrain
 var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
-var _breath_label: Label             # the seconds of air left, shown with the oxygen symbol
 var sound_panel = SoundPanelScript.new()   # Ctrl+Shift+F5: every playing sound with a switch to mute it (sound_panel.gd)
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
@@ -290,7 +290,7 @@ var _tint: ColorRect
 var _aim_msec: int = 0
 var _aim_pos: Vector3 = Vector3.ZERO
 var _mode_label: Label
-var status_icons                      # StatusIcons: the symbol row (brain, house, ...); other threads add with status_icons.add_icon
+var status_icons                      # StatusIcons: the status strip left of the hotbar (data/ui/status_strip.json); others add a symbol with status_icons.add(id, read)
 var test_water_step: bool = false   # headless check: press + twice 12 s in
 var _water_label: Label             # the water flow rate readout, shown for 3 seconds after + or -
 var _water_label_until_msec: int = 0
@@ -1537,6 +1537,7 @@ func _welcome_body(info: Dictionary) -> void:
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
 	trail_signs.trunks_near = func(point: Vector3, radius: float) -> Array: return _trunks_round(point, radius) if flora != null else []   # rubbed trees by deer trails
+	trail_signs.patches_changed.connect(grass.set_sign_patches)   # the grass short round latrines, droppings and warrens (Lane A 23 Nov: unseen in tall grass)
 	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
 		if sound != null:
 			sound.slots.play("sign_spot", at)
@@ -1672,26 +1673,6 @@ func _welcome_body(info: Dictionary) -> void:
 	_water_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_water_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_water_label)
-	# Oxygen countdown (Dave 2026-10-21): the seconds of air left, under the bubble symbol, only with the head under water.
-	_breath_label = Label.new()
-	_breath_label.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	_breath_label.anchor_top = 0.2
-	_breath_label.anchor_bottom = 0.2
-	_breath_label.offset_top = 36.0
-	_breath_label.offset_bottom = 76.0
-	_breath_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_breath_label.add_theme_font_size_override("font_size", 30)
-	_breath_label.add_theme_constant_override("outline_size", 5)
-	_breath_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
-	_breath_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_breath_label.visible = false
-	layer.add_child(_breath_label)
-	status_icons = StatusIconsScript.new()
-	layer.add_child(status_icons)
-	status_icons.add_icon("inspection", _load_brain_icon(), func() -> bool: return inspecting, 0.85)
-	status_icons.add_icon("thirst", StatusIconsScript.drop_texture(), func() -> bool: return items.thirst <= 15, 0.85)
-	status_icons.add_icon("oxygen", StatusIconsScript.bubble_texture(), func() -> bool: return items.breath_ds >= 0, 0.9)
-	status_icons.add_icon("cover", StatusIconsScript.house_texture(), func() -> bool: return under_cover > 0.0)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
 	var tq_menu: int = Probe.start()
@@ -1800,6 +1781,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	_setup_status_strip(layer)   # after items.setup: its reads use the vitals data the view loads there
 	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
 	_player_view.name = "Players"
 	_player_view.table = items.table
@@ -1943,6 +1925,20 @@ func _welcome_body(info: Dictionary) -> void:
 		var seen: Array = trail_signs.sign_at(int(near[pick][0]))
 		var text: String = TrailSignsScript.read_text(seen, level, trail_signs.cfg) if not seen.is_empty() else ""
 		return {} if text == "" else {"kind": "sign", "point": near[pick][1], "prompt": "Press E to read the sign", "tap": func(): items.show_notice(text)})
+	# Reading a fresh print (hunting thread): whose, how old, a warning for a predator's, and with Tracking which way it went. Client only.
+	items.register_interactable("fresh_print", 47, func():
+		if fresh_tracks == null or body == null:
+			return {}
+
+		var near: Array = fresh_tracks.readable(body.global_position)
+		var pick: int = items.reticle_index(near.map(func(r): return r[1]))
+
+		if pick < 0 or items.aim_cos_of(near[pick][1]) < float(fresh_tracks.cfg.get("read_aim_cos", 0.985)):
+			return {}
+
+		var mark: Array = fresh_tracks.mark_at(int(near[pick][0]))
+		var text: String = FreshTracksScript.read_text(mark, int(items.skill_level_of("tracking")), Time.get_ticks_msec(), fresh_tracks.cfg) if not mark.is_empty() else ""
+		return {} if text == "" else {"kind": "sign", "point": near[pick][1], "prompt": "Press E to read the prints", "tap": func(): items.show_notice(text)})
 	items.register_interactable("plant", 40, func():
 		return {} if items.plant_hint == "" else {"kind": "plant", "point": items.plant_point, "prompt": items.plant_hint, "quiet": not items.plant_aimed, "tap": harvest.tap})
 	held = HeldItemScript.new()
@@ -4324,6 +4320,88 @@ func _load_brain_icon() -> Texture2D:
 
 	var image: Image = Image.load_from_file(ProjectSettings.globalize_path(path))
 	return ImageTexture.create_from_image(image) if image != null else null
+
+
+# The status strip left of the hotbar (Dave 23 Nov 2026, src/client/status_icons.gd): hunger and thirst always, and a symbol for every state
+# that changes the player while it lasts. The words and the order are data/ui/status_strip.json; each read here only reports the state, from
+# what the client already holds (no new server work). Every number in the words comes from the game's own data files.
+func _setup_status_strip(layer: CanvasLayer) -> void:
+	status_icons = StatusIconsScript.new()
+	layer.add_child(status_icons)
+	items.status_strip = status_icons
+	status_icons.theme = items._tooltip_theme()   # the hover lines on the art kit's card, as the inventory's tooltips
+	var spec: Dictionary = status_icons.spec
+	var vitals: Dictionary = items._vitals_cfg
+	var warmth_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
+	var warmth_cfg: Dictionary = warmth_parsed if typeof(warmth_parsed) == TYPE_DICTIONARY else {}
+	var body_703: Dictionary = warmth_cfg.get("body_703", {}) if bool(warmth_cfg.get("body_703", {}).get("enabled", false)) else {}
+	var limp_cfg: Dictionary = vitals.get("limp", {})
+	var health_max: float = float(vitals.get("health_max", 100))
+	var level_tone: Callable = func(id: String, value: float) -> int:   # the strip's own warn_at / danger_at for a number
+		var row: Dictionary = spec.get(id, {})
+		return 2 if value <= float(row.get("danger_at", -INF)) else (1 if value <= float(row.get("warn_at", -INF)) else 0)
+
+	status_icons.add_icon("inspection", _load_brain_icon(), func() -> bool: return inspecting)
+
+	for slot in range(int(items._food_ui.cfg.get("slots", 3))):
+		status_icons.add("food_effect:%d" % slot, func() -> Dictionary:
+			var rows: Array = items._food_ui.rows
+
+			if slot >= rows.size():
+				return {}
+
+			return {"value": "%dm" % int(rows[slot][3]), "vars": {"text": items._food_ui.lines()[slot]}})
+
+	status_icons.add("cart", func() -> Dictionary: return {} if items.pulling_id == 0 else {"vars": {"n": snappedf(items.pull_pace_mps, 0.1)}})
+	status_icons.add("snow", func() -> Dictionary: return {} if _snow_pace_now >= 0.999 or flying else {"vars": {"n": int(round(_snow_pace_now * 100.0))}})
+	status_icons.add("cover", func() -> Dictionary: return {"tone": 0} if under_cover > 0.0 else {})
+	status_icons.add("soaked", func() -> Dictionary: return {} if items.soak_percent < 30 else {"value": "%d%%" % items.soak_percent, "tone": 1 if items.soak_wind else 0})
+	status_icons.add("cold", func() -> Dictionary:
+		var w: float = float(items.warmth)
+
+		if warmth_cfg.is_empty() or w >= float(warmth_cfg.get("cold_at", 40.0)):
+			return {}
+
+		var stage: int = 2 if not body_703.is_empty() and w < float(body_703.get("severe_at", 8.0)) else (1 if w < float(warmth_cfg.get("hurt_at", 20.0)) else 0)
+		return {"value": "%d%%" % items.warmth, "tone": stage})
+	status_icons.add("sick", func() -> Dictionary: return {} if items.sick_hours <= 0 else {"value": "%dh" % items.sick_hours, "tone": 1, "vars": {"h": items.sick_hours}})
+	status_icons.add("tired", func() -> Dictionary:
+		var tone: int = level_tone.call("tired", float(items.energy))
+		return {} if tone == 0 else {"value": "%d%%" % items.energy, "tone": tone, "vars": {"n": items.energy}})
+	status_icons.add("strain", func() -> Dictionary:
+		return {} if items.strain_state != 1 else {"tone": 1, "vars": {"n": int(round((1.0 - items.over_pace_factor()) * 100.0))}})
+	status_icons.add("load", func() -> Dictionary:
+		if items._carry_cfg.is_empty():
+			return {}
+
+		var kg: float = items.carried_kg()
+		var body_kg: float = items.carry_body_kg()
+		var free: float = CarryRulesScript.comfort_kg(body_kg, items._carry_cfg)
+
+		if kg <= free:
+			return {}
+
+		var cap: float = CarryRulesScript.cap_kg(body_kg, items._carry_cfg)
+		var pace: int = int(round(CarryRulesScript.speed_factor(kg, body_kg, items._carry_cfg) * 100.0))
+		return {"value": "%d%%" % pace, "tone": 2 if kg >= cap else 1, "vars": {"kg": snappedf(kg, 0.1), "free": int(round(free)), "cap": int(round(cap)), "n": pace}})
+	status_icons.add("limp", func() -> Dictionary:
+		return {} if items.limp_share >= 1.0 else {"tone": 1, "vars": {"n": int(round(items.limp_share * 100.0)), "min": int(ceil(float(limp_cfg.get("seconds", 600.0)) / 60.0)),
+			"heal": int(round(health_max * float(limp_cfg.get("heal_at", 0.6))))}})
+	status_icons.add("oxygen", func() -> Dictionary:
+		if items.breath_ds < 0:
+			return {}
+
+		var seconds: int = int(ceil(float(items.breath_ds) / 10.0))
+		return {"value": str(seconds), "tone": level_tone.call("oxygen", float(seconds)), "vars": {"n": seconds}})
+	status_icons.add("health", func() -> Dictionary:
+		return {} if float(items.health) >= health_max else {"value": str(items.health), "tone": level_tone.call("health", float(items.health)), "vars": {"n": items.health, "max": int(health_max)}})
+	status_icons.add("hunger", func() -> Dictionary:
+		var tone: int = 2 if items.hunger <= 0 else (1 if items.hunger <= int(vitals.get("warn_hunger", 15)) else 0)
+		return {"value": "%d%%" % items.hunger, "tone": tone, "vars": {"n": items.hunger}})
+	status_icons.add("thirst", func() -> Dictionary:
+		var tone: int = 2 if items.thirst <= 0 else (1 if items.thirst <= int(vitals.get("warn_thirst", 15)) else 0)
+		return {"value": "%d%%" % items.thirst, "tone": tone, "vars": {"n": items.thirst}})
+	status_icons.tick(0.0, true)
 
 
 # ------------------------------------------------------------------ options menu
@@ -8080,17 +8158,7 @@ func _run_embed_test() -> void:
 
 
 # Blue tint and thick blue fog while the camera is below the sea or a lake.
-func _update_breath_label() -> void:
-	var air: int = items.breath_ds
-	_breath_label.visible = air >= 0
-
-	if air >= 0:
-		_breath_label.text = "%d" % int(ceil(float(air) / 10.0))
-		_breath_label.add_theme_color_override("font_color", Color(1.0, 0.45, 0.4) if air < 100 else Color.WHITE)
-
-
 func _update_underwater() -> void:
-	_update_breath_label()
 	var eye: Vector3 = camera.global_position
 	# Owner report (2026-10-20, build 145): beside a cliff gorge with a thin film of water the
 	# view turned blue with nothing drawn. The highest wet corner of an 8 m square (water_level_at)

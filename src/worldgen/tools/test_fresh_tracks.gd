@@ -26,11 +26,51 @@ func _init() -> void:
 
 	check(t.shown() == 6, "a walking deer near the player leaves a print a step (%d)" % t.shown())
 	check(absf(float(t.marks[5][1])) < 0.01, "heading east along its steps (yaw %.2f)" % float(t.marks[5][1]))
+	check(absf(float(t.marks[0][1])) < 0.01, "the first print of the walk learns its heading from the second")
+	var lone = TracksScript.new()
+	lone.player_at = func() -> Vector3: return Vector3.ZERO
+	lone.on_step("deer", Vector3(2.0, 0.0, 2.0), 1000)
+	check(not TracksScript.read_text(lone.marks[0], 100, 1000, c).contains("heading"), "a single footfall gives no heading, even to a master tracker")
+	lone.on_step("deer", Vector3(5.0, 0.0, 2.0), 1300)   # a herd neighbour 3 m off, not this deer's next step
+	check(is_nan(float(lone.marks[1][1])) and is_nan(float(lone.marks[0][1])), "a step of another deer 3 m away gives no heading rather than a wrong one")
+	lone.on_step("dog", Vector3(1.0, 0.0, 1.0), 1400)
+	lone.on_step("dog", Vector3(1.8, 0.0, 1.0), 1700)
+	check(lone.shown() == 2, "a dog at heel leaves no prints (it would crowd out the wild trail and the E key)")
+	check(TracksScript.read_text(lone.marks[0], 1, 1000 + 20000, c).contains("just now") and TracksScript.read_text(lone.marks[0], 1, 1000 + 200000, c).contains("minutes"), "just now, then minutes ago")
+	lone.free()
+	# Review 23 Nov: two of a kind close together. A step with two same-kind footfalls within a stride could be either animal's: no heading.
+	var pair = TracksScript.new()
+	pair.player_at = func() -> Vector3: return Vector3.ZERO
+	pair.on_step("rabbit", Vector3(2.0, 0.0, 2.0), 1000)
+	pair.on_step("rabbit", Vector3(4.5, 0.0, 2.0), 1100)   # a second rabbit 2.5 m off: past a stride, no heading
+	pair.on_step("rabbit", Vector3(3.2, 0.0, 2.0), 1200)   # within a stride of both: whose step is it?
+	check(is_nan(float(pair.marks[2][1])), "a step a stride from two of its kind gives no heading rather than a wrong one")
+	# Expiry from the front moves the indexes of the recent footfalls with it: a new walk's heading goes to its own first print.
+	var old = TracksScript.new()
+	old.player_at = func() -> Vector3: return Vector3.ZERO
+	var life_ms: int = int(TracksScript.life_s(0, c) * 1000.0)
+	old.on_step("wolf", Vector3(-8.0, 0.0, -8.0), 0)
+	old.on_step("wolf", Vector3(-12.0, 0.0, -8.0), 100)
+	old.on_step("deer", Vector3(2.0, 0.0, 2.0), life_ms + 50)   # the first print of a deer's walk, as the wolf's prints run out
+	old.update(life_ms + 150)
+	check(old.shown() == 1 and is_nan(float(old.marks[0][1])), "the old prints are gone, the deer's first print has no heading yet")
+	old.on_step("deer", Vector3(2.0, 0.0, 3.0), life_ms + 400)
+	check(old.shown() == 2 and absf(float(old.marks[0][1]) - PI * 0.5) < 0.01, "its second step gives its own first print the heading (south)")
+	pair.free()
+	old.free()
 	t.on_step("deer", Vector3(6.2, 1.0, 3.1), 2900)
 	check(t.shown() == 6, "a step 0.2 m from the last one (a shuffle) leaves no print")
 	t.on_step("duck", Vector3(1.0, 1.0, 1.0), 3000)
 	t.on_step("deer", Vector3(float(c["draw_m"]) + 5.0, 1.0, 0.0), 3100)
 	check(t.shown() == 6, "a duck and a deer past draw_m leave nothing")
+	var near: Array = t.readable(Vector3(5.0, 1.0, 3.0), 3000)
+	check(not near.is_empty(), "a fresh print near the player can be read")
+	var plain: String = TracksScript.read_text(t.mark_at(int(near[0][0])), 1, 3000, c)
+	check(plain.begins_with("Deer prints") and plain.contains("just now") and not plain.contains("heading"), "untrained: whose and how fresh (%s)" % plain)
+	check(TracksScript.read_text(t.mark_at(int(near[0][0])), int(c["read_way_level"]), 3000, c).contains("heading east"), "at read_way_level: which way it went")
+	check(TracksScript.read_text([Vector3.ZERO, 0.0, 0, "paw", "wolf"], 1, 1000, c).contains(str(c["read"]["warning"])), "a wolf's prints warn")
+	check(not TracksScript.read_text([Vector3.ZERO, 0.0, 0, "paw", "dog"], 1, 1000, c).contains(str(c["read"]["warning"])), "a dog's prints do not")
+	check(TracksScript.read_text([Vector3.ZERO, 0.0, 0, "hoof", "deer"], 1, 600000, c).contains("a while ago"), "an old print says so")
 	t.update(3200)
 	check(t._nodes.has("hoof") and (t._nodes["hoof"] as MultiMeshInstance3D).multimesh.instance_count == 6, "the prints are drawn")
 	var life0: float = TracksScript.life_s(0, c)

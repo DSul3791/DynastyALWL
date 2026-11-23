@@ -12,10 +12,11 @@ extends Node3D
 
 const CONFIG := "res://data/look/trail_signs.json"
 const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
+const BurrowView := preload("res://src/client/burrow_view.gd")   # its mound mesh: a warren's holes look like the live rabbits' burrows
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
-const PELLET_COLOR := Color(0.24, 0.18, 0.11)
+const PELLET_COLOR := Color(0.10, 0.075, 0.05)   # near-black fresh rabbit pellets on the scratched earth of the latrine (Lane A 23 Nov: none seen on litter)
 const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
@@ -23,8 +24,9 @@ const RUB_COLOR := Color(0.78, 0.68, 0.50)   # fresh wood under rubbed-off bark
 const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out too (a route's print spacing starts at its home)
 const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
 const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
-const PELLET_LIFT_M := 0.02      # pellets sit this far up: on top of the leaf litter and the latrine's bare patch, not under them
-const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)
+const DROPPINGS_LIFT_M := 0.035  # deer droppings have no patch under them: among the leaf cards, not hovering over bare ground
+const PELLET_LIFT_M := 0.06      # pellets sit this far up: on top of the leaf cards (grass_view lays them 3 cm up) and the latrine's patch, not under them (Lane A 23 Nov)
+const LATRINE_BED_COLOR := Color(0.36, 0.26, 0.16)   # scratched bare earth: warmer and darker than the pale pressed ground round it, lighter than the pellets
 
 var cfg: Dictionary = {}
 var ground_height: Callable:       # (x, z) -> the ground's height there, NAN when not known (a new one forgets the heights kept)
@@ -39,13 +41,24 @@ var _dirty: bool = false
 var _built_at: Vector3 = Vector3.INF
 var _level: int = -1
 var _next_msec: int = 0
-var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "rub", "halo" -> MultiMeshInstance3D
+var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "mound", "halo" -> MultiMeshInstance3D
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
+var _logged: String = ""          # the last rebuild line, printed only when it changes
+var _told_loading: bool = false
+var _patches: Array = []           # the last patches sent (patches_changed fires only when they change)
+var unplaced: int = 0              # signs in reach whose ground had no collision yet at the last rebuild (they are worked out again soon)
+var _retry_msec: int = 0           # when unplaced > 0: rebuild again at this time, though the player has not moved (Lane A 23 Nov: none drawn)
+var _retries: int = 0              # such tries since the player last moved (at most ground_retries, so a spot with no ground costs nothing for long)
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
 # a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
 # slight sound there and tells the server, which trains Tracking once per sign). One a look, so a cluster comes one by one.
 var on_spot: Callable              # (kind: String, spot: Vector3) when a sign is spotted
+# A place of interest found (Dave wants what a player finds on the map): a warren or a deer's bedding place, the first time one of its
+# signs is spotted this session. The map listens; its own record keeps it. [kind "warren" or "bed", Vector3 on the ground].
+signal place_found(kind: String, at: Vector3)
+signal patches_changed(patches: Array)   # [[Vector2 spot, radius m], ...]: where the grass is grazed or scratched short round a sign (grass_view presses it)
+var found_places: Array = []       # the same, in the order found this session
 var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
 var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
 var _glow_texture: Texture2D = null
@@ -75,6 +88,10 @@ func set_routes(block_x: int, block_z: int, block_routes: Array) -> void:
 
 # Called each frame; does work at most twice a second, and only once the player has ground (loading false).
 func update(player: Vector3, tracking: int, loading: bool) -> void:
+	if loading and not _told_loading:
+		_told_loading = true
+		FreezeWatchScript.printer.line("trail signs: waiting for the world to load before any sign is worked out")
+
 	if loading or Time.get_ticks_msec() < _next_msec:
 		return
 
@@ -87,8 +104,12 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 
 	var moved: bool = _built_at == Vector3.INF or Vector2(player.x - _built_at.x, player.z - _built_at.z).length() > float(cfg.get("rebuild_move_m", 8.0))
 
-	if _dirty or moved or tracking != _level:
+	var retry: bool = _retry_msec > 0 and Time.get_ticks_msec() >= _retry_msec
+
+	if _dirty or moved or retry or tracking != _level:
 		_dirty = false
+		_retry_msec = 0
+		_retries = _retries + 1 if retry and not moved else 0
 		_built_at = player
 		_level = tracking
 		var reach: float = reach_m(tracking, cfg)
@@ -99,8 +120,35 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 		if reach > 0.0 and trunks_near.is_valid():
 			_signs.append_array(rubs_for(near, trunks_near, cfg))
 		_draw(player, tracking)
+		var now_patches: Array = patches_for(_signs, cfg)
+
+		if now_patches != _patches:
+			_patches = now_patches
+			patches_changed.emit(_patches)
+
+		if unplaced > 0 and _retries < int(cfg.get("ground_retries", 15)):
+			_retry_msec = Time.get_ticks_msec() + int(float(cfg.get("ground_retry_s", 2.0)) * 1000.0)   # the ground there may not have collision yet: try again
+		var line: String = "trail signs: %d route blocks held, %d near, %d signs worked out, %d pieces drawn, %d waiting for ground, Tracking %d, reach %.0f m" % [routes.size(), near.size(), _signs.size(), shown, unplaced, tracking, reach]
+
+		if line != _logged:
+			_logged = line
+			FreezeWatchScript.printer.line(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane tells "no routes came" from "nothing drawn" (Lane A 23 Nov: signs not seen)
 
 	_spot(player, tracking)
+
+
+# Lane A 23 Nov 2026 (signs drawn but not seen: the latrines lay in knee-high grass): rabbits scratch a latrine bare and graze the grass
+# short round their warren, and droppings lie where an animal stood. The grass round them is pressed in the run map, as for the deer beds,
+# so a sign sits on a short, pale patch that reads from standing height. [[Vector2 spot, radius m], ...] for the signs worked out.
+static func patches_for(signs: Array, c: Dictionary) -> Array:
+	var out: Array = []
+	var r: Dictionary = c.get("patch_m", {"latrine": 0.7, "droppings": 0.6, "warren": 3.2})
+
+	for s in signs:
+		if r.has(str(s[0])):
+			out.append([s[1], float(r[str(s[0])])])
+
+	return out
 
 
 # The routes with a point within m of a spot, by block (each route kept whole, so its signs do not depend on where the player is).
@@ -122,7 +170,7 @@ static func routes_near(by_block: Dictionary, at: Vector2, m: float) -> Dictiona
 	return out
 
 
-# The signs of a set of routes: [kind, spot, yaw, size, lead, toward] with kind "latrine", "scrape", "prints", "droppings" or "bed"; lead is a
+# The signs of a set of routes: [kind, spot, yaw, size, lead, toward] with kind "latrine", "scrape", "prints", "hops", "droppings", "bed" or "warren"; lead is a
 # point the trail goes to from the sign (INF when none) and toward what lies there ("grazing", "warren", "feeding", "" along the trail), for
 # reading the sign. The same routes give the same signs.
 static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> Array:
@@ -143,6 +191,7 @@ static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> 
 				runs.append([pts[0], pts])
 				out.append(["latrine", _off(pts[0], pts[1], c.get("latrine_off_m", [1.0, 3.0]), 1), 0.0, 0.0, last, "grazing"])
 				out.append(["latrine", _off(last, pts[pts.size() - 2], c.get("latrine_off_m", [1.0, 3.0]), 2), 0.0, 0.0, pts[0], "warren"])
+				_prints_on(pts, wet_at, c, out, "hops", "grazing")
 			elif kind == KIND_DEER:
 				var off: float = float(c.get("droppings_off_m", 4.0))
 				out.append(["droppings", _off(pts[0], pts[1], [off * 0.25, off], 3), 0.0, 0.0, last, "feeding"])
@@ -152,6 +201,16 @@ static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> 
 				_prints_on(pts, wet_at, c, out)
 
 	_junctions(runs, c, out)
+	var homes: Dictionary = {}   # a warren's runs all start at it: one warren sign each (Dave 23 Nov 2026: "so rabbit warrens actually have a model")
+
+	for run in runs:
+		var home: Vector2 = run[0]
+		var tag: Vector2i = Vector2i(roundi(home.x), roundi(home.y))
+
+		if not homes.has(tag):
+			homes[tag] = true
+			out.append(["warren", home, 0.0, 0.0, Vector2.INF, ""])
+
 	return out
 
 
@@ -240,19 +299,28 @@ static func _h01(at: Vector2, salt: int) -> float:
 	return float(hash(Vector3i(int(round(at.x * 4.0)), int(round(at.y * 4.0)), salt)) & 0xFFFF) / 65536.0
 
 
-# Prints where a deer trail crosses wet ground: at most one line per prints_every_m of trail, along the trail.
-static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary, out: Array) -> void:
+# Prints where a trail crosses wet ground (deer "prints", rabbit "hops" in the mud of a run): at most one line per prints_every_m, along the trail.
+static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary, out: Array, kind: String = "prints", toward: String = "feeding") -> void:
 	if not wet_at.is_valid():
 		return
 
 	var every: float = float(c.get("prints_every_m", 30.0))
 	var since: float = every
+	var probe_m: float = float(c.get("wet_probe_m", 8.0))
+	var dry: float = probe_m   # metres since the last wet look: water is looked for about every wet_probe_m, not at every point (each look reads the water five times)
 
 	for i in range(1, pts.size()):
-		since += pts[i - 1].distance_to(pts[i])
+		var leg: float = pts[i - 1].distance_to(pts[i])
+		since += leg
+		dry += leg
 
-		if since >= every and bool(wet_at.call(pts[i].x, pts[i].y)):
-			out.append(["prints", pts[i], (pts[i] - pts[i - 1]).angle(), 0.0, pts[pts.size() - 1], "feeding"])
+		if since < every or dry < probe_m:
+			continue
+
+		dry = 0.0
+
+		if bool(wet_at.call(pts[i].x, pts[i].y)):
+			out.append([kind, pts[i], (pts[i] - pts[i - 1]).angle(), 0.0, pts[pts.size() - 1], toward])
 			since = 0.0
 
 
@@ -344,19 +412,24 @@ static func reach_m(level: int, c: Dictionary) -> float:
 
 # Whether a kind of sign shows at a level (scrapes and prints only to a finer eye).
 static func shows(kind: String, level: int, c: Dictionary) -> bool:
-	return level >= int(c.get("fine_level", 50)) if kind == "scrape" or kind == "prints" else level >= int(c.get("see_level", 25))
+	return level >= int(c.get("fine_level", 50)) if kind == "scrape" or kind == "prints" or kind == "hops" else level >= int(c.get("see_level", 25))
 
 
 func _draw(player: Vector3, level: int) -> void:
 	var reach: float = reach_m(level, cfg)
-	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "rub": [], "halo": []}
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "hop": [], "rub": [], "mound": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 	var halo: float = halo_alpha(level, cfg)
+	unplaced = 0
 
 	for s in _signs:
 		var spot: Vector2 = s[1]
 
 		if reach <= 0.0 or spot.distance_to(at) > reach or not shows(str(s[0]), level, cfg) or not ground_height.is_valid():
+			continue
+
+		if is_nan(_heap_ground(spot)):
+			unplaced += 1   # no collision under it yet (far terrain loads after the ground under the player): update tries again
 			continue
 
 		_lay(str(s[0]), spot, float(s[2]), rows)
@@ -376,7 +449,7 @@ func _draw(player: Vector3, level: int) -> void:
 		shown += (rows[layer] as Array).size()
 
 
-# Reading a sign (hunting thread, 23 Nov 2026): the shown signs within read_m of the eye, as [index, point] for the aim, nearest first.
+# Reading a sign (hunting thread, 23 Nov 2026): the shown signs within read_m of the eye, as [index, point] for the aim (the caller picks by the reticle).
 func readable(player: Vector3, level: int) -> Array:
 	var out: Array = []
 	var reach: float = minf(float(cfg.get("read_m", 3.0)), reach_m(level, cfg))
@@ -436,7 +509,7 @@ static func halo_alpha(level: int, c: Dictionary) -> float:
 	if level < from:
 		return 0.0
 
-	var span: Array = c.get("halo_alpha", [0.06, 0.28])
+	var span: Array = c.get("halo_alpha", [0.15, 0.4])
 	return lerpf(float(span[0]), float(span[1]), clampf(float(level - from) / maxf(100.0 - float(from), 1.0), 0.0, 1.0))
 
 
@@ -450,15 +523,23 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 	var size: float = float(cfg.get("halo_m", 1.0))
 	var long: float = size
 
-	if kind == "prints":
+	if kind == "hops":
+		long = maxf(size, float(int(cfg.get("hop_sets", [3, 4])[1])) * float(cfg.get("hop_step_m", 0.5)))
+	elif kind == "prints":
 		var most: Array = cfg.get("prints", [4, 6])
 		long = maxf(size, float(most[1]) * float(cfg.get("print_step_m", 0.6)))
+	elif kind == "warren":
+		size = 2.0 * float((cfg.get("warren_m", [0.6, 2.6]) as Array)[1]) + 1.0
+		long = size
+	elif kind == "latrine":
+		size = float(cfg.get("latrine_glow_m", 2.0))   # round the latrine's patch, which hides the middle
+		long = size
 	elif kind == "bed":
 		var bed: Array = cfg.get("bed_size_m", [1.5, 0.8])
 		size = float(bed[1]) + 0.4
 		long = float(bed[0]) + 0.4
 
-	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.02, spot.y), yaw, Vector3(size, 1.0, long)])
+	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.035, spot.y), yaw, Vector3(size, 1.0, long)])   # over the leaf cards (3 cm), under the latrine patch and the pellets
 
 
 # The small pieces of one sign: [position, yaw, scale] rows into the mesh it uses.
@@ -467,7 +548,7 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 		"latrine", "droppings":
 			var span: Array = cfg.get("latrine_pellets" if kind == "latrine" else "droppings_pellets", [8, 15])
 			var count: int = int(span[0]) + int(_h01(spot, 20) * float(int(span[1]) - int(span[0]) + 1))
-			var big: float = 1.0 if kind == "latrine" else 1.4
+			var big: float = (1.0 if kind == "latrine" else 1.4) * float(cfg.get("pellet_scale", 1.0))
 			var y: float = _heap_ground(spot)
 
 			if is_nan(y):
@@ -476,12 +557,12 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 			var spread: float = float(cfg.get("heap_m", 0.22))
 
 			if kind == "latrine":   # a latrine lies on a patch the rabbits scratch bare (a dark earth patch, over litter and short grass)
-				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.5, spot.y), TAU * _h01(spot, 7), 1.0])
+				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.2, spot.y), TAU * _h01(spot, 7), 1.0])   # a thick disc sunk into the ground, its top just under the pellets
 
 			for n in count:
 				var r: float = spread * sqrt(_h01(spot, 30 + n))
 				var a: float = TAU * _h01(spot, 60 + n)
-				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y + PELLET_LIFT_M, spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
+				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y + (PELLET_LIFT_M if kind == "latrine" else DROPPINGS_LIFT_M), spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
 		"rub":
 			var y4: float = _heap_ground(spot)
 
@@ -496,6 +577,35 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 
 			if not is_nan(y2):
 				(rows["scrape"] as Array).append([Vector3(spot.x, y2, spot.y), TAU * _h01(spot, 5), 1.0])
+		"warren":   # the holes of a warren: warren_holes mounds of dug earth within warren_m of its home, each its own size and heading
+			var holes: Array = cfg.get("warren_holes", [3, 6])
+			var count4: int = int(holes[0]) + int(_h01(spot, 23) * float(int(holes[1]) - int(holes[0]) + 1))
+			var spread_m: Array = cfg.get("warren_m", [0.6, 2.6])
+
+			for n in count4:
+				var a2: float = TAU * (float(n) + 0.6 * _h01(spot, 24 + n)) / float(count4)
+				var at3: Vector2 = spot + Vector2(cos(a2), sin(a2)) * lerpf(float(spread_m[0]), float(spread_m[1]), _h01(spot, 34 + n))
+				var y6: float = _heap_ground(at3)
+
+				if not is_nan(y6):
+					var mound_span: Array = cfg.get("mound_scale", [0.85, 1.2])
+					var big2: float = lerpf(float(mound_span[0]), float(mound_span[1]), _h01(spot, 44 + n))
+					(rows["mound"] as Array).append([Vector3(at3.x, y6 - BurrowView.SINK, at3.y), a2 + PI, Vector3(big2, big2, big2)])   # the hole faces out from the warren's middle
+		"hops":   # a rabbit's hop in mud: the two long hind feet side by side ahead, the two small fore feet one behind the other
+			var sets: Array = cfg.get("hop_sets", [3, 4])
+			var count3: int = int(sets[0]) + int(_h01(spot, 22) * float(int(sets[1]) - int(sets[0]) + 1))
+			var ahead: Vector2 = Vector2(cos(yaw), sin(yaw))
+
+			for n in count3:
+				var mid: Vector2 = spot + ahead * (float(n) - float(count3) * 0.5) * float(cfg.get("hop_step_m", 0.5))
+				var y5: float = _heap_ground(mid)
+
+				if is_nan(y5):
+					continue
+
+				for foot in [[ahead * 0.07 + ahead.orthogonal() * 0.035, 1.0], [ahead * 0.07 - ahead.orthogonal() * 0.035, 1.0], [-ahead * 0.04, 0.6], [-ahead * 0.11, 0.6]]:
+					var at2: Vector2 = mid + (foot[0] as Vector2)
+					(rows["hop"] as Array).append([Vector3(at2.x, y5, at2.y), yaw, float(foot[1])])
 		"prints":
 			var span2: Array = cfg.get("prints", [4, 6])
 			var count2: int = int(span2[0]) + int(_h01(spot, 21) * float(int(span2[1]) - int(span2[0]) + 1))
@@ -577,6 +687,8 @@ func _mesh(layer: String) -> Mesh:
 	material.roughness = 1.0
 
 	match layer:
+		"mound":
+			return BurrowView.build_mesh()
 		"halo":
 			var plane: PlaneMesh = PlaneMesh.new()
 			plane.size = Vector2(1.0, 1.0)
@@ -584,6 +696,9 @@ func _mesh(layer: String) -> Mesh:
 			material.albedo_texture = _glow_tex()
 			var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
 			material.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]), 0.0)
+			material.emission_enabled = true   # as the spot glow, fainter (halo_emit)
+			material.emission = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+			material.emission_energy_multiplier = float(cfg.get("halo_emit", 0.25))
 			plane.material = material
 			return plane
 		"pellet", "deer_pellet":
@@ -597,9 +712,9 @@ func _mesh(layer: String) -> Mesh:
 			return sphere
 		"latrine_bed":
 			var bed: CylinderMesh = CylinderMesh.new()
-			bed.top_radius = 0.3
-			bed.bottom_radius = 0.34
-			bed.height = 0.015
+			bed.top_radius = 0.4
+			bed.bottom_radius = 0.45
+			bed.height = 0.08   # its base sunk below the ground, so it never hovers on bare ground or a slope
 			bed.radial_segments = 10
 			bed.rings = 1
 			material.albedo_color = LATRINE_BED_COLOR
@@ -617,6 +732,12 @@ func _mesh(layer: String) -> Mesh:
 			material.albedo_color = SCRAPE_COLOR
 			patch.material = material
 			return patch
+		"hop":
+			var pad: BoxMesh = BoxMesh.new()   # a hind foot; the fore feet are the same mark drawn at 0.6
+			pad.size = Vector3(0.035, 0.006, 0.075)
+			material.albedo_color = PRINT_COLOR
+			pad.material = material
+			return pad
 		_:
 			var hoof: BoxMesh = BoxMesh.new()
 			hoof.size = Vector3(0.07, 0.006, 0.09)
@@ -651,10 +772,21 @@ func _spot(player: Vector3, level: int) -> void:
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
 		last_spot = where
 		FreezeWatchScript.printer.line("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
-		_glow(where, 1.6 if str(s[0]) == "prints" else 1.0)
+		_glow(where, 1.6 if str(s[0]) == "prints" or str(s[0]) == "hops" else (float(cfg.get("latrine_glow_m", 2.0)) if str(s[0]) == "latrine" else 1.0))   # a latrine's round its 0.9 m patch
 
 		if on_spot.is_valid():
 			on_spot.call(str(s[0]), where)
+
+		if str(s[0]) == "warren" or str(s[0]) == "bed":
+			var place: String = str(s[0])
+			var fresh: bool = true
+
+			for known in found_places:   # a deer place has 2-3 beds: one find for them all
+				fresh = fresh and not (str(known[0]) == place and (known[1] as Vector3).distance_to(where) < 8.0)
+
+			if fresh:
+				found_places.append([place, where])
+				place_found.emit(place, where)
 
 		return
 
@@ -664,7 +796,7 @@ func _glow(at: Vector3, size: float) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(size, size)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0   # lit like the ground round it: lighter by day, as dark as the rest at night (no glowing marker)
+	material.roughness = 1.0   # lit like the ground round it, plus a faint light of its own (glow_emit, below): a soft patch, not a marker
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_texture = _glow_tex()
 	var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
@@ -674,11 +806,14 @@ func _glow(at: Vector3, size: float) -> void:
 	node.name = "TrailSignGlow"
 	node.mesh = plane
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.position = at + Vector3(0.0, 0.03, 0.0)
+	node.position = at + Vector3(0.0, 0.055, 0.0)   # over the leaf cards and the halo, under the latrine patch and pellets (gold round them, not over them: Lane A W6)
 	add_child(node)
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
-	var peak: float = float(cfg.get("glow_alpha", 0.45))
+	var peak: float = float(cfg.get("glow_alpha", 0.6))
 	var tween: Tween = node.create_tween()
+	material.emission_enabled = true   # a little light of its own so it shows on pale litter and in shade (Lane A 23 Nov: no glow seen)
+	material.emission = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	material.emission_energy_multiplier = float(cfg.get("glow_emit", 0.5))
 	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.15)
 
 	if glow_keep:

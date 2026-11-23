@@ -1,16 +1,29 @@
 {
-	"note": "Fresh tracks (23 Nov 2026, hunting thread; Dave: 'extrapolate from them and see what would make for a fun hunting game'): each footfall of a live animal drawn within draw_m of the player (animal_view stepped, read only) leaves a print that fades over life_s real seconds, life_mult times longer at Tracking 100, so a hunter can follow the animal itself. A print only once the kind has moved min_gap_m from its last one; at most max_prints at once (one walking deer at 1.3 m/s lays about two a second, so 480 hold a few minutes of a few animals; a herd fills it sooner and the oldest go first). Shapes by kind; birds and frogs leave none. Client only. Provisional.",
+	"note": "Fresh tracks (23 Nov 2026, hunting thread; Dave: 'extrapolate from them and see what would make for a fun hunting game'): each footfall of a live animal drawn within draw_m of the player (animal_view stepped, read only) leaves a print that fades over life_s real seconds, life_mult times longer at Tracking 100, so a hunter can follow the animal itself. A print only once the kind has moved min_gap_m from its last one; at most max_prints at once (one walking deer at 1.3 m/s lays about two a second, so 480 hold a few minutes of a few animals; a herd fills it sooner and the oldest go first). Shapes by kind; birds, frogs and the farm and companion animals (dog, cat, cow, goat, donkey) leave none, so a dog at heel never crowds out the wild trail or the E key. A print's heading is known only from a second footfall of the same kind within stride_m and 2 s (a herd stands about 3 m apart); until then the reading gives none. Client only. Provisional.",
 	"life_s": 600.0,
 	"life_mult": 2.0,
 	"draw_m": 30.0,
 	"max_prints": 480,
 	"min_gap_m": 0.6,
+	"stride_m": 1.6,
 	"side_m": 0.07,
 	"alpha": 0.85,
+	"read_note": "Reading a fresh print: look right at it (read_aim_cos, about 10 degrees) within read_m and press E. Whose it is and how old for anyone; a predator's adds a warning (Dave's core rule: the game does not want you to die unless you do something deliberately stupid, so warn plainly); from read_way_level (Dave's 10 for trails on the map) which way it was heading.",
+	"read_m": 3.0,
+	"read_aim_cos": 0.985,
+	"read_way_level": 10,
+	"read": {
+		"what": "%s prints, %s.",
+		"ages": {"now": "made just now", "minutes": "made minutes ago", "older": "made a while ago"},
+		"way": "It was heading %s.",
+		"warning": "A predator passed this way: keep your eyes open.",
+		"predators": ["wolf", "bear", "black_bear", "lynx", "puma", "lion", "leopard", "tiger", "hyena"],
+		"names": {"black_bear": "black bear", "mountain_goat": "mountain goat", "honey_badger": "honey badger", "deer": "deer", "elk": "elk", "moose": "moose"}
+	},
 	"size_m": {"hoof": [0.07, 0.09], "paw": [0.08, 0.09], "hop": [0.04, 0.08]},
 	"kinds": {
-		"hoof": ["deer", "moose", "elk", "boar", "horse", "donkey", "bighorn", "mountain_goat", "chamois", "cow", "goat", "buffalo", "pronghorn", "warthog", "wildebeest", "camel", "rhino"],
-		"paw": ["wolf", "fox", "bear", "black_bear", "lynx", "puma", "lion", "leopard", "tiger", "hyena", "dog", "cat", "raccoon", "badger", "honey_badger", "beaver"],
+		"hoof": ["deer", "moose", "elk", "boar", "horse", "bighorn", "mountain_goat", "chamois", "buffalo", "pronghorn", "warthog", "wildebeest", "camel", "rhino"],
+		"paw": ["wolf", "fox", "bear", "black_bear", "lynx", "puma", "lion", "leopard", "tiger", "hyena", "raccoon", "badger", "honey_badger", "beaver"],
 		"hop": ["rabbit", "kangaroo"]
 	}
 }
