@@ -189,5 +189,12 @@ func run() -> void:
 	held.carrying_log = false
 	held._process(0.05)
 	_check(held.held_id() == "stone_axe" and held._model != null, "the log laid down: the axe is back in hand")
+	# 159: another player's arrow and thrown spear are flown here too (flight_seen), look only.
+	var flying: int = held._flights.size()
+	held.add_seen_flight(table.number_of("wooden_arrow"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 2.0, -30.0), false)
+	held.add_seen_flight(table.number_of("wooden_spear"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 0.0, -15.0), true)
+	_check(held._flights.size() == flying + 2 and (held._flights[flying]["node"] as Node3D).is_inside_tree(), "another player's arrow and spear fly here (%d)" % (held._flights.size() - flying))
+	held._process(0.05)
+	_check((held._flights[flying]["node"] as Node3D).global_position.z < -1.0, "and move on along their way")
 	print("test_spear_hold: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

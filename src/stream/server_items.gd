@@ -824,6 +824,8 @@ func note_spots_on_close() -> void:
 
 func peer_left(peer: int) -> void:
 	_held.erase(peer)
+	_held_left.erase(peer)
+	_hand_flags.erase(peer)
 	_cold_out.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
@@ -928,16 +930,40 @@ func peer_left(peer: int) -> void:
 
 # The item number the player says is in its hand (protocol 146 held_item), kept per peer for the goblin camps (server_tribes.gd armed).
 var _held: Dictionary = {}   # peer -> item number
+var _held_left: Dictionary = {}   # peer -> the left hand's item number (159)
+var _hand_flags: Dictionary = {}  # peer -> held_item.gd HAND_* flags (159)
+var send_flight: Callable          # (thrower peer, item number, from, velocity, burning): others see an arrow or thrown weapon fly (159)
 
 
-func report_held(peer: int, number: int) -> void:
+func report_held(peer: int, number: int, left: int = 0, flags: int = 0) -> void:
 	_held[peer] = maxi(number, 0)
+	_held_left[peer] = maxi(left, 0)
+	_hand_flags[peer] = flags & 15
+
+
+# The item in this player's left hand (a torch, lantern or shield; 159), 0 for none: as held_number, only while the pack holds it.
+func left_hand_number(peer: int) -> int:
+	return _in_pack(peer, int(_held_left.get(peer, 0)))
+
+
+# What the client says its hands are doing (held_item.gd HAND_*: bow raised 1, drawn 2, shield up 4, on a ladder 8), shown to the others only.
+func hand_flags(peer: int) -> int:
+	return int(_hand_flags.get(peer, 0))
+
+
+# Whether the player bears a burning torch or lantern: its client's torch-burn report came within TORCH_REPORT_MS (as _flame_near).
+func torch_burning(peer: int) -> bool:
+	return _torch_seen.has(peer) and Time.get_ticks_msec() - int(_torch_seen[peer]) <= TORCH_REPORT_MS
 
 
 # The item in this player's hand, 0 for none: what the client last said, and only while the pack still holds one (a claim of an item the
 # player does not have counts as empty hands).
 func held_number(peer: int) -> int:
-	var number: int = int(_held.get(peer, 0))
+	return _in_pack(peer, int(_held.get(peer, 0)))
+
+
+# `number` when the player's pack holds one, else 0 (a claim of an item the player does not have counts as empty hands).
+func _in_pack(peer: int, number: int) -> int:
 	var inv = inventory_of(peer)
 
 	if number == 0 or inv == null:
@@ -3497,6 +3523,9 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var thrown: Dictionary = inv.take_from_slot(slot, 1)
 	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0, "lag": shot_lag(peer, now)})
 
+	if send_flight.is_valid():
+		send_flight.call(peer, number, _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), direction.normalized() * THROW_SPEED, false)
+
 
 # How far behind the server the shooter's screen showed the animals when it shot or threw (ACT_SEEN just before): [ms behind for a seen
 # animal, ms behind for a committed charge, or -1 when it sent none], or [] for judged now. The flight keeps it, so every step of an arrow
@@ -3566,6 +3595,9 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
 	_arrows.append({"peer": peer, "number": number, "inst": shot_inst, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
 		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id), "lag": shot_lag(peer, now)})
+
+	if send_flight.is_valid():
+		send_flight.call(peer, number, _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), aim * _bow.speed(power, bow_id), aflame)
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)) * (float(fire_cfg.get("alarm_mult", 2.0)) if aflame else 1.0))

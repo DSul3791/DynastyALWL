@@ -1737,6 +1737,9 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
+	net.flight_seen_received.connect(func(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+		if held != null:
+			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 159)
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
@@ -1863,6 +1866,8 @@ func _welcome_body(info: Dictionary) -> void:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
 	held.held_light_budget = func(): return quality >= 1
+	if _player_view != null:
+		_player_view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST if quality >= 1 else PlayerViewScript.LIT_MOST_LOW   # Low: one other player's torch lights
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
 	items.pick_hand = func(key: int): held.press_slot(key)
