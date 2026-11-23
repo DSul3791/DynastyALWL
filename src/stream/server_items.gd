@@ -920,17 +920,7 @@ func report_held(peer: int, number: int, left: int = 0, flags: int = 0) -> void:
 
 # The item in this player's left hand (a torch, lantern or shield; 157), 0 for none: as held_number, only while the pack holds it.
 func left_hand_number(peer: int) -> int:
-	var number: int = int(_held_left.get(peer, 0))
-	var inv = inventory_of(peer)
-
-	if number == 0 or inv == null:
-		return 0
-
-	for slot in range(inv.slot_count):
-		if inv.numbers[slot] == number:
-			return number
-
-	return 0
+	return _in_pack(peer, int(_held_left.get(peer, 0)))
 
 
 # What the client says its hands are doing (held_item.gd HAND_*: bow raised 1, drawn 2, shield up 4, on a ladder 8), shown to the others only.
@@ -946,7 +936,11 @@ func torch_burning(peer: int) -> bool:
 # The item in this player's hand, 0 for none: what the client last said, and only while the pack still holds one (a claim of an item the
 # player does not have counts as empty hands).
 func held_number(peer: int) -> int:
-	var number: int = int(_held.get(peer, 0))
+	return _in_pack(peer, int(_held.get(peer, 0)))
+
+
+# `number` when the player's pack holds one, else 0 (a claim of an item the player does not have counts as empty hands).
+func _in_pack(peer: int, number: int) -> int:
 	var inv = inventory_of(peer)
 
 	if number == 0 or inv == null:

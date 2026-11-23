@@ -438,12 +438,11 @@ const HAND_SHIELD_UP := 4
 const HAND_LADDER := 8
 var _held_sent: Array = []
 var _held_wait: float = 0.0
-var on_ladder: bool = false                 # set by terrain_client.gd while the player holds on to a ladder (ladder_climb.gd climbing)
 
 
+# Only the shield's for now: the bow and ladder bits are kept for their poses on other players (not made yet), so a bow draw costs no sends.
 func hand_flags() -> int:
-	var state: String = bow_state()
-	return (HAND_BOW_RAISED if state == "raised" else 0) | (HAND_BOW_DRAWN if state == "drawn" else 0) | (HAND_SHIELD_UP if blocking else 0) | (HAND_LADDER if on_ladder else 0)
+	return HAND_SHIELD_UP if blocking else 0
 
 
 func _report_held(delta: float) -> void:
@@ -3605,11 +3604,17 @@ const TORCH_LEAN := 0.12      # third-person torch carry: the shaft leans this m
 # Third person, torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): the torch stands upright in the world, leaning a little forward and out
 # from the body, whatever the hand's own angle, with the grip in the fist. The arm pose that puts the hand up in front is the body's (dynasty_body.gd _torch_carry).
 func _stand_torch_upright() -> void:
-	var skel: Node3D = _avatar_rig.get("skeleton") as Node3D
-	var mount: Node3D = _avatar_rig.hand_mount_l as Node3D
+	if stand_torch(_off_model, _avatar_rig):
+		_third_fist_on(_off_model).visible = true
 
-	if skel == null or mount == null or not mount.is_inside_tree():
-		return
+
+# The same for any torch `model` in `rig`'s left hand (another player's too: player_view.gd).
+static func stand_torch(model: Node3D, rig: Node3D) -> bool:
+	var skel: Node3D = rig.get("skeleton") as Node3D if rig != null else null
+	var mount: Node3D = rig.get("hand_mount_l") as Node3D if rig != null else null
+
+	if skel == null or mount == null or model == null or not mount.is_inside_tree():
+		return false
 
 	var front: Vector3 = skel.global_basis * Vector3.BACK      # the Dynasty skeleton faces +Z, its left is +X
 	var left: Vector3 = skel.global_basis * Vector3.RIGHT
@@ -3617,16 +3622,21 @@ func _stand_torch_upright() -> void:
 	left.y = 0.0
 
 	if front.length() < 0.001 or left.length() < 0.001:
-		return
+		return false
 
 	front = front.normalized()
 	left = left.normalized()
 	var shaft: Vector3 = (Vector3.UP + front * TORCH_LEAN + left * TORCH_LEAN).normalized()
 	var across: Vector3 = shaft.cross(front).normalized()
 	var upright: Basis = Basis(across, shaft, across.cross(shaft).normalized())
-	var grip: float = float(_off_model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
-	_off_model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
-	_third_fist_on(_off_model).visible = true
+	var grip: float = float(model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
+	model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
+	var fist: Node3D = model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if fist != null:
+		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+
+	return true
 
 
 # Same grips as the right hand, on the left mount (first person arms, or the body in third person).

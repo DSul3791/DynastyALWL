@@ -330,6 +330,37 @@ func _client() -> void:
 
 		var out_torch: Node3D = view._bodies[7].get("left_node", null)
 		check(out_torch != null and out_torch.get_node_or_null("Light") == null, "the torch gone out: no light")
+		# Five other players with burning torches: only the LIT_MOST nearest cast light, one light each (no hand light).
+		var crowd: Array = [21, 22, 23, 24, 25]
+
+		for cp in crowd:
+			view.on_look(cp, "Torch %d" % cp, "body_1", "", PackedInt32Array())
+
+		for round_n in range(4):   # MAKE_PER_ROWS bodies a message
+			var ids: PackedInt32Array = PackedInt32Array([7] + crowd)
+			var crowd_at: PackedVector3Array = PackedVector3Array([at])
+			for k in range(crowd.size()):
+				crowd_at.append(at + Vector3(2.0 + k, 0.0, 0.0))
+			view.on_rows(ids, crowd_at, PackedFloat32Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT, 0, 0, 0, 0, 0]), PackedInt32Array([axe, 0, 0, 0, 0, 0]), PackedInt32Array([t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100]), PackedInt32Array([torch_n, torch_n, torch_n, torch_n, torch_n, torch_n]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT, 1, 1, 1, 1, 1]))
+			await process_frame
+
+		for i in range(3):
+			await process_frame
+
+		var lights_on: int = 0
+		var hand_on: int = 0
+
+		for cp in crowd:
+			var torch_node: Node3D = view._bodies.get(cp, {}).get("left_node", null)
+
+			if torch_node != null and (torch_node.get_node("Light") as OmniLight3D).visible:
+				lights_on += 1
+				check(is_equal_approx((torch_node.get_node("Light") as OmniLight3D).light_energy, HeldItemScript.FlameRules.TORCH_LIGHT_ENERGY), "another player's torch is as bright as one's own")
+
+			if torch_node != null and torch_node.get_node_or_null("HandLight") != null and (torch_node.get_node("HandLight") as OmniLight3D).visible:
+				hand_on += 1
+
+		check(view.drawn_count() == 6 and lights_on == PlayerViewScript.LIT_MOST and hand_on == 0, "five burning torches: the %d nearest light, one light each (%d drawn, %d lit, %d hand lights)" % [PlayerViewScript.LIT_MOST, view.drawn_count(), lights_on, hand_on])
 		var drink_clip: String = str(view._bodies[7]["rig"].current())
 		check(drink_clip == "drink" or not view._bodies[7]["rig"].animation_player.has_animation("drink"), "a drink plays the drink clip (%s)" % drink_clip)
 

@@ -40,7 +40,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 157  # 157 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). 156 was reserved for the sound thread. Client and server must be updated together. 155 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+const PROTOCOL_VERSION := 157  # 157 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). 156 was reserved for the sound thread. Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 154 (23 Nov 2026, Dave on the real server: animals "teleporting and jumping right through us"): a standing animal's row carries the send time; ENet never drops unreliable packets on purpose (data/network.json packet_throttle_*); see PROTOCOL.md. Client and server must be updated together.
 # 153 (23 Nov 2026, Dave: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"): sign_spotted(x, z), client to server, a trail sign this player has just spotted; the server checks it and trains Tracking (server_traps sign_found). Client and server must be updated together.
 # 152 (23 Nov 2026, Dave: game trails "auto added to the map once you get to a certain skill level"): map_trails(block_x, block_z, routes), the game trails of a 256 m trail block this character has been near, kept in its map record (server_map.gd note_trails) and sent on joining and when new; the Map page draws them inside the surveyed cells at Tracking data/map.json trails_tracking and up. Client and server must be updated together.
@@ -411,7 +411,7 @@ func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 
 # Another player's arrow or thrown weapon leaving the hand (157): item number, where it left (the eye), its velocity, burning or not. The
 # receiving client flies it with the server's gravity (server_items.gd THROW_GRAVITY), look only. To players within 150 m but the thrower.
-@rpc("authority", "call_remote", "reliable")
+@rpc("authority", "call_remote", "unreliable")   # look only: a lost one is a missed arrow, and it never holds up the reliable channel
 func flight_seen(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 	flight_seen_received.emit(number, from, velocity, fire)
 
