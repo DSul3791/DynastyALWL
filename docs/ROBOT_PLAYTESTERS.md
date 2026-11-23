@@ -12,6 +12,7 @@ tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot draws another; robot_watch.py prints PASS/FAIL; about 3 min
 tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
 tools/robots.sh 2 wolves           # the same, and the second robot comes in 3 s into the rush
+ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, along it and off it; the server prints each one's trail share
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
 ```
@@ -43,7 +44,13 @@ Plan `wolves` / `wolves_alone`: Robot 1 runs about 380 m out of town (beyond the
 25 m off, and the robot is given a spear only once the rush starts (a spear on the hotbar keeps a pack off, by design). It prints one `WOLVES`
 line (outcome, bites and the gaps between them, strikes, hits on wolves, most wolves within 3 m, health); the server prints each pack's phase
 (`AUDIT wolfpack`); each jab prints a `JAB` line (the animals drawn within 6 m) beside the server's `AUDIT strike`. No rejoin pass follows
-watch or the wolf plans. Plan `light` (walk,
+watch or the wolf plans.
+
+Plan `snares`: given 7 snares, the robot runs to the nearest dry game-trail point the client was sent (trail_signs.routes), sets a snare on
+it and four more along trails within 80 m, one 4 m beside the first (no second Tracking practice within 15 m), and one 40 m from every
+trail; then waits 150 s 20 m off for a catch. Each set prints a `SNARE` line (set or not, Tracking trained or not, any words), and the
+server an `AUDIT snare` line with its trail share (server_traps trail_at; a catch needs on_trail_min 0.1, practice snare_min 0.5). A
+snare that neither appears nor is refused in words fails, so does a second practice beside the first or one off every trail. Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
 ## Invariants

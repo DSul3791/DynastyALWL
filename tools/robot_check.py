@@ -206,7 +206,7 @@ def others(robot_logs):
 		seen += 1
 		key = (who, names.get(peer, str(peer)))
 		# The nearest point of the path it walked (between consecutive pose lines, 0.5 s apart: a runner's lines lie 4.5 m apart)
-		path = sorted(q for q in pose.get(peer, []) if ms - 1500 <= q[0] <= ms)
+		path = sorted(q for q in pose.get(peer, []) if ms - 1500 <= q[0] <= ms + 600)   # and the pose line after the look (gate review of #1701)
 		d = min([seg_dist(x, z, a, b) for a, b in zip(path, path[1:])] + [((x - q[2]) ** 2 + (z - q[3]) ** 2) ** 0.5 for q in track])
 
 		if d > OTHERS_M:
@@ -243,8 +243,10 @@ def others(robot_logs):
 
 	print("robot_check: %d views of other robots compared with where they were" % seen)
 
-	if len(names) >= 2 and seen == 0:
-		out.append("others: %d robots played together and no robot's view of another matched its pose lines (the others check never ran)" % len(names))
+	robots = set(names.values())   # by name: one robot's play and rejoin passes are two peers, not two robots (bug-fix thread, 23 Nov 2026)
+
+	if len(robots) >= 2 and seen == 0:
+		out.append("others: %d robots played together and no robot's view of another matched its pose lines (the others check never ran)" % len(robots))
 
 	return out
 
