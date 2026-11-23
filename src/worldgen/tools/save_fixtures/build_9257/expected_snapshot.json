@@ -1,0 +1,5380 @@
+{
+ "characters": {
+  "fixture9257a01": {
+   "effective": {
+    "athletics": "39.73 cap 25",
+    "broadswords": "1.00 cap 25",
+    "crafting": "63.99 cap 25",
+    "daggers": "20.25 cap 25",
+    "digging": "12.72 cap 25",
+    "earthwork": "16.89 cap 25",
+    "fighting": "1.20 cap 25",
+    "fishing": "1.01 cap 25",
+    "foraging": "1.01 cap 25",
+    "gathering": "1.01 cap 25",
+    "hunting": "63.99 cap 25",
+    "jumping": "32.49 cap 25",
+    "knives": "9.44 cap 25",
+    "mapping": "1.30 cap 25",
+    "mining": "3.42 cap 25",
+    "parry": "1.06 cap 25",
+    "rapier": "47.28 cap 25",
+    "rapier_master": "15.45 cap 25",
+    "stonework": "4.54 cap 25",
+    "strike": "1.74 cap 25",
+    "sweep": "5.14 cap 25",
+    "swordplay": "2.64 cap 25",
+    "tracking": "1.01 cap 25",
+    "trades": "72.72 cap 25",
+    "woodcutting": "1.20 cap 25",
+    "woodwork": "1.30 cap 25"
+   },
+   "last": [
+    58167.0,
+    6.0,
+    71364.0
+   ],
+   "learned": [],
+   "purse": {
+    "coin_copper": 10
+   },
+   "skills": {
+    "athletics": 4000.0,
+    "broadswords": 0.5,
+    "crafting": 20000.0,
+    "daggers": 4000.0,
+    "digging": 900.0,
+    "earthwork": 900.0,
+    "fighting": 12.0,
+    "fishing": 0.5,
+    "foraging": 0.5,
+    "gathering": 0.5,
+    "hunting": 20000.0,
+    "jumping": 4000.0,
+    "knives": 900.0,
+    "mapping": 12.0,
+    "mining": 150.0,
+    "parry": 12.0,
+    "rapier": 20000.0,
+    "rapier_master": 4000.0,
+    "stonework": 150.0,
+    "strike": 150.0,
+    "sweep": 900.0,
+    "swordplay": 150.0,
+    "tracking": 0.5,
+    "trades": 20000.0,
+    "woodcutting": 12.0,
+    "woodwork": 12.0
+   },
+   "stats": [
+    50,
+    50,
+    50,
+    50
+   ]
+  },
+  "fixture9257b02": {
+   "effective": {
+    "hunting": "72.72 cap 25",
+    "tracking": "19.42 cap 25"
+   },
+   "last": [
+    58167.0,
+    6.0,
+    71364.0
+   ],
+   "learned": [],
+   "purse": {},
+   "skills": {
+    "hunting": 30000.0,
+    "tracking": 2500.0
+   },
+   "stats": [
+    50,
+    50,
+    50,
+    50
+   ]
+  },
+  "fixture9257c03": {
+   "effective": {
+    "athletics": "55.00 cap 75",
+    "broadswords": "55.00 cap 75",
+    "crafting": "30.00 cap 50",
+    "daggers": "55.00 cap 75",
+    "fighting": "55.00 cap 75",
+    "jumping": "55.00 cap 75",
+    "knives": "55.00 cap 75",
+    "parry": "55.00 cap 75",
+    "rapier": "55.00 cap 75",
+    "rapier_master": "55.00 cap 75",
+    "strike": "55.00 cap 75",
+    "sweep": "55.00 cap 75",
+    "swordplay": "55.00 cap 75",
+    "trades": "30.00 cap 50"
+   },
+   "last": [
+    58167.0,
+    6.0,
+    71364.0
+   ],
+   "learned": [],
+   "purse": {
+    "coin_copper": 75
+   },
+   "skills": {
+    "athletics": 8685.855,
+    "swordplay": 3040.482,
+    "trades": 2296.921
+   },
+   "stats": [
+    50,
+    50,
+    50,
+    50
+   ]
+  },
+  "loadbot_bot1": {
+   "effective": {
+    "crafting": "2.94 cap 25",
+    "digging": "1.55 cap 25",
+    "earthwork": "1.22 cap 25",
+    "mapping": "1.15 cap 25",
+    "trades": "1.89 cap 25",
+    "woodcutting": "1.25 cap 25",
+    "woodwork": "1.09 cap 25"
+   },
+   "last": [
+    58167.0,
+    6.0,
+    71364.0
+   ],
+   "learned": [],
+   "purse": {
+    "coin_copper": 10
+   },
+   "skills": {
+    "crafting": 118.607,
+    "digging": 32.657,
+    "earthwork": 8.46,
+    "mapping": 5.781,
+    "trades": 35.32,
+    "woodcutting": 14.48,
+    "woodwork": 3.661
+   },
+   "stats": [
+    44,
+    55,
+    77,
+    50
+   ]
+  },
+  "loadbot_bot2": {
+   "effective": {
+    "crafting": "2.88 cap 25",
+    "digging": "1.55 cap 25",
+    "earthwork": "1.22 cap 25",
+    "mapping": "1.14 cap 25",
+    "trades": "1.83 cap 25",
+    "woodcutting": "1.20 cap 25",
+    "woodwork": "1.08 cap 25"
+   },
+   "last": [
+    58167.0,
+    6.0,
+    71364.0
+   ],
+   "learned": [],
+   "purse": {
+    "coin_copper": 10
+   },
+   "skills": {
+    "crafting": 114.97,
+    "digging": 32.865,
+    "earthwork": 8.516,
+    "mapping": 5.329,
+    "trades": 33.031,
+    "woodcutting": 11.993,
+    "woodwork": 2.96
+   },
+   "stats": [
+    51,
+    30,
+    39,
+    3
+   ]
+  },
+  "loadbot_bot3": {
+   "effective": {
+    "crafting": "2.92 cap 25",
+    "digging": "1.62 cap 25",
+    "earthwork": "1.24 cap 25",
+    "mapping": "1.15 cap 25",
+    "trades": "1.87 cap 25"
+   },
+   "last": [
+    58167.0,
+    6.0,
+    71364.0
+   ],
+   "learned": [],
+   "purse": {
+    "coin_copper": 5
+   },
+   "skills": {
+    "crafting": 117.41,
+    "digging": 36.96,
+    "earthwork": 9.633,
+    "mapping": 5.737,
+    "trades": 34.749
+   },
+   "stats": [
+    43,
+    43,
+    57,
+    66
+   ]
+  }
+ },
+ "crops": {
+  "b1161940,1427560": [
+   "wolfsbane",
+   10.0
+  ],
+  "b1161940,1427580": [
+   "staunchmoss",
+   0.5
+  ],
+  "b1161940,1427600": [
+   "hushfern",
+   200.0
+  ],
+  "b1161960,1427480": [
+   "tussock_sedge",
+   10.0
+  ],
+  "b1161960,1427560": [
+   "henbane",
+   40.0
+  ],
+  "b1161960,1427580": [
+   "emberroot",
+   10.0
+  ],
+  "b1161960,1427600": [
+   "heartroot",
+   0.5
+  ],
+  "b1161980,1427560": [
+   "owlpetal",
+   200.0
+  ],
+  "b1161980,1427580": [
+   "wispbloom",
+   40.0
+  ],
+  "b1161980,1427600": [
+   "tideglass_weed",
+   10.0
+  ],
+  "b1162060,1427560": [
+   "meadowsweet",
+   0.5
+  ],
+  "b1162060,1427580": [
+   "mugwort",
+   200.0
+  ],
+  "b1162060,1427600": [
+   "aloe",
+   40.0
+  ],
+  "b1162080,1427480": [
+   "cattail",
+   0.5
+  ],
+  "b1162080,1427560": [
+   "feverfew",
+   10.0
+  ],
+  "b1162080,1427580": [
+   "arnica",
+   0.5
+  ],
+  "b1162080,1427600": [
+   "foxglove",
+   200.0
+  ],
+  "b1162100,1427560": [
+   "burdock",
+   40.0
+  ],
+  "b1162100,1427580": [
+   "angelica",
+   10.0
+  ],
+  "b1162100,1427600": [
+   "belladonna",
+   0.5
+  ],
+  "b1162180,1427560": [
+   "wild_marjoram",
+   200.0
+  ],
+  "b1162180,1427580": [
+   "yarrow",
+   40.0
+  ],
+  "b1162180,1427600": [
+   "comfrey",
+   10.0
+  ],
+  "b1162200,1427480": [
+   "dune_grass",
+   200.0
+  ],
+  "b1162200,1427560": [
+   "wild_sage",
+   0.5
+  ],
+  "b1162200,1427580": [
+   "plantain",
+   200.0
+  ],
+  "b1162200,1427600": [
+   "st_johns_wort",
+   40.0
+  ],
+  "b1162220,1427560": [
+   "lavender",
+   10.0
+  ],
+  "b1162220,1427580": [
+   "chamomile",
+   0.5
+  ],
+  "b1162220,1427600": [
+   "valerian",
+   200.0
+  ],
+  "b1162300,1427560": [
+   "wild_strawberry",
+   40.0
+  ],
+  "b1162300,1427580": [
+   "wild_thyme",
+   10.0
+  ],
+  "b1162300,1427600": [
+   "dandelion",
+   0.5
+  ],
+  "b1162320,1427480": [
+   "thatch_grass",
+   40.0
+  ],
+  "b1162320,1427560": [
+   "crowberry",
+   200.0
+  ],
+  "b1162320,1427580": [
+   "wild_mint",
+   40.0
+  ],
+  "b1162320,1427600": [
+   "watercress",
+   10.0
+  ],
+  "b1162340,1427560": [
+   "wild_garlic",
+   0.5
+  ],
+  "b1162340,1427580": [
+   "sorrel",
+   200.0
+  ],
+  "b1162340,1427600": [
+   "samphire",
+   40.0
+  ],
+  "b1162420,1427560": [
+   "honeyspindle",
+   10.0
+  ],
+  "b1162420,1427580": [
+   "cotton_grass",
+   0.5
+  ],
+  "b1162420,1427600": [
+   "lingonberry",
+   200.0
+  ],
+  "b1162440,1427360": [
+   "wheat",
+   10.0
+  ],
+  "b1162440,1427480": [
+   "tidecrown",
+   10.0
+  ],
+  "b1162440,1427560": [
+   "sleetberry",
+   40.0
+  ],
+  "b1162440,1427580": [
+   "alpine_flowers",
+   10.0
+  ],
+  "b1162440,1427600": [
+   "cranberry",
+   0.5
+  ],
+  "b1162460,1427560": [
+   "sunsilver_vine",
+   200.0
+  ],
+  "b1162460,1427580": [
+   "blueberry",
+   40.0
+  ],
+  "b1162460,1427600": [
+   "cloudberry",
+   10.0
+  ],
+  "b1162540,1427560": [
+   "blackthorn",
+   0.5
+  ],
+  "b1162540,1427580": [
+   "rosemary",
+   200.0
+  ],
+  "b1162540,1427600": [
+   "drakethorn",
+   40.0
+  ],
+  "b1162560,1427360": [
+   "wild_rose",
+   0.5
+  ],
+  "b1162560,1427480": [
+   "gloaming_star",
+   0.5
+  ],
+  "b1162560,1427560": [
+   "hawthorn",
+   10.0
+  ],
+  "b1162560,1427580": [
+   "wild_banana",
+   0.5
+  ],
+  "b1162560,1427600": [
+   "sunberry",
+   200.0
+  ],
+  "b1162580,1427560": [
+   "sea_buckthorn",
+   40.0
+  ],
+  "b1162580,1427580": [
+   "prickly_pear",
+   10.0
+  ],
+  "b1162580,1427600": [
+   "hagwillow",
+   0.5
+  ],
+  "b1162660,1427440": [
+   "stormreed",
+   200.0
+  ],
+  "b1162660,1427460": [
+   "nightcrown",
+   40.0
+  ],
+  "b1162660,1427480": [
+   "frostglass_orchid",
+   10.0
+  ],
+  "b1162660,1427560": [
+   "hazel",
+   200.0
+  ],
+  "b1162660,1427580": [
+   "gorse",
+   40.0
+  ],
+  "b1162660,1427600": [
+   "cactus",
+   10.0
+  ],
+  "b1162680,1427360": [
+   "sea_holly",
+   200.0
+  ],
+  "b1162680,1427440": [
+   "truthsage",
+   0.5
+  ],
+  "b1162680,1427460": [
+   "mournbloom",
+   200.0
+  ],
+  "b1162680,1427480": [
+   "sevenyear_lily",
+   40.0
+  ],
+  "b1162680,1427560": [
+   "bramble",
+   0.5
+  ],
+  "b1162680,1427580": [
+   "dwarf_birch",
+   200.0
+  ],
+  "b1162680,1427600": [
+   "raspberry",
+   40.0
+  ],
+  "b1162700,1427440": [
+   "echo_moss",
+   10.0
+  ],
+  "b1162700,1427460": [
+   "pilgrims_cup",
+   0.5
+  ],
+  "b1162700,1427480": [
+   "stillwater_lotus",
+   200.0
+  ],
+  "b1162700,1427560": [
+   "juniper",
+   10.0
+  ],
+  "b1162700,1427580": [
+   "saltbush",
+   0.5
+  ],
+  "b1162700,1427600": [
+   "elder",
+   200.0
+  ],
+  "b1162780,1427440": [
+   "gloomthistle",
+   40.0
+  ],
+  "b1162780,1427460": [
+   "riverbraid",
+   10.0
+  ],
+  "b1162780,1427480": [
+   "whisperfern",
+   0.5
+  ],
+  "b1162780,1427560": [
+   "beet",
+   40.0
+  ],
+  "b1162780,1427580": [
+   "lettuce",
+   10.0
+  ],
+  "b1162780,1427600": [
+   "heather",
+   0.5
+  ],
+  "b1162800,1427360": [
+   "moss_hummock",
+   40.0
+  ],
+  "b1162800,1427440": [
+   "dewlantern",
+   200.0
+  ],
+  "b1162800,1427460": [
+   "brinebell",
+   40.0
+  ],
+  "b1162800,1427480": [
+   "duskmallow",
+   10.0
+  ],
+  "b1162800,1427560": [
+   "flax",
+   200.0
+  ],
+  "b1162800,1427580": [
+   "parsnip",
+   40.0
+  ],
+  "b1162800,1427600": [
+   "reeds",
+   10.0
+  ],
+  "b1162820,1427440": [
+   "marrowroot",
+   0.5
+  ],
+  "b1162820,1427460": [
+   "quenchbell",
+   200.0
+  ],
+  "b1162820,1427480": [
+   "tanglewort",
+   40.0
+  ],
+  "b1162820,1427560": [
+   "radish",
+   0.5
+  ],
+  "b1162820,1427580": [
+   "fern",
+   200.0
+  ],
+  "b1162820,1427600": [
+   "nettle",
+   40.0
+  ],
+  "b1164140,1431060": [
+   "peas",
+   10.0
+  ],
+  "b1164940,1430080": [
+   "wheat",
+   0.5
+  ],
+  "b1164940,1430100": [
+   "rye",
+   200.0
+  ],
+  "b1164940,1430120": [
+   "turnip",
+   40.0
+  ],
+  "b1164960,1430080": [
+   "barley",
+   10.0
+  ],
+  "b1164960,1430100": [
+   "carrot",
+   0.5
+  ],
+  "b1164960,1430120": [
+   "cabbage",
+   200.0
+  ],
+  "b1164980,1430080": [
+   "oats",
+   40.0
+  ],
+  "b1164980,1430100": [
+   "potato",
+   10.0
+  ],
+  "b1164980,1430120": [
+   "onion",
+   0.5
+  ]
+ },
+ "fires": {
+  "581740,714000": {
+   "burn_left": 4080.0,
+   "number": "campfire_kit",
+   "state": 9
+  },
+  "581800,714000": {
+   "burn_left": 4079.0,
+   "number": "campfire_kit",
+   "state": 1
+  }
+ },
+ "ground": {
+  "#0": 1048,
+  "acacia_pods": 1,
+  "acorns": 2,
+  "advanced_backpack": 2,
+  "advanced_kiln": 1,
+  "advanced_smithy": 1,
+  "advanced_well": 1,
+  "agate": 1,
+  "alder_cones": 1,
+  "aloe_seed": 1,
+  "alpine_flowers_seed": 1,
+  "amethyst": 1,
+  "angelica_seed": 1,
+  "apothecary_cabinet": 1,
+  "apple_autumn_seed": 1,
+  "apple_cooking_seed": 1,
+  "apple_early_seed": 1,
+  "apple_keeping_seed": 1,
+  "apple_pie": 1,
+  "apple_sauce": 1,
+  "apple_summer_seed": 1,
+  "arnica_seed": 1,
+  "axe": 1,
+  "axle": 1,
+  "banana_fritter_batter": 1,
+  "bark": 11,
+  "beam_acacia": 1,
+  "beam_alder": 1,
+  "beam_balsam_fir": 1,
+  "beam_coconut_palm": 1,
+  "beam_date_palm": 1,
+  "beam_everember": 1,
+  "beam_hearthwood": 1,
+  "beam_mangrove": 1,
+  "beam_maple": 1,
+  "beam_mirrorbark": 1,
+  "beam_rowan": 1,
+  "beam_spruce": 1,
+  "beam_sweet_chestnut": 1,
+  "beam_tropical_hardwood": 1,
+  "beam_walnut": 1,
+  "beam_wardpine": 1,
+  "beam_wild_apple": 1,
+  "beam_wild_cherry": 1,
+  "beam_wild_pear": 1,
+  "beam_willow": 1,
+  "beam_witness_tree": 1,
+  "bedroll": 1,
+  "beech_seed": 4,
+  "belladonna_seed": 1,
+  "belt_pouch": 1,
+  "birch_seeds": 1,
+  "blackthorn_seed": 1,
+  "blueberry_seed": 1,
+  "board_rack": 1,
+  "bog_iron_ore": 1,
+  "bookcase": 1,
+  "bottle_and_jar_rack": 1,
+  "bramble_seed": 1,
+  "breakfast_platter": 1,
+  "brick_arched_doorway": 1,
+  "brick_double_arched_doorway": 1,
+  "brick_double_doorway": 1,
+  "brick_roof_65": 1,
+  "brick_wall": 1,
+  "brinebell_seed": 1,
+  "bronze_axe": 1,
+  "bronze_greaves": 1,
+  "bronze_hammer": 1,
+  "bronze_helm": 1,
+  "bronze_hinges": 1,
+  "bronze_hoe": 1,
+  "bronze_knife": 1,
+  "bronze_nails": 1,
+  "bronze_pickaxe": 1,
+  "bronze_saw": 1,
+  "bronze_scale_shirt": 1,
+  "bronze_scythe": 1,
+  "bronze_shovel": 1,
+  "bronze_sickle": 1,
+  "burdock_seed": 1,
+  "cactus_seed": 1,
+  "campfire_roasting_spit": 1,
+  "cargo_sled": 1,
+  "carving_station": 1,
+  "cattail_seed": 1,
+  "chamomile_seed": 1,
+  "charcuterie_board": 1,
+  "chestnut_cakes": 1,
+  "clay_griddle": 1,
+  "cloudberry_seed": 1,
+  "coconut_palm_seed": 1,
+  "comfrey_seed": 1,
+  "cooking_pot": 1,
+  "copper_axe": 1,
+  "copper_chisel": 1,
+  "copper_drip_head": 1,
+  "copper_hammer": 1,
+  "copper_hoe": 1,
+  "copper_knife": 1,
+  "copper_nails": 1,
+  "copper_pickaxe": 1,
+  "copper_pipe": 1,
+  "copper_saw": 1,
+  "copper_scythe": 1,
+  "copper_shovel": 1,
+  "copper_sickle": 1,
+  "copper_tap": 1,
+  "cotton_grass_seed": 1,
+  "covered_wagon": 1,
+  "cranberry_seed": 1,
+  "crowberry_seed": 1,
+  "crude_arched_door": 1,
+  "crude_door": 1,
+  "crude_double_arched_door": 1,
+  "crude_double_door": 1,
+  "damson_seed": 1,
+  "damsons": 1,
+  "dandelion_seed": 1,
+  "date_palm_seed": 1,
+  "dessert_platter": 1,
+  "dewlantern_seed": 1,
+  "double_draft_harness": 1,
+  "double_ox_yoke": 1,
+  "drakethorn_seed": 1,
+  "dresser": 1,
+  "dried_figs": 1,
+  "dried_mushrooms": 1,
+  "dune_grass_seed": 1,
+  "duskmallow_seed": 1,
+  "dwarf_birch_seed": 1,
+  "echo_moss_seed": 1,
+  "elder_seed": 1,
+  "emberroot_seed": 1,
+  "engineered_arched_door": 1,
+  "engineered_arched_doorway": 1,
+  "engineered_door": 1,
+  "engineered_double_arched_door": 1,
+  "engineered_double_arched_doorway": 1,
+  "engineered_double_door": 1,
+  "engineered_double_doorway": 1,
+  "engineered_fence": 1,
+  "engineered_floor": 1,
+  "engineered_gate": 1,
+  "engineered_roof": 1,
+  "engineered_roof_65": 1,
+  "engineered_roof_corner": 1,
+  "everember_needles": 1,
+  "everember_sap": 1,
+  "everember_seed": 1,
+  "everember_wood": 1,
+  "farm_wagon": 1,
+  "feast_roast": 1,
+  "feedbag": 1,
+  "fern_seed": 1,
+  "feverfew": 1,
+  "feverfew_seed": 1,
+  "fibre": 1,
+  "fibre_shoulder_bag": 1,
+  "fiddleheads": 1,
+  "field_mushrooms": 1,
+  "fig_seed": 1,
+  "figs": 1,
+  "fine_wood": 1,
+  "fir_cones": 1,
+  "fireplace_cooking_crane": 1,
+  "firewood_rack": 1,
+  "fish_stew": 1,
+  "floor_section": 1,
+  "fly_agaric_caps": 1,
+  "fodder": 1,
+  "food": 1,
+  "food_preparation_table": 1,
+  "forager_stew": 1,
+  "fortified_arched_door": 1,
+  "fortified_arched_doorway": 1,
+  "fortified_door": 1,
+  "fortified_doorway": 1,
+  "fortified_double_arched_door": 1,
+  "fortified_double_arched_doorway": 1,
+  "fortified_double_door": 1,
+  "fortified_double_doorway": 1,
+  "fortified_fence": 1,
+  "fortified_floor": 1,
+  "fortified_foundation": 1,
+  "fortified_gate": 1,
+  "fortified_pillar": 1,
+  "fortified_roof": 1,
+  "fortified_roof_65": 1,
+  "fortified_roof_corner": 1,
+  "fortified_stairs": 1,
+  "fortified_wall": 1,
+  "fortified_wall_top": 1,
+  "fortified_window": 1,
+  "foundation_section": 1,
+  "foxglove_leaves": 1,
+  "foxglove_seed": 1,
+  "frostglass_orchid_seed": 1,
+  "frostglass_petals": 1,
+  "fruit_leather": 1,
+  "fur_boots": 1,
+  "fur_cloak": 1,
+  "fur_hat": 1,
+  "fur_mittens": 1,
+  "gambeson": 1,
+  "garlic_meat": 1,
+  "garnet": 1,
+  "gloaming_star": 1,
+  "gloaming_star_seed": 1,
+  "gloomthistle_down": 1,
+  "gloomthistle_heads": 1,
+  "gloomthistle_seed": 1,
+  "gold_nugget": 1,
+  "gorse_seed": 1,
+  "grass_cloak": 1,
+  "grass_skirt": 1,
+  "greens": 1,
+  "griddle": 1,
+  "grill": 1,
+  "grooming_kit": 1,
+  "gum": 1,
+  "hagwillow_bark": 1,
+  "hagwillow_seed": 1,
+  "hagwillow_withies": 1,
+  "handcart": 1,
+  "hard_wood": 1,
+  "hardwood": 1,
+  "hardwood_seeds": 1,
+  "harvest_platter": 1,
+  "haws": 1,
+  "hawthorn_blossom": 1,
+  "hawthorn_seed": 1,
+  "hazelnuts": 1,
+  "hearthwood_logs": 1,
+  "hearthwood_seed": 1,
+  "heartroot_seed": 1,
+  "heartroots": 1,
+  "hearty_pottage": 1,
+  "heather_seed": 1,
+  "heavy_collar_harness": 1,
+  "henbane_leaves": 1,
+  "henbane_seeds": 1,
+  "herb_fish": 1,
+  "herbs": 1,
+  "hide_cloak": 1,
+  "honey_flowers": 1,
+  "honeyspindle_nectar": 1,
+  "honeyspindle_pods": 1,
+  "honeyspindle_seed": 1,
+  "hunters_stew": 1,
+  "hushfern_fronds": 1,
+  "hushfern_seed": 1,
+  "improved_backpack": 2,
+  "improved_kiln": 1,
+  "improved_smelter": 1,
+  "improved_standing_torch": 1,
+  "improved_torch": 2,
+  "improved_torch_sconce": 1,
+  "iron_anvil_part": 1,
+  "iron_axe": 1,
+  "iron_breastplate": 1,
+  "iron_brigandine": 1,
+  "iron_cauldron": 1,
+  "iron_chunk": 1,
+  "iron_frying_pan": 1,
+  "iron_gauntlets": 1,
+  "iron_greaves": 1,
+  "iron_grill_grate": 1,
+  "iron_helm": 1,
+  "iron_horseshoes": 1,
+  "iron_knife": 1,
+  "iron_lantern_dark": 1,
+  "iron_mail_barding": 1,
+  "iron_mail_chausses": 1,
+  "iron_mail_coif": 1,
+  "iron_mail_hauberk": 1,
+  "iron_ore": 1,
+  "iron_sabatons": 1,
+  "iron_sickle": 1,
+  "irrigation_trench": 1,
+  "juniper_berries": 1,
+  "juniper_seed": 1,
+  "kindling": 1,
+  "lantern_dew": 1,
+  "large_garden_plot": 1,
+  "large_resource_bin": 1,
+  "large_wooden_chest": 1,
+  "lavender_flowers": 1,
+  "lavender_seed": 1,
+  "leather_apron": 1,
+  "leather_belt": 1,
+  "leather_boots": 1,
+  "leather_broad_brim_hat": 1,
+  "leather_gloves": 1,
+  "leather_jerkin": 1,
+  "leather_quiver": 1,
+  "leather_satchel": 1,
+  "leather_shoes": 1,
+  "leather_trousers": 1,
+  "leaves": 386,
+  "lemon_seed": 1,
+  "light_cargo_cart": 1,
+  "light_draft_harness": 1,
+  "linen_apron": 1,
+  "linen_dress": 1,
+  "linen_headwrap": 1,
+  "linen_shirt": 1,
+  "linen_skirt": 1,
+  "linen_trousers": 1,
+  "lingonberries": 1,
+  "lingonberry_seed": 1,
+  "linseed": 1,
+  "log": 7,
+  "log_arched_doorway": 1,
+  "log_backed_bench": 1,
+  "log_beech": 7,
+  "log_double_arched_doorway": 1,
+  "log_double_bench": 1,
+  "log_double_doorway": 1,
+  "log_floor": 1,
+  "log_oak": 5,
+  "log_rack": 1,
+  "log_roof": 1,
+  "log_roof_65": 1,
+  "log_wall": 1,
+  "lumber_acacia": 1,
+  "lumber_balsam_fir": 1,
+  "lumber_coconut_palm": 1,
+  "lumber_date_palm": 1,
+  "lumber_everember": 1,
+  "lumber_hearthwood": 1,
+  "lumber_mangrove": 1,
+  "lumber_maple": 1,
+  "lumber_mirrorbark": 1,
+  "lumber_rowan": 1,
+  "lumber_sweet_chestnut": 1,
+  "lumber_tropical_hardwood": 1,
+  "lumber_walnut": 1,
+  "lumber_wardpine": 1,
+  "lumber_wild_apple": 1,
+  "lumber_wild_cherry": 1,
+  "lumber_wild_pear": 1,
+  "lumber_witness_tree": 1,
+  "lumencap_caps": 1,
+  "mail_shirt": 1,
+  "mango_seed": 1,
+  "mangrove_propagules": 1,
+  "maple_keys": 1,
+  "marjoram": 1,
+  "marrowroot_seed": 1,
+  "marrowroots": 1,
+  "masons_pallet": 1,
+  "master_forge": 1,
+  "meadowsweet_flowers": 1,
+  "meadowsweet_seed": 1,
+  "medium_resource_bin": 1,
+  "medlar": 1,
+  "medlar_seed": 1,
+  "mint": 1,
+  "mirrorbark_bark": 1,
+  "mirrorbark_seed": 1,
+  "mirrorbark_wood": 1,
+  "mirrorcap_caps": 1,
+  "mixed_grill_platter": 1,
+  "morels": 1,
+  "moss_hummock_seed": 1,
+  "mournbloom_petals": 1,
+  "mournbloom_seed": 1,
+  "mugwort": 1,
+  "mugwort_seed": 1,
+  "mushroom_skewer": 1,
+  "nettle_seed": 1,
+  "nettle_tea": 1,
+  "nettles": 1,
+  "nightcrown_blooms": 1,
+  "nightcrown_seed": 1,
+  "oak_seed": 4,
+  "oil": 1,
+  "oilcloth_cloak": 1,
+  "olive_seed": 1,
+  "olives": 1,
+  "open_storage_bin": 1,
+  "orange_seed": 1,
+  "ore_and_metal_rack": 1,
+  "owlpetal_seed": 1,
+  "owlpetals": 1,
+  "padded_barding": 1,
+  "padded_horse_blanket": 1,
+  "palm_fronds": 1,
+  "palm_wood": 1,
+  "passenger_carriage": 1,
+  "passenger_gig": 1,
+  "passenger_sleigh": 1,
+  "pear_autumn_seed": 1,
+  "pear_summer_seed": 1,
+  "pear_winter_seed": 1,
+  "pilgrims_cup_pitchers": 1,
+  "pilgrims_cup_seed": 1,
+  "pilgrims_cup_water": 1,
+  "pine_cones": 1,
+  "pine_tar": 1,
+  "plantain_leaves": 1,
+  "plantain_seed": 1,
+  "plate_cuirass": 1,
+  "ploughmans_board": 1,
+  "plum_jam": 1,
+  "plum_seed": 1,
+  "poles": 1,
+  "pomegranate_seed": 1,
+  "pomegranates": 1,
+  "porcini": 1,
+  "potash": 1,
+  "preserved_damsons": 1,
+  "prickly_pear_seed": 1,
+  "prickly_pears": 1,
+  "primitive_bow": 1,
+  "primitive_well": 1,
+  "puffball": 1,
+  "quality_backpack": 2,
+  "quenchbell_heads": 1,
+  "quenchbell_seed": 1,
+  "quince": 1,
+  "quince_paste": 1,
+  "quince_seed": 1,
+  "raspberries": 1,
+  "raspberry_leaves": 1,
+  "raspberry_seed": 1,
+  "reed_stems": 1,
+  "reeds_seed": 1,
+  "refined_arched_door": 1,
+  "refined_door": 1,
+  "refined_double_arched_door": 1,
+  "refined_double_door": 1,
+  "reinforced_wagon_wheel": 1,
+  "resin": 1,
+  "riding_boots": 2,
+  "rimecap_caps": 1,
+  "riverbraid_seed": 1,
+  "riverbraid_stems": 1,
+  "roast_platter": 1,
+  "roof_section": 1,
+  "roof_section_65": 1,
+  "rose_hips": 1,
+  "rose_petals": 1,
+  "rosemary": 1,
+  "rosemary_seed": 1,
+  "rowan_berries": 1,
+  "rowan_seed": 1,
+  "rustic_arched_door": 1,
+  "rustic_door": 1,
+  "rustic_double_arched_door": 1,
+  "rustic_double_door": 1,
+  "sage": 1,
+  "saltbush_seed": 1,
+  "samphire": 1,
+  "samphire_seed": 1,
+  "sap": 1,
+  "saw": 1,
+  "sawbuck": 1,
+  "sea_buckthorn_berries": 1,
+  "sea_buckthorn_seed": 1,
+  "sea_holly_seed": 1,
+  "seafood_platter": 1,
+  "seed_bundle": 3,
+  "seeds": 1,
+  "serving_platter": 1,
+  "sevenyear_blossoms": 1,
+  "sevenyear_bulbs": 1,
+  "sevenyear_lily_seed": 1,
+  "silver_ore": 1,
+  "simple_backpack": 2,
+  "sleetberries": 1,
+  "sleetberry_seed": 1,
+  "sloes": 1,
+  "small_chest": 1,
+  "small_garden_plot": 1,
+  "small_log_sled": 1,
+  "small_wagon": 1,
+  "smoked_fish": 1,
+  "smoked_meat": 1,
+  "softwood": 1,
+  "sorrel_leaves": 1,
+  "sorrel_seed": 1,
+  "sour_cherry_seed": 5,
+  "spines": 1,
+  "spruce_cones": 1,
+  "st_johns_wort": 1,
+  "st_johns_wort_seed": 1,
+  "stairs_wood": 1,
+  "staunchmoss": 1,
+  "staunchmoss_seed": 1,
+  "steel_anvil_part": 1,
+  "steel_axe": 1,
+  "steel_gauntlets": 1,
+  "steel_greaves": 1,
+  "steel_half_plate": 1,
+  "steel_helm": 1,
+  "steel_knife": 1,
+  "steel_nails": 1,
+  "steel_plate_barding": 1,
+  "steel_plate_harness": 1,
+  "steel_sabatons": 1,
+  "steel_saw": 1,
+  "steel_sickle": 1,
+  "stewed_berries": 1,
+  "stewed_pears": 1,
+  "stick": 134,
+  "stillwater_petals": 1,
+  "stillwater_seeds": 1,
+  "stone_arched_doorway": 1,
+  "stone_double_arched_doorway": 1,
+  "stone_double_doorway": 1,
+  "stone_floor": 1,
+  "stone_roof": 1,
+  "stone_roof_65": 1,
+  "stone_saw": 1,
+  "stone_wall": 1,
+  "storage_barrel": 1,
+  "storage_sign": 1,
+  "stormreed_seed": 1,
+  "stormreed_stalks": 1,
+  "straw": 1,
+  "strawberries": 1,
+  "stuffing": 1,
+  "sturdy_arched_door": 1,
+  "sturdy_door": 1,
+  "sturdy_double_arched_door": 1,
+  "sturdy_double_door": 1,
+  "sunberries": 1,
+  "sunberry_seed": 1,
+  "sunsilver_leaves": 1,
+  "sunsilver_vine_seed": 1,
+  "superior_arched_door": 1,
+  "superior_door": 1,
+  "superior_double_arched_door": 1,
+  "superior_double_door": 1,
+  "sweet_chestnut_seed": 1,
+  "tabard": 1,
+  "tanglewort_seed": 1,
+  "tanglewort_vines": 1,
+  "tannin_bark": 4,
+  "tavern_supper_board": 1,
+  "thatch": 1,
+  "thatch_arched_doorway": 1,
+  "thatch_double_arched_doorway": 1,
+  "thatch_double_doorway": 1,
+  "thatch_grass_seed": 1,
+  "thatch_roof_65": 1,
+  "thorny_canes": 1,
+  "thorny_wood": 1,
+  "thyme": 1,
+  "tidecrown_pearls": 1,
+  "tidecrown_seed": 1,
+  "tideglass_fronds": 1,
+  "tideglass_weed_seed": 1,
+  "timber": 1,
+  "timber_wagon": 1,
+  "tin_ore": 1,
+  "tinder": 1,
+  "tinder_fungus": 1,
+  "tool_cabinet": 1,
+  "tool_roll": 1,
+  "trail_bread": 1,
+  "travellers_wagon": 1,
+  "tree_roots": 8,
+  "truthsage_leaves": 1,
+  "truthsage_seed": 1,
+  "tussock_sedge_seed": 1,
+  "unbaked_apple_pie": 1,
+  "unbaked_chestnut_cakes": 1,
+  "unbaked_fish_pie": 1,
+  "unbaked_flatbread": 1,
+  "unbaked_garlic_flatbread": 1,
+  "unbaked_honey_loaf": 1,
+  "unbaked_oatcakes": 1,
+  "unbaked_rye_flatbread": 1,
+  "unbaked_trail_bread": 1,
+  "unbaked_venison_pie": 1,
+  "uncooked_crab_cakes": 1,
+  "uncooked_meat_skewers": 1,
+  "uncooked_meatballs": 1,
+  "uncooked_mushroom_skewers": 1,
+  "uncooked_sausages": 1,
+  "utility_bandolier": 1,
+  "valerian_roots": 1,
+  "valerian_seed": 1,
+  "wall_section": 1,
+  "walnut_husks": 1,
+  "walnut_seed": 1,
+  "walnuts": 1,
+  "wardpine_resin": 1,
+  "wardpine_seed": 1,
+  "wardpine_wood": 1,
+  "wardrobe": 1,
+  "warehouse_crate": 1,
+  "warehouse_desk": 1,
+  "water": 1,
+  "watercress": 1,
+  "watercress_seed": 1,
+  "weapon_scabbard": 1,
+  "whisperfern_fronds": 1,
+  "whisperfern_seed": 1,
+  "wild_apple_seed": 1,
+  "wild_apple_sweet_seed": 6,
+  "wild_apples": 1,
+  "wild_banana_seed": 1,
+  "wild_carrot_roots": 1,
+  "wild_cherry_seed": 1,
+  "wild_garlic_bulbs": 1,
+  "wild_garlic_leaves": 1,
+  "wild_garlic_seed": 1,
+  "wild_marjoram_seed": 1,
+  "wild_mint_seed": 1,
+  "wild_pear_seed": 1,
+  "wild_pears": 1,
+  "wild_rose_seed": 1,
+  "wild_sage_seed": 1,
+  "wild_strawberry_seed": 1,
+  "wild_thyme_seed": 1,
+  "willow_bark": 1,
+  "willow_seeds": 1,
+  "wispbloom_heads": 1,
+  "wispbloom_seed": 1,
+  "withies": 1,
+  "witness_bark": 1,
+  "witness_leaves": 1,
+  "witness_tree_seed": 1,
+  "wolfsbane_roots": 1,
+  "wolfsbane_seed": 1,
+  "wood": 1,
+  "wood_arched_doorway": 1,
+  "wood_double_arched_doorway": 1,
+  "wooden_cart_wheel": 1,
+  "wooden_lantern_dark": 1,
+  "wooden_pipe": 3,
+  "wooden_snowshoes": 1,
+  "wool_cap": 1,
+  "wool_cloak": 1,
+  "wool_coat": 1,
+  "wool_dress": 1,
+  "wool_mittens": 1,
+  "wool_robe": 1,
+  "wool_scarf": 1,
+  "wool_socks": 1,
+  "wool_trousers": 1,
+  "wool_tunic": 1,
+  "yarrow": 1,
+  "yarrow_seed": 1
+ },
+ "packs": {
+  "fixture9257a01": [
+   "acorn_mash x1 w960",
+   "animal_fat x1 w0",
+   "baked_apples x1 w960",
+   "bandage x1 w0",
+   "bark x1 w0",
+   "beam_beech x1 w0",
+   "beam_birch x1 w0",
+   "beam_oak x1 w0",
+   "beam_scots_pine x1 w0",
+   "berry_compote x1 w1280",
+   "blacksmithy x1 w0",
+   "bone x1 w0",
+   "bucket x1 w0",
+   "campfire_kit x1 w0",
+   "carcass x1 w0",
+   "carp x1 w160",
+   "chamomile_tea x1 w640",
+   "chest x1 w0",
+   "chopping_block x1 w0",
+   "clay x1 w0",
+   "clay_pot x1 w0",
+   "coin_bronze x1 w0",
+   "coin_copper x1 w0",
+   "coin_gold x1 w0",
+   "coin_silver x1 w0",
+   "driftwood x1 w0",
+   "energy_bar x1 w9600",
+   "feather x1 w0",
+   "fibre_sandals x1 w0",
+   "fibre_sandals x1 w0",
+   "firewood x1 w0",
+   "fishing_rod x1 w0",
+   "grass_cloak x1 w0",
+   "grass_skirt x1 w0",
+   "gravel x1 w0",
+   "herbal_tea x1 w640",
+   "hide x1 w0",
+   "hide_boots x1 w0",
+   "hide_hood x1 w0",
+   "hide_hood x1 w0",
+   "hide_mittens x1 w0",
+   "hide_mittens x1 w0",
+   "hide_trousers x1 w0",
+   "hide_trousers x1 w0",
+   "iron_ingot x1 w0",
+   "iron_pickaxe x1 w0",
+   "iron_shovel x1 w0",
+   "large_forge x1 w0",
+   "large_forge_kit x1 w0",
+   "lean_to x1 w0",
+   "leaves x1 w0",
+   "log x1 w0",
+   "log_workbench x1 w0",
+   "lumber x1 w0",
+   "lumber_alder x1 w0",
+   "lumber_beech x1 w0",
+   "lumber_birch x1 w0",
+   "lumber_oak x1 w0",
+   "lumber_scots_pine x1 w0",
+   "lumber_spruce x1 w0",
+   "lumber_willow x1 w0",
+   "magic_tonic x1 w0",
+   "master_forge_kit x1 w0",
+   "medicine x1 w0",
+   "nut_paste x1 w3200",
+   "perch x1 w160",
+   "pike x1 w160",
+   "plank_chest x1 w0",
+   "plant_fibre x1 w0",
+   "poultice x1 w0",
+   "raw_meat x1 w240",
+   "remains x1 w0",
+   "roast_fish x1 w480",
+   "roast_forage x1 w1920",
+   "roast_meat x1 w640",
+   "roast_roots x1 w1280",
+   "rope x1 w0",
+   "rotten_food x1 w0",
+   "sand x1 w0",
+   "seed_bundle x1 w9600",
+   "sewing_needle x1 w0",
+   "simple_backpack x1 w0",
+   "sinew x1 w0",
+   "soil x1 w0",
+   "spear x1 w0",
+   "steel_ingot x1 w0",
+   "steel_pickaxe x1 w0",
+   "steel_shovel x1 w0",
+   "stick x1 w0",
+   "stomach_tea x1 w640",
+   "stone x1 w0",
+   "stone_axe x1 w0",
+   "stone_forge x1 w0",
+   "stone_knife x1 w0",
+   "stone_shovel x1 w0",
+   "tool_rack x1 w0",
+   "torch x1 w0",
+   "tree_roots x1 w4800",
+   "trout x1 w160",
+   "twine x1 w0",
+   "vice x1 w0",
+   "waterskin x1 w0",
+   "willow_bark_tea x1 w640",
+   "wooden_bowl x1 w0",
+   "wooden_shovel x1 w0",
+   "wooden_spear x1 w0",
+   "workbench x1 w0"
+  ],
+  "fixture9257b02": [],
+  "fixture9257c03": [],
+  "loadbot_bot1": [
+   "clay x3 w0",
+   "plant_fibre x80 w0",
+   "soil x9 w0",
+   "stone_axe x1 w27",
+   "twine x40 w0",
+   "wooden_shovel x1 w46",
+   "worm x1 w0"
+  ],
+  "loadbot_bot2": [
+   "clay x1 w0",
+   "plant_fibre x80 w0",
+   "soil x11 w0",
+   "stone_axe x1 w6",
+   "twine x40 w0",
+   "wooden_shovel x1 w50"
+  ],
+  "loadbot_bot3": [
+   "clay x2 w0",
+   "plant_fibre x80 w0",
+   "soil x18 w0",
+   "stone_axe x1 w0",
+   "twine x40 w0",
+   "wooden_shovel x1 w45",
+   "worm x1 w0"
+  ]
+ },
+ "sites": {
+  "advanced_kiln@582090,716300": {},
+  "advanced_smithy@582450,716750": {},
+  "advanced_well@582630,716120": {
+   "bark_shingle": 16.0,
+   "bucket": 2.0,
+   "cobblestone": 60.0,
+   "lumber": 12.0,
+   "mortar": 16.0,
+   "rope": 2.0
+  },
+  "antler_mount@582810,717110": {},
+  "apothecary_cabinet@582540,717290": {},
+  "armour_stand@582360,716390": {},
+  "blacksmithy@582360,716750": {},
+  "board_rack@582360,717380": {},
+  "bookcase@582450,717290": {},
+  "bottle_and_jar_rack@582630,717290": {},
+  "brick_arched_doorway@582630,717560": {},
+  "brick_doorway@582000,715490": {
+   "brick": 8.0,
+   "mortar": 2.0
+  },
+  "brick_double_arched_doorway@582720,717560": {},
+  "brick_double_doorway@582540,717560": {},
+  "brick_floor@582540,716840": {},
+  "brick_gate@582540,715580": {
+   "brick": 3.0,
+   "hinges": 1.0,
+   "lumber": 2.0,
+   "mortar": 1.0
+  },
+  "brick_stairs@582630,715850": {
+   "brick": 10.0,
+   "mortar": 2.0
+  },
+  "brick_wall@582450,716840": {},
+  "brick_window@582360,715490": {
+   "brick": 6.0,
+   "mortar": 2.0
+  },
+  "chair@582810,717020": {},
+  "chandelier@582630,717110": {},
+  "clay_hearth@582630,716750": {},
+  "cooking_pot@582270,716300": {},
+  "doorway_section@582810,716660": {},
+  "double_doorway@582000,715940": {
+   "lumber": 4.0,
+   "twine": 1.0
+  },
+  "dresser@582360,717290": {},
+  "engineered_arched_doorway@582000,717650": {},
+  "engineered_doorway@582540,716480": {},
+  "engineered_double_arched_doorway@582090,717650": {},
+  "engineered_double_doorway@582810,717560": {},
+  "engineered_fence@582270,716660": {},
+  "engineered_floor@582000,716570": {},
+  "engineered_foundation@582360,716480": {},
+  "engineered_gate@582360,716660": {},
+  "engineered_pillar@582720,716480": {},
+  "engineered_stairs@582810,716480": {},
+  "engineered_wall@582450,716480": {},
+  "engineered_window@582630,716480": {},
+  "feather_bed@582360,717110": {},
+  "fireplace@582810,716840": {},
+  "fireplace_cooking_crane@582090,717470": {},
+  "flower_pot@582720,717110": {},
+  "foundation_section@582360,715400": {
+   "clay": 1.0,
+   "stone": 8.0
+  },
+  "griddle@582360,716300": {},
+  "grill@582180,716300": {},
+  "grindstone@582000,717290": {},
+  "handcart@582180,717470": {},
+  "hide_rug@582090,717110": {},
+  "hide_sack@582090,716390": {},
+  "improved_kiln@582000,716300": {},
+  "improved_smelter@582180,717200": {},
+  "kiln@582810,716210": {},
+  "ladder@582180,716750": {},
+  "large_forge@582270,717200": {},
+  "large_resource_bin@582090,717380": {},
+  "large_wooden_chest@582180,717290": {},
+  "lean_to@582000,716930": {},
+  "leatherworking_table@582630,717200": {},
+  "log_arched_doorway@582810,717470": {},
+  "log_doorway@582720,715400": {
+   "twine": 1.0
+  },
+  "log_double_arched_doorway@582000,717560": {},
+  "log_double_doorway@582720,717470": {},
+  "log_fence@582810,715490": {
+   "twine": 1.0
+  },
+  "log_floor@582090,716840": {},
+  "log_foundation@582540,715400": {
+   "stone": 6.0,
+   "twine": 1.0
+  },
+  "log_gate@582000,715580": {
+   "twine": 1.0
+  },
+  "log_palisade@582090,715580": {
+   "twine": 2.0
+  },
+  "log_palisade_gate@582180,715580": {
+   "rope": 1.0,
+   "twine": 2.0
+  },
+  "log_pillar@582090,715670": {
+   "twine": 1.0
+  },
+  "log_stairs@582450,715850": {
+   "twine": 1.0
+  },
+  "log_wall@582000,716840": {},
+  "log_window@582180,715490": {
+   "twine": 1.0
+  },
+  "log_workbench@582810,716750": {},
+  "loom@582810,717200": {},
+  "masons_pallet@582450,717380": {},
+  "medium_resource_bin@582000,717380": {},
+  "mixer@582270,716480": {},
+  "oil_press@582810,716300": {},
+  "open_storage_bin@582810,717290": {},
+  "ore_and_metal_rack@582540,717380": {},
+  "plank_chest@582180,716930": {},
+  "preserving_jar@582720,716390": {},
+  "primitive_well@582450,716120": {
+   "clay_pot": 1.0,
+   "twine": 4.0
+  },
+  "quern@582450,716300": {},
+  "root_cellar@582810,716390": {},
+  "sawbuck@582450,716030": {
+   "lumber": 4.0,
+   "wooden_pin": 8.0
+  },
+  "sign@582450,716390": {},
+  "small_chest@582090,717290": {},
+  "small_garden_plot@582270,716030": {
+   "copper_nails": 4.0,
+   "lumber": 1.0
+  },
+  "small_log_sled@582270,717470": {},
+  "small_wagon@582360,717470": {},
+  "smelter@582090,717200": {},
+  "smoker@582720,716300": {},
+  "stairs_wood@582180,717020": {},
+  "stone_arched_doorway@582360,717560": {},
+  "stone_bench@582090,715760": {
+   "cobblestone": 5.0,
+   "mortar": 1.0
+  },
+  "stone_brazier@582000,716030": {
+   "cobblestone": 6.0,
+   "mortar": 2.0
+  },
+  "stone_channel@582360,716220": {},
+  "stone_channel_corner@582460,716220": {},
+  "stone_channel_tee@582540,716220": {},
+  "stone_cistern@582640,716220": {},
+  "stone_double_arched_doorway@582450,717560": {},
+  "stone_double_doorway@582270,717560": {},
+  "stone_floor@582270,717020": {},
+  "stone_forge@582270,716750": {},
+  "stone_gate@582360,715580": {
+   "cobblestone": 3.0,
+   "hinges": 1.0,
+   "lumber": 2.0
+  },
+  "stone_pillar@582180,715670": {
+   "cobblestone": 4.0,
+   "mortar": 1.0
+  },
+  "stone_planter@582000,716120": {
+   "cobblestone": 3.0,
+   "mortar": 1.0,
+   "soil": 2.0
+  },
+  "stone_wall@582360,716840": {},
+  "stone_well@582540,716120": {
+   "bucket": 1.0,
+   "cobblestone": 15.0,
+   "lumber": 2.0,
+   "mortar": 4.0,
+   "rope": 1.0
+  },
+  "stone_workbench@582000,715850": {
+   "cobblestone": 10.0,
+   "lumber": 3.0,
+   "mortar": 2.0
+  },
+  "stonecutters_bench@582630,716390": {},
+  "storage_jar@582000,716390": {},
+  "storage_sign@582630,717380": {},
+  "straw_bed@582270,717110": {},
+  "table@582000,717110": {},
+  "thatch_arched_doorway@582540,717470": {},
+  "thatch_doorway@582720,716930": {},
+  "thatch_double_arched_doorway@582630,717470": {},
+  "thatch_double_doorway@582450,717470": {},
+  "thatch_floor@582360,716930": {},
+  "thatch_gate@582540,715490": {
+   "stick": 7.0,
+   "twine": 2.0
+  },
+  "thatch_scarecrow@582270,716120": {
+   "stick": 3.0,
+   "thatch": 5.0,
+   "twine": 1.0
+  },
+  "thatch_wall@582450,716930": {},
+  "timber_prop@582090,717020": {},
+  "timber_set@582090,716750": {},
+  "tool_cabinet@582720,717290": {},
+  "tusk_mount@582540,716390": {},
+  "vice@582000,717200": {},
+  "wall_section@582000,715400": {
+   "lumber": 2.0,
+   "twine": 1.0
+  },
+  "wall_torch@582540,717110": {},
+  "wardrobe@582270,717290": {},
+  "warehouse_desk@582810,717380": {},
+  "weapon_rack@582270,716390": {},
+  "window_section@582000,716750": {},
+  "wood_arched_doorway@582090,717560": {},
+  "wood_double_arched_doorway@582180,717560": {},
+  "wood_gate@582720,715490": {
+   "bronze_hinges": 1.0,
+   "lumber": 2.0,
+   "twine": 1.0
+  },
+  "wooden_channel_corner@582000,716220": {
+   "lumber": 2.0,
+   "twine": 1.0
+  },
+  "wooden_crate@582000,716480": {},
+  "wooden_pillar@582000,715670": {
+   "lumber": 1.0,
+   "twine": 1.0
+  },
+  "wooden_sluice@582180,716220": {
+   "bronze_hinges": 1.0,
+   "lumber": 1.0
+  },
+  "wooden_torch_post@582360,715940": {
+   "tallow": 1.0,
+   "twine": 1.0
+  },
+  "wooden_trough@582720,716120": {
+   "lumber": 2.0,
+   "twine": 1.0
+  },
+  "workbench@582810,716930": {}
+ },
+ "stores": {
+  "advanced_kiln@582000,714200": [
+   "bandage x1 w0",
+   "bark x1 w0",
+   "campfire_kit x1 w0",
+   "chest x1 w0",
+   "chopping_block x1 w0",
+   "driftwood x1 w0",
+   "firewood x1 w0",
+   "lean_to x1 w0",
+   "leaves x1 w0",
+   "log x1 w0",
+   "lumber x1 w0",
+   "plank_chest x1 w0",
+   "plant_fibre x1 w0",
+   "poultice x1 w0",
+   "roast_forage x1 w1440",
+   "seed_bundle x1 w7200",
+   "spear x1 w0",
+   "stick x1 w0",
+   "stone x1 w0",
+   "stone_axe x1 w0",
+   "stone_knife x1 w0",
+   "torch x1 w0",
+   "tree_roots x1 w3600",
+   "twine x1 w0",
+   "wooden_shovel x1 w0",
+   "wooden_spear x1 w0"
+  ],
+  "advanced_kiln@582090,716300": [],
+  "advanced_smithy@582070,714200": [
+   "bone x1 w0",
+   "bucket x1 w0",
+   "clay x1 w0",
+   "clay_pot x1 w0",
+   "gravel x1 w0",
+   "hide x1 w0",
+   "iron_ingot x1 w0",
+   "iron_pickaxe x1 w0",
+   "iron_shovel x1 w0",
+   "rope x1 w0",
+   "sand x1 w0",
+   "sewing_needle x1 w0",
+   "simple_backpack x1 w0",
+   "soil x1 w0",
+   "steel_ingot x1 w0",
+   "steel_pickaxe x1 w0",
+   "steel_shovel x1 w0",
+   "stone_shovel x1 w0",
+   "waterskin x1 w0",
+   "wooden_bowl x1 w0"
+  ],
+  "advanced_smithy@582450,716750": [],
+  "apothecary_cabinet@582280,714200": [
+   "animal_fat x1 w0",
+   "carp x1 w120",
+   "chamomile_tea x1 w480",
+   "energy_bar x1 w7200",
+   "feather x1 w0",
+   "fibre_sandals x1 w0",
+   "fishing_rod x1 w0",
+   "grass_cloak x1 w0",
+   "grass_skirt x1 w0",
+   "herbal_tea x1 w480",
+   "hide_boots x1 w0",
+   "hide_cloak x1 w0",
+   "hide_hood x1 w0",
+   "hide_mittens x1 w0",
+   "hide_trousers x1 w0",
+   "magic_tonic x1 w0",
+   "medicine x1 w0",
+   "perch x1 w120",
+   "pike x1 w120",
+   "raw_meat x1 w180",
+   "remains x1 w0",
+   "roast_fish x1 w360",
+   "roast_meat x1 w480",
+   "rotten_food x1 w0",
+   "sinew x1 w0",
+   "stomach_tea x1 w480",
+   "trout x1 w120",
+   "willow_bark_tea x1 w480",
+   "workbench x1 w0"
+  ],
+  "apothecary_cabinet@582540,717290": [],
+  "armour_stand@582360,716390": [],
+  "blacksmithy@582360,716750": [],
+  "board_rack@582360,717380": [],
+  "board_rack@582700,714200": [
+   "beam_beech x1 w0",
+   "beam_birch x1 w0",
+   "beam_oak x1 w0",
+   "blacksmithy x1 w0",
+   "carcass x1 w0",
+   "coin_bronze x1 w0",
+   "coin_copper x1 w0",
+   "coin_gold x1 w0",
+   "coin_silver x1 w0",
+   "large_forge x1 w0",
+   "large_forge_kit x1 w0",
+   "log_beech x1 w0",
+   "log_birch x1 w0",
+   "log_oak x1 w0",
+   "log_scots_pine x1 w0",
+   "log_workbench x1 w0",
+   "lumber_beech x1 w0",
+   "lumber_birch x1 w0",
+   "lumber_oak x1 w0",
+   "lumber_scots_pine x1 w0",
+   "master_forge x1 w0",
+   "master_forge_kit x1 w0",
+   "stone_forge x1 w0",
+   "tool_rack x1 w0",
+   "vice x1 w0"
+  ],
+  "bookcase@582450,717290": [],
+  "bookcase@582770,714200": [
+   "beam_acacia x1 w0",
+   "beam_alder x1 w0",
+   "beam_coconut_palm x1 w0",
+   "beam_mangrove x1 w0",
+   "beam_rowan x1 w0",
+   "beam_scots_pine x1 w0",
+   "beam_spruce x1 w0",
+   "beam_tropical_hardwood x1 w0",
+   "beam_wild_apple x1 w0",
+   "beam_willow x1 w0",
+   "log_acacia x1 w0",
+   "log_alder x1 w0",
+   "log_coconut_palm x1 w0",
+   "log_mangrove x1 w0",
+   "log_rowan x1 w0",
+   "log_spruce x1 w0",
+   "log_tropical_hardwood x1 w0",
+   "log_wild_apple x1 w0",
+   "log_wild_pear x1 w0",
+   "log_willow x1 w0",
+   "lumber_acacia x1 w0",
+   "lumber_alder x1 w0",
+   "lumber_coconut_palm x1 w0",
+   "lumber_mangrove x1 w0",
+   "lumber_rowan x1 w0",
+   "lumber_spruce x1 w0",
+   "lumber_tropical_hardwood x1 w0",
+   "lumber_wild_apple x1 w0",
+   "lumber_wild_pear x1 w0",
+   "lumber_willow x1 w0"
+  ],
+  "bottle_and_jar_rack@582000,714270": [
+   "beam_date_palm x1 w0",
+   "beam_everember x1 w0",
+   "beam_hearthwood x1 w0",
+   "beam_mirrorbark x1 w0",
+   "beam_sweet_chestnut x1 w0",
+   "beam_walnut x1 w0",
+   "beam_wardpine x1 w0",
+   "beam_wild_cherry x1 w0",
+   "beam_wild_pear x1 w0",
+   "beam_witness_tree x1 w0",
+   "log_balsam_fir x1 w0",
+   "log_date_palm x1 w0",
+   "log_everember x1 w0",
+   "log_hearthwood x1 w0",
+   "log_mirrorbark x1 w0",
+   "log_sweet_chestnut x1 w0",
+   "log_walnut x1 w0",
+   "log_wardpine x1 w0",
+   "log_wild_cherry x1 w0",
+   "log_witness_tree x1 w0",
+   "lumber_balsam_fir x1 w0",
+   "lumber_date_palm x1 w0",
+   "lumber_everember x1 w0",
+   "lumber_hearthwood x1 w0",
+   "lumber_mirrorbark x1 w0",
+   "lumber_sweet_chestnut x1 w0",
+   "lumber_walnut x1 w0",
+   "lumber_wardpine x1 w0",
+   "lumber_wild_cherry x1 w0",
+   "lumber_witness_tree x1 w0"
+  ],
+  "bottle_and_jar_rack@582630,717290": [],
+  "chopping_block@582000,714410": [
+   "acorn_mash x1 w720",
+   "baked_apples x1 w720",
+   "beam_balsam_fir x1 w0",
+   "beam_maple x1 w0",
+   "berry_compote x1 w960",
+   "chestnut_cakes x1 w2400",
+   "feast_roast x1 w960",
+   "fish_stew x1 w600",
+   "floor_section x1 w0",
+   "forager_stew x1 w720",
+   "foundation_section x1 w0",
+   "fruit_leather x1 w3600",
+   "garlic_meat x1 w720",
+   "hearty_pottage x1 w960",
+   "herb_fish x1 w600",
+   "hunters_stew x1 w720",
+   "log_maple x1 w0",
+   "lumber_maple x1 w0",
+   "mushroom_skewer x1 w600",
+   "nut_paste x1 w2400",
+   "roast_roots x1 w960",
+   "roof_section x1 w0",
+   "smoked_fish x1 w3600",
+   "trail_bread x1 w4800",
+   "wall_section x1 w0"
+  ],
+  "crude_chest@582700,714410": [
+   "brick x1 w0",
+   "cobblestone x1 w0",
+   "cut_stone_block x1 w0",
+   "doorway_section x1 w0",
+   "fine_board x1 w0",
+   "iron_hoe x1 w0",
+   "iron_shovel_large x1 w0",
+   "iron_shovel_medium x1 w0",
+   "ladder x1 w0",
+   "mortar x1 w0",
+   "nails x1 w0",
+   "path_patch x1 w0",
+   "rough_plank x1 w0",
+   "steel_hoe x1 w0",
+   "steel_shovel_large x1 w0",
+   "steel_shovel_medium x1 w0",
+   "stone_hoe x1 w0",
+   "stone_shingle x1 w0",
+   "stone_shovel_large x1 w0",
+   "stone_shovel_medium x1 w0",
+   "timber_prop x1 w0",
+   "timber_set x1 w0",
+   "window_section x1 w0",
+   "wooden_hoe x1 w0",
+   "wooden_shovel_large x1 w0",
+   "wooden_shovel_medium x1 w0"
+  ],
+  "dresser@582360,717290": [],
+  "dresser@582560,714480": [
+   "campfire_pot x1 w0",
+   "clay_hearth x1 w0",
+   "firewood x1 w0",
+   "hand_saw x1 w0",
+   "hinges x1 w0",
+   "rock_pile x1 w0",
+   "rough_bed x1 w0",
+   "rough_bed_kit x1 w0",
+   "saw_blade x1 w0",
+   "saw_mill x1 w0",
+   "shore_net x1 w0",
+   "stone_adze x1 w0",
+   "stone_hammer x1 w0",
+   "tar x1 w0",
+   "thatch_floor x1 w0",
+   "thatch_roof x1 w0",
+   "thatch_wall x1 w0",
+   "water_wheel x1 w0",
+   "wooden_block x1 w0",
+   "wooden_block x1 w0",
+   "wooden_hammer x1 w0",
+   "wooden_pin x1 w0",
+   "woodworking_table x1 w0"
+  ],
+  "fine_chest@582000,714690": [
+   "bronze_ingot x1 w0",
+   "copper_ingot x1 w0",
+   "fine_leather x1 w0",
+   "flatbread x1 w1200",
+   "flint x1 w0",
+   "flour x1 w0",
+   "heavy_leather x1 w0",
+   "hide_scraper x1 w0",
+   "honey_loaf x1 w2400",
+   "javelin x1 w0",
+   "kindling_duplicate x1 w0",
+   "leather x1 w0",
+   "obsidian x1 w0",
+   "obsidian_knife x1 w0",
+   "oven x1 w0",
+   "processed_hide x1 w0",
+   "pyrite x1 w0",
+   "quiver x1 w0",
+   "rivets x1 w0",
+   "roast_joint x1 w960",
+   "scythe x1 w0",
+   "sea_salt x1 w0",
+   "sickle x1 w0",
+   "snare x1 w0",
+   "snare_trap x1 w0",
+   "steel_striker x1 w0",
+   "stone_arrow x1 w0",
+   "stone_pickaxe x1 w0",
+   "thatch_doorway x1 w0",
+   "tin_ingot x1 w0",
+   "wooden_arrow x1 w0",
+   "wooden_bow x1 w0",
+   "wooden_club x1 w0",
+   "yeast x1 w0"
+  ],
+  "fire@581740,714000": [
+   "firewood x3 w0",
+   "stick x4 w0"
+  ],
+  "fire@581800,714000": [
+   "firewood x3 w0",
+   "stick x4 w0"
+  ],
+  "firewood_rack@582210,714690": [
+   "bronze_helm x1 w0",
+   "bronze_mace x1 w0",
+   "bronze_shield x1 w0",
+   "bronze_sword x1 w0",
+   "candle x1 w0",
+   "clay_jug x1 w0",
+   "coal x1 w0",
+   "copper_ore x1 w0",
+   "gambeson x1 w0",
+   "herb_salve x1 w0",
+   "hide_gloves x1 w0",
+   "hide_trousers x1 w0",
+   "hide_tunic x1 w0",
+   "iron_helm x1 w0",
+   "iron_mace x1 w0",
+   "iron_ore x1 w0",
+   "iron_shield x1 w0",
+   "iron_sword x1 w0",
+   "leather_cap x1 w0",
+   "leather_jerkin x1 w0",
+   "mail_shirt x1 w0",
+   "plank_shield x1 w0",
+   "splint x1 w0",
+   "steel_helm x1 w0",
+   "steel_mace x1 w0",
+   "steel_shield x1 w0",
+   "steel_sword x1 w0",
+   "stone_mace x1 w0",
+   "tin_ore x1 w0",
+   "wicker_shield x1 w0"
+  ],
+  "fish_trap_set@582280,714690": [
+   "antler x1 w0",
+   "barley x1 w0",
+   "barley_seeds x1 w0",
+   "bone_arrow x1 w0",
+   "carrot x1 w0",
+   "carrot_seeds x1 w0",
+   "claw x1 w0",
+   "compost x1 w0",
+   "crab_meat x1 w120",
+   "down x1 w0",
+   "egg x1 w2400",
+   "fibre_arrow x1 w0",
+   "flax x1 w0",
+   "flax_seeds x1 w0",
+   "hide_glue x1 w0",
+   "plate_cuirass x1 w0",
+   "potato x1 w0",
+   "potato_seeds x1 w0",
+   "quern x1 w0",
+   "quill x1 w0",
+   "sea_salt x1 w0",
+   "seal_meat x1 w180",
+   "seaweed x1 w720",
+   "shellfish x1 w80",
+   "stone_wedge x1 w0",
+   "turnip x1 w0",
+   "turnip_seeds x1 w0",
+   "tusk x1 w0",
+   "wheat x1 w14400",
+   "wheat_seeds x1 w0"
+  ],
+  "food_preparation_table@582490,714690": [
+   "beet x1 w0",
+   "boiled_egg x1 w1680",
+   "cabbage x1 w0",
+   "fur_boots x1 w0",
+   "fur_cloak x1 w0",
+   "fur_hat x1 w0",
+   "linen x1 w0",
+   "linen_shirt x1 w0",
+   "oats x1 w0",
+   "oats_seeds x1 w0",
+   "onion x1 w0",
+   "peas x1 w0",
+   "roast_seal x1 w480",
+   "roast_shellfish x1 w240",
+   "rye x1 w0",
+   "wool x1 w0",
+   "wool_cap x1 w0",
+   "wool_mittens x1 w0",
+   "wool_trousers x1 w0",
+   "wool_tunic x1 w0"
+  ],
+  "handcart@582140,714900": [
+   "baked_potato x1 w600",
+   "barley_broth x1 w480",
+   "beet_roast x1 w600",
+   "beet_seeds x1 w0",
+   "cabbage_seeds x1 w0",
+   "cabbage_stew x1 w720",
+   "crab_cakes x1 w480",
+   "dried_berries x1 w9600",
+   "egg_nettle_fry x1 w360",
+   "fish_pie x1 w720",
+   "garlic_bread x1 w960",
+   "hazelnut_butter x1 w2400",
+   "herb_omelette x1 w360",
+   "jerky x1 w7200",
+   "juniper_trout x1 w480",
+   "mussel_stew x1 w360",
+   "oat_cakes x1 w1200",
+   "oat_porridge x1 w480",
+   "onion_roast x1 w480",
+   "onion_seeds x1 w0",
+   "pea_soup x1 w600",
+   "peas_seeds x1 w0",
+   "rye_flatbread x1 w1200",
+   "rye_seeds x1 w0",
+   "salted_fish x1 w9600",
+   "sauerkraut x1 w4800",
+   "seal_stew x1 w720",
+   "seaweed_soup x1 w360",
+   "turnip_mash x1 w600",
+   "venison_pie x1 w960"
+  ],
+  "handcart@582180,717470": [],
+  "hide_sack@582090,716390": [],
+  "improved_kiln@582000,716300": [],
+  "improved_kiln@582350,714900": [
+   "apple_autumn x1 w4800",
+   "apple_cooking x1 w7200",
+   "apple_early x1 w720",
+   "apple_keeping x1 w16380",
+   "apple_summer x1 w1680",
+   "banana_fritter x1 w360",
+   "butter x1 w4800",
+   "cactus_fry x1 w360",
+   "cheese x1 w14400",
+   "cod x1 w120",
+   "eel x1 w240",
+   "herring x1 w120",
+   "leather_strap x1 w0",
+   "lettuce x1 w0",
+   "lettuce_seeds x1 w0",
+   "mackerel x1 w100",
+   "milk x1 w240",
+   "pear_autumn x1 w3600",
+   "pear_summer x1 w960",
+   "pear_winter x1 w14400",
+   "plums x1 w960",
+   "radish x1 w0",
+   "radish_seeds x1 w0",
+   "salmon x1 w120",
+   "sea_water x1 w0",
+   "smelt x1 w120",
+   "soap x1 w0",
+   "sour_cherries x1 w480",
+   "tallow x1 w0",
+   "tilled_bed x1 w0"
+  ],
+  "improved_smelter@582180,717200": [],
+  "improved_smelter@582420,714900": [
+   "dried_apples x1 w9600",
+   "lemons x1 w7200",
+   "mangoes x1 w960",
+   "oranges x1 w4800"
+  ],
+  "kiln@582810,716210": [],
+  "large_forge@582270,717200": [],
+  "large_forge@582420,715040": [
+   "brick_floor x1 w0",
+   "brick_roof x1 w0"
+  ],
+  "large_resource_bin@582090,717380": [],
+  "large_resource_bin@582560,715040": [
+   "antler_mount x1 w0",
+   "bench x1 w0",
+   "blackthorn_bush x1 w0",
+   "bramble_bush x1 w0",
+   "cactus_bush x1 w0",
+   "canopy_bed x1 w0",
+   "chair x1 w0",
+   "chandelier x1 w0",
+   "dwarf_birch_bush x1 w0",
+   "elder_bush x1 w0",
+   "feather_bed x1 w0",
+   "fibre_cloth x1 w0",
+   "fireplace x1 w0",
+   "flower_pot x1 w0",
+   "gorse_bush x1 w0",
+   "hawthorn_bush x1 w0",
+   "hazel_bush x1 w0",
+   "hide_rug x1 w0",
+   "juniper_bush x1 w0",
+   "log_seat x1 w0",
+   "raspberry_bush x1 w0",
+   "saltbush_bush x1 w0",
+   "sea_buckthorn_bush x1 w0",
+   "stool x1 w0",
+   "straw_bed x1 w0",
+   "table x1 w0",
+   "wall_torch x1 w0",
+   "wild_rose_bush x1 w0",
+   "wool_rug x1 w0"
+  ],
+  "large_wooden_chest@582180,717290": [],
+  "large_wooden_chest@582630,715040": [
+   "berries x1 w360",
+   "brick_doorway x1 w0",
+   "brick_foundation x1 w0",
+   "charcoal x1 w0",
+   "crystal_lens x1 w0",
+   "drakethorn_bush x1 w0",
+   "fish x1 w0",
+   "fuel x1 w0",
+   "fur x1 w0",
+   "hagwillow_bush x1 w0",
+   "honeyspindle_bush x1 w0",
+   "iron_hammer x1 w0",
+   "log_doorway x1 w0",
+   "log_foundation x1 w0",
+   "mushrooms x1 w360",
+   "nuts x1 w7200",
+   "pitch x1 w0",
+   "prickly_pear_bush x1 w0",
+   "rosemary_bush x1 w0",
+   "sleetberry_bush x1 w0",
+   "spyglass x1 w0",
+   "standing_torch x1 w0",
+   "steel_hammer x1 w0",
+   "stone_doorway x1 w0",
+   "sunberry_bush x1 w0",
+   "sunsilver_vine_bush x1 w0",
+   "thatch_window x1 w0",
+   "torch x1 w0",
+   "torch_sconce x1 w0",
+   "wild_banana_bush x1 w0",
+   "wood_foundation x1 w0",
+   "wooden_block x4 w0",
+   "wooden_block x4 w0",
+   "wool_cloth x1 w0"
+  ],
+  "leatherworking_table@582630,717200": [],
+  "leatherworking_table@582770,715040": [
+   "brick_window x1 w0",
+   "log_fence x1 w0",
+   "log_gate x1 w0",
+   "log_palisade x1 w0",
+   "log_window x1 w0",
+   "stone_window x1 w0",
+   "thatch_fence x1 w0",
+   "thatch_gate x1 w0",
+   "wood_fence x1 w0",
+   "wood_gate x1 w0"
+  ],
+  "log_rack@582280,715180": [
+   "brick_fence x1 w0",
+   "brick_gate x1 w0",
+   "brick_pillar x1 w0",
+   "iron_fence x1 w0",
+   "iron_gate x1 w0",
+   "log_palisade_gate x1 w0",
+   "log_pillar x1 w0",
+   "log_roof_corner x1 w0",
+   "stone_fence x1 w0",
+   "stone_gate x1 w0",
+   "stone_pillar x1 w0",
+   "thatch_pillar x1 w0",
+   "thatch_roof_corner x1 w0",
+   "wooden_pillar x1 w0",
+   "wooden_roof_corner x1 w0"
+  ],
+  "loom@582350,715250": [
+   "brick_roof_corner x1 w0",
+   "iron_bench x1 w0",
+   "iron_chair x1 w0",
+   "iron_table x1 w0",
+   "log_bench x1 w0",
+   "log_table x1 w0",
+   "stone_bench x1 w0",
+   "stone_roof_corner x1 w0",
+   "stone_table x1 w0",
+   "stone_workbench x1 w0"
+  ],
+  "loom@582810,717200": [],
+  "masons_pallet@582420,715250": [
+   "brick_stairs x1 w0",
+   "doorway_section x1 w0",
+   "double_doorway x1 w0",
+   "fortified_doorway x1 w0",
+   "horn_pane x1 w0",
+   "iron_hanging_lantern x1 w0",
+   "iron_lantern x1 w0",
+   "iron_railing x1 w0",
+   "lamp_oil x1 w0",
+   "log_stairs x1 w0",
+   "stone_stairs x1 w0",
+   "wooden_barrel x1 w0",
+   "wooden_cupboard x1 w0",
+   "wooden_hanging_lantern x1 w0",
+   "wooden_lantern x1 w0",
+   "wooden_railing x1 w0",
+   "wooden_shelf x1 w0"
+  ],
+  "masons_pallet@582450,717380": [],
+  "master_forge@582490,715250": [
+   "iron_brazier x1 w0",
+   "iron_lamp_post x1 w0",
+   "iron_torch_stand x1 w0",
+   "iron_wall_lantern x1 w0",
+   "stone_brazier x1 w0",
+   "stone_lamp_post x1 w0",
+   "stone_torch_pillar x1 w0",
+   "wooden_garden_plot x1 w0",
+   "wooden_lamp_post x1 w0",
+   "wooden_torch_post x1 w0"
+  ],
+  "medium_resource_bin@582000,717380": [],
+  "medium_resource_bin@582560,715250": [
+   "iron_hand_pump x1 w0",
+   "log_trough x1 w0",
+   "stone_planter x1 w0",
+   "stone_well x1 w0",
+   "thatch_scarecrow x1 w0",
+   "wooden_channel x1 w0",
+   "wooden_cold_frame x1 w0",
+   "wooden_compost_bin x1 w0",
+   "wooden_garden_plot x1 w0",
+   "wooden_garden_plot x1 w0",
+   "wooden_garden_plot x1 w0",
+   "wooden_hand_pump x1 w0",
+   "wooden_planter_box x1 w0",
+   "wooden_trellis x1 w0",
+   "wooden_trough x1 w0"
+  ],
+  "open_storage_bin@582000,715320": [
+   "clay x1 w0",
+   "clay_pipe_elbow x1 w0",
+   "clay_pipe_run x1 w0",
+   "clay_pipe_tee x1 w0",
+   "iron_deep_well_pump x1 w0",
+   "iron_pipe x1 w0",
+   "iron_pipe_elbow x1 w0",
+   "iron_tap x1 w0",
+   "stone_channel x1 w0",
+   "stone_channel_corner x1 w0",
+   "stone_channel_tee x1 w0",
+   "stone_cistern x1 w0",
+   "stone_trough x1 w0",
+   "wooden_channel_corner x1 w0",
+   "wooden_channel_tee x1 w0",
+   "wooden_sluice x1 w0"
+  ],
+  "open_storage_bin@582810,717290": [],
+  "ore_and_metal_rack@582070,715320": [
+   "bone_club x1 w0",
+   "drying_rack x1 w0",
+   "gut x1 w0",
+   "hide_sack x1 w0",
+   "hook x1 w0",
+   "horn x1 w0",
+   "improved_backpack x1 w0",
+   "kiln x1 w0",
+   "leather_boots x1 w0",
+   "leather_gloves x1 w0",
+   "leather_quiver x1 w0",
+   "leather_trousers x1 w0",
+   "oil_press x1 w0",
+   "raised_cistern x1 w0",
+   "smoker x1 w0",
+   "storage_jar x1 w0",
+   "straw_hat x1 w0",
+   "tanning_rack x1 w0",
+   "toggle x1 w0",
+   "wooden_longbow x1 w0",
+   "worm x1 w0"
+  ],
+  "ore_and_metal_rack@582540,717380": [],
+  "plank_chest@582180,716930": [],
+  "root_cellar@582810,716390": [],
+  "small_chest@582000,715530": [
+   "armour_stand x1 w0",
+   "bonemeal x1 w0",
+   "bronze_chisel x1 w0",
+   "carved_stone_block x1 w0",
+   "carved_stone_shingle x1 w0",
+   "clay_bloomery x1 w0",
+   "fruit x1 w0",
+   "fruit_juice x1 w480",
+   "herb_antidote x1 w0",
+   "iron_chisel x1 w0",
+   "meat_skewer x1 w480",
+   "mortar_pestle x1 w0",
+   "mug x1 w0",
+   "parsnip x1 w0",
+   "parsnip_seeds x1 w0",
+   "sausage x1 w3600",
+   "sign x1 w0",
+   "sling x1 w0",
+   "sling_stone x1 w0",
+   "steel_chisel x1 w0",
+   "stonecutters_bench x1 w0",
+   "tusk_mount x1 w0",
+   "weapon_rack x1 w0",
+   "wicker_basket x1 w0"
+  ],
+  "small_chest@582090,717290": [],
+  "small_log_sled@582140,715530": [
+   "bedroll x1 w0",
+   "bird_trap x1 w0",
+   "bird_trap_set x1 w0",
+   "bronze_scale_shirt x1 w0",
+   "cheese_press x1 w0",
+   "chicken_coop x1 w0",
+   "claw_necklace x1 w0",
+   "copper_pot x1 w0",
+   "fire_arrow x1 w0",
+   "fish_soup x1 w600",
+   "fish_trap x1 w0",
+   "fish_trap_set x1 w0",
+   "fishing_bait x1 w0",
+   "fishing_spear x1 w0",
+   "fodder_trough x1 w0",
+   "iron_anvil x1 w0",
+   "knife x1 w0",
+   "leather_belt x1 w0",
+   "meatballs x1 w720",
+   "pickled_vegetables x1 w16380",
+   "preserving_jar x1 w0",
+   "root_cellar x1 w0",
+   "sap_tap x1 w0",
+   "tub x1 w0",
+   "vegetable x1 w0",
+   "whetstone x1 w0",
+   "wooden_snowshoes x1 w0"
+  ],
+  "small_log_sled@582270,717470": [],
+  "small_wagon@582210,715530": [
+   "bark_shingle x1 w0",
+   "clay_roof_tile x1 w0",
+   "concrete x1 w0",
+   "engineered_doorway x1 w0",
+   "engineered_foundation x1 w0",
+   "engineered_pillar x1 w0",
+   "engineered_stairs x1 w0",
+   "engineered_wall x1 w0",
+   "engineered_window x1 w0",
+   "iron_band x1 w0",
+   "iron_chest x1 w0",
+   "lime_powder x1 w0",
+   "limestone x1 w0",
+   "log_shelf x1 w0",
+   "loom x1 w0",
+   "mixer x1 w0",
+   "spinning_wheel x1 w0",
+   "wooden_crate x1 w0",
+   "wooden_shingle x1 w0"
+  ],
+  "small_wagon@582360,717470": [],
+  "smelter@582090,717200": [],
+  "smelter@582280,715530": [],
+  "stone_forge@582270,716750": [],
+  "storage_barrel@582350,715740": [
+   "bellows x1 w0",
+   "bronze_spear x1 w0",
+   "crude_chair x1 w0",
+   "crude_chest x1 w0",
+   "crude_table x1 w0",
+   "fine_chest x1 w0",
+   "grindstone x1 w0",
+   "hardwood_board x1 w0",
+   "iron_battleaxe x1 w0",
+   "iron_greataxe x1 w0",
+   "iron_greatsword x1 w0",
+   "iron_shortsword x1 w0",
+   "iron_warhammer x1 w0",
+   "leatherworking_table x1 w0",
+   "ornate_chair x1 w0",
+   "ornate_table x1 w0",
+   "quarterstaff x1 w0",
+   "quenching_trough x1 w0",
+   "smelter x1 w0",
+   "steel_battleaxe x1 w0",
+   "steel_greataxe x1 w0",
+   "steel_greatsword x1 w0",
+   "steel_maul x1 w0",
+   "steel_rapier x1 w0",
+   "steel_scimitar x1 w0",
+   "steel_scythe x1 w0",
+   "steel_shortsword x1 w0",
+   "steel_warhammer x1 w0",
+   "tailors_table x1 w0",
+   "thread x1 w0"
+  ],
+  "storage_jar@582000,716390": [],
+  "tailors_table@582140,715880": [
+   "bronze_arrow x1 w0",
+   "heavy_crossbow x1 w0",
+   "iron_arrow x1 w0",
+   "iron_bolt x1 w0",
+   "iron_breastplate x1 w0",
+   "iron_brigandine x1 w0",
+   "iron_buckler x1 w0",
+   "iron_halberd x1 w0",
+   "iron_lance x1 w0",
+   "iron_mail_hauberk x1 w0",
+   "iron_pike x1 w0",
+   "iron_spear x1 w0",
+   "iron_trident x1 w0",
+   "light_crossbow x1 w0",
+   "steel_arrow x1 w0",
+   "steel_bolt x1 w0",
+   "steel_halberd x1 w0",
+   "steel_half_plate x1 w0",
+   "steel_spear x1 w0",
+   "wooden_bolt x1 w0"
+  ],
+  "tool_cabinet@582700,715950": [
+   "bronze_greaves x1 w0",
+   "fibre_shoulder_bag x1 w0",
+   "fur_mittens x1 w0",
+   "iron_gauntlets x1 w0",
+   "iron_greaves x1 w0",
+   "iron_mail_chausses x1 w0",
+   "iron_mail_coif x1 w0",
+   "iron_sabatons x1 w0",
+   "leather_apron x1 w0",
+   "leather_broad_brim_hat x1 w0",
+   "leather_satchel x1 w0",
+   "leather_shoes x1 w0",
+   "linen_apron x1 w0",
+   "linen_dress x1 w0",
+   "linen_headwrap x1 w0",
+   "linen_skirt x1 w0",
+   "linen_trousers x1 w0",
+   "oilcloth_cloak x1 w0",
+   "simple_backpack x1 w0",
+   "steel_gauntlets x1 w0",
+   "steel_greaves x1 w0",
+   "steel_plate_harness x1 w0",
+   "steel_sabatons x1 w0",
+   "tabard x1 w0",
+   "wool_cloak x1 w0",
+   "wool_coat x1 w0",
+   "wool_dress x1 w0",
+   "wool_robe x1 w0",
+   "wool_scarf x1 w0",
+   "wool_socks x1 w0"
+  ],
+  "tool_cabinet@582720,717290": [],
+  "wardrobe@582270,717290": [],
+  "wardrobe@582350,716020": [
+   "acorns x1 w7200",
+   "aloe_gel x1 w0",
+   "amadou x1 w0",
+   "angelica_roots x1 w3600",
+   "angelica_stems x1 w0",
+   "arnica_flowers x1 w0",
+   "banana_leaves x1 w0",
+   "bananas x1 w0",
+   "bedding x1 w0",
+   "beechnuts x1 w7200",
+   "belladonna_berries x1 w360",
+   "belladonna_leaves x1 w0",
+   "belt_pouch x1 w0",
+   "birch_bark x1 w0",
+   "blackberries x1 w360",
+   "blueberries x1 w360",
+   "cargo_lashings x1 w0",
+   "leather_bridle x1 w0",
+   "leather_saddlebags x1 w0",
+   "pack_saddle x1 w0",
+   "quality_backpack x1 w0",
+   "riding_saddle x1 w0",
+   "rope_halter x1 w0",
+   "tool_roll x1 w0",
+   "travellers_saddle x1 w0",
+   "utility_bandolier x1 w0",
+   "war_saddle x1 w0",
+   "weapon_scabbard x1 w0",
+   "wicker_panniers x1 w0",
+   "wooden_pack_frame x1 w0"
+  ],
+  "warehouse_crate@582420,716020": [
+   "brinebells x1 w0",
+   "burdock_roots x1 w3600",
+   "burrs x1 w0",
+   "cactus_pads x1 w0",
+   "chamomile_flowers x1 w0",
+   "chanterelles x1 w360",
+   "charcoal_wood x1 w0",
+   "cherries x1 w1200",
+   "cherry_wood x1 w0",
+   "chestnuts x1 w7200",
+   "cinderfoot_caps x1 w360",
+   "cloudberries x1 w360",
+   "coconuts x1 w4800",
+   "comfrey_leaves x1 w0",
+   "comfrey_roots x1 w3600",
+   "crab_apples x1 w2400",
+   "cranberries x1 w360",
+   "crowberries x1 w360",
+   "dandelion_flowers x1 w0",
+   "dandelion_leaves x1 w0",
+   "dandelion_roots x1 w3600",
+   "dates x1 w3600",
+   "drakethorn_berries x1 w360",
+   "duskmallow_flowers x1 w0",
+   "duskmallow_roots x1 w3600",
+   "dye x1 w0",
+   "echo_moss x1 w0",
+   "elderberries x1 w360",
+   "elderflowers x1 w0",
+   "emberroots x1 w3600"
+  ],
+  "weapon_rack@582270,716390": [],
+  "wooden_crate@582000,716480": [],
+  "wooden_cupboard@582180,715850": []
+ },
+ "structs": {
+  "advanced_kiln@582000,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "advanced_kiln",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "advanced_kiln@582090,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "advanced_kiln",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "advanced_smithy@582070,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "advanced_smithy",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "advanced_smithy@582450,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "advanced_smithy",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "advanced_well@582140,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "advanced_well",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "advanced_well@582630,716120": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "advanced_well",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "antler_mount@582810,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "antler_mount",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "apothecary_cabinet@582280,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "apothecary_cabinet",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "apothecary_cabinet@582540,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "apothecary_cabinet",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "armour_stand@582360,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "armour_stand",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "bellows@582420,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "bellows",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "bird_trap_set@582560,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "bird_trap_set",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "blacksmithy@582360,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "blacksmithy",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "board_rack@582360,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "board_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "board_rack@582700,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "board_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "bookcase@582450,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "bookcase",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "bookcase@582770,714200": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "bookcase",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "bottle_and_jar_rack@582000,714270": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "bottle_and_jar_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "bottle_and_jar_rack@582630,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "bottle_and_jar_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_arched_doorway@582070,714270": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "brick_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_arched_doorway@582630,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_doorway@582000,715490": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_double_arched_doorway@582210,714270": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "brick_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_double_arched_doorway@582720,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_double_doorway@582280,714270": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "brick_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_double_doorway@582540,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_fence@582450,715580": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "brick_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_floor@582540,716840": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_floor",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_foundation@582630,715400": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "brick_foundation",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_gate@582540,715580": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_pillar@582270,715670": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "brick_pillar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_stairs@582630,715850": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_stairs",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_wall@582450,716840": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_wall",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "brick_window@582360,715490": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "brick_window",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "carving_station@582560,714340": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "carving_station",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "chair@582810,717020": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "chair",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "chandelier@582630,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "chandelier",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "chopping_block@582000,714410": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "chopping_block",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "clay_hearth@582630,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "clay_hearth",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "cooking_pot@582270,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "cooking_pot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "cooking_pot@582420,714410": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "cooking_pot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "crude_chair@582630,714410": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "crude_chair",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "crude_chest@582700,714410": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "crude_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "crude_table@582350,714480": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "crude_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "doorway_section@582810,716660": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "doorway_section",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "double_doorway@582000,715940": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "dresser@582360,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "dresser",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "dresser@582560,714480": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "dresser",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_arched_doorway@582000,714550": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "engineered_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_arched_doorway@582000,717650": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_doorway@582540,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_double_arched_doorway@582090,717650": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_double_arched_doorway@582420,714550": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "engineered_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_double_doorway@582630,714550": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "engineered_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_double_doorway@582810,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_fence@582270,716660": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_fence@582700,714550": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "engineered_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_floor@582000,716570": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_floor",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_foundation@582360,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_foundation",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_gate@582070,714620": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "engineered_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_gate@582140,714620": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "engineered_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_gate@582360,716660": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_pillar@582720,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_pillar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_stairs@582810,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_stairs",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_wall@582450,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_wall",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "engineered_window@582630,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "engineered_window",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "feather_bed@582360,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "feather_bed",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fine_chest@582000,714690": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fine_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fireplace@582810,716840": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "fireplace",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fireplace_cooking_crane@582090,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "fireplace_cooking_crane",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fireplace_cooking_crane@582140,714690": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fireplace_cooking_crane",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "firewood_rack@582210,714690": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "firewood_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fish_trap_set@582280,714690": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fish_trap_set",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "floor_section@582090,715400": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "floor_section",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "flower_pot@582720,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "flower_pot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "food_preparation_table@582490,714690": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "food_preparation_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_arched_doorway@582700,714690": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_double_arched_doorway@582280,714760": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_double_doorway@582490,714760": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_fence@582560,714760": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_floor@582630,714760": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_floor",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_stairs@582420,714830": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_stairs",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "fortified_window@582630,714830": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "fortified_window",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "foundation_section@582360,715400": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "foundation_section",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "griddle@582360,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "griddle",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "griddle@582770,714830": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "griddle",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "grill@582000,714900": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "grill",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "grill@582180,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "grill",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "grindstone@582000,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "grindstone",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "grindstone@582070,714900": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "grindstone",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "handcart@582140,714900": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "handcart",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "handcart@582180,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "handcart",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "hide_rug@582090,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "hide_rug",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "hide_sack@582090,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "hide_sack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "improved_kiln@582000,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "improved_kiln",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "improved_kiln@582350,714900": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "improved_kiln",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "improved_smelter@582180,717200": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "improved_smelter",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "improved_smelter@582420,714900": {
+   "fields": [
+    "kind",
+    "owner",
+    "smelt_t",
+    "smelt_job",
+    "lit"
+   ],
+   "number": "improved_smelter",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "kiln@582810,716210": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "kiln",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "ladder@582180,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "ladder",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_forge@582270,717200": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "large_forge",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_forge@582420,715040": {
+   "fields": [
+    "kind",
+    "owner",
+    "smelt_t",
+    "smelt_job",
+    "smelt_lanes",
+    "lit"
+   ],
+   "number": "large_forge",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@580980,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581040,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581100,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581160,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581220,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581280,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581340,713730": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581340,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581400,713730": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@581400,713790": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@582360,716040": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_garden_plot@582480,715050": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_resource_bin@582090,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "large_resource_bin",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_resource_bin@582560,715040": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_resource_bin",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_wooden_chest@582180,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "large_wooden_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "large_wooden_chest@582630,715040": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "large_wooden_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "lean_to@582000,716930": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "lean_to",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "leatherworking_table@582630,717200": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "leatherworking_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "leatherworking_table@582770,715040": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "leatherworking_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_arched_doorway@582000,715110": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "log_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_arched_doorway@582810,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_backed_bench@582070,715110": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "log_backed_bench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_doorway@582720,715400": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_double_arched_doorway@582000,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_double_arched_doorway@582280,715110": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "log_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_double_bench@582350,715110": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "log_double_bench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_double_doorway@582420,715110": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "log_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_double_doorway@582720,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_fence@582810,715490": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_floor@582090,716840": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_floor",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_foundation@582540,715400": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_foundation",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_gate@582000,715580": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_palisade@582090,715580": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_palisade",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_palisade_gate@582180,715580": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_palisade_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_pillar@582090,715670": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_pillar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_rack@582280,715180": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "log_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_stairs@582450,715850": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_stairs",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_wall@582000,716840": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_wall",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_window@582180,715490": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_window",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "log_workbench@582810,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "log_workbench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "loom@582350,715250": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "loom",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "loom@582810,717200": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "loom",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "masons_pallet@582420,715250": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "masons_pallet",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "masons_pallet@582450,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "masons_pallet",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "master_forge@582490,715250": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "master_forge",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "medium_resource_bin@582000,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "medium_resource_bin",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "medium_resource_bin@582560,715250": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "medium_resource_bin",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "mixer@582270,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "mixer",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "mortar_pestle@582700,715250": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "mortar_pestle",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "oil_press@582810,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "oil_press",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "open_storage_bin@582000,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "open_storage_bin",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "open_storage_bin@582810,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "open_storage_bin",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "ore_and_metal_rack@582070,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "ore_and_metal_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "ore_and_metal_rack@582540,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "ore_and_metal_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "ornate_chair@582140,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "ornate_chair",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "ornate_table@582210,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "ornate_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "plank_chest@582180,716930": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "plank_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "preserving_jar@582720,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "preserving_jar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "primitive_well@582450,716120": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "primitive_well",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "primitive_well@582490,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "primitive_well",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "quenching_trough@582560,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "quenching_trough",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "quern@582450,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "quern",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "quern@582630,715320": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "quern",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "rock_pile@582490,715390": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "rock_pile",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "root_cellar@582810,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "root_cellar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "rough_bed@582770,715390": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "rough_bed",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "sawbuck@582450,716030": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "sawbuck",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "sawbuck@582630,715460": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "sawbuck",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "sign@582450,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "sign",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_chest@582000,715530": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_chest@582090,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "small_chest",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@580980,713740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581040,713740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581100,713740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581160,713740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581220,713680": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581220,713740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581280,713680": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581280,713740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581340,713680": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@581400,713680": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@582070,715530": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_garden_plot@582270,716030": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "small_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_log_sled@582140,715530": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_log_sled",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_log_sled@582270,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "small_log_sled",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_wagon@582210,715530": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "small_wagon",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "small_wagon@582360,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "small_wagon",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "smelter@582090,717200": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "smelter",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "smelter@582280,715530": {
+   "fields": [
+    "kind",
+    "owner",
+    "smelt_t",
+    "smelt_job",
+    "lit"
+   ],
+   "number": "smelter",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "smoker@582720,716300": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "smoker",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "snare_trap@582420,715530": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "snare_trap",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stairs_wood@582180,717020": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stairs_wood",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_arched_doorway@582360,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_arched_doorway@582630,715530": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_bench@582090,715760": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_bench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_brazier@582000,716030": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_brazier",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_channel@582360,716220": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_channel",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_channel_corner@582460,716220": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_channel_corner",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_channel_tee@582540,716220": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_channel_tee",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_cistern@582640,716220": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_cistern",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_doorway@582810,715400": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_double_arched_doorway@582350,715600": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_double_arched_doorway@582450,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_double_doorway@582270,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_double_doorway@582420,715600": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_fence@582270,715580": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_floor@582270,717020": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_floor",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_forge@582270,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_forge",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_gate@582360,715580": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_pillar@582180,715670": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_pillar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_planter@582000,716120": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_planter",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_stairs@582540,715850": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_stairs",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_table@582180,715760": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_trough@582280,716220": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_trough",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_wall@582360,716840": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_wall",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_well@582540,716120": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_well",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_window@582270,715490": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "stone_window",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stone_workbench@582000,715850": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stone_workbench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "stonecutters_bench@582630,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "stonecutters_bench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "storage_barrel@582350,715740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "storage_barrel",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "storage_jar@582000,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "storage_jar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "storage_sign@582490,715740": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "storage_sign",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "storage_sign@582630,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "storage_sign",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "straw_bed@582270,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "straw_bed",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "table@582000,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "tailors_table@582140,715880": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "tailors_table",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_arched_doorway@582280,715880": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "thatch_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_arched_doorway@582540,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_doorway@582720,716930": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_double_arched_doorway@582420,715880": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "thatch_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_double_arched_doorway@582630,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_double_doorway@582450,717470": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_double_doorway@582490,715880": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "thatch_double_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_fence@582450,715490": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "thatch_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_floor@582360,716930": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_floor",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_gate@582540,715490": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_pillar@582810,715580": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "thatch_pillar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_scarecrow@582270,716120": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_scarecrow",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_wall@582450,716930": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "thatch_wall",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "thatch_window@582090,715490": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "thatch_window",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "timber_prop@582090,717020": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "timber_prop",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "timber_set@582090,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "timber_set",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "tool_cabinet@582700,715950": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "tool_cabinet",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "tool_cabinet@582720,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "tool_cabinet",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "tusk_mount@582540,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "tusk_mount",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "vice@582000,717200": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "vice",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wall_section@582000,715400": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wall_section",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wall_torch@582540,717110": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wall_torch",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wardrobe@582270,717290": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wardrobe",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wardrobe@582350,716020": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wardrobe",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "warehouse_crate@582420,716020": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "warehouse_crate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "warehouse_desk@582490,716020": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "warehouse_desk",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "warehouse_desk@582810,717380": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "warehouse_desk",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "weapon_rack@582270,716390": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "weapon_rack",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "window_section@582000,716750": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "window_section",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_arched_doorway@582090,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wood_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_arched_doorway@582770,716020": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wood_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_double_arched_doorway@582000,716090": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wood_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_double_arched_doorway@582180,717560": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wood_double_arched_doorway",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_fence@582630,715490": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wood_fence",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_foundation@582450,715400": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wood_foundation",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wood_gate@582720,715490": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wood_gate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_channel@582820,716120": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_channel",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_channel_corner@582000,716220": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wooden_channel_corner",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_channel_tee@582100,716220": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_channel_tee",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_crate@582000,716480": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wooden_crate",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_cupboard@582180,715850": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_cupboard",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_garden_plot@582180,716040": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_garden_plot",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_hanging_lantern@582090,715940": {
+   "fields": [
+    "kind",
+    "owner",
+    "lit",
+    "fuel_left"
+   ],
+   "number": "wooden_hanging_lantern",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_lamp_post@582630,715940": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_lamp_post",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_pillar@582000,715670": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wooden_pillar",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_pipe@582420,716160": {
+   "fields": [
+    "kind",
+    "owner",
+    "len",
+    "pitch",
+    "paid"
+   ],
+   "number": "wooden_pipe",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_pipe@582490,716160": {
+   "fields": [
+    "kind",
+    "owner",
+    "len",
+    "pitch",
+    "paid"
+   ],
+   "number": "wooden_pipe",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_planter_box@582810,716030": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_planter_box",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_railing@582720,715850": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_railing",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_sluice@582180,716220": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wooden_sluice",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_torch_post@582360,715940": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wooden_torch_post",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_trellis@582090,716120": {
+   "fields": [
+    "kind",
+    "owner"
+   ],
+   "number": "wooden_trellis",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "wooden_trough@582720,716120": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "wooden_trough",
+   "owner": "fixture9257c03",
+   "wear": 0
+  },
+  "workbench@582810,716930": {
+   "fields": [
+    "kind",
+    "owner",
+    "site"
+   ],
+   "number": "workbench",
+   "owner": "fixture9257c03",
+   "wear": 0
+  }
+ },
+ "trees": 4,
+ "worn": {
+  "fixture9257a01": [
+   "leather_cap w0 []",
+   "hide_tunic w0 []",
+   "hide_trousers w0 []",
+   "hide_boots w0 []",
+   "hide_gloves w0 []",
+   "hide_cloak w0 []",
+   "straw_hat w0 []",
+   "quiver w0 []"
+  ],
+  "fixture9257b02": [],
+  "fixture9257c03": [],
+  "loadbot_bot1": [],
+  "loadbot_bot2": [],
+  "loadbot_bot3": []
+ }
+}

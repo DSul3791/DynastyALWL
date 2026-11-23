@@ -37,6 +37,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const VERSION := 4                       # world_items.json: 4 (18 Nov 2026, audit finding 2) is a header naming the area files in world_items/ (AREA_M squares, each with its own rows; only the areas that changed are written); 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const CHARACTERS_VERSION := 2           # characters.json: 2 (19 Nov 2026) has attributes on the 0 to 100 scale; a version 1 file's -10 to +10 values (and fitness training) are converted once at load
+const OLD_FLOOR_OVER_CAP := 5           # skills.json floor_over_cap until 23 Nov 2026 (build 9257): a character saved then keeps those floors (SkillWeb.keep_old_floors)
 const ATTRIBUTE_KEYS := ["luck", "fitness", "strength", "memory", "dexterity", "perception", "charisma"]
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
@@ -672,7 +673,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key] = {"train": 0.0, "skills_v": 3, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_characters[key].merge(_new_attributes())
 		_dirty = true
 
@@ -14849,6 +14850,7 @@ func _become_new_player(peer: int) -> void:
 	_characters[key]["tried"] = {}
 	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
+	_soak.erase(peer)
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
 	_admin_mode_on.erase(peer)
@@ -17600,7 +17602,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
-	var soak: float = float(_soak.get(peer, 0.0))
+	var v: Dictionary = vitals_of(peer)
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else clampf(float(v.get("soak", 0.0)), 0.0, 1.0)   # wet clothes stay wet over a restart or a rejoin (survival walk 23 Nov 2026)
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
 	var hours: float = game_s / 3600.0
 
@@ -17630,6 +17633,9 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
 	_soak[peer] = soak
+
+	if not v.is_empty() and (soak > 0.0 or v.has("soak")):
+		v["soak"] = soak   # saved with the vitals (vitals.json)
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
@@ -17946,6 +17952,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_soak.erase(peer)   # dry clothes, as the saved vitals say
 	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
@@ -26512,12 +26519,18 @@ func _load_characters() -> void:
 		if bool(parsed["players"][key].get("dead", false)):   # real death (death.json real_death): a dead character stays dead across a restart
 			_characters[str(key)]["dead"] = true
 
-		if int(parsed["players"][key].get("skills_v", 1)) < 2:
+		var skills_v: int = int(parsed["players"][key].get("skills_v", 1))
+
+		if skills_v < 2:
 			migrate_old_skills(str(key), parsed["players"][key])
-			_characters[str(key)]["skills_v"] = 2
 			_dirty = true
-		else:
-			_characters[str(key)]["skills_v"] = 2
+
+		# Build 9257 and before (skills_v 2): trainings gave a floor 5 over the band; the character keeps what its skills read then.
+		if skills_v < 3 and not _skills_cfg.is_empty():
+			if SkillWeb.keep_old_floors(_skills_cfg, _characters[str(key)]["skills"], OLD_FLOOR_OVER_CAP) > 0:
+				_dirty = true
+
+		_characters[str(key)]["skills_v"] = 3
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.
@@ -26665,6 +26678,9 @@ func _load_vitals() -> void:
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
 		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0), "limp": maxf(float(row.get("limp", 0.0)), 0.0)}
+
+		if float(row.get("soak", 0.0)) > 0.0:
+			_vitals[str(key)]["soak"] = clampf(float(row["soak"]), 0.0, 1.0)   # wet clothes (_update_soak)
 
 		if typeof(row.get("sick_due", null)) == TYPE_ARRAY and not (row["sick_due"] as Array).is_empty():
 			_vitals[str(key)]["sick_due"] = row["sick_due"]   # pending sickness from raw food (docs/design/body_in_weather_design.md 5)

@@ -106,7 +106,7 @@ func _init() -> void:
 	check(not v.is_empty() and absf(float(v["fed"]) - 1200.0) < 0.1 and float(v["wet"]) > 0.0 and float(v["warmth"]) == 100.0 and float(v["energy"]) == 100.0 and float(v["sick"]) == 0.0, "era 24: older vitals start full where they never had a field (%s)" % str(v))
 	check(int(items._characters["compat-key-aaa01"]["luck"]) == 75 and int(items._characters["compat-key-bbb02"]["fitness"]) == 35 and int(items._characters["compat-key-bbb02"]["luck"]) == 40, "era 26: luck and fitness survive, moved to the 0 to 100 scale (old 5 is 75, -3 is 35)")
 	check(int(items._characters["compat-key-aaa01"]["strength"]) == 50 and items._characters["compat-key-aaa01"]["worn"].size() == items._worn_places().size() and items._characters["compat-key-aaa01"]["worn"].all(func(e): return int(e[0]) == 0) and items._characters["compat-key-aaa01"]["skills"].is_empty(), "newer attributes default to neutral (%s)" % str(items._characters["compat-key-aaa01"]))
-	check(items._characters["compat-key-ccc03"]["skills"].has("mining") and int(items._characters["compat-key-ccc03"].get("skills_v", 0)) == 2, "era 37: old skill records migrate to the web")
+	check(items._characters["compat-key-ccc03"]["skills"].has("mining") and int(items._characters["compat-key-ccc03"].get("skills_v", 0)) == 3, "era 37: old skill records migrate to the web")
 	check(FileAccess.file_exists(dir + "/characters.json.v1.bak"), "and the old file is kept as a backup")
 
 	# Era 44 and after: station tiers (states 16 to 18, ids unchanged) and remains rows.

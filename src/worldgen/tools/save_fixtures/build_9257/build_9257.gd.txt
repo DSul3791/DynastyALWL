@@ -1,0 +1,366 @@
+extends SceneTree
+
+# Builds a 9257-era store with a bit of everything, on top of a store a real 9257 server and bots already wrote. Run with the 9257 code
+# (main a27c98df) checked out: godot --headless --path . --script <this> -- --store=DIR
+#   characters with packs, worn pieces and skills; every placeable structure; containers filled; every item number in a chest or on the
+#   ground; crops of every kind at several ages; a lit fire, a loaded kiln and smelter; blueprint sites half and fully built; a craft queue.
+
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
+
+const BASE := Vector3(58200.0, 6.0, 71420.0)
+var items
+var store: String = ""
+var log_lines: Array = []
+
+
+func note(s: String) -> void:
+	print(s)
+	log_lines.append(s)
+
+
+func _init() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--store="):
+			store = a.trim_prefix("--store=")
+
+	items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	items.send_notice = func(_p, t): log_lines.append("  said: " + str(t))
+	items.ground_height = func(_x, _z): return BASE.y
+	items.setup(ItemTableScript.load_default(), store)
+	var table = items.table
+
+	# Three characters.
+	var keys: Array = ["fixture9257a01", "fixture9257b02", "fixture9257c03"]
+
+	for n in range(3):
+		var peer: int = 101 + n
+		items.peer_connected_hello(peer, keys[n])
+		items.report_position(peer, BASE + Vector3(-6.0 * n, 0.0, -8.0))
+		items._characters[items._peer_key[peer]]["grace_s"] = 0.0
+		items.vitals_of(peer)["weight"] = 1000.0
+
+	var a: int = 101
+	var key_a: String = items._peer_key[a]
+
+	# Skills: every skill at a spread of points (low, mid, past the by-use cap, high).
+	var skill_ids: Array = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))["skills"] as Dictionary).keys()
+	var points: Array = [0.5, 12.0, 150.0, 900.0, 4000.0, 20000.0]
+	var sk: Dictionary = {}
+
+	for i in skill_ids.size():
+		var p: float = points[i % points.size()]
+		sk[skill_ids[i]] = {"day": 100, "dgain": 0.0, "last": 8600000.0, "p": p, "peak": p}
+
+	items._characters[key_a]["skills"] = sk
+	items._characters[items._peer_key[102]]["skills"] = {"hunting": {"day": 100, "dgain": 0.0, "last": 8600000.0, "p": 30000.0, "peak": 30000.0}, "tracking": {"day": 100, "dgain": 0.0, "last": 8600000.0, "p": 2500.0, "peak": 2500.0}}
+	# Character C trained once in Trades and Swordplay (the 9257 rule: the floor 5 over the cap, 30) and twice in Athletics.
+	const SkillWeb := preload("res://src/shared/skill_web.gd")
+	var cfg: Dictionary = SkillWeb.config()
+	var rec_c: Dictionary = items._characters[items._peer_key[103]].get("skills", {})
+
+	for pair in [["trades", 1], ["swordplay", 1], ["athletics", 2]]:
+		var u: float = SkillWeb.units_for(cfg, str(pair[0]), 22.0)
+		rec_c[str(pair[0])] = {"p": u, "peak": u, "day": 100, "dgain": 0.0, "last": 8600000.0}
+
+		for t in range(int(pair[1])):
+			if t > 0:
+				var u2: float = SkillWeb.units_for(cfg, str(pair[0]), 47.0)
+				rec_c[str(pair[0])]["p"] = maxf(float(rec_c[str(pair[0])]["p"]), u2)
+
+			var why: String = SkillWeb.train(cfg, str(pair[0]), rec_c, 8600000.0 + 400000.0 * t)
+			note("train %s: %s" % [pair[0], why if why != "" else "ok"])
+
+	items._characters[items._peer_key[103]]["skills"] = rec_c
+	note("skills set: %d" % sk.size())
+
+	# Every item number: the ones a pack can carry go into chests later; first, a pack of mixed things with wear.
+	var numbers: Array = []
+
+	for number in range(1, 5000):
+		if table.id_of(number) != "":
+			numbers.append(number)
+
+	note("item numbers: %d" % numbers.size())
+	var inv_a = items.inventory_of(a)
+
+	for number in numbers.slice(0, 200):
+		if inv_a.count_of(number) == 0 and not items.is_shoulder_item(number):
+			var wear: int = int(table.shelf_units(number) / 3) if table.shelf_units(number) > 0 else 0
+			items.give(a, number, 1, {}, wear)
+
+	# Worn pieces: anything wearable that fits.
+	for number in numbers:
+		if items._place_of(number) >= 0:
+			items.give(a, number, 1)
+			var ws: int = inv_a.numbers.find(number)
+
+			if ws >= 0:
+				items.action(a, Net.ACT_WEAR, ws, 0, 0, Vector3.ZERO)
+
+	note("worn: %s" % str(items.worn_slots_of(a).map(func(w): return table.id_of(int(w[0])))))
+	# A worn bag with something in it.
+	for w in range(items.worn_slots_of(a).size()):
+		var bag = items._worn_bag(a, w)
+
+		if bag != null:
+			bag.add(table.number_of("stick"), 3)
+			bag.add(table.number_of("flint") if table.number_of("flint") > 0 else table.number_of("stone"), 1)
+
+	# Every structure with a kit, placed on a grid.
+	var kinds: Array = items._structures.keys()
+	kinds.sort()
+	var placed: Dictionary = {}
+	var n_place: int = 0
+	var builder: int = 103
+
+	for kind in kinds:
+		var def: Dictionary = items._structures[kind]
+		var kit: int = table.number_of(str(def.get("kit", "")))
+
+		if kit <= 0:
+			continue
+
+		var spot: Vector3 = BASE + Vector3(float(n_place % 12) * 7.0, 0.0, float(n_place / 12) * 7.0)
+		n_place += 1
+		items.report_position(builder, spot + Vector3(0.0, 0.0, -2.0))
+		var inv = items.inventory_of(builder)
+
+		for s in inv.slot_count:
+			inv.clear_slot(s)
+
+		items.give(builder, kit, 1)
+		var slot: int = inv.numbers.find(kit)
+		var before: Array = items._items.keys()
+
+		if slot >= 0:
+			items.action(builder, Net.ACT_PLACE, slot, 0, 0, spot)
+
+		var added: Array = items._items.keys().filter(func(id): return not before.has(id))
+
+		if added.is_empty():
+			note("  not placed: %s" % kind)
+		else:
+			placed[kind] = added[0]
+
+	note("structures placed: %d of %d" % [placed.size(), n_place])
+
+	# Fill each container (struct with a store) with a run of item numbers, so every number lies somewhere.
+	var at: int = 0
+	var boxes: Array = []
+
+	for kind in placed:
+		var id: int = placed[kind]
+		var it: Dictionary = items._items.get(id, {})
+
+		if it.has("struct") and items._chests.has(int(it["struct"].get("uid", 0))):
+			boxes.append(items._chests[int(it["struct"]["uid"])])
+
+	for box in boxes:
+		for s in range(box.usable if "usable" in box else box.slot_count):
+			if at >= numbers.size():
+				break
+
+			var number: int = numbers[at]
+			var wear: int = int(table.shelf_units(number) / 4) if table.shelf_units(number) > 0 else 0
+
+			if box.add(number, 1, wear) == 0:
+				at += 1
+
+	note("items stored in %d boxes: %d of %d numbers" % [boxes.size(), at, numbers.size()])
+
+	# The rest on the ground, one of each.
+	var g: int = 0
+
+	for number in numbers.slice(at):
+		items.drop_in_world(number, 1, BASE + Vector3(-40.0 + float(g % 20) * 1.5, 0.0, 40.0 + float(g / 20) * 1.5))
+		g += 1
+
+	for id in items._items:
+		if not items._items[id].has("struct") and not items._items[id].has("tree") and not items._items[id].has("fire"):
+			items._items[id]["left"] = 1.0e7
+
+	note("ground items: %d" % g)
+
+	# Crops: every crop at several ages.
+	var crops_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+	var crop_ids: Array = []
+
+	if crops_cfg is Dictionary:
+		for k in (crops_cfg.get("crops", {}) as Dictionary):
+			crop_ids.append(k)
+
+	var c: int = 0
+	var plot_kinds: Array = placed.keys().filter(func(k): return items._is_plot_kind(str(k)))
+	var extra: int = 0
+
+	for kind in plot_kinds:
+		var kit: int = table.number_of(str(items._structures[kind]["kit"]))
+
+		for n in range(10):
+			var spot: Vector3 = BASE + Vector3(-60.0 - float(extra % 8) * 6.0, 0.0, -40.0 - float(extra / 8) * 6.0)
+			extra += 1
+			items.report_position(builder, spot + Vector3(0.0, 0.0, -2.0))
+			var binv = items.inventory_of(builder)
+
+			for s4 in binv.slot_count:
+				binv.clear_slot(s4)
+
+			items.give(builder, kit, 1)
+			items.action(builder, Net.ACT_PLACE, binv.numbers.find(kit), 0, 0, spot)
+
+	for id in items._items:
+		var it: Dictionary = items._items[id]
+
+		if it.has("struct") and items._is_plot_kind(str(it["struct"].get("kind", ""))):
+			for cell in items._bed_cells(it):
+				var crop_id: String = crop_ids[c % crop_ids.size()]
+				items._crops[items._bed_key(cell)] = {"crop": crop_id, "sown": 300, "age": [0.5, 10.0, 40.0, 200.0][c % 4], "wet": 3, "day": 360, "compost": c % 2 == 0}
+				c += 1
+
+	note("crops: %d (%d kinds)" % [c, crop_ids.size()])
+
+	# A lit fire with wood; a kiln and smelters loaded and lit where they take it.
+	for kind in placed:
+		var id: int = placed[kind]
+
+		if not items._items.has(id):
+			continue
+
+		var it: Dictionary = items._items[id]
+		items.report_position(builder, it["pos"] + Vector3(0.0, 0.0, -1.5))
+
+		if it.has("fire"):
+			items.give(builder, table.number_of("firewood"), 3)
+			items.action(builder, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+			var fs: int = items.inventory_of(builder).numbers.find(table.number_of("firewood"))
+
+			if fs >= 0:
+				items.action(builder, Net.ACT_CHEST_PUT, fs, id, 3, Vector3.ZERO)
+
+			items.action(builder, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+			items.give(builder, table.number_of("fire_starter") if table.number_of("fire_starter") > 0 else table.number_of("flint"), 1)
+			items.action(builder, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
+			note("fire %s state %d" % [kind, int(it["fire"]["state"])])
+
+	# Blueprints: every hammer blueprint placed; every other one built.
+	var hammer: int = table.number_of("stone_hammer")
+	var bp_n: int = 0
+
+	for number in items._blueprints:
+		var bp: Dictionary = items._blueprints[number]
+
+		if bool(bp.get("retired", false)):
+			continue
+
+		var spot: Vector3 = BASE + Vector3(float(bp_n % 10) * 9.0, 0.0, 120.0 + float(bp_n / 10) * 9.0)
+		items.report_position(builder, spot + Vector3(0.0, 0.0, -2.5))
+		var inv = items.inventory_of(builder)
+
+		for s in inv.slot_count:
+			inv.clear_slot(s)
+
+		items.give(builder, hammer, 1)
+		items.action(builder, Net.ACT_PLACE_BLUEPRINT, int(number), 0, 0, spot)
+		bp_n += 1
+
+	note("blueprint sites tried: %d" % bp_n)
+
+	# Build some sites: half of the first ones filled part way, the others finished.
+	var sites: Array = []
+
+	for id in items._items:
+		if items._items[id].has("struct") and items._items[id]["struct"].has("site"):
+			sites.append(id)
+
+	var built: int = 0
+	var half: int = 0
+
+	for i in range(mini(sites.size(), 60)):
+		var id: int = sites[i]
+		var it: Dictionary = items._items[id]
+		var bp: Dictionary = items._blueprints.get(int(it["struct"]["site"].get("bp", -1)), {})
+
+		if bp.is_empty():
+			for number in items._blueprints:
+				if str(items._blueprints[number]["structure"]) == str(it["struct"]["kind"]):
+					bp = items._blueprints[number]
+
+		if bp.is_empty():
+			continue
+
+		items.report_position(builder, it["pos"] + Vector3(0.0, 0.0, -2.0))
+		var inv = items.inventory_of(builder)
+
+		for s2 in inv.slot_count:
+			inv.clear_slot(s2)
+
+		var tool_id: String = str(bp.get("tool", "hammer"))
+		items.give(builder, table.number_of("steel_hammer") if table.number_of("steel_hammer") > 0 else hammer, 1)
+		items.give(builder, table.number_of("steel_knife") if table.number_of("steel_knife") > 0 else table.number_of("flint_knife"), 1)
+		var share: float = 0.5 if i % 2 == 0 else 1.0
+
+		for need in bp["cost"]:
+			var number: int = table.number_of(str(need[0]))
+			var order: PackedInt32Array = table.spend_order(number)
+
+			if order.size() >= 1:
+				number = int(order[order.size() - 1])
+
+			if not items.is_shoulder_item(number):
+				items.give(builder, number, maxi(1, int(ceil(float(need[1]) * share))))
+
+		HeldTool.hit_site(items, id, builder)
+
+		if items._items.has(id) and not items._items[id]["struct"].has("site"):
+			built += 1
+		else:
+			half += 1
+
+	note("sites built %d, left part filled %d (of %d sites)" % [built, half, sites.size()])
+
+	# Campfires: one laid and lit with firewood, one laid cold, one put out to ash is left to time.
+	var builder_inv = items.inventory_of(builder)
+
+	for n in range(2):
+		var spot: Vector3 = BASE + Vector3(-20.0 - 6.0 * n, 0.0, -20.0)
+		items.report_position(builder, spot + Vector3(0.0, 0.0, -1.5))
+
+		for s3 in builder_inv.slot_count:
+			builder_inv.clear_slot(s3)
+
+		items.give(builder, table.number_of("campfire_kit"), 1)
+		var before: Array = items._items.keys()
+		items.action(builder, Net.ACT_PLACE, builder_inv.numbers.find(table.number_of("campfire_kit")), 0, 0, spot)
+		var added: Array = items._items.keys().filter(func(id): return not before.has(id))
+
+		if added.is_empty():
+			note("campfire not laid")
+			continue
+
+		var fid: int = added[0]
+		items.give(builder, table.number_of("firewood"), 3)
+		items.action(builder, Net.ACT_CHEST_OPEN, fid, 0, 0, Vector3.ZERO)
+		items.action(builder, Net.ACT_CHEST_PUT, builder_inv.numbers.find(table.number_of("firewood")), fid, 3, Vector3.ZERO)
+		items.action(builder, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
+		if n == 0:
+			items.action(builder, Net.ACT_LIGHT, fid, 0, 0, Vector3.ZERO)
+
+			if not items.fire_is_lit(int(items._items[fid]["fire"]["state"])):
+				items._items[fid]["fire"]["state"] = items._fire_best_state(items._items[fid]["fire"])
+
+		note("campfire %d state %d burn_left %.0f" % [fid, int(items._items[fid]["fire"]["state"]), float(items._items[fid]["fire"]["burn_left"])])
+
+	items.save()
+	items._finish_writer()
+	var f: FileAccess = FileAccess.open(store + "/fixture_build_log.txt", FileAccess.WRITE)
+	f.store_string("\n".join(log_lines))
+	f.close()
+	quit(0)
