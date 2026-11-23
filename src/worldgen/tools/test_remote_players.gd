@@ -161,11 +161,13 @@ func _server() -> void:
 	players.note_action(2, NetScript.ACT_USE_STRUCT, 3)
 	players.note_action(2, NetScript.ACT_USE_STRUCT, 0)
 	fake.down = {2: true}
+	fake.swim[2] = true
 	clock[0] = 2720
 	players.tick(0.2)
 	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 5, "a strike, a hammer blow, a cast and a split are four more swings (count %d of 5)" % ((int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) if sent.size() == 1 else -1))
-	check(sent.size() == 1 and (int(sent[0][4][0]) & 3) == 3, "a fainted or passed-out player is drawn lying (stance %d)" % ((int(sent[0][4][0]) & 3) if sent.size() == 1 else -1))
+	check(sent.size() == 1 and (int(sent[0][4][0]) & 3) == 3 and (int(sent[0][4][0]) & PlayersScript.SWIM) == 0, "a fainted or passed-out player is drawn lying, not swimming, even in water (state %d)" % (int(sent[0][4][0]) if sent.size() == 1 else -1))
 	fake.down = {}
+	fake.swim.erase(2)
 	# 159: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
 	sent.clear()
 	var torch_n: int = ItemTableScript.load_default().number_of("torch")

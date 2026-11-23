@@ -56,6 +56,7 @@ func _init() -> void:
 
 	check(items.passed_out(1), "cold down to 1 health passes the player out (%d s)" % ticks)
 	check(int(items._strain[1]["state"]) == 2, "with the faint look (strain state 2)")
+	check(items.fainted_of(1), "the others see the body lying (fainted_of)")
 	var hp: float = float(v["health"])
 	items.hurt_player(1, 50.0, true, "wolf")
 	check(float(v["health"]) == hp, "nothing hurts them while out (%.1f)" % float(v["health"]))
@@ -71,6 +72,7 @@ func _init() -> void:
 	check(float(v["warmth"]) >= float(items._warmth_cfg["hurt_at"]), "warm enough not to be hurt at once (%.1f)" % float(v["warmth"]))
 	check(items.inventory_of(1).count_of(stone) == 7, "the whole pack is kept")
 	check(int(items._strain[1]["state"]) == 0, "awake")
+	check(not items.fainted_of(1), "and standing again for the others")
 	check((items._peer_pos[1] as Vector3).is_equal_approx(Vector3(150.0, 5.0, 0.0)), "the server has them there too")
 
 	# Nearest by distance: from beyond the bandit camp the town is nearer.

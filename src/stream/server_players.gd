@@ -223,8 +223,10 @@ func tick(delta: float) -> void:
 			heard[peer] = pos
 
 		var swing: Array = _swings.get(peer, [0, 0])
-		var stance: int = 3 if items.fainted_of(peer) else clampi(int(items.stance_of(peer)), 0, 3)   # fainted or passed out from cold: drawn lying, as it is
-		var state: int = stance | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0) \
+		var down: bool = items.fainted_of(peer)
+		var stance: int = 3 if down else clampi(int(items.stance_of(peer)), 0, 3)   # fainted, or passed out from cold or in water: drawn lying, as it is
+		# a body down in water is not shown treading water (the swim clip wins over lying)
+		var state: int = stance | (SWIM if items.is_swimming(peer) and not down else 0) | (CARRY if items.carries_log(peer) else 0) \
 				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
 		var left: int = int(items.left_hand_number(peer))
 		var more: int = (MORE_LIT if items.torch_burning(peer) else 0) | ((int(items.hand_flags(peer)) & 15) << MORE_HANDS_SHIFT) | (int(_meals.get(peer, 0)) << MORE_MEAL_SHIFT)
