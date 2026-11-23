@@ -24,6 +24,7 @@ const RUB_COLOR := Color(0.78, 0.68, 0.50)   # fresh wood under rubbed-off bark
 const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out too (a route's print spacing starts at its home)
 const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
 const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
+const DROPPINGS_LIFT_M := 0.035  # deer droppings have no patch under them: among the leaf cards, not hovering over bare ground
 const PELLET_LIFT_M := 0.06      # pellets sit this far up: on top of the leaf cards (grass_view lays them 3 cm up) and the latrine's patch, not under them (Lane A 23 Nov)
 const LATRINE_BED_COLOR := Color(0.36, 0.26, 0.16)   # scratched bare earth: warmer and darker than the pale pressed ground round it, lighter than the pellets
 
@@ -553,12 +554,12 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 			var spread: float = float(cfg.get("heap_m", 0.22))
 
 			if kind == "latrine":   # a latrine lies on a patch the rabbits scratch bare (a dark earth patch, over litter and short grass)
-				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.75, spot.y), TAU * _h01(spot, 7), 1.0])
+				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.2, spot.y), TAU * _h01(spot, 7), 1.0])   # a thick disc sunk into the ground, its top just under the pellets
 
 			for n in count:
 				var r: float = spread * sqrt(_h01(spot, 30 + n))
 				var a: float = TAU * _h01(spot, 60 + n)
-				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y + PELLET_LIFT_M, spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
+				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y + (PELLET_LIFT_M if kind == "latrine" else DROPPINGS_LIFT_M), spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
 		"rub":
 			var y4: float = _heap_ground(spot)
 
@@ -710,7 +711,7 @@ func _mesh(layer: String) -> Mesh:
 			var bed: CylinderMesh = CylinderMesh.new()
 			bed.top_radius = 0.4
 			bed.bottom_radius = 0.45
-			bed.height = 0.015
+			bed.height = 0.08   # its base sunk below the ground, so it never hovers on bare ground or a slope
 			bed.radial_segments = 10
 			bed.rings = 1
 			material.albedo_color = LATRINE_BED_COLOR
@@ -802,7 +803,7 @@ func _glow(at: Vector3, size: float) -> void:
 	node.name = "TrailSignGlow"
 	node.mesh = plane
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.position = at + Vector3(0.0, 0.09, 0.0)   # over the leaf cards and the latrine patch
+	node.position = at + Vector3(0.0, 0.1, 0.0)   # over the leaf cards and the latrine patch
 	add_child(node)
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
 	var peak: float = float(cfg.get("glow_alpha", 0.6))

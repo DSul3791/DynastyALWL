@@ -1,7 +1,7 @@
 {
 	"note": "Stage 2d (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, TR-13): signs along the trails, worked out on each client from the routes it already has (same spots for every player, no server cost). Rabbits leave pellet latrines by the warren and at the grazing end of a run and dig scrapes where runs of different warrens meet; deer leave prints where a trail crosses wet ground and droppings by the bed (Ziege et al. 2016, BMC Ecology, rabbit latrines; onX and Idaho Fish and Game on deer sign). A player sees them from Tracking skill see_level (latrines and droppings) and fine_level (scrapes and prints; both 0 since Dave's 23 Nov 2026 ruling that signs are simply there for everyone, see everyone_note; they were 5 and 25), within draw_m (min at see_level, max at 100). Nothing is made before the player has ground (the first-join window). Provisional.",
 	"ground_note": "Lane A 23 Nov: no sign was drawn while standing still. A sign whose ground has no collision yet is worked out again every ground_retry_s, at most ground_retries times before the player moves.",
-	"size_note": "Lane A 23 Nov: pellets, mounds and the faint halo were not seen at standing height. pellet_scale and mound_scale make them about one and a half times true size so a heap and a warren read at a glance.",
+	"size_note": "Lane A 23 Nov: pellets, mounds and the faint halo were not seen at standing height. pellet_scale and mound_scale make them larger than true size (pellets 2x, mounds 1.3 to 1.8x) so a heap and a warren read at a glance.",
 	"pellet_scale": 2.0,
 	"patch_note": "Lane A 23 Nov: the latrines lay in knee-high grass. The grass round a latrine, droppings and a warren is pressed short and pale (grass_view run map), patch_m the radius; Pellets lie 6 cm up, over the leaf cards (3 cm), on a darker scratched patch; the glow is warm gold (pale vanished on the pale pressed ground). glow_emit and halo_emit give the spot glow and the Tracking halo a little light of their own so they show on litter and in shade.",
 	"patch_m": {"latrine": 0.7, "droppings": 0.6, "warren": 3.2},
@@ -26,7 +26,7 @@
 	"halo_m": 1.0,
 	"latrine_off_m": [1.0, 3.0],
 	"latrine_pellets": [30, 50],
-	"latrine_note": "Lane A 23 Nov 2026 (Job S): 8 to 15 pellets of 1.6 cm at ground level under leaf litter and grass did not show at all. A latrine is now 30 to 50 pellets of about 2 cm on a dark scratched-earth patch about 0.65 m across (real rabbit latrines hold dozens to hundreds of pellets, often on a scraped patch), lifted 2 cm over the litter; deer droppings 15 to 25.",
+	"latrine_note": "Lane A 23 Nov 2026 (Job S): 8 to 15 pellets of 1.6 cm at ground level under leaf litter and grass did not show at all. A latrine is now 30 to 50 pellets of about 2 cm on a dark scratched-earth patch about 0.65 m across (real rabbit latrines hold dozens to hundreds of pellets, often on a scraped patch), lifted 6 cm over the leaf cards (3.5 cm for deer droppings); deer droppings 15 to 25.",
 	"junction_m": 2.0,
 	"junction_clear_m": 5.0,
 	"prints_every_m": 30.0,
