@@ -180,6 +180,9 @@ func _init() -> void:
 	items._vitals_tick(6.0 * 3600.0 / 72.0)
 	var v6b: Dictionary = items.vitals_of(6)
 	check([float(v6b["fed"]), float(v6b["wet"]), float(v6b.get("warmth", 0.0)), float(v6b.get("water", 0.0))] == was, "absent: no hunger, thirst, cold or drying (%s, was %s)" % [str([v6b["fed"], v6b["wet"], v6b.get("warmth", 0.0), v6b.get("water", 0.0)]), str(was)])
+	var stones6: int = _count(items.inventory_of(6), stone)
+	items.action(6, Net.ACT_DROP, _slot_of(items.inventory_of(6), stone), 0, 1, HERE)
+	check(_count(items.inventory_of(6), stone) == stones6 and stones6 >= 1, "an absent player acts on nothing (a drop while parked: %d stones, was %d)" % [_count(items.inventory_of(6), stone), stones6])
 	items._heard_ms[6] = now - 5000
 	items._park_check_ms = now - 5000
 	items._park_quiet(now)
@@ -187,6 +190,8 @@ func _init() -> void:
 	items._park_check_ms = 0
 	items.report_position(6, HERE + Vector3(1.0, 0.0, 0.0))
 	check(not items.is_absent(6) and items.peer_ids().has(6) and items.wolf_info().size() == 1, "its next report puts the body back for everyone")
+	items.action(6, Net.ACT_DROP, _slot_of(items.inventory_of(6), stone), 0, 1, HERE + Vector3(1.0, 0.0, 0.0))
+	check(_count(items.inventory_of(6), stone) == stones6 - 1, "and it acts again (control: the same drop goes through, %d stones)" % _count(items.inventory_of(6), stone))
 	items._vitals_tick(6.0 * 3600.0 / 72.0)
 	check(float(items.vitals_of(6)["fed"]) < float(was[0]) or float(items.vitals_of(6)["wet"]) < float(was[1]), "and its vitals run again (control: the same tick does drain a present player)")
 	items._heard_ms[6] = now - ItemsScript.ABSENT_MS - 5000

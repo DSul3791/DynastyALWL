@@ -1495,8 +1495,8 @@ func action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> vo
 func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> void:
 	var inv = inventory_of(peer)
 
-	if inv == null:
-		return
+	if inv == null or _parked.has(peer):
+		return   # an absent player (no position report for ABSENT_MS) acts on nothing: a game that stops reporting is no untouchable body that still crafts and eats (gate review); a frozen game's next report puts it back within 0.2 s
 
 	var before: Array = _snapshot(inv)
 
