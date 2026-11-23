@@ -12,6 +12,7 @@ const PlayerViewScript := preload("res://src/client/player_view.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const BodyModelsScript := preload("res://src/client/character/body_models.gd")
+const HeldItemScript := preload("res://src/client/held_item.gd")
 const MotionBufferScript := preload("res://src/client/motion_buffer.gd")
 
 var failures: int = 0
@@ -281,6 +282,13 @@ func _check_holds() -> void:
 				spears += 1
 				var point: Vector3 = -model.global_basis.z.normalized()
 				check(point.dot(front) > 0.95, "%s %s: the spear points ahead along the facing (%.2f)" % [body, id, point.dot(front)])
+				var rest: Transform3D = mount.transform
+				mount.rotate_object_local(Vector3.RIGHT, 0.6)   # the hand swings, as a walk clip moves it; the spear keeps the facing, its fist the hand
+				mount.position += Vector3(0.0, 0.0, 15.0)   # 0.15 m in the centimetre skeleton
+				PlayerViewScript.aim_spear(model, rig)
+				var fist: Node3D = model.get_node_or_null(HeldItemScript.THIRD_FIST_NAME) as Node3D
+				check(fist != null and fist.global_position.distance_to(mount.global_position) < 0.02 and fist.global_basis.z.normalized().dot(mount.global_basis.z.normalized()) > 0.99, "%s %s: the fist stays on the hand, along the fingers, as it swings" % [body, id])
+				mount.transform = rest
 
 			model.free()
 

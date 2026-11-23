@@ -370,6 +370,10 @@ static func aim_spear(model: Node3D, rig: Node3D) -> void:
 	var x: Vector3 = Vector3.UP.cross(z).normalized()
 	var mount: Node3D = model.get_parent() as Node3D
 	model.global_transform = Transform3D(Basis(x, z.cross(x), z), mount.global_position + tip * HeldItem.SPEAR_GRIP_Z)
+	var fist: Node3D = model.get_node_or_null(HeldItem.THIRD_FIST_NAME) as Node3D
+
+	if fist != null:
+		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(HeldItem.THIRD_FIST_SCALE), Vector3.ZERO)   # back on the hand, as held_item.gd refits it each frame
 
 
 # The body files this look needs are read (warmed on loader threads by on_look): no main-thread read of a 28 MB glb in the middle of play.
