@@ -1570,6 +1570,9 @@ func _audit_walk(chunk: Vector2i) -> void:
 			var x: float = x0 + float(i)
 			var z: float = z0 + float(j)
 			var h: float = float(generator.surface_height(x, z))
+
+			if is_nan(h):
+				h = -INF   # no ground known (an unbaked tile): a way out, never a trap
 			var level: float = _water_level(x, z)
 			ground[j * n + i] = h
 			top[j * n + i] = h
@@ -1578,13 +1581,20 @@ func _audit_walk(chunk: Vector2i) -> void:
 				top[j * n + i] = level
 				swim[j * n + i] = 1
 
+	var base: PackedFloat32Array = ground.duplicate()
+
 	for cz in range(int(floor((z0 - 0.5) / float(WINDOW_M))), int(floor((z0 + float(n)) / float(WINDOW_M))) + 1):
 		for cx in range(int(floor((x0 - 0.5) / float(WINDOW_M))), int(floor((x0 + float(n)) / float(WINDOW_M))) + 1):
 			var centre: Vector2 = (Vector2(cx, cz) + Vector2(0.5, 0.5)) * float(WINDOW_M)
 
-			for rock in _boulders_round(centre, float(WINDOW_M) * 0.5):
+			for rock in _boulders_round(centre, float(WINDOW_M) * 0.75):   # past the cell's corners
 				var q: Vector3 = rock[0]
 				var r: float = float(rock[1])
+
+				if Vector2i(int(floor(q.x / float(WINDOW_M))), int(floor(q.z / float(WINDOW_M)))) != Vector2i(cx, cz):
+					continue   # each rock once: from its own cell
+
+				_checked("walk rocks")
 				var reach: int = int(ceil(r))
 
 				for dj in range(-reach, reach + 1):
@@ -1596,7 +1606,7 @@ func _audit_walk(chunk: Vector2i) -> void:
 							continue
 
 						if Vector2(x0 + float(i) - q.x, z0 + float(j) - q.z).length() < r * 0.9:
-							top[j * n + i] = maxf(top[j * n + i], ground[j * n + i] + r * 0.7)
+							top[j * n + i] = maxf(top[j * n + i], base[j * n + i] + r * 0.7)   # from the bare ground, so overlapping rocks do not stack
 							ground[j * n + i] = top[j * n + i]   # the rock is the floor there
 
 	var stand: PackedByteArray = PackedByteArray()   # 1: a floor a player stands and jumps on (under 45 degrees) or water
@@ -1616,14 +1626,14 @@ func _audit_walk(chunk: Vector2i) -> void:
 			stand[k] = 1 if gx * gx + gz * gz <= 1.0 else 0
 
 	# Backwards from the window's edge: a spot is free when it has a step to a free spot.
-	var free: PackedByteArray = PackedByteArray()
-	free.resize(n * n)
+	var can_leave: PackedByteArray = PackedByteArray()
+	can_leave.resize(n * n)
 	var queue: PackedInt32Array = PackedInt32Array()
 
 	for k in n:
 		for edge in [k, (n - 1) * n + k, k * n, k * n + n - 1]:
-			if free[edge] == 0:
-				free[edge] = 1
+			if can_leave[edge] == 0:
+				can_leave[edge] = 1
 				queue.append(edge)
 
 	var head: int = 0
@@ -1644,14 +1654,14 @@ func _audit_walk(chunk: Vector2i) -> void:
 
 			var a: int = aj * n + ai
 
-			if free[a] == 1:
+			if can_leave[a] == 1:
 				continue
 
 			var rise: float = (minf(top[b], maxf(ground[b], top[a])) if swim[b] == 1 else top[b]) - top[a]   # into water: wade in from its bed, then swim up
 			var can: bool = rise <= 0.0 or (stand[a] == 1 and rise <= (WALK_BANK_M if swim[a] == 1 else WALK_JUMP_M))
 
 			if can:
-				free[a] = 1
+				can_leave[a] = 1
 				queue.append(a)
 
 	# The trapped spots inside the chunk, gathered into pits.
@@ -1664,7 +1674,7 @@ func _audit_walk(chunk: Vector2i) -> void:
 			var k: int = j * n + i
 			_checked("walk spots")
 
-			if free[k] == 1 or seen[k] == 1:
+			if can_leave[k] == 1 or seen[k] == 1:
 				continue
 
 			var pit: PackedInt32Array = PackedInt32Array([k])
@@ -1689,15 +1699,22 @@ func _audit_walk(chunk: Vector2i) -> void:
 
 					var m: int = nj * n + ni
 
-					if free[m] == 1:
+					if can_leave[m] == 1:
 						rim = minf(rim, top[m])
 					elif seen[m] == 0:
 						seen[m] = 1
 						pit.append(m)
 
-			trapped += pit.size()
+			var inner: int = 0
+
+			for c in pit:
+				var ci: int = c % n
+				var cj: int = int(float(c) / float(n))
+				inner += 1 if ci >= WALK_PAD_M and cj >= WALK_PAD_M and ci < n - WALK_PAD_M and cj < n - WALK_PAD_M else 0
+
+			trapped += inner
 			var at: Vector3 = Vector3(x0 + float(low % n), top[low], z0 + floorf(float(low) / float(n)))
-			var note: String = "%d m2, floor y %.1f, lowest way out y %.1f%s" % [pit.size(), top[low], rim, ", water" if swim[low] == 1 else ""]
+			var note: String = "%d m2 (%d in this chunk), floor y %.1f, lowest way out y %.1f%s" % [pit.size(), inner, top[low], rim, ", water" if swim[low] == 1 else ""]
 			_fault("walk_trap", float(pit.size()), at, note)
 
 			if rim - top[low] >= float(FAULTS["walk_trap_deep"][1]):
