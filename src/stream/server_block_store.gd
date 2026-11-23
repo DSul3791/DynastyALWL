@@ -128,6 +128,9 @@ const OPS_KEY := "_ops"   # in revisions.json: how many edits of the log the rev
 
 
 func _count_unsaved_edits(counted: int) -> void:
+	if counted >= ops.count:
+		return   # a clean stop: the revisions count every edit (or the log was cut back below them)
+
 	var list: Array = ops.edits()
 
 	for n in range(clampi(counted, 0, list.size()), list.size()):

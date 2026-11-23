@@ -93,6 +93,16 @@ func _init() -> void:
 	var written: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/revisions.json"))
 	check(int(written.get(BlockStore.OPS_KEY, -1)) == 7 and not b.tile_revisions.has(BlockStore.OPS_KEY) and not b.revisions().has(BlockStore.OPS_KEY), "the file counts the 7 edits; the count is not a tile and is not sent to clients")
 
+	# A ground reset empties the log and raises every tile past CATCH_UP_MAX; after a dig and a hard stop the count still matches.
+	var before_reset: int = b.revision_of(tile)
+	b.reset_edits()
+	dig(b, 9)
+	var after_dig: int = b.revision_of(tile)
+	b = null
+	var r = open_store()
+	check(r.ops.count == 1 and after_dig == before_reset + BlockStore.CATCH_UP_MAX + 2 and r.revision_of(tile) == after_dig, "after a ground reset, a dig and a hard stop the tile comes back at %d (%d, %d edits in the log)" % [after_dig, r.revision_of(tile), r.ops.count])
+	r = null
+
 	# A revisions.json from before the count (the live 9257 save): the revisions load as they are.
 	var old := FileAccess.open(DIR + "/revisions.json", FileAccess.WRITE)
 	old.store_string(JSON.stringify({"58,71": 4}))
