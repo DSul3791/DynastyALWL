@@ -109,6 +109,52 @@ func stopped_after(done: int, from: String = DIR, to: String = COPY) -> Array:
 	return [got, names.size()]
 
 
+# A store where the Stone is in the pack; it is put into the chest and a save runs with `block` (a path under the store, or "area" for the
+# chest's world item area) unable to be written. True when the store then reads as before, and as after once the block is gone.
+func lost_file_case(block: String, periodic: bool, stone: int) -> bool:
+	copy_dir(DIR, COPY)
+	var it = make(COPY)
+	var was: Array = state_of(it)
+	it.peer_connected_hello(1, KEY)
+	it.report_position(1, HERE)
+	var box_id: int = 0
+
+	for id in it._items:
+		if it._items[id].has("struct") and str(it._items[id]["struct"]["kind"]) == "chest":
+			box_id = id
+
+	it.action(1, Net.ACT_CHEST_OPEN, box_id, 0, 0, Vector3.ZERO)
+	it.action(1, Net.ACT_CHEST_PUT, it.inventory_of(1).numbers.find(stone), box_id, 20, Vector3.ZERO)
+	it.drop_in_world(it.table.number_of("stick"), 2, HERE + Vector3(0.0, 0.0, 2.0))   # a change in the area too, so the area file is written
+	var wanted: Array = state_of(it)
+	var area: String = ItemsScript.AREA_DIR + "/" + it.area_key_of(HERE.x, HERE.z) + ".json.tmp"
+	var path: String = COPY + "/" + (area if block == "area" else block)
+	DirAccess.make_dir_recursive_absolute(path)
+	it._area_dirty[it.area_key_of(HERE.x, HERE.z)] = true   # what the rolling check would mark within a save interval (_save_sweep)
+	it._dirty = true
+	it._async_writes = periodic
+	it.save()
+	it._start_writer()
+	it._finish_writer()
+	it._async_writes = false
+	var read_then = make(COPY)
+	var then: Array = state_of(read_then)
+	read_then._finish_writer()
+	DirAccess.remove_absolute(path)
+	it.tick(0.05)   # the failed save marks the world for saving again
+	it.save()
+	it._finish_writer()
+	var read_now = make(COPY)
+	var now: Array = state_of(read_now)
+	read_now._finish_writer()
+	it._finish_writer()
+
+	if then != was or now != wanted:
+		print("     %s periodic %s: before %s, read after the failed save %s, after the next save %s (wanted %s)" % [block, periodic, str(was), str(then), str(now), str(wanted)])
+
+	return then == was and now == wanted
+
+
 func _init() -> void:
 	wipe(DIR)
 	var items = make(DIR)
@@ -222,6 +268,10 @@ func _init() -> void:
 	check(state_of(read_now) == wanted and read_now.load_failures.is_empty(), "once the file can be written the next save lands whole (%s)" % str(state_of(read_now)))
 	read_now._finish_writer()
 	full._finish_writer()
+
+	# The same with the background writer (the periodic save) and with the file lost being an area or the header itself.
+	for case in [["chests.json.tmp", true], ["world_items.json.tmp", false], ["world_items.json.tmp", true], ["area", false], ["area", true]]:
+		check(lost_file_case(str(case[0]), bool(case[1]), stone), "%s save that cannot write %s: no header, the others put back, the store reads as the save before; the next save lands whole" % ["a periodic" if case[1] else "a direct", "an area file" if case[0] == "area" else str(case[0]).trim_suffix(".tmp")])
 
 	# A save after a stop goes on from the save that was read, and the next stop again reads whole.
 	copy_dir(DIR, COPY)

@@ -762,7 +762,7 @@ func save_revisions() -> void:
 
 	if _revisions_dirty:
 		_revisions_dirty = false
-		if not ItemsScript._write_file(_store_dir + "/revisions.json", JSON.stringify(tile_revisions, "\t", true)):   # whole to a .tmp, then moved over
+		if not ItemsScript._write_file(_store_dir + "/revisions.json", JSON.stringify(tile_revisions, "\t", true), false):   # whole to a .tmp, then moved over
 			_revisions_dirty = true   # tried again at the next call
 
 	_edit_mutex.unlock()

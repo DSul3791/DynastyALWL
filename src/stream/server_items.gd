@@ -2257,7 +2257,6 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 
 	var areas: Dictionary = {}
 	var listed: Dictionary = {}
-	var failed: Array = []
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
@@ -2279,20 +2278,20 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
-			failed.append(key)   # not written: the header names the gen still on disk, and the next save builds it again (no sum)
+			_skip_item_job(job, done)   # an area that could not be written: no header, like any other file of the save (the areas built again next save)
+			return
 
-			if sums.has(key):
-				listed[key] = int(sums[key])
-
-			continue
-
+		done.append(path)
 		sums[key] = gen
 		listed[key] = gen
 
 	var world: Dictionary = (job["world"] as Dictionary).duplicate()
 	world["areas"] = listed
 	world["gen"] = gen
-	_write_file(dir + "/world_items.json", JSON.stringify(world))
+
+	if not _write_file(dir + "/world_items.json", JSON.stringify(world)):
+		_skip_item_job(job, done)   # the header itself: the store stays the save before, and what this save wrote goes back
+		return
 
 	for key in sums.keys():
 		if not listed.has(key):
@@ -2302,11 +2301,6 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 		if file.ends_with(".json") and not listed.has(file.trim_suffix(".json")):
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file)   # an area left empty (its .prev goes too: the header no longer names it)
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file + ".prev")
-
-	for key in failed:
-		sums.erase(key)
-
-	(job["failed_out"] as Array).append_array(failed)   # read on the tick once this writer is done: the save runs again for them
 
 
 # Every saved world item row of a store, for the tests and tools: the header's area files in order, or an older file's own rows.
@@ -8827,32 +8821,54 @@ static func restore_missing(path: String) -> String:
 	return done
 
 
-static func _write_file(path: String, text: String) -> bool:
-	_file_lock.lock()
+# locked false: a small file only the main thread writes (traders, NPC flags, tile revisions, picked plants), which need not wait while the
+# background writer holds the lock through a big save.
+static func _write_file(path: String, text: String, locked: bool = true) -> bool:
+	if locked:
+		_file_lock.lock()
+
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
 	if file == null:
-		_file_lock.unlock()
+		if locked:
+			_file_lock.unlock()
+
 		push_error("SERVER SAVE FAILED: cannot write %s (%s; a read-only or missing store?): the file on disk is the save before, kept as it is" % [path, error_string(FileAccess.get_open_error())])
 		return false
 
 	var stored: bool = file.store_string(text)
 	var error: int = file.get_error()
 	file.close()
+	var whole: bool = stored and (error == OK or error == ERR_FILE_EOF)
 
-	if not stored or (error != OK and error != ERR_FILE_EOF):
+	if whole:   # the last buffered bytes go out at the close: what landed is read back by its length
+		var check: FileAccess = FileAccess.open(path + ".tmp", FileAccess.READ)
+		whole = check != null and check.get_length() == text.to_utf8_buffer().size()
+
+	if not whole:
 		DirAccess.remove_absolute(path + ".tmp")   # a disk that filled part way: the torn .tmp is never moved over the whole file
-		_file_lock.unlock()
+
+		if locked:
+			_file_lock.unlock()
+
 		push_error("SERVER SAVE FAILED: %s could not be written whole (%s; is the disk full?): the file on disk is the save before, kept as it is" % [path, error_string(error)])
 		return false
 
 	# The file it replaces becomes .prev by a rename, not a copy: a copy onto a full disk tore the .prev, the one fallback. A stop between the two
 	# renames leaves .tmp and .prev and no file, which restore_missing puts back from the whole .tmp.
-	if FileAccess.file_exists(path):
-		DirAccess.rename_absolute(path, path + ".prev")
+	if FileAccess.file_exists(path) and DirAccess.rename_absolute(path, path + ".prev") != OK:
+		DirAccess.remove_absolute(path + ".tmp")   # the file could not become .prev (held open elsewhere?): nothing is moved, the save before stands
+
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: %s could not be moved to %s.prev: the file on disk is the save before, kept as it is" % [path, path])
+		return false
 
 	var moved: bool = DirAccess.rename_absolute(path + ".tmp", path) == OK
-	_file_lock.unlock()
+
+	if locked:
+		_file_lock.unlock()
 
 	if not moved:
 		push_error("SERVER SAVE FAILED: %s.tmp could not be moved into place: restored at the next start from the .tmp" % path)

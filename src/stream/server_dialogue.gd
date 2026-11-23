@@ -180,4 +180,4 @@ func _save() -> void:
 	if _dir == "":
 		return
 
-	ItemsScript._write_file(_dir + "/npc_flags.json", JSON.stringify({"version": 1, "players": _flags}))   # whole to a .tmp, then moved over
+	ItemsScript._write_file(_dir + "/npc_flags.json", JSON.stringify({"version": 1, "players": _flags}), false)   # whole to a .tmp, then moved over

@@ -594,13 +594,13 @@ func save_removed(force: bool = false) -> void:
 		var path: String = "%s/%d_%d.json" % [_dir, chunk.x, chunk.y]
 
 		if (writes[chunk] as Array).is_empty():
-			for one in [path, path + ".prev", path + ".tmp"]:   # its earlier copies go too, or the next start would put the old one back
+			for one in [path + ".tmp", path + ".prev", path]:   # its earlier copies go too (first, so a stop between leaves nothing to put back), or the next start would put the old one back
 				if FileAccess.file_exists(one):
 					DirAccess.remove_absolute(one)
 
 			continue
 
-		if not ItemsScript._write_file(path, JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]})):   # whole to a .tmp, then moved over
+		if not ItemsScript._write_file(path, JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}), false):   # whole to a .tmp, then moved over
 			failed.append(chunk)
 
 	if not failed.is_empty():

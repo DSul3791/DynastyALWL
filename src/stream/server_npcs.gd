@@ -561,4 +561,4 @@ func _save_admin() -> void:
 		if npcs[id]["home"] != Vector3.INF:
 			homes.append({"id": id, "x": npcs[id]["home"].x, "z": npcs[id]["home"].z})
 
-	ItemsScript._write_file(_dir + "/npc_admin.json", JSON.stringify({"version": 1, "markers": rows, "npc_homes": homes}))   # whole to a .tmp, then moved over
+	ItemsScript._write_file(_dir + "/npc_admin.json", JSON.stringify({"version": 1, "markers": rows, "npc_homes": homes}), false)   # whole to a .tmp, then moved over

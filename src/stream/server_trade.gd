@@ -47,7 +47,7 @@ func save() -> void:
 	if _path == "":
 		return
 
-	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "traders": _state}))   # whole to a .tmp, then moved over: a hard stop never tears it
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "traders": _state}), false)   # whole to a .tmp, then moved over: a hard stop never tears it
 
 
 func _game_s() -> float:

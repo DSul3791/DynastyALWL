@@ -12,6 +12,17 @@ const BowScript := preload("res://src/stream/server_bow.gd")
 var failures: int = 0
 
 
+
+# A save file's text without its "gen" (each save carries its own number: test_save_set), for comparing what two saves wrote.
+func without_gen(text: String) -> String:
+	var parsed: Variant = JSON.parse_string(text)
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return text
+
+	parsed.erase("gen")
+	return JSON.stringify(parsed)
+
 func check(ok: bool, what: String) -> void:
 	if not ok:
 		failures += 1
@@ -130,7 +141,7 @@ func _init() -> void:
 	a._finish_writer()
 
 	for file in files:
-		check(FileAccess.file_exists(dir + "/" + file) and FileAccess.get_file_as_string(dir + "/" + file) == direct[file], "%s: the periodic save writes what a direct save writes, as of its copy" % file)
+		check(FileAccess.file_exists(dir + "/" + file) and without_gen(FileAccess.get_file_as_string(dir + "/" + file)) == without_gen(direct[file]), "%s: the periodic save writes what a direct save writes, as of its copy" % file)
 
 	check(FileAccess.file_exists(dir + "/world_items.json") and world_save(dir) == direct_world, "world items: the periodic save writes what a direct save writes, as of its copy")
 
