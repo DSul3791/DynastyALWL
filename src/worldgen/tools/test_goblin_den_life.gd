@@ -154,7 +154,15 @@ func _init() -> void:
 	g0["state"] = a.GRAZE
 	hurts = 0
 	steps(a, g0, 0.25)
-	steps(a, g0, 3.0)
+	var went: Array = [int(g0["state"])]
+
+	for _k in 12:   # 3 s in quarter seconds: the warning, the lunge stopped at the wall, the rest after it
+		steps(a, g0, 0.25)
+
+		if went.back() != int(g0["state"]):
+			went.append(int(g0["state"]))
+
+	check(went.has(a.big_game.CHARGE) and went.has(a.big_game.RECOVER), "it warns, lunges and recovers (%s): the wall stops the lunge, it is never stuck in it" % str(went))
 	check(hurts == 0 and g0["pos"].x > wall_x, "a wall across the passage between them: the lunge stops at it and never strikes through it (%d blows, goblin at x %.2f, the wall at %.2f)" % [hurts, g0["pos"].x, wall_x])
 	a.walls = Callable()
 

@@ -677,6 +677,7 @@ func _step_cave(a: Dictionary, def: Dictionary, dt: float) -> void:
 		if float(a["timer"]) <= 0.0:
 			a["state"] = host.big_game.CHARGE
 			a["ran"] = 0.0
+			a["charged_s"] = 0.0
 			a["hit"] = false
 
 		return
@@ -687,12 +688,15 @@ func _step_cave(a: Dictionary, def: Dictionary, dt: float) -> void:
 		var there: bool = _walk(a, goal, float(defend.get("charge_mps", 5.0)), dt, true)
 		a["ran"] = float(a["ran"]) + absf(float(a["cave_at"]) - from)
 
+		a["charged_s"] = float(a.get("charged_s", 0.0)) + dt   # the blow waits strike_min_s into the lunge, as the big game charge's
+		var may_land: bool = float(a["charged_s"]) >= float(defend.get("strike_min_s", 0.0)) - 0.0001
+
 		# Never through a wall (a player who walled off the den passage): the same rule as the big game charge (host.wall_between).
-		if not near.is_empty() and not bool(a["hit"]) and (near["pos"] as Vector3).distance_to(a["pos"]) <= float(defend.get("hit_m", 1.0)) + 0.6 and not host.wall_between(a["pos"], near["pos"]) and host.big_game.hurt_player.is_valid():
+		if not near.is_empty() and not bool(a["hit"]) and may_land and (near["pos"] as Vector3).distance_to(a["pos"]) <= float(defend.get("hit_m", 1.0)) + 0.6 and not host.wall_between(a["pos"], near["pos"]) and host.big_game.hurt_player.is_valid():
 			a["hit"] = true
 			host.big_game.hurt_player.call(int(near["peer"]), float(defend.get("damage", 8.0)) * host.level_x(a, "damage"), false, str(a["sp"]), a["pos"])
 
-		if bool(a["hit"]) or float(a["ran"]) >= float(defend.get("charge_m", 15.0)) or there:
+		if bool(a["hit"]) or float(a["ran"]) >= float(defend.get("charge_m", 15.0)) or (there and may_land):   # at the player early: it holds the lunge until the blow may land
 			a["state"] = host.big_game.RECOVER
 			a["timer"] = float(defend.get("recover_s", 3.0))
 

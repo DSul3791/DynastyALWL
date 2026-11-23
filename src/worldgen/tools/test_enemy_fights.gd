@@ -4,7 +4,8 @@ extends SceneTree
 # server scene wires them (terrain_server.gd: hit_animal, the big game's hurt_player with its 10-health floor, the walls).
 #   1. every melee weapon, by type and tier, against a wild goblin and a level 1 and level 5 camp bandit: it lands, it wears by each blow,
 #      a higher tier of a type takes no more blows than the one below, and no fight takes a silly number of blows (a table is printed);
-#   2. an enemy's attack is readable as the animals' are: a warning, a strike, a recovery, and no second strike inside the recovery;
+#   2. an enemy's attack is readable as the animals' are: a warning, a strike, a recovery, and no second strike inside the recovery; from
+#      beside the player the strike is still drawn charging strike_min_s before it lands;
 #   3. it never lands from out of reach (a player who steps aside) nor through a wall between them;
 #   4. worn armour and a raised shield cut a bandit's blow, and both wear by it; a bandit's blow is his weapon's kind (a level 5 bandit's iron
 #      sword cuts, so mail stops more of it than of a level 1 bandit's club);
@@ -249,6 +250,31 @@ func _readable() -> void:
 		check(hit_at > 0.0 and warned >= float(def["warn_s"]) - 0.01, "its blow lands %.2f s after the warning began (the warning is %.2f s)" % [warned, float(def["warn_s"])])
 		var in_recovery: int = landed.filter(func(l): return float(l[0]) > hit_at and float(l[0]) < hit_at + float(def["recover_s"])).size()
 		check(landed.size() >= 1 and in_recovery == 0, "and no second blow inside its %.1f s recovery (%d blows in all)" % [float(def["recover_s"]), landed.size()])
+
+
+	# From right beside the player (the robots over a lossy link, 23 Nov 2026: a bandit warning from 1.4 m struck on the charge's first step,
+	# so no client ever drew the charge): the strike is held strike_min_s, in the charge state, before the blow lands.
+	for sp in ["goblin", "bandit"]:
+		var def: Dictionary = animals.species_def(sp)["defend"]
+
+		for d in [1.0, 1.4]:
+			fresh_player()
+			var id: int = enemy(sp, d)
+			animals.big_game.warn(animals.animals[id], Vector3(0.0, 10.0, 0.0), -1.0, true)
+			var charging: float = 0.0
+			var closest: float = INF
+
+			for k in int(4.0 / DT):
+				tick(DT)
+
+				if landed.is_empty() and animals.animals.has(id) and int(animals.animals[id]["state"]) == BigGame.CHARGE:
+					charging += DT
+
+				if animals.animals.has(id):
+					closest = minf(closest, Vector2(animals.animals[id]["pos"].x, animals.animals[id]["pos"].z).length())
+
+			check(landed.size() == 1 and charging >= float(def["strike_min_s"]) - 0.001, "a %s warning from %.1f m strikes once, after %.2f s drawn charging (at least %.2f)" % [sp, d, charging, float(def["strike_min_s"])])
+			check(closest >= 0.3, "and never runs into the player meanwhile (nearest %.2f m)" % closest)
 
 
 # 3. Out of reach and through walls.
