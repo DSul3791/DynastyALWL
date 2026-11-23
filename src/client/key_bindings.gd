@@ -96,6 +96,7 @@ const MODIFIER_KEYS := [KEY_CTRL, KEY_SHIFT, KEY_ALT, KEY_META]
 static var _changed: Dictionary = {}        # id -> {"key": int, "ctrl": bool, "shift": bool}
 static var _loaded: bool = false
 static var _chord_lock: bool = false        # an admin chord fired: Ctrl (down) and Shift (run) are ignored by held() until both are let go
+static var version: int = 0                 # goes up on every change, so a button built once can see that its key label is old and relabel
 static var path: String = PATH              # tests point this at their own file with use_path() (use_path keeps the file, loaded choices and statics together)
 
 
@@ -216,6 +217,8 @@ static func _resolve_admin_clashes() -> void:
 
 static func save() -> void:
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	version += 1
 
 	if file != null:
 		file.store_string(JSON.stringify(_changed, "\t"))

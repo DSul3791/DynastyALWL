@@ -96,6 +96,8 @@ func _init() -> void:
 	w.send_notice = func(_p, _text): pass
 	var struck: Array = []
 	w.hit_animal_path = func(peer, from, to, damage, _lag): struck.append([peer, from, to, damage]); return {}
+	var alarmed: Array = []
+	w.animal_alarm = func(point, radius): alarmed.append([point, radius])
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
@@ -248,6 +250,7 @@ func _init() -> void:
 	check(absf(health_2 - float(w.vitals_of(2)["health"]) - float(crush["health"])) < 0.001, "the player it lands on loses %.0f health (%.0f -> %.0f)" % [float(crush["health"]), health_2, float(w.vitals_of(2)["health"])])
 	check(float(w.vitals_of(1)["health"]) == health_1, "the feller standing behind it is not hurt")
 	check(struck.size() == 1 and int(struck[0][0]) == 1 and absf(float(struck[0][3]) - float(crush["animal"])) < 0.001, "the first animal along the trunk is struck for %.0f, by the feller (%s)" % [float(crush["animal"]), str(struck)])
+	check(alarmed.size() == 1 and float(alarmed[0][1]) == float(crush["alarm_m"]) and (alarmed[0][0] as Vector3).distance_to(base) < 22.0, "the crash startles the animals within alarm_m of the fallen tree (%s)" % str(alarmed))
 	check(not tree.has("fresh") and logs.all(func(k): return not w._items[k].has("fall")) and w._falls.is_empty(), "landed: the stump is no longer fresh and the logs lie")
 	check(logs.all(func(k): return w._logs.has(k)), "the logs are bodies in the log physics from the landing (test_log_physics.gd: they settle, roll off what they land on)")
 
