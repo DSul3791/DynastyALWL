@@ -17266,8 +17266,8 @@ func warmth_target(peer: int) -> float:
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 
 	# Wet from rain or snow (Dave 5 Nov, rain card: "Rain x1.5"; only shelter dries you, slowly under a tree or roof, fast by a fire): the chill follows
-	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses the rain falling now.
-	var soak: float = float(_soak[peer]) if _soak.has(peer) else (minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
+	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses its saved soak or the rain falling now.
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else maxf(clampf(float(vitals_of(peer).get("soak", 0.0)), 0.0, 1.0), minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
 
 	var body: Dictionary = _body_cfg()
 
@@ -17473,7 +17473,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
-	var soak: float = float(_soak.get(peer, 0.0))
+	var v: Dictionary = vitals_of(peer)
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else clampf(float(v.get("soak", 0.0)), 0.0, 1.0)   # wet clothes stay wet over a restart or a rejoin (survival walk 23 Nov 2026)
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
 	var hours: float = game_s / 3600.0
 
@@ -17503,6 +17504,9 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
 	_soak[peer] = soak
+
+	if not v.is_empty() and (soak > 0.0 or v.has("soak")):
+		v["soak"] = soak   # saved with the vitals (vitals.json)
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
@@ -26535,6 +26539,9 @@ func _load_vitals() -> void:
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
 		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0), "limp": maxf(float(row.get("limp", 0.0)), 0.0)}
+
+		if float(row.get("soak", 0.0)) > 0.0:
+			_vitals[str(key)]["soak"] = clampf(float(row["soak"]), 0.0, 1.0)   # wet clothes (_update_soak)
 
 		if typeof(row.get("sick_due", null)) == TYPE_ARRAY and not (row["sick_due"] as Array).is_empty():
 			_vitals[str(key)]["sick_due"] = row["sick_due"]   # pending sickness from raw food (docs/design/body_in_weather_design.md 5)
