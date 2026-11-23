@@ -37,6 +37,14 @@ func _init() -> void:
 		var online: String = CpuBudget.read_text("/sys/devices/system/cpu/online")
 		check(CpuBudget.set_size(online) >= 1, "a kernel file reads (online CPUs %s)" % online.strip_edges())
 
+	# The server's CPU setting (Dave 23 Nov 2026): --cpus=N wins over DYNASTY_SERVER_CPUS; none, 0 or junk is no setting.
+	check(CpuBudget.setting(PackedStringArray(["--port=24600", "--cpus=4"]), "6") == 4, "--cpus=4 wins over the environment's 6")
+	check(CpuBudget.setting(PackedStringArray(["--port=24600"]), "6") == 6, "DYNASTY_SERVER_CPUS=6 without --cpus")
+	check(CpuBudget.setting(PackedStringArray(), "") == 0 and CpuBudget.setting(PackedStringArray(), "lots") == 0 and CpuBudget.setting(PackedStringArray(["--cpus=x"]), "4") == 0, "unset or not a number: no setting")
+	check(CpuBudget.setting(PackedStringArray(["--cpus=-3"]), "") == 0, "a negative count is no setting")
+	check(CpuBudget.allowed(12, 4) == 4 and CpuBudget.allowed(3, 4) == 3 and CpuBudget.allowed(12, 0) == 12, "the setting caps the usable CPUs, never raises them")
+	check(CpuBudget.idle_threads_for(0, 2) == 2 and CpuBudget.idle_threads_for(4, 2) == 2 and CpuBudget.idle_threads_for(3, 2) == 1 and CpuBudget.idle_threads_for(2, 2) == 0 and CpuBudget.idle_threads_for(1, 2) == 0, "idle builders by the setting: 2 at 4 CPUs, 1 at 3, none at 1 or 2")
+
 	var usable: int = CpuBudget.usable()
 	check(usable >= 1 and usable <= maxi(OS.get_processor_count(), 1), "this machine: %d usable of %d" % [usable, OS.get_processor_count()])
 	print("Test done: %d fail" % failures)

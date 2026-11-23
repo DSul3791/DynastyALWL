@@ -1915,8 +1915,6 @@ func tick(delta: float) -> void:
 		_slow_mark("rot", t0)
 		_fires(spent)
 		_slow_mark("fires", t0)
-		_vitals_tick(spent)
-		_slow_mark("vitals", t0)
 		_craft_tick(spent)
 		_sharpen_tick(spent)
 		_slow_mark("craft", t0)
@@ -1935,7 +1933,7 @@ func tick(delta: float) -> void:
 		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
 		_slow_mark("comfort", t0)
-		_goals_tick()
+		_goals_tick(false)   # the goals themselves: _goals_spread, every frame
 		_slow_mark("goals " + _goals_detail, t0)
 		_learn_clock += spent
 
@@ -1957,6 +1955,13 @@ func tick(delta: float) -> void:
 
 		_expire_items(spent)
 		_tick_ids = {}
+
+	# Each player's vitals and goals about 4 times a second as before, but a share of the players each frame, not all on one frame
+	# (load test 23 Nov 2026, docs/design/SERVER_SCALE.md: at 32 to 64 players the quarter-second frame took 100 to 400 ms).
+	_vitals_spread(delta)
+	_slow_mark("vitals", t0)
+	_goals_spread(delta)
+	_slow_mark("goals-spread", t0)
 
 	_sync_in -= delta
 	_road_sync_in -= delta
@@ -7450,6 +7455,7 @@ func _fires(delta: float) -> void:
 				fire["state"] = 9
 				it["left"] = FIRE_LAID_S
 				_dirty = true
+				_lit_valid = false   # out: the vitals' fire list is kept a quarter second now (_vitals_spread)
 
 
 # Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage, and a fire still holding charcoal (_fire_expire).
@@ -12890,6 +12896,7 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 
 	if fire_is_lit(state) and state != FIRE_STATE_SURVIVAL and float(wood[_fire_class_of_state(state)]) <= 0.0:
 		fire["state"] = _fire_best_state(fire)
+		_lit_valid = false   # a smaller fire, or out: the vitals' fire list is kept a quarter second now (_vitals_spread)
 
 
 # --- Charcoal left by burning wood (Dave 17 Nov 2026: "anything that burns wood should leave behind charcoal"; cooking.json charcoal_left) ---
@@ -18124,19 +18131,83 @@ func _note_motion(peer: int, position: Vector3) -> void:
 	_motion[peer] = [position, now]
 
 
-func _vitals_tick(spent: float) -> void:
+# Vitals spread over frames (load test 23 Nov 2026, docs/design/SERVER_SCALE.md). Each frame owes players * delta / SLOW_TICK_S looks
+# (kept as a fraction between frames, at most every player once a frame); they go round the players in turn, each with its own seconds
+# since its last look, so its drains, warmth and comfort come out the same as one look a quarter second. A long frame (a test's tick(1.0))
+# looks at every player with the whole time, as the slow tick did. The lit-fire list is made again once a quarter second, not every frame.
+var _vit_spent: Dictionary = {}    # peer -> seconds since its last vitals look
+var _vit_owed: float = 0.0         # looks owed, carried between frames
+var _vit_next: int = 0             # where the turn is in the player list
+var _vit_lit_age: float = 0.0      # seconds since the lit-fire list was last dropped
+
+
+func _vitals_spread(delta: float) -> void:
+	var peers: Array = _peer_key.keys()
+	_vit_lit_age += delta
+
+	for peer in _vit_spent.keys():
+		if not _peer_key.has(peer):
+			_vit_spent.erase(peer)
+
+	if peers.is_empty():
+		_vit_owed = 0.0
+		return
+
+	for peer in peers:
+		_vit_spent[peer] = float(_vit_spent.get(peer, 0.0)) + delta
+
+	_vit_owed = minf(_vit_owed + float(peers.size()) * delta / SLOW_TICK_S, float(peers.size()))
+	var n: int = int(_vit_owed)
+
+	if n <= 0:
+		return
+
+	_vit_owed -= float(n)
+	var due: Array = []
+	var spent_of: Dictionary = {}
+
+	for i in n:
+		if _vit_next >= peers.size():
+			_vit_next = 0
+
+		var peer: int = int(peers[_vit_next])
+		_vit_next += 1
+		due.append(peer)
+		spent_of[peer] = float(_vit_spent[peer])
+		_vit_spent[peer] = 0.0
+
+	var lit_fresh: bool = _vit_lit_age >= SLOW_TICK_S
+
+	if lit_fresh:
+		_vit_lit_age = 0.0
+
+	_vitals_tick(SLOW_TICK_S, due, spent_of, lit_fresh)
+
+
+# `only` (with `spent_of`, peer -> its own seconds since its last vitals): those players only, each by its own elapsed time (_vitals_spread).
+# Empty: every player by `spent`, as before (tests call it so).
+func _vitals_tick(spent: float, only: Array = [], spent_of: Dictionary = {}, lit_fresh: bool = true) -> void:
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
+	var base_spent: float = spent
 	var game_s: float = spent * GAME_RATE
 	_load_cache.clear()
 	_kg_cache.clear()
 	_cover_cache.clear()
-	_lit_valid = false
+
+	if lit_fresh:
+		_lit_valid = false
+
 	_in_vitals = true
 
 	if weather_now.is_valid() and float((weather_now.call() as Dictionary).get("rain", 0.0)) > 0.05:   # starter-calendar: the fallback rain memory when no rain_hours_at is set (tests)
 		_last_rain_s = _now_game_s()
 
-	for peer in _peer_key:
+	for peer in (_peer_key.keys() if only.is_empty() else only):
+		if not _peer_key.has(peer):
+			continue   # left since it was picked
+
+		spent = float(spent_of.get(peer, base_spent))
+		game_s = spent * GAME_RATE
 		var v: Dictionary = _vitals.get(_peer_key[peer], {})
 
 		if v.is_empty() or _parked.has(peer):
@@ -25393,14 +25464,54 @@ func _send_goal_progress(peer: int, counts: Dictionary) -> void:
 		send_goal_progress.call(peer, moved)
 
 
-func _goals_tick() -> void:
+# Goals spread over frames like the vitals (_vitals_spread): every player's goals about 4 times a second, a share of the players each
+# frame. shortcut: every goal is looked at for every player at each look (the have and worn checks read the pack); fine for the 49 live
+# goals, the full catalog needs indexed events (GA-49).
+var _goal_owed: float = 0.0
+var _goal_turn: int = 0
+var _goals_spread_usec: int = 0   # the time spent since the last slow tick, for its detail line
+var goal_check_seen: Callable      # tests (test_vitals_spread): told of each player whose goals the spread looks at
+
+
+func _goals_spread(delta: float) -> void:
+	if _goals_data().is_empty():
+		return
+
+	var peers: Array = _peer_key.keys()
+
+	if peers.is_empty():
+		_goal_owed = 0.0
+		return
+
+	_goal_owed = minf(_goal_owed + float(peers.size()) * delta / SLOW_TICK_S, float(peers.size()))
+	var n: int = int(_goal_owed)
+	_goal_owed -= float(n)
+	var tg: int = Time.get_ticks_usec()
+
+	for i in n:
+		if _goal_turn >= peers.size():
+			_goal_turn = 0
+
+		var peer: int = int(peers[_goal_turn])
+		_goal_turn += 1
+
+		if _peer_key.has(peer):
+			_goals_check(peer)
+
+			if goal_check_seen.is_valid():
+				goal_check_seen.call(peer)
+
+	_goals_spread_usec += Time.get_ticks_usec() - tg
+
+
+# with_goals: also every player's goals here, all at once (tests call it so); the tick passes false and _goals_spread does them.
+func _goals_tick(with_goals: bool = true) -> void:
 	if _goals_data().is_empty():
 		return
 
 	var t0: int = Time.get_ticks_usec()
 	_night_walk_tick()
 	var t1: int = Time.get_ticks_usec()
-	var goals_usec: int = 0
 	_slowest_hint_usec = 0
 	_slowest_hint = ""
 
@@ -25412,20 +25523,28 @@ func _goals_tick() -> void:
 	var phase: int = _hint_phase
 	_hint_phase = (_hint_phase + 1) % maxi(1, hint_every)
 
-	# shortcut: every goal is looked at for every player each slow tick (the have and worn checks read the pack); fine for the 49 live goals, the full catalog needs indexed events (GA-49).
-	for peer in _peer_key.keys():
+	# The goals themselves are looked at in _goals_spread, a share of the players each frame; the hints stay here.
+	if with_goals:
 		var tg: int = Time.get_ticks_usec()
-		_goals_check(peer)
-		goals_usec += Time.get_ticks_usec() - tg
 
+		for peer in _peer_key.keys():
+			_goals_check(peer)
+
+		_goals_spread_usec += Time.get_ticks_usec() - tg
+
+	var goals_usec: int = _goals_spread_usec
+	_goals_spread_usec = 0
+	var th: int = Time.get_ticks_usec()
+
+	for peer in _peer_key.keys():
 		if nth % maxi(1, hint_every) == phase:
 			_hints_check(peer)
 
 		nth += 1
 
-	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split).
-	_goals_detail = "(night walk %.0f, goals %.0f, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
-		float(Time.get_ticks_usec() - t1 - goals_usec) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
+	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split). Goals: the spread looks since the last slow tick.
+	_goals_detail = "(night walk %.0f, goals %.0f spread, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
+		float(Time.get_ticks_usec() - th) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
 
 
 # The goal list as the client gets it, in the authored order: [id, title, how-to, reward copper, reward item id ("" none), reward item count, after ids

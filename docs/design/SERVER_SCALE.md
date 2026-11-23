@@ -29,7 +29,7 @@ server was too busy to answer the join handshake in time.
 (at 32 it is already 72% busy). Spread players hit a second wall sooner: making new ground uses every CPU, and the bots waited a
 minute for ground.
 
-Per-player traffic (25 KB/s, about 0.2 Mbit/s) is the third limit: 100 players need about 20 Mbit/s upload from the server's line.
+Per-player traffic is about 25 KB/s (0.2 Mbit/s): 100 players need about 20 Mbit/s upload. Dave's line is 1 Gbit, so this is not a near limit.
 
 ## Top costs (main thread, ms per second, 64 clustered)
 
@@ -80,6 +80,52 @@ Together these should put about 100 to 150 clustered players on one main thread.
     over at the border. One process cannot hold thousands in GDScript.
 11. **A separate save service.** A database instead of JSON files, so many processes can save at once.
 12. **Hosting.** Thousands of players need data-centre servers and bandwidth, not a home server.
+
+## Dave's rulings, 23 Nov 2026
+
+- "Plan for thousands and be happy when it works for hundreds right now." First target: 100+ players on one server.
+- His line is 1 Gbit, so traffic is not the near limit; the CPU is.
+- **CPU setting.** "Make the thread/core count a setting we can set for the server to be allowed to use and design around that." His server
+  box has 6 cores, 12 threads, and runs 5 other servers; about 15 players there for now, a dedicated server later.
+  `DYNASTY_SERVER_CPUS` (compose.yaml, default 4; `--cpus=N` wins) is that setting (deploy/server/SERVER.md, CPUs). Today it sizes the ground makers
+  and idle builders; the plan is that every later job moved off the main thread sizes itself from it too.
+- **Prebuilt ground.** "The generator part should prebuild our entire world or the parts we are working with right now. The server
+  doesn't build anything; it just serves the prebuilt stuff up to the clients." The region for now is the starting nine tiles (Dave: "the starting 9 chunks good enough then we will look at expanding in the future"). The
+  plan is in "Prebuilt ground for the nine tiles" below.
+
+## Prebuilt ground for the nine tiles (plan, not built)
+
+Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client
+asks for, surface blocks only; caves and deep blocks are left to be made as now), two 1 km squares: one round the starter town,
+one in open country. The tool only measures one square. Sizes are of the store's `generated_g1.sqlite` (the tool's own size line still
+reads the old name `generated.sqlite` and prints 0 MB). Gzip measured on the smaller file (27.6 to 10.4 MB) and applied to the larger.
+
+| | per km2 | one tile (236 km2) | nine tiles (2,123 km2) |
+|---|---|---|---|
+| Build time, 3 threads | 35-41 s | 2.3-2.7 h | about 22 h |
+| Build time, 11 threads (a guess for Dave's PC, not measured) | about 10 s | about 40 min | about 6 h |
+| Disk, as the server keeps it | 26-42 MB | 6-10 GB | 55-90 GB |
+| Gzipped for the copy | 10-16 MB | 2.3-3.8 GB | 20-35 GB |
+
+Three quarters of the blocks are the finest level (16 m), so leaving out far levels saves little.
+
+How it would work:
+1. A builder on Dave's PC (new) makes the server's generated-ground file for a chosen area from the committed tiles and records
+   the terrain version and tile fingerprint it was made from.
+2. Install, with the server stopped (new): check that fingerprint against the server's tiles, then copy the file in as
+   `generated_g<N+1>.sqlite` and write `generated_generation.txt` (N+1) and `terrain_version.txt`. Without both files the store
+   deletes the copy at start; with a wrong fingerprint it throws the file away and makes ground as now. The store already keeps
+   player changes apart (`edits.sqlite`, `digs.dat`), so digs and fills stay.
+3. The server serves blocks from the file. A block not in it is still made and saved as now (true today), so nobody at the edge
+   is stranded. To reach Dave's aim (the server builds nothing) the idle pre-builder is turned off inside the area and a count
+   of blocks made outside it goes in the server log (new) to show where the area must grow.
+4. Trees and plants are not stored today (the server places them from the tiles on each visit; only removals are saved).
+   Prebuilding those is a second step, not measured yet.
+
+Recommendation: start with the starter tile (3,4) only, about 40 minutes on Dave's PC and 2.3-3.8 GB to copy, then the other
+eight. Not for the Wednesday package: the builder and install step are new and must first be tried on a copy of the 9257 world
+(test_save_9257 and a restart with the new file). A new generation drops the store's "settled" copies; those are a cache remade
+from the edit log, so no player change is lost, but the first visits after install remake them.
 
 ## Rules kept
 
