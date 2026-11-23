@@ -340,6 +340,7 @@ func _ready() -> void:
 
 	# Test plays (lag lane 23 Nov 2026): --game-hour=H starts the clock at hour H of its current day, so standing-play hitch counts taken on
 	# different days compare (the sky's cost depends on the hour). Nothing else changes; the clock runs on from there and is saved as usual.
+	# For throwaway test stores only: it can move the clock back up to a day, which skews item, trade and animal timers on a kept world.
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
 			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
