@@ -147,7 +147,7 @@ var dialogue                           # ServerDialogue: talking to NPCs
 var trade                              # ServerTrade: shops (coins)
 var _npc_sent_ms: Dictionary = {}
 var _animal_sent_ms: Dictionary = {}
-var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
+var _npc_sent: Dictionary = {}         # peer -> hash of the NPC rows last sent
 var _npc_send_t: float = 0.0
 var _pulse_t: float = 0.0
 var _water_updates: int = 0
@@ -380,8 +380,12 @@ func _ready() -> void:
 		store.clear_generated()
 		print("server: cleared the generated ground as asked (--clear-generated)")
 
+	if problem == "" and not _store_writable(store_dir):
+		problem = "the store folder %s cannot be written (read-only, full, or not this user's)" % store_dir
+
 	if problem != "":
-		push_error("Terrain server: %s" % problem)
+		push_error("Terrain server: cannot start: %s. The store is left as it was; nothing is saved over it." % problem)
+		_refused_start = true   # no frame runs on a half-made server, and nothing is saved at exit
 		get_tree().quit(1)
 		return
 
@@ -464,7 +468,7 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	@warning_ignore("confusable_local_declaration")
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
-	items.send_comfort = func(peer, level, rested_level, rested_minutes, tip): net.comfort.rpc_id(peer, level, rested_level, rested_minutes, tip)
+	items.send_comfort = func(peer, tenths, target, trend, tip): net.comfort.rpc_id(peer, tenths, target, trend, tip)
 	@warning_ignore("confusable_local_declaration")
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
 	@warning_ignore("confusable_local_declaration")
@@ -676,6 +680,7 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+	items.ground_edits = func(): return store.ops.count   # the header's "digs": a hard stop drops the digs and fills after the last whole save (store.setup)
 
 	if not items.load_failures.is_empty():
 		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
@@ -744,6 +749,7 @@ func _ready() -> void:
 	edited_ground.ops = store.ops
 	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
 	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	items.ground_now = edited_ground.height   # where carcasses, arrows, thrown things, litter and regrown plants come down (round 7)
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
@@ -983,6 +989,7 @@ func _ready() -> void:
 	trade.npcs = npcs
 	trade.game_seconds = func(): return game_clock.seconds
 	trade.setup(store_dir)
+	trade.in_save_set(items)   # shelves land in the same whole save as the packs that paid
 	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
@@ -1375,6 +1382,10 @@ func _event_state() -> String:
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	queued += ", " + _pool_summary()
+	# What the memory holds (the long run, 23 Nov 2026: is a slow rise what players added or a leak): engine objects, nodes, resources, world
+	# items, ground edits and animals.
+	queued += ", objects %d nodes %d resources %d, world items %d, ground edits %d, animals %d" % [int(Performance.get_monitor(Performance.OBJECT_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), items.world_item_count() if items != null else 0, store.ops.count, animals.animals.size() if animals != null else 0]
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
@@ -3385,6 +3396,8 @@ func _send_npcs(delta: float) -> void:
 			animals.watched[int(watched_id)] = true   # the animal an admin watches through the spyglass keeps living (server_animals tick)
 
 	# Each player is looked at about four times a second, a fifth of them per pass, so the work never lands on one tick.
+	animals.begin_send_pass()   # each animal's row built once this pass, the animals found by grid (docs/design/SERVER_SCALE.md)
+
 	for n in range(_send_round % 5, peers.size(), 5):
 		var peer: int = int(peers[n])
 		var at: Variant = items.position_of(peer)
@@ -3393,13 +3406,13 @@ func _send_npcs(delta: float) -> void:
 			continue
 
 		var rows: Array = npcs.rows_near(at)
-		var signature: String = str(rows)
+		var signature: int = hash(rows)   # not str(rows): turning every player's rows into text 4 times a second was the dearest part (load test 23 Nov 2026)
 
 		# The rows ride an unreliable channel and an idle crowd never changes, so a lost first packet (or one that came before the
 		# client had built its NPC view) was never sent again: Dave's Ctrl+N saw "roster 2, drawn 0". Resend unchanged rows every 2 s.
 		var now_ms: int = Time.get_ticks_msec()
 
-		if _npc_sent.get(peer, "") != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
+		if not _npc_sent.has(peer) or int(_npc_sent[peer]) != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
 			_npc_sent[peer] = signature
 			_npc_sent_ms[peer] = now_ms
 			net.npcs.rpc_id(peer, rows)
@@ -3409,7 +3422,7 @@ func _send_npcs(delta: float) -> void:
 		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
 		var reach: Array = items.spyglass_reach(peer, animals.cfg.get("spyglass", {}))
 		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at)
-		var sig: String = str(beasts)
+		var sig: int = hash(beasts)
 
 		if spy == -1:
 			items.spyglass.erase(peer)
@@ -3417,7 +3430,7 @@ func _send_npcs(delta: float) -> void:
 		elif spy > 0:
 			net.animal_info.rpc_id(peer, spy, animals.info_of(spy))
 
-		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
+		if not _animal_sent.has(peer) or int(_animal_sent[peer]) != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
 			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
@@ -3477,6 +3490,8 @@ func _send_npcs(delta: float) -> void:
 			_far_fires_sent[peer] = far_sig
 			net.far_fires.rpc_id(peer, far_rows[0], far_rows[1])
 
+	animals.end_send_pass()
+
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
 func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void:
@@ -3495,6 +3510,18 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 			animals.spawn(arg, pos.x, pos.z)
 	elif kind == "carcass":
 		items.make_carcass(arg, pos)
+
+
+# A small file written whole and taken away again: a read-only store, or one with no room for a save, stops the start with a clear line
+# instead of a server that plays on and saves nothing.
+func _store_writable(dir: String) -> bool:
+	var probe: String = dir + "/write_check.json"
+	var ok: bool = ItemsScript._write_file(probe, JSON.stringify({"version": 1, "checked": Time.get_unix_time_from_system(), "room": " ".repeat(65536)}))
+
+	for one in [probe, probe + ".prev", probe + ".tmp"]:
+		DirAccess.remove_absolute(one)
+
+	return ok
 
 
 func _process(delta: float) -> void:
@@ -4161,6 +4188,7 @@ func _exit_tree() -> void:
 		items.note_spots_on_close()   # players still in: where they stand now, not the last 10 s note
 		items.save()
 		items._finish_writer()   # a save with nothing new returns early: the last autosave's files and log lines still finish before the exit
+		print("server save: %d flushes to the disk, %.1f ms each on average (sync -f before and after each header)" % [ItemsScript.syncs, ItemsScript.sync_ms / maxf(1.0, float(ItemsScript.syncs))])
 
 	_bury_mutex.lock()
 	_bury_queue.clear()

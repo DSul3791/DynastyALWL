@@ -239,14 +239,18 @@ func tick(delta: float) -> void:
 
 		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more, cast]
 
+	var grid: Dictionary = grid_of(heard)   # filed once, so each receiver looks at its 9 cells, not at every player (load test 23 Nov 2026)
+
 	for receiver in at:
-		var pool: Dictionary = heard
+		var rows: Array = []
 
-		if not heard.has(receiver):
-			pool = heard.duplicate()
+		if heard.has(receiver):
+			rows = rows_for(receiver, heard, grid)
+		else:
+			var pool: Dictionary = heard.duplicate()
 			pool[receiver] = at[receiver]   # a silent player is still sent the others (its rows wait in the line)
+			rows = rows_for(receiver, pool)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
 
-		var rows: Array = rows_for(receiver, pool)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
 		var ids: PackedInt32Array = PackedInt32Array()
 		var newest: int = 0
 
@@ -305,7 +309,8 @@ static func cast_code(body: Vector3, float_at: Vector3) -> int:
 
 
 # The others near `me`, nearest first, at most MAX_ROWS: [[peer, position], ...]. `at` is peer -> position of the players that can be shown.
-static func rows_for(me: int, at: Dictionary) -> Array:
+# With `grid` (grid_of(at)) only the players in the 9 NEAR_M cells round `me` are looked at; the answer is the same.
+static func rows_for(me: int, at: Dictionary, grid: Dictionary = {}) -> Array:
 	var here: Variant = at.get(me, null)
 	var out: Array = []
 
@@ -313,8 +318,17 @@ static func rows_for(me: int, at: Dictionary) -> Array:
 		return out
 
 	var reach2: float = NEAR_M * NEAR_M
+	var pool: Array = at.keys()
 
-	for peer in at:
+	if not grid.is_empty():
+		var home: Vector2i = _cell_of(here)
+		pool = []
+
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				pool.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+
+	for peer in pool:
 		if peer == me:
 			continue
 
@@ -325,6 +339,25 @@ static func rows_for(me: int, at: Dictionary) -> Array:
 
 	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
 	return out.slice(0, MAX_ROWS)
+
+
+# peer -> position filed into NEAR_M cells (x, z): any player within NEAR_M of a spot is in one of the 9 cells round it.
+static func grid_of(at: Dictionary) -> Dictionary:
+	var grid: Dictionary = {}
+
+	for peer in at:
+		var cell: Vector2i = _cell_of(at[peer])
+
+		if not grid.has(cell):
+			grid[cell] = []
+
+		grid[cell].append(peer)
+
+	return grid
+
+
+static func _cell_of(pos: Vector3) -> Vector2i:
+	return Vector2i(floori(pos.x / NEAR_M), floori(pos.z / NEAR_M))
 
 
 func _tell_all(about: int) -> void:

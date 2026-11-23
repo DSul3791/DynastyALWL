@@ -1318,6 +1318,9 @@ static func water_short(cfg: Dictionary, kit_id: String, spot: Vector3, depth: C
 
 
 # Why a spot is red in words (the ghost's caption; the server says it too when it refuses).
+const WET_GROUND_M := 1.0   # ground lower than this (shore mud, at the sea) takes no placed thing (server_items _place, the ghost in held_item)
+
+
 static func reason_text(state: String, opening: String = "") -> String:   # opening: given for a door's refusal ("nodoorway", "mismatch", "taken"): the doorway's shape, doorway_fit's "opening"
 	match state:
 		"nodoorway":
@@ -1346,6 +1349,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "it is too far above or below the ground"
 		"water":
 			return "you cannot build in water"
+		"wet":
+			return "the ground is too wet here"
 		"shallow":
 			return "it needs deeper water"
 		"nofire":

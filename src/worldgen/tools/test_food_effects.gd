@@ -156,13 +156,13 @@ func _init() -> void:
 	check(not live().has("dessert") and absf(items.fitness_xp_mult(1) - 1.15) < 0.0001, "after 1 game hour the penalty is gone while the 6 h stew still runs")
 
 	# Rested and food together: added once, capped.
-	items._characters[KEY]["rested"] = {"level": 20, "until": Time.get_unix_time_from_system() + 600.0}
+	items._characters[KEY]["comfort"] = 10.0   # the comfort meter full (it replaced the Rested buff, 23 Nov 2026)
 	var rested_mult: float = float(items.rested_tier(1).get("skill_gain_mult", 1.0))
 	check(rested_mult > 1.0 and absf(items.skill_xp_mult(1) - rested_mult) < 0.0001, "skill XP with Rested and a Fitness meal: Rested only (x%.2f)" % rested_mult)
 	eat("berry_compote", gi("fruit_veg"))
 	check(absf(items.skill_xp_mult(1) - (rested_mult - 0.05)) < 0.0001, "Rested plus a dessert: x%.2f, one sum" % (rested_mult - 0.05))
 	check(absf(FoodEffects.skill_mult({"main": {"id": "feast_board_test", "t": 3, "until": 1.0e12}}, 0.0, {"caps": {"skill": 0.25}, "groups": cfg["groups"], "foods": {"feast_board_test": {"group": "main", "tier": 3, "xp": "all"}}}, 1.2) - 1.25) < 0.0001, "an all-skill +10 % with Rested +20 % is capped at +25 %")
-	items._characters[KEY].erase("rested")
+	items._characters[KEY]["comfort"] = 0.0
 
 	# Energy aids and teas (s3.16 [D17], s7 item 22).
 	items._characters[KEY]["food"] = {}

@@ -921,6 +921,7 @@ func peer_left(peer: int) -> void:
 	_stuck_msec.erase(peer)
 	_resume_to.erase(peer)
 	_station_said.erase(peer)
+	_refusal_said.erase(peer)
 	_hole_blows.erase(peer)
 	_fishing.erase(peer)
 	_last_fish.erase(peer)
@@ -930,6 +931,12 @@ func peer_left(peer: int) -> void:
 	_cave_pool.erase(peer)
 	_soak.erase(peer)
 	_overheat.erase(peer)
+	_by_fire.erase(peer)
+	_comfort_goal.erase(peer)
+	_comfort_cache.erase(peer)
+	_comfort_sent.erase(peer)
+	_comfort_tip_sent.erase(peer)
+	_comfort_tip_at.erase(peer)
 	_last_dose.erase(peer)
 	_remains_sent.erase(peer)
 	_worn_sent.erase(peer)
@@ -1833,6 +1840,7 @@ var water_flow_at: Callable             # set by the server: (Vector3) -> float,
 var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
 var cave_floor: Callable                # set by the server: (Vector3) -> the floor of the cave air at a point (a passage, chamber or a mouth's cut), NAN outside one; ground_height does not know the caves
 var edits_near: Callable                # set by the server: (point, radius) -> [[kind 0 dig / 1 fill, centre, radius]], the saved ground edits near a point, oldest first (ground_ops.gd); ground_height does not know them
+var ground_now: Callable               # set by the server: (x, z) -> the ground as dug and filled (edited_ground.height; the top of the highest solid span); unset: ground_height
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
 var dump_water: Callable                # set by the server: (x, z) -> String, writes the live water cells near a point to a text file
@@ -2042,7 +2050,7 @@ func save_soon(ids: Array = []) -> void:
 # removals only then (terrain_server), so a crash never leaves a felled tree gone with no stump and no logs (the coordinator, 23 Nov 2026);
 # the other way round, a stump on disk whose tree's removal is not, is put right at the next start (felled_flora).
 func fells_on_disk() -> bool:
-	return not _fell_unsaved and _writer == null and _pending_writes.is_empty()
+	return not _fell_unsaved and _writer == null and _pending_writes.is_empty() and _save_failed.is_empty()   # a save that lost a file put its others back (_skip_item_job)
 
 
 # Every saved stump that was a standing flora tree, as [chunk Vector2i, flora id]: the server cuts each again at start (a no-op for one
@@ -2080,6 +2088,8 @@ func cut_felled_flora(flora) -> int:
 
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
 func _event_save_due() -> bool:
+	if not _event_save and ground_edits.is_valid() and int(ground_edits.call()) != _digs_written:
+		_event_save = true   # a dig or fill (a player's, an admin's, a tunnel's collapse, a reset): saved within seconds, so a hard stop drops seconds of them, not 30
 	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
 
 
@@ -2104,6 +2114,9 @@ func save() -> void:
 	if _dir != "" and not _dirty and load_failures.is_empty() and not _water_kind.is_empty():
 		_dirty = _water_tanks_save() != _tanks_written   # a tank's litres moved (rain, a pump, a pipe) and nothing else changed (restart drill 23 Nov 2026)
 
+	if not _dirty and ground_edits.is_valid() and int(ground_edits.call()) != _digs_written:
+		_dirty = true   # a dig or fill that changed no item still moves the header's "digs": unsaved, the next start would drop it
+
 	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
 
@@ -2112,6 +2125,7 @@ func save() -> void:
 	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
+	_set_gen = _save_gen + 1   # every file of this save carries the gen _item_job gives the header, written last (_read_json_version)
 	_fell_unsaved = false   # this save carries every stump and log felled so far (on disk once the writer is idle: fells_on_disk)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
@@ -2134,7 +2148,15 @@ func save() -> void:
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
 	_write_atomic("tracking_marks.json", _traps.saved_marks())   # the trail signs and snare spots that already trained each character's Tracking
+
+	for name in set_extras:   # other systems' files that must land in the same whole save as the packs (trade_state.json: a shelf and the pack it paid)
+		var extra: Variant = (set_extras[name] as Callable).call()
+
+		if extra is Dictionary:
+			_write_atomic(str(name), extra)
+
 	_save_item_files(_item_job())
+	_set_gen = 0
 
 
 # The files made from the world items (world_items.json, tree_states.json, lights.json, kilns.json) are built from a deep copy taken on the
@@ -2160,6 +2182,29 @@ const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countd
 const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices, "by_rows": row index -> who dropped it}
 var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
+# A save is one set of files (coordinator 23 Nov 2026, the live save): save() writes inventories, chests, vitals, characters, craft queues,
+# crops, smelters, smithies, trees, lights and kilns, then the areas and last the world_items.json header, one file at a time, so a hard stop
+# between two left some files from the new save and the rest from the one before (Stone put into a chest was then in neither; taken out, in
+# both: test_save_set). Each of those files now carries "gen", the gen of the header its save writes last; at load a file whose gen is past
+# the header's is from a save that never finished and is read from its .prev, the save before. A file with no gen (written outside save(),
+# or by a build before this) is read as it is.
+var _set_gen: int = 0              # while save() runs: the gen its files carry; 0 outside a save
+# Files of other systems written in every save, in the same whole save as the packs (name -> Callable returning the file's Dictionary):
+# terrain_server registers trade_state.json, so a hard stop never keeps a trader's shelf from one save and the pack that paid from another.
+var set_extras: Dictionary = {}
+# () -> int: how many ground edits (digs.dat records) the world holds now. Saved in the header as "digs", so a hard stop drops the digs
+# and fills after the last whole save along with the pack changes they made (server_block_store.gd setup, ground_ops.gd open).
+var ground_edits: Callable
+var _digs_written: int = -1
+
+
+func _digs_now() -> int:
+	_digs_written = int(ground_edits.call()) if ground_edits.is_valid() else -1
+	return _digs_written
+
+var _set_lost_file: bool = false   # a file of the save running now (written on the tick, not the writer) could not be written
+var _set_written: Array = []       # the files of the save running now written so far on the tick (rolled back when it loses one)
+var _head_gen: int = -2            # the gen of the header on disk, read once at load (-1: no header, or one with no gen; -2: not read yet)
 const SWEEP_BUDGET_US := 1000      # PROVISIONAL: the most a tick spends on the rolling check (2% of a 50 ms tick)
 var _save_sig: Dictionary = {}     # world id -> [hash of its saved fields, its area key ("" = not saved in an area)] as the check last saw it
 var _area_ids: Dictionary = {}     # area key -> {world id: true}: the items each area file holds
@@ -2249,7 +2294,8 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed, "kiln_lit_by": _kiln_lit_by.duplicate(),
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true,
+			"digs": _digs_now()}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2259,24 +2305,68 @@ func _save_item_files(job: Dictionary) -> void:
 
 	var t0: int = Time.get_ticks_usec()
 	_finish_writer()
-	_write_item_job(job)
+
+	if _set_lost_file:
+		_skip_item_job(job, _set_written)
+	else:
+		_write_item_job(job, _set_written)
+
+	_set_lost_file = false
+	_set_written = []
 	_note_save_part("world items", t0)
 
 
 # Writes a job's files: tree_states, lights, kilns, the areas that changed, then the header, then takes away the files of areas left empty.
 # Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
-static func _write_item_job(job: Dictionary) -> void:
+# A power cut (not a process kill: the files are then in the system's cache and still land) could lose what was written but not yet on the
+# disk, in any order. Before a save's header and after it the store's file system is flushed to the disk (coreutils `sync -f`, syncfs: one
+# call, with digs.dat and every set file), so the header never names files that are not on the disk. Linux servers only (the server image
+# is Ubuntu); DYNASTY_SAVE_SYNC=0 turns it off for a comparison. sync_ms adds up the time it took (save timing, the long run).
+static var sync_saves: bool = OS.get_environment("DYNASTY_SAVE_SYNC") != "0" and OS.get_name() == "Linux"   # coreutils' sync -f (BSD sync takes no file)
+static var sync_ms: float = 0.0
+static var syncs: int = 0
+
+
+static func _sync_store(dir: String) -> void:
+	if not sync_saves:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var code: int = OS.execute("sync", ["-f", ProjectSettings.globalize_path(dir)])
+
+	if code != 0:
+		push_error("server save: could not flush the store to the disk (sync -f exit %d): saves go on, but a power cut may lose the last one" % code)
+		sync_saves = false   # said once; a process kill still loses nothing
+
+	sync_ms += float(Time.get_ticks_usec() - t0) / 1000.0
+	syncs += 1
+
+
+static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	var dir: String = str(job["dir"])
 	var items: Dictionary = job["items"]
 	var kinds: Dictionary = job["kinds"]
 	var gen: int = int(job["gen"])
 	var sums: Dictionary = job["sums"]
-	_write_file(dir + "/tree_states.json", JSON.stringify({"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}))
-	_write_file(dir + "/lights.json", JSON.stringify({"version": 1, "lit": _light_rows_of(items, kinds)}))
-	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))}))
+	var texts: Dictionary = {
+		dir + "/tree_states.json": JSON.stringify({"version": TREE_SAVE_VERSION, "gen": gen, "trees": _tree_rows_of(items), "saplings": job["saplings"]}),
+		dir + "/lights.json": JSON.stringify({"version": 1, "gen": gen, "lit": _light_rows_of(items, kinds)}),
+		dir + "/kilns.json": JSON.stringify({"version": 1, "gen": gen, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))})}
+	var done: Array = written.duplicate()
+	var whole: bool = true
+
+	for path in texts:
+		if _write_file(path, texts[path]):
+			done.append(path)
+		else:
+			whole = false
+
+	if not whole:
+		_skip_item_job(job, done)
+		return
+
 	var areas: Dictionary = {}
 	var listed: Dictionary = {}
-	var failed: Array = []
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
@@ -2298,20 +2388,24 @@ static func _write_item_job(job: Dictionary) -> void:
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
-			failed.append(key)   # not written: the header names the gen still on disk, and the next save builds it again (no sum)
+			_skip_item_job(job, done)   # an area that could not be written: no header, like any other file of the save (the areas built again next save)
+			return
 
-			if sums.has(key):
-				listed[key] = int(sums[key])
-
-			continue
-
+		done.append(path)
 		sums[key] = gen
 		listed[key] = gen
 
 	var world: Dictionary = (job["world"] as Dictionary).duplicate()
 	world["areas"] = listed
 	world["gen"] = gen
-	_write_file(dir + "/world_items.json", JSON.stringify(world))
+
+	_sync_store(dir)   # every other file of the save (and digs.dat) on the disk before the header that names it: a power cut keeps one whole save
+
+	if not _write_file(dir + "/world_items.json", JSON.stringify(world)):
+		_skip_item_job(job, done)   # the header itself: the store stays the save before, and what this save wrote goes back
+		return
+
+	_sync_store(dir)   # and the header too, so a power cut loses no more than the save being written
 
 	for key in sums.keys():
 		if not listed.has(key):
@@ -2321,11 +2415,6 @@ static func _write_item_job(job: Dictionary) -> void:
 		if file.ends_with(".json") and not listed.has(file.trim_suffix(".json")):
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file)   # an area left empty (its .prev goes too: the header no longer names it)
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file + ".prev")
-
-	for key in failed:
-		sums.erase(key)
-
-	(job["failed_out"] as Array).append_array(failed)   # read on the tick once this writer is done: the save runs again for them
 
 
 # Every saved world item row of a store, for the tests and tools: the header's area files in order, or an older file's own rows.
@@ -3258,6 +3347,31 @@ func _reject(peer: int, reason: int) -> void:
 		send_reject.call(peer, reason)
 
 
+# A refusal with words the player can act on (hands-on screens check, 23 Nov 2026: these were the refusal sound alone). The words come at
+# most once every HANDS_FULL_SAY_GAP_MS a player, since a held swing or a held E asks many times a second; the sound comes every time.
+var _refusal_said: Dictionary = {}   # peer -> {words: msec last said}
+
+
+func _reject_said(peer: int, reason: int, words: String) -> void:
+	var now: int = Time.get_ticks_msec()
+	var said: Dictionary = _refusal_said.get(peer, {})
+
+	if swath_mult <= 0.0 and now - int(said.get(words, -HANDS_FULL_SAY_GAP_MS)) >= HANDS_FULL_SAY_GAP_MS:   # a swath swing says nothing (_say), so it starts no gap
+		said[words] = now
+		_refusal_said[peer] = said
+		_say(peer, words)
+
+	_reject(peer, reason)
+
+
+func _reject_far(peer: int) -> void:
+	_reject_said(peer, 0, "Too far away: step closer.")
+
+
+func _reject_tool(peer: int, tool: String) -> void:
+	_reject_said(peer, 1, "That needs %s in your hand." % tool)
+
+
 func _say(peer: int, text: String) -> void:
 	if swath_mult > 0.0:
 		return   # a sickle or scythe swing cuts many plants at once: what one of them refuses is not told (swath_swing says when nothing was cut)
@@ -3558,7 +3672,10 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 # left every fire, chest, station, torch and young plant over it in the air.
 const EDIT_SETTLES := ["remains", "carcass", "snare_trap"]   # placed things that lie on the ground and follow it (the walkover ones too)
 const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a placed thing's foot
-const EDIT_LIFT_M := 0.3    # how far over a fill's top the ground under a buried stack is looked for
+const EDIT_LIFT_M := 0.3   # how far over a fill's top the ground under a buried stack is looked for
+const HOE_EDGE_SLOPE := 0.6   # the hoe leaves ground falling or rising from a placed thing's footprint no steeper than this (m per m; Steering.MAX_SLOPE 0.9)
+const HOE_EDGE_FACE_M := 1.5   # ...and within this of the footprint a cut's or fill's face is no steeper than 1.5 times that
+const EDIT_ON_BASE_M := 0.15   # a thing whose foot is this far over the ground at its middle stands on a foundation or floor (the hoe's strokes)
 
 
 # A placed kind that lies on the ground and follows it into a dig and onto a fill.
@@ -3610,7 +3727,9 @@ func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
 # The name of a placed thing a dig at `centre` would take the ground from under (`fill` false: the sphere reaches within EDIT_UNDER_M under its
 # foot, inside its footprint) or a fill would bury (`fill` true: the sphere rises over its foot there), "" when none. Fires, stations, chests,
 # torches, buildings and every other placed piece count; stacks, remains, patches and hung things (attach_to) do not: they follow the ground or a wall.
-func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
+# `buildings` false (the hoe's strokes): foundations, and things standing on one or on a floor, do not count; a wall, fence or trough on the
+# ground still does.
+func _edit_blocker(centre: Vector3, radius: float, fill: bool, buildings: bool = true) -> String:
 	for id in _ids_near(centre, radius + FLOOR_ROWS_REACH_M + 1.0):
 		if not _items.has(id):
 			continue
@@ -3629,6 +3748,9 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
 			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
 				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
 
+			if not buildings and bool(def.get("foundation", false)):
+				continue   # the hoe levels round foundations on purpose (LEVEL_BELOW_PIECE_M)
+
 			yaw = float(it["struct"].get("yaw", 0.0))
 			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
 		else:
@@ -3642,10 +3764,63 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
 
 		var apart: Vector2 = Vector2(centre.x, centre.z) - (box[0] as Vector2)
 		var half: Vector2 = box[1]
-		var off: Vector2 = Vector2(maxf(absf(apart.dot(PlacementRules._side(box, 0))) - half.x, 0.0), maxf(absf(apart.dot(PlacementRules._side(box, 1))) - half.y, 0.0))
+		var ax: Vector2 = PlacementRules._side(box, 0)
+		var az: Vector2 = PlacementRules._side(box, 1)
+		var off: Vector2 = Vector2(maxf(absf(apart.dot(ax)) - half.x, 0.0), maxf(absf(apart.dot(az)) - half.y, 0.0))
 
-		if off.length() < sqrt(radius * radius - dy * dy):
-			return name
+		if buildings:
+			if off.length() < sqrt(radius * radius - dy * dy):
+				return name
+
+			continue
+
+		# The hoe: the ground may fall or rise from the footprint's edge no steeper than HOE_EDGE_SLOPE, so no step is left at the edge for a foot
+		# or a cart wheel. Over the sphere's plan on a 9 by 9 grid: where the sphere cuts through that slope (or the foot inside it), it is refused.
+		var plane: float = float(box[3])   # from the foot itself, so no drop is left at the edge
+
+		if off.length() - radius >= maxf(HOE_EDGE_FACE_M, (absf(plane - centre.y) + radius) / HOE_EDGE_SLOPE):
+			continue   # too far off for the slope or the face rule to reach (most things near a garden): no samples
+
+		if edits_near.is_valid() and ground_height.is_valid():
+			var p: Vector3 = it["pos"]
+			var ground: float = _edited_height(p.x, p.z, edits_near.call(p, 3.0))
+
+			if not is_nan(ground) and plane > ground + EDIT_ON_BASE_M:
+				continue   # it stands on a foundation or a floor, not on the ground: the hoe levels round the house as before
+
+		# The footprint's point nearest the sphere's middle, where a cut goes deepest under it (a fill highest over it): exact for a thin fence.
+		var inner: Vector2 = (box[0] as Vector2) + ax * clampf(apart.dot(ax), -half.x, half.x) + az * clampf(apart.dot(az), -half.y, half.y)
+		var inner_flat: float = inner.distance_squared_to(Vector2(centre.x, centre.z))
+
+		if inner_flat < radius * radius:
+			var inner_v: float = sqrt(radius * radius - inner_flat)
+
+			if centre.y - inner_v < plane and plane < centre.y + inner_v:
+				return name
+
+		for i in 9:
+			for j in 9:
+				var dx: float = radius * (float(i) / 4.0 - 1.0)
+				var dz: float = radius * (float(j) / 4.0 - 1.0)
+				var flat: float = dx * dx + dz * dz
+
+				if flat >= radius * radius:
+					continue
+
+				var v: float = sqrt(radius * radius - flat)
+				var rel: Vector2 = Vector2(centre.x + dx, centre.z + dz) - (box[0] as Vector2)
+				var out: float = Vector2(maxf(absf(rel.dot(ax)) - half.x, 0.0), maxf(absf(rel.dot(az)) - half.y, 0.0)).length()
+				var cone: float = plane + (1.0 if fill else -1.0) * HOE_EDGE_SLOPE * out
+
+				if centre.y - v < cone and cone < centre.y + v:
+					return name
+
+				# Near the footprint the sphere's own face must be no steeper than that either where it cuts below (or fills above) the foot:
+				# a deep sphere's rim is a wall even when the slope is kept on average.
+				var face: bool = (centre.y + v > plane) if fill else (centre.y - v < plane)
+
+				if face and out < HOE_EDGE_FACE_M and sqrt(flat) > HOE_EDGE_SLOPE * 1.5 * v:
+					return name
 
 	return ""
 
@@ -3850,7 +4025,7 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 		practice(hunter, "hunt", float(_carcass_cfg["species"][species].get("hunt_difficulty", 1.0)))
 		practice(hunter, "track", 0.5)   # following the game to the kill; Tracking also trains from the trail-reading event when it exists
 
-	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else pos.y
+	var ground: float = _ground_under(pos + Vector3(0.0, 0.3, 0.0))   # the ground the animal fell on, a pit's floor or a fill's top too
 	var spot: Vector3 = Vector3(pos.x, ground if not is_nan(ground) else pos.y, pos.z)
 	var id: int = _next_id
 	_next_id += 1
@@ -4120,14 +4295,21 @@ func _arrow_fly(delta: float) -> void:
 					at_foot = not stuck
 					at = from.lerp(to, into)
 
-			var ground: float = float(ground_height.call(to.x, to.z)) if ground_height.is_valid() else -1000000.0
+			var knows: bool = ground_height.is_valid() or ground_now.is_valid()
+			var down: Vector3 = _landing(from, to) if knows else Vector3.INF
 
-			if at_foot and not is_nan(ground):
-				at.y = float(ground_height.call(at.x, at.z))
+			if at_foot and knows:
+				var foot: float = _ground_under(at)
+				at.y = foot if not is_nan(foot) else at.y
 
-			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
+			if not landed and (down.x != INF or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
 				landed = true
-				at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
+
+				if down.x != INF:
+					at = down
+				else:   # out of range or time in the air: down on the ground under it
+					var ground: float = _ground_under(to) if knows else -1000000.0
+					at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
 
 			ar["pos"] = to
 
@@ -4207,18 +4389,20 @@ func _fly(delta: float) -> void:
 			if not hit.is_empty():
 				var at: Vector3 = hit["at"]
 				hit_number(int(flight["peer"]), at, throw_damage)
-				var below: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+				var below: float = _ground_under(at) if ground_height.is_valid() or ground_now.is_valid() else at.y
 				_land_thrown(flight, Vector3(at.x, below if not is_nan(below) else at.y, at.z))
 				_flights.erase(flight)
 				continue
 
-		var ground: float = float(ground_height.call(flight["pos"].x, flight["pos"].z)) if ground_height.is_valid() else -1000000.0
+		var knows: bool = ground_height.is_valid() or ground_now.is_valid()
+		var down: Vector3 = _landing(from, flight["pos"]) if knows else Vector3.INF
 
-		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
-			var spot: Vector3 = flight["pos"]
+		if down.x != INF or flight["age"] >= THROW_MAX_S:
+			var spot: Vector3 = down if down.x != INF else flight["pos"]
 
-			if not is_nan(ground):
-				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
+			if down.x == INF and knows:   # out of time in the air: not under the ground
+				var ground: float = _ground_under(spot)
+				spot.y = maxf(ground, spot.y) if not is_nan(ground) else spot.y
 
 			if animal_alarm.is_valid():
 				if _bow == null:
@@ -4739,13 +4923,13 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var shovel: int = _swing_tool(peer, inv, held_slot, "shovel")
 
 	if shovel < 0:
-		_reject(peer, 1)
+		_reject_tool(peer, "a shovel")
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -4800,13 +4984,13 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var shovel: int = _swing_tool(peer, inv, held_slot, "shovel")
 
 	if shovel < 0:
-		_reject(peer, 1)
+		_reject_tool(peer, "a shovel")
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -4902,13 +5086,13 @@ func _hoe_ready(peer: int, inv, at: Vector3, held_slot: int) -> int:
 		return -1
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return -1
 
 	var hoe: int = _swing_tool(peer, inv, held_slot, "hoe")
 
 	if hoe < 0:
-		_reject(peer, 1)
+		_reject_tool(peer, "a hoe")
 		return -1
 
 	var now: int = Time.get_ticks_msec()
@@ -5076,6 +5260,8 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			_say(peer, "Not enough soil to raise the low ground: dig some, or carry it or leave it nearby.")
 		elif _level_refused and dig_refusal.is_valid():
 			_say(peer, str(dig_refusal.call()))
+		elif _level_skipped:
+			_say(peer, "Only ground under placed things is left: take them up to level it.")
 		else:
 			_say(peer, "The ground here is already level with where you stand.")
 
@@ -5175,6 +5361,7 @@ func _edited_height(x: float, z: float, edits: Array, base: float = NAN) -> floa
 # Returns the edits made, -1 when a spot is not loaded.
 var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
 var _level_unpaid: bool = false    # the last _level_ground left low ground unfilled for want of soil
+var _level_skipped: bool = false   # the last _level_ground left a spot under a chest, fire or station as it was
 
 
 # `targets` and `radii` (a garden: till_garden), when given, are each spot's own height and sphere size.
@@ -5184,6 +5371,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 	var grid: Dictionary = _edit_buckets(edits) if spots.size() > 64 else {}   # a garden's hundreds of spots read only the edits near each
 	_level_refused = false
 	_level_unpaid = false
+	_level_skipped = false
 
 	while worked < max_ops:
 		var best: Vector3 = Vector3.ZERO
@@ -5218,12 +5406,18 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		var depth: float = minf(absf(best_off), LEVEL_MAX_M)
 
+		var centre: Vector3 = Vector3(best.x, best.y - depth + sphere, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - sphere, best.z)
+
+		if _edit_blocker(centre, sphere, best_off < 0.0, false) != "":
+			skip[best_n] = true   # a chest, fire or station stands there: the stroke leaves its ground and levels the rest (coordinator 23 Nov 2026)
+			_level_skipped = true
+			continue
+
 		if best_off < 0.0 and can_pay.is_valid() and not bool(can_pay.call(depth, sphere)):
 			skip[best_n] = true
 			_level_unpaid = true
 			continue
 
-		var centre: Vector3 = Vector3(best.x, best.y - depth + sphere, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - sphere, best.z)
 		var done: Variant = dig_ground.call(centre, sphere) if best_off > 0.0 else fill_ground.call(centre, sphere, int(FILL_SOIL["soil"]))
 
 		if typeof(done) == TYPE_BOOL and not bool(done):
@@ -5653,6 +5847,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 				continue
 
 			var depth: float = minf(absf(h - target), ROAD_DEPTH_M)
+			var road_at: Vector3 = Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y) if h > target else Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y)
+
+			if _edit_blocker(road_at, SMOOTH_SPHERE_M, h <= target, false) != "":
+				continue   # the road leaves the ground under a chest, fire or station as it is
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
@@ -5737,6 +5935,7 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var dir: Vector2 = along / length
 	var worked: int = 0
 	var dug: bool = false
+	var skipped: bool = false   # a point was left for a placed thing standing on it
 
 	for offset in [Vector2.ZERO, dir, -dir, Vector2(-dir.y, dir.x), Vector2(dir.y, -dir.x)]:
 		var x: float = at.x + offset.x
@@ -5759,8 +5958,14 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
 		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
-		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+
 		dug = true
+
+		if _edit_blocker(sphere_at, SMOOTH_SPHERE_M, d <= 0.0, false) != "":
+			skipped = true
+			continue   # a chest, fire or station stands there: the stroke grades round it
+
+		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
@@ -5771,7 +5976,7 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	if worked == 0:
-		_say(peer, "This ground is worked enough.")
+		_say(peer, "Only ground under placed things is left: take them up to grade it." if skipped else "This ground is worked enough.")
 		return
 
 	_wear_slot(peer, inv, hoe, "dig")
@@ -6353,7 +6558,7 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 		return
 
 	if _peer_pos[peer].distance_to(at) > MINE_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var tool: int = _held_tool(inv, held_slot, "pick")   # the pick or axe in hand breaks a stone off bare rock (an axe wears 5 a blow, drops.json tool_wear rock)
@@ -6506,6 +6711,66 @@ const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placem
 const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot (as terrain_generator and server_carts CAVE_PROBE_UP_M)
 
 
+# Where a thing let go at `p` comes to rest (round 7, 23 Nov 2026: a carcass or a regrown plant kept to the generated ground, floating over a
+# dug pit or buried in a fill): the ground as dug and filled, or under it (in a cave or a dug tunnel) the floor of the air `p` is in. Cheap
+# above that top (edited_ground keeps its cells); floor_below, a scan of the edits near, only under it. floor_below from inside rock answers
+# at once just over the point (terrain_generator.floor_below): `p` is not in an open space, so the top.
+func _ground_under(p: Vector3) -> float:
+	var top: float = _ground_top(p.x, p.z)
+
+	if is_nan(top) or p.y >= top - 0.05 or not floor_below.is_valid():
+		return top
+
+	var under: float = float(floor_below.call(p))
+	return top if is_nan(under) or under > p.y + 0.05 else under
+
+
+# Where a flight stepping from `from` to `to` comes down (round 7: arrows and thrown things kept to the generated ground, so over a pit they
+# stopped in the air, in a fill they went in, and in a tunnel or a cave they came out on the hill above): Vector3.INF while it is still in
+# the air (or there is no ground to know). From the open air over its own column it strikes the ground as dug and filled where it is (a pit's
+# floor, a fill's top, a hillside), unless it went in at a tunnel's or a cave's mouth (open air under the top there). From under its column's top (a tunnel, a cave) it comes down to the floor of the open column under it,
+# or, struck into the rock (a wall or the roof), to the floor where it last was in the open. A flight is only looked at after the step that
+# took it into the rock, so the open air is read from `from`, never `to`.
+func _landing(from: Vector3, to: Vector3) -> Vector3:
+	var top: float = _ground_top(to.x, to.z)
+
+	if is_nan(top) or to.y > top:
+		return Vector3.INF
+
+	var own: float = _ground_top(from.x, from.z)
+
+	if not floor_below.is_valid() or is_nan(own) or from.y >= own - 0.05:
+		if floor_below.is_valid() and to.y < top - 0.05:   # under the top from the open air: into a tunnel's or a cave's mouth, or into the rock
+			var inside: float = float(floor_below.call(to))
+
+			if not is_nan(inside) and inside <= to.y + 0.05:
+				return Vector3(to.x, inside, to.z) if to.y <= inside else Vector3.INF
+
+		return Vector3(to.x, top, to.z)   # from the open air: it struck the ground
+
+	var under: float = float(floor_below.call(Vector3(to.x, from.y, to.z)))   # down to's column from the height it was last in the air
+
+	if not is_nan(under) and under <= from.y + 0.05:
+		if to.y <= under:
+			return Vector3(to.x, under, to.z)
+
+		var here: float = float(floor_below.call(to))
+
+		if not is_nan(here) and here <= to.y + 0.05:
+			return Vector3.INF   # still in the open air
+
+	var floor_y: float = float(floor_below.call(from))   # struck into the rock: down where it last was in the open
+	return Vector3(from.x, floor_y, from.z) if not is_nan(floor_y) and floor_y <= from.y + 0.05 else Vector3(to.x, top, to.z)
+
+
+# The ground as dug and filled at (x, z), the top of its highest solid span; the generated ground where the server has not given it.
+func _ground_top(x: float, z: float) -> float:
+	if ground_now.is_valid():
+		return float(ground_now.call(x, z))
+
+	return float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+
 # The ground under a spot: the cave floor when the spot is under the generated surface `surface` and in a cave's air, else `surface`.
 func _cave_ground(at: Vector3, surface: float) -> float:
 	if not cave_floor.is_valid() or is_nan(surface) or at.y >= surface - 0.05:
@@ -6631,8 +6896,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground there is not ready yet. Try again in a moment.")   # the terrain under the ghost has not streamed in
 		return
 
-	if ground < 1.0:
-		_say(peer, "The ground is too wet here.")
+	if ground < PlacementRules.WET_GROUND_M:
+		_say(peer, "The ground is too wet here.")   # the ghost's own rule (held_item "wet")
 		return
 
 	if PlacementRules.off_ground(_structures_cfg, kit_id, at.y, ground, on_base, on_grid.size() > 3) == "float":   # a piece on a foundation is exempt: the ground under it was the foundation's check (BUG-009)
@@ -7757,7 +8022,7 @@ func _pick_up_fire(peer: int, inv, id: int) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var fire: Dictionary = it["fire"]
@@ -7858,7 +8123,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	if is_shoulder_item(int(it["number"])):
@@ -8848,6 +9113,10 @@ func _read_area(key: String, gen: int) -> Dictionary:
 	if typeof(prev) == TYPE_DICTIONARY and int(prev.get("gen", -1)) == gen and int(prev.get("version", 0)) <= VERSION and typeof(prev.get("items")) == TYPE_ARRAY:
 		push_error("server items: %s read from the save before it (.prev, the gen the header names)" % path)
 		_area_recovered[key] = true
+
+		if typeof(main) == TYPE_DICTIONARY:
+			_set_aside_unfinished(path)
+
 		return prev
 
 	if typeof(main) == TYPE_DICTIONARY and typeof(main.get("items")) == TYPE_ARRAY:
@@ -8878,6 +9147,23 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) <= version and int(parsed.get("version", 0)) >= (version if oldest < 0 else oldest):
+		if name != "world_items.json" and parsed.has("gen") and int(parsed["gen"]) > _header_gen():
+			var before: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev")) if FileAccess.file_exists(path + ".prev") else null
+
+			if typeof(before) == TYPE_DICTIONARY and int(before.get("version", 0)) <= version and int(before.get("version", 0)) >= (version if oldest < 0 else oldest) and int(before.get("gen", 0)) <= _header_gen():
+				push_error("server save: %s is from save %d, which stopped before it finished (the last whole save is %d): read from %s.prev, so the store is that whole save" % [path, int(parsed["gen"]), _header_gen(), path])
+				_set_aside_unfinished(path)
+				return before
+
+			if before == null and _header_gen() >= 0:
+				# New to the store in the save that stopped: the whole save before did not have it, so it is read as absent (an item in it
+				# would otherwise also be where the save before had it).
+				push_error("server save: %s is from save %d, which stopped before it finished (the last whole save is %d), and the save before had no such file: read as absent, so the store is that whole save" % [path, int(parsed["gen"]), _header_gen()])
+				_set_aside_unfinished(path)
+				return null
+
+			push_error("server save: %s is from save %d, past the last whole save %d, and has no earlier copy of that save: read as it is" % [path, int(parsed["gen"]), _header_gen()])
+
 		return parsed
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) > version:
@@ -8904,11 +9190,42 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	return null
 
 
+# A file from a save that never finished, read from its .prev at load: put aside as .unfinished and the .prev copied back in its place, so the
+# next save keeps the whole save as its .prev (a second stop before that save's header lands then still reads whole).
+static func _set_aside_unfinished(path: String) -> void:
+	_file_lock.lock()
+	DirAccess.rename_absolute(path, path + ".unfinished")
+
+	if FileAccess.file_exists(path + ".prev"):
+		DirAccess.copy_absolute(path + ".prev", path)
+	_file_lock.unlock()
+
+
+# The gen of the last whole save: the world_items.json header's, or its .prev's when the header is damaged (as _load_world_items reads it).
+func _header_gen() -> int:
+	if _head_gen == -2:
+		_head_gen = -1
+		var path: String = _dir + "/world_items.json"
+		restore_missing(path)
+
+		for one in [path, path + ".prev"]:
+			var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(one)) if FileAccess.file_exists(one) else null
+
+			if typeof(head) == TYPE_DICTIONARY:
+				_head_gen = int(head.get("gen", -1)) if head.has("areas") else -1
+				break
+
+	return _head_gen
+
+
 # Writes a save file without ever leaving a half-written one: the new text goes to .tmp and is renamed over the old file,
 # and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
 	var t0: int = Time.get_ticks_usec()
+
+	if _set_gen > 0:
+		data["gen"] = _set_gen
 
 	if _async_writes:
 		_pending_writes.append([path, data.duplicate(true)])   # a copy of its own: the background writer makes the JSON (see _start_writer)
@@ -8918,7 +9235,12 @@ func _write_atomic(name: String, data: Dictionary) -> void:
 	var text: String = JSON.stringify(data)
 	_note_save_part(name, t0)
 	_finish_writer()
-	_write_file(path, text)
+
+	if _write_file(path, text):
+		if _set_gen > 0:
+			_set_written.append(path)
+	elif _set_gen > 0:
+		_set_lost_file = true   # this save's header is not written (_save_item_files)
 
 
 # A save part that took more than 10 ms on the tick, for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick).
@@ -8933,6 +9255,34 @@ func _note_save_part(name: String, t0: int) -> void:
 # One write at a time: the background writer and a save from anywhere else (shutdown, a test's last save) used the same path.tmp, and the second rename failed with an error
 # line ("Error calling utility function", exit 1 or 139 in the gates, 31 Oct 2026). The lock makes the files land in order.
 static var _file_lock: Mutex = Mutex.new()
+
+
+# A file another system saves through set_extras, read as the save set reads its own (a file from a save that stopped before its header
+# is read from its .prev). Null when it is missing or cannot be read.
+func read_set_file(name: String, version: int) -> Variant:
+	var failures: int = load_failures.size()
+	var parsed: Variant = _read_json_version(name, version)
+
+	if load_failures.size() > failures:
+		load_failures.resize(failures)   # read after the start's check: that system starts empty (as it did before) rather than stopping every save
+		return null
+
+	return parsed
+
+
+# The number of ground edits the last whole save held (the header's "digs", or its .prev's when the header is damaged), -1 when the store
+# has no such header (a new store, or one saved before #1822's follow-up): then the edit log is kept whole. Read before the items load.
+static func header_digs(dir: String) -> int:
+	var path: String = dir + "/world_items.json"
+	restore_missing(path)
+
+	for one in [path, path + ".prev"]:
+		var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(one)) if FileAccess.file_exists(one) else null
+
+		if typeof(head) == TYPE_DICTIONARY:
+			return int(head.get("digs", -1)) if head.has("areas") and head.has("gen") else -1
+
+	return -1
 
 
 # A save file that is missing while its .tmp or .prev is there is put back before it is read (22 Nov 2026, the #1597/#1598 reviews). On Windows
@@ -8965,23 +9315,73 @@ static func restore_missing(path: String) -> String:
 	return done
 
 
-static func _write_file(path: String, text: String) -> bool:
-	_file_lock.lock()
+# The size of a file on disk, read with a handle that is closed before this returns (an open handle stops a rename on Windows); -1 if unreadable.
+static func _length_of(path: String) -> int:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	if file == null:
+		return -1
+
+	var size: int = file.get_length()
+	file.close()
+	return size
+
+
+# locked false: a small file only the main thread writes (traders, NPC flags, tile revisions, picked plants), which need not wait while the
+# background writer holds the lock through a big save.
+static func _write_file(path: String, text: String, locked: bool = true) -> bool:
+	if locked:
+		_file_lock.lock()
+
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
 	if file == null:
-		_file_lock.unlock()
-		push_error("server items: cannot write %s" % path)
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: cannot write %s (%s; a read-only or missing store?): the file on disk is the save before, kept as it is" % [path, error_string(FileAccess.get_open_error())])
 		return false
 
-	file.store_string(text)
+	var stored: bool = file.store_string(text)
+	var error: int = file.get_error()
 	file.close()
+	var whole: bool = stored and (error == OK or error == ERR_FILE_EOF)
 
-	if FileAccess.file_exists(path):
-		DirAccess.copy_absolute(path, path + ".prev")
+	if whole:   # the last buffered bytes go out at the close: what landed is read back by its length
+		whole = _length_of(path + ".tmp") == text.to_utf8_buffer().size()
+
+	if not whole:
+		DirAccess.remove_absolute(path + ".tmp")   # a disk that filled part way: the torn .tmp is never moved over the whole file
+
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: %s could not be written whole (%s; is the disk full?): the file on disk is the save before, kept as it is" % [path, error_string(error)])
+		return false
+
+	# The file it replaces becomes .prev by a rename, not a copy: a copy onto a full disk tore the .prev, the one fallback. A stop between the two
+	# renames leaves .tmp and .prev and no file, which restore_missing puts back from the whole .tmp.
+	if FileAccess.file_exists(path) and DirAccess.rename_absolute(path, path + ".prev") != OK:
+		DirAccess.remove_absolute(path + ".tmp")   # the file could not become .prev (held open elsewhere?): nothing is moved, the save before stands
+
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: %s could not be moved to %s.prev: the file on disk is the save before, kept as it is" % [path, path])
+		return false
 
 	var moved: bool = DirAccess.rename_absolute(path + ".tmp", path) == OK
-	_file_lock.unlock()
+
+	if not moved:   # the save before goes back in place, as if this write never began
+		DirAccess.remove_absolute(path + ".tmp")
+		DirAccess.rename_absolute(path + ".prev", path)
+
+	if locked:
+		_file_lock.unlock()
+
+	if not moved:
+		push_error("SERVER SAVE FAILED: %s.tmp could not be moved into place: the save before is kept" % path)
+
 	return moved
 
 
@@ -9011,11 +9411,47 @@ func _start_writer() -> void:
 
 
 static func _write_batch(batch: Array) -> void:
+	var whole: bool = true   # every file of this save so far written
+	var written: Array = []  # the paths this save has written so far
+
 	for row in batch:
-		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files
-			_write_item_job(row)
+		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files, the header last; a save that lost a file does not write its header
+			if whole:
+				_write_item_job(row, written)
+			else:
+				_skip_item_job(row, written)
+
+			whole = true   # a batch can hold the next save too
+			written = []
+		elif _write_file(str(row[0]), JSON.stringify(row[1])):
+			written.append(str(row[0]))
 		else:
-			_write_file(str(row[0]), JSON.stringify(row[1]))
+			whole = false
+
+
+# A save one of whose files could not be written: its header is not written, so the store stays the save before as a whole (its other new
+# files are read from their .prev at load, _read_json_version). Its areas lose their sums and are built and written again by the next save.
+static func _skip_item_job(job: Dictionary, written: Array) -> void:
+	var sums: Dictionary = job["sums"]
+
+	# The files it did write go back to the save before (their .prev), so the next save keeps the whole save as their .prev: a stop in that
+	# save then still reads as one whole save.
+	_file_lock.lock()
+
+	for path in written:
+		if FileAccess.file_exists(str(path) + ".prev"):
+			DirAccess.rename_absolute(str(path) + ".prev", str(path))
+		else:
+			DirAccess.remove_absolute(str(path))   # new in this save: the save before had no such file
+
+	_file_lock.unlock()
+
+	for key in job["areas"]:
+		sums.erase(key)
+
+	(job["failed_out"] as Array).append_array((job["areas"] as Dictionary).keys())
+	(job["failed_out"] as Array).append("")   # nothing to rebuild, still a failure: the tick marks the world dirty and the save runs again
+	push_error("SERVER SAVE FAILED: save %d lost a file, so its world items and header were not written: the store stays the save before, whole; the next save tries again" % int(job["gen"]))
 
 
 func _reap_writer() -> void:
@@ -10246,7 +10682,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var flat: Vector2 = Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z)
 
 	if flat.length() > HIT_REACH_M + size_now:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var rate: float = float(tool[1])
@@ -10602,7 +11038,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 	var flat: float = Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length()
 
 	if flat > HIT_REACH_M + float(info["trunk"]):
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	_last_hit[peer] = now
@@ -10906,7 +11342,7 @@ func _crushed(peer: int, amount: float) -> void:
 	if v.is_empty():
 		return
 
-	v["health"] = maxf(float(v["health"]) - amount, 1.0)
+	v["health"] = maxf(float(v["health"]) - amount * comfort_bonus(peer, "damage_taken_mult"), 1.0)
 	_say(peer, "A falling tree hit you")
 
 	if not _forced_sleep(peer):
@@ -11546,8 +11982,8 @@ func _seed_litter(id: int, tree: Dictionary, fallback: Vector3) -> Array:
 		var far: float = sqrt(rng.randf()) * float(circle[2]) * 0.5   # luck-exempt: where it lands, no player
 		spot = Vector3(float(circle[0]) + cos(angle) * far, fallback.y, float(circle[1]) + sin(angle) * far)
 
-		if ground_height.is_valid():
-			var ground: float = float(ground_height.call(spot.x, spot.z))
+		if ground_height.is_valid() or ground_now.is_valid():
+			var ground: float = _ground_top(spot.x, spot.z)   # a pit's floor, a fill's top (a tree's litter never lands in a tunnel)
 			spot.y = ground + 0.1 if not is_nan(ground) else spot.y
 
 	return [[int(seeds[0]), int(seeds[1]), spot]]
@@ -11638,8 +12074,8 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 			var z: float = float(circle[1]) + sin(angle) * far
 			var y: float = at.y
 
-			if ground_height.is_valid():   # on the ground where it lands, not at the stump's height (a slope)
-				var ground: float = float(ground_height.call(x, z))
+			if ground_height.is_valid() or ground_now.is_valid():   # on the ground where it lands, not at the stump's height (a slope), as dug and filled
+				var ground: float = _ground_top(x, z)
 				y = ground + 0.1 if not is_nan(ground) else y
 
 			rows.append([number, floori(float(total) / float(heaps)) + (1 if k < total % heaps else 0), Vector3(x, y, z)])
@@ -11764,7 +12200,7 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, at: Ve
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. The dice come from the seed and the spot,
 # so a restart gives the same answer.
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
-	if not standing_near.is_valid() or not ground_height.is_valid():
+	if not standing_near.is_valid() or not (ground_height.is_valid() or ground_now.is_valid()):
 		return
 
 	var tree: Dictionary = stump["tree"]
@@ -11781,7 +12217,7 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 
 	var angle: float = rng.randf() * TAU   # luck-exempt: world regrowth, no player
 	var spot: Vector3 = near[0] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, RESPAWN_PLACE_M)   # luck-exempt: world regrowth, no player
-	var ground: float = float(ground_height.call(spot.x, spot.z))
+	var ground: float = _ground_top(spot.x, spot.z)   # in a dug pit or on a fill, not in the air over it
 	var species_entry: Dictionary = _flora_by_name.get(str(tree["species"]), {})
 
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
@@ -11947,7 +12383,7 @@ func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, held_slot: int) 
 	var spot: Vector3 = info["position"]
 
 	if Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length() > HIT_REACH_M + 1.0:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var cfg: Dictionary = _drops.get("shrub_work", {})
@@ -12004,7 +12440,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
@@ -15510,6 +15946,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	var kind: String = str(_items.get(id, {}).get("struct", {}).get("kind", ""))
 
 	if bool(_structures.get(kind, {}).get("take_only", false)):
+		_say(peer, "Nothing goes back in here: you can only take from it.")   # remains and a carcass (structures.json take_only): a drag in was only the refusal sound
 		_reject(peer, 3)
 		return 0
 
@@ -15775,6 +16212,7 @@ func _become_new_player(peer: int) -> void:
 	_inventories[key] = InventoryScript.pack(table)
 	_characters[key]["worn"] = _clean_worn([])
 	_characters[key]["new_player"] = true
+	_characters[key]["comfort"] = 0.0   # a fresh start empties the comfort meter
 	_characters[key]["tried"] = {}
 	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
@@ -16727,6 +17165,7 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	var stopped: float = protection_of(peer, mode if mode != "" else attack_mode(cause), pen)
 	_wear_armour(peer, amount)
 	amount *= 1.0 - stopped
+	amount *= comfort_bonus(peer, "damage_taken_mult")   # the comfort meter: at 10 health counts double (half harm), saved health never changes
 	var before: float = float(v["health"])
 	v["health"] = before - amount
 
@@ -17655,6 +18094,7 @@ func _vitals_tick(spent: float) -> void:
 			v["health"] = clampf(float(v["health"]) + regen * spent, 0.0, health_max)
 
 		_energy_tick(peer, v, spent, game_s)
+		_comfort_meter_tick(peer, v, spent)
 		_breath_tick(peer, v, spent)
 
 		if float(v["health"]) <= 0.0 and kill(peer, str(_death_cause.get(peer, "drowning"))):
@@ -18603,7 +19043,7 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	if w < hurt_at:
 		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult * comfort_bonus(peer, "damage_taken_mult"), 1.0)
 
 		# Only with a known position: never moved to the spawn point (review 23 Nov 2026).
 		if float(v["health"]) <= 1.0 and bool(cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
@@ -18719,6 +19159,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 		if (row[0] as Vector3).distance_to(pos) <= float(tier_row.get("heat_radius_m", cfg.get("fire_radius_m", 4.0))):
 			by_fire = true
 			break
+
+	_by_fire[peer] = by_fire   # the comfort meter's "warmed by a fire" point
 
 	if bool(_swimming.get(peer, false)):
 		soak = 1.0   # in the water: soaked through
@@ -19052,10 +19494,10 @@ func kill(peer: int, cause: String) -> bool:
 	if key == "" or inv == null or not _peer_pos.has(peer) or _death_cfg.is_empty() or not _structures.has("remains"):
 		return false
 
-	_characters[key].erase("rested")   # death ends the Rested buff
+	_characters[key].erase("rested")   # an old save's Rested buff (retired)
+	_characters[key]["comfort"] = 0.0  # death empties the comfort meter
 	_characters[key].erase("food")     # and every food effect (s3.16)
 	_sync_food(peer, true)
-	_rest_credit.erase(peer)
 	_carts.release(peer, "")   # a cart in hand stays where they fell
 	var pos: Vector3 = _peer_pos[peer]
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
@@ -19444,7 +19886,7 @@ func _fall(peer: int, centimetres: int) -> void:
 
 	_last_fall[peer] = now
 	practice(peer, "fall", clampf(drop / maxf(safe_m, 1.0), 0.2, 2.0))
-	v["health"] = maxf(float(v["health"]) - damage, 1.0)
+	v["health"] = maxf(float(v["health"]) - damage * comfort_bonus(peer, "damage_taken_mult"), 1.0)
 	_say(peer, "The fall hurt")
 
 	if not _forced_sleep(peer):
@@ -19559,8 +20001,9 @@ func _step_to_station(peer: int, station_id: int) -> Vector3:
 			spot = candidate
 			break
 
-	if ground_height.is_valid():
-		spot.y = float(ground_height.call(spot.x, spot.z))
+	if ground_height.is_valid() or ground_now.is_valid():
+		var stand: float = _ground_under(spot + Vector3(0.0, 0.5, 0.0))   # a station on a fill or in a dug floor: stood on that ground, not inside it
+		spot.y = stand if not is_nan(stand) else spot.y
 
 	_peer_pos[peer] = spot
 	var look: Vector3 = centre - spot
@@ -20359,7 +20802,7 @@ func _cut_hole(peer: int, inv, slot: int) -> void:
 		return
 
 	if not str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["axe", "pick"] or _is_broken(inv, slot):
-		_reject(peer, 1)
+		_reject_tool(peer, "an axe or a pick that is not broken")
 		return
 
 	if not _on_ice(_peer_pos[peer]):
@@ -23684,7 +24127,7 @@ func _lights_tick(spent: float) -> void:
 # comfort_at(peer): 0 when not sheltered; else 1 for the shelter plus the points of every DIFFERENT comfort kind within radius_m (9 m) and height_m (3 m) of the player, each kind
 # once, only the best bed and the best grade of each graded family (a kind with a "grade" and "family": chair, table, bench; master s3.5), fires/torches/chandeliers only while lit, clamped to max_level (20). A placed structure counts by its structures.json `comfort` id (or its own kind
 # when comfort.json has a kind of that name: rough_bed, workbench, chest ...); lit fires count as `campfire`, a clay hearth as lit when a lit fire burns within 3 m.
-# Rested: earned by sleeping or lying on a good bed at comfort 2 or more (sitting on a seat for 30 s is not built yet); lasts comfort_buff_real_minutes (45) REAL minutes; the tier
+# The level found here is the furniture the comfort meter counts (comfort_points, below). The old Rested buff (retired 23 Nov 2026 by the meter) was: earned by resting at comfort 2 or more; lasted 45 REAL minutes; the tier
 # (health regeneration, exhaustion, hunger and thirst, action speed, skill gain, cold) is the highest whose min_level is reached when earned; a rest at an equal or higher level
 # refreshes it, a lower one leaves it alone; saved in characters.json "rested" {level, until (unix seconds)}; cleared by death. Hooks built: health regeneration (the larger of the
 # bed's and the buff's, never the product), hunger and thirst drain, skill gain, energy drain. Action speed (cooldowns and craft time, _pace_factor) and cold stress (warmth_target) are built too; the HUD line and its tooltip come with protocol 80 and 81. Not built: HUD icons.
@@ -23735,7 +24178,10 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 	var height: float = float(cfg.get("height_m", 3.0))
 	var found: Dictionary = {}     # comfort kind id -> true (each kind once)
 
-	for id in _items:
+	for id in _ids_near(here, radius):   # the sync grid's cells near the player, not every record (the meter reads this for every sheltered player)
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 		var pos: Vector3 = it["pos"]
 
@@ -23797,74 +24243,193 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 	return out
 
 
-# The tooltip of the comfort line (protocol 81): what counts now with its points, what a few more pieces would add, and the Rested buff with its bonuses and minutes left.
+# --- The comfort meter (Dave 23 Nov 2026; comfort.json meter, docs/COMFORT_DESIGN.md s11). It replaces the timed Rested buff. ---
+# Always on, 0 to meter.max (10), kept in characters.json "comfort". comfort_points adds up what the player has now (shelter, a fire's warmth,
+# food and water, a bed, clothes, furniture nearby); the meter climbs toward that target and drifts down by what they do. The bonus is the whole
+# level x 10 percent of meter.full_bonus. rested_tier returns those scaled multipliers so every old Rested hook (regen, energy, hunger and thirst,
+# action pace, skill gain, cold) reads the meter; hurt and strain read comfort_bonus. All per player, per slow tick, with no scan of the world
+# beyond comfort_at's own cached look (1.5 s).
+var _by_fire: Dictionary = {}           # peer -> within a lit fire's heat reach (_update_soak)
+var _comfort_goal: Dictionary = {}      # peer -> the target worked out on the last vitals tick
+
+
+func _meter_cfg() -> Dictionary:
+	return _comfort_data().get("meter", {})
+
+
+func comfort_meter(peer: int) -> float:
+	return clampf(float(_characters.get(_peer_key.get(peer, ""), {}).get("comfort", 0.0)), 0.0, float(_meter_cfg().get("max", 10)))
+
+
+# The whole level shown on screen; the bonus follows it.
+func comfort_level(peer: int) -> int:
+	return int(floor(comfort_meter(peer) + 0.0001))
+
+
+# A full_bonus multiplier scaled by the level: 1.0 at 0, the full value at max, in a straight line.
+func comfort_bonus(peer: int, what: String) -> float:
+	var cfg: Dictionary = _meter_cfg()
+
+	if cfg.is_empty():
+		return 1.0
+
+	return lerpf(1.0, float(cfg.get("full_bonus", {}).get(what, 1.0)), float(comfort_level(peer)) / maxf(float(cfg.get("max", 10)), 1.0))
+
+
+# The points the meter climbs toward: [[name, points, has it], ...] in the order the tooltip lists them.
+func comfort_points(peer: int) -> Array:
+	var pts: Dictionary = _meter_cfg().get("points", {})
+	var v: Dictionary = vitals_of(peer)
+	var out: Array = []
+
+	if pts.is_empty() or v.is_empty() or not _peer_pos.has(peer):
+		return out
+
+	var sheltered: bool = _vitals_cover(_peer_pos[peer]) > 0.0
+	var food: float = float(v.get("fed", 0.0)) / maxf(float(_vitals_cfg.get("stomach_cap_kcal", 2400)), 1.0)
+	var water: float = float(v.get("wet", 0.0)) / maxf(float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), 1.0)
+	var covered: Dictionary = {}   # body, legs, feet -> true when worn; -> "plant" when only fibre
+	var fine: bool = true
+
+	for number in worn_of(peer):
+		if number <= 0:
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(number))
+		var slot: String = str(entry.get("slot", ""))
+
+		if slot in ["body", "legs", "feet"]:
+			covered[slot] = true
+			fine = fine and str(entry.get("fabric", "")) != "plant"
+
+	var dressed: bool = covered.size() == 3
+	var furniture: int = 0
+	var names: PackedStringArray = PackedStringArray()
+
+	if sheltered:
+		for row in comfort_at(peer)["items"]:
+			if str(row[0]) != "bed" and str(_comfort_kind(str(row[0])).get("class", "")) != "fire":
+				furniture += int(row[1])
+				names.append(_comfort_name(str(row[0])))
+
+	out.append(["Sheltered (a lean-to, a roof or a tree)", int(pts.get("sheltered", 1)), sheltered])
+	out.append(["Warmed by a fire", int(pts.get("by_fire", 1)), bool(_by_fire.get(peer, false))])
+	out.append(["Food above 25%", int(pts.get("food_over_25", 1)), food > 0.25])
+	out.append(["Food above 50%", int(pts.get("food_over_50", 1)), food > 0.5])
+	out.append(["Water above 50%", int(pts.get("water_over_50", 1)), water > 0.5])
+	out.append(["Lying on a bed", int(pts.get("on_bed", 1)), on_good_bed(peer)])
+	out.append(["Dressed (body, legs and feet)", int(pts.get("dressed", 1)), dressed])
+	out.append(["Dressed in better than fibre", int(pts.get("dressed_fine", 1)), dressed and fine])
+	var most: int = int(pts.get("furniture_max", 2))
+	out.append(["Furniture nearby, sheltered" + (": " + ", ".join(names) if not names.is_empty() else " (a seat, a table, a rug, a lit torch)"), mini(furniture, most) if furniture > 0 else most, furniture > 0])
+	return out
+
+
+func comfort_target(peer: int) -> float:
+	var total: int = 0
+
+	for row in comfort_points(peer):
+		if bool(row[2]):
+			total += int(row[1])
+
+	return clampf(float(total), 0.0, float(_meter_cfg().get("max", 10)))
+
+
+func _comfort_resting(peer: int) -> bool:
+	return _asleep.has(peer) or int(_stance.get(peer, 0)) >= 2
+
+
+# The meter moves a little each slow tick: toward the target, slowly; falling faster for running, wet clothes and cold.
+func _comfort_meter_tick(peer: int, v: Dictionary, spent: float) -> void:
+	var cfg: Dictionary = _meter_cfg()
+	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
+
+	if cfg.is_empty() or row.is_empty():
+		return
+
+	var m: float = comfort_meter(peer)
+	var target: float = comfort_target(peer)
+	_comfort_goal[peer] = target   # the HUD tick reads it (no second cover look)
+	var minutes: float = spent / 60.0
+	var resting: bool = _comfort_resting(peer)
+
+	if m < target:
+		m = minf(m + float(cfg.get("rise_per_min", 1.0)) * (float(cfg.get("rise_rest_mult", 2.0)) if resting else 1.0) * minutes, target)
+	elif m > target:
+		var rate: float = float(cfg.get("fall_per_min", 0.15))
+
+		if resting:
+			rate *= float(cfg.get("fall_rest_mult", 0.4))
+		else:
+			rate *= lerpf(1.0, float(cfg.get("fall_run_mult", 2.5)), clampf((exertion_of(peer) - 0.4) / 0.6, 0.0, 1.0))   # walking (0.4) is the base, running (1.0) the most
+
+		rate *= lerpf(1.0, float(cfg.get("fall_wet_mult", 1.5)), clampf(float(v.get("soak", _soak.get(peer, 0.0))), 0.0, 1.0))
+
+		if cold_stage(peer) >= 1:
+			rate *= float(cfg.get("fall_cold_mult", 1.5))
+
+		m = maxf(m - rate * minutes, target)
+
+	var before: int = comfort_level(peer)
+	row["comfort"] = m
+
+	if comfort_level(peer) != before:
+		_dirty = true   # saved when the whole level changes; the fraction rides along with the next write
+
+
+# The old Rested hooks read the meter: {} at level 0, else the full_bonus multipliers scaled by the level.
+func rested_tier(peer: int) -> Dictionary:
+	var level: int = comfort_level(peer)
+	var full: Dictionary = _meter_cfg().get("full_bonus", {})
+
+	if level <= 0 or full.is_empty():
+		return {}
+
+	var out: Dictionary = {"name": "Comfort %d" % level, "level": level}
+
+	for what in full:
+		out[what] = comfort_bonus(peer, str(what))
+
+	return out
+
+
+# The tooltip of the comfort meter: the bonus now, what counts and what is missing.
 func comfort_tip(peer: int) -> String:
-	var cfg: Dictionary = _comfort_data()
-	var data: Dictionary = comfort_at(peer)
 	var lines: PackedStringArray = PackedStringArray()
+	var level: int = comfort_level(peer)
+	var mx: int = int(_meter_cfg().get("max", 10))
+	var target: int = int(_comfort_goal.get(peer, comfort_target(peer)))
+	lines.append("Comfort %d of %d (heading for %d)" % [level, mx, target])
 
-	if not bool(data["sheltered"]):
-		lines.append("Comfort 0: you are not under a roof or a tree crown.")
-		lines.append("Shelter gives +1, and then furniture and fire nearby count.")
+	if level > 0:
+		lines.append("Bonus %d%%:" % int(round(float(level) * 100.0 / float(maxi(mx, 1)))))
+		lines.append("  health counts x%.1f" % (1.0 / maxf(comfort_bonus(peer, "damage_taken_mult"), 0.01)))
+		lines.append("  exertion and tiredness build %d%% slower" % int(round((1.0 - comfort_bonus(peer, "exhaustion_mult")) * 100.0)))
+		lines.append("  food and water last x%.1f" % (1.0 / maxf(comfort_bonus(peer, "hunger_thirst_mult"), 0.01)))
 	else:
-		lines.append("Comfort %d of %d" % [int(data["level"]), int(cfg.get("max_level", 20))])
-		lines.append("+%d  Shelter" % int(cfg.get("shelter", {}).get("points", 1)))
-		var have: Dictionary = {}
-		var graded_have: Dictionary = {}   # graded families that already count (a better grade adds only the difference)
+		lines.append("No bonus yet.")
 
-		for row in data["items"]:
-			var id: String = str(row[0])
-			have[id] = true
-			lines.append("+%d  %s" % [int(row[1]), _comfort_name(id)])
+	var have: PackedStringArray = PackedStringArray()
+	var missing: PackedStringArray = PackedStringArray()
 
-			if _comfort_kind(id).has("grade"):
-				graded_have[str(_comfort_kind(id)["family"])] = true
+	for row in comfort_points(peer):
+		(have if bool(row[2]) else missing).append("  +%d  %s" % [int(row[1]), str(row[0])])
 
-		var missing: Array = []
+	if not have.is_empty():
+		lines.append("You have:")
+		lines.append_array(have)
 
-		for kind in cfg.get("kinds", []):
-			var id: String = str(kind["id"])
+	if not missing.is_empty():
+		lines.append("Missing:")
+		lines.append_array(missing)
 
-			if have.has(id) or (str(kind.get("class", "")) == "bed" and have.has("bed")) or (kind.has("grade") and graded_have.has(str(kind["family"]))) or not (str(kind.get("status", "")) in ["live", "placeable"]):
-				continue
-
-			missing.append([int(kind["points"]), id, bool(kind.get("needs_lit", false))])
-
-		missing.sort_custom(func(a, b): return a[0] > b[0])
-
-		if not missing.is_empty():
-			lines.append("Could add:")
-
-			for n in mini(missing.size(), 5):
-				lines.append("  +%d  %s%s" % [missing[n][0], _comfort_name(missing[n][1]), " (lit)" if missing[n][2] else ""])
-
-	var tier: Dictionary = rested_tier(peer)
-
-	if not tier.is_empty():
-		lines.append("%s, %d min left:" % [str(tier.get("name", "Rested")), int(ceil(rested_seconds_left(peer) / 60.0))])
-		lines.append_array(_rested_bonus_lines(tier))
-	else:
-		lines.append("Rest on a bed or sit 30 s at comfort 2 or more to become Rested.")
-
+	lines.append("It climbs slowly to what you have, faster sitting or lying; running, rain and cold make it fall faster.")
 	return "\n".join(lines)
 
 
 func _comfort_name(id: String) -> String:
 	var words: String = id.replace("_", " ")
 	return words.substr(0, 1).to_upper() + words.substr(1)
-
-
-func _rested_bonus_lines(tier: Dictionary) -> PackedStringArray:
-	var out: PackedStringArray = PackedStringArray()
-	var rows: Array = [["regen_mult", "health regeneration +%d%%"], ["exhaustion_mult", "exhaustion %d%% slower"], ["hunger_thirst_mult", "hunger and thirst %d%% slower"], ["action_speed_mult", "work %d%% faster"], ["skill_gain_mult", "skill gain +%d%%"], ["cold_stress_mult", "cold %d%% weaker"]]
-
-	for r in rows:
-		var change: int = int(round(absf(float(tier.get(r[0], 1.0)) - 1.0) * 100.0))
-
-		if change > 0:
-			out.append("  " + str(r[1]) % change)
-
-	return out
 
 
 func _comfort_lit_fire_near(pos: Vector3, radius: float) -> bool:
@@ -23875,109 +24440,40 @@ func _comfort_lit_fire_near(pos: Vector3, radius: float) -> bool:
 	return false
 
 
-# The tier of the Rested buff a player has now ({} when none or run out): the comfort.json rested.tiers row picked when it was earned.
-func rested_tier(peer: int) -> Dictionary:
-	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {}).get("rested", {})
-
-	if row.is_empty() or Time.get_unix_time_from_system() >= float(row.get("until", 0.0)):
-		return {}
-
-	var best: Dictionary = {}
-
-	for tier in _comfort_data().get("rested", {}).get("tiers", []):
-		if int(tier["min_level"]) <= int(row.get("level", 0)):
-			best = tier
-
-	return best
+# The HUD meter (protocol 164): (peer, meter in tenths 0..100, target level, trend -1 falling / 0 / 1 rising, tooltip or "" when unchanged).
+var send_comfort: Callable
+var _comfort_sent: Dictionary = {}      # peer -> [tenths, target, trend]
+var _comfort_tip_sent: Dictionary = {}  # peer -> the last tooltip sent
+var _comfort_tip_at: Dictionary = {}    # peer -> msec the tooltip was last built
+const COMFORT_TIP_S := 1.5
 
 
-func rested_seconds_left(peer: int) -> float:
-	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {}).get("rested", {})
-	return maxf(float(row.get("until", 0.0)) - Time.get_unix_time_from_system(), 0.0)
+func _comfort_tick(_spent: float = 0.0) -> void:
+	var now: int = Time.get_ticks_msec()
 
-
-# A rest was completed (slept, or lay on a good bed). At comfort 2 or more the buff is set or refreshed; a lower level than the buff in force changes nothing.
-func rest_completed(peer: int, half: bool = false) -> bool:
-	var key: String = str(_peer_key.get(peer, ""))
-	var cfg: Dictionary = _comfort_data().get("rested", {})
-
-	if key == "" or not _characters.has(key) or cfg.is_empty():
-		return false
-
-	var level: int = int(comfort_at(peer, true)["level"])
-
-	if level < int(cfg.get("min_level_to_earn", 2)):
-		var data: Dictionary = comfort_at(peer)
-
-		if not bool(data["sheltered"]):
-			_say(peer, "You are not sheltered: nothing here comforts you.")
-		else:
-			_say(peer, "It is too bare to rest well here (comfort 2 needed).")
-
-		return false
-
-	var current: Dictionary = _characters[key].get("rested", {})
-	var minutes: float = float(cfg.get("comfort_buff_real_minutes", 45)) * (0.5 if half else 1.0)
-	var active: bool = not current.is_empty() and Time.get_unix_time_from_system() < float(current.get("until", 0.0))
-
-	if active and level < int(current.get("level", 0)):
-		return false
-
-	_characters[key]["rested"] = {"level": level, "until": Time.get_unix_time_from_system() + minutes * 60.0}
-	_dirty = true
-	_say(peer, "You feel rested.")
-	return true
-
-
-# Called every slow tick: lying on a good bed (awake or asleep) at comfort 2+ earns the buff once per rest; the buff ending is told once.
-var send_comfort: Callable            # (peer, comfort level, rested tier level 0 = none, whole minutes of Rested left, tooltip text): the HUD line and its tooltip (protocol 80, 81)
-var _comfort_sent: Dictionary = {}      # peer -> the last [level, rested level, minutes] told
-const SIT_REST_S := 30.0
-var _sit_s: Dictionary = {}             # peer -> seconds sat on a seat so far
-var _rest_credit: Dictionary = {}       # peer -> true while this rest has already earned the buff
-var _rested_told: Dictionary = {}       # peer -> true while "You feel rested" is in force (to say the end once)
-
-
-func _comfort_tick(spent: float = 0.0) -> void:
 	for peer in _peer_key.keys():
 		_sync_food(peer, false)
 
-		if not _peer_pos.has(peer):
+		if not send_comfort.is_valid() or not _peer_pos.has(peer) or vitals_of(peer).is_empty():
 			continue
 
-		# Sitting (stance 2) within 1.2 m of a seat piece for 30 s completes a rest too.
-		if int(_stance.get(peer, 0)) == 2 and _seat_near(_peer_pos[peer]):
-			_sit_s[peer] = float(_sit_s.get(peer, 0.0)) + spent
+		var m: float = comfort_meter(peer)
+		var target: float = float(_comfort_goal.get(peer, m))
+		var told: Array = [int(floor(m * 10.0 + 0.001)), int(target), 1 if target > m + 0.001 else (-1 if target < m - 0.001 else 0)]
+		var tip: String = ""
 
-			if float(_sit_s[peer]) >= SIT_REST_S and not _rest_credit.has(peer):
-				_rest_credit[peer] = true
-				rest_completed(peer)
-		else:
-			_sit_s.erase(peer)
+		if now - int(_comfort_tip_at.get(peer, -100000)) >= int(COMFORT_TIP_S * 1000.0) or _comfort_sent.get(peer, []) != told:
+			if now - int(_comfort_tip_at.get(peer, -100000)) >= int(COMFORT_TIP_S * 1000.0):
+				_comfort_tip_at[peer] = now
+				var built: String = comfort_tip(peer)
 
-		var sitting_credit: bool = _sit_s.has(peer) and _rest_credit.has(peer)
-		var resting: bool = _asleep.has(peer) or (int(_stance.get(peer, 0)) == 3 and on_good_bed(peer)) or sitting_credit
+				if built != str(_comfort_tip_sent.get(peer, "")):
+					_comfort_tip_sent[peer] = built
+					tip = built
 
-		if resting and not _rest_credit.has(peer):
-			_rest_credit[peer] = true
-			rest_completed(peer)
-		elif not resting:
-			_rest_credit.erase(peer)
-
-		var rested: bool = not rested_tier(peer).is_empty()
-
-		if send_comfort.is_valid():
-			var told: Array = [int(comfort_at(peer)["level"]), int(_characters.get(_peer_key.get(peer, ""), {}).get("rested", {}).get("level", 0)) if rested else 0, int(ceil(rested_seconds_left(peer) / 60.0)) if rested else 0, comfort_tip(peer)]
-
-			if _comfort_sent.get(peer, []) != told:
-				_comfort_sent[peer] = told
-				send_comfort.call(peer, told[0], told[1], told[2], told[3])
-
-		if rested:
-			_rested_told[peer] = true
-		elif _rested_told.has(peer):
-			_rested_told.erase(peer)
-			_say(peer, "You no longer feel rested.")
+		if _comfort_sent.get(peer, []) != told or tip != "":
+			_comfort_sent[peer] = told
+			send_comfort.call(peer, told[0], told[1], told[2], tip)
 
 
 # --- Camp goals' own checks (data/items/camp_goals.json, HINTS_AND_CAMP_EVENTS_SPEC.md section 2; Tyler 31 Oct 2026) ---
@@ -25756,7 +26252,7 @@ func _view_in_reach(peer: int, vid: int) -> Dictionary:
 		return {}
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m() + 1.0:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return {}
 
 	return it
@@ -27254,7 +27750,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			st["t"] = 0.0
 	else:
 		var diff: float = effort_of(peer) - float(cfg.get("rest_effort", 0.52))
-		var rate: float = float(cfg.get("rise_per_s", 0.02)) * fitness_rise_mult(peer) if diff > 0.0 else float(cfg.get("fall_per_s", 0.05))
+		var rate: float = float(cfg.get("rise_per_s", 0.02)) * fitness_rise_mult(peer) * comfort_bonus(peer, "exhaustion_mult") if diff > 0.0 else float(cfg.get("fall_per_s", 0.05))   # the comfort meter: exertion builds slower
 
 		# Slower to come down while still racing after a faint.
 		if diff < 0.0 and bool(st.get("after_faint", false)):
@@ -27975,7 +28471,7 @@ func _load_characters() -> void:
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
 			"tried": parsed["players"][key].get("tried", {}) if typeof(parsed["players"][key].get("tried", {})) == TYPE_DICTIONARY else {},
 			"learned": parsed["players"][key].get("learned", {}) if typeof(parsed["players"][key].get("learned", {})) == TYPE_DICTIONARY else {},   # recipe numbers learned (F-01)
-			"rested": parsed["players"][key].get("rested", {}) if typeof(parsed["players"][key].get("rested", {})) == TYPE_DICTIONARY else {},
+			"comfort": clampf(float(parsed["players"][key].get("comfort", 0.0)) if typeof(parsed["players"][key].get("comfort", 0.0)) in [TYPE_FLOAT, TYPE_INT] else 0.0, 0.0, 10.0),   # the comfort meter (23 Nov 2026); a 9257 save has none and starts at 0
 			"food": parsed["players"][key].get("food", {}) if typeof(parsed["players"][key].get("food", {})) == TYPE_DICTIONARY else {},   # food effects {group: {id, t, until game s}}
 			"last": _clean_last(parsed["players"][key].get("last", {})),   # where the character resumes (start_position_for)
 			"rests": _clean_rests(parsed["players"][key].get("rests", [])),
@@ -28053,7 +28549,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		if _salt_only(peer, thirst):
 			_say(peer, str(thirst["sources"].get("say_salt", "Salt water. It would only make you thirstier.")))   # the sea (design section 2)
 		else:
-			_reject(peer, 0)
+			_reject_said(peer, 0, "No water within reach.")
 
 		return
 

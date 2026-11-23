@@ -25,6 +25,7 @@ extends RefCounted
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const GroundSettle := preload("res://src/stream/ground_settle.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const BLOCK_SIZE := 16
 
@@ -87,28 +88,90 @@ func setup(terrain_generator, store_dir: String) -> String:
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
 	_warm(_cache)
 	_warm(_edits)
-	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat")
+	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat", ItemsScript.header_digs(store_dir))   # digs after the last whole save are dropped with their pack changes
 
 	if ops_error != "":
 		return ops_error
 
 	print("server: %d ground edits loaded from digs.dat" % ops.count)
+
+	if not ops.dropped.is_empty():
+		_drop_settled()   # copies made with the cut edits in them: a later log that grows past their number again must not take them
+
 	_purge_old_settled()
 	var settle_error: String = _open_settle()
 
 	if settle_error != "":
 		return settle_error
 
-	var path: String = store_dir + "/revisions.json"
+	_load_revisions(store_dir + "/revisions.json")
+	_bump_dropped()
+	return ""
+
+
+# Edits dropped at the start (ops.open cut the log back to the last whole save: a hard stop after it): a client's saved copy of their tiles
+# may hold them, so those tiles' revisions jump past CATCH_UP_MAX and the copy is dropped whole at the next join (as after a ground reset).
+func _bump_dropped() -> void:
+	var bumped: Dictionary = {}
+
+	for edit in ops.dropped:
+		for block in GroundOps.blocks_of(edit[0], edit[1]):
+			var tile: Vector2i = generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))
+			bumped["%d,%d" % [tile.x, tile.y]] = true
+
+	for key in bumped:
+		tile_revisions[key] = int(tile_revisions.get(key, 1)) + CATCH_UP_MAX + 1
+
+	if not bumped.is_empty():
+		_revisions_dirty = true
+
+	if _revisions_dirty:
+		save_revisions()   # the counts as this start left them (with "_ops" = the log's count now)
+
+
+# revisions.json: every tile's revision, and how many edits of the log they count (OPS_KEY).
+func _load_revisions(path: String) -> void:
+	ItemsScript.restore_missing(path)
 
 	if FileAccess.file_exists(path):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
 		if typeof(parsed) == TYPE_DICTIONARY:
 			for key in parsed:
-				tile_revisions[str(key)] = int(parsed[key])
+				if str(key) != OPS_KEY:
+					tile_revisions[str(key)] = int(parsed[key])
 
-	return ""
+			# A hard stop up to a second after the last write: the log has edits the revisions do not count yet. Their tiles rise again as
+			# edit_sphere raised them, so a client that joined in that second never sees the same revision over different ground. A file
+			# from before this (no count) is taken as it is.
+			if parsed.has(OPS_KEY):
+				_count_unsaved_edits(int(parsed[OPS_KEY]))
+
+
+# Round 7 (physical world audit, 23 Nov 2026: a hard stop in the middle of digging loses nothing, and two players see the same ground). Since the
+# #1822 follow-up a hard stop drops the edits after the last whole world save (saved within seconds of an edit) with the pack changes they made.
+const OPS_KEY := "_ops"   # in revisions.json: how many edits of the log the revisions counted when written
+
+
+func _count_unsaved_edits(counted: int) -> void:
+	if counted >= ops.count:
+		return   # a clean stop: the revisions count every edit (or the log was cut back below them)
+
+	var list: Array = ops.edits()
+
+	for n in range(clampi(counted, 0, list.size()), list.size()):
+		var tiles: Dictionary = {}
+
+		for block in GroundOps.blocks_of(list[n][1], float(list[n][2])):
+			tiles[generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))] = true
+
+		for tile in tiles:
+			var key: String = "%d,%d" % [tile.x, tile.y]
+			tile_revisions[key] = int(tile_revisions.get(key, 1)) + 1
+
+	if counted < list.size():
+		_revisions_dirty = true
+		print("server: %d ground edits after the last revisions write counted again" % (list.size() - counted))
 
 
 # Called every few seconds: true once the tile files have changed (a bake
@@ -174,6 +237,16 @@ func _write(path: String, text: String) -> void:
 	if file != null:
 		file.store_string(text)
 		file.close()
+
+
+# The settled copies are a cache made from the edit log (ground_settle.gd): after the log was cut back they may hold edits it no longer has,
+# so they are all thrown away and remade from the log as blocks get busy again.
+func _drop_settled() -> void:
+	var folder: String = ProjectSettings.globalize_path(_store_dir)
+
+	for file in DirAccess.get_files_at(folder):
+		if file.begins_with("settled_g"):
+			DirAccess.remove_absolute(folder + "/" + file)
 
 
 func _settled_stem() -> String:
@@ -760,11 +833,11 @@ func save_revisions() -> void:
 
 	if _revisions_dirty:
 		_revisions_dirty = false
-		var revisions_file: FileAccess = FileAccess.open(_store_dir + "/revisions.json", FileAccess.WRITE)
+		var saved: Dictionary = tile_revisions.duplicate()
+		saved[OPS_KEY] = ops.count   # the edits these revisions count (a hard stop before the next write: _count_unsaved_edits)
 
-		if revisions_file != null:
-			revisions_file.store_string(JSON.stringify(tile_revisions, "\t", true))
-			revisions_file.close()
+		if not ItemsScript._write_file(_store_dir + "/revisions.json", JSON.stringify(saved, "\t", true), false):   # whole to a .tmp, then moved over
+			_revisions_dirty = true   # tried again at the next call
 
 	_edit_mutex.unlock()
 

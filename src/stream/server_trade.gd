@@ -8,6 +8,7 @@ extends RefCounted
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TradePrices := preload("res://src/shared/trade_prices.gd")   # the sums the shop window shows too
 const Attributes := preload("res://src/shared/attributes.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 const TALK_RANGE_M := 4.5
 const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
@@ -29,25 +30,40 @@ func setup(store_dir: String = "") -> void:
 	_shops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	_path = store_dir.path_join("trade_state.json") if store_dir != "" else ""
 
+	if _path != "":
+		ItemsScript.restore_missing(_path)
+
 	if _path != "" and FileAccess.file_exists(_path):
 		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
 		_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
 
 
-# Shelves and purses are saved after every deal (a few hundred bytes); the player's side of the deal (pack, coins) goes in the world save
-# that the deal brings forward (save_soon): seconds later, not up to a minute.
+# Shelves and purses go in the same whole save as the player's side of the deal (pack, coins): the deal brings that save forward
+# (save_soon), seconds later. Until in_save_set (no world save to join, as in some tests) they are written on their own after every deal.
 func save() -> void:
 	if items != null:
 		items.save_soon()
 
-	if _path == "":
+	if _path == "" or _in_set:
 		return
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "traders": _state}), false)   # whole to a .tmp, then moved over: a hard stop never tears it
 
-	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "traders": _state}))
-		file.close()
+
+var _in_set: bool = false
+
+
+# trade_state.json joins the world save's file set (server_items.gd set_extras): a hard stop mid-save never keeps a shelf from one save and
+# the pack that paid for it from another (it used to be written at once while the pack waited for the next save). Read again the way the
+# set reads its files, so a shelf from a save that never finished is read from its .prev. Call after setup, with the items loaded.
+func in_save_set(world_items) -> void:
+	if _path == "" or world_items == null:
+		return
+
+	var saved: Variant = world_items.read_set_file(_path.get_file(), 1)
+	_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
+	world_items.set_extras[_path.get_file()] = func(): return {"version": 1, "traders": _state.duplicate(true)}
+	_in_set = true
 
 
 func _game_s() -> float:

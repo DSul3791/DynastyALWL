@@ -85,7 +85,8 @@ func _init() -> void:
 	steps(a, b, 0.1)
 	check(int(b["state"]) == a.GRAZE and hurt_log.is_empty(), "backing off 40 m ends the warning calmly (state %d)" % int(b["state"]))
 
-	# 3. Running away during the warning skips the rest of it, and that charge is real even with bluff_share 1.
+	# 3. Running away during the warning skips the rest of it, past warn_min_s (Dave 23 Nov 2026: it growls before it attacks), and that charge
+	# is real even with bluff_share 1.
 	def["bluff_share"] = 1.0
 	b = bear(a, 0.0)
 	b["den"] = Vector3(500.0, 10.0, 0.0)   # away from its den, so den_bluff_x does not apply
@@ -93,8 +94,10 @@ func _init() -> void:
 	a.big_game.warn(b, players[0]["pos"], 1.5)
 	a._noise_from = [players[0]["pos"]]
 	a._player_vel = [Vector2(8.0, 0.0)]   # 8 m/s straight away from the bear
-	steps(a, b, 0.05)
-	check(int(b["state"]) == a.big_game.CHARGE and not bool(b.get("bluff", true)), "running away during the warning brings a real charge at once (state %d)" % int(b["state"]))
+	steps(a, b, a.big_game.warn_min_s(def) - 0.15)
+	check(int(b["state"]) == a.big_game.WARN or int(b["state"]) == a.big_game.WARN_POP, "running away does not cut the growl below warn_min_s (state %d)" % int(b["state"]))
+	steps(a, b, 0.3)
+	check(int(b["state"]) == a.big_game.CHARGE and not bool(b.get("bluff", true)), "then the charge comes, real, well before the 1.5 s warning ends (state %d)" % int(b["state"]))
 
 	# 4. Running toward it, then stopping, does not skip the warning.
 	b = bear(a, 0.0)
@@ -126,7 +129,7 @@ func _init() -> void:
 	steps(a, b, 6.0)
 	check(hurt_log.size() == 1, "a mother's charge is real (%d hits)" % hurt_log.size())
 
-	# 7. A row without the new keys (the moose) behaves as before: one warning state, every charge real.
+	# 7. A row without the bear's threat keys (the moose: no bluffs or growl; it has the fair dodge since #1824) behaves as before: one warning state, every charge real.
 	hurt_log = []
 	var id: int = a.spawn("moose", 0.0, 0.0)
 	var m: Dictionary = a.animals[id]
