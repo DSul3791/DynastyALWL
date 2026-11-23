@@ -1078,6 +1078,10 @@ func goal_progress(changes: Dictionary) -> void:
 	goal_progress_received.emit(changes)
 
 
+# A server asked to stop (stop.now: a restart or an update) tells every player this as a notice before it saves and closes their
+# connections; the client shows it on its "connection lost" window (terrain_client.gd _on_server_lost). Any build of either side: a notice.
+const SERVER_CLOSING := "The server is restarting. Everything is being saved: your character, your pack and the world. Join again in a minute or two."
+
 # A short message for the player ("too many trunks lie here", and so on).
 @rpc("authority", "call_remote", "reliable")
 func notice(text: String) -> void:

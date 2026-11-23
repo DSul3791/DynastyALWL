@@ -858,6 +858,9 @@ func _ready() -> void:
 	net.welcome_received.connect(_on_welcome)
 	net.join_refused_received.connect(func(text: String) -> void:
 		_on_join_refused(text, "Joined from elsewhere" if text.contains("joined the server again") else "Update required"))   # terrain_server.gd _drop_replaced: not a version problem
+	net.notice_received.connect(func(text: String) -> void:
+		if text == NetScript.SERVER_CLOSING:
+			_server_closing = text)   # the server is stopping (a restart or an update): its "connection lost" window says so
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.edits_since_received.connect(_on_edits_since)
@@ -1083,7 +1086,12 @@ func _on_server_lost() -> void:
 		_finish(1)
 		return
 
-	_show_lost_notice("the server stopped answering or closed the connection")
+	_show_lost_notice(lost_reason(_server_closing))
+
+
+# Why the connection went, for the "connection lost" window: the server's own word when it said it was stopping (a restart).
+static func lost_reason(closing: String) -> String:
+	return closing.trim_suffix(".") if closing != "" else "the server stopped answering or closed the connection"
 
 
 # The notice stays up until the player picks Retry or Quit: no timer, no automatic quit. The world is frozen (tree paused,
@@ -4271,6 +4279,7 @@ var _lose_after_s: float = 0.0
 var _link_print_msec: int = 0
 var _horizon = null                   # artificial horizon (horizon_indicator.gd), shown underground or in water
 var link_bars = null                      # server connection indicator (link_bars.gd)
+var _server_closing: String = ""          # NetScript.SERVER_CLOSING once the server said it is stopping
 var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
