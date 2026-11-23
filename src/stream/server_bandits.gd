@@ -41,6 +41,7 @@ var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vec
                                # ids laid (tracks not empty: a cold fire pit and a mark at tracks_at, the road, carrying those boot prints, [dx, dy, dz, yaw] from it)
 var laid_still: Callable       # (Array of world ids) -> bool: every piece is still there
 var drop_gear: Callable        # (item key, Vector3) -> void: a fallen bandit's weapon or clothes on the ground
+var captor_absent: Callable    # (peer) -> bool: that player's line dropped and they are parked (server_items is_absent); his captive waits for him
 var guards_at: Callable        # () -> Array of Vector3: where the guards (role guard: Edda) stand; a tied bandit led within guard_m of one is handed over
 var pay_bounty: Callable       # (peer, copper) -> void: the bounty for a bandit handed over
 var tell: Callable             # (peer, text) -> void: a notice to one player
@@ -1399,6 +1400,17 @@ func claim_horse(id: int, peer: int) -> bool:
 func _captive(a: Dictionary, dt: float) -> void:
 	var c: Dictionary = _clearing()
 	var peer: int = int(a.get("bound_by", -1))
+
+	# His captor's line dropped (parked after 15 s): he waits, tied where he stands, and his time to slip free does not run (coordinator's
+	# ruling, 23 Nov 2026: a dropped line must not cost the player what they earned) until the captor is back or has left the game.
+	if peer >= 0 and captor_absent.is_valid() and bool(captor_absent.call(peer)):
+		var held: float = _now()
+		a["gave_up"] = float(a["gave_up"]) + held - float(a.get("held_at", held))
+		a["held_at"] = held
+		a["state"] = animals.ALERT
+		return
+
+	a.erase("held_at")
 
 	if _now() - float(a["gave_up"]) >= float(c.get("escape_game_hours", 1.0)) * 3600.0:
 		_set_free(a, peer, "The bandit slipped his bonds and got away.")

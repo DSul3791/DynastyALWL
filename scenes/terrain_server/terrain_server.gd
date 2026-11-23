@@ -1049,6 +1049,7 @@ func _ready() -> void:
 	bandits.flush_world = func(): items.save()
 	animals.big_game.struck = func(struck_animal, struck_peer, struck_result): bandits.struck(struck_animal, struck_peer, struck_result)   # a landed charge (it changes nothing about the blow)
 	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
+	bandits.captor_absent = items.is_absent   # a captive waits for a captor whose line dropped
 	bandits.guards_at = func():
 		var guard_spots: Array = []
 
