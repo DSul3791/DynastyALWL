@@ -848,7 +848,11 @@ func _init() -> void:
 	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 3
 	m._last_mine.clear()
 	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).wear[axe_slot] == wear_was, "a blow on the resting patch breaks nothing and wears nothing")
+	m._last_mine.clear()
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(8.5, 10.0, 0.0))   # the next 8 m patch, still within reach
 	check(m.inventory_of(1).wear[axe_slot] == wear_was + 3, "a blow on rock wears the axe by the table's number (%d to %d)" % [wear_was, m.inventory_of(1).wear[axe_slot]])
+	m.inventory_of(1).remove(rock_stone, 1)   # that patch's stone back out: the counts below are the first patch's
 	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 5
 
 	m.report_position(1, Vector3(-5.0, 10.0, 0.0))

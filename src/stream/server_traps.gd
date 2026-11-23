@@ -269,8 +269,8 @@ func _came_near(id: int, now: float) -> void:
 
 
 # What a restart keeps of a set trap beyond its owner and wear (server_items world row 24, JSON; "" for nothing): how squarely it sits on
-# a run and by a fox earth or a choke, its away clock and quiet time, and the catch it holds (the carcass itself is not saved, so its
-# species and life are, and after_load lays it again). The coordinator, 23 Nov 2026: a restart while the player was away lost the run
+# a run and by a fox earth or a choke, and its away clock and quiet time. The catch it holds is a carcass, saved itself; after_load
+# finds it again. The coordinator, 23 Nov 2026: a restart while the player was away lost the run
 # note, so the time away rolled as off a run and nothing was caught; a catch waiting in its snare was lost.
 const SAVED_KEYS := ["run", "fox", "choke", "away_at", "quiet"]
 
@@ -282,11 +282,6 @@ func saved_state(it: Dictionary) -> String:
 	for k in SAVED_KEYS:
 		if st.has(k):
 			out[k] = st[k]
-
-	var c: Dictionary = host._items.get(int(st.get("catch", 0)), {})
-
-	if str(c.get("struct", {}).get("kind", "")) == "carcass" and int(c["struct"].get("blows", 0)) == 0 and not c["struct"].has("parts"):   # one already being cut up is not laid again whole
-		out["held"] = [str(c["struct"].get("species", "")), float(c.get("left", 0.0))]
 
 	return "" if out.is_empty() else JSON.stringify(out)
 
@@ -305,17 +300,41 @@ func restore_state(entry: Dictionary, text: String) -> void:
 		entry["struct"]["held"] = parsed["held"]
 
 
-# After a load: each trap that held a catch has it again, by the trap, still marked as snared (no Tracking or Hunting for it again).
+# After a load: each trap holds its catch again. The carcass is saved itself (server_items _kept_transient), with new ids after a load, so
+# the trap finds the snared carcass lying at its spot. A save from before carcasses were kept has the catch's species and life ("held")
+# instead: it is laid again, still marked as snared (no Tracking or Hunting for it again).
 func after_load() -> void:
+	var bodies: Array = []
+
+	for id in host._items:
+		if str(host._items[id].get("struct", {}).get("kind", "")) == "carcass" and bool(host._items[id]["struct"].get("snared", false)):
+			bodies.append(id)
+
 	for id in host._items.keys():
 		var it: Dictionary = host._items[id]
 
-		if not it.has("struct") or not it["struct"].has("held") or not is_kind(str(it["struct"].get("kind", ""))):
+		if not it.has("struct") or not is_kind(str(it["struct"].get("kind", ""))):
+			continue
+
+		var spot: Vector3 = it["pos"] + Vector3(float(_of_item(it).get("carcass_offset_m", 0.7)), 0.0, 0.0)
+
+		for b in bodies:
+			var at: Vector3 = host._items[b]["pos"]
+
+			if Vector2(at.x - spot.x, at.z - spot.z).length() < 0.5:   # x and z only: the carcass sits on the ground, which a slope lifts
+				it["struct"]["catch"] = b
+				bodies.erase(b)
+				break
+
+		if not it["struct"].has("held"):
 			continue
 
 		var held: Array = it["struct"]["held"]
 		it["struct"].erase("held")
-		var spot: Vector3 = it["pos"] + Vector3(float(_of_item(it).get("carcass_offset_m", 0.7)), 0.0, 0.0)
+
+		if host._items.has(int(it["struct"].get("catch", 0))):
+			continue
+
 		var c: int = host.make_carcass(str(held[0]), spot, -1)
 
 		if host._items.has(c):
