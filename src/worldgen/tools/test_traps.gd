@@ -643,7 +643,7 @@ func away_checks() -> void:
 
 	# The time away goes by the rabbits' own hours: twelve hours of day (rabbits abed) catch nothing, twelve of night do.
 	items.report_position(1, Vector3(5000.0, 10.0, 0.0))
-	items.species_active_at = func(sp, hour): return 1.0 if sp == "rabbit" and (hour >= 20.0 or hour < 8.0) else 0.0
+	items.species_active_at = func(sp, hour, _z): return 1.0 if sp == "rabbit" and (hour >= 20.0 or hour < 8.0) else 0.0
 	var by_day: int = 0
 	var by_night: int = 0
 

@@ -11,6 +11,8 @@ extends RefCounted
 #   - hidden by its box: something drawn outside a box that clips and does not scroll (only a scroll list brings it into view)
 # (Wrapped text never loses lines by itself: the engine keeps a label at least as tall as its lines, so lost lines can only come from a
 # clipping box, which "hidden by its box" names.)
+# Limits: inside a scroll list only what is scrolled into view is checked for cut-off and squeezed text (rows below the fold are checked for
+# width, through the panel they would widen); a scroll list inside a clipping box is not compared with that box.
 # Each problem is one line: "<what>: <node path> <rect>".
 
 const SLACK_PX := 2.0
