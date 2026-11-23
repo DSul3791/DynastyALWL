@@ -11,7 +11,7 @@ Find sign, read it, follow the trail, spot the animal (trails end at beds and wa
 
 ## What changed
 - **Signs for everyone** (data/look/trail_signs.json everyone_note): every kind shows from the first level within 15 m (30 m at 100).
-  From Tracking 10 a faint steady pale patch lies under each shown sign, growing to 0.28 alpha at 100, lit like the ground (no marker at
+  From Tracking 10 a faint steady pale patch lies under each shown sign, growing to 0.4 alpha at 100 (0.15 at 10; Lane A 23 Nov: the first values did not show), lit like the ground with a faint light of its own (halo_emit, glow_emit) so it shows on litter and in shade, faintly at night; latrines, droppings and warrens sit on grass pressed short round them (patch_m); a sign whose ground has no collision yet is tried again every ground_retry_s, at most ground_retries times (no marker at
   night). Spotting (glow, sound, XP) unchanged, now from the first level (server_traps reads see_level 0).
 - **Deer beds**: 2-3 ovals of 1.5 x 0.8 m within 1.5-3.5 m of each deer trail's home, pressed into the run map (grass_view
   _press_beds), so grass lies flat and worn earth bares the litter; a sign for spotting and reading.
@@ -25,9 +25,21 @@ Find sign, read it, follow the trail, spot the animal (trails end at beds and wa
   (animal_view `stepped`, read only, agreed with the animals thread) leaves a print by shape (hoof, paw, hop), fading over 10 real minutes,
   up to twice as long at Tracking 100; a print only after the animal moved 0.6 m, at most 480 (a walking deer lays about two a second, so with several animals near the oldest go before their time).
 
+- **Reading fresh prints** (23 Nov 2026, second pass): look right at a fresh print within 3 m, E: whose and how fresh for anyone; a
+  predator's (wolf, bears, big cats, hyena) adds a plain warning (Dave's core rule: no death unless you do something deliberately
+  stupid, so warn); from Tracking 10 which way it was heading. A dog's never warns.
+- **Rabbit prints in mud**: where a run crosses wet ground, 3-4 hops of four marks (two long hind feet ahead, two small fore feet
+  behind), one line per 30 m, like the deer prints.
+- **Warrens always drawn** (Dave 23 Nov 2026: "so rabbit warrens actually have a model or image"): 3-6 burrow mounds (burrow_view's
+  mound) within 0.6-2.6 m of every warren home, from the routes; a sign to spot and read. Live rabbits' burrows still come from the server.
+- **For the map**: trail_signs `place_found(kind, at)` and `found_places` (session only) fire the first time a warren or deer bedding
+  place is spotted; the map keeps its own record.
+- Left out on purpose: "fresh or old" on trail signs (it would repeat the habit line and could claim an animal that is dead), browsed
+  plants (need shrub model changes), predator sign at dens (the client does not know den spots), a wind or noise display (no written design).
+
 ## Cost
 Client only. No messages, no protocol change, no server work beyond the existing spot check. Signs rebuild only on change or 8 m moved;
 fresh prints redraw at most twice a second while any exist.
 
 ## Not yet
-Fresh prints are not read with E and give no XP (the server has no way to check them cheaply). Pictures on a real GPU are owed (Lane A).
+Fresh prints give no XP (the server has no way to check them cheaply). Pictures on a real GPU are owed (Lane A).
