@@ -602,6 +602,7 @@ func setup(item_table, store_dir: String) -> void:
 	_split_old_barrels()   # after the reset: the barrels it turns are written to their area files at the first save
 	_lift_out_of_slabs()   # stacks dropped on a foundation before 23 Nov 2026 lay inside it: onto its top, written at the first save
 	_carts.after_load()
+	_traps.after_load()   # each trap's held catch laid again by it
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
@@ -2090,14 +2091,14 @@ func _item_job() -> Dictionary:
 
 			for id in _area_ids[key]:
 				if _items.has(id):
-					copy[id] = _items[id].duplicate(true)
+					copy[id] = _save_copy(id)
 					ids.append(id)
 
 			areas[key] = ids
 
 	for id in _save_side:
 		if _items.has(id) and not copy.has(id):
-			copy[id] = _items[id].duplicate(true)
+			copy[id] = _save_copy(id)
 
 	_area_dirty = {}
 	_note_save_part("world item copy", t0)
@@ -2205,6 +2206,17 @@ static func saved_world_rows(dir: String) -> Array:
 
 static func area_key_of(x: float, z: float) -> String:
 	return "%d_%d" % [int(floor(x / AREA_M)), int(floor(z / AREA_M))]
+
+
+# A world item as the writer saves it: a set trap also carries what a restart keeps of its state (server_traps.saved_state: its run note,
+# away clock and the catch it holds), worked out here on the main thread since the writer cannot read the other items.
+func _save_copy(id: int) -> Dictionary:
+	var out: Dictionary = _items[id].duplicate(true)
+
+	if out.has("struct") and _traps != null and _traps.is_kind(str(out["struct"].get("kind", ""))):
+		out["struct"]["trap_state"] = _traps.saved_state(_items[id])
+
+	return out
 
 
 # Not saved in an area file: as _world_item_row skips (scatter, trunks and stumps, the showroom, the camp fire, a transient structure).
@@ -2464,6 +2476,10 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 
 	if it.has("struct"):
 		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
+
+		if it["struct"].has("trap_state"):
+			(items[items.size() - 1] as Array).append(str(it["struct"]["trap_state"]))   # row 24: a set trap's state (server_traps.saved_state)
+
 		return
 
 	var at: Vector3 = it["pos"]
@@ -8225,6 +8241,9 @@ func _load_world_items() -> void:
 				entry["struct"]["seq"] = float(row[12])
 				_next_uid = maxi(_next_uid, int(row[12]) + 1)
 				entry["wear"] = int(row[8])
+
+				if row.size() > 24 and typeof(row[24]) == TYPE_STRING and str(row[24]) != "":
+					_traps.restore_state(entry, str(row[24]))   # its run note, away clock and held catch (laid again by _traps.after_load)
 
 			_load_row_of[_next_id] = row_n
 			_items[_next_id] = entry
