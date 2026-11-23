@@ -110,7 +110,7 @@ func _init() -> void:
 	var ta: Array = [1, line(Vector2(260.0, 300.0), Vector2(340.0, 300.0), 1.0)]
 	var tb: Array = [1, line(Vector2(300.0, 260.0), Vector2(301.5, 340.0), 1.0)]
 	var eager: Dictionary = c.duplicate()
-	eager["rub_retry_m"] = float(c["rub_every_m"])   # look again at the next point, so both trails reach the sapling
+	eager["rub_retry_m"] = 0.5   # look again at the next point (1 m on), so both trails reach the sapling
 	var ab: Array = SignsScript.rubs_for({Vector2i(1, 1): [ta], Vector2i(1, 2): [tb]}, lone, eager)
 	var ba: Array = SignsScript.rubs_for({Vector2i(1, 2): [tb], Vector2i(1, 1): [ta]}, lone, eager)
 	check(ab.size() == 1 and str(ab) == str(ba), "one rub on a shared sapling, the same whichever block came first (%s / %s)" % [str(ab), str(ba)])
