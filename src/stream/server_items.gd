@@ -3150,7 +3150,7 @@ func drop_world_made(number: int, count: int, position: Vector3, lifetime_s: flo
 # (drops, stuck arrows, split logs), every placed structure with its contents (buildings, stations, containers, blueprint sites, tilled beds
 # and their crops, path patches, traps, carts and crates) and every campfire. Restored: felled trees stand again (trunks and stumps go, the
 # flora removals are cleared, saplings go), picked-up scatter, mined boulders and bog iron, picked plants and fruit, shore finds, nests, fish
-# and ore patches. Kept: what the server put down ("world": den piles, goblin gifts, loot), the showroom and carcasses (neither is saved), and
+# and ore patches. Kept: what the server put down ("world": den piles, goblin gifts, loot), the showroom (not saved) and carcasses (saved, they rot by themselves), and
 # every character's pack, worn gear, vitals, skills and progression - remains too: they hold a dead character's pack and purse (they expire by
 # themselves). The ground is the server scene's part (reset_terrain_edits, after this). Written to disk before it returns, so a hard stop
 # cannot bring anything back. Returns how many player-made rows went.
@@ -19115,8 +19115,8 @@ func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3
 	if near.is_finite() and water_kind_at.is_valid():
 		var kind: String = _water_kind_near(near, reach)
 
-		if kind != "":
-			var by_water: String = _fish_schools()._species_for(kind, str(season_now.call()) if season_now.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+		if kind != "" and _fish_schools().has_method("species_for"):   # a test's stand-in school module may not have it
+			var by_water: String = _fish_schools().species_for(kind, str(season_now.call()) if season_now.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
 
 			if by_water != "":
 				return by_water

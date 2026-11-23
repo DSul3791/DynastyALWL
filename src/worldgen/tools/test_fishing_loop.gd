@@ -308,7 +308,7 @@ func _init() -> void:
 	if fire < 0:
 		print("  said: ", said.slice(-4))
 
-	check(fire >= 0 and items.fire_is_lit(int(items._items[fire]["fire"]["state"])), "4. a campfire burns on the bank")
+	check(fire >= 0 and ItemsScript.fire_is_lit(int(items._items[fire]["fire"]["state"])), "4. a campfire burns on the bank")
 	var trout_before: int = have(items, "trout")
 	items.give(1, n(items, "trout"), 1)
 	var roast_before: int = have(items, "roast_fish")

@@ -319,7 +319,9 @@ func after_load() -> void:
 		var spot: Vector3 = it["pos"] + Vector3(float(_of_item(it).get("carcass_offset_m", 0.7)), 0.0, 0.0)
 
 		for b in bodies:
-			if (host._items[b]["pos"] as Vector3).distance_to(spot) < 0.5:
+			var at: Vector3 = host._items[b]["pos"]
+
+			if Vector2(at.x - spot.x, at.z - spot.z).length() < 0.5:   # x and z only: the carcass sits on the ground, which a slope lifts
 				it["struct"]["catch"] = b
 				bodies.erase(b)
 				break

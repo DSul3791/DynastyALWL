@@ -79,7 +79,8 @@ func knife_in_hand(items, peer: int, knife: String) -> int:
 func cut(items, peer: int, id: int, knife: String, blows: int = 99) -> int:
 	var struck: int = 0
 	var slot: int = knife_in_hand(items, peer, knife)
-	items.report_position(peer, items._items[id]["pos"] + Vector3(0.5, 0.0, 0.0)) if items._items.has(id) else null
+	if items._items.has(id):
+		items.report_position(peer, items._items[id]["pos"] + Vector3(0.5, 0.0, 0.0))
 
 	for n in blows:
 		if not items._items.has(id):
@@ -205,6 +206,7 @@ func _init() -> void:
 
 	# A restart while a carcass lies whole, and one half cut: both are still there with what is left of them.
 	var moose: int = items.make_carcass("moose", Vector3(60.0, 10.0, 60.0), 1)
+	check(moose != 0, "a moose carcass is laid")
 	var elk: int = items.make_carcass("elk", Vector3(80.0, 10.0, 80.0), 1)
 	cut(items, 1, elk, "stone_knife", 1)
 	var elk_left: Array = (items._items[elk]["struct"]["parts"] as Array).duplicate(true)

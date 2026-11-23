@@ -383,7 +383,9 @@ func _hunting() -> void:
 	check(not zoo.animals.has(bled_id) and carcasses_after == carcasses_before + 1, "a wounded animal bleeds out and leaves a carcass")
 	var test_one: int = items.make_carcass("rabbit", Vector3(3.0, 10.0, 0.0))
 	check(test_one != 0 and items.make_carcass("dragon", Vector3.ZERO) == 0, "the admin test carcass works for a known species only")
+	items._dirty = true
 	items.save()
+	items._finish_writer()
 	var again = ItemsScript.new()
 	again.send_full = func(_p, _b): pass
 	again.send_slots = func(_p, _b): pass
@@ -394,4 +396,4 @@ func _hunting() -> void:
 	for id in again._items:
 		kept += 1 if again._items[id].has("struct") and str(again._items[id]["struct"]["kind"]) == "carcass" else 0
 
-	check(kept == 0, "carcasses are not saved")
+	check(kept >= 1, "carcasses are kept over a restart (23 Nov 2026: a kill was lost at every restart)")
