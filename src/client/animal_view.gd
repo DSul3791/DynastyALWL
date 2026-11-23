@@ -864,6 +864,9 @@ func _species_scenes(number: int) -> PackedStringArray:
 # walk, because load() read the model (2 to 3 MB) on the main thread. A scene not loaded yet is asked of a worker and false returned;
 # one that fails to load counts as ready, and _make_model then falls back to the code-built body as before.
 func _scenes_ready(number: int) -> bool:
+	if DisplayServer.get_name() == "headless":
+		return true      # the dummy renderer's stores are not thread safe (test_worker_resources): headless clients load as before
+
 	var all_in: bool = true
 
 	for path in _species_scenes(number):
