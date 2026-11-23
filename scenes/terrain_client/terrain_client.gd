@@ -1779,7 +1779,9 @@ func _welcome_body(info: Dictionary) -> void:
 		if not changed.is_empty():
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
 	items.skill_up_event = func() -> void: sound.slots.play("skill_tock", body.global_position + Vector3(0.0, 1.5, 0.0))   # a skill rises: a soft wooden tock (the skill group cools down 20 s)
-	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
+	items.hurt_event = func(lost: int) -> void:
+		sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
+		_attacker_snarl()
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
 	items.thought_event = func(line_id, kind): sound.inner.speak(line_id, kind)
@@ -3217,6 +3219,26 @@ func _warmth_cfg() -> Dictionary:
 
 
 # The footstep and ice tier (sound_stage, gear_sounds, ice_feel: 0 walk, 1 the middle step a jump push-off uses, 2 run).
+# A bite or a charge lands: the animal doing it snarls where it is (a wolf's growl, a bear's roar), so a fight is heard from the attacker,
+# at most once every SNARL_EVERY_MS. Nothing when the blow came from no attacking animal (a fall, a bandit).
+const SNARL_M := 5.0
+const SNARL_EVERY_MS := 1500
+var _snarl_ms: int = 0
+
+
+func _attacker_snarl() -> void:
+	if _animal_view_node == null or sound == null or Time.get_ticks_msec() < _snarl_ms:
+		return
+
+	var who: Dictionary = _animal_view_node.attacker_near(body.global_position, SNARL_M)
+
+	if who.is_empty():
+		return
+
+	_snarl_ms = Time.get_ticks_msec() + SNARL_EVERY_MS
+	sound.creatures.call_at(str(who["kind"]), who["at"], "threat")
+
+
 func _gait() -> int:
 	return 2 if running else 0
 

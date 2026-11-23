@@ -18,6 +18,8 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 # --sound-outdoors (docs/design/sound_outdoors_design.md): the open air moves each voice too (outdoor_air.gd: wind direction, night
 # carry, forest level, cold and fog). The level goes through unit_size (the voice's own size kept in the meta "air_unit"), never
 # volume_db, which the sound modules write; a new voice gets its level at once (node_added), not at the next scan.
+# Front or behind (always on): a voice behind the ears plays through the darker rear copy of its bus (Sound3D.place_rear), chosen as it
+# starts (node_added) and at each scan.
 
 const EASE_TICK_SEC := 0.05            # the cutoff easing runs at 20 Hz
 const SCAN_SEC := 0.5
@@ -52,6 +54,7 @@ var air: Dictionary = {"wind": 0.0, "toward": Vector2.ZERO, "gust": 0.0, "night"
 var air_shadowed: int = 0               # voices 3 dB or more down for the wind at the last scan (HUD)
 var air_carried: int = 0                # voices 1 dB or more up at the last scan
 var air_masked: int = 0                 # small voices hidden by rain or a gale at the last scan
+var behind: int = 0                     # voices on a rear bus at the last scan (HUD)
 var _air_targets: Dictionary = {}       # player instance id -> target dB
 var _head: Vector3 = Vector3.INF
 
@@ -69,7 +72,7 @@ func _enter_tree() -> void:
 
 
 func _hook() -> void:
-	if outdoors and is_inside_tree() and not get_tree().node_added.is_connected(_on_node_added):
+	if is_inside_tree() and not get_tree().node_added.is_connected(_on_node_added):
 		get_tree().node_added.connect(_on_node_added)
 
 
@@ -125,6 +128,8 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 	_head = Vector3.INF if flying else head
 	air["forest"] = forest
 	air["gust"] = float(_stage.gust)
+	behind = 0
+	var ears: Transform3D = _ears()
 
 	if _stage.weather != null:                    # step 2: masking and fresh snow, from the weather sounds' own eased levels
 		air["rain"] = float(_stage.weather.rain)
@@ -141,6 +146,9 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 
 		if player == null or not player.playing:
 			continue
+
+		if Sound3D.place_rear(player, Sound3D.rear_share(ears, player.global_position)):
+			behind += 1
 
 		var to: Vector3 = player.global_position - head
 		var distance: float = to.length()
@@ -219,6 +227,12 @@ func _on_node_added(node: Node) -> void:
 
 # A new voice starts at its level for the air now (a howl upwind starts low), not 0.5 s later.
 func _first_look(player: AudioStreamPlayer3D) -> void:
+	if is_instance_valid(player) and player.is_in_group("world_sounds") and is_inside_tree():
+		Sound3D.place_rear(player, Sound3D.rear_share(_ears(), player.global_position))
+
+	if not outdoors:
+		return
+
 	if is_instance_valid(player) and bool(player.get_meta("air_sharp", false)) and _head != Vector3.INF:
 		_echo(player)
 
@@ -320,3 +334,14 @@ func _echo_after(stream: AudioStream, pitch: float, at: Vector3, db: float, dela
 		echo.play()
 		echoes_played += 1
 	)
+
+
+# Where the ears are and which way they face: the current AudioListener3D (Sound3D.ears), else the camera Godot hears from.
+func _ears() -> Transform3D:
+	var listener: AudioListener3D = get_viewport().get_audio_listener_3d()
+
+	if listener != null:
+		return listener.global_transform
+
+	var camera: Camera3D = get_viewport().get_camera_3d()
+	return camera.global_transform if camera != null else Transform3D.IDENTITY

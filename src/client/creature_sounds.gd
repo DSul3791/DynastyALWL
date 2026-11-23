@@ -46,6 +46,12 @@ const KINDS := {
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
+# Kinds with no clips of their own that sound like one that has (stand-ins until their own recordings): an American black bear growls
+# like a bear, an elk calls like a moose. Without these their warnings and charges were silent.
+const CALL_AS := {"black_bear": "bear", "elk": "moose"}
+# How much louder than its unit-size level a call may get close by (Godot's max_db, default 3): with 3 a wolf growl (unit 40 m) was
+# equally loud anywhere within 28 m, so near and far could not be told apart; at 9 the level keeps rising to about 14 m.
+const NEAR_MAX_DB := 9.0
 const BIRD_IDLE := ["bird_whistle", "bird_feebee", "bird_trill", "bird_chirp"]
 
 var tier: int = 2
@@ -91,6 +97,8 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	if kind == "bird":
 		return _bird(at, mood)
 
+	kind = str(CALL_AS.get(kind, kind))
+
 	if not KINDS.has(kind):
 		return false
 
@@ -121,6 +129,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.unit_size = float(info["unit"])
 	player.max_distance = float(info["reach"]) * 1.2
 	player.attenuation_filter_cutoff_hz = float(info["cutoff"])
+	player.max_db = NEAR_MAX_DB
 	add_child(player)
 	player.add_to_group("world_sounds")
 
