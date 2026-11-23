@@ -354,6 +354,14 @@ func _ready() -> void:
 	# Test plays (lag lane 23 Nov 2026): --game-hour=H starts the clock at hour H of its current day, so standing-play hitch counts taken on
 	# different days compare (the sky's cost depends on the hour). Nothing else changes; the clock runs on from there and is saved as usual.
 	# For throwaway test stores only: it can move the clock back up to a day, which skews item, trade and animal timers on a kept world.
+	# --game-day=D (look rig --day, weather walk 23 Nov 2026) moves the clock to day D of the year (0 to 364) at the same hour, in the same year,
+	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0
+			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])
+
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
 			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
@@ -1529,7 +1537,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	else:
 		generator.prefetch_tile(position.x, position.z)
 
-	items.report_position(peer_id, position)
+	items.report_position(peer_id, position, velocity)   # with its velocity: a blow is judged from where the striker is now (strike_origin)
 
 	if map_knowledge != null:
 		map_knowledge.note_position(peer_id, position)   # the charcoal Map: a survey every few metres walked (server_map.gd)
