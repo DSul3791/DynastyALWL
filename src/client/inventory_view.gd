@@ -2647,7 +2647,7 @@ func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: i
 		eat_event.call(_eat_item)   # a medicine's sound; food and drinks from the pack are silent (Dave 17 Nov 2026: "doesnt need sound for eating"; ItemSounds.eat_kind)
 		_eat_item = ""
 
-	# A mouthful at the water's edge or from a water container (drink(), eat_slot) took effect: the gulp sound (Dave 2026-10-21: no sound when drinking).
+	# A mouthful at the water's edge or from a water container (drink(), eat_slot) took effect: the gulp sound (Dave 2026-10-21 reported there was no sound when drinking).
 	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
 		eat_event.call("drink")
 

@@ -79,10 +79,14 @@ func update(delta: float, body: CharacterBody3D) -> void:
 func hear_others(flames: Array) -> void:
 	var wanted: Array = flames.slice(0, OTHERS_MOST)
 
-	for n in range(_other_loops.size() - 1, -1, -1):
-		if n >= wanted.size() or str(_other_loops[n][1]) != str(wanted[n][1]):
-			(_other_loops[n][0] as AudioStreamPlayer3D).queue_free()
-			_other_loops.remove_at(n)
+	var keep: int = 0   # loops kept from the front while each still has its flame's kind; from the first that does not, all go (a survivor never plays another kind's clip)
+
+	while keep < _other_loops.size() and keep < wanted.size() and str(_other_loops[keep][1]) == str(wanted[keep][1]):
+		keep += 1
+
+	for n in range(_other_loops.size() - 1, keep - 1, -1):
+		(_other_loops[n][0] as AudioStreamPlayer3D).queue_free()
+		_other_loops.remove_at(n)
 
 	for n in wanted.size():
 		if n >= _other_loops.size():

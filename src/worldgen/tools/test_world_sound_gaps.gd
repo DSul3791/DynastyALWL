@@ -195,6 +195,14 @@ func _others_hands(world: Node3D, stage: SoundStage) -> void:
 			and (loops[0] as AudioStreamPlayer3D).playing, "the two nearest flames flutter where they are carried (%d)" % flame.others_heard)
 	flame.hear_others([[at + Vector3(0, 0, 4), "torch"]])
 	check(flame.others_heard == 1 and (flame._other_loops[0][0] as AudioStreamPlayer3D).global_position.is_equal_approx(at + Vector3(0, 0, 4)), "a carried torch's flutter moves with it, the rest stop")
+	flame.hear_others([[at, "torch"], [at + Vector3(1, 0, 0), "torch"]])
+	var second: AudioStreamPlayer3D = flame._other_loops[1][0]
+	flame.hear_others([[at, "lantern"], [at + Vector3(1, 0, 0), "torch"]])
+	var kinds: Array = flame._other_loops.map(func(l: Array) -> String: return str(l[1]))
+	flame.hear_others([[at, "lantern"], [at + Vector3(1, 0, 0), "torch"]])
+	var steady: bool = flame._other_loops.size() == 2 and flame._other_loops.map(func(l: Array) -> String: return str(l[1])) == ["lantern", "torch"]
+	check(kinds == ["lantern", "torch"] and steady and second.is_queued_for_deletion() == true,
+			"a lantern carrier coming nearest: each loop plays its own flame's clip, and stays put on the next look (%s)" % str(kinds))
 	flame.hear_others([])
 	check(flame.others_heard == 0, "none near: silent")
 	view._bodies.clear()   # stand-in bodies with no rig: the view's frame must not draw them
