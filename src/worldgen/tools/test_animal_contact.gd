@@ -37,12 +37,15 @@ func _animals(players: Array, hurt: Array) -> Object:
 	return a
 
 
-# A `sp` 20 m from a standing player charges them for 10 s of ticks `dt` s apart (each animal steps every fourth tick, at most 1 s at a time). Returns [hits, nearest it came (m), where it ended (m)].
+# A `sp` up to 20 m from a standing player (nearer for one that calms past calm_m or whose charge runs out before charge_m: a boar at 13.5 m,
+# a deer at 7 m; Lane B 23 Nov 2026: a deer warned from 20 m rightly calmed and ran) charges them for 10 s of ticks `dt` s apart (each animal steps every fourth tick, at most 1 s at a time). Returns [hits, nearest it came (m), where it ended (m)].
 func charge(sp: String, dt: float) -> Array:
 	var players: Array = [Vector3(0.0, 10.0, 0.0)]
 	var hurt: Array = []
 	var a = _animals(players, hurt)
-	var id: int = a.spawn(sp, 20.0, 0.0)
+	var defend: Dictionary = a.species_def(sp).get("defend", {})
+	var start_m: float = minf(20.0, minf(float(defend.get("calm_m", 32.0)) * 0.8, float(defend.get("charge_m", 24.0)) * 0.9))
+	var id: int = a.spawn(sp, start_m, 0.0)
 	var b: Dictionary = a.animals[id]
 	b["temper"] = "defensive"
 	b["protective"] = false
@@ -93,7 +96,7 @@ func _init() -> void:
 
 		for dt in [0.05, 0.5]:
 			var r: Array = charge(sp, dt)
-			check(int(r[0]) >= 1 and float(r[1]) >= c_m - 0.01, "%s charging from 20 m (steps of %.2f s) hits and stops against the player: nearest %.2f m, contact %.2f m, ended %.2f m" % [sp, dt, float(r[1]), c_m, float(r[2])])
+			check(int(r[0]) >= 1 and float(r[1]) >= c_m - 0.01, "%s charging (from up to 20 m, steps of %.2f s) hits and stops against the player: nearest %.2f m, contact %.2f m, ended %.2f m" % [sp, dt, float(r[1]), c_m, float(r[2])])
 
 	# Any other step into a player is held at the player's side; a step away is left alone; the wolves' player infos work the same.
 	var a = _animals([Vector3.ZERO], [])
