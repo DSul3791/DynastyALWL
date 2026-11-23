@@ -10687,7 +10687,7 @@ func _craft_sap(entry: Array) -> int:
 
 
 # The bark a felled trunk of `species` gives once, as [item number, count], or [] for a species that gives none: drops.json trunk "bark_species" names them,
-# and the amount is that species' harvest_yield row (oak: tannin_bark 3; GOALS-REPAIR GA-01). A standing tree is never stripped: E on it is not offered.
+# and the amount is that species' harvest_yield row (oak: Tannin bark; GOALS-REPAIR GA-01, A-2). A standing tree is never stripped: E on it is not offered.
 func _bark_row(cfg: Dictionary, species: String) -> Array:
 	if not (cfg.get("bark_species", []) as Array).has(species):
 		return []
