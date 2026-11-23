@@ -468,8 +468,9 @@ func _pair_roll(ax: int, az: int, bx: int, bz: int) -> float:
 	return h01((ax if first else bx) * 7919 + (az if first else bz), (bx if first else ax) * 7919 + (bz if first else az), 9)
 
 
-# Which end lays a join between two warrens (so it is laid once): the lower square when the other lies within its block's reach
-# (DEST_OUT_M), else the higher one when the lower lies within its own.
+# Which end lays a join between two warrens (so it is never laid twice): the lower square when the other lies within its block's reach
+# (DEST_OUT_M), else the higher one when the lower lies within its own. A pair lying too far either side of a block side for either is
+# left unjoined (the spill bound, REACH_OUT_M, comes first): a few joins fewer, accepted.
 func _lays_join(sx: int, sz: int, at: Vector2, nx: int, nz: int, other: Vector2) -> bool:
 	var lower: bool = sx < nx or (sx == nx and sz < nz)
 	var mine: bool = _dest_box(at).has_point(other)
@@ -1047,4 +1048,7 @@ func _boxes(place: Dictionary) -> Array:
 
 # A place's drawn trails: the routes its animals walk (each from its home), then the joins and water legs they do not (links).
 func trails_of(place: Dictionary) -> Array:
-	return (place["routes"] as Array) + (place.get("links", []) as Array)
+	if not place.has("trails"):
+		place["trails"] = (place["routes"] as Array) + (place.get("links", []) as Array)   # kept on the place (asked per route in route_distance)
+
+	return place["trails"]

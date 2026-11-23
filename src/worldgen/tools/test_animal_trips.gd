@@ -123,6 +123,19 @@ func _init() -> void:
 	run_lens.sort()
 	var median: float = float(run_lens[run_lens.size() >> 1]) if not run_lens.is_empty() else 0.0
 	check(ok_runs and median >= 80.0, "every trail is a chain of points a few metres apart; runs go to grazing ground within forage_m, no set length (%d runs, shortest %.0f m, median %.0f m, longest %.0f m)" % [run_lens.size(), run_lens[0] if not run_lens.is_empty() else 0.0, median, run_lens[run_lens.size() - 1] if not run_lens.is_empty() else 0.0])
+	var ends: Dictionary = {}
+	var twice: int = 0
+
+	for p in p1:
+		for link in p.get("links", []):
+			var pts: PackedVector2Array = link
+			var a: Vector2 = pts[0].snapped(Vector2(0.01, 0.01))
+			var b: Vector2 = pts[pts.size() - 1].snapped(Vector2(0.01, 0.01))
+			var k: String = str([a, b]) if a < b else str([b, a])
+			twice += 1 if ends.has(k) else 0
+			ends[k] = true
+
+	check(twice == 0, "a join between two warrens is laid by one end only (%d laid twice of %d)" % [twice, ends.size()])
 	check(links > 0, "warrens join their neighbours and deer trails go on to water (%d drawn joins and water legs)" % links)
 	check(spill <= r1.REACH_OUT_M, "no trail runs farther past its block than REACH_OUT_M (%.0f m of %.0f)" % [spill, r1.REACH_OUT_M])
 	check(ok_apart, "a deer's (moose's, elk's) feeding ground is another patch than its bed (patch_m)")

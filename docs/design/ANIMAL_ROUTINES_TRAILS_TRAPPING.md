@@ -117,8 +117,8 @@ the run squeezes past stems or a rock). Placed logs do not count, since they set
 **Stage 2d (built, TR-13)**: signs along trails, worked out on each client from the routes it already has (src/client/trail_signs.gd,
 data/look/trail_signs.json; design /mnt/project-files/trails/STAGE2D_SIGNS_DESIGN.md). Pellet latrines lie 1 to 3 m off each run's
 ends (warren and grazing), a scrape where runs of two warrens meet, deer prints where a trail crosses water (one line per 30 m),
-and deer droppings by the bed. A player sees them from Tracking 25 (latrines, droppings) and 50 (scrapes, prints), within 15 m
-rising to 30 m at 100. Nothing is made or drawn while the world loads round the player, or below Tracking 25; signs are
+and deer droppings by the bed. A player sees them from Tracking 5 (latrines, droppings) and 25 (scrapes, prints; 25 and 50 until 23 Nov 2026, TR-14), within 15 m
+rising to 30 m at 100. Nothing is made or drawn while the world loads round the player, or below Tracking 5; signs are
 worked out afresh (routes within reach plus 40 m only) when the player moves 8 m, so water loaded since shows. Heaps take the lowest
 of three ground probes, so one by a trunk lies on the ground. Settled ground's routes stop, and its signs
 go with them. Not yet: a look hint on a sign, fen and bog ground as wet (only water counts now), fox scat. Sources: Ziege et al. 2016,
@@ -141,7 +141,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 
 ## Provisional values (TR-n)
 
-- TR-1 warren chance 0.45 per 64 m square of open ground with rabbit biome weight, slope under 0.35; trails have no set length (Dave 23 Nov 2026: "they should just exist wherever they exist"): 2-3 runs out to the best grassland spots within 200 m (one spot a 64 m square, never the warren's own; 70 degrees apart; slope under 0.25), and a run joining a neighbouring warren within 200 m for 0.15 of the pairs (drawn, not walked). First seed: median run 131 m, 32 to 200 m. A trail ends at most 90 m past its 256 m block (runs at most 150 m past it with drift and a water detour), so the client's 3 x 3 blocks always hold every trail it draws.
+- TR-1 warren chance 0.45 per 64 m square of open ground with rabbit biome weight, slope under 0.35; trails have no set length (Dave 23 Nov 2026: "they should just exist wherever they exist"): 2-3 runs out to the best grassland spots within 200 m (one spot a 64 m square, never the warren's own; 70 degrees apart; slope under 0.25), and a run joining a neighbouring warren within 200 m for 0.15 of the pairs (drawn, not walked; it counts as a run for snares, as rabbits from either warren use it; a pair whose ends lie too far either side of a block side for either to lay it within 90 m is left unjoined, and a join can end at a warren spot that turned out to have no grazing run, both rare). First seed: median run 131 m, 32 to 200 m. A trail ends at most 90 m past its 256 m block (runs at most 150 m past it with drift and a water detour), so the client's 3 x 3 blocks always hold every trail it draws.
 - TR-2 deer range: one per 256 m square where deer may live; bed on the steepest acceptable side ground (sheltered, above the
   bottom), feeding ground on the flattest open ground of the block, wherever it lies (another patch, over 40 m from the bed; no set length, 23 Nov), and on from there to the nearest fresh water within 240 m (drawn).
 - TR-3 routes: a point every 12 m, each tried 3, 6 or 12 m either side of the last one's line, the gentlest climb kept, drifting at most 30 m off the straight line; round deep water by a dry point 20-60 m to one side of the middle; a small wiggle every 4 m.
@@ -158,8 +158,8 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   review, data/animals/traps.json "tracking"): a snare set on a trail trains Tracking, but not within 15 m of a spot where that character's
   snare trained it in the last game day (no farming by re-setting); walking 10 m along a trail between two 30 s looks trains it; catches
   train it as before. Signs show from Tracking 5 (latrines, droppings) and 25 (scrapes, prints), was 25 and 50. Tracking 10 (the map's
-  trails) is about 970 units: about 1.5 hours of steady trail following at 5.4 units a practice, held to about 3.2 hours by the skill
-  day cap (300 units a game day, an hour); by kills alone it would be about 360 kills. The trainer to pass 25 is not part of this.
+  trails) is about 970 units: about 1.5 hours of steady trail following at 5.4 units a practice, held to about 3.2 to 3.7 hours by the
+  skill's soft day cap (gain falls toward nothing at 300 units a game day, an hour); by kills alone it would be about 360 kills. The trainer to pass 25 is not part of this.
 - TR-9 fox (salt 900): an earth in half the blocks (times the fox biome weight), 8 tries, the spot nearest slope 0.25 (at most
   0.6, dry), with at least 2 warrens within 200 m; 3 rounds of 2-4 warrens each. Clock: out sunset + 0.5 h, home sunrise - 0.25 h,
   jitter 0.5 h.
@@ -168,7 +168,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-11 players' paths: 0.04 a pass (half a deer's 0.08), drawn from about 6 walks there and back, fading 0.14 a game day (a
   well-walked path is gone in about a game week, against 4 days for an animal trail), none more than 1.5 m above the ground.
 - TR-13 signs: see data/look/trail_signs.json (latrine 1-3 m off, 8-15 pellets; scrape where runs pass within 2 m, 5 m clear of
-  a warren; prints 4-6 on water within 3 m, one line per 30 m; droppings within 4 m of a bed; Tracking 25 and 50; 15 to 30 m).
+  a warren; prints 4-6 on water within 3 m, one line per 30 m; droppings within 4 m of a bed; Tracking 5 and 25 (TR-14); 15 to 30 m).
 - TR-12 choke point: within 1.2 m of a tree's root or a boulder's edge, on a rabbit run (the snare's prey), x1.5; the Bird trap takes no lift.
 
 ## Cost on the server tick
