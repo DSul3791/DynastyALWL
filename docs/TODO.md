@@ -54,6 +54,11 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - (a) Data: settle each lake to its lip, lowering it 0.3 to 0.6 m. This re-bakes water in the live world's tiles: **Dave's call**.
 - (b) Drawing: draw a lake's outlet over its lip as a fall rather than a stretched sheet. This is looks work: **parked**.
 
+### Piece 0d. What players build: questions for Dave (physical world audit round 5, 23 Nov 2026; coordinator: build nothing yet)
+- **Walled in by another player.** A player can build walls and a roof round another player. Only the builder can take a piece down (or an admin), and there is no unstuck command, so the one inside stays shut in. Possible rules: (a) refuse a piece that would close a room round another player; (b) let a player take down a piece that shuts them in; (c) an unstuck command that steps a player to the nearest open ground. **Dave's call.**
+- **Gable ends.** A long house roofed with Roof 45 or 65 panels leaves the two triangle ends open; no gable piece exists. A 4 x 4 m room roofed with four roof corners closes fully (test_build_holds). A gable end piece for each tier would close them. **Design gap for Dave.**
+- Left as is, too small to chase: a pinhole about 1 ray in 2,000 at the ridge of the Stone and Engineered roof corners. A wall's blueprint site under a roof can still be taken down, because sites skip the "Take down what stands on it first." check.
+
 ### Piece 0b. Server check of running speed (coordinator 23 Nov 2026: leave for now, note it)
 - The server checks no gait speed: walk, run, crouch and a raised shield's walk-only rule (#1688, terrain_client.gd `held.blocking`) are the client's alone. A modified client could run with a shield up, or run faster than RUN_SPEED. When it matters (player versus player, robbery), the server could compare reported positions against the gait's top speed, and ignore the shield flag (hand_flags & 4) while the player moves faster than walking pace.
 - Also open from the no-use audit (#1674, #1688): materials still marked "Nothing uses it yet." wait for Dave or a design doc (withies, thorny canes, thorny wood, burrs, banana leaves, oil, elderflowers, hawthorn blossom, raspberry leaves, cactus pads, fine leather, seeds, brinebells); feeding animals and fodder; the rapier moves; the trellis; ale and mead.

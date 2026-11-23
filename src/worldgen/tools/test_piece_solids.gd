@@ -74,6 +74,23 @@ func _init() -> void:
 		if piece != null:
 			piece.free()
 
+	# Things block where they are drawn, and their footprint is that size (coordinator 23 Nov 2026): the rock pile's stones, the Saw mill's wheel,
+	# the quenching trough, the bookcase and the apothecary cabinet.
+	for kind in ["rock_pile", "quenching_trough", "bookcase", "apothecary_cabinet", "saw_mill"]:
+		var def: Dictionary = cfg["structures"][kind]
+		var model: Node3D = view._model_for_state(int(def["state"]), {})
+		var drawn: AABB = view._bounds_in(model, model)
+		var box: Variant = solid_box(model)
+		var wide: float = maxf(-drawn.position.x, drawn.end.x) * 2.0
+		var deep: float = maxf(-drawn.position.z, drawn.end.z) * 2.0
+		var covers: bool = box != null and (box as AABB).position.x <= drawn.position.x + 0.05 and (box as AABB).end.x >= drawn.end.x - 0.05 and (box as AABB).position.z <= drawn.position.z + 0.05 and (box as AABB).end.z >= drawn.end.z - 0.05
+		check(covers, "%s: solid across its drawn %.2f x %.2f m (%s)" % [kind, drawn.size.x, drawn.size.z, str(box)])
+
+		if kind != "saw_mill":   # the mill's wheel stands over the water past its footprint on purpose (needs_running_water): its footprint stays
+			check(float(def["footprint_x"]) >= wide - 0.06 and float(def["footprint_z"]) >= deep - 0.06, "%s: its footprint %.2f x %.2f holds the drawn %.2f x %.2f" % [kind, float(def["footprint_x"]), float(def["footprint_z"]), wide, deep])
+
+		model.free()
+
 	var crane: Node3D = view._model_for_state(int(cfg["structures"]["fireplace_cooking_crane"]["state"]), {})
 	check(not view._has_solid(crane), "a piece that hangs in a fireplace gets no box (it would fill the hearth)")
 	crane.free()
