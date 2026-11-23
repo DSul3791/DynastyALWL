@@ -82,6 +82,11 @@ func _dropper() -> void:
 	var axe_at: Vector3 = Vector3(36.0, 10.0, 0.0)
 	var gift_at: Vector3 = Vector3(42.0, 10.0, 0.0)
 	var plain_at: Vector3 = Vector3(48.0, 10.0, 0.0)
+	var far_at: Vector3 = Vector3(-300.0, 10.0, 260.0)   # another area file: its rows sit after the first area's when loaded
+	items._items[items._next_id] = {"number": items.table.number_of("stone_brazier"), "count": 1, "pos": Vector3(24.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "stone_brazier", "yaw": 0.0}}
+	items._next_id += 1   # a structure row ahead of the loose ones in the same area
+	check(items.drop_in_world(items.table.number_of("stone"), 2, far_at - Vector3(3.0, 0.0, 0.0), 0, 0.0, NAN, NAN, ""), "a stone with no dropper in the far area")
+	check(items.drop_in_world(items.table.number_of("plant_fibre"), 2, far_at, 0, 0.0, NAN, NAN, ANNA), "Anna drops fibre in the far area")
 	check(items.drop_in_world(items.table.number_of("raw_meat"), 3, meat_at, 0, 0.0, NAN, NAN, DAVE), "Dave drops raw meat")
 	check(items.drop_in_world(items.table.number_of("stone_axe"), 1, axe_at, 40, 0.0, NAN, NAN, DAVE), "and a worn stone axe")
 	check(items.drop_in_world(items.table.number_of("dried_berries"), 1, gift_at, 0, 0.0, NAN, NAN, "goblin:" + BAND), "the band lays a return gift")
@@ -91,6 +96,7 @@ func _dropper() -> void:
 	check(row_by(b, axe_at, "stone_axe") == DAVE, "so is the axe (%s)" % row_by(b, axe_at, "stone_axe"))
 	check(row_by(b, gift_at, "dried_berries") == "goblin:" + BAND, "the return gift is still the band's (%s)" % row_by(b, gift_at, "dried_berries"))
 	check(row_by(b, plain_at, "stone") == "", "the stone still has no dropper")
+	check(row_by(b, far_at, "plant_fibre") == ANNA and row_by(b, far_at - Vector3(3.0, 0.0, 0.0), "stone") == "", "in the far area the fibre is Anna's and its stone has none (%s)" % row_by(b, far_at, "plant_fibre"))
 
 	# The band steals on the reloaded rows: Dave Known, his axe and the band's gift are left, his meat is taken (and counts as a gift).
 	var a = AnimalsScript.new()
@@ -146,7 +152,7 @@ func _dropper() -> void:
 			f.close()
 			stripped += 1
 
-	check(stripped >= 1, "the area files carried by_rows (%d stripped)" % stripped)
+	check(stripped >= 2, "the area files carried by_rows (%d stripped)" % stripped)
 	var old = make_items(dir)
 	check(row_by(old, plain_at, "stone") == "", "an old store still loads its items")
 	check(row_by(old, axe_at, "stone_axe") == "" and row_by(old, meat_at, "raw_meat") == "", "with no dropper, as before")
