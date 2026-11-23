@@ -1,5 +1,7 @@
 extends Node
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # NPC speech (Dave 2026-10-21: "text is always the trigger, then we hand it the prebaked text or the AI text"). ONE entry point:
 #   speak(voice_id, text, at)   a line of text, who says it, and where (the NPC's position in the world)
 # The text is turned into a cache key from the voice details (data/npcs/voices.json: voice, speed, pitch) and the text itself,
@@ -33,7 +35,7 @@ func _ready() -> void:
 	var config: ConfigFile = ConfigFile.new()
 
 	if config.load(CONFIG) == OK:
-		enabled = bool(config.get_value("voice", "enabled", true))
+		enabled = SettingsRead.flag(config, "voice", "enabled", true)
 
 	_make_bus()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(VOICES_PATH))

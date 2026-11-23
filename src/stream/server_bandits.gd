@@ -1,6 +1,7 @@
 extends RefCounted
 
 const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file: whole-file writes
+const ItemTableScript := preload("res://src/shared/item_table.gd")
 
 # Bandit camp sites, stage 1 (Dave 19 Nov 2026; docs/design/BANDIT_CAMPS.md, data/npcs/bandits.json). Candidate sites are fixed by the world
 # seed, one chance per cell_m square (a hash, like the wolf homes): nothing is stored for a sleeping site. Players and pulled carts moving
@@ -424,7 +425,7 @@ func save() -> void:
 		left_over["%d,%d" % [cell.x, cell.y]] = stash_left[cell]
 
 	# Written whole to a .tmp and moved over the old file (server_items.gd _write_file): a crash mid-write never tears it, so a stash survives.
-	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet, "stash_left": left_over}))
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet, "stash_left": left_over, "seed_pinch": true}))
 
 
 func load_file() -> void:
@@ -495,6 +496,42 @@ func load_file() -> void:
 
 		if key.x != 2147483647 and typeof(parsed["stash_left"][name]) == TYPE_ARRAY:
 			stash_left[key] = parsed["stash_left"][name]   # stolen pieces that could not be laid: kept
+
+	if not bool(parsed.get("seed_pinch", false)):
+		_count_old_seeds()
+
+
+# A bandits file from before seeds were counted one by one (23 Nov 2026, #1628): the seeds in every stolen stash, and in the bags in them,
+# counted once in today's units, as server_items.gd _count_old_seeds does for the stores (ItemsScript.old_seed_units).
+func _count_old_seeds() -> void:
+	var per: Dictionary = ItemsScript.old_seed_units()
+	var table = null
+	var rest: Array = []   # [the stash it came from, a piece]: added after the walk
+
+	for pieces in sites.values().map(func(site): return site.get("stash", [])) + stash_left.values():
+		for piece in pieces:
+			if typeof(piece) != TYPE_DICTIONARY:
+				continue
+
+			if per.has(str(piece.get("id", ""))):
+				piece["count"] = int(piece["count"]) * int(per[str(piece["id"])])
+
+			var inst: Variant = piece.get("inst", {})
+
+			if typeof(inst) == TYPE_DICTIONARY and typeof((inst as Dictionary).get("bag")) == TYPE_ARRAY:
+				if table == null:
+					table = ItemTableScript.load_default()
+
+				for row in inst["bag"]:
+					if row is Array and (row as Array).size() >= 2 and per.has(table.id_of(int(row[0]))):
+						var total: int = int(row[1]) * int(per[table.id_of(int(row[0]))])
+						row[1] = mini(total, ItemTableScript.COUNT_MAX)
+
+						if total > ItemTableScript.COUNT_MAX:   # a bag row holds a u16; the rest rides in the stash as its own piece (a stash piece has no cap)
+							rest.append([pieces, {"id": table.id_of(int(row[0])), "count": total - ItemTableScript.COUNT_MAX, "wear": 0, "inst": {}}])
+
+	for pair in rest:
+		pair[0].append(pair[1])
 
 
 func _key_of(name: String) -> Vector2i:

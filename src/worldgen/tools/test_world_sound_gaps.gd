@@ -187,7 +187,7 @@ func _fall_frames(drop_m: float, flat: float) -> Array:
 	return frames
 
 
-func _falls(world: Node3D, stage: SoundStage) -> void:
+func _falls(world: Node3D, _stage: SoundStage) -> void:
 	var view = PlayerView.new()
 	world.add_child(view)
 	var node: Node3D = Node3D.new()
