@@ -6,7 +6,8 @@ extends SceneTree
 #   2. The raw greens whose text says "eaten raw" or "eaten fresh" can be eaten (40 kcal, as fiddleheads).
 #   3. The rapier moves (skills.json "placeholder") say "planned" in the skills screen; nothing practises them yet.
 #   4. Every shield blocks (items.json block) and its text says how much.
-#   5. Comfrey roots, "not for eating", cannot be eaten. (Materials with no use: tools/progression_check.py --unmarked, run by merge_check.)
+#   5. Comfrey roots, "not for eating", cannot be eaten; a mortar and pestle grinds one into a poultice.
+#   6. Tree roots burn in a fire like firewood. (Materials with no use: tools/progression_check.py --unmarked, run by merge_check.)
 #   godot --headless --path . --script res://src/worldgen/tools/test_no_use_yet.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -105,6 +106,12 @@ func _init() -> void:
 
 	# 5. Comfrey roots ("not for eating") are not food, though their id ends with "roots".
 	check(VitalsRules.food_value("comfrey_roots", items._vitals_cfg) == 0, "comfrey roots cannot be eaten")
+	var recipes: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json"))["recipes"]
+	var root_poultice: Dictionary = recipes.get("poultice_comfrey_root", {})
+	check(str(root_poultice.get("station", "")) == "mortar_pestle" and str(root_poultice.get("needs", [])) == str([["comfrey_roots", 1.0]]) and str(root_poultice.get("gives", [])) == str(["poultice", 1.0]), "but a mortar and pestle grinds one into a poultice, as their text says")
+
+	# 6. Tree roots ("roots: food and medicine, fuel", RECIPE_GRAPH.md) burn like firewood.
+	check(float(items._cooking.get("fuel", {}).get("tree_roots", 0.0)) > 0.0 and str(items._cooking.get("fuel_class", {}).get("tree_roots", "")) == "firewood" and (items._cooking.get("fuel_order", []) as Array).has("tree_roots"), "tree roots are firewood-class fuel")
 
 	items._finish_writer()
 	print("Test done: %d failure(s)" % failures)

@@ -202,7 +202,7 @@
 		"tree_roots": {
 			"number": 18,
 			"name": "Roots",
-			"description": "Roots from the base of a felled tree. Nothing uses it yet.",
+			"description": "Roots from the base of a felled tree. They burn in a fire like firewood.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],

@@ -325,7 +325,7 @@
 		"comfrey_roots": {
 			"name": "Comfrey roots",
 			"kind": "material",
-			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating. Nothing uses it yet.",
+			"description": "A thick black root of comfrey, mucky and slimy inside. Ground into a poultice; not for eating.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true
@@ -2355,7 +2355,7 @@
 		"tree_roots": {
 			"name": "Roots",
 			"kind": "material",
-			"description": "Roots from the base of a felled tree. Nothing uses it yet.",
+			"description": "Roots from the base of a felled tree. They burn in a fire like firewood.",
 			"how_to_get": [],
 			"used_for": [
 				"Roots from a felled tree. No use yet; planned as fibre for baskets."
