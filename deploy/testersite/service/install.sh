@@ -45,8 +45,11 @@ fetch service/reports.py reports.py
 fetch service/compose.yaml compose.yaml
 mkdir -p pages
 for f in index.html bug.html idea.html css/dynasty.css js/tester.js; do fetch "site/$f" "pages/$f"; done
-python3 -c 'import ast,sys; ast.parse(open("reports.py").read())' 2>/dev/null || grep -q "def main" reports.py \
-  || die "reports.py did not download properly"
+if command -v python3 >/dev/null; then
+  python3 -c 'import ast; ast.parse(open("reports.py").read())' 2>/dev/null || die "reports.py did not download properly"
+else
+  grep -q "^def main" reports.py || die "reports.py did not download properly"
+fi
 echo "ok"
 
 say "2. GitHub token"
@@ -68,7 +71,7 @@ say "3. Settings"
 NET="$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' "$CADDY" | awk '{print $1}')"
 [ -n "$NET" ] || die "could not find the Docker network of $CADDY"
 [ "$NET" != host ] || die "$CADDY uses the host network; ask for the other set-up in INSTALL.md"
-TESTERS="$(grep -E '^[[:space:]]*[^#[:space:]]+[[:space:]]+\$2[aby]\$' "$CADDYFILE" | awk '{print $1}' | sort -u | paste -sd, -)"
+TESTERS="$(grep -E '^[[:space:]]*[^#[:space:]]+[[:space:]]+\$2[aby]\$' "$CADDYFILE" | awk '{print $1}' | sort -u | paste -sd, - || true)"
 touch .env
 grep -vE '^(WEB_NETWORK|TESTERS)=' .env > .env.new || true
 printf 'WEB_NETWORK=%s\nTESTERS=%s\n' "$NET" "$TESTERS" >> .env.new
@@ -78,6 +81,7 @@ echo "Testers on the high-score table: ${TESTERS:-none found (they appear once t
 
 say "4. Starting the report service"
 mkdir -p data
+chmod 700 data            # reports and pictures: root only
 docker compose up -d --force-recreate
 echo "ok"
 
@@ -95,17 +99,19 @@ say "6. Caddy: /api/ to the report service, and the login name on the pages"
 NEED_API=1; NEED_TPL=1
 grep -q 'dynasty-reports:8080' "$CADDYFILE" && NEED_API=0
 grep -qE '^[[:space:]]*templates' "$CADDYFILE" && NEED_TPL=0
+NEED_HOME=$NEED_TPL
+grep -qE '^[[:space:]]*@home[[:space:]]' "$CADDYFILE" && NEED_HOME=0   # a matcher from SERVER.md step 3 done by hand
 if [ "$NEED_API$NEED_TPL" = "00" ]; then
   echo "Already there; nothing to change."
 else
   grep -qE '^[[:space:]]*file_server' "$CADDYFILE" || die "no file_server line in the Caddyfile; see INSTALL.md, 'By hand'"
   cp -p "$CADDYFILE" "$CADDYFILE.before-reports"
-  awk -v api="$NEED_API" -v tpl="$NEED_TPL" '
+  awk -v api="$NEED_API" -v tpl="$NEED_TPL" -v home="$NEED_HOME" '
     !done && /^[[:space:]]*file_server/ {
       match($0, /^[[:space:]]*/); pad = substr($0, 1, RLENGTH)
       if (tpl == 1) {
         print pad "# Tester site (deploy/testersite/INSTALL.md): Caddy writes the login name into these pages."
-        print pad "@home path / /index.html /download/ /download/index.html"
+        if (home == 1) print pad "@home path / /index.html /download/ /download/index.html"
         print pad "templates @home"
       }
       if (api == 1) {

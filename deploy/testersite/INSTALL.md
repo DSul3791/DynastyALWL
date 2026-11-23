@@ -6,7 +6,9 @@ latest** (with the build number), **Submit a bug** and **Suggest an idea**, and 
 reported, ideas, total score, sortable by any column. Testers need no GitHub account: the site files each report as an issue on
 [DynastyALWL-QA](https://github.com/DSul3791/DynastyALWL-QA/issues) under their login name. Nothing is reported from inside the game.
 
-**Status: tested in the cloud only** (a copy of the server's set-up with Caddy, the login and a fake GitHub). Not yet run on Dave's server.
+**Status: tested in the cloud only** (`tools/test_tester_site_caddy.sh`: a copy of the server's set-up with Caddy, the login and a fake GitHub). Not yet run on Dave's server.
+
+The rest of the site (the game zip, `/download/`, `images/hero.jpg`, `fonts/`, `latest.json`) comes from the packaging side: `tools/make_testplayers_site.ps1` and `deploy/testplayers/SERVER.md`, from the packaging thread's PR (not in dev at the time of writing). Without `latest.json` the Build box is simply empty and the tester types it.
 
 ## How it works
 
@@ -89,7 +91,8 @@ Then `sudo docker exec game-web caddy validate --config /etc/caddy/Caddyfile --a
 ## For developers
 
 - `python3 tools/test_tester_site.py` checks the service against a fake GitHub (no network, no Docker).
+- `sudo bash tools/test_tester_site_caddy.sh` checks install.sh against Caddy with a login and a fake GitHub (needs Docker).
 - `install.sh` takes `SOURCE=<a local deploy/testersite folder>` instead of downloading, `BRANCH=<branch>` to download another
   branch, and keeps any extra line in `.env` (the cloud test sets `GITHUB_API` to a fake GitHub container there).
 - The front page reads `/latest.json` at load, so it needs no filling in per build. If Caddy's `templates` is on for `/`
-  (deploy/testplayers/SERVER.md step 3) the login name is filled in by Caddy; otherwise the page asks `/api/me`.
+  (install.sh adds it, or SERVER.md step 3 by hand) the login name is filled in by Caddy; otherwise the page asks `/api/me`.

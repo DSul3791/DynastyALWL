@@ -51,7 +51,7 @@ MAX_REQUEST = 30 * 1024 * 1024       # whole form, pictures included
 MAX_TEXT = 20000                     # one text box
 MAX_TITLE = 120
 MAX_LOG_CHARS = 360000               # keep the end of a long log: that is where the crash is
-COMMENT_CHARS = 60000                # GitHub's limit is 65536 per comment
+COMMENT_CHARS = 30000                # GitHub's limit is 65536 per comment; fence() can grow text by 7/4
 MAX_PICTURES = 4
 MAX_PICTURE = 8 * 1024 * 1024
 PER_HOUR = 20                        # reports per tester per hour
@@ -184,23 +184,27 @@ def send_waiting():
     for row in rows:
         try:
             send_one(row)
-        except Exception as e:  # anything: keep the report, try again later
-            detail = str(e)
+        except Exception as e:  # keep the report either way
+            detail, permanent = str(e), False
             if isinstance(e, urllib.error.HTTPError):
                 detail = f"GitHub said {e.code}: {e.read()[:300].decode(errors='replace')}"
-            query("UPDATE reports SET tries=tries+1, last_error=? WHERE id=?", (detail[:500], row["id"]), commit=True)
-            print(f"report {row['id']} not sent yet: {detail}", flush=True)
-            return  # GitHub is down or the token is wrong; the rest wait too
+                # GitHub refused this report itself (not the token, not busy): stop retrying it, carry on with the rest.
+                permanent = 400 <= e.code < 500 and e.code not in (401, 403, 408, 429)
+            query("UPDATE reports SET tries=tries+1, last_error=?, status=? WHERE id=?",
+                  (detail[:500], "failed" if permanent else "waiting", row["id"]), commit=True)
+            print(f"report {row['id']} {'refused by GitHub' if permanent else 'not sent yet'}: {detail}", flush=True)
+            if not permanent:
+                return  # GitHub is down or the token is wrong; the rest wait too
 
 
 def sender():
     while True:
+        WAKE.clear()  # before sending, so a report saved meanwhile wakes the next round
         try:
             send_waiting()
         except Exception as e:
             print("sender:", e, flush=True)
         WAKE.wait(RETRY_SECONDS)
-        WAKE.clear()
 
 
 # ---------------------------------------------------------------- reading the form

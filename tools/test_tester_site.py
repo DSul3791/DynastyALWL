@@ -39,6 +39,12 @@ class FakeGitHub(BaseHTTPRequestHandler):
             self.end_headers()
             return
         assert self.headers["Authorization"] == "Bearer test-token", self.headers["Authorization"]
+        if self.path == "/repos/o/qa/issues" and "REFUSE" in data["title"]:
+            self.send_response(422)
+            self.send_header("Content-Length", "2")
+            self.end_headers()
+            self.wfile.write(b"{}")
+            return
         if self.path == "/repos/o/qa/issues":
             FakeGitHub.issues.append(data)
             n = len(FakeGitHub.issues)
@@ -123,7 +129,7 @@ def main():
 
             log = ("line\n" * 30000 + "ERROR: the end ``` of the log @dave\n").encode()
             code, j = call(port, "/api/bug", fields={"build": "Build 9250", "title": "Froze in inventory",
-                                                     "what": "It froze, ask @dave", "steps": "1. open I"},
+                                                     "what": "It froze, ask @dave"},
                             files=[("files", "godot.log", log), ("files", "shot.png", PNG)])
             check(code == 200 and j["sent"] and j["issue_url"].endswith("/issues/1"), "bug filed straight away")
             check(j["score"] == {"bugs": 1, "ideas": 0, "total": 1}, "the answer carries the tester's new score")
@@ -133,7 +139,7 @@ def main():
                   and "`godot.log`" in issue["body"] and "/api/pictures/1-1.png" in issue["body"], "bug body has the form's headings and the name")
             check("@​dave" in issue["body"], "@mentions cannot ping")
             logs = [c for c in FakeGitHub.comments if c[0] == "/repos/o/qa/issues/1/comments"]
-            check(len(logs) == 3 and all(len(c[1]["body"]) < 65536 for c in logs)
+            check(len(logs) == 6 and all(len(c[1]["body"]) < 65536 for c in logs)
                   and "ERROR: the end" in logs[-1][1]["body"], "log posted as comments under GitHub's size limit, end kept")
 
             code, j = call(port, "/api/bug", fields={"build": "", "what": "x"})
@@ -166,6 +172,15 @@ def main():
             check("Screenshots" not in FakeGitHub.issues[1]["body"], "the idea form takes no files")
             code, j = call(port, "/api/scores")
             check(j["waiting"] == 0 and j["players"][0]["user"] == "alice" and len(j["recent"]) == 3, "scores and latest list")
+            n_before = len(FakeGitHub.issues)
+            call(port, "/api/idea", user="Zed", fields={"title": "REFUSE me", "idea": "x"})
+            call(port, "/api/idea", user="Zed", fields={"idea": "After the refused one"})
+            for _ in range(40):
+                if len(FakeGitHub.issues) > n_before:
+                    break
+                time.sleep(0.25)
+            check(FakeGitHub.issues[-1]["title"] == "[Idea] After the refused one",
+                  "a report GitHub refuses (422) does not hold up the ones after it")
             code, j = call(port, "/api/me", user="DungeonMaster")
             check(j == {"user": "DungeonMaster"}, "/api/me gives the login name")
         finally:
