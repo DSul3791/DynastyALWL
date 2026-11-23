@@ -1480,7 +1480,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				_tick_ageing(id)   # a kept pile passes here too and stays kept (left over 1e8, so _expire_items skips it); the call only lists it
 
 				if by != "":
-					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
+					near["by"] = by   # the last player to add to it (goblin gifts, a stray's food; saved, by_rows)
 
 				_dirty = true
 				count -= added
@@ -1514,7 +1514,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 		_items[_next_id]["inst"] = item_inst.duplicate(true)
 
 	if by != "":
-		_items[_next_id]["by"] = by   # who dropped it (goblin gifts; kept while the server runs, not saved)
+		_items[_next_id]["by"] = by   # who dropped it (goblin gifts, a stray's food; saved in the area files' by_rows, 23 Nov 2026)
 
 	if not is_nan(girth):
 		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
@@ -2109,7 +2109,7 @@ func save() -> void:
 const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
 const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countdowns (an item's lifetime, a fire's burn) in steps this long, so an area
                                    # where only a fire burns or a drop ages is written about every 10 minutes, not every save; a clean shutdown writes exactly
-const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
+const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices, "by_rows": row index -> who dropped it}
 var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
 const SWEEP_BUDGET_US := 1000      # PROVISIONAL: the most a tick spends on the rolling check (2% of a 50 ms tick)
@@ -2232,11 +2232,11 @@ static func _write_item_job(job: Dictionary) -> void:
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
-		var rows: Array = [[], []]
+		var rows: Array = [[], [], {}]
 
 		for id in job["areas"][key]:
 			if items.has(id):
-				_world_item_row(items[id], id, kinds, job["tilt_y"], rows[0], rows[1])
+				_world_item_row(items[id], id, kinds, job["tilt_y"], rows[0], rows[1], rows[2])
 
 		if not (rows[0] as Array).is_empty():
 			areas[key] = rows
@@ -2246,7 +2246,7 @@ static func _write_item_job(job: Dictionary) -> void:
 			listed[key] = int(sums[key])   # not dirty: its file stands as written
 
 	for key in areas:
-		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1]})
+		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1], "by_rows": areas[key][2]})
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
@@ -2574,8 +2574,9 @@ func _reindex_save() -> void:
 	save_check_now()
 
 
-# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down), or nothing for what is never saved.
-static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array) -> void:
+# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down, and who dropped a loose one to `by_rows`),
+# or nothing for what is never saved.
+static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array, by_rows: Dictionary) -> void:
 	if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
 		return   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
@@ -2628,6 +2629,9 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 
 	if it.has("world"):
 		world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
+
+	if str(it.get("by", "")) != "":
+		by_rows[str(items.size())] = str(it["by"])   # who dropped it (a goblin's gift, food for a stray or a dog): kept over a restart (23 Nov 2026)
 
 	items.append(row)
 
@@ -8269,6 +8273,7 @@ func _load_world_items() -> void:
 		_save_gen = int(parsed.get("gen", 0))
 		var all_rows: Array = []
 		var all_world: Array = []
+		var all_by: Dictionary = {}
 
 		_load_row_area = []
 
@@ -8283,10 +8288,17 @@ func _load_world_items() -> void:
 			for n in area.get("world_rows", []):
 				all_world.append(base + int(n))
 
+			var by_area: Variant = area.get("by_rows", {})   # added 23 Nov 2026: an older area file has none (its loose items load with no dropper, as before)
+
+			if typeof(by_area) == TYPE_DICTIONARY:
+				for n in by_area:
+					all_by[str(base + int(n))] = str(by_area[n])
+
 			all_rows.append_array(area.get("items", []))
 
 		parsed["items"] = all_rows
 		parsed["world_rows"] = all_world
+		parsed["by_rows"] = all_by
 
 	_next_id = int(parsed.get("next_id", 1))
 
@@ -8351,6 +8363,8 @@ func _load_world_items() -> void:
 
 	for n in parsed.get("world_rows", []):
 		world_rows[int(n)] = true
+
+	var by_rows: Dictionary = parsed.get("by_rows", {}) if typeof(parsed.get("by_rows", {})) == TYPE_DICTIONARY else {}   # who dropped each loose item (added 23 Nov 2026)
 
 	for row in parsed["items"]:
 		row_n += 1
@@ -8552,6 +8566,9 @@ func _load_world_items() -> void:
 
 		if world_rows.has(row_n):
 			entry["world"] = true
+
+		if by_rows.has(str(row_n)):
+			entry["by"] = str(by_rows[str(row_n)])
 
 		_load_row_of[_next_id] = row_n
 		_items[_next_id] = entry
