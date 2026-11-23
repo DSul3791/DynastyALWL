@@ -115,6 +115,9 @@ func totals() -> Dictionary:
 	for id in items._items:
 		var it: Dictionary = items._items[id]
 
+		if it.has("struct") and str(it["struct"]["kind"]) == "remains":
+			continue   # a body: only what lies on it counts (its store, above)
+
 		if it.has("struct"):
 			var kit_id: String = str(items._structures.get(str(it["struct"]["kind"]), {}).get("kit", ""))
 			add.call(items.table.number_of(kit_id) if kit_id != "" else int(it["number"]), 1)
@@ -303,6 +306,10 @@ func step(rng: RandomNumberGenerator) -> String:
 		var spot: Vector3 = HERE + Vector3(rng.randf_range(-3.0, 3.0), 0.0, rng.randf_range(1.5, 3.5))
 		items.action(peer, Net.ACT_PLACE, s, 0, 0, spot)
 		return "p%d place slot %d at %s" % [peer, s, spot]
+	elif roll < 99 and rng.randf() < 0.25:
+		var died: bool = items.kill(peer, "test")
+		items.report_position(peer, HERE + Vector3(float(peer) * 0.5, 0.0, 0.0))
+		return "p%d died%s" % [peer, "" if died else " (refused)"]
 	elif roll < 99:
 		items.peer_left(peer)
 		join(peer)
@@ -312,7 +319,7 @@ func step(rng: RandomNumberGenerator) -> String:
 		return "server restart"
 
 
-func run(seed: int) -> void:
+func run(run_seed: int) -> void:
 	DirAccess.make_dir_recursive_absolute(DIR + "/" + ItemsScript.AREA_DIR)
 
 	for sub in [DIR, DIR + "/" + ItemsScript.AREA_DIR]:
@@ -341,7 +348,7 @@ func run(seed: int) -> void:
 		items.drop_in_world(n("stick"), 7, HERE + Vector3(float(k) - 3.0, 0.0, -2.0))
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	rng.seed = run_seed
 	var start: Dictionary = totals()
 	var broke: String = ""
 	log_lines.clear()
@@ -370,7 +377,7 @@ func run(seed: int) -> void:
 		twined += items._inventories[key].count_of(n("twine"))
 
 	print("  end: %d in containers, %d ground stacks, %d worn, %d twine in packs (12 given)" % [in_boxes, ground_ids().size(), worn, twined])
-	check(broke == "", "seed %d: %d random actions by two players keep every total (%s)" % [seed, STEPS, broke if broke != "" else "%d kinds" % start.size()])
+	check(broke == "", "seed %d: %d random actions by two players keep every total (%s)" % [run_seed, STEPS, broke if broke != "" else "%d kinds" % start.size()])
 	items._finish_writer()
 
 
@@ -389,7 +396,7 @@ func campfire_round() -> void:
 	var inv = items.inventory_of(1)
 	var start: Dictionary = totals()
 
-	for round in range(3):   # before the fix each round came back a whole kit and laid 4 more sticks; now the first round ends it
+	for lap in range(3):   # before the fix each round came back a whole kit and laid 4 more sticks; now the first round ends it
 		items.action(1, Net.ACT_PLACE, inv.numbers.find(n("campfire_kit")), 0, 0, HERE + Vector3(0.0, 0.0, -1.5))
 		var fire_id: int = box_ids()[0] if not box_ids().is_empty() else 0
 		items.action(1, Net.ACT_CHEST_OPEN, fire_id, 0, 0, Vector3.ZERO)
@@ -431,8 +438,8 @@ func campfire_round() -> void:
 func _init() -> void:
 	campfire_round()
 
-	for seed in SEEDS:
-		run(seed)
+	for one_seed in SEEDS:
+		run(one_seed)
 
 	print("item conservation: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
