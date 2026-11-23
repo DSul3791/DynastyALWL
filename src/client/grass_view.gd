@@ -603,17 +603,22 @@ func _press_beds(pts: PackedVector2Array, data: PackedByteArray) -> int:
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TrailSigns.CONFIG))
 		_bed_cfg = parsed if parsed is Dictionary else {"bed_count": [0, 0]}
 
-	var size: Array = _bed_cfg.get("bed_size_m", [1.5, 0.8])
+	return press_beds(pts, data, _run_origin, _bed_cfg)
+
+
+# The ovals themselves, into a RUN_TEXELS square of RUN_TEXEL_M texels whose south-west corner is at origin (a test calls it directly).
+static func press_beds(pts: PackedVector2Array, data: PackedByteArray, origin: Vector2, c: Dictionary) -> int:
+	var size: Array = c.get("bed_size_m", [1.5, 0.8])
 	var ax: float = float(size[0]) * 0.5
 	var az: float = float(size[1]) * 0.5
 	var added: int = 0
 
-	for bed in TrailSigns.beds_for(pts[0], pts[1], _bed_cfg):
+	for bed in TrailSigns.beds_for(pts[0], pts[1], c):
 		var centre: Vector2 = bed[0]
 		var along: Vector2 = Vector2(cos(float(bed[1])), sin(float(bed[1])))
 		var span: int = int(ceil(ax / RUN_TEXEL_M)) + 1
-		var tx0: int = int(floor((centre.x - _run_origin.x) / RUN_TEXEL_M))
-		var tz0: int = int(floor((centre.y - _run_origin.y) / RUN_TEXEL_M))
+		var tx0: int = int(floor((centre.x - origin.x) / RUN_TEXEL_M))
+		var tz0: int = int(floor((centre.y - origin.y) / RUN_TEXEL_M))
 
 		for dz in range(-span, span + 1):
 			for dx in range(-span, span + 1):
@@ -623,7 +628,7 @@ func _press_beds(pts: PackedVector2Array, data: PackedByteArray) -> int:
 				if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
 					continue
 
-				var d: Vector2 = _run_origin + Vector2(float(x) + 0.5, float(z) + 0.5) * RUN_TEXEL_M - centre
+				var d: Vector2 = origin + Vector2(float(x) + 0.5, float(z) + 0.5) * RUN_TEXEL_M - centre
 				var e: float = sqrt(pow(d.dot(along) / ax, 2.0) + pow(d.dot(along.orthogonal()) / az, 2.0))
 				var v: int = int(round(255.0 * (1.0 - smoothstep(0.75, 1.0, e))))
 				var at: int = x + z * RUN_TEXELS

@@ -57,6 +57,9 @@ func on_step(kind: String, at: Vector3, now_msec: int = -1) -> void:
 	elif not last.is_empty():
 		yaw = float(last[2]) if last.size() > 2 else 0.0
 
+	if not last.is_empty() and Vector2(at.x - last[0].x, at.z - last[0].z).length() < float(cfg.get("min_gap_m", 0.6)) and now - int(last[1]) < 2000:
+		return   # a gait count that barely moved (turning, a shuffle): no new print, so the list holds a walk of minutes, not seconds
+
 	_last_step[kind] = [at, now, yaw]
 	var side: Vector2 = Vector2(cos(yaw), sin(yaw)).orthogonal() * float(cfg.get("side_m", 0.07)) * (1.0 if marks.size() % 2 == 0 else -1.0)
 	marks.append([Vector3(at.x + side.x, at.y, at.z + side.y), yaw, now, shape])

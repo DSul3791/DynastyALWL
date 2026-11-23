@@ -37,7 +37,7 @@ func _init() -> void:
 	check(t.shown() == 0 and (t._nodes["hoof"] as MultiMeshInstance3D).multimesh.instance_count == 0, "gone after life_s")
 
 	for n in int(c["max_prints"]) + 50:
-		t.on_step("rabbit", Vector3(float(n % 20) * 0.5, 0.0, 0.0), 100000 + n * 10)
+		t.on_step("rabbit", Vector3(float(n % 20) * 0.7, 0.0, 0.0), 100000 + n * 10)
 
 	check(t.shown() == int(c["max_prints"]), "never more than max_prints (%d)" % t.shown())
 	t.free()

@@ -3,10 +3,11 @@ extends Node3D
 # Signs along the trails (stage 2d, TR-13, data/look/trail_signs.json): rabbit pellet latrines by the warren and at a run's grazing end,
 # scrapes where runs of different warrens meet, deer prints where a trail crosses wet ground, deer droppings by the bed. Worked out on
 # this client from the routes the server already sends with the trail blocks (route[0] is the place's home), hashed from the spot, so
-# every player sees the same sign in the same place; no messages, no server work. Shown by the player's Tracking skill, within draw_m.
-# Nothing is worked out or drawn while the world is loading round the player (the first-join window), nor below see_level, and only
+# every player sees the same sign in the same place (rubbed trees: once the same trees are loaded); no messages, no server work. Shown to
+# everyone (Dave 23 Nov 2026), within draw_m by Tracking, with a faint halo from halo_from.
+# Nothing is worked out or drawn while the world is loading round the player (the first-join window), and only
 # when the routes near the player change, the player has moved rebuild_move_m or the level changed; then only the routes with a point
-# within reach + NEAR_PAD_M are worked out, so water and ground loaded since the last time are read afresh. Four MultiMeshes of tiny plain meshes, no shadows; the materials are plain
+# within reach + NEAR_PAD_M are worked out, so water and ground loaded since the last time are read afresh. One MultiMesh per layer (pellets, beds of latrines, scrapes, prints, rubs, halo), no shadows; the materials are plain
 # StandardMaterial3D like the bandit boot prints (track_look.gd), so they share that shader.
 
 const CONFIG := "res://data/look/trail_signs.json"
@@ -36,7 +37,8 @@ var _built_at: Vector3 = Vector3.INF
 var _level: int = -1
 var _next_msec: int = 0
 var _nodes: Dictionary = {}        # "pellet", "deer_pellet", "scrape", "print" -> MultiMeshInstance3D
-var _signs: Array = []             # [kind, Vector2 spot, yaw] for the routes near the player, worked out at each rebuild
+var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
+var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
 # a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
 # slight sound there and tells the server, which trains Tracking once per sign). One a look, so a cluster comes one by one.
@@ -87,6 +89,7 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 		_built_at = player
 		_level = tracking
 		var reach: float = reach_m(tracking, cfg)
+		_ground_cache.clear()
 		var near: Dictionary = routes_near(routes, Vector2(player.x, player.z), reach + NEAR_PAD_M)
 		_signs = [] if reach <= 0.0 else signs_for(near, wet, cfg)
 
@@ -178,40 +181,46 @@ static func rubs_for(by_block: Dictionary, trunks_at: Callable, c: Dictionary) -
 	var widest: float = float(c.get("rub_max_r_m", 0.3))
 	var out_m: float = float(c.get("rub_out_m", 0.3))
 	var used: Dictionary = {}
+	var deer: Array = []
 
 	for key in by_block:
 		for row in by_block[key]:
-			if int(row[0]) != KIND_DEER:
+			if int(row[0]) == KIND_DEER and (row[1] as PackedVector2Array).size() >= 2:
+				deer.append(row[1])
+
+	# A fixed order (by home), so where two trails pass one tree the same trail gets the rub on every client, whatever order the blocks came in.
+	deer.sort_custom(func(a, b): return a[0].x < b[0].x or (a[0].x == b[0].x and a[0].y < b[0].y))
+
+	for route in deer:
+		var pts: PackedVector2Array = route
+		var since: float = every * (1.0 - _h01(pts[0], 70))   # the first one a hashed way along, not always at the bed
+
+		for i in range(1, pts.size()):
+			since += pts[i - 1].distance_to(pts[i])
+
+			if since < every:
 				continue
 
-			var pts: PackedVector2Array = row[1]
-			var since: float = every * (1.0 - _h01(pts[0], 70))   # the first one a hashed way along, not always at the bed
+			var best: Array = []
 
-			for i in range(1, pts.size()):
-				since += pts[i - 1].distance_to(pts[i])
+			for trunk in trunks_at.call(Vector3(pts[i].x, 0.0, pts[i].y), reach):
+				var root: Vector3 = trunk[0]
+				var tag: Vector2i = Vector2i(roundi(root.x * 4.0), roundi(root.z * 4.0))
 
-				if since < every:
-					continue
+				if float(trunk[1]) <= widest and not used.has(tag) and (best.is_empty() or float(trunk[1]) < float(best[1]) or (is_equal_approx(float(trunk[1]), float(best[1])) and root.x < (best[0] as Vector3).x)):
+					best = trunk
 
-				var best: Array = []
+			if best.is_empty():
+				since = every - float(c.get("rub_retry_m", 10.0))   # none here: look again a little farther on, not at every point (each look reads the trees)
+				continue
 
-				for trunk in trunks_at.call(Vector3(pts[i].x, 0.0, pts[i].y), reach):
-					var root: Vector3 = trunk[0]
-					var tag: Vector2i = Vector2i(roundi(root.x * 4.0), roundi(root.z * 4.0))
-
-					if float(trunk[1]) <= widest and not used.has(tag) and (best.is_empty() or float(trunk[1]) < float(best[1]) or (is_equal_approx(float(trunk[1]), float(best[1])) and root.x < (best[0] as Vector3).x)):
-						best = trunk
-
-				if best.is_empty():
-					continue
-
-				var at: Vector3 = best[0]
-				var foot: Vector2 = Vector2(at.x, at.z)
-				var dir: Vector2 = pts[i] - foot
-				dir = Vector2.RIGHT if dir.length() < 0.01 else dir.normalized()
-				used[Vector2i(roundi(at.x * 4.0), roundi(at.z * 4.0))] = true
-				out.append(["rub", foot + dir * (float(best[1]) + out_m), dir.angle(), float(best[1]), pts[pts.size() - 1], "feeding"])
-				since = 0.0
+			var at: Vector3 = best[0]
+			var foot: Vector2 = Vector2(at.x, at.z)
+			var dir: Vector2 = pts[i] - foot
+			dir = Vector2.RIGHT if dir.length() < 0.01 else dir.normalized()
+			used[Vector2i(roundi(at.x * 4.0), roundi(at.z * 4.0))] = true
+			out.append(["rub", foot + dir * (float(best[1]) + out_m), dir.angle(), float(best[1]), pts[pts.size() - 1], "feeding"])
+			since = 0.0
 
 	return out
 
@@ -442,8 +451,9 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 		var most: Array = cfg.get("prints", [4, 6])
 		long = maxf(size, float(most[1]) * float(cfg.get("print_step_m", 0.6)))
 	elif kind == "bed":
-		size = 1.2
-		long = 1.9
+		var bed: Array = cfg.get("bed_size_m", [1.5, 0.8])
+		size = float(bed[1]) + 0.4
+		long = float(bed[0]) + 0.4
 
 	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.02, spot.y), yaw, Vector3(size, 1.0, long)])
 
@@ -507,6 +517,18 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 # The ground under a small heap: the middle of the spot and two probes HEAP_PROBE_M either side (so one probe on a trunk or boulder
 # is passed over, and on a slope the heap sits on the ground at its centre, not buried by the lowest), NAN when none is known.
 func _heap_ground(spot: Vector2) -> float:
+	var key: Vector2i = Vector2i(roundi(spot.x * 8.0), roundi(spot.y * 8.0))
+
+	if _ground_cache.has(key):
+		return float(_ground_cache[key])
+
+	var found: float = _heap_ground_probe(spot)
+	_ground_cache[key] = found
+	return found
+
+
+# Three rays for one spot (_heap_ground keeps the answer until the next rebuild: a sign's heap, halo, spot and reading share it).
+func _heap_ground_probe(spot: Vector2) -> float:
 	var ys: Array = []
 
 	for d in [Vector2.ZERO, Vector2(HEAP_PROBE_M, 0.0), Vector2(-HEAP_PROBE_M * 0.5, HEAP_PROBE_M)]:

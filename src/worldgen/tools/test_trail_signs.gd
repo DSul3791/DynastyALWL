@@ -5,6 +5,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_trail_signs.gd
 
 const SignsScript := preload("res://src/client/trail_signs.gd")
+const GrassScript := preload("res://src/client/grass_view.gd")
 
 var failures: int = 0
 
@@ -73,6 +74,18 @@ func _init() -> void:
 		near_home = near_home and d2 >= float(c["bed_off_m"][0]) - 0.01 and d2 <= float(c["bed_off_m"][1]) + 0.01
 
 	check(near_home, "%d deer beds within bed_off_m of the bed end (%s)" % [beds.size(), str(beds)])
+	var run_map: PackedByteArray = PackedByteArray()
+	run_map.resize(GrassScript.RUN_TEXELS * GrassScript.RUN_TEXELS)
+	run_map.fill(0)
+	var origin: Vector2 = Vector2(0.0, 150.0)
+	var pressed: int = GrassScript.press_beds(routes[3][1], run_map, origin, c)
+	var all_pressed: bool = pressed > 0
+
+	for b in beds:
+		var t: Vector2i = Vector2i(int(floor(((b[1] as Vector2).x - origin.x) / GrassScript.RUN_TEXEL_M)), int(floor(((b[1] as Vector2).y - origin.y) / GrassScript.RUN_TEXEL_M)))
+		all_pressed = all_pressed and run_map[t.x + t.y * GrassScript.RUN_TEXELS] > 200
+
+	check(all_pressed, "the grass view presses the grass flat at every bed the signs show (%d texels)" % pressed)
 	check(str(SignsScript.beds_for(Vector2(50.0, 200.0), Vector2(54.0, 200.0), c)) == str(SignsScript.beds_for(Vector2(50.0, 200.0), Vector2(54.0, 200.0), c)), "the same home gives the same beds (the grass is pressed where the signs are)")
 	var trees: Array = []   # a thick trunk and a sapling beside the deer trail every 10 m, one far off
 
@@ -192,6 +205,14 @@ func _init() -> void:
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown == drawn, "and the same again with it")
+	check(view._nodes.has("halo") and (view._nodes["halo"] as MultiMeshInstance3D).multimesh.instance_count > 0 and is_equal_approx((((view._nodes["halo"] as MultiMeshInstance3D).multimesh.mesh as PrimitiveMesh).material as StandardMaterial3D).albedo_color.a, SignsScript.halo_alpha(80, c)), "at Tracking 80 the signs carry a halo of halo_alpha(80)")
+	var reading: Array = view.readable(Vector3(120.0, 5.0, 110.0), 80)
+	var read_ok: bool = true
+
+	for r in reading:
+		read_ok = read_ok and (view.sign_at(int(r[0])) as Array).size() == 6 and Vector2((r[1] as Vector3).x, (r[1] as Vector3).z).distance_to(Vector2(120.0, 110.0)) <= float(c["read_m"]) + 0.01
+
+	check(read_ok, "the readable signs lie within read_m and each has its reading (%d)" % reading.size())
 	view.set_routes(0, 0, [])
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)

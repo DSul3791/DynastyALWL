@@ -1937,8 +1937,8 @@ func _welcome_body(info: Dictionary) -> void:
 		var near: Array = trail_signs.readable(body.global_position, level)
 		var pick: int = items.reticle_index(near.map(func(r): return r[1]))
 
-		if pick < 0:
-			return {}
+		if pick < 0 or items.aim_cos_of(near[pick][1]) < float(trail_signs.cfg.get("read_aim_cos", 0.985)):
+			return {}   # only a sign looked right at: a looser look leaves E (and held E, auto pick-up) to the item, snare or plant beside it
 
 		var seen: Array = trail_signs.sign_at(int(near[pick][0]))
 		var text: String = TrailSignsScript.read_text(seen, level, trail_signs.cfg) if not seen.is_empty() else ""
