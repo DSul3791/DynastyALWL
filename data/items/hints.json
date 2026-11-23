@@ -59,12 +59,12 @@
 		{
 			"id": "kit",
 			"trigger": "6_sticks_16_stones",
-			"text": "Craft a Campfire kit: 6 sticks and 16 stones."
+			"text": "Craft a Campfire: 6 sticks and 16 stones."
 		},
 		{
 			"id": "place_fire",
 			"trigger": "kit_made",
-			"text": "Hold the fire kit and click ground. Under trees it survives rain."
+			"text": "Hold the Campfire and click the ground. Under trees it survives rain."
 		},
 		{
 			"id": "light",
@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
+			"text": "A Wooden - Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
 			"goal": "workbench"
 		},
 		{
@@ -132,7 +132,7 @@
 		{
 			"id": "fish",
 			"trigger": "workbench_placed",
-			"text": "Make a fishing rod and try the pond.",
+			"text": "Make a fishing rod and fish at the water.",
 			"goal": "fish"
 		},
 		{
@@ -194,7 +194,7 @@
 		{
 			"id": "place_fire",
 			"trigger": "has_campfire_kit",
-			"text": "Hold the fire kit and click ground. Under trees it survives rain."
+			"text": "Hold the Campfire and click the ground. Under trees it survives rain."
 		},
 		{
 			"id": "cave_in",
@@ -209,7 +209,7 @@
 		{
 			"id": "plant_food_pot",
 			"trigger": "has_plant_food_at_fire",
-			"text": "The campfire cooks only meat. Plants cook in a pot: fire 6 clay into a Clay pot at this campfire, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 clay pot)."
+			"text": "The campfire cooks only meat. Plants cook in a pot: fire 6 clay into a Clay - Pot at this campfire, then hold the hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, 1 Clay - Pot)."
 		},
 		{
 			"id": "pot_first_dish",
@@ -219,7 +219,7 @@
 		{
 			"id": "nettles",
 			"trigger": "near_nettle",
-			"text": "Nettles give fibre and leaves. Steep leaves in a pot for tea."
+			"text": "Nettles give plant fibre and their leaves (Nettles). Steep 3 with water in the campfire pot for tea."
 		}
 	]
 }
