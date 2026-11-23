@@ -962,6 +962,13 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					refused[anim_name] = true
 					continue
 
+				# A clip that throws the model far taller than it stands (the elephant's Hit_Head_Right-IP stood 4 times its height and
+				# drew nothing on screen: Lane A one-shot check, 23 Nov 2026) is broken the other way: the next clip for the role is tried.
+				if rest_h > 0.0001 and clip_h > rest_h * TALL_SHARE:
+					_model_note(kind, "clip %s throws the model up (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
+					refused[anim_name] = true
+					continue
+
 				# A bite, a hit or a death plays once (_play_once) from its own copy, so a looping role naming the same clip keeps looping.
 				if str(key) in ONCE_ROLES:
 					var once_name: String = anim_name.get_slice("|", anim_name.count("|")) + "_once"
@@ -1198,6 +1205,7 @@ static func _lie_change(bare: String) -> bool:
 	return false
 
 
+const TALL_SHARE := 3.0       # a clip taller than this many times the standing height is a broken one (a bear rearing is about 2)
 const LIE_FLAT_SHARE := 0.2   # a lying clip lower than this share of the standing height is a broken one (the bear's legless tube)
 
 
