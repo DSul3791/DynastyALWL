@@ -229,6 +229,19 @@ def test_link_cut():
 		a = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		ta = socket.create_connection(("127.0.0.1", listen + 1))
 		before = [udp_ask(a), tcp_ask(ta)]
+		c = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		c_first = udp_ask(c)
+
+		with open(ctl, "w") as f:
+			f.write("hold %d 1.5" % c.getsockname()[1])
+
+		time.sleep(0.5)
+		held = [udp_ask(c), udp_ask(a)]
+		time.sleep(1.2)
+		back = udp_ask(c)
+		check(c_first and held == [False, True] and back, "lossy_link --control: \"hold PORT 1.5\" drops only that client, then it passes again on the same connection (%s %s %s)" % (c_first, held, back))
+		check(open(ctl).read() == "done", "lossy_link --control: the control file says done after a hold")
+		c.close()
 
 		with open(ctl, "w") as f:
 			f.write("cut")

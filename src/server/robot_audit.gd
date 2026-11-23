@@ -14,6 +14,7 @@ extends Node
 #   AUDIT enemy_hit <peer> <unix ms> <cause[/weapon]> from <x,z> player <x,z> gap <m> result <hurt|maimed|...> shield <share>   each goblin,
 #     bandit or big game blow at a player (hurt_player / hurt_armed wrapped)
 #   AUDIT snare <id> ...   each snare set, with its trail share
+#   AUDIT chest <container world id> <unix ms> <signature> <slots used>   a container a player has open, each time its contents change
 #   AUDIT where <animal id> <species> <unix ms> <x> <z> <state>   plan kind_ only, after its control command
 #   AUDIT control <unix ms> <command>   a robot's server_control.txt command done (plan cold): the only place this node changes the game
 # No protocol change, and with the flag off this node is never made.
@@ -41,6 +42,7 @@ var _names: Dictionary = {}      # species number -> name
 var _snares_seen: Dictionary = {}  # world item id -> true: each snare set is printed once with how much trail it sits on
 var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
 var _control_t: float = 0.0
+var _chest_sig: Dictionary = {}   # container world id -> its contents' signature last printed (AUDIT chest)
 var _where_sp: int = -1           # plan kind_ (control "where <species number>"): every WHERE_EVERY_S, the server's own place of each of that species
 var _where_t: float = 0.0
 const WHERE_EVERY_S := 0.5
@@ -85,6 +87,20 @@ func _process(delta: float) -> void:
 			if _sig.get(peer, "") != sig:
 				_sig[peer] = sig
 				print("AUDIT pack %d %d %s %d" % [int(peer), RobotRules.now_ms(), sig, RobotRules.used(inv)])
+
+		# Each container a player has open: its contents' signature when it changes (plan together: the robots' open windows against it).
+		# Read straight from the store (_chests by the piece's uid), not _chest_of, which may speak to the player.
+		for peer in items._chest_viewer:
+			var id: int = int(items._chest_viewer[peer])
+			var it: Dictionary = items._items.get(id, {}) if id > 0 else {}
+			var chest = items._chests.get(int(it["struct"]["uid"])) if it.has("struct") and (it["struct"] as Dictionary).has("uid") else null
+
+			if chest != null:
+				var csig: String = RobotRules.signature(chest)
+
+				if _chest_sig.get(id, "") != csig:
+					_chest_sig[id] = csig
+					print("AUDIT chest %d %d %s %d" % [id, RobotRules.now_ms(), csig, RobotRules.used(chest)])
 
 	_control_t += delta
 

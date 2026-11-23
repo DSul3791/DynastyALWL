@@ -570,6 +570,8 @@ func run() -> void:
 	elif plan.begins_with("drop_"):
 		await _drop(plan.trim_prefix("drop_"))
 		return
+	elif plan == "together":
+		await _together()
 	elif plan.begins_with("kind_"):
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
@@ -3439,3 +3441,249 @@ func _slide_sample(id: int, pos: Vector3, b: Dictionary) -> void:
 
 	if ratio < 0.67 or ratio > 1.5:
 		_slide[5] = int(_slide[5]) + 1
+
+
+# --- plan together (players thread, 23 Nov 2026): two robots on the same thing in the same second, over the lossy link -------------------
+# Both robots stand at the spawn. Robot 1 builds a wicker basket; both open it. Then, each on one agreed unix ms (_tg_go: both write when
+# they are ready, both start TG_LEAD_MS after the later one): both put 2 twine in; both take 4 twine out; Robot 1 drops 3 stones and both pick
+# the stack up; Robot 2's link is held 20 s (lossy_link "hold <its port> 20": packets dropped both ways, the connection kept) while Robot 1
+# puts in and takes out of the open basket; then Robot 2 is back. After each, once quiet: the item's count over both packs, the basket (as
+# Robot 1's open window shows it) and the ground within TG_GROUND_M of Robot 1 must equal the count before (_tg_total, Robot 1 checks);
+# each robot's open window must equal the server's (AUDIT chest, the robot audit prints each open container's signature on a change).
+const TG_LEAD_MS := 1500
+const TG_GROUND_M := 8.0
+const TG_HOLD_S := 20.0
+
+var _tg_chest_id: int = -1
+var _tg_chest = null              # this robot's open window on the basket (chest_received)
+var _tg_chest_ms: int = 0
+
+
+func _together() -> void:
+	_step = "together"
+	var one: bool = robot_name.ends_with("1")
+
+	if not admin or _share("x") == "":
+		_fail("together", "setup", "plan together needs --robot-admin and tools/robots.sh (ROBOT_SHARE): nothing measured")
+		return
+
+	client.net.chest_received.connect(func(id: int, bytes: PackedByteArray):
+		if id == _tg_chest_id:
+			var inv = InventoryScript.new(client.items.table)
+			inv.from_bytes(bytes)
+			_tg_chest = inv
+			_tg_chest_ms = Time.get_ticks_msec())
+
+	# Out of the starter camp's ground (no building near its tree), both the same way; then the basket: Robot 1 builds it, both open it.
+	var _out: bool = await _run_to(Vector3(58202.0, client.body.global_position.y, 71364.0), 25.0, 2.0)
+	_release_all()
+
+	if one:
+		_give("stone_knife", 1)
+		await _check_pack("together knife")
+		var basket: int = await _build_basket()
+		_write(_share("tg_basket.txt"), str(basket))
+
+		if basket < 0:
+			_fail("together", "basket", "Robot 1 could not build the basket: nothing measured")
+			return
+
+	var said: String = await _tg_read("tg_basket.txt", 60.0)
+
+	if said == "" or int(said) < 0:
+		_fail("together", "basket", "no basket from Robot 1 in 60 s")
+		return
+
+	_tg_chest_id = int(said)
+	await _tg_near_basket()
+	_give("twine", 4)
+	await _check_pack("together twine")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_OPEN, _tg_chest_id, 0, 0, Vector3.ZERO)
+	await _wait(2.0)
+
+	if _tg_chest == null:
+		_fail("together", "open", "opened the basket (world item %d): no contents came" % _tg_chest_id)
+		return
+
+	var twine: int = _num("twine")
+	var stone: int = _num("stone")
+	var twine_all: int = await _tg_total("open", twine)
+
+	# 1. Both put 2 twine in, in the same second.
+	await _tg_go("put")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, _slot_of("twine"), _tg_chest_id, 2, Vector3.ZERO)
+	await _tg_after("put", twine, twine_all, "both put 2 twine in")
+
+	# 2. Both take 4 twine out (there are 4 in): one gets them, or both get 2; none is made or lost.
+	await _tg_go("take")
+	var slot: int = _tg_chest.numbers.find(twine) if _tg_chest != null else -1
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_TAKE, maxi(slot, 0), _tg_chest_id, 4, Vector3.ZERO)
+	await _tg_after("take", twine, twine_all, "both took 4 twine out")
+
+	# 3. One dropped stack, both pick it up at once.
+	var stack: int = -1
+
+	if one:
+		_give("stone", 3)
+		await _check_pack("together stones")
+		var here: Vector3 = client.body.global_position
+		var known: Dictionary = client.items._world.duplicate()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_DROP, _slot_of("stone"), 0, 3, Vector3(here.x + 1.0, here.y - 0.9, here.z))
+		var until: int = Time.get_ticks_msec() + 8000
+
+		while stack < 0 and Time.get_ticks_msec() < until:
+			for id in client.items._world:
+				if not known.has(id) and int(client.items._world[id].get("number", 0)) == stone:
+					stack = int(id)
+
+			await get_tree().process_frame
+
+		_write(_share("tg_stack.txt"), str(stack))
+
+	said = await _tg_read("tg_stack.txt", 30.0)
+	stack = int(said) if said != "" else -1
+
+	if stack < 0:
+		_fail("together", "stack", "Robot 1's dropped stones never showed as a world item")
+	else:
+		var until2: int = Time.get_ticks_msec() + 8000
+
+		while not client.items._world.has(stack) and Time.get_ticks_msec() < until2:
+			await get_tree().process_frame
+
+		var stones_all: int = await _tg_total("stones", stone)
+		await _tg_go("pick")
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PICKUP, stack, 0, 0, Vector3.ZERO)
+		await _tg_after("pick", stone, stones_all, "both picked up the same 3 stones")
+
+	# 4. Robot 2's link held 20 s while Robot 1 changes the open basket; then Robot 2 must see the basket as it is.
+	await _tg_go("hold")
+
+	if not one:
+		var port: int = (client.multiplayer.multiplayer_peer as ENetMultiplayerPeer).host.get_local_port()
+		_write(_share(CONTROL_FILE), "hold %d %d" % [port, int(TG_HOLD_S)])
+		FreezeWatchScript.printer.line("ROBOT %s step together: link held %.0f s (udp port %d)" % [robot_name, TG_HOLD_S, port])
+		var was_ms: int = _tg_chest_ms
+		await _wait(TG_HOLD_S + 2.0)
+		var until3: int = Time.get_ticks_msec() + 8000
+
+		while _tg_chest_ms == was_ms and Time.get_ticks_msec() < until3:
+			await get_tree().process_frame
+
+		FreezeWatchScript.printer.line("ROBOT %s step together: back after the hold, connected %s, the basket window %s" % [robot_name,
+			str(client.multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED), "updated" if _tg_chest_ms != was_ms else "never updated"])
+	else:
+		await _wait(4.0)   # Robot 2 is held now
+		_give("twine", 3)
+		await _check_pack("together twine while held")
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, _slot_of("twine"), _tg_chest_id, 3, Vector3.ZERO)
+		await _check_pack("put while the other is held")
+		await _wait(TG_HOLD_S)
+
+	var held_total: int = await _tg_total("held", twine)
+
+	if one and held_total != twine_all + 3:
+		_fail("together", "held", "Robot 1 put 3 more twine in while Robot 2 was held: twine over both packs, the basket and the ground %d, wanted %d" % [held_total, twine_all + 3])
+
+	await _tg_go("after_hold")
+	await _tg_window("after_hold")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, _tg_chest_id, 0, 0, Vector3.ZERO)
+	FreezeWatchScript.printer.line("ROBOT %s step together: done" % robot_name)
+
+
+# Both robots near the basket (Robot 2 walks to it): CHEST_REACH_M on the server.
+func _tg_near_basket() -> void:
+	var w: Dictionary = {}
+	var until: int = Time.get_ticks_msec() + 8000
+
+	while w.is_empty() and Time.get_ticks_msec() < until:
+		w = client.items._world.get(_tg_chest_id, {})
+		await get_tree().process_frame
+
+	if not w.is_empty() and Vector2(w["pos"].x - client.body.global_position.x, w["pos"].z - client.body.global_position.z).length() > 1.8:
+		var _there: bool = await _go_to(w["pos"], 15.0, 1.5)
+
+
+func _tg_read(file: String, s: float) -> String:
+	var until: int = Time.get_ticks_msec() + int(s * 1000.0)
+
+	while Time.get_ticks_msec() < until:
+		if FileAccess.file_exists(_share(file)):
+			var t: String = FileAccess.get_file_as_string(_share(file)).strip_edges()
+
+			if t != "":
+				return t
+
+		await get_tree().process_frame
+
+	return ""
+
+
+# Both ready, then both go on one unix ms: TG_LEAD_MS after the later robot said ready.
+func _tg_go(step: String) -> void:
+	_step = "together %s" % step
+	var me: String = "1" if robot_name.ends_with("1") else "2"
+	var other: String = "2" if me == "1" else "1"
+	_write(_share("tg_ready_%s_%s.txt" % [step, me]), str(_now_ms()))
+	var them: String = await _tg_read("tg_ready_%s_%s.txt" % [step, other], 120.0)
+
+	if them == "":
+		_fail("together", step, "the other robot never got to %s in 120 s" % step)
+		return
+
+	var go: int = maxi(int(FileAccess.get_file_as_string(_share("tg_ready_%s_%s.txt" % [step, me]))), int(them)) + TG_LEAD_MS
+
+	while _now_ms() < go:
+		await get_tree().process_frame
+
+
+# The count of one item: this robot's pack, written for the other; Robot 1 adds the other's pack, its basket window and the ground near it.
+func _tg_total(step: String, number: int) -> int:
+	await _quiet()
+	await _wait(1.5)
+	var me: String = "1" if robot_name.ends_with("1") else "2"
+	_write(_share("tg_count_%s_%s.txt" % [step, me]), str(int(client.items.inventory.count_of(number))))
+
+	if me != "1":
+		return 0
+
+	var them: String = await _tg_read("tg_count_%s_2.txt" % step, 60.0)
+	var ground: int = 0
+
+	for id in client.items._world:
+		var w: Dictionary = client.items._world[id]
+
+		if int(w.get("number", 0)) == number and Vector2(w["pos"].x - client.body.global_position.x, w["pos"].z - client.body.global_position.z).length() < TG_GROUND_M:
+			ground += int(w.get("count", 1))
+
+	var in_box: int = int(_tg_chest.count_of(number)) if _tg_chest != null else 0
+	var total: int = int(client.items.inventory.count_of(number)) + int(them) + in_box + ground
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER %s %s: packs %d + %s, basket %d, ground %d = %d" % [robot_name, step, client.items.table.id_of(number), int(client.items.inventory.count_of(number)), them, in_box, ground, total])
+	return total
+
+
+# After a step: the totals as before (Robot 1), and this robot's basket window against the server's.
+func _tg_after(step: String, number: int, before: int, what: String) -> void:
+	var total: int = await _tg_total(step, number)
+
+	if robot_name.ends_with("1") and total != before:
+		_fail("together", step, "%s: %s over both packs, the basket and the ground went %d -> %d" % [what, client.items.table.id_of(number), before, total])
+
+	await _tg_window(step)
+
+
+func _tg_window(step: String) -> void:
+	var server: String = ""
+	var text: String = FileAccess.get_file_as_string(_share("server.log")) if FileAccess.file_exists(_share("server.log")) else ""
+
+	for line in text.split("\n"):
+		if line.begins_with("AUDIT chest %d " % _tg_chest_id):
+			server = line.split(" ")[4]
+
+	var mine: String = RobotRules.signature(_tg_chest) if _tg_chest != null else "none"
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER window %s: mine %s, server %s" % [robot_name, step, mine, server])
+
+	if server == "":
+		_fail("together", "window:%s" % step, "no AUDIT chest line for basket %d in the server log: its contents never printed" % _tg_chest_id)
+	elif mine != server:
+		_fail("together", "window:%s" % step, "this robot's open basket window (%s) is not the server's (%s) once quiet" % [mine, server])
