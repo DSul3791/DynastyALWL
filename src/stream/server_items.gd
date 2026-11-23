@@ -184,7 +184,7 @@ var skill_level: Callable         # (peer, skill id) -> level factor around 1.0;
 var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
-var craft_began: Callable        # (peer, recipe number): one craft at the head of a queue began its work (server_action_cues.gd craft_started)
+var craft_working: Callable      # (peer, recipe number): the craft at the head of a queue is being worked this tick (server_action_cues.gd craft_working)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
@@ -16066,6 +16066,11 @@ func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
 
 
+# Where a world item lies, null for none (server_action_cues.gd: a knife cut on a carcass is heard there).
+func item_pos_of(id: int) -> Variant:
+	return (_items.get(id, {}) as Dictionary).get("pos", null)
+
+
 # The structure kind of a world item ("carcass", "log", ...), "" for none (server_action_cues.gd: what a blow struck).
 func struct_kind_of(id: int) -> String:
 	return str((_items.get(id, {}) as Dictionary).get("struct", {}).get("kind", ""))
@@ -25093,12 +25098,13 @@ func _craft_tick(spent: float) -> void:
 		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
 			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
-		queue["elapsed"] = float(queue["elapsed"]) + spent
+		var worked_before: float = float(queue["elapsed"])
+		queue["elapsed"] = worked_before + spent
 
 		var starting: bool = not queue.has("need_s")
 
-		if starting and craft_began.is_valid():
-			craft_began.call(peer, int(head[0]))   # the others nearby hear the work begin (server_action_cues.gd, protocol 156)
+		if craft_working.is_valid() and worked_before < _head_need_s(peer, queue, recipe, variant):   # not a finished batch waiting for room
+			craft_working.call(peer, int(head[0]))   # the others nearby hear the work while it goes on, as the crafter does (server_action_cues.gd, protocol 156)
 
 		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):
 			if starting:

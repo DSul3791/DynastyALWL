@@ -412,8 +412,8 @@ func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 	players_received.emit(ids, positions, yaws, states, held, times)
 
 
-# Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material),
-# 2 a plant gathered (detail = the flora species id), 3 a craft began (detail = the recipe number). Sent only to players within its earshot.
+# Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material; material 5 a knife cut on a carcass),
+# 2 a plant gathered (detail = the flora species id), 3 a craft being worked, again every 4.5 s while it goes on (detail = the recipe number). Sent only to players within its earshot.
 @rpc("authority", "call_remote", "unreliable")
 func action_cue(peer_id: int, cue: int, detail: int, at: Vector3) -> void:
 	action_cue_received.emit(peer_id, cue, detail, at)
