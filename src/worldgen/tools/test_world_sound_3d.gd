@@ -123,12 +123,10 @@ func _left_minus_right(world: Node3D, at: Vector3) -> float:
 	var phase: float = 0.0
 
 	var settle_until: int = Time.get_ticks_msec() + 400   # the pan settles and the old voice's tail drains first
+	var give_up: int = Time.get_ticks_msec() + 4000
 	var counted: int = 0
-	var frame: int = 0
 
-	while counted < 8000 and frame < 2000:      # enough mixed frames, however fast or slow the loop runs against the mixer
-		frame += 1
-
+	while counted < 8000 and Time.get_ticks_msec() < give_up:      # enough mixed frames, however fast or slow the loop runs against the mixer
 		for n in playback.get_frames_available():
 			phase += 0.06
 			playback.push_frame(Vector2.ONE * 0.5 * sin(phase))
@@ -288,7 +286,7 @@ func _other_steps(world: Node3D) -> void:
 
 # Another player's step voice (sound_stage.gd play_other_step, other_step_room): positional at the feet, and at most OTHER_STEP_VOICES at once.
 func _other_step_voice(world: Node3D) -> void:
-	var stage = SoundStage.new()
+	var stage: SoundStage = SoundStage.new()
 	world.add_child(stage)
 
 	for wind in ["_wind_low", "_wind_gust"]:                # set up by setup() in the game; its _exit_tree stops them
