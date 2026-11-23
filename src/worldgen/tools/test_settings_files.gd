@@ -74,6 +74,7 @@ func _display() -> void:
 	a.quality = 0
 	a.text_index = 3
 	a.hud_text = false
+	a.hud_text_chosen = true
 	a.cave_dark = false
 	a.damage_numbers = false
 	a.idle_minutes = 90
@@ -89,6 +90,7 @@ func _display() -> void:
 	b.load_saved()
 	check(b.size_index == 1 and b.fullscreen and b.vsync_index == 2 and b.quality == 0 and b.text_index == 3, "size, fullscreen, VSync, quality and text size come back")
 	check(not b.hud_text and not b.cave_dark and not b.damage_numbers and b.idle_minutes == 90 and is_equal_approx(b.mouse_look, 2.25) and b.sort_index == 4, "screen text, cave darkness, damage numbers, idle time, mouse and sort come back")
+	check(b.hud_text_chosen, "a developer-text choice made with the key is saved and read back")
 	check(DisplaySettingsScript.fahrenheit and DisplaySettingsScript.reduce_motion, "temperature unit and reduce motion come back")
 	DisplaySettingsScript.fahrenheit = false
 	DisplaySettingsScript.reduce_motion = false
@@ -99,6 +101,12 @@ func _display() -> void:
 	old.path = DISPLAY_TEMP
 	old.load_saved()
 	check(old.size_index == 2 and old.quality == 3 and old.text_index == 0 and old.idle_minutes == 120 and old.sort_index == 2 and old.mouse_look == 1.0, "a 9257 file loads as saved, mouse sensitivity at its default")
+	check(not old.hud_text_chosen, "a 9257 file has no developer-text choice, so the installed game hides that text")
+	_write(DISPLAY_TEMP, "[display]\n\nhud_text=true\nhud_text_chosen=true\n")
+	var picked = DisplaySettingsScript.new()
+	picked.path = DISPLAY_TEMP
+	picked.load_saved()
+	check(picked.hud_text_chosen and picked.hud_text, "a saved key choice of 'on' is read")
 
 	# Damaged: wrong kinds everywhere, out of range, a value that is not a number.
 	_write(DISPLAY_TEMP, "[display]\n\nsize=[1, 2]\nfullscreen={\"a\": 1}\nvsync=\"fast\"\nquality=99\ntext=-4\nhud_text=\"maybe\"\nidle_minutes=5\nmouse_look=\"nan\"\nsort=[3]\nsort_version=\"x\"\n")
