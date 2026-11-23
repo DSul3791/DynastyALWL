@@ -88,6 +88,55 @@ func fill(at: Vector3) -> void:
 	items.action(1, Net.ACT_FILL, HeldTool.slot_of(items, "shovel"), 0, 0, at)
 
 
+# Hoe-levels round `at` toward `target` stroke after stroke (a 3 m round of spots on a 1 m grid) until only the ground under placed things is off level.
+func level_round(at: Vector3, target: float) -> Array:
+	var lv: Array = []
+	var spots: Array = []
+
+	for i in range(-3, 4):
+		for j in range(-3, 4):
+			if i * i + j * j <= 9:
+				spots.append(Vector2(float(i), float(j)))
+
+	for stroke in 60:
+		if items._level_ground(at, spots, target, lv) <= 0:
+			break
+
+	return lv
+
+
+# The lowest and highest ground over a footprint's middle, corners and edge middles.
+func height_span(at: Vector3, half: Vector2, lv: Array) -> Vector2:
+	var span: Vector2 = Vector2(INF, -INF)
+
+	for cx in [-1.0, 0.0, 1.0]:
+		for cz in [-1.0, 0.0, 1.0]:
+			var h: float = items._edited_height(at.x + cx * half.x, at.z + cz * half.y, lv)
+			span = Vector2(minf(span.x, h), maxf(span.y, h))
+
+	return span
+
+
+# From the footprint's edge outward 3 m in 0.1 m steps, five ways: the steepest rise or fall per metre, and the height reached.
+func steepest_out(at: Vector3, half: Vector2, lv: Array) -> Vector2:
+	var steep: float = 0.0
+	var far: float = NAN
+
+	for way in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1), Vector2(0.7071, 0.7071)]:
+		var reach: float = absf(way.x) * half.x + absf(way.y) * half.y
+		var last: float = items._edited_height(at.x + way.x * reach, at.z + way.y * reach, lv)
+
+		for k in range(1, 31):
+			var p: Vector2 = Vector2(at.x, at.z) + way * (reach + 0.1 * k)
+			var h: float = items._edited_height(p.x, p.y, lv)
+			steep = maxf(steep, absf(h - last) / 0.1)
+			last = h
+
+		far = last
+
+	return Vector2(steep, far)
+
+
 func _init() -> void:
 	var dir: String = "user://test_dig_fill_neighbours"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -239,62 +288,58 @@ func _init() -> void:
 	check(said.is_empty() and edits.size() == 2, "on a blueprint site the shovel digs and fills (%s)" % str(said))
 	items._items.erase(site_id)
 
-	# A hoe stroke (level ground) round a chest and a campfire: the spots under them are left, the rest is levelled, and the edge of the footprint
-	# is a slope a player or cart can cross, not a sharp step (coordinator 23 Nov 2026). Cut 0.5 m down, then fill 0.5 m up.
-	for job in [[9.5, "cut"], [10.5, "fill"]]:
-		for kit in ["chest_kit", "campfire_kit"]:
-			edits.clear()
-			var spot: Vector3 = Vector3(600.0 + (0.0 if kit == "chest_kit" else 40.0) + (0.0 if job[1] == "cut" else 100.0), 10.0, 0.0)
-			items.report_position(1, spot + Vector3(2.5, 0.0, 0.0))
-			var thing: int = place(kit, spot)
-			var lv: Array = []
-			var spots: Array = []
+	# A hoe stroke (level ground) round a chest, a campfire and a fence on the ground: the spots under them are left, the rest is levelled, and
+	# the edge of the footprint is a slope a player or cart can cross, not a sharp step (coordinator 23 Nov 2026). Cut 0.5 m down, fill 0.5 m up,
+	# and cut 1.5 m down round a chest; the steepest allowed is Steering.MAX_SLOPE (0.9 m per m).
+	var n_job: int = 0
 
-			for i in range(-3, 4):
-				for j in range(-3, 4):
-					if i * i + j * j <= 9:
-						spots.append(Vector2(float(i), float(j)))
+	for job in [[9.5, "cut", "chest_kit"], [9.5, "cut", "campfire_kit"], [9.5, "cut", "thatch_fence_kit"], [10.5, "fill", "chest_kit"], [10.5, "fill", "campfire_kit"], [8.5, "deep cut", "chest_kit"]]:
+		n_job += 1
+		var kit: String = job[2]
+		edits.clear()
+		var spot: Vector3 = Vector3(600.0 + 40.0 * n_job, 10.0, 0.0)
+		items.report_position(1, spot + Vector3(2.5, 0.0, 0.0))
+		var thing: int = place(kit, spot)
+		var lv: Array = level_round(spot, float(job[0]))
+		var it: Dictionary = items._items.get(thing, {})
+		var def: Dictionary = items._structures.get(str(it.get("struct", {}).get("kind", "")), {})
+		var half: Vector2 = PlacementRules._box(def, it["pos"], 0.0)[1] if not def.is_empty() else Vector2(0.6, 0.6)
+		var under: Vector2 = height_span(spot, half, lv)
+		check(lv.size() > 0 and items._items.has(thing), "a hoe %s round a %s levels the ground round it (%d edits)" % [job[1], kit, lv.size()])
+		check(items._level_skipped, "  and the last stroke says it left ground under a placed thing")
+		check(under.x >= 9.85 and under.y <= 10.15, "  the ground under the %s is left as it was: %.2f to %.2f" % [kit, under.x, under.y])
+		var slope: Vector2 = steepest_out(spot, half, lv)
+		check(slope.x <= 0.9, "  from the %s's edge out the ground slopes at most 0.9 m per m (steepest %.2f), out to %.2f" % [kit, slope.x, slope.y])
 
-			var worked: int = 0
+	# A chest standing on a foundation does not stop the hoe levelling round the foundation (foundations stay as they are: the hoe
+	# works round them, as before).
+	edits.clear()
+	var base_at: Vector3 = Vector3(900.0, 10.0, 0.0)
+	items.report_position(1, base_at + Vector3(3.0, 0.0, 0.0))
+	var base: int = place("foundation_section_kit", base_at)
+	var top: float = float(items._items[base]["pos"].y) + 0.3 if items._items.has(base) else 10.3
+	items.report_position(1, base_at + Vector3(1.0, top, 0.0) - Vector3(0.0, 10.0, 0.0))
+	var on_base: int = place("chest_kit", Vector3(base_at.x + 1.0, top, base_at.z))
+	var round_base: Array = level_round(base_at + Vector3(3.5, 0.0, 0.0), 9.5)
+	var edge: float = items._edited_height(base_at.x + 2.6, base_at.z, round_base)
+	check(base != -1 and on_base != -1 and absf(float(items._items[on_base]["pos"].y) - top) < 0.05, "a chest stands on a foundation (y %.2f, top %.2f)" % [float(items._items[on_base]["pos"].y) if items._items.has(on_base) else NAN, top])
+	check(edge < 9.7, "  and a hoe cut beside the foundation levels the ground at its edge as before (%.2f)" % edge)
 
-			for stroke in 40:   # stroke after stroke until only the ground under the thing is off level
-				var n: int = items._level_ground(spot, spots, float(job[0]), lv)
-				worked += maxi(n, 0)
+	# A grade stroke along a line through a chest grades round it and leaves its ground.
+	edits.clear()
+	var line_at: Vector3 = Vector3(1000.0, 10.0, 0.0)
+	items.report_position(1, line_at + Vector3(0.0, 0.0, 2.0))
+	var graded: int = place("chest_kit", line_at)
+	items._grade_points[1] = [line_at + Vector3(-3.0, -0.5, 0.0), line_at + Vector3(3.0, -0.5, 0.0)]
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("iron_hoe"), 0, 1, Vector3.ZERO)
+	said.clear()
 
-				if n <= 0:
-					break
+	for k in 6:
+		items._last_dig.clear()
+		items.action(1, Net.ACT_HOE_GRADE, HeldTool.slot_of(items, "hoe"), 0, 0, line_at)
 
-			check(items._level_skipped, "  and the last stroke says it left ground under a placed thing")
-			var it: Dictionary = items._items.get(thing, {})
-			var def: Dictionary = items._structures.get(str(it.get("struct", {}).get("kind", "")), {})
-			var half: Vector2 = PlacementRules._box(def, it["pos"], 0.0)[1] if not def.is_empty() else Vector2(0.6, 0.6)
-			var under: float = INF
-			var over: float = -INF
-
-			for cx in [-1.0, 0.0, 1.0]:
-				for cz in [-1.0, 0.0, 1.0]:
-					var h: float = items._edited_height(spot.x + cx * half.x, spot.z + cz * half.y, lv)
-					under = minf(under, h)
-					over = maxf(over, h)
-
-			check(worked > 0 and items._items.has(thing), "a hoe %s round a %s levels the ground round it (%d edits)" % [job[1], kit, worked])
-			check(under >= 9.85 and over <= 10.15, "  the ground under the %s is left as it was: %.2f to %.2f" % [kit, under, over])
-			var steep: float = 0.0
-			var far: float = 10.0
-
-			for way in [Vector2(1, 0), Vector2(-1, 0), Vector2(0, 1), Vector2(0, -1), Vector2(0.7071, 0.7071)]:
-				var reach: float = absf(way.x) * half.x + absf(way.y) * half.y
-				var last: float = items._edited_height(spot.x + way.x * reach, spot.z + way.y * reach, lv)
-
-				for k in range(1, 31):
-					var p: Vector2 = Vector2(spot.x, spot.z) + way * (reach + 0.1 * k)
-					var h: float = items._edited_height(p.x, p.y, lv)
-					steep = maxf(steep, absf(h - last) / 0.1)
-					last = h
-
-				far = last
-
-			check(steep <= 1.0, "  from the %s's edge out the ground slopes at most 45 degrees (steepest %.2f m per m), down to %.2f" % [kit, steep, far])
+	var line_under: Vector2 = height_span(line_at, Vector2(0.38, 0.25), edits)
+	check(graded != -1 and line_under.x >= 9.85 and edits.size() > 0, "a grade stroke over a chest grades round it and leaves its ground (%.2f to %.2f, %d edits, said %s)" % [line_under.x, line_under.y, edits.size(), str(said.slice(-1))])
 
 	print("test_dig_fill_neighbours: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)
