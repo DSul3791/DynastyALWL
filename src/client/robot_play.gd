@@ -37,7 +37,7 @@ const JUMP_FLOOR_M := 1.5
 const PLAYER_TOP_MPS := 9.5      # terrain_client RUN_SPEED 9.0
 const FRESH_S := 1.5             # a body just drawn may still settle onto its first samples
 const INSIDE_M := 0.3
-const RESPAWN_M := 40.0          # a drawn player farther than this in one frame was moved on purpose (respawn, rescue), not a jump
+const RESPAWN_M := 20.0          # a drawn player farther than this in one frame was moved on purpose (respawn, the cold's rescue 38 m off), not a jump: a runner covers it in 2 s
 const HAND_M := 0.25             # the hand mount this far from the hand bone (it sits about 0.11 m off it) has come loose
 const SAVED_FILE := "user://robot_last_pack.txt"
 const MID_FILE := "user://robot_mid_craft.txt"
@@ -193,7 +193,7 @@ func _hook() -> void:
 	client.net.died_received.connect(func(cause, spawn):
 		if str(cause) == "passed out":   # the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
 			_woke_at = spawn
-			FreezeWatchScript.printer.line("ROBOT %s step passed out: moved to %s" % [robot_name, str(spawn)])
+			FreezeWatchScript.printer.line("ROBOT %s step passed out at %d: moved to %s" % [robot_name, _now_ms(), str(spawn)])   # tools/robot_check.py: drawn lying before it is no wrong stance
 			return
 
 		_died += 1
@@ -3684,7 +3684,7 @@ func _tg_place(bp: int, offsets: Array, file: String) -> int:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, bp, 0, 0, spot)
 		var until: int = Time.get_ticks_msec() + 6000
 
-		while id < 0 and Time.get_ticks_msec() < until and _notices.size() == heard:
+		while id < 0 and Time.get_ticks_msec() < until and not _notices.slice(heard).any(func(t): return not str(t).begins_with("Blueprint down")):   # a refusal moves on
 			for w in client.items._world:
 				if not known.has(w) and Vector2(client.items._world[w]["pos"].x - spot.x, client.items._world[w]["pos"].z - spot.z).length() < 1.5:
 					id = int(w)
@@ -3756,14 +3756,20 @@ func _tg_seen() -> void:
 		_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
 		await _wait(1.0)
 		_write(_share("tg_woke.txt"), "%s %.1f %.1f %.1f" % [str(_woke_at != null), client.body.global_position.x, client.body.global_position.y, client.body.global_position.z])
+		var _done: String = await _tg_read("tg_seen_done.txt", 30.0)   # stay in the world while Robot 1 looks
 		return
 
 	var lying_ms: int = 0
 	var stances: Dictionary = {}
+	var standing: int = -1   # the stance drawn after it lay: 0 once it is drawn standing again
 	var t1: int = Time.get_ticks_msec()
+	var woke_ms: int = -1
 
-	while _tg_read_now("tg_woke.txt") == "" and Time.get_ticks_msec() - t1 < 250000:
+	while Time.get_ticks_msec() - t1 < 250000 and (woke_ms < 0 or (standing != 0 and Time.get_ticks_msec() - woke_ms < 8000)):
 		var b: Dictionary = _tg_other()
+
+		if woke_ms < 0 and _tg_read_now("tg_woke.txt") != "":
+			woke_ms = Time.get_ticks_msec()
 
 		if not b.is_empty():
 			var st: int = int(b.get("state", 0)) & 3
@@ -3771,21 +3777,13 @@ func _tg_seen() -> void:
 
 			if st == 3:
 				lying_ms += int(get_process_delta_time() * 1000.0)
+			elif stances.has(3):
+				standing = st
 
 		await get_tree().process_frame
 
 	var woke: String = _tg_read_now("tg_woke.txt")
-	var after: Array = woke.split(" ")
-
-	if after.size() >= 4:
-		var _near: bool = await _go_to(Vector3(float(after[1]), float(after[2]), float(after[3])), 30.0, 4.0)
-
-	var standing: int = -1
-	var t2: int = Time.get_ticks_msec()
-
-	while standing != 0 and Time.get_ticks_msec() - t2 < 8000:
-		standing = int(_tg_other().get("state", -1)) & 3 if not _tg_other().is_empty() else -1
-		await get_tree().process_frame
+	_write(_share("tg_seen_done.txt"), "done")
 
 	FreezeWatchScript.printer.line("ROBOT %s TOGETHER seen out: Robot 2 woke %s; stances drawn (stance: frames) %s, lying %d ms; after waking drawn stance %d" % [robot_name, woke, str(stances), lying_ms, standing])
 	_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
@@ -3795,7 +3793,7 @@ func _tg_seen() -> void:
 	elif not stances.has(3):
 		_fail("together", "seen_lying", "Robot 2 passed out; Robot 1 never drew it lying down (stance 3): stances drawn %s" % str(stances))
 	elif standing != 0:
-		_fail("together", "seen_stand", "Robot 2 woke; Robot 1 still draws stance %d for it 8 s later (wanted standing, 0)" % standing)
+		_fail("together", "seen_stand", "Robot 2 woke; Robot 1 still draws stance %d for it 8 s later (wanted standing, 0; -1: not drawn)" % standing)
 
 
 # A share file's text now ("" when it is not there yet).

@@ -214,8 +214,18 @@ def others(robot_logs):
 	example = {}
 	seen = 0
 
+	# A pass-out (the cold) lies the body down on the server while the robot's own stance stays: drawn lying in the minute before it was moved is right
+	out_ms = collections.defaultdict(list)
+
+	for _, who, p in lines(robot_logs, "step"):
+		if p[:3] == ["passed", "out", "at"]:
+			out_ms[who].append(int(p[3].rstrip(":")))
+
 	for _, who, p in lines(robot_logs, "SEES"):
 		peer, ms, stance, x, z, clip = int(p[0]), int(p[1]), int(p[2]), float(p[3]), float(p[5]), p[6]
+
+		if stance == 3 and any(t - 60000 <= ms <= t + 3000 for t in out_ms.get(names.get(peer, ""), [])):
+			continue
 		track = [q for q in pose.get(peer, []) if ms - 1000 <= q[0] <= ms]
 		# steady from STEADY_MS before the look to one pose line after it: a stance taken and left between two pose lines is not steady
 		before = [q for q in pose.get(peer, []) if ms - STEADY_MS <= q[0] <= ms + 600]
