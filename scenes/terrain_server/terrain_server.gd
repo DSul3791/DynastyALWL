@@ -685,6 +685,8 @@ func _ready() -> void:
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
 		return
 
+	items.cut_felled_flora(flora)   # a stump saved before its tree's removal was (a crash between them): the tree stays cut
+
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
@@ -1164,6 +1166,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key, build):
 		var t0: int = Time.get_ticks_usec()
+
+		if _peers.has(peer) and _peers[peer].has("refused"):
+			return   # refused once: a later hello from the same connection is never let in while it is being closed
+
 		var refused: String = BuildStamp.refusal(_stamped_build, build)
 
 		if refused != "":
@@ -1462,6 +1468,8 @@ func _drop_replaced(old_peer: int) -> void:
 	if not _peers.has(old_peer):
 		return
 
+	_peers[old_peer].erase("player")   # its character is the new connection's now: it no longer counts towards a full server
+
 	net.join_refused.rpc_id(old_peer, "This character joined the server again from another game window or computer, so this one was closed. Nothing was lost.")
 	await get_tree().create_timer(1.0).timeout
 
@@ -1474,21 +1482,21 @@ func _drop_replaced(old_peer: int) -> void:
 const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
 
 
-# Whether a hello from `peer` (character `store`) finds the server full: only connections whose hello was let in count (not the ones still
-# at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
-func _full_for(peer: int, store: String) -> bool:
-	var players: int = 0
+# Whether a hello from `peer` (character `store_key`) finds the server full: only connections whose hello was let in count (not the ones
+# still at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
+func _full_for(peer: int, store_key: String) -> bool:
+	var let_in: int = 0
 
 	for other in _peers:
 		if other == peer or not _peers[other].has("player") or _peers[other].has("refused"):
 			continue
 
-		if items.key_of(other) == store:
+		if items.key_of(other) == store_key:
 			return false
 
-		players += 1
+		let_in += 1
 
-	return players >= max_players
+	return let_in >= max_players
 
 
 func _refuse_join(peer: int, build: int, text: String) -> void:
@@ -3620,7 +3628,9 @@ func _process(delta: float) -> void:
 		_events.mark("checks: revisions file")
 		store.save_revisions()
 		_events.mark("checks: flora removed file")
-		flora.save_removed()
+
+		if items.fells_on_disk():   # a felled tree's removal is written after its stump and logs (server_items fells_on_disk)
+			flora.save_removed()
 
 	_events.mark("checks: flags, report")
 	var flag_path: String = _store_path + "/clear_generated.now"

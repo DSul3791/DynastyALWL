@@ -32,6 +32,14 @@ func _init() -> void:
 	_check(rad_to_deg(atan2(gale.length(), 2.5)) <= WeatherLook.RAIN_LOOK_MAX_SLANT_DEG + 0.01, "drizzle in a gale slants at most 65 degrees")
 	_check(rad_to_deg(atan2(WeatherLook.rain_drift(2.5, 0.3, 0.0, 0.0).length(), 2.5)) > rad_to_deg(atan2(WeatherLook.rain_drift(9.0, 0.3, 0.0, 0.0).length(), 9.0)), "light rain slants more than a downpour in the same wind")
 	_check(WeatherLook.rain_drift(6.5, 0.0, 1.0, 1.0).length() < 0.001, "no wind, no slant")
+	# Weather round 2 (Lane A, 23 Nov 2026): a snowing night showed a clear starry sky, and the flakes were too few and too small to see.
+	var snow_cover: float = clampf(maxf(0.8, WeatherLook.wet_sky_share(0.0, 0.6) * (WeatherLook.RAIN_OVERCAST + (1.0 - WeatherLook.RAIN_OVERCAST) * 0.54)), 0.0, 1.0)
+	_check(WeatherLook.stars_through(1.0, snow_cover) < 0.05, "no stars through the overcast of a snowing night (cover %.2f)" % snow_cover)
+	_check(WeatherLook.stars_through(1.0, 0.15) == 1.0 and WeatherLook.stars_through(1.0, 0.5) == 1.0, "a clear or broken sky keeps its stars")
+	var near_share: float = pow(WeatherLook.SNOW_BOX_M / WeatherLook.BOX_M, 2.0)
+	_check(float(WeatherLook.SNOW_AMOUNT[2]) / (4.0 * WeatherLook.SNOW_BOX_M * WeatherLook.SNOW_BOX_M) >= 3.0 * 2000.0 / (4.0 * WeatherLook.BOX_M * WeatherLook.BOX_M) and near_share < 0.5,
+		"the snow falls at least three times as thick about the eye as before (2000 flakes over 48 m)")
+	_check(WeatherLook.SNOW_FLAKE_M >= 0.1, "a flake is drawn at least 10 cm across (a few pixels at 10 m)")
 
 	var lo: float = 1.0
 	var hi: float = 0.0
