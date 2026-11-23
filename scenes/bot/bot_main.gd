@@ -290,7 +290,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 func _on_surface(x: float, z: float, y: float) -> void:
 	if absf(x - _position.x) < 8.0 and absf(z - _position.z) < 8.0:
 		_ground_y = y
-		_position.y = y   # reported on the ground, as a walking player is
+		_position.y = y + 0.9   # reported as a walking player is: the standing body's middle, half of stance.gd's 1.8 m above the feet (Dave 23 Nov 2026: the other players' view drew the bot half underground when it sent its feet)
 
 
 # Tall items of a chunk (over 5 m) are taken as trees; a blow on anything else the server refuses, and the bot moves on after 40 s.
