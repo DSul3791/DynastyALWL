@@ -2553,6 +2553,22 @@ func fog_floor(pos: Vector3) -> float:
 	return floor_m
 
 
+# Ground below sea level here cut off from the open sea (fog_ground.gd under_land, from the window the point lies deepest inside): not the
+# sea (the fen flats, Lane A 22 Nov 2026). False where no window holds it: the old rule, all ground at or under 0 m is sea.
+func sea_cut_off(x: float, z: float) -> bool:
+	var best: float = -1.0
+	var cut: bool = false
+
+	for ground in _fog_grounds:
+		var margin: float = FogGroundScript.margin(ground.grid, x, z)
+
+		if margin > best:
+			best = margin
+			cut = ground.under_land(x, z)
+
+	return cut
+
+
 # The fog's shape at a point (fog_shape.gd).
 func fog_shape_at(pos: Vector3) -> Vector3:
 	return WeatherRules.fog_shape(_wx, pos.y, fog_floor(pos))

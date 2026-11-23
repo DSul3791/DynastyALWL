@@ -510,7 +510,7 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
-	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, water_live, x, z)   # the four above, bound to one tile (copper and tin rocks, boulders)
+	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, water_live, x, z, _sea_cut_off)   # the four above, bound to one tile (copper and tin rocks, boulders)
 	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
 		var water: Array = _water_at(Vector3(x, 0.0, z))
 		var baked: int = 0
@@ -521,7 +521,7 @@ func _ready() -> void:
 			if not tile_data.placeholder and not tile_data.water_class.is_empty():
 				baked = int(tile_data.water_class[tile_data.nearest(x, z)])
 
-		return [water[0], water[1], baked])
+		return [water[0], water[1], baked, float(water[1]) <= 0.0 and not _sea_cut_off(x, z)])
 	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
@@ -1328,7 +1328,13 @@ func _starter_stamp() -> String:
 # [water surface (NAN if none), ground height] at a reported position: the sea at 0, or the simulated tile's water.
 func _water_at(position: Vector3) -> Array:
 	var tile: Vector2i = generator.tile_of(position.x, position.z)
-	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position)
+	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position, _sea_cut_off)
+
+
+# Ground below sea level cut off from the open sea (a fen hollow behind sand above 0 m) is not the sea: no sea water to fill, no sea fish,
+# no wading in a sea the client does not draw there (fog_ground.gd under_land, read from the animals' windows round the players).
+func _sea_cut_off(x: float, z: float) -> bool:
+	return animals != null and animals.sea_cut_off(x, z)
 
 
 # As _water_at, for a player's reported position: under the hill, a spring cave pool's water counts (BUG-008), its floor taken as the
