@@ -92,6 +92,19 @@ for that species: robot_kinds.py holds each robot's drawn places against the ser
 gap to it against the drawn gap. Drawn against server numbers include the client's draw delay (it draws the past by design), not only a
 real error. It judges nothing; the FAILs are robot_check's as in every plan.
 
+Plan `together` (two robots at once on one thing, players thread 23 Nov 2026; `ROBOT_S=800 tools/robots.sh 2 together --delay-ms 120
+--jitter-ms 30 --loss 0.03`, about 13 min): both run out of the camp, Robot 1 builds a Wicker basket and both open it. Each step starts at
+one moment for both (ready files in ROBOT_SHARE, then a shared start 1.5 s on), and Robot 1 adds up the item over both packs, the basket and
+the ground within 8 m (TOGETHER lines; a total that changes fails). Steps: both put twine at once; both take at once; both pick up one
+dropped stack; Robot 2's link is held silent for 20 s (`hold PORT SECONDS` to the lossy link's control file) while Robot 1 puts more in,
+and the total must be the old one plus what went in. After each step each robot's open basket window must match the server's
+(`AUDIT chest <id> <ms> <signature> <used>` from the robot audit when a watched chest changes). Then both hammer one wooden crate site,
+each with part of its cost (exactly 5 lumber and 8 nails must go in), and both use one rustic door at once (it toggles twice and ends as
+it began), then each in turn: both must draw the site and the door the same. Last, Robot 1 watches Robot 2: Robot 2 swings 4 times and
+Robot 1's rows must show its swing count change; then Robot 2 is passed out by the cold (`cold <peer>` to the server control file) and
+Robot 1 must draw it lying (stance 3) and standing again after it wakes. While a robot is passed out its own stance stays standing, so
+robot_check does not count it drawn lying in the minute before the rescue as a wrong stance.
+
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
