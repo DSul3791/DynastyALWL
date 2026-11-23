@@ -159,6 +159,7 @@ var cave_scatter: Callable     # (cell Vector2i, cell_m) -> PackedFloat32Array, 
 var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
+var yaw_of: Callable           # (peer) -> the body's facing, rotation.y radians (server_players.gd yaw_of); a raised shield guards the way it faces
 var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
 var send_survey_refused: Callable # (peer, Vector3): a survey marker was refused; the client's line goes on from this, the survey's last kept marker
 var send_hoe_verdict: Callable   # (peer, kind, code, at, state, why, cells): the server's answer to a hoe grid (Till Garden Grid, Till Soil 2m, Plant): protocol 128
@@ -3741,7 +3742,7 @@ func _arrow_fly(delta: float) -> void:
 
 
 # The share 0..1 along from -> to where the flight first meets a standing trunk, or -1 (BowAim.segment_trunk on each trunk near the segment).
-const ARROW_TRUNK_SEARCH_M := 2.0   # the thickest trunk's radius and a little over
+const ARROW_TRUNK_SEARCH_M := 2.0   # the thickest trunk collider and a little over (tree_trunks.gd SEARCH_TRUNK_M caps the colliders that grew to their drawn size)
 
 
 func _arrow_trunk(from: Vector3, to: Vector3) -> float:
@@ -15633,8 +15634,9 @@ func _take_from_bags(peer: int, number: int) -> int:
 # attack_modes by the cause, else its default_mode; `pen` is a weapon's armour penetration), and every piece that protects wears by the hit.
 # Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling injury; the pack then backs off). Lethal (a player already
 # maimed): with death.json stop_at_1 (on) it stops at 1 and reports "maimed" again; off, health can reach zero and the character dies.
-# Returns "hurt", "maimed" or "dead".
-func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0, mode: String = "", pen: float = 0.0) -> String:
+# `from` is where the blow came from (the attacker's position; NO_FROM when unknown): a raised shield stops its share of a blow from the front
+# (shield_share). Returns "hurt", "maimed" or "dead".
+func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0, mode: String = "", pen: float = 0.0, from: Vector3 = NO_FROM) -> String:
 	var v: Dictionary = vitals_of(peer)
 
 	if v.is_empty():
@@ -15642,6 +15644,12 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 	if _cold_out.has(peer):
 		return "hurt"   # passed out from cold: nothing hurts them until they wake (warmth.json pass_out)
+
+	var guard: float = shield_share(peer, from)   # a raised shield takes its share of a blow from the front first, and wears by it
+
+	if guard > 0.0:
+		_wear_shield(peer, guard * amount)
+		amount *= 1.0 - guard
 
 	var stopped: float = protection_of(peer, mode if mode != "" else attack_mode(cause), pen)
 	_wear_armour(peer, amount)
@@ -15671,6 +15679,73 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 	_sync_vitals(peer, false)
 	return "hurt"
+
+
+const NO_FROM := Vector3.INF   # hurt_player: the blow's origin is not known, so no shield can be judged against it
+const HAND_SHIELD_UP := 4       # held_item.gd HAND_SHIELD_UP: the client says B is held with a shield in the left hand (protocol 159 held_item)
+
+
+# The pack slot of the shield this player holds raised, -1 for none: the client's shield-up flag (hand_flags, protocol 159) with a shield
+# (items.json "block") in the left hand (left_hand_number: only while the pack still holds it) that is not broken.
+func _raised_shield_slot(peer: int) -> int:
+	if (hand_flags(peer) & HAND_SHIELD_UP) == 0:
+		return -1
+
+	var number: int = left_hand_number(peer)
+	var inv = inventory_of(peer)
+
+	if number <= 0 or inv == null or float(table.entry(table.id_of(number)).get("block", 0.0)) <= 0.0:
+		return -1
+
+	for slot in range(inv.slot_count):
+		if inv.numbers[slot] == number and not _is_broken(inv, slot):
+			return slot
+
+	return -1
+
+
+# The share of a blow from `from` that this player's raised shield stops (coordinator for Dave, 23 Nov 2026, provisional): the shield's
+# items.json block when the attacker stands within the front arc (protection.json shield_arc_deg, 120) of the way the body faces; nothing
+# from the side or behind, nothing when the origin or facing is unknown.
+func shield_share(peer: int, from: Vector3) -> float:
+	if not from.is_finite() or not yaw_of.is_valid():
+		return 0.0
+
+	var slot: int = _raised_shield_slot(peer)
+	var pos: Variant = position_of(peer)
+
+	if slot < 0 or pos == null:
+		return 0.0
+
+	var block: float = clampf(float(table.entry(table.id_of(inventory_of(peer).numbers[slot])).get("block", 0.0)), 0.0, 0.95)
+	var to: Vector2 = Vector2(from.x - (pos as Vector3).x, from.z - (pos as Vector3).z)
+
+	if to.length() < 0.05:
+		return block   # the attacker is on top of the player: the shield is between them
+
+	var yaw: float = float(yaw_of.call(peer))
+	var facing: Vector2 = Vector2(-sin(yaw), -cos(yaw))   # the body faces -Z turned by its yaw (server_action_cues.gd hands_of)
+	var half: float = deg_to_rad(float(_protection_cfg.get("shield_arc_deg", 120.0)) * 0.5)
+	return block if absf(facing.angle_to(to)) <= half else 0.0
+
+
+# The raised shield takes the blow it stopped: wear by protection.json wear_per_damage, as worn armour; at its maximum a wooden one is gone,
+# a metal one stays in the pack, broken, until it is repaired (_tool_broke).
+func _wear_shield(peer: int, blocked: float) -> void:
+	var slot: int = _raised_shield_slot(peer)
+	var inv = inventory_of(peer)
+
+	if slot < 0 or inv.max_durability(slot) <= 0:
+		return
+
+	var before: Array = _snapshot(inv)
+	inv.wear[slot] = mini(inv.wear[slot] + maxi(1, int(round(blocked * float(_protection_cfg.get("wear_per_damage", 1.0))))), inv.max_durability(slot))
+	_dirty = true
+
+	if _is_broken(inv, slot):
+		_tool_broke(peer, inv, slot, table.entry(table.id_of(inv.numbers[slot])))
+
+	_send_changes(peer, inv, before)
 
 
 # The damage mode of an attack by its cause (an animal species or "wolves"; protection.json attack_modes, else default_mode).

@@ -26,6 +26,7 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -496,7 +497,7 @@ func _trees_of(flora: Dictionary) -> Array:
 		if sp.is_empty() or int(sp["kind"]) != PlacerScript.KIND_TREE:
 			continue
 
-		var r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n]))
+		var r: float = TreeTrunks.standing_collider(str(sp["name"]), ids[n], float(flora["heights"][n]), PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n])))
 
 		if r > 0.0 and float(flora["heights"][n]) < PlacerScript.SAPLING_M:
 			_fault("sapling_collider", PlacerScript.SAPLING_M - float(flora["heights"][n]), flora["positions"][n], "%s %.2f m tall, trunk collider r %.3f m" % [sp["name"], float(flora["heights"][n]), r])

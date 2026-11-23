@@ -1,6 +1,7 @@
 extends RefCounted
 
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 
 # Where a felled trunk comes to rest (Kathleen, Dave's tree-fall job). The trunk hinges at the stump and its axis is one straight line from the hinge,
 # so on any ground it rests on the highest point it meets: the pose is the lowest pitch (radians above the horizontal, negative = running downhill)
@@ -74,18 +75,9 @@ static func standing_radius(trunk_m: float, ref_height: float, height: float, br
 	return base * height / ref_height
 
 
-# The model variant flora_view.gd draws for the tree `id` (its own hash; with young_below_m in the species row, trees shorter than it take the young
-# half). Mirrors flora_view exactly, including its negative remainders, which index the variant list from the end.
+# The model variant flora_view.gd draws for the tree `id` (tree_trunks.gd drawn_variant, which the client pack has; this script is server only).
 static func drawn_variant(entry: Dictionary, id: int, height: float) -> int:
-	var count: int = TreeBuilder.VARIANTS
-	var variant: int = (id * 2654435761 >> 5) % count
-
-	if entry.has("young_below_m"):
-		@warning_ignore("integer_division")
-		var half: int = count / 2
-		variant = variant % half + (half if height < float(entry["young_below_m"]) else 0)
-
-	return posmod(variant, count)
+	return TreeTrunks.drawn_variant(entry, id, height)
 
 
 # The butt radius the client draws this standing tree with: its model's trunk (tree_builder.gd trunk_radius) at the reference height the model is

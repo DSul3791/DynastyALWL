@@ -5387,7 +5387,7 @@
 		"wicker_shield": {
 			"name": "Wicker - Shield",
 			"kind": "weapon",
-			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Blocking does not stop blows yet.",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Raised, it stops 35% of a frontal blow.",
 			"how_to_get": [
 				"Craft: 3 Stick, 2 Plant fibre"
 			],
@@ -5407,7 +5407,7 @@
 		"plank_shield": {
 			"name": "Wooden - Shield",
 			"kind": "weapon",
-			"description": "Boards bound with hide. Sturdier than wicker. Blocking does not stop blows yet.",
+			"description": "Boards bound with hide. Sturdier than wicker. Raised, it stops 45% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a workbench: 3 Plank, 1 Hide, 1 Hide glue"
 			],
@@ -5437,7 +5437,7 @@
 		"bronze_shield": {
 			"name": "Bronze - Shield",
 			"kind": "weapon",
-			"description": "A wicker shield faced with hide, rimmed and bossed with bronze. Blocking does not stop blows yet.",
+			"description": "A wicker shield faced with hide, rimmed and bossed with bronze. Raised, it stops 55% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a forge: 1 Wicker - Shield, 1 Bronze ingot, 1 Hide"
 			],
@@ -5467,7 +5467,7 @@
 		"iron_shield": {
 			"name": "Iron - Shield",
 			"kind": "weapon",
-			"description": "Boards held by iron bands. Hard to break. Blocking does not stop blows yet.",
+			"description": "Boards held by iron bands. Hard to break. Raised, it stops 65% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Plank, 2 Iron ingot"
 			],
@@ -5497,7 +5497,7 @@
 		"steel_shield": {
 			"name": "Steel - Shield",
 			"kind": "weapon",
-			"description": "A long steel-faced shield that covers shoulder to shin. Blocking does not stop blows yet.",
+			"description": "A long steel-faced shield that covers shoulder to shin. Raised, it stops 75% of a frontal blow.",
 			"how_to_get": [
 				"Craft at a brick forge: 2 Plank, 2 Steel ingot"
 			],

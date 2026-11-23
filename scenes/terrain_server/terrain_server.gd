@@ -78,6 +78,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
 # Lag lane 23 Nov 2026 (cloud join, timestamped): a new player's far ground reaches the neighbour tiles (a client's coarse LOD blocks go out
@@ -469,6 +470,7 @@ func _ready() -> void:
 	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
 	cues.items = items
 	cues.yaw_of = players.yaw_of
+	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
 	items.craft_working = cues.craft_working
 	net.look_reported.connect(players.set_look)
@@ -834,7 +836,7 @@ func _ready() -> void:
 	animals.fires = func(): return _fire_at
 	animals.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
-	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)), "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
 	@warning_ignore("confusable_local_declaration")
@@ -864,7 +866,7 @@ func _ready() -> void:
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
-	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
+	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer):
 		if sp == "bandit" or sp == "horse":
@@ -985,6 +987,7 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	TreeTrunks.warm()   # the trunk collider table (_cached_trees), read once at start
 	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
 		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
 			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
@@ -2311,8 +2314,9 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 						if not cells.has(cell):
 							cells[cell] = []
 
-						# The trunk collider the client makes (flora_placer.collider_radius): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
-						cells[cell].append([ids[n], at, tree_name, PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall), tall])
+						# The trunk collider the client makes (tree_trunks.gd standing_collider: as wide as it is drawn): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
+						var trunk_r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall)
+						cells[cell].append([ids[n], at, tree_name, TreeTrunks.standing_collider(str(tree_name), ids[n], tall, trunk_r), tall])
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])

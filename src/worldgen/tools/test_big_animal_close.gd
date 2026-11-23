@@ -36,7 +36,7 @@ func fight(sp: String, temper: String, dist: float, blow: float, every_s: float,
 
 	a.rng.seed = 7
 	a.big_game.player_info = func(): return [{"peer": 1, "pos": players[0], "stance": 0, "hp": 1.0}]
-	a.big_game.hurt_player = func(peer, amount, _lethal, _cause):
+	a.big_game.hurt_player = func(peer, amount, _lethal, _cause, _from):
 		hurt_log.append([peer, amount])
 		return "hurt"
 	var id: int = a.spawn(sp, 0.0, 0.0)
