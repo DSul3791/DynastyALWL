@@ -730,6 +730,7 @@ static func saw_mill() -> Node3D:
 	var wheel: Node3D = water_wheel()
 	wheel.position = Vector3(-1.5, 1.0, 0.0)
 	root.add_child(wheel)
+	_solid(root, Vector3(2.2, 2.16, 0.96), Vector3(-1.5, 1.08, 0.0))   # the wheel blocks where it is drawn (round 5: it had no solid, 2 m of mill walked through)
 	return root
 
 

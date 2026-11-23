@@ -150,6 +150,8 @@ var _pulse_t: float = 0.0
 var _water_updates: int = 0
 var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
 var _weather_next_msec: int = 0
+var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
+var _weather_here_msec: int = -100000
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
@@ -352,6 +354,14 @@ func _ready() -> void:
 	# Test plays (lag lane 23 Nov 2026): --game-hour=H starts the clock at hour H of its current day, so standing-play hitch counts taken on
 	# different days compare (the sky's cost depends on the hour). Nothing else changes; the clock runs on from there and is saved as usual.
 	# For throwaway test stores only: it can move the clock back up to a day, which skews item, trade and animal timers on a kept world.
+	# --game-day=D (look rig --day, weather walk 23 Nov 2026) moves the clock to day D of the year (0 to 364) at the same hour, in the same year,
+	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0
+			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])
+
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
 			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
@@ -484,6 +494,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_skills = func(peer, attributes, rows): net.skills.rpc_id(peer, attributes, rows)
 	items.weather_now = func(): return weather
+	items.weather_at = _weather_here   # the weather over the spot itself (its row and height), as its player's client works it out
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
@@ -1820,6 +1831,27 @@ func _queue_water(peer_id: int, chunk: Vector2i) -> void:
 func _weather_at(pos: Vector3) -> Dictionary:
 	var row: int = floori(pos.z / float(settings.tile_size_m))
 	return WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), pos.y, 0.0, row, settings.equator_tile_row)
+
+
+# The weather over a spot as the player's client there works it out (terrain_client._update_weather: the zone of its row, its height), so
+# what the server does to a player (warmth, wet clothes, a fire or torch put out by rain, sleep, drinking) follows the sky that player
+# sees: up a mountain it snows (no rain cooling, no fire put out) while it rains at the coast (weather and seasons walk, 23 Nov 2026).
+# One answer per row and Weather.HEIGHT_BAND_M of height (band_height) a second, so many fires and players cost a few noise reads.
+func _weather_here(pos: Vector3) -> Dictionary:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _weather_here_msec >= 1000:
+		_weather_here_cache.clear()
+		_weather_here_msec = now
+
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	var height: float = WeatherScript.band_height(pos.y)
+	var key := Vector2i(row, int(round(height)))
+
+	if not _weather_here_cache.has(key):
+		_weather_here_cache[key] = WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, 0.0, row, settings.equator_tile_row)
+
+	return _weather_here_cache[key]
 
 
 # The weather over the starter tile (zone from its row, season and time from the game clock,

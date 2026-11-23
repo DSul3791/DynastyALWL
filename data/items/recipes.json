@@ -5068,7 +5068,7 @@
 			"category": "Food and drink",
 			"needs": [
 				[
-					"trout",
+					"fish",
 					1
 				],
 				[
@@ -7398,7 +7398,7 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"note": "Unlocked 23 Nov 2026: the trap code is in (fish traps fish each game hour, bird traps catch like snares), so the row is live and known from the start like the Snare."
+			"note": "Unlocked 23 Nov 2026: the trap code is in (a fish trap fishes the hours it has stood when it is opened, bird traps catch like snares), so the row is live and known from the start like the Snare."
 		},
 		"bird_trap": {
 			"number": 391,
@@ -7420,7 +7420,7 @@
 			],
 			"craft_s": 10.0,
 			"known": true,
-			"note": "Unlocked 23 Nov 2026: the trap code is in (fish traps fish each game hour, bird traps catch like snares), so the row is live and known from the start like the Snare."
+			"note": "Unlocked 23 Nov 2026: the trap code is in (a fish trap fishes the hours it has stood when it is opened, bird traps catch like snares), so the row is live and known from the start like the Snare."
 		},
 		"pickled_vegetables": {"number": 393, "name": "Pickled vegetables", "category": "Food and drink", "needs": [["vegetable", 3], ["sea_salt", 1], ["water", 1]], "gives": ["pickled_vegetables", 2], "craft_s": 12.0, "known": false, "station": "preserving_jar", "locked": true, "ready_age": 72.0},
 		"copper_pot": {

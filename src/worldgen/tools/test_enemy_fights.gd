@@ -328,7 +328,7 @@ func _reach_and_walls() -> void:
 			if animals.animals.has(id):
 				closest = minf(closest, float(animals.animals[id]["pos"].x))
 
-		check(closest > 101.6 and closest < 103.0, "a %s's charge runs up to the wall and stops there (nearest x %.2f; the wall at 101.6)" % [sp, closest])
+		check(closest > 101.6 and closest < 104.0, "a %s's charge runs up to the wall and stops there (nearest x %.2f; the wall at 101.6; a charge turns along it its nose and 0.2 s short of it)" % [sp, closest])
 		check(landed.is_empty(), "and never strikes the player behind it (%d blows)" % landed.size())
 
 	# Nor does the player's blow go through it: a bandit standing against the near side, an Iron sword (reach 2.5 m) from behind it.

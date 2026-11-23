@@ -236,11 +236,14 @@ func _init() -> void:
 	var trap_cell: Vector2i = items._fish_cell(items._items[trap_id]["pos"])
 	items._fish_stock["%d,%d" % [trap_cell.x, trap_cell.y]] = [12, clock[0]]
 	fishing["trap"]["hour_chance"] = 1.0
-	game[0] += 3600.0
-	items._fish_traps_tick()   # the first look notes the trap (the traps are looked over every ten game minutes)
-	game[0] += 3600.0
-	items._fish_traps_tick()
 	var box = items._chests[int(items._items[trap_id]["struct"]["uid"])]
+	game[0] += 3600.0
+
+	for k in 30:
+		items.tick(1.0)
+
+	check(box.is_empty(), "3. while nobody looks the server does no work for the trap: an hour passes, nothing is rolled")
+	items._chest_of(1, trap_id)   # E: the hour it has stood is fished now
 	var in_trap: Array = []
 
 	for slot in box.slot_count:
@@ -248,7 +251,7 @@ func _init() -> void:
 			in_trap.append(items.table.id_of(box.numbers[slot]))
 
 	if in_trap.is_empty():
-		print("  trap: ", items._items[trap_id], " stock ", items.fish_stock(trap_cell), " rolled ", items._trap_rolled)
+		print("  trap: ", items._items[trap_id], " stock ", items.fish_stock(trap_cell))
 
 	check(in_trap.size() == 1, "3. after a game hour the trap holds a fish (%s)" % str(in_trap))
 	check(in_trap.size() == 1 and lives_in(items, str(in_trap[0]), "river"), "3. and it is a river fish (%s)" % str(in_trap))
@@ -278,9 +281,7 @@ func _init() -> void:
 		fishing["trap"]["hour_chance"] = 1.0
 		items._fish_stock["%d,%d" % [trap_cell.x, trap_cell.y]] = [12, clock[0]]
 		game[0] += 3600.0
-		items._fish_traps_tick()
-		game[0] += 3600.0
-		items._fish_traps_tick()
+		items._chest_of(1, again)   # the hour since it was last looked at, kept over the restart (row 24 rolled_s)
 		var now_in: int = 0
 
 		for slot in box.slot_count:
@@ -291,6 +292,8 @@ func _init() -> void:
 
 	check(float(items._skill_records(1).get("fishing", {}).get("p", 0.0)) >= fish_skill - 0.01, "3. Fishing practice is kept over the restart")
 	check(have(items, "fishing_rod") == 1, "3. the rod is still in the pack")
+	check(int(items._structures["fish_trap_set"].get("cap_per_chunk", 0)) >= 100000 and int(items._structures["bird_trap_set"].get("cap_per_chunk", 0)) >= 100000, "3. fish and bird traps have no limit per chunk, like the snare")
+	check(str(items._structures["fish_trap_set"].get("kit", "")) == "fish_trap" and str(items._structures["snare_trap"].get("kit", "")) == "snare" and str(items.table.entry("fish_trap").get("kind", "")) == str(items.table.entry("snare").get("kind", "")), "3. the fish trap is made and set the way the snare is (the item itself is set, no kit)")
 
 	# 4. Cooking and keeping: a fish roasts on the campfire; the roast keeps longer; the smoker and the pot keep fish for days.
 	var fire_spot: Vector3 = Vector3(DRY_X + 10.0, 10.0, 5.0)
