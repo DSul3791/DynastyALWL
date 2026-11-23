@@ -73,14 +73,25 @@ run --counts
 check $([ $RC -eq 0 ] && echo "$OUTPUT" | grep -q "3 src/a.gd"; echo $?) "--counts only counts (exit $RC)"
 stub 'echo "WARN src/a.gd:3: UNUSED_VARIABLE x"; echo "WARN src/a.gd:9: SHADOWED y"; echo "WARN src/b.gd:1: UNUSED_VARIABLE w"; echo "scripts checked: 2, warnings: 3"; exit 0'
 run
-check $([ $RC -eq 0 ] && echo "$OUTPUT" | grep -q "no new warnings: 3 now, 5 in the baseline" && echo "$OUTPUT" | grep -q "1 files are below their baseline count"; echo $?) "below the baseline: exit 0 and says to lower it (exit $RC)"
+check $([ $RC -eq 0 ] && echo "$OUTPUT" | grep -q "no new warnings: 3 now, 5 in the baseline" && echo "$OUTPUT" | grep -q "files below their baseline count: 1"; echo $?) "below the baseline: exit 0 and says to lower it (exit $RC)"
 cp "$STUB/baseline.txt" "$STUB/baseline.keep"
 run --update-baseline
 check $([ $RC -eq 0 ] && grep -q "1 src/b.gd" "$STUB/baseline.txt" && grep -q "2 src/a.gd" "$STUB/baseline.txt"; echo $?) "--update-baseline writes the current counts (exit $RC)"
 rm -f "$STUB/baseline.txt"
 run
-check $([ $RC -eq 4 ] && grep -q "baseline .* is missing or empty" "$ERR"; echo $?) "no baseline file fails (exit $RC)"
+check $([ $RC -eq 4 ] && grep -q "baseline .* is missing" "$ERR"; echo $?) "no baseline file fails (exit $RC)"
 mv "$STUB/baseline.keep" "$STUB/baseline.txt"
+stub 'echo "WARN src/a.gd:3: UNUSED_VARIABLE x"; echo "PARSE FAIL src/c.gd"; echo "scripts checked: 3, warnings: 1"; echo "parse failures: 1"; exit 1'
+run
+check $([ $RC -eq 3 ] && ! echo "$OUTPUT" | grep -q "no new warnings" && ! echo "$OUTPUT" | grep -q "below their baseline"; echo $?) "a parse failure exits 3 and makes no baseline claim (exit $RC)"
+cp "$STUB/baseline.txt" "$STUB/baseline.keep"
+run --update-baseline
+check $([ $RC -eq 3 ] && cmp -s "$STUB/baseline.txt" "$STUB/baseline.keep" && grep -q "baseline NOT written" "$ERR"; echo $?) "--update-baseline writes nothing when a script does not parse (exit $RC)"
+mv "$STUB/baseline.keep" "$STUB/baseline.txt"
+: > "$STUB/baseline.empty"
+stub 'echo "scripts checked: 2, warnings: 0"; exit 0'
+OUTPUT=$(PATH="$STUB:$PATH" CHECK_WARNINGS_TIMEOUT=20 WARNING_BASELINE="$STUB/baseline.empty" bash tools/check_warnings.sh 2> "$ERR"); RC=$?
+check $([ $RC -eq 0 ] && echo "$OUTPUT" | grep -q "no new warnings: 0 now, 0 in the baseline"; echo $?) "an empty baseline means zero allowed: a clean run passes (exit $RC)"
 
 # 5. tools/local_check.sh turns a warning check that did not finish into FAIL (before: PASS "0 total").
 stub 'case "$*" in *check_addons*) echo ADDON_OK;; *validate_items*) echo "validate: 0 errors";; *check_warnings*) exit 0;; esac'

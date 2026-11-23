@@ -78,8 +78,10 @@ case "$1" in
 		COUNTS=$(cut -d: -f1 "$OUT" | sort | uniq -c | sort -rn)
 		echo "$COUNTS" | grep -v '^$'
 
-		if [ ! -s "$BASE" ]; then
-			echo "check_warnings: FAIL, the baseline $BASE is missing or empty, so new warnings cannot be told apart" >&2
+		if grep -q "^PARSE FAIL \|^parse failures: " "$RAW"; then
+			echo "check_warnings: no baseline comparison, a script does not parse (its warnings were never counted)" >&2
+		elif [ ! -f "$BASE" ]; then
+			echo "check_warnings: FAIL, the baseline $BASE is missing, so new warnings cannot be told apart" >&2
 			STATUS=4
 		else
 			NOW_TOTAL=$(echo "$COUNTS" | awk '{s+=$1} END{print s+0}')
@@ -97,7 +99,7 @@ case "$1" in
 			fi
 
 			if [ "$UNDER" -gt 0 ]; then
-				echo "check_warnings: $UNDER files are below their baseline count: lower the baseline with tools/check_warnings.sh --update-baseline and commit it"
+				echo "check_warnings: files below their baseline count: $UNDER. Lower the baseline with tools/check_warnings.sh --update-baseline and commit it"
 			fi
 		fi
 		;;
