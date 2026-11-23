@@ -18,7 +18,8 @@ extends Node
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
-# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), seen (one robot raises and draws a bow, then fishes; the other checks what it draws), wiggle (one robot runs back and forth across a spot; the other measures how far off its path it draws it), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), seen (one robot raises and draws a bow, then fishes; the other checks what it draws), wiggle (one robot runs back and forth across a spot; the other measures how far off its path it draws it), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count), pack_fuzz (two robots at random in the pack and one
+# shared basket: src/client/robot_pack_fuzz.gd). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -30,6 +31,7 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const PackFuzz := preload("res://src/client/robot_pack_fuzz.gd")
 
 const QUIET_S := 3.0             # a pack check waits until no pack message came for this long
 const QUIET_LIMIT_S := 20.0
@@ -583,6 +585,8 @@ func run() -> void:
 		await _watch(30.0)
 	elif plan == "screens":
 		await _screens()
+	elif plan == "pack_fuzz":
+		await PackFuzz.new(self).run()   # src/client/robot_pack_fuzz.gd
 	elif plan == "drop_back":
 		await _drop_back()
 	elif plan == "drop_freeze":
