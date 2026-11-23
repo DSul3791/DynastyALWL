@@ -503,7 +503,7 @@ func _ready() -> void:
 	items.weather_at = _weather_here   # the weather over the spot itself (its row and height), as its player's client works it out
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
-	items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos)   # a player stuck in a cave's rock goes to the nearest campfire (Dave 23 Nov 2026)
+	items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos) if _under_rock(pos) else []   # a player stuck in a cave's rock goes to the nearest campfire (Dave 23 Nov 2026)
 	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
@@ -4223,6 +4223,7 @@ func _exit_tree() -> void:
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
+# Under rock (a cave or a dug tunnel, _under_rock) the nearest campfire out of the rock comes first (_cave_rescue, Dave 23 Nov 2026).
 # Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town (Edda and
 # Hob's fire; without one the square of data/npcs/markers.json, else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
 # off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
@@ -4280,6 +4281,9 @@ func _under_rock(p: Vector3) -> bool:
 	if _in_cave(p):
 		return true
 
+	if generator == null or not generator.tile_cached(p.x, p.z):
+		return false   # a tile not in memory is not read for this on the main thread (a far fire): taken as open
+
 	var top: float = float(animals.ground_height.call(p.x, p.z)) if animals != null and animals.ground_height.is_valid() else NAN
 	return not is_nan(top) and top - p.y > CAVE_ROOF_M
 
@@ -4290,20 +4294,7 @@ func _under_rock(p: Vector3) -> bool:
 # (_rescue_ground). [[spot, "campfire" | "town" | "goblin" | "bandit"]], or [] when there is no fire out of the rock (the caller's own place stands).
 func _cave_rescue(near: Vector3) -> Array:
 	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
-	var fires: Array = items.campfires()
-
-	for tribe in tribes.tribes():
-		var at: Dictionary = ((tribes.tribes()[tribe] as Dictionary).get("camp", {}) as Dictionary).get("fire", {})
-
-		if at.has("x"):
-			fires.append([Vector3(float(at["x"]), NAN, float(at.get("z", 0.0))), "goblin"])
-
-	for cell in bandits.sites:
-		var site: Dictionary = bandits.sites[cell]
-
-		if int(site.get("stage", 0)) >= int(bandits.CAMP):
-			fires.append([Vector3(float(site.get("x", 0.0)), NAN, float(site.get("z", 0.0))), "bandit"])
-
+	var fires: Array = items.campfires()   # the camps' fires are world items too (camp fires, lay_bandit_camp)
 	var best: Array = ItemsScript.nearest_fire_out_of_rock(fires, near, func(p: Vector3) -> bool: return _under_rock(p), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)))
 	return [] if best.is_empty() else [[_rescue_ground(Vector2(best[0].x + off_m, best[0].z)), best[1]]]
 

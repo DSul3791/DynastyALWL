@@ -57,13 +57,33 @@ func _init() -> void:
 	check(not got.is_empty() and str(got[1]) == "goblin" and is_equal_approx(float(got[0].y), 12.0), "a nearer camp fire counts, its height read from the ground (%s)" % str(got))
 	check(ItemsScript.nearest_fire_out_of_rock([[Vector3(3.0, -7.5, 0.0), "campfire"]], near, under, ground).is_empty() and ItemsScript.nearest_fire_out_of_rock([], near, under, ground).is_empty(), "no fire out of the rock: none (the old rescue place stands)")
 
-	# Every placed fire counts, lit or not, the town's camp fires named so.
+	# Every fire counts, lit or not, each named by its camp; a bandit camp's boot-print mark at the road is not a fire.
 	var items = make_items()
-	items._items[990001] = {"number": 1, "count": 1, "pos": Vector3(50.0, 10.0, 0.0), "left": 1.0e9, "fire": {"state": 0, "burn_left": 0.0, "covered": false, "recheck": 0.0}}
-	var town_id: int = int(items._camp_fire_ids.values()[0]) if not items._camp_fire_ids.is_empty() else -1
+	var fire_row: Callable = func(camp: Variant, marks: bool) -> Dictionary:
+		var f: Dictionary = {"state": 0, "burn_left": 0.0, "covered": false, "recheck": 0.0}
+		if camp != null:
+			f["camp"] = camp
+		if marks:
+			f["marks"] = true
+		return f
+	var NpcCamp = load("res://src/shared/npc_camp.gd")
+	var rows: Array = [[990001, Vector3(50.0, 10.0, 0.0), null, false, "campfire"], [990002, Vector3(60.0, 10.0, 0.0), 0, false, "town" if NpcCamp.fire_spot().x != INF else "goblin"], [990003, Vector3(70.0, 10.0, 0.0), 2, false, "goblin"], [990004, Vector3(80.0, 10.0, 0.0), "bandit_3_4", false, "bandit"], [990005, Vector3(90.0, 10.0, 0.0), "bandit_3_4", true, ""]]
+
+	for r in rows:
+		items._items[int(r[0])] = {"number": 1, "count": 1, "pos": r[1], "left": 1.0e9, "fire": fire_row.call(r[2], bool(r[3]))}
+
 	var spots: Array = items.campfires()
-	check(spots.any(func(s): return (s[0] as Vector3).is_equal_approx(Vector3(50.0, 10.0, 0.0)) and str(s[1]) == "campfire"), "an unlit placed fire is a campfire to be carried to")
-	check(town_id == -1 or spots.any(func(s): return str(s[1]) == "town"), "the town's camp fires are in the list as the town's (%d fires)" % spots.size())
+
+	for r in rows:
+		var found: Array = spots.filter(func(s): return (s[0] as Vector3).is_equal_approx(r[1]))
+
+		if str(r[4]) == "":
+			check(found.is_empty(), "a bandit camp's boot-print mark at the road is not a fire to be carried to")
+		else:
+			check(found.size() == 1 and str(found[0][1]) == str(r[4]), "a fire with camp %s is a %s to be carried to (%s)" % [str(r[2]), str(r[4]), str(found)])
+
+	for r in rows:
+		items._items.erase(int(r[0]))
 
 	# Stuck in a cave's rock: carried to the fire, the pack kept, one plain line.
 	items.peer_connected_hello(1, "caverescue001")
@@ -121,7 +141,7 @@ func _init() -> void:
 
 	# The wiring in terrain_server (not run here): every rescue under rock asks _cave_rescue, and the cold and water pass-out wake lines have a campfire line.
 	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
-	check(server.contains("if _under_rock(near):") and server.contains("var fire: Array = _cave_rescue(was)") and server.contains("items.cave_rescue = func"), "terrain_server: a pass-out under rock, a cave-in and a stuck player all go to _cave_rescue")
+	check(server.contains("if _under_rock(near):") and server.contains("var fire: Array = _cave_rescue(was)") and server.contains("items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos) if _under_rock(pos) else []"), "terrain_server: a pass-out under rock, a cave-in and a stuck player all go to _cave_rescue (a stuck player only under rock)")
 	var pass_out: Dictionary = items._warmth_cfg.get("pass_out", {})
 	check((pass_out.get("say_wake", {}) as Dictionary).has("campfire") and (pass_out.get("say_wake_water", {}) as Dictionary).has("campfire"), "cold and water pass-outs carried to a campfire have their own wake line")
 	var client: String = FileAccess.get_file_as_string("res://src/client/rescue.gd")

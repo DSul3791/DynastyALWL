@@ -917,6 +917,7 @@ func peer_left(peer: int) -> void:
 	_bag_edit.erase(peer)
 	_over_cap.erase(peer)
 	_spot_saved_msec.erase(peer)
+	_stuck_msec.erase(peer)
 	_resume_to.erase(peer)
 	_station_said.erase(peer)
 	_hole_blows.erase(peer)
@@ -19122,12 +19123,11 @@ func _stuck_rescue(peer: int, at: Vector3) -> void:
 	if _stuck_msec.has(peer) and now - int(_stuck_msec[peer]) < STUCK_COOLDOWN_MS:
 		return
 
-	_stuck_msec[peer] = now
-
 	if not ground_open.is_valid() or bool(ground_open.call([at + Vector3(0.0, -0.7, 0.0), at, at + Vector3(0.0, 0.7, 0.0)])):
 		return   # the server's ground is open there: not stuck
 
-	var spots: Array = cave_rescue.call(at)
+	_stuck_msec[peer] = now
+	var spots: Array = cave_rescue.call(at)   # [] unless `at` is under rock (a cave or a dug tunnel): stuck in a hillside is the client's surface rescue
 
 	if spots.is_empty():
 		return   # no campfire out of the rock anywhere: the client's own rescue onto the floor near by stands
@@ -19167,19 +19167,28 @@ static func nearest_fire_out_of_rock(fires: Array, near: Vector3, under_rock: Ca
 	return best
 
 
-# Every placed fire (any owner, lit or not, the town's camp fires too) as [position, "town" | "campfire"]: where a player rescued in a cave
-# is carried (terrain_server _cave_rescue). Only when someone is rescued, never on the tick.
+# Every fire in the world (any owner's, lit or not; the camps' too) as [position, "campfire" | "town" | "goblin" | "bandit"]: where a player
+# rescued in a cave is carried (terrain_server _cave_rescue). A camp fire's "camp" names it: a string a bandit camp's, NpcCamp.fires() index 0
+# Edda and Hob's (the town's), a higher index a goblin tribe's. A bandit camp's boot-print mark at the road is not a fire. Only on a rescue.
 func campfires() -> Array:
-	var town: Dictionary = {}
-
-	for k in _camp_fire_ids:
-		town[int(_camp_fire_ids[k])] = true
-
 	var out: Array = []
+	var town_first: bool = NpcCamp.fire_spot().x != INF   # index 0 is Edda and Hob's only when the town has its fire
 
 	for id in _items:
-		if (_items[id] as Dictionary).has("fire"):
-			out.append([_items[id]["pos"], "town" if town.has(id) else "campfire"])
+		var fire: Variant = (_items[id] as Dictionary).get("fire")
+
+		if fire == null or bool((fire as Dictionary).get("marks", false)):
+			continue
+
+		var camp: Variant = (fire as Dictionary).get("camp")
+		var kind: String = "campfire"
+
+		if typeof(camp) == TYPE_STRING:
+			kind = "bandit"
+		elif typeof(camp) == TYPE_INT:
+			kind = "town" if int(camp) == 0 and town_first else "goblin"
+
+		out.append([_items[id]["pos"], kind])
 
 	return out
 
