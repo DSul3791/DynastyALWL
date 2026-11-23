@@ -48,6 +48,13 @@ func _no_fixed_letters() -> void:
 	for fixed in ["\"Split (S)\"", "\"Use (E)\"", "\"Drop (D)\"", "\"Repair (R)\"", "Close (E)", "Keys: Split (S)", "Use (E) puts it on", "Use (E) drinks"]:
 		check(not view_src.contains(fixed), "the text %s names the bound key, not a fixed letter" % fixed)
 
+	var seen: int = Bindings.version
+	Bindings.set_binding("drop_item", KEY_O, false, false)
+	check(Bindings.version > seen, "a rebind moves KeyBindings.version, so buttons built once relabel")
+	var grid_src: String = FileAccess.get_file_as_string("res://src/client/ui/inventory/pack_grid.gd")
+	check(grid_src.contains("func refresh() -> void:\n\trelabel_keys()"), "the pack's action buttons relabel on every pack refresh")
+	check(grid_src.contains("_key_buttons.clear()") and grid_src.contains("_keys_seen = -1"), "a rebuilt pack panel (text size change) labels its new action buttons, not blank ones")
+	check(FileAccess.get_file_as_string("res://src/client/dialogue_view.gd").contains("_shop_close.text = \"Close (%s)\" % KeyBindings.label(\"interact\")"), "the shop's Close button is relabelled each time the shop opens")
 	check("Split (%s)" % Bindings.label("split_item") == "Split (V)" and "Use (%s)" % Bindings.label("use_item") == "Use (U)", "a rebound key shows in the button text")
 	Bindings.reset_all()
 
