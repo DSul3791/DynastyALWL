@@ -846,8 +846,8 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 	# One player at a time can push it out of one body into another standing beside them (robot bear hunt 23 Nov 2026: two hunters 1.4 m
 	# apart, a charging bear put on the second one's circle, inside the first, 0.22 m from their middle): ending inside anyone and nearer them
 	# than it was, it stays where it was.
-	if kept and _deeper_in(a["pos"], was, players, m):
-		a["pos"] = was
+	if kept and (_deeper_in(a["pos"], was, players, m) or wall_between(was, a["pos"])):
+		a["pos"] = was   # nor put out through a wall or a shut door behind it
 
 	if kept and Vector2(a["pos"].x - was.x, a["pos"].z - was.z).length() < 0.05:
 		a["pos"] = was   # held at the player: it stands there, not a few centimetres to and fro
@@ -903,6 +903,9 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 
 	if _deeper_in(to, a["pos"], others, AnimalContact.contact_m(str(a["sp"]))):
 		return false   # not out of one player into another beside them (`others`: every player's feet or infos)
+
+	if wall_between(a["pos"], to):
+		return false   # not through a wall or a shut door: a player who pins it against one does not push it out the other side
 
 	a["pos"] = to   # its sent heading stays; the client draws it facing the way it steps while it steps. Tick stamps it moving (moved_ms) as for any step
 	return true
