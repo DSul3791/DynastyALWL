@@ -11,6 +11,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const SkillWebScript := preload("res://src/shared/skill_web.gd")
 
 var passes: int = 0
 var failures: int = 0
@@ -275,6 +276,7 @@ func _init() -> void:
 	choke_checks()
 	pile_checks()
 	wiring_checks()
+	tracking_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -353,6 +355,7 @@ func pile_checks() -> void:
 
 	traps.cfg["base_chance"] = 0.0001
 	taken.clear()
+	looks[0] = 0   # setting them read each one's trail once (Tracking practice); a pass is what is measured
 	traps.on_pass(501, "rabbit", Vector3(705.0, 10.0, 700.0), Vector3(701.0, 10.0, 700.0))
 	check(looks[0] > 0 and looks[0] <= 2 * traps.PASS_LOOK_MAX, "a rabbit by a pile of 300 snares is rolled by at most %d of them (%d trail looks)" % [traps.PASS_LOOK_MAX, looks[0]])
 	traps.cfg["base_chance"] = 100.0
@@ -649,3 +652,59 @@ func away_checks() -> void:
 		by_night += 1 if traps.check_away(id) else 0
 
 	check(by_day == 0 and by_night > 100, "a day away catches nothing while the rabbits sleep, a night does (%d, %d of 400)" % [by_day, by_night])
+
+
+# Tracking practice (Dave 23 Nov 2026, "you should get xp for placing snares on trails"; traps.json "tracking"): a snare set on a trail
+# trains it, set again on the same spot it does not, off a trail never; walking along a trail trains it, standing on one or walking
+# off one does not; and the numbers reach the map's trails level (map.json trails_tracking) in a few hours of tracking, not hundreds of kills.
+func tracking_checks() -> void:
+	var items = make("user://test_traps_tracking", true)
+	var traps = items._traps
+	items.run_distance = func(x, _z, _kind): return 0.1 if x < 1000.0 else 10.0   # a trail everywhere west of x 1000
+	strength = 0.0
+	var pts: Callable = func() -> float: return float(items._skill_records(1).get("tracking", {}).get("p", 0.0))
+	var fresh: Callable = func() -> void: items._last_practice.clear()   # the 2 s practice cooldown is real time
+
+	var p0: float = pts.call()
+	var first: int = lay(items, Vector3(10.0, 10.0, 0.0))
+	var p1: float = pts.call()
+	check(p1 > p0, "a snare set on a trail trains Tracking (%.1f -> %.1f units)" % [p0, p1])
+	items._items.erase(first)
+	fresh.call()
+	lay(items, Vector3(12.0, 10.0, 0.0))
+	check(is_equal_approx(pts.call(), p1), "taken up and set again on the same spot it does not (%.1f)" % pts.call())
+	fresh.call()
+	lay(items, Vector3(60.0, 10.0, 0.0))
+	var p2: float = pts.call()
+	check(p2 > p1, "set on the trail elsewhere it does (%.1f)" % p2)
+	fresh.call()
+	lay(items, Vector3(2000.0, 10.0, 0.0))
+	check(is_equal_approx(pts.call(), p2), "off any trail never (%.1f)" % pts.call())
+
+	var check_s: float = float(traps.cfg["check_s"])
+	items.report_position(1, Vector3(100.0, 10.0, 0.0))
+	traps.tick(check_s)
+	fresh.call()
+	traps.tick(check_s)
+	check(is_equal_approx(pts.call(), p2), "standing on a trail trains nothing")
+	items.report_position(1, Vector3(115.0, 10.0, 0.0))
+	fresh.call()
+	traps.tick(check_s)
+	var p3: float = pts.call()
+	check(p3 > p2, "walking along it does (%.1f)" % p3)
+	items.report_position(1, Vector3(1500.0, 10.0, 0.0))
+	fresh.call()
+	traps.tick(check_s)
+	check(is_equal_approx(pts.call(), p3), "walking off the trails does not")
+
+	var cfg: Dictionary = items._skills_cfg
+	var level: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/map.json")).get("trails_tracking", 10))
+	var need: float = SkillWebScript.units_for(cfg, "tracking", level)
+	var each: float = p3 - p2
+	var follow_per_h: float = 3600.0 / check_s
+	var hours: float = maxf(need / each / follow_per_h, need / float(cfg["system"]["day_cap_units"]))   # a game day is an hour of play
+	var kills: float = need / (each * 0.5)
+	print("tracking numbers: ", "Tracking %d in about %.1f hours of following trails (%.0f units, %.1f a practice; by kills alone %.0f); first signs at %d" % [int(level), hours, need, each, kills, int(float(JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json")).get("see_level", 25)))])
+	check(hours >= 1.0 and hours <= 4.0, "Tracking %d (the map's trails) in about %.1f hours of following trails (%.0f units, %.1f a practice; by kills alone %.0f)" % [int(level), hours, need, each, kills])
+	var see: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json")).get("see_level", 25))
+	check(see <= 5.0, "the first trail signs show from Tracking %d (%.0f minutes of following)" % [int(see), SkillWebScript.units_for(cfg, "tracking", see) / each / follow_per_h * 60.0])

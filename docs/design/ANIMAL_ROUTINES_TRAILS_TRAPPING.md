@@ -154,6 +154,12 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
   first night); six snares on runs feed one player well (there is no limit on how many a player sets). Off a run, none while away.
+- TR-14 Tracking practice (23 Nov 2026; Dave: "you should get xp for placing snares on trails"; the rest a coordinator pick for his
+  review, data/animals/traps.json "tracking"): a snare set on a trail trains Tracking, but not within 15 m of a spot where that character's
+  snare trained it in the last game day (no farming by re-setting); walking 10 m along a trail between two 30 s looks trains it; catches
+  train it as before. Signs show from Tracking 5 (latrines, droppings) and 25 (scrapes, prints), was 25 and 50. Tracking 10 (the map's
+  trails) is about 970 units: about 1.5 hours of steady trail following at 5.4 units a practice, held to about 3.2 hours by the skill
+  day cap (300 units a game day, an hour); by kills alone it would be about 360 kills. The trainer to pass 25 is not part of this.
 - TR-9 fox (salt 900): an earth in half the blocks (times the fox biome weight), 8 tries, the spot nearest slope 0.25 (at most
   0.6, dry), with at least 2 warrens within 200 m; 3 rounds of 2-4 warrens each. Clock: out sunset + 0.5 h, home sunrise - 0.25 h,
   jitter 0.5 h.

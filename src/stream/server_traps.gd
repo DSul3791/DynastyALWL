@@ -25,6 +25,8 @@ var _owned_built: bool = false     # false until the first ask (a loaded save's 
 var _fine: Dictionary = {}         # Vector2i FINE_M cell -> Array of set trap ids, for passes (stale ids are dropped a few at a time)
 var _marks_cache: Dictionary = {}  # owner key -> [game-free ms it was made, rows]: marks_of is asked every send, rebuilt at most every marks_refresh_s
 
+var _follow_at: Dictionary = {}    # peer -> where it stood at the last check_s look (Tracking: following a trail)
+var _snare_xp: Dictionary = {}     # owner key -> [[x, z, game s], ...]: where a snare set on a trail last trained its Tracking
 const GRID_M := 32.0               # the sweeps round players
 const FINE_M := 4.0                # passes: a step reads the few 4 m cells round it
 const PASS_LOOK_MAX := 16          # at most this many trap ids read per step, however many are packed into the cells round it
@@ -217,6 +219,7 @@ func tick(delta: float) -> void:
 	if host._peer_pos.is_empty():
 		return
 
+	_follow_checks()
 	_ensure_grid()
 
 	if _grid.is_empty():
@@ -622,6 +625,7 @@ func on_placed(peer: int, id: int) -> void:
 		_ensure_grid()   # the first build takes in this one too
 
 	_own(str(st["owner"]), id)
+	_snare_practice(peer, host._items[id])
 
 	if str(st.get("kind", "")) == str(cfg.get("kind", "snare_trap")):
 		host._goal_event(peer, "snare_set")   # ADD-08: a snare, not the Bird trap kind
@@ -720,3 +724,53 @@ func _own(key: String, id: int) -> void:
 		_owned[key] = ids
 
 	_marks_cache.erase(key)   # a trap just set is on the Map at the next send
+
+
+# Tracking practice (Dave 23 Nov 2026, "you should get xp for placing snares on trails"; coordinator pick, recorded for his review: Tracking
+# grows by tracking, not only by kills). The numbers are traps.json "tracking". A snare set on a trail (trail_at over snare_min) trains
+# it, but only away from the spots where that character's snares trained it within snare_spot_s: taking one up and setting it again
+# there trains nothing. And every check_s, a player standing on a trail who has walked follow_m since the last look is following it.
+# One run_distance read per player per check_s; no work for set snares.
+func _snare_practice(peer: int, it: Dictionary) -> void:
+	var tc: Dictionary = cfg.get("tracking", {})
+
+	if tc.is_empty() or str(it["struct"].get("kind", "")) != str(cfg.get("kind", "snare_trap")) or trail_at(it["pos"]) < float(tc.get("snare_min", 0.5)):
+		return
+
+	var key: String = str(host._peer_key.get(peer, ""))
+	var now: float = host._now_game_s()
+	var kept: Array = []
+	var near: bool = false
+
+	for spot in _snare_xp.get(key, []):
+		if now - float(spot[2]) < float(tc.get("snare_spot_s", 86400.0)):
+			kept.append(spot)
+			near = near or Vector2(float(spot[0]) - it["pos"].x, float(spot[1]) - it["pos"].z).length() < float(tc.get("snare_spot_m", 15.0))
+
+	if not near and host.practice(peer, "track_snare") > 0.0:
+		kept.append([it["pos"].x, it["pos"].z, now])
+
+	_snare_xp[key] = kept.slice(maxi(kept.size() - 64, 0))
+
+
+func _follow_checks() -> void:
+	var tc: Dictionary = cfg.get("tracking", {})
+
+	if tc.is_empty() or not host.run_distance.is_valid():
+		return
+
+	for peer in _follow_at.keys():
+		if not host._peer_pos.has(peer):
+			_follow_at.erase(peer)
+
+	for peer in host._peer_pos:
+		var p: Vector3 = host._peer_pos[peer]
+		var last: Vector3 = _follow_at.get(peer, p)
+
+		if Vector2(p.x - last.x, p.z - last.z).length() < float(tc.get("follow_m", 10.0)) and _follow_at.has(peer):
+			continue   # standing about: not following anything (the spot to measure from is kept)
+
+		_follow_at[peer] = p
+
+		if last != p and trail_at(p) >= float(tc.get("follow_min", 0.5)):
+			host.practice(int(peer), "track_follow")
