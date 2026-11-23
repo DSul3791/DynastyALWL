@@ -10,6 +10,7 @@ const MAX_DRAWN := 30
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a body comes to the player (data/animals/contact.json)
@@ -47,6 +48,8 @@ const AIR_STATES := [15]                      # a flock in the air (takes off, f
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
 var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
+var look_points: Callable        # () -> Array of Vector3: the players' heads (this one and the others drawn), for head tracking; unset in tests
+var _look_points: Array = []     # this frame's look_points
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
@@ -668,6 +671,7 @@ func _process_body(delta: float) -> void:
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
 	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
+	_look_points = look_points.call() if look_points.is_valid() else []
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -870,6 +874,15 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 			if not missing.is_empty():
 				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
+
+	# The head turns to watch a player (head_look.gd); a row with "head_look": false keeps its clip's head.
+	var head_bone: Array = BreathLook.head_bone_of(inst) if bool(row.get("head_look", true)) else []
+
+	if not head_bone.is_empty():
+		var look: SkeletonModifier3D = HeadLookScript.new()
+		look.setup(head_bone[0], int(head_bone[1]), root)
+		(head_bone[0] as Skeleton3D).add_child(look)
+		root.set_meta("head_look", look)
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -1820,8 +1833,12 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		return
 
 	var player: AnimationPlayer = node.get_meta("player")
+	var once: bool = _t < float(b.get("once_until", -1.0))
 
-	if _t < float(b.get("once_until", -1.0)):
+	if node.has_meta("head_look"):
+		_steer_head(node, b, state, speed, once, delta)
+
+	if once:
 		return      # a bite, hit or death clip is playing once (_play_once)
 
 	var roles: Dictionary = player.get_meta("roles", {})
@@ -1906,6 +1923,47 @@ func _idle_life(b: Dictionary, player: AnimationPlayer, role: String, base: Stri
 			b["idle_until"] = _t + randf_range(float(IDLE_BASE_S[0]), float(IDLE_BASE_S[1]))
 
 	return str(b["idle_clip"])
+
+
+# Head tracking (head_look.gd): an animal on watch (alert, stalking, warning, recovering, sneaking, or a drinker looking up) follows
+# the nearest player's head within LOOK_WATCH_M; a calm one (grazing, standing, lying) only one within LOOK_CALM_M, and less strongly (LOOK_CALM_STRENGTH);
+# moving faster than LOOK_STILL_MPS, an attack, a charge or a one-shot clip: it looks where it goes (the clip's own head).
+const LOOK_WATCH_STATES := [3, 6, 10, 12, 13, 16]
+const LOOK_CALM_STATES := [GRAZE, LIE]
+const LOOK_WATCH_M := 30.0
+const LOOK_CALM_M := 8.0
+const LOOK_CALM_STRENGTH := 0.6
+const LOOK_STILL_MPS := 1.5
+
+
+static func look_strength(state: int, speed: float, once: bool, drink_up: bool) -> Vector2:
+	if once or speed > LOOK_STILL_MPS:
+		return Vector2.ZERO
+
+	if state in LOOK_WATCH_STATES or (state == DRINK and drink_up):
+		return Vector2(1.0, LOOK_WATCH_M)
+
+	if state in LOOK_CALM_STATES:
+		return Vector2(LOOK_CALM_STRENGTH, LOOK_CALM_M)
+
+	return Vector2.ZERO
+
+
+func _steer_head(node: Node3D, b: Dictionary, state: int, speed: float, once: bool, delta: float) -> void:
+	var look = node.get_meta("head_look")      # head_look.gd (untyped: its own fields are read)
+
+	if not is_instance_valid(look):
+		return
+
+	var how: Vector2 = look_strength(state, speed, once, state == DRINK and drink_looking(int(b.get("id", 0)), _t))
+	var want: Vector3 = Vector3.ZERO
+
+	if how.x > 0.0 and not _look_points.is_empty():
+		var sk: Skeleton3D = look.get_skeleton()
+		var at: Vector3 = sk.global_transform * sk.get_bone_global_pose(int(look.head)).origin if sk != null else node.global_position
+		want = HeadLookScript.goal(at, node.global_transform.basis, _look_points, how.y, how.x)
+
+	look.steer(want, delta)
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).

@@ -67,6 +67,20 @@ then one variant once through its own length (at least 1 s), then its own clip f
 starts the next stop on its own clip again. Names are checked against `data/animals/model_clips.json` by `tools/model_clips.py`.
 Test: `src/worldgen/tools/test_animal_idle.gd`.
 
+## Head tracking (23 Nov 2026)
+
+An animal turns its head to watch a player (`src/client/head_look.gd`, a SkeletonModifier3D on the model's skeleton, laid over
+whatever clip plays). Client drawing only: the server still owns where the body is and which way it faces.
+- Who: the nearest player's head (this player and every other player drawn). On watch (alert 3, wind-up 6, warn 10, recover 12,
+  sneak 13, warn pop 16, or a drinker with its head up) within 30 m at full strength; calm (graze 0, lie 19) within 8 m at 0.6.
+- Not while moving faster than 1.5 m/s, in an attack or charge, or while a one-shot clip plays: then the clip's own head shows.
+- Limits: 70 degrees either side, 35 up, 30 down; a player further round than 110 degrees (behind the shoulder) is not watched.
+  The head swings at about 170 degrees a second and starts or stops watching over 0.4 s.
+- The neck bone (the head's parent, when its name has "neck") takes 40% of the turn and the head the rest. The turn is built in
+  the body's frame and carried into each bone's parent frame, so no rig's bone axes need listing. A row with `"head_look": false`
+  keeps its clip's head.
+Test: `src/worldgen/tools/test_head_look.gd`.
+
 ## How to confirm (Lane A)
 
 - The creature check or the game log lists `feet move X m/s` or `feet measured X m/s, too far from the row's Y` for each walk and run.
