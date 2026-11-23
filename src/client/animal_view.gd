@@ -934,6 +934,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					break
 
 				var anim: Animation = player.get_animation(anim_name)
+				var refuse_as: String = anim_name
 
 				# clip_loop {role: [t0, t1, blend_s]}: a file with no looping clip for a role (the mink has only start clips) loops a
 				# window of another one; tools/find_loop.gd finds the window whose ends are most alike, and the last blend_s seconds
@@ -946,6 +947,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					if player.has_animation_library("") and not player.has_animation(loop_name):
 						player.get_animation_library("").add_animation(loop_name, _loop_copy(anim, float(loop_spec[0]), float(loop_spec[1]), float(loop_spec[2]) if (loop_spec as Array).size() > 2 else 0.1))
 
+					refuse_as = anim_name      # a refused loop copy refuses its source clip, so the next clip for the role is tried
 					anim_name = loop_name
 					anim = player.get_animation(anim_name)
 					_model_note(kind, "role %s loops %s from %.3f to %.3f s" % [str(key), anim_name, float(loop_spec[0]), float(loop_spec[1])])
@@ -959,14 +961,14 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
 				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
-					refused[anim_name] = true
+					refused[refuse_as] = true
 					continue
 
 				# A clip that throws the model far taller than it stands (the elephant's Hit_Head_Right-IP stood 4 times its height and
 				# drew nothing on screen: Lane A one-shot check, 23 Nov 2026) is broken the other way: the next clip for the role is tried.
 				if rest_h > 0.0001 and clip_h > rest_h * TALL_SHARE:
 					_model_note(kind, "clip %s throws the model up (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
-					refused[anim_name] = true
+					refused[refuse_as] = true
 					continue
 
 				# A bite, a hit or a death plays once (_play_once) from its own copy, so a looping role naming the same clip keeps looping.
@@ -1026,8 +1028,10 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				var idle_anim: Animation = player.get_animation(idle_full)
 				_fit_clip_units(player, idle_anim, kind, idle_full)
 
-				if rest_h > 0.0001 and _clip_height(player, idle_anim, rig) < rest_h * float(row.get("flat_share", 0.5)):
-					_model_note(kind, "idle clip %s lays the model flat: not used" % idle_full)
+				var idle_h: float = _clip_height(player, idle_anim, rig)
+
+				if rest_h > 0.0001 and (idle_h < rest_h * float(row.get("flat_share", 0.5)) or idle_h > rest_h * TALL_SHARE):
+					_model_note(kind, "idle clip %s lays the model flat or throws it up: not used" % idle_full)
 					continue
 
 				idle_anim.loop_mode = Animation.LOOP_LINEAR
@@ -1205,7 +1209,7 @@ static func _lie_change(bare: String) -> bool:
 	return false
 
 
-const TALL_SHARE := 3.0       # a clip taller than this many times the standing height is a broken one (a bear rearing is about 2)
+const TALL_SHARE := 3.0       # a clip taller than this many times the standing height is a broken one (a standing animal's clips stay well under 2)
 const LIE_FLAT_SHARE := 0.2   # a lying clip lower than this share of the standing height is a broken one (the bear's legless tube)
 
 

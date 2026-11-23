@@ -2402,7 +2402,7 @@
 				"walk": "Walk-IP",
 				"run": "Run-IP",
 				"trot": "Trot-IP",
-				"hit": "Hit_HeadR_Heavy-IP",
+				"hit": ["Hit_HeadR_Heavy-IP", "Hit_ChestR_Heavy-IP", "Hit_ChestL_Heavy-IP"],
 				"die": "Death_01-IP",
 				"bite": "Attack_HornR-IP"
 			},
