@@ -2678,7 +2678,7 @@ func _wx_on() -> bool:
 # at sea level, weather and seasons walk 23 Nov 2026): Weather.state's own dictionary, read as _wx (the same keys), and its wind. Without
 # weather_at (tests) the tick's one weather stays. Cost: one cached lookup an animal step.
 func _weather_for(pos: Vector3) -> void:
-	_here = pos   # its row's own season and sun too (_season_here, sunrise_hour)
+	_here = pos   # its row's own season too (_season_here; its sun goes by sun_z)
 
 	if not weather_at.is_valid():
 		return
