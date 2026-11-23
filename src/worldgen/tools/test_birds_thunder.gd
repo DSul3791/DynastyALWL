@@ -52,6 +52,10 @@ func _init() -> void:
 	a._thunder_tick([Vector3.ZERO])   # the first tick only starts its clock (no backlog of strikes from before the server ran)
 	check(a._claps.is_empty() and not near_crow.has("fly"), "the first tick starts the clock: no strike yet")
 	game_s[0] += 60.0
+	a._thunder_asked_ms = Time.get_ticks_msec()   # asked just now: the strikes wait for the next ask (THUNDER_ASK_MS apart; load test 23 Nov 2026)
+	a._thunder_tick([Vector3.ZERO])
+	check(a._claps.is_empty(), "within THUNDER_ASK_MS of the last ask no strike is asked for yet")
+	a._thunder_asked_ms -= a.THUNDER_ASK_MS   # a quarter second later: the ask covers the whole minute
 	a._thunder_tick([Vector3.ZERO])
 	check(a._claps.size() == 1 and not near_crow.has("fly"), "the flash: the sound has not reached the crow yet")
 
