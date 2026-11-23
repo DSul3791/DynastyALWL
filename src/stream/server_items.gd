@@ -15159,6 +15159,10 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	var before: float = float(v["health"])
 	v["health"] = before - amount
 
+	if lethal and bool(_death_cfg.get("stop_at_1", false)):
+		lethal = false   # nothing kills (death.json stop_at_1, Dave 23 Nov 2026): a lethal blow stops at 1 and counts as crippling again
+		floor_hp = 1.0
+
 	if lethal and float(v["health"]) <= 0.0:
 		v["health"] = 0.0
 		_sync_vitals(peer, true)
@@ -15717,8 +15721,11 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 			_say(peer, "You are out of air")
 
 		if t >= float(cfg.get("faint_after_s", 15.0)) and int(_strain.get(peer, {}).get("state", 0)) == 2 and bool(cfg.get("can_die", false)):
-			_death_cause[peer] = "drowning"
-			v["health"] = 0.0
+			if bool(_death_cfg.get("stop_at_1", false)):
+				v["health"] = minf(float(v["health"]), 1.0)   # fainted under water: near death, not dead (death.json stop_at_1)
+			else:
+				_death_cause[peer] = "drowning"
+				v["health"] = 0.0
 	else:
 		_suffocate.erase(peer)
 
@@ -17190,6 +17197,28 @@ func kill(peer: int, cause: String) -> bool:
 	if _items.has(remains_id) and _remains_hold(_items[remains_id]):   # the set made above: a new player has no shelter and must be told where their things went
 		_say(peer, "Your things are on your remains where you fell. Press Tab to see which way.")
 
+	return true
+
+
+# A tunnel collapse on a player when nothing kills (death.json stop_at_1, Dave 23 Nov 2026): dug out onto the ground above (`to`), health 1,
+# the pack kept. The client plays the cave-in sequence without the death lines. Returns false when stop_at_1 is off (the caller kills).
+func survive_cave_in(peer: int, to: Vector3) -> bool:
+	var v: Dictionary = vitals_of(peer)
+
+	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
+		return false
+
+	v["health"] = minf(float(v["health"]), 1.0)
+	_peer_pos[peer] = to
+	_resume_to.erase(peer)
+	_motion.erase(peer)
+	_sync_vitals(peer, true)
+	_dirty = true
+
+	if send_died.is_valid():
+		send_died.call(peer, "cave-in survived", to)
+
+	_say(peer, "The tunnel came down on you. Someone heard you under the rock and dug you out, barely alive.")
 	return true
 
 

@@ -2716,13 +2716,13 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 		return
 
 	# A cave-in death plays its long sequence first; the body is moved when it ends (finish_cavein_death).
-	if cause == "cave-in":
+	if cause == "cave-in" or cause == "cave-in survived":
 		if cavein_death == null:
 			cavein_death = CaveinDeathScript.new()
 			add_child(cavein_death)
 
 		body.velocity = Vector3.ZERO
-		cavein_death.start(self, spawn_point)
+		cavein_death.start(self, spawn_point, cause == "cave-in survived")
 		return
 
 	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)

@@ -1956,7 +1956,23 @@ func _init() -> void:
 		if vt.remains_ids().size() > 0:
 			break
 
-	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	check(faint_seen and vt.remains_ids().is_empty() and float(vt.vitals_of(1)["health"]) == 1.0, "[%d remains, health %.0f] fainting under water leaves 1 health, not dead (death.json stop_at_1)" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	vt._death_cfg["stop_at_1"] = false
+	vt._vitals[vt._peer_key[1]]["health"] = 100.0
+	vt._suffocate.erase(1)
+	vt._strain.erase(1)
+	vt._breath[1] = 1.0
+	faint_seen = false
+
+	for n in range(40):
+		vt.tick(1.0)
+		faint_seen = faint_seen or int(vt._strain.get(1, {}).get("state", 0)) == 2
+
+		if vt.remains_ids().size() > 0:
+			break
+
+	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] with stop_at_1 off fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	vt._death_cfg["stop_at_1"] = true
 	vt.set_head_under(1, false)
 	vt.tick(1.0)
 	vt.vitals_of(1)["fed"] = 0.0   # the death above started the vitals over

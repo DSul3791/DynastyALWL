@@ -271,7 +271,20 @@ func _init() -> void:
 	wolf._limp_tick(1, wolf.vitals_of(1), 1.0)
 	check(wolf.limp_share(1) == 1.0 and limps[limps.size() - 1][1] == 100, "healing to 60 percent ends the limp")
 	wolf._vitals["wolf-key-00001"]["health"] = 5.0
-	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "a lethal bite kills")
+	# Nothing kills (death.json stop_at_1, Dave 23 Nov 2026): a lethal bite on a crippled player stops at 1 and cripples again.
+	check(bool(wolf._death_cfg.get("stop_at_1", false)) and wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "maimed" and float(wolf.vitals_of(1)["health"]) == 1.0, "a lethal bite stops at 1 (%.1f)" % float(wolf.vitals_of(1)["health"]))
+	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "maimed" and float(wolf.vitals_of(1)["health"]) == 1.0, "and the next one too")
+	wolf._death_cfg["stop_at_1"] = false
+	wolf._vitals["wolf-key-00001"]["health"] = 5.0
+	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "with stop_at_1 off a lethal bite kills")
+	wolf._death_cfg["stop_at_1"] = true
+
+	# A tunnel collapse with stop_at_1: dug out onto the ground above, health 1, the pack kept, the client told "cave-in survived".
+	died.clear()
+	wolf._vitals["wolf-key-00001"]["health"] = 60.0
+	wolf.give(1, wolf.table.number_of("stone"), 3)
+	check(wolf.survive_cave_in(1, Vector3(5.0, 20.0, 5.0)) and float(wolf.vitals_of(1)["health"]) == 1.0 and (wolf.position_of(1) as Vector3).is_equal_approx(Vector3(5.0, 20.0, 5.0))
+		and wolf.inventory_of(1).count_of(wolf.table.number_of("stone")) >= 3 and died.size() == 1 and str(died[0][1]) == "cave-in survived", "a cave-in leaves the player alive at 1 above ground (%s)" % str(died))
 
 	# A sleeper bitten down to the maim floor wakes; one passed out from exhaustion does not.
 	var sleeper = make(dir + "_sleeper")
