@@ -128,12 +128,24 @@ Plan `moves` (one robot, player-movement thread 23 Nov 2026, Dave: motion must b
 120 --jitter-ms 30 --loss 0.03`): the player's own body over a real route, each stretch a ROUTE line: open walk and run in four directions,
 strafe and back, jumps while running, crouch on open ground, woods standing and crouched, the crouched trail, a thicket, into the water and
 back out over the edge, the hills; then it sets down and hammers up two Refined foundations with a wall, a doorway and stairs, and walks in
-through the doorway, along the wall, up and down the stairs, off the edge and back on, standing and crouched. Every robot client (and a play
+through the doorway, along the wall, up and down the stairs, off the edge and back on, standing and crouched (plan `moves_built`: only
+these built legs, about 7 min). Every robot client (and a play
 with `--motion-audit`) runs the motion audit (`src/client/motion_audit.gd`): `MOTION stop` (held under a quarter of the asked pace for
 0.4 s, with what it touched; "no cause" when only the floor), `MOTION slow` (under 70% on flat ground for 1 s), `MOTION snap` (set more
 than 0.3 m between walk frames, or moved by the stuck rescue), `MOTION push` (a log or an animal moved it more than 0.15 m) and each minute
 `MOTION summary <gait>` (the share of the asked distance made, the counts, and where the rest went: against things, on slopes, on clear
 flat ground). It judges nothing.
+
+Plan `seen` (two robots, players thread 23 Nov 2026, protocol 162; `tools/robots.sh 2 seen --delay-ms 120 --jitter-ms 30 --loss 0.03`):
+Robot 2 takes a Shortbow in hand and sends the held-item flags 1 (raised), 2 (drawn) and 0, 3 s each; Robot 1 must draw the more byte's
+bits 2 then 4 with the bow pose and play the bow_raised and bow_drawn clips (SEEN bow line). Then both go to the nearest water, Robot 2
+casts a fishing rod and walks 8 m off: Robot 1 must draw its float within 8 m of it, and no float 3 s after it walked away (SEEN cast line).
+
+Plan `wiggle` (two robots; `tools/robots.sh 2 wiggle [link]`): Robot 1 runs back and forth across a spot every 0.5 s for 15 s; Robot 2,
+6 m off, records where it draws Robot 1 each frame and holds it against Robot 1's own place at the same moment less the best-fitting
+draw delay (0 to 1500 ms; along a straight back-and-forth the path itself covers any overshoot, so the time is what tells). It prints a
+WIGGLE line (the delay, median, 95th, worst) and judges nothing. A bow is posed off the hand mount by design (before the body when raised
+or drawn, at the side lowered), so the held check only asks its mount to stay on the hand.
 
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).

@@ -18,7 +18,7 @@ extends Node
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
-# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), seen (one robot raises and draws a bow, then fishes; the other checks what it draws), wiggle (one robot runs back and forth across a spot; the other measures how far off its path it draws it), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -201,7 +201,7 @@ func _hook() -> void:
 		_lowest_health = mini(_lowest_health, int(health)))
 	client.multiplayer.server_disconnected.connect(_on_lost)
 	client.net.died_received.connect(func(cause, spawn):
-		if str(cause) == "passed out":   # the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
+		if str(cause) == "passed out" or str(cause) == "rescued":   # rescued from a cave's rock, or the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
 			_woke_at = spawn
 			FreezeWatchScript.printer.line("ROBOT %s step passed out at %d: moved to %s" % [robot_name, _now_ms(), str(spawn)])   # tools/robot_check.py: drawn lying before it is no wrong stance
 			if _share(RESCUE_FILE) != "":   # the others' jump check: this move is the rescue's
@@ -359,7 +359,9 @@ func _check_held(pv: Node) -> void:
 		var d: float = mount.global_position.distance_to(hand)
 		_held_looks += 1
 
-		if d > HAND_M or item.get_parent() != mount:
+		var posed: bool = str(b.get("held_kind", "")) == "bow"   # a bow is posed off the mount by design: before the body when raised or drawn, at the side lowered (player_view.gd _pose_bow, 162)
+
+		if d > HAND_M or (item.get_parent() != mount and not posed):
 			_held_bad[peer] = int(_held_bad.get(peer, 0)) + 1
 
 			if int(_held_bad[peer]) >= 4:   # two seconds running: not one frame of a swing
@@ -597,6 +599,10 @@ func run() -> void:
 		await _together()
 	elif plan == "trail":
 		await _trail_crouch(40.0)
+	elif plan == "seen":
+		await _seen()
+	elif plan == "wiggle":
+		await _wiggle()
 	elif plan.begins_with("kind_"):
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
@@ -3813,6 +3819,231 @@ func _quit() -> void:
 
 	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1   # the client quits the usual way (the server keeps the character, as when a player closes the game)
+
+
+# --- plans seen and wiggle (players thread, protocol 162, 23 Nov 2026) ------------------------------------------------------------------------
+const SEEN_BOW := "wooden_bow"
+const SEEN_POSE_S := 3.0       # each bow flag held this long
+const SEEN_CAST_M := 8.0       # Robot 1 must draw Robot 2's float within this of Robot 2
+const SEEN_AWAY_M := 8.0       # Robot 2 walks this far from its cast spot: the line comes in (the server's say_away)
+const WIGGLE_S := 15.0
+const WIGGLE_LEG_S := 0.5
+
+
+# Robot 2 raises its bow (held_item flags 1), draws it (2), lowers it; Robot 1 must see the more bits 2 then 4 and draw the bow pose and clip.
+# Then Robot 2 fishes at the nearest water and walks away: Robot 1 must draw a float within SEEN_CAST_M of it, then none.
+func _seen() -> void:
+	_step = "seen"
+	var one: bool = robot_name.ends_with("1")
+
+	if not admin or _share("x") == "":
+		_fail("seen", "setup", "plan seen needs --robot-admin and tools/robots.sh (ROBOT_SHARE): nothing measured")
+		return
+
+	if not one:
+		_give(SEEN_BOW, 1)
+		await _check_pack("seen bow")
+
+		if _slot_of(SEEN_BOW) > 0:
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of(SEEN_BOW), 0, 0, Vector3.ZERO)
+			await _check_pack("bow to hand")
+
+	await _tg_go("bow")
+
+	if not one:
+		for flags in [1, 2, 0]:
+			client.net.held_item.rpc_id(1, int(client.held.held_number()), int(client.held.off_number()), flags)
+			await _wait(SEEN_POSE_S)
+	else:
+		var seen_more: Dictionary = {}   # "more bits/bow pose/clip" -> frames
+		var until: int = Time.get_ticks_msec() + int(SEEN_POSE_S * 3000.0 + 2000.0)
+
+		while Time.get_ticks_msec() < until:
+			var b: Dictionary = _tg_other()
+
+			if not b.is_empty():
+				var rig: Node3D = b.get("rig", null) as Node3D
+				var clip: String = str(rig.current()) if rig != null and rig.has_method("current") else ""
+				var key: String = "%d/%s/%s" % [int(b.get("more", 0)) & 6, client._player_view.bow_pose(b), clip]
+				seen_more[key] = int(seen_more.get(key, 0)) + 1
+
+			await get_tree().process_frame
+
+		var keys: String = str(seen_more)
+		FreezeWatchScript.printer.line("ROBOT %s SEEN bow: drawn (more bits & 6 / bow pose / clip: frames) %s" % [robot_name, keys])
+		var raised: bool = seen_more.keys().any(func(k): return str(k).begins_with("2/bow_raised/"))
+		var drawn: bool = seen_more.keys().any(func(k): return str(k).begins_with("4/bow_drawn/") or str(k).begins_with("6/bow_drawn/"))
+
+		if not raised or not drawn:
+			_fail("seen", "bow", "Robot 2 raised then drew its bow; Robot 1 drew %s (wanted more bit 2 with bow_raised, then bit 4 with bow_drawn)" % keys)
+		elif not seen_more.keys().any(func(k): return str(k).split("/")[2].contains("bow_raised")) or not seen_more.keys().any(func(k): return str(k).split("/")[2].contains("bow_drawn")):
+			_fail("seen", "bow_clip", "Robot 1 had the bow flags right but never played the bow clips (idle_bow_raised, idle_bow_drawn): %s" % keys)
+
+	await _tg_go("to_water")
+	var water: Vector3 = await _find_water()
+
+	if is_nan(water.x):
+		_note("seen", "no water loaded near: the cast is not tested")
+		return
+
+	var there: bool = await _go_to(water, 60.0, 3.5 if not one else 7.0)
+
+	if not one:
+		_give("fishing_rod", 1)
+		await _check_pack("seen rod")
+
+		if _slot_of("fishing_rod") > 0:
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of("fishing_rod"), 0, 0, Vector3.ZERO)
+			await _check_pack("rod to hand")
+
+	await _tg_go("cast")
+
+	if not one:
+		_face(Vector3(water.x - client.body.global_position.x, 0.0, water.z - client.body.global_position.z).normalized())
+		var said_from: int = _notices.size()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_FISH, _slot_of("fishing_rod"), 0, 0, water)
+		await _wait(5.0)
+		_write(_share("seen_cast.txt"), "%.2f %.2f %s" % [client.body.global_position.x, client.body.global_position.z, str(_notices.slice(said_from))])
+		var from: Vector3 = client.body.global_position
+		var away: Vector3 = Vector3(from.x - water.x, 0.0, from.z - water.z).normalized()
+
+		for _n in 4:
+			var _m: float = await _walk_for(away if away.length() > 0.5 else Vector3.FORWARD, 1.5)
+
+			if Vector2(client.body.global_position.x - from.x, client.body.global_position.z - from.z).length() >= SEEN_AWAY_M:
+				break
+
+		_write(_share("seen_away.txt"), "%.1f" % Vector2(client.body.global_position.x - from.x, client.body.global_position.z - from.z).length())
+		var _done: String = await _tg_read("seen_done.txt", 30.0)
+		return
+
+	var cast: String = await _tg_read("seen_cast.txt", 30.0)
+	var b_now: Dictionary = _tg_other()
+	var fl: Vector3 = b_now.get("float_at", Vector3.INF) if not b_now.is_empty() else Vector3.INF
+	var b_pos: Vector3 = (b_now["node"] as Node3D).global_position if not b_now.is_empty() else Vector3.INF
+	var off: float = Vector2(fl.x - b_pos.x, fl.z - b_pos.z).length() if fl != Vector3.INF and b_pos != Vector3.INF else INF
+	var away_m: String = await _tg_read("seen_away.txt", 30.0)
+	await _wait(3.0)
+	var b_after: Dictionary = _tg_other()
+	var fl_after: Vector3 = b_after.get("float_at", Vector3.INF) if not b_after.is_empty() else Vector3.INF
+	FreezeWatchScript.printer.line("ROBOT %s SEEN cast: Robot 2 %s (water %s, %s); drawn float %s, %.1f m from Robot 2; after it walked %s m off: float %s" % [
+		robot_name, cast, str(water.round()), "reached" if there else "short of it", str(fl.round()) if fl != Vector3.INF else "none", off, away_m, str(fl_after.round()) if fl_after != Vector3.INF else "none"])
+	_write(_share("seen_done.txt"), "done")
+
+	if fl == Vector3.INF:
+		_fail("seen", "cast", "Robot 2 cast a rod at the water (it was told %s); Robot 1 drew no float" % cast)
+	elif off > SEEN_CAST_M:
+		_fail("seen", "cast_far", "Robot 1 drew Robot 2's float %.1f m from it (at most %.0f)" % [off, SEEN_CAST_M])
+
+	if fl != Vector3.INF and fl_after != Vector3.INF:
+		_fail("seen", "cast_kept", "Robot 2 walked %s m from its cast; Robot 1 still draws its float 3 s later" % away_m)
+
+
+# Robot 1 runs to a spot, then back and forth across it every WIGGLE_LEG_S at run speed for WIGGLE_S; Robot 2 stands off and records where it
+# draws Robot 1 each frame, then holds it against Robot 1's own place at the same moment less the best-fitting draw delay: a WIGGLE line
+# with the median, 95th and worst. It judges nothing (players thread: the drawn body runs on past a fast reversal).
+func _wiggle() -> void:
+	_step = "wiggle"
+	var one: bool = robot_name.ends_with("1")
+	var spot: Vector3 = Vector3(58190.0, client.body.global_position.y, 71364.0)
+	var _there: bool = await _run_to(spot + (Vector3(0.0, 0.0, 6.0) if not one else Vector3.ZERO), 25.0, 1.5)
+	_release_all()
+	await _tg_go("wiggle")
+	var path: PackedStringArray = PackedStringArray()
+	var drawn: Array = []   # [ms, x, z]
+	var end: int = Time.get_ticks_msec() + int(WIGGLE_S * 1000.0)
+	var dir: Vector3 = Vector3(1.0, 0.0, 0.0)
+	var next_leg: int = 0
+
+	if one:
+		_key("run", true)
+		_key("move_forward", true)
+
+	while Time.get_ticks_msec() < end:
+		if one:
+			if Time.get_ticks_msec() >= next_leg:
+				dir = -dir
+				_face(dir)
+				next_leg = Time.get_ticks_msec() + int(WIGGLE_LEG_S * 1000.0)
+
+			path.append("%d %.3f %.3f" % [_now_ms(), client.body.global_position.x, client.body.global_position.z])
+		else:
+			var b: Dictionary = _tg_other()
+
+			if not b.is_empty():
+				var p: Vector3 = (b["node"] as Node3D).global_position
+				drawn.append([_now_ms(), p.x, p.z])
+
+		await get_tree().process_frame
+
+	_release_all()
+
+	if one:
+		_write(_share("wiggle_path.txt"), "\n".join(path))
+		var _done: String = await _tg_read("wiggle_done.txt", 30.0)
+		return
+
+	var text: String = await _tg_read("wiggle_path.txt", 30.0)
+	var pts: Array = []
+
+	for line in text.split("\n"):
+		var f: PackedStringArray = line.split(" ")
+
+		if f.size() == 3:
+			pts.append([int(f[0]), float(f[1]), float(f[2])])
+
+	# Against Robot 1's own place at the same moment less a draw delay: the delay (0 to 1500 ms, 25 ms steps) that fits best, as the client draws
+	# the past by design; along a straight back-and-forth the path itself covers the overshoot, so the time is what tells.
+	var best_shift: int = 0
+	var best_med: float = INF
+	var offs: Array = []
+
+	for shift in range(0, 1525, 25):
+		var trial: Array = []
+
+		for d in drawn:
+			var at: Vector2 = _wiggle_at(pts, int(d[0]) - shift)
+
+			if at.x != INF:
+				trial.append(Vector2(float(d[1]), float(d[2])).distance_to(at))
+
+		trial.sort()
+
+		if not trial.is_empty() and float(trial[trial.size() >> 1]) < best_med:
+			best_med = float(trial[trial.size() >> 1])
+			best_shift = shift
+			offs = trial
+
+	offs.sort()
+	_write(_share("wiggle_done.txt"), "done")
+
+	if offs.is_empty():
+		_fail("wiggle", "none", "Robot 2 never drew Robot 1 during its wiggle (%d drawn samples, %d path points): nothing measured" % [drawn.size(), pts.size()])
+		return
+
+	FreezeWatchScript.printer.line("ROBOT %s WIGGLE Robot 1 ran back and forth every %.1f s for %.0f s: drawn against its own place %d ms before (the best-fitting draw delay) median %.2f m, 95th %.2f m, worst %.2f m (%d frames)" % [
+		robot_name, WIGGLE_LEG_S, WIGGLE_S, best_shift, float(offs[offs.size() >> 1]), float(offs[int(offs.size() * 0.95)]), float(offs[-1]), offs.size()])
+
+
+# Robot 1's own place at unix ms `ms` from its path lines [ms, x, z] (in time order), straight between them; INF outside the path's span.
+static func _wiggle_at(pts: Array, ms: int) -> Vector2:
+	if pts.size() < 2 or ms < int(pts[0][0]) or ms > int(pts[-1][0]):
+		return Vector2(INF, INF)
+
+	var lo: int = 0
+	var hi: int = pts.size() - 1
+
+	while hi - lo > 1:
+		var mid: int = (lo + hi) >> 1
+
+		if int(pts[mid][0]) <= ms:
+			lo = mid
+		else:
+			hi = mid
+
+	var span: float = float(int(pts[hi][0]) - int(pts[lo][0]))
+	var t: float = 0.0 if span <= 0.0 else float(ms - int(pts[lo][0])) / span
+	return Vector2(float(pts[lo][1]), float(pts[lo][2])).lerp(Vector2(float(pts[hi][1]), float(pts[hi][2])), t)
 
 
 # --- plan kind_<species> (animal thread, 23 Nov 2026): every animal kind in a fight, drawn by two robots over the lossy link ---------------
