@@ -5,6 +5,8 @@
 #   tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   Robot 1 walks, stops, swings, sleeps; Robot 2 draws it (robot_watch.py)
 #   ROBOT_S=900 tools/robots.sh 1 route; ROBOT_S=900 ROBOT_CLIENT_ARGS=--quality=0 tools/robots.sh 1 route   the moving route (src/client/robot_play.gd _route) at Low quality
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
+#   tools/robots.sh 1 drops               the link dies mid-action (6 twine queued, a basket open, asleep, in a wolf rush) and the robot comes
+#                                         straight back; a 10 s freeze; two clients as one character (about 15 min)
 # Robot play-testers (23 Nov 2026, after build 9257's first hour on Dave's server found faults no one-machine test saw).
 # Starts a headless server with --robot-audit (src/server/robot_audit.gd) and --open-admin on a spare port, a simulated internet link in
 # front of it (tools/lossy_link.py: delay, jitter, loss), and ROBOTS real clients (headless, dummy renderer) each run by
@@ -38,31 +40,61 @@ cleanup() { [ -n "$LP" ] && kill $LP 2>/dev/null; [ -n "$SP" ] && kill $SP 2>/de
 trap cleanup EXIT
 for i in $(seq 1 120); do grep -q "^Terrain server listening" "$D/server.log" && break; kill -0 $SP 2>/dev/null || break; sleep 1; done
 if ! grep -q "^Terrain server listening" "$D/server.log"; then echo "robots: the server never came up"; tail -20 "$D/server.log"; exit 2; fi
-python3 tools/lossy_link.py --listen $LINK --server-port $PORT "${LINK_ARGS[@]}" > "$D/link.log" 2>&1 &
+python3 tools/lossy_link.py --listen $LINK --server-port $PORT --control "$D/link_control.txt" "${LINK_ARGS[@]}" > "$D/link.log" 2>&1 &
 LP=$!
 sleep 1
+
+# One client: robot number i with plan, log tag, user data folder (its character) and cache.
+launch() {
+	local i=$1 plan=$2 tag=$3 data=$4 cache=$5
+	mkdir -p "$data" "$cache"
+	( XDG_DATA_HOME="$data" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
+		res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$LINK --block-port=$((LINK + 1)) \
+		--cache="$cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin ${ROBOT_CLIENT_ARGS:-} > "$D/robot${i}_$tag.log" 2>&1
+	  echo $? > "$D/robot${i}_$tag.exit" ) &   # the client's exit code: 0 after a clean quit (134 was the quit abort, fixed by #1647)
+}
 
 # One pass: every robot at once (they start at the same spawn, so they meet the same animals and see each other).
 pass() {
 	local plan=$1 tag=$2 pids=()
 	for i in $(seq 1 $ROBOTS); do
-		mkdir -p "$D/r$i/data" "$D/r$i/cache"
-		( XDG_DATA_HOME="$D/r$i/data" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
-			res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$LINK --block-port=$((LINK + 1)) \
-			--cache="$D/r$i/cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin ${ROBOT_CLIENT_ARGS:-} > "$D/robot${i}_$tag.log" 2>&1
-		  echo $? > "$D/robot${i}_$tag.exit" ) &   # the client's exit code: 0 after a clean quit (134 was the quit abort, fixed by #1647)
+		launch $i "$plan" "$tag" "$D/r$i/data" "$D/r$i/cache"
 		pids+=($!)
 		sleep 2
 	done
 	wait "${pids[@]}"
 }
 
+# Plan drops, one robot: each case cuts the link mid-action (lossy_link.py --control), then the same robot starts again at once, while the
+# server may still hold the dead connection. If it cannot get in, once more after 35 s (the server's timeout for a dead peer).
+drops() {
+	ROBOTS=1
+	for c in twine chest asleep; do
+		pass drop_$c drop_$c
+		pass drop_back back_$c
+		if ! grep -q "step joined" "$D/robot1_back_$c.log"; then
+			echo "FAIL robots: Robot 1 could not get back in at once after the link died ($c); again in 35 s" | tee -a "$D/robots_sh.log"
+			sleep 35; pass drop_back back2_$c
+		fi
+	done
+	pass drop_freeze freeze
+	launch 1 drop_twin1 twin1 "$D/r1/data" "$D/r1/cache"; local p1=$!
+	sleep 30
+	launch 1 drop_twin2 twin2 "$D/r1/data" "$D/r1/cache2"; local p2=$!   # the same user data folder: the same character
+	wait $p1 $p2
+	# The wolf case last: its raw meat ages in the pack, and an ageing pack would read as changed in the freeze and twin checks.
+	pass drop_wolf drop_wolf
+	pass drop_back back_wolf
+	grep -h "same character" "$D/server.log" | head -3
+}
+
 START=$(date +%s)
-pass "$PLAN" play
+if [ "$PLAN" = "drops" ]; then drops; else pass "$PLAN" play; fi
 { [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ]; } && { sleep 3; pass rejoin rejoin; }
 echo "robots: passes took $(( $(date +%s) - START )) s"
 kill $LP 2>/dev/null; sleep 1
 kill $SP 2>/dev/null; sleep 3
 python3 tools/robot_check.py "$D"; RC=$?
+[ -f "$D/robots_sh.log" ] && grep -q "^FAIL" "$D/robots_sh.log" && [ $RC -eq 0 ] && RC=1   # drops: a robot that could not get back in at once
 if [ "$PLAN" = "watch" ]; then python3 tools/robot_watch.py "$D"; WC=$?; [ $WC -gt $RC ] && RC=$WC; fi   # the worse of the two: 2 broken over 1 a finding
 exit $RC

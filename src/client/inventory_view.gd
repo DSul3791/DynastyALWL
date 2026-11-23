@@ -5055,12 +5055,62 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 	if sized != 1.0:   # a look shared by pieces of different sizes (chests by slot count, Dave 18 Nov 2026), drawn and its ghost at their own size
 		model.scale = Vector3.ONE * sized   # uniform, so any collision box in it scales true
 
+	_add_missing_solid(model, _structure_by_state(state))
+
 	# A blueprint never burns (Dave 17 Nov 2026: the Primitive smithy's blueprint "has a fire ... burning before you make it"): the one place every
 	# forge, smithy and smelter look's flames and smoke are put out for a placement ghost or a site waiting for materials. Lights stay off unlit.
 	if extra.has("ghost") or extra.has("site"):
 		BuildingLook.show_forge_fire(model, false)
 
 	return model
+
+
+# Looks drawn with no solid of their own that a player must walk round, not through (physical world audit round 5, 23 Nov 2026: a Workbench and a
+# Grindstone are "blocks_walk" on the server but had no solid on the client; chests, the chopping block, tool racks, the vice and the bellows were
+# walked through too). Pieces that hang on a fire, table or wall (attach_to) stay as they are.
+const SOLID_LOOKS := ["chest", "workbench", "chopping_block", "tool_rack", "vice"]
+
+
+# Gives a model with no solid one box of its drawn size (inside its footprint, at most 2.2 m tall) when its piece blocks the way (SOLID_LOOKS or
+# structures.json blocks_walk). A model that has a solid keeps it. The piece's own "look" is asked, not the look it is drawn with: a pipe or tap
+# with no look of its own is drawn as the chopping block for now, and it must stay walk-over.
+func _add_missing_solid(model: Node3D, def: Dictionary) -> void:
+	if def.is_empty() or str(def.get("attach_to", "")) != "" or not (str(def.get("look", "")) in SOLID_LOOKS or bool(def.get("blocks_walk", false))) or _has_solid(model):
+		return
+
+	var box: AABB = _bounds_in(model, model)
+
+	if box.size.x <= 0.0 or box.size.z <= 0.0:
+		return
+
+	var scale: float = maxf(model.scale.x, 0.01)   # the box is in the model's own (unscaled) space: footprint and height limit scaled into it
+	var half: Vector2 = Vector2(float(def.get("footprint_x", box.size.x * scale)), float(def.get("footprint_z", box.size.z * scale))) * 0.5 / scale
+	var lo: Vector3 = Vector3(maxf(box.position.x, -half.x), maxf(box.position.y, 0.0), maxf(box.position.z, -half.y))
+	var hi: Vector3 = Vector3(minf(box.end.x, half.x), minf(box.end.y, 2.2 / scale), minf(box.end.z, half.y))
+
+	if hi.x <= lo.x or hi.y <= lo.y or hi.z <= lo.z:
+		return
+
+	var body: StaticBody3D = StaticBody3D.new()
+	body.set_meta("placed_structure", true)   # not rock: the cave module's enclosure rays skip it (BUG-027)
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var solid: BoxShape3D = BoxShape3D.new()
+	solid.size = hi - lo
+	shape.shape = solid
+	shape.position = (lo + hi) * 0.5
+	body.add_child(shape)
+	model.add_child(body)
+
+
+static func _has_solid(node: Node) -> bool:
+	if node is CollisionObject3D:
+		return true
+
+	for child in node.get_children():
+		if _has_solid(child):
+			return true
+
+	return false
 
 
 func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:

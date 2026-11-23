@@ -102,8 +102,14 @@ func _gap_checks(label: String, wall_kit: String, gap_kit: String, gap_kind: Str
 
 	var shut_run: float = _run_at(x, z)
 	check(shut_run > z, "%s shut: the wolf stays on its side (closest z %.2f, the line at %.2f)" % [label, shut_run, z])
+	# Every attack (a charge, a bite, a wolf's kill, a player's jab) asks wall_between across the line of the blow: shut, nothing lands through it.
+	var gap_x: float = float(items._items[gap_id]["pos"].x)      # the gap's own middle (x itself is the seam with the piece beside it)
+	var near_side: Vector3 = Vector3(gap_x, 10.0, z + 1.0)
+	var far_side: Vector3 = Vector3(gap_x, 10.0, z - 1.0)
+	check(animals.wall_between(near_side, far_side), "%s shut: a blow across it is stopped" % label)
 	_swing(gap_id, x, z)
 	check(str(items._items[gap_id]["struct"]["kind"]) == gap_kind + "_open", "%s: E opens it" % label)
+	check(not animals.wall_between(near_side, far_side), "%s open: a blow through the gap lands" % label)
 	var open_run: float = _run_at(x, z)
 	check(open_run < z - 7.0, "%s open: the wolf runs through (got to z %.2f)" % [label, open_run])
 	_swing(gap_id, x, z)

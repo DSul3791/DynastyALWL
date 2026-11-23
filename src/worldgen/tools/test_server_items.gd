@@ -516,11 +516,15 @@ func _init() -> void:
 	var stone_slot: int = 1
 	t.action(1, Net.ACT_THROW, stone_slot, 0, 0, Vector3(1.0, 0.3, 0.0))
 	check(t.inventory_of(1).count_of(stone) == 1 and t._flights.is_empty(), "a stone is not a throwing weapon")
+	var startled: Array = []
+	t.animal_alarm = func(point, radius): startled.append([point, radius])
 	t.action(1, Net.ACT_THROW, 0, 0, 0, Vector3(1.0, 0.3, 0.0))
 	check(t.inventory_of(1).count_of(spear) == 0 and t._flights.size() == 1, "spear leaves the inventory")
 	for n in range(400):
 		t.tick(0.02)
 	check(t._flights.is_empty() and t.world_item_count() >= 1, "spear came down as a world item")
+	check(startled.size() == 1 and float(startled[0][1]) == float(t._bow.cfg["land_alarm_m"]) and float(startled[0][1]) > 0.0, "a spear that missed startles the animals where it came down (%s)" % str(startled))
+	t.animal_alarm = Callable()
 	var landed: Vector3 = Vector3.ZERO
 
 	for k in t._items:
