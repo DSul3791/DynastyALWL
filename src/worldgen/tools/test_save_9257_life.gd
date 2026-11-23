@@ -373,7 +373,7 @@ func _overflow_and_crash() -> void:
 			row[1] = 2000
 
 	write_json("world_items/455_557.json", area)
-	write_json("bandit_sites.json", {"version": 1, "dormant": {}, "stretches": {}, "sites": {"580,713": {"x": 58050.0, "z": 71350.0, "levels": [], "stage": 3, "stash": [{"id": "wheat_seeds", "count": 4, "wear": 0}, {"id": "stone_knife", "count": 1, "wear": 3}]}}, "stash_left": {"580,713": [{"id": "linseed", "count": 2, "wear": 0}]}})
+	write_json("bandit_sites.json", {"version": 1, "dormant": {}, "stretches": {}, "sites": {"580,713": {"x": 58050.0, "z": 71350.0, "levels": [], "stage": 3, "stash": [{"id": "wheat_seeds", "count": 4, "wear": 0}, {"id": "stone_knife", "count": 1, "wear": 3}, {"id": "leather_satchel", "count": 1, "wear": 0, "inst": {"bag": [[338, 2000, 0]]}}]}}, "stash_left": {"580,713": [{"id": "linseed", "count": 2, "wear": 0}]}})
 	var then: Dictionary = {}
 	var items = boot()
 	var per: Dictionary = old_units(items.table)
@@ -416,7 +416,14 @@ func _overflow_and_crash() -> void:
 	bandits.setup(DIR)
 	var stash: Array = bandits.sites.values()[0].get("stash", []) if not bandits.sites.is_empty() else []
 	var left: Array = bandits.stash_left.values()[0] if not bandits.stash_left.is_empty() else []
-	check(stash.size() == 2 and int(stash[0]["count"]) == 4 * 50 and int(stash[1]["count"]) == 1 and left.size() == 1 and int(left[0]["count"]) == 200, "a bandit stash is counted too: 4 old wheat seeds are 200, the knife 1, 2 old linseed 200 (%s %s)" % [str(stash), str(left)])
+	var satchel_rest: int = 0
+
+	for piece in stash:
+		if str(piece["id"]) == "wheat_seeds" and int(piece["count"]) != 200:
+			satchel_rest += int(piece["count"])
+
+	check(stash.size() == 4 and int(stash[2]["inst"]["bag"][0][1]) == 65535 and satchel_rest == 100000 - 65535, "a stolen satchel's 2,000 old wheat seeds: 65,535 in it, the other %d beside it in the stash" % satchel_rest)
+	check(int(stash[0]["count"]) == 4 * 50 and int(stash[1]["count"]) == 1 and left.size() == 1 and int(left[0]["count"]) == 200, "a bandit stash is counted too: 4 old wheat seeds are 200, the knife 1, 2 old linseed 200 (%s %s)" % [str(stash), str(left)])
 	bandits.save()
 	var again = BanditsScript.new()
 	again.setup(DIR)

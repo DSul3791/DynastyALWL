@@ -13761,7 +13761,13 @@ func _finish_site(peer: int, id: int) -> void:
 
 
 # Taking a site down gives back everything deposited (100 percent, like any blueprint).
-func _take_down_site(peer: int, _inv, id: int) -> void:
+# The floor under a spot: the foundation top there, else the spot (what another player's piece gives back lands there, not in the air).
+func _floor_under(at: Vector3) -> Vector3:
+	var top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
+	return Vector3(at.x, top, at.z) if not is_nan(top) else at
+
+
+func _take_down_site(peer: int, _inv, id: int, for_builder: bool = false) -> void:   # for_builder: another player's site on your foundation
 	var it: Dictionary = _items[id]
 
 	for item_id in _site_of(it).get("have", {}):
@@ -13772,7 +13778,10 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 			_gain_source = SRC_RETURN
 
 			for pair in _kinds_back(str(item_id), count, _site_of(it).get("kinds", {})):
-				give(peer, int(pair[0]), int(pair[1]))
+				if for_builder:
+					drop_in_world(int(pair[0]), int(pair[1]), _floor_under(it["pos"]), 0, CLEARED_LIFETIME_S)
+				else:
+					give(peer, int(pair[0]), int(pair[1]))
 
 			_gain_source = was_src
 
@@ -13958,40 +13967,56 @@ func _may_take_down(peer: int, it: Dictionary) -> bool:
 	if key != "" and str(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("attach_to", "")) == PlacementRules.DOOR_ATTACH and _frame_owner_at(it["pos"]) in [key, ""]:
 		return true   # a door another player hung in your doorway (or in an old frame open to all): you may take it out, or the frame could never come down
 
-	if key != "" and _base_owner_of(it) == key:
+	if key != "" and _base_owners_of(it).has(key):
 		return true   # a piece another player built on your foundation (coordinator 23 Nov 2026): you may take it down; its materials stay there (_take_down)
 
 	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
 	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
 
 
-# The builder of the foundation a building piece stands on ("" for none, or one saved before owners): the foundation under it whose
-# footprint holds it across the ground (a roof's eaves BASE_EAVES_M over the edge) and whose top is at or below its foot. Anyone may build
-# on a foundation, and its owner may take down what others built there (coordinator 23 Nov 2026: a stranger cannot wall you in for good).
+# The builders of the foundation a building piece stands on: the foundations with the highest top at or below its foot (a stacked one: only
+# the slab it is on) whose footprint holds it across the ground (a wall on the edge between two: both; a roof panel or corner by its eaves,
+# BASE_EAVES_M over the edge). A piece on the ground beside a foundation stands on none. Anyone may build on a foundation, and its owner may
+# take down what others built there (coordinator 23 Nov 2026: a stranger cannot wall you in for good). Owners saved as "" are left out.
 const BASE_EAVES_M := 1.0
+const BASE_EDGE_M := 0.1
 
 
-func _base_owner_of(it: Dictionary) -> String:
-	if not bool(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("piece", false)):
-		return ""
+func _base_owners_of(it: Dictionary) -> Array:
+	var def_it: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
+
+	if not bool(def_it.get("piece", false)):
+		return []
+
+	var margin: float = BASE_EAVES_M if str(def_it.get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND] else BASE_EDGE_M
+	var best_top: float = -INF
+	var owners: Array = []
 
 	for id in _items:
 		var base: Dictionary = _items[id]
 
-		if base == it or not base.has("struct") or (base["pos"] as Vector3).distance_to(it["pos"]) > 12.0:
+		if base == it or not base.has("struct") or base["struct"].has("site") or Vector2(base["pos"].x - it["pos"].x, base["pos"].z - it["pos"].z).length() > 12.0:
 			continue
 
 		var def: Dictionary = _structures.get(str(base["struct"]["kind"]), {})
 
-		if not bool(def.get("foundation", false)) or float(base["pos"].y) > float(it["pos"].y) + 0.05:
+		if not bool(def.get("foundation", false)):
 			continue
 
+		var top: float = float(base["pos"].y) + PlacementRules.anchor_top(def)
 		var local: Vector2 = PlacementRules.local_of({"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}, it["pos"])
 
-		if absf(local.x) <= float(def.get("footprint_x", 4.0)) * 0.5 + BASE_EAVES_M and absf(local.y) <= float(def.get("footprint_z", 4.0)) * 0.5 + BASE_EAVES_M and str(base["struct"].get("owner", "")) != "":
-			return str(base["struct"]["owner"])
+		if top > float(it["pos"].y) + 0.05 or absf(local.x) > float(def.get("footprint_x", 4.0)) * 0.5 + margin or absf(local.y) > float(def.get("footprint_z", 4.0)) * 0.5 + margin:
+			continue
 
-	return ""
+		if top > best_top + 0.05:
+			best_top = top
+			owners = []
+
+		if top >= best_top - 0.05:
+			owners.append(str(base["struct"].get("owner", "")))
+
+	return owners.filter(func(o): return o != "")
 
 
 # The builder of the doorway frame a door hangs in ("" for a frame saved before owners, "-" when no frame is within DOOR_TAKEN_M).
@@ -14029,8 +14054,13 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take the door out first.")   # a doorway frame, built or still a site, never leaves its door hanging in the air (BUGLIST-002)
 		return
 
+	# Another player's piece (or blueprint site) on your foundation: it comes down, and what it gives back lies on the floor for its builder,
+	# never in your pack; it waits there however long they are away.
+	var key: String = str(_peer_key.get(peer, ""))
+	var for_builder: bool = str(it["struct"].get("owner", "")) not in ["", key] and not (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))) and _base_owners_of(it).has(key)
+
 	if it["struct"].has("site"):
-		_take_down_site(peer, inv, id)
+		_take_down_site(peer, inv, id, for_builder)
 		return
 
 	if it["struct"].has("bandit"):
@@ -14078,9 +14108,6 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take down what stands on it first.")
 		return
 
-	# Another player's piece on your foundation: it comes down, and what it gives back lies here for its builder, never in your pack.
-	var key: String = str(_peer_key.get(peer, ""))
-	var for_builder: bool = str(it["struct"].get("owner", "")) not in ["", key] and not (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))) and _base_owner_of(it) == key
 	var into = InventoryScript.pack(table) if for_builder else inv
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
@@ -14091,12 +14118,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
 
 	if for_builder:
-		var floor_top: float = PlacementRules.foundation_top(_structures_cfg, it["pos"], _foundation_rows())
-		var floor_at: Vector3 = Vector3(it["pos"].x, floor_top, it["pos"].z) if not is_nan(floor_top) else it["pos"]   # a roof's or ceiling's give-back lands on the floor under it
-
 		for s in into.slot_count:
 			if into.numbers[s] != 0:
-				drop_in_world(into.numbers[s], into.counts[s], floor_at, into.wear[s], 0.0, NAN, NAN, "", into.inst_of(s))
+				drop_in_world(into.numbers[s], into.counts[s], _floor_under(it["pos"]), into.wear[s], CLEARED_LIFETIME_S, NAN, NAN, "", into.inst_of(s))
 
 		_say(peer, "Taken down. It was another player's: what it was built from lies here for them.")
 
@@ -20276,6 +20300,8 @@ const PlotWater := preload("res://src/shared/plot_water.gd")
 # the ground), so a crash between two files never counts one twice; a file read from its .prev is counted from that copy's own mark.
 # Nothing vanishes: what a pack, store or bag slot cannot hold (u16) goes to its free slots after every stack is counted, and the rest lies
 # on the ground there (a ground pile has no such cap). The bandits' stashes do the same from their own file (server_bandits.gd).
+# shortcut: a rest that leaves its own file (a full chest's rest on the ground, a worn bag's rest in the pack) is lost or doubled if the
+# server dies between those two files in the first save; it takes a slot of more than 1,310 old seeds (65,535 / 50) and that crash.
 # A dev store saved between #1628 and the mark is counted once too (test stores only; the live world never ran that code).
 func _count_old_seeds() -> void:
 	if not _old_seed_files.values().has(true):
@@ -20290,16 +20316,15 @@ func _count_old_seeds() -> void:
 	var later: Array = []   # [inventory or null, number, count, wear, where on the ground if it does not fit]: placed after every stack is counted
 	var moved: int = 0
 
-	for key in _inventories:
-		var at: Vector3 = _last_spot_of(str(key))
+	if _old_seed_files.get("packs", false):
+		for key in _inventories:
+			moved += _old_seeds_in(_inventories[key], per, later, _last_spot_of(str(key)))   # and the bags held in it (the pack's own file)
 
-		if _old_seed_files.get("packs", false):
-			moved += _old_seeds_in(_inventories[key], per, later, at)   # and the bags held in it (the pack's own file)
-
-		if _old_seed_files.get("worn", false):
-			for w in _characters.get(key, {}).get("worn", []):
+	if _old_seed_files.get("worn", false):
+		for key in _characters:
+			for w in _characters[key].get("worn", []):
 				if w is Array and (w as Array).size() > 3 and w[3] is Dictionary and (w[3] as Dictionary).has("bag"):
-					moved += _old_seeds_in_bag(w[3], per, later, _inventories[key], at)
+					moved += _old_seeds_in_bag(w[3], per, later, _inventories.get(key, null), _last_spot_of(str(key)))
 
 	if _old_seed_files.get("stores", false):
 		var where: Dictionary = {}   # uid -> the structure's spot

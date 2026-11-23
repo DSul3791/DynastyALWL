@@ -506,6 +506,7 @@ func load_file() -> void:
 func _count_old_seeds() -> void:
 	var per: Dictionary = ItemsScript.old_seed_units()
 	var table = null
+	var rest: Array = []   # [the stash it came from, a piece]: added after the walk
 
 	for pieces in sites.values().map(func(site): return site.get("stash", [])) + stash_left.values():
 		for piece in pieces:
@@ -523,7 +524,14 @@ func _count_old_seeds() -> void:
 
 				for row in inst["bag"]:
 					if row is Array and (row as Array).size() >= 2 and per.has(table.id_of(int(row[0]))):
-						row[1] = mini(int(row[1]) * int(per[table.id_of(int(row[0]))]), ItemTableScript.COUNT_MAX)
+						var total: int = int(row[1]) * int(per[table.id_of(int(row[0]))])
+						row[1] = mini(total, ItemTableScript.COUNT_MAX)
+
+						if total > ItemTableScript.COUNT_MAX:   # a bag row holds a u16; the rest rides in the stash as its own piece (a stash piece has no cap)
+							rest.append([pieces, {"id": table.id_of(int(row[0])), "count": total - ItemTableScript.COUNT_MAX, "wear": 0, "inst": {}}])
+
+	for pair in rest:
+		pair[0].append(pair[1])
 
 
 func _key_of(name: String) -> Vector2i:

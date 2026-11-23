@@ -231,3 +231,56 @@ func _two_builders(items) -> void:
 		items._take_down(1, items.inventory_of(1), theirs[0])
 
 	check(theirs.size() == 1 and items._items.has(theirs[0]) and str(said[-1]) == "Only the one who built it can take it down.", "on player 2's own foundation, player 1 cannot take player 2's wall down (%s)" % str(said[-1]))
+
+	# A blueprint site player 2 put on player 1's foundation, with lumber in it: taken down by player 1, the lumber lies on the floor.
+	items.report_position(2, base + Vector3(1.0, 0.3, 1.0))
+	items.place_piece(2, "wall_section_kit", Vector3(base.x + 1.0, floor_y, base.z + 2.0), 0)
+	var site: int = 0
+
+	for id in pieces_at(items, "wall_section", base):
+		if absf(float(items._items[id]["pos"].z) - (base.z + 2.0)) < 0.1:
+			site = id
+
+	if site != 0:
+		items._items[site]["struct"]["site"] = {"have": {"lumber": 8}}   # as a site part filled by player 2's hammer
+
+	var lumber_floor: int = ground_count(items, lumber, base)
+	var pack_now: int = pack_total(items.inventory_of(1))
+	items.report_position(1, base + Vector3(1.0, 0.3, 1.0))
+	items._take_down(1, items.inventory_of(1), site)
+	check(site != 0 and not items._items.has(site) and pack_total(items.inventory_of(1)) == pack_now and ground_count(items, lumber, base) == lumber_floor + 8, "player 2's blueprint site on player 1's foundation: its 8 lumber lie on the floor, not in player 1's pack")
+	var waits: bool = true
+
+	for id in items._items:
+		if not items._items[id].has("struct") and int(items._items[id].get("number", 0)) == lumber and (items._items[id]["pos"] as Vector3).distance_to(base) < 3.5:
+			waits = waits and float(items._items[id]["left"]) > 1.0e8
+
+	check(waits, "and what is left for the builder never despawns while they are away")
+
+	# Beside the foundation on the ground, and on a neighbour's foundation that abuts it: not player 1's to take down.
+	items.report_position(2, base + Vector3(-4.0, 0.0, 0.0))
+	items.place_piece(2, "wall_section_kit", Vector3(base.x - 2.6, GROUND, base.z - 3.0), 90)
+	var beside: Array = []
+
+	for id in pieces_at(items, "wall_section", base + Vector3(-2.6, 0.0, -2.0)):
+		if absf(float(items._items[id]["pos"].y) - GROUND) < 0.05:
+			beside.append(id)
+
+	check(beside.size() == 1 and not items._may_take_down(1, items._items[beside[0]]), "a wall player 2 built on the ground just beside player 1's foundation is not player 1's to take down")
+	items.peer_connected_hello(3, "shelterwalk03")
+	var next := base + Vector3(0.0, 0.0, -4.0)
+	items.report_position(3, next + Vector3(1.0, 0.0, -3.0))
+	items.place_piece(3, "wood_foundation_kit", next, 0)
+	items.report_position(2, next + Vector3(1.0, 0.3, -1.0))
+	items.place_piece(2, "wall_section_kit", Vector3(next.x + 1.0, floor_y, next.z - 2.0), 0)   # the far edge of player 3's foundation
+	var far_wall: Array = pieces_at(items, "wall_section", next + Vector3(1.0, 0.0, -2.0)).filter(func(w): return absf(float(items._items[w]["pos"].z) - (next.z - 2.0)) < 0.1)
+	var shared: Array = pieces_at(items, "wall_section", base + Vector3(0.0, 0.0, -2.0)).filter(func(w): return absf(float(items._items[w]["pos"].z) - (base.z - 2.0)) < 0.1 and absf(float(items._items[w]["pos"].x) - (base.x + 1.0)) < 0.1)
+
+	if shared.is_empty():
+		items.report_position(2, base + Vector3(1.0, 0.3, -1.0))
+		items.place_piece(2, "wall_section_kit", Vector3(base.x + 1.0, floor_y, base.z - 2.0), 0)
+		shared = pieces_at(items, "wall_section", base + Vector3(0.0, 0.0, -2.0)).filter(func(w): return absf(float(items._items[w]["pos"].z) - (base.z - 2.0)) < 0.1 and absf(float(items._items[w]["pos"].x) - (base.x + 1.0)) < 0.1)
+
+	check(far_wall.size() == 1 and not items._may_take_down(1, items._items[far_wall[0]]) and items._may_take_down(3, items._items[far_wall[0]]), "on the neighbour's foundation that abuts it, only the neighbour may take player 2's wall down")
+	check(shared.size() == 1 and items._may_take_down(1, items._items[shared[0]]) and items._may_take_down(3, items._items[shared[0]]), "a wall on the edge the two foundations share may be taken down by either owner")
+
