@@ -4941,10 +4941,6 @@
 				[
 					"bronze_ingot",
 					1
-				],
-				[
-					"stick",
-					1
 				]
 			],
 			"repair_station": "forge",
@@ -9616,7 +9612,7 @@
 				"look_alikes": [],
 				"value": 50,
 				"durability": 2250,
-				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair": [["iron_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9633,7 +9629,7 @@
 				"look_alikes": [],
 				"value": 100,
 				"durability": 5625,
-				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair": [["steel_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9668,7 +9664,7 @@
 				"look_alikes": [],
 				"value": 40,
 				"durability": 1667,
-				"repair": [["bronze_ingot", 1], ["stick", 1]],
+				"repair": [["bronze_ingot", 1]],
 				"repair_station": "forge",
 				"edge": true
 			},
@@ -9685,7 +9681,7 @@
 				"look_alikes": [],
 				"value": 60,
 				"durability": 2500,
-				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair": [["iron_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9702,7 +9698,7 @@
 				"look_alikes": [],
 				"value": 100,
 				"durability": 6250,
-				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair": [["steel_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -12676,13 +12672,13 @@
 			"note_provisional": "Dave 15 Nov 2026: \"add copper nails to our items list\". The recipe (1 Copper ingot to 100 at the Primitive smithy) mirrors Bronze nails and is assumed for his review. The Quality - Backpack asks for them and takes any nails instead (wood_species.json group copper_nails)."
 		},
 		"copper_hammer": {"number": 1497, "name": "Copper - Hammer", "description": "A cast copper head on a short haft. Builds from blueprints, repairs, and breaks stone from boulders.", "kind": "tool", "tool_class": "hammer", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 5000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"copper_knife": {"number": 1498, "name": "Copper - Knife", "description": "A copper blade on a bone grip. Dresses a kill and cuts bark.", "kind": "tool", "tool_class": "knife", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 20, "look_alikes": [], "edge": true, "cut": 1.1, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_knife": {"number": 1498, "name": "Copper - Knife", "description": "A copper blade on a bone grip. Dresses a kill and cuts bark.", "kind": "tool", "tool_class": "knife", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1000, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 20, "look_alikes": [], "edge": true, "cut": 1.1, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"stone_saw": {"number": 1499, "name": "Stone - Saw", "description": "A notched flint blade on a stick. Saws logs into wooden blocks, planks and boards, very slowly.", "kind": "tool", "tool_class": "saw", "material": "stone", "tier": 2, "stack": 1, "unstackable": true, "durability": 600, "value": 15, "look_alikes": [], "saw_speed": 0.3, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_hoe": {"number": 1500, "name": "Copper - Hoe", "description": "A hoe with a copper blade.", "kind": "tool", "tool_class": "hoe", "till_speed": 1.25, "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"bronze_hoe": {"number": 1501, "name": "Bronze - Hoe", "description": "A hoe with a bronze blade.", "kind": "tool", "tool_class": "hoe", "till_speed": 1.5, "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_shovel": {"number": 1502, "name": "Copper - Shovel", "description": "A shovel with a copper blade.", "kind": "tool", "tool_class": "shovel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "shovel_size": "medium", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"bronze_shovel": {"number": 1503, "name": "Bronze - Shovel", "description": "A shovel with a bronze blade.", "kind": "tool", "tool_class": "shovel", "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "shovel_size": "large", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"copper_sickle": {"number": 1504, "name": "Copper - Sickle", "description": "A curved copper blade on a short handle. Cuts grain and grass.", "kind": "tool", "tool_class": "sickle", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1100, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_sickle": {"number": 1504, "name": "Copper - Sickle", "description": "A curved copper blade on a short handle. Cuts grain and grass.", "kind": "tool", "tool_class": "sickle", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1100, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_scythe": {"number": 1505, "name": "Copper - Scythe", "description": "A long copper blade on a snath. Mows grain and grass.", "kind": "tool", "tool_class": "scythe", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 4000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_chisel": {"number": 1506, "name": "Copper - Chisel", "description": "A copper chisel. Carves stone.", "kind": "tool", "tool_class": "chisel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 300, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_pipe": {"number": 1508, "name": "Copper - Pipe", "description": "A drawn copper pipe, three metres long. Lay it from the hand between water points; it never rots.", "kind": "material", "stack": 20, "look_alikes": [], "value": 18, "pipe_m": 3.0, "note": "Laid from the hand (PLUMBING_DESIGN s9): one piece covers 3 m of a run (Dave: one copper makes about 3 m); the laid run is structure kind copper_pipe (state 458). PROVISIONAL (PLUMBING_DESIGN s9, Dave 19 Nov 2026 pipe rework): values assumed for Dave to retune."},

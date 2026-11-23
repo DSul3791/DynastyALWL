@@ -125,7 +125,51 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# 1. The data: each metal tool's ingot comes from a smelter job; it is repaired where it is made; repair costs no more metal than making it new.
+# 1. The data: each metal tool's ingot comes from a smelter job; it is repaired where it is made. Every repair costs less than making the
+# thing new by any of its recipes (coordinator ruling, 23 Nov 2026), except the known ones in SAME_AS_NEW.
+const SAME_AS_NEW: Array = [
+	"wooden_spear", "fishing_spear", "whetstone",   # one material only: left as they are (coordinator ruling, 23 Nov 2026)
+	"copper_chisel", "bronze_chisel", "iron_chisel", "steel_chisel", "steel_striker",   # one ingot to make and to mend: it cannot get cheaper
+]
+
+
+# Is a repair strictly cheaper than one made by this recipe: no more of anything the recipe needs, nothing it does not, and less in all.
+func _cheaper(repair: Array, r: Dictionary) -> bool:
+	var per: Dictionary = {}
+	var made: float = maxf(float(r["gives"][1]), 1.0)
+
+	for need in r.get("needs", []):
+		per[items.table.id_of(int(need[0]))] = float(per.get(items.table.id_of(int(need[0])), 0.0)) + float(need[1]) / made
+
+	var less: bool = false
+
+	# Mended with things the recipe does not use: compare what they are worth (the items' value).
+	if repair.any(func(cost): return not per.has(str(cost[0]))):
+		var mend_worth: float = 0.0
+		var new_worth: float = 0.0
+
+		for cost in repair:
+			mend_worth += float(cost[1]) * float(items.table.entry(str(cost[0])).get("value", 0))
+
+		for k in per:
+			new_worth += float(per[k]) * float(items.table.entry(str(k)).get("value", 0))
+
+		return mend_worth < new_worth
+
+	for cost in repair:
+		var have: float = float(per.get(str(cost[0]), 0.0))
+
+		if float(cost[1]) > have + 0.001:
+			return false
+
+		less = less or float(cost[1]) < have - 0.001
+
+	var named: Dictionary = {}
+
+	for cost in repair:
+		named[str(cost[0])] = true
+
+	return less or per.keys().any(func(k): return not named.has(k))
 func _ladder() -> void:
 	var smelted: Dictionary = {}
 	var jobs: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {})
@@ -138,16 +182,26 @@ func _ladder() -> void:
 	var elsewhere: Array = []
 	var dearer: Array = []
 	var metal: int = 0
+	var mendable: int = 0
 
 	for id in items.table.ids():
 		var entry: Dictionary = items.table.entry(id)
 
-		if str(entry.get("repair_station", "")) == "" or (entry.get("repair", []) as Array).is_empty():
+		if (entry.get("repair", []) as Array).is_empty():
 			continue
 
 		var makers: Array = items.recipes.makers_of(items.table.number_of(id))
 
 		if makers.is_empty():
+			continue
+
+		mendable += 1
+
+		for m in makers:
+			if not _cheaper(entry["repair"], items.recipes.recipe(int(m))) and not SAME_AS_NEW.has(id) and not dearer.has(id):
+				dearer.append(id)
+
+		if str(entry.get("repair_station", "")) == "":
 			continue
 
 		var r: Dictionary = items.recipes.recipe(int(makers[0]))
@@ -168,22 +222,11 @@ func _ladder() -> void:
 		if str(r.get("station", "")) != str(entry["repair_station"]):
 			elsewhere.append("%s (made at %s, mended at %s)" % [id, str(r.get("station", "hand")), str(entry["repair_station"])])
 
-		var made_for: float = 0.0
-		var mend_for: float = 0.0
-
-		for need in r.get("needs", []):
-			made_for += float(need[1]) / maxf(float(r["gives"][1]), 1.0) if items.table.id_of(int(need[0])).ends_with("_ingot") else 0.0
-
-		for cost in entry["repair"]:
-			mend_for += float(cost[1]) if str(cost[0]).ends_with("_ingot") else 0.0
-
-		if mend_for > made_for + 0.001:
-			dearer.append(id)
-
+	check(mendable >= 60, "the things that can be mended are found (%d)" % mendable)
 	check(metal >= 40, "the metal tools and weapons are found (%d)" % metal)
 	check(unmade.is_empty(), "every one's ingot is made by a smelter job (%s)" % str(unmade))
 	check(elsewhere.is_empty(), "each is mended at the station type it is made at (%s)" % str(elsewhere))
-	check(dearer.is_empty(), "no repair costs more metal than making it new (%s)" % str(dearer))
+	check(dearer.is_empty(), "no repair costs as much as or more than making it new, by any recipe, beyond the known %s (%s)" % [str(SAME_AS_NEW), str(dearer)])
 
 
 # 2. Bronze at the Primitive smelter: a restart in the middle of a job, then a crash (the work since the last save is gone), and what is
@@ -229,9 +272,11 @@ func _smelt() -> void:
 	# A crash: more work, never saved by hand; what comes back is the last save on disk, and it still adds up.
 	run(job_s + 2.0)
 	adds_up.call("before the crash")
+	var b_before: int = on_ground(bronze)
 	items._finish_writer()
 	items = make_server()
 	adds_up.call("after a crash")
+	check(on_ground(bronze) <= b_before and on_ground(bronze) % 2 == 0, "a crash only takes back whole jobs since the last save (%d before, %d after)" % [b_before, on_ground(bronze)])
 	run(job_s * 4.0 + 8.0)
 	adds_up.call("run to the end")
 	prim = find_kind("smelter")
@@ -284,6 +329,13 @@ func _break_and_mend() -> void:
 	said.clear()
 	act(Net.ACT_REPAIR, slot)
 	check(inv.wear[slot] >= most and said.any(func(t): return str(t).contains("no fuel")), "with no fuel in it, it does not mend, and Dave is told it needs fuel (%s)" % str(said))
+	# A worn-out smithy says exactly what a craft there does.
+	var smithy_most: float = items._smithies.durability(items._structures[str(items._items[forge]["struct"]["kind"])])
+	items._smithies.set_wear(forge, smithy_most)
+	said.clear()
+	act(Net.ACT_REPAIR, slot)
+	check(inv.wear[slot] >= most and said.has("Needs repair"), "beside a worn-out smithy it does not mend, and Dave is told \"Needs repair\" (%s)" % str(said))
+	items._smithies.set_wear(forge, 0)
 	var fbox = items._smithy_box(items._items[forge])
 	fbox.numbers[ItemsScript.FUEL_SLOT] = n("charcoal")
 	fbox.counts[ItemsScript.FUEL_SLOT] = 5
@@ -291,13 +343,14 @@ func _break_and_mend() -> void:
 	for cost in costs:
 		items.give(1, n(str(cost[0])), int(cost[1]) + 1)
 
+	said.clear()
 	act(Net.ACT_REPAIR, slot)
 	var left_ok: bool = true
 
 	for cost in costs:
 		left_ok = left_ok and inv.count_of(n(str(cost[0]))) == 1
 
-	check(inv.wear[slot] == 0 and left_ok, "beside a Primitive smithy it is mended for exactly %s (one of each left) (%s)" % [str(costs), str(said)])
+	check(inv.wear[slot] == 0 and left_ok and not said.has("Needs repair"), "beside a Primitive smithy it is mended for exactly %s (one of each left) (%s)" % [str(costs), str(said)])
 	items._dirty = true
 	items.save()
 	items._finish_writer()
