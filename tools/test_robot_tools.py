@@ -457,6 +457,23 @@ def test_others():
 			check(r.returncode == want, "robot_check others: %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
 
 
+def test_faint():
+	"""A robot standing (its own stance 0) drawn lying by the other: wrong, unless inside its own strain faint (the server lies it down)."""
+	for what, faint, want in [("drawn lying through its own faint passes", True, 0), ("drawn lying while it stands fails", False, 1)]:
+		with tempfile.TemporaryDirectory() as d:
+			good_logs(d)
+			poses = ["ROBOT Robot 2 POSE 8 %d 0 10.00 0.00 0.00 0.00" % (1000 + 500 * i) for i in range(20)]
+			sees = ["ROBOT Robot 1 SEES 8 %d 3 10.00 0.00 0.00 lie" % (4250 + 500 * i) for i in range(10)]
+
+			with open(os.path.join(d, "robot1_play.log"), "a") as f:
+				f.write("\n".join(sees) + "\n")
+
+			own = ["ROBOT Robot 2 step fainted from strain at 3500", "ROBOT Robot 2 step woke at 9500"] if faint else []
+			write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)"] + own + poses + ["ROBOT Robot 2 done: 0 fails"])
+			r = run_check(d)
+			check(r.returncode == want, "robot_check faint: %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
+
+
 def test_solo():
 	"""One robot, a play pass and a rejoin pass (two peers, one name), no SEES lines: not a failed others check."""
 	with tempfile.TemporaryDirectory() as d:
@@ -503,6 +520,7 @@ if __name__ == "__main__":
 	test_twin()
 	test_kinds()
 	test_held_link()
+	test_faint()
 	test_stuck()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
