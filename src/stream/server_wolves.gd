@@ -621,6 +621,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 	if info.is_empty():
 		pack["phase"] = "prowl"
+		pack["target"] = -1   # gone (left, or a dropped line parked 15 s: server_items is_absent): let go, not hunted on their return
 		return
 
 	var p: Vector3 = info["pos"]
