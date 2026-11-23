@@ -219,9 +219,8 @@ func _draw_legend() -> void:
 	for row in rows:
 		width = maxf(width, font.get_string_size(str(row[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX).x)
 
-	var hint: String = "Wheel: zoom   Drag: move"
-	width = maxf(width + 30.0, font.get_string_size(hint, HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX - 2).x)
-	var box: Rect2 = Rect2(Vector2(10.0, size.y - 10.0 - LEGEND_ROW * (rows.size() + 1) - 8.0), Vector2(width + 16.0, LEGEND_ROW * (rows.size() + 1) + 8.0))
+	width += 30.0   # the mark's column (the Journal's footer already says wheel to zoom, drag to move)
+	var box: Rect2 = Rect2(Vector2(10.0, size.y - 10.0 - LEGEND_ROW * rows.size() - 8.0), Vector2(width + 16.0, LEGEND_ROW * rows.size() + 8.0))
 	draw_rect(box, Color(PAPER.lightened(0.08), 0.92))
 	draw_rect(box, Color(Sketch.INK, 0.35), false, 1.0)
 	var ink: Color = Color(Sketch.INK, 0.85)
@@ -238,8 +237,6 @@ func _draw_legend() -> void:
 			_:
 				_draw_trap(mark + Vector2(0, -2), str(rows[i][0]))
 		draw_string(font, Vector2(box.position.x + 32.0, y + LEGEND_PX * 0.35), str(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX, ink)
-
-	draw_string(font, Vector2(box.position.x + 8.0, box.position.y + 4.0 + LEGEND_ROW * (rows.size() + 0.5) + LEGEND_PX * 0.35), hint, HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX - 2, Color(Sketch.INK, 0.6))
 
 
 # One trap mark at `spot`.
