@@ -24910,11 +24910,12 @@ func _craft_tick(spent: float) -> void:
 		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
 			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
-		queue["elapsed"] = float(queue["elapsed"]) + spent
+		var worked_before: float = float(queue["elapsed"])
+		queue["elapsed"] = worked_before + spent
 
 		var starting: bool = not queue.has("need_s")
 
-		if craft_working.is_valid() and float(queue["elapsed"]) - spent < _head_need_s(peer, queue, recipe, variant):   # not a finished batch waiting for room
+		if craft_working.is_valid() and worked_before < _head_need_s(peer, queue, recipe, variant):   # not a finished batch waiting for room
 			craft_working.call(peer, int(head[0]))   # the others nearby hear the work while it goes on, as the crafter does (server_action_cues.gd, protocol 156)
 
 		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):

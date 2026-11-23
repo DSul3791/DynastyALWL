@@ -96,7 +96,7 @@ func _server_checks() -> void:
 	cues.note_action(1, Net.ACT_HIT, 5, 3, 4, Vector3.ZERO)
 	check(got.is_empty(), "a second cue within %d ms is held back" % Cues.GAP_MS)
 
-	# A pick on a boulder, then on the ground at the point struck; a miss and a knife on a carcass send nothing.
+	# A pick on a boulder, then on the ground at the point struck; a miss sends nothing, a knife on a carcass is flesh.
 	items.held[1] = 11
 	clock[0] += 200
 	got.clear()
