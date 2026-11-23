@@ -11801,8 +11801,13 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
-	var spot: Vector3 = Vector3(at.x, _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y, at.z)   # the ground as dug and filled
+	var dug: float = _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y   # the ground as dug and filled
+	var in_cave: bool = float(_peer_pos[peer].y) < dug - 0.05   # the cave floor only for a player standing under the ground there (the aim's height is the client's word)
+	var spot: Vector3 = Vector3(at.x, _cave_ground(at, dug) if in_cave and ground_height.is_valid() else dug, at.z)
 	var why: String = _sapling_refusal(item_id, spot)
+
+	if tree_seed_species(item_id) != "" and dug - spot.y > 1.0:
+		why = "A tree needs open sky: it cannot grow in a cave."   # a bush fits under the roof; a tree would grow through it (this reason first)
 
 	if why != "":
 		_say(peer, why)
@@ -18778,6 +18783,12 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, _remains_surface(pos, _foundation_rows()), pos.z)   # on the floor they stood on, or the ground as dug
+
+	if cave and not is_nan(ground):
+		var under: float = _remains_surface(pos, _foundation_rows())   # deep in a cave: its floor (a death in mid-jump does not hang in the air; the settle pass skips cave remains)
+
+		if under < ground - 0.5 and under <= pos.y + 0.05:
+			spot.y = under
 	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
@@ -19021,14 +19032,24 @@ var _remains_settled: Dictionary = {}   # remains world id -> [the y the recheck
 
 
 # Where remains rest at `pos` (a point a little above or below the surface): the top of a foundation or floor within reach of it (a death in a house is
-# not buried under the slab), else the ground as dug and filled. `rows` is _foundation_rows().
+# not buried under the slab), else the ground as dug and filled, or the floor of a cave they are in (round 6, 23 Nov 2026: the settle pass lifted
+# remains in a cave onto the hill above). `rows` is _foundation_rows().
 func _remains_surface(pos: Vector3, rows: Array) -> float:
 	var top: float = PlacementRules.support_top(_structures_cfg, pos, rows, true)
 
 	if not is_nan(top):
 		return top
 
-	return _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
+	var dug: float = _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
+	var floor_y: float = _cave_ground(pos, dug)   # in a cave: its floor, where the owner can reach them
+
+	if floor_y != dug and floor_y < pos.y - REMAINS_CAVE_DROP_M:
+		return pos.y   # over a cave spring pool's 20 m basin: they stay where they fell, at the water, not on its far bottom
+
+	return floor_y
+
+
+const REMAINS_CAVE_DROP_M := 3.0   # remains in a cave fall at most this far to its floor
 
 
 # --- Fall damage (job 62) ---
