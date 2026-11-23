@@ -255,6 +255,11 @@ func _init() -> void:
 
 	check(cell_sends >= 5, "the worn cells changing still go out (%d sends in three minutes)" % cell_sends)
 	check(route_sends == 0, "but a standing player is never sent the same routes again (%d repeats)" % route_sends)
+	var sig_was: int = int(t._sent[3][Vector2i(0, 0)][2])
+	t._sent[3][Vector2i(0, 0)][2] = sig_was + 1   # as if the routes this peer has were older ones
+	t.note(950, "deer", Vector3(200.0, 10.0, 200.0))
+	var changed: Array = t.updates_for(3, Vector3(128.0, 10.0, 128.0), 36000 + 7 * 31000).filter(func(u): return u[0] == 0 and u[1] == 0)
+	check(changed.size() == 1 and (changed[0][3] as PackedByteArray) != Codec.ROUTES_SAME and not (changed[0][3] as PackedByteArray).is_empty(), "routes that changed go out in full again")
 	check(Codec.decode_routes(Codec.ROUTES_SAME, Vector2i(0, 0), Codec.ROUTE_BLOCK_M).is_empty() and Codec.ROUTES_SAME.size() < 6, "the unchanged mark is never a real routes block")
 
 	# The clock and the trips.
