@@ -51,6 +51,7 @@ const HANDS_UP_M := 0.3                                           # position_of 
 const HANDS_OUT_M := 0.8                                          # and in front
 const MINE_POINT_M := 6.0                                         # a blow on the ground farther than this from the player is not its own (server_items MINE_REACH_M 4.5, plus the drift between reports)
 const LOUD_HOLD_MS := 5000                                        # a player stays loud to animals this long after a loud cue (a craft's work cue comes every CRAFT_EVERY_MS)
+const LOUD_RANK := {"blow": 3, "hurt": 2, "dig": 2, "craft": 1}   # loudest first, as animals.json senses.action_heard_x orders them (test_hearing_ranges)
 const LOUD_NAMES := {CUE_BLOW: "blow", CUE_CRAFT: "craft", CUE_HURT: "hurt"}   # the cues animals hear (animals.json senses.action_heard_x); a pick, a chest, a gulp, a pickup and a knife cut are quiet
 
 var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of, item_pos_of, open_store_of, store_total, body_water_of, loose_item_of, inventory_of
@@ -66,6 +67,9 @@ var _loud: Dictionary = {}         # peer -> [LOUD_NAMES name, ms it ends]
 
 # A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
 func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3) -> void:
+	if kind in [Net.ACT_HIT, Net.ACT_HIT_SHRUB] or (kind == Net.ACT_MINE and b == 0):
+		_mark_loud(peer, "blow")   # before the gap: a blow struck just after a quiet cue (a pick, a pickup) is still heard by the animals
+
 	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE] or not _due(peer):
 		return   # nothing to hear, or too soon after its last cue: no pack scan for a flood
 
@@ -109,7 +113,7 @@ func before_action(peer: int, kind: int, a: int, b: int) -> Array:
 		return []
 
 	if kind in [Net.ACT_DIG, Net.ACT_FILL, Net.ACT_DIG_TRENCH]:
-		_loud[peer] = ["dig", int(now_ms.call()) + LOUD_HOLD_MS]   # a shovel's bite, heard by animals (every client hears the edit itself: dig_sounds.gd); taken on the try, a refused one too
+		_mark_loud(peer, "dig")   # a shovel's bite, heard by animals (every client hears the edit itself: dig_sounds.gd); taken on the try, a refused one too
 		return []
 
 	if kind in [Net.ACT_CHEST_OPEN, Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE, Net.ACT_CHEST_CLOSE]:
@@ -227,7 +231,7 @@ func craft_working(peer: int, recipe: int) -> void:
 # Send one cue about `peer` to every other player within the cue's earshot of `at`. False when held back (too soon after its last, or unknown).
 func cue(peer: int, kind: int, detail: int, at: Vector3, paced: bool = true) -> bool:
 	if LOUD_NAMES.has(kind) and not (kind == CUE_BLOW and detail % 8 == MATERIALS.find("flesh")):
-		_loud[peer] = [str(LOUD_NAMES[kind]), int(now_ms.call()) + LOUD_HOLD_MS]   # even when held back by the gap: the blow was struck
+		_mark_loud(peer, str(LOUD_NAMES[kind]))   # even when held back by the gap: the work was done
 
 	if not send_cue.is_valid() or items == null or not HEAR_M.has(kind) or not at.is_finite():
 		return false
@@ -255,6 +259,20 @@ func cue(peer: int, kind: int, detail: int, at: Vector3, paced: bool = true) -> 
 # Whether `peer` may send a cue now (GAP_MS since its last).
 func _due(peer: int) -> bool:
 	return int(now_ms.call()) - int(_last_ms.get(peer, -100000)) >= GAP_MS
+
+
+# `peer` did something loud (`name`, a LOUD_RANK key): it stays loud LOUD_HOLD_MS. A quieter thing never lowers a louder one still sounding
+# (a cry of pain between two axe blows keeps the blow's reach).
+func _mark_loud(peer: int, name: String) -> void:
+	var now: int = int(now_ms.call())
+	var row: Array = _loud.get(peer, ["", 0])
+
+	if now < int(row[1]) and int(LOUD_RANK.get(str(row[0]), 0)) > int(LOUD_RANK.get(name, 0)):
+		row[1] = now + LOUD_HOLD_MS   # the louder one goes on: a dig after blows is heard, and the hold runs on
+		_loud[peer] = row
+		return
+
+	_loud[peer] = [name, now + LOUD_HOLD_MS]
 
 
 # The loud thing each player did lately, in items.peer_ids order (server_items.peer_positions is the same order): a LOUD_NAMES name or "dig",

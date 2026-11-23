@@ -99,9 +99,15 @@ func _init() -> void:
 	cues.hurt(2, 10.0)
 	cues.before_action(1, Net.ACT_DIG, 0, 0)
 	check(cues.loud_kinds() == ["dig", "hurt"], "a dig and a cry of pain are loud")
-	clock[0] += 200
+	clock[0] += CuesScript.LOUD_HOLD_MS + 1
 	cues.cue(1, CuesScript.CUE_CRAFT, 4, Vector3.ZERO)
 	check(cues.loud_kinds()[0] == "craft", "craft work is loud")
+	cues.forget(1)
+	cues.cue(1, CuesScript.CUE_PICK, 3, Vector3.ZERO)
+	cues.note_action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+	check(cues.loud_kinds()[0] == "blow", "a tree blow just after a pick (inside the gap) still marks its player loud")
+	cues.hurt(1, 10.0)
+	check(cues.loud_kinds()[0] == "blow", "a cry between blows does not lower the blow's reach")
 	check(CuesScript.LOUD_HOLD_MS >= CuesScript.CRAFT_EVERY_MS, "a craft's repeating cue keeps its worker loud between cues")
 	cues.forget(1)
 	check(cues.loud_kinds()[0] == "", "a player who left is not loud")
@@ -118,7 +124,14 @@ func _init() -> void:
 
 	check(all_under, "every action_heard_x is above 1 and at most far_factor (past it no player is sensed)")
 	check(heard.has("blow") and heard.has("hurt") and heard.has("dig") and heard.has("craft"), "every loud cue has its distance")
-	check(float(heard["blow"]) >= float(heard["hurt"]) and float(heard["hurt"]) >= float(heard["craft"]), "a blow carries farthest, craft work least")
+	var ranked: bool = true
+
+	for x in heard:
+		for y in heard:
+			if int(CuesScript.LOUD_RANK.get(x, 0)) > int(CuesScript.LOUD_RANK.get(y, 0)):
+				ranked = ranked and float(heard[x]) > float(heard[y])
+
+	check(ranked and CuesScript.LOUD_RANK.size() == heard.size(), "LOUD_RANK orders the loud names as action_heard_x does")
 	check(deer == [60.0, 35.0, 70.0], "the deer row is the one these checks are worked out from")
 	check(deer_does(70.0, 0, "") == "graze", "a quiet player standing 70 m off: the deer keeps grazing")
 	check(deer_does(70.0, 0, "blow") == "alert", "an axe blow at 70 m: the deer looks up (70 / 1.4 = 50 m)")
