@@ -119,7 +119,7 @@ func _init() -> void:
 			var what: String = "%d fps, toward %s" % [int(fps), str(goal)]
 			check(shown.distance_to(real) < 0.5, "%s: the drawn bear ends with the server's (%.2f m apart)" % [what, shown.distance_to(real)])
 			check(nearest > m - 0.05, "%s: never inside the player (nearest %.2f m, circle %.1f)" % [what, nearest, m])
-			check(fastest < 12.0 * 1.4, "%s: never a jump (fastest %.1f m/s for a 12 m/s bear)" % [what, fastest])
+			check(fastest < 12.0 * 1.5, "%s: never a jump (fastest %.1f m/s for a 12 m/s bear; smooth catches up at most 1.3 times plus its slack)" % [what, fastest])
 
 	# A charge carried on past the player (go_round false) is still held on its own side until its next row.
 	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-2.0, 0, 0), Vector3(2.5, 0, 0), m, INF, false).is_equal_approx(Vector3(-2.0, 0, 0)), "a charge carried past the player waits on its own side")
