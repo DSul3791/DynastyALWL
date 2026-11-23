@@ -38,6 +38,26 @@ func _init() -> void:
 	check(lone.shown() == 2, "a dog at heel leaves no prints (it would crowd out the wild trail and the E key)")
 	check(TracksScript.read_text(lone.marks[0], 1, 1000 + 20000, c).contains("just now") and TracksScript.read_text(lone.marks[0], 1, 1000 + 200000, c).contains("minutes"), "just now, then minutes ago")
 	lone.free()
+	# Review 23 Nov: two of a kind close together. A step with two same-kind footfalls within a stride could be either animal's: no heading.
+	var pair = TracksScript.new()
+	pair.player_at = func() -> Vector3: return Vector3.ZERO
+	pair.on_step("rabbit", Vector3(2.0, 0.0, 2.0), 1000)
+	pair.on_step("rabbit", Vector3(4.5, 0.0, 2.0), 1100)   # a second rabbit 2.5 m off: past a stride, no heading
+	pair.on_step("rabbit", Vector3(3.2, 0.0, 2.0), 1200)   # within a stride of both: whose step is it?
+	check(is_nan(float(pair.marks[2][1])), "a step a stride from two of its kind gives no heading rather than a wrong one")
+	# Expiry from the front moves the indexes of the recent footfalls with it: a new walk's heading goes to its own first print.
+	var old = TracksScript.new()
+	old.player_at = func() -> Vector3: return Vector3.ZERO
+	var life_ms: int = int(TracksScript.life_s(0, c) * 1000.0)
+	old.on_step("wolf", Vector3(-8.0, 0.0, -8.0), 0)
+	old.on_step("wolf", Vector3(-12.0, 0.0, -8.0), 100)
+	old.on_step("deer", Vector3(2.0, 0.0, 2.0), life_ms + 50)   # the first print of a deer's walk, as the wolf's prints run out
+	old.update(life_ms + 150)
+	check(old.shown() == 1 and is_nan(float(old.marks[0][1])), "the old prints are gone, the deer's first print has no heading yet")
+	old.on_step("deer", Vector3(2.0, 0.0, 3.0), life_ms + 400)
+	check(old.shown() == 2 and absf(float(old.marks[0][1]) - PI * 0.5) < 0.01, "its second step gives its own first print the heading (south)")
+	pair.free()
+	old.free()
 	t.on_step("deer", Vector3(6.2, 1.0, 3.1), 2900)
 	check(t.shown() == 6, "a step 0.2 m from the last one (a shuffle) leaves no print")
 	t.on_step("duck", Vector3(1.0, 1.0, 1.0), 3000)

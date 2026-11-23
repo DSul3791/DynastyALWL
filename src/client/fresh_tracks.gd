@@ -16,7 +16,7 @@ var shape_of: Dictionary = {}      # animal kind -> "hoof", "paw" or "hop" (data
 var marks: Array = []             # [Vector3 at, yaw, born msec, shape, kind], oldest first
 var tracking: int = 0              # the player's Tracking (terrain_client sets it each frame with the trail signs)
 var player_at: Callable            # () -> the player's position: marks farther than draw_m are not laid
-var _last_step: Dictionary = {}    # kind -> [Vector3, msec, yaw, index of its print] of its last footfall, for the heading of the next
+var _recent: Array = []            # [kind, Vector3, msec, index of its print, followed] of the footfalls of the last 2 s, for the heading of the next
 var _nodes: Dictionary = {}        # shape -> MultiMeshInstance3D
 var _dirty: bool = false
 var _next_msec: int = 0
@@ -46,21 +46,33 @@ func on_step(kind: String, at: Vector3, now_msec: int = -1) -> void:
 	var now: int = Time.get_ticks_msec() if now_msec < 0 else now_msec
 
 	if player_at.is_valid() and (player_at.call() as Vector3).distance_to(at) > float(cfg.get("draw_m", 30.0)):
-		_last_step.erase(kind)
 		return
 
+	_recent = _recent.filter(func(r): return now - int(r[2]) < 2000)
 	var yaw: float = NAN   # unknown until a second footfall of the same walk says which way it goes (never guessed: the reading would lie)
-	var last: Array = _last_step.get(kind, [])
-	var gap: float = INF if last.is_empty() else Vector2(at.x - last[0].x, at.z - last[0].z).length()
-	var recent: bool = not last.is_empty() and now - int(last[1]) < 2000
+	var stride: float = float(cfg.get("stride_m", 1.6))
+	var newest: Array = []  # the same kind's last footfall
+	var ends: Array = []    # the same kind's footfalls of the last 2 s within two strides that no later step has followed: the walks it may go on
 
-	if recent and gap < float(cfg.get("min_gap_m", 0.6)):
+	for r in _recent:
+		if str(r[0]) != kind:
+			continue
+
+		newest = r
+
+		if not bool(r[4]) and Vector2(at.x - (r[1] as Vector3).x, at.z - (r[1] as Vector3).z).length() <= stride * 2.0:
+			ends.append(r)
+
+	if not newest.is_empty() and Vector2(at.x - (newest[1] as Vector3).x, at.z - (newest[1] as Vector3).z).length() < float(cfg.get("min_gap_m", 0.6)):
 		return   # a gait count that barely moved (turning, a shuffle): no new print, so the list holds a walk of minutes, not seconds
 
-	# The heading from the same kind's last footfall only within one stride and 2 s: one animal's own steps (a herd stands about 3 m apart,
-	# so a neighbour's step is farther than a stride and gives no heading rather than a wrong one).
-	if recent and gap <= float(cfg.get("stride_m", 1.6)):
-		yaw = Vector2(at.x - last[0].x, at.z - last[0].z).angle()
+	# The heading only when one walk can be going on here: exactly one unfollowed footfall of the kind within two strides, and it within one.
+	# Two (animals grazing close, a herd pressed together) could be either: no heading rather than a wrong one (review 23 Nov). The signal
+	# carries no animal, so two of a kind closer than a stride are still told apart only by this.
+	if ends.size() == 1 and Vector2(at.x - (ends[0][1] as Vector3).x, at.z - (ends[0][1] as Vector3).z).length() <= stride:
+		var last: Array = ends[0]
+		last[4] = true
+		yaw = Vector2(at.x - (last[1] as Vector3).x, at.z - (last[1] as Vector3).z).angle()
 
 		if int(last[3]) >= 0 and int(last[3]) < marks.size() and is_nan(float(marks[int(last[3])][1])):
 			marks[int(last[3])][1] = yaw   # the first print of the walk learns its heading from the second
@@ -68,14 +80,10 @@ func on_step(kind: String, at: Vector3, now_msec: int = -1) -> void:
 	var side_yaw: float = 0.0 if is_nan(yaw) else yaw
 	var side: Vector2 = Vector2(cos(side_yaw), sin(side_yaw)).orthogonal() * float(cfg.get("side_m", 0.07)) * (1.0 if marks.size() % 2 == 0 else -1.0)
 	marks.append([Vector3(at.x + side.x, at.y, at.z + side.y), yaw, now, shape, kind])
-	_last_step[kind] = [at, now, yaw, marks.size() - 1]
+	_recent.append([kind, at, now, marks.size() - 1, false])
 
 	if marks.size() > int(cfg.get("max_prints", 480)):
-		var cut: int = marks.size() - int(cfg.get("max_prints", 480))
-		marks = marks.slice(cut)
-
-		for k in _last_step:
-			_last_step[k][3] = int(_last_step[k][3]) - cut   # the index of each walk's last print moves with the cut
+		_cut_front(marks.size() - int(cfg.get("max_prints", 480)))
 
 	_dirty = true
 
@@ -93,9 +101,13 @@ func update(now_msec: int = -1) -> void:
 		return
 
 	var life: float = life_s(tracking, cfg) * 1000.0
-	var kept: Array = marks.filter(func(p): return float(now - int(p[2])) < life)
-	_dirty = _dirty or kept.size() != marks.size() or not marks.is_empty()   # marks fade as they age
-	marks = kept
+	var gone: int = 0   # marks are oldest first, so the expired ones are at the front
+
+	while gone < marks.size() and float(now - int(marks[gone][2])) >= life:
+		gone += 1
+
+	_dirty = _dirty or not marks.is_empty()   # marks fade as they age
+	_cut_front(gone)
 
 	if not _dirty:
 		return
@@ -155,6 +167,17 @@ static func read_text(mark: Array, level: int, now_msec: int, c: Dictionary) -> 
 		text += " " + str(lines.get("way", "It was heading %s.")) % TrailSigns.compass(Vector2(cos(yaw), sin(yaw)))
 
 	return text
+
+
+# Drops the n oldest marks; the recent footfalls' print indexes move with them (an index under 0 is a print gone).
+func _cut_front(n: int) -> void:
+	if n <= 0:
+		return
+
+	marks = marks.slice(n)
+
+	for r in _recent:
+		r[3] = int(r[3]) - n
 
 
 func mark_at(index: int) -> Array:
