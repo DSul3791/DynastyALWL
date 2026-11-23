@@ -56,6 +56,24 @@ sees the whole machine; to hold every thread to a set of CPUs, add a cpuset as b
 
 CPUs (coordinator decision D-STALL-1, 22 Nov 2026, from David4 tests): never give the server container a CPU quota (`--cpus`, compose `cpus:`). On David4 a 5-CPU quota (cgroup `cpu.max`) with a server and two clients inside gave 50 ms server stalls, because a quota pause stops every thread of the group at once. To keep the server and David4 apart, give the server its own CPUs with a cpuset instead, which never pauses: for example `cpuset: "6-11"` under the service (`docker run --cpuset-cpus 6-11`), with David4 pinned to other CPUs too (on Docker Desktop the numbers are the WSL 2 machine's CPUs, not Windows'). The server counts a cpuset when it picks its thread count (`src/shared/cpu_budget.gd`). Run no game clients inside the server's container. If a quota is set anyway (by hand or on the host), the server log's "items tick slow" line says "container CPU quota throttling rose X ms this tick" (#1481); without a quota that part is not printed.
 
+Prebuilt ground (Dave 23 Nov 2026: "the server doesnt build anything it just serves the prebuilt stuff up to the clients"; plan in
+docs/design/SERVER_SCALE.md, "Prebuilt ground for the nine tiles"). The ground of chosen tiles is built on a fast PC and installed into
+the store, so the server serves it instead of making it as players walk. Ground not in the pack (caves, other tiles) is still made as
+before. Trees and plants are not in the pack yet.
+1. Build, on the PC, in a clone at the same commit as the server image (the pack must come from the same tiles; the install refuses
+   one that does not). The starter tile takes about 40 minutes and 6-10 GB; a stopped build goes on where it was when run again:
+   `& <godot> --headless --path E:\Software\godotDev\dynasty_release --script res://src/worldgen/tools/prebuild_ground.gd -- --tiles=3_4 --out=E:/Software/godotDev/ground_pack`
+   (`--tiles=nine` for all nine tiles, about 6 hours and 55-90 GB; `--threads=N` to leave the PC some room). It ends with a
+   `prebuild_ground: DONE` line.
+2. Copy it over: `scp -r E:\Software\godotDev\ground_pack dave@192.168.0.108:/home/dave/dynasty/`
+3. Install it, on the server, with the server stopped (a fresh world, or over the current one: digs and fills are kept):
+   `docker compose -f compose.yaml down`, then
+   `docker compose -f compose.yaml run --rm --no-deps -v /home/dave/dynasty/ground_pack:/pack:ro --entrypoint godot dynasty-server --headless --path /game --script res://src/worldgen/tools/install_ground.gd -- --pack=/pack --store=/data/store`
+   which ends with `install_ground: DONE` (or `install_ground: FAILED: <why>`, the store left as it was; after a crash the server's
+   run note still says running: add `--server-stopped` at the end once `docker ps` shows the server is down), then
+   `docker compose -f compose.yaml up -d`. The copy needs the pack's size free again on the server's disk; the folder
+   /home/dave/dynasty/ground_pack can be deleted afterwards.
+
 ## Join it
 
 From the editor build: run the game with the user arguments `--client-only` (the join page asks for the address) or `--server=<address>` (for example `--server=hannibalshouse.duckdns.org`). On the same network use the gaming server's local address.
