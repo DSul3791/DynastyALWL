@@ -92,6 +92,27 @@ for that species: robot_kinds.py holds each robot's drawn places against the ser
 gap to it against the drawn gap. Drawn against server numbers include the client's draw delay (it draws the past by design), not only a
 real error. It judges nothing; the FAILs are robot_check's as in every plan.
 
+Plan `together` (two robots at once on one thing, players thread 23 Nov 2026; `ROBOT_S=800 tools/robots.sh 2 together --delay-ms 120
+--jitter-ms 30 --loss 0.03`, about 13 min): both run out of the camp, Robot 1 builds a Wicker basket and both open it. Each step starts at
+one moment for both (ready files in ROBOT_SHARE, then a shared start 1.5 s on), and Robot 1 adds up the item over both packs, the basket and
+the ground within 8 m (TOGETHER lines; a total that changes fails). Steps: both put twine at once; both take at once; both pick up one
+dropped stack; Robot 2's link is held silent for 20 s (`hold PORT SECONDS` to the lossy link's control file) while Robot 1 puts more in,
+and the total must be the old one plus what went in. After each step each robot's open basket window must match the server's
+(`AUDIT chest <id> <ms> <signature> <used>` from the robot audit when a watched chest changes). Then both hammer one wooden crate site,
+each with part of its cost (exactly 5 lumber and 8 nails must go in), and both use one rustic door at once (it toggles twice and ends as
+it began), then each in turn: both must draw the site and the door the same. Last, Robot 1 watches Robot 2: Robot 2 swings 4 times and
+Robot 1's rows must show its swing count change; then Robot 2 is passed out by the cold (`cold <peer>` to the server control file) and
+Robot 1 must draw it lying (stance 3) and standing again after it wakes. While a robot is passed out its own stance stays standing, so
+robot_check does not count it drawn lying in the 20 s before the rescue as a wrong stance; the rescued robot writes `rescued.txt` in
+ROBOT_SHARE so the watcher's jump check takes the rescue's move as deliberate. robot_check also fails a held step when link.log has no
+`LINK hold` line with a client held. robots.sh runs this plan with exactly 2 robots.
+
+Plan `trail` (one robot, tracking thread 23 Nov 2026; `tools/robots.sh 1 trail --delay-ms 120 --jitter-ms 30 --loss 0.03`): Dave's report
+was a crouch walk stopped on flat ground under a tree by a fern while standing walked on (#1775). The robot goes to the dry game-trail point
+with the most trees within 8 m (within 170 m, where trees are loaded), crouches and follows the trail's line in 4 m waypoints for 40 s. A
+2 s leg under a quarter of the crouch pace is compared with standing at the same spot (a `blocked` FAIL when standing walks on). It prints
+a TRAIL line.
+
 Plan `roam` (animals thread 23 Nov 2026, stuck animals away from the fight; `ROBOT_S=3600 tools/robots.sh 2 roam --delay-ms 120
 --jitter-ms 30 --loss 0.03`, an hour of real time is one game day): each robot goes to the nearest water's edge, the thickest woods near, then
 500 m of open ground in a direction of its own, and stands 4 min at each, round and round until 2 min before its timeout. In every plan the
