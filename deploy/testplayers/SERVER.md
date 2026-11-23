@@ -46,6 +46,14 @@ ssh "dave@${server}" "ls -l /data/game-web/site/downloads/; rm /data/game-web/si
 
 - Files from the example page, such as `css/` or `images/logo.png`, are not used by the new page. They stay until you delete them.
 
+## 2b. The bug and idea pages (one paste on the server, every time after step 2)
+
+The bug and idea pages and their small report service come from the "tester bug and idea pages" work (branch `claude/project-thread-sq5q8u`, `deploy/testersite/`). Its install puts its own front page (the same three boxes, now working, with the high scores) over the one from step 2. It also adds the `/api/` part to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe. Until that work is merged, step 2 brings back the "Opening soon" front page, so run this again after every upload:
+
+```
+sudo mkdir -p /data/game-web/reports && cd /data/game-web/reports && sudo curl -fsSLO https://raw.githubusercontent.com/DSul3791/DynastyALWL/claude/project-thread-sq5q8u/deploy/testersite/service/install.sh && sudo BRANCH=claude/project-thread-sq5q8u bash install.sh
+```
+
 ## 3. Show who is logged in (one Caddyfile line, once)
 
 The pages show the login name at the top right. Caddy fills it in as it sends the page, using its `templates` feature and the `{http.auth.user.id}` value that the login sets (Caddy docs: basic_auth, templates). Until this is on, the pages simply hide the name.
