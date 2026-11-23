@@ -39,7 +39,7 @@ var _dirty: bool = false
 var _built_at: Vector3 = Vector3.INF
 var _level: int = -1
 var _next_msec: int = 0
-var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "rub", "halo" -> MultiMeshInstance3D
+var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "halo" -> MultiMeshInstance3D
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
@@ -143,6 +143,7 @@ static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> 
 				runs.append([pts[0], pts])
 				out.append(["latrine", _off(pts[0], pts[1], c.get("latrine_off_m", [1.0, 3.0]), 1), 0.0, 0.0, last, "grazing"])
 				out.append(["latrine", _off(last, pts[pts.size() - 2], c.get("latrine_off_m", [1.0, 3.0]), 2), 0.0, 0.0, pts[0], "warren"])
+				_prints_on(pts, wet_at, c, out, "hops", "grazing")
 			elif kind == KIND_DEER:
 				var off: float = float(c.get("droppings_off_m", 4.0))
 				out.append(["droppings", _off(pts[0], pts[1], [off * 0.25, off], 3), 0.0, 0.0, last, "feeding"])
@@ -240,8 +241,8 @@ static func _h01(at: Vector2, salt: int) -> float:
 	return float(hash(Vector3i(int(round(at.x * 4.0)), int(round(at.y * 4.0)), salt)) & 0xFFFF) / 65536.0
 
 
-# Prints where a deer trail crosses wet ground: at most one line per prints_every_m of trail, along the trail.
-static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary, out: Array) -> void:
+# Prints where a trail crosses wet ground (deer "prints", rabbit "hops" in the mud of a run): at most one line per prints_every_m, along the trail.
+static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary, out: Array, kind: String = "prints", toward: String = "feeding") -> void:
 	if not wet_at.is_valid():
 		return
 
@@ -252,7 +253,7 @@ static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary,
 		since += pts[i - 1].distance_to(pts[i])
 
 		if since >= every and bool(wet_at.call(pts[i].x, pts[i].y)):
-			out.append(["prints", pts[i], (pts[i] - pts[i - 1]).angle(), 0.0, pts[pts.size() - 1], "feeding"])
+			out.append([kind, pts[i], (pts[i] - pts[i - 1]).angle(), 0.0, pts[pts.size() - 1], toward])
 			since = 0.0
 
 
@@ -344,12 +345,12 @@ static func reach_m(level: int, c: Dictionary) -> float:
 
 # Whether a kind of sign shows at a level (scrapes and prints only to a finer eye).
 static func shows(kind: String, level: int, c: Dictionary) -> bool:
-	return level >= int(c.get("fine_level", 50)) if kind == "scrape" or kind == "prints" else level >= int(c.get("see_level", 25))
+	return level >= int(c.get("fine_level", 50)) if kind == "scrape" or kind == "prints" or kind == "hops" else level >= int(c.get("see_level", 25))
 
 
 func _draw(player: Vector3, level: int) -> void:
 	var reach: float = reach_m(level, cfg)
-	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "rub": [], "halo": []}
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "hop": [], "rub": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 	var halo: float = halo_alpha(level, cfg)
 
@@ -376,7 +377,7 @@ func _draw(player: Vector3, level: int) -> void:
 		shown += (rows[layer] as Array).size()
 
 
-# Reading a sign (hunting thread, 23 Nov 2026): the shown signs within read_m of the eye, as [index, point] for the aim, nearest first.
+# Reading a sign (hunting thread, 23 Nov 2026): the shown signs within read_m of the eye, as [index, point] for the aim (the caller picks by the reticle).
 func readable(player: Vector3, level: int) -> Array:
 	var out: Array = []
 	var reach: float = minf(float(cfg.get("read_m", 3.0)), reach_m(level, cfg))
@@ -450,7 +451,9 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 	var size: float = float(cfg.get("halo_m", 1.0))
 	var long: float = size
 
-	if kind == "prints":
+	if kind == "hops":
+		long = maxf(size, float(int(cfg.get("hop_sets", [3, 4])[1])) * float(cfg.get("hop_step_m", 0.5)))
+	elif kind == "prints":
 		var most: Array = cfg.get("prints", [4, 6])
 		long = maxf(size, float(most[1]) * float(cfg.get("print_step_m", 0.6)))
 	elif kind == "bed":
@@ -496,6 +499,21 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 
 			if not is_nan(y2):
 				(rows["scrape"] as Array).append([Vector3(spot.x, y2, spot.y), TAU * _h01(spot, 5), 1.0])
+		"hops":   # a rabbit's hop in mud: the two long hind feet side by side ahead, the two small fore feet one behind the other
+			var sets: Array = cfg.get("hop_sets", [3, 4])
+			var count3: int = int(sets[0]) + int(_h01(spot, 22) * float(int(sets[1]) - int(sets[0]) + 1))
+			var ahead: Vector2 = Vector2(cos(yaw), sin(yaw))
+
+			for n in count3:
+				var mid: Vector2 = spot + ahead * (float(n) - float(count3) * 0.5) * float(cfg.get("hop_step_m", 0.5))
+				var y5: float = _heap_ground(mid)
+
+				if is_nan(y5):
+					continue
+
+				for foot in [[ahead * 0.07 + ahead.orthogonal() * 0.035, 1.0], [ahead * 0.07 - ahead.orthogonal() * 0.035, 1.0], [-ahead * 0.04, 0.6], [-ahead * 0.11, 0.6]]:
+					var at2: Vector2 = mid + (foot[0] as Vector2)
+					(rows["hop"] as Array).append([Vector3(at2.x, y5, at2.y), yaw, float(foot[1])])
 		"prints":
 			var span2: Array = cfg.get("prints", [4, 6])
 			var count2: int = int(span2[0]) + int(_h01(spot, 21) * float(int(span2[1]) - int(span2[0]) + 1))
@@ -617,6 +635,12 @@ func _mesh(layer: String) -> Mesh:
 			material.albedo_color = SCRAPE_COLOR
 			patch.material = material
 			return patch
+		"hop":
+			var pad: BoxMesh = BoxMesh.new()   # a hind foot; the fore feet are the same mark drawn at 0.6
+			pad.size = Vector3(0.035, 0.006, 0.075)
+			material.albedo_color = PRINT_COLOR
+			pad.material = material
+			return pad
 		_:
 			var hoof: BoxMesh = BoxMesh.new()
 			hoof.size = Vector3(0.07, 0.006, 0.09)
@@ -651,7 +675,7 @@ func _spot(player: Vector3, level: int) -> void:
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
 		last_spot = where
 		FreezeWatchScript.printer.line("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
-		_glow(where, 1.6 if str(s[0]) == "prints" else 1.0)
+		_glow(where, 1.6 if str(s[0]) == "prints" or str(s[0]) == "hops" else 1.0)
 
 		if on_spot.is_valid():
 			on_spot.call(str(s[0]), where)

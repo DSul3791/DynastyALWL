@@ -12,7 +12,7 @@ const PRINT_COLOR := Color(0.17, 0.13, 0.09)
 
 var cfg: Dictionary = {}
 var shape_of: Dictionary = {}      # animal kind -> "hoof", "paw" or "hop" (data/look/fresh_tracks.json kinds)
-var marks: Array = []             # [Vector3 at, yaw, born msec, shape], oldest first
+var marks: Array = []             # [Vector3 at, yaw, born msec, shape, kind], oldest first
 var tracking: int = 0              # the player's Tracking (terrain_client sets it each frame with the trail signs)
 var player_at: Callable            # () -> the player's position: marks farther than draw_m are not laid
 var _last_step: Dictionary = {}    # kind -> [Vector3, msec] of its last footfall, for the heading of the next
@@ -62,7 +62,7 @@ func on_step(kind: String, at: Vector3, now_msec: int = -1) -> void:
 
 	_last_step[kind] = [at, now, yaw]
 	var side: Vector2 = Vector2(cos(yaw), sin(yaw)).orthogonal() * float(cfg.get("side_m", 0.07)) * (1.0 if marks.size() % 2 == 0 else -1.0)
-	marks.append([Vector3(at.x + side.x, at.y, at.z + side.y), yaw, now, shape])
+	marks.append([Vector3(at.x + side.x, at.y, at.z + side.y), yaw, now, shape, kind])
 
 	if marks.size() > int(cfg.get("max_prints", 240)):
 		marks = marks.slice(marks.size() - int(cfg.get("max_prints", 240)))
@@ -99,6 +99,57 @@ func update(now_msec: int = -1) -> void:
 
 	for shape in rows:
 		_fill(shape, rows[shape])
+
+
+# Reading a fresh print (hunting thread, 23 Nov 2026): the newest print of each animal kind within read_m, as [index, point] for the aim.
+func readable(player: Vector3, now_msec: int = -1) -> Array:
+	var now: int = Time.get_ticks_msec() if now_msec < 0 else now_msec
+	var out: Array = []
+	var seen: Dictionary = {}
+	var life: float = life_s(tracking, cfg) * 1000.0
+
+	for n in range(marks.size() - 1, -1, -1):
+		var m: Array = marks[n]
+
+		if float(now - int(m[2])) >= life or (m[0] as Vector3).distance_to(player) > float(cfg.get("read_m", 3.0)) + 1.0:
+			continue
+
+		var tag: String = "%s %d %d" % [str(m[4]), roundi((m[0] as Vector3).x), roundi((m[0] as Vector3).z)]
+
+		if not seen.has(tag):
+			seen[tag] = true
+			out.append([n, (m[0] as Vector3) + Vector3(0.0, 0.03, 0.0)])
+
+	return out
+
+
+# What a fresh print says (data/look/fresh_tracks.json "read"): whose it is and how old for anyone, a warning for a predator's; from
+# read_way_level which way it was heading.
+static func read_text(mark: Array, level: int, now_msec: int, c: Dictionary) -> String:
+	var lines: Dictionary = c.get("read", {})
+	var kind: String = str(mark[4])
+	var who: String = str((lines.get("names", {}) as Dictionary).get(kind, kind.replace("_", " ")))
+	var age_s: float = float(now_msec - int(mark[2])) / 1000.0
+	var ages: Dictionary = lines.get("ages", {})
+	var age: String = str(ages.get("minutes", "made minutes ago")) if age_s < 300.0 else str(ages.get("older", "made a while ago"))
+	var text: String = str(lines.get("what", "%s prints, %s.")) % [who.substr(0, 1).to_upper() + who.substr(1), age]
+
+	if (lines.get("predators", []) as Array).has(kind):
+		text += " " + str(lines.get("warning", "Something dangerous is about."))
+
+	if level >= int(c.get("read_way_level", 10)):
+		var yaw: float = float(mark[1])
+		text += " " + str(lines.get("way", "It was heading %s.")) % compass(Vector2(cos(yaw), sin(yaw)))
+
+	return text
+
+
+static func compass(way: Vector2) -> String:
+	return ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][posmod(int(round(atan2(way.y, way.x) / (PI / 4.0))), 8)]
+
+
+func mark_at(index: int) -> Array:
+	return marks[index] if index >= 0 and index < marks.size() else []
 
 
 func shown() -> int:

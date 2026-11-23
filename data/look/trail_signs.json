@@ -26,6 +26,9 @@
 	"droppings_off_m": 4.0,
 	"droppings_pellets": [15, 25],
 	"rebuild_move_m": 8.0,
+	"hop_note": "Rabbit prints in mud (23 Nov 2026, hunting thread): where a rabbit run crosses wet ground, hop_sets hops hop_step_m apart, each the two long hind feet side by side ahead and the two small fore feet behind (the classic rabbit track; Idaho Fish and Game track guide), one line per prints_every_m like the deer prints.",
+	"hop_sets": [3, 4],
+	"hop_step_m": 0.5,
 	"bed_note": "Deer beds (23 Nov 2026, hunting thread; Dave: 'extrapolate from them and see what would make for a fun hunting game'): deer lie up by day in small groups, each leaving an oval of pressed grass or leaves about its body's size, the plainest sign that a trail's end is a bedding place (Penn State Extension and onX on deer beds). bed_count beds within bed_off_m of each deer trail's home; grass_view presses the grass in bed_size_m ovals (the worn-earth ground bares the litter there), so no mesh. Provisional.",
 	"bed_count": [2, 3],
 	"bed_off_m": [1.5, 3.5],
@@ -50,6 +53,7 @@
 		"prints": {"what": "Split hoof prints pressed in the soft ground. Deer passed here.", "habit": "Deer walk this way to feed at dusk and back to their beds at dawn."},
 		"droppings": {"what": "A pile of dark pellets. Deer lie up close by.", "habit": "Deer bed near here through the day."},
 		"bed": {"what": "An oval of pressed-down grass. A deer lay here.", "habit": "Deer lie here by day and leave at dusk: come quietly, downwind."},
+		"hops": {"what": "Small prints in the mud, two long ones ahead of two small ones. A rabbit hopped through.", "habit": "Rabbits come along this run from about sunset to sunrise."},
 		"rub": {"what": "Bark rubbed off a young tree. A stag marked his trail.", "habit": "Stags walk this trail between the beds and the feeding ground."}
 	}
 }

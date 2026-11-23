@@ -64,6 +64,14 @@ func _init() -> void:
 
 	check(on_wet and print_lines.size() == 1, "deer prints only on the wet crossing, one line per 30 m (%d)" % print_lines.size())
 	check(count(signs, "droppings") == 1, "deer droppings by the bed")
+	var muddy: Array = SignsScript.signs_for({Vector2i(0, 0): [[0, line(Vector2(110.0, 300.0), Vector2(150.0, 300.0))]]}, wet, c).filter(func(s): return str(s[0]) == "hops")
+	check(muddy.size() == 1 and (muddy[0][1] as Vector2).x > 120.0 and (muddy[0][1] as Vector2).x < 140.0, "a rabbit run through the mud leaves one line of hop prints there (%d)" % muddy.size())
+	var hop_rows: Dictionary = {"hop": []}
+	var hop_view = SignsScript.new()
+	hop_view.ground_height = func(_x, _z): return 5.0
+	hop_view._lay("hops", Vector2(10.0, 10.0), 0.0, hop_rows)
+	check((hop_rows["hop"] as Array).size() >= 4 * int(c["hop_sets"][0]) and (hop_rows["hop"] as Array).size() % 4 == 0, "each hop is four marks (%d)" % (hop_rows["hop"] as Array).size())
+	hop_view.free()
 	# Deer beds (pressed ovals by a deer trail's home, the grass view presses the same spots) and rubbed trees along the trail.
 	var bed_span: Array = c["bed_count"]
 	var beds: Array = signs.filter(func(s): return str(s[0]) == "bed")
@@ -129,7 +137,7 @@ func _init() -> void:
 	check(way.begins_with(plain) and (way.contains("south-east") or way.contains("south")) and way.contains("grazing"), "at read_way_level it says which way the run goes, toward the grazing (%s)" % way)
 	check(SignsScript.read_text(home_latrine, int(c["read_habit_level"]), c).ends_with(str(c["read"]["latrine"]["habit"])), "at read_habit_level it says when rabbits use it")
 	check(SignsScript.compass(Vector2(0.0, -1.0)) == "north" and SignsScript.compass(Vector2(1.0, 0.0)) == "east", "+z is south, +x east")
-	for kind in ["latrine", "scrape", "prints", "droppings", "bed", "rub"]:
+	for kind in ["latrine", "scrape", "prints", "hops", "droppings", "bed", "rub"]:
 		check((c["read"] as Dictionary).has(kind), "every kind of sign has a reading (%s)" % kind)
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
 	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.
@@ -145,7 +153,7 @@ func _init() -> void:
 
 	# Tracking (Dave 23 Nov 2026: "signs should just be there and if you have a higher tracking skill maybe they get highlighted or glow
 	# a little"): every kind shows to everyone; skill reaches farther and, from halo_from, lays a faint steady highlight that grows.
-	for kind in ["latrine", "droppings", "scrape", "prints"]:
+	for kind in ["latrine", "droppings", "scrape", "prints", "hops"]:
 		check(SignsScript.shows(kind, 0, c) and SignsScript.shows(kind, 1, c), "%s shows untrained" % kind)
 	check(SignsScript.reach_m(0, c) >= 15.0 - 0.01 and SignsScript.reach_m(1, c) >= 15.0 - 0.01, "untrained, signs show within 15 m")
 	var from: int = int(c["halo_from"])

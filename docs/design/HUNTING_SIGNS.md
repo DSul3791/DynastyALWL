@@ -25,6 +25,14 @@ Find sign, read it, follow the trail, spot the animal (trails end at beds and wa
   (animal_view `stepped`, read only, agreed with the animals thread) leaves a print by shape (hoof, paw, hop), fading over 10 real minutes,
   up to twice as long at Tracking 100; a print only after the animal moved 0.6 m, at most 480 (a walking deer lays about two a second, so with several animals near the oldest go before their time).
 
+- **Reading fresh prints** (23 Nov 2026, second pass): look right at a fresh print within 3 m, E: whose and how fresh for anyone; a
+  predator's (wolf, bears, big cats, hyena) adds a plain warning (Dave's core rule: no death unless you do something deliberately
+  stupid, so warn); from Tracking 10 which way it was heading. A dog's never warns.
+- **Rabbit prints in mud**: where a run crosses wet ground, 3-4 hops of four marks (two long hind feet ahead, two small fore feet
+  behind), one line per 30 m, like the deer prints.
+- Left out on purpose: "fresh or old" on trail signs (it would repeat the habit line and could claim an animal that is dead), browsed
+  plants (need shrub model changes), predator sign at dens (the client does not know den spots), a wind or noise display (no written design).
+
 ## Cost
 Client only. No messages, no protocol change, no server work beyond the existing spot check. Signs rebuild only on change or 8 m moved;
 fresh prints redraw at most twice a second while any exist.

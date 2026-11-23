@@ -7,6 +7,18 @@
 	"min_gap_m": 0.6,
 	"side_m": 0.07,
 	"alpha": 0.85,
+	"read_note": "Reading a fresh print: look right at it (read_aim_cos, about 10 degrees) within read_m and press E. Whose it is and how old for anyone; a predator's adds a warning (Dave's core rule: the game does not want you to die unless you do something deliberately stupid, so warn plainly); from read_way_level (Dave's 10 for trails on the map) which way it was heading.",
+	"read_m": 3.0,
+	"read_aim_cos": 0.985,
+	"read_way_level": 10,
+	"read": {
+		"what": "%s prints, %s.",
+		"ages": {"minutes": "made minutes ago", "older": "made a while ago"},
+		"way": "It was heading %s.",
+		"warning": "A hunter is about: keep your eyes open.",
+		"predators": ["wolf", "bear", "black_bear", "lynx", "puma", "lion", "leopard", "tiger", "hyena"],
+		"names": {"black_bear": "black bear", "mountain_goat": "mountain goat", "honey_badger": "honey badger", "deer": "deer", "elk": "elk", "moose": "moose"}
+	},
 	"size_m": {"hoof": [0.07, 0.09], "paw": [0.08, 0.09], "hop": [0.04, 0.08]},
 	"kinds": {
 		"hoof": ["deer", "moose", "elk", "boar", "horse", "donkey", "bighorn", "mountain_goat", "chamois", "cow", "goat", "buffalo", "pronghorn", "warthog", "wildebeest", "camel", "rhino"],

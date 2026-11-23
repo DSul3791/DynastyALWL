@@ -1943,6 +1943,20 @@ func _welcome_body(info: Dictionary) -> void:
 		var seen: Array = trail_signs.sign_at(int(near[pick][0]))
 		var text: String = TrailSignsScript.read_text(seen, level, trail_signs.cfg) if not seen.is_empty() else ""
 		return {} if text == "" else {"kind": "sign", "point": near[pick][1], "prompt": "Press E to read the sign", "tap": func(): items.show_notice(text)})
+	# Reading a fresh print (hunting thread): whose, how old, a warning for a predator's, and with Tracking which way it went. Client only.
+	items.register_interactable("fresh_print", 47, func():
+		if fresh_tracks == null or body == null:
+			return {}
+
+		var near: Array = fresh_tracks.readable(body.global_position)
+		var pick: int = items.reticle_index(near.map(func(r): return r[1]))
+
+		if pick < 0 or items.aim_cos_of(near[pick][1]) < float(fresh_tracks.cfg.get("read_aim_cos", 0.985)):
+			return {}
+
+		var mark: Array = fresh_tracks.mark_at(int(near[pick][0]))
+		var text: String = FreshTracksScript.read_text(mark, int(items.skill_level_of("tracking")), Time.get_ticks_msec(), fresh_tracks.cfg) if not mark.is_empty() else ""
+		return {} if text == "" else {"kind": "sign", "point": near[pick][1], "prompt": "Press E to read the prints", "tap": func(): items.show_notice(text)})
 	items.register_interactable("plant", 40, func():
 		return {} if items.plant_hint == "" else {"kind": "plant", "point": items.plant_point, "prompt": items.plant_hint, "quiet": not items.plant_aimed, "tap": harvest.tap})
 	held = HeldItemScript.new()
