@@ -13896,8 +13896,9 @@ func _holds_up(base: Dictionary, base_id: int) -> bool:
 		var row: Dictionary = {"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "id": int(id)}
 		rows.append(row)
 
-		# Walls and fences stand on a foundation's anchors or the ground, never on a wall: they rest on nothing a take-down of `base` can pull out.
-		if int(id) != base_id and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)) and not (str(odef.get("piece_kind", "")) in ["wall", PlacementRules.FENCE_KIND]):
+		# Fences stand on a foundation's anchors or the ground: they rest on nothing a take-down of `base` can pull out. An upper storey's wall stands on a
+		# ceiling or a lower wall's top (PlacementRules.storey_tops_at), so it is asked like a ceiling.
+		if int(id) != base_id and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)) and str(odef.get("piece_kind", "")) != PlacementRules.FENCE_KIND:
 			near.append(row)
 
 	for row in near:
