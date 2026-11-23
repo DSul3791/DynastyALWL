@@ -253,7 +253,7 @@ func _server() -> void:
 	sent.clear()
 	players.tick(0.2)
 	var quiet_rows: Array = sent.filter(func(r): return int(r[0]) == 1)
-	check(quiet_rows.size() == 1 and not (quiet_rows[0][1] as PackedInt32Array).has(2), "a player silent for %d s leaves the others' rows (no ghost)" % (PlayersScript.SILENT_MS / 1000))
+	check(quiet_rows.size() == 1 and not (quiet_rows[0][1] as PackedInt32Array).has(2), "a player silent for %.0f s leaves the others' rows (no ghost)" % (PlayersScript.SILENT_MS / 1000.0))
 	var quiet_two: Array = sent.filter(func(r): return int(r[0]) == 2)
 	check(quiet_two.is_empty() or (quiet_two[0][1] as PackedInt32Array).has(1), "the silent player is still sent the others, for when its game wakes")
 	clock[0] += 200
