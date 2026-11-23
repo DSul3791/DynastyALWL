@@ -16,6 +16,10 @@ address gets its own upstream socket, so the server sees separate peers. The cli
 
 Packets keep their order in each direction unless --reorder is given (internet routes rarely reorder; ENet copes either way).
 Prints one "LINK" line at the start and a "LINK totals" line every 30 s and on exit (packets in, dropped, worst delay).
+With --control FILE the link reads FILE five times a second; when it says "cut", every connection open at that moment goes dead both ways
+(UDP dropped, the block line silent but not closed), as when a player's internet drops, and the file is set to "done". Clients that connect
+later pass as usual, so the same player can rejoin at once while the server still holds the dead connection (robot plan drops).
+
 Standard library only (Python 3.8+), so it runs in the cloud, on Lane B and on Dave's PC alike.
 """
 import argparse
@@ -88,11 +92,15 @@ class Upstream(asyncio.DatagramProtocol):
 		self.client_addr = client_addr
 		self.transport = None
 		self.down = Shaper(relay.args, relay.rng, relay.stats)
+		self.cut = False
 
 	def connection_made(self, transport):
 		self.transport = transport
 
 	def datagram_received(self, data, addr):
+		if self.cut:
+			return
+
 		self.relay.stats.packets += 1
 
 		if self.down.drop():
@@ -129,6 +137,9 @@ class UdpRelay(asyncio.DatagramProtocol):
 			self.stats.clients += 1
 			spawn(self.loop, self._open(entry, addr))
 
+		if entry.get("cut"):
+			return
+
 		self.stats.packets += 1
 
 		if entry["shaper"].drop():
@@ -152,8 +163,18 @@ class UdpRelay(asyncio.DatagramProtocol):
 
 		entry["pending"].clear()
 
+	def cut_all(self):
+		"""Every client address seen so far goes dead both ways; a new address (a client started again) is a new connection."""
+		for entry in self.clients.values():
+			entry["cut"] = True
 
-async def pipe(reader, writer, shaper, stats, loop):
+			if entry["up"] is not None:
+				entry["up"].cut = True
+
+		return len(self.clients)
+
+
+async def pipe(reader, writer, shaper, stats, loop, line=None):
 	"""One direction of a block-line connection: a reader stamps each chunk with its due time, a writer sends each when due, so the
 	delays overlap (one chunk's wait never holds the next chunk's read: the line keeps its full rate, only later)."""
 	queue = asyncio.Queue()
@@ -183,6 +204,10 @@ async def pipe(reader, writer, shaper, stats, loop):
 				break
 
 			await asyncio.sleep(max(0.0, at - time.monotonic()))
+
+			if line is not None and line["cut"]:
+				continue   # cut: the line goes silent (read and thrown away), never closed, as a dead route looks to TCP
+
 			writer.write(data)
 			await writer.drain()
 	except (ConnectionError, OSError):
@@ -192,6 +217,14 @@ async def pipe(reader, writer, shaper, stats, loop):
 			writer.close()
 		except Exception:
 			pass
+
+
+def read_control(path):
+	try:
+		with open(path) as f:
+			return f.read().strip()
+	except OSError:
+		return ""
 
 
 async def main():
@@ -204,12 +237,15 @@ async def main():
 	p.add_argument("--loss", type=float, default=0.02, help="share of UDP packets dropped, each direction (0.02 = 2%%)")
 	p.add_argument("--reorder", action="store_true", help="let jitter reorder packets")
 	p.add_argument("--seed", type=int, default=1)
+	p.add_argument("--control", default="", help='a file: "cut" in it makes every connection open now go dead both ways')
 	p.add_argument("--seconds", type=float, default=0.0, help="quit after this long (0 = run until killed)")
 	args = p.parse_args()
 	loop = asyncio.get_running_loop()
 	rng = random.Random(args.seed)
 	stats = Stats()
-	await loop.create_datagram_endpoint(lambda: UdpRelay(args, rng, stats, loop), local_addr=("127.0.0.1", args.listen))
+	relay = UdpRelay(args, rng, stats, loop)
+	await loop.create_datagram_endpoint(lambda: relay, local_addr=("127.0.0.1", args.listen))
+	lines = []   # each block-line connection: {"cut": bool}
 
 	async def on_tcp(reader, writer):
 		try:
@@ -218,8 +254,10 @@ async def main():
 			writer.close()
 			return
 
-		spawn(loop, pipe(reader, up_w, Shaper(args, rng, stats), stats, loop))
-		spawn(loop, pipe(up_r, writer, Shaper(args, rng, stats), stats, loop))
+		line = {"cut": False}
+		lines.append(line)
+		spawn(loop, pipe(reader, up_w, Shaper(args, rng, stats), stats, loop, line))
+		spawn(loop, pipe(up_r, writer, Shaper(args, rng, stats), stats, loop, line))
 
 	await asyncio.start_server(on_tcp, "127.0.0.1", args.listen + 1)
 	print("LINK up: udp %d -> %s:%d, tcp %d -> %d, delay %.0f ms +- %.0f ms each way, loss %.1f%%%s" % (
@@ -238,9 +276,20 @@ async def main():
 
 	while not stop.is_set():
 		try:
-			await asyncio.wait_for(stop.wait(), timeout=1.0)
+			await asyncio.wait_for(stop.wait(), timeout=0.2)
 		except asyncio.TimeoutError:
 			pass
+
+		if args.control and read_control(args.control) == "cut":
+			n = relay.cut_all()
+
+			for line in lines:
+				line["cut"] = True
+
+			with open(args.control, "w") as f:
+				f.write("done")
+
+			print("LINK cut %d: %d udp clients and %d block lines dead both ways" % (int(time.time() * 1000), n, len(lines)), flush=True)
 
 		if time.monotonic() >= next_line:
 			print(stats.line("so far"), flush=True)

@@ -55,6 +55,7 @@ func setup(server_items, server_animals) -> void:
 		reject.call(peer, reason)
 		print("AUDIT reject %d %d %d" % [int(peer), RobotRules.now_ms(), int(reason)])
 	_wrap_hits.call_deferred()   # items.hit_animal is set after this setup (terrain_server.gd)
+	_wrap_enemy.call_deferred()
 	print("AUDIT on: robot audit lines follow (src/server/robot_audit.gd)")
 
 
@@ -210,6 +211,42 @@ func _wrap_hits() -> void:
 		print("AUDIT strike %d %d reach %.1f seen %d present %d judged %d (server now %d) target %d %s, nearest judged %.2f m, now %.2f m; judged/now %s" % [int(peer), RobotRules.now_ms(), float(reach),
 			int(seen[0]), int(seen[1]), judged, Time.get_ticks_msec(), target, "hit" if (answer is Dictionary and not (answer as Dictionary).is_empty()) or (answer is bool and answer) else "miss", then, near, " ".join(judged_at)])
 		return answer
+
+
+# Each blow a charging foe lands (server_big_game.gd: moose, bear, goblin, bandit): `AUDIT enemy_hit <peer> <unix ms> <species> from <x>,<z>
+# player <x>,<z> gap <m> result <hurt|maimed|dead|...>`, the server's own distance at the landing (robot plans fight_goblin, fight_bandit).
+func _wrap_enemy() -> void:
+	var bg = animals.big_game
+
+	if bg == null or not bg.hurt_player.is_valid():
+		print("AUDIT enemy_hit off: big_game.hurt_player is not set")
+		return
+
+	var say := func(peer, cause, from: Vector3, answer, shield: float) -> void:
+		var p: Vector3 = Vector3.INF
+
+		for info in (bg.player_info.call() if bg.player_info.is_valid() else []):
+			if int(info["peer"]) == int(peer):
+				p = info["pos"]
+
+		var gap: float = Vector2(p.x - from.x, p.z - from.z).length() if p.is_finite() and from.is_finite() else -1.0
+		print("AUDIT enemy_hit %d %d %s from %.1f,%.1f player %.1f,%.1f gap %.2f result %s shield %.2f" % [int(peer), RobotRules.now_ms(), str(cause), from.x, from.z, p.x, p.z, gap, str(answer), shield])
+	var shield_of := func(peer, from: Vector3) -> float:   # read before the blow: a shield it breaks reads 0 after it
+		return float(items.shield_share(int(peer), from)) if items.has_method("shield_share") else -1.0
+	var hurt: Callable = bg.hurt_player
+	bg.hurt_player = func(peer, amount, lethal, cause, from):
+		var shield: float = shield_of.call(peer, from)
+		var answer: Variant = hurt.call(peer, amount, lethal, cause, from)
+		say.call(peer, cause, from, answer, shield)
+		return answer
+
+	if bg.hurt_armed.is_valid():   # an armed bandit's blow goes this way (server_big_game.gd: the weapon's damage mode)
+		var armed: Callable = bg.hurt_armed
+		bg.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
+			var shield: float = shield_of.call(peer, from)
+			var answer: Variant = armed.call(peer, amount, lethal, cause, from, weapon)
+			say.call(peer, str(cause) + "/" + str(weapon), from, answer, shield)
+			return answer
 
 
 # Each snare set: `AUDIT snare <id> <unix ms> <x> <z> trail <0..1> owner <key>`, the trail share server_traps.trail_at gives it (catch

@@ -145,6 +145,109 @@ def test_link():
 	stop.set()
 
 
+def test_link_cut():
+	"""--control: "cut" kills the connections open now, both ways; a client that connects after it passes (plan drops)."""
+	while True:
+		server_port, listen = free_port(), free_port()
+
+		try:
+			for p in (listen + 1, server_port + 1):
+				t = socket.socket()
+				t.bind(("127.0.0.1", p))
+				t.close()
+			break
+		except OSError:
+			pass
+
+	udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	udp.bind(("127.0.0.1", server_port))
+	tcp = socket.socket()
+	tcp.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	tcp.bind(("127.0.0.1", server_port + 1))
+	tcp.listen(4)
+
+	def udp_echo():
+		udp.settimeout(10)
+
+		try:
+			while True:
+				data, addr = udp.recvfrom(64)
+				udp.sendto(data, addr)
+		except OSError:
+			pass
+
+	def tcp_echo(c):
+		try:
+			while True:
+				data = c.recv(64)
+
+				if not data:
+					break
+
+				c.sendall(data)
+		except OSError:
+			pass
+
+	def tcp_accept():
+		tcp.settimeout(10)
+
+		try:
+			while True:
+				c, _ = tcp.accept()
+				threading.Thread(target=tcp_echo, args=(c,), daemon=True).start()
+		except OSError:
+			pass
+
+	threading.Thread(target=udp_echo, daemon=True).start()
+	threading.Thread(target=tcp_accept, daemon=True).start()
+
+	with tempfile.TemporaryDirectory() as d:
+		ctl = os.path.join(d, "link_control.txt")
+		relay = subprocess.Popen([sys.executable, os.path.join(HERE, "lossy_link.py"), "--listen", str(listen), "--server-port", str(server_port),
+			"--delay-ms", "5", "--jitter-ms", "0", "--loss", "0", "--control", ctl, "--seconds", "10"], stdout=subprocess.PIPE, text=True)
+		relay.stdout.readline()
+
+		def udp_ask(s):
+			s.settimeout(0.5)
+			s.sendto(b"x", ("127.0.0.1", listen))
+
+			try:
+				return s.recvfrom(8)[0] == b"x"
+			except socket.timeout:
+				return False
+
+		def tcp_ask(s):
+			s.settimeout(0.5)
+			s.sendall(b"y")
+
+			try:
+				return s.recv(8) == b"y"
+			except socket.timeout:
+				return False
+
+		a = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		ta = socket.create_connection(("127.0.0.1", listen + 1))
+		before = [udp_ask(a), tcp_ask(ta)]
+
+		with open(ctl, "w") as f:
+			f.write("cut")
+
+		time.sleep(0.8)
+		after = [udp_ask(a), tcp_ask(ta)]
+		b = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		tb = socket.create_connection(("127.0.0.1", listen + 1))
+		fresh = [udp_ask(b), tcp_ask(tb)]
+		relay.terminate()
+		relay.wait()
+		check(before == [True, True], "lossy_link --control: udp and the block line pass before the cut (%s)" % before)
+		check(after == [False, False], "lossy_link --control: after \"cut\" the open connections are dead both ways (%s)" % after)
+		check(fresh == [True, True], "lossy_link --control: a client that connects after the cut passes (%s)" % fresh)
+		check(open(ctl).read() == "done", "lossy_link --control: the control file says done after the cut")
+
+	for s in (udp, tcp, a, b, ta, tb):
+		s.close()
+
+
 def write(d, name, lines):
 	with open(os.path.join(d, name), "w") as f:
 		f.write("\n".join(lines) + "\n")
@@ -220,6 +323,34 @@ def test_check():
 		check(r.returncode == 2, "robot_check calls a robot that never joined a broken run (exit 2)")
 
 
+def test_twin():
+	"""Plan drops: the first of two clients of one character, dropped by the server on purpose, is excused only for that."""
+	twin = ["ROBOT Robot 1 step joined: peer 5 at (0, 0, 0)", "ROBOT Robot 1 LOST the server at 3000 (step twin, notices [])",
+		"ROBOT Robot 1 TWIN first dropped by the server", "ERROR: Trying to call an RPC via a multiplayer peer which is not connected."]
+	same = "Peer 6 is the same character as peer 5: the older connection is dropped"
+
+	for what, lines, code, server_extra, want in [
+		("passes a twin the server dropped as the same character (exit 1, no done line, an error after)", twin, "1", [same], 0),
+		("fails the same log when the server never said same character", twin, "1", [], 1),
+		("fails a dropped twin that exited 134", twin, "134", [same], 1),
+		("fails a twin log without the dropped line", twin[:1], "1", [same], 1),
+		("still fails an engine ERROR in the server log beside an excused twin", twin, "1", [same, "ERROR: Cannot open file 'x'."], 1),
+	]:
+		with tempfile.TemporaryDirectory() as d:
+			good_logs(d)
+
+			with open(os.path.join(d, "server.log"), "a") as f:
+				f.write("".join(x + "\n" for x in server_extra))
+
+			write(d, "robot1_twin1.log", lines)
+
+			with open(os.path.join(d, "robot1_twin1.exit"), "w") as f:
+				f.write(code + "\n")
+
+			r = run_check(d)
+			check(r.returncode == want, "robot_check %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
+
+
 def watch_logs(d, jump=False, swing_clip="chop", still=False):
 	"""A walker that walks 3 m/s east for 4 s from x 0, stops, swings, sleeps; a watcher drawing it 300 ms late every 20 ms."""
 	ev = ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)",
@@ -284,9 +415,11 @@ def test_watch():
 
 if __name__ == "__main__":
 	test_link()
+	test_link_cut()
 	test_check()
 	test_others()
 	test_solo()
+	test_twin()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
 	sys.exit(1 if failures else 0)
