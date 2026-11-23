@@ -20,6 +20,8 @@ var view            # the InventoryView that owns this part (src/client/inventor
 var root: Control   # the top control this part built
 var _slot_scroll: ScrollContainer   # holds the slot grid
 var info: InfoStrip                 # the item under the pointer, or the selected one (redesign 4.1)
+var _key_buttons: Array = []   # [Button, text with one %s, KeyBindings action id]: the action buttons, relabelled when a key is rebound
+var _keys_seen: int = -1       # KeyBindings.version the labels were made at
 var _last_numbers: PackedInt32Array = PackedInt32Array()   # the pack at the last refresh, to see what just arrived
 var _last_counts: PackedInt32Array = PackedInt32Array()
 var station: Dictionary = {}         # what the station here can use (inventory_view.station_use): item number -> StationUse.FUEL or INPUT
@@ -108,21 +110,35 @@ func build() -> Control:
 	right.add_child(row)
 
 	# One row; each button carries its key (the same keys work on the slot under the mouse).
-	for spec in [["Split (%s)" % KeyBindings.label("split_item"), "Split the selected stack in half", view._split_selected], ["Drop (%s)" % KeyBindings.label("drop_item"), "Drop the whole stack. Shift+%s drops one" % KeyBindings.label("drop_item"), view._drop_selected.bind(true)], ["Use (%s)" % KeyBindings.label("use_item"), "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): view.eat_slot(view._selected)], ["Repair (%s)" % KeyBindings.label("repair_item"), "Repair a worn tool with its materials", view._repair_selected]]:
+	for spec in [["Split (%s)", "split_item", "Split the selected stack in half", view._split_selected], ["Drop (%s)", "drop_item", "Drop the whole stack. Shift+%s drops one", view._drop_selected.bind(true)], ["Use (%s)", "use_item", "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): view.eat_slot(view._selected)], ["Repair (%s)", "repair_item", "Repair a worn tool with its materials", view._repair_selected]]:
 		var action: Button = Button.new()
-		action.text = spec[0]
-		action.tooltip_text = spec[1]
+		_key_buttons.append([action, spec[0], spec[1], spec[2]])
 		view._style(action, view.BODY_PX - 10)
 		# Key hints, not boxed buttons (redesign 4.1): plain text on the panel, gold under the pointer; still clickable.
 		action.flat = true
 		action.add_theme_color_override("font_color", ArtKit.CREAM)
 		action.add_theme_color_override("font_hover_color", ArtKit.HEADING)
 		action.add_theme_color_override("font_pressed_color", ArtKit.HEADING)
-		action.pressed.connect(spec[2])
+		action.pressed.connect(spec[3])
 		row.add_child(action)
 
+	relabel_keys()
 	root = right
 	return root
+
+
+# The action buttons name the bound keys; after a rebind on the Controls page they are relabelled the next time the pack refreshes.
+func relabel_keys() -> void:
+	if _keys_seen == KeyBindings.version:
+		return
+
+	_keys_seen = KeyBindings.version
+
+	for entry in _key_buttons:
+		if is_instance_valid(entry[0]):
+			var key: String = KeyBindings.label(entry[2])
+			(entry[0] as Button).text = str(entry[1]) % key
+			(entry[0] as Button).tooltip_text = str(entry[3]).replace("%s", key)
 
 
 # Sizes the slot scroll to the whole rows that fit in `room` (canvas px), at least one, at the top of its holder.
@@ -146,6 +162,7 @@ func _fit_slots() -> void:
 
 # The slots: arranged by the sort, then each one's text, bars, tooltip and whether the search shows it.
 func refresh() -> void:
+	relabel_keys()
 	station = view.station_use() if view.has_method("station_use") else {}
 	_fit_slots()
 	arrange_slots()
