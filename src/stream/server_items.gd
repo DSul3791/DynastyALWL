@@ -13907,7 +13907,9 @@ func _holds_up(base: Dictionary, base_id: int) -> bool:
 		var others: Array = rows.filter(func(r): return int(r["id"]) != int(row["id"]) and Vector2(r["pos"].x, r["pos"].z).distance_to(at) <= HOLDS_UP_SNAP_M)
 		var without: Array = others.filter(func(r): return int(r["id"]) != base_id)
 
-		for mode in [0, 1]:
+		var roof: bool = str(_structures[str(_items[int(row["id"])]["struct"]["kind"])].get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]
+
+		for mode in ([0, 1] if roof else [0]):   # the second mode is a roof's other slope: walls and ceilings snap the same either way
 			var with_it: Array = PlacementRules.snap(_structures_cfg, kit, row["pos"], int(round(float(row["yaw"]))), others, mode)
 
 			if not bool(with_it[2]) or (with_it[0] as Vector3).distance_to(row["pos"]) > 0.05:

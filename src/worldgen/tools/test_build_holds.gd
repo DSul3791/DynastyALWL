@@ -177,7 +177,7 @@ func _init() -> void:
 	check(kept and took < 50.0, "a wall in a street of %d pieces under a roof stays, the check taking %.1f ms (under 50)" % [items._items.size(), took])
 
 	# A second storey (shelter walk, 23 Nov 2026: every upper wall was refused "something is in the way"): walls aimed at the ceilings' top stand on it,
-	# walls aimed at a lower wall's top with no ceiling stand on that top, and an inner wall stands on a ceiling's inner edge.
+	# and walls aimed at a lower wall's top with no ceiling stand on that top.
 	var e: Array = room(1500.0, "wall_section_kit", "foundation_section_kit")
 	var up_ceilings: Array = []
 
@@ -191,14 +191,19 @@ func _init() -> void:
 		upper.append(place("wall_section_kit", Vector3(1500.0 + float(w[0]) + 0.2 * signf(float(w[0])), floor_top + 0.05, 500.0 + float(w[1]) + 0.2 * signf(float(w[1]))), int(w[2])))
 
 	check(up_ceilings.all(func(id): return id > 0) and upper.all(func(id): return id > 0 and absf(float(items._items[id]["pos"].y) - floor_top) < 0.01), "eight upper walls aimed at the ceilings stand on them, %.2f m up (%s)" % [floor_top, str(upper.map(func(id): return items._items[id]["pos"] if id > 0 else said))])
-	var inner: int = place("wall_section_kit", Vector3(1500.0, floor_top + 0.05, 499.0), 90)
-	check(inner > 0 and absf(float(items._items[inner]["pos"].y) - floor_top) < 0.01, "an inner wall upstairs stands on the ceilings' join (%s)" % str(items._items[inner]["pos"] if inner > 0 else said))
 	var f: Array = room(1520.0, "wall_section_kit", "foundation_section_kit")
 	var stacked: int = place("wall_section_kit", Vector3(1521.0, top + 0.05, 502.2), 0)
 	check(stacked > 0 and absf(float(items._items[stacked]["pos"].y) - top) < 0.01, "a wall aimed at a lower wall's top stands on it (%s)" % str(items._items[stacked]["pos"] if stacked > 0 else said))
 	var again: int = place("wall_section_kit", Vector3(1521.0, 10.35, 502.2), 0)
 	check(again < 0, "a wall aimed at the foundation where a wall stands is still refused (%s)" % str(said))
 	check(f[0] > 0 and e[0] > 0, "the two rooms stand")
+	var t1: int = Time.get_ticks_usec()
+	var lower_gone: bool = take_down(int((e[1] as Dictionary)[Vector2i(1, 2)]))
+	var took_lower: float = float(Time.get_ticks_usec() - t1) / 1000.0
+	check(lower_gone and took_lower < 50.0 and upper.all(func(id): return items._items.has(id)), "a lower wall comes down while the ceiling over it rests on another wall, the upper walls stay, the check taking %.1f ms (under 50)" % took_lower)
+	var t2: int = Time.get_ticks_usec()
+	var ceiling_kept: bool = not take_down(int(up_ceilings[0]))
+	check(ceiling_kept, "a ceiling under upper walls stays, the check taking %.1f ms" % (float(Time.get_ticks_usec() - t2) / 1000.0))
 	var under_stack: int = int((f[1] as Dictionary)[Vector2i(1, 2)])
 	check(not take_down(under_stack) and said.has("Take down what stands on it first."), "the wall under it stays, saying why (%s)" % str(said))
 	check(not take_down(int(up_ceilings[3])) and said.has("Take down what stands on it first."), "a ceiling under upper walls stays, saying why (%s)" % str(said))

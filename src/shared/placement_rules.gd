@@ -145,8 +145,6 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 				if piece_kind == "wall":
 					anchors = span_anchors(anchors, float(def.get("footprint_x", WALL_CELL_M)))
-			elif piece_kind == "wall" and str(base.get("piece_kind", "")) == "floor":
-				anchors = span_anchors(edge_anchors(base), float(def.get("footprint_x", WALL_CELL_M)))   # an upper storey's wall on a ceiling's edge (inner edges too)
 
 			if anchors.is_empty():
 				continue
@@ -254,6 +252,10 @@ static func storey_tops_at(cfg: Dictionary, at: Vector3, rows: Array) -> Array:
 
 		var def: Dictionary = structure_of_state(cfg, int(row["state"]))
 		var kind: String = str(def.get("piece_kind", ""))
+
+		if kind != "wall" and kind != "floor":
+			continue
+
 		var local: Vector2 = local_of(row, at)
 		var hx: float = float(def.get("footprint_x", 2.0)) * 0.5
 		var hz: float = float(def.get("footprint_z", 2.0)) * 0.5
@@ -264,13 +266,11 @@ static func storey_tops_at(cfg: Dictionary, at: Vector3, rows: Array) -> Array:
 				continue   # the point on this wall's own run (a wall round the corner does not hold one up: take-down asks this too)
 
 			top = snappedf(float(row["pos"].y) + float(def.get("height_m", WALL_HEIGHT_M)), 0.001)
-		elif kind == "floor":
-			if absf(local.x) > hx + CEILING_EDGE_REACH_M or absf(local.y) > hz + CEILING_EDGE_REACH_M:
-				continue
+		else:
+			if float(row["pos"].y) < at.y + 0.05 or absf(local.x) > hx + CEILING_EDGE_REACH_M or absf(local.y) > hz + CEILING_EDGE_REACH_M:
+				continue   # a floor laid on the foundation itself is not a storey: the ground floor's walls stand on the foundation (test_placement_rules)
 
 			top = snappedf(float(row["pos"].y) + anchor_top(def), 0.001)
-		else:
-			continue
 
 		if not out.has(top):
 			out.append(top)
