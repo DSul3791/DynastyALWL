@@ -4033,7 +4033,11 @@ func _free_craft() -> bool:
 	return admin_craft
 
 
+# A locked recipe (recipes.json "locked": a chain it needs does not exist yet) is never lit: the server would refuse it.
 func _can_craft(number: int) -> bool:
+	if not _free_craft() and bool(recipes.recipe(number).get("locked", false)):
+		return false
+
 	return _free_craft() or (hand_tool_ok(number) and (_stock_can_make(number) or _logs_cover(number) or (bool(_parts_plan(number)["ok"]) and hand_tool_short(number) == "")))
 
 

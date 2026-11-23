@@ -4,3 +4,6 @@
 # resources as they exit. The abort that follows ("corrupted size vs. prev_size") is a real fault, passed to the packaging thread; this is
 # only its leak notice.
 ^ERROR: \d+ resources still in use at exit
+# Quitting with the crafting screen open (the screens plan, 23 Nov 2026, robot 1 on dev 7eaee33b): the engine reports the screen's fonts,
+# shaped text and dummy textures as leaked RIDs at exit. Teardown only, after the pack check; the rejoin pass checks nothing was lost.
+^ERROR: \d+ RID allocations of type '\w+' were leaked at exit\.
