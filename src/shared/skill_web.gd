@@ -231,6 +231,30 @@ static func gain(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dic
 
 # One success at a skill: the skill gets specific_share, the rest goes up the parents split by their weights, and each further
 # generation passes on feed_ratio of what it received. Returns the units the skill itself gained.
+# The skill a success at `skill` trains now (Dave 23 Nov 2026: everyone starts at 1 in all skills and gains experience by doing): the skill
+# itself once unlocked, else its nearest unlocked parent (the heaviest first), so the practice that will unlock it is not lost; "" when none.
+static func trainable(cfg: Dictionary, skill: String, records: Dictionary) -> String:
+	var skills: Dictionary = cfg.get("skills", {})
+
+	if not skills.has(skill):
+		return ""
+
+	if unlocked(cfg, skill, records):
+		return skill
+
+	var parents: Dictionary = skills[skill].get("parents", {})
+	var order: Array = parents.keys()
+	order.sort_custom(func(a, b): return float(parents[a]) > float(parents[b]))
+
+	for p in order:
+		var got: String = trainable(cfg, str(p), records)
+
+		if got != "":
+			return got
+
+	return ""
+
+
 static func practice(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dictionary, difficulty: float, now_s: float) -> float:
 	var system: Dictionary = cfg["system"]
 	var share: float = float(system.get("specific_share", 0.8))
@@ -398,8 +422,8 @@ static func validate(cfg: Dictionary) -> Array:
 	for action in cfg.get("actions", {}):
 		if not skills.has(str(cfg["actions"][action].get("skill", ""))):
 			problems.append("action %s names an unknown skill" % action)
-		elif skills[str(cfg["actions"][action]["skill"])].has("needs"):
-			problems.append("action %s trains a locked skill" % action)
+		elif trainable(cfg, str(cfg["actions"][action]["skill"]), {}) == "":
+			problems.append("action %s trains a locked skill with no unlocked parent" % action)
 
 	return problems
 

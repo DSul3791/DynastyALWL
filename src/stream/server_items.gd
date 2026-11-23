@@ -2862,7 +2862,11 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	if def.is_empty() or not _characters.has(_peer_key.get(peer, "")):
 		return 0.0
 
-	var skill: String = str(def.get("skill", ""))
+	var skill: String = SkillWeb.trainable(_skills_cfg, str(def.get("skill", "")), records)   # a locked skill's practice goes to its nearest unlocked parent
+
+	if skill == "":
+		return 0.0
+
 	var system: Dictionary = _skills_cfg.get("system", {})
 	var now: int = Time.get_ticks_msec()
 	var last: Dictionary = _last_practice.get(peer, {})
@@ -3263,6 +3267,8 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var skill_action: String = _blow_action(table.id_of(inv.numbers[slot]), entry)
+	damage *= skill_factor(peer, skill_action)   # 1.0 at skill 1, so a new player's blows are as before
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)   # {"at": where it struck} from the server (or true from older hooks), {} or false for a miss
 	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
@@ -3273,8 +3279,35 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		var at: Vector3 = (answer as Dictionary).get("at", ahead) if answer is Dictionary else ahead
 		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
 		_wear_slot(peer, inv, slot, "strike")
+		practice(peer, skill_action)
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+# The skills.json action a blow with this item trains (the design's web: Fighting -> Brawling (Hand to hand), Swordplay, Spear, ...; Knives;
+# Swordplay -> Rapier, Broadswords; Knives -> Daggers). Anything else in hand (a mace, a club, an axe, a stone) trains Fighting. PROVISIONAL.
+static func _blow_action(id: String, entry: Dictionary) -> String:
+	var weapon: String = str(entry.get("weapon_class", ""))
+
+	if weapon == "sword":
+		if id.contains("rapier"):
+			return "strike_rapier"
+
+		if id.contains("greatsword") or id.contains("broadsword") or id.contains("longsword"):
+			return "strike_broadsword"
+
+		return "strike_sword"
+
+	if id.contains("dagger"):
+		return "strike_dagger"
+
+	if weapon in ["spear", "javelin", "fish_spear"]:
+		return "strike_spear"
+
+	if str(entry.get("tool_class", "")) == "knife":
+		return "strike_knife"
+
+	return "strike_fighting"
 
 
 # A bare-handed blow (Dave 23 Nov 2026: punching "should be a basic thing ... a skill like hand to hand"): melee.json bare_hand's damage times the

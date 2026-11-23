@@ -68,11 +68,6 @@
 			"skill": "jumping",
 			"effect": "toughness"
 		},
-		"punch": {
-			"skill": "hand_to_hand",
-			"effect": "damage",
-			"_provisional": "PROVISIONAL (Dave 23 Nov 2026: \"he can probably fight with his hands and should have a skill like hand to hand\"): a bare-handed blow that lands trains it, and the skill factor multiplies the punch (melee.json bare_hand)"
-		},
 		"craft": {
 			"skill": "crafting",
 			"effect": "speed"
@@ -109,6 +104,39 @@
 			"skill": "mapping",
 			"effect": "accuracy",
 			"_provisional": "PROVISIONAL (GOALS-REPAIR A-5): Mapping practice from surveying new ground (WP-MAP; data/map.json cells_per_practice)"
+		},
+		"punch": {
+			"skill": "hand_to_hand",
+			"effect": "damage",
+			"_provisional": "PROVISIONAL (Dave 23 Nov 2026: everyone starts at 1 in all skills and gains experience by doing): a blow that lands at an animal trains the skill of what struck it (server_items.gd _blow_action); while that skill is still locked the practice goes to its nearest unlocked parent (SkillWeb.trainable), so a new player's blows train Athleticism, then Fighting, which unlock it. The factor multiplies the blow's damage (1.0 at value 1)."
+		},
+		"strike_fighting": {
+			"skill": "fighting",
+			"effect": "damage"
+		},
+		"strike_sword": {
+			"skill": "swordplay",
+			"effect": "damage"
+		},
+		"strike_broadsword": {
+			"skill": "broadswords",
+			"effect": "damage"
+		},
+		"strike_rapier": {
+			"skill": "rapier",
+			"effect": "damage"
+		},
+		"strike_knife": {
+			"skill": "knives",
+			"effect": "damage"
+		},
+		"strike_dagger": {
+			"skill": "daggers",
+			"effect": "damage"
+		},
+		"strike_spear": {
+			"skill": "spear",
+			"effect": "damage"
 		}
 	},
 	"skills": {
@@ -233,19 +261,6 @@
 			"max_factor": 4.0,
 			"order": 10
 		},
-		"hand_to_hand": {
-			"name": "Hand to hand",
-			"parents": {
-				"athletics": 1.0
-			},
-			"traits": {
-				"strength": 0.5,
-				"dexterity": 0.3,
-				"fitness": 0.2
-			},
-			"max_factor": 2.0,
-			"order": 11
-		},
 		"crafting": {
 			"name": "Crafting",
 			"parents": {
@@ -288,8 +303,46 @@
 					"skill": "athletics",
 					"value": 15
 				}
+			]
+		},
+		"hand_to_hand": {
+			"name": "Hand to hand",
+			"parents": {
+				"fighting": 1.0
+			},
+			"traits": {
+				"strength": 0.5,
+				"dexterity": 0.3,
+				"fitness": 0.2
+			},
+			"max_factor": 2.0,
+			"order": 0,
+			"needs": [
+				{
+					"skill": "fighting",
+					"value": 15
+				}
 			],
-			"placeholder": true
+			"_note": "The design's Brawling node (SKILLS_WEB_DESIGN.md: Fighting -> Brawling, Swordplay, Axe handling, Spear, Throwing); Dave 23 Nov 2026 calls it hand to hand."
+		},
+		"spear": {
+			"name": "Spear",
+			"parents": {
+				"fighting": 1.0
+			},
+			"traits": {
+				"strength": 0.4,
+				"dexterity": 0.4,
+				"fitness": 0.2
+			},
+			"max_factor": 1.5,
+			"order": 3,
+			"needs": [
+				{
+					"skill": "fighting",
+					"value": 15
+				}
+			]
 		},
 		"swordplay": {
 			"name": "Swordplay",
@@ -308,8 +361,7 @@
 					"skill": "fighting",
 					"value": 15
 				}
-			],
-			"placeholder": true
+			]
 		},
 		"knives": {
 			"name": "Knives",
@@ -327,8 +379,7 @@
 					"skill": "fighting",
 					"value": 15
 				}
-			],
-			"placeholder": true
+			]
 		},
 		"daggers": {
 			"name": "Daggers",
@@ -347,8 +398,7 @@
 					"skill": "knives",
 					"value": 15
 				}
-			],
-			"placeholder": true
+			]
 		},
 		"rapier": {
 			"name": "Rapier",
@@ -367,8 +417,7 @@
 					"skill": "swordplay",
 					"value": 15
 				}
-			],
-			"placeholder": true
+			]
 		},
 		"broadswords": {
 			"name": "Broadswords",
@@ -387,8 +436,7 @@
 					"skill": "swordplay",
 					"value": 15
 				}
-			],
-			"placeholder": true
+			]
 		},
 		"parry": {
 			"name": "Parry",
