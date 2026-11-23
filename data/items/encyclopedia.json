@@ -13722,7 +13722,7 @@
 				},
 				{
 					"title": "Iron",
-					"text": "Dark, reddish-brown, heavy ore. Small iron stones lie along river beds like copper and tin, and you pick them up by hand, one Iron ore each. Anything bigger needs a bronze pick or better. Only an Improved smelter with its bellows worked smelts it. Bog iron is the other way in. Now and then a meteorite lies on open ground: break it with any pick or the Stone - Hammer and its Iron chunks do the work of iron ingots. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+					"text": "Dark, reddish-brown, heavy ore. Small iron stones lie along river beds like copper and tin, and you pick them up by hand, one Iron ore each. Anything bigger needs a bronze pick or better. An Improved smelter with its bellows worked, or an Advanced smelter, smelts it. Bog iron is the other way in. Now and then a meteorite lies on open ground: break it with any pick or the Stone - Hammer and its Iron chunks do the work of iron ingots. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
 				},
 				{
 					"title": "Bog iron",
@@ -13730,7 +13730,7 @@
 				},
 				{
 					"title": "Coal and charcoal",
-					"text": "Coal lies a long way from the first camp, so you will not wait for it. Burn wood on a campfire and charcoal is left in it, ready to take from the fire; a kiln makes far more. It burns hot and clean and fuels the forge just as well."
+					"text": "Coal is rare, so you will not wait for it. Burn firewood or logs on a campfire and charcoal is left in it, ready to take from the fire (sticks and kindling leave none); a kiln makes far more. It burns hot and clean and fuels the forge just as well."
 				},
 				{
 					"title": "Salt",
@@ -13786,11 +13786,11 @@
 			"sections": [
 				{
 					"title": "Bronze nails and Bronze hinges",
-					"text": "At a Stone - Forge, one copper ingot makes a hundred Copper nails, the first metal hardware, for small chests, crates, garden plots and racks. One bronze ingot makes a hundred Bronze nails or twenty Bronze hinges, for chests, cupboards, furniture and the wood gate."
+					"text": "At a Primitive smithy, one copper ingot makes a hundred Copper nails, the first metal hardware, for small chests, crates, garden plots and racks. One bronze ingot makes a hundred Bronze nails or twenty Bronze hinges, for chests, cupboards, furniture and the Refined - Gate."
 				},
 				{
 					"title": "Nails and Hinges (iron)",
-					"text": "Made at a brick forge from an iron ingot, for stone, brick and iron gates, large chests, bins and mills; Steel nails from a steel ingot are for the iron chest and fortified gate. Where a cost names a metal, that metal or a better one will do: Bronze nails fill a Copper nails cost, but Copper nails never fill a Bronze one. Iron bands for fortified walls have no bronze stand-in: those wait for iron."
+					"text": "Made at a brick forge from an iron ingot, for stone, brick and iron gates, large chests, bins and mills; Steel nails from a steel ingot are for the Ornate - Chest and the fortified gate. Where a cost names a metal, that metal or a better one will do: Bronze nails fill a Copper nails cost, but Copper nails never fill a Bronze one. Iron bands for fortified walls have no bronze stand-in: those wait for iron."
 				}
 			]
 		}
