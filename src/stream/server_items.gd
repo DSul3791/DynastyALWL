@@ -4623,18 +4623,18 @@ func _hoe_ready(peer: int, inv, at: Vector3, held_slot: int) -> int:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_dig.get(peer, -100000)) < _hoe_ms(inv, hoe):
+	if now - int(_last_dig.get(peer, -100000)) < HOE_COOLDOWN_MS:
 		return -1
 
 	_last_dig[peer] = now
 	return hoe
 
 
-# The hoe's pace: HOE_COOLDOWN_MS divided by its items.json till_speed (Wooden 1 to Steel 2.5; tier consistency, coordinator 23 Nov 2026: every
-# hoe tilled at one pace, so a better one gave nothing but durability), for a click and for each step of a garden job.
-func _hoe_ms(inv, slot: int) -> int:
-	var speed: float = float(table.entry(table.id_of(inv.numbers[slot])).get("till_speed", 1.0)) if slot >= 0 else 1.0
-	return int(round(float(HOE_COOLDOWN_MS) / maxf(speed, 0.1)))
+# The hoe's items.json till_speed (Wooden 1 to Steel 2.5; tier consistency, coordinator 23 Nov 2026: every hoe tilled a garden at one pace, so a
+# better one gave nothing but durability): a garden job does this many times the ground edits and beds each step. A single stroke keeps
+# HOE_COOLDOWN_MS (the client's hold repeat, held_item.gd HOE_REPEAT_S, is paced to it).
+func _hoe_speed(inv, slot: int) -> float:
+	return maxf(float(table.entry(table.id_of(inv.numbers[slot])).get("till_speed", 1.0)), 0.1) if slot >= 0 else 1.0
 
 
 # Pathen (Dave 2 Nov 2026; one level spot a click, 18 Nov 2026): the click levels the ground under the spot to its own average (_hoe_path), then lays a round
@@ -6103,7 +6103,7 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 	var rates: Dictionary = (_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {})
 	# The class's ladder lifted so its stone tool gives one a blow (an axe's 0.5 to 2 becomes 1 to 2.5): every tier still breaks more than the one
 	# below (tier consistency, coordinator 23 Nov 2026: stone, copper and bronze axes all gave one), never under one.
-	var rate: float = maxf(float(rates.get(str(entry.get("material", "")), 1.0)) + maxf(1.0 - float(rates.get("stone", 1.0)), 0.0), 1.0)
+	var rate: float = maxf(float(rates.get(str(entry.get("material", "")), rates.get("stone", 1.0))) + maxf(1.0 - float(rates.get("stone", 1.0)), 0.0), 1.0)
 	_wear_slot(peer, inv, tool, "rock")   # after reading the tool: one that breaks on this blow leaves its slot empty
 	var part: float = float(state.get("part", 0.0)) + rate
 	var stones: int = int(floor(part + 0.001))
@@ -21710,7 +21710,7 @@ func _beds_by_trench(spot: Vector3, plots: Array, kind: String = TRENCH_KIND) ->
 # original heights of the beds are averaged together; the garden is levelled to that average and every bed tilled (dark garden soil, no grass); a garden's
 # edge blends back to the land no steeper than GARDEN_BLEND_GRADE and within GARDEN_BLEND_M; trees, large rocks, buildings (and ground within
 # GARDEN_BUILD_CLEAR_M of one) refuse the whole thing, red, before anything changes. Small loose rocks in it are picked up. No soil is used. The work then runs
-# as one job on the slow tick (GARDEN_EDITS_A_STEP ground edits, then GARDEN_TILLS_A_STEP beds, every HOE_COOLDOWN_MS) and finishes whatever the player
+# as one job on the slow tick (GARDEN_EDITS_A_STEP ground edits, then GARDEN_TILLS_A_STEP beds, every HOE_COOLDOWN_MS, times the hoe's till_speed) and finishes whatever the player
 # holds. A garden opens the next Garden Grid GARDEN_COOLDOWN_MS later (the client's red countdown); the soil patch has no wait. PROVISIONAL values TG-1..TG-6.
 const GARDEN_BLEND_M := 20.0           # Dave: the blend reaches the existing ground within 20 m of the garden's edge
 const GARDEN_BLEND_GRADE := 0.5        # TG-1: at most this rise a metre (27 degrees; Dave allows up to 45): with 1.2 m spheres a steeper blend has each cut or fill undo its neighbour's
@@ -21718,8 +21718,8 @@ const GARDEN_BUILD_CLEAR_M := 2.0      # Dave: no ground changed under a buildin
 const GARDEN_FEATHER_SPHERE_M := 1.2   # the blend's cut and fill spheres (a 2.5 m sphere is flatter than the slope it should leave)
 const GARDEN_FEATHER_SLACK_M := 0.1    # a blend spot within this of its target is left: neighbouring 1.2 m spheres undo each other by up to about 0.09 m
 const GARDEN_MAX_EDITS := 1500         # TG-2: a garden that needs more ground edits than this is refused before anything changes
-const GARDEN_EDITS_A_STEP := 8         # TG-3: ground edits each HOE_COOLDOWN_MS
-const GARDEN_TILLS_A_STEP := 4         # beds tilled each HOE_COOLDOWN_MS once the ground is level
+const GARDEN_EDITS_A_STEP := 8         # TG-3: ground edits each HOE_COOLDOWN_MS (times the hoe's till_speed)
+const GARDEN_TILLS_A_STEP := 4         # beds tilled each HOE_COOLDOWN_MS once the ground is level (times the hoe's till_speed)
 const GARDEN_COOLDOWN_MS := 20000      # Dave: 20 s before the next Garden Grid
 const SOIL_PATCH_BEDS := 2             # Till Soil 2m: a 2 m patch, 2 by 2 metre beds
 const GARDEN_GIVE_UP_MS := 120000    # a garden whose ground will not load or take the edits for this long is tilled as it lies
@@ -21768,7 +21768,7 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 		_garden_ready_ms[peer] = now + GARDEN_COOLDOWN_MS
 
 	plan["give_up_ms"] = Time.get_ticks_msec() + GARDEN_GIVE_UP_MS
-	plan["step_ms"] = _hoe_ms(inv, _held_tool(inv, int(plan["slot"]), "hoe"))   # the pace of the hoe that took the job on, kept if it is put away
+	plan["speed"] = _hoe_speed(inv, _held_tool(inv, int(plan["slot"]), "hoe"))   # the pace of the hoe that took the job on, kept if it is put away
 	_garden_jobs[peer] = plan
 	_hoe_verdict(peer, Net.ACT_TILL_GARDEN, size % 10000000, at, 2, "")
 	_say(peer, "Levelling and tilling a %d by %d garden." % [int(plan["w"]), int(plan["d"])] if int(plan["mode"]) == TILL_GARDEN else "Tilling a 2 m patch of soil.")
@@ -22007,7 +22007,7 @@ func _garden_jobs_tick() -> void:
 		if now < int(job["next_ms"]):
 			continue
 
-		job["next_ms"] = now + int(job.get("step_ms", HOE_COOLDOWN_MS))
+		job["next_ms"] = now + HOE_COOLDOWN_MS
 		var inv = inventory_of(peer) if _peer_pos.has(peer) else null
 
 		if inv == null:
@@ -22018,7 +22018,7 @@ func _garden_jobs_tick() -> void:
 		var centre: Vector3 = job["centre"]
 
 		if int(job["worked"]) < GARDEN_MAX_EDITS and not (job["spots"] as Array).is_empty():
-			var worked: int = _level_ground(centre, job["spots"], centre.y, job["edits"], job["targets"], job["radii"], Callable(), GARDEN_EDITS_A_STEP)
+			var worked: int = _level_ground(centre, job["spots"], centre.y, job["edits"], job["targets"], job["radii"], Callable(), ceili(GARDEN_EDITS_A_STEP * float(job.get("speed", 1.0))))
 
 			if worked > 0:
 				job["worked"] = int(job["worked"]) + worked
@@ -22037,7 +22037,7 @@ func _garden_jobs_tick() -> void:
 
 		var cells: Array = job["cells"]
 
-		for n in GARDEN_TILLS_A_STEP:
+		for n in ceili(GARDEN_TILLS_A_STEP * float(job.get("speed", 1.0))):
 			if cells.is_empty():
 				break
 

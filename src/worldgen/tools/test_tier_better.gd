@@ -58,7 +58,20 @@ func _init() -> void:
 	_rises("saw", "saw speed", func(e): return float(e.get("saw_speed", 0.0)))
 	_rises("hammer", "building reach", func(e): return items._hammer_reach_of(e))
 	_rises("hoe", "tilling pace", func(e): return float(e.get("till_speed", 1.0)))
+	# What a garden job does with it each step (server_items _garden_jobs_tick): ground edits and beds.
+	_rises("hoe", "a garden job's ground edits and beds a step", func(e):
+		var speed: float = _held_speed(str(table.id_of(int(e["number"]))))
+		return float(ceili(items.GARDEN_EDITS_A_STEP * speed) * 100 + ceili(items.GARDEN_TILLS_A_STEP * speed)))
 	_rises("knife", "butchering speed (carcass.json knife_speed)", func(e): return float((items._carcass_cfg.get("knife_speed", {}) as Dictionary).get(str(e.get("material", "")), 0.0)))
+	_knife_blows()
+
+	# The hammer the building reach is taken from: the best on the hotbar, Copper over Stone though both are tier 2.
+	var inv = _fresh_pack()
+	inv.numbers[0] = table.number_of("stone_hammer")
+	inv.counts[0] = 1
+	inv.numbers[1] = table.number_of("copper_hammer")
+	inv.counts[1] = 1
+	check(items._heaviest_hammer_slot(inv) == 1 and items._hammer_x(1) > float(items._wear_cfg["hammer_reach_x"]["2"]), "with a Stone and a Copper hammer on the hotbar, the Copper one sets the building reach (x%.3f)" % items._hammer_x(1))
 
 	# Bare rock: the server's own blow, per pick and axe (server_items _mine), stones over a patch's six blows.
 	for cls in ["pick", "axe"]:
@@ -130,19 +143,78 @@ func _best_rises(cls: String, key: String, field: String) -> void:
 	check(ok, "%s: the best %s of each tier beats the tier below (%s)" % [cls, field, str(best)])
 
 
-# Stones a fresh bare-rock patch gives to six blows of `id`, held in the first hotbar slot.
-func _bare_rock(id: String) -> int:
+# The player's pack, emptied, at the origin.
+func _fresh_pack():
 	items._peer_pos.clear()
-	items._mined.clear()
 	items.ground_height = func(_x, _z): return 10.0
 	items.rock_at = func(_x, _z): return true
 	items.peer_connected_hello(1, "tierbetter00001")
 	items.vitals_of(1)["weight"] = 1.0e6
 	var inv = items.inventory_of(1)
 
-	for s in inv.slot_count:
-		inv.clear_slot(s)
+	for k in inv.slot_count:
+		inv.clear_slot(k)
 
+	items._peer_pos[1] = Vector3(0.0, 10.0, 0.0)
+	return inv
+
+
+# The till_speed the server reads off `id` in hand.
+func _held_speed(id: String) -> float:
+	var inv = _fresh_pack()
+	inv.numbers[0] = table.number_of(id)
+	inv.counts[0] = 1
+	return items._hoe_speed(inv, 0)
+
+
+# Every species' carcass worked with each knife (the server's _process_carcass): a better knife never takes more blows than the one below, and
+# the best knife takes fewer than stone on every carcass of two blows or more (whole blows: a small carcass shares a count between neighbouring
+# knives, which then differ in wear only).
+func _knife_blows() -> void:
+	var worse: Array = []
+	var slow: Array = []
+
+	for sp in (items._carcass_cfg.get("species", {}) as Dictionary):
+		var last: int = 1000000
+		var stone: int = 0
+
+		for e in _ladder("knife"):
+			var got: int = _carcass_blows(str(sp), str(table.id_of(int(e["number"]))))
+
+			if got > last:
+				worse.append("%s %s" % [sp, str(table.id_of(int(e["number"])))])
+
+			if str(e.get("material", "")) == "stone":
+				stone = got
+
+			last = got
+
+		if stone >= 2 and last >= stone:
+			slow.append("%s %d" % [sp, stone])
+
+	check(worse.is_empty(), "no better knife takes more blows on any carcass than the one below (%s)" % str(worse))
+	check(slow.is_empty(), "and the best knife takes fewer blows than stone on every carcass of two blows or more (%s)" % str(slow))
+
+
+func _carcass_blows(sp: String, knife: String) -> int:
+	var inv = _fresh_pack()
+	inv.numbers[0] = table.number_of(knife)
+	inv.counts[0] = 1
+	var id: int = items.make_carcass(sp, Vector3(0.5, 10.0, 0.0), 1)
+	var blows: int = 0
+
+	while items._items.has(id) and blows < 100:
+		items._last_process.clear()
+		items._process_carcass(1, inv, id, 0)
+		blows += 1
+
+	return blows
+
+
+# Stones a fresh bare-rock patch gives to six blows of `id`, held in the first hotbar slot.
+func _bare_rock(id: String) -> int:
+	items._mined.clear()
+	var inv = _fresh_pack()
 	inv.numbers[0] = table.number_of(id)
 	inv.counts[0] = 1
 	var at := Vector3(0.0, 10.0, 0.0)
