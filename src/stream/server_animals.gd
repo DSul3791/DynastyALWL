@@ -835,7 +835,8 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 	return kept
 
 
-# A standing animal a player at `at` has walked into steps out of their body at its walking pace, `dt` s of it, away from them; not into
+# An animal a player at `at` has walked or run into steps out of their body at up to half its flee speed (its walking pace at least), `dt` s
+# of it, away from them; not into
 # ground it cannot walk on. Birds in the air or on a perch, animals in a burrow or cave and a bandit camp's tied horses stay. True when it moved.
 func make_way(a: Dictionary, at: Vector3, dt: float) -> bool:
 	if at == Vector3.INF or a.has("fly") or a.has("camp") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
@@ -1090,6 +1091,9 @@ func tick(delta: float) -> void:
 
 		if animals.has(id) and a["pos"] != was:
 			keep_off_players(a, was, players)   # never into a player's body (Dave 23 Nov 2026: "jumping right through us")
+
+			if near_p != Vector3.INF and Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).length() < AnimalContact.contact_m(str(a["sp"])) - 0.01:
+				make_way(a, near_p, dt)   # a grazer's small step a player ran into is kept by keep_off: it still steps out of them (gate review of #1670)
 		elif animals.has(id) and near_d < AnimalContact.contact_m(str(a["sp"])):
 			make_way(a, near_p, dt)   # a player walked into it standing: it steps aside (robot play-testers 23 Nov 2026: a dog 0.02 m from a player)
 

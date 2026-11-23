@@ -27,7 +27,7 @@ const CATCH_X := 0.3            # ...catching up at most this share of the body'
 const CATCH_MIN_MPS := 0.9      # so a drawn body never goes over 1.3 times its leg's speed (robots under lag, 23 Nov 2026: deer and a fox at 2x)
 const AHEAD_CARRY_S := 0.8      # a body drawn at the present (a committed charge, animal_view AHEAD_STATES) carries on this long past its newest point
 const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 12 m/s); smooth() eases a body at most this fast (a 16-18 m/s
-                                # flush or pronghorn flight still moves under its frame of room; any excess is eased in, not jumped)
+                                # flush or pronghorn flight is drawn at 15 and settles a few tenths of a metre behind its point; any excess is eased in, not jumped)
 
 
 # Local seconds minus server seconds (`off` so far, INF for none): the smallest seen, the batch that came fastest, so a point's time plus
@@ -158,8 +158,9 @@ static func clock_delay(c: Dictionary) -> float:
 
 
 # Where to draw a body this frame: `p` where its points put it now (at), `speed` its recent ground speed. A frame's move of the target
-# beyond a normal one (1.5 times its speed, at least 2 m/s) is not shown at once: it goes into the body's correction (sm_err), which is then
-# blended away (SMOOTH_HALF_S, at most CATCH_X of its speed faster). A late batch, a hole bridged too far, a step past a player held
+# beyond a normal one (its speed, at least 2 m/s, at most CARRY_MPS) is not shown at once: it goes into the body's correction (sm_err), which
+# is then blended away (SMOOTH_HALF_S, at most CATCH_X of its speed faster, CATCH_MIN_MPS at least: so about 1.3 times its leg speed, plus
+# up to about 1.5 m/s for a slow walker while a correction drains). Remote players (player_view) share it. A late batch, a hole bridged too far, a step past a player held
 # back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
 static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> Vector3:
 	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
@@ -167,7 +168,7 @@ static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> 
 
 	if body.has("sm_p"):
 		var jump: Vector3 = p - (body["sm_p"] as Vector3)
-		var room: float = v * delta + 0.01   # the leg's own speed: anything faster is eased in below
+		var room: float = v * delta * 1.05 + 0.002   # the leg's own speed (a slack in proportion, so it holds at any frame rate): anything faster is eased in below
 
 		if jump.length() > SNAP_M:
 			err = Vector3.ZERO
