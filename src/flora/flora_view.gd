@@ -1260,6 +1260,7 @@ func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 		"shape": shape,
 		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
 		"log": str(entry.get("model", "")) == "fallen_log" and not (str(entry["name"]) in ["old_stump", "dead_tree"]),   # the dead tree stands (tree_builder _snag)
+		"snag": TreeTrunks.is_snag(entry),   # a standing dead tree: blocks like a tree (its own trunk collider)
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
@@ -3196,14 +3197,16 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			groups[proxy_key].append(n)
 
-		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: walk-through, louder instead), only long fallen
-		# logs within the shrub model range (level bit 32).
+		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: undergrowth is walk-through, louder instead), except long
+		# fallen logs and the standing dead tree (a snag, a trunk not undergrowth: coordinator 23 Nov 2026) within the shrub model range (level bit 32).
 		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
 
 			if radius > 0.0 and int(info["kind"]) == KIND_TREE:
 				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), radius)   # as wide as the model is drawn (tree_trunks.json)
+			elif bool(info.get("snag", false)):
+				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), TreeTrunks.snag_fallback(float(info["height"]), float(items["heights"][n])))
 
 			if radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
@@ -3531,7 +3534,7 @@ func _trunk_shape(radius: float) -> CylinderShape3D:
 	if shape == null:
 		shape = CylinderShape3D.new()
 		shape.radius = float(key) / 100.0
-		shape.height = 3.0
+		shape.height = 3.0 + 2.0 * maxf(shape.radius - 1.0, 0.0)   # a wide trunk (the everember's ~7 m) reaches down to the ground on its downhill side, up to a 45 degree slope
 		_trunk_shapes[key] = shape
 
 	return shape
