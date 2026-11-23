@@ -989,7 +989,8 @@ func _ready() -> void:
 	bandits.animals = animals
 	TreeTrunks.warm()   # the trunk collider table (_cached_trees), read once at start
 	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
-		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
+		var made: float = camp_reach + TreeTrunks.widest_m()   # a wide trunk (everember) is listed from its root, up to widest_m beyond the camp
+		for corner in [Vector2(-made, -made), Vector2(made, -made), Vector2(-made, made), Vector2(made, made)]:
 			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
 				return null
 
@@ -2233,6 +2234,7 @@ func _berries_near_cached(point: Vector3, radius: float) -> PackedVector3Array:
 # flora stream (a worker) has made it.
 const TREE_LISTS_KEPT := 200
 const TREE_CELL_M := 16.0
+const WIDE_CELL := Vector2i(2147483647, 2147483647)   # _tree_lists key of a chunk's trunks wider than TreeTrunks.SEARCH_TRUNK_M
 var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name, trunk collider radius, height]
 var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
 
@@ -2266,7 +2268,8 @@ func _arrow_trunks(point: Vector3, radius: float) -> Array:
 func _cached_trees(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
-	var reach: int = maxi(int(ceil(radius / size)), 1)
+	var widest: float = TreeTrunks.widest_m()
+	var reach: int = maxi(int(ceil((radius + widest) / size)), 1)
 	var found: Array = []
 
 	if _tree_names.is_empty():
@@ -2285,7 +2288,7 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 			var near_x: float = clampf(point.x, corner.x, corner.x + size)
 			var near_z: float = clampf(point.z, corner.y, corner.y + size)
 
-			if Vector2(near_x - point.x, near_z - point.z).length() > radius:
+			if Vector2(near_x - point.x, near_z - point.z).length() > radius + widest:
 				continue
 
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
@@ -2316,7 +2319,15 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 
 						# The trunk collider the client makes (tree_trunks.gd standing_collider: as wide as it is drawn): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
 						var trunk_r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall)
-						cells[cell].append([ids[n], at, tree_name, TreeTrunks.standing_collider(str(tree_name), ids[n], tall, trunk_r), tall])
+						var tree: Array = [ids[n], at, tree_name, TreeTrunks.standing_collider(str(tree_name), ids[n], tall, trunk_r), tall]
+
+						if float(tree[3]) > TreeTrunks.SEARCH_TRUNK_M:
+							cell = WIDE_CELL   # a trunk wider than the callers' search margins (the everember): found by its own radius below
+
+							if not cells.has(cell):
+								cells[cell] = []
+
+						cells[cell].append(tree)
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
@@ -2344,6 +2355,19 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 
 						if not gone.has(tree[0]):
 							found.append(tree)
+
+			# The wide trunks of this chunk: within `radius` of the point or reaching it (their own radius past it), so a caller's fixed
+			# margin for an ordinary trunk still finds them (an arrow at an everember's bark, a cart beside it).
+			for tree in listed.get(WIDE_CELL, []):
+				if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() > radius + float(tree[3]):
+					continue
+
+				if not gone_read:
+					gone = flora.removed_in(chunk)
+					gone_read = true
+
+				if not gone.has(tree[0]):
+					found.append(tree)
 
 	return found
 
