@@ -211,7 +211,7 @@ func _init() -> void:
 	var wet_moose: Dictionary = {"sp": "moose", "pos": Vector3(0.53, 10.0, 0.0), "state": 0}
 	var dry_level: Callable = mw.water_level
 	mw.water_level = func(_x: float, _z: float) -> float: return 10.2
-	check(not mw.make_way(wet_moose, Vector3(0.0, 10.0, 0.0), 0.1) and wet_moose["pos"].x == 0.53, "a moose swimming keeps its line")
+	check(not mw.make_way(wet_moose, Vector3(0.0, 10.0, 0.0), 0.1) and is_equal_approx(wet_moose["pos"].x, 0.53), "a moose swimming keeps its line")   # approx: a Vector3 holds 32-bit floats
 	mw.water_level = dry_level
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
