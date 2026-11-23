@@ -43,9 +43,11 @@ func body(v, id: int, roles: Dictionary) -> Dictionary:
 	return b
 
 
-func _init() -> void:
+func _initialize() -> void:   # nodes added to root enter the tree only after a frame (test_goal_ui); flinch and _die need the tree
 	var v = AnimalViewScript.new()
 	root.add_child(v)
+	await process_frame
+	check(v.is_inside_tree(), "the view is in the tree")
 
 	# A hit on a standing body: the clip plays, cut at HIT_MAX_S (the clip is 2.9 s), and the state's clip waits until then.
 	var b: Dictionary = body(v, 1, {"0": ["Idle", 4.0], "hit": ["Hit_Idle_F01_once", 2.9]})
