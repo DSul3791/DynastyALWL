@@ -199,7 +199,7 @@ func _init() -> void:
 	rain[0] = 0.8
 	var grow: int = int(items._crop_table()["wheat"]["grow_days"])
 
-	for d in range(grow / 2):
+	for d in range(int(grow * 0.5)):
 		clock[0] += 86400.0
 		items._crops_tick()
 
@@ -230,8 +230,8 @@ func _init() -> void:
 	check(count("wheat") - grain_before == 4 * int(items._crop_table()["wheat"]["yields"][0][1]), "the full grain (%d)" % (count("wheat") - grain_before))
 	check(count("straw") > straw_before, "and straw (%d)" % (count("straw") - straw_before))
 	var seed_back: int = count("wheat_seeds") - seed_before
-	check(seed_back >= 4 * int(back[0]) * 2 / 3 and seed_back <= 4 * int(back[1]) * 3 / 2, "and plenty of seed back: %d (%d to %d a bed)" % [seed_back, int(back[0]), int(back[1])])
-	check(seed_back >= 12 * pinch("wheat"), "enough to sow the patch three times over (%d spots)" % (seed_back / pinch("wheat")))
+	check(seed_back >= int(4.0 * float(back[0]) * 2.0 / 3.0) and seed_back <= int(4.0 * float(back[1]) * 1.5), "and plenty of seed back: %d (%d to %d a bed)" % [seed_back, int(back[0]), int(back[1])])
+	check(seed_back >= 12 * pinch("wheat"), "enough to sow the patch three times over (%d spots)" % int(float(seed_back) / float(pinch("wheat"))))
 	restart("harvested")
 
 	# 5. Replant from the harvest.
