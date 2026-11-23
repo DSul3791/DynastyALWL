@@ -129,11 +129,12 @@ func _init() -> void:
 # thing new by any of its recipes (coordinator ruling, 23 Nov 2026), except the known ones in SAME_AS_NEW.
 const SAME_AS_NEW: Array = [
 	"wooden_spear", "fishing_spear", "whetstone",   # one material only: left as they are (coordinator ruling, 23 Nov 2026)
-	"copper_chisel", "bronze_chisel", "iron_chisel", "steel_chisel", "steel_striker",   # one ingot to make and to mend: it cannot get cheaper
+	"copper_chisel", "bronze_chisel", "iron_chisel", "steel_striker",   # one ingot to make and to mend: it cannot get cheaper
 ]
 
 
-# Is a repair strictly cheaper than one made by this recipe: no more of anything the recipe needs, nothing it does not, and less in all.
+# Is a repair strictly cheaper than one made by this recipe: no more of anything the recipe needs and less in all, or, when it is mended
+# with things the recipe does not use, worth less.
 func _cheaper(repair: Array, r: Dictionary) -> bool:
 	var per: Dictionary = {}
 	var made: float = maxf(float(r["gives"][1]), 1.0)
@@ -170,6 +171,8 @@ func _cheaper(repair: Array, r: Dictionary) -> bool:
 		named[str(cost[0])] = true
 
 	return less or per.keys().any(func(k): return not named.has(k))
+
+
 func _ladder() -> void:
 	var smelted: Dictionary = {}
 	var jobs: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {})
@@ -226,6 +229,8 @@ func _ladder() -> void:
 	check(metal >= 40, "the metal tools and weapons are found (%d)" % metal)
 	check(unmade.is_empty(), "every one's ingot is made by a smelter job (%s)" % str(unmade))
 	check(elsewhere.is_empty(), "each is mended at the station type it is made at (%s)" % str(elsewhere))
+	var not_same: Array = SAME_AS_NEW.filter(func(id): return items.recipes.makers_of(items.table.number_of(id)).all(func(m): return _cheaper(items.table.entry(id)["repair"], items.recipes.recipe(int(m)))))
+	check(not_same.is_empty(), "each known exception really mends for as much as new (%s are cheaper: take them off the list)" % str(not_same))
 	check(dearer.is_empty(), "no repair costs as much as or more than making it new, by any recipe, beyond the known %s (%s)" % [str(SAME_AS_NEW), str(dearer)])
 
 

@@ -73,7 +73,7 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 
 ### Piece 0g. Nails by tier (ore loop, 23 Nov 2026; coordinator: move nothing, a question for Dave)
 - The recorded ruling is "copper light; bronze chests; iron construction; steel fortification". The data has: **copper** garden plots, cistern, crate, small chest, bottle rack, quality backpack; **bronze** furniture, barrels, pumps, iron doorway, blacksmithy; **iron** fences, fine chest, large wooden chest, bins, saw mill, advanced smithy, water wheel; **steel** iron chest, fortified gate. No wall or house uses nails. So most chests are not on bronze, and iron covers both chests and buildings. **Decision** for Dave: keep the data, or move the uses to match the ruling.
-- Repairs (coordinator ruling, 23 Nov 2026): a repair costs less than making new. Metal knives and sickles now mend for 1 ingot (the stick dropped). Left as they are, mended for the same as new: Wooden spear, Fishing spear, Whetstone (one material), and the copper to steel chisels and the Steel striker (one ingot to make). test_ore_tool_loop holds that list.
+- Repairs (coordinator ruling, 23 Nov 2026): a repair costs less than making new. Metal knives and sickles now mend for 1 ingot (the stick dropped). Left as they are, mended for the same as new: Wooden spear, Fishing spear, Whetstone (one material), and the copper, bronze and iron chisels and the Steel striker (one ingot to make). test_ore_tool_loop holds that list.
 - Not in the game, and not built (coordinator 23 Nov 2026): moulds, casting and re-smelting a worn tool.
 
 ### Piece 0b. Server check of running speed (coordinator 23 Nov 2026: leave for now, note it)
