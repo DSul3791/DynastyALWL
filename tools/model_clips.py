@@ -131,12 +131,18 @@ def _real_file(rel):
 def scan():
     tracked = subprocess.run(["git", "-C", ROOT, "ls-files", "assets/animals"], capture_output=True, text=True).stdout.splitlines()
     found = {}
+    skipped = 0
 
     for rel in sorted(t for t in tracked if t.lower().endswith(".fbx")):
         try:
             found["res://" + rel] = clips_of(_real_file(rel))
         except (OSError, ValueError, struct.error, IndexError) as e:
             print("skipped %s: %s" % (rel, e))
+            skipped += 1
+
+    if skipped:
+        print("model clips: %d files could not be read: the list is not written (fetch the LFS objects first)" % skipped)
+        sys.exit(1)
 
     with open(LIST, "w", encoding="utf8") as f:
         f.write("{\n" + ",\n".join("\t%s: %s" % (json.dumps(k), json.dumps(found[k], ensure_ascii=False)) for k in sorted(found)) + "\n}\n")
@@ -161,11 +167,13 @@ def check():
     species = json.load(open(MODELS, encoding="utf8"))["species"]
     bad = []
     checked = 0
+    unlisted = set()
 
     for kind, row in _rows(species):
         scene = str(row.get("scene", ""))
 
         if scene not in listed:
+            unlisted.add(scene)
             continue
 
         names = {c[0] for c in listed[scene]} | {c[0].replace(".", "_") for c in listed[scene]}      # a row may name Idle_Breathing.001 as Idle_Breathing_001 (the lioness row)
@@ -174,13 +182,13 @@ def check():
             for clip in wanted if isinstance(wanted, list) else [wanted]:
                 checked += 1
 
-                if not str(clip).startswith("gait_") and str(clip) not in names and str(row.get("clip_prefix", "")) + str(clip) not in names:
+                if not str(clip).startswith("gait_") and str(clip) not in names:
                     bad.append("%s role %s: no clip %r in %s" % (kind, role, clip, scene))
 
     for line in bad:
         print("FAIL " + line)
 
-    print("model clips: %d named clips checked, %d missing" % (checked, len(bad)))
+    print("model clips: %d named clips checked, %d missing; %d model files not in the list (a .glb, or a new file: run --scan): %s" % (checked, len(bad), len(unlisted), ", ".join(sorted(unlisted))))
     return 1 if bad else 0
 
 

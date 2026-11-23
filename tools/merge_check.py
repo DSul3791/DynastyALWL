@@ -216,6 +216,8 @@ if clips.returncode != 0:
     for line in clips.stdout.splitlines():
         if line.startswith("FAIL "):
             bad("animal clip: " + line[5:])
+    if "FAIL " not in clips.stdout:
+        bad("animal clip check crashed: " + clips.stderr[-200:])
 
 text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_output=True, text=True)
 if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
