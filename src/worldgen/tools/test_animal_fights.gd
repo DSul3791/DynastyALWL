@@ -1,10 +1,15 @@
 extends SceneTree
 
 # Fighting animals from the player's side (the coordinator for Dave, 23 Nov 2026: "the basics come first: movement, weights, fighting
-# animals"). The real server_items and server_animals, wired as terrain_server wires them, and a player who fights as a person would. For
-# every animal that defends itself, with bare hands and each weapon tier, a player at each link delay closes in, strikes in reach, waits out
-# a warning, steps aside from a charge and strikes again in the opening after it. One table per kind: blows to bring it down, the time it
-# took, the blows taken, the health left, and how many charges were dodged. A fight lost or a charge that could not be dodged is listed.
+# animals"; Dave: fights must not be "almost impossible to hit"). The real server_items and server_animals, wired as terrain_server wires
+# them, and a player who fights as a person would: the fight starts with a blow from within reach, the player strikes in reach, holds while
+# the animal warns, steps aside and strikes again in the opening after its charge. The player sees the server dodge_view_ms plus half the
+# link's round trip late and reacts REACT_S after that; their steps reach the server half a round trip later.
+#   1. every animal that defends itself, with a spear at 0 and 120 ms: charges dodged by a player who steps aside only when they see the
+#      charge, by one who reads the warning perfectly, and by one who steps aside as soon as the warning shows; the last must clear most
+#      (every attack dodgeable: server_big_game.gd header; the warning is the cue);
+#   2. a table per kind of each weapon tier and bare hands at 60 ms: blows, time, charges dodged, blows taken, health left, result;
+#   3. one spear blow, then the animal runs off bleeding: it dies of it, and its blood leads a walking hunter to the body.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_fights.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -94,6 +99,11 @@ func _init() -> void:
 		quit(0)
 		return
 
+	if OS.get_environment("BLEED_ONLY") != "":
+		bleeding()
+		quit(0)
+		return
+
 	var kinds: Array = []
 
 	for sp in animals.cfg["species"]:
@@ -147,6 +157,8 @@ func _init() -> void:
 	for l in lost:
 		print("  " + l)
 
+	bleeding()
+
 	items._finish_writer()
 	print("Test done: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
@@ -186,7 +198,6 @@ func fight(sp: String, weapon: String, ping: int, read: int = 0) -> Dictionary:
 	a["hp"] = float(animals.species_def(sp)["health"])
 	a["heading"] = PI
 	a["cool"] = 0.0
-	var def: Dictionary = animals.species_def(sp)["defend"]
 	var me: Vector3 = Vector3(0.0, 10.0, 0.0)
 	items.report_position(1, me)
 	var seen_lag: float = (float(animals.cfg.get("dodge_view_ms", 350)) + float(ping) * 0.5) / 1000.0 + REACT_S   # from the server's charge to the player's step
@@ -297,6 +308,63 @@ func fight(sp: String, weapon: String, ping: int, read: int = 0) -> Dictionary:
 
 	dodged = charges - landed.size()   # every blow on the player is a charge's; a charge cut short by the kill landed nothing
 	return {"blows": blows, "time": clock - start, "charges": charges, "dodged": dodged, "hits": landed.size(), "health": float(v["health"]), "result": result}
+
+
+# 3. One spear blow and the animal runs off bleeding (Dave 23 Nov 2026: "I love the idea the animal is bleeding and if they bleed enough they die
+# eventually"; "I like the blood trails"). Does it die, how far off, and could a hunter follow its trail to the body: the drops are every_m
+# apart, at most max_drops an animal and gone after life_s, so the trail must still be there, end to end, by the time a walker gets along it.
+func bleeding() -> void:
+	var bcfg: Dictionary = animals.cfg.get("blood", {})
+	print("\nBLEEDING (one spear blow, %.0f damage; bleeding %.2f health a second, a drop every %.0f m, at most %d, each lasting %.0f s)" % [8.0, float(bcfg.get("bleed_hp_per_s", 0.0)), float(bcfg.get("every_m", 3.0)), int(bcfg.get("max_drops", 40)), float(bcfg.get("life_s", 240.0))])
+	print("  kind           health | dies after  away  | drops  trail ends short of the body | followable")
+	var deaths: Array = []
+	animals.died = func(sp, pos, _peer): deaths.append([sp, pos, clock])
+
+	for sp in ["rabbit", "deer", "fox", "boar", "elk", "moose", "bear", "buffalo", "lion", "rhino", "elephant"]:
+		animals.animals.clear()
+		animals.blood.clear()
+		deaths.clear()
+		items.report_position(1, Vector3(0.0, 10.0, 0.0))
+		var id: int = animals.spawn(sp, AnimalContact.body_m(sp) + 2.0, 0.0)
+		var a: Dictionary = animals.animals[id]
+		a["level"] = 1
+		a["hp"] = float(animals.species_def(sp)["health"])
+		a["cool"] = 0.0
+		var start: float = clock
+		animals.damage(id, 8.0, 1, "spear")
+		var drops: Array = []   # [game time it fell, where]
+		var seen: int = 0
+		items.report_position(1, Vector3(-25.0, 10.0, 0.0))   # the hunter hangs back out of its reach: it runs and bleeds, not fights
+
+		while deaths.is_empty() and clock - start < 3600.0:
+			clock += 0.1
+			animals.tick(0.1)
+
+			while animals.blood.size() > seen:
+				drops.append([clock, animals.blood[seen][0]])
+				seen += 1
+
+		var died: bool = not deaths.is_empty()
+		var end_at: Vector3 = deaths[0][1] if died else (animals.animals[id]["pos"] if animals.animals.has(id) else Vector3.ZERO)
+		var took: float = (float(deaths[0][2]) if died else clock) - start
+		var away: float = Vector2(end_at.x, end_at.z).length()
+		var short: float = Vector2(end_at.x - drops.back()[1].x, end_at.z - drops.back()[1].z).length() if not drops.is_empty() else away
+		# A hunter who sets off along the trail as soon as it runs, at a walk: each drop must still be there when they reach it.
+		var walked: float = 0.0
+		var from: Vector3 = Vector3.ZERO
+		var follow: bool = not drops.is_empty() and short <= 10.0
+
+		for d in drops:
+			walked += Vector2(d[1].x - from.x, d[1].z - from.z).length()
+			from = d[1]
+
+			if walked / WALK_MPS > float(d[0]) - start + float(bcfg.get("life_s", 240.0)):
+				follow = false
+
+		print("  %-14s %6.0f | %s %5.0f m | %5d %8.0f m | %s" % [sp, float(animals.species_def(sp)["health"]), ("%6.0f s" % took) if died else " lives", away, drops.size(), short, "yes" if follow and died else "no"])
+		check(died and (away < 10.0 or follow), "a %s wounded by one blow bleeds to death, and its blood leads to the body" % sp)
+
+	animals.died = Callable()
 
 
 func melee_reach(weapon: String) -> float:

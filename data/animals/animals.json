@@ -4273,9 +4273,10 @@
 		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
 	},
 	"blood": {
+		"note_drops": "max_drops 40 -> 400 and max_total 200 -> 600 (coordinator for Dave, 23 Nov 2026: \"I love the idea the animal is bleeding and if they bleed enough they die eventually\"; test_animal_fights.gd): an elk hurt by one spear blow walked on 21 m past its fortieth drop before it died, so its trail stopped short of the body. Each drop still fades after life_s, so the trail is the last few minutes of its walk.",
 		"every_m": 3.0,
-		"max_drops": 40,
-		"max_total": 200,
+		"max_drops": 400,
+		"max_total": 600,
 		"life_s": 240.0,
 		"max_sent": 80,
 		"bleed_hp_per_s": 0.15
