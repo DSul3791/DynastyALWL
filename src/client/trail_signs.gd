@@ -39,7 +39,7 @@ var _dirty: bool = false
 var _built_at: Vector3 = Vector3.INF
 var _level: int = -1
 var _next_msec: int = 0
-var _nodes: Dictionary = {}        # "pellet", "deer_pellet", "scrape", "print" -> MultiMeshInstance3D
+var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "scrape", "print", "rub", "halo" -> MultiMeshInstance3D
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
@@ -379,7 +379,7 @@ func _draw(player: Vector3, level: int) -> void:
 # Reading a sign (hunting thread, 23 Nov 2026): the shown signs within read_m of the eye, as [index, point] for the aim, nearest first.
 func readable(player: Vector3, level: int) -> Array:
 	var out: Array = []
-	var reach: float = minf(float(cfg.get("read_m", 4.0)), reach_m(level, cfg))
+	var reach: float = minf(float(cfg.get("read_m", 3.0)), reach_m(level, cfg))
 
 	if not ground_height.is_valid():
 		return out

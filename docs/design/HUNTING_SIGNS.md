@@ -17,13 +17,13 @@ Find sign, read it, follow the trail, spot the animal (trails end at beds and wa
   _press_beds), so grass lies flat and worn earth bares the litter; a sign for spotting and reading.
 - **Rubbed trees**: by deer trails, at most one per 35 m, the thinnest loaded trunk (radius up to 0.3 m) within 2.5 m: a pale 0.11 x
   0.5 m strip at knee to chest height on the trail side (terrain_client _trunks_round, read only).
-- **Reading a sign**: aim at a sign within 4 m, E. Anyone reads what it is; from Tracking 10 which way the trail runs and to what; from
+- **Reading a sign**: look right at a sign (within about 10 degrees, read_aim_cos) within 3 m, E; a looser look leaves E to items and snares beside it. Anyone reads what it is; from Tracking 10 which way the trail runs and to what; from
   25 (Advanced, Dave's classes) when its animal uses it.
 - **Trails stronger in grass** (data/look/worn_earth.json grass_press 0.6, grass_pale 0.35): on top of the trample's squash, a trail
   presses most of what is left and takes a straw tint.
 - **Fresh tracks** (src/client/fresh_tracks.gd, data/look/fresh_tracks.json): each footfall of a drawn animal within 30 m
   (animal_view `stepped`, read only, agreed with the animals thread) leaves a print by shape (hoof, paw, hop), fading over 10 real minutes,
-  up to twice as long at Tracking 100, at most 240.
+  up to twice as long at Tracking 100; a print only after the animal moved 0.6 m, at most 480 (a walking deer lays about two a second, so with several animals near the oldest go before their time).
 
 ## Cost
 Client only. No messages, no protocol change, no server work beyond the existing spot check. Signs rebuild only on change or 8 m moved;

@@ -104,6 +104,23 @@ func _init() -> void:
 	check(thin, "rubs on the deer trail's saplings (not the thick trunks, not the far one), at most one each rub_every_m, on the trail side (%d)" % rubs.size())
 	check(str(rubs) == str(SignsScript.rubs_for({Vector2i(0, 0): routes.duplicate(true)}, trunks_at, c)), "the same trees give the same rubs")
 	check(SignsScript.rubs_for({Vector2i(0, 0): [routes[0], routes[1]]}, trunks_at, c).is_empty(), "rabbit runs leave no rubs")
+	# Two deer trails passing one sapling: the same trail gets it whichever block came first; and a treeless stretch is not looked at every point.
+	var one_tree: Array = [[Vector3(300.0, 5.0, 301.0), 0.05, 3.0]]
+	var lone: Callable = func(p: Vector3, r: float) -> Array: return one_tree.filter(func(t): return Vector2(t[0].x - p.x, t[0].z - p.z).length() <= r + float(t[1]))
+	var ta: Array = [1, line(Vector2(260.0, 300.0), Vector2(340.0, 300.0), 1.0)]
+	var tb: Array = [1, line(Vector2(300.0, 260.0), Vector2(301.5, 340.0), 1.0)]
+	var eager: Dictionary = c.duplicate()
+	eager["rub_retry_m"] = float(c["rub_every_m"])   # look again at the next point, so both trails reach the sapling
+	var ab: Array = SignsScript.rubs_for({Vector2i(1, 1): [ta], Vector2i(1, 2): [tb]}, lone, eager)
+	var ba: Array = SignsScript.rubs_for({Vector2i(1, 2): [tb], Vector2i(1, 1): [ta]}, lone, eager)
+	check(ab.size() == 1 and str(ab) == str(ba), "one rub on a shared sapling, the same whichever block came first (%s / %s)" % [str(ab), str(ba)])
+	var looks: Array = [0]
+	var counting: Callable = func(_p: Vector3, _r: float) -> Array:
+		looks[0] += 1
+		return []
+	var bare: Array = [1, line(Vector2(0.0, 500.0), Vector2(200.0, 500.0))]
+	SignsScript.rubs_for({Vector2i(0, 2): [bare]}, counting, c)
+	check(int(looks[0]) * 2 < (bare[1] as PackedVector2Array).size(), "a treeless trail is looked at about every rub_retry_m, not at every point (%d looks, %d points)" % [int(looks[0]), (bare[1] as PackedVector2Array).size()])
 	# Reading: anyone reads what it is; from read_way_level which way the trail runs and to what; from read_habit_level when it is used.
 	var home_latrine: Array = signs.filter(func(s): return str(s[0]) == "latrine" and (s[1] as Vector2).distance_to(w1) < 4.0 and str(s[5]) == "grazing")[0]
 	var plain: String = SignsScript.read_text(home_latrine, 1, c)
@@ -206,11 +223,11 @@ func _init() -> void:
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown == drawn, "and the same again with it")
 	check(view._nodes.has("halo") and (view._nodes["halo"] as MultiMeshInstance3D).multimesh.instance_count > 0 and is_equal_approx((((view._nodes["halo"] as MultiMeshInstance3D).multimesh.mesh as PrimitiveMesh).material as StandardMaterial3D).albedo_color.a, SignsScript.halo_alpha(80, c)), "at Tracking 80 the signs carry a halo of halo_alpha(80)")
-	var reading: Array = view.readable(Vector3(120.0, 5.0, 110.0), 80)
-	var read_ok: bool = true
+	var reading: Array = view.readable(stand, 80)
+	var read_ok: bool = not reading.is_empty()
 
 	for r in reading:
-		read_ok = read_ok and (view.sign_at(int(r[0])) as Array).size() == 6 and Vector2((r[1] as Vector3).x, (r[1] as Vector3).z).distance_to(Vector2(120.0, 110.0)) <= float(c["read_m"]) + 0.01
+		read_ok = read_ok and (view.sign_at(int(r[0])) as Array).size() == 6 and Vector2((r[1] as Vector3).x, (r[1] as Vector3).z).distance_to(Vector2(stand.x, stand.z)) <= float(c["read_m"]) + 0.01
 
 	check(read_ok, "the readable signs lie within read_m and each has its reading (%d)" % reading.size())
 	view.set_routes(0, 0, [])
