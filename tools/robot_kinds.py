@@ -8,6 +8,7 @@ The robots (src/client/robot_play.gd _kind) print each frame's stats in a KIND l
 AUDIT enemy_hit for each goblin, bandit or big game blow, with where it had the animal (from) and the player. Both robots and the server run
 on one machine, so their unix ms share a clock. Measures:
   jumps   per robot: the largest drawn step in one frame, that step against the kind's top speed x the frame, and steps over 1 m
+          (steps in the second after a frame over 250 ms, a freeze's catch-up, are left out and counted as after_freeze)
   agree   the two robots' drawn places of the same animal at the same moment (the other robot's A rows interpolated): median, 95th, worst
   hits    per server blow: the drawn place of that animal on the struck robot at that moment against where the server had it, and the
           drawn gap to the robot; per BITTEN line (every blow, also wolves): the drawn gap and drawn state
