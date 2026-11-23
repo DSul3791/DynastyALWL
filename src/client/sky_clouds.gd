@@ -10,7 +10,8 @@ extends RefCounted
 # Cost follows quality (F2): Low has 3 noise octaves and no high streaks, Medium 4, High 5
 # with a second light sample, Ultra 6. (Half and quarter resolution sky passes were tried
 # and drew a white sky in the test renderer, so the clouds draw at full resolution.)
-# The sky's lighting cubemap (ambient light and reflections) is drawn once with a cheap cloud cover and is not redrawn as the clouds move (PROCESS_MODE_QUALITY),
+# The sky's lighting cubemap (ambient light and reflections) is drawn with a cheap cloud cover and is not redrawn as the
+# clouds move (PROCESS_MODE_INCREMENTAL, make_sky),
 # so moving clouds cost no cubemap updates. TIME wraps once an hour (Godot default), so the
 # cloud field jumps once an hour; no weather system yet (coverage is fixed).
 
@@ -258,8 +259,11 @@ static func make_sky(quality: int) -> Sky:
 	material.shader = shader_for(quality)
 	var sky: Sky = Sky.new()
 	sky.sky_material = material
-	# Drawn once: the moving clouds are not redrawn into the lighting cubemap (see top).
-	sky.process_mode = Sky.PROCESS_MODE_QUALITY
+	# Lag lane 23 Nov 2026: QUALITY redraws the whole lighting cubemap in the one frame its sky changes, and weather_look.gd changes the sky
+	# colours every SKY_STEP_MSEC (4 s) as the sun moves: a 120-150 ms frame with flat draw calls and normal script time, every few seconds,
+	# at the hours whose colours move (Lane A standing plays: 17-28 hitches a play at some game times, 5-7 at others). INCREMENTAL makes the
+	# same cubemap over several frames (rendering/reflections/sky_reflections/roughness_layers). The moving clouds still cost no update.
+	sky.process_mode = Sky.PROCESS_MODE_INCREMENTAL
 	return sky
 
 
