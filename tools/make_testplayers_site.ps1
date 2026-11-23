@@ -7,7 +7,7 @@
 #   images\hero.jpg, fonts\           its picture and the menu fonts with their SIL OFL licence
 #   downloads\Dynasty-build-<N>.zip   the installer, zipped, https://hannibalshouse.duckdns.org/downloads/Dynasty-build-<N>.zip
 #   files.sha256                      every other file's SHA-256 with its path, for the check on the server (sha256sum -c)
-# Copy it up with the scp line it prints (deploy/testplayers/SERVER.md). Nothing is uploaded from here and no password is written anywhere.
+# Copy it up with the scp line it prints (deploy/testplayers/SERVER.md, which also has the one Caddyfile line for the login name). Nothing is uploaded from here and no password is written anywhere.
 # -Repo is the checkout whose deploy\testplayers and assets\ui\fonts are used; by default the one this script sits in.
 param(
 	[Parameter(Mandatory = $true)][string]$Out,
@@ -57,12 +57,15 @@ function Fill([string]$html) {
 
 # The page, with every link from the site root (the server's own layout notes ask for links that begin with "/").
 $page = [IO.File]::ReadAllText((Join-Path $pages "index.html"))
+# The login name, top right: Caddy's templates fill it in as the page is sent (SERVER.md, step 4); left as it is, the page hides it.
+$page = $page.Replace('data-user="{{USER}}"', 'data-user="@@USER@@"')
 $page = $page.Replace('href="{{ZIP}}"', 'href="/downloads/{{ZIP}}"').Replace('src="hero.jpg"', 'src="/images/hero.jpg"').Replace('url("fonts/', 'url("/fonts/')
 foreach ($want in 'href="/downloads/{{ZIP}}"', 'src="/images/hero.jpg"', 'url("/fonts/Cinzel-Bold.ttf")') {
 	if (-not $page.Contains($want)) { throw "make_testplayers_site: deploy\testplayers\index.html changed; the page has no $want after the link rewrite" }
 }
 $utf8 = New-Object System.Text.UTF8Encoding($false)   # UTF-8 without a byte order mark
-[IO.File]::WriteAllText((Join-Path $site "index.html"), (Fill $page), $utf8)
+$page = (Fill $page).Replace("@@USER@@", '{{placeholder `http.auth.user.id` | html}}')
+[IO.File]::WriteAllText((Join-Path $site "index.html"), $page, $utf8)
 Copy-Item -LiteralPath (Join-Path $pages "hero.jpg") -Destination (Join-Path $site "images")
 foreach ($f in "Cinzel-Bold.ttf", "EBGaramond-Regular.ttf", "EBGaramond-SemiBold.ttf", "FONTS_LICENSE.md") {
 	Copy-Item -LiteralPath (Join-Path $Repo "assets\ui\fonts\$f") -Destination (Join-Path $site "fonts")
@@ -78,5 +81,5 @@ foreach ($file in Get-ChildItem -LiteralPath $site -Recurse -File | Sort-Object 
 
 Write-Host "make_testplayers_site: $site"
 Write-Host "  index.html, images\hero.jpg, fonts\, files.sha256, downloads\$zipName ($sizeMb MB, SHA-256 $hash)"
-Write-Host "  copy it up (type the password when asked; HOST = dell-gameserver-01 or its LAN address):"
-Write-Host "  scp -r `"$site\index.html`" `"$site\files.sha256`" `"$site\images`" `"$site\fonts`" `"$site\downloads`" dave@HOST:/data/game-web/site/"
+Write-Host "  copy it up (deploy\testplayers\SERVER.md step 2; type the password when scp asks):"
+Write-Host "  Set-Location `"$site`"; scp -r index.html files.sha256 images fonts downloads `"dave@dell-gameserver-01:/data/game-web/site/`""
