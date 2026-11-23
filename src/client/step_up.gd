@@ -27,8 +27,10 @@ static func try(body: CharacterBody3D, motion: Vector3, step: float) -> float:
 
 	var origin: Transform3D = body.global_transform
 
-	# Nothing ahead at this height: nothing to step over.
-	if not body.test_move(origin, motion):
+	# Nothing ahead at this height: nothing to step over. Probed with the body's own margin (terrain_client PLAYER_SAFE_MARGIN_M, 1 cm), as
+	# move_and_slide meets things: with test_move's 1 mm a ledge whose top edge is level with the round foot's widest part (a foundation 0.37 m
+	# over the ground) was missed, Jolt rounding the box's edge, while the slide stopped at it (Dave's "invisible wall" at a doorway, robots 23 Nov 2026).
+	if not body.test_move(origin, motion, null, body.safe_margin):
 		return 0.0
 
 	# The full step first, then lower lifts (robots 23 Nov 2026: a doorway stands on a foundation's edge, its lintel 2 m over the top; a walker on

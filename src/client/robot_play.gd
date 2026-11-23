@@ -3666,11 +3666,22 @@ func _mv_leg(stretch: String, stance: int, from: Vector3, to: Vector3, go_round:
 	_face(dir)
 	_key("move_forward", true)
 
+	var still_from: Vector3 = client.body.global_position
+	var still_ms: int = Time.get_ticks_msec()
+	var told: bool = false
+
 	while Time.get_ticks_msec() < end:
 		var left: Vector3 = Vector3(to.x - client.body.global_position.x, 0.0, to.z - client.body.global_position.z)
 
 		if left.length() < 0.5 or left.dot(dir) < 0.0:
 			break
+
+		if client.body.global_position.distance_to(still_from) > 0.05:
+			still_from = client.body.global_position
+			still_ms = Time.get_ticks_msec()
+		elif not told and Time.get_ticks_msec() - still_ms > 1500:
+			told = true
+			_mv_why_held(dir)
 
 		await get_tree().process_frame
 
@@ -3680,6 +3691,85 @@ func _mv_leg(stretch: String, stance: int, from: Vector3, to: Vector3, go_round:
 	FreezeWatchScript.printer.line("ROBOT %s MOVES leg %s: %s, %.1f m short of the end" % [robot_name, stretch,
 		"reached" if Vector2(to.x - at.x, to.z - at.z).length() < 0.6 else "SHORT", Vector2(to.x - at.x, to.z - at.z).length()])
 	_route_end()
+
+
+# A built leg held 1.5 s (Dave's doorway "invisible wall", robots 23 Nov 2026): what holds the body: the client's hop state, the forward test move, and every shape the capsule overlaps.
+func _mv_why_held(dir: Vector3) -> void:
+	var body: CharacterBody3D = client.body
+	var shape: CollisionShape3D = client._shape
+	var cap: CapsuleShape3D = shape.shape as CapsuleShape3D
+	var r: KinematicCollision3D = KinematicCollision3D.new()
+	var hit: bool = body.test_move(body.global_transform, dir * 0.05, r, 0.001, true, 4)
+	var parts: PackedStringArray = PackedStringArray()
+
+	for i in r.get_collision_count():
+		var c: Object = r.get_collider(i)
+		parts.append("%s n %s at %s depth %.3f" % [str(c.get_parent().name) + "/" + str(c.name) if c is Node and c.get_parent() != null else str(c), str(r.get_normal(i).snapped(Vector3(0.01, 0.01, 0.01))), str(r.get_position(i).snapped(Vector3(0.01, 0.01, 0.01))), r.get_depth()])
+
+	var q: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	q.shape = cap
+	q.transform = shape.global_transform
+	q.exclude = [body.get_rid()]
+	q.collision_mask = body.collision_mask
+	var over: PackedStringArray = PackedStringArray()
+
+	for row in body.get_world_3d().direct_space_state.intersect_shape(q, 8):
+		var c: Object = row["collider"]
+		over.append(str(c.get_parent().name) + "/" + str(c.name) if c is Node and c.get_parent() != null else str(c))
+
+	var rest: Dictionary = body.get_world_3d().direct_space_state.get_rest_info(q)
+	var probe: KinematicCollision3D = KinematicCollision3D.new()
+	var probe_hit: bool = body.test_move(body.global_transform, dir * 0.12, probe)
+	var probe_what: String = ""
+
+	if probe_hit:
+		var pc: Object = probe.get_collider()
+		probe_what = "%s n %s at %s travel %s" % [str(pc.get_parent().name) + "/" + str(pc.name) if pc is Node and pc.get_parent() != null else str(pc), str(probe.get_normal().snapped(Vector3(0.01, 0.01, 0.01))), str(probe.get_position().snapped(Vector3(0.01, 0.01, 0.01))), str(probe.get_travel().snapped(Vector3(0.001, 0.001, 0.001)))]
+
+	var at: Vector3 = body.global_position
+	var lift: float = client.StepUpScript.try(body, dir * 0.0107, 0.5)
+	body.global_position = at
+	var slides: PackedStringArray = PackedStringArray()
+
+	for i in body.get_slide_collision_count():
+		var sc: KinematicCollision3D = body.get_slide_collision(i)
+		var so: Object = sc.get_collider()
+		slides.append("%s n %s at %s" % [str(so.get_parent().name) + "/" + str(so.name) if so is Node and so.get_parent() != null else str(so), str(sc.get_normal().snapped(Vector3(0.01, 0.01, 0.01))), str(sc.get_position().snapped(Vector3(0.01, 0.01, 0.01)))])
+
+	var wide: CapsuleShape3D = CapsuleShape3D.new()
+	wide.radius = 0.8
+	wide.height = 2.4
+	var qw: PhysicsShapeQueryParameters3D = PhysicsShapeQueryParameters3D.new()
+	qw.shape = wide
+	qw.transform = shape.global_transform
+	qw.exclude = [body.get_rid()]
+	qw.collision_mask = 0xFFFFFFFF
+	var near: PackedStringArray = PackedStringArray()
+
+	for row in body.get_world_3d().direct_space_state.intersect_shape(qw, 16):
+		var c: Object = row["collider"]
+		var desc: String = str(c.get_parent().name) + "/" + str(c.name) if c is Node and c.get_parent() != null else str(c)
+
+		if c is CollisionObject3D:
+			desc += " layer %d" % (c as CollisionObject3D).collision_layer
+
+			for owner_id in (c as CollisionObject3D).get_shape_owners():
+				var so_node: Object = (c as CollisionObject3D).shape_owner_get_owner(owner_id)
+
+				if so_node is CollisionShape3D:
+					var cs3: CollisionShape3D = so_node
+					var size: String = str((cs3.shape as BoxShape3D).size) if cs3.shape is BoxShape3D else cs3.shape.get_class()
+					desc += " [%s at %s rot %s]" % [size, str(cs3.global_position.snapped(Vector3(0.01, 0.01, 0.01))), str(cs3.global_rotation_degrees.snapped(Vector3(0.1, 0.1, 0.1)))]
+
+		near.append(desc)
+
+	FreezeWatchScript.printer.line("ROBOT %s HELD3 dir %s, solids within 0.8 m: %s" % [robot_name, str(dir.snapped(Vector3(0.01, 0.01, 0.01))), " | ".join(near)])
+	FreezeWatchScript.printer.line("ROBOT %s HELD2 probe 12 cm %s %s; dry step-up lift %.3f; wall normal %s; last slides %s" % [robot_name, probe_hit, probe_what, lift,
+		str(body.get_wall_normal().snapped(Vector3(0.01, 0.01, 0.01))), "; ".join(slides)])
+	FreezeWatchScript.printer.line("ROBOT %s HELD at %s stance %d shape h %.2f y %.2f: floor %s wall %s hover %.3f carry %s lift %.3f vel %s; test_move 5 cm %s travel %s: %s; overlaps %s; rest %s" % [robot_name,
+		str(body.global_position.snapped(Vector3(0.01, 0.01, 0.01))), client.stance.stance, cap.height, shape.position.y, body.is_on_floor(), body.is_on_wall(), client._step_hover_m,
+		str(client._slide_carry.snapped(Vector3(0.001, 0.001, 0.001))), client._step_lift, str(body.velocity.snapped(Vector3(0.01, 0.01, 0.01))), hit, str(r.get_travel().snapped(Vector3(0.001, 0.001, 0.001))), "; ".join(parts), ", ".join(over),
+		str({"n": rest.get("normal", Vector3.ZERO), "p": rest.get("point", Vector3.ZERO)})])
 
 
 # One piece set down at `spot` from 3 m south of it (on the ground there, or snapped onto the foundations by the server), its lumber and twine

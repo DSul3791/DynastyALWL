@@ -49,7 +49,7 @@ func _initialize() -> void:
 
 
 func _ledges(rn: Node3D, ticks_s: int) -> void:
-	for case in [[0.08, false], [0.15, false], [0.3, false], [0.45, false], [0.5, false], [0.55, false], [0.6, false], [0.3, true], [0.45, true]]:
+	for case in [[0.35, false], [0.36, false], [0.37, false], [0.38, false], [0.08, false], [0.15, false], [0.3, false], [0.45, false], [0.5, false], [0.55, false], [0.6, false], [0.3, true], [0.45, true]]:
 		var h: float = float(case[0])
 		var ledge: StaticBody3D = _box(rn, Vector3(0, h * 0.5, -4.0), Vector3(4, h, 4))   # its face at z = -2
 		var lintel: StaticBody3D = _box(rn, Vector3(0, h + 2.2, -2.0), Vector3(4, 0.4, 0.2)) if bool(case[1]) else null   # a doorway on the edge: 2 m clear over its top
