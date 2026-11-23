@@ -56,6 +56,7 @@ var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thr
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const PlayerViewScript := preload("res://src/client/player_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
 const ShowroomScript := preload("res://src/client/showroom.gd")
 const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
@@ -120,6 +121,7 @@ const BuildStamp := preload("res://src/shared/build_stamp.gd")
 var BUILD: int = BuildStamp.number()   # the release stamp's build number, or build.gd NUMBER in an editor run (step A1)
 var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+Shift+N shortcut
+var _player_view: Node3D = null         # the other players (protocol 151, player_view.gd)
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -355,6 +357,7 @@ var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
 var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
 var test_walk: bool = false
+var shot_run: bool = false             # the shot runner's --shot-run: on foot along _walk_dir at run_speed while it measures frame times (running lag)
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
 var _walk_dir: Vector3 = Vector3.ZERO
@@ -528,6 +531,7 @@ var _recent_cuts: Dictionary = {}     # held chunk -> {item id: msec the cut cam
 var _flora_asked: Dictionary = {}     # chunk -> true asked or held in full, false trees only
 var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
+var quitting: bool = false            # the game is closing, not changing scene (death screen, Retry): _ends_at_exit_tree
 var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
 var _in_mutex: Mutex = Mutex.new()
 var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
@@ -922,6 +926,27 @@ func _ready() -> void:
 	_connect()
 
 
+var _refused_read_msec: int = -100000   # _play_server_refused: when the run note was last read
+
+
+# Play's own server refused to start (its save files could not be read: terrain_server.gd): its reason, from the note it left
+# (user://server_run.json, state "refused") since this game began waiting; "" otherwise.
+func _play_server_refused(waited: int) -> String:
+	var path: String = "user://server_run.json"
+	var now: int = Time.get_ticks_msec()
+
+	if now - _refused_read_msec < 1000:
+		return ""   # read once a second, not every frame of the start-up
+
+	_refused_read_msec = now
+	var note: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+
+	if not (note is Dictionary) or str(note.get("state", "")) != "refused" or float(note.get("t", 0.0)) < Time.get_unix_time_from_system() - float(waited) - 30.0:
+		return ""
+
+	return str(note.get("why", "The server did not start."))
+
+
 # What the connection window says: the step the game is on, how long it has been there, and (when it is stuck) the likely reason.
 func _update_connect_window() -> void:
 	if _join_refused != "":
@@ -981,6 +1006,14 @@ func _update_connect_window() -> void:
 		_connect_window.update(text)
 		return
 
+	var refused: String = "" if _remote else _play_server_refused(waited)
+
+	if refused != "":
+		_join_refused = refused   # stays on the window; no retry
+		_telemetry.event("JOIN: Play's server refused to start: %s" % refused)
+		_connect_window.fail("The server did not start", refused, func(): _finish(1))
+		return
+
 	var trying: String = "1. Opening the connection to %s: %s, %d s\n2. Waiting for the server's welcome\n3. Loading the ground under you" % [where, "trying" if status == MultiplayerPeer.CONNECTION_CONNECTING else "not connected", waited]
 
 	if waited >= 20 and _remote:
@@ -1003,6 +1036,7 @@ func _connect() -> void:
 		push_error("Terrain client: cannot connect to %s:%d (%s)" % [_host, _port, error_string(error)])
 
 		if not _remote:
+			quitting = true
 			get_tree().quit(1)
 			return
 
@@ -1669,6 +1703,12 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
+	_player_view.name = "Players"
+	_player_view.table = items.table
+	add_child(_player_view)
+	net.player_look_received.connect(_player_view.on_look)
+	net.players_received.connect(_player_view.on_rows)
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -1762,7 +1802,7 @@ func _welcome_body(info: Dictionary) -> void:
 		# The record's water where the settled water shows none (docs/design/drink_prompt_design.md (a); Kathleen: name what is there).
 		var source: String = _record_drink_here()
 		return {"prompt": "%s — Press E to drink" % source, "tap": items.drink} if source != "" else {})
-	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a bucket, clay jug or waterskin in the pack E fills it with sea water; otherwise on a tide-line node
+	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a container shore_nodes.json lists (bucket, clay jug, clay pot, waterskin) in the pack E fills it with sea water; otherwise on a tide-line node
 	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
 	items.register_interactable("gather_edge", 34, func():
 		var text: String = _shore_prompt()
@@ -1776,6 +1816,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
@@ -4827,6 +4868,7 @@ func _make_avatar() -> Node3D:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_CLOSE_REQUEST:
 		_telemetry.event("EXIT: the window was asked to close (X button, Alt+F4 or the editor's Stop)")
+		quitting = true
 		_say_logout()
 
 	if crash_report == null:
@@ -4849,7 +4891,9 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		crash_report.event("key %s" % OS.get_keycode_string(event.keycode))
+		# Keys typed into a text box (a server or chest password, a chat line) are never written down: crash reports are shared.
+		var focus: Control = get_viewport().gui_get_focus_owner()
+		crash_report.event("key (typing in a text box)" if focus is LineEdit or focus is TextEdit else "key %s" % OS.get_keycode_string(event.keycode))
 	elif event is InputEventMouseButton and event.pressed:
 		crash_report.event("mouse button %d at %d,%d" % [event.button_index, int(event.position.x), int(event.position.y)])
 
@@ -5399,7 +5443,7 @@ func _move_player(delta: float) -> void:
 	if test_walk:
 		_walk_step()
 		direction = _walk_dir
-	elif lag_run != null and _walk_dir != Vector3.ZERO:
+	elif (lag_run != null or shot_run) and _walk_dir != Vector3.ZERO:
 		direction = _walk_dir
 	var fast: float = FAST if KeyBindings.held("run") else 1.0
 	var forward: bool = KeyBindings.held("move_forward")
@@ -5460,7 +5504,7 @@ func _move_player(delta: float) -> void:
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null) else pace)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null or shot_run) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who
@@ -6059,7 +6103,7 @@ func _process(delta: float) -> void:
 		var seconds: float = float(now - _aim_msec) / 1000.0
 
 		if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
-			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds)
+			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds, body.rotation.y)   # protocol 151: the facing, for the other players
 
 		_aim_msec = now
 		_aim_pos = here
@@ -7799,6 +7843,7 @@ func _finish(code: int) -> void:
 		cache.flush()
 
 	_telemetry.drain()   # its lines are written on a worker
+	quitting = true
 	get_tree().quit(code)
 
 
@@ -7830,6 +7875,28 @@ func _exit_tree() -> void:
 		stream.close()
 
 	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+	if _ends_at_exit_tree():
+		_end_now()
+
+
+# The exported Windows game crashed in the engine's own teardown, about 6 s after this _exit_tree (release check build 9193, 22 Nov
+# 2026: 0xC0000005 in ntdll.dll after "EXIT: game closed (exit_tree)"). Everything the client keeps is written by then: settings are
+# saved when changed, the block cache is flushed below and is only a cache (the server holds the world and the players). So the exported
+# Windows game ends here instead of tearing the world down; the editor and tests keep the normal quit. Only when the game is closing:
+# the death screen's new character and the lost-connection Retry also take this scene out of the tree, and the game goes on.
+func _ends_at_exit_tree() -> bool:
+	return quitting and OS.has_feature("template") and OS.get_name() == "Windows"
+
+
+func _end_now() -> void:
+	if cache != null:
+		cache.flush()   # the window-close path comes here without _finish()
+	if link != null:
+		link.close()
+	if multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.close()   # the server sees a disconnect now, not a timeout
+	print("EXIT: process ends after exit_tree (exported Windows game)")
+	OS.kill(OS.get_process_id())   # Windows: TerminateProcess with exit code 0
 
 
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".

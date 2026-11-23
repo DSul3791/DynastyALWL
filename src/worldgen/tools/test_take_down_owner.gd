@@ -84,6 +84,46 @@ func _init() -> void:
 	b._take_down(1, b.inventory_of(1), mine)
 	check(mine >= 0 and not b._items.has(mine), "the builder takes their own piece down")
 
+	# A door a friend hung in your doorway: the frame's builder may take it out (else neither could ever come down); a third player may not.
+	var at: Vector3 = Vector3(20.0, 10.0, 20.0)
+	b._next_id += 1
+	var door: int = b._next_id   # the door's id first: the frame lookup must not take the door (it carries "opening" too) for its frame
+	b._items[door] = {"number": b.table.number_of("crude_door"), "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "crude_door", "yaw": 0.0, "owner": "friend-key-00002"}}
+	b._next_id += 1
+	var frame: int = b._next_id
+	b._items[frame] = {"number": b.table.number_of("log_doorway"), "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "log_doorway", "yaw": 0.0, "owner": "builder-key-0001"}}
+	b.peer_connected_hello(3, "stranger-key-003")
+	check(b._may_take_down(1, b._items[door]), "the doorway's builder may take out a door another player hung in it")
+	check(not b._may_take_down(3, b._items[door]) and b._may_take_down(2, b._items[door]), "a stranger may not; the door's own hanger still may")
+	check(not b._may_take_down(2, b._items[frame]), "the door's hanger still cannot take the frame")
+	b._items[frame]["struct"].erase("owner")   # a frame saved before owners: open to all, so its door is too (else the frame could never come down)
+	check(b._may_take_down(3, b._items[door]), "a door in an old unowned frame may be taken out by anyone")
+	b._items.erase(frame)
+	check(not b._may_take_down(3, b._items[door]), "a stranger may not take a door that hangs in no frame")
+	b._items.erase(door)
+
+	# Pieces laid by hand record their maker too: a torch (the tilled bed is in test_farming).
+	b.give_to(1, "torch", 1)
+	b.report_position(1, Vector3(30.0, 10.0, 30.0))
+	b._place_torch(1, b.inventory_of(1), b.inventory_of(1).numbers.find(b.table.number_of("torch")), false, 0, Vector3(30.5, 10.0, 30.0))
+	var torch_owner: String = ""
+
+	for id in b._items:
+		if b._items[id].has("struct") and str(b._items[id]["struct"]["kind"]).contains("torch"):
+			torch_owner = str(b._items[id]["struct"].get("owner", ""))
+
+	check(torch_owner == "builder-key-0001", "a placed torch records who set it (%s)" % torch_owner)
+	var torch_id: int = -1
+
+	for id in b._items:
+		if b._items[id].has("struct") and str(b._items[id]["struct"]["kind"]).contains("torch"):
+			torch_id = int(id)
+
+	b.report_position(2, Vector3(30.0, 10.0, 30.0))
+	said.clear()
+	b._take_down(2, b.inventory_of(2), torch_id)
+	check(torch_id != -1 and b._items.has(torch_id) and said.any(func(t): return str(t).contains("built it")), "another player cannot pick up a torch someone set (%s)" % str(said))
+
 	b._finish_writer()
 	print("test_take_down_owner: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

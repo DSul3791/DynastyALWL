@@ -815,7 +815,7 @@ func _update_bow(delta: float) -> void:
 		_hud_layer.add_child(_reticle)
 
 	if _reticle != null:
-		_reticle.visible = _draw_t >= 0.0
+		_reticle.visible = _draw_t >= 0.0 or (holding and _is_spear() and _model != null and _model.visible)   # a spear in hand shows the cross by itself, for the throw and jab (Dave 22 Nov 2026); put away, it goes
 		_reticle.point = _reticle.global_position + _reticle.size * 0.5   # always the middle of the screen: the view moves, not the cross
 
 
@@ -2248,6 +2248,8 @@ var hoe_mode: String = "smooth"
 var garden_pick: String = ""             # Plant: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
 var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
 var _garden_rows: Array = []             # the plant list as shown: [{"id", "kind"}]
+var _hoe_menu_grey: Array = []           # per shown row: true when it cannot be planted now (out of season, or winter), drawn dim and not picked
+var season_now: Callable = Callable()    # -> "spring" | "summer" | "autumn" | "winter" (terrain_client: the synced game clock); none: every row open
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null
@@ -2393,8 +2395,11 @@ func _hoe_menu_refresh() -> void:
 		if _garden_rows.is_empty():
 			help = "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, or put them in a container or on the ground near you."
 
+	_hoe_menu_grey = []
+
 	for n in _hoe_menu_size():
 		rows.append(_hoe_menu_line(n))
+		_hoe_menu_grey.append(_hoe_menu_page == "garden" and not _garden_row_open(n))
 
 	if not rows.is_empty():
 		help = _hoe_menu_note(_hoe_menu_index)
@@ -2453,7 +2458,8 @@ func _hoe_menu_show(title: String, rows: Array, index: int, help: String, keys: 
 		label.text = "..." if more else str(rows[at])
 		label.add_theme_font_override("font", ArtKit.font("garamond_semibold" if on else "garamond"))
 		label.add_theme_stylebox_override("normal", _hoe_menu_mark(on))
-		label.add_theme_color_override("font_color", ArtKit.GOLD_BRIGHT if on else (ArtKit.DIM if more else ArtKit.CREAM))
+		var grey: bool = not more and at < _hoe_menu_grey.size() and bool(_hoe_menu_grey[at])
+		label.add_theme_color_override("font_color", ArtKit.DIM if grey else (ArtKit.GOLD_BRIGHT if on else (ArtKit.DIM if more else ArtKit.CREAM)))
 		label.add_theme_font_size_override("font_size", px["row"])
 
 	_hoe_menu_panel.offset_left = -width / 2.0
@@ -2499,7 +2505,33 @@ func _hoe_menu_line(n: int) -> String:
 		return "%d. %s" % [n + 1, str(HOE_MODES[n]["name"])]
 
 	var number: int = _inv.table.number_of(str(_garden_rows[n]["id"]))
-	return "%s (%d)" % [_inv.table.name_of(number), _inv.stock_fill(number)]
+	return "%s (%d)%s" % [_inv.table.name_of(number), _inv.stock_fill(number), "" if _garden_row_open(n) else "   not now"]
+
+
+func _season_now() -> String:
+	return str(season_now.call()) if season_now.is_valid() else ""
+
+
+# Whether plant row n can go in now (FarmRules.plantable_now, the rule the server's sowing and planting refusals use).
+func _garden_row_open(n: int) -> bool:
+	var season: String = _season_now()
+
+	if season == "" or n < 0 or n >= _garden_rows.size():
+		return true
+
+	return FarmRules.plantable_now(_inv.crop_table(), str(_garden_rows[n]["id"]), str(_garden_rows[n]["kind"]), season)
+
+
+# Why plant row n cannot go in now.
+func _garden_row_why(n: int) -> String:
+	if _season_now() == "winter":
+		return "The ground is frozen hard: nothing can be planted in winter."
+
+	var seasons: Array = FarmRules.sow_seasons(_inv.crop_table().get(FarmRules.crop_of_seed(_inv.crop_table(), str(_garden_rows[n]["id"])), {})).filter(func(x): return str(x) != "winter")
+	if seasons.is_empty():
+		return "Out of season: it cannot be sown now."
+
+	return "Out of season: sow it in %s (it is %s now)." % [" or ".join(PackedStringArray(seasons.map(func(x): return str(x)))), _season_now()]
 
 
 # The highlighted row's explanation, shown under the list.
@@ -2507,12 +2539,19 @@ func _hoe_menu_note(n: int) -> String:
 	if _hoe_menu_page != "garden":
 		return "%s: %s." % [str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
 
+	if not _garden_row_open(n):
+		return _garden_row_why(n)
+
 	return "Plant on tilled soil." if str(_garden_rows[n]["kind"]) == "seed" else "Plant in open ground."
 
 
 # Left click in the hoe's list: on the first page it sets the action (Plant goes on to the list of what to plant); on the plant list it picks the plant.
 func _hoe_menu_choose() -> void:
 	if _hoe_menu_page == "garden":
+		if _hoe_menu_index < _garden_rows.size() and not _garden_row_open(_hoe_menu_index):
+			_inv._on_notice(_garden_row_why(_hoe_menu_index))   # greyed out: it stays unpicked and the list stays open
+			return
+
 		if _hoe_menu_index < _garden_rows.size():
 			var row: Dictionary = _garden_rows[_hoe_menu_index]
 			garden_pick = str(row["id"])

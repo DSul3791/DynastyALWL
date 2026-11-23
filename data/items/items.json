@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1524,
+	"next_number": 1546,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -6959,8 +6959,8 @@
 			"wooden_barrel_kit": {
 				"number": 648,
 				"retired": true,
-				"name": "Barrel",
-				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"name": "Water barrel",
+				"description": "A hooped plank barrel for water.",
 				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
@@ -6969,13 +6969,24 @@
 			},
 			"wooden_barrel": {
 				"number": 649,
-				"name": "Barrel",
-				"description": "A hooped barrel of hardwood staves. Holds 8 stacks.",
+				"name": "Water barrel",
+				"description": "A hooped barrel that holds 60 L of water to drink; its 3 slots fill water containers from it.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 133."
+				"note": "Placed piece: row state 133. The Water barrel (Dave 22 Nov 2026); a barrel placed before that which held goods loads as a Storage barrel."
+			},
+			"storage_barrel": {
+				"number": 1545,
+				"name": "Storage barrel",
+				"description": "A hooped barrel of hardwood staves for keeping food and goods. Holds 12 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"slots": 12,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 463. The Storage barrel (Dave 22 Nov 2026)."
 			},
 			"log_stairs_kit": {
 				"number": 650,
@@ -11558,6 +11569,226 @@
 			"value": 1,
 			"sell_lot": 15,
 			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+		},
+		"bramble_seed": {
+			"number": 1524,
+			"name": "Bramble seed",
+			"description": "Seeds from a bramble. Sow them with the hoe in a tilled bed or a planter and a bramble grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"juniper_seed": {
+			"number": 1525,
+			"name": "Juniper seed",
+			"description": "Seeds from a juniper. Sow them with the hoe in a tilled bed or a planter and a juniper grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"gorse_seed": {
+			"number": 1526,
+			"name": "Gorse seed",
+			"description": "Seeds from a gorse. Sow them with the hoe in a tilled bed or a planter and a gorse grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"dwarf_birch_seed": {
+			"number": 1527,
+			"name": "Dwarf birch seed",
+			"description": "Seeds from a dwarf birch. Sow them with the hoe in a tilled bed or a planter and a dwarf birch grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"saltbush_seed": {
+			"number": 1528,
+			"name": "Saltbush seed",
+			"description": "Seeds from a saltbush. Sow them with the hoe in a tilled bed or a planter and a saltbush grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"cactus_seed": {
+			"number": 1529,
+			"name": "Barrel cactus seed",
+			"description": "Seeds from a barrel cactus. Sow them with the hoe in a tilled bed or a planter and a barrel cactus grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"raspberry_seed": {
+			"number": 1530,
+			"name": "Raspberry seed",
+			"description": "Seeds from a raspberry. Sow them with the hoe in a tilled bed or a planter and a raspberry grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"elder_seed": {
+			"number": 1531,
+			"name": "Elder seed",
+			"description": "Seeds from a elder. Sow them with the hoe in a tilled bed or a planter and a elder grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"blackthorn_seed": {
+			"number": 1533,
+			"name": "Blackthorn seed",
+			"description": "Seeds from a blackthorn. Sow them with the hoe in a tilled bed or a planter and a blackthorn grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"hawthorn_seed": {
+			"number": 1534,
+			"name": "Hawthorn seed",
+			"description": "Seeds from a hawthorn. Sow them with the hoe in a tilled bed or a planter and a hawthorn grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"sea_buckthorn_seed": {
+			"number": 1535,
+			"name": "Sea buckthorn seed",
+			"description": "Seeds from a sea buckthorn. Sow them with the hoe in a tilled bed or a planter and a sea buckthorn grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"rosemary_seed": {
+			"number": 1536,
+			"name": "Rosemary seed",
+			"description": "Seeds from a rosemary. Sow them with the hoe in a tilled bed or a planter and a rosemary grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"wild_banana_seed": {
+			"number": 1537,
+			"name": "Wild banana seed",
+			"description": "Seeds from a wild banana. Sow them with the hoe in a tilled bed or a planter and a wild banana grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"prickly_pear_seed": {
+			"number": 1538,
+			"name": "Prickly pear seed",
+			"description": "Seeds from a prickly pear. Sow them with the hoe in a tilled bed or a planter and a prickly pear grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"drakethorn_seed": {
+			"number": 1539,
+			"name": "Drakethorn seed",
+			"description": "Seeds from a drakethorn. Sow them with the hoe in a tilled bed or a planter and a drakethorn grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"sunberry_seed": {
+			"number": 1540,
+			"name": "Sunberry seed",
+			"description": "Seeds from a sunberry. Sow them with the hoe in a tilled bed or a planter and a sunberry grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"hagwillow_seed": {
+			"number": 1541,
+			"name": "Hag willow seed",
+			"description": "Seeds from a hag willow. Sow them with the hoe in a tilled bed or a planter and a hag willow grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"honeyspindle_seed": {
+			"number": 1542,
+			"name": "Honeyspindle seed",
+			"description": "Seeds from a honeyspindle. Sow them with the hoe in a tilled bed or a planter and a honeyspindle grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"sleetberry_seed": {
+			"number": 1543,
+			"name": "Sleetberry seed",
+			"description": "Seeds from a sleetberry. Sow them with the hoe in a tilled bed or a planter and a sleetberry grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+		},
+		"sunsilver_vine_seed": {
+			"number": 1544,
+			"name": "Sunsilver vine seed",
+			"description": "Seeds from a sunsilver vine. Sow them with the hoe in a tilled bed or a planter and a sunsilver vine grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"cotton_grass_seed": {
 			"number": 1409,

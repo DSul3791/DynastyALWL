@@ -68,7 +68,7 @@ def targets(check):
     for k in ["made_item", "got_item", "have_item"]:
         if check.get(k):
             return ("items", [check[k]])
-    for k in ["made_item_any", "have_item_any"]:
+    for k in ["made_item_any", "have_item_any", "stored_item_any"]:
         if check.get(k):
             return ("items", list(check[k]))
     return (None, [])

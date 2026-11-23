@@ -127,7 +127,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - PV-3 A run is straight, up to 30 m, paid in whole pieces; the start must be a connection point; within 6 m reach of where you stand at each click.
 - PV-4 Copper - Tap: 1 Copper ingot; only on a pipe's end or joint; its 3 slots fill water containers at up to 30 L a real minute between them (Dave 19 Nov 20:11Z gave E to drink, F with about 3 slots; the fill rate is assumed). Water reaches it from the first tank up its pipes that holds any.
 - PV-5 Copper - Drip head: 1 Copper ingot; draws 2 L/min while water reaches it; Dave (19 Nov 20:09Z) set the 10 m circle; assumed: the beds and plots there are kept fully watered, at any height within 10 m.
-- PV-6 Barrel: 60 L (Dave 21 Nov 2026: "a barrel should hold around 60Liters"; was 200 L); water or goods, never both; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
+- PV-6 Barrel: 60 L (Dave 21 Nov 2026: "a barrel should hold around 60Liters"; was 200 L); water or goods, never both, until Dave 22 Nov 2026 split it: the Water barrel (wooden_barrel) holds water and 3 slots of water containers it fills, the Storage barrel (storage_barrel) goods only; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
 - PV-7 Linked barrels (by any pipe, copper or wooden) level to one water surface, height respected; levelled at most every 3 real seconds while changing.
 - PV-8 A barrel's bottom point feeds pipes out but takes no water in (it fills from above or by rain).
 - PV-9 (Dave 19 Nov 20:31Z) A pipe is a row of segments, one per pack piece (Wooden 2 m, Copper 3 m) counted from the end it was laid from; each joint between them is a connection point. A tap or drip head fits on any end or joint not already taken, and a barrel set down with its bottom point within 0.6 m across (0.25 m up or down) of one moves so the middle of its bottom lands exactly on it (Dave 21:56Z); pipes and fittings keep no building gap (they lie through anything); a joint splits the run in two there (pieces shared, none made). A run's second click may be on the ground (or anything) within 6 m. Assumed: a junction made with the sliding start point measures its new half's joints from that point.
@@ -174,7 +174,9 @@ past it; a click on the next connection point lays the whole run, taking the pip
   bring it any water it irrigates the soil in a circle of 10 m radius round it: every tilled bed and garden plot there is kept fully watered.
   It draws 2 L/min while water reaches it (PV-5).
 - **Barrels hold water** (PV-6): 60 L (Dave 21 Nov 2026), as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and
-  one holding water takes no goods ("It holds water."). Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
+  one holding water takes no goods ("It holds water."). (Superseded 22 Nov 2026 by Dave: the Barrel is now the Water barrel, 3 slots that take
+  only water containers and fill them from its water (fill_lpm 30), a drink with E; goods go in the new Storage barrel (12 slots). A barrel saved
+  with goods loads as a Storage barrel.) Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
   full rain (its 0.25 m2 top at about 10 mm a game hour), less in lighter rain. A pipe end or open tap over its rim pours in. E at a barrel holding
   water drinks or fills the container in hand; one with no water opens as before.
 - **Linked barrels level out** (PV-7): barrels whose bottom points are joined by pipe (copper or wooden, any number of runs and junctions) share

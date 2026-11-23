@@ -311,7 +311,7 @@ func _init() -> void:
 	damaged.close()
 	var fourth = make(dir)
 	fourth.peer_connected_hello(1, "abcdef123456")
-	check(fourth.inventory_of(1).count_of(stone) == 0, "with no earlier copy a corrupt save starts clean")
+	check(fourth.inventory_of(1).count_of(stone) == 0 and fourth.load_failures == ["inventories.json"], "with no earlier copy a corrupt save is named and nothing is loaded from it (terrain_server refuses to start)")
 
 	# Gathering and loose items.
 	var g = make("user://test_server_items_b")
@@ -1587,24 +1587,24 @@ func _init() -> void:
 	lt.peer_connected_hello(1, "abcdef123456")
 	lt.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var lean_kit: int = lt.table.number_of("lean_to_kit")
-	lt.action(1, Net.ACT_ADMIN_GIVE, lean_kit, 0, 8, Vector3.ZERO)
+	lt.action(1, Net.ACT_ADMIN_GIVE, lean_kit, 0, 14, Vector3.ZERO)
 	lt.place_item(1, lean_kit, Vector3(3.0, 10.0, 0.0), 0, 90)
-	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 7, "a lean-to is placed and registers its roof")
+	check(lt.world_item_count() == 1 and roofs.size() == 1 and lt.inventory_of(1).count_of(lean_kit) == 13, "a lean-to is placed and registers its roof")
 	var roof: Array = roofs[1]
 	check(absf(roof[5] - PI * 0.5) < 0.01 and roof[6] < 10.0 and roof[7] > 11.0, "the roof is a yawed box from just under the ground to 2 m up")
 	lt.place_item(1, lean_kit, Vector3(4.0, 10.0, 0.0), 0)
 	check(lt.world_item_count() == 1, "not within 2.5 m of another structure")
 
-	for n in range(8):
+	for n in range(13):
 		lt.report_position(1, Vector3(10.0 + float(n) * 4.0, 10.0, 0.0))
 		lt.place_item(1, lean_kit, Vector3(10.0 + float(n) * 4.0 + 1.0, 10.0, 0.0), 0)
-	check(lt.world_item_count() == 6, "six lean-tos fit in a chunk (%d)" % lt.world_item_count())
+	check(lt.world_item_count() == 12, "twelve lean-tos fit in a chunk (cap_per_chunk, raised for groups 22 Nov 2026) (%d)" % lt.world_item_count())
 	lt.save()
 	var lt2 = make(ld)
 	var roofs2: Array = []
 	lt2.roof_add = func(r): roofs2.append(r); return roofs2.size()
 	lt2.register_roofs()
-	check(lt2.world_item_count() == 6 and roofs2.size() == 6, "lean-tos and their roofs come back after a restart")
+	check(lt2.world_item_count() == 12 and roofs2.size() == 12, "lean-tos and their roofs come back after a restart")
 	lt2.peer_connected_hello(1, "abcdef123456")
 	lt2.report_position(1, Vector3(3.0, 10.0, 0.0))
 	var shelter: int = 0
@@ -1615,7 +1615,7 @@ func _init() -> void:
 
 	lt2.roof_remove = func(key): roofs2.clear()
 	lt2.action(1, Net.ACT_PICKUP, shelter, 0, 0, Vector3.ZERO)
-	check(lt2.world_item_count() == 5 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 20, "taking it down gives its materials back (no kit)")   # the lean-to blueprint costs 20 sticks (items review stage 1; was 30)
+	check(lt2.world_item_count() == 11 and lt2.inventory_of(1).count_of(lt2.table.number_of("stick")) >= 20, "taking it down gives its materials back (no kit)")   # the lean-to blueprint costs 20 sticks (items review stage 1; was 30)
 
 	# Storage chest.
 	var cd: String = "user://test_server_items_chest"

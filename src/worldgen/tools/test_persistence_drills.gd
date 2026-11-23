@@ -281,6 +281,12 @@ func _init() -> void:
 		for field in expect:
 			check(lost[field] == expect[field], "%s fully damaged: %s still intact (%s)" % [file, field, str(lost[field])])
 
+		var refused = reload(snap)
+		check(refused.load_failures == [file], "%s fully damaged: listed as unreadable, so the server refuses to start (%s)" % [file, str(refused.load_failures)])
+		refused._dirty = true
+		refused.save()
+		check(FileAccess.get_file_as_string(snap + "/" + file) == "not json", "%s fully damaged: nothing saved over it" % file)
+
 	# A newer-version file is set aside and the older copy is not used in its place.
 	wipe(dir + "_x")
 
@@ -288,7 +294,10 @@ func _init() -> void:
 
 	write(dir + "_x/world_items.json", "{\"version\": 9999, \"items\": []}")
 	var newer = reload(dir + "_x")
-	check(int(state_of(newer)["ground"]) == 0 and FileAccess.file_exists(dir + "_x/world_items.json.bad"), "a file from a newer version is set aside, not replaced by an old copy")
+	check(int(state_of(newer)["ground"]) == 0 and newer.load_failures == ["world_items.json"] and not FileAccess.file_exists(dir + "_x/world_items.json.bad"), "a file from a newer version is not read, not set aside and not replaced by an old copy: the server refuses to start (coordinator 22 Nov 2026)")
+	newer._dirty = true
+	newer.save()
+	check(FileAccess.get_file_as_string(dir + "_x/world_items.json") == "{\"version\": 9999, \"items\": []}", "and nothing is saved over it")
 
 	# digs.dat (the ground edit log, Ground's): a torn last record is cut off and appending goes on; a header torn while the
 	# file was first written starts a fresh log; a file that is not a log is refused and left alone.

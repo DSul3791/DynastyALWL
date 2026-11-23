@@ -43,6 +43,12 @@ Checked against the code and dev history, not against the lists' own tick marks.
 
 Grouped so that each piece can be one thread. Order is a suggestion (section 4). Already running elsewhere and **not repeated here**: world resource distribution, goal list and recipe check, natural animal movement and behaviour. The pieces held for the second merge on 21 Nov (#1455, #1456, #1457, #1459, #1460, #1461 and the Primitive smithy model) are all in dev now.
 
+### Piece 0. Sea drawn over fen flats below sea level (known look fault in the first package; first job after it)
+- **Cause (22 Nov 2026, Lane A pictures fen_wide_cmp2.png and fen3_all.png):** the fen sand flats round 58408,71560 lie between -0.5 and +0.3 m (a sample of the generated heights), and the sea plane is at 0 m. So the sea covers them by a few centimetres. Its surf foam, drawn wherever the sea is under 0.5 m deep (water_material.gd, `line` and `surf`), draws whole flats as flat white sheets with hard edges, on Vulkan and d3d12 alike. It is not the ground shader: #1596 (pool roughness, NaN guards) stays, and #1602 (dark pools) was reverted in #1604.
+- **Confirm in game:** Ctrl+Shift+F8 colours the water by type (red running, blue still, green foam). The white should turn green.
+- **To decide:** either keep the sea off inland ground below sea level, or lift wetland ground above it. No world reset unless Dave agrees.
+- **Check it works, not just the look:** what the server thinks that water is. Can a player drink or fill salt water on a fen flat? Do animals treat it as sea?
+
 ### Piece 1. Lag leftovers (BugsList 108, still open part)
 - **Gate Z result (not BugsList 108; delete this line once Dave decides):** the cold first-join freeze grew from 24.0 s to 25.2 s. This is the same freeze as BugsList 93, measured by the gate's A5 rule: the longest FREEZE, median of 3 cold windowed Play runs, limit 24.85 s (set from main's 23.96 s). Dave, 21 Nov 2026, on that freeze: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that." (the message is built, PR #1405). The second main merge waits on Dave's choice: accept, or fix and re-gate.
 - First-sight shader builds on d3d12 (0.5 to 0.9 s a new thing). **Decided, D-TODO-1** (coordinator, 21 Nov): keep d3d12 and warm up the materials near the spawn once, behind the "preparing graphics" note (BugsList 93). Step 1 is in dev: the FREEZE and HITCH lines name what is first shown in a slow frame, and log lines are written off the main thread (#1491). Still to do: the warm-up itself.
@@ -74,7 +80,7 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - Done: all 132 grey items now have their own look, in groups 5a to 5f (#1492, #1493, #1494, #1496, #1499), with fixes from the first Lane A pictures (#1507). Only `kindling_duplicate` stays in data/items/look_placeholders.json, for its number. Not yet played.
 
 ### Piece 6. Settlement size table
-- **Decided, D-TODO-5** (a coordinator pick for Dave, under his 21 Nov questions rule; not Dave's own approval; corrected 22 Nov): the proposed city size table in Design_Ideas_Unapproved.md ("The settlement ladder") is adopted as written: hamlet 10 to 100, village 100 to 400, town 400 to 1,500, city 1,500 to 5,000, grand city 5,000 to 15,000, with radii 300, 450, 675, 1,000 and 1,500 m. Real medieval sizes were the sanity check (most towns well under 2,000 people; only the largest cities over 10,000). Still to do: record it in the design with its status, for Dave's review (piece 8).
+- **Decided, D-TODO-5** (a coordinator pick for Dave, under his 21 Nov questions rule; not Dave's own approval; corrected 22 Nov): the proposed city size table in Design_Ideas_Unapproved.md ("The settlement ladder") is adopted as written: hamlet 10 to 100, village 100 to 400, town 400 to 1,500, city 1,500 to 5,000, grand city 5,000 to 15,000, with radii 300, 450, 675, 1,000 and 1,500 m. Real medieval sizes were the sanity check (most towns well under 2,000 people; only the largest cities over 10,000). Recorded in Design_Ideas_Unapproved.md ("The settlement ladder") as PROVISIONAL, for Dave's review (piece 8).
 
 ### Piece 7. Bandit toll and robbery (BugsList 82, 83)
 - Built and switched off. **Dave only** (robbery switch).

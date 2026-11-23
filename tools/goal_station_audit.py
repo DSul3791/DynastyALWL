@@ -108,7 +108,7 @@ def goal_needs(chain, g):
     ids = [c[k] for k in ("made_item", "have_item", "got_item") if c.get(k)]
     if ids:
         return chain.item(str(ids[0])) or frozenset()
-    anyof = c.get("made_item_any") or c.get("have_item_any") or []
+    anyof = c.get("made_item_any") or c.get("have_item_any") or c.get("stored_item_any") or []
     roads = [chain.item(str(i)) for i in anyof]
     roads = [x for x in roads if x is not None]
     return min(roads, key=len) if roads else frozenset()

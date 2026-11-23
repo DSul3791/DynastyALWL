@@ -193,6 +193,11 @@ func _init() -> void:
 	house._remains_check_in = 0.0
 	house._remains_tick(1.0)
 	check(on_floor.size() == 1 and absf(float(house._items[on_floor[0]]["pos"].y) - top) < 0.05, "the recheck leaves them on the floor")
+	house._items[on_floor[0]]["pos"].y = ground   # saved before the floor fix: buried at the generated ground under the slab
+	house._remains_full_at = 0.0
+	house._remains_check_in = 0.0
+	house._remains_tick(1.0)
+	check(absf(float(house._items[on_floor[0]]["pos"].y) - top) < 0.05, "older remains buried under a floor come up onto it at the full pass (y %.2f)" % float(house._items[on_floor[0]]["pos"].y))
 	var landing: Vector3 = house._bed_landing(Vector3(40.0, top, 40.0))
 	check(absf(landing.y - (top + 0.1)) < 0.05, "a bed on the floor lands the player on the floor beside it, not in the slab (y %.2f, floor top %.2f)" % [landing.y, top])
 	house.edits_near = func(_point, _radius) -> Array: return [[1, Vector3(80.0, 8.0, 80.0), 3.0]]   # a fill raising the ground round x 80 to about 11
@@ -267,6 +272,18 @@ func _init() -> void:
 	check(wolf.limp_share(1) == 1.0 and limps[limps.size() - 1][1] == 100, "healing to 60 percent ends the limp")
 	wolf._vitals["wolf-key-00001"]["health"] = 5.0
 	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "a lethal bite kills")
+
+	# A sleeper bitten down to the maim floor wakes; one passed out from exhaustion does not.
+	var sleeper = make(dir + "_sleeper")
+	sleeper.peer_connected_hello(1, "sleep-key-00001")
+	sleeper.report_position(1, Vector3(100.0, 12.0, 100.0))
+	sleeper._asleep[1] = {}
+	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
+	check(sleeper.hurt_player(1, 10.0, false, "wolves", 25.0) == "maimed" and not sleeper._asleep.has(1), "a maiming bite wakes a sleeper")
+	sleeper._asleep[1] = {"forced": true}   # passed out from exhaustion: a blow does not end that
+	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
+	var forced_hit: String = sleeper.hurt_player(1, 10.0, false, "wolves", 25.0)
+	check(forced_hit == "maimed" and sleeper._asleep.has(1), "a maiming bite leaves a passed-out sleeper asleep (%s)" % forced_hit)
 
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -169,6 +169,29 @@ func _init() -> void:
 	var d = make()
 	check(FileAccess.file_exists(area_path(here) + ".bad") and typeof(near_prev) == TYPE_DICTIONARY and loose(d) == (near_prev["items"] as Array).size(), "a damaged area file is set aside and the save before it read (%d items)" % loose(d))
 
+	# A listed area file gone with no .prev, or from a newer build: named in load_failures, nothing loaded over it, a save writes nothing.
+	var gone_text: String = FileAccess.get_file_as_string(area_path(here))
+	var gone_prev: String = FileAccess.get_file_as_string(area_path(here) + ".prev")
+	var header_text: String = FileAccess.get_file_as_string(dir + "/world_items.json")
+	DirAccess.remove_absolute(area_path(here))
+	DirAccess.remove_absolute(area_path(here) + ".prev")
+	var lost = make()
+	check(lost.load_failures == ["world_items/%s.json" % here], "a missing area file the header names stops the start (%s)" % str(lost.load_failures))
+	lost._dirty = true
+	lost.save()
+	check(FileAccess.get_file_as_string(dir + "/world_items.json") == header_text, "and a save then writes nothing over the header")
+	f = FileAccess.open(area_path(here), FileAccess.WRITE)
+	f.store_string(JSON.stringify({"version": ItemsScript.VERSION + 1, "gen": 1, "items": []}))
+	f.close()
+	var newer = make()
+	check(newer.load_failures == ["world_items/%s.json" % here] and FileAccess.file_exists(area_path(here)), "a newer build's area file stops the start and stays where it is")
+	f = FileAccess.open(area_path(here), FileAccess.WRITE)
+	f.store_string(gone_text)
+	f.close()
+	f = FileAccess.open(area_path(here) + ".prev", FileAccess.WRITE)
+	f.store_string(gone_prev)
+	f.close()
+
 	# A torn header: set aside as .bad, the header before it read, and each area at the gen it names (from .prev where the area changed since).
 	a._dirty = true
 	a.save()   # writes the damaged area again (a direct save writes every area)

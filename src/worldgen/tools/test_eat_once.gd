@@ -90,10 +90,12 @@ func _init() -> void:
 	items._characters[items._peer_key[1]]["grace_s"] = 100.0
 	items._vitals_tick(30.0)
 	check(absf(items.grace_of(1) - 70.0) < 0.01, "the first hour counts down with online time")
+	items._last_rain_s = 1234.0   # it rained before the restart
 	items._dirty = true
 	items.save()
 	var again = make(dir)
 	again.peer_connected_hello(1, "eat-once-key-01")
+	check(is_equal_approx(again._last_rain_s, 1234.0), "the last rain survives a restart, so seasonal brooks keep running (%s)" % str(again._last_rain_s))
 	check(again.tried_of(1).get("raw_meat", "") == "harm" and absf(again.grace_of(1) - 70.0) < 0.01, "tried foods and the remaining hour survive a reload")
 
 	# An old save without the fields loads with defaults and no protection.

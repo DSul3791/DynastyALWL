@@ -233,6 +233,7 @@ func _build_main() -> void:
 	quit.add_child(ask)
 	_button(quit, "Yes, leave", func():
 		_c._say_logout()
+		_c.quitting = true
 		_c.get_tree().quit())
 	_button(quit, "No, stay", func(): show_page("main"))
 
@@ -393,6 +394,10 @@ func _build_gameplay() -> void:
 	_cave_button = _button(gameplay, "Cave-in time", func():
 		var steps: Array = [120, 300, 600, 1200]
 		_c.net.tunnel_setting.rpc_id(1, _c.tunnel_on, steps[(steps.find(_c.tunnel_cave_in_s) + 1) % steps.size()]))
+	# The tunnel rows are admin settings (Dave 23 Nov 2026: no admin entries in the settings for testers): shown, like Esc > Admin, only to a
+	# player this server lists as an admin (refresh()).
+	_admin_buttons.append(_tunnel_switch.get_parent())
+	_admin_buttons.append(_cave_button)
 	_button(gameplay, "Back", func(): show_page("settings"))
 
 

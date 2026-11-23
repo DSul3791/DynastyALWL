@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Farming rules on the server (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026). A hoe tills a bed; a seed is sown only in its season and is used up; a game day that
-# ends with the bed's moisture at 25 percent or more (rain fills it, a pour adds to it, the weather dries it) is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling (turnip
+# ends with the bed's moisture at 25 percent or more (rain fills it, a pour adds to it, the weather dries it) is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling, unless the crop overwinters (wheat, rye, autumn onions) (turnip
 # grows on); compost speeds growth by 20 percent; harvest gives the yields and seeds back, half without the sickle for grain; an unripe crop is refused; crops are saved.
 # GOALS-REPAIR WP-R1B adds the player's route through the requests the client sends (sowing is the hoe's Plant grid, ACT_PLANT_GRID, since Dave's play test of 19 Nov 2026: E on a
 # bed no longer sows; ACT_WATER_BED, ACT_HARVEST): a real flax
@@ -223,7 +223,7 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	season[0] = off_season
 	notes.clear()
 	sow(bed, "flax_seeds")
-	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.has("Not the season for flax."), "flax is refused in %s (sow_seasons %s): seed kept, the server's text says why and what to do (%s)" % [off_season, str(flax_seasons), str(notes)])
+	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.any(func(n): return str(n).begins_with("Not the season for flax: sow it in spring")), "flax is refused in %s (sow_seasons %s): seed kept, the server's text says why and what to do (%s)" % [off_season, str(flax_seasons), str(notes)])
 	season[0] = in_season
 	items.report_position(1, Vector3(40.0, 10.0, 40.0))
 	sow(bed, "flax_seeds")
@@ -285,7 +285,7 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	act(Net.ACT_HARVEST, bed)
 	check(count("flax") == after and not items._crops.has(key), "a second harvest of the same bed gives nothing")
 
-	# Flax and the four grains in every season: sown exactly in their sow_seasons (data/items/crops.json, GOALS-REPAIR A-4: no season data change).
+	# Flax and the four grains in every season: sown exactly in their sow_seasons (data/items/crops.json; A-4 kept the grains out of summer; winter wheat sows in autumn, coordinator 22 Nov 2026).
 	var sowable: int = 0
 
 	for crop in ["flax", "wheat", "barley", "oats", "rye"]:
@@ -313,6 +313,8 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 		check(not shown.is_empty() and shown.size() == seasons.size(), "%s sows in exactly its seasons %s (sown in %s)" % [crop, str(seasons), str(shown)])
 
 	check(sowable >= 5, "every one of flax and the four grains can be sown in some season (%d season slots)" % sowable)
+	var summer_crops: Array = crops.keys().filter(func(c): return crops[c] is Dictionary and crops[c].has("grow_days") and (crops[c].get("sow_seasons", [crops[c].get("sow_season", "spring")]) as Array).has("summer") and ["carrot", "turnip", "cabbage", "peas", "beet", "radish", "lettuce"].has(c))
+	check(summer_crops.size() == 7, "a new world starts in summer: the quick vegetables can be sown then (%s)" % str(summer_crops))   # coordinator 22 Nov 2026: crops really sown in summer may be
 	season[0] = "spring"
 
 
@@ -760,13 +762,14 @@ func _init() -> void:
 	give("wooden_hoe" if items.table.has_id("wooden_hoe") else "stone_hoe", 1)
 	var made: int = items.till(1, items.inventory_of(1), Vector3(1.2, 10.0, 1.2), HeldTool.slot_of(items, "hoe"))
 	check(made != 0 and bed_id() != 0, "with a hoe a bed is tilled")
+	check(str(items._items[bed_id()]["struct"].get("owner", "")) == str(items._peer_key[1]), "the tilled bed records who tilled it (only they take it down)")
 	items._last_dig.clear()
 	check(items.till(1, items.inventory_of(1), Vector3(1.3, 10.0, 1.3), HeldTool.slot_of(items, "hoe")) == 0 and items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed").size() == 1, "the same metre is not tilled twice")
 
-	# Sow: wheat is a spring crop.
+	# Sow: wheat sows in spring and autumn (winter wheat), not in summer.
 	var bed: int = bed_id()
 	give("wheat_seeds", 3)
-	season[0] = "autumn"
+	season[0] = "summer"
 	check(not sow(bed, "wheat_seeds") and count("wheat_seeds") == 3, "wheat is refused out of season and the seed is kept")
 	season[0] = "spring"
 	check(sow(bed, "wheat_seeds") and count("wheat_seeds") == 2, "in spring the sowing works and uses one seed")
@@ -795,6 +798,13 @@ func _init() -> void:
 	items._crops[dry_key] = {"crop": "wheat", "sown": 0, "age": float(grow) + 5.0, "wet": 0, "day": items._game_day(), "compost": false, "rained": -1}
 	check(items.crop_stage(items._crops[dry_key]) == 2, "old enough but never watered: stalls at stage 2, not ripe")
 	items._crops.erase(dry_key)
+	var kept: Dictionary = items._crops[key].duplicate()
+	items._crops[key]["age"] = float(grow) + 5.0
+	items._crops[key]["wet"] = 0
+	notes.clear()
+	act(Net.ACT_HARVEST, bed)
+	check(notes.has("It has stopped growing: it needs more wet days. Keep the bed watered and it will ripen."), "a crop stalled for water says so at harvest (%s)" % str(notes))
+	items._crops[key] = kept
 
 	# Harvest: without a sickle half the yield.
 	var yield_wheat: int = int(crops["wheat"]["yields"][0][1])
@@ -807,14 +817,49 @@ func _init() -> void:
 	check(sow(bed, "wheat_seeds"), "the bed is sown again")
 	season[0] = "winter"
 	days(1)
-	check(not items._crops.has(key), "a seedling does not survive winter frost")
+	check(items._crops.has(key) and items.crop_stage(items._crops[key]) == 0, "a wheat seedling (overwinters) sits out the frost")
+	items._crops.erase(key)
+	season[0] = "spring"
+	give("barley_seeds", 1)
+	check(sow(bed, "barley_seeds"), "barley is sown")
+	season[0] = "winter"
+	days(1)
+	check(not items._crops.has(key), "a barley seedling does not survive winter frost")
 	give("turnip_seeds", 2)
-	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring and autumn)")
+	notes.clear()
+	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring, summer and autumn)")
+	check(notes.any(func(n): return str(n).begins_with("The ground is frozen hard")), "and the winter refusal says the ground is frozen (%s)" % str(notes))
 	season[0] = "autumn"
 	check(sow(bed, "turnip_seeds"), "turnip can be sown in autumn (sow_seasons list)")
 	season[0] = "winter"
 	days(2)
 	check(items._crops.has(key) and float(items._crops[key]["age"]) >= 2.0, "and grows through it")
+	# Winter: no bush or tree goes in either, by the hoe's grid or the bush key (Dave 22 Nov 2026: the ground is too hard).
+	var by_tree: Dictionary = ((items._drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
+	var tree_seed: String = str(by_tree[by_tree.keys()[0]])
+	give(tree_seed, 1)
+	var open_spot: Vector3 = Vector3(260.5, 10.0, 260.5)
+	var stood: Vector3 = items._peer_pos[1]
+	items.report_position(1, open_spot + Vector3(1.0, 0.0, 0.0))
+	items._last_dig.clear()
+	items._hoe_check_ms.clear()
+	notes.clear()
+	var saplings_before: int = items._saplings.size()
+	var hoe_w: int = HeldTool.slot_of(items, "hoe")
+	items.inventory_of(1).wear[hoe_w] = 0
+	check(items.plant_grid(1, items.inventory_of(1), hoe_w, items.table.number_of(tree_seed), 101, open_spot) == 0 and count(tree_seed) == 1 and items._saplings.size() == saplings_before, "winter: the hoe plants no tree seed and the pack keeps it (%s)" % str(notes))
+	notes.clear()
+	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of(tree_seed)), open_spot)
+	check(count(tree_seed) == 1 and items._saplings.size() == saplings_before and notes.has("The ground is frozen hard: nothing can be planted in winter."), "winter: the bush key plants nothing either (%s)" % str(notes))
+	season[0] = "spring"
+	items._last_dig.clear()
+	items._hoe_check_ms.clear()
+	items.inventory_of(1).wear[hoe_w] = 0
+	check(items.plant_grid(1, items.inventory_of(1), hoe_w, items.table.number_of(tree_seed), 101, open_spot) > 0 and count(tree_seed) == 0, "spring: the same seed goes in (%s)" % str(notes))
+	season[0] = "winter"
+	items.report_position(1, stood)
+	items._last_dig.clear()
+	items._hoe_check_ms.clear()
 
 	# Wheat with the sickle: put a ripe crop in directly (growth was tested above) and harvest it with the tool.
 	items._crops.erase(key)

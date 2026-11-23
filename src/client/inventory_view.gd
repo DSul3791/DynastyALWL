@@ -449,6 +449,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_thought_label)
 	net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())   # a stamped server refuses another build (protocol 133)
+	var me: Dictionary = CharacterStore.active()
+	net.my_look.rpc_id(1, str(me.get("name", "")), str(me.get("body", "")), str(me.get("code", "")))   # protocol 151: how the other players see this character
 
 	for forgotten in CharacterKeys.take_forgotten():
 		net.forget_character.rpc_id(1, str(forgotten))
@@ -481,6 +483,9 @@ func _machine_key() -> String:
 
 
 func toggle() -> void:
+	if _modal_up():
+		return   # I over a talk, trade, lock-code or food prompt would stack a second window and capture the mouse from under it
+
 	hotbar_hover = -1   # a hover left over from the last time the window was open never acts on a hotbar slot
 
 	if chest_mode:
@@ -528,6 +533,11 @@ func search_escape() -> bool:
 	return true
 
 
+# A window that must be answered or shut first: a talk or trade, the lock-code or storage window, the food-replace prompt.
+func _modal_up() -> bool:
+	return dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
+
+
 func close() -> void:
 	if _storage_ui.is_open():
 		_storage_ui.close()
@@ -535,6 +545,7 @@ func close() -> void:
 
 	if _food_ui.is_open():
 		_food_ui.close()
+		_storage_ui._release_mouse()   # Esc on the food prompt alone gives the camera back, as the storage window does
 		return
 
 	if dialogue_open and dialogue_close.is_valid():
@@ -552,7 +563,7 @@ func close() -> void:
 
 # The Tab character screen (src/client/character_screen.gd): health, exertion, heart, hunger, thirst, attributes, skills.
 func toggle_character() -> void:
-	if chest_mode:
+	if chest_mode or _modal_up():
 		return
 
 	if open:
@@ -1130,8 +1141,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(_structure_by_state(state).get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E drinks, F opens its slots where water containers fill
 		return {"prompt": "Press E to take a drink, F to fill water containers (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
-	if _is_chest(state) and int(_world[id].get("water_l", 0)) >= 1:   # a barrel holding water (PLUMBING_DESIGN s9, PV-6): water or goods, never both
-		return {"prompt": "Press E to drink, or to fill what you hold (%d L in it; hold E to take it down)" % int(_world[id]["water_l"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
+	if _is_chest(state) and bool(_structure_by_state(state).get("fills_containers", false)):   # a Water barrel (Dave 22 Nov 2026): E drinks or fills what you hold, F opens its 3 slots where water containers fill
+		return {"prompt": "Press E to drink, or to fill what you hold, F to fill water containers (%d L in it; hold E to take it down)" % int(_world[id].get("water_l", 0)), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if _is_chest(state):
 		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}

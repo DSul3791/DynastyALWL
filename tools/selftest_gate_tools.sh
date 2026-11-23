@@ -77,6 +77,7 @@ case "$N" in
 	test_animals) C="${FAKE_COUNT:?}"; n=$(cat "$C" 2>/dev/null || echo 0); echo $((n + 1)) > "$C"; [ "$n" -eq 0 ] && { echo "FAIL first time"; exit 1; };;
 	test_broken) echo "FAIL always"; exit 1;;
 	test_script_error) echo "SCRIPT ERROR: bad"; exit 0;;
+	validate_items) [ -n "$FAKE_ITEMS_CRASH" ] && exit 139; [ -n "$FAKE_ITEMS_BAD" ] && { echo "item validator: 10 errors, 3 warnings"; exit 0; }; echo "item validator: 0 errors, 114 warnings"; exit 0;;
 esac
 echo "Test done: 1 pass, 0 fail"
 F
@@ -89,6 +90,13 @@ echo "$OUTTXT" | grep -q "FLAKE test_animals"; ok $? "a retry that passed is log
 echo "$OUTTXT" | grep -q "slowest"; ok $? "the summary names the slowest tests"
 bash tools/run_tests.sh --jobs 2 --out "$T/o2" --fast test_script_error >/dev/null 2>&1; [ $? -ne 0 ]; ok $? "error text in the output fails a test"
 OUTTXT=$(bash tools/run_tests.sh --jobs 2 --out "$T/o3" --fast test_broken 2>&1); echo "$OUTTXT" | grep -q "Test done: 0 pass, 1 fail"; ok $? "a failing test not on the retry list fails at once"
+# every check the plan lists runs (22 Nov 2026: validate_items was listed and never run); an unknown check fails the run
+echo '{"fast":["test_inventory"],"timing":[],"slow":[],"checks":["validate_items"]}' > "$T/pc.json"
+OUTTXT=$(bash tools/run_tests.sh --jobs 1 --out "$T/o4" --plan "$T/pc.json" 2>&1); echo "$OUTTXT" | grep -q "Test done: 2 pass, 0 fail"; ok $? "a plan's validate_items check runs and counts as a pass"
+OUTTXT=$(FAKE_ITEMS_BAD=1 bash tools/run_tests.sh --jobs 1 --out "$T/o5" --plan "$T/pc.json" 2>&1); [ $? -ne 0 ] && echo "$OUTTXT" | grep -q "FAILED check validate_items"; ok $? "validate_items errors fail the run (10 errors is not 0 errors)"
+OUTTXT=$(FAKE_ITEMS_CRASH=1 bash tools/run_tests.sh --jobs 1 --out "$T/o7" --plan "$T/pc.json" 2>&1); [ $? -ne 0 ] && echo "$OUTTXT" | grep -q "FAILED check validate_items"; ok $? "a validator that crashes with no output fails the run"
+echo '{"fast":["test_inventory"],"timing":[],"slow":[],"checks":["no_such_check"]}' > "$T/pc2.json"
+OUTTXT=$(bash tools/run_tests.sh --jobs 1 --out "$T/o6" --plan "$T/pc2.json" 2>&1); [ $? -ne 0 ] && echo "$OUTTXT" | grep -q "CHECKS NOT RUN: no_such_check"; ok $? "a check the runner does not know is named and fails the run"
 # pc_queue.sh with a fake gate, slot and gh: pass, real failure (fails solo too), conflict, load noise (passes solo twice),
 # missing branch, already merged; all rows land in one results file with the full tested head.
 cat > "$T/fake_gate.sh" <<'FG'

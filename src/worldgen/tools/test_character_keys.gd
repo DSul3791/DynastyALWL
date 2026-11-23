@@ -70,10 +70,15 @@ func _init() -> void:
 	check(items.forget_key(1, "key-bbbbbbbb-0002"), "an offline character is forgotten")
 	check(not items._characters.has("key-bbbbbbbb-0002") and not items._inventories.has("key-bbbbbbbb-0002") and not items._vitals.has("key-bbbbbbbb-0002"), "record, pack and vitals are gone")
 	check(items._characters.has("key-aaaaaaaa-0001") and items._inventories.has("key-cccccccc-0003"), "the others are untouched")
+	items._characters["key-aaaaaaaa-0001"]["xp_day"] = 104
+	items._characters["key-aaaaaaaa-0001"]["xp_today"] = 22.5
+	items._characters["key-aaaaaaaa-0001"]["season_seen"] = 3
 	items._save_characters()
 	var again = make(dir)
 	again._load_characters()
 	check(not again._characters.has("key-bbbbbbbb-0002") and again._characters.has("key-aaaaaaaa-0001"), "the deletion survives a restart")
+	var kept: Dictionary = again._characters["key-aaaaaaaa-0001"]
+	check(int(kept.get("xp_day", -1)) == 104 and is_equal_approx(float(kept.get("xp_today", -1.0)), 22.5) and int(kept.get("season_seen", -1)) == 3, "the day's fitness XP and the season the hint saw survive a restart (%s)" % str([kept.get("xp_day"), kept.get("xp_today"), kept.get("season_seen")]))
 
 	if failures == 0:
 		print("Test done: all pass")

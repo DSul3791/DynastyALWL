@@ -1,0 +1,16 @@
+# The test players' page on the game server (deploy/testplayers/HOSTING.md). Caddy gets and renews the HTTPS certificate for this name
+# by itself (ports 80 and 443 must reach this machine). The page folder is mounted at /srv/testplayers.
+hannibalshouse.duckdns.org {
+	redir /dynasty/testplayers /dynasty/testplayers/
+	handle_path /dynasty/testplayers/* {
+		# Optional password (HOSTING.md, step 4): remove the # in front of the three basic_auth lines and put in the hash.
+		# basic_auth {
+		# 	tester PASTE_THE_HASH_HERE
+		# }
+		root * /srv/testplayers
+		file_server
+	}
+	handle {
+		respond 404
+	}
+}

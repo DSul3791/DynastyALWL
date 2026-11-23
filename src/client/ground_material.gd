@@ -561,7 +561,8 @@ void fragment() {
 		ice_look = mix(ice_look, vec3(0.82, 0.85, 0.88), max(crack * 0.5, bubble * 0.35));
 		color = mix(color, mix(water, ice_look, puddle_ice), puddle);
 		vec3 surface = normalize(vec3(-ripple.x, 1.0, -ripple.y));
-		NORMAL = normalize(mix(NORMAL, (VIEW_MATRIX * vec4(surface, 0.0)).xyz, puddle));
+		vec3 puddle_n = mix(NORMAL, (VIEW_MATRIX * vec4(surface, 0.0)).xyz, puddle);
+		NORMAL = dot(puddle_n, puddle_n) > 1e-8 ? normalize(puddle_n) : NORMAL;
 	}
 	// Splash crowns on hard open ground in rain (rain_look_design.md 3.2): strong on rock, less on gravel, sand and mud (a dull dark plop on
 	// mud), almost none in turf and litter, none in puddles (they have rings), under crowns or on lying snow; drawn within 20 m.
@@ -585,7 +586,11 @@ void fragment() {
 			color = mix(color, mix(color, worn_soil.rgb, worn_earth.w * lw[1]) * worn_earth.z, worn);
 		}
 	}
-	ALBEDO = color;
+	// Never a NaN or an over-bright albedo (fen pools drawn flat white under Vulkan, gate Z4 A4 22 Nov 2026): a bad value is dark ground.
+	if (any(isnan(color)) || any(isinf(color))) {
+		color = vec3(0.05, 0.045, 0.04);
+	}
+	ALBEDO = clamp(color, vec3(0.0), vec3(1.0));
 	// Mud is wet: a little sheen.
 	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
 	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
@@ -593,7 +598,11 @@ void fragment() {
 	ROUGHNESS = mix(ROUGHNESS, 0.36, min(wetland, 1.0) * (1.0 - rock_mask) * (1.0 - lying));      // wet peat and mud have a sheen
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
 	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);
-	ROUGHNESS = mix(ROUGHNESS, mix(0.03, 0.15, puddle_ice), puddle);      // a puddle mirrors the sky; ice a little less
+	ROUGHNESS = mix(ROUGHNESS, mix(0.12, 0.2, puddle_ice), puddle);      // a puddle shines with the sky; ice a little less (not a 0.03 mirror: white under Vulkan, gate Z4 A4)
+	ROUGHNESS = isnan(ROUGHNESS) ? 0.9 : clamp(ROUGHNESS, 0.05, 1.0);
+	if (any(isnan(NORMAL))) {
+		NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	}
 
 	// Caustics while the player is under water: the ripples overhead focus the sun into a moving net of bright lines on the bed,
 	// strongest in shallow water facing up, gone with depth, with distance and at night (the sun's own light carries them).

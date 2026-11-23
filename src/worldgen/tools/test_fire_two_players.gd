@@ -109,6 +109,24 @@ func _init() -> void:
 	f.tick(30.0)
 	check(f._items.has(id2) and float(f._items[id2]["fire"]["burn_left"]) < burn_before, "the fire keeps burning after its lighter leaves")
 
+	# Two players with the same fire store open: one puts a stick in or takes it out, and the other's open store is sent the change (not a stale slot).
+	var pushes: Dictionary = {}
+	f.send_chest = func(p, _id, _b): pushes[p] = int(pushes.get(p, 0)) + 1
+	f.report_position(3, Vector3(-1.0, 10.0, 1.0))
+	f.action(2, Net.ACT_CHEST_OPEN, id2, 0, 0, Vector3.ZERO)
+	f.action(3, Net.ACT_CHEST_OPEN, id2, 0, 0, Vector3.ZERO)
+	var store = f._chest_of(3, id2)
+	var in_store: int = -1 if store == null else store.count_of(stick)
+	var p3_sticks: int = f.inventory_of(3).count_of(stick)
+	pushes.clear()
+	f.action(2, Net.ACT_CHEST_PUT, f.inventory_of(2).numbers.find(stick), id2, 1, Vector3.ZERO)
+	check(int(pushes.get(3, 0)) == 1 and int(pushes.get(2, 0)) == 1, "a put into a shared fire store reaches the other viewer once and the putter once (%s)" % str(pushes))
+	check(store != null and store.count_of(stick) == in_store + 1, "the stick landed in the fire store")
+	pushes.clear()
+	f.action(3, Net.ACT_CHEST_TAKE, 0 if store == null else store.numbers.find(stick), id2, 1, Vector3.ZERO)
+	check(store != null and store.count_of(stick) == in_store and f.inventory_of(3).count_of(stick) == p3_sticks + 1, "and player 3 took it out")
+	check(int(pushes.get(2, 0)) == 1, "a take from it reaches the other viewer too (%s)" % str(pushes))
+
 	f._finish_writer()   # the background save thread must be done before quit, or the script is freed under it (Opcode 20 _write_file error)
 	print("test_fire_two_players: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 150  # 150 (22 Nov 2026, Dave: "if you place a snare it will mark on your map"): trap_marks(rows), the snares and Bird traps this character has set, [[x, z, kind], ...] oldest first (server_traps.gd marks_of), sent when they change; the Journal Map page marks them. Client and server must be updated together.
+const PROTOCOL_VERSION := 151  # 151 (22 Nov 2026, the friends' play test: players could not see each other): report_position gains yaw (the body's facing); new my_look (client to server: the character's name, body model and body code), player_look (server to client: another player's look and worn pieces) and players (server to client, unreliable, about 8 a second: the other players within 150 m), src/stream/server_players.gd and src/client/player_view.gd. Client and server must be updated together.
+# 150 (22 Nov 2026, Dave: "if you place a snare it will mark on your map"): trap_marks(rows), the snares and Bird traps this character has set, [[x, z, kind], ...] oldest first (server_traps.gd marks_of), sent when they change; the Journal Map page marks them. Client and server must be updated together.
 # 149 (22 Nov 2026, Dave: game trails "where animals might travel occassionally and we could set traps or snares"): trails(block_x, block_z, bytes, routes), routes the block's trails between animal places (src/shared/trail_codec.gd decode_routes: [kind, world points]), drawn as matted grass. Client and server must be updated together.
 # 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
 # 147 (21 Nov 2026, Dave's play test: "animals are still teleporting and not actually running"): animals(rows, server_ms), each row's field 5 the server ms its animal reached that position; the client draws animals on the server's timeline. Client and server must be updated together.
@@ -60,6 +61,8 @@ signal filled_received(center: Vector3, radius: float, material: int)
 signal flora_requested(peer_id: int, chunks: PackedInt32Array)
 signal flora_received(chunk: Vector2i, bytes: PackedByteArray, water: PackedByteArray, full: bool)
 signal position_reported(peer_id: int, position: Vector3, velocity: Vector3)
+signal facing_reported(peer_id: int, yaw: float)
+signal look_reported(peer_id: int, char_name: String, body: String, code: String)
 signal cut_flora_requested(peer_id: int, chunk: Vector2i, id: int)
 signal cut_swath_requested(peer_id: int, held_slot: int, plants: PackedInt32Array)
 signal pipe_lay_requested(peer_id: int, slot: int, from: Vector3, to: Vector3)
@@ -132,6 +135,8 @@ signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array, insts: PackedByteArray)
 signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
+signal player_look_received(peer_id: int, char_name: String, body: String, code: String, worn: PackedInt32Array)
+signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array)
 signal animals_received(rows: Array, server_ms: int)
 signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
@@ -359,9 +364,32 @@ func vent(at: Vector3) -> void:
 
 
 @rpc("any_peer", "call_remote", "unreliable_ordered")
-func report_position(position: Vector3, velocity: Vector3) -> void:
+func report_position(position: Vector3, velocity: Vector3, yaw: float) -> void:
 	if multiplayer.is_server():
 		position_reported.emit(multiplayer.get_remote_sender_id(), position, velocity.limit_length(2000.0))
+		facing_reported.emit(multiplayer.get_remote_sender_id(), yaw)   # protocol 151: the body's facing, for the other players' view of it
+
+
+# Protocol 151: the character this client plays, as the others see it (character_store.gd: name, body model id, body code). Sent after hello.
+@rpc("any_peer", "call_remote", "reliable")
+func my_look(char_name: String, body_model: String, code: String) -> void:
+	if multiplayer.is_server():
+		look_reported.emit(multiplayer.get_remote_sender_id(), char_name, body_model, code)
+
+
+# Protocol 151 (server_players.gd): another player's look and the item numbers it wears (one per worn position, as worn), sent when it changes
+# and, for every player already here, to a player who just sent its own look.
+@rpc("authority", "call_remote", "reliable")
+func player_look(peer_id: int, char_name: String, body_model: String, code: String, worn_numbers: PackedInt32Array) -> void:
+	player_look_received.emit(peer_id, char_name, body_model, code, worn_numbers)
+
+
+# Protocol 151 (server_players.gd): the other players within 150 m, nearest first: peer ids, positions (the body's middle), facings (rotation.y),
+# states (stance 0 stand / 1 crouch / 2 sit / 3 lie, +4 swimming, +8 a log on the shoulder), the item number in the hand (0 none) and the server
+# ms each position came in. About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
+@rpc("authority", "call_remote", "unreliable")
+func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array) -> void:
+	players_received.emit(ids, positions, yaws, states, held, times)
 
 
 # A player pressed + (1) or - (-1): step the flow rate of all water.

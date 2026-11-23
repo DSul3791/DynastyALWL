@@ -135,12 +135,15 @@ func _init() -> void:
 	var again = boot(dir)
 	check(again.world_item_count() == 4, "a save and reload keeps all four")
 
-	# From the future: set aside, never eaten, the server still starts.
+	# From the future: never read, never eaten, nothing saved over it; the server refuses to start (coordinator 22 Nov 2026).
 	fresh(dir)
 	put(dir, "world_items.json", {"version": 99, "next_id": 1, "items": [[stone, 1, 1.0, 1.0, 1.0, 1.0]], "taken": [], "picked": {}})
 	put(dir, "inventories.json", {"version": 99, "inventories": {}})
 	items = boot(dir)
-	check(items.world_item_count() == 0 and FileAccess.file_exists(dir + "/world_items.json.bad") and FileAccess.file_exists(dir + "/inventories.json.bad"), "files from a newer version are set aside as .bad")
+	check(items.world_item_count() == 0 and items.load_failures.has("world_items.json") and items.load_failures.has("inventories.json") and not FileAccess.file_exists(dir + "/world_items.json.bad"), "files from a newer version are not read and are left where they are (%s)" % str(items.load_failures))
+	items._dirty = true
+	items.save()
+	check(int(JSON.parse_string(FileAccess.get_file_as_string(dir + "/world_items.json"))["version"]) == 99, "and nothing is saved over them")
 
 	print("save compat: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

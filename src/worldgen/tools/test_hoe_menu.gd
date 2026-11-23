@@ -30,7 +30,8 @@ class FakeView:
 	func refresh_hotbar() -> void:
 		pass
 
-	func _on_notice(_text: String) -> void:
+	func _on_notice(text: String) -> void:
+		notices.append(text)
 		pass
 
 	func text_px(size: int) -> int:   # inventory_view.gd: the size times the player's text size, never under 16 for a font
@@ -44,6 +45,11 @@ class FakeView:
 
 	func is_broken(_slot: int) -> bool:
 		return false
+
+	var notices: Array = []
+
+	func crop_table() -> Dictionary:   # inventory_view.gd: the crops table (data/items/crops.json)
+		return JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))["crops"]
 
 	func key_slot(_key: int) -> int:
 		return -1
@@ -158,6 +164,24 @@ func run() -> void:
 	_check(shown.size() < plants.size() and shown.size() >= 3, "long list: %d of 40 rows shown" % shown.size())
 	_check(shown.any(func(label: Label) -> bool: return label.text == plants[25] and label.get_theme_stylebox("normal") is StyleBoxFlat), "long list: the highlighted row is shown and marked")
 	_check(shown[0].text == "..." and shown[shown.size() - 1].text == "...", "long list: '...' at both ends where rows are hidden")
+	# The plant list greys out what cannot go in now (Dave 22 Nov 2026), by the rule the server uses (FarmRules.plantable_now).
+	var season: Array = ["summer"]
+	held.season_now = func(): return season[0]
+	held._hoe_menu_page = "garden"
+	held._garden_rows = [{"id": "wheat_seeds", "kind": "seed"}, {"id": "carrot_seeds", "kind": "seed"}, {"id": "hazel_bush", "kind": "bush"}]
+	_check(not held._garden_row_open(0) and held._garden_row_open(1) and held._garden_row_open(2), "summer: wheat greyed, carrots and a bush open")
+	_check(held._hoe_menu_note(0).begins_with("Out of season: sow it in spring or autumn"), "the greyed row says when it sows (%s)" % held._hoe_menu_note(0))
+	held.garden_pick = ""
+	held._hoe_menu_open = true
+	held._hoe_menu_index = 0
+	held._hoe_menu_choose()
+	_check(held.garden_pick == "" and held._hoe_menu_open, "a greyed row cannot be picked; the list stays open")
+	held._hoe_menu_index = 1
+	held._hoe_menu_choose()
+	_check(held.garden_pick == "carrot_seeds", "an open row is picked")
+	season[0] = "winter"
+	_check(not held._garden_row_open(0) and not held._garden_row_open(1) and not held._garden_row_open(2), "winter: everything greyed out")
+	_check(held._hoe_menu_note(1).begins_with("The ground is frozen hard"), "and it says why")
 	print("hoe_menu: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

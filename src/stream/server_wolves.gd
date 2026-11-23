@@ -50,6 +50,13 @@ func cfgw() -> Dictionary:
 	return host.cfg.get("wolves", {})
 
 
+# The town keep-out (coordinator for Dave, 22 Nov 2026): within town_keep_m of the starter town's markers (host.town, the middle of
+# data/npcs/markers.json; never the spawn) no pack starts a stalk, rush or hunt and a rush or hunt breaks off. Behaviour only: dens stay
+# where they are (a pack still defends a den with pups, _den_guard). No markers: host.town is INF and there is no keep-out.
+func in_town(p: Vector3) -> bool:
+	return host.town.x != INF and Vector2(p.x - host.town.x, p.z - host.town.y).length() < float(cfgw().get("town_keep_m", 300.0))
+
+
 # Pack wolves only: pups and companion wolves are not counted against max_wolves.
 func wolf_count() -> int:
 	var n: int = 0
@@ -349,7 +356,7 @@ func _prey_near(c: Vector3, r: float) -> int:
 
 		var d: float = Vector2(a["pos"].x - c.x, a["pos"].z - c.z).length()
 
-		if d < best_d:
+		if d < best_d and not in_town(a["pos"]):   # nor hunted in the town keep-out
 			best_d = d
 			best = id
 
@@ -367,7 +374,7 @@ func _dog_near(c: Vector3, r: float) -> int:
 	for dog in host._dogs:
 		var dd: float = Vector2(dog[1].x - c.x, dog[1].z - c.z).length()
 
-		if dd < best_d:
+		if dd < best_d and not in_town(dog[1]):
 			best_d = dd
 			best = int(dog[0])
 
@@ -413,6 +420,9 @@ func _prowl(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 	for info in infos:
 		if pack["ignore"].has(info["peer"]) and float(pack["ignore"][info["peer"]]) > _clock:
 			continue
+
+		if in_town(info["pos"]):
+			continue   # the town keep-out: a player in town is not stalked
 
 		for m in members:
 			var d: float = Vector2(info["pos"].x - m["pos"].x, info["pos"].z - m["pos"].z).length()
@@ -478,6 +488,12 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 	var w: Dictionary = cfgw()
 	var def: Dictionary = host.species_def("wolf")
 	var info: Dictionary = _info_of(infos, int(pack["target"]))
+
+	if not info.is_empty() and in_town(info["pos"]):
+		pack["ignore"][int(pack["target"])] = _clock + float(w.get("town_ignore_s", 30.0))   # not watched again at each step over the line
+		pack["phase"] = "prowl"
+		pack["target"] = -1
+		return
 
 	if info.is_empty() or Vector2(info["pos"].x - c.x, info["pos"].z - c.z).length() > float(w.get("lose_m", 120.0)):
 		pack["phase"] = "prowl"
@@ -583,7 +599,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 	for m in members:
 		low = low or float(m["hp"]) < float(def.get("health", 30.0)) * float(w.get("flee_hp_share", 0.4))
 
-	if others > 0 or pack["hurt"] or low or lit_target:
+	if others > 0 or pack["hurt"] or low or lit_target or in_town(p):
 		_retreat(pack, members, c, p, float(w.get("hurt_retreat_s", 45.0)), false)
 		return
 
@@ -660,7 +676,7 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 	var target: int = int(pack["target"])
 	var info: Dictionary = _info_of(infos, target)
 
-	if target < 0 or info.is_empty() or Vector2(info["pos"].x - c.x, info["pos"].z - c.z).length() > float(w.get("return_m", 250.0)):
+	if target < 0 or info.is_empty() or Vector2(info["pos"].x - c.x, info["pos"].z - c.z).length() > float(w.get("return_m", 250.0)) or in_town(info["pos"]):
 		pack["maimed"].erase(target)
 		pack["phase"] = "prowl"
 		pack["target"] = -1
@@ -677,6 +693,13 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array) -> void:
 	var def: Dictionary = host.species_def("wolf")
 	var prey_id: int = int(pack["prey"])
+
+	if prey_id != 0 and host.animals.has(prey_id) and in_town(host.animals[prey_id]["pos"]):
+		pack["prey"] = 0   # the prey (a deer, a player's dog) went into town: the hunt ends at the keep-out
+		pack["phase"] = "prowl"
+		pack["home"] = c
+		pack["timer"] = 0.0
+		return
 
 	if prey_id != 0 and host.animals.has(prey_id):
 		var prey: Dictionary = host.animals[prey_id]

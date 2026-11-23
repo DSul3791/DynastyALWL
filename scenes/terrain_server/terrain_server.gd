@@ -32,6 +32,7 @@ const WaterAreas := preload("res://src/shared/water_areas.gd")
 const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
+const IceMoatScript := preload("res://src/shared/ice_moat.gd")
 const PlayServerScript := preload("res://src/shared/play_server.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -50,6 +51,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const PlayersScript := preload("res://src/stream/server_players.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
@@ -124,6 +126,7 @@ var _send_round: int = 0
 var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
+var players                            # ServerPlayers: what each player sees of the others (protocol 151)
 var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
@@ -241,8 +244,12 @@ var _aim: Dictionary = {}              # peer -> Vector2 ground point to make fi
 var _clear_generated_at_start: bool = false
 var _flag_check_msec: int = 0
 var _store_path: String = ""
+var ice_moat = IceMoatScript.new()   # the thaw's open shore moat, as the client draws it (ice_moat.gd)
 var game_clock = GameClockScript.new()   # the one game clock; advances only while the server runs
 var _clock_saved_msec: int = 0
+
+
+var _refused_start: bool = false   # a save file exists but could not be read: the server quits at once and saves nothing
 
 
 func _ready() -> void:
@@ -417,7 +424,15 @@ func _ready() -> void:
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
 	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed))
 	@warning_ignore("confusable_local_declaration")
-	items.send_worn = func(peer, numbers, insts): net.worn.rpc_id(peer, numbers, insts)
+	items.send_worn = func(peer, numbers, insts):
+		net.worn.rpc_id(peer, numbers, insts)
+		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
+	players = PlayersScript.new()
+	players.items = items
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
+	net.facing_reported.connect(players.note_report)
+	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
 	@warning_ignore("confusable_local_declaration")
@@ -467,8 +482,27 @@ func _ready() -> void:
 				best = near
 
 		return best.y
+	items.nearest_fresh_water = func(pos, reach):   # the drink goal's hint (server_items.gd _water_way): only tiles already loaded (never a tile read on this thread)
+		var best: Vector3 = Vector3(0.0, INF, 0.0)
+		var coords: Dictionary = {}
+		var skipped: bool = false
+
+		for corner in [Vector2.ZERO, Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+			if generator.tile_cached(pos.x + corner.x, pos.z + corner.y):
+				coords[generator.tile_of(pos.x + corner.x, pos.z + corner.y)] = true
+			else:
+				skipped = true
+
+		for coord in coords:
+			var spot: Vector3 = generator.get_tile(coord).fresh_water_spot(pos, reach)
+
+			if spot.y < best.y:
+				best = spot
+
+		return Vector3(0.0, NAN, 0.0) if best.y == INF and skipped else best   # NAN: not known yet (a tile the reach touches is not loaded)
 	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
 	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
+	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed)), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
@@ -578,6 +612,16 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+
+	if not items.load_failures.is_empty():
+		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
+		push_error(why)
+		print(why)
+		_run_note("refused", 0, why)
+		_refused_start = true
+		get_tree().quit(3)   # never come up on an empty world over the players' saves
+		return
+
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
@@ -671,6 +715,7 @@ func _ready() -> void:
 	animals.canopy = func(point): return flora.covered(point)
 	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
+	animals.ice_moat_at = items.ice_moat_at     # and the same open moat in a thaw
 	animals.game_seconds = func(): return game_clock.seconds
 	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, _weather_at(centre), centre, reach)   # the shared strikes, under that player's own weather (birds_and_thunder_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
@@ -1008,7 +1053,12 @@ func _ready() -> void:
 			return
 
 		_slow_rpc("hello: authenticate", t0)
-		items.peer_connected_hello(peer, identity.store_key(account))
+		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
+			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
+
+			if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
+				multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+
 		_slow_rpc("hello: peer_connected_hello", t0)
 		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 134: the client's Admin menu follows it
 		net.npc_roster.rpc_id(peer, npcs.roster())
@@ -1393,6 +1443,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
 	_trap_marks_sent.erase(peer_id)
+	players.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -1912,25 +1963,43 @@ func _cut_tree(chunk: Vector2i, id: int) -> bool:
 
 
 # Standing placer trees whose root lies within `radius` (flat) of a point, as [chunk, id] (dig under trees, job 85).
+# Only the chunks the radius reaches, and only those whose full list is made (tree_info reads that list): every dig asks this, and it used
+# to place and scan all nine 256 m chunks round the dig on the main thread (22 Nov 2026 load bots: 5.5 s on a first dig, about 50 ms on
+# every later one). A chunk not made yet is skipped: the same dig's bury job makes it on the flora thread.
+# shortcut: a dig in a chunk not made yet does not fell the trees it undermines; the next dig there does, once the chunk is made.
 func _trees_near(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var reach: int = maxi(int(ceil(radius / size)), 1)
 	var found: Array = []
 
-	for dz in [-1, 0, 1]:
-		for dx in [-1, 0, 1]:
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var corner: Vector2 = Vector2(float(home.x + dx) * size, float(home.y + dz) * size)
+
+			if Vector2(clampf(point.x, corner.x, corner.x + size) - point.x, clampf(point.z, corner.y, corner.y + size) - point.z).length() > radius:
+				continue
+
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
-			var trees: Dictionary = flora.items_of(chunk, true)
+
+			if not flora.has_items(chunk):
+				continue   # the dig's own bury job (_bury_find, flora thread) makes it
+
+			var trees: Dictionary = flora.items_of(chunk)   # kept: no placement
 			var gone: Array = flora.removed_in(chunk)
+			var ids: PackedInt32Array = trees["ids"]
+			var positions: PackedVector3Array = trees["positions"]
 
-			for n in range(trees["ids"].size()):
-				var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+			for n in range(ids.size()):
+				var at: Vector3 = positions[n]
 
-				if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or gone.has(trees["ids"][n]):
+				if absf(at.x - point.x) > radius or absf(at.z - point.z) > radius or Vector2(at.x - point.x, at.z - point.z).length() > radius:
 					continue
 
-				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
-					found.append([chunk, trees["ids"][n]])
+				var species: Dictionary = flora.placer._by_id.get(ids[n] >> 16, {})
+
+				if not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE and not gone.has(ids[n]):
+					found.append([chunk, ids[n]])
 
 	return found
 
@@ -3030,12 +3099,11 @@ func _send_npcs(delta: float) -> void:
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
 
-		var marks: Array = items.trap_marks(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150)
-		var marks_sig: int = hash(marks)
+		var marks_sig: int = items.trap_marks_sig(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150): sent when they change
 
 		if not _trap_marks_sent.has(peer) or int(_trap_marks_sent[peer]) != marks_sig:
 			_trap_marks_sent[peer] = marks_sig
-			net.trap_marks.rpc_id(peer, marks)
+			net.trap_marks.rpc_id(peer, items.trap_marks(peer))
 
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)
@@ -3097,6 +3165,9 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 
 
 func _process(delta: float) -> void:
+	if _refused_start:
+		return
+
 	if store == null:
 		return
 
@@ -3138,6 +3209,8 @@ func _process(delta: float) -> void:
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
+	_events.mark("send players")
+	players.tick(delta)
 	_events.mark("deliver blocks")
 
 	# Send what the workers made, batched per peer.
@@ -3348,11 +3421,17 @@ func _log_dir() -> String:
 # whether it obeys Play's stop request ("stop": 1, a server Play started; _stop_if_asked).
 # A game started while the old server is closing, or from a newer checkout, replaces it instead of joining a server that
 # will stop answering (Dave, build 619: stuck on "0 blocks arriving").
-func _run_note(state: String, listen_port: int) -> void:
+func _run_note(state: String, listen_port: int, why: String = "") -> void:
 	var file: FileAccess = FileAccess.open(_run_note_path(), FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}))
+		var note: Dictionary = {"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}
+
+		if why != "":
+			note["why"] = why   # "refused": the game's connect window shows it (terrain_client.gd _play_server_refused)
+			note["t"] = Time.get_unix_time_from_system()
+
+		file.store_string(JSON.stringify(note))
 		file.close()
 
 
@@ -3619,6 +3698,9 @@ func _load_game_clock() -> void:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
+	if typeof(parsed) != TYPE_DICTIONARY and FileAccess.file_exists(path + ".prev"):
+		parsed = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev"))   # damaged: the save before it
+
 	if typeof(parsed) == TYPE_DICTIONARY and parsed.has("seconds"):
 		game_clock.seconds = float(parsed["seconds"])
 
@@ -3629,16 +3711,15 @@ func _save_game_clock() -> void:
 	if _store_path == "":
 		return
 
-	var file: FileAccess = FileAccess.open(_store_path + "/game_clock.json", FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify({"seconds": game_clock.seconds}))
+	ItemsScript._write_file(_store_path + "/game_clock.json", JSON.stringify({"seconds": game_clock.seconds}))   # whole to a .tmp, then moved over: a hard stop never tears it
 
 
 func _exit_tree() -> void:
 	_events.event("EXIT: server closed (exit_tree)")
 	_events.stop_watchdog()
-	_save_game_clock()
+
+	if not _refused_start:   # it never started: nothing is saved over the files it could not read (items.save is a no-op then; the threads still join)
+		_save_game_clock()
 
 	tunnels.stop()
 
@@ -3671,7 +3752,7 @@ func _exit_tree() -> void:
 		_bury_thread.wait_to_finish()
 		_bury_thread = null
 
-	if flora != null:
+	if flora != null and not _refused_start:
 		flora.save_removed(true)
 
 	if animals != null and animals.goblins != null:
