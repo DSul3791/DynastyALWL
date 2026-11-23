@@ -3885,7 +3885,8 @@ func _cut_nearest_tree() -> void:
 # The player body's collision margin. Godot's 1 mm default stopped a crouched player dead on flat forest ground (Dave 23 Nov 2026: "like I was
 # against an invisible wall but if I stood up I could walk"): at the crouch pace (0.64 m/s, about 1 cm a physics step) move_and_slide on the
 # terrain made no headway at about one walk in seven past trees near the town, touching only the floor; standing at that pace stuck as often,
-# so it is the pace, not the crouched shape. With 1 cm it never stuck (the --crouchwalk check, tools/items_check.py).
+# so it is the pace, not the crouched shape. The 1 cm margin cleared the crouch pace but not slower ones; _carry_slide covers those
+# (the crouchwalk and crouchslow checks, tools/items_check.py).
 const PLAYER_SAFE_MARGIN_M := 0.01
 var _slide_carry: Vector3 = Vector3.ZERO   # see _carry_slide
 
@@ -5649,7 +5650,8 @@ func _move_player(delta: float) -> void:
 		var carried: Vector3 = _slide_carry / delta if carrying else Vector3.ZERO
 		body.velocity += carried
 		body.move_and_slide()
-		body.velocity -= carried   # the pace the animation, sounds and ice grip read stays the walker's own
+		if not body.is_on_wall():
+			body.velocity -= carried   # the pace the animation, sounds and ice grip read stays the walker's own
 		Probe.stop("p slide", tm)
 
 		if carrying:
@@ -5722,7 +5724,6 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 	return true
 
 
-# Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
 # Dave 23 Nov 2026, crouched "like I was against an invisible wall but if I stood up I could walk": on the voxel terrain under Jolt a
 # move_and_slide of only a few millimetres on the floor (a slow crouch, a loaded or tired walker) often goes nowhere at all, though nothing
 # but the floor is touched. When a floor move made under 30% of the asked headway and no wall stopped it, the asked move is carried into the
@@ -5742,6 +5743,7 @@ func _carry_slide(from: Vector3, asked: Vector3) -> void:
 	_slide_carry = (_slide_carry + asked).limit_length(SLIDE_CARRY_MAX_M)
 
 
+# Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
 # The step height is data/movement.json step_up_m. Anything higher is a wall and move_and_slide slides along it.
 func _step_up(motion: Vector3) -> void:
 	_step_lift += StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
@@ -7890,7 +7892,7 @@ func _ground_below(p: Vector3) -> float:
 	return float(hit["position"].y) if not hit.is_empty() else NAN
 
 
-# --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side, a crouched walk at the crouch pace past it from four sides, 3 s each;
+# --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side, a crouched walk at the crouch pace (or --runspeed) up beside it from four sides, 3 s each;
 # a walk that covers under 60 percent of its distance is stuck. Prints "crouch walk: N of M stuck" and ends the walk test.
 var _crouch_trees: Array = []
 var _crouch_case: int = -1
@@ -7949,8 +7951,10 @@ func _crouch_walk_step(now: int) -> void:
 	var ang: float = deg_to_rad(90.0 * (_crouch_case % 4))
 	var toward: Vector3 = Vector3(-sin(ang), 0.0, -cos(ang))
 	var start: Vector3 = tree - toward * 2.0 + Vector3(toward.z, 0.0, -toward.x) * 0.8
-	body.global_position = Vector3(start.x, _ground_below(Vector3(start.x, tree.y + 30.0, start.z)) + 1.0, start.z)
+	var ground: float = _ground_below(Vector3(start.x, tree.y + 30.0, start.z))
+	body.global_position = Vector3(start.x, (tree.y if is_nan(ground) else ground) + 1.0, start.z)
 	body.velocity = Vector3.ZERO
+	_slide_carry = Vector3.ZERO
 	body.rotation.y = atan2(-toward.x, -toward.z)
 	_crouch_from = body.global_position
 	_crouch_case_msec = now
