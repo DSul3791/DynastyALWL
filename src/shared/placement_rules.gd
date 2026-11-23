@@ -959,7 +959,14 @@ static func keeps_off(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: 
 
 		return "overlap" if _boxes_meet(_box(def, spot, yaw_deg), _box(other, row["pos"], float(row.get("yaw", 0.0)))) else ""
 
-	return "close" if (row["pos"] as Vector3).distance_to(spot) < float(cfg.get("gap_m", 2.5)) else ""
+	var gap: float = float(cfg.get("gap_m", 2.5))
+
+	if def.has("gap_m") or other.has("gap_m"):
+		# A small thing with its own gap (a snare: Dave 23 Nov 2026, "no limit" on snares): the smaller gap decides, and it says so plainly.
+		gap = minf(float(def.get("gap_m", gap)), float(other.get("gap_m", gap)))
+		return "spaced" if (row["pos"] as Vector3).distance_to(spot) < gap else ""
+
+	return "close" if (row["pos"] as Vector3).distance_to(spot) < gap else ""
 
 
 # A wall, doorway, window, fence, gate or railing: a piece that stands along a line.
@@ -1192,6 +1199,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "too close to another fire or building"
 		"overlap":
 			return "something is in the way: a wall, a post or another piece stands there"
+		"spaced":
+			return "too close: leave about 60 cm between a trap and the next thing set there"   # structures.json snare_trap and bird_trap_set gap_m
 		"bed":
 			return "a bed or planter is already in that spot"
 		"crowded":
