@@ -120,9 +120,9 @@ func _init() -> void:
 		for i in inv.slot_count:
 			mirror[i] = [inv.numbers[i], inv.counts[i]]
 	items.send_full = func(_p, _b): mirror_from_server.call()
-	items.send_slots = func(_p, b: PackedByteArray) -> void:
-		for k in int(b[0]):
-			mirror[int(b[1 + 9 * k])] = [b.decode_u32(2 + 9 * k), b.decode_u16(6 + 9 * k)]
+	items.send_slots = func(_p, bytes: PackedByteArray) -> void:
+		for k in int(bytes[0]):
+			mirror[int(bytes[1 + 9 * k])] = [bytes.decode_u32(2 + 9 * k), bytes.decode_u16(6 + 9 * k)]
 	mirror_from_server.call()
 	queue(items, 2, 1)
 	var seen_twine: int = 0
