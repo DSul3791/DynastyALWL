@@ -1925,6 +1925,7 @@ func _on_notice(text: String) -> void:
 		notice_event.call(text)
 
 	_prompt.text = KeyBindings.localize(text)
+	_prompt.move_to_front()   # over the inventory window, which is built later on the same layer: a refusal while crafting was hidden under it (Dave 23 Nov 2026)
 
 	if _site_list != null:
 		_site_list.visible = false
