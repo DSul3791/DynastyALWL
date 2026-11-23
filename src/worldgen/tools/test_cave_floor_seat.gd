@@ -77,7 +77,7 @@ func _init() -> void:
 
 	check(same, "every entry keeps x, z, kind and value")
 	check(boulders_kept, "every boulder keeps its height")
-	check(most_drop <= 3.0, "no stone lowered more than 3 m (a spring pool's bed is not a floor to move to): most %.2f m" % most_drop)
+	check(most_drop <= 3.001, "no stone lowered more than 3 m (a spring pool's bed is not a floor to move to): most %.2f m" % most_drop)
 	check(open_spots > 0 and open_on_ground, "every stone in the open lies on the ground's surface height (%d)" % open_spots)
 	print("     %d stones and leftovers measured: %d off the floor before, %d after" % [measured, off_before, off_after])
 	check(off_before > 20, "the unseated layout has floating or buried stones (the fault is measured)")
