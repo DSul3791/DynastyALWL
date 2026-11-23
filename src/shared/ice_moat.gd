@@ -32,7 +32,7 @@ static func in_moat(pos: Vector3, moat: int, water_near: Callable) -> bool:
 
 
 # The moat width in cells at `pos` now, as the client works it out (Ice.season at the pond depth, FrozenWater.thaw_of, IceFeel.moat_cells).
-func moat_cells(pos: Vector3, game_s: float, zone_group: String, seed_value: int) -> int:
+func moat_cells(pos: Vector3, game_s: float, zone_group: String, seed_value: int, row: int = Ice.Weather.STARTER_ROW, equator_row: int = 0) -> int:
 	var key: String = "%d|%d|%s" % [floori(pos.z / 1000.0), roundi(maxf(pos.y, 0.0) / 5.0), zone_group]   # a band can straddle a zone row
 	var kept: Array = _bands.get(key, [])
 
@@ -42,7 +42,7 @@ func moat_cells(pos: Vector3, game_s: float, zone_group: String, seed_value: int
 	if _bands.size() > 256:
 		_bands.clear()
 
-	var season: Dictionary = Ice.season(game_s, zone_group, maxf(pos.y, 0.0), POND_DEPTH_M, seed_value)
+	var season: Dictionary = Ice.season(game_s, zone_group, maxf(pos.y, 0.0), POND_DEPTH_M, seed_value, row, equator_row)   # the band's own row (its key holds the row's z)
 	var moat: int = IceFeel.moat_cells(FrozenWater.thaw_of(float(season["cover"]), float(season["peak"])))
 	_bands[key] = [moat, game_s + KEEP_S]
 	return moat
