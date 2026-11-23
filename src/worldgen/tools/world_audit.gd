@@ -15,6 +15,7 @@ extends SceneTree
 #     --out=NAME       JSON report, always under user:// (default world_audit.json); --merge=N1,N2,... merges those part reports, prints
 #                      the total and writes user://world_audit_total.json
 #     --examples=N     worst examples kept per fault (default 12)
+#     --caves          instead of chunks: every cave of every baked tile (walking lines, dens, den mouths, goblin paths, floor items)
 #
 # Nothing is written to the world; the tool reads the tiles, the placer, the water grid and the server's scatter layout.
 # Fault names and limits are in FAULTS below; the README is docs/design/WORLD_AUDIT.md.
@@ -63,6 +64,19 @@ const FAULTS := {
 	"water_step": ["two neighbouring wet points whose levels differ 1.0 m more than their beds do (water steeper than the ground), no fall drawn there", 1.0],
 	"lake_tilted": ["neighbouring lake points more than 0.10 m apart (standing water on a slope)", 0.10],
 	"water_dry_bed": ["a lake or river sample with no water drawn over it", 0.0],
+	"cave_floor_off": ["a point on a cave's walking line (the skeleton floor goblin paths and den spots use) with the floor mesh more than 0.40 m above it, or no floor within 3 m under it", 0.40],
+	"cave_squeeze": ["a cave's walking line with under 0.70 m between floor and roof: no player stance fits (crawl is 0.7 m)", 0.70],
+	"cave_crawl": ["a cave's walking line with 0.70 to 1.20 m headroom: crawl only (not a fault alone)", 1.20],
+	"cave_steep": ["a cave floor climbing more than 1.0 m in 1 m along its walking line", 1.0],
+	"den_floor_off": ["a cave den or goblin den spot more than 0.30 m off the floor mesh", 0.30],
+	"den_on_pool": ["a cave den spot over a spring pool's water (dens there are only for den sounds)", 0.0],
+	"den_low": ["headroom at a den spot under the animal's height (goblin and bear 1.2 m, wolf 0.9, fox 0.5)", 0.0],
+	"den_mouth_off": ["an animal den mouth where the server puts a new animal (surface_height) with no mesh ground within 0.30 m (in the air or in rock)", 0.30],
+	"goblin_path_off": ["a point on a goblin den path (mouth to den, walked by its goblins) off the floor mesh by more than 0.40 m or under 1.2 m headroom", 0.40],
+	"cave_item_floats": ["a cave stone, mine leftover or boulder above the floor mesh (stone 0.10 m, boulder its radius)", 0.10],
+	"cave_item_on_pool": ["a cave stone or boulder laid over a spring pool's water (hangs over it or sits on it)", 0.0],
+	"cave_prop_off": ["cave floor dressing (bones, goblin litter or fire, den droppings or bedding) more than 0.15 m off the floor mesh (looks)", 0.15],
+	"cave_item_buried": ["a cave stone or mine leftover more than 0.15 m under the floor mesh", 0.15],
 	"far_float_lod1": ["at LOD 1 (the view past the near ring), a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod2": ["at LOD 2, a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod3": ["at LOD 3, a plant or tree base more than 0.25 m off the mesh", 0.25],
@@ -101,6 +115,7 @@ func _init() -> void:
 	var part: Vector2i = Vector2i(0, 1)
 	var out: String = "user://world_audit.json"
 	var probe: Vector2 = Vector2.INF
+	var caves: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		var value: String = argument.get_slice("=", 1)
@@ -127,6 +142,8 @@ func _init() -> void:
 		elif argument.begins_with("--merge="):
 			quit(_merge(value.split(",")))
 			return
+		elif argument == "--caves":
+			caves = true
 		elif argument.begins_with("--probe="):
 			probe = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 
@@ -162,18 +179,22 @@ func _init() -> void:
 		quit(_probe(probe))
 		return
 
-	_setup_items(settings)
-	var chunks: Array = _pick_chunks(per_biome, near, border)
 	var mine: Array = []
-
-	for n in range(chunks.size()):
-		if n % part.y == part.x:
-			mine.append(chunks[n])
-
-	print("world_audit: %d chunks picked, %d in part %d/%d" % [chunks.size(), mine.size(), part.x, part.y])
 	var started: int = Time.get_ticks_msec()
 
-	for n in range(mine.size()):
+	if caves:
+		mine = _audit_caves(part)
+	else:
+		_setup_items(settings)
+		var chunks: Array = _pick_chunks(per_biome, near, border)
+
+		for n in range(chunks.size()):
+			if n % part.y == part.x:
+				mine.append(chunks[n])
+
+		print("world_audit: %d chunks picked, %d in part %d/%d" % [chunks.size(), mine.size(), part.x, part.y])
+
+	for n in range(0 if caves else mine.size()):
 		var c: Vector2i = mine[n][0]
 		_biome_now = str(mine[n][1])
 		_audit_chunk(c, windows, lods)
@@ -276,17 +297,22 @@ func _pick_chunks(per_biome: int, near: int, border: int) -> Array:
 
 # The LOD `lod` Transvoxel mesh of the generator's blocks over the square [x0, x0 + w) x [z0, z0 + w):
 # {"tris": PackedVector3Array (3 world points a triangle), "grid": cell index -> PackedInt32Array of triangle numbers, "cell": m, "x0", "z0", "n"}.
-func _window_mesh(x0: int, z0: int, w: int, lod: int) -> Dictionary:
+# With y_lo and y_hi (a cave window) the blocks cover that height range instead of the surface's.
+func _window_mesh(x0: int, z0: int, w: int, lod: int, y_lo: float = NAN, y_hi: float = NAN) -> Dictionary:
 	var s: int = 1 << lod
 	var n: int = int(float(w) / float(s))
-	var lo: float = INF
-	var hi: float = -INF
+	var lo: float = y_lo + 6.0 * float(s)
+	var hi: float = y_hi - 6.0 * float(s)
 
-	for k in range(0, w + 1, maxi(s, 2)):
-		for i in range(0, w + 1, maxi(s, 2)):
-			var h: float = generator.surface_height(float(x0 + i), float(z0 + k))
-			lo = minf(lo, h)
-			hi = maxf(hi, h)
+	if is_nan(y_lo):
+		lo = INF
+		hi = -INF
+
+		for k in range(0, w + 1, maxi(s, 2)):
+			for i in range(0, w + 1, maxi(s, 2)):
+				var h: float = generator.surface_height(float(x0 + i), float(z0 + k))
+				lo = minf(lo, h)
+				hi = maxf(hi, h)
 
 	var y0: int = int(floor((lo - 6.0 * float(s)) / float(s))) * s
 	var ny: int = mini(int(ceil((hi + 6.0 * float(s) - float(y0)) / float(s))) + 3, 400)
@@ -866,6 +892,216 @@ func _check_scatter(m: Dictionary, cell: Vector2i, trees: Array) -> void:
 				_fault("boulder_overlap", over, p, "%s through %s trunk" % [boulders[a][2], t[2]])
 
 
+# ---------------------------------------------------------------- caves
+
+const CAVE_WINDOW_M := 16
+const CAVE_BAND_M := 8
+const CAVE_PROP_NAMES := ["animal bones", "human bones", "goblin litter", "goblin fire", "den droppings", "den bedding"]
+const DEN_HEADROOM := {"goblin": 1.2, "bear": 1.2, "wolf": 0.9, "fox": 0.5, "den": 0.5}
+
+var _cave_data = null                # the tile whose caves are being checked (its spring pools)
+var _cave_meshes: Dictionary = {}   # Vector3i (16 m column, 8 m band) -> window mesh over that column, the band and 8 m either side
+
+
+# The LOD 0 mesh round (x, y, z): a 16 m column window covering y - 8 to y + 16 at least, cached.
+func _cave_mesh(x: float, y: float, z: float) -> Dictionary:
+	var key: Vector3i = Vector3i(int(floor(x / CAVE_WINDOW_M)), int(floor(y / CAVE_BAND_M)), int(floor(z / CAVE_WINDOW_M)))
+
+	if not _cave_meshes.has(key):
+		if _cave_meshes.size() > 400:
+			_cave_meshes.clear()
+
+		_cave_meshes[key] = _window_mesh(key.x * CAVE_WINDOW_M, key.z * CAVE_WINDOW_M, CAVE_WINDOW_M, 0, float(key.y * CAVE_BAND_M - CAVE_BAND_M), float(key.y * CAVE_BAND_M + 2 * CAVE_BAND_M))
+		_checked("cave mesh windows")
+
+	return _cave_meshes[key]
+
+
+# [floor height nearest to y (NAN: none within 3 m under it), headroom over that floor (INF: open above within the window), 1 when the floor is a
+# spring pool's surface (tile_terrain_data.cave_pool_surface: the 20 m pool under a spring chamber) else 0]. A point under the pool's surface
+# (a stone on the pool's bottom) is measured against the mesh.
+# pool_margin: how far outside a pool's basin (and over its surface) a point still counts as on the pool (walking lines and dens 1 m: a
+# player swims there; loose things 0.3 m).
+func _cave_floor(x: float, y: float, z: float, pool_margin: float = 1.0) -> Vector3:
+	var hits: PackedFloat32Array = _mesh_hits(_cave_mesh(x, y, z), x, z)
+	var floor_y: float = NAN
+	var pool: float = _cave_data.cave_pool_surface(Vector3(x, y, z), pool_margin) if _cave_data != null else NAN
+
+	for h in hits:
+		if h <= y + 1.0 and h >= y - 3.0 and (is_nan(floor_y) or absf(h - y) < absf(floor_y - y)):
+			floor_y = h
+
+	var on_pool: bool = not is_nan(pool) and y > pool - 0.05 and (is_nan(floor_y) or pool > floor_y)
+
+	if on_pool:
+		floor_y = pool
+
+	if is_nan(floor_y):
+		return Vector3(NAN, INF, 0.0)
+
+	var roof: float = INF
+
+	for h in hits:
+		if h > floor_y + 0.05:
+			roof = minf(roof, h)
+
+	return Vector3(floor_y, roof - floor_y, 1.0 if on_pool else 0.0)
+
+
+# Every cave of every baked tile in this part: the walking line of each passage, the den spots, the den mouths, the goblin paths and the floor items.
+func _audit_caves(part: Vector2i) -> Array:
+	var done: Array = []
+	var n: int = 0
+
+	for file_name in DirAccess.get_files_at(WORLD + "/tiles"):
+		if not file_name.ends_with(".tile"):
+			continue
+
+		var parts: PackedStringArray = file_name.get_basename().split("_")
+		var tile: Vector2i = Vector2i(int(parts[1]), int(parts[2]))
+		var data = generator.get_tile(tile)
+
+		if data.placeholder or data.caves.is_empty():
+			continue
+
+		n += 1
+
+		if (n - 1) % part.y != part.x:
+			continue
+
+		_biome_now = "tile %d,%d" % [tile.x, tile.y]
+		data.build_cave_scatter()
+		_cave_data = data
+		_cave_meshes.clear()
+
+		for cave in data.caves:
+			for capsule in cave["capsules"]:
+				_walk_line(capsule["a"] - Vector3(0.0, capsule["rh"], 0.0), capsule["b"] - Vector3(0.0, capsule["rh"], 0.0), "", 0.0)   # cave shapes are in world metres
+
+		for k in data.cave_dens.size():
+			_check_den(data.cave_dens[k], "den")
+
+		for k in data.goblin_dens.size():
+			_check_den(data.goblin_dens[k], "goblin")
+
+		for path in data.goblin_den_paths:
+			for p in range(path.size() - 1):
+				_walk_line(path[p], path[p + 1], "goblin_path_off", DEN_HEADROOM["goblin"])
+
+		for sp in data.animal_den_mouths:
+			for mouth in data.animal_den_mouths[sp]:
+				var y: float = generator.surface_height(mouth.x, mouth.y)
+				var f: Vector3 = _cave_floor(mouth.x, y, mouth.y)
+				_checked("den mouths")
+
+				if is_nan(f.x) or absf(f.x - y) > float(FAULTS["den_mouth_off"][1]):
+					_fault("den_mouth_off", 9.0 if is_nan(f.x) else absf(f.x - y), Vector3(mouth.x, y, mouth.y), "%s mouth: spawn height %.2f, floor %s" % [sp, y, "none" if is_nan(f.x) else "%.2f" % f.x])
+				elif f.y < float(DEN_HEADROOM.get(sp, 0.5)):
+					_fault("den_low", f.y, Vector3(mouth.x, y, mouth.y), "%s mouth: %.2f m headroom" % [sp, f.y])
+
+		_check_cave_scatter(data)
+
+		@warning_ignore("integer_division")
+		for k in range(data.cave_bones.size() / 5):   # the dressing on cave floors: bones, goblin litter and fire, den droppings and bedding, mine timbers
+			var at: Vector3 = Vector3(data.cave_bones[k * 5], data.cave_bones[k * 5 + 1], data.cave_bones[k * 5 + 2])
+			var kind: int = int(data.cave_bones[k * 5 + 3])
+			var fb: Vector3 = _cave_floor(at.x, at.y, at.z, 0.3)
+			_checked("cave props")
+
+			if kind >= 6:
+				continue   # mine timber sets stand on the floor by their own legs (CD-6); not measured here
+
+			if is_nan(fb.x) or fb.z > 0.0 or absf(at.y - fb.x) > float(FAULTS["cave_prop_off"][1]):
+				_fault("cave_prop_off", 9.0 if is_nan(fb.x) else absf(at.y - fb.x), at, "%s: %s" % [CAVE_PROP_NAMES[clampi(kind, 0, 5)], "no floor within 3 m" if is_nan(fb.x) else ("over a spring pool" if fb.z > 0.0 else "%+.2f m off the floor" % (at.y - fb.x))])
+
+		done.append([tile, _biome_now])
+		print("world_audit: caves of tile %s done (%d caves)" % [str(tile), data.caves.size()])
+
+	return done
+
+
+# A walking line from a to b (floor points), sampled every metre: floor where the skeleton says, headroom and slope.
+func _walk_line(a: Vector3, b: Vector3, fault: String, need: float) -> void:
+	var steps: int = maxi(1, int(ceil(Vector2(b.x - a.x, b.z - a.z).length())))
+	var last: float = NAN
+
+	for k in range(steps + 1):
+		var p: Vector3 = a.lerp(b, float(k) / float(steps))
+
+		if generator.surface_height(p.x, p.z) < p.y + 0.5:
+			last = NAN
+			continue   # open to the sky here (a mouth's cut): the surface checks cover it
+
+		var f: Vector3 = _cave_floor(p.x, p.y, p.z)
+		_checked("cave walk points" if fault == "" else "goblin path points")
+		var off: float = 9.0 if is_nan(f.x) else f.x - p.y
+
+		if fault != "":
+			if off > float(FAULTS[fault][1]) or is_nan(f.x) or f.y < need:
+				_fault(fault, off if f.y >= need else need - f.y, p, "floor %s, headroom %.2f" % ["none" if is_nan(f.x) else "%+.2f m" % off, f.y])
+
+			continue
+
+		if is_nan(f.x) or off > float(FAULTS["cave_floor_off"][1]):
+			_fault("cave_floor_off", off, p, "floor %s" % ("none within 3 m" if is_nan(f.x) else "%+.2f m off the line" % off))
+			last = NAN
+			continue
+
+		if f.y < float(FAULTS["cave_squeeze"][1]):
+			_fault("cave_squeeze", FAULTS["cave_squeeze"][1] - f.y, p, "headroom %.2f m" % f.y)
+		elif f.y < float(FAULTS["cave_crawl"][1]):
+			_fault("cave_crawl", FAULTS["cave_crawl"][1] - f.y, p, "headroom %.2f m" % f.y)
+
+		var run: float = Vector2(b.x - a.x, b.z - a.z).length() / float(steps)
+
+		if not is_nan(last) and run > 0.2 and absf(f.x - last) / run > float(FAULTS["cave_steep"][1]):
+			_fault("cave_steep", absf(f.x - last) / run, p, "floor climbs %.2f m in %.2f m" % [absf(f.x - last), run])
+
+		last = f.x
+
+
+func _check_den(at: Vector3, kind: String) -> void:
+	var f: Vector3 = _cave_floor(at.x, at.y, at.z)
+	_checked("den spots")
+
+	if f.z > 0.0:
+		_fault("den_on_pool", absf(f.x - at.y), at, "%s: over a spring pool, its surface %+.2f m" % [kind, f.x - at.y])
+	elif is_nan(f.x) or absf(f.x - at.y) > float(FAULTS["den_floor_off"][1]):
+		_fault("den_floor_off", 9.0 if is_nan(f.x) else absf(f.x - at.y), at, "%s: floor %s" % [kind, "none" if is_nan(f.x) else "%+.2f m" % (f.x - at.y)])
+	elif f.y < float(DEN_HEADROOM[kind]):
+		_fault("den_low", float(DEN_HEADROOM[kind]) - f.y, at, "%s: %.2f m headroom" % [kind, f.y])
+
+
+# The cave floor stones, boulders and mine leftovers as the server lays them (server_items._lay_out_cave_items puts each at its cave_scatter spot).
+func _check_cave_scatter(data) -> void:
+	@warning_ignore("integer_division")
+	for k in range(data.cave_scatter.size() / 5):
+		var p: Vector3 = Vector3(data.cave_scatter[k * 5], data.cave_scatter[k * 5 + 1], data.cave_scatter[k * 5 + 2])
+		var kind: int = int(data.cave_scatter[k * 5 + 3])
+		var f: Vector3 = _cave_floor(p.x, p.y, p.z, 0.3)
+		var name: String = ["stone", "boulder", "mine leftover"][clampi(kind, 0, 2)]
+		_checked("cave items")
+
+		var rest: float = data.cave_floor_under(p)
+
+		if not is_nan(f.x) and f.z == 0.0:
+			_checked("cave items, resting floor within 0.10 m of the mesh" if not is_nan(rest) and absf(rest - f.x) <= 0.10 else "cave items, resting floor off the mesh")
+
+		if f.z > 0.0:
+			_fault("cave_item_on_pool", absf(p.y - f.x), p, "%s over a spring pool, %+.2f m from its surface" % [name, p.y - f.x])
+		elif is_nan(f.x):
+			_fault("cave_item_floats", 9.0, p, "%s: no floor within 3 m under it" % name)
+		elif kind == 1:
+			var r: float = data.cave_scatter[k * 5 + 4]
+
+			if p.y - f.x > r:
+				_fault("cave_item_floats", p.y - f.x - r, p, "boulder r %.2f, %.2f m over the floor" % [r, p.y - f.x])
+		elif p.y - f.x > float(FAULTS["cave_item_floats"][1]):
+			_fault("cave_item_floats", p.y - f.x, p, "%s %.2f m up" % [name, p.y - f.x])
+		elif f.x - p.y > float(FAULTS["cave_item_buried"][1]):
+			_fault("cave_item_buried", f.x - p.y, p, "%s %.2f m under" % [name, f.x - p.y])
+
+
 # One spot (a place a player reported): the ground heights, the mesh at each level and the flora and water there.
 func _probe(at: Vector2) -> int:
 	var x0: int = int(floor(at.x - 0.5 * float(WINDOW_M)))
@@ -875,6 +1111,11 @@ func _probe(at: Vector2) -> int:
 	for lod in range(4):
 		var m: Dictionary = _window_mesh(x0, z0, WINDOW_M, lod)
 		print("  lod %d: %d triangles, mesh heights %s" % [lod, int(float((m["tris"] as PackedVector3Array).size()) / 3.0), str(_mesh_hits(m, at.x, at.y))])
+
+	for lod in range(2):   # the column from 120 m under the surface up, as a cave window sees it (caves are carved at LOD 0 to 3)
+		var s: float = generator.surface_height(at.x, at.y)
+		var m: Dictionary = _window_mesh(x0, z0, WINDOW_M, lod, s - 120.0, s + 8.0)
+		print("  lod %d column: mesh heights %s" % [lod, str(_mesh_hits(m, at.x, at.y))])
 
 	var chunk: Vector2i = placer.chunk_of(at.x, at.y)
 	var flora: Dictionary = placer.chunk_items(chunk)
