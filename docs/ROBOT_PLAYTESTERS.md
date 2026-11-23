@@ -21,7 +21,7 @@ tools/robots.sh 1 drops            # the link dies mid-action and the robot come
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
 ```
-Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `ai-team/TEST_GATES.md` and the coordinator: cloud Godot runs only under Dave's 22 Nov 2026 permission (to Wed 25 Nov 2026, recipe in the coordinator's CLOUD_TESTS.md); otherwise Lane B. Never Dave's PC while he plays. Exit 0 = every invariant held, 1 = a finding, 2 = the run broke.
+Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `ai-team/TEST_GATES.md` and the coordinator: cloud Godot runs only under Dave's 22 Nov 2026 permission (to Wed 25 Nov 2026, recipe in the coordinator's CLOUD_TESTS.md); otherwise Lane B. Never Dave's PC while he plays. Exit 0 = every invariant held, 1 = a finding, 2 = the run broke. Each robot gets its own user data folder in the run folder (its character): XDG_DATA_HOME on Linux, APPDATA on Windows (Git Bash or MSYS bash, converted with cygpath), so robots on one machine never share a character.
 
 ## Pieces
 | File | What it does |
