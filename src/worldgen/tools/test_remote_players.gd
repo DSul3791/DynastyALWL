@@ -169,6 +169,63 @@ func _server() -> void:
 	fake.left = {}
 	fake.burning = {}
 	fake.flags = {}
+	# The row times are when the client sent each report, not when it arrived (note_move): a walker reporting every 0.2 s over a link
+	# that delays each report 120 +- 30 ms keeps legs of its own length, so the others draw it at its own speed (robots: 1.3 to 1.7x bursts).
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 1574
+	var walker_at: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var send_ms: float = 100000.0
+	var stamps: Array = []
+	var worst: float = 0.0
+	var after_arrival: int = 0
+	var arrivals: Array = []
+
+	for n in range(150):
+		var gap_s: float = 0.2 + rng.randf() * 0.016   # a 60 fps client sends on the first frame 0.2 s after the last
+		send_ms += gap_s * 1000.0
+		var speed: float = 3.3 if n < 50 else (9.0 if n < 100 else 3.3)
+		var moved: Vector3 = Vector3(0.0, 0.0, -speed * gap_s)
+		walker_at += moved
+		arrivals.append([send_ms + 120.0 + rng.randf_range(-30.0, 30.0), walker_at, moved / gap_s])
+
+	arrivals.sort_custom(func(a, b): return float(a[0]) < float(b[0]))   # unreliable: a later report can come first
+
+	for row in arrivals:
+		clock[0] = int(row[0])
+		players.note_move(9, row[1], row[2])
+		players.note_report(9, 0.0)
+		stamps.append([int(players._report_ms[9]), row[1]])
+
+		if int(players._report_ms[9]) > int(clock[0]):
+			after_arrival += 1
+
+	for k in range(10, stamps.size()):
+		var leg_s: float = float(int(stamps[k][0]) - int(stamps[k - 1][0])) / 1000.0
+		var leg_m: float = (stamps[k][1] as Vector3).distance_to(stamps[k - 1][1])
+		var real: float = 9.0 if leg_m > 1.0 else 3.3
+
+		if leg_s > 0.0 and leg_m > 0.0:
+			worst = maxf(worst, leg_m / leg_s / real)
+
+	check(worst < 1.15 and after_arrival == 0, "a walker's legs keep their own length through 120 +- 30 ms jitter: drawn at most %.2fx its speed (want < 1.15), no stamp after its arrival (%d)" % [worst, after_arrival])
+	# A made-up report (NaN, huge numbers, a flood in one millisecond) only moves its own row's times, never ahead of the arrival nor
+	# more than STAMP_BEHIND_MS behind it, and always forward.
+	var bad: Array = [[Vector3(NAN, 0.0, 0.0), Vector3.ZERO], [Vector3(3e38, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)], [Vector3(-3e38, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)],
+			[Vector3.ZERO, Vector3(INF, 0.0, 0.0)], [Vector3(1.0, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)], [Vector3(2.0, 0.0, 0.0), Vector3(-2000.0, 0.0, 0.0)]]
+	var bad_ok: bool = true
+	var last_stamp: int = int(players._report_ms[9])
+
+	for k in range(60):
+		clock[0] += 0 if k % 3 != 0 else 7
+		var row: Array = bad[k % bad.size()]
+		players.note_move(9, row[0], row[1])
+		players.note_report(9, 0.0)
+		var st: int = int(players._report_ms[9])
+		bad_ok = bad_ok and st <= int(clock[0]) and st >= int(clock[0]) - int(PlayersScript.STAMP_BEHIND_MS) - 1 and st >= last_stamp
+		last_stamp = st
+
+	check(bad_ok and (players._move[9][0] as Vector3).is_finite(), "made-up reports keep the stamps within %d ms before their arrival, never after it, never back" % int(PlayersScript.STAMP_BEHIND_MS))
+	clock[0] = 2760
 	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
 	for i in range(8):
 		players.note_action(2, NetScript.ACT_MINE)

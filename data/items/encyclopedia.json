@@ -325,9 +325,11 @@
 		"comfrey_roots": {
 			"name": "Comfrey roots",
 			"kind": "material",
-			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating. Nothing uses it yet.",
+			"description": "A thick black root of comfrey, mucky and slimy inside. Ground into a poultice; not for eating.",
 			"how_to_get": [],
-			"used_for": [],
+			"used_for": [
+				"Used in Comfrey root poultice"
+			],
 			"obtainable_now": true
 		},
 		"crab_apples": {
@@ -2336,7 +2338,8 @@
 			"description": "Crushed herb leaves bound on a wound.",
 			"how_to_get": [
 				"Craft at a mortar and pestle: 3 Plantain leaves",
-				"Craft at a mortar and pestle: 2 Comfrey leaves"
+				"Craft at a mortar and pestle: 2 Comfrey leaves",
+				"Craft at a mortar and pestle: 1 Comfrey roots"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2355,10 +2358,10 @@
 		"tree_roots": {
 			"name": "Roots",
 			"kind": "material",
-			"description": "Roots from the base of a felled tree. Nothing uses it yet.",
+			"description": "Roots from the base of a felled tree. They burn in a fire like firewood.",
 			"how_to_get": [],
 			"used_for": [
-				"Roots from a felled tree. No use yet; planned as fibre for baskets."
+				"Burns in a fire like firewood"
 			],
 			"obtainable_now": true
 		},

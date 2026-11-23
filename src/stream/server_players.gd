@@ -42,7 +42,8 @@ var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
 
 var _looks: Dictionary = {}        # peer -> [name, body, code]
 var _yaw: Dictionary = {}          # peer -> facing (the body's rotation.y, radians)
-var _report_ms: Dictionary = {}    # peer -> server ms of its latest position report
+var _report_ms: Dictionary = {}    # peer -> server ms of its latest position report (its stamp: note_move)
+var _move: Dictionary = {}         # peer -> [last reported position, its send time on the client's own timeline (s), offset ms, arrival ms, stamp ms]
 var _worn_sent: Dictionary = {}    # peer -> the worn numbers last told to everyone
 var _look_ms: Dictionary = {}      # peer -> server ms of its last accepted look
 var _sent: Dictionary = {}         # receiver -> [newest row ms sent, ids sent, ms sent]
@@ -86,7 +87,52 @@ static func clean_name(raw: String) -> String:
 
 func note_report(peer: int, yaw: float) -> void:
 	_yaw[peer] = wrapf(yaw, -PI, PI) if is_finite(yaw) else 0.0
-	_report_ms[peer] = int(now_ms.call())
+	_report_ms[peer] = int((_move[peer] as Array)[4]) if _move.has(peer) else int(now_ms.call())
+
+
+# A position report came in (report_position, before its facing: note_report). Its row time is when the client sent it, put on the
+# server's clock, not when it arrived: the others draw a player between its points by these times, so an arrival 30 ms late followed by
+# one on time made a 0.2 s leg look 0.14 s long, drawn at 1.4 times the walker's speed (robots, 23 Nov 2026: 1.3 to 1.7x bursts at 120 +- 30 ms).
+# The client's report carries its velocity over its own gap since its last report (terrain_client.gd: (here - last) / seconds), so the
+# gap is (moved . velocity) / speed^2 while it moves; standing, the arrival gap. The send times are put on the server clock by the
+# smallest arrival offset seen (the fastest report), rising STAMP_CREEP_MS a report so a slow drift is followed; never after the arrival,
+# never more than STAMP_BEHIND_MS before it. No protocol change: the rows' times only come out steadier.
+const STAMP_JITTER_S := 0.15       # the moved gap is kept within this of the arrival gap (a lost report, or a client's made-up velocity)
+const STAMP_CREEP_MS := 2.0
+const STAMP_BEHIND_MS := 250.0
+const STAMP_MIN_MPS := 0.5         # slower than this the arrival gap is used (a standing player's jitter moves nothing)
+
+
+# When its latest report arrived (server ms): news is judged on arrivals, like a swing's or a hand's, not on the earlier send stamp.
+func _arrived_ms(peer: int) -> int:
+	return int((_move[peer] as Array)[3]) if _move.has(peer) else int(_report_ms.get(peer, 0))
+
+
+func note_move(peer: int, position: Vector3, velocity: Vector3) -> void:
+	var now: int = int(now_ms.call())
+	var m: Array = _move.get(peer, [])
+
+	if not position.is_finite() or not velocity.is_finite():
+		position = (m[0] if not m.is_empty() else Vector3.ZERO)
+		velocity = Vector3.ZERO   # a made-up report: timed by its arrival
+
+	if m.is_empty():
+		_move[peer] = [position, 0.0, float(now), now, now]
+		return
+
+	var arrived: float = float(now - int(m[3])) / 1000.0
+	var gap: float = arrived
+	var speed2: float = velocity.length_squared()
+
+	if speed2 >= STAMP_MIN_MPS * STAMP_MIN_MPS:
+		var moved_s: float = (position - (m[0] as Vector3)).dot(velocity) / speed2
+		gap = clampf(moved_s, arrived - STAMP_JITTER_S, arrived + STAMP_JITTER_S) if is_finite(moved_s) else arrived
+
+	var sent_s: float = float(m[1]) + maxf(gap, 0.01)
+	var off: float = minf(float(m[2]) + STAMP_CREEP_MS, float(now) - sent_s * 1000.0)
+	off = maxf(off, float(now) - STAMP_BEHIND_MS - sent_s * 1000.0)
+	var stamp: int = maxi(int(round(sent_s * 1000.0 + off)), int(m[4]) + 1)
+	_move[peer] = [position, sent_s, off, now, mini(stamp, now)]
 
 
 # The worn pieces changed (server_items send_worn): everyone sees the new clothes.
@@ -127,6 +173,7 @@ func forget(peer: int) -> void:
 	_looks.erase(peer)
 	_yaw.erase(peer)
 	_report_ms.erase(peer)
+	_move.erase(peer)
 	_worn_sent.erase(peer)
 	_sent.erase(peer)
 	_look_ms.erase(peer)
@@ -175,7 +222,7 @@ func tick(delta: float) -> void:
 			shown = [left, more, now]
 			_shown[peer] = shown
 
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(int(_report_ms[peer]), int(swing[1])), int(shown[2])), left, more]
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more]
 
 	for receiver in at:
 		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them

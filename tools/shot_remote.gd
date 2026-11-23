@@ -25,12 +25,14 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 
 const SIZE := Vector2i(1280, 720)
 const FOV := 75.0
-const CHEST_Y := 0.95
+const FEET_M := 0.9     # player_view.gd FEET_M: a players row carries the standing body's middle, 0.9 m over the feet (stance.gd; the game's own report)
+const CHEST_Y := 0.45   # the chest over that middle
+const LOW_Y := -0.55    # a sitting or lying body's middle-ish over that middle
 const ROW_MS := 125
 const PEER := 7
 
 var _view: Node3D
-var _at: Vector3 = Vector3.ZERO
+var _at: Vector3 = Vector3(0.0, FEET_M, 0.0)   # feet on the floor at y 0 (Lane A, 23 Nov 2026: at y 0 the body stood 0.9 m sunk in the floor)
 var _server_ms: int = 10000
 var _walk: float = 0.0
 var _stance: int = 0
@@ -178,8 +180,8 @@ func _init() -> void:
 			continue
 
 		if Time.get_ticks_msec() < ready_at:
-			cam.position = (drawn["node"] as Node3D).position + Vector3(0.0, 1.6, 3.0)   # keeps pace: full-rate animation (player_view.gd FULL_M)
-			cam.look_at((drawn["node"] as Node3D).position + Vector3(0.0, CHEST_Y, 0.0), Vector3.UP)
+			cam.position = (drawn["node"] as Node3D).position + Vector3(0.0, 0.7, 3.0)   # keeps pace: full-rate animation (player_view.gd FULL_M)
+			cam.look_at((drawn["node"] as Node3D).position + Vector3(0.0, _aim_y(), 0.0), Vector3.UP)
 			continue
 
 		if shot == -1:
@@ -211,7 +213,7 @@ func _init() -> void:
 		var held_node: Node3D = drawn.get("held_node", null) as Node3D
 		var deg: float = deg_to_rad(float(bits[1]))
 		var dist: float = float(bits[2])
-		var aim: Vector3 = held_node.global_position if dist < 2.0 and held_node != null and is_instance_valid(held_node) else node.global_position + Vector3(0.0, CHEST_Y, 0.0)
+		var aim: Vector3 = held_node.global_position if dist < 2.0 and held_node != null and is_instance_valid(held_node) else node.global_position + Vector3(0.0, _aim_y(), 0.0)
 		var side: Vector3 = node.global_transform.basis * Vector3(-sin(deg), 0.0, -cos(deg))
 		cam.global_position = aim + side * dist + Vector3(0.0, 0.1, 0.0)
 		cam.look_at(aim, Vector3.UP)
@@ -231,6 +233,10 @@ func _init() -> void:
 
 	print("shot remote: %d picture(s) in %.1f s" % [saved, float(Time.get_ticks_msec() - started) / 1000.0])
 	quit(0 if saved == wanted and saved > 0 else 4)
+
+
+func _aim_y() -> float:
+	return CHEST_Y if _stance <= 1 else LOW_Y
 
 
 # One players row, as the server sends it: position (walking north at _walk m/s), facing north (rotation.y 0), state, held item, server ms.
