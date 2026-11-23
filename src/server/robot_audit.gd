@@ -59,6 +59,7 @@ var _names: Dictionary = {}      # species number -> name
 var _snares_seen: Dictionary = {}  # world item id -> true: each snare set is printed once with how much trail it sits on
 var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
 var _control_t: float = 0.0
+var _chest_sig: Dictionary = {}   # container world id -> its contents' signature last printed (AUDIT chest)
 var _where_sp: int = -1           # plan kind_ (control "where <species number>"): every WHERE_EVERY_S, the server's own place of each of that species
 var _where_t: float = 0.0
 const WHERE_EVERY_S := 0.5
@@ -67,7 +68,6 @@ var _stuck: Dictionary = {}       # animal id -> [spot Vector3, unix ms there si
 var _near_from: int = -1         # unix ms the AUDIT near span began
 var _near_looks: int = 0          # looks in the span (each ANIMAL_EVERY_S or a frame later)
 var _near_count: Dictionary = {}  # species name -> animals near a player at the last look
-var _chest_sig: Dictionary = {}   # world id -> last printed container signature
 var _count_ids: PackedStringArray = PackedStringArray()   # control "count": the items whose totals are printed
 var _total_said: String = ""
 var _count_at: Vector2 = Vector2.ZERO   # loose items count within COUNT_M of here (the robots' spot), not the whole world's natural ones
@@ -296,7 +296,7 @@ func _ahead_of(id: int, a: Dictionary, pos: Vector3, ahead: Vector3, players: Ar
 	if animals.blocked.is_valid() and bool(animals.blocked.call(ahead.x, ahead.z)):
 		return "water"
 
-	if animals.ground_height.is_valid() and float(animals.ground_height.call(ahead.x, ahead.z)) - pos.y > Steering.MAX_SLOPE * 1.5:
+	if animals.ground_height.is_valid() and absf(float(animals.ground_height.call(ahead.x, ahead.z)) - pos.y) > Steering.MAX_SLOPE * 1.5:   # up or down: Steering refuses both
 		return "steep"
 
 	var body: float = AnimalContact.body_m(str(a.get("sp", "")))

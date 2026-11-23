@@ -987,7 +987,7 @@ func _update_connect_window() -> void:
 		var landed: bool = (_ground_logged or (not waiting_for_ground and since >= 10)) if _connect_window.first_load_note_shown() else not waiting_for_ground
 
 		if since > JOIN_GIVE_UP_S and not landed:
-			_connect_window.fail("The ground did not arrive", "The server welcomed this game, but after %d minutes the ground under you has still not loaded.\n\nGo back and join again, or quit and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % int(since / 60), func(): _finish(1))
+			_connect_window.fail("The ground did not arrive", "The server welcomed this game, but after %d minutes the ground under you has still not loaded.\n\nGo back and join again, or quit and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % floori(since / 60.0), func(): _finish(1))
 			return
 
 		if landed and since >= 3:   # never before the ground is there: a window closed at 120 s left a player looking at an empty world, and the ground watchdog's give-up (up to 180 s and more) then had no window to say it on

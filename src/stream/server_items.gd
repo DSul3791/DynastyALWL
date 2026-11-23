@@ -256,6 +256,7 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 const EVENT_SAVE_GAP_S := 5.0      # PROVISIONAL (D-TODO-2): the least real time between a save and the next one a big event brings forward
 var _event_save: bool = false      # a big event asked for a save (save_soon)
+var _fell_unsaved: bool = false    # a tree was felled since the last save copied the world (fells_on_disk)
 var _since_save: float = 0.0       # real seconds since the last tick save
 var _event_saves: int = 0          # saves that carried a big event's request (tests)
 var _dirty: bool = false
@@ -1962,9 +1963,7 @@ func tick(delta: float) -> void:
 
 	_reap_writer()
 
-	if _writer == null and not _save_failed.is_empty():
-		_save_failed.clear()
-		_dirty = true   # an area file could not be written: the next save builds it again
+	_retry_failed_saves()
 
 	_save_parts = []
 	_since_save += delta
@@ -2035,6 +2034,46 @@ func save_soon(ids: Array = []) -> void:
 	_event_save = true
 
 
+# True once every tree felled so far is in files on disk (its stump and logs saved and the writer idle). The server writes the flora's
+# removals only then (terrain_server), so a crash never leaves a felled tree gone with no stump and no logs (the coordinator, 23 Nov 2026);
+# the other way round, a stump on disk whose tree's removal is not, is put right at the next start (felled_flora).
+func fells_on_disk() -> bool:
+	return not _fell_unsaved and _writer == null and _pending_writes.is_empty()
+
+
+# Every saved stump that was a standing flora tree, as [chunk Vector2i, flora id]: the server cuts each again at start (a no-op for one
+# already cut), so a stump saved before the flora's removals were written never stands beside its tree again.
+func felled_flora() -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var tree: Variant = _items[id].get("tree")
+
+		if tree != null and (tree as Dictionary).has("flora_id") and typeof(tree.get("chunk")) == TYPE_ARRAY and (tree["chunk"] as Array).size() == 2:
+			out.append([Vector2i(int(tree["chunk"][0]), int(tree["chunk"][1])), int(tree["flora_id"])])
+
+	return out
+
+
+# An area file the writer could not write (_save_failed) is built again by the next save, and until then a stump in it may not be on disk.
+func _retry_failed_saves() -> void:
+	if _writer == null and not _save_failed.is_empty():
+		_save_failed.clear()
+		_dirty = true   # an area file could not be written: the next save builds it again
+		_fell_unsaved = true   # the flora's removals wait for that save too (fells_on_disk)
+
+
+# At start (terrain_server): each saved stump's flora tree is cut again where the flora's removals lack it. Returns how many were cut.
+func cut_felled_flora(flora) -> int:
+	var cut: int = 0
+
+	for felled in felled_flora():
+		if not flora.removed_in(felled[0]).has(int(felled[1])) and flora.cut(felled[0], int(felled[1])):
+			cut += 1
+
+	return cut
+
+
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
 func _event_save_due() -> bool:
 	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
@@ -2069,6 +2108,7 @@ func save() -> void:
 	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
+	_fell_unsaved = false   # this save carries every stump and log felled so far (on disk once the writer is idle: fells_on_disk)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	for key in _picked.keys():
@@ -3490,10 +3530,13 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 
 
 # After a dig or fill: loose items near it come down (or stay) onto what the ground is now (boulders first, so a stack on one follows it down).
-func settle_loose_near(centre: Vector3, radius: float) -> void:
+func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> void:
 	var loose: Array = []
 
-	for id in _items:
+	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 2 m), never a walk of every record
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 
 		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
@@ -3511,11 +3554,15 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 			continue
 
-		if it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+		if it.has("struct") and _follows_ground(str(it["struct"].get("kind", ""))) and not it["struct"].has("site"):
+			pass   # remains, a carcass, a snare and the hoe's patches lie on the ground like a stack: they follow it down into a dig and up onto a fill
+		elif it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
 			continue
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
 			loose.append(id)
+
+	_settle_saplings(centre, radius, fill)
 
 	if loose.is_empty():
 		return
@@ -3523,9 +3570,105 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 	var near: Array = _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M)   # the floors and boulders round the dig, looked up once
 
 	for id in loose:
-		_items[id]["pos"] = _settled_loose(_items[id]["pos"], near)
+		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near, fill)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
+
+
+# Round 7 (physical world audit, 23 Nov 2026: what players change in the ground): a fill left every stack, chest and fire under it buried and a dig
+# left every fire, chest, station, torch and young plant over it in the air.
+const EDIT_SETTLES := ["remains", "carcass", "snare_trap"]   # placed things that lie on the ground and follow it (the walkover ones too)
+const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a placed thing's foot
+const EDIT_LIFT_M := 0.3    # how far over a fill's top the ground under a buried stack is looked for
+
+
+# A placed kind that lies on the ground and follows it into a dig and onto a fill.
+func _follows_ground(kind: String) -> bool:
+	return EDIT_SETTLES.has(kind) or bool(_structures.get(kind, {}).get("walkover", false))
+
+
+# Where a stack (or remains, a patch) at `at` rests once the ground round an edit at `centre` changed: down onto what is under it (_settled_loose), or,
+# `fill` and buried inside the fill's sphere, up onto its top over it (looked for from just above the sphere: a stack on a tunnel floor under the
+# edit is outside it and stays).
+func _edit_rest(at: Vector3, centre: Vector3, radius: float, near: Array, fill: bool) -> Vector3:
+	var flat_sq: float = (at.x - centre.x) * (at.x - centre.x) + (at.z - centre.z) * (at.z - centre.z)
+
+	if fill and floor_below.is_valid() and flat_sq < radius * radius and at.y > centre.y - sqrt(radius * radius - flat_sq) - 0.1:
+		var over: Vector3 = Vector3(at.x, centre.y + sqrt(radius * radius - flat_sq) + EDIT_LIFT_M, at.z)
+
+		if over.y > at.y:
+			var top: Vector3 = _settled_loose(over, near)
+
+			if top.y > at.y + 0.05 and top.y < over.y - 0.01:
+				return top   # it was under the ground: up onto it
+
+	return _settled_loose(at, near)
+
+
+# Young plants and planted bushes (_saplings) round an edit come to rest on the ground as it is now, as a stack does.
+func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
+	var home: Vector2i = Vector2i(int(floor(centre.x / FLORA_CHUNK_M)), int(floor(centre.z / FLORA_CHUNK_M)))
+
+	for sapling in _saplings:
+		if absi(int(sapling["chunk"][0]) - home.x) > 1 or absi(int(sapling["chunk"][1]) - home.y) > 1:
+			continue   # the chunks round the edit only (the cheap test first)
+
+		var p: Vector3 = sapling["pos"]
+
+		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 0.5:
+			continue
+
+		var rest: Vector3 = _edit_rest(p, centre, radius, [], fill)
+
+		if absf(rest.y - p.y) > 0.02:
+			sapling["pos"] = Vector3(p.x, rest.y, p.z)
+			_dirty = true
+
+			if flora_changed.is_valid():
+				flora_changed.call(Vector2i(int(sapling["chunk"][0]), int(sapling["chunk"][1])))
+
+
+# The name of a placed thing a dig at `centre` would take the ground from under (`fill` false: the sphere reaches within EDIT_UNDER_M under its
+# foot, inside its footprint) or a fill would bury (`fill` true: the sphere rises over its foot there), "" when none. Fires, stations, chests,
+# torches, buildings and every other placed piece count; stacks, remains, patches and hung things (attach_to) do not: they follow the ground or a wall.
+func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
+	for id in _ids_near(centre, radius + FLOOR_ROWS_REACH_M + 1.0):
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+		var def: Dictionary = {}
+		var yaw: float = 0.0
+		var name: String = "The campfire"
+
+		if it.has("fire"):
+			def = {"footprint_x": 1.2, "footprint_z": 1.2, "height_m": 0.6}
+		elif it.has("struct"):
+			var kind: String = str(it["struct"].get("kind", ""))
+			def = _structures.get(kind, {})
+
+			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
+				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
+
+			yaw = float(it["struct"].get("yaw", 0.0))
+			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
+		else:
+			continue
+
+		var box: Array = PlacementRules._box(def, it["pos"], yaw)
+		var dy: float = float(box[3]) + (0.05 if fill else -EDIT_UNDER_M) - centre.y
+
+		if absf(dy) >= radius:
+			continue
+
+		var apart: Vector2 = Vector2(centre.x, centre.z) - (box[0] as Vector2)
+		var half: Vector2 = box[1]
+		var off: Vector2 = Vector2(maxf(absf(apart.dot(PlacementRules._side(box, 0))) - half.x, 0.0), maxf(absf(apart.dot(PlacementRules._side(box, 1))) - half.y, 0.0))
+
+		if off.length() < sqrt(radius * radius - dy * dy):
+			return name
+
+	return ""
 
 
 # A floor, foundation or boulder under loose stacks went (taken down, retired) or shrank (mined): the stacks within `reach` of `at` come down onto
@@ -4632,7 +4775,12 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
 
-	_last_dig[peer] = now
+	_last_dig[peer] = now   # a refused dig waits out the stroke too (no notice and look-up per packet)
+	var standing: String = _edit_blocker(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach, false)
+
+	if standing != "":
+		_say(peer, "%s stands on that ground: take it up before you dig under it." % standing)
+		return
 
 	for n in maxi(1, int(round(reach))):
 		_wear_slot(peer, inv, shovel, "dig")
@@ -4702,7 +4850,13 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_say(peer, "Nothing to fill with: dig some soil, sand or gravel first")
 		return
 
+	var heap_r: float = FILL_RADIUS_M * pow(float(mini(_shovel_pieces(inv, shovel), inv.count_of(table.number_of(material_item)))), 1.0 / 3.0)   # the largest heap this fill can make
 	_last_dig[peer] = now
+	var buried: String = _edit_blocker(at + Vector3(0.0, FILL_UP_M, 0.0), maxf(heap_r, FILL_RADIUS_M), true)
+
+	if buried != "":
+		_say(peer, "%s stands there: the fill would bury it." % buried)
+		return
 	var pieces: int = 0
 
 	for n in _shovel_pieces(inv, shovel):
@@ -4724,6 +4878,8 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_gain_source = SRC_RETURN
 		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
 		_gain_source = was_src
+	else:
+		settle_loose_near(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), true)   # stacks, remains and young plants under the heap come up onto it
 
 	_dirty = true
 
@@ -5102,6 +5258,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
+		settle_loose_near(centre, sphere, best_off < 0.0)   # stacks, remains, patches and young plants follow the levelled ground (round 7)
 
 		if spots.size() > 64:
 			_bucket_add(grid, edits[-1])
@@ -5520,8 +5677,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
+				settle_loose_near(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
 			else:
 				fill_ground.call(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+				settle_loose_near(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, true)
 
 			edits += 1
 
@@ -5620,11 +5779,13 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			continue
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		var done: Variant = dig_ground.call(Vector3(x, h - depth + SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(Vector3(x, h + depth - SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
+		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 		dug = true
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
+			settle_loose_near(sphere_at, SMOOTH_SPHERE_M, d <= 0.0)
 
 	if not dug:
 		_say(peer, "The ground here is already on the line.")
@@ -6024,7 +6185,7 @@ func _silt_hole(hole: Array) -> void:
 		print("Bog hole at (%.1f, %.1f) left open: its silting would reach open ground under it" % [float(hole[0]), float(hole[2])])
 		return
 	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
-	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
+	settle_loose_near(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, true)   # the refill sphere itself: what lay in the hole comes up onto it
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
@@ -10545,6 +10706,9 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	var tree: Dictionary = {"species": str(info["name"]), "yaw": yaw, "pitch": pitch, "length": float(info["height"]), "radius": radius, "felled_at": now_s}
 	tree["crown"] = _crown_circle(spot, info, yaw, pitch)   # where its crown lands: the client flattens the grass there, the litter falls in it
 	var stump: Dictionary = {"species": tree["species"], "yaw": yaw, "pitch": pitch, "length": tree["length"], "radius": radius, "felled_at": now_s, "state": 4, "chunk": [chunk.x, chunk.y], "crown": tree["crown"], "fresh": true}
+
+	if info.has("id") and not bool(info.get("dynamic", false)):   # a planted tree is the items' own (_saplings), saved with the stump
+		stump["flora_id"] = int(info["id"])   # the standing tree it was: kept cut on load if a crash wrote this stump but not the flora's removals (felled_flora)
 	var stump_id: int = _next_id
 	_items[stump_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}   # "fresh" until it lands: the client plays the fall from the stump row
 	_next_id += 1
@@ -10580,6 +10744,8 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	_falls[stump_id] = {"shared": fall, "pieces": pieces, "hinge": hinge, "along": along, "length": float(tree["length"]), "radius": radius, "small": _is_small_tree(tree, _drops.get("trunk", {})), "peer": feller_peer}
 	_dirty = true
 	_sync_in = 0.0   # bug 6: the pieces go out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
+	save_soon([stump_id] + pieces)   # a big event: the stump and its logs are on disk within seconds (the flora's removal waits for it: fells_on_disk)
+	_fell_unsaved = true
 	return stump_id
 
 
@@ -10945,7 +11111,14 @@ func _repair(peer: int, inv, slot: int) -> void:
 		return
 
 	if bench != "" and not station_near(peer, bench):
-		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+		# Beside a worn-out or unfuelled smithy the player is told what is wrong with it, as a craft there is (ore loop, 23 Nov 2026).
+		if _broken_station_near(peer, bench):
+			_say(peer, "Needs repair")
+		elif _unfuelled_smithy_near(peer, bench):
+			_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % _station_name(bench))
+		else:
+			_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+
 		return
 
 	# The tool's own slot must not be spent as material. A cost is filled like a recipe's (ingredient groups: an Iron chunk mends what asks

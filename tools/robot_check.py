@@ -239,6 +239,7 @@ def main():
 		findings.append("held: %d robots played together and no robot measured another's held item (the held check never ran)" % play_logs)
 
 	findings += conserved([t for t in totals if fuzz_end == 0 or t[0] <= fuzz_end], gave)
+	findings += held_link(d, robot_logs)
 	findings += others(robot_logs)
 	findings += hunts(robot_logs)
 
@@ -273,6 +274,22 @@ def seg_dist(x, z, a, b):
 ONE_SHOTS = {"wake_up", "drink", "sit_down", "stand_up"}
 
 
+def held_link(d, robot_logs):
+	"""Plan together: a robot that says its link was held needs the link's own word that it held a client (a hold of no one proves nothing)."""
+	said = sum(1 for path in robot_logs for line in open(path, encoding="utf-8", errors="replace") if "step together: link held" in line)
+
+	if not said:
+		return []
+
+	link = os.path.join(d, "link.log")
+	held = [int(m.group(1)) for line in (open(link, encoding="utf-8", errors="replace") if os.path.exists(link) else []) for m in [re.search(r"^LINK hold \d+: .*?, (\d+) clients held", line)] if m]
+
+	if not held or max(held) < 1:
+		return ["together: a robot's link was to be held, and the link held no client (%s): the held step proved nothing" % (str(held) if held else "no LINK hold line")]
+
+	return []
+
+
 def others(robot_logs):
 	pose = collections.defaultdict(list)   # peer -> [(ms, stance, x, z, speed)]
 	names = {}
@@ -288,8 +305,18 @@ def others(robot_logs):
 	example = {}
 	seen = 0
 
+	# A pass-out (the cold) lies the body down on the server while the robot's own stance stays: drawn lying in the minute before it was moved is right
+	out_ms = collections.defaultdict(list)
+
+	for _, who, p in lines(robot_logs, "step"):
+		if p[:3] == ["passed", "out", "at"]:
+			out_ms[who].append(int(p[3].rstrip(":")))
+
 	for _, who, p in lines(robot_logs, "SEES"):
 		peer, ms, stance, x, z, clip = int(p[0]), int(p[1]), int(p[2]), float(p[3]), float(p[5]), p[6]
+
+		if stance == 3 and any(t - 20000 <= ms <= t + 3000 for t in out_ms.get(names.get(peer, ""), [])):   # the faint lies about 10 s
+			continue
 		track = [q for q in pose.get(peer, []) if ms - 1000 <= q[0] <= ms]
 		# steady from STEADY_MS before the look to one pose line after it: a stance taken and left between two pose lines is not steady
 		before = [q for q in pose.get(peer, []) if ms - STEADY_MS <= q[0] <= ms + 600]
