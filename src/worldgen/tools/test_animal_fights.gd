@@ -110,6 +110,12 @@ func _init() -> void:
 		if animals.species_def(sp).has("defend") and not sp in ["goblin", "bandit"]:   # goblins and bandits: test_enemy_fights
 			kinds.append(sp)
 
+	# 0. Every animal that defends itself has the fair dodge and a charge that runs before its blow lands (a kind added later without them would
+	# hit before any screen drew the lunge, and a step aside the player saw in time would not count).
+	for sp in kinds:
+		var d: Dictionary = animals.species_def(sp)["defend"]
+		check(bool(d.get("fair_dodge", false)) and float(d.get("strike_min_s", animals.cfg.get("strike_min_s", 0.0))) >= 0.3, "a %s's charge has the fair dodge and strike_min_s" % sp)
+
 	# 1. Can a charge be dodged? Each kind, with a spear, at 0 and 120 ms: a player who steps aside only when they see the charge itself, one who
 	# reads the warning perfectly, and one who steps aside as soon as they see the warning start. Every attack must be dodgeable (Dave,
 	# server_big_game.gd header): the warning is the cue, so the last of these must get clear of most charges at any ordinary link.
@@ -131,6 +137,12 @@ func _init() -> void:
 					warned_dodged += int(r["dodged"])
 
 		print("  %-14s | %-10s %-10s | %-10s %-10s | %-10s %-10s" % [sp, cells[0], cells[1], cells[2], cells[3], cells[4], cells[5]])
+
+		var still: Dictionary = fight(sp, "spear", 0, 3)   # a player who stands in its face and never steps aside is hit: the charges are real
+		print("    stands still: %d hits of %d charges" % [int(still["hits"]), int(still["charges"])])
+
+		if float(animals.species_def(sp)["defend"].get("bluff_share", 0.0)) == 0.0 and int(still["charges"]) > 0:   # a bluffer's one charge may stop short
+			check(int(still["hits"]) > 0, "a %s's charge hits a player who stands still (%d hits of %d charges)" % [sp, int(still["hits"]), int(still["charges"])])
 
 		if warned_charges > 0:
 			check(float(warned_dodged) >= 0.6 * float(warned_charges), "a %s's charges can be dodged by stepping aside when its warning shows (%d of %d, at 0 and 120 ms)" % [sp, warned_dodged, warned_charges])
@@ -157,6 +169,7 @@ func _init() -> void:
 	for l in lost:
 		print("  " + l)
 
+	chases(kinds)
 	bleeding()
 
 	items._finish_writer()
@@ -248,7 +261,7 @@ func fight(sp: String, weapon: String, ping: int, read: int = 0) -> Dictionary:
 		var seen_state: int = int(view[1])
 		var seen_pos: Vector3 = view[2]
 
-		if seen_state == BigGame.CHARGE and not charge_seen:
+		if seen_state == BigGame.CHARGE and not charge_seen and read != 3:   # read 3: the player never steps aside
 			charge_seen = true
 			var dir: Vector3 = Vector3(cos(float(view[3])), 0.0, sin(float(view[3])))
 			dodge_dir = Vector3(-dir.z, 0.0, dir.x)   # square across its line, away from the side it is on
@@ -278,7 +291,7 @@ func fight(sp: String, weapon: String, ping: int, read: int = 0) -> Dictionary:
 			pass   # it is warning: the player holds, ready to step aside (a blow now would only bring the charge at once)
 		elif to.length() - body > reach - 0.3:
 			me += to.normalized() * minf(WALK_MPS * DT, to.length() - body - (reach - 0.4))
-		elif seen_state != BigGame.CHARGE and clock >= next_blow:
+		elif seen_state != BigGame.CHARGE and clock >= next_blow and read != 3:   # read 3 neither steps aside nor strikes
 			facing = atan2(-to.x, -to.z)
 			next_blow = clock + recover_s(weapon)   # the weapon's own recovery, on the game clock (the server's guard is real time)
 			items._last_strike.clear()
@@ -308,6 +321,50 @@ func fight(sp: String, weapon: String, ping: int, read: int = 0) -> Dictionary:
 
 	dodged = charges - landed.size()   # every blow on the player is a charge's; a charge cut short by the kill landed nothing
 	return {"blows": blows, "time": clock - start, "charges": charges, "dodged": dodged, "hits": landed.size(), "health": float(v["health"]), "result": result}
+
+
+# 4. A hunter's chase of a runner (ANIMAL_BEHAVIOUR.md HB-2: running from a predator makes it worse): its blow is not judged late, so a sprinter
+# over a 120 ms link it has caught is still hit (gate review of #1824: with the fair dodge on the chase, a sprinter beat every chase).
+func chases(kinds: Array) -> void:
+	print("\nCHASES (a player sprinting away at 9 m/s over a 120 ms link, the hunter charging from 4 m behind)")
+	ping_now = 120
+
+	for sp in kinds:
+		if not animals.species_def(sp).has("hunter"):
+			continue
+
+		animals.animals.clear()
+		landed.clear()
+		var v: Dictionary = items.vitals_of(1)
+		v["health"] = 100.0
+		v.erase("limp")
+		var me: Vector3 = Vector3(4.0 + AnimalContact.body_m(sp), 10.0, 0.0)
+		items.report_position(1, me)
+		var id: int = animals.spawn(sp, 0.0, 0.0)
+		var a: Dictionary = animals.animals[id]
+		a["level"] = 1
+		a["cool"] = 0.0
+		a["heading"] = 0.0
+		var started: bool = animals.big_game.chase(a, me, float(animals.species_def(sp)["hunter"].get("run_m", 30.0)))
+		var reports: Array = []
+
+		for k in int(4.0 / DT):
+			clock += DT
+			me.x += 9.0 * DT
+			reports.append([clock + 0.06, me])
+
+			while not reports.is_empty() and float(reports[0][0]) <= clock:
+				items.report_position(1, reports.pop_front()[1])
+
+			animals.tick(DT)
+
+			if not landed.is_empty():
+				break
+
+		print("  %-14s %s" % [sp, ("hit for %.0f" % float(landed[0][1])) if not landed.is_empty() else "never hit"])
+		check(started and not landed.is_empty(), "a %s that chases a sprinter and catches them lands its blow at 120 ms" % sp)
+
+	ping_now = 0
 
 
 # 3. One spear blow and the animal runs off bleeding (Dave 23 Nov 2026: "I love the idea the animal is bleeding and if they bleed enough they die
@@ -360,6 +417,15 @@ func bleeding() -> void:
 
 			if walked / WALK_MPS > float(d[0]) - start + float(bcfg.get("life_s", 240.0)):
 				follow = false
+
+		# What a player is actually sent (blood_near: within send_radius_m, the nearest max_sent): standing on any drop, the next one along is in it,
+		# and standing at the body, the trail's end is. (Drops age on the real clock, and this whole run takes seconds, so none dry here.)
+		for k in range(0, drops.size() - 1, 5):
+			if not animals.blood_near(drops[k][1]).has(drops[k + 1][1]):
+				follow = false
+
+		if not drops.is_empty() and not animals.blood_near(end_at).has(drops.back()[1]):
+			follow = false
 
 		print("  %-14s %6.0f | %s %5.0f m | %5d %8.0f m | %s" % [sp, float(animals.species_def(sp)["health"]), ("%6.0f s" % took) if died else " lives", away, drops.size(), short, "yes" if follow and died else "no"])
 		check(died and (away < 10.0 or follow), "a %s wounded by one blow bleeds to death, and its blood leads to the body" % sp)
