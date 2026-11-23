@@ -350,7 +350,7 @@ func _make_way(m: Dictionary, infos: Array, dt: float) -> void:
 		var at: Vector3 = info["pos"]
 
 		if Vector2(at.x - m["pos"].x, at.z - m["pos"].z).length() < cm and absf(at.y - m["pos"].y) < 2.0:
-			host.make_way(m, at, dt)
+			host.make_way(m, at, dt, infos)
 			return
 
 
