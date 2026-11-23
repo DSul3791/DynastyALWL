@@ -158,19 +158,19 @@ func water_level(x: float, z: float) -> float:
 
 
 # Under the island, not the sea (Dave 20 Nov 2026: a tunnel dug deep under the island hit water): the baked ground here, its lowest within
-# 64 m ("low"), is above sea level by LAND_ABOVE_M. Then below 0 m is dry rock or a dug space, not sea. The coarse map is the generated ground,
+# 64 m counting only ground joined to the open sea ("sea_low", sea_reach), is above sea level by LAND_ABOVE_M. Then below 0 m is dry rock or a dug space, not sea. The coarse map is the generated ground,
 # so digging never makes a sea. False where nothing is known (no grid yet, off the window): the old rule, all below 0 m is sea.
 const LAND_ABOVE_M := 0.5
 const SEA_ASK_BELOW_M := 40.0       # the client asks for the window without drawn fog too while the eye is this low (the sea check needs it)
 
 
 func under_land(x: float, z: float) -> bool:
-	return sample(grid, "low", x, z, 0.0) > LAND_ABOVE_M
+	return sample(grid, "sea_low", x, z, 0.0) > LAND_ABOVE_M
 
 
 # --- pure, on any thread ---
 
-# Reads the window [origin, origin + WINDOW_M] from the tiles it overlaps: {"origin", "n", "floor", "view", "near", "low"}; {} when no tile is there.
+# Reads the window [origin, origin + WINDOW_M] from the tiles it overlaps: {"origin", "n", "floor", "view", "near", "low", "sea_low"}; {} when no tile is there.
 static func read_window(dir: String, tile_size: float, origin: Vector2) -> Dictionary:
 	var cells: Dictionary = read_cells(dir, tile_size, origin)
 	return build_grid(cells["heights"], cells["fresh"], int(cells["n"]), origin) if not cells.is_empty() else {}
@@ -333,7 +333,54 @@ static func build_grid(heights: PackedFloat32Array, fresh: PackedFloat32Array, n
 	for k in range(n * n):
 		near[k] = 1.0 - smoothstep(0.0, STEAM_REACH_M, fresh[k]) if is_finite(fresh[k]) else 0.0
 
-	return {"origin": origin, "n": n, "floor": floor_m, "view": view, "near": near, "low": min_filter(filled, n, 2)}
+	return {"origin": origin, "n": n, "floor": floor_m, "view": view, "near": near, "low": min_filter(filled, n, 2), "sea_low": min_filter(sea_reach(heights, n), n, 2)}
+
+
+# The sea's own ground (fen flats drawn as white sea, Lane A 22 Nov 2026: flats a few decimetres below sea level, cut off from the sea by
+# ground above it, had the sea plane over them): ground below sea level joined to the open sea through ground below sea level, flooded
+# from the open sea bed (SEA_OPEN_M or deeper) and from unknown cells (the old rule there: sea). Those cells read 0; every other cell
+# reads its ground but at least SEA_CUT_OFF_M, so an inland hollow below 0 m is land to the sea check (under_land, the sea plane's mask).
+const SEA_OPEN_M := -1.0
+const SEA_CUT_OFF_M := 1.0
+
+
+static func sea_reach(heights: PackedFloat32Array, n: int) -> PackedFloat32Array:
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(n * n)
+	var queue: PackedInt32Array = PackedInt32Array()
+
+	for k in range(n * n):
+		var h: float = heights[k]
+
+		if is_nan(h) or h <= SEA_OPEN_M:
+			out[k] = 0.0
+			queue.append(k)
+		else:
+			out[k] = maxf(h, SEA_CUT_OFF_M)
+
+	var head: int = 0
+
+	while head < queue.size():
+		var k: int = queue[head]
+		head += 1
+		var i: int = k % n
+		@warning_ignore("integer_division")
+		var j: int = k / n
+
+		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var ni: int = i + step.x
+			var nj: int = j + step.y
+
+			if ni < 0 or nj < 0 or ni >= n or nj >= n:
+				continue
+
+			var m: int = nj * n + ni
+
+			if out[m] != 0.0 and heights[m] < 0.0:
+				out[m] = 0.0
+				queue.append(m)
+
+	return out
 
 
 # The lowest value within `reach` cells (a square), in two passes (rows, then columns).
