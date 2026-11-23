@@ -77,6 +77,14 @@ var _fell: Dictionary = {}       # animal ids the client saw go down from a hit
 var _pose_t: float = 0.0
 var _died: int = 0
 var last_touch: String = ""      # what the body touched at the end of the last _walk_for, keys still held
+var _stretch: String = ""        # plan route: the stretch being timed ("" none), its frames and slow frames (_route_frame)
+var _stretch_msec: int = 0
+var _stretch_from: Vector3 = Vector3.ZERO
+var _stretch_frames: int = 0
+var _stretch_worst: float = 0.0
+var _stretch_100: int = 0
+var _stretch_500: int = 0
+var _route_lines: PackedStringArray = PackedStringArray()
 
 
 func prepare(name_arg: String, args: PackedStringArray) -> void:
@@ -186,6 +194,8 @@ func _hook_view() -> void:
 func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
+
+	_route_frame(delta)
 
 	var now: int = Time.get_ticks_msec()
 	var me: Vector3 = client.body.global_position
@@ -504,6 +514,8 @@ func run() -> void:
 		await _watch(30.0)
 	elif plan == "screens":
 		await _screens()
+	elif plan == "route":
+		await _route()
 	else:
 		if admin:
 			await _craft_chain()
@@ -2080,6 +2092,143 @@ func _quit_at_once() -> void:
 
 	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1
+
+
+# Plan route (lag lane 23 Nov 2026, coordinator: "hitches while moving, which is how people really play"): a fixed route a new player takes,
+# timed stretch by stretch: round the starter town, a long run north over many block borders, the thickest woods near there, the nearest
+# river and along it, after the nearest wild animal with a spear, a chest built and opened, a full turn of the view. Each stretch prints
+#   ROBOT <name> ROUTE <stretch>: <s> s, <frames> frames, worst <ms> ms, <n> over 100 ms, <n> over 500 ms, moved <m> m, at x,z
+# and the game's own HITCH and FREEZE lines fall between its begin and end lines. Needs --robot-admin (the spear and the chest's makings).
+# The same route at Low quality: --quality=0 on the client.
+func _route() -> void:
+	var start: Vector3 = client.body.global_position
+	_route_begin("town")
+	for corner in [Vector3(40.0, 0.0, 0.0), Vector3(40.0, 0.0, 40.0), Vector3(-40.0, 0.0, 40.0), Vector3(-40.0, 0.0, -30.0), Vector3(0.0, 0.0, 0.0)]:
+		await _run_to(start + corner, 25.0, 4.0)
+	_route_end()
+
+	_route_begin("run north 600 m")
+	await _run_to(start + Vector3(60.0, 0.0, -600.0), 120.0, 6.0)
+	_route_end()
+
+	_route_begin("woods")
+	await _forest_walk(30.0)
+	_route_end()
+
+	_route_begin("to the river")
+	var water: Vector3 = await _find_water()
+	if is_nan(water.x):
+		_note("route", "no water in a loaded chunk")
+	else:
+		await _run_to(water, 90.0, 6.0)
+	_route_end()
+
+	_route_begin("along the river")
+	var along: Vector3 = client.body.global_position
+	var came: Vector3 = _stretch_from
+	for leg in range(4):
+		var next: Vector3 = await _find_water_beyond(along, came, 30.0)
+		if is_nan(next.x):
+			break
+		await _run_to(next, 30.0, 5.0)
+		came = along
+		along = next
+	_route_end()
+
+	_route_begin("past animals")
+	_give("spear", 1)
+	await _check_pack("route spear")
+	await _hunt_all(25.0)
+	_route_end()
+
+	_route_begin("chest")
+	_give("stone_knife", 1)
+	await _storage()
+	_route_end()
+
+	_route_begin("view turn")
+	var yaw: float = client.body.rotation.y
+	for n in range(80):
+		client.body.rotation.y = yaw + TAU * float(n + 1) / 80.0
+		await get_tree().process_frame
+	await _wait(2.0)
+	_route_end()
+
+	_route_begin("run back to town")
+	await _run_to(start, 150.0, 8.0)
+	_route_end()
+	print("ROBOT %s ROUTE summary:" % robot_name)
+	for line in _route_lines:
+		print("ROBOT %s ROUTE = %s" % [robot_name, line])
+
+
+# The wet corner of a loaded water grid nearest `from` that lies at least `beyond_m` from it and no nearer the route's last point than `from`
+# (so the run goes on along the water, not back), or NAN; one chunk a frame, as _find_water.
+func _find_water_beyond(from: Vector3, back: Vector3, beyond_m: float) -> Vector3:
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_d: float = INF
+	var chunk_m: float = float(client.flora.chunk_m)
+	var back_d: float = Vector2(from.x - back.x, from.z - back.z).length()
+
+	for chunk in client.flora._chunks.keys():
+		var grid: Dictionary = client.flora._chunks.get(chunk, {}).get("grid", {})
+
+		if int(grid.get("wet", 0)) == 0:
+			continue
+
+		var spacing: float = float(grid["spacing"])
+		var count: int = int(grid["count"])
+		var levels = grid["levels"]
+
+		for j in range(count):
+			for i in range(count):
+				if is_nan(float(levels[j * count + i])):
+					continue
+
+				var x: float = float(chunk.x) * chunk_m + float(i) * spacing
+				var z: float = float(chunk.y) * chunk_m + float(j) * spacing
+				var d: float = Vector2(x - from.x, z - from.z).length()
+
+				if d >= beyond_m and d < best_d and Vector2(x - back.x, z - back.z).length() > back_d:
+					best_d = d
+					best = Vector3(x, float(levels[j * count + i]), z)
+
+		await get_tree().process_frame
+
+	return best
+
+
+func _route_begin(stretch: String) -> void:
+	_step = "route " + stretch
+	_stretch = stretch
+	_stretch_msec = Time.get_ticks_msec()
+	_stretch_from = client.body.global_position
+	_stretch_frames = 0
+	_stretch_worst = 0.0
+	_stretch_100 = 0
+	_stretch_500 = 0
+	print("ROBOT %s ROUTE begin %s at %.0f,%.0f" % [robot_name, stretch, _stretch_from.x, _stretch_from.z])
+
+
+func _route_end() -> void:
+	var here: Vector3 = client.body.global_position
+	var line: String = "%s: %.1f s, %d frames, worst %.0f ms, %d over 100 ms, %d over 500 ms, moved %.0f m, at %.0f,%.0f" % [_stretch,
+		float(Time.get_ticks_msec() - _stretch_msec) / 1000.0, _stretch_frames, _stretch_worst, _stretch_100, _stretch_500,
+		Vector2(here.x - _stretch_from.x, here.z - _stretch_from.z).length(), here.x, here.z]
+	print("ROBOT %s ROUTE %s" % [robot_name, line])
+	_route_lines.append(line)
+	_stretch = ""
+
+
+func _route_frame(delta: float) -> void:
+	if _stretch == "":
+		return
+
+	var ms: float = delta * 1000.0
+	_stretch_frames += 1
+	_stretch_worst = maxf(_stretch_worst, ms)
+	_stretch_100 += 1 if ms > 100.0 else 0
+	_stretch_500 += 1 if ms > 500.0 else 0
 
 
 func _quit() -> void:
