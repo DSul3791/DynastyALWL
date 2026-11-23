@@ -98,6 +98,33 @@ func on_look(peer: int, char_name: String, body: String, code: String, worn: Pac
 		_dress(_bodies[peer])
 
 
+# How long a body walks on past its newest point (MotionBuffer.at): CARRY_S, or none while it is turning back and forth (any two of its last
+# REVERSE_LEGS legs turned back on each other, by more than REVERSE_DEG): a dodging player's next step cannot be guessed, and walking on along
+# the last leg drew it up to 2.2 m the wrong way (robots' wiggle plan, 23 Nov 2026: a run back and forth every 0.5 s on a 120 +- 30 ms link
+# with 3% loss). It then stands at its newest point until the next row; one walking or running on keeps the carry through lost batches.
+const REVERSE_DEG := 100.0
+const REVERSE_LEGS := 4
+
+
+static func carry_for(samples: Array) -> float:
+	var n: int = samples.size()
+	var after: Vector3 = Vector3.ZERO
+
+	for k in range(n - 1, maxi(n - 1 - REVERSE_LEGS, 0), -1):
+		var leg: Vector3 = (samples[k][0] as Vector3) - (samples[k - 1][0] as Vector3)
+		leg.y = 0.0
+
+		if leg.length() < 0.05:
+			continue
+
+		if after != Vector3.ZERO and leg.normalized().dot(after) < cos(deg_to_rad(REVERSE_DEG)):
+			return 0.0
+
+		after = leg.normalized()
+
+	return CARRY_S
+
+
 func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray(), cast: PackedInt32Array = PackedInt32Array()) -> void:
 	var n: int = mini(ids.size(), mini(positions.size(), mini(yaws.size(), mini(states.size(), mini(held.size(), times.size())))))
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
@@ -236,7 +263,7 @@ func _process(delta: float) -> void:
 			MotionBuffer.settle(b)   # after this computer's own stall the others are drawn where they are, not eased in from metres behind
 
 		if not (b["samples"] as Array).is_empty():
-			var at: Array = MotionBuffer.at(b["samples"], drawn_at, CARRY_S)   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
+			var at: Array = MotionBuffer.at(b["samples"], drawn_at, carry_for(b["samples"]))   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
 			b["path_p"] = at[0]
 			# A late batch or a lost one never jumps the body: the step beyond a normal one is eased in (MotionBuffer.smooth, as the animals).
 			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta, SMOOTH_ROOM_X, SMOOTH_CATCH_X, SMOOTH_CATCH_MIN_MPS)
@@ -598,7 +625,7 @@ static func arm_pose(b: Dictionary) -> String:
 	if bow != "":
 		return bow
 
-	return "shield_up" if str(b.get("left_kind", "")) == "shield" and (int(b.get("more", 0)) & MORE_SHIELD_UP) != 0 else ""
+	return "shield_up" if str(b.get("left_kind", "")) == "shield" and str(b.get("held_kind", "")) != "bow" and (int(b.get("more", 0)) & MORE_SHIELD_UP) != 0 else ""
 
 
 # "bow_raised", "bow_drawn" or "" (the bow down, or not a bow in hand): the more byte's bow flags (the client's held_item.gd hand_flags, 162).
@@ -679,6 +706,7 @@ func _show_left(b: Dictionary, distance: float) -> void:
 		return
 
 	var kind: String = str(b.get("left_kind", ""))
+	model.visible = str(b.get("held_kind", "")) != "bow"   # a bow takes both hands: the left item is put away, as the player's own (held_item.gd _off_model)
 
 	if kind == "lantern":
 		model.global_basis = Basis.IDENTITY   # hangs straight down by its bail
