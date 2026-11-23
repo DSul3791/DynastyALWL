@@ -549,7 +549,7 @@ Recipes cooked AT a placed fire or hearth. campfire = any lit fire; campfire_pot
 | 51 | 314 | roast_beechnuts -> 2 x roast_forage | 3 x beechnuts [tree:beech; tree:trunk] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_01.jpg |
 | 52 | 315 | roast_morels -> 2 x roast_forage | 3 x morels [plant:morel] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_01.jpg |
 | 53 | 316 | roast_bananas -> 2 x roast_forage | 2 x bananas [plant:wild_banana] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_01.jpg |
-| 54 | 317 | roast_fiddleheads -> 2 x roast_forage | 3 x fiddleheads [plant:fern (natural yield)] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_01.jpg |
+| 54 | 317 | roast_fiddleheads -> 2 x roast_forage | 12 x fiddleheads [plant:fern (natural yield)] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_01.jpg |
 | 55 | 318 | roast_wild_pears -> 2 x roast_forage | 3 x wild_pears [plant:wild_pear; tree:trunk] | clay_hearth L1 | yes | PASS (wave 2) | sheets/items_01.jpg |
 | 56 | 234 | leather -> 1 x leather | 1 x processed_hide [recipe:processed_hide]; 2 x tannin_bark [plant:oak]; 1 x water [plant:cactus (natural yield)] | campfire_pot L1 | yes | PASS (wave 3) | sheets/items_02.jpg |
 | 57 | 235 | heavy_leather -> 1 x heavy_leather | 2 x leather [recipe:leather]; 2 x tannin_bark [plant:oak] | campfire_pot L1 | yes | PASS (wave 3) | sheets/items_02.jpg |
