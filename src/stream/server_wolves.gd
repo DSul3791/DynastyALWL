@@ -655,7 +655,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
-			pack["turn"][id] = {"step": "back", "t": 0.0}   # one bite a lunge, then back to its place on the ring
+			pack["turn"][id] = {"step": "recover", "t": 0.0}   # one bite a lunge, a moment standing in reach (the opening), then back to its place
 			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))   # a higher-level wolf bites harder
 
 			# Meat is the prize: a few bites in, the pack tears it out of the pack and runs (never in a fire's or torch's light).
@@ -682,8 +682,9 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 # The battle ring (Dave 23 Nov 2026: animals "so robotic", "not actually acting like animals"; RESEARCH_2026-11-23.md 7 and 9): in a rush each
 # wolf keeps a place on a ring ring_m round the player, from the side it came, the places spread evenly and drifting round. Only
-# lunge_at_once wolves attack at a time: one is given a turn, stands and winds up (windup_s, the crouch you can read), lunges in for one
-# bite (lunge_s at most), and backs off to its place (back_s); then the one that waited longest goes. The others circle and watch.
+# lunge_at_once wolves attack at a time (one more for every extra_lunge_per in the pack): one is given a turn, stands and winds up (windup_s,
+# the crouch you can read), lunges in for one bite (lunge_s at most), stands in reach recover_s (the opening to hit it), and backs off to
+# its place (back_s); then the one that waited longest goes. The others circle and watch.
 func _ring_turns(pack: Dictionary, members: Array, p: Vector3, dt: float) -> void:
 	var w: Dictionary = cfgw()
 
@@ -717,7 +718,7 @@ func _ring_turns(pack: Dictionary, members: Array, p: Vector3, dt: float) -> voi
 		if not members.any(func(m): return int(m["id"]) == int(id)):
 			turn.erase(id)
 
-	if turn.size() >= mini(int(w.get("lunge_at_once", 1)) + int(members.size() / 4.0), members.size()):
+	if turn.size() >= mini(int(w.get("lunge_at_once", 1)) + int(members.size() / maxf(float(w.get("extra_lunge_per", 6)), 1.0)), members.size()):
 		return
 
 	var best: Dictionary = {}
@@ -775,7 +776,16 @@ func _ring_step(pack: Dictionary, m: Dictionary, p: Vector3, speed: float, dt: f
 
 		return true
 
-	_walk(m, place, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)   # backing off to its place: the gap to hit back in
+	if str(t["step"]) == "recover":   # after its bite it stands in reach, facing in, for recover_s: the opening to hit it (robots 23 Nov 2026: near only for the lunge)
+		m["moving"] = false
+		m["heading"] = face
+
+		if float(t["t"]) >= float(w.get("recover_s", 0.9)):
+			pack["turn"][id] = {"step": "back", "t": 0.0}
+
+		return false
+
+	_walk(m, place, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)   # backing off to its place
 
 	if float(t["t"]) >= float(w.get("back_s", 1.2)):
 		pack["turn"].erase(id)

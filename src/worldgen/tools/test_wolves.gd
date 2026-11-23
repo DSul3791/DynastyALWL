@@ -413,7 +413,9 @@ func _init() -> void:
 	rp["sprint"] = 0.0
 	rp["bite"] = {}
 	var rw: Dictionary = r.cfg["wolves"]
-	var allowed: int = mini(int(rw.get("lunge_at_once", 1)) + int(rp["ids"].size() / 4.0), rp["ids"].size())
+	var allowed: int = mini(int(rw.get("lunge_at_once", 1)) + int(rp["ids"].size() / maxf(float(rw.get("extra_lunge_per", 6)), 1.0)), rp["ids"].size())
+	var stood: Dictionary = {}   # id -> seconds a wolf stood in reach after its bite (recover_s, the opening)
+	var stood_least: float = INF
 	var most: int = 0
 	var wound_up: Dictionary = {}
 	var lunge_unwound: int = 0
@@ -450,13 +452,20 @@ func _init() -> void:
 				if turn.is_empty() and d > 3.5:
 					on_ring.append(wm["pos"])
 
+			if str(turn.get("step", "")) == "recover":
+				stood[id] = float(turn["t"])
+				check(float(turn["t"]) <= 0.0 or (not bool(wm["moving"]) and d <= float(rw.get("reach_m", 3.0)) + 0.1), "after its bite a wolf stands in reach (%.2f m)" % d)   # t 0: the bite's own step, it lunged
+			elif stood.has(id):
+				stood_least = minf(stood_least, float(stood[id]))
+				stood.erase(id)
+
 			if bitten_by.has(id) and d > float(rw.get("reach_m", 3.0)) + 0.5:
 				backed += 1
 				bitten_by.erase(id)
 
 		if log_bites > bites_was:
 			for id in rp["ids"]:
-				if str(rp.get("turn", {}).get(id, {}).get("step", "")) == "back":
+				if str(rp.get("turn", {}).get(id, {}).get("step", "")) in ["recover", "back"]:
 					bitten_by[id] = true
 
 		most = maxi(most, lunging)
@@ -471,6 +480,7 @@ func _init() -> void:
 	check(log_bites > 0 and most >= 1 and most <= allowed, "the wolves take turns: %d bites, at most %d lunging at once (allowed %d)" % [log_bites, most, allowed])
 	check(lunge_unwound == 0, "every lunge comes after a full wind-up (%d did not)" % lunge_unwound)
 	check(backed > 0, "after a bite the wolf backs off out of reach (%d times)" % backed)
+	check(stood_least < INF and stood_least >= float(rw.get("recover_s", 0.9)) - 0.21, "and first stands in reach about recover_s, the opening to strike it (shortest %.2f s)" % stood_least)
 	check(spread_seen > 0 and spread_ok, "the circling wolves keep apart on the ring (%d looks)" % spread_seen)
 	# A lone player can win it: the gap after the tell is the time to strike, and a wolf hit while it lunges drives the pack off.
 	r = make()
