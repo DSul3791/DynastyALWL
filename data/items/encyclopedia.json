@@ -13702,15 +13702,15 @@
 				},
 				{
 					"title": "Stone - Pickaxe",
-					"text": "The first pick. It breaks boulders and gives you ore from tin and copper outcrops. Harder ores need a better pick. A pick is also the right tool for rock and ore; a shovel is for soil."
+					"text": "The first pick. It breaks boulders and gives you ore from tin and copper rocks; the Stone - Hammer breaks those too. Iron rock needs a bronze pick or better. A pick is also the right tool for rock and ore; a shovel is for soil."
 				},
 				{
 					"title": "Tin",
-					"text": "Soft, silvery ore. Tin on its own is not much use, but a little of it turns copper into bronze. Tin lies close to where you start, on the steep ground of the hills near your first camp."
+					"text": "Soft, dark ore. Tin on its own is not much use, but with copper it makes bronze. Tin lies along rivers and lakes, in the shallow water and on the banks: the small glassy stones you pick up by hand, the bigger rocks you break with a hammer or a pick. There is more of it, and bigger, toward the mountains, and less and smaller toward the sea."
 				},
 				{
 					"title": "Copper",
-					"text": "Red-brown ore that a Primitive smelter turns into ingots, one for each ore. A little farther out than tin, on the same kind of rocky slopes. The Primitive smithy shapes copper into the first metal tools, and copper ore smelted with tin ore makes bronze."
+					"text": "Red-brown and green-crusted ore that a Primitive smelter turns into ingots, one for each ore. It lies along the same rivers and shores as tin, small pieces by hand and bigger rocks for the hammer or pick, and a few lie anywhere on land. The Primitive smithy shapes copper into the first metal tools, and copper ore smelted with tin ore makes bronze."
 				},
 				{
 					"title": "Bronze",
@@ -13718,11 +13718,11 @@
 				},
 				{
 					"title": "River placers",
-					"text": "Where rivers cut through ore-bearing hills, little bends and banks collect loose ore. Look for bright flecks in the boulders at a river bend and break them with a pick. Tin and copper turn up this way."
+					"text": "Rivers carry ore down from the hills, so walk the water first. Copper, tin and iron all lie in the shallows and on the banks, and at the foot of a mountain you may find a big ore boulder. Over a body of its own ore a river bank can be thick with it."
 				},
 				{
 					"title": "Iron",
-					"text": "Dark, heavy ore, and hard to get at. It needs a bronze pick or better to break, and only an Improved smelter with its bellows worked smelts it. Iron rock is not found near your first camp, and the deposits we know of lie out of easy reach. Bog iron is the nearer way. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
+					"text": "Dark, reddish-brown, heavy ore. Small iron stones lie along river beds like copper and tin, and you pick them up by hand, one Iron ore each. Anything bigger needs a bronze pick or better. Only an Improved smelter with its bellows worked smelts it. Bog iron is the other way in. Now and then a meteorite lies on open ground: break it with any pick or the Stone - Hammer and its Iron chunks do the work of iron ingots. Iron makes harder tools, nails, hinges and the tools of a proper workshop."
 				},
 				{
 					"title": "Bog iron",
@@ -13768,7 +13768,7 @@
 				},
 				{
 					"title": "Iron - Lantern",
-					"text": "Iron and horn panes, burning lamp oil, made at a brick forge. It throws more light than a torch, and well over a wooden lantern, and one fill of oil lasts three game days. Rain does not trouble it. It takes iron, and iron is hard to come by near your first camp."
+					"text": "Iron and horn panes, burning lamp oil, made at a brick forge. It throws more light than a torch, and well over a wooden lantern, and one fill of oil lasts three game days. Rain does not trouble it. It takes iron."
 				},
 				{
 					"title": "Candle",
@@ -13776,21 +13776,21 @@
 				},
 				{
 					"title": "Lamp oil",
-					"text": "Three herring in a stoppered campfire pot render one flask of oil. Once you have an oil press, four linseed or four walnuts do the same. Lamp oil feeds the iron lantern, and the iron hanging lanterns, wall lanterns and lamp posts too."
+					"text": "Three herring in a stoppered campfire pot render one flask of oil. Once you have an oil press, 400 linseed or four walnuts do the same. Lamp oil feeds the iron lantern, and the iron hanging lanterns, wall lanterns and lamp posts too."
 				}
 			]
 		},
 		"hardware": {
 			"title": "Building and hardware",
-			"text": "Most early building needs nothing but wood, stone and twine. Gates, doors that swing, chests with lids, barrels and crates need hardware: nails to hold the boards and hinges to hang them.",
+			"text": "Most early building needs nothing but wood, stone and twine. Gates, doors that swing, chests with lids, barrels and crates need hardware: nails to hold the boards and hinges to hang them. Each metal has its work: copper for light things, bronze for chests and furniture, iron for building, steel for fortification.",
 			"sections": [
 				{
 					"title": "Bronze nails and Bronze hinges",
-					"text": "The first metal hardware. At a Stone - Forge, one bronze ingot makes a hundred nails or twenty hinges. Every gate, door, chest and cupboard that asks for nails or hinges takes bronze ones."
+					"text": "At a Stone - Forge, one copper ingot makes a hundred Copper nails, the first metal hardware, for small chests, crates, garden plots and racks. One bronze ingot makes a hundred Bronze nails or twenty Bronze hinges, for chests, cupboards, furniture and the wood gate."
 				},
 				{
 					"title": "Nails and Hinges (iron)",
-					"text": "Iron does the same job, made at a brick forge from an iron ingot. Where a cost says nails or hinges, any kind will do. Iron bands for fortified walls have no bronze stand-in: those wait for iron."
+					"text": "Made at a brick forge from an iron ingot, for stone, brick and iron gates, large chests, bins and mills; Steel nails from a steel ingot are for the iron chest and fortified gate. Where a cost names a metal, that metal or a better one will do: Bronze nails fill a Copper nails cost, but Copper nails never fill a Bronze one. Iron bands for fortified walls have no bronze stand-in: those wait for iron."
 				}
 			]
 		}

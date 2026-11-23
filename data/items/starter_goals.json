@@ -183,7 +183,7 @@
 		{
 			"id": "spear",
 			"title": "Make a spear",
-			"hint": "A Wooden - Spear (1 stick, keep a stone) then 2 twine for a Stone - Spear.",
+			"hint": "A Wooden - Spear (1 stick, keep a stone) then 2 twine and a stone for a Stone - Spear.",
 			"after": [
 				"twine"
 			],
