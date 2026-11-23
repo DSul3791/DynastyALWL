@@ -17004,7 +17004,7 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 				# Passed out under water: rescued as from the cold (warmth.json pass_out), or the faint and the wake would come round for ever with
 				# the head still under and movement locked (no auto-rise, BUG-029).
-				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and _peer_pos.has(peer):
 					_out_water[peer] = true
 					_cold_pass_out(peer)
 			else:
@@ -18058,13 +18058,16 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	var here: Vector3 = _peer_pos.get(peer, respawn_point)
 	var best: Array = []
 
-	for spot in rescue_spots.call(here):
+	for spot in (rescue_spots.call(here) if rescue_spots.is_valid() else []):
 		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
 			best = spot
 
 	# No camp and no town square anywhere (a test world): they come to where they lay, never at the spawn (nothing is based on the spawn).
 	var to: Vector3 = best[0] if not best.is_empty() else here
 	var kind: String = str(best[1]) if not best.is_empty() else "here"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
+
+	if water and best.is_empty():
+		to = _dry_shore(here)   # no place to be carried to: the nearest dry shore, never the spawn (coordinator 23 Nov 2026)
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
@@ -18074,7 +18077,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_resume_to.erase(peer)
 	_motion.erase(peer)
 
-	if water and not best.is_empty():   # carried out of the water: breathing again (the client's next report says where the head is)
+	if water:   # carried out of the water: breathing again (the client's next report says where the head is; with no shore found, a full breath to swim up awake)
 		_head_under[peer] = false
 		_suffocate.erase(peer)
 		_breath.erase(peer)
@@ -18084,7 +18087,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_sync_warmth(peer, true)
 	_dirty = true
 
-	if send_died.is_valid() and not best.is_empty():
+	if send_died.is_valid() and not to.is_equal_approx(here):
 		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
 
 	if water:
@@ -18097,6 +18100,35 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 
 func passed_out(peer: int) -> bool:
 	return _cold_out.has(peer)
+
+
+# The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M, on
+# the ground; `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
+const SHORE_STEP_M := 3.0
+const SHORE_MAX_M := 200.0
+const SHORE_DRY_M := 0.05
+
+func _dry_shore(from: Vector3) -> Vector3:
+	if not ground_height.is_valid() or not water_depth_at.is_valid():
+		return from
+
+	var r: float = SHORE_STEP_M
+
+	while r <= SHORE_MAX_M:
+		var steps: int = maxi(int(ceil(TAU * r / SHORE_STEP_M)), 8)
+
+		for i in steps:
+			var a: float = TAU * float(i) / float(steps)
+			var x: float = from.x + cos(a) * r
+			var z: float = from.z + sin(a) * r
+			var g: float = float(ground_height.call(x, z))
+
+			if not is_nan(g) and float(water_depth_at.call(Vector3(x, g, z))) <= SHORE_DRY_M:
+				return Vector3(x, g, z)
+
+		r += SHORE_STEP_M
+
+	return from
 
 
 func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:

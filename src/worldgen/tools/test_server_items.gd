@@ -1981,19 +1981,24 @@ func _init() -> void:
 	vt._breath[1] = 1.0
 	vt.report_position(1, Vector3(50.0, 5.0, 50.0))
 	var faint_seen: bool = false
+	var lowest: float = 100.0
 
 	for n in range(40):
 		vt.tick(1.0)
 		faint_seen = faint_seen or int(vt._strain.get(1, {}).get("state", 0)) == 2
+		lowest = minf(lowest, float(vt.vitals_of(1)["health"]))
 
 		if vt.remains_ids().size() > 0:
 			break
 
-	check(faint_seen and vt.remains_ids().is_empty() and float(vt.vitals_of(1)["health"]) <= 2.0, "[%d remains, health %.0f] fainting under water leaves 1 health, not dead (death.json stop_at_1)" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	check(faint_seen and vt.remains_ids().is_empty() and lowest <= 2.0, "[%d remains, lowest health %.0f] fainting under water leaves 1 health, not dead (death.json stop_at_1; then the pass-out, test_cold_pass_out)" % [vt.remains_ids().size(), lowest])
 	vt._death_cfg["stop_at_1"] = false
 	vt._vitals[vt._peer_key[1]]["health"] = 100.0
 	vt._suffocate.erase(1)
 	vt._strain.erase(1)
+	vt._cold_out.erase(1)   # the pass-out above (test_cold_pass_out) carried them out of the water: back under
+	vt._out_water.erase(1)
+	vt.set_head_under(1, true)
 	vt._breath[1] = 1.0
 	faint_seen = false
 
