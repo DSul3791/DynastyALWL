@@ -125,7 +125,8 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 		if stance == StanceScript.STAND and bool(avatar.get_meta("torch_left", false)) and player.has_animation(plain + "_torch"):
 			return plain + "_torch"
 
-		# The bow raised or drawn (meta `bow_pose` "bow_raised" / "bow_drawn", set by player_view for another player; dynasty_body.gd _bow_aim): idle or walking.
+		# The bow raised or drawn, or the shield up (meta `bow_pose` "bow_raised" / "bow_drawn" / "shield_up", set by player_view for another player;
+		# dynasty_body.gd _bow_aim, _shield_up): the variants that exist for the gait.
 		var bow_pose: String = str(avatar.get_meta("bow_pose", ""))
 
 		if stance == StanceScript.STAND and bow_pose != "" and not carrying and player.has_animation(plain + "_" + bow_pose):
@@ -212,7 +213,7 @@ static func gait_of(clip: String) -> String:
 	if clip.begins_with("crouch_walk"):
 		return clip
 
-	for suffix in ["_torch", "_bow_raised", "_bow_drawn"]:
+	for suffix in ["_torch", "_bow_raised", "_bow_drawn", "_shield_up"]:
 		if clip.ends_with(suffix):
 			return clip.trim_suffix(suffix)
 
