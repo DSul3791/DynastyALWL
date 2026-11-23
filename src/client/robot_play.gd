@@ -1046,6 +1046,11 @@ func _eat_drink() -> void:
 
 	if slot >= 0:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_EAT, slot, 0, 0, Vector3.ZERO)
+		var asked: int = Time.get_ticks_msec()
+
+		while _count("wild_apples") == 2 and Time.get_ticks_msec() - asked < 4000:   # the server's answer first: a quiet pack can still be the old one over a slow link
+			await get_tree().process_frame
+
 		await _check_pack("eat")
 
 		if _count("wild_apples") != 1:
