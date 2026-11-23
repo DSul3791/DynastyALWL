@@ -7215,6 +7215,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	var quick: bool = not fresh.is_empty()
 	var grid: Dictionary = {}
 	var lit: Array = []
+	_site_memo = {}   # each player's on-hand counts for the sites' lists, worked out once this sync (_site_view)
 
 	for id in ([] if quick else _items.keys()):   # a quick sync files nothing: the road's ids came since the full sync, and _ids_near adds those
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
@@ -7391,6 +7392,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 			sent += added.size()
 
 	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
+	_site_memo = null
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
 	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
 	_sync_detail = "(%d records: grid %.0f, scan %.0f, bog %.1f (built %d fields in %.1f), send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0,
@@ -12676,6 +12678,12 @@ const BUILD_STOCK_M := 4.0
 
 
 # What a site's list shows one player: [[item id, still needed, on hand], ...], "on hand" being the pack, loose stock beside them and containers within reach.
+# During a world sync (_site_memo not null) a player's hammer reach, containers and each item's on-hand count are worked out once for all the sites
+# near them: nothing changes within the sync, and doing it per site walked every world record twice per site and player (server load test
+# 23 Nov 2026: 16 players beside 130 sites held the tick 1.0 to 1.4 s in every full sync).
+var _site_memo = null   # null outside a sync; peer -> {"inv", "reach", "boxes", "hand": {item number: on hand}}
+
+
 func _site_view(peer: int, it: Dictionary) -> Array:
 	var out: Array = []
 	var inv = inventory_of(peer)
@@ -12683,15 +12691,32 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 	if inv == null or not _peer_pos.has(peer):
 		return out
 
-	var reach_x: float = _hammer_x(peer)
-	var boxes: Array = _craft_boxes(peer, reach_x)
+	var memo: Dictionary = {}
+
+	if _site_memo != null:
+		if not (_site_memo as Dictionary).has(peer):
+			var reach_here: float = _hammer_x(peer)
+			_site_memo[peer] = {"reach": reach_here, "boxes": _craft_boxes(peer, reach_here), "hand": {}}
+
+		memo = _site_memo[peer]
+
+	var reach_x: float = float(memo["reach"]) if not memo.is_empty() else _hammer_x(peer)
+	var boxes: Array = memo["boxes"] if not memo.is_empty() else _craft_boxes(peer, reach_x)
 
 	for need in _site_needs(_site_of(it)):
 		var number: int = table.number_of(str(need[0]))
+
+		if not memo.is_empty() and memo["hand"].has(number):
+			out.append([str(need[0]), int(need[1]), int(memo["hand"][number])])
+			continue
+
 		var on_hand: int = inv.count_fill(number, true) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M * reach_x)
 
 		for box in boxes:
 			on_hand += box[1].count_fill(number, true)
+
+		if not memo.is_empty():
+			memo["hand"][number] = on_hand
 
 		out.append([str(need[0]), int(need[1]), on_hand])
 
