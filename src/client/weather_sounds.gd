@@ -358,10 +358,11 @@ func _ground(delta: float) -> void:
 	snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow + falling, 1.0), delta / HUSH_EASE_SEC)
 
 
-# Snow lies underfoot for the steps (sound_stage.step_ground): the ground's snow memory has reached `cover_from`, and the player is not inside
-# a cave's rock, where no snow lies whatever falls outside.
-func snow_underfoot(cover_from: float) -> bool:
-	return ground_snow >= cover_from and in_rock < IN_ROCK_DRY
+# Snow lies underfoot for the steps (sound_stage.step_ground): the ground's snow memory has reached `cover_from`, and, for the listener's
+# own feet, the player is not inside a cave's rock, where no snow lies whatever falls outside. Another player's step (`own_feet` false)
+# reads the snow outside: whether they are in a cave is not known here.
+func snow_underfoot(cover_from: float, own_feet: bool = true) -> bool:
+	return ground_snow >= cover_from and (not own_feet or in_rock < IN_ROCK_DRY)
 
 
 # Under trees in rain: now and then a drop falls from a leaf nearby.

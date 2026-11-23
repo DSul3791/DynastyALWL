@@ -104,6 +104,9 @@ func walk() -> void:
 	stage.cave["rock_enclosure"] = 1.0
 	run(sounds, body, 1.0)
 	check(not sounds.snow_underfoot(SNOW_COVER), "inside the cave no snow underfoot")
+	check(sounds.snow_underfoot(SNOW_COVER, false), "while another player's step outside still crunches in the snow there")
+	var stage_src: String = FileAccess.get_file_as_string("res://src/client/sound_stage.gd")
+	check(stage_src.contains("step_ground(feet, depth, \"\", false)") and stage_src.contains("weather.snow_underfoot(SNOW_COVER, own_feet)"), "the other players' steps ask for the snow outside (sound_stage step_at)")
 	stage.cave["rock_enclosure"] = 0.0
 	run(sounds, body, 1.0)
 	check(sounds.snow_underfoot(SNOW_COVER), "walking out, the snow crunches again")

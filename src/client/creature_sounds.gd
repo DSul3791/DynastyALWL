@@ -291,12 +291,12 @@ func took_off(kind: String, at: Vector3) -> bool:
 	if now < int(_take_off_until.get(kind, 0)):
 		return false
 
-	_take_off_until[kind] = now + TAKE_OFF_EVERY_MS
+	var played: bool = _stage.ambient.alarm(at) if str(TAKE_OFF[kind]) == "crow" else _stage.ambient.flush(at, 0.0, str(TAKE_OFF[kind]))
 
-	if str(TAKE_OFF[kind]) == "crow":
-		return _stage.ambient.alarm(at)
+	if played:
+		_take_off_until[kind] = now + TAKE_OFF_EVERY_MS   # only a take-off heard holds the next one back
 
-	return _stage.ambient.flush(at, 0.0, str(TAKE_OFF[kind]))
+	return played
 
 
 func _bird(at: Vector3, mood: String) -> bool:

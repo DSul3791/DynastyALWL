@@ -1264,9 +1264,9 @@ func step_ground(feet: Vector3, depth: float, own_floor: String = "", own_feet: 
 		kind = built
 		tune = [0.0, 1.0]
 
-	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches; not under the listener's own feet inside a cave,
-	# where none lies (another player's step is read by the snow outside: whether they are in a cave is not known here).
-	if weather != null and (weather.snow_underfoot(SNOW_COVER) if own_feet else weather.ground_snow >= SNOW_COVER) and kind in SNOW_SURFACES:
+	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches; not under the listener's own feet inside a cave
+	# (weather_sounds.snow_underfoot).
+	if weather != null and weather.snow_underfoot(SNOW_COVER, own_feet) and kind in SNOW_SURFACES:
 		kind = "snow"
 		tune = [0.0, 1.0]
 

@@ -242,15 +242,17 @@ func _process(delta: float) -> void:
 			node.rotation.y = lerp_angle(node.rotation.y, float(at[1]), clampf(delta * 12.0, 0.0, 1.0))
 
 		# The legs follow the path's own speed, not the easing (a correction slid in is not a step).
-		var path_v: Vector3 = ((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)   # the drawn path's own speed, uncapped (a fall reads it)
+		var path_v: Vector3 = ((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)   # the drawn path's own speed, uncapped
+		var path_dt: float = drawn_at - float(b.get("fall_t", drawn_at - delta))   # how far the drawn moment moved on (a late batch steps it back)
+		b["fall_t"] = drawn_at
 		var moved: Vector3 = path_v.limit_length(MotionBuffer.CARRY_MPS)   # a carried-on point taken back is not a sprint
 		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(delta * 8.0, 0.0, 1.0))
 		b["velocity"] = velocity
 		var distance: float = eye.distance_to(node.global_position)
 		_count_steps(b, velocity, delta, distance)
 		var samples: Array = b["samples"]
-		var carried: bool = settle or samples.size() < 2 or drawn_at > float((samples[samples.size() - 1] as Array)[2])   # past the newest sent point: a guess
-		_count_fall(b, path_v, carried, delta, distance)
+		var carried: bool = fall_carried(samples, drawn_at, path_dt, delta) or settle
+		_count_fall(b, path_v * delta / maxf(path_dt, 0.001), carried, delta, distance)   # the fall by the drawn moment's own steps
 		_far_check(b, distance, delta)
 		_show_held(b)
 		_show_left(b, distance)
@@ -334,6 +336,15 @@ func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: floa
 # landing, heard at the feet within hearing. Not counted: frames drawn past the newest sent point (a lost report carries the body on,
 # then it is taken back) or after this computer's stall (`carried`: held, neither added nor ended); a leg faster than any fall (SNAP_MPS:
 # a teleport, an unstuck); going into water (a dive is a splash, not a thud) or swimming.
+# A frame the fall counter skips: past the newest sent point (a lost report carries the body on: a guess, later taken back), too few
+# points, or the drawn moment not moving on by about the frame (the lateness rose with a late batch and stepped it back or held it).
+static func fall_carried(samples: Array, drawn_at: float, path_dt: float, delta: float) -> bool:
+	if samples.size() < 2 or drawn_at > float((samples[samples.size() - 1] as Array)[2]):
+		return true
+
+	return path_dt <= 0.0 or absf(path_dt - delta) > 0.5 * delta
+
+
 func _count_fall(b: Dictionary, path_v: Vector3, carried: bool, delta: float, distance: float) -> void:
 	if carried:
 		return
@@ -352,6 +363,8 @@ func _count_fall(b: Dictionary, path_v: Vector3, carried: bool, delta: float, di
 		if sink >= FALL_FROM_MPS and sink > flat:
 			b["falling"] = true
 		elif not bool(b.get("falling", false)):
+			# shortcut: a runner braking hard on ground steeper than 45 degrees could start a fall with up to this capped drop (rare: such
+			# ground is not walkable); a landing then reads a little high.
 			# Not yet a fall: no more than a body falling free drops before it sinks this steeply (a leap off at a run counts from the
 			# edge; a long walk down a slope before a ledge does not add up).
 			var steep_at: float = maxf(FALL_FROM_MPS, flat)

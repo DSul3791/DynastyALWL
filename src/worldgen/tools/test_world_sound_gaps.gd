@@ -242,6 +242,14 @@ func _falls(world: Node3D, stage: SoundStage) -> void:
 		var drop_ok: bool = heard.all(func(h: Array) -> bool: return float(h[1]) >= float(c[5]) and float(h[1]) <= float(c[6]))
 		check(heard.size() == int(c[4]) and at_feet and drop_ok, "another player, %s: %d landing heard (heard %d%s)" % [c[0], c[4], heard.size(), ", %.1f m" % float(heard[0][1]) if not heard.is_empty() else ""])
 
+	# The frames the counter skips (player_view.fall_carried): sent points at 0.0 and 0.2 s.
+	var pts: Array = [[Vector3.ZERO, 0.0, 0.0], [Vector3(0, -1, 0), 0.0, 0.2]]
+	check(not PlayerView.fall_carried(pts, 0.1, 0.02, 0.02), "between two sent points the fall is counted")
+	check(PlayerView.fall_carried(pts, 0.25, 0.02, 0.02), "past the newest point (a lost report carrying the body on) it is not")
+	check(PlayerView.fall_carried(pts, 0.08, -0.02, 0.02) and PlayerView.fall_carried(pts, 0.1, 0.0, 0.02) and PlayerView.fall_carried(pts, 0.1, 0.05, 0.02),
+			"nor while a late batch steps the drawn moment back, holds it or jumps it on")
+	check(PlayerView.fall_carried([pts[0]], 0.0, 0.02, 0.02), "nor with a single point")
+
 	var steps_stage := StepsHeard.new()
 	world.add_child(steps_stage)
 
