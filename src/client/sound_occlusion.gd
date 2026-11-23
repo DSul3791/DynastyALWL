@@ -147,7 +147,7 @@ func _scan(body: CharacterBody3D, flying: bool) -> void:
 		if player == null or not player.playing:
 			continue
 
-		if Sound3D.place_rear(player, Sound3D.rear_share(ears, player.global_position)):
+		if not player.has_meta("air_kind") and Sound3D.place_rear(player, Sound3D.rear_share(ears, player.global_position)):   # a band voice's bus is the band's
 			behind += 1
 
 		var to: Vector3 = player.global_position - head
@@ -227,7 +227,7 @@ func _on_node_added(node: Node) -> void:
 
 # A new voice starts at its level for the air now (a howl upwind starts low), not 0.5 s later.
 func _first_look(player: AudioStreamPlayer3D) -> void:
-	if is_instance_valid(player) and player.is_in_group("world_sounds") and is_inside_tree():
+	if is_instance_valid(player) and player.is_in_group("world_sounds") and not player.has_meta("air_kind") and is_inside_tree():
 		Sound3D.place_rear(player, Sound3D.rear_share(_ears(), player.global_position))
 
 	if not outdoors:

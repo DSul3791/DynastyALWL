@@ -374,7 +374,32 @@ func _animal_checks(world: Node3D) -> void:
 		check(creatures.call_at(kind, at, "threat"), "%s's threat call plays" % kind)
 		_positional(_made(creatures, count), at, "%s's threat call" % kind)
 		var made: Array = _made(creatures, count)
-		check(not made.is_empty() and is_equal_approx((made[0] as AudioStreamPlayer3D).max_db, CreatureSounds.NEAR_MAX_DB), "%s's call keeps rising close by (max_db %.0f)" % [kind, CreatureSounds.NEAR_MAX_DB])
+		var voice: AudioStreamPlayer3D = made[0] if not made.is_empty() else null
+		check(voice != null and voice.max_db > 3.5 and voice.max_db <= CreatureSounds.NEAR_MAX_DB and is_equal_approx(voice.max_db, minf(voice.volume_db + CreatureSounds.NEAR_RISE_DB, CreatureSounds.NEAR_MAX_DB)), "%s's call keeps rising close by (max_db %.1f)" % [kind, voice.max_db if voice != null else 0.0])
+		creatures._threat_until.clear()
+
+	for child in creatures.get_children():
+		child.free()
+
+	# A pack rush: five wolves to attack at once make at most THREAT_VOICES growls, and the same kind not again within THREAT_EVERY_MS.
+	var before: int = creatures.get_child_count()
+	var growls: int = 0
+
+	for n in 5:
+		growls += 1 if creatures.call_at("wolf", Vector3(float(n), 0.0, -6.0), "threat") else 0
+
+	check(growls == 1, "a pack's attack in one row: one growl, the rest within the cooldown (%d)" % growls)
+	creatures._threat_until.clear()
+
+	for child in creatures.get_children():
+		child.free()
+
+	for n in 5:
+		creatures.call_at(["wolf", "bear", "moose", "black_bear", "elk"][n], Vector3(float(n), 0.0, -6.0), "threat")
+		creatures._threat_until.clear()
+
+	var live: int = _made(creatures, before).filter(func(v) -> bool: return v.has_meta("keep")).size()
+	check(live == CreatureSounds.THREAT_VOICES, "at most %d threat calls sound at once (%d new)" % [CreatureSounds.THREAT_VOICES, live])
 
 	var view = AnimalView.new()
 	world.add_child(view)

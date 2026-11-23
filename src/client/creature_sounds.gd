@@ -49,9 +49,16 @@ const KINDS := {
 # Kinds with no clips of their own that sound like one that has (stand-ins until their own recordings): an American black bear growls
 # like a bear, an elk calls like a moose. Without these their warnings and charges were silent.
 const CALL_AS := {"black_bear": "bear", "elk": "moose"}
-# How much louder than its unit-size level a call may get close by (Godot's max_db, default 3): with 3 a wolf growl (unit 40 m) was
-# equally loud anywhere within 28 m, so near and far could not be told apart; at 9 the level keeps rising to about 14 m.
+# Close by (Godot caps a voice's volume_db plus its distance gain at max_db, default 3): with 3 a wolf growl (-5 dB, unit 40 m) was
+# equally loud anywhere within 16 m and a bear roar within 7 m, so near and far could not be told apart. A call may now rise
+# NEAR_RISE_DB over its own level (the level stops rising at a quarter of its unit size: a wolf 10 m, a bear 4 m), never past
+# NEAR_MAX_DB (the clips peak near -14 dBFS, so -5 dBFS at most).
+const NEAR_RISE_DB := 12.0
 const NEAR_MAX_DB := 9.0
+# A pack rushing in sends every wolf to attack in one row: threat calls skip the voice budget and are never shed, so at most
+# THREAT_VOICES of them sound at once, and one kind's threat call at most every THREAT_EVERY_MS.
+const THREAT_VOICES := 3
+const THREAT_EVERY_MS := 400
 const BIRD_IDLE := ["bird_whistle", "bird_feebee", "bird_trill", "bird_chirp"]
 
 var tier: int = 2
@@ -62,6 +69,7 @@ var last: String = ""                   # kind, mood, file and distance for the 
 var _stage                              # SoundStage (ambient weights, hour, weather, voice budget)
 var _streams: Dictionary = {}
 var _voices: Array = []
+var _threat_until: Dictionary = {}      # kind -> ticks msec before which it calls no threat again
 var _next: Dictionary = {}              # kind -> seconds until its next natural call
 var _rng := RandomNumberGenerator.new()
 
@@ -113,6 +121,15 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	if mood != "threat" and (_voices.size() >= int(_stage.preset["creature_voices"]) or not _stage.has_room()):
 		return false
 
+	if mood == "threat":
+		var now: int = Time.get_ticks_msec()
+		var threats: int = _voices.filter(func(v) -> bool: return is_instance_valid(v) and v.has_meta("keep")).size()
+
+		if threats >= THREAT_VOICES or now < int(_threat_until.get(kind, 0)):
+			return false
+
+		_threat_until[kind] = now + THREAT_EVERY_MS
+
 	var sound_name: String = str(info["calls"].get(mood, info["calls"]["idle"]))
 	var list: Array = _variants(sound_name)
 
@@ -129,7 +146,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.unit_size = float(info["unit"])
 	player.max_distance = float(info["reach"]) * 1.2
 	player.attenuation_filter_cutoff_hz = float(info["cutoff"])
-	player.max_db = NEAR_MAX_DB
+	player.max_db = minf(player.volume_db + NEAR_RISE_DB, NEAR_MAX_DB)
 	add_child(player)
 	player.add_to_group("world_sounds")
 

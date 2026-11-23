@@ -3218,7 +3218,6 @@ func _warmth_cfg() -> Dictionary:
 	return _warmth_cfg_cache
 
 
-# The footstep and ice tier (sound_stage, gear_sounds, ice_feel: 0 walk, 1 the middle step a jump push-off uses, 2 run).
 # A bite or a charge lands: the animal doing it snarls where it is (a wolf's growl, a bear's roar), so a fight is heard from the attacker,
 # at most once every SNARL_EVERY_MS. Nothing when the blow came from no attacking animal (a fall, a bandit).
 const SNARL_M := 5.0
@@ -3239,6 +3238,7 @@ func _attacker_snarl() -> void:
 	sound.creatures.call_at(str(who["kind"]), who["at"], "threat")
 
 
+# The footstep and ice tier (sound_stage, gear_sounds, ice_feel: 0 walk, 1 the middle step a jump push-off uses, 2 run).
 func _gait() -> int:
 	return 2 if running else 0
 
