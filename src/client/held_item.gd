@@ -163,6 +163,7 @@ var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush 
 var swath_cut: Callable                 # (held pack slot, tool class) -> radius: one sickle or scythe swing (harvest.gd swath; 0 when nothing was sent)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var trunks_round: Callable                 # (point, radius) -> [[root, trunk radius, height]]: the ghost goes red over a standing tree (terrain_client _trunks_round)
+var trunks_version: Callable               # () -> int, rising when the held trees change (a tree felled under a still ghost)
 var _swing_t: float = -1.0
 signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
 var _caption_age: float = 1.0
@@ -1962,11 +1963,12 @@ func _reason() -> String:
 
 
 # Whether the ghost stands over a standing tree's trunk (PlacementRules.over_trunk, as the server checks it). The trunks are listed only when the
-# ghost has moved TREE_LOOK_M or turned since the last look: listing them reads every tree of the chunks round it.
+# ghost has moved TREE_LOOK_M, turned, changed piece, or the trees changed (one felled under it) since the last look.
 const TREE_LOOK_M := 0.1
 var _tree_look_key: Vector4 = Vector4.INF
 var _tree_look_over: bool = false
 var _tree_look_kit: String = ""
+var _tree_look_version: int = -1
 
 
 func _over_tree(kit: String) -> bool:
@@ -1975,10 +1977,12 @@ func _over_tree(kit: String) -> bool:
 
 	var at: Vector3 = _blueprint.global_position
 	var key: Vector4 = Vector4(at.x, at.y, at.z, float(_blueprint_yaw))
+	var version: int = int(trunks_version.call()) if trunks_version.is_valid() else 0
 
-	if not _tree_look_key.is_finite() or Vector3(key.x, key.y, key.z).distance_to(Vector3(_tree_look_key.x, _tree_look_key.y, _tree_look_key.z)) >= TREE_LOOK_M or key.w != _tree_look_key.w or kit != _tree_look_kit:
+	if not _tree_look_key.is_finite() or Vector3(key.x, key.y, key.z).distance_to(Vector3(_tree_look_key.x, _tree_look_key.y, _tree_look_key.z)) >= TREE_LOOK_M or key.w != _tree_look_key.w or kit != _tree_look_kit or version != _tree_look_version:
 		_tree_look_key = key
 		_tree_look_kit = kit
+		_tree_look_version = version
 		_tree_look_over = PlacementRules.over_trunk(_placement, kit, at, deg_to_rad(float(_blueprint_yaw)), trunks_round.call(at, PlacementRules.footprint_reach(_placement, kit)))
 
 	return _tree_look_over
