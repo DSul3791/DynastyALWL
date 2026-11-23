@@ -3287,7 +3287,7 @@ func _process(delta: float) -> void:
 	if store == null:
 		return
 
-	game_clock.advance(delta)
+	game_clock.follow(Time.get_ticks_usec())   # real time, not the clipped frame delta (game_clock.gd follow)
 	var frame_now: int = Time.get_ticks_msec()
 
 	if _last_frame_msec > 0 and frame_now - _last_frame_msec >= IDLE_YIELD_GAP_MS:
