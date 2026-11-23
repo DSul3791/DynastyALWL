@@ -52,7 +52,8 @@
 		"say_wake": {
 			"town": "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here, to the town.",
 			"goblin": "You wake up feeling pain through your bones. Goblins found you frozen almost to death and dragged you to their fire.",
-			"bandit": "You wake up feeling pain through your bones. Bandits found you frozen almost to death and brought you to their camp."
+			"bandit": "You wake up feeling pain through your bones. Bandits found you frozen almost to death and brought you to their camp.",
+			"here": "You come to where you fell, aching with cold. Find a fire."
 		}
 	},
 	"water_base_c": 12.0,

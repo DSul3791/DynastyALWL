@@ -2,7 +2,8 @@ extends SceneTree
 
 # Passing out from cold (Dave 23 Nov 2026, data/items/warmth.json pass_out): cold down to 1 health and the player passes out (the faint
 # look, nothing hurts them), then wakes at the nearest goblin camp, bandit camp or the town with that place's message, the pack kept,
-# health and warmth up to the wake values. With no places (rescue_spots unset) cold stops at 1 as before (test_warmth).
+# health and warmth up to the wake values. With no places (rescue_spots unset) cold stops at 1 as before (test_warmth); with an empty list they
+# wake where they lay.
 #   godot --headless --path . --script res://src/worldgen/tools/test_cold_pass_out.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -85,6 +86,35 @@ func _init() -> void:
 		ticks += 1
 
 	check(died.size() == 1 and (died[0][2] as Vector3).is_equal_approx(Vector3(900.0, 5.0, 0.0)) and said.has(str(cfg["say_wake"]["town"])), "near the town they wake in the town (%s)" % str(died))
+	# No camp and no town anywhere: they come to where they lay, never moved to the spawn (review 23 Nov 2026).
+	died.clear()
+	said.clear()
+	items.rescue_spots = func(_pos): return []
+	items.report_position(1, Vector3(300.0, 5.0, 40.0))
+	v["warmth"] = 0.0
+	v["health"] = 1.0
+	ticks = 0
+
+	while not items.passed_out(1) and ticks < 600:
+		items.tick(1.0)
+		ticks += 1
+
+	for t in int(ceil(float(cfg["out_s"]))) + 1:
+		items.tick(1.0)
+
+	check(not items.passed_out(1) and died.is_empty() and said.has(str(cfg["say_wake"]["here"])) and (items._peer_pos[1] as Vector3).is_equal_approx(Vector3(300.0, 5.0, 40.0)), "with nowhere to be carried they wake where they lay (%s)" % str(died))
+
+	# A death while out ends the pass-out: no rescue move after the respawn.
+	v["warmth"] = 0.0
+	v["health"] = 1.0
+	ticks = 0
+
+	while not items.passed_out(1) and ticks < 600:
+		items.tick(1.0)
+		ticks += 1
+
+	items.kill(1, "test")
+	check(not items.passed_out(1), "a death while passed out clears it")
 	items.peer_left(1)
 	check(not items.passed_out(1), "leaving clears the state")
 	print("cold pass out: %d failures" % failures)

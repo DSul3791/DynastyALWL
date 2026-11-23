@@ -17157,8 +17157,9 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
 			best = spot
 
-	var to: Vector3 = best[0] if not best.is_empty() else respawn_point
-	var kind: String = str(best[1]) if not best.is_empty() else "town"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
+	# No camp and no town square anywhere (a test world): they come to where they lay, never at the spawn (nothing is based on the spawn).
+	var to: Vector3 = best[0] if not best.is_empty() else here
+	var kind: String = str(best[1]) if not best.is_empty() else "here"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
@@ -17171,7 +17172,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_sync_warmth(peer, true)
 	_dirty = true
 
-	if send_died.is_valid():
+	if send_died.is_valid() and not best.is_empty():
 		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
 
 	_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
@@ -17645,6 +17646,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
 	_waking.erase(peer)
@@ -17714,6 +17716,7 @@ func survive_cave_in(peer: int, to: Vector3) -> bool:
 	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
 		return false
 
+	_cold_out.erase(peer)   # a cave-in on a player passed out from cold: the dig-out is the rescue, no second move when the cold faint ends
 	v["health"] = minf(float(v["health"]), 1.0)
 	_peer_pos[peer] = to
 	_resume_to.erase(peer)

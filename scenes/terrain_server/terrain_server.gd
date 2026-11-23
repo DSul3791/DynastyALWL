@@ -461,7 +461,7 @@ func _ready() -> void:
 	items.weather_now = func(): return weather
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
-	items.rescue_spots = func(_pos): return _rescue_spots()   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
+	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
@@ -3911,8 +3911,9 @@ func _exit_tree() -> void:
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
 # Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town's square
 # (data/npcs/markers.json "square", else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
-# off any tree, onto the ground. [Vector3, "goblin" | "bandit" | "town"]. Not on the tick: only when someone passes out.
-func _rescue_spots() -> Array:
+# off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
+# [[Vector3, "goblin" | "bandit" | "town"]], or [] when there is none. Not on the tick: only when someone passes out.
+func _rescue_spots(near: Vector3) -> Array:
 	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 4.0))
 	var out: Array = []
 
@@ -3921,13 +3922,13 @@ func _rescue_spots() -> Array:
 		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
 
 		if not at.is_empty():
-			out.append([_rescue_ground(Vector2(float(at.get("x", 0.0)) + off_m, float(at.get("z", 0.0)))), "goblin"])
+			out.append([Vector2(float(at.get("x", 0.0)) + off_m, float(at.get("z", 0.0))), "goblin"])
 
 	for cell in bandits.sites:
 		var site: Dictionary = bandits.sites[cell]
 
 		if int(site.get("stage", 0)) >= int(bandits.CAMP):
-			out.append([_rescue_ground(Vector2(float(site.get("x", 0.0)) + off_m, float(site.get("z", 0.0)))), "bandit"])
+			out.append([Vector2(float(site.get("x", 0.0)) + off_m, float(site.get("z", 0.0))), "bandit"])
 
 	var town: Vector2 = animals.town
 
@@ -3936,9 +3937,15 @@ func _rescue_spots() -> Array:
 			town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
 
 	if town.x != INF:
-		out.append([_rescue_ground(town), "town"])
+		out.append([town, "town"])
 
-	return out
+	var best: Array = []
+
+	for spot in out:
+		if best.is_empty() or (spot[0] as Vector2).distance_to(Vector2(near.x, near.z)) < (best[0] as Vector2).distance_to(Vector2(near.x, near.z)):
+			best = spot
+
+	return [] if best.is_empty() else [[_rescue_ground(best[0]), best[1]]]
 
 
 func _rescue_ground(at: Vector2) -> Vector3:
