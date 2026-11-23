@@ -14723,6 +14723,7 @@ func _become_new_player(peer: int) -> void:
 	_characters[key]["tried"] = {}
 	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
+	_soak.erase(peer)
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
 	_admin_mode_on.erase(peer)
@@ -17474,7 +17475,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
-	var soak: float = float(_soak.get(peer, 0.0))
+	var v: Dictionary = vitals_of(peer)
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else clampf(float(v.get("soak", 0.0)), 0.0, 1.0)   # wet clothes stay wet over a restart or a rejoin (survival walk 23 Nov 2026)
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
 	var hours: float = game_s / 3600.0
 
@@ -17504,6 +17506,9 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
 	_soak[peer] = soak
+
+	if not v.is_empty() and (soak > 0.0 or v.has("soak")):
+		v["soak"] = soak   # saved with the vitals (vitals.json)
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
@@ -17820,6 +17825,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_soak.erase(peer)   # dry clothes, as the saved vitals say
 	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
@@ -26542,6 +26548,9 @@ func _load_vitals() -> void:
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
 		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0), "limp": maxf(float(row.get("limp", 0.0)), 0.0)}
+
+		if float(row.get("soak", 0.0)) > 0.0:
+			_vitals[str(key)]["soak"] = clampf(float(row["soak"]), 0.0, 1.0)   # wet clothes (_update_soak)
 
 		if typeof(row.get("sick_due", null)) == TYPE_ARRAY and not (row["sick_due"] as Array).is_empty():
 			_vitals[str(key)]["sick_due"] = row["sick_due"]   # pending sickness from raw food (docs/design/body_in_weather_design.md 5)
