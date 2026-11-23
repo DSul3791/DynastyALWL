@@ -5,6 +5,7 @@ extends Node
 # a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 20 px on the 1920x1080 canvas (26 on the old 2880x1620 one), readable on a 55 inch 4K.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const FONT_PX := 20
 const MAX_CHOICES := 5
 
@@ -15,6 +16,7 @@ var player_position: Callable
 var voice_line: Callable = Callable()   # (voice_id, text) -> void; text to voice listens here
 
 var _panel: PanelContainer = null
+var _shop_close: Button = null             # its Close button, relabelled with the bound key each time it opens
 var _shop_panel: PanelContainer = null     # the trade window (protocol 62)
 var _shop_npc: String = ""
 var _shop_title: String = ""
@@ -157,7 +159,7 @@ func _on_say(npc_id: String, npc_name: String, text: String, voice_id: String, c
 
 	if ends or _count == 0:
 		var done: Button = Button.new()
-		done.text = "Close (E)"
+		done.text = "Close (%s)" % KeyBindings.label("interact")
 		done.add_theme_font_size_override("font_size", FONT_PX)
 		done.pressed.connect(close)
 		_choices.add_child(done)
@@ -183,7 +185,7 @@ func _choose(index: int) -> void:
 
 func _key(event: InputEventKey) -> bool:
 	if _shop_panel != null and _shop_panel.visible:
-		if event.keycode == KEY_E or event.keycode == KEY_ESCAPE:
+		if KeyBindings.matches(event, "interact") or event.keycode == KEY_ESCAPE:
 			close()
 
 		return true
@@ -192,7 +194,7 @@ func _key(event: InputEventKey) -> bool:
 		_choose(event.keycode - KEY_1)
 		return true
 
-	if event.keycode == KEY_E and (_ends or _count == 0):
+	if KeyBindings.matches(event, "interact") and (_ends or _count == 0):
 		close()
 		return true
 
@@ -251,7 +253,8 @@ func _build_shop(layer: CanvasLayer) -> void:
 	_shop_purse = items.make_coin_label(SHOP_PX)
 	head.add_child(_shop_purse)
 	var close_button: Button = Button.new()
-	close_button.text = "Close (E)"
+	_shop_close = close_button
+	close_button.text = "Close (%s)" % KeyBindings.label("interact")
 	close_button.add_theme_font_size_override("font_size", SHOP_PX)
 	close_button.pressed.connect(close)
 	head.add_child(close_button)
@@ -329,6 +332,7 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		_shop_tired[tired_ids[i]] = float(tired_milli[i]) / 1000.0
 	_panel.visible = false
 	_shop_panel.visible = true
+	_shop_close.text = "Close (%s)" % KeyBindings.label("interact")   # the key may have been rebound since the window was built
 	_refresh_shop()
 
 	if not items.dialogue_open:

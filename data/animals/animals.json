@@ -1144,6 +1144,8 @@
 				]
 			},
 			"defend": {
+				"strike_min_s": 0.35,
+				"strike_min_note": "A blow lands only once the charge has run this long, so it is drawn before it lands (robots over a lossy link, 23 Nov 2026). server_big_game.gd.",
 				"warn_m": 0.0,
 				"warn_s": 0.6,
 				"charge_mps": 5.0,
@@ -4136,7 +4138,7 @@
 			"graze_s": [10.0, 30.0],
 			"flee_run_m": 30.0,
 			"flee_mps": 4.5,
-			"defend": {"warn_m": 0.0, "warn_s": 0.8, "charge_mps": 5.0, "charge_m": 10.0, "turn_rad_s": 2.0, "hit_m": 1.6, "damage": 10.0, "recover_s": 2.0, "calm_m": 20.0, "cool_s": 4.0, "corner_m": 0.0, "corner_warn_s": 0.8, "provoked_m": 15.0, "provoked_warn_s": 0.6, "threat_m": 0.0, "threat_warn_s": 0.8},
+			"defend": {"strike_min_s": 0.35, "warn_m": 0.0, "warn_s": 0.8, "charge_mps": 5.0, "charge_m": 10.0, "turn_rad_s": 2.0, "hit_m": 1.6, "damage": 10.0, "recover_s": 2.0, "calm_m": 20.0, "cool_s": 4.0, "corner_m": 0.0, "corner_warn_s": 0.8, "provoked_m": 15.0, "provoked_warn_s": 0.6, "threat_m": 0.0, "threat_warn_s": 0.8},
 			"model": false
 		}
 	},
@@ -4261,7 +4263,9 @@
 		"brush_noise_per_ms": 0.04,
 		"brush_crouch_share": 0.5,
 		"brush_moving_ms": 0.5,
-		"noise_sample_s": 0.25
+		"noise_sample_s": 0.25,
+		"action_heard_x": {"blow": 1.4, "hurt": 1.25, "dig": 1.25, "craft": 1.1},
+		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
 	},
 	"blood": {
 		"every_m": 3.0,

@@ -23,6 +23,9 @@ extends RefCounted
 # Digging, filling and the hoe are heard already (every client hears the ground edits: dig_sounds.gd), as are animal hits (animal_hit,
 # protocol 96), the chopping block, the saws and the bellows (world state). A swing at nothing makes no sound for its own player either.
 # Cost: one distance test per connected player per cue, a few cues a second per working player.
+# Animals hear the loud ones too (hearing-range pass, 23 Nov 2026, docs/SOUND_MAP.md "Who hears what, how far"): a blow on wood, stone or
+# ground, a cry of pain, craft work and a shovel's dig mark the player loud for LOUD_HOLD_MS (loud_kinds), and server_animals senses them farther for it
+# (animals.json senses.action_heard_x), whatever their stance or cover. Nothing more is sent: the animals read it on their own noise sample.
 
 const Net := preload("res://src/stream/terrain_net.gd")
 
@@ -47,6 +50,9 @@ const CRAFT_EVERY_MS := 4500                                      # a craft work
 const HANDS_UP_M := 0.3                                           # position_of is the body's middle; the hands work a little above it
 const HANDS_OUT_M := 0.8                                          # and in front
 const MINE_POINT_M := 6.0                                         # a blow on the ground farther than this from the player is not its own (server_items MINE_REACH_M 4.5, plus the drift between reports)
+const LOUD_HOLD_MS := 5000                                        # a player stays loud to animals this long after a loud cue (a craft's work cue comes every CRAFT_EVERY_MS)
+const LOUD_RANK := {"blow": 3, "hurt": 2, "dig": 2, "craft": 1}   # loudest first, as animals.json senses.action_heard_x orders them (test_hearing_ranges); hurt and dig tie
+const LOUD_NAMES := {CUE_BLOW: "blow", CUE_CRAFT: "craft", CUE_HURT: "hurt"}   # the cues animals hear (animals.json senses.action_heard_x); a pick, a chest, a gulp, a pickup and a knife cut are quiet
 
 var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of, item_pos_of, open_store_of, store_total, body_water_of, loose_item_of, inventory_of
 var yaw_of: Callable = func(_peer: int) -> float: return 0.0      # the body's facing (server_players.gd), for a blow with no point of its own
@@ -56,10 +62,14 @@ var sent: int = 0                  # cues sent (one per receiver), for checks
 
 var _last_ms: Dictionary = {}      # peer -> ms of its last cue
 var _craft: Dictionary = {}        # peer -> [recipe, ms of its last craft cue]
+var _loud: Dictionary = {}         # peer -> {loud name: ms it ends}
 
 
 # A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
 func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3) -> void:
+	if kind in [Net.ACT_HIT, Net.ACT_HIT_SHRUB] or (kind == Net.ACT_MINE and b == 0):
+		_mark_loud(peer, "blow")   # before the gap: a blow struck just after a quiet cue (a pick, a pickup) is still heard by the animals
+
 	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE] or not _due(peer):
 		return   # nothing to hear, or too soon after its last cue: no pack scan for a flood
 
@@ -100,6 +110,10 @@ func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3)
 # take that moved nothing, a drink refused (no water near, full), a pickup out of reach or of a thing too heavy, are heard as nothing.
 func before_action(peer: int, kind: int, a: int, b: int) -> Array:
 	if items == null:
+		return []
+
+	if kind in [Net.ACT_DIG, Net.ACT_FILL, Net.ACT_DIG_TRENCH]:
+		_mark_loud(peer, "dig")   # a shovel's bite, heard by animals (every client hears the edit itself: dig_sounds.gd); taken on the try, a refused one too
 		return []
 
 	if kind in [Net.ACT_CHEST_OPEN, Net.ACT_CHEST_PUT, Net.ACT_CHEST_TAKE, Net.ACT_CHEST_CLOSE]:
@@ -216,6 +230,9 @@ func craft_working(peer: int, recipe: int) -> void:
 
 # Send one cue about `peer` to every other player within the cue's earshot of `at`. False when held back (too soon after its last, or unknown).
 func cue(peer: int, kind: int, detail: int, at: Vector3, paced: bool = true) -> bool:
+	if LOUD_NAMES.has(kind) and not (kind == CUE_BLOW and detail % 8 == MATERIALS.find("flesh")):
+		_mark_loud(peer, str(LOUD_NAMES[kind]))   # even when held back by the gap: the work was done
+
 	if not send_cue.is_valid() or items == null or not HEAR_M.has(kind) or not at.is_finite():
 		return false
 
@@ -244,6 +261,40 @@ func _due(peer: int) -> bool:
 	return int(now_ms.call()) - int(_last_ms.get(peer, -100000)) >= GAP_MS
 
 
+# `peer` did something loud (`name`, a LOUD_RANK key): it stays loud for that LOUD_HOLD_MS. Each name keeps its own end, and the loudest
+# one still sounding counts (loud_kinds): a cry between two axe blows keeps the blow's reach, and crafting after one blow is craft work
+# once that blow's 5 s are up.
+func _mark_loud(peer: int, name: String) -> void:
+	var ends: Dictionary = _loud.get(peer, {})
+	ends[name] = int(now_ms.call()) + LOUD_HOLD_MS
+	_loud[peer] = ends
+
+
+# The loud thing each player did lately, in items.peer_ids order (server_items.peer_positions is the same order): the loudest LOUD_RANK
+# name still sounding, or "" for none. server_animals reads it on its noise sample (player_loud).
+func loud_kinds() -> Array:
+	var out: Array = []
+
+	for peer in (items.peer_ids() if items != null else []):
+		out.append(loud_of(peer))
+
+	return out
+
+
+# The loudest LOUD_RANK name `peer` still sounds, or "" (the wolf packs ask by peer: server_wolves heard_of).
+func loud_of(peer: int) -> String:
+	var now: int = int(now_ms.call())
+	var ends: Dictionary = _loud.get(peer, {})
+	var best: String = ""
+
+	for name in ends:
+		if now < int(ends[name]) and (best == "" or int(LOUD_RANK.get(name, 0)) > int(LOUD_RANK.get(best, 0))):
+			best = str(name)
+
+	return best
+
+
 func forget(peer: int) -> void:
 	_last_ms.erase(peer)
 	_craft.erase(peer)
+	_loud.erase(peer)
