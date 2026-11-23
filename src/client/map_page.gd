@@ -198,6 +198,45 @@ func _draw() -> void:
 	var me: Vector2 = middle + (_world_to_sketch(player_at) - centre) * zoom
 	draw_line(me + Vector2(-5, -5), me + Vector2(5, 5), Color(Sketch.INK, 0.85), 2.0)
 	draw_line(me + Vector2(-5, 5), me + Vector2(5, -5), Color(Sketch.INK, 0.85), 2.0)
+	_draw_legend()
+
+
+# A small key in the page's lower left corner (coordinator 23 Nov 2026: what the marks mean, on the map itself). The game-trail row only shows
+# once the trails are drawn; the trap rows always (a tester reads what a mark will be before setting one).
+const LEGEND_PX := 14
+const LEGEND_ROW := 20.0
+
+
+func _draw_legend() -> void:
+	var font: Font = get_theme_default_font()
+	var rows: Array = [["you", "You"], ["snare_trap", "Snare"], ["bird_trap_set", "Bird trap"]]
+
+	if _trails_on:
+		rows.append(["trail", "Game trail"])
+
+	var width: float = 0.0
+
+	for row in rows:
+		width = maxf(width, font.get_string_size(str(row[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX).x)
+
+	width += 30.0   # the mark's column (the Journal's footer already says wheel to zoom, drag to move)
+	var box: Rect2 = Rect2(Vector2(10.0, size.y - 10.0 - LEGEND_ROW * rows.size() - 8.0), Vector2(width + 16.0, LEGEND_ROW * rows.size() + 8.0))
+	draw_rect(box, Color(PAPER.lightened(0.08), 0.92))
+	draw_rect(box, Color(Sketch.INK, 0.35), false, 1.0)
+	var ink: Color = Color(Sketch.INK, 0.85)
+
+	for i in range(rows.size()):
+		var y: float = box.position.y + 4.0 + LEGEND_ROW * (i + 0.5)
+		var mark: Vector2 = Vector2(box.position.x + 16.0, y)
+		match str(rows[i][0]):
+			"you":
+				draw_line(mark + Vector2(-5, -5), mark + Vector2(5, 5), ink, 2.0)
+				draw_line(mark + Vector2(-5, 5), mark + Vector2(5, -5), ink, 2.0)
+			"trail":
+				draw_dashed_line(mark + Vector2(-8, 0), mark + Vector2(8, 0), Color(Sketch.INK, 0.55), 1.2, 4.0)
+			_:
+				_draw_trap(mark + Vector2(0, -2), str(rows[i][0]))
+		draw_string(font, Vector2(box.position.x + 32.0, y + LEGEND_PX * 0.35), str(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX, ink)
 
 
 # One trap mark at `spot`.
