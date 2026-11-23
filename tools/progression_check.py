@@ -182,7 +182,7 @@ def circular(r, unreached_ids):
     """Unreached items whose recipe inputs lead back to themselves through other unreached items (Tarjan's SCCs on the unreached graph)."""
     graph = {}
     for rid, rec in r.recipes.items():
-        if rec.get("retired"):
+        if not active(rec):   # a locked row is no circle a player meets
             continue
         g = rec.get("gives", [""])[0]
         if g in unreached_ids:
@@ -443,7 +443,8 @@ def main(argv):
     p("\n## 8 Skill gates")
     for x in sec["skill"]:
         p("- " + x)
-    p("\n## 9 Stingy yields (row, input, amount, best source, per action, actions a craft)")
+    p("\n## 9 Stingy yields (row, input, amount, best source, per action, actions a craft). Ore, ingots, crops and felled-trunk drops are not"
+      " in this table (tools/progression_effort.py counts them per stage); the oak's Tannin bark is per felled tree")
     for rid, name, iid, n, how, avg, acts in sec["stingy"]:
         p("- %s %s: %d `%s`; best %s gives %.1f an action: %.0f actions" % (rid, name, n, iid, how, avg, acts))
     p("\n## 10 Farming")

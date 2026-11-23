@@ -211,6 +211,15 @@ func _init() -> void:
 		reloaded = reloaded or (reload._items[id].has("struct") and str(reload._items[id]["struct"]["kind"]) == "bellows")
 
 	check(bellows_id >= 0 and reloaded, "a placed Bellows loads from the save")
+	# The part-burnt unit survives a restart (BugsList 116 known limit): smithies.json "fuel" by the station's uid.
+	var burnt_left: float = float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0))
+	var reload_left: float = -1.0
+
+	for id in reload._items:
+		if reload._items[id].has("struct") and str(reload._items[id]["struct"]["kind"]) == "blacksmithy":
+			reload_left = float(reload._items[id]["struct"].get("fuel_left", 0.0))
+
+	check(burnt_left > 0.0 and burnt_left < float(smithy_def["fuel_craft_s"]) and is_equal_approx(reload_left, burnt_left), "the Smithy's part-burnt fuel unit loads from the save (%.1f s left, loaded %.1f)" % [burnt_left, reload_left])
 	reload._finish_writer()
 	var bellows_bp: Dictionary = tiers._blueprints.get(203, {})
 	check(not bellows_bp.is_empty() and str(bellows_bp.get("structure", "")) == "bellows" and not tiers._can_blueprint(1, tiers.inventory_of(1), bellows_bp), "the Bellows blueprint is kept for its take-down but cannot be built")

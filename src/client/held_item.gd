@@ -3160,7 +3160,28 @@ func _fill_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
 
 	if _sound != null:
-		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
+		_sound.placed.shovel_load(fill_is_stony(_fill_order(), func(n: String) -> int: return _inv.inventory.count_of(_inv.table.number_of(n))), hit["position"])   # played when the click is sent (the server may still refuse)
+
+
+const STONY_FILL := ["gravel", "stone"]   # these scoop with the stone sound, soil, sand and clay with the soil one
+var _fill_names: Array = []
+
+
+# What the server fills with: the first of digging.json "fill" the pack holds (server_items._fill takes the same order).
+static func fill_is_stony(order: Array, count_of: Callable) -> bool:
+	for item in order:
+		if int(count_of.call(str(item))) > 0:
+			return STONY_FILL.has(str(item))
+
+	return false
+
+
+func _fill_order() -> Array:
+	if _fill_names.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
+		_fill_names = (parsed.get("fill", []) as Array) if typeof(parsed) == TYPE_DICTIONARY else []
+
+	return _fill_names
 
 
 var raise_mode: bool = false              # the shovel raises ground (Dave 2026-10-22); false digs

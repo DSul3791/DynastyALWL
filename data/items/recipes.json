@@ -3626,8 +3626,7 @@
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter", "retired": true},
 		"stone_pickaxe": {
 			"number": 186,
-			"retired": true,
-			"note_retired": "Retired 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md W-12): the Stone Hammer breaks rock and copper, tin and coal ore. Saved Stone Pickaxes keep working.",
+			"note": "Restored 23 Nov 2026 (coordinator for Dave, recorded for his review): Dave's 18 Nov 2026 tool-tier ruling (every tool but the hoe and shovel starts at stone) outranks the provisional W-12 retirement of 15 Nov 2026.",
 			"name": "Stone - Pickaxe",
 			"category": "Tools",
 			"needs": [

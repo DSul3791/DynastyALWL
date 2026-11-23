@@ -15,6 +15,7 @@ const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
 var host = null   # the items module (server_items.gd)
 var _worn: Dictionary = {}   # world id -> true for every smithy with use wear (crafted, set_wear, load_rows): the save walks these, not every item
+var burning: Dictionary = {}   # world id -> true for every smithy part-way through a fuel unit (server_items _smithy_burn, load_fuel_rows)
 
 
 func is_smithy(def: Dictionary) -> bool:
@@ -126,6 +127,40 @@ func save_rows() -> Dictionary:
 			rows[str(it["struct"]["uid"])] = float(it["struct"]["use_wear"])
 
 	return rows
+
+
+# The part-burnt fuel unit of each smithy (struct fuel_left, seconds of making left), by the station's uid, saved beside the use wear in
+# smithies.json "fuel" (BugsList 116 known limit: a restart lost up to one unit). Older saves have no "fuel" and start on a new unit, as before.
+func fuel_rows() -> Dictionary:
+	var rows: Dictionary = {}
+
+	for id in burning.keys():
+		var it: Dictionary = host._items.get(id, {})
+
+		if not it.has("struct") or float(it["struct"].get("fuel_left", 0.0)) <= 0.0:
+			burning.erase(id)   # taken down or burnt out
+		elif it["struct"].has("uid"):
+			rows[str(it["struct"]["uid"])] = float(it["struct"]["fuel_left"])
+
+	return rows
+
+
+func load_fuel_rows(parsed: Variant) -> void:
+	var rows: Dictionary = parsed.get("fuel", {}) if typeof(parsed) == TYPE_DICTIONARY and typeof(parsed.get("fuel", null)) == TYPE_DICTIONARY else {}
+
+	if rows.is_empty():
+		return
+
+	for id in host._items:
+		var it: Dictionary = host._items[id]
+
+		if it.has("struct") and it["struct"].has("uid") and rows.has(str(it["struct"]["uid"])):
+			var def: Dictionary = host._structures.get(str(it["struct"]["kind"]), {})
+			var left: float = clampf(float(rows[str(it["struct"]["uid"])]), 0.0, float(def.get("fuel_craft_s", 1800.0)))
+
+			if str(def.get("fuel_slot", "")) != "" and left > 0.0:
+				it["struct"]["fuel_left"] = left
+				burning[id] = true
 
 
 func load_rows(parsed: Variant) -> void:

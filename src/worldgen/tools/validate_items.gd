@@ -1125,7 +1125,7 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (the Stone - Pickaxe, TREE_WOOD_TOOLS_DESIGN.md W-12).
+		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (W-12 used it for the Stone - Pickaxe until 23 Nov 2026).
 		# A retired row is kept only for its number (mango, orange and lemon, D-TODO-7 21 Nov 2026): it needs no source.
 		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id) and not bool(entry.get("legacy", false)) and not bool(entry.get("retired", false)):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
