@@ -1382,7 +1382,7 @@ Not yet played; not yet seen in a picture.
 - test_smelters 3b checks the row on leaving and going back: no bellows to both players when left, and 2 to the worker and 1 to the other when back.
 
 **Known limits:**
-- A smelter already being worked when you log in plays its bellows strokes while the world loads. The quiet load (entry 123) covers placed-thing sounds only.
+- ~~A smelter already being worked when you log in plays its bellows strokes while the world loads.~~ Fixed in #1632: the bellows wait for the quiet load too (not yet played).
 - The look and the sound have not been seen or heard in game.
 
 **Acceptance:** light an Improved smelter and press E. The prompt turns to "Press E to stop using the bellows", the fire brightens, and the smoke puffs with a bellows sound about every 1.4 s. Press E again: "You leave the bellows", and the light, puffs and sound stop while it stays lit. A second player nearby sees and hears the same.
@@ -1410,7 +1410,7 @@ Not yet played.
 - Tests cover the fuel slot, the refusal, Sort, burning only while making, and the three looks (test_stations, test_resource_bins 9a-9d, test_forge_models, test_mission001_walkthrough and the bronze and iron routes).
 
 **Known limits:**
-- The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
+- ~~The part-burnt unit is not saved.~~ Fixed in #1632: it is saved in smithies.json "fuel"; a save from before #1632 starts the next unit, as before (not yet played).
 - The coals and flare have not been seen in game.
 - Release note, old saves: a smithy built before #1428 may still hold a product in its first slot, which is now the fuel slot. It then reads "no fuel" until the player takes that item out and puts Coal or Charcoal in. Nothing is lost.
 
