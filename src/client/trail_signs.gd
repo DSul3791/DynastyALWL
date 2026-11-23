@@ -536,7 +536,7 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 		size = float(bed[1]) + 0.4
 		long = float(bed[0]) + 0.4
 
-	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.08, spot.y), yaw, Vector3(size, 1.0, long)])
+	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.035, spot.y), yaw, Vector3(size, 1.0, long)])   # over the leaf cards (3 cm), under the latrine patch and the pellets
 
 
 # The small pieces of one sign: [position, yaw, scale] rows into the mesh it uses.
@@ -803,7 +803,7 @@ func _glow(at: Vector3, size: float) -> void:
 	node.name = "TrailSignGlow"
 	node.mesh = plane
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.position = at + Vector3(0.0, 0.1, 0.0)   # over the leaf cards and the latrine patch
+	node.position = at + Vector3(0.0, 0.055, 0.0)   # over the leaf cards and the halo, under the latrine patch and pellets (gold round them, not over them: Lane A W6)
 	add_child(node)
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
 	var peak: float = float(cfg.get("glow_alpha", 0.6))
