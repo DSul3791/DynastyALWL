@@ -16,7 +16,7 @@ const BurrowView := preload("res://src/client/burrow_view.gd")   # its mound mes
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
-const PELLET_COLOR := Color(0.16, 0.12, 0.08)   # dark rabbit pellets on the pale scratched earth of the latrine (Lane A 23 Nov: none seen on litter)
+const PELLET_COLOR := Color(0.10, 0.075, 0.05)   # near-black fresh rabbit pellets on the scratched earth of the latrine (Lane A 23 Nov: none seen on litter)
 const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
@@ -24,8 +24,8 @@ const RUB_COLOR := Color(0.78, 0.68, 0.50)   # fresh wood under rubbed-off bark
 const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out too (a route's print spacing starts at its home)
 const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
 const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
-const PELLET_LIFT_M := 0.02      # pellets sit this far up: on top of the leaf litter and the latrine's bare patch, not under them
-const LATRINE_BED_COLOR := Color(0.46, 0.36, 0.24)   # scratched bare earth, paler than litter so the dark pellets stand out on it
+const PELLET_LIFT_M := 0.06      # pellets sit this far up: on top of the leaf cards (grass_view lays them 3 cm up) and the latrine's patch, not under them (Lane A 23 Nov)
+const LATRINE_BED_COLOR := Color(0.36, 0.26, 0.16)   # scratched bare earth: warmer and darker than the pale pressed ground round it, lighter than the pellets
 
 var cfg: Dictionary = {}
 var ground_height: Callable:       # (x, z) -> the ground's height there, NAN when not known (a new one forgets the heights kept)
@@ -535,7 +535,7 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 		size = float(bed[1]) + 0.4
 		long = float(bed[0]) + 0.4
 
-	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.04, spot.y), yaw, Vector3(size, 1.0, long)])
+	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.08, spot.y), yaw, Vector3(size, 1.0, long)])
 
 
 # The small pieces of one sign: [position, yaw, scale] rows into the mesh it uses.
@@ -553,7 +553,7 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 			var spread: float = float(cfg.get("heap_m", 0.22))
 
 			if kind == "latrine":   # a latrine lies on a patch the rabbits scratch bare (a dark earth patch, over litter and short grass)
-				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.5, spot.y), TAU * _h01(spot, 7), 1.0])
+				(rows["latrine_bed"] as Array).append([Vector3(spot.x, y + PELLET_LIFT_M * 0.75, spot.y), TAU * _h01(spot, 7), 1.0])
 
 			for n in count:
 				var r: float = spread * sqrt(_h01(spot, 30 + n))
@@ -802,7 +802,7 @@ func _glow(at: Vector3, size: float) -> void:
 	node.name = "TrailSignGlow"
 	node.mesh = plane
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.position = at + Vector3(0.0, 0.05, 0.0)   # over the leaf litter
+	node.position = at + Vector3(0.0, 0.09, 0.0)   # over the leaf cards and the latrine patch
 	add_child(node)
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
 	var peak: float = float(cfg.get("glow_alpha", 0.6))
