@@ -939,7 +939,7 @@ func _ready() -> void:
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
 	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
 	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
-	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
+	items.species_active_at = func(sp, hour, z): return animals.activity_at(animals.species_def(sp), hour, z)   # by the sun of the snare's row
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)

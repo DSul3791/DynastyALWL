@@ -149,6 +149,9 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-5 the look: a run 0.8 m wide, a deer trail 1.2 m, fading over 0.5 m either side (first 0.35 and 0.6 m: Lane A pictures 22 Nov showed nothing, too thin to read through the tufts; a walked path, the trample Dave likes, is 1.6 m); the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked. Log lines for a lane: server "ranges: block ... worked out" (places and their homes) and "trails: block ... with N bytes of routes", client "grass runs: block ... came with N routes" and "grass runs: N routes near, T texels matted".
 - TR-7 sun clock: rabbits out 1 h before sunset, home 1 h after sunrise; deer, moose and elk out half an hour before sunset, home
   half an hour after sunrise (jitter 0.75 h each way). At the starter row sunrise runs 04:51 (midsummer) to 07:09 (midwinter).
+  Since 23 Nov 2026 (tracking loop test) each animal goes by the sun of its own tile row, as the sky the player sees there does: north of the
+  equator the seasons are the other way round. The tick, the top-up, what is sent of an animal, the wolves' dusk wait and a snare's time away all read it.
+  Limit: past about 66 degrees the sunrise clamps (midnight sun, polar night) and the dawn and dusk windows can cross midnight.
 - TR-8 moose (salt 300): 12 tries, feeding ground within 40 m of deep water preferred, trail kind 1; elk: deer's
   rules (salt 600, so its spots and rolls share no hash with moose or deer); both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did. How many a player sees is to tune after Dave plays.
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit

@@ -204,5 +204,53 @@ func _init() -> void:
 	check(absf(rise_none - rise_south) < 0.01, "with no place given the starter row's sun is used (%.2f)" % rise_none)
 	check(period_south == "day" and period_north != "day", "17:30 is still day on the starter row, past sunset in the north (%s, %s)" % [period_south, period_north])
 
+	# The animals use it, not only the sum: the tick reads each animal's own row's sun and is back on the starter row's after; what is sent of
+	# an animal (lying or grazing) and a snare's time away go by its row too.
+	var rows_read: Dictionary = {}
+	var t = AnimalsScript.new()
+	t.ground_height = func(_x, _z): return 10.0
+	t.blocked = func(_x, _z): return false
+	var two: Array = [Vector3(0.0, 10.0, south_z), Vector3(0.0, 10.0, north_z)]
+	t.player_positions = func(): return two
+	t.setup()
+	t.traits = false
+	t.hour_now = func(): return 17.5
+	t.sun_row_m = tile
+	t.sunrise_now = func(z):
+		rows_read[ClimateScript.row_of_z(z, tile) if not is_nan(z) else 999] = true
+		return WeatherScript.sunrise_hour(mid, NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, tile), 0))
+	var deer_north: Array = []
+
+	for k in 12:
+		deer_north.append(t.spawn("deer", 3.0 * k, north_z + 30.0))
+
+	t.spawn("rabbit", 5.0, south_z + 30.0)
+
+	for _n in 8:
+		t.tick(0.25)
+
+	check(rows_read.has(ClimateScript.STARTER_ROW) and rows_read.has(-ClimateScript.STARTER_ROW), "the tick reads the sun of each animal's own row (%s)" % str(rows_read.keys()))
+	check(is_nan(t.sun_z), "after the tick the starter row's sun is the default again")
+	var lying_wrong: int = 0
+	var starter_lying: int = 0
+
+	for id in deer_north:
+		if not t.animals.has(id):
+			continue
+
+		var d: Dictionary = t.animals[id]
+		d["state"] = t.GRAZE
+		var sent: int = t._wire_state(d)
+		t.sun_z = NAN
+		starter_lying += 1 if t._wire_state_now(d) == t.LIE else 0
+		t.sun_z = float(d["pos"].z)
+		lying_wrong += 1 if t._wire_state_now(d) != sent else 0
+		t.sun_z = NAN
+
+	check(lying_wrong == 0, "a deer is sent lying or grazing by its own row's sun (%d of %d differ)" % [lying_wrong, deer_north.size()])
+	check(starter_lying > 0, "(on the starter row's day some of them would have been sent lying: %d)" % starter_lying)
+	var rabbit_def: Dictionary = t.species_def("rabbit")
+	check(not is_equal_approx(t.activity_at(rabbit_def, 17.5, south_z), t.activity_at(rabbit_def, 17.5, north_z)) and is_nan(t.sun_z), "a snare's time away rolls each row's rabbit hours (%.2f south, %.2f north)" % [t.activity_at(rabbit_def, 17.5, south_z), t.activity_at(rabbit_def, 17.5, north_z)])
+
 	print("test_tracking_loop: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

@@ -641,8 +641,8 @@ func check_away(id: int) -> bool:
 
 	for h in n:
 		var hour: float = fmod((from_s + (float(h) + 0.5) * 3600.0) / 3600.0, 24.0)
-		var ph: float = p * _active_at(sp, hour) * mult
-		var pf: float = p * fox_share * _active_at("fox", hour) * mult if fox_share > 0.0 else 0.0
+		var ph: float = p * _active_at(sp, hour, it["pos"].z) * mult
+		var pf: float = p * fox_share * _active_at("fox", hour, it["pos"].z) * mult if fox_share > 0.0 else 0.0
 		miss *= 1.0 - clampf(ph + pf, 0.0, 1.0)
 		sum_p += ph
 		sum_fox += pf
@@ -669,10 +669,11 @@ func check_away(id: int) -> bool:
 	return true
 
 
-# How active a species is at a game hour (0..1): the animals' own rows (species_active_at), else how active it is now, else 1.
-func _active_at(sp: String, hour: float) -> float:
+# How active a species is at a game hour (0..1) at ground z (its row's sun): the animals' own rows (species_active_at), else how active it is
+# now, else 1.
+func _active_at(sp: String, hour: float, z: float = NAN) -> float:
 	if host.species_active_at.is_valid():
-		return float(host.species_active_at.call(sp, hour))
+		return float(host.species_active_at.call(sp, hour, z))
 
 	return float(host.species_active.call(sp)) if host.species_active.is_valid() else 1.0
 
@@ -870,11 +871,23 @@ func load_marks(parsed: Variant) -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return
 
-	for key in (parsed.get("signs", {}) as Dictionary):
-		_sign_xp[str(key)] = parsed["signs"][key]
+	for part in [["signs", _sign_xp], ["snares", _snare_xp]]:
+		var rows: Variant = parsed.get(part[0], {})
 
-	for key in (parsed.get("snares", {}) as Dictionary):
-		_snare_xp[str(key)] = parsed["snares"][key]
+		if typeof(rows) != TYPE_DICTIONARY:
+			continue
+
+		for key in rows:
+			if typeof(rows[key]) != TYPE_ARRAY:
+				continue
+
+			var spots: Array = []
+
+			for spot in rows[key]:
+				if typeof(spot) == TYPE_ARRAY and (spot as Array).size() >= 3:
+					spots.append([float(spot[0]), float(spot[1]), float(spot[2])])
+
+			(part[1] as Dictionary)[str(key)] = spots
 
 
 # A trail sign the player at `peer` has just spotted (protocol 153; Dave 23 Nov 2026, "spotting animal markings should highlight the

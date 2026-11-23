@@ -57,7 +57,7 @@ func start(wipe: bool, at: Vector3):
 	items.water_near = func(p, _r): return (p as Vector3).distance_to(POND) < 12.0
 	items.water_depth_at = func(p): return 0.6 if (p as Vector3).distance_to(POND) < 10.0 else 0.0
 	items.trail_strength = func(_x, _z): return 0.0   # no worn grass: only the trails between animal places count
-	items.species_active_at = func(_sp, hour): return 0.6 if hour >= 18.0 or hour < 6.0 else 0.15   # rabbits out from dusk to dawn
+	items.species_active_at = func(_sp, hour, _z): return 0.6 if hour >= 18.0 or hour < 6.0 else 0.15   # rabbits out from dusk to dawn
 	items.setup(ItemTableScript.load_default(), DIR)
 	ranges = RangesScript.new()
 	ranges.setup()

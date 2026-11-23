@@ -482,7 +482,7 @@ var trail_strength: Callable         # (x, z) -> how worn the game trail is ther
 var run_distance: Callable           # (x, z, kind) -> metres to the nearest trail between animal places of that kind (-1 any), INF only when none is found and ground that could hold a nearer one is not worked out, 10 when no trail is nearer (server_ranges.gd route_distance)
 var fox_near: Callable              # (x, z, m) -> a fox earth lies within m, in worked-out ground (server_ranges.gd fox_near; stage 2b)
 var species_active: Callable         # (species) -> 0..1, how active that species is now (server_animals.activity_chance)
-var species_active_at: Callable      # (species, game hour) -> 0..1, how active it is at that hour: a snare's time away, worked out when a player comes back
+var species_active_at: Callable      # (species, game hour, ground z or NAN) -> 0..1, how active it is at that hour by that row's sun: a snare's time away, worked out when a player comes back
 var _bow = null                     # server_bow.gd, made at the first shot
 var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)
 var _last_shot: Dictionary = {}     # peer -> msec
