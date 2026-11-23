@@ -1381,6 +1381,10 @@ func _event_state() -> String:
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	queued += ", " + _pool_summary()
+	# What the memory holds (the long run, 23 Nov 2026: is a slow rise what players added or a leak): engine objects, nodes, resources, world
+	# items, ground edits and animals.
+	queued += ", objects %d nodes %d resources %d, world items %d, ground edits %d, animals %d" % [int(Performance.get_monitor(Performance.OBJECT_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), items.world_item_count() if items != null else 0, store.ops.count, animals.animals.size() if animals != null else 0]
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
