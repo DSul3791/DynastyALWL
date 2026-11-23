@@ -870,16 +870,14 @@ func _scenes_ready(number: int) -> bool:
 		if _scene_held.has(path):
 			continue
 
-		if ResourceLoader.has_cached(path):
-			_scene_held[path] = load(path)      # already in memory (another view loaded it): no file read
-			continue
-
 		var status: int = ResourceLoader.load_threaded_get_status(path)
 
 		if status == ResourceLoader.THREAD_LOAD_LOADED:
 			_scene_held[path] = ResourceLoader.load_threaded_get(path)
 		elif status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			all_in = false
+		elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.has_cached(path):
+			_scene_held[path] = load(path)      # already in memory (another view loaded it): no file read
 		elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.load_threaded_request(path, "", true) == OK:
 			all_in = false
 		else:
