@@ -2109,6 +2109,6 @@
 			"blows": 6
 		}
 	},
-	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife.",
+	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server reads the species row's `blows`, and the top-level `blows` (4) only for a species without one (server_items.gd _process_carcass). All species use tool_class knife.",
 	"note_feather_sinew": "23 Nov 2026 (Dave: \"we are not gate keeping by limiting resources\"; coordinator answer, recorded for his review): every bird's feathers x3 (a goose or turkey fletches 20 to 30 arrows; an arrow took about one feather) and sinew x2 on animals of 20 to 250 kg (a deer's back and leg tendons; the backpacks ask 20 and 40). Thread \"Walk the crafting progression end to end\"."
 }
