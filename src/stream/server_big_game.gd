@@ -346,7 +346,9 @@ func step(a: Dictionary, dt: float) -> void:
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.blow_blocked(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
-					var wait_s: float = late_s(def, int(info["peer"]))
+					# A hunter's chase of a runner is not judged late: running from a predator is what gets you caught (ANIMAL_BEHAVIOUR.md HB-2,
+					# bear_threat_design.md), and a sprinter would be 3 to 4 m clear by then (gate review of #1824). Only chase() sets run_m.
+					var wait_s: float = 0.0 if a.has("run_m") else late_s(def, int(info["peer"]))
 
 					if wait_s > 0.0:
 						# A fair dodge over the link: judged once the player has seen the blow land and their step has come back (see late_s).
