@@ -190,6 +190,21 @@ func _init() -> void:
 		var y: float = shoot_from(items, row[1], row[2])
 		check(in_tunnel(y, row[1]) and y < tunnel_floor + 0.3, "an arrow shot %s comes down on its floor (%.2f), not in the rock or on the hill over it at 10, floor %.2f" % [row[0], y, tunnel_floor])
 
+	# Into the tunnel's mouth from the open air: a ramp pit dug beside it (open to the sky, its floor at the tunnel's) and an arrow and a stone sent level
+	# from there into the tunnel come down on the tunnel's floor, not on the hill over it.
+	for k in 4:
+		edits.append([0, TUNNEL - Vector3(3.0 + 1.4 * float(k), 0.0, 0.0), 1.5])
+
+	for k in 4:
+		edits.append([0, TUNNEL - Vector3(3.0 + 1.4 * float(k), -4.0, 0.0), 1.5])
+		edits.append([0, TUNNEL - Vector3(3.0 + 1.4 * float(k), -1.5, 0.0), 1.5])
+
+	var pit_open: bool = top_at(TUNNEL.x - 5.0, TUNNEL.z) < 5.0
+	var mouth_arrow: float = shoot_from(items, Vector3(TUNNEL.x - 5.0, 4.6, TUNNEL.z), Vector3(40.0, -1.0, 0.0))
+	var mouth_x: float = alarms[0].x if not alarms.is_empty() else NAN
+	var mouth_stone: Array = throw_from(items, Vector3(TUNNEL.x - 5.0, 4.6, TUNNEL.z), Vector3(9.0, 0.0, 0.0))
+	check(pit_open and in_tunnel(mouth_arrow, TUNNEL) and in_tunnel(float(mouth_stone[0]), TUNNEL) and in_tunnel(float(mouth_stone[1]), TUNNEL), "an arrow (%.2f at x %.1f) and a stone (%.2f, lies %.2f) sent from an open ramp pit into the tunnel's mouth come down in it, not on the hill over it" % [mouth_arrow, mouth_x, float(mouth_stone[0]), float(mouth_stone[1])])
+
 	# A natural hillside, no edits: an arrow and a stone that strike its face land on the face where they struck (the open air is read from
 	# their own column), not at its foot or in the air.
 	var face: float = shoot_from(items, Vector3(195.0, 13.0, 100.0), Vector3(40.0, 0.0, 0.0))

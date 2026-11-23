@@ -6674,7 +6674,7 @@ func _ground_under(p: Vector3) -> float:
 # Where a flight stepping from `from` to `to` comes down (round 7: arrows and thrown things kept to the generated ground, so over a pit they
 # stopped in the air, in a fill they went in, and in a tunnel or a cave they came out on the hill above): Vector3.INF while it is still in
 # the air (or there is no ground to know). From the open air over its own column it strikes the ground as dug and filled where it is (a pit's
-# floor, a fill's top, a hillside). From under its column's top (a tunnel, a cave) it comes down to the floor of the open column under it,
+# floor, a fill's top, a hillside), unless it went in at a tunnel's or a cave's mouth (open air under the top there). From under its column's top (a tunnel, a cave) it comes down to the floor of the open column under it,
 # or, struck into the rock (a wall or the roof), to the floor where it last was in the open. A flight is only looked at after the step that
 # took it into the rock, so the open air is read from `from`, never `to`.
 func _landing(from: Vector3, to: Vector3) -> Vector3:
@@ -6686,6 +6686,12 @@ func _landing(from: Vector3, to: Vector3) -> Vector3:
 	var own: float = _ground_top(from.x, from.z)
 
 	if not floor_below.is_valid() or is_nan(own) or from.y >= own - 0.05:
+		if floor_below.is_valid() and to.y < top - 0.05:   # under the top from the open air: into a tunnel's or a cave's mouth, or into the rock
+			var inside: float = float(floor_below.call(to))
+
+			if not is_nan(inside) and inside <= to.y + 0.05:
+				return Vector3(to.x, inside, to.z) if to.y <= inside else Vector3.INF
+
 		return Vector3(to.x, top, to.z)   # from the open air: it struck the ground
 
 	var under: float = float(floor_below.call(Vector3(to.x, from.y, to.z)))   # down to's column from the height it was last in the air
