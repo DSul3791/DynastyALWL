@@ -11,15 +11,18 @@ const PlayersScript := preload("res://src/stream/server_players.gd")
 const PlayerViewScript := preload("res://src/client/player_view.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const BodyModelsScript := preload("res://src/client/character/body_models.gd")
 const MotionBufferScript := preload("res://src/client/motion_buffer.gd")
 
 var failures: int = 0
 
 
-func check(ok: bool, what: String) -> void:
+func check(ok: bool, what: String) -> bool:
 	if not ok:
 		failures += 1
 		print("FAIL ", what)
+
+	return ok
 
 
 class FakeItems:
@@ -224,8 +227,71 @@ func _client() -> void:
 		check(swim_clip.begins_with("swim"), "a swimming player plays the swim clip (%s)" % swim_clip)
 
 
+# Dave 23 Nov 2026 on 9257: another player's spear "floating in the air almost sticking out of his chest". Every item with a hand look, on
+# every body model, is put in a remote player's hand as the player's own third-person body holds it: under that body's hand mount (the left
+# for a bow), its middle within reach of the hand, and a spear pointing ahead along the facing (not along the fingers, as before the fix).
+func _check_holds() -> void:
+	if not DynastyBodyScript.available():
+		print("test_remote_players: the Dynasty glb is not imported here, the hold checks are skipped")
+		return
+
+	var table = ItemTableScript.load_default()
+	var numbers: Array = []
+
+	for id in table.ids():
+		var n: int = table.number_of(str(id))
+
+		if PlayerViewScript.held_model(n, table) != null:
+			numbers.append(n)
+
+	check(numbers.size() >= 10, "items with a hand look found (%d)" % numbers.size())
+	var spears: int = 0
+
+	for body in BodyModelsScript.ids():
+		if not DynastyBodyScript.available(str(body)):
+			continue
+
+		var root: Node3D = Node3D.new()
+		root.rotation.y = 0.7
+		get_root().add_child(root)
+		var rig: Node3D = PlayerViewScript.make_rig(str(body), {})
+		root.add_child(rig)
+		rig.play("idle")
+		await process_frame
+		var front: Vector3 = rig.global_basis * Vector3.FORWARD
+		front = Vector3(front.x, 0.0, front.z).normalized()
+
+		for n in numbers:
+			var made: Array = PlayerViewScript.hold_in(rig, int(n), table)
+			var id: String = table.id_of(int(n))
+
+			if not check(made.size() == 2, "%s %s: held" % [body, id]):
+				continue
+
+			var model: Node3D = made[0]
+			var mount: Node3D = model.get_parent() as Node3D
+			check(mount == rig.get("hand_mount_l" if made[1] == "bow" else "hand_mount_r"), "%s %s: in the %s hand" % [body, id, "left" if made[1] == "bow" else "right"])
+			var mesh: MeshInstance3D = model.get_child(0) as MeshInstance3D
+			var box: AABB = mesh.global_transform * mesh.get_aabb()
+			var hand: Vector3 = mount.global_position
+			var off: float = hand.distance_to(hand.clamp(box.position, box.end))
+			check(off < 0.12, "%s %s (%s): the item is in the hand, %.2f m from it" % [body, id, made[1], off])
+
+			if made[1] == "spear":
+				spears += 1
+				var point: Vector3 = -model.global_basis.z.normalized()
+				check(point.dot(front) > 0.95, "%s %s: the spear points ahead along the facing (%.2f)" % [body, id, point.dot(front)])
+
+			model.free()
+
+		root.queue_free()
+
+	check(spears > 0, "a spear was among the held items")
+
+
 func _init() -> void:
 	_server()
 	await _client()
+	await _check_holds()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
