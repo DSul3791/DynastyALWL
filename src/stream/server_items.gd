@@ -1380,7 +1380,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 					_wide_piles[id] = true
 
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, maxf(lifetime_s, float(near["left"]) if float(near["left"]) > 1.0e8 else 0.0))   # a never-expiring heap (crafted overflow, a cleared piece's leavings) stays so
-				_tick_ageing(id)   # (a kept pile stays kept: this only ever meets an ageing one now)
+				_tick_ageing(id)   # a kept pile passes here too and stays kept (left over 1e8, so _expire_items skips it); the call only lists it
 
 				if by != "":
 					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
