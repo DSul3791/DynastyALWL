@@ -124,6 +124,17 @@ the spell's length, and `AUDIT near` each minute of real time (the mean number o
 per kind the animal-hours watched, the stuck spells and their rate per animal per game day, the median and longest spell, what lay ahead and
 the first spots. It judges nothing.
 
+Plan `moves` (one robot, player-movement thread 23 Nov 2026, Dave: motion must be fluid; `ROBOT_S=900 tools/robots.sh 1 moves --delay-ms
+120 --jitter-ms 30 --loss 0.03`): the player's own body over a real route, each stretch a ROUTE line: open walk and run in four directions,
+strafe and back, jumps while running, crouch on open ground, woods standing and crouched, the crouched trail, a thicket, into the water and
+back out over the edge, the hills; then it sets down and hammers up two Refined foundations with a wall, a doorway and stairs, and walks in
+through the doorway, along the wall, up and down the stairs, off the edge and back on, standing and crouched. Every robot client (and a play
+with `--motion-audit`) runs the motion audit (`src/client/motion_audit.gd`): `MOTION stop` (held under a quarter of the asked pace for
+0.4 s, with what it touched; "no cause" when only the floor), `MOTION slow` (under 70% on flat ground for 1 s), `MOTION snap` (set more
+than 0.3 m between walk frames, or moved by the stuck rescue), `MOTION push` (a log or an animal moved it more than 0.15 m) and each minute
+`MOTION summary <gait>` (the share of the asked distance made, the counts, and where the rest went: against things, on slopes, on clear
+flat ground). It judges nothing.
+
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
