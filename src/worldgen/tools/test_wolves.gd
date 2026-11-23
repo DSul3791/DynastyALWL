@@ -399,5 +399,105 @@ func _init() -> void:
 	still["pos"] = Vector3(2.0, 10.0, 1.0)
 	a.wolves.pace(still, 1300)
 	check(int(still["moved_ms"]) == 1300 and bool(still["moving"]), "and a new move stamps again")
+	# 12. The battle ring (Dave 23 Nov 2026: animals "so robotic"): in a rush the wolves keep places round the player and take turns; each
+	# turn is a still wind-up (the tell), one lunge and a back-off. Never more than lunge_at_once (+1 a 4 wolves) lunge together.
+	var r = make()
+	health = {1: 100000.0}   # no maim here: the rush runs on
+	log_bites = 0
+	players = [player(1, 0.0, 0.0)]
+	var rid: int = r.wolves.spawn_pack(20.0, 0.0)
+	var rp: Dictionary = r.wolves.packs[rid]
+	rp["den"] = Vector3(9000.0, 0.0, 0.0)
+	rp["phase"] = "rush"
+	rp["target"] = 1
+	rp["sprint"] = 0.0
+	rp["bite"] = {}
+	var rw: Dictionary = r.cfg["wolves"]
+	var allowed: int = mini(int(rw.get("lunge_at_once", 1)) + int(rp["ids"].size() / 4.0), rp["ids"].size())
+	var most: int = 0
+	var wound_up: Dictionary = {}
+	var lunge_unwound: int = 0
+	var backed: int = 0
+	var bitten_by: Dictionary = {}
+	var spread_ok: bool = true
+	var spread_seen: int = 0
+
+	for n in 300:
+		var bites_was: int = log_bites
+		r.tick(0.1)
+
+		if phase_of(r, rid) != "rush":
+			break
+
+		var lunging: int = 0
+		var on_ring: Array = []
+
+		for id in rp["ids"]:
+			var wm: Dictionary = r.animals[id]
+			var turn: Dictionary = rp.get("turn", {}).get(id, {})
+			var d: float = Vector2(wm["pos"].x, wm["pos"].z).length()
+
+			if str(turn.get("step", "")) == "windup":
+				wound_up[id] = float(turn["t"])
+				check(not bool(wm["moving"]) and int(wm["state"]) == 6, "a winding-up wolf stands crouched (state 6) facing in")
+			elif str(turn.get("step", "")) == "lunge":
+				lunging += 1
+				lunge_unwound += 0 if float(wound_up.get(id, 0.0)) >= float(rw.get("windup_s", 0.6)) - 0.11 else 1
+				check(int(wm["state"]) == 7, "a lunging wolf is in the attack state (7)")
+			else:
+				wound_up.erase(id)
+
+				if turn.is_empty() and d > 3.5:
+					on_ring.append(wm["pos"])
+
+			if bitten_by.has(id) and d > float(rw.get("reach_m", 3.0)) + 0.5:
+				backed += 1
+				bitten_by.erase(id)
+
+		if log_bites > bites_was:
+			for id in rp["ids"]:
+				if str(rp.get("turn", {}).get(id, {}).get("step", "")) == "back":
+					bitten_by[id] = true
+
+		most = maxi(most, lunging)
+
+		if n > 60 and on_ring.size() >= 2:
+			spread_seen += 1
+
+			for i in on_ring.size():
+				for j in range(i + 1, on_ring.size()):
+					spread_ok = spread_ok and (on_ring[i] as Vector3).distance_to(on_ring[j]) > 1.5
+
+	check(log_bites > 0 and most >= 1 and most <= allowed, "the wolves take turns: %d bites, at most %d lunging at once (allowed %d)" % [log_bites, most, allowed])
+	check(lunge_unwound == 0, "every lunge comes after a full wind-up (%d did not)" % lunge_unwound)
+	check(backed > 0, "after a bite the wolf backs off out of reach (%d times)" % backed)
+	check(spread_seen > 0 and spread_ok, "the circling wolves keep apart on the ring (%d looks)" % spread_seen)
+	# A lone player can win it: the gap after the tell is the time to strike, and a wolf hit while it lunges drives the pack off.
+	r = make()
+	health = {1: 100000.0}
+	players = [player(1, 0.0, 0.0)]
+	rid = r.wolves.spawn_pack(20.0, 0.0)
+	rp = r.wolves.packs[rid]
+	rp["den"] = Vector3(9000.0, 0.0, 0.0)
+	rp["phase"] = "rush"
+	rp["target"] = 1
+	rp["sprint"] = 0.0
+	rp["bite"] = {}
+	var struck_wolf: bool = false
+
+	for n in 300:
+		r.tick(0.1)
+
+		for id in rp["ids"]:
+			if not struck_wolf and str(rp.get("turn", {}).get(id, {}).get("step", "")) == "lunge" and Vector2(r.animals[id]["pos"].x, r.animals[id]["pos"].z).length() < 3.0:
+				r.damage(id, 5.0, 1)   # the player's jab as it comes in
+				struck_wolf = true
+
+		if struck_wolf:
+			r.tick(0.1)
+			break
+
+	check(struck_wolf and phase_of(r, rid) == "wait", "a lunging wolf struck by the player drives the pack off (%s)" % phase_of(r, rid))
+
 	print("wolves: %d failures" % failures)
 	quit(failures)
