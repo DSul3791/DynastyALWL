@@ -76,7 +76,7 @@ func stare(dist: float, sp: String = "deer") -> Array:
 	for n in 80:
 		a.tick(0.05)
 
-		if int(a.animals[id]["state"]) == AnimalsScript.FLEE:
+		if int(a.animals[id]["state"]) == AnimalsScript.FLEE or int(a.animals[id]["state"]) == AnimalsScript.HIDDEN:   # a rabbit by its burrow goes to ground
 			return [stared, faced]
 
 		if int(a.animals[id]["state"]) == AnimalsScript.ALERT:
@@ -122,11 +122,12 @@ func _init() -> void:
 	var under: Array = stare(2.0, "rabbit")
 	check(under[0] >= 0.0 and under[0] <= 0.2, "a rabbit 2 m off bolts at once (%.2f s staring)" % float(under[0]))
 
-	# A walk blocked short of its target (a lane closed at x 3) ends in a short pause with no old way kept, then another pick (Lane B's roam rerun,
-	# 23 Nov 2026: stuck spells a whole graze long, in graze with the target far off).
+	# A walk blocked short of its target ends in a short pause with no old way kept, then another pick (Lane B's roam rerun, 23 Nov 2026:
+	# stuck spells a whole graze long, in graze with the target far off). Steering turns round anything with a free side, so the rabbit is
+	# shut in a pen 8 cm across where no step is free.
 	var w = make([Vector3(-50.0, 10.0, 0.0)], calm)   # a player 50 m off keeps it ticked, beyond its notice
-	w.blocked = func(x, z): return x > 3.0 or absf(z) > 0.6   # a dead-end lane: no way round the wall at its end
-	var bid: int = w.spawn("rabbit", 0.0, 0.0)
+	w.blocked = func(x, z): return absf(x - 2.75) > 0.04 or absf(z) > 0.04
+	var bid: int = w.spawn("rabbit", 2.75, 0.0)
 	var b: Dictionary = w.animals[bid]
 	b["state"] = AnimalsScript.HOP
 	b["target"] = Vector3(12.0, 10.0, 0.0)

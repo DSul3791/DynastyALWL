@@ -1733,8 +1733,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 # comes within its flee distance of stops, lifts its head and stares at them (ALERT, the head turned to them; the client plays its alert look
 # and call), then bolts. The stare is reactions.startle_s [short, long]: long for a player noticed at its flee distance, shrinking toward short
 # as they are nearer, and short for one running at it (coordinator 23 Nov 2026: long enough to read, about 1.5 to 2 s at a distance). One
-# that was already watching them (it stared as they came) bolts at once, as does one hurt, one whose temperament never watches, a bird, or
-# one a player comes within startle_close_m of. True while it stares (the caller does nothing more this step).
+# that was already watching them (it stared as they came) bolts at once, as does one hurt, one whose temperament never watches, a bird, a
+# goblin or bandit (give_way player), or one a player comes within startle_close_m of. True while it stares (the caller does nothing more this step).
 func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt: float) -> bool:
 	var r: Dictionary = cfg.get("reactions", {})
 	var close: bool = seen_d <= float(r.get("startle_close_m", 3.0))
@@ -1758,7 +1758,8 @@ func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt:
 
 	var startle_s: float = lerpf(float(span[0]), float(span[1]), near_x)
 
-	if startle_s <= 0.0 or close or not int(a["state"]) in [GRAZE, HOP] or a.get("wound", false) or not bool(_temper_row(a).get("alert", true)) or def.has("flight"):
+	if startle_s <= 0.0 or close or not int(a["state"]) in [GRAZE, HOP] or a.get("wound", false) or not bool(_temper_row(a).get("alert", true)) or def.has("flight") \
+			or str(def.get("defend", {}).get("give_way", "")) == "player":   # goblins and bandits: people, who run or fight at once
 		return false
 
 	a["state"] = ALERT
