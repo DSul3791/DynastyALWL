@@ -858,6 +858,9 @@ func _ready() -> void:
 	net.welcome_received.connect(_on_welcome)
 	net.join_refused_received.connect(func(text: String) -> void:
 		_on_join_refused(text, "Joined from elsewhere" if text.contains("joined the server again") else "Update required"))   # terrain_server.gd _drop_replaced: not a version problem
+	net.notice_received.connect(func(text: String) -> void:
+		if text == NetScript.SERVER_CLOSING:
+			_server_closing = text)   # the server is stopping (a restart or an update): its "connection lost" window says so
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.edits_since_received.connect(_on_edits_since)
@@ -1066,6 +1069,9 @@ func _connect() -> void:
 # The server dropped this client or ended. A player sees a plain message with Retry and Quit and the world stays
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
+	if quitting:
+		return   # this game closed its own line as it quits (_close_line)
+
 	FreezeWatchScript.printer.line("Terrain client: server left")
 	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
 	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats(enet.get_peer(1)) if enet != null and enet.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else "gone"))
@@ -1083,7 +1089,12 @@ func _on_server_lost() -> void:
 		_finish(1)
 		return
 
-	_show_lost_notice("the server stopped answering or closed the connection")
+	_show_lost_notice(lost_reason(_server_closing))
+
+
+# Why the connection went, for the "connection lost" window: the server's own word when it said it was stopping (a restart).
+static func lost_reason(closing: String) -> String:
+	return closing.trim_suffix(".") if closing != "" else "the server stopped answering or closed the connection"
 
 
 # The notice stays up until the player picks Retry or Quit: no timer, no automatic quit. The world is frozen (tree paused,
@@ -1885,8 +1896,9 @@ func _welcome_body(info: Dictionary) -> void:
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.trunks_round = _trunks_round
 	held.trunks_version = func() -> int: return flora.canopy_version
+	held.report_now = send_position_now   # a fresh position report just before each blow (server_items strike_origin)
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
-	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
+	held.season_now = func(): return _drink_season if _drink_season != "" else game_clock.season()   # the hoe's plant list greys out what is out of season: the season where the player stands, as the server sows by the bed's (season_at; the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
@@ -3021,11 +3033,10 @@ func _update_weather() -> void:
 	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
-	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain of the
-	# server's one weather, over the starter row at sea level (terrain_server._update_weather), not this player's own sky.
-	var starter: int = WeatherScript.STARTER_ROW
+	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain
+	# over this spot (the server's weather_at, terrain_server._weather_here: this row and height, the same state as this sky).
 	_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z, tile_m, int(world.get("equator_row", 0)))
-	_drink_raining = float(WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), starter), 0.0, 0.0, starter, int(world.get("equator_row", 0)))["rain"]) > 0.05
+	_drink_raining = float(weather["rain"]) > 0.05
 	world_wind_dir = float(weather["wind_dir"])
 	weather = wind_onto(weather)
 
@@ -4271,6 +4282,7 @@ var _lose_after_s: float = 0.0
 var _link_print_msec: int = 0
 var _horizon = null                   # artificial horizon (horizon_indicator.gd), shown underground or in water
 var link_bars = null                      # server connection indicator (link_bars.gd)
+var _server_closing: String = ""          # NetScript.SERVER_CLOSING once the server said it is stopping
 var _lost_layer: CanvasLayer             # "Connection to the server was lost" window
 var crash_report                      # CrashReport: breadcrumbs and the report of an unclean last run
 var _previous_run_note_until_msec: int = 0
@@ -6162,6 +6174,23 @@ func _note_after_welcome(delta: float) -> void:
 		_after_welcome = null
 
 
+
+# Tells the server where we are and how fast we move (every 0.2 s from _process, and just before a blow, held_item report_now, so the server
+# judges the blow from where we stand: server_items strike_origin).
+func send_position_now() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _aim_msec < 20:
+		return   # one went this moment: fresh enough
+	var here: Vector3 = _anchor
+	var seconds: float = maxf(float(now - _aim_msec) / 1000.0, 0.02)
+
+	if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
+		net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds, body.rotation.y)   # protocol 151: the facing, for the other players
+
+	_aim_msec = now
+	_aim_pos = here
+
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
 	_note_after_welcome(delta)
@@ -6373,14 +6402,7 @@ func _process(delta: float) -> void:
 
 	# Tell the server where we are heading so it makes that ground first.
 	if now - _aim_msec >= 200:
-		var here: Vector3 = _anchor
-		var seconds: float = float(now - _aim_msec) / 1000.0
-
-		if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
-			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds, body.rotation.y)   # protocol 151: the facing, for the other players
-
-		_aim_msec = now
-		_aim_pos = here
+		send_position_now()
 
 	if now >= _budget_check_msec:
 		# Writing the pending blocks and counting the cache folder's size are disk work (on a
@@ -8219,7 +8241,15 @@ func _finish(code: int) -> void:
 
 	_telemetry.drain()   # its lines are written on a worker
 	quitting = true
+	_close_line()
 	get_tree().quit(code)
+
+
+# The game connection is closed as the game quits, so the server hears it at once (robots, 23 Nov 2026: a quit game's connection stayed up
+# 15 s and more, until the server's 15 s absent rule took the body out, and its line's timeout 60 to 120 s later).
+func _close_line() -> void:
+	if multiplayer.multiplayer_peer != null and not (multiplayer.multiplayer_peer is OfflineMultiplayerPeer) and multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_DISCONNECTED:
+		multiplayer.multiplayer_peer.close()
 
 
 # Worker thread: writes pending blocks and keeps the cache folder inside its size limit.
@@ -8255,6 +8285,10 @@ func _exit_tree() -> void:
 	# own code is gone: "free(): invalid pointer" / "corrupted size vs. prev_size" and an abort at every quit after joining a world
 	# (headless robot clients, 23 Nov 2026, dev 2aa2ea24; GDScript lambda freed from Callable in GDScript's cleanup). A scene change makes a new one.
 	Probe.context = Callable()
+
+	if quitting:
+		_close_line()   # the window's X comes here without _finish()
+
 	if _ends_at_exit_tree():
 		_end_now()
 

@@ -11860,10 +11860,10 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "FUTURE-GATED",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "Live 23 Nov 2026: parsnip had no seed source; wild carrot gives parsnip seed (coordinator ruling for Dave, recorded in the coordinator log ANSWERED_FOR_DAVE). test_every_plant, test_garden_loop."
   },
   {
    "key": "parsnip_seeds",
@@ -11874,10 +11874,10 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "FUTURE-GATED",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "Live 23 Nov 2026: parsnip had no seed source; wild carrot gives parsnip seed (coordinator ruling for Dave, recorded in the coordinator log ANSWERED_FOR_DAVE). test_every_plant, test_garden_loop."
   },
   {
    "key": "mug",
@@ -12036,10 +12036,10 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "FUTURE-GATED",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "Live 23 Nov 2026 (#1743): unlocked by the trapping loop, coordinator ruling for Dave. test_fishing_loop, test_trapping_loop."
   },
   {
    "key": "fish_trap_set",
@@ -12064,10 +12064,10 @@
    "section": null,
    "phase": null,
    "depends": [],
-   "state": "FUTURE-GATED",
+   "state": "IMPLEMENTED - UNVERIFIED",
    "tests": [],
    "accepted_commit": null,
-   "note": ""
+   "note": "Live 23 Nov 2026 (#1743): unlocked by the trapping loop, coordinator ruling for Dave. test_fishing_loop, test_trapping_loop."
   },
   {
    "key": "bird_trap_set",

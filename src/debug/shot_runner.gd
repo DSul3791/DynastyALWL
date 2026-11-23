@@ -46,6 +46,8 @@ const LookTable := preload("res://src/client/look_table.gd")
 const ItemCam := preload("res://src/debug/item_cam.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const StanceScript := preload("res://src/client/stance.gd")
+const BuildingLookScript := preload("res://src/client/building_look.gd")
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const NpcCamp := preload("res://src/shared/npc_camp.gd")
 
 var client = null
@@ -1279,6 +1281,17 @@ func _show_pieces(now: int) -> void:
 
 		if fire_light != null and (int(piece_extra.get("forge", 0)) >= 1 or int(piece_extra.get("lit", 0)) >= 1):
 			fire_light.visible = true
+		elif fire_light == null and int(piece_extra.get("lit", 0)) >= 1 and bool(def.get("lights", false)):
+			# A lit torch, lantern, lamp or brazier: in the game the world row adds its flame and light (inventory_view, BuildingLook.lit_fixture).
+			var fixture: Node3D = BuildingLookScript.lit_fixture(StructureLookScript.look_of(int(def["state"])))
+			model.add_child(fixture)
+			var lamp: Light3D = fixture.get_node_or_null("Light") as Light3D
+
+			if lamp != null:
+				lamp.visible = true   # in the game the lights list switches it on (inventory_view), which the rig does not run
+
+			if lamp is OmniLight3D and float(def.get("light_m", 0.0)) > 0.0:
+				(lamp as OmniLight3D).omni_range = float(def["light_m"])
 
 		client.add_child(model)
 		model.set_meta("piece_name", str(piece_name))

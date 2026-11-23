@@ -27,6 +27,10 @@ STEADY_MS = 2000        # a stance held this long must be the stance the others 
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
+# The first of two clients as one character (plan drops, twin): the robot's own line when the server cuts it, or the client's join-refused
+# notice when the server tells it first (players thread #1745: "This character joined the server again from another game window").
+TWIN_WORDS = ("TWIN first dropped by the server", "join refused: This character joined the server again")
+
 def known_errors():
 	path = os.path.join(HERE, "robot_known_errors.txt")
 	pats = []
@@ -88,7 +92,7 @@ def main():
 		dropped = False   # plan drops: a twin the server dropped on purpose; its game's lines after that are not faults
 
 		for line in open(path, encoding="utf-8", errors="replace"):
-			dropped = dropped or (same_char and path != server_log and "TWIN first dropped by the server" in line)
+			dropped = dropped or (same_char and path != server_log and any(w in line for w in TWIN_WORDS))
 
 			if dropped:
 				continue
@@ -145,7 +149,8 @@ def main():
 		code = open(exit_path).read().strip() if os.path.exists(exit_path) else ""
 		# Plan drops: the first of two clients of one character, dropped on purpose by the server (its "same character" line): a dropped
 		# headless client exits 1 with no done line. Any other exit code, or a drop the server did not make for a twin, still fails.
-		twin_dropped = "TWIN first dropped by the server" in open(path, encoding="utf-8", errors="replace").read() and code in ("1", "") and same_char
+		twin_text = open(path, encoding="utf-8", errors="replace").read()
+		twin_dropped = any(w in twin_text for w in TWIN_WORDS) and code in ("1", "") and same_char
 
 		if twin_dropped:
 			pass

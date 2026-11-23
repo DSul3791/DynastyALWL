@@ -278,6 +278,12 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 		packs.erase(pack["id"])
 		return
 
+	if str(pack["phase"]) in ["stalk", "rush"] and _info_of(infos, int(pack["target"])).is_empty():
+		# The player it hunts is gone (left, or a dropped line parked 15 s: server_items is_absent): it lets go, here before the frozen check
+		# below, so a pack frozen mid-rush does not take them up again on their return.
+		pack["phase"] = "prowl"
+		pack["target"] = -1
+
 	var c: Vector3 = _centre(members)
 	var active: float = float(host.cfg.get("active_radius_m", 200.0))
 	var near_any: bool = false
@@ -288,6 +294,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 	if not near_any:
 		return   # frozen until a player comes within active_radius_m
 
+	host._weather_for(c)   # the pack walks by the snow where it is, not the starter row's (weather and seasons walk, 23 Nov 2026)
 	var w: Dictionary = cfgw()
 	pack["timer"] -= dt
 	pack["hunger"] = minf(float(pack["hunger"]) + dt / maxf(float(w.get("hunger_full_s", 3600.0)), 1.0), 1.0)

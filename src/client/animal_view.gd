@@ -44,6 +44,7 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
+const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
@@ -52,6 +53,8 @@ var look_points: Callable        # () -> Array of Vector3: the players' heads (t
 var _look_points: Array = []     # this frame's look_points, fetched the first time an animal looks in a frame
 var _look_frame: int = -1        # the _t-frame _look_points was fetched in
 var _frame: int = 0              # counts _process_body calls
+var _frame_s: float = -1.0       # when _process_body last ran (s, the ticks clock)
+var _settle_until: float = -1.0  # after this computer's own stall: until then bodies are drawn where their points are (MotionBuffer.settle)
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
@@ -486,7 +489,8 @@ func seen_server_ms() -> Array:
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-	MotionBuffer.clock_note(_clock, now_s, server_ms)
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
+	MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -674,6 +678,9 @@ func _process(delta: float) -> void:
 func _process_body(delta: float) -> void:
 	_t += delta
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall: rows read now came late because nobody read them
+	var settle: bool = now_s <= _settle_until
+	_frame_s = now_s
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
 	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
@@ -688,6 +695,10 @@ func _process_body(delta: float) -> void:
 			state = 10
 
 		var before: Vector3 = node.position
+
+		if settle:
+			MotionBuffer.settle(b)
+
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
 		var t_drawn: float = present if ahead else drawn_at
 		var drawn: Array = MotionBuffer.at(b["samples"], t_drawn, (MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else -1.0)   # only a charge carries on; the others stand

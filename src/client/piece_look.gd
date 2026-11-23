@@ -730,6 +730,7 @@ static func saw_mill() -> Node3D:
 	var wheel: Node3D = water_wheel()
 	wheel.position = Vector3(-1.5, 1.0, 0.0)
 	root.add_child(wheel)
+	_solid(root, Vector3(2.2, 2.16, 0.96), Vector3(-1.5, 1.08, 0.0))   # the wheel blocks where it is drawn (round 5: it had no solid, 2 m of mill walked through)
 	return root
 
 
@@ -811,6 +812,9 @@ static func log_wall(far: bool = false) -> Node3D:
 			for x in [-0.93, 0.93]:
 				_box(root, Vector3(0.14, 0.12, 0.3), Vector3(x, y, 0.0), _frame)
 
+	# Clay chinking packed between the logs, the wall's full 2 x 2.4 m inside them (physical world audit round 5, 23 Nov 2026: round logs touch only
+	# along a line and the short courses stop 15 cm from each end, so daylight showed through every join between two walls and at the foot and top).
+	_box(root, Vector3(2.0, 2.4, 0.12), Vector3(0.0, 1.2, 0.0), _daub)
 	_solid(root, Vector3(2.0, 2.4, 0.3), Vector3(0.0, 1.2, 0.0))
 	return root
 
@@ -1518,9 +1522,9 @@ static func tier_floor(kind: String = "stone") -> Node3D:
 
 	match kind:
 		"log":
-			for k in 7:
-				_box(root, Vector3(0.28, 0.05, 2.0), Vector3(-0.84 + 0.28 * float(k), 0.085, 0.0), _log)
-				_box(root, Vector3(0.24, 0.01, 1.96), Vector3(-0.84 + 0.28 * float(k), 0.115, 0.0), _planks)
+			for k in 7:   # seven split logs across the full 2 m (they spanned 1.96 m: a 4 cm gap of sky at every join of two log ceilings, round 5)
+				_box(root, Vector3(2.0 / 7.0, 0.11, 2.0), Vector3(-1.0 + 2.0 / 7.0 * (float(k) + 0.5), 0.055, 0.0), _log)   # down to its spot: on a wall top no slit under it
+				_box(root, Vector3(0.24, 0.01, 1.96), Vector3(-1.0 + 2.0 / 7.0 * (float(k) + 0.5), 0.115, 0.0), _planks)
 		"stone":
 			_box(root, Vector3(2.0, 0.02, 2.0), Vector3(0.0, 0.07, 0.0), _planks)
 			_box(root, Vector3(2.0, 0.03, 2.0), Vector3(0.0, 0.095, 0.0), _mortar)
@@ -2098,8 +2102,14 @@ static func log_foundation() -> Node3D:
 	for x in [-1.85, 1.85]:
 		_log_along(root, 3.4, 0.28, Vector3(x, 0.14, 0.0), true)                 # and along Z, between them (the corner joint)
 
-	for k in 12:   # the deck: logs laid across the top, hewn flat on top, their heights a little uneven
-		_box(root, Vector3(0.26, 0.24, 3.4), Vector3(-1.54 + 0.28 * float(k), 0.16 + 0.008 * float(k % 3), 0.0), _log)
+	for z in [-1.85, 1.85]:   # the sills hewn flat on top, where the walls stand (round 5: the round sill tops left a slit of daylight under every wall's foot)
+		_box(root, Vector3(4.0, 0.05, 0.3), Vector3(0.0, 0.275, z), _log)
+
+	for x in [-1.85, 1.85]:
+		_box(root, Vector3(0.3, 0.05, 4.0), Vector3(x, 0.275, 0.0), _log)
+
+	for k in 12:   # the deck: logs laid across the top, hewn flat on top, their heights a little uneven; side by side out to the sills (round 5: 2 cm slits showed the ground)
+		_box(root, Vector3(0.3, 0.24, 3.4), Vector3(-1.65 + 0.3 * float(k), 0.16 + 0.008 * float(k % 3), 0.0), _log)
 
 	_solid(root, Vector3(4.0, 2.0, 4.0), Vector3(0.0, -0.7, 0.0))
 	return root

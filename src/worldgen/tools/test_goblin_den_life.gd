@@ -166,6 +166,31 @@ func _init() -> void:
 	check(hurts == 0 and g0["pos"].x > wall_x, "a wall across the passage between them: the lunge stops at it and never strikes through it (%d blows, goblin at x %.2f, the wall at %.2f)" % [hurts, g0["pos"].x, wall_x])
 	a.walls = Callable()
 
+	# 5c. A fair dodge over the link (server_big_game late_s; robots 23 Nov 2026): on a 240 ms round trip the lunge's blow waits, held at the
+	# player, and lands only if they are still within its reach of where it stopped; one who backs off once their screen showed it is clear.
+	a.big_game.ping_ms = func(_peer): return 240
+
+	for back in [0.0, 3.0]:
+		infos = [{"peer": 1, "pos": g0["pos"] + Vector3(-4.0, 0.0, 0.0)}]
+		g0["cool"] = 0.0
+		g0["state"] = a.GRAZE
+		hurts = 0
+		var held: bool = false
+
+		for _k in 24:   # 6 s in quarter seconds
+			steps(a, g0, 0.25)
+
+			if g0.has("late") and not held:
+				held = true
+				infos = [{"peer": 1, "pos": infos[0]["pos"] + Vector3(-back, 0.0, 0.0)}]   # the step back, as the server hears it during the wait
+
+		if back == 0.0:
+			check(held and hurts == 1, "on a laggy link the lunge's blow waits at the player (%s) and lands once on one who stays (%d)" % [str(held), hurts])
+		else:
+			check(held and hurts == 0, "and one who backs %.0f m off down the passage during the wait is not struck (%d)" % [back, hurts])
+
+	a.big_game.ping_ms = Callable()
+
 	# 6. Backing off during the warning avoids the strike.
 	var g1: Dictionary = band[1]
 	hurts = 0

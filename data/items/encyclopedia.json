@@ -10481,21 +10481,20 @@
 			"used_for": [
 				"Used in Pickled vegetables"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"parsnip_seeds": {
 			"name": "Parsnip seeds",
 			"kind": "material",
 			"description": "Seeds for sowing parsnip. Plant in a tilled bed.",
 			"how_to_get": [
+				"Picked from wild carrot (summer/autumn)",
 				"From a ripe parsnip in a garden"
 			],
 			"used_for": [
 				"Sown with the hoe (Garden) to grow parsnip, 30 seeds a spot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"mug": {
 			"name": "Mug",
@@ -10596,8 +10595,7 @@
 				"Craft: 10 Stick, 4 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"fish_trap_set": {
 			"name": "Fish trap",
@@ -10605,8 +10603,7 @@
 			"description": "A fish trap set in the water.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bird_trap": {
 			"name": "Bird trap",
@@ -10616,8 +10613,7 @@
 				"Craft: 8 Stick, 2 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"bird_trap_set": {
 			"name": "Bird trap",
@@ -10625,8 +10621,7 @@
 			"description": "A bird trap set on the ground.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"iron_anvil_kit": {
 			"name": "Anvil",

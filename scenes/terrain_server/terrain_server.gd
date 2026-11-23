@@ -148,16 +148,19 @@ var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last 
 var _npc_send_t: float = 0.0
 var _pulse_t: float = 0.0
 var _water_updates: int = 0
-var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
+var weather: Dictionary = {}           # the starter row's weather at sea level (WeatherScript.state), refreshed every second: the flora season, the log line, fallbacks
 var _weather_next_msec: int = 0
+var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
+var _weather_here_msec: int = -100000
+var _rain_hours_cache: Dictionary = {}   # Vector3i(tile row, height band, hours looked back) -> _rain_hours_at's answer, for the game hour it was made
+var _rain_hours_hour: int = -1
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
-var _swell: float = 0.0
-var _dry: float = 0.0
+var _river_rows: Dictionary = {}   # tile row -> [swell, dry]: each live row's rivers follow their own row's weather, lagged (not saved: they settle in WEATHER_LAG_S)
 var _weather_bucket: int = -1
 var _water_seen: Dictionary = {}        # tile -> msec a player was last in it (the live water set keeps a tile WATER_KEEP_MS after)
 var _water_live_next: int = 0
@@ -352,6 +355,14 @@ func _ready() -> void:
 	# Test plays (lag lane 23 Nov 2026): --game-hour=H starts the clock at hour H of its current day, so standing-play hitch counts taken on
 	# different days compare (the sky's cost depends on the hour). Nothing else changes; the clock runs on from there and is saved as usual.
 	# For throwaway test stores only: it can move the clock back up to a day, which skews item, trade and animal timers on a kept world.
+	# --game-day=D (look rig --day, weather walk 23 Nov 2026) moves the clock to day D of the year (0 to 364) at the same hour, in the same year,
+	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0
+			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])
+
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
 			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
@@ -484,6 +495,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_skills = func(peer, attributes, rows): net.skills.rpc_id(peer, attributes, rows)
 	items.weather_now = func(): return weather
+	items.weather_at = _weather_here   # the weather over the spot itself (its row and height), as its player's client works it out
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
@@ -696,6 +708,7 @@ func _ready() -> void:
 		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
 	npcs.player_positions = func(): return items.peer_positions()
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
+	npcs.rain_at = func(pos): return float(_weather_here(pos).get("rain", 0.0))   # town people shelter from the rain over the town, not the starter row's
 	npcs.setup(store_dir)
 	tribes = TribesScript.new()
 	tribes.items = items
@@ -754,13 +767,20 @@ func _ready() -> void:
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
+	items.rain_hours_at = _rain_hours_at   # the drink rule's hours since rain, where the player drinks
+	animals.weather_at = _weather_here   # each animal by the weather where it stands (its row and height), as players are
 	coarse_ground.net = net
 	coarse_ground.tiles_dir = world_dir + "/tiles"
 	coarse_ground.tile_size_m = float(settings.tile_size_m)
 	animals.fog_world = {"tiles_dir": world_dir + "/tiles", "tile_size_m": float(settings.tile_size_m)}   # the cold-air floor for animals' sight in fog (fog_ground.gd)
-	animals.weather_ahead = func(hours): return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(4), 0.0, 0.0)   # the starter tile's row, as _update_weather (animals_in_weather_design.md 3)
+	animals.weather_ahead_at = func(hours, pos):   # a storm coming to the animal's own row (animals_in_weather_design.md 3; not the starter row's)
+		var row: int = floori(pos.z / float(settings.tile_size_m))
+		return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+	animals.row_of = func(pos): return floori(pos.z / float(settings.tile_size_m))
 	animals.canopy = func(point): return flora.covered(point)
-	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
+	animals.air_at = func(pos):   # Weather.air_c at the animal (#620): its own row's zone and season (across the equator too) and its height
+		var row: int = floori(pos.z / float(settings.tile_size_m))
+		return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(row), maxf(pos.y, 0.0), int(settings.master_seed), row, settings.equator_tile_row)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
 	animals.ice_moat_at = items.ice_moat_at     # and the same open moat in a thaw
 	animals.game_seconds = func(): return game_clock.seconds
@@ -1014,6 +1034,7 @@ func _ready() -> void:
 		return feet
 	animals.bandit_camps = bandits
 	animals.big_game.weapon_of = bandits.weapon_of   # a bandit's blow is his weapon's kind (a sword cuts), not a beast's
+	animals.big_game.ping_ms = func(ping_peer): return _ping_ms(int(ping_peer))   # a fair dodge: a goblin's or bandit's blow judged once the player's step has come back
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
@@ -1027,6 +1048,7 @@ func _ready() -> void:
 	bandits.flush_world = func(): items.save()
 	animals.big_game.struck = func(struck_animal, struck_peer, struck_result): bandits.struck(struck_animal, struck_peer, struck_result)   # a landed charge (it changes nothing about the blow)
 	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
+	bandits.captor_absent = items.is_absent   # a captive waits for a captor whose line dropped
 	bandits.guards_at = func():
 		var guard_spots: Array = []
 
@@ -1142,6 +1164,7 @@ func _ready() -> void:
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
 			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
+			bandits.captor_back(old_peer, peer)   # a bandit they tied waits for this connection now
 
 			_drop_replaced(old_peer)
 
@@ -1293,6 +1316,17 @@ func _pool_summary() -> String:
 	var landscape: bool = items != null and items._resource_task != -1
 	return "pool jobs: tile reads %d, undergrowth %d, cover %d, landscape %s; block line sends in progress %d" % [generator._prefetch_tasks.busy() if generator != null else 0,
 		flora._brush_tasks.busy() if flora != null else 0, _cover_tasks.busy(), "on" if landscape else "off", _link.sending() if _link != null else 0]
+
+
+# A peer's round trip in ms as ENet measures it (0 when there is no such peer), for a fair dodge (server_big_game late_s).
+func _ping_ms(peer_id: int) -> int:
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+
+	if enet == null or not _peers.has(peer_id):
+		return 0
+
+	var link: ENetPacketPeer = enet.get_peer(peer_id)
+	return int(link.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)) if link != null else 0
 
 
 # The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
@@ -1514,7 +1548,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	else:
 		generator.prefetch_tile(position.x, position.z)
 
-	items.report_position(peer_id, position)
+	items.report_position(peer_id, position, velocity)   # with its velocity: a blow is judged from where the striker is now (strike_origin)
 
 	if map_knowledge != null:
 		map_knowledge.note_position(peer_id, position)   # the charcoal Map: a survey every few metres walked (server_map.gd)
@@ -1810,6 +1844,50 @@ func _weather_at(pos: Vector3) -> Dictionary:
 	return WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), pos.y, 0.0, row, settings.equator_tile_row)
 
 
+# The weather over a spot as the player's client there works it out (terrain_client._update_weather: the zone of its row, its height), so
+# what the server does to a player (warmth, wet clothes, a fire or torch put out by rain, sleep, drinking) follows the sky that player
+# sees: up a mountain it snows (no rain cooling, no fire put out) while it rains at the coast (weather and seasons walk, 23 Nov 2026).
+# One answer per row and Weather.HEIGHT_BAND_M of height (band_height) a second, so many fires and players cost a few noise reads.
+func _weather_here(pos: Vector3) -> Dictionary:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _weather_here_msec >= 1000:
+		_weather_here_cache.clear()
+		_weather_here_msec = now
+
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	var height: float = WeatherScript.band_height(pos.y)
+	var key := Vector2i(row, int(round(height)))
+
+	if not _weather_here_cache.has(key):
+		_weather_here_cache[key] = WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, 0.0, row, settings.equator_tile_row)
+
+	return _weather_here_cache[key]
+
+
+# Game hours since it last rained over a spot (Weather.rain_hours_ago at its row and 10 m band, as _weather_here), up to max_h; INF when it
+# did not. The drink rule's brooks (DrinkRules.runs) run after the rain that fell where the player stands, not the starter row's (Dave:
+# nothing is based on where the spawn is). Worked out once a row and band a game hour.
+func _rain_hours_at(pos: Vector3, max_h: float) -> float:
+	var hour: int = floori(game_clock.seconds / 3600.0)
+
+	if hour != _rain_hours_hour:
+		_rain_hours_cache.clear()
+		_rain_hours_hour = hour
+
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	var height: float = WeatherScript.band_height(pos.y)
+	var look: int = ceili(maxf(max_h, 0.0))
+	var key := Vector3i(row, int(round(height)), look)
+
+	if _rain_hours_cache.has(key):
+		return float(_rain_hours_cache[key])
+
+	var ago: float = WeatherScript.rain_hours_ago(settings.master_seed, float(hour) * 3600.0, settings.get_zone_group_for_row(row), height, row, settings.equator_tile_row, float(look))
+	_rain_hours_cache[key] = ago
+	return ago
+
+
 # The weather over the starter tile (zone from its row, season and time from the game clock,
 # town spirit a neutral placeholder until it exists) swells the rivers: rain feeds the springs,
 # lagged because runoff takes time (snow just piles up).
@@ -1820,7 +1898,7 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
+	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
@@ -1830,11 +1908,40 @@ func _update_weather() -> void:
 
 	if bucket != _weather_bucket:
 		_weather_bucket = bucket
-		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
+		print("server: starter row weather %s, rain %.2f snow %.2f storm %.2f, %.0f C; live water row %d rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.centre.y, water_live.runoff])
 
-	_swell += (WeatherScript.river_push(weather) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	_dry += (WeatherScript.river_dry(weather) - _dry) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	water_live.set_runoff(maxf(1.0 + WEATHER_SWELL * _swell - DRY_SHRINK * _dry, RUNOFF_FLOOR))
+	water_live.set_runoff(_river_runoff(game_s, water_live.centre.y))
+
+
+# The runoff for the running water tile (row `running`: the hub's centre, the first baked tile of set_live): its own row's rain and heat at
+# sea level, lagged WEATHER_LAG_S, so a river rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn
+# is). The rows of the next few live tiles are followed too, so a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
+# shortcut: a tile's rivers rise by their own tile row; an upstream stretch in another row is not weighted in (physical world thread
+# 23 Nov 2026: nearly every catchment sits inside its own tile or the next). set_runoff is one number: any other live tile in another row
+# runs on the running tile's runoff. A row is forgotten once no live tile is in it (WATER_KEEP_MS after the last player left), so walking
+# back into a flooded row after that starts its rivers again from the baked flow and they swell over WEATHER_LAG_S.
+func _river_runoff(game_s: float, running: int) -> float:
+	var rows: Array = [running]
+
+	for tile in _water_live_last.slice(0, 4):   # set_live's four at most
+		if not rows.has((tile as Vector2i).y):
+			rows.append((tile as Vector2i).y)
+
+	for row in _river_rows.keys():
+		if not rows.has(row):
+			_river_rows.erase(row)
+
+	var k: float = 1.0 - exp(-1.0 / WEATHER_LAG_S)
+
+	for row in rows:
+		var here: Dictionary = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+		var push: float = WeatherScript.river_push(here)
+		var dry: float = WeatherScript.river_dry(here)
+		var was: Array = _river_rows.get(row, [0.0, 0.0])   # a row newly live starts from its baked flow, as its new water window does, and swells from there
+		_river_rows[row] = [float(was[0]) + (push - float(was[0])) * k, float(was[1]) + (dry - float(was[1])) * k]
+
+	var run: Array = _river_rows[rows[0]]
+	return maxf(1.0 + WEATHER_SWELL * float(run[0]) - DRY_SHRINK * float(run[1]), RUNOFF_FLOOR)
 
 
 # The water sim follows the players (tech/WATER_NINE_TILES_PLAN.md): the tiles they stand in, kept
@@ -3509,7 +3616,7 @@ func _process(delta: float) -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(_store_path + STOP_NOW))
 			print("server: stop asked (stop.now); saving and closing with %d players here" % _peers.size())
 			_events.event("QUIT: stop asked (stop.now), %d players here" % _peers.size())
-			_quit_at_msec = now
+			_quit_at_msec = now + _tell_closing()
 			_run_note("closing", _listen_port)
 
 		if FileAccess.file_exists(flag_path):
@@ -3591,6 +3698,7 @@ func _process(delta: float) -> void:
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1
+		_close_players()
 		var flush_from: int = Time.get_ticks_msec()
 		store.flush()
 		_events.event("shutdown: ground flushed in %d ms" % (Time.get_ticks_msec() - flush_from))
@@ -3640,6 +3748,35 @@ func _run_note(state: String, listen_port: int, why: String = "") -> void:
 # pull) and asks it to close. Only a request naming this process and another commit is obeyed, only by a server Play started
 # (--quit-when-empty), and only with nobody playing on it: it closes the normal way (ground flushed, world and inventories saved in
 # _exit_tree), so Play can start one on the new code.
+# A stop with players here (a restart or an update, run_server.sh stop.now): each is told why (NetScript.SERVER_CLOSING) and the quit waits
+# CLOSING_TELL_MS for that notice to go out; returns that wait (0 with nobody here).
+const CLOSING_TELL_MS := 1500
+
+
+func _tell_closing() -> int:
+	if _peers.is_empty():
+		return 0
+
+	for peer in _peers.keys():
+		net.notice.rpc_id(int(peer), NetScript.SERVER_CLOSING)
+
+	return CLOSING_TELL_MS
+
+
+# The players' connections are closed the normal way as the server quits (their games hear it at once and show the "connection lost"
+# window with the reason, not 60 to 120 s later at their line's timeout). Their spots are noted and saved as before (_exit_tree).
+func _close_players() -> void:
+	var peer: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+
+	if peer == null or _peers.is_empty():
+		return
+
+	for id in _peers.keys():
+		peer.disconnect_peer(int(id))   # a polite goodbye (not forced): each game gets server_disconnected
+
+	peer.host.flush()
+
+
 func _stop_if_asked(now: int) -> void:
 	if not FileAccess.file_exists(STOP_NOTE):
 		return
