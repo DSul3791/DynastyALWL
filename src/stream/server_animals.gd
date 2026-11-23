@@ -186,11 +186,12 @@ func species_def(sp: String) -> Dictionary:
 	return cfg.get("species", {}).get(sp, {})
 
 
-# Admin and tests: put an animal down at once (x, z; the ground gives y). Returns its id or 0.
-func spawn(sp: String, x: float, z: float) -> int:
+# Admin and tests: put an animal down at once (x, z; the ground gives y). Returns its id or 0. over_cap: a player's own companion made
+# beside them (server_companions._make_live) is never refused by server_cap; it still counts toward it, so the wild ones make room.
+func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 	var def: Dictionary = species_def(sp)
 
-	if def.is_empty() or animals.size() >= int(cfg.get("server_cap", 150)):
+	if def.is_empty() or (animals.size() >= int(cfg.get("server_cap", 150)) and not over_cap):
 		return 0
 
 	var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else 0.0
