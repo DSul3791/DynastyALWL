@@ -432,7 +432,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
-		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 153 a standing animal's
+		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 154 a standing animal's
 		# row carries the send time, so every leg between two points is one the animal really made.
 		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), float(_clock["off"]), INF)
 		_bodies[id]["state"] = int(row[4])

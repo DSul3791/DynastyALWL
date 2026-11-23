@@ -2,7 +2,7 @@
 
 Dave's first game on the real server (Linux Docker, friends over the internet and the LAN, build 9257): "animals were still teleporting
 and jumping right through us ... battle was almost impossible. the animals are like really bad animatronics". Then: "they might need more
-freedom client side", and "check on the internet for the best practices". This page keeps the research, the diagnosis and what protocol 153
+freedom client side", and "check on the internet for the best practices". This page keeps the research, the diagnosis and what protocol 154
 changed. The play-test write-ups for Dave are in the project files (animal-motion/DIAGNOSIS_2026-11-23.md, RESEARCH_2026-11-23.md).
 
 ## What other games do (sources)
@@ -72,7 +72,7 @@ changed. The play-test write-ups for Dave are in the project files (animal-motio
   - no lag compensation for player hits;
   - the foe flips between two players each step.
 
-## Protocol 153 (this change)
+## Protocol 154 (this change)
 
 - data/network.json `packet_throttle_*`, applied by net_settings.gd on both ends: deceleration 0, so nothing is dropped on purpose.
 - Server rows_near: a standing animal's row carries the send time every send. `moving` comes from the step; wolves set it in

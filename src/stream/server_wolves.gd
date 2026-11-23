@@ -329,7 +329,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 
 
 # The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and
-# whether it moved this think (moving), so rows_near sends the server's move times, and a standing wolf's row the send time (protocol 153),
+# whether it moved this think (moving), so rows_near sends the server's move times, and a standing wolf's row the send time (protocol 154),
 # and the client draws a steady trot that stops dead.
 func pace(m: Dictionary, now_ms: int) -> void:
 	m["moving"] = m["pos"] != m.get("paced_pos")

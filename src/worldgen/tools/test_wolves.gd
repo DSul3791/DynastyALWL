@@ -369,7 +369,7 @@ func _init() -> void:
 	fires_at = []
 
 	# 10. Pacing: a pack wolf's row carries the server time the pack brain moved it (moved_ms), and once it stops it counts as standing
-	# (moving false), so its row carries the send time (protocol 153), as every other animal's row does.
+	# (moving false), so its row carries the send time (protocol 154), as every other animal's row does.
 	a = make()
 	players = [player(1, 0.0, 0.0)]
 	pid = a.wolves.spawn_pack(60.0, 0.0)

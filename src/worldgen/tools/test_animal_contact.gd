@@ -2,7 +2,7 @@ extends SceneTree
 
 # No animal goes through a player (Dave 23 Nov 2026, first game on the real server: animals were "jumping right through us"; data/animals/contact.json,
 # docs/design/ANIMAL_NETCODE.md). A charge stops against the player it reaches, also when the server runs slowly (long steps); any other step
-# that would take an animal into a player is held at the player's side; a standing animal's row carries the send time (protocol 153).
+# that would take an animal into a player is held at the player's side; a standing animal's row carries the send time (protocol 154).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_contact.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -107,7 +107,7 @@ func _init() -> void:
 	var bird: Dictionary = {"sp": "crow", "pos": Vector3(0.1, 0.0, 0.0), "state": 0, "fly": true}
 	check(not a.keep_off_players(bird, Vector3(3.0, 0.0, 0.0), [Vector3.ZERO]), "a bird in the air is not held")
 
-	# Protocol 153: a standing animal's row carries the send time, every send; a moving one keeps the time of its step.
+	# Protocol 154: a standing animal's row carries the send time, every send; a moving one keeps the time of its step.
 	var players: Array = [Vector3(0.0, 10.0, 0.0)]
 	var s = _animals(players, [])
 	var rid: int = s.spawn("deer", 10.0, 0.0)

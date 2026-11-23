@@ -12,7 +12,7 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 # --probe-animals (Dave 23 Nov 2026, the real server: animals "teleporting and jumping right through us"; tools/animal_net_probe.sh): the
 # bot draws the animals sent to it through the client's MotionBuffer and prints a PROBE line (src/worldgen/tools/animal_net_probe.gd).
 #   --lag=MS,JITTER_MS,LOSS_PERCENT  its connection goes through an in-process relay with that delay, jitter and loss, both ways
-#   --old-draw                       the drawing before protocol 153 (delay of one arrival gap + 0.15 s, a stand guessed from gaps, no smoothing)
+#   --old-draw                       the drawing before protocol 154 (delay of one arrival gap + 0.15 s, a stand guessed from gaps, no smoothing)
 #   --old-throttle                   ENet's default packet throttle (drops unreliable packets when the ping wobbles) on this connection
 #   --stand-after=S                  stands still after S seconds (animals come near a still player)
 #   --spawn=SP,SP                    (server with --open-admin) places one of each species 15 to 25 m away at the start

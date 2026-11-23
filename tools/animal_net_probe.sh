@@ -1,6 +1,6 @@
 #!/bin/bash
 # usage: tools/animal_net_probe.sh [SECONDS_PER_RUN]
-# What a player sees of the animals over an internet-like connection, before and after protocol 153 (Dave 23 Nov 2026, the real server:
+# What a player sees of the animals over an internet-like connection, before and after protocol 154 (Dave 23 Nov 2026, the real server:
 # animals "teleporting and jumping right through us"; docs/design/ANIMAL_NETCODE.md). One headless server on a spare port with its own
 # throwaway store (never the live server, its container or its ports), then ONE protocol bot at a time (scenes/bot/bot_main.gd
 # --probe-animals), joined through an in-process relay that adds delay, jitter and loss. Each run prints a PROBE line (frames over 0.5 m a

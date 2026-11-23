@@ -2056,7 +2056,7 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 		if d <= radius and a["state"] != HIDDEN:
 			# Field 5 (protocol 147): the server milliseconds it was at this position: its step's time (tick), or now for a move made
 			# elsewhere (the pack brain, a companion). The client draws each animal on these times, not on when the rows came (Dave 21 Nov
-			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 153 (Dave 23 Nov 2026, the real server):
+			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 154 (Dave 23 Nov 2026, the real server):
 			# a standing animal's row carries the send time, every send, so the client knows it stood until just before it moved. It used to
 			# guess a stand from a gap in arrivals, and over the internet a lost batch looks the same: the animal stood, then jumped.
 			if a.get("row_pos") != a["pos"]:

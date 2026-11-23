@@ -120,7 +120,7 @@ static func delay_s(gap: float) -> float:
 	return clampf(gap + LEAD_S, 0.1, 0.7)
 
 
-# The row clock of one stream of timed rows (the animals, protocol 153; Dave 23 Nov 2026, first game on the real server over the internet:
+# The row clock of one stream of timed rows (the animals, protocol 154; Dave 23 Nov 2026, first game on the real server over the internet:
 # "animals were still teleporting and jumping right through us"). On a real connection rows come late by a varying amount and some never
 # come (ENet drops unreliable packets on purpose when the ping wobbles: data/network.json packet_throttle). The draw delay was one row gap
 # plus a fixed 0.15 s, measured from arrival gaps, so a lost or late batch ran the body past its newest point and it stood, then jumped.

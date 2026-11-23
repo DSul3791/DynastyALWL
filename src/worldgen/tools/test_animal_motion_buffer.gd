@@ -88,7 +88,7 @@ func _init() -> void:
 	var stop: Array = []
 	MotionBuffer.push(stop, Vector3(0, 0, 0), 0.0, 60.0, 0.25)
 	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.25, 0.25)
-	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # a standing row: the send time (protocol 153)
+	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # a standing row: the send time (protocol 154)
 	check(absf((MotionBuffer.at(stop, 60.75)[0] as Vector3).x - 2.5) < 0.001, "a stopped runner stays where it stopped (%.2f)" % (MotionBuffer.at(stop, 60.75)[0] as Vector3).x)
 
 	# Repeated rows the way the client gets them (gate review of PR #1433): the offset creeps between batches, so the same server ms lands a
@@ -200,7 +200,7 @@ func _init() -> void:
 	for k in 11:
 		halt_rows.append([k * 100, Vector3(float(k), 0.0, 0.0)])
 
-	halt_rows.append([1250, Vector3(10.0, 0.0, 0.0)])   # standing: the send time (protocol 153)
+	halt_rows.append([1250, Vector3(10.0, 0.0, 0.0)])   # standing: the send time (protocol 154)
 	var slowest: float = INF
 	var halt_was: Vector3 = Vector3.INF
 	var halt_end: Vector3 = Vector3.ZERO
@@ -227,7 +227,7 @@ func _init() -> void:
 	# either way every 1.2 s), stands 2 s, again; rows every 0.25 s; 40 to 70 ms on the way; a share of the batches lost. The old way (a stand
 	# guessed from arrival gaps, a delay of one arrival gap plus 0.15 s, no smoothing, stood_ms once) jumped over half a metre in a frame
 	# 3 times in 30 s at 10% loss and 9 at 30%; now none, also at 50% (scratch model, same numbers: gdmirror.py). The old way here is a model
-	# of the code before protocol 153 written into this test (_connection_jumps), not that code itself.
+	# of the code before protocol 154 written into this test (_connection_jumps), not that code itself.
 	check(_connection_jumps(false, 0.3) >= 3, "the old way at 30%% loss jumps (%d frames over 0.5 m in 30 s)" % _connection_jumps(false, 0.3))
 
 	for loss in [0.0, 0.1, 0.3, 0.5]:
@@ -243,7 +243,7 @@ func _lcg(state: Array) -> float:
 	return float(state[0]) / 2147483648.0
 
 
-# Frames (60 a second, over 29 s) in which the drawn body moved more than 0.5 m, for the path above: `fixed` the protocol 153 path (standing
+# Frames (60 a second, over 29 s) in which the drawn body moved more than 0.5 m, for the path above: `fixed` the protocol 154 path (standing
 # rows stamped every send, the row clock, smooth), otherwise the old one; `loss` the share of batches lost.
 func _connection_jumps(fixed: bool, loss: float, seconds: float = 30.0) -> int:
 	var rng: Array = [7]
