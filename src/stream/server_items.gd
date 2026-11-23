@@ -2062,6 +2062,7 @@ func save() -> void:
 	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
+	_set_gen = _save_gen + 1   # every file of this save carries the gen _item_job gives the header, written last (_read_json_version)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	for key in _picked.keys():
@@ -2083,6 +2084,7 @@ func save() -> void:
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
 	_save_item_files(_item_job())
+	_set_gen = 0
 
 
 # The files made from the world items (world_items.json, tree_states.json, lights.json, kilns.json) are built from a deep copy taken on the
@@ -2108,6 +2110,16 @@ const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countd
 const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
 var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
+# A save is one set of files (coordinator 23 Nov 2026, the live save): save() writes inventories, chests, vitals, characters, craft queues,
+# crops, smelters, smithies, trees, lights and kilns, then the areas and last the world_items.json header, one file at a time, so a hard stop
+# between two left some files from the new save and the rest from the one before (Stone put into a chest was then in neither; taken out, in
+# both: test_save_set). Each of those files now carries "gen", the gen of the header its save writes last; at load a file whose gen is past
+# the header's is from a save that never finished and is read from its .prev, the save before. A file with no gen (written outside save(),
+# or by a build before this) is read as it is.
+var _set_gen: int = 0              # while save() runs: the gen its files carry; 0 outside a save
+var _set_lost_file: bool = false   # a file of the save running now (written on the tick, not the writer) could not be written
+var _set_written: Array = []       # the files of the save running now written so far on the tick (rolled back when it loses one)
+var _head_gen: int = -2            # the gen of the header on disk, read once at load (-1: no header, or one with no gen; -2: not read yet)
 const SWEEP_BUDGET_US := 1000      # PROVISIONAL: the most a tick spends on the rolling check (2% of a 50 ms tick)
 var _save_sig: Dictionary = {}     # world id -> [hash of its saved fields, its area key ("" = not saved in an area)] as the check last saw it
 var _area_ids: Dictionary = {}     # area key -> {world id: true}: the items each area file holds
@@ -2207,21 +2219,42 @@ func _save_item_files(job: Dictionary) -> void:
 
 	var t0: int = Time.get_ticks_usec()
 	_finish_writer()
-	_write_item_job(job)
+
+	if _set_lost_file:
+		_skip_item_job(job, _set_written)
+	else:
+		_write_item_job(job, _set_written)
+
+	_set_lost_file = false
+	_set_written = []
 	_note_save_part("world items", t0)
 
 
 # Writes a job's files: tree_states, lights, kilns, the areas that changed, then the header, then takes away the files of areas left empty.
 # Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
-static func _write_item_job(job: Dictionary) -> void:
+static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	var dir: String = str(job["dir"])
 	var items: Dictionary = job["items"]
 	var kinds: Dictionary = job["kinds"]
 	var gen: int = int(job["gen"])
 	var sums: Dictionary = job["sums"]
-	_write_file(dir + "/tree_states.json", JSON.stringify({"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}))
-	_write_file(dir + "/lights.json", JSON.stringify({"version": 1, "lit": _light_rows_of(items, kinds)}))
-	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))}))
+	var texts: Dictionary = {
+		dir + "/tree_states.json": JSON.stringify({"version": TREE_SAVE_VERSION, "gen": gen, "trees": _tree_rows_of(items), "saplings": job["saplings"]}),
+		dir + "/lights.json": JSON.stringify({"version": 1, "gen": gen, "lit": _light_rows_of(items, kinds)}),
+		dir + "/kilns.json": JSON.stringify({"version": 1, "gen": gen, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))})}
+	var done: Array = written.duplicate()
+	var whole: bool = true
+
+	for path in texts:
+		if _write_file(path, texts[path]):
+			done.append(path)
+		else:
+			whole = false
+
+	if not whole:
+		_skip_item_job(job, done)
+		return
+
 	var areas: Dictionary = {}
 	var listed: Dictionary = {}
 	var failed: Array = []
@@ -8629,6 +8662,10 @@ func _read_area(key: String, gen: int) -> Dictionary:
 	if typeof(prev) == TYPE_DICTIONARY and int(prev.get("gen", -1)) == gen and int(prev.get("version", 0)) <= VERSION and typeof(prev.get("items")) == TYPE_ARRAY:
 		push_error("server items: %s read from the save before it (.prev, the gen the header names)" % path)
 		_area_recovered[key] = true
+
+		if typeof(main) == TYPE_DICTIONARY:
+			_set_aside_unfinished(path)
+
 		return prev
 
 	if typeof(main) == TYPE_DICTIONARY and typeof(main.get("items")) == TYPE_ARRAY:
@@ -8659,6 +8696,16 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) <= version and int(parsed.get("version", 0)) >= (version if oldest < 0 else oldest):
+		if name != "world_items.json" and parsed.has("gen") and int(parsed["gen"]) > _header_gen():
+			var before: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev")) if FileAccess.file_exists(path + ".prev") else null
+
+			if typeof(before) == TYPE_DICTIONARY and int(before.get("version", 0)) <= version and int(before.get("version", 0)) >= (version if oldest < 0 else oldest) and int(before.get("gen", 0)) <= _header_gen():
+				push_error("server save: %s is from save %d, which stopped before it finished (the last whole save is %d): read from %s.prev, so the store is that whole save" % [path, int(parsed["gen"]), _header_gen(), path])
+				_set_aside_unfinished(path)
+				return before
+
+			push_error("server save: %s is from save %d, past the last whole save %d, and has no earlier copy of that save: read as it is" % [path, int(parsed["gen"]), _header_gen()])
+
 		return parsed
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) > version:
@@ -8685,11 +8732,40 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	return null
 
 
+# A file from a save that never finished, read from its .prev at load: put aside as .unfinished and the .prev copied back in its place, so the
+# next save keeps the whole save as its .prev (a second stop before that save's header lands then still reads whole).
+static func _set_aside_unfinished(path: String) -> void:
+	_file_lock.lock()
+	DirAccess.rename_absolute(path, path + ".unfinished")
+	DirAccess.copy_absolute(path + ".prev", path)
+	_file_lock.unlock()
+
+
+# The gen of the last whole save: the world_items.json header's, or its .prev's when the header is damaged (as _load_world_items reads it).
+func _header_gen() -> int:
+	if _head_gen == -2:
+		_head_gen = -1
+		var path: String = _dir + "/world_items.json"
+		restore_missing(path)
+
+		for one in [path, path + ".prev"]:
+			var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(one)) if FileAccess.file_exists(one) else null
+
+			if typeof(head) == TYPE_DICTIONARY:
+				_head_gen = int(head.get("gen", -1)) if head.has("areas") else -1
+				break
+
+	return _head_gen
+
+
 # Writes a save file without ever leaving a half-written one: the new text goes to .tmp and is renamed over the old file,
 # and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
 	var t0: int = Time.get_ticks_usec()
+
+	if _set_gen > 0:
+		data["gen"] = _set_gen
 
 	if _async_writes:
 		_pending_writes.append([path, data.duplicate(true)])   # a copy of its own: the background writer makes the JSON (see _start_writer)
@@ -8699,7 +8775,12 @@ func _write_atomic(name: String, data: Dictionary) -> void:
 	var text: String = JSON.stringify(data)
 	_note_save_part(name, t0)
 	_finish_writer()
-	_write_file(path, text)
+
+	if _write_file(path, text):
+		if _set_gen > 0:
+			_set_written.append(path)
+	elif _set_gen > 0:
+		_set_lost_file = true   # this save's header is not written (_save_item_files)
 
 
 # A save part that took more than 10 ms on the tick, for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick).
@@ -8752,17 +8833,30 @@ static func _write_file(path: String, text: String) -> bool:
 
 	if file == null:
 		_file_lock.unlock()
-		push_error("server items: cannot write %s" % path)
+		push_error("SERVER SAVE FAILED: cannot write %s (%s; a read-only or missing store?): the file on disk is the save before, kept as it is" % [path, error_string(FileAccess.get_open_error())])
 		return false
 
-	file.store_string(text)
+	var stored: bool = file.store_string(text)
+	var error: int = file.get_error()
 	file.close()
 
+	if not stored or (error != OK and error != ERR_FILE_EOF):
+		DirAccess.remove_absolute(path + ".tmp")   # a disk that filled part way: the torn .tmp is never moved over the whole file
+		_file_lock.unlock()
+		push_error("SERVER SAVE FAILED: %s could not be written whole (%s; is the disk full?): the file on disk is the save before, kept as it is" % [path, error_string(error)])
+		return false
+
+	# The file it replaces becomes .prev by a rename, not a copy: a copy onto a full disk tore the .prev, the one fallback. A stop between the two
+	# renames leaves .tmp and .prev and no file, which restore_missing puts back from the whole .tmp.
 	if FileAccess.file_exists(path):
-		DirAccess.copy_absolute(path, path + ".prev")
+		DirAccess.rename_absolute(path, path + ".prev")
 
 	var moved: bool = DirAccess.rename_absolute(path + ".tmp", path) == OK
 	_file_lock.unlock()
+
+	if not moved:
+		push_error("SERVER SAVE FAILED: %s.tmp could not be moved into place: restored at the next start from the .tmp" % path)
+
 	return moved
 
 
@@ -8792,11 +8886,45 @@ func _start_writer() -> void:
 
 
 static func _write_batch(batch: Array) -> void:
+	var whole: bool = true   # every file of this save so far written
+	var written: Array = []  # the paths this save has written so far
+
 	for row in batch:
-		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files
-			_write_item_job(row)
+		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files, the header last; a save that lost a file does not write its header
+			if whole:
+				_write_item_job(row, written)
+			else:
+				_skip_item_job(row, written)
+
+			whole = true   # a batch can hold the next save too
+			written = []
+		elif _write_file(str(row[0]), JSON.stringify(row[1])):
+			written.append(str(row[0]))
 		else:
-			_write_file(str(row[0]), JSON.stringify(row[1]))
+			whole = false
+
+
+# A save one of whose files could not be written: its header is not written, so the store stays the save before as a whole (its other new
+# files are read from their .prev at load, _read_json_version). Its areas lose their sums and are built and written again by the next save.
+static func _skip_item_job(job: Dictionary, written: Array) -> void:
+	var sums: Dictionary = job["sums"]
+
+	# The files it did write go back to the save before (their .prev), so the next save keeps the whole save as their .prev: a stop in that
+	# save then still reads as one whole save.
+	_file_lock.lock()
+
+	for path in written:
+		if FileAccess.file_exists(str(path) + ".prev"):
+			DirAccess.rename_absolute(str(path) + ".prev", str(path))
+
+	_file_lock.unlock()
+
+	for key in job["areas"]:
+		sums.erase(key)
+
+	(job["failed_out"] as Array).append_array((job["areas"] as Dictionary).keys())
+	(job["failed_out"] as Array).append("")   # nothing to rebuild, still a failure: the tick marks the world dirty and the save runs again
+	push_error("SERVER SAVE FAILED: save %d lost a file, so its world items and header were not written: the store stays the save before, whole; the next save tries again" % int(job["gen"]))
 
 
 func _reap_writer() -> void:
