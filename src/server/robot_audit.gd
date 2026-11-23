@@ -20,6 +20,9 @@ extends Node
 #     <animal id> <species> <unix ms> <seconds> when it gets going again or is gone; AUDIT near <unix ms> <species>:<mean> ... span_s:<s>
 #     every NEAR_EVERY_S of real time, the mean number of animals near a player by kind over that span (how long each kind was watched: tools/robot_stuck.py counts stuck per game day)
 #   AUDIT control <unix ms> <command>   a robot's server_control.txt command done (plan cold): the only place this node changes the game
+#   AUDIT chest <world id> <unix ms> <signature> <slots used>   each container's contents when they change (looked at every 0.25 s)
+#   AUDIT total <unix ms> <item>:<count> ...   after control "count <x> <z> <item> ...": how many of each there are in every pack and container
+#     and loose on the ground within COUNT_M of x, z, together, when that changes (plan pack_fuzz: nothing doubled or lost, tools/robot_check.py)
 # No protocol change, and with the flag off this node is never made.
 
 const RobotRules := preload("res://src/shared/robot_rules.gd")
@@ -64,6 +67,11 @@ var _stuck: Dictionary = {}       # animal id -> [spot Vector3, unix ms there si
 var _near_from: int = -1         # unix ms the AUDIT near span began
 var _near_looks: int = 0          # looks in the span (each ANIMAL_EVERY_S or a frame later)
 var _near_count: Dictionary = {}  # species name -> animals near a player at the last look
+var _chest_sig: Dictionary = {}   # world id -> last printed container signature
+var _count_ids: PackedStringArray = PackedStringArray()   # control "count": the items whose totals are printed
+var _total_said: String = ""
+var _count_at: Vector2 = Vector2.ZERO   # loose items count within COUNT_M of here (the robots' spot), not the whole world's natural ones
+const COUNT_M := 40.0
 
 
 func setup(server_items, server_animals) -> void:
@@ -104,6 +112,8 @@ func _process(delta: float) -> void:
 			if _sig.get(peer, "") != sig:
 				_sig[peer] = sig
 				print("AUDIT pack %d %d %s %d" % [int(peer), RobotRules.now_ms(), sig, RobotRules.used(inv)])
+
+		_containers()
 
 	_control_t += delta
 
@@ -456,6 +466,10 @@ func _read_control() -> void:
 
 			v["warmth"] = maxf(float(v.get("warmth", 0.0)), 60.0)
 			items._sync_vitals(peer, true)
+		elif p[0] == "count" and p.size() > 3 and p[1].is_valid_float() and p[2].is_valid_float():
+			_count_at = Vector2(float(p[1]), float(p[2]))
+			_count_ids = p.slice(3)
+			_total_said = ""
 		elif p[0] == "where" and p.size() > 1 and p[1].is_valid_int():
 			_where_sp = int(p[1])   # a species number, not a peer
 		elif p[0] == "health" and not v.is_empty() and p.size() > 2 and p[2].is_valid_float():
@@ -466,6 +480,64 @@ func _read_control() -> void:
 			continue
 
 		print("AUDIT control %d %s" % [RobotRules.now_ms(), line])
+
+
+# Every container's contents (by its world id, the id the clients know it by) when they change, and with control "count" the totals.
+func _containers() -> void:
+	var now: int = RobotRules.now_ms()
+	var totals: Dictionary = {}
+
+	for id in _count_ids:
+		totals[items.table.number_of(id)] = 0
+
+	for id in items._items:
+		var it: Dictionary = items._items[id]
+
+		if not it.has("struct"):
+			if totals.has(int(it.get("number", 0))) and Vector2((it["pos"] as Vector3).x, (it["pos"] as Vector3).z).distance_to(_count_at) <= COUNT_M:
+				totals[int(it["number"])] += int(it.get("count", 1))
+
+			continue
+
+		var uid: Variant = (it["struct"] as Dictionary).get("uid", null)
+
+		if uid == null or not items._chests.has(int(uid)):
+			continue
+
+		var box = items._chests[int(uid)]
+		var sig: String = RobotRules.signature(box)
+
+		if _chest_sig.get(id, "") != sig:
+			_chest_sig[id] = sig
+			print("AUDIT chest %d %d %s %d" % [int(id), now, sig, RobotRules.used(box)])
+
+		_add_counts(box, totals)
+
+	if totals.is_empty():
+		return
+
+	for peer in items.peer_ids():
+		_add_counts(items.inventory_of(int(peer)), totals)
+
+	var parts: PackedStringArray = PackedStringArray()
+
+	for id in _count_ids:
+		parts.append("%s:%d" % [id, int(totals[items.table.number_of(id)])])
+
+	var said: String = " ".join(parts)
+
+	if said != _total_said:
+		_total_said = said
+		print("AUDIT total %d %s" % [now, said])
+
+
+static func _add_counts(inv, totals: Dictionary) -> void:
+	if inv == null:
+		return
+
+	for s in range(inv.numbers.size()):
+		if totals.has(int(inv.numbers[s])):
+			totals[int(inv.numbers[s])] += int(inv.counts[s])
 
 
 # A copy of a weather state with a hard frost (the original may be a cached dictionary: never changed).

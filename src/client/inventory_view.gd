@@ -520,6 +520,9 @@ func toggle() -> void:
 	if _panel != null:
 		_panel.visible = open
 
+	if not open:
+		_end_drag()
+
 	if _you_part != null:
 		_you_part.set_active(open)
 
@@ -3044,6 +3047,8 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 
 func _close_chest() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	_open_asked_msec = -100000   # contents still on their way (another player's change, sent before the close arrived) must not open the window again:
+	                             # the server has it closed, so that window would never be brought up to date (hands-on screens fuzz, 23 Nov 2026)
 
 	if chest_event.is_valid() and _world.has(chest_id):
 		chest_event.call("close", _world[chest_id]["pos"])
@@ -3060,7 +3065,15 @@ func _close_chest() -> void:
 	if _panel != null:
 		_panel.visible = false
 
+	_end_drag()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+# A stack still on the pointer when the window closes goes back where it was (nothing is moved until a drop): without this the engine
+# kept the drag going over the game, the stack's picture on the cursor until the next click (hands-on screens fuzz, 23 Nov 2026).
+func _end_drag() -> void:
+	if is_inside_tree() and get_viewport().gui_is_dragging():
+		get_viewport().gui_cancel_drag()
 
 
 # Kept on the view for the tests: _container_part.is_fire (src/client/ui/inventory/container_panel.gd).

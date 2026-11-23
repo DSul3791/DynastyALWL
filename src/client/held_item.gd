@@ -2197,6 +2197,9 @@ func _update_blueprint() -> void:
 		if not is_nan(terrain):
 			blueprint_state = PlacementRules.off_ground(_placement, kit, _blueprint_at.y - lifted, terrain, on_base and attach != "table", on_grid.size() > 3)   # a platter's base is a table: the server snaps with foundation rows only, so no exemption
 
+			if blueprint_state == "" and terrain < PlacementRules.WET_GROUND_M:
+				blueprint_state = "wet"   # ground this low is shore mud: the server refuses it (server_items _place)
+
 	if blueprint_state == "" and _over_tree(kit):
 		blueprint_state = "tree"   # the server refuses it the same way (server_items _place)
 

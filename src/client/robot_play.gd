@@ -17,7 +17,7 @@ extends Node
 # Plans (--robot-plan=): first_hours (default: craft, drop and pick up, stances, forest crouch walk, hunt, sleep, quit), screens (every
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
-# nothing in the world), roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# nothing in the world), roam (an hour from place to place, standing at each, for the server's stuck-animal count), pack_fuzz (two robots at random in the pack and one shared basket: src/client/robot_pack_fuzz.gd). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -29,6 +29,7 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const PackFuzz := preload("res://src/client/robot_pack_fuzz.gd")
 
 const QUIET_S := 3.0             # a pack check waits until no pack message came for this long
 const QUIET_LIMIT_S := 20.0
@@ -564,6 +565,8 @@ func run() -> void:
 		await _watch(30.0)
 	elif plan == "screens":
 		await _screens()
+	elif plan == "pack_fuzz":
+		await PackFuzz.new(self).run()   # src/client/robot_pack_fuzz.gd
 	elif plan == "drop_back":
 		await _drop_back()
 	elif plan == "drop_freeze":
@@ -1225,6 +1228,10 @@ func _pose_lines(delta: float) -> void:
 		return
 
 	_pose_t = 0.0
+
+	if client.multiplayer.multiplayer_peer == null or client.multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return   # the robot has quit: no peer id to print (the engine's "multiplayer instance isn't currently active" error)
+
 	var me: Vector3 = client.body.global_position
 	var v: Vector3 = client.body.velocity
 	FreezeWatchScript.printer.line("ROBOT %s POSE %d %d %d %.2f %.2f %.2f %.2f" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), client.stance.stance, me.x, me.y, me.z, Vector2(v.x, v.z).length()])
