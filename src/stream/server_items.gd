@@ -1612,6 +1612,10 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			vitals_of(peer)["energy"] = clampf(float(count), 0.0, 100.0)
 
+	elif kind == Net.ACT_ADMIN_SKILL:
+		if admin_ok.is_valid() and admin_ok.call(peer):
+			admin_set_skill(peer, a, count)
+
 	elif kind == Net.ACT_NEW_PLAYER:
 		if admin_ok.is_valid() and admin_ok.call(peer):
 			_become_new_player(peer)
@@ -2946,6 +2950,23 @@ func npc_train(peer: int, skill: String, max_level: int, cost_id: String = "", c
 		take_from(peer, cost_id, cost_n, true)
 
 	return train_skill(peer, skill, -1)
+
+
+# Admin (tests and the look rig's --shot-skill): sets the skill at place `index` in skills.json "skills" to `value` (its practice units).
+func admin_set_skill(peer: int, index: int, value: int) -> void:
+	var names: Array = (_skills_cfg.get("skills", {}) as Dictionary).keys()
+	var records: Dictionary = _skill_records(peer)
+
+	if index < 0 or index >= names.size() or not _characters.has(_peer_key.get(peer, "")):
+		return
+
+	var skill: String = str(names[index])
+	var record: Dictionary = records.get(skill, {})
+	record["p"] = SkillWeb.units_for(_skills_cfg, skill, clampf(float(value), 1.0, float(SkillWeb.cap_of(_skills_cfg, skill, records))))
+	record["peak"] = maxf(float(record.get("peak", 0.0)), float(record["p"]))
+	records[skill] = record
+	_dirty = true
+	_sync_skills(peer, true)
 
 
 func _sync_skills(peer: int, force: bool) -> void:
@@ -15055,6 +15076,11 @@ func wolf_info() -> Array:
 			"meat": carried_count(peer, "raw_meat") > 0, "meat_cooked": carried_count(peer, "roast_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
 
 	return out
+
+
+# A trail sign the player spotted (protocol 153): Tracking once per sign (server_traps.gd sign_found).
+func sign_spotted(peer: int, at: Vector2) -> bool:
+	return _traps.sign_found(peer, at)
 
 
 # An animal near a player stepped from `from` to `to` (server_animals.gd snare_pass): a set trap it has just come up to may take it.

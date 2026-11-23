@@ -277,6 +277,7 @@ func _init() -> void:
 	pile_checks()
 	wiring_checks()
 	tracking_checks()
+	sign_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -708,3 +709,32 @@ func tracking_checks() -> void:
 	check(hours >= 1.0 and hours <= 4.0, "Tracking %d (the map's trails) in about %.1f hours of following trails (%.0f units, %.1f a practice; by kills alone %.0f)" % [int(level), hours, need, each, kills])
 	var see: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json")).get("see_level", 25))
 	check(see <= 5.0, "the first trail signs show from Tracking %d (%.0f minutes of following)" % [int(see), SkillWebScript.units_for(cfg, "tracking", see) / each / follow_per_h * 60.0])
+
+
+# Spotting a trail sign (protocol 153; Dave 23 Nov 2026): Tracking once per sign per character; not again for the same sign, not for a
+# spot far from the player or off any trail, not below the level the first signs show from. The admin skill set (look rig --shot-skill).
+func sign_checks() -> void:
+	var items = make("user://test_traps_signs", true)
+	items.run_distance = func(x, _z, _kind): return 1.0 if x < 1000.0 else 10.0
+	var pts: Callable = func() -> float: return float(items._skill_records(1).get("tracking", {}).get("p", 0.0))
+	var fresh: Callable = func() -> void: items._last_practice.clear()
+	var at: Vector3 = Vector3(100.0, 10.0, 0.0)
+	items.report_position(1, at)
+	check(not items.sign_spotted(1, Vector2(103.0, 0.0)), "untrained, spotting a sign trains nothing (the first signs show from trail_signs.json see_level)")
+	var names: Array = (items._skills_cfg["skills"] as Dictionary).keys()
+	items.admin_set_skill(1, names.find("tracking"), 6)
+	check(absf(items.working_level(1, "tracking") - 6.0) < 0.6, "the admin skill set puts Tracking at 6 (%.2f)" % items.working_level(1, "tracking"))
+	var p0: float = pts.call()
+	fresh.call()
+	check(items.sign_spotted(1, Vector2(103.0, 0.0)) and pts.call() > p0, "with the Tracking to see it, a sign spotted trains it (%.1f -> %.1f)" % [p0, pts.call()])
+	var p1: float = pts.call()
+	fresh.call()
+	check(not items.sign_spotted(1, Vector2(103.5, 0.5)) and is_equal_approx(pts.call(), p1), "the same sign again trains nothing")
+	fresh.call()
+	check(not items.sign_spotted(1, Vector2(160.0, 0.0)), "a sign far from the player trains nothing")
+	items.report_position(1, Vector3(1500.0, 10.0, 0.0))
+	fresh.call()
+	check(not items.sign_spotted(1, Vector2(1503.0, 0.0)), "nor a spot with no trail by it")
+	items.report_position(1, at)
+	fresh.call()
+	check(items.sign_spotted(1, Vector2(96.0, 4.0)), "another sign does")

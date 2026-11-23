@@ -32,6 +32,13 @@ var _level: int = -1
 var _next_msec: int = 0
 var _nodes: Dictionary = {}        # "pellet", "deer_pellet", "scrape", "print" -> MultiMeshInstance3D
 var _signs: Array = []             # [kind, Vector2 spot, yaw] for the routes near the player, worked out at each rebuild
+# Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
+# a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
+# slight sound there and tells the server, which trains Tracking once per sign). One a look, so a cluster comes one by one.
+var on_spot: Callable              # (kind: String, spot: Vector3) when a sign is spotted
+var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
+var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
+var _glow_texture: Texture2D = null
 
 
 func _init() -> void:
@@ -67,15 +74,15 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 
 	var moved: bool = _built_at == Vector3.INF or Vector2(player.x - _built_at.x, player.z - _built_at.z).length() > float(cfg.get("rebuild_move_m", 8.0))
 
-	if not _dirty and not moved and tracking == _level:
-		return
+	if _dirty or moved or tracking != _level:
+		_dirty = false
+		_built_at = player
+		_level = tracking
+		var reach: float = reach_m(tracking, cfg)
+		_signs = [] if reach <= 0.0 else signs_for(routes_near(routes, Vector2(player.x, player.z), reach + NEAR_PAD_M), wet, cfg)
+		_draw(player, tracking)
 
-	_dirty = false
-	_built_at = player
-	_level = tracking
-	var reach: float = reach_m(tracking, cfg)
-	_signs = [] if reach <= 0.0 else signs_for(routes_near(routes, Vector2(player.x, player.z), reach + NEAR_PAD_M), wet, cfg)
-	_draw(player, tracking)
+	_spot(player, tracking)
 
 
 # The routes with a point within m of a spot, by block (each route kept whole, so its signs do not depend on where the player is).
@@ -367,3 +374,72 @@ func _mesh(layer: String) -> Mesh:
 			material.albedo_color = PRINT_COLOR
 			hoof.material = material
 			return hoof
+
+
+# The first shown sign within spot_m of the player that this session has not spotted: it glows and on_spot is called. One a look.
+func _spot(player: Vector3, level: int) -> void:
+	var near_m: float = minf(float(cfg.get("spot_m", 6.0)), reach_m(level, cfg))
+	var at: Vector2 = Vector2(player.x, player.z)
+
+	if near_m <= 0.0 or not ground_height.is_valid():
+		return
+
+	for s in _signs:
+		var spot: Vector2 = s[1]
+		var key: Vector2i = Vector2i(roundi(spot.x * 2.0), roundi(spot.y * 2.0))
+
+		if _spotted.has(key) or spot.distance_to(at) > near_m or not shows(str(s[0]), level, cfg):
+			continue
+
+		var y: float = _heap_ground(spot)
+
+		if is_nan(y):
+			continue
+
+		_spotted[key] = true
+		spotted += 1
+		var where: Vector3 = Vector3(spot.x, y, spot.y)
+		_glow(where, 1.6 if str(s[0]) == "prints" else 0.9)
+
+		if on_spot.is_valid():
+			on_spot.call(str(s[0]), where)
+
+		return
+
+
+# A soft pale patch on the ground round a spotted sign, swelling and fading over glow_s: the eye catching it, not a marker.
+func _glow(at: Vector3, size: float) -> void:
+	if _glow_texture == null:
+		var gradient: Gradient = Gradient.new()
+		gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+		gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+		var tex: GradientTexture2D = GradientTexture2D.new()
+		tex.gradient = gradient
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		tex.fill_from = Vector2(0.5, 0.5)
+		tex.fill_to = Vector2(0.5, 0.0)
+		tex.width = 64
+		tex.height = 64
+		_glow_texture = tex
+
+	var plane: PlaneMesh = PlaneMesh.new()
+	plane.size = Vector2(size, size)
+	var material: StandardMaterial3D = StandardMaterial3D.new()
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.albedo_texture = _glow_texture
+	var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
+	material.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]), 0.0)
+	plane.material = material
+	var node: MeshInstance3D = MeshInstance3D.new()
+	node.name = "TrailSignGlow"
+	node.mesh = plane
+	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	node.position = at + Vector3(0.0, 0.03, 0.0)
+	add_child(node)
+	var glow_s: float = float(cfg.get("glow_s", 1.6))
+	var peak: float = float(cfg.get("glow_alpha", 0.3))
+	var tween: Tween = node.create_tween()
+	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.3)
+	tween.tween_property(material, "albedo_color:a", 0.0, glow_s * 0.7)
+	tween.tween_callback(node.queue_free)
