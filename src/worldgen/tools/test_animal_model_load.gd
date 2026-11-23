@@ -53,6 +53,23 @@ func _initialize() -> void:
 	check(v._bodies.has(2) and not bool((v._bodies[2]["node"] as Node3D).get_meta("model", false)), "a wolf with no model file is drawn from the code-built body")
 	check(ResourceLoader.load_threaded_get_status(SCENE) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, "headless, nothing is asked of a worker")
 
+	# A colour texture's alpha test runs on a worker (_alpha_ready): false until the answer is in, then the answer _has_alpha would give.
+	var see_through: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	see_through.fill(Color(1.0, 1.0, 1.0, 0.0))
+	var solid: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
+	solid.fill(Color(0.5, 0.4, 0.3, 1.0))
+	check(not v._alpha_ready("res://see_through.png", see_through), "the first ask for a texture's alpha starts the worker and waits")
+	var asks: int = 1
+
+	while not (v._alpha_ready("res://see_through.png", see_through) and v._alpha_ready("res://solid.png", solid)) and asks < 600:
+		await process_frame
+		asks += 1
+
+	check(v._alpha_of.get("res://see_through.png", false) == true, "a see-through texture is found see-through (%d asks)" % asks)
+	check(v._alpha_of.get("res://solid.png", true) == false, "a solid texture is found solid")
+	check(v._alpha_tasks.is_empty() and v._alpha_done.is_empty(), "no worker task or answer is left over")
+	check(v._alpha_ready("res://solid.png", null), "an answer in hand is not asked again (no texture needed)")
+
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCENE))
 	print("test_animal_model_load: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

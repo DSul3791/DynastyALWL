@@ -119,3 +119,15 @@ Dave, 21 Nov 2026: "animals are still teleporting and not actually running".
 ## For Dave
 
 Please review the values above. They can be changed in `animals.json` without any code change.
+
+## Stare before running, growl before attacking (23 Nov 2026)
+
+Dave, 23 Nov 2026: animals "should look up and stare at the player before running away or growling before attacking. fight should not just be animals teleporting around almost impossible to hit." The coordinator's steer: the stare must be clearly readable, about 1.5 to 2 s when the player is first noticed at a distance and down toward 0.5 s only when they are close or running at it; the growl long enough to hear, turn and react, about 1 s.
+
+**The stare (`server_animals.gd _stares`).** A grazing or walking animal that a player comes within its flee distance of stops, lifts its head and stares at them (ALERT, state 3, heading on the player; the client turns the head to them and plays its alert call), then bolts. The stare is `reactions.startle_s` [0.5, 1.75] s: the long end for a player at the flee distance, shorter as they are nearer, the short end for one running at it. It bolts at once when hurt, when it was already watching them (it stared as they came from its notice distance), when a player is within `reactions.startle_close_m` (3 m), for birds, and for temperaments that never watch. Herd mates set off by the first one still follow after their own alarm moment.
+
+**The growl (`server_big_game.gd warn_min_s`).** Every warning before a charge lasts at least `warn_min_s` (1.0 s): the head-down stand and the warning call. A player running off, or a blow during the warning, cuts it to no less. Goblins and bandits (`give_way` "player") keep their own short squaring-up. A hunter giving chase to a player who is already running has no stand: it roars as it sets off (the client voices the charge as a threat call).
+
+**Voices.** Twelve kinds had no voice, so their warnings were silent. They borrow one until Dave's recordings exist (docs/SOUND_MAP.md, "Stand-in animal voices").
+
+**The blow waits for its lunge (`strike_min_s`, 0.35 s).** A charge's blow lands only once the charge has run this long, so every screen draws the lunge first (a warthog charging from 1 m used to hit 0.18 s in, drawn 1.7 to 2.8 m short of the player).
