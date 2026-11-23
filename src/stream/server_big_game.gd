@@ -25,6 +25,8 @@ var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list
 var hurt_player: Callable       # (peer, amount, lethal, cause, from: the attacker's position, for a raised shield) -> "hurt" / "maimed" / "dead"
 var notice: Callable            # (peer, text)
 var struck: Callable            # (animal, peer, hurt result) after a charge lands (bandit camps stage 4b; it changes nothing about the blow)
+var weapon_of: Callable         # (animal) -> the items.json id of the weapon it strikes with, "" for its own body (a camp bandit's, by his level)
+var hurt_armed: Callable        # (peer, amount, lethal, cause, from, weapon id) -> as hurt_player, with the blow's damage mode and pen taken from that weapon
 
 
 func handles(a: Dictionary) -> bool:
@@ -136,6 +138,7 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["dir"] = a["heading"]
 	a["ran"] = 0.0
+	a["charged_s"] = 0.0
 	a["hit"] = false
 	a["bluff"] = false
 	a["run_m"] = run_m
@@ -215,6 +218,7 @@ func step(a: Dictionary, dt: float) -> void:
 			a["state"] = CHARGE
 			a["dir"] = a["heading"]   # locked now: the player can still step aside
 			a["ran"] = 0.0
+			a["charged_s"] = 0.0
 			a["hit"] = false
 			a["bluff"] = _bluffs(a, def)
 
@@ -222,6 +226,11 @@ func step(a: Dictionary, dt: float) -> void:
 
 	if state == CHARGE:
 		var speed: float = float(def.get("charge_mps", 11.0))
+		# strike_min_s (a defend row's): a blow lands only once the charge has run this long, so every client draws the strike before it
+		# lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step, still drawn
+		# warning). 0 (rows without it): as before.
+		a["charged_s"] = float(a.get("charged_s", 0.0)) + dt
+		var may_land: bool = float(a["charged_s"]) >= float(def.get("strike_min_s", 0.0)) - 0.0001
 		var step_m: float = speed * dt
 
 		if not near.is_empty():
@@ -229,6 +238,12 @@ func step(a: Dictionary, dt: float) -> void:
 			var want: float = atan2(to2.z - a["pos"].z, to2.x - a["pos"].x)
 			var turn: float = clampf(angle_difference(float(a["dir"]), want), -float(def.get("turn_rad_s", 0.25)) * dt, float(def.get("turn_rad_s", 0.25)) * dt)
 			a["dir"] = float(a["dir"]) + turn
+
+		# Already at the player before the blow may land: it holds the strike where it stands (drawn as the charge) rather than running
+		# through them; the blow lands from here once strike_min_s has passed.
+		if not may_land and not near.is_empty() and not near.has("dog") and Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length() <= AnimalContact.contact_m(str(a["sp"])) + 0.3:
+			a["heading"] = float(a["dir"])
+			return
 
 		var goal: Vector3 = a["pos"] + Vector3(cos(float(a["dir"])), 0.0, sin(float(a["dir"]))) * step_m * 2.0
 		var species: Dictionary = host.species_def(str(a["sp"]))
@@ -259,14 +274,14 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		# A charge at a dog: the dog is hit when it is within hit_m (a player in the way is still hit below).
-		if not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
+		if may_land and not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
 			var dog_at: Vector3 = host.animals[int(near["dog"])]["pos"]
 
 			if _off_path(dog_at, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and not host.wall_between(a["pos"], dog_at):
 				a["hit"] = true
 				host.damage(int(near["dog"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), -1, "charge")
 
-		if not bool(a["hit"]):
+		if may_land and not bool(a["hit"]):
 			for info in (player_info.call() if player_info.is_valid() else []):
 				var p: Vector3 = info["pos"]
 
@@ -274,7 +289,15 @@ func step(a: Dictionary, dt: float) -> void:
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
-					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"]), a["pos"]))   # a higher-level animal hits harder
+					var amount: float = float(def.get("damage", 25.0)) * host.level_x(a, "damage")   # a higher-level animal hits harder
+					var weapon: String = str(weapon_of.call(a)) if weapon_of.is_valid() else ""
+					# A bandit's blow cuts, pierces or batters as the weapon in his hand does (coordinator, 23 Nov 2026: every bandit blow counted blunt).
+					var landed: String
+
+					if weapon != "" and hurt_armed.is_valid():
+						landed = str(hurt_armed.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"], weapon))
+					else:
+						landed = str(hurt_player.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"]))
 
 					if struck.is_valid():
 						struck.call(a, int(info["peer"]), landed)

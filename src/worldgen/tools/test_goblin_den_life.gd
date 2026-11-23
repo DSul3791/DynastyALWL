@@ -146,6 +146,26 @@ func _init() -> void:
 	steps(a, g0, 3.0)
 	check(hurts == 1, "staying through the warning gets one strike (got %d)" % hurts)
 
+	# 5b. Not through a wall: the same player 4 m off with a wall across the passage between them (the walls hook, as the server wires it).
+	infos = [{"peer": 1, "pos": g0["pos"] + Vector3(-1.5, 0.0, 0.0)}]   # just past where a lunge lands
+	var wall_x: float = g0["pos"].x - 0.75
+	a.walls = func(x0, _z0, x1, _z1, _margin): return (x0 - wall_x) * (x1 - wall_x) <= 0.0   # a wall across the passage between them
+	g0["cool"] = 0.0
+	g0["state"] = a.GRAZE
+	hurts = 0
+	steps(a, g0, 0.25)
+	var went: Array = [int(g0["state"])]
+
+	for _k in 12:   # 3 s in quarter seconds: the warning, the lunge stopped at the wall, the rest after it
+		steps(a, g0, 0.25)
+
+		if went.back() != int(g0["state"]):
+			went.append(int(g0["state"]))
+
+	check(went.has(a.big_game.CHARGE) and went.has(a.big_game.RECOVER), "it warns, lunges and recovers (%s): the wall stops the lunge, it is never stuck in it" % str(went))
+	check(hurts == 0 and g0["pos"].x > wall_x, "a wall across the passage between them: the lunge stops at it and never strikes through it (%d blows, goblin at x %.2f, the wall at %.2f)" % [hurts, g0["pos"].x, wall_x])
+	a.walls = Callable()
+
 	# 6. Backing off during the warning avoids the strike.
 	var g1: Dictionary = band[1]
 	hurts = 0
