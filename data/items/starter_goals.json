@@ -209,7 +209,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) and fish at the water.",
+			"hint": "Jab any spear into shallow water while standing still, or make a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) and fish at the water.",
 			"after": [
 				"twine"
 			],
