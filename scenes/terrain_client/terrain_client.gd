@@ -863,7 +863,7 @@ func _ready() -> void:
 
 	net.welcome_received.connect(_on_welcome)
 	net.join_refused_received.connect(func(text: String) -> void:
-		_on_join_refused(text, "Joined from elsewhere" if text.contains("joined the server again") else "Update required"))   # terrain_server.gd _drop_replaced: not a version problem
+		_on_join_refused(text, join_refused_title(text)))
 	net.notice_received.connect(func(text: String) -> void:
 		if text == NetScript.SERVER_CLOSING:
 			_server_closing = text)   # the server is stopping (a restart or an update): its "connection lost" window says so
@@ -986,7 +986,11 @@ func _update_connect_window() -> void:
 		# Ground on the very first walk step (a warm ground cache after an update) never logs "ground ready": then 10 s, past the pause's start.
 		var landed: bool = (_ground_logged or (not waiting_for_ground and since >= 10)) if _connect_window.first_load_note_shown() else not waiting_for_ground
 
-		if (landed and since >= 3) or since > 120:
+		if since > JOIN_GIVE_UP_S and not landed:
+			_connect_window.fail("The ground did not arrive", "The server welcomed this game, but after %d minutes the ground under you has still not loaded.\n\nGo back and join again, or quit and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % int(since / 60), func(): _finish(1))
+			return
+
+		if landed and since >= 3:   # never before the ground is there: a window closed at 120 s left a player looking at an empty world, and the ground watchdog's give-up (up to 180 s and more) then had no window to say it on
 			_telemetry.event("connect window closed after %d s in the world" % since)
 
 			if landed:
@@ -1190,16 +1194,28 @@ func _on_connection_failed() -> void:
 		return
 
 	if _remote:
-		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection. A full server also turns new players away without a word: if the server pick page showed it full, try again when someone leaves." % [_host, _port])   # ENet turns a player past MAX_PLAYERS away before any message, so the game cannot tell "full" from "down"
+		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection." % [_host, _port])   # a full server says so (terrain_server.gd SERVER_FULL), so this is a server that is down or unreachable
 		return
 
 	_finish(1)
+
+
+# The window's title for a refusal the server explains (terrain_server.gd: _drop_replaced, SERVER_FULL, BuildStamp.refusal).
+static func join_refused_title(text: String) -> String:
+	if text.contains("joined the server again"):
+		return "Joined from elsewhere"
+
+	if text.contains("server is full"):
+		return "Server full"
+
+	return "Update required"
 
 
 # The server cannot be reached before joining: a window says why, with Back to servers and Quit;
 # a headless run quits with code 1 as before.
 func _cannot_reach(text: String) -> void:
 	_telemetry.event("JOIN: cannot reach the server: %s" % text)
+	FreezeWatchScript.printer.line("Terrain client: cannot reach the server: " + text)   # the console too: headless checks (tools/way_in_check.sh) read it
 
 	if _connect_window == null:
 		_finish(1)
@@ -4424,6 +4440,7 @@ var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
 var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
+const JOIN_GIVE_UP_S := 600               # the join window turns into a failure (Back to servers, Quit) if the ground is still missing this long after the welcome
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0
 var _in_pit: bool = false

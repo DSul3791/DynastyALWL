@@ -97,7 +97,8 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const TunnelWatchScript := preload("res://src/stream/tunnel_watch.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
-const MAX_PLAYERS := 32                 # ENet's peer limit; the server pick page shows "2 / 32"
+const MAX_PLAYERS := 32                 # the most players at once; the server pick page shows "2 / 32"
+var max_players: int = MAX_PLAYERS       # --max-players=N (tests: a full server with 1 player)
 const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
@@ -293,6 +294,8 @@ func _ready() -> void:
 			_clear_generated_at_start = true
 		elif argument.begins_with("--store="):
 			store_dir = argument.trim_prefix("--store=")
+		elif argument.begins_with("--max-players="):
+			max_players = clampi(int(argument.trim_prefix("--max-players=")), 1, MAX_PLAYERS)
 		elif argument.begins_with("--threads="):
 			_max_running = maxi(int(argument.trim_prefix("--threads=")), 1)
 		elif argument.begins_with("--idle-threads="):
@@ -1073,7 +1076,9 @@ func _ready() -> void:
 	_start_water()
 
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = server_peer.create_server(port, MAX_PLAYERS)
+	# One seat more than the players: ENet turns a peer past its limit away before any message, so the game could not tell "full" from
+	# "down". The extra peer is let in only to be told the server is full (hello, below) and dropped.
+	var error: int = server_peer.create_server(port, max_players + 1)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -1156,6 +1161,10 @@ func _ready() -> void:
 
 		if refused != "":
 			_refuse_join(peer, build, refused)
+			return
+
+		if _peers.size() > max_players:
+			_refuse_join(peer, build, SERVER_FULL % max_players)
 			return
 
 		var account: String = identity.authenticate(peer, key)
@@ -1430,7 +1439,7 @@ func _publish_status() -> void:
 		"stamped": _stamped_build > 0,
 		"protocol": NetScript.PROTOCOL_VERSION,
 		"players": _peers.size(),
-		"max_players": MAX_PLAYERS,
+		"max_players": max_players,
 		"locked": _server_settings.locked(),
 	})
 
@@ -1449,6 +1458,10 @@ func _drop_replaced(old_peer: int) -> void:
 	if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
 		multiplayer.multiplayer_peer.disconnect_peer(old_peer)
 		_on_peer_disconnected(old_peer)   # forgotten now: a dead line never answers the close, so it stayed in the lists (and was sent to, 2,540 send errors in 6 min) until its 60 to 120 s timeout (robots 23 Nov 2026); the engine's own leave later finds nothing (a force close would skip that leave and keep the peer in the engine's list)
+
+
+# The words a player past max_players is given (the client titles its window "Server full" when it sees "server is full").
+const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
 
 
 func _refuse_join(peer: int, build: int, text: String) -> void:
