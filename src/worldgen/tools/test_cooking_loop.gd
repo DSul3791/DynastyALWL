@@ -2,10 +2,11 @@ extends SceneTree
 
 # The cooking and preserving loop, over server restarts (the coordinator, 23 Nov 2026): every live food recipe is made at its station from
 # live inputs and gives what its row says; what it gives feeds what its tooltip says (VitalsRules.food_value, as the server's eat) and, for a
-# dish, its dishes.json kcal; every raw food the campfire cooks roasts into its cooks_into row on the fire and in the fire's store, and keeps
-# longer than it did raw; raw animal food and rotten food make you sick and cooked food does not; food ages slower in a chest and slower
-# still in a cellar than in the pack; a craft running at a station, the fire's store and the ages of food all carry over a restart; two
-# players at one station each get their own. Deep rot-by-container numbers are test_winter_stores'; the jar's maturing is test_goal_events'.
+# dish, its dishes.json kcal (kcal foods are eaten; drinks, medicines and energy aids are only checked to do something); every raw food the
+# campfire cooks roasts into its cooks_into row on the fire and in the fire's store, and keeps longer than it did raw; raw animal food makes
+# you sick later and rotten food at once, cooked food not at all; raw meat ages slower in a chest and slower still in a root cellar than in
+# the pack; a craft half done at a station (with its progress), the fire's store and food ages carry over a restart; two players' crafts at
+# one station both finish, each from their own pack. A year of rot by container is test_winter_stores'; the jar's maturing is test_goal_events'.
 #   godot --headless --path . --script res://src/worldgen/tools/test_cooking_loop.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -282,6 +283,7 @@ func _init() -> void:
 
 	# 1. Every live food recipe at its station, and what it gives feeds what the tooltip says.
 	var made_n: int = 0
+	var eligible: int = 0
 	var skipped: Array = []
 	var used: Dictionary = {}   # every item some live recipe takes, a group's members too
 	var dead: Array = []
@@ -315,6 +317,7 @@ func _init() -> void:
 			skipped.append(rid)   # a jar matures it for game days: test_goal_events
 			continue
 
+		eligible += 1
 		var peer: int = new_player()
 		var station: String = str(r.get("station", ""))
 
@@ -342,7 +345,7 @@ func _init() -> void:
 		items.peer_left(peer)
 
 	check(dead.is_empty(), "1. every food recipe gives something that feeds, drinks, heals, cures, gives energy or goes into another recipe (%s do none)" % str(dead))
-	check(made_n >= 100, "1. %d live food recipes made (%d matured in a jar, left to test_goal_events: %s)" % [made_n, skipped.size(), str(skipped)])
+	check(eligible > 0 and made_n == eligible, "1. %d of %d live food recipes made (%d matured in a jar, left to test_goal_events: %s)" % [made_n, eligible, skipped.size(), str(skipped)])
 
 	# 2. Every raw food the campfire cooks: on the fire and in its store, into its cooks_into row, keeping longer than raw.
 	var cook: int = new_player()
@@ -411,13 +414,14 @@ func _init() -> void:
 	items._characters[items.key_of(eater)]["grace_s"] = 0.0   # past the first hour's grace (Dave's open question: raw meat in the grace hour)
 	items._sick_cfg["infection"]["odds"]["raw_meat"] = 1.0   # the 1 in 5 made certain for the test
 	items.inventory_of(eater).add(meat, 1)
-	eat_one(eater, meat)
+	var ate_raw: Array = eat_one(eater, meat)
 	var due: Variant = items.vitals_of(eater).get("sick_due", [])
-	check((typeof(due) == TYPE_ARRAY and not (due as Array).is_empty()) or float(items.vitals_of(eater).get("sick", 0.0)) > 0.0, "3. raw meat makes you sick (late, after its onset hours)")
+	check(int(ate_raw[0]) > 0 and typeof(due) == TYPE_ARRAY and not (due as Array).is_empty() and float(items.vitals_of(eater).get("sick", 0.0)) <= 0.0, "3. raw meat eaten makes you sick later, after its onset hours, not at once", eater)
 	var cooked_eater: int = new_player()
 	items._characters[items.key_of(cooked_eater)]["grace_s"] = 0.0
 	items.inventory_of(cooked_eater).add(roast, 1)
-	eat_one(cooked_eater, roast)
+	var ate_roast: Array = eat_one(cooked_eater, roast)
+	check(int(ate_roast[0]) > 0 and have(cooked_eater, roast) == 0, "3. roast meat is eaten", cooked_eater)
 	var due2: Variant = items.vitals_of(cooked_eater).get("sick_due", [])
 	check((typeof(due2) != TYPE_ARRAY or (due2 as Array).is_empty()) and float(items.vitals_of(cooked_eater).get("sick", 0.0)) <= 0.0, "3. roast meat does not")
 	var rot_eater: int = new_player()
@@ -426,19 +430,48 @@ func _init() -> void:
 	check(rotten != 0, "3. food that rots turns into %s" % str(items.table.spoilage().get("rotten_item", "")))
 	items.inventory_of(rot_eater).add(rotten, 1)
 	eat_one(rot_eater, rotten)
-	check(float(items.vitals_of(rot_eater).get("sick", 0.0)) > 0.0, "3. eating it makes you sick at once", rot_eater)
+	check(have(rot_eater, rotten) == 0 and float(items.vitals_of(rot_eater).get("sick", 0.0)) > 0.0, "3. eating it makes you sick at once", rot_eater)
 
-	# 4. Food ages slower in a chest than in the pack, slower still in a cellar (place_mult; test_winter_stores has the year).
+	# 4. Raw meat ages slower in a chest than in the pack, slower still in a root cellar (place_mult, the cellar's cold; a year is test_winter_stores').
 	var keeper: int = new_player()
-	var mult: Dictionary = items.table.spoilage().get("place_mult", {})
-	check(float(mult.get("chest", 1.0)) < float(mult.get("pack", 1.0)) and float(mult.get("ground", 1.0)) > float(mult.get("pack", 1.0)), "4. a chest keeps food longer than the pack, the ground shorter")
-	var cellar_kind: String = ""
+	items.year_mean_at = func(_p): return 8.0   # the cellar's ground temperature
+	var stores: Dictionary = {}
 
-	for kind in items._structures:
-		if bool(items._structures[kind].get("cold_store", false)):
-			cellar_kind = kind
+	for kind in ["chest", "root_cellar"]:
+		var at: Vector3 = yard(keeper) + Vector3(1.5 if kind == "chest" else -2.5, 0.0, 0.0)
+		var kit: String = str(items._structures[kind]["kit"])
 
-	check(cellar_kind != "", "4. there is a cold store (%s)" % cellar_kind)
+		if items._blueprint_of_kit.has(kit):
+			items.place_piece(keeper, kit, at)
+		else:
+			items.give(keeper, items.table.number_of(kit), 1)
+			items.place_item(keeper, items.table.number_of(kit), at)
+
+		stores[kind] = newest_struct(kind)
+
+	check(int(stores["chest"]) >= 0 and int(stores["root_cellar"]) >= 0, "4. a chest and a root cellar stand in the yard", keeper)
+	var ages: Dictionary = {}
+
+	if int(stores["chest"]) >= 0 and int(stores["root_cellar"]) >= 0:
+		for kind in stores:
+			items.inventory_of(keeper).add(meat, 1)
+			items.report_position(keeper, items._items[int(stores[kind])]["pos"] + Vector3(1.0, 0.0, 0.0))
+			put_in(keeper, int(stores[kind]), meat, 1)
+
+		items.inventory_of(keeper).add(meat, 1)
+
+		for k in 40:
+			items._spoil_tick(60.0)
+
+		var pack_slot: int = slot_of(keeper, meat)
+		ages["pack"] = int(items.inventory_of(keeper).wear[pack_slot]) if pack_slot >= 0 else -1
+
+		for kind in stores:
+			var store = items._chests[int(items._items[int(stores[kind])]["struct"]["uid"])]
+			var at_slot: int = store.numbers.find(meat)
+			ages[kind] = int(store.wear[at_slot]) if at_slot >= 0 else -1
+
+		check(int(ages["pack"]) > int(ages["chest"]) and int(ages["chest"]) > int(ages["root_cellar"]) and int(ages["root_cellar"]) >= 0, "4. the same meat ages most in the pack, less in a chest, least in a root cellar (%s)" % str(ages))
 
 	# 5. Over a restart: a craft half done at a station, raw food in the fire's store, food ages.
 	var baker: int = new_player()
@@ -461,6 +494,12 @@ func _init() -> void:
 				break
 
 	check(slow_n > 0, "5. a hearth recipe to leave half done (%s)" % str(slow_r.get("id", "")))
+
+	if slow_n <= 0:
+		print("Test done: %d pass, %d fail" % [passes, failures])
+		quit(1)
+		return
+
 	var baker_key: String = items.key_of(baker)
 	var baker_at: Vector3 = yard(baker)
 	set_station(baker, "clay_hearth", 1)
@@ -479,13 +518,14 @@ func _init() -> void:
 	var aged_key: String = items.key_of(aged)
 	items.inventory_of(aged).add(meat, 2, 37)
 	var keep_fire_box: int = box.count_of(roast) if box != null else 0
+	check(keep_fire_box >= 3, "5. the fire's store holds its roasts when the server stops (%d)" % keep_fire_box)
 	save_all()
 
 	start(false)
 	items.peer_connected_hello(baker, baker_key)
 	items.report_position(baker, baker_at)
 	items.vitals_of(baker)["weight"] = 1.0e6
-	check(not items.craft_queue_of(baker).is_empty(), "5. after a restart the half-done hearth craft is still queued (%s)" % str(items.craft_queue_of(baker)))
+	check(not items.craft_queue_of(baker).is_empty() and float(items._craft_queues.get(baker_key, {}).get("elapsed", 0.0)) > 0.0, "5. after a restart the half-done hearth craft is still queued with its progress (%s, %.1f s done)" % [str(items.craft_queue_of(baker)), float(items._craft_queues.get(baker_key, {}).get("elapsed", 0.0))])
 	var out_n2: int = int(slow_r["gives"][0])
 	var before2: int = have(baker, out_n2)
 
@@ -506,28 +546,26 @@ func _init() -> void:
 	var fire_after: Dictionary = items._items.get(fire_near(fire_at), {})
 	check(not fire_after.is_empty() and fire_after.has("fire"), "5. the campfire is still there after a restart")
 
-	if not fire_after.is_empty() and fire_after.has("fire") and fire_after["fire"].has("uid"):
-		var box2 = items._chests.get(int(fire_after["fire"]["uid"]))
-		check(box2 != null and box2.count_of(roast) == keep_fire_box, "5. with the roasts in its store (%d, was %d)" % [box2.count_of(roast) if box2 != null else -1, keep_fire_box])
+	var box2 = items._chests.get(int(fire_after["fire"]["uid"])) if not fire_after.is_empty() and fire_after.has("fire") and fire_after["fire"].has("uid") else null
+	check(box2 != null and box2.count_of(roast) == keep_fire_box, "5. with the roasts in its store (%d, was %d)" % [box2.count_of(roast) if box2 != null else -1, keep_fire_box])
 
-	# 6. Two players at one station: each gets their own.
+	# 6. Two players at one station: both crafts finish, each from their own pack.
 	var a: int = new_player()
 	var b: int = new_player()
-	items.report_position(b, yard(a) + Vector3(0.5, 0.0, 0.5))
+	var hearth_at: Vector3 = yard(a)
+	items.report_position(b, hearth_at + Vector3(0.5, 0.0, 0.5))
 	set_station(a, "clay_hearth", 1)
-	var got_a: Array = [0]
+	var given: Array = []   # [peer, number] of every input handed out
 
-	for row in slow_r.get("needs", []):
-		give_any(a, int(row[0]), int(row[1]))
-		give_any(b, int(row[0]), int(row[1]))
+	for p in [a, b]:
+		for row in slow_r.get("keeps", []):
+			give_any(p, int(row[0]), int(row[1]))
 
-	for row in slow_r.get("keeps", []):
-		give_any(a, int(row[0]), int(row[1]))
-		give_any(b, int(row[0]), int(row[1]))
+		for row in slow_r.get("needs", []):
+			given.append([p, give_any(p, int(row[0]), int(row[1]))])
 
 	var out3: int = int(slow_r["gives"][0])
-	var a0: int = have(a, out3)
-	var b0: int = have(b, out3)
+	var held0: int = have(a, out3) + have(b, out3)
 	items._last_queue_act.clear()
 	items.action(a, Net.ACT_CRAFT_QUEUE, slow_n, 0, 1, CraftHand.at(items, a, slow_n))
 	items._last_queue_act.clear()
@@ -541,21 +579,25 @@ func _init() -> void:
 		items.tick(1.0)
 
 	items.tick(1.0)
+	var spent: Array = []
 
-	for p in [a, b]:
-		for id in items._items.keys():
-			var it: Dictionary = items._items.get(id, {})
+	for row in given:
+		if have(int(row[0]), int(row[1])) != 0:
+			spent.append("%d still has %s" % [int(row[0]), items.table.id_of(int(row[1]))])
 
-			if it.has("struct") and items._is_station_store(it) and (it["pos"] as Vector3).distance_to(items._peer_pos[p]) <= 4.0:
-				items.action(p, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
-				items.action(p, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
-				items.action(p, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(spent.is_empty() and items.craft_queue_of(a).is_empty() and items.craft_queue_of(b).is_empty(), "6. both crafts finish, each taking its inputs from its own player's pack (%s)" % str(spent), b)
+	var made3: int = have(a, out3) + have(b, out3) - held0
 
-		pick_up_near(p, out3)
+	for id in items._items.keys():
+		var it: Dictionary = items._items.get(id, {})
 
-	got_a[0] = have(a, out3) - a0
-	var got_b: int = have(b, out3) - b0
-	check(got_a[0] + got_b >= 2 * int(slow_r["gives"][1]), "6. both crafts finish (%d and %d %s)" % [got_a[0], got_b, items.table.id_of(out3)], b)
+		if (it["pos"] as Vector3).distance_to(hearth_at) <= 6.0:
+			if it.has("struct") and items._is_station_store(it) and it["struct"].has("uid") and items._chests.has(int(it["struct"]["uid"])):
+				made3 += items._chests[int(it["struct"]["uid"])].count_of(out3)
+			elif int(it.get("number", 0)) == out3 and not it.has("struct"):
+				made3 += int(it["count"])
+
+	check(made3 >= 2 * int(slow_r["gives"][1]), "6. and the hearth gave both batches (%d %s)" % [made3, items.table.id_of(out3)], b)
 
 	items._finish_writer()
 	print("Test done: %d pass, %d fail" % [passes, failures])
