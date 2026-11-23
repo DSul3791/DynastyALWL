@@ -114,6 +114,7 @@ const RAIN_AMOUNT := [500, 1400, 2800, 4500]
 const SNOW_AMOUNT := [600, 1600, 3200, 5000]   # weather round 2 (Lane A, 23 Nov 2026): at 2000 flakes in a 48 m box the snow read as "a few faint specks"
 const SNOW_BOX_M := 14.0                 # half width of the box the snow falls through: near the eye, where a flake is big enough to see
 const SNOW_FLAKE_M := 0.11               # a flake's drawn size (its soft edge fades from 40 percent out): a few pixels at 10 m
+const SNOW_GLOW := [0.08, 0.55]          # the flakes' emission at night and by day (a lit flake under an overcast is no brighter than the sky)
 const STARS_GONE_COVER := Vector2(0.55, 0.85)   # cloud cover over which the stars fade out: none shine through an overcast that snows or rains
 const BOLT_FROM := 1                     # first quality level that draws the bolt itself
 const TURBULENCE_FROM := 1               # snow drifts sideways from here up
@@ -244,6 +245,7 @@ var canopy                              # CanopyMap: where trees shelter the gro
 var _rain: GPUParticles3D
 var _rain_material: ShaderMaterial
 var _snow: GPUParticles3D
+var _snow_material: StandardMaterial3D   # the flakes' (_make_snow): its glow follows the daylight (_update_particles)
 var _bolt: MeshInstance3D
 var _bolt_material: StandardMaterial3D
 var _flash_t: float = -1.0              # seconds since the last flash began, -1 when none
@@ -549,13 +551,15 @@ func _make_snow() -> GPUParticles3D:
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	# Lit, so a flake shows white in firelight and by day and only faintly in the dark away from a fire (weather round 2: "no flakes in
 	# the firelight"); backlight, so a flake between the eye and the fire lights up too (a billboard faces the eye, the fire is behind it);
-	# a little emission keeps the nearest ones just visible on a dark night.
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
+	# a little emission keeps the nearest ones just visible on a dark night, more by day so a flake stays whiter than the overcast behind it
+	# (SNOW_GLOW). Per pixel: backlight is worked out per pixel (11 cm flakes: little fill).
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
 	material.backlight_enabled = true
 	material.backlight = Color(0.85, 0.87, 0.9)
 	material.emission_enabled = true
 	material.emission = Color(0.9, 0.93, 1.0)
-	material.emission_energy_multiplier = 0.08
+	material.emission_energy_multiplier = float(SNOW_GLOW[0])
+	_snow_material = material
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material.albedo_texture = texture
@@ -1326,6 +1330,11 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 		_client.sound.weather.canopy_drip = drips.store   # the drip sound after the rain (canopy_drip_design.md)
 
 	if _snow.emitting:
+		var glow: float = lerpf(float(SNOW_GLOW[0]), float(SNOW_GLOW[1]), 1.0 - day.night)
+
+		if _snow_material != null and absf(glow - _snow_material.emission_energy_multiplier) > 0.02:
+			_snow_material.emission_energy_multiplier = glow
+
 		(_snow.process_material as ParticleProcessMaterial).direction = Vector3(tilt * 0.8, -1.0, tilt * 0.3).normalized()
 
 
