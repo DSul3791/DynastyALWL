@@ -565,7 +565,7 @@ func _target() -> Dictionary:
 	if _client.sound != null and _client.sound.weather != null and (int(_client.sound_tests.weather_at) >= 0 or bool(_client.sound.weather.forced)):
 		if bool(_client.sound.weather.forced) and not _forced_logged:
 			_forced_logged = true
-			print("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
+			FreezeWatchScript.printer.line("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
 
 		return TEST.get(_client.sound.weather.kind, out)
 

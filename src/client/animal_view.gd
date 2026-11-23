@@ -15,6 +15,7 @@ const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn bet
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a body comes to the player (data/animals/contact.json)
 const AnimalGait := preload("res://src/client/animal_gait.gd")   # which leg clip and how fast, smoothed (Dave 21 Nov 2026: no running without moving the feet)
 const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const LIE := 19        # lying down to rest: a companion at heel, or a wild grazer bedded down (protocol 148)
 const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown (server_bandits.gd)
 const GRAZE := 0
@@ -1678,7 +1679,7 @@ func _model_note(kind: String, text: String) -> void:
 
 	if not _model_notes.has(key):
 		_model_notes[key] = true
-		print("animal model %s: %s" % [kind, text])
+		FreezeWatchScript.printer.line("animal model %s: %s" % [kind, text])
 
 
 # Whether a drinking animal has its head up to look round at time t (seconds): once per DRINK_SLOT_S slot, starting 6 to 14 s into it and lasting
