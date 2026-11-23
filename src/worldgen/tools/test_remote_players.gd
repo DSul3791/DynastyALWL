@@ -654,6 +654,39 @@ func _check_holds() -> void:
 
 # Robots 23 Nov 2026: a player 70 m off lay down and was drawn standing (bodies past QUARTER_M are not animated, and the clip stayed idle).
 # Far off the body still takes the lying, sitting or swimming pose when the state says so, once, with no animation after.
+# Robots, 23 Nov 2026 (dev 0b0c3247, 60 +- 25 ms, 2% loss): with the animals' easing (1.3 times the measured speed) another player was drawn
+# 2 m behind while it ran and 6 m behind for 10 s after a 1.4 s freeze on the watching client. A player's own easing catches up.
+func _check_catch_up() -> void:
+	var dt: float = 1.0 / 60.0
+	var sm: Dictionary = {}
+	MotionBufferScript.smooth(sm, Vector3.ZERO, 6.0, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)
+	var p: Vector3 = MotionBufferScript.smooth(sm, Vector3(6.0, 0.0, 0.0), 0.0, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)   # 6 m on in one frame (the freeze), then it stands
+	var first: float = p.x
+	var t: float = dt
+
+	while t < 2.5:
+		p = MotionBufferScript.smooth(sm, Vector3(6.0, 0.0, 0.0), 0.0, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)
+		t += dt
+
+	check(first < 1.0, "a 6 m step after a freeze is not jumped (%.2f m in the first frame)" % first)
+	check(absf(p.x - 6.0) < 0.05, "a stopped player 6 m ahead after a freeze is caught up within 2.5 s (%.2f m left)" % absf(p.x - 6.0))
+	# A player breaking into a run (0 to 6 m/s in 0.5 s) while its measured speed trails by 0.4 s: drawn within 1 m of its path.
+	var run: Dictionary = {}
+	var x: float = 0.0
+	var worst: float = 0.0
+	t = 0.0
+
+	while t < 4.0:
+		var speed: float = clampf(t / 0.5, 0.0, 1.0) * 6.0
+		x += speed * dt
+		var measured: float = clampf((t - 0.4) / 0.5, 0.0, 1.0) * 6.0
+		var drawn: Vector3 = MotionBufferScript.smooth(run, Vector3(x, 0.0, 0.0), measured, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)
+		worst = maxf(worst, x - drawn.x)
+		t += dt
+
+	check(worst < 1.0, "a player breaking into a run is drawn within 1 m of its path (worst %.2f m)" % worst)
+
+
 func _check_far_pose() -> void:
 	if not DynastyBodyScript.available():
 		return
@@ -732,5 +765,6 @@ func _init() -> void:
 	await _check_holds()
 	await _check_hand_follows()
 	await _check_far_pose()
+	_check_catch_up()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
