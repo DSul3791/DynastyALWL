@@ -3,6 +3,7 @@ extends Node
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const PlayServer := preload("res://src/shared/play_server.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
+const InstanceLock := preload("res://src/client/instance_lock.gd")
 const RUN_NOTE := "user://server_run.json"
 const STOP_NOTE := "user://server_stop.json"   # asks the server Play started to close (terrain_server._stop_if_asked)
 const STOP_WAIT_MSEC := 60000                   # how long Play waits for that server to save and let go of the port
@@ -29,6 +30,17 @@ func _launch_role(role: String) -> void:
 			)
 
 		"play":
+			if InstanceLock.should_ask(OS.get_cmdline_user_args(), DisplayServer.get_name()) and not Engine.has_meta("copy_checked"):
+				Engine.set_meta("copy_checked", true)   # once per launch: back here after a death is the same copy
+
+				if not OS.get_cmdline_user_args().has("--to-servers") and InstanceLock.other_copy() > 0:   # a restart of this copy: the old process may still be closing
+					InstanceLock.ask(self, func() -> void:
+						InstanceLock.keep_fresh(get_tree())
+						_launch_role(role))
+					return
+
+				InstanceLock.keep_fresh(get_tree())
+
 			if JoinAddress.client_only() and not AppConfig.has_flag("test") and AppConfig.get_command_line_value("server", "") == "":
 				_client_pages()
 				return

@@ -84,7 +84,11 @@
 		"severe_hurt_mult": 2.0,
 		"moderate_pace": 1.5,
 		"severe_pace": 2.5,
-		"say_severe": "You have stopped shivering. Get to a fire, now."
+		"say_severe": "You have stopped shivering. Get to a fire, now.",
+		"say_wet_wind": "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.",
+		"say_wet_wind_note": "Said once a cold spell, with the getting-cold, freezing or stopped-shivering line, while soaked at least wet_wind_say_soak and in a wind of at least wet_wind_say_wind and not under a roof: the player is told why their clothes do not help (coordinator 23 Nov 2026). Told again only after they are warm again.",
+		"wet_wind_say_soak": 0.5,
+		"wet_wind_say_wind": 0.3
 	},
 	"cave_climate": {
 		"note": "Cave air by depth and season (docs/design/cave_climate_design.md; Jamie #709 underground-climate.md, coordinator 8 Nov 2026, Dave may revert). Deep in, the year mean at the height (cave_mean_c, 5.5 C at cave 8002). In from the mouth: lerp(outside air with day_swing_kept of its day swing, deep, smoothstep(near_m, reach_m, depth_m)), the band by which way the cave runs from the mouth (rises, drops or level) and the season (summer = outside warmer than the cave); depth_m is the straight distance to the nearest mouth. Inside draught_m a draught of draught_per_c m/s for each degree between outside and cave, at most draught_max_ms; none past. Drying under cover: none past dry_mouth_m; at the mouth winter_dry_share of dry_cover_per_h when the outside is winter_dry_c or more colder than the cave, else none. Remove this block for the flat cave of #667.",
