@@ -153,6 +153,13 @@ func _init() -> void:
 	items._after_built(1, items._items[9012], items._structures["wall_section"])
 	check(steps.is_empty(), "a wall built a storey below a player moves nobody (%s)" % str(steps))
 
+	# The spots the server prebuilds the ground round at start-up: newest first, at most the limit asked.
+	items._characters["resume-key-older01"] = {"last": {"pos": [10.0, 5.0, 20.0], "t": 1000, "left": "deliberate"}}
+	items._characters["resume-key-nopos01"] = {"luck": 3}
+	var spots: Array = items.saved_spots(8)
+	check(spots.size() == 2 and spots[0].distance_to(base7 + Vector3(20.0, 0.0, 0.0)) < 0.01 and spots[1] == Vector3(10.0, 5.0, 20.0), "saved_spots: the newest leaver first, characters with no spot left out (%s)" % str(spots))
+	check(items.saved_spots(1).size() == 1, "saved_spots keeps to its limit")
+
 	# A malformed saved spot is not a spot.
 	check(items._clean_last({"pos": [1.0, NAN, 2.0]}).is_empty() and items._clean_last({"pos": ["a", 1, 2]}).is_empty() and items._clean_last([]).is_empty(), "a broken saved spot is dropped at load")
 	check(items._clean_rests([[1, 2, 3, "fire"], [1, 2, "x", "fire"], [1, 2, 3, "bad"]]).size() == 1, "rest points are read back, broken ones dropped")

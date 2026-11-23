@@ -777,6 +777,22 @@ func start_position_for(peer: int) -> Array:
 	return [spot.x, spot.y, spot.z]
 
 
+# The saved spots of the characters that left most recently (newest first, at most `limit`): the server builds the ground round them
+# at start-up, so the first join after the generated ground was thrown away (a new TERRAIN_VERSION) does not wait on it.
+func saved_spots(limit: int) -> Array:
+	var rows: Array = []
+
+	for key in _characters:
+		var last: Dictionary = _characters[key].get("last", {})
+		var pos: Array = last.get("pos", [])
+
+		if pos.size() == 3:
+			rows.append([int(last.get("t", 0)), Vector3(float(pos[0]), float(pos[1]), float(pos[2]))])
+
+	rows.sort_custom(func(a, b): return a[0] > b[0])
+	return rows.slice(0, limit).map(func(row): return row[1])
+
+
 # A saved spot that something was built over while the character was away: on a foundation, stand on its top; inside a wall or heavy station
 # (structure_blocks), the nearest clear point within RESUME_SEARCH_M, else the nearest rest or shelter point (else the bed or world spawn). Water
 # (head under) is the scene's (terrain_server._resume_spot); ground dug or filled over the spot is the client's embed rescue, as for any player.
@@ -24582,7 +24598,16 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
-	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
+	if queue.is_empty() or recipe.is_empty():
+		return
+
+	if not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe):
+		# Never a silent no (23 Nov 2026, the screens robot: Fish trap and Bird trap lit, pressed, nothing happened).
+		if bool(recipe.get("locked", false)):
+			_say(peer, "Nobody knows how to make %s yet" % table.in_sentence(str(recipe.get("name", "that"))))
+		else:
+			var at_station: String = (", standing at the %s" % _station_name(str(recipe["station"]))) if str(recipe.get("station", "")) != "" else ""
+			_say(peer, "You have not worked out how to make %s yet: carry what it needs in your pack%s, then try again" % [table.in_sentence(str(recipe.get("name", "that"))), at_station])
 		return
 
 	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
