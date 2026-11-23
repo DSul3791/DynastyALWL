@@ -913,6 +913,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
+
+		if member != "" and animals.wall_between(origin, npcs.npcs[member]["pos"]):
+			member = ""   # a tribe member behind a wall is out of reach of the blow, as an animal is (server_animals.target_along)
+
 		var seen: Array = items.strike_seen.get(peer, [-1, -1])   # protocol 155: judged where the player saw the animals, at most rewind_max_ms back
 		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
