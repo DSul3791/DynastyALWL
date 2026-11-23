@@ -338,12 +338,9 @@ func _init() -> void:
 		items._fish_stock["%d,%d" % [cell.x, cell.y]] = [12, Time.get_unix_time_from_system()]
 		items._fishing_data()["trap"]["hour_chance"] = 1.0
 
-		for h in 4:
-			items._fish_traps_tick()
-			clock[0] += 3600.0
-			items._traps_at_s = -1.0e18
-
-		items._fish_traps_tick()
+		clock[0] += 4.0 * 3600.0
+		items.report_position(1, POND + Vector3(1.0, 0.0, 0.0))
+		items._chest_of(1, fish_traps[0])   # E: the hours it has stood are fished now
 		var box = items._chests[uid]
 
 		for slot in box.slot_count:
