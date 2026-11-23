@@ -15680,13 +15680,12 @@ const HAND_SHIELD_UP := 4       # held_item.gd HAND_SHIELD_UP: the client says B
 
 
 # The pack slot of the shield this player holds raised, -1 for none: the client's shield-up flag (hand_flags, protocol 159) with a shield
-# (items.json "block") in the left hand that the pack still holds and that is not broken. Read through has_method so this file does not
-# depend on when the hand flags land.
+# (items.json "block") in the left hand (left_hand_number: only while the pack still holds it) that is not broken.
 func _raised_shield_slot(peer: int) -> int:
-	if not has_method("hand_flags") or (int(call("hand_flags", peer)) & HAND_SHIELD_UP) == 0:
+	if (hand_flags(peer) & HAND_SHIELD_UP) == 0:
 		return -1
 
-	var number: int = int(call("left_hand_number", peer))
+	var number: int = left_hand_number(peer)
 	var inv = inventory_of(peer)
 
 	if number <= 0 or inv == null or float(table.entry(table.id_of(number)).get("block", 0.0)) <= 0.0:

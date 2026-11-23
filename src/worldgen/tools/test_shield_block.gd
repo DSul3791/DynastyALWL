@@ -5,7 +5,7 @@ extends SceneTree
 # Server judges it."):
 #   1. raised (hand flag 4, protocol 159) with the shield in the left hand, a blow from in front loses the shield's block share;
 #   2. from the side past 60 degrees, or from behind, it loses nothing; nor with the shield lowered, nor when the blow's origin is unknown;
-#   3. the shield wears by what it stopped; a broken shield stops nothing, and a wicker one that breaks is gone;
+#   3. the shield wears by what it stopped, the player is told when it breaks, and a broken shield stops nothing;
 #   4. every shield's share rises with its tier, from about a third to three quarters.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shield_block.gd
 
@@ -103,7 +103,7 @@ func _init() -> void:
 	inv.wear[slot_of("wicker_shield")] = inv.max_durability(slot_of("wicker_shield")) - 1
 	said.clear()
 	taken(front)
-	check(slot_of("wicker_shield") < 0, "a Wicker shield worn out by a blow is gone (%s)" % str(said))
+	check(said.any(func(t): return str(t).contains("wicker shield broke")) and absf(taken(front) - HIT) < 0.01, "a Wicker shield worn out by a blow breaks, and then stops nothing (%s)" % str(said))
 
 	# 4. The shares by tier.
 	var last: float = 0.0
