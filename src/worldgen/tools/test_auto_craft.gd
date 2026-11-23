@@ -293,7 +293,7 @@ func _init() -> void:
 	lock_it.send_notice = func(_p, text): said.append(str(text))
 	give(lock_it, "stick", 10)
 	give(lock_it, "twine", 4)
-	queue(lock_it, 390, 1)   # recipes.json fish_trap
+	queue(lock_it, 398, 1)   # recipes.json claw_necklace (the Fish trap, 390, went live on 23 Nov 2026)
 	check(entries(lock_it).is_empty() and said.size() == 1 and said[0].begins_with("Nobody knows how to make"), "a locked recipe says why it cannot be made, once (%s)" % str(said))
 
 	print("auto craft tests: %d failures" % failures)
