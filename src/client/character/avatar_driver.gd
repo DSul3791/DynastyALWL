@@ -88,7 +88,7 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	if player == null or not player.has_animation("jump"):
 		return choose_clip(stance, pace, current, carrying)
 
-	current = current.trim_suffix("_torch")   # the gait thresholds read the plain names
+	current = gait_of(current.trim_suffix("_torch"))   # the gait thresholds read the plain names
 
 	var panic_t: float = maxf(float(avatar.get_meta("panic_t", 0.0)) - delta, 0.0)
 	avatar.set_meta("panic_t", panic_t)
@@ -203,12 +203,24 @@ static func crouch_walk_clip(velocity_local: Vector2) -> String:
 # -1 while the avatar's gait clip is played in reverse (walking backwards on a body without a walk_back clip: clip_for sets the meta), else 1. The client
 # multiplies the clip's speed_scale by it.
 static func backward_sign(avatar, clip: String) -> float:
-	return -1.0 if avatar != null and clip.trim_suffix("_torch") in ["walk", "jog", "run"] and bool(avatar.get_meta("backward", false)) else 1.0
+	return -1.0 if avatar != null and gait_of(clip) in ["walk", "jog", "run"] and bool(avatar.get_meta("backward", false)) else 1.0
+
+
+# A carry variant's own gait: the torch carry and the bow aim (walk_torch, walk_bow_raised, idle_bow_drawn...) keep their gait's stride;
+# the crouched torch walks keep their own names.
+static func gait_of(clip: String) -> String:
+	if clip.begins_with("crouch_walk"):
+		return clip
+
+	for suffix in ["_torch", "_bow_raised", "_bow_drawn"]:
+		if clip.ends_with(suffix):
+			return clip.trim_suffix(suffix)
+
+	return clip
 
 
 static func speed_scale(clip: String, pace: float) -> float:
-	if clip.ends_with("_torch") and not clip.begins_with("crouch_walk"):
-		clip = clip.trim_suffix("_torch")   # the torch carry gaits keep their gait's stride
+	clip = gait_of(clip)
 
 	if clip == "panic_run":
 		return 1.0
@@ -240,7 +252,7 @@ static func speed_scale(clip: String, pace: float) -> float:
 # Lean into a slope: uphill by the slope angle (up to 25 degrees), downhill a little back (Tyler's table). `local_normal` is the floor normal in the
 # body's own frame. Returns the tilt in radians (0 when not on the floor, nearly still or idle).
 static func slope_tilt(on_floor: bool, local_normal: Vector3, pace: float, clip: String) -> float:
-	if not on_floor or pace <= WALK_MIN_PACE or clip == "idle" or clip == "idle_torch":
+	if not on_floor or pace <= WALK_MIN_PACE or gait_of(clip) == "idle":
 		return 0.0
 
 	var angle: float = atan2(local_normal.z, maxf(local_normal.y, 0.1))

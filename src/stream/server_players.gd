@@ -290,10 +290,11 @@ func tick(delta: float) -> void:
 			_sent.erase(gone)
 
 
-# A rod's float (`float_at`, INF for none) as one int beside a row at `body`: bit 24 set, then x, y and z from the body in signed decimetres,
-# 8 bits each (within 12.7 m: a cast lands within the rod's reach, fishing.json reach_m 8). 0 = no line in the water. cast_point reads it back.
+# A rod's float (`float_at`, INF for none) as one int beside a row at `body`: bit 24 set, then x, y and z from the body in signed 0.12 m
+# steps, 8 bits each (within 15.2 m: a cast lands within the rod's reach, fishing.json reach_m 8, and the angler may walk 6 m before the
+# line is taken in, move_cancel_m). 0 = no line in the water. player_view.gd cast_point reads it back.
 const CAST_ON := 1 << 24
-const CAST_STEP_M := 0.1
+const CAST_STEP_M := 0.12
 
 static func cast_code(body: Vector3, float_at: Vector3) -> int:
 	if not float_at.is_finite() or not body.is_finite():
@@ -301,16 +302,6 @@ static func cast_code(body: Vector3, float_at: Vector3) -> int:
 
 	var d: Vector3 = (float_at - body) / CAST_STEP_M
 	return CAST_ON | ((clampi(roundi(d.x), -127, 127) & 255) << 16) | ((clampi(roundi(d.y), -127, 127) & 255) << 8) | (clampi(roundi(d.z), -127, 127) & 255)
-
-
-static func cast_point(body: Vector3, code: int) -> Vector3:
-	if (code & CAST_ON) == 0:
-		return Vector3.INF
-
-	var x: int = (code >> 16) & 255
-	var y: int = (code >> 8) & 255
-	var z: int = code & 255
-	return body + Vector3(x - 256 if x > 127 else x, y - 256 if y > 127 else y, z - 256 if z > 127 else z) * CAST_STEP_M
 
 
 # The others near `me`, nearest first, at most MAX_ROWS: [[peer, position], ...]. `at` is peer -> position of the players that can be shown.

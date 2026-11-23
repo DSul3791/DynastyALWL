@@ -193,10 +193,16 @@ func _server() -> void:
 	fake.left = {}
 	fake.burning = {}
 	fake.flags = {}
+	# 162: the bow aim gaits keep their gait's stride and walk backwards as the plain walk (review: the feet slid).
+	var Driver = load("res://src/client/character/avatar_driver.gd")
+	var back_rig: Node3D = Node3D.new()
+	back_rig.set_meta("backward", true)
+	check(is_equal_approx(Driver.speed_scale("walk_bow_raised", 1.0), Driver.speed_scale("walk", 1.0)) and is_equal_approx(Driver.speed_scale("walk_bow_drawn", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_bow_raised") == -1.0 and Driver.slope_tilt(true, Vector3(0.0, 0.9, 0.4), 2.0, "idle_bow_drawn") == 0.0, "an archer's walk is paced and reversed as the plain walk")
+	back_rig.free()
 	# 162: a rod's float rides beside the row as one int (cast_code), read back to the same spot within 5 cm; a new cast is news; none is 0.
 	var float_at: Vector3 = Vector3(115.5, 8.2, 96.3)
 	var code: int = PlayersScript.cast_code(Vector3(110.0, 10.0, 100.0), float_at)
-	check(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), code).distance_to(float_at) < 0.09 and PlayersScript.cast_code(Vector3.ZERO, Vector3.INF) == 0 and not PlayerViewScript.cast_point(Vector3.ZERO, 0).is_finite(), "the float's spot goes as one int and comes back (%s)" % str(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), code)))
+	check(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), code).distance_to(float_at) < 0.11 and PlayersScript.cast_code(Vector3.ZERO, Vector3.INF) == 0 and not PlayerViewScript.cast_point(Vector3.ZERO, 0).is_finite(), "the float's spot goes as one int and comes back (%s)" % str(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), code)))
 	sent.clear()
 	fake.floats = {2: float_at}
 	clock[0] = 2770

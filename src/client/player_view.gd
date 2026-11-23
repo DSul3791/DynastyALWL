@@ -489,7 +489,7 @@ const LINE_POINTS := 10
 const LINE_SAG := 0.12              # metres of sag per metre of line
 const FLOAT_R := 0.035
 const CAST_ON := 1 << 24            # server_players.gd cast_code
-const CAST_STEP_M := 0.1
+const CAST_STEP_M := 0.12
 
 
 # The float's world spot from a row's `cast` int (server_players.gd cast_code) beside the row's position; INF for none.
@@ -507,7 +507,8 @@ func _show_line(b: Dictionary, distance: float) -> void:
 	var float_at: Vector3 = b.get("float_at", Vector3.INF)
 	var held_node: Node3D = b.get("held_node", null) as Node3D
 	var line: MeshInstance3D = b.get("line", null) as MeshInstance3D
-	var on: bool = float_at.is_finite() and distance <= LINE_M and held_node != null and is_instance_valid(held_node) and held_node.is_inside_tree()
+	var rod: bool = table != null and str(table.entry(table.id_of(int(b.get("held", 0)))).get("tool_class", "")) == "rod"   # the line is the rod's (put away, no line)
+	var on: bool = rod and float_at.is_finite() and distance <= LINE_M and held_node != null and is_instance_valid(held_node) and held_node.is_inside_tree()
 
 	if not on:
 		if line != null and is_instance_valid(line):
