@@ -1,7 +1,10 @@
 #!/bin/bash
 # GDScript warning counter (Dave's rule: new code makes zero warnings, so the log holds only real problems).
 #
-#   tools/check_warnings.sh              warnings per file, all scripts (about 1 minute)
+#   tools/check_warnings.sh              warnings per file, all scripts (about 1 minute), against tools/warning_baseline.txt: exits 4 and
+#                                        names each file over its baseline count; says so when files are below it (lower the baseline)
+#   tools/check_warnings.sh --counts     the same counts with no baseline comparison (run_tests.sh and local_check.sh compare themselves)
+#   tools/check_warnings.sh --update-baseline   rewrite tools/warning_baseline.txt from the current counts (after warnings were cleared)
 #   tools/check_warnings.sh --changed    only files changed against origin/main (and uncommitted):
 #                                        prints their warnings and exits 1 if there are any. Run before every push.
 #   tools/check_warnings.sh --detail F   every warning of file F (path from the project root, e.g. src/client/hud.gd)
@@ -11,10 +14,12 @@
 # reports warnings in debug mode, and counts what the engine says. --ignore-error-breaks keeps a parse error from
 # stopping the run at the local debugger's "debug>" prompt (Godot 4.7: GDScript::reload breaks there on a parse error).
 #
-# Exit codes: 0 checked; 1 warnings in changed files (--changed); 2 the check did not finish (no godot, timed out,
-# or no "scripts checked" line), so nothing it printed can be trusted; 3 a script does not parse (named on stderr).
-# CHECK_WARNINGS_TIMEOUT sets the time limit in seconds (default 600).
+# Exit codes: 0 checked, no file over the baseline; 1 warnings in changed files (--changed); 2 the check did not finish (no godot, timed out,
+# or no "scripts checked" line), so nothing it printed can be trusted; 3 a script does not parse (named on stderr); 4 new warnings: a file
+# has more than its count in the baseline (coordinator 23 Nov 2026: exit 0 used to mean only "finished", and four threads read it as clean).
+# CHECK_WARNINGS_TIMEOUT sets the time limit in seconds (default 600); WARNING_BASELINE another baseline file (tools/test_check_warnings.sh).
 cd "$(dirname "$0")/.." || exit 2
+BASE=${WARNING_BASELINE:-tools/warning_baseline.txt}
 command -v godot >/dev/null || { echo "check_warnings: godot is not on the PATH, nothing was checked" >&2; exit 2; }
 LIMIT=${CHECK_WARNINGS_TIMEOUT:-600}
 RAW=$(mktemp)
@@ -58,8 +63,45 @@ case "$1" in
 	--detail)
 		grep "^$2:" "$OUT"
 		;;
-	*)
+	--self-check|--counts)
 		cut -d: -f1 "$OUT" | sort | uniq -c | sort -rn
+		;;
+	--update-baseline)
+		if grep -q "^PARSE FAIL \|^parse failures: " "$RAW"; then
+			echo "check_warnings: baseline NOT written, a script does not parse" >&2
+		else
+			cut -d: -f1 "$OUT" | sort | uniq -c | sort -rn > "$BASE"
+			echo "baseline written to $BASE: $(awk '{s+=$1} END{print s+0}' "$BASE") warnings in $(wc -l < "$BASE") files"
+		fi
+		;;
+	*)
+		COUNTS=$(cut -d: -f1 "$OUT" | sort | uniq -c | sort -rn)
+		echo "$COUNTS" | grep -v '^$'
+
+		if grep -q "^PARSE FAIL \|^parse failures: " "$RAW"; then
+			echo "check_warnings: no baseline comparison, a script does not parse (its warnings were never counted)" >&2
+		elif [ ! -f "$BASE" ]; then
+			echo "check_warnings: FAIL, the baseline $BASE is missing, so new warnings cannot be told apart" >&2
+			STATUS=4
+		else
+			NOW_TOTAL=$(echo "$COUNTS" | awk '{s+=$1} END{print s+0}')
+			BASE_TOTAL=$(awk '{s+=$1} END{print s+0}' "$BASE")
+			OVER=$(echo "$COUNTS" | awk 'FILENAME==ARGV[1]{b[$2]=$1; next} NF==2 && $1 > b[$2]+0 {printf "  %s: %d now, %d in the baseline\n", $2, $1, b[$2]+0}' "$BASE" -)
+			UNDER=$(echo "$COUNTS" | awk 'FILENAME==ARGV[1] {if (NF==2) n[$2]=$1; next} $1 > n[$2]+0 {c++} END{print c+0}' - "$BASE")
+
+			if [ -n "$OVER" ]; then
+				echo "check_warnings: FAIL, new warnings ($NOW_TOTAL now, $BASE_TOTAL in the baseline); files over their baseline count:" >&2
+				echo "$OVER" >&2
+				echo "  see each with: tools/check_warnings.sh --detail <file>" >&2
+				STATUS=4
+			else
+				echo "no new warnings: $NOW_TOTAL now, $BASE_TOTAL in the baseline"
+			fi
+
+			if [ "$UNDER" -gt 0 ]; then
+				echo "check_warnings: files below their baseline count: $UNDER. Lower the baseline with tools/check_warnings.sh --update-baseline and commit it"
+			fi
+		fi
 		;;
 esac
 

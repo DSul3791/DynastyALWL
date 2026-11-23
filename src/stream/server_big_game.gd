@@ -325,7 +325,7 @@ func step(a: Dictionary, dt: float) -> void:
 				var p: Vector3 = info["pos"]
 
 				# Never through a wall: one stopped against a wall's near side is within hit_m of a player hard behind it (Dave: never hitting through walls).
-				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p) and hurt_player.is_valid():
+				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.blow_blocked(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
 					var wait_s: float = late_s(def, int(info["peer"]))
@@ -447,7 +447,7 @@ func _judge_late(a: Dictionary, def: Dictionary, dt: float) -> void:
 	for info in (player_info.call() if player_info.is_valid() else []):
 		var p: Vector3 = info["pos"]
 
-		if int(info["peer"]) == int(late["peer"]) and _off_path(p, late["from"], late["to"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p):
+		if int(info["peer"]) == int(late["peer"]) and _off_path(p, late["from"], late["to"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.blow_blocked(a["pos"], p):
 			_land(a, def, int(info["peer"]))
 			break
 

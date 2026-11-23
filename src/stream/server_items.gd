@@ -482,7 +482,7 @@ var trail_strength: Callable         # (x, z) -> how worn the game trail is ther
 var run_distance: Callable           # (x, z, kind) -> metres to the nearest trail between animal places of that kind (-1 any), INF only when none is found and ground that could hold a nearer one is not worked out, 10 when no trail is nearer (server_ranges.gd route_distance)
 var fox_near: Callable              # (x, z, m) -> a fox earth lies within m, in worked-out ground (server_ranges.gd fox_near; stage 2b)
 var species_active: Callable         # (species) -> 0..1, how active that species is now (server_animals.activity_chance)
-var species_active_at: Callable      # (species, game hour) -> 0..1, how active it is at that hour: a snare's time away, worked out when a player comes back
+var species_active_at: Callable      # (species, game hour, ground z or NAN) -> 0..1, how active it is at that hour by that row's sun: a snare's time away, worked out when a player comes back
 var _bow = null                     # server_bow.gd, made at the first shot
 var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)
 var _last_shot: Dictionary = {}     # peer -> msec
@@ -607,6 +607,7 @@ func setup(item_table, store_dir: String) -> void:
 	_lift_out_of_slabs()   # stacks dropped on a foundation before 23 Nov 2026 lay inside it: onto its top, written at the first save
 	_carts.after_load()
 	_traps.after_load()   # each trap's held catch laid again by it
+	_traps.load_marks(_read_json_version("tracking_marks.json", 1))
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
@@ -1478,7 +1479,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				_tick_ageing(id)   # a kept pile passes here too and stays kept (left over 1e8, so _expire_items skips it); the call only lists it
 
 				if by != "":
-					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
+					near["by"] = by   # the last player to add to it (goblin gifts, a stray's food; saved, by_rows)
 
 				_dirty = true
 				count -= added
@@ -1512,7 +1513,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 		_items[_next_id]["inst"] = item_inst.duplicate(true)
 
 	if by != "":
-		_items[_next_id]["by"] = by   # who dropped it (goblin gifts; kept while the server runs, not saved)
+		_items[_next_id]["by"] = by   # who dropped it (goblin gifts, a stray's food; saved in the area files' by_rows, 23 Nov 2026)
 
 	if not is_nan(girth):
 		_items[_next_id]["girth"] = clampf(girth, 0.25, 2.5)
@@ -2083,6 +2084,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _tanks_written, "wells": _wells_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
+	_write_atomic("tracking_marks.json", _traps.saved_marks())   # the trail signs and snare spots that already trained each character's Tracking
 	_save_item_files(_item_job())
 
 
@@ -2106,7 +2108,7 @@ func save() -> void:
 const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
 const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countdowns (an item's lifetime, a fire's burn) in steps this long, so an area
                                    # where only a fire burns or a drop ages is written about every 10 minutes, not every save; a clean shutdown writes exactly
-const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
+const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices, "by_rows": row index -> who dropped it}
 var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
 const SWEEP_BUDGET_US := 1000      # PROVISIONAL: the most a tick spends on the rolling check (2% of a 50 ms tick)
@@ -2229,11 +2231,11 @@ static func _write_item_job(job: Dictionary) -> void:
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
-		var rows: Array = [[], []]
+		var rows: Array = [[], [], {}]
 
 		for id in job["areas"][key]:
 			if items.has(id):
-				_world_item_row(items[id], id, kinds, job["tilt_y"], rows[0], rows[1])
+				_world_item_row(items[id], id, kinds, job["tilt_y"], rows[0], rows[1], rows[2])
 
 		if not (rows[0] as Array).is_empty():
 			areas[key] = rows
@@ -2243,7 +2245,7 @@ static func _write_item_job(job: Dictionary) -> void:
 			listed[key] = int(sums[key])   # not dirty: its file stands as written
 
 	for key in areas:
-		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1]})
+		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1], "by_rows": areas[key][2]})
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
@@ -2571,8 +2573,9 @@ func _reindex_save() -> void:
 	save_check_now()
 
 
-# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down), or nothing for what is never saved.
-static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array) -> void:
+# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down, and who dropped a loose one to `by_rows`),
+# or nothing for what is never saved.
+static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array, by_rows: Dictionary) -> void:
 	if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
 		return   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
@@ -2625,6 +2628,9 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 
 	if it.has("world"):
 		world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
+
+	if str(it.get("by", "")) != "":
+		by_rows[str(items.size())] = str(it["by"])   # who dropped it (a goblin's gift, food for a stray or a dog): kept over a restart (23 Nov 2026)
 
 	items.append(row)
 
@@ -8266,6 +8272,7 @@ func _load_world_items() -> void:
 		_save_gen = int(parsed.get("gen", 0))
 		var all_rows: Array = []
 		var all_world: Array = []
+		var all_by: Dictionary = {}
 
 		_load_row_area = []
 
@@ -8280,10 +8287,17 @@ func _load_world_items() -> void:
 			for n in area.get("world_rows", []):
 				all_world.append(base + int(n))
 
+			var by_area: Variant = area.get("by_rows", {})   # added 23 Nov 2026: an older area file has none (its loose items load with no dropper, as before)
+
+			if typeof(by_area) == TYPE_DICTIONARY:
+				for n in by_area:
+					all_by[str(base + int(n))] = str(by_area[n])
+
 			all_rows.append_array(area.get("items", []))
 
 		parsed["items"] = all_rows
 		parsed["world_rows"] = all_world
+		parsed["by_rows"] = all_by
 
 	_next_id = int(parsed.get("next_id", 1))
 
@@ -8348,6 +8362,8 @@ func _load_world_items() -> void:
 
 	for n in parsed.get("world_rows", []):
 		world_rows[int(n)] = true
+
+	var by_rows: Dictionary = parsed.get("by_rows", {}) if typeof(parsed.get("by_rows", {})) == TYPE_DICTIONARY else {}   # who dropped each loose item (added 23 Nov 2026)
 
 	for row in parsed["items"]:
 		row_n += 1
@@ -8549,6 +8565,9 @@ func _load_world_items() -> void:
 
 		if world_rows.has(row_n):
 			entry["world"] = true
+
+		if by_rows.has(str(row_n)):
+			entry["by"] = str(by_rows[str(row_n)])
 
 		_load_row_of[_next_id] = row_n
 		_items[_next_id] = entry
@@ -11782,8 +11801,13 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
-	var spot: Vector3 = Vector3(at.x, _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y, at.z)   # the ground as dug and filled
+	var dug: float = _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y   # the ground as dug and filled
+	var in_cave: bool = float(_peer_pos[peer].y) < dug - 0.05   # the cave floor only for a player standing under the ground there (the aim's height is the client's word)
+	var spot: Vector3 = Vector3(at.x, _cave_ground(at, dug) if in_cave and ground_height.is_valid() else dug, at.z)
 	var why: String = _sapling_refusal(item_id, spot)
+
+	if tree_seed_species(item_id) != "" and dug - spot.y > 1.0:
+		why = "A tree needs open sky: it cannot grow in a cave."   # a bush fits under the roof; a tree would grow through it (this reason first)
 
 	if why != "":
 		_say(peer, why)
@@ -18759,6 +18783,12 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, _remains_surface(pos, _foundation_rows()), pos.z)   # on the floor they stood on, or the ground as dug
+
+	if cave and not is_nan(ground):
+		var under: float = _remains_surface(pos, _foundation_rows())   # deep in a cave: its floor (a death in mid-jump does not hang in the air; the settle pass skips cave remains)
+
+		if under < ground - 0.5 and under <= pos.y + 0.05:
+			spot.y = under
 	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
@@ -19002,14 +19032,24 @@ var _remains_settled: Dictionary = {}   # remains world id -> [the y the recheck
 
 
 # Where remains rest at `pos` (a point a little above or below the surface): the top of a foundation or floor within reach of it (a death in a house is
-# not buried under the slab), else the ground as dug and filled. `rows` is _foundation_rows().
+# not buried under the slab), else the ground as dug and filled, or the floor of a cave they are in (round 6, 23 Nov 2026: the settle pass lifted
+# remains in a cave onto the hill above). `rows` is _foundation_rows().
 func _remains_surface(pos: Vector3, rows: Array) -> float:
 	var top: float = PlacementRules.support_top(_structures_cfg, pos, rows, true)
 
 	if not is_nan(top):
 		return top
 
-	return _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
+	var dug: float = _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
+	var floor_y: float = _cave_ground(pos, dug)   # in a cave: its floor, where the owner can reach them
+
+	if floor_y != dug and floor_y < pos.y - REMAINS_CAVE_DROP_M:
+		return pos.y   # over a cave spring pool's 20 m basin: they stay where they fell, at the water, not on its far bottom
+
+	return floor_y
+
+
+const REMAINS_CAVE_DROP_M := 3.0   # remains in a cave fall at most this far to its floor
 
 
 # --- Fall damage (job 62) ---
