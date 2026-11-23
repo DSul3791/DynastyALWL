@@ -263,6 +263,14 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	text.clear()
 	_collect(layer, text)
 	check(journal.page == Journal.SKILLS and journal.skill_selected == "trades" and text.has("Skill level 25 of 100, Advanced."), "a new skills message refreshes the page in place, after training Advanced")
+	journal.select_skill("mining")
+	text.clear()
+	_collect(layer, text)
+	check(text.has("Rises by use, up to 100.") and text.has("5% of the way to 81."), "in Master use goes on to 100")
+	await process_frame
+	var head_cells: Array = layer.find_children("SkillHeadings", "HBoxContainer", true, false)[0].get_children()
+	var row_cells: Array = layer.find_children("Skill_mining", "Button", true, false)[0].find_children("*", "Label", true, false)
+	check(absf(head_cells[1].global_position.x - row_cells[1].global_position.x) < 2.0 and absf(head_cells[2].global_position.x - row_cells[2].global_position.x) < 2.0, "each heading sits over its column (%s / %s)" % [str(head_cells[1].global_position.x), str(row_cells[1].global_position.x)])
 	journal.close()
 	view.free()
 

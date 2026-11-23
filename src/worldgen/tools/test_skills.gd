@@ -136,13 +136,20 @@ func _init() -> void:
 	check(Web.class_of(cfg, Web.effective(cfg, "woodcutting", bands)) == "Master" and int(cfg["system"]["max_value"]) == 100, "three trainings reach Master, and the top is 100")
 	var master_day: float = at
 
+	var last_day: int = 0
+
 	for d in 900:
+		if int(Web.effective(cfg, "woodcutting", bands)) >= 100:
+			break
+
+		last_day = d
+
 		for n in 100:
 			Web.practice(cfg, "woodcutting", {}, bands, 1.0, master_day + float(d) * 86400.0 + float(n))
 
 	var master_top: float = Web.effective(cfg, "woodcutting", bands)
 	check(int(master_top) == 100 and Web.class_of(cfg, master_top) == "Master", "in Master, use goes all the way to 100 (%.2f)" % master_top)
-	check(Web.gain(cfg, "woodcutting", {}, bands, 1.0, master_day + 901.0 * 86400.0) == 0.0, "and adds nothing past it")
+	check(Web.gain(cfg, "woodcutting", {}, bands, 1.0, master_day + float(last_day) * 86400.0 + 200.0) == 0.0, "and adds nothing past it")
 	check(Web.class_rank(cfg, "Basic") == 0 and Web.class_rank(cfg, "Master") == 3 and Web.class_rank(cfg, "") == -1, "classes sort Basic, Advanced, Expert, Master")
 	bad = cfg.duplicate(true)
 	bad["system"]["classes"][2]["from"] = 51

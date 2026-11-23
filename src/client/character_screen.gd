@@ -387,7 +387,7 @@ func refresh() -> void:
 			var soon: Label = _label("planned: nothing practises it yet", BODY_PX - 4)
 			soon.modulate = Color(0.75, 0.75, 0.75)
 			notes.add_child(soon)
-		elif unmet == "" and row.size() > 7 and effective < cap - 1:   # the last point under a cap is never reached by use (skills.json slow_last): no "% to" it
+		elif unmet == "" and row.size() > 7 and effective < (cap if cap >= 100 else cap - 1):   # the last point under a cap is never reached by use (skills.json slow_last): no "% to" it; in Master use reaches 100
 			var next_level: Label = _label("%d%% to %d" % [int(row[7]), effective + 1], BODY_PX - 4)
 			next_level.modulate = Color(0.8, 0.8, 0.8)
 			notes.add_child(next_level)

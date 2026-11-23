@@ -50,6 +50,8 @@ var skill_descending: bool = false
 var skill_selected: String = ""                         # the skill whose details show
 var _skills_cfg: Dictionary = {}                        # skills.json, read at the first look
 var _skill_scroll: ScrollContainer
+var _level_px: float = 0.0                              # the Skill level and Class columns' widths, set by their headings
+var _class_px: float = 0.0
 
 
 class JournalFrame extends Control:
@@ -470,6 +472,9 @@ func _cells(controls: Array) -> HBoxContainer:
 		var cell: Control = controls[i]
 		cell.size_flags_horizontal = Control.SIZE_EXPAND_FILL if i == 0 else Control.SIZE_SHRINK_END
 		cell.custom_minimum_size.x = 0.0 if i == 0 else float(_items.text_px(130 if i == 1 else 140))
+
+		if i > 0 and (_level_px if i == 1 else _class_px) > cell.custom_minimum_size.x:
+			cell.custom_minimum_size.x = _level_px if i == 1 else _class_px   # as wide as its heading
 		line.add_child(cell)
 
 	return line
@@ -502,12 +507,21 @@ func _show_skill_table() -> void:
 
 	var heading: HBoxContainer = _cells(heads)
 	heading.name = "SkillHeadings"
-	_left.add_child(heading)
+	var heading_box: MarginContainer = MarginContainer.new()   # the same insets as a row's cells, so each heading sits over its column
+	heading_box.add_theme_constant_override("margin_left", _items.text_px(14))
+	heading_box.add_child(heading)
+	_left.add_child(heading_box)
+	_level_px = maxf(float(_items.text_px(130)), (heads[1] as Button).get_combined_minimum_size().x)
+	_class_px = maxf(float(_items.text_px(140)), (heads[2] as Button).get_combined_minimum_size().x)
+
+	for i in [1, 2]:
+		(heads[i] as Control).custom_minimum_size.x = _level_px if i == 1 else _class_px
 	_skill_scroll = ScrollContainer.new()
 	_skill_scroll.name = "SkillTable"
 	_skill_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_skill_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	_left.add_child(_skill_scroll)
+	heading_box.add_theme_constant_override("margin_right", _items.text_px(10) + int(_skill_scroll.get_v_scroll_bar().get_combined_minimum_size().x))   # the rows are narrower by the scroll bar
 	var list: VBoxContainer = VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 3)
@@ -566,7 +580,12 @@ func _skill_note(r: Dictionary) -> String:
 	if int(r["level"]) >= int(r["cap"]):
 		return "At the top."
 
-	return "Rises by use, up to %d." % (int(r["cap"]) - 1)
+	return "Rises by use, up to %d." % _use_top(r)
+
+
+# The highest level use reaches: one under the cap (a trainer opens the next class), the top itself in Master.
+func _use_top(r: Dictionary) -> int:
+	return int(r["cap"]) - (0 if int(r["cap"]) >= int(_skill_cfg().get("system", {}).get("max_value", 100)) else 1)
 
 
 func _show_skill_details() -> void:
@@ -592,7 +611,7 @@ func _show_skill_details() -> void:
 		card.add_child(_text(_skill_note(r), 22, Color(0.6, 0.85, 1.0) if bool(r["wall"]) else ArtKit.CREAM))
 		var more: PackedStringArray = PackedStringArray()
 
-		if str(r["locked"]) == "" and not bool(r["planned"]) and int(r["to_next"]) >= 0 and int(r["level"]) < int(r["cap"]) - 1:
+		if str(r["locked"]) == "" and not bool(r["planned"]) and int(r["to_next"]) >= 0 and int(r["level"]) < _use_top(r):
 			more.append("%d%% of the way to %d." % [int(r["to_next"]), int(r["level"]) + 1])
 
 		if int(r["trained"]) > 0:
