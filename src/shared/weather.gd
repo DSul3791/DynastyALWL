@@ -151,6 +151,16 @@ static func band_height(y: float) -> float:
 	return float(int(round(maxf(y, 0.0) / HEIGHT_BAND_M))) * HEIGHT_BAND_M
 
 
+# Whole game hours since it last rained (rain over 0.05) over a spot of `row` at `altitude_m`, looking back hour by hour up to max_h
+# game hours (0 while it rains); INF when it did not. The drink rule's "hours since rain" where the player drinks (DrinkRules.runs).
+static func rain_hours_ago(seed_value: int, game_s: float, group: String, altitude_m: float, row: int, equator_row: int, max_h: float) -> float:
+	for h in range(0, ceili(maxf(max_h, 0.0)) + 1):
+		if float(state(seed_value, game_s - float(h) * 3600.0, group, altitude_m, 0.0, row, equator_row)["rain"]) > 0.05:
+			return float(h)
+
+	return INF
+
+
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
 	var days: float = float(GameClockScript.DAYS_PER_YEAR)
