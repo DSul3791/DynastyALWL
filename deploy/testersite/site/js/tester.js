@@ -124,18 +124,17 @@
       }).then(function (j) {
         if (!j._ok) throw new Error(j.error || "Something went wrong.");
         out.className = "result ok";
-        out.appendChild(el("strong", "", "Thank you, it is in. "));
-        if (j.sent && j.issue_url) {
-          out.appendChild(document.createTextNode("It is on GitHub as "));
-          var a = el("a", "", j.issue_url.replace(/^.*\/issues\//, "issue #")); a.href = j.issue_url; a.target = "_blank"; a.rel = "noopener";
-          out.appendChild(a); out.appendChild(document.createTextNode("."));
-        } else {
-          out.appendChild(document.createTextNode("It is saved and goes to GitHub as soon as GitHub answers; it already counts on the high-score table."));
+        out.appendChild(el("strong", "", "Thank you, it is in!"));
+        if (j.score) out.appendChild(el("span", "big", "Your score: " + j.score.total));
+        var links = el("div", "note");
+        var again = el("a", "", "Send another"); again.href = location.pathname; links.appendChild(again);
+        links.appendChild(document.createTextNode(" \u00b7 "));
+        var home = el("a", "", "Front page"); home.href = "/"; links.appendChild(home);
+        if (j.issue_url) {
+          links.appendChild(document.createTextNode(" \u00b7 "));
+          var a = el("a", "", "See it on GitHub"); a.href = j.issue_url; a.target = "_blank"; a.rel = "noopener"; links.appendChild(a);
         }
-        out.appendChild(el("br"));
-        var again = el("a", "", "Send another"); again.href = location.pathname; out.appendChild(again);
-        out.appendChild(document.createTextNode(" · "));
-        var home = el("a", "", "Back to the front page"); home.href = "/"; out.appendChild(home);
+        out.appendChild(links);
         form.hidden = true;
       }).catch(function (e) {
         out.className = "result bad";

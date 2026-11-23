@@ -20,7 +20,7 @@ reported, ideas, total score, sortable by any column. Testers need no GitHub acc
   that name the browser sent. The service has no port on the server; only Caddy can reach it. So nobody can post as somebody else.
 - **Never lost:** every report is saved on the server before it goes to GitHub. If GitHub cannot be reached (or the token is wrong),
   the report waits and is sent every two minutes until it gets through. It counts on the high-score table straight away.
-- **The issue** has the same headings as the GitHub forms (`bug.yml`, `idea.yml`), "Sent from the tester site by **name**", and the
+- **The forms** are as short as possible (Dave: "ridiculously simple"): bug = Build (filled in), Short title, What happened, Attach files; idea = Build, Short title, Your idea. **The issue** uses the GitHub forms' headings for those boxes, "Sent from the tester site by **name**", and the
   labels `bug` or `idea` plus `tester-site`. A game log or crash report is posted as comments under the issue (the last 360,000
   characters, where the crash is). Screenshots stay on the server and the issue links to them (log in to see them).
 - **Limits:** 20 reports per tester per hour, 30 MB per report, 4 pictures of 8 MB, 20,000 characters per box. An `@name` in a

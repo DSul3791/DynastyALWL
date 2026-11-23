@@ -58,19 +58,17 @@ PER_HOUR = 20                        # reports per tester per hour
 RETRY_SECONDS = 120
 
 FORMS = {
-    # kind: (title prefix, label, [(field, heading, required)], [file fields])
+    # kind: (title prefix, label, [(field, heading, required)], takes files). Dave 23 Nov: "ridiculously simple".
     "bug": ("[Bug] ", "bug", [
         ("build", "Build", True),
         ("what", "What happened?", True),
-        ("expected", "What did you expect?", False),
-    ], ["log", "crash"]),
+    ], True),
     "idea": ("[Idea] ", "idea", [
         ("build", "Build", False),
         ("idea", "Your idea", True),
-        ("why", "Why would it help?", False),
-    ], []),
+    ], False),
 }
-FILE_HEADINGS = {"log": "Game log (godot.log)", "crash": "Crash report"}
+MAX_TEXT_FILES = 3                   # logs and crash reports from the one "Attach files" box
 PICTURE_TYPES = {b"\x89PNG": "png", b"\xff\xd8\xff": "jpg", b"GIF8": "gif", b"RIFF": "webp"}
 
 DB_LOCK = threading.Lock()
@@ -110,7 +108,7 @@ def query(sql, args=(), commit=False):
 
 def no_mentions(text):
     # A zero-width space after @ stops GitHub notifying whoever a tester happens to name.
-    return re.sub(r"@(?=\w)", "@​", text)
+    return re.sub(r"@(?=\w)", "@\u200b", text)
 
 
 def clean(text, limit):
@@ -129,9 +127,8 @@ def build_issue(kind, user, fields, files, picture_names):
         value = fields.get(name) or "_No response_"
         lines += [f"### {heading}", "", value, ""]
     if kind == "bug":
-        attached = [FILE_HEADINGS[k] for k in FORMS[kind][3] if files.get(k)]
-        lines += ["### Your game log", "", ("Attached below as comments: " + ", ".join(attached) + ".")
-                  if attached else "_No response_", ""]
+        lines += ["### Your game log", "", ("Attached below as comments: " + ", ".join(f"`{n}`" for n in files) + ".")
+                  if files else "_No response_", ""]
     if picture_names:
         lines += ["### Screenshots", "", "On the tester site (log in with a tester name to see them):", ""]
         lines += [f"- {SITE_URL}/api/pictures/{p}" for p in picture_names]
@@ -139,14 +136,12 @@ def build_issue(kind, user, fields, files, picture_names):
     first = fields.get("title") or (fields.get("what") or fields.get("idea") or "").split("\n")[0]
     title = prefix + (first[:MAX_TITLE].strip() or "(no title)")
     comments = []
-    for key, text in files.items():
-        if not text:
-            continue
+    for fname, text in files.items():
         cut = len(text) > MAX_LOG_CHARS
         text = text[-MAX_LOG_CHARS:]
         parts = [text[i:i + COMMENT_CHARS] for i in range(0, len(text), COMMENT_CHARS)]
         for n, part in enumerate(parts, 1):
-            head = f"**{FILE_HEADINGS[key]}**, part {n} of {len(parts)}"
+            head = f"**`{fname}`**, part {n} of {len(parts)}"
             if cut and n == 1:
                 head += " (the start was cut; this is the last part of the file)"
             comments.append(head + "\n\n" + fence(part))
@@ -223,10 +218,21 @@ def parse_form(content_type, body):
         data = part.get_payload(decode=True) or b""
         if part.get_filename() is not None:
             if data:
-                uploads.setdefault(name, []).append(data)
+                uploads.setdefault(name, []).append((part.get_filename(), data))
         else:
             fields[name] = data.decode("utf-8", errors="replace")
     return fields, uploads
+
+
+def looks_like_text(data):
+    sample = data[:4096]
+    if b"\x00" in sample:
+        return False
+    try:
+        sample.decode("utf-8")
+        return True
+    except UnicodeDecodeError as e:
+        return e.start >= len(sample) - 4  # a character cut at the sample's end
 
 
 def picture_ext(data):
@@ -238,21 +244,27 @@ def picture_ext(data):
 
 def take_report(kind, user, fields, uploads):
     """Checks and saves one report. Returns (status code, answer)."""
-    _, _, spec, file_keys = FORMS[kind]
+    _, _, spec, takes_files = FORMS[kind]
     values = {"title": clean(fields.get("title"), MAX_TITLE)}
     for name, heading, required in spec:
         values[name] = clean(fields.get(name), 200 if name == "build" else MAX_TEXT)
         if required and not values[name]:
             return 400, {"error": f"Please fill in \"{heading}\"."}
-    files = {}
-    for key in file_keys:
-        blobs = uploads.get(key) or []
-        if blobs:
-            files[key] = blobs[0].decode("utf-8", errors="replace").replace("\x00", "")
-    pictures = [p for p in uploads.get("pictures", []) if p][:MAX_PICTURES]
-    for p in pictures:
-        if len(p) > MAX_PICTURE or not picture_ext(p):
-            return 400, {"error": "Pictures must be PNG, JPG, GIF or WebP, up to 8 MB each."}
+    # One "Attach files" box: pictures are kept on the server, logs and crash reports go under the issue as text.
+    files, pictures = {}, []
+    for fname, data in (uploads.get("files") or []) if takes_files else []:
+        fname = re.sub(r"[^\w.\- ]", "_", os.path.basename(fname or "file"))[:80] or "file"
+        if picture_ext(data):
+            if len(data) > MAX_PICTURE:
+                return 400, {"error": f"{fname} is too big; pictures can be 8 MB at most."}
+            pictures.append(data)
+        elif looks_like_text(data):
+            files[fname if fname not in files else f"{len(files) + 1}-{fname}"] = \
+                data.decode("utf-8", errors="replace").replace("\x00", "")
+        else:
+            return 400, {"error": f"{fname} cannot be attached. Logs, crash reports (text) and pictures can."}
+    if len(pictures) > MAX_PICTURES or len(files) > MAX_TEXT_FILES:
+        return 400, {"error": f"Attach at most {MAX_PICTURES} pictures and {MAX_TEXT_FILES} log files."}
     hour_ago = datetime.fromtimestamp(time.time() - 3600, timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     rows, _ = query("SELECT COUNT(*) AS n FROM reports WHERE user=? AND created>?", (user, hour_ago))
     if rows[0]["n"] >= PER_HOUR:
@@ -275,7 +287,9 @@ def take_report(kind, user, fields, uploads):
         if rows[0]["status"] == "sent" or rows[0]["tries"] > 0:
             break
     row = rows[0]
-    return 200, {"id": rid, "sent": row["status"] == "sent", "issue_url": row["issue_url"]}
+    mine = next((p for p in scores()["players"] if p["user"] == user), {"bugs": 0, "ideas": 0, "total": 0})
+    return 200, {"id": rid, "sent": row["status"] == "sent", "issue_url": row["issue_url"],
+                 "score": {k: mine[k] for k in ("bugs", "ideas", "total")}}
 
 
 def scores():

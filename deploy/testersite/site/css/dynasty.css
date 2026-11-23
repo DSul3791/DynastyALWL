@@ -113,6 +113,12 @@ input[type=file]::file-selector-button { font: 600 0.95rem "EB Garamond", Georgi
 .result.bad { border-color: var(--warn); }
 .result:empty { display: none; }
 .back { display: inline-block; margin-bottom: 14px; font-size: 1rem; }
+.form-page h1 { margin-bottom: 20px; }
+.hero.short + main.form-page { max-width: 640px; }
+.opt { color: var(--muted); font-weight: 400; }
+.button.wide { display: block; width: 100%; text-align: center; padding: 20px; font-size: 1.25rem; margin-top: 6px; }
+.result.ok { font-size: 1.2rem; text-align: center; padding: 24px 16px; }
+.result .big { display: block; font: 700 1.5rem/1.3 "Cinzel", Georgia, serif; color: var(--gold); margin: 6px 0 10px; }
 
 footer { text-align: center; color: var(--muted); font-size: 0.95rem; margin-top: 30px; }
 footer .mark { font: 700 0.8rem/1 "Cinzel", Georgia, serif; letter-spacing: 0.2em; color: var(--gold); display: block; margin-bottom: 6px; }

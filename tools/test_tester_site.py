@@ -124,12 +124,13 @@ def main():
             log = ("line\n" * 30000 + "ERROR: the end ``` of the log @dave\n").encode()
             code, j = call(port, "/api/bug", fields={"build": "Build 9250", "title": "Froze in inventory",
                                                      "what": "It froze, ask @dave", "steps": "1. open I"},
-                            files=[("log", "godot.log", log)])
+                            files=[("files", "godot.log", log), ("files", "shot.png", PNG)])
             check(code == 200 and j["sent"] and j["issue_url"].endswith("/issues/1"), "bug filed straight away")
+            check(j["score"] == {"bugs": 1, "ideas": 0, "total": 1}, "the answer carries the tester's new score")
             issue = FakeGitHub.issues[0]
             check(issue["title"] == "[Bug] Froze in inventory" and issue["labels"] == ["bug", "tester-site"], "bug title and labels")
             check("**slayervegeta**" in issue["body"] and "### What happened?" in issue["body"]
-                  and "### What did you expect?\n\n_No response_" in issue["body"], "bug body has the form's headings and the name")
+                  and "`godot.log`" in issue["body"] and "/api/pictures/1-1.png" in issue["body"], "bug body has the form's headings and the name")
             check("@​dave" in issue["body"], "@mentions cannot ping")
             logs = [c for c in FakeGitHub.comments if c[0] == "/repos/o/qa/issues/1/comments"]
             check(len(logs) == 3 and all(len(c[1]["body"]) < 65536 for c in logs)
@@ -141,17 +142,17 @@ def main():
             check(code == 401, "no login is refused")
             code, _ = call(port, "/api/bug", fields={"build": "1", "what": "x"}, form_header=False)
             check(code == 403, "post from outside the site's form is refused")
-            code, _ = call(port, "/api/bug", fields={"build": "1", "what": "x"}, files=[("pictures", "a.png", b"not a picture")])
-            check(code == 400, "a file that is not a picture is refused")
+            code, j = call(port, "/api/bug", fields={"build": "1", "what": "x"}, files=[("files", "x.zip", b"PK\x03\x04\x00\x01")])
+            check(code == 400 and "x.zip" in j["error"], "a file that is neither text nor a picture is refused")
 
             FakeGitHub.up = False
-            code, j = call(port, "/api/idea", user="alice", fields={"idea": "Name my horse", "why": "fun"},
-                            files=[("pictures", "a.png", PNG)])
+            code, j = call(port, "/api/idea", user="alice", fields={"idea": "Name my horse"},
+                            files=[("files", "a.png", PNG)])
             check(code == 200 and not j["sent"], "idea kept while GitHub is down")
             code, j = call(port, "/api/scores")
             check(j["waiting"] == 1 and [(p["user"], p["total"]) for p in j["players"]][:2] == [("alice", 1), ("slayervegeta", 1)],
                   "a waiting report already counts; equal totals alphabetical")
-            code, pic = call(port, "/api/pictures/2-1.png")
+            code, pic = call(port, "/api/pictures/1-1.png")
             check(code == 200 and pic == PNG, "picture stored and served")
             FakeGitHub.up = True
             # The sender retries on a timer; nudge it with another report rather than wait two minutes.
@@ -162,7 +163,7 @@ def main():
                 time.sleep(0.25)
             titles = [i["title"] for i in FakeGitHub.issues]
             check(titles[1:] == ["[Idea] Name my horse", "[Idea] More rivers"], "the waiting idea went first once GitHub was back")
-            check("/api/pictures/2-1.png" in FakeGitHub.issues[1]["body"], "picture linked in the issue")
+            check("Screenshots" not in FakeGitHub.issues[1]["body"], "the idea form takes no files")
             code, j = call(port, "/api/scores")
             check(j["waiting"] == 0 and j["players"][0]["user"] == "alice" and len(j["recent"]) == 3, "scores and latest list")
             code, j = call(port, "/api/me", user="DungeonMaster")

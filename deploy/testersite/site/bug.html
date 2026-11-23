@@ -4,61 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Submit a bug</title>
-<!-- The tester site's bug form (deploy/testersite). Same boxes as the QA repo's bug.yml issue form; the report service files it there. -->
+<!-- The tester site's bug form (deploy/testersite). Dave 23 Nov 2026: "ridiculously simple"; the build is filled in from /latest.json. -->
 <link rel="stylesheet" href="/css/dynasty.css">
 <script src="/js/tester.js" defer></script>
 </head>
 <body>
   <div class="who"></div>
   <div class="hero short"><img src="/images/hero.jpg" alt="" width="1330" height="760"></div>
-  <main>
+  <main class="form-page">
     <section class="panel">
       <a class="back" href="/">&larr; Front page</a>
-      <p class="kicker">Play-test</p>
       <h1>Submit a bug</h1>
-      <p class="note">Something went wrong, broke, or did not do what you expected. It goes to the team's bug list under your name and counts on the high-score table.</p>
-      <form data-kind="bug" style="margin-top:18px">
-        <div class="row2">
-          <div class="field">
-            <label for="build">Build <span class="req">*</span></label>
-            <span class="hint">On the title page and the server page.</span>
-            <input type="text" id="build" name="build" placeholder="Build 9250" required maxlength="200">
-          </div>
-          <div class="field">
-            <label for="title">Short title</label>
-            <span class="hint">A few words, like "Froze when opening the inventory".</span>
-            <input type="text" id="title" name="title" maxlength="120">
-          </div>
+      <form data-kind="bug">
+        <div class="field">
+          <label for="build">Build</label>
+          <input type="text" id="build" name="build" placeholder="Build 9250" maxlength="200" required>
         </div>
         <div class="field">
-          <label for="what">What happened? <span class="req">*</span></label>
-          <span class="hint">What you saw, in your own words.</span>
+          <label for="title">Short title</label>
+          <input type="text" id="title" name="title" maxlength="120" placeholder="Froze when opening the inventory">
+        </div>
+        <div class="field">
+          <label for="what">What happened?</label>
           <textarea id="what" name="what" required maxlength="20000"></textarea>
         </div>
         <div class="field">
-          <label for="expected">What did you expect?</label>
-          <textarea id="expected" name="expected" maxlength="20000" style="min-height:70px"></textarea>
-        </div>
-        <div class="field">
-          <label for="log">Your game log</label>
-          <span class="hint">Choose <strong>godot.log</strong>. In the file window, paste this into the address bar at the top and press Enter:
+          <label for="files">Attach files <span class="opt">(optional)</span></label>
+          <span class="hint">Your game log, a crash report or screenshots. The log is <code>godot.log</code> in
             <code class="path">%APPDATA%\Godot\app_userdata\Dynasty a life well lived\logs</code></span>
-          <input type="file" id="log" name="log" accept=".log,.txt,text/plain">
+          <input type="file" id="files" name="files" multiple>
         </div>
-        <div class="field">
-          <label for="crash">Crash report, if the game crashed</label>
-          <span class="hint">The newest file in the <code>crash_reports</code> folder, next to the <code>logs</code> folder.</span>
-          <input type="file" id="crash" name="crash">
-        </div>
-        <div class="field">
-          <label for="pictures">Screenshots</label>
-          <span class="hint">Up to 4 pictures, 8 MB each.</span>
-          <input type="file" id="pictures" name="pictures" accept="image/png,image/jpeg,image/gif,image/webp" multiple>
-        </div>
-        <div class="actions">
-          <button class="button" type="submit" data-label="Send the bug">Send the bug</button>
-          <span class="note" style="margin:0">Boxes with <span class="req" style="color:var(--gold)">*</span> are needed.</span>
-        </div>
+        <button class="button wide" type="submit" data-label="Submit bug">Submit bug</button>
       </form>
       <div class="result" id="result" role="status"></div>
     </section>
