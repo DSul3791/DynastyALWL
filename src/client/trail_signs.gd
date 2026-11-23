@@ -792,7 +792,7 @@ func _glow(at: Vector3, size: float) -> void:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(size, size)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.roughness = 1.0   # lit like the ground round it: lighter by day, as dark as the rest at night (no glowing marker)
+	material.roughness = 1.0   # lit like the ground round it, plus a faint light of its own (glow_emit, below): a soft patch, not a marker
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.albedo_texture = _glow_tex()
 	var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])

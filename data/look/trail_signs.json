@@ -20,7 +20,7 @@
 	"see_level": 0,
 	"fine_level": 0,
 	"draw_m": [15.0, 30.0],
-	"everyone_note": "Dave 23 Nov 2026: 'signs should just be there and if you have a higher tracking skill maybe they get highlighted or glow a little'. Every kind of sign shows to everyone from the first level (see_level and fine_level 0); Tracking only reaches farther (draw_m, 15 m untrained to 30 m at 100) and, from halo_from, lays a faint steady pale patch under each shown sign (halo_alpha from halo_from to 100, lit like the ground, so dark at night: the eye catching it, not a marker). The spot glow, sound and XP stay as they were. Provisional.",
+	"everyone_note": "Dave 23 Nov 2026: 'signs should just be there and if you have a higher tracking skill maybe they get highlighted or glow a little'. Every kind of sign shows to everyone from the first level (see_level and fine_level 0); Tracking only reaches farther (draw_m, 15 m untrained to 30 m at 100) and, from halo_from, lays a faint steady pale patch under each shown sign (halo_alpha from halo_from to 100, lit like the ground with a faint light of its own, halo_emit, so it shows faintly at night: the eye catching it, not a marker). The spot glow, sound and XP stay as they were. Provisional.",
 	"halo_from": 10,
 	"halo_alpha": [0.15, 0.4],
 	"halo_m": 1.0,
