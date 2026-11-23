@@ -1362,18 +1362,27 @@ func _wolf_fight() -> void:
 
 		var gap: float = Vector2(nearest.x - me.x, nearest.z - me.z).length() if nearest != Vector3.INF else INF
 
-		if armed and gap < 4.0 and now - strike_ms > 800:   # as a player would: a step in when it is just out of reach, then the jab
+		if armed and gap < 4.0 and now - strike_ms > 800:
+			strike_ms = now   # as a player would: a step in when it is just out of reach, then the jab
 			var to: Vector3 = Vector3(nearest.x - me.x, 0.0, nearest.z - me.z).normalized()
 			_face(to)
 
-			if gap > 2.6:
+			if gap > 2.5:   # step in, then jab only if the drawn wolf is now within 2.5 m (spear reach 3.0): a jab from farther is a fair miss
 				_key("move_forward", true)
 				await _wait(0.2)
 				_key("move_forward", false)
+				var again: Dictionary = _wolves_drawn()
+				me = client.body.global_position
+				gap = INF
 
-			_strike_at(to)
-			strikes += 1
-			strike_ms = now
+				for id in again:
+					gap = minf(gap, Vector2(again[id].x - me.x, again[id].z - me.z).length())
+
+				if gap <= 2.5:
+					_strike_at(to)
+			else:
+				_strike_at(to)
+			strikes += 1 if gap <= 2.5 else 0
 
 		if _health >= 0 and _health <= MAIM_HP:
 			outcome = "maimed"

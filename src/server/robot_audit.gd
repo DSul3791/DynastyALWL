@@ -152,11 +152,21 @@ func _wrap_hits() -> void:
 		var seen: Array = items.strike_seen.get(peer, [-1, -1])
 		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var answer: Variant = hit.call(peer, origin, dir, reach, amount)
-		var near: float = INF
+		var near: float = INF        # the nearest animal now
+		var then: float = INF        # the nearest at the moment the blow is judged (the place target_along uses)
+		var judged: int = -1
 
 		for id in animals.animals:
-			var at: Vector3 = animals.animals[id]["pos"]
-			near = minf(near, Vector2(at.x - origin.x, at.z - origin.z).length())
+			var a: Dictionary = animals.animals[id]
+			near = minf(near, Vector2(a["pos"].x - origin.x, a["pos"].z - origin.z).length())
+			var j: int = animals.judged_ms(a, int(seen[0]), int(seen[1]))
+			var at: Vector3 = animals.pos_at(a, j)
+			var d: float = Vector2(at.x - origin.x, at.z - origin.z).length()
 
-		print("AUDIT strike %d %d %.1f %d %d %s nearest now %.2f" % [int(peer), RobotRules.now_ms(), float(reach), int(seen[0]), target, "hit" if (answer is Dictionary and not (answer as Dictionary).is_empty()) or (answer is bool and answer) else "miss", near])
+			if d < then:
+				then = d
+				judged = j
+
+		print("AUDIT strike %d %d reach %.1f seen %d present %d judged %d (server now %d) target %d %s, nearest judged %.2f m, now %.2f m" % [int(peer), RobotRules.now_ms(), float(reach),
+			int(seen[0]), int(seen[1]), judged, Time.get_ticks_msec(), target, "hit" if (answer is Dictionary and not (answer as Dictionary).is_empty()) or (answer is bool and answer) else "miss", then, near])
 		return answer
