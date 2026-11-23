@@ -35,7 +35,8 @@ const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit nea
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
-const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+const VOICED_STATES := [2, 3, 7, 10, 11, 16]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning
+const ATTACK_STATES := [7, 11]                # a wolf attacking, big game charging: the one biting you (attacker_near)
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 # Drawn at the present, not a delay behind (Dave 23 Nov 2026: "battle was almost impossible"): warn, charge, recover and the jaw-pop. A charge's
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
@@ -352,6 +353,27 @@ func flinch(id: int) -> void:
 	tween.tween_property(node, "scale", rest, FLINCH_S * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
 
+# The kind and place of the nearest animal attacking or charging within `max_m` of `at` ({} when none): who bit you, for its snarl.
+func attacker_near(at: Vector3, max_m: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_m: float = max_m
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+
+		if not int(b["state"]) in ATTACK_STATES or str(b["kind"]) == "" or not is_instance_valid(b["node"]):
+			continue
+
+		var where: Vector3 = (b["node"] as Node3D).global_position
+		var d: float = where.distance_to(at)
+
+		if d <= best_m:
+			best_m = d
+			best = {"kind": str(b["kind"]), "at": where}
+
+	return best
+
+
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
 func note_hit(at: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
@@ -424,7 +446,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": []}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": [], "contact_m": AnimalContact.contact_m(str(KIND_OF_SPECIES.get(int(row[1]), ""))), "turn_rad_s": AnimalContact.draw_turn_rad_s(str(KIND_OF_SPECIES.get(int(row[1]), "")))}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -591,9 +613,19 @@ func _process_body(delta: float) -> void:
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
 		var t_drawn: float = present if ahead else drawn_at
 		var drawn: Array = MotionBuffer.at(b["samples"], t_drawn, (MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else -1.0)   # only a charge carries on; the others stand
-		var spot: Vector3 = AnimalContact.stop_toward(me, b.get("sm_p", before), drawn[0], AnimalContact.contact_m(str(b["kind"]))) if ahead and me != Vector3.INF else drawn[0]   # a charge carried on stops at the player, as the server's does
+		var spot: Vector3 = drawn[0]
+
+		if not ahead:
+			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
+
+		if me != Vector3.INF:
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]))   # never drawn into the local player: a carried charge, or the feet's ease past a wolf's stop
+
+		if ahead:
+			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
+
 		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
-		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		b["spd"] = spd

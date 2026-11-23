@@ -1096,7 +1096,11 @@ func _ready() -> void:
 		_slow_rpc("surface_requested", t0))
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
-	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
+	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		items.action(peer, kind, a, b, count, at)
+
+		if players != null:
+			players.note_action(peer, kind))
 	@warning_ignore("confusable_local_declaration")
 	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
@@ -2145,7 +2149,7 @@ func _berries_near_cached(point: Vector3, radius: float) -> PackedVector3Array:
 # flora stream (a worker) has made it.
 const TREE_LISTS_KEPT := 200
 const TREE_CELL_M := 16.0
-var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name]
+var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name, trunk collider radius, height]
 var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
 
 
@@ -2162,12 +2166,14 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 
 
 # Standing tree trunks near a point for an arrow's flight (Dave 10 Nov 2026: an arrow shot at a tree must stick in it), from the same cached cells:
-# [root position, trunk radius m, height m] each. The radius is the collider's (flora_placer.collider_radius: the species trunk scaled by the tree's height).
+# [root position, trunk radius m, height m] each. The radius is the collider's (flora_placer.collider_radius: the species trunk scaled by the tree's height;
+# saplings, with none, are left out).
 func _arrow_trunks(point: Vector3, radius: float) -> Array:
 	var found: Array = []
 
 	for tree in _cached_trees(point, radius):
-		found.append([tree[1], float(tree[3]), float(tree[4])])
+		if float(tree[3]) > 0.0:   # saplings have no trunk collider (flora_placer.SAPLING_M)
+			found.append([tree[1], float(tree[3]), float(tree[4])])
 
 	return found
 
@@ -2224,7 +2230,8 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 						if not cells.has(cell):
 							cells[cell] = []
 
-						cells[cell].append([ids[n], at, tree_name, float(species["trunk"]) * tall / ref_height, tall])
+						# The trunk collider the client makes (flora_placer.collider_radius): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
+						cells[cell].append([ids[n], at, tree_name, PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall), tall])
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
