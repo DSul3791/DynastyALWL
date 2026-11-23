@@ -4,7 +4,7 @@ extends SceneTree
 # server_items and server_animals wired as the server scene wires them (terrain_server.gd: the big game's hurt_player with its 10-health
 # floor, the walls hook on structure_blocks_step), a 72 m log wall across the way:
 #   1. every big game charge (bear, boar, moose, buffalo, the big cats, hyena, rhino, elephant, dog) lands in the open, and never on a
-#      player standing hard behind the wall; the animal stays on its own side;
+#      player standing hard behind the wall; the animal never goes through it (running round its end is allowed);
 #   2. a hunter's chase (a puma at a runner) the same;
 #   3. a player who pins an animal against the wall does not push it out through the other side (make_way), nor does keeping a step
 #      off them (keep_off_players).
@@ -19,12 +19,15 @@ const DIR := "user://test_animal_attack_walls"
 const DT := 0.05
 const WALL_X := 101.6        # the wall's middle; its faces are 0.125 m either side
 const BEHIND := Vector3(101.2, 10.0, 0.0)
+const WALL_HALF_M := 36.0     # the wall runs z -36 to 36
 const CHARGERS := ["bear", "black_bear", "boar", "moose", "buffalo", "lion", "tiger", "leopard", "puma", "lynx", "hyena", "rhino", "elephant", "dog"]
 
 var failures: int = 0
 var items
 var animals
 var landed: Array = []
+var track: PackedStringArray = PackedStringArray()
+var crossed: int = 0
 
 
 func check(ok: bool, what: String) -> void:
@@ -105,17 +108,44 @@ func stand(at: Vector3) -> void:
 	landed.clear()
 
 
-# Ticks `seconds`; returns the smallest x the animal reached (it comes from the east).
+# Ticks `seconds`; returns the smallest x the animal reached (it comes from the east), and counts in `crossed` its steps that cross the
+# wall's line where the wall stands (|z| <= WALL_HALF_M). A step past the wall's end is no crossing: an animal may run round it (a lynx's
+# charge slides along the wall, then it wanders). Its track (time, x, z, state at each change) is kept in `track`, printed when a check fails.
 func run(a: Dictionary, seconds: float) -> float:
 	var closest: float = INF
+	var last: String = ""
+	var was: Vector3 = a["pos"]
+	track.clear()
+	crossed = 0
 
 	for k in int(round(seconds / DT)):
 		animals.tick(DT)
 
 		if animals.animals.has(int(a["id"])):
-			closest = minf(closest, float(animals.animals[int(a["id"])]["pos"].x))
+			var at: Dictionary = animals.animals[int(a["id"])]
+			var now: Vector3 = at["pos"]
+			closest = minf(closest, float(now.x))
+
+			if (was.x - WALL_X) * (now.x - WALL_X) < 0.0 or (now.x == WALL_X and was.x != WALL_X):
+				var z: float = lerpf(was.z, now.z, (WALL_X - was.x) / (now.x - was.x)) if now.x != was.x else now.z
+
+				if absf(z) <= WALL_HALF_M:
+					crossed += 1
+					track.append("  CROSSED at z %.2f" % z)
+
+			was = now
+			var line: String = "x %.2f z %.2f state %d" % [float(now.x), float(now.z), int(at["state"])]
+
+			if line != last:
+				track.append("  t %.2f %s" % [float(k + 1) * DT, line])
+				last = line
 
 	return closest
+
+
+func show_track(ok: bool) -> void:
+	if not ok:
+		print("\n".join(track))
 
 
 # 1. A forced warning (no bluff) and its charge: in the open it lands; at a player hard behind the wall it never does.
@@ -132,7 +162,8 @@ func _charges() -> void:
 		var walled: Dictionary = put(sp, BEHIND.x + start_m)
 		animals.big_game.warn(walled, BEHIND, -1.0, true)
 		var closest: float = run(walled, 12.0)
-		check(landed.is_empty() and closest > WALL_X, "%s: its charge at a player behind the wall never lands (%d blows) and it stays on its side (nearest x %.2f)" % [sp, landed.size(), closest])
+		check(landed.is_empty() and crossed == 0, "%s: its charge at a player behind the wall never lands (%d blows) and it never goes through the wall (%d crossings; nearest x %.2f)" % [sp, landed.size(), crossed, closest])
+		show_track(landed.is_empty() and crossed == 0)
 
 
 # 2. A hunter giving chase to a runner (no warning, no bluff) is the same charge: never through the wall.
@@ -147,7 +178,8 @@ func _chase() -> void:
 	var walled: Dictionary = put("puma", 106.0)
 	animals.big_game.chase(walled, BEHIND, 30.0)
 	var closest: float = run(walled, 6.0)
-	check(landed.is_empty() and closest > WALL_X, "a puma's chase at a runner behind the wall never lands (%d blows; nearest x %.2f)" % [landed.size(), closest])
+	check(landed.is_empty() and crossed == 0, "a puma's chase at a runner behind the wall never lands (%d blows) nor goes through it (%d crossings; nearest x %.2f)" % [landed.size(), crossed, closest])
+	show_track(landed.is_empty() and crossed == 0)
 
 
 # 3. A deer against the wall's east face, a player walking into it from the east: it steps aside, never out through the wall.
