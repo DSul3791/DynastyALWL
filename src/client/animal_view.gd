@@ -49,7 +49,9 @@ const AIR_STATES := [15]                      # a flock in the air (takes off, f
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
 var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
 var look_points: Callable        # () -> Array of Vector3: the players' heads (this one and the others drawn), for head tracking; unset in tests
-var _look_points: Array = []     # this frame's look_points
+var _look_points: Array = []     # this frame's look_points, fetched the first time an animal looks in a frame
+var _look_frame: int = -1        # the _t-frame _look_points was fetched in
+var _frame: int = 0              # counts _process_body calls
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
@@ -400,6 +402,10 @@ func _die(b: Dictionary) -> bool:
 		return false
 
 	var node: Node3D = b["node"]
+
+	if node.has_meta("head_look"):
+		(node.get_meta("head_look") as SkeletonModifier3D).active = false      # the death clip's own head (head tracking stops)
+
 	get_tree().create_timer(float(b["once_until"]) - _t + DIE_HOLD_S).timeout.connect(node.queue_free)
 	return true
 
@@ -671,7 +677,7 @@ func _process_body(delta: float) -> void:
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
 	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
-	_look_points = look_points.call() if look_points.is_valid() else []
+	_frame += 1
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -1957,6 +1963,10 @@ func _steer_head(node: Node3D, b: Dictionary, state: int, speed: float, once: bo
 
 	var how: Vector2 = look_strength(state, speed, once, state == DRINK and drink_looking(int(b.get("id", 0)), _t))
 	var want: Vector3 = Vector3.ZERO
+
+	if how.x > 0.0 and _look_frame != _frame:
+		_look_frame = _frame
+		_look_points = look_points.call() if look_points.is_valid() else []
 
 	if how.x > 0.0 and not _look_points.is_empty():
 		var sk: Skeleton3D = look.get_skeleton()

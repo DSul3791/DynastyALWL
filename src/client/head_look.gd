@@ -31,7 +31,8 @@ func setup(sk: Skeleton3D, head_bone: int, root: Node3D) -> void:
 
 
 # What to watch: [weight, yaw, pitch] toward the nearest of `points` within `range_m` of `at` (the head), in the frame `frame`
-# (the body's basis); [0, 0, 0] when none is in range or the nearest is behind the shoulder. Angles are held to the limits.
+# (the body's basis); [0, 0, 0] when none is in range or the nearest is behind the shoulder. A point within 0.3 m (the animal's
+# own head) is skipped. Angles are held to the limits.
 static func goal(at: Vector3, frame: Basis, points: Array, range_m: float, strength: float) -> Vector3:
 	var best: Vector3 = Vector3.INF
 	var best_d: float = range_m
@@ -59,6 +60,10 @@ static func goal(at: Vector3, frame: Basis, points: Array, range_m: float, stren
 # Eases this head toward `want` ([weight, yaw, pitch] from goal) over `delta` seconds. Stopping watching keeps the angles while
 # the weight fades, so the head comes back along the way it went.
 func steer(want: Vector3, delta: float) -> void:
+	if weight < 0.01 and want.x > 0.0:
+		yaw = want.y      # starting to watch from rest: the head comes up toward the new point, not from the last one
+		pitch = want.z
+
 	weight = move_toward(weight, want.x, WEIGHT_S * delta)
 
 	if want.x > 0.0:
@@ -83,14 +88,21 @@ func _process_modification() -> void:
 	var turn: Quaternion = _turn_in(sk)
 
 	if neck >= 0:
-		_turn_bone(sk, neck, Quaternion.IDENTITY.slerp(turn, NECK_SHARE))
-		_turn_bone(sk, head, Quaternion.IDENTITY.slerp(turn, 1.0 - NECK_SHARE))
+		# The head's parent frame after the neck turns, worked out here (q_neck * the neck's frame before) rather than read back from the
+		# skeleton straight after a pose write.
+		var neck_q: Quaternion = Quaternion.IDENTITY.slerp(turn, NECK_SHARE)
+		var neck_before: Quaternion = _global_rot(sk, neck)
+		_turn_bone(sk, neck, neck_q, _global_rot(sk, sk.get_bone_parent(neck)))
+		_turn_bone(sk, head, Quaternion.IDENTITY.slerp(turn, 1.0 - NECK_SHARE), neck_q * neck_before)
 	else:
-		_turn_bone(sk, head, turn)
+		_turn_bone(sk, head, turn, _global_rot(sk, sk.get_bone_parent(head)))
 
 
-# Turns `bone` by `q` (skeleton frame) about its own joint: its pose is in its parent's frame, so q is carried into that frame.
-static func _turn_bone(sk: Skeleton3D, bone: int, q: Quaternion) -> void:
-	var parent: int = sk.get_bone_parent(bone)
-	var p: Quaternion = sk.get_bone_global_pose(parent).basis.get_rotation_quaternion() if parent >= 0 else Quaternion.IDENTITY
-	sk.set_bone_pose_rotation(bone, (p.inverse() * q * p * sk.get_bone_pose_rotation(bone)).normalized())
+static func _global_rot(sk: Skeleton3D, bone: int) -> Quaternion:
+	return sk.get_bone_global_pose(bone).basis.get_rotation_quaternion() if bone >= 0 else Quaternion.IDENTITY
+
+
+# Turns `bone` by `q` (skeleton frame) about its own joint: its pose is in its parent's frame (`parent`, that frame's rotation in the
+# skeleton), so q is carried into that frame.
+static func _turn_bone(sk: Skeleton3D, bone: int, q: Quaternion, parent: Quaternion) -> void:
+	sk.set_bone_pose_rotation(bone, (parent.inverse() * q * parent * sk.get_bone_pose_rotation(bone)).normalized())
