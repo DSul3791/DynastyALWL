@@ -7,6 +7,9 @@
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 #   tools/robots.sh 1 drops               the link dies mid-action (6 twine queued, a basket open, asleep, in a wolf rush) and the robot comes
 #                                         straight back; a 10 s freeze; two clients as one character (about 15 min)
+#   ROBOT_S=400 tools/robots.sh 1 cold    a hard frost to 1 health, pass out, wake at a rescue spot; then goblin blows at health 1 (one robot only)
+#   ROBOT_S=200 tools/robots.sh 1 fight_goblin|fight_bandit [link]   a charging foe: shield at the warning, side-steps, jabs
+#   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
 # Robot play-testers (23 Nov 2026, after build 9257's first hour on Dave's server found faults no one-machine test saw).
 # Starts a headless server with --robot-audit (src/server/robot_audit.gd) and --open-admin on a spare port, a simulated internet link in
 # front of it (tools/lossy_link.py: delay, jitter, loss), and ROBOTS real clients (headless, dummy renderer) each run by
@@ -17,6 +20,7 @@
 # Exit 0 = every invariant held; 1 = a FAIL (listed); 2 = the run itself broke (a robot never joined, the server died).
 set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
+[ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)
@@ -31,7 +35,7 @@ fi
 PORT=$((21000 + RANDOM % 9000)); LINK=$((PORT + 10))
 D=$(mktemp -d /tmp/robots_XXXX); mkdir -p "$D/store"
 echo "robots: $ROBOTS robots, plan $PLAN, server port $PORT, link port $LINK, logs in $D"
-$GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$D/store" \
+ROBOT_SHARE="$D" $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$D/store" \
 	--quit-after=$(( ROBOT_S * 2 + 400 )) --open-admin --robot-audit > "$D/server.log" 2>&1 &
 SP=$!
 LP=""

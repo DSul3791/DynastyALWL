@@ -9,13 +9,17 @@ extends SceneTree
 #   2. on such an hour, through the real ServerItems (weather_at): a fire or a standing torch on the snowy peak burns on, the same fire at the rainy coast
 #      goes out; the body on the peak feels the client's air (no rain cooling, the height already in it); snow wets clothes as rain does;
 #      a bedroll on the peak is not woken by rain that falls only at the coast;
-#   3. a server restart in the middle keeps the peak fire lit, and the snow still does not put it out.
+#   3. a server restart in the middle keeps the peak fire lit, and the snow still does not put it out;
+#   4. snares, carts, town people, the drink rule's hours since rain and the animals (their rain, snow, air and a storm coming) go by the
+#      weather where they are too.
 #   godot --headless --path . --script res://src/worldgen/tools/test_weather_walk.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Weather := preload("res://src/shared/weather.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
+const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
 
 const DIR := "user://test_weather_walk"
 const SEED := 574716103
@@ -91,6 +95,7 @@ func _init() -> void:
 	var spots: Array = [Vector3(0.0, 333.0, COAST.z), Vector3(0.0, 517.0, COAST.z), Vector3(0.0, 744.0, COAST.z)]
 	var season_off: int = 0
 	var split_t: float = -1.0
+	var heavy_t: float = -1.0         # an hour of heavy rain at the coast (town people shelter, animals stand out) with snow on the peak
 	var hours: int = 0
 	var t: float = 0.0
 	var clock = GameClock.new()
@@ -105,6 +110,9 @@ func _init() -> void:
 
 			if split_t < 0.0 and t > 200.0 * 86400.0:
 				split_t = t
+
+			if heavy_t < 0.0 and float(coast["rain"]) >= 0.6:
+				heavy_t = t
 
 		for spot in spots:
 			var drawn: Dictionary = client_sky(t, spot)
@@ -191,6 +199,76 @@ func _init() -> void:
 		f._fires(1.0)
 
 	check(float(server_sky(wet_t, PEAK)["rain"]) >= 0.5 and not lit(f, peak_fire), "when it rains on the peak itself, the rain puts the peak fire out (day %d)" % int(wet_t / 86400.0))
+
+	# 4. The rest of the server reads the weather where it is (coordinator 23 Nov 2026: nothing is based on where the spawn is).
+	check(heavy_t >= 0.0, "an hour of heavy rain at the coast with snow on the peak (day %d)" % int(heavy_t / 86400.0))
+	clock_s = heavy_t
+	drawn_peak = client_sky(clock_s, PEAK)
+	f = make("weatherwalk01")
+	f.weather_now = func(): return {"rain": 0.0}   # the starter row dry: what follows can only come from weather_at
+	f.rain_now = func(): return 0.0
+	check(f._rain_here(COAST) >= ItemsScript.RAIN_PUTS_OUT and f._rain_here(PEAK) == 0.0, "snares and carts (_rain_here) take the rain over themselves")
+	var npcs = NpcsScript.new()
+	NpcsScript.test_hold_off = true
+	npcs.hour_now = func(): return 10.0
+	npcs.ground_height = func(_x, _z): return 10.0
+	npcs.rain_now = func(): return 0.0
+	npcs.rain_at = func(pos): return float(server_sky(clock_s, pos)["rain"])
+	npcs.player_positions = func(): return []
+	npcs.setup("")
+	var hob: Dictionary = npcs.npcs["hob"]
+	hob["placed"] = true
+	hob["pos"] = COAST
+	check(npcs.package_of(hob, 10.0) == "shelter", "the rain over the town sends Hob under cover, whatever the starter row's sky")
+	hob["pos"] = PEAK
+	check(npcs.package_of(hob, 10.0) == "work", "where it snows instead he works on")
+	# The drink rule's hours since rain, at the spot: the coast rains now (0 h), the peak has not rained this hour.
+	var coast_h: float = Weather.rain_hours_ago(SEED, clock_s, "temperate", COAST.y, ROW, 0, 24.0)
+	var peak_h: float = Weather.rain_hours_ago(SEED, clock_s, "temperate", Weather.band_height(PEAK.y), ROW, 0, 24.0)
+	check(coast_h == 0.0 and peak_h > 0.0, "hours since rain: 0 at the rainy coast, %s on the snowy peak" % str(peak_h))
+	var after_t: float = clock_s
+	while float(server_sky(after_t, COAST)["rain"]) > 0.05 and after_t < clock_s + 10.0 * 86400.0:
+		after_t += 3600.0
+	after_t += 2.0 * 3600.0
+	var after_h: float = Weather.rain_hours_ago(SEED, after_t, "temperate", COAST.y, ROW, 0, 24.0)
+	check(after_h >= 2.0 and after_h <= 3.0, "two hours after the coast's rain stops it reads two hours since rain (%s)" % str(after_h))
+	# Animals: each by the sky over itself.
+	var an = AnimalsScript.new()
+	an.ground_height = func(_x, _z): return 10.0
+	an.blocked = func(_x, _z): return false
+	an.player_positions = func(): return []
+	an.player_stances = func(): return []
+	an.hour_now = func(): return 12.0
+	an.weather_at = func(pos): return server_sky(clock_s, pos)
+	an.weather_ahead_at = func(_h, pos): return {"storm": 1.0} if pos.z > 100000.0 else {"storm": 0.0}
+	an.row_of = func(pos): return floori(pos.z / 1000.0)
+	an.setup()
+	an._read_weather({"rain": 0.0, "wind": 0.0}, 10.0)
+	an._weather_for(PEAK)
+	var deer_peak: Dictionary = {"pos": PEAK}
+	check(float(an._wx["snow"]) > 0.0 and not an._raining(), "an animal on the peak sees snow, not the coast's rain")
+	check(absf(an._air_c(deer_peak) - float(drawn_peak["temp_c"])) < 0.1, "and feels the peak's air once (%.2f C, sky %.2f C)" % [an._air_c(deer_peak), float(drawn_peak["temp_c"])])
+	check(not an._storm_ahead, "no storm coming to the peak's row")
+	an._weather_for(COAST)
+	check(an._raining(), "an animal at the coast is in the rain")
+	an._weather_for(Vector3(0.0, 10.0, 150000.0))
+	check(an._storm_ahead, "a storm due on a far row is felt by the animals in that row only")
+	an._weather_for(COAST)
+	check(not an._storm_ahead, "and not back at the coast")
+	# The server's own air (terrain_server air_at: the row's zone and season at the animal's height) gives the same peak air.
+	an.air_at = func(pos): return Weather.air_c(clock_s, "temperate", maxf(pos.y, 0.0), SEED, ROW, 0)
+	an._weather_for(PEAK)
+	check(absf(an._air_c(deer_peak) - float(drawn_peak["temp_c"])) < 0.1, "with the server's air_at too (%.2f C)" % an._air_c(deer_peak))
+	# A whole tick with a deer on the peak and one at the coast: each steps by its own sky, and the one weather is back afterwards.
+	an.wind = func(): return {"rain": 0.0, "wind": 0.1, "wind_dir": 0.0}
+	an.player_positions = func(): return [PEAK, COAST]
+	an.spawn("deer", PEAK.x, PEAK.z)
+	an.spawn("deer", COAST.x, COAST.z)
+	for n in 5:
+		an.tick(0.2)
+	check(float(an._wx.get("rain", 1.0)) == 0.0 and float(an._wx.get("snow", 1.0)) == 0.0 and absf(an._wind_s - 0.1) < 0.001 and not an._storm_ahead, "after a tick the one weather is back (rain %.2f, snow %.2f, wind %.2f)" % [float(an._wx.get("rain", 1.0)), float(an._wx.get("snow", 1.0)), an._wind_s])
+	an.alarm_near(PEAK, 50.0)
+	check(float(an._wx.get("rain", 1.0)) == 0.0 and float(an._wx.get("snow", 1.0)) == 0.0, "and after an alarm between ticks")
 
 	print("test_weather_walk: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)

@@ -162,13 +162,14 @@ static func clock_delay(c: Dictionary) -> float:
 # is then blended away (SMOOTH_HALF_S, at most CATCH_X of its speed faster, CATCH_MIN_MPS at least: so about 1.3 times its leg speed, plus
 # up to about 1.5 m/s for a slow walker while a correction drains). Remote players (player_view) share it. A late batch, a hole bridged too far, a step past a player held
 # back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
-static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> Vector3:
+# room_x, catch_x and catch_min: the animals' (1.3 times their speed at most) unless given; other players pass their own (player_view.gd).
+static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, room_x: float = 1.05, catch_x: float = CATCH_X, catch_min: float = CATCH_MIN_MPS) -> Vector3:
 	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
 	var err: Vector3 = body.get("sm_err", Vector3.ZERO)
 
 	if body.has("sm_p"):
 		var jump: Vector3 = p - (body["sm_p"] as Vector3)
-		var room: float = v * delta * 1.05 + 0.002   # the leg's own speed (a slack in proportion, so it holds at any frame rate): anything faster is eased in below
+		var room: float = v * delta * room_x + 0.002   # the leg's own speed (a slack in proportion, so it holds at any frame rate): anything faster is eased in below
 
 		if jump.length() > SNAP_M:
 			err = Vector3.ZERO
@@ -178,7 +179,7 @@ static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> 
 		var size: float = err.length()
 
 		if size > 0.0:
-			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), maxf(v * CATCH_X, CATCH_MIN_MPS) * delta), size)
+			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), maxf(v * catch_x, catch_min) * delta), size)
 
 	body["sm_p"] = p
 	body["sm_err"] = err

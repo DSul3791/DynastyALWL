@@ -288,6 +288,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 	if not near_any:
 		return   # frozen until a player comes within active_radius_m
 
+	host._weather_for(c)   # the pack walks by the snow where it is, not the starter row's (weather and seasons walk, 23 Nov 2026)
 	var w: Dictionary = cfgw()
 	pack["timer"] -= dt
 	pack["hunger"] = minf(float(pack["hunger"]) + dt / maxf(float(w.get("hunger_full_s", 3600.0)), 1.0), 1.0)
