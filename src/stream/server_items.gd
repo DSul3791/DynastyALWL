@@ -18217,6 +18217,11 @@ func passed_out(peer: int) -> bool:
 	return _cold_out.has(peer)
 
 
+# Fainted from strain, or passed out from cold or in water, and not yet up again (strain state 2 fainted, 3 waking): the others see the body lying.
+func fainted_of(peer: int) -> bool:
+	return int(_strain.get(peer, {}).get("state", 0)) >= 2
+
+
 # The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points
 # about a tenth of the radius apart, never under SHORE_STEP_M), 2 m over the ground as every wake spot is set down (_rescue_ground,
 # dug_out_height); `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
