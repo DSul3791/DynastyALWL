@@ -14,6 +14,7 @@ extends Node
 #   AUDIT enemy_hit <peer> <unix ms> <cause[/weapon]> from <x,z> player <x,z> gap <m> result <hurt|maimed|...> shield <share>   each goblin,
 #     bandit or big game blow at a player (hurt_player / hurt_armed wrapped)
 #   AUDIT snare <id> ...   each snare set, with its trail share
+#   AUDIT where <animal id> <species> <unix ms> <x> <z> <state>   plan kind_ only, after its control command
 #   AUDIT control <unix ms> <command>   a robot's server_control.txt command done (plan cold): the only place this node changes the game
 # No protocol change, and with the flag off this node is never made.
 
@@ -40,6 +41,9 @@ var _names: Dictionary = {}      # species number -> name
 var _snares_seen: Dictionary = {}  # world item id -> true: each snare set is printed once with how much trail it sits on
 var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
 var _control_t: float = 0.0
+var _where_sp: int = -1           # plan kind_ (control "where <species number>"): every WHERE_EVERY_S, the server's own place of each of that species
+var _where_t: float = 0.0
+const WHERE_EVERY_S := 0.5
 var _cold: bool = false            # plan cold: the weather the server's vitals read is a hard frost (control file)
 
 
@@ -87,6 +91,18 @@ func _process(delta: float) -> void:
 	if _control_t >= 0.5:
 		_control_t = 0.0
 		_read_control()
+
+	_where_t += delta
+
+	if _where_sp >= 0 and animals != null and _where_t >= WHERE_EVERY_S:
+		_where_t = 0.0
+		var ms: int = RobotRules.now_ms()
+
+		for id in animals.animals:
+			var w: Dictionary = animals.animals[id]
+
+			if RobotRules.species_of(int(w.get("num", 0))) == _where_sp:
+				print("AUDIT where %d %d %d %.2f %.2f %d" % [int(id), _where_sp, ms, (w["pos"] as Vector3).x, (w["pos"] as Vector3).z, int(w.get("state", 0))])
 
 	_animal_t += delta
 	_frame_max = maxf(_frame_max, delta)
@@ -266,6 +282,8 @@ func _wrap_enemy() -> void:
 #                           this server), and that peer starts at health 6, warmth 15 (cold hurts)
 #   warm <peer>             the weather is the world's own again
 #   health <peer> <value>   that peer's health is set, at least 1 (the 1-health floor under blows)
+#   where <species number>  from now on, every 0.5 s: AUDIT where <animal id> <species> <unix ms> <x> <z> <state> for each of that species
+#                           (plan kind_: where the server has the animal between blows; tools/robot_kinds.py)
 # Each command is done once and printed as AUDIT control; the file is then emptied. Nothing of this exists without --robot-audit.
 var _weather_was: Array = []      # [weather_now, weather_at] before the cold
 
@@ -314,6 +332,8 @@ func _read_control() -> void:
 
 			v["warmth"] = maxf(float(v.get("warmth", 0.0)), 60.0)
 			items._sync_vitals(peer, true)
+		elif p[0] == "where" and p.size() > 1 and p[1].is_valid_int():
+			_where_sp = int(p[1])   # a species number, not a peer
 		elif p[0] == "health" and not v.is_empty() and p.size() > 2 and p[2].is_valid_float():
 			v["health"] = maxf(float(p[2]), 1.0)
 			items._sync_vitals(peer, true)

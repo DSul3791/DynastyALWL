@@ -78,6 +78,12 @@ var _hp: Dictionary = {}         # animal id -> its health share last seen in th
 var _fell: Dictionary = {}       # animal ids the client saw go down from a hit
 var _pose_t: float = 0.0
 var _died: int = 0
+var _kind_sp: int = -1           # plan kind_<name>: the species measured (each frame's drawn steps, A lines for robot_kinds.py)
+var _kstat: Dictionary = {}      # species number -> [frames, largest step m, largest step / (top speed x frame), steps over 1 m]
+var _inside_other: int = 0       # plan kind_: frames a drawn animal of the kind was inside another drawn player's capsule
+var _a_ms: int = 0
+var _slide_was: Dictionary = {}  # plan kind_: animal id -> [drawn position, msec] at its last A sample (the ground speed over ~100 ms)
+var _slide: Array = [0, 0, 0, 0, 0, 0, INF, 0.0]   # model samples, moving, standing clip while moving, rate at its top, rate at its bottom, feet off the ground speed, lowest and highest feet / ground
 var _woke_at = null              # where the cold's pass-out moved this player (plan cold), null before
 var last_touch: String = ""      # what the body touched at the end of the last _walk_for, keys still held
 var _stretch: String = ""        # plan route: the stretch being timed ("" none), its frames and slow frames (_route_frame)
@@ -178,6 +184,9 @@ func _hook() -> void:
 	client.net.vitals_received.connect(func(hu, health, _w, th, _l, _f):
 		_hunger = int(hu)
 		_thirst = int(th)
+		if _kind_sp >= 0 and _health > 0 and int(health) < _health:
+			_kind_hurt(_health, int(health))
+
 		_health = int(health)
 		_lowest_health = mini(_lowest_health, int(health)))
 	client.multiplayer.server_disconnected.connect(_on_lost)
@@ -195,7 +204,7 @@ func _hook() -> void:
 # After joining (the animal view is made then): an animal that went down from a hit (animal_view.gd fell, sent with its last row's place).
 func _hook_view() -> void:
 	var view: Node = client._animal_view_node
-	view.fell.connect(func(_kind, at, _small):
+	view.fell.connect(func(_what, at, _small):
 		for id in view._bodies:
 			if (view._bodies[id]["target"] as Vector3).distance_to(at) < 0.01:
 				_fell[int(id)] = true)
@@ -211,6 +220,12 @@ func _process(delta: float) -> void:
 	var me: Vector3 = client.body.global_position
 	var view: Node = client._animal_view_node
 	var present: Dictionary = {}
+
+	var a_now: bool = _kind_sp >= 0 and now - _a_ms >= KIND_A_MS
+
+	if a_now:
+		_a_ms = now
+		FreezeWatchScript.printer.line("ROBOT %s P %d %.2f %.2f" % [robot_name, _now_ms(), me.x, me.z])
 
 	if view != null:
 		for row in view.drawn_positions():
@@ -228,9 +243,20 @@ func _process(delta: float) -> void:
 					_fail("jump", "animal%d" % id, "drawn animal %d (species %d) moved %.1f m in one %.0f ms frame (top speed %.1f m/s), %s -> %s" % [
 						id, num, step, delta * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
 
+				if num == _kind_sp and now - int(was[1]) > int(FRESH_S * 1000.0):
+					var st: Array = _kstat.get(num, [0, 0.0, 0.0, 0])
+					st[0] = int(st[0]) + 1
+					st[1] = maxf(float(st[1]), step)
+					st[2] = maxf(float(st[2]), step / maxf(float(_top_mps.get(num, 15.0)) * delta, 0.001))
+					st[3] = int(st[3]) + (1 if step > 1.0 else 0)
+					_kstat[num] = st
+
 				was[0] = pos
 			else:
 				_seen_animal[id] = [pos, now]
+
+			if num == _kind_sp:
+				_kind_frame(id, pos, a_now)
 
 			if Vector2(pos.x - me.x, pos.z - me.z).length() < INSIDE_M and absf(pos.y - me.y) < 1.2:
 				_fail("inside", "animal%d" % id, "drawn animal %d (species %d) %.2f m from this player's middle: inside the capsule" % [id, num, Vector2(pos.x - me.x, pos.z - me.z).length()])
@@ -544,6 +570,8 @@ func run() -> void:
 	elif plan.begins_with("drop_"):
 		await _drop(plan.trim_prefix("drop_"))
 		return
+	elif plan.begins_with("kind_"):
+		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
 		await _route()
 	else:
@@ -729,6 +757,57 @@ func _forest_spot() -> Vector3:
 			best = c
 
 	return Vector3(NAN, NAN, NAN) if most == 0 else Vector3((float(best.x) + 0.5) * 16.0, client.body.global_position.y, (float(best.y) + 0.5) * 16.0)
+
+
+# The middle of the thickest 8 m patch of hazel or elder (flora.json ids 11 and 34) within `radius` m, with its count, or [NAN spot, 0] when
+# none is loaded (the bug thread, 23 Nov 2026: #1740 draws every shrub within 16 m at Low and Medium, so a thicket is the worst case there).
+const THICKET_SPECIES := [11, 34]
+
+func _thicket_spot(radius: float) -> Array:
+	var cells: Dictionary = {}
+	var here: Vector3 = client.body.global_position
+
+	for chunk in client.flora._chunks:
+		var held: Dictionary = client.flora._chunks[chunk].get("items", {})
+
+		for n in range(held.get("ids", []).size()):
+			if not (int(held["ids"][n]) >> 16) in THICKET_SPECIES:
+				continue
+
+			var p: Vector3 = held["positions"][n]
+
+			if Vector2(p.x - here.x, p.z - here.z).length() < radius:
+				var c: Vector2i = Vector2i(floori(p.x / 8.0), floori(p.z / 8.0))
+				cells[c] = int(cells.get(c, 0)) + 1
+
+	var best: Vector2i = Vector2i.ZERO
+	var most: int = 0
+
+	for c in cells:
+		if int(cells[c]) > most:
+			most = int(cells[c])
+			best = c
+
+	return [Vector3(NAN, NAN, NAN) if most == 0 else Vector3((float(best.x) + 0.5) * 8.0, here.y, (float(best.y) + 0.5) * 8.0), most]
+
+
+# Through the thickest hazel or elder near the route, standing, back and forth across it for `s` seconds.
+func _thicket_walk(s: float) -> void:
+	var found: Array = _thicket_spot(250.0)
+	var spot: Vector3 = found[0]
+
+	if is_nan(spot.x):
+		_note("thicket", "no hazel or elder loaded within 250 m")
+		return
+
+	var there: bool = await _run_to(spot, 60.0, 3.0)
+	FreezeWatchScript.printer.line("ROBOT %s step thicket: %s, %d hazel or elder in its 8 m square" % [robot_name, "there" if there else "short of it", int(found[1])])
+	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
+	var turn: int = 0
+
+	while Time.get_ticks_msec() < end:
+		await _walk_for(Vector3(1.0, 0.0, 0.0).rotated(Vector3.UP, PI * 0.5 * float(turn % 4)), 3.0)
+		turn += 1
 
 
 # Walks (keys held, facing the target) until within `near_m` or `limit_s` runs out; sidesteps a quarter turn when stuck. True when there.
@@ -1020,6 +1099,11 @@ func _eat_drink() -> void:
 
 	if slot >= 0:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_EAT, slot, 0, 0, Vector3.ZERO)
+		var asked: int = Time.get_ticks_msec()
+
+		while _count("wild_apples") == 2 and Time.get_ticks_msec() - asked < 4000:   # the server's answer first: a quiet pack can still be the old one over a slow link
+			await get_tree().process_frame
+
 		await _check_pack("eat")
 
 		if _count("wild_apples") != 1:
@@ -3144,6 +3228,10 @@ func _route() -> void:
 	await _forest_walk(30.0)
 	_route_end()
 
+	_route_begin("thicket")
+	await _thicket_walk(25.0)
+	_route_end()
+
 	_route_begin("to the river")
 	var water: Vector3 = await _find_water()
 	if is_nan(water.x):
@@ -3278,3 +3366,131 @@ func _quit() -> void:
 	_check_refusals(Time.get_ticks_msec() + 5000)
 	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1   # the client quits the usual way (the server keeps the character, as when a player closes the game)
+
+
+# --- plan kind_<species> (animal thread, 23 Nov 2026): every animal kind in a fight, drawn by two robots over the lossy link ---------------
+# Robot 1 places one of the kind (a wolf is a pack) 15 m ahead of itself; both robots take a spear and hunt it for up to KIND_S, then Robot 1
+# places another, KIND_ROUNDS times. Each frame, for the kind's drawn bodies: the step since the last frame against the kind's top speed
+# (_kstat), the body inside this player (the inside FAIL) or inside another drawn player (counted). Every KIND_A_MS each robot prints
+# ROBOT n A <unix ms> <id> <x> <z> <state> for each body of the kind and ROBOT n P <unix ms> <x> <z> for itself; a health drop prints a
+# BITTEN line with the nearest drawn body. tools/robot_kinds.py compares the two robots' A lines (do both clients draw the same?) and
+# the server's AUDIT enemy_hit lines (the drawn gap from where the server had the animal when it struck). Feet against ground (slides)
+# needs the bought models, which cloud clones leave out (tools/skip_models.sh): the code-built bodies step by the ground speed itself.
+const KIND_S := 70.0
+const KIND_ROUNDS := 2
+const KIND_A_MS := 100
+
+func _kind(kind_name: String) -> void:
+	_step = "kind %s" % kind_name
+	var cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
+	var sp: int = int(((cfg as Dictionary).get("species", {}) as Dictionary).get(kind_name, {}).get("number", -1)) if cfg is Dictionary else -1
+
+	if not admin or sp < 0:
+		_fail("kind", kind_name, "no such species in data/animals/animals.json, or no --robot-admin: nothing measured")
+		return
+
+	_kind_sp = sp
+
+	if robot_name.ends_with("1") and _share(SERVER_CONTROL) != "":
+		_write(_share(SERVER_CONTROL), "where %d" % sp)   # the server's own place of the kind every 0.5 s (AUDIT where; robot_kinds.py)
+	_give("spear", 1)
+	await _check_pack("kind spear")
+	var spear: int = _slot_of("spear")
+
+	if spear > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
+		await _check_pack("spear to hand")
+
+	for round_n in KIND_ROUNDS:
+		if robot_name.ends_with("1"):
+			client.net.admin_place.rpc_id(1, "animal", client.body.global_position - client.body.global_transform.basis.z * 15.0, kind_name)
+
+		await _wait(3.0)
+		var _found: bool = await _hunt(sp, KIND_S)
+		await _wait(2.0)
+
+	var st: Array = _kstat.get(sp, [0, 0.0, 0.0, 0])
+	FreezeWatchScript.printer.line("ROBOT %s KIND %s %d frames %d largest_step %.2f m largest_x %.2f over_1m %d inside_other %d lowest_health %d" % [
+		robot_name, kind_name, sp, int(st[0]), float(st[1]), float(st[2]), int(st[3]), _inside_other, _lowest_health])
+	FreezeWatchScript.printer.line("ROBOT %s SLIDE %s model_samples %d moving %d standing_clip %d rate_top %d rate_bottom %d feet_off %d feet_ground %.2f..%.2f%s" % [
+		robot_name, kind_name, int(_slide[0]), int(_slide[1]), int(_slide[2]), int(_slide[3]), int(_slide[4]), int(_slide[5]),
+		float(_slide[6]) if int(_slide[1]) > 0 else 0.0, float(_slide[7]), "" if int(_slide[0]) > 0 else " (no bought models here: code-built bodies step by the ground speed)"])
+
+	if int(st[0]) == 0:
+		_fail("kind", kind_name, "no %s was ever drawn near: nothing measured" % kind_name)
+
+
+func _kind_frame(id: int, pos: Vector3, a_now: bool) -> void:
+	var pv: Node = client._player_view
+
+	if pv != null:
+		for row in pv.drawn():
+			var p: Vector3 = row["pos"]
+
+			if Vector2(pos.x - p.x, pos.z - p.z).length() < INSIDE_M and absf(pos.y - p.y) < 1.2:
+				_inside_other += 1
+
+	if a_now:
+		var b: Dictionary = client._animal_view_node._bodies.get(id, {})
+		_slide_sample(id, pos, b)
+		FreezeWatchScript.printer.line("ROBOT %s A %d %d %.2f %.2f %d" % [robot_name, _now_ms(), id, pos.x, pos.z, int(b.get("state", -1))])
+
+
+func _kind_hurt(before: int, after: int) -> void:
+	var me: Vector3 = client.body.global_position
+	var best: int = -1
+	var gap: float = INF
+
+	for row in client._animal_view_node.drawn_positions():
+		var d: float = Vector2((row[1] as Vector3).x - me.x, (row[1] as Vector3).z - me.z).length()
+
+		if int(_species.get(int(row[0]), 0)) == _kind_sp and d < gap:
+			gap = d
+			best = int(row[0])
+
+	var b: Dictionary = client._animal_view_node._bodies.get(best, {})
+	FreezeWatchScript.printer.line("ROBOT %s BITTEN %d health %d -> %d by %d drawn gap %.2f state %d at %.2f %.2f" % [robot_name, _now_ms(), before, after, best, gap, int(b.get("state", -1)), me.x, me.z])
+
+
+# Feet against ground, every A sample of a body drawn with a bought model (an AnimationPlayer; none in cloud clones, tools/skip_models.sh).
+# The ground speed is the drawn body's own over the last sample (~100 ms). The feet: the moving clip's foot speed (its travel_mps, measured
+# from the feet, docs/design/FOOT_SLIDING.md) x the rate it plays at; a clip with no travel_mps plays at speed / its row speed, so its feet
+# match the eased speed (animal_view.gd) unless the rate is held at AnimalGait's top or bottom. Counted while the body moves over 0.5 m/s:
+# a standing clip (feet still), the rate at its top (feet slower than the ground) or bottom, feet off the ground speed by over a third.
+func _slide_sample(id: int, pos: Vector3, b: Dictionary) -> void:
+	var now: int = Time.get_ticks_msec()
+	var was: Array = _slide_was.get(id, [])
+	_slide_was[id] = [pos, now]
+
+	if was.is_empty() or now - int(was[1]) <= 0 or now - int(was[1]) > 400 or b.is_empty() or not (b["node"] as Node3D).has_meta("player"):
+		return
+
+	var player: AnimationPlayer = (b["node"] as Node3D).get_meta("player")
+	_slide[0] = int(_slide[0]) + 1
+	var ground: float = Vector2(pos.x - (was[0] as Vector3).x, pos.z - (was[0] as Vector3).z).length() / (float(now - int(was[1])) * 0.001)
+
+	if ground < 0.5:
+		return
+
+	_slide[1] = int(_slide[1]) + 1
+	var role: String = str(b.get("gait_role", ""))
+
+	if role == "" or player.current_animation == "":
+		_slide[2] = int(_slide[2]) + 1
+		_slide[6] = minf(float(_slide[6]), 0.0)
+		_slide[5] = int(_slide[5]) + 1
+		return
+
+	if player.speed_scale >= 2.49:
+		_slide[3] = int(_slide[3]) + 1
+	elif player.speed_scale <= 0.41:
+		_slide[4] = int(_slide[4]) + 1
+
+	var anim: Animation = player.get_animation(player.current_animation) if player.has_animation(player.current_animation) else null
+	var feet: float = player.speed_scale * float(anim.get_meta("travel_mps")) if anim != null and anim.has_meta("travel_mps") else float(b.get("spd", 0.0))
+	var ratio: float = feet / ground
+	_slide[6] = minf(float(_slide[6]), ratio)
+	_slide[7] = maxf(float(_slide[7]), ratio)
+
+	if ratio < 0.67 or ratio > 1.5:
+		_slide[5] = int(_slide[5]) + 1

@@ -112,9 +112,11 @@ CLIENTS = [
     ]),
     ("crouchwalk", ["--walk", "--crouchwalk"], 30000, [   # Dave 23 Nov 2026: crouched, an invisible wall on flat ground under a tree
         ("crouched walks past trees never stop dead", r"crouch walk: (\d+) of [1-9]\d* stuck", 0, 0),
+        ("nearly head on, crouched walks slide round the trunk (walks counted)", r"stuck, (\d+) head on", 4, 16),
     ]),
     ("crouchslow", ["--walk", "--crouchwalk", "--runspeed=0.25"], 30000, [   # the same at a slow, loaded or tired pace (a few mm a step)
         ("slow crouched walks never stop dead", r"crouch walk: (\d+) of [1-9]\d* stuck", 0, 0),
+        ("nearly head on, slow crouched walks slide round the trunk (walks counted)", r"stuck, (\d+) head on", 4, 16),
     ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),

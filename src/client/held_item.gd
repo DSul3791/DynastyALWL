@@ -453,8 +453,13 @@ func hand_flags() -> int:
 func _report_held(delta: float) -> void:
 	_held_wait -= delta
 
-	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
-		return   # no server to tell (offline, a headless check, or this is the server)
+	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree():
+		return
+
+	var line: MultiplayerPeer = _net.multiplayer.multiplayer_peer
+
+	if line == null or line.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED or _net.multiplayer.get_unique_id() == 1:
+		return   # no server to tell (offline, a headless check, a line closed on quitting, or this is the server)
 
 	var now: Array = [held_number(), off_number(), hand_flags()]
 
@@ -2403,7 +2408,7 @@ var garden_pick: String = ""             # Plant: the item id picked to plant (s
 var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
 var _garden_rows: Array = []             # the plant list as shown: [{"id", "kind"}]
 var _hoe_menu_grey: Array = []           # per shown row: true when it cannot be planted now (out of season, or winter), drawn dim and not picked
-var season_now: Callable = Callable()    # -> "spring" | "summer" | "autumn" | "winter" (terrain_client: the synced game clock); none: every row open
+var season_now: Callable = Callable()    # -> "spring" | "summer" | "autumn" | "winter" (terrain_client: the season where the player stands, from the synced game clock); none: every row open
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null

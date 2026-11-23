@@ -48,6 +48,7 @@ var _mutex: Mutex = Mutex.new()
 var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
+var _cache_db_mutex: Mutex = Mutex.new()   # every read, write and flush of the generated-ground cache file, one at a time (_cache_load)
 var settle_enabled: bool = true         # data/network.json "settled_ground": 0 turns settled copies off (every load replays the whole log)
 var _settle = GroundSettle.new()       # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth. Swapped by clear_generated under _mutex: read it as `settle` (a fresh reference each time)
 var settle:
@@ -235,7 +236,7 @@ func _open_generated() -> VoxelStreamSQLite:
 # file's version row. One read here, on the main thread before any worker runs, opens the file and its first connection alone.
 func _warm(stream: VoxelStreamSQLite) -> void:
 	var scratch: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
-	stream.load_voxel_block(scratch, Vector3i(0, 0, 0), 0)
+	_cache_load(stream, scratch, Vector3i(0, 0, 0), 0)
 
 
 # Deletes generated ground files of other generations (best effort).
@@ -446,6 +447,23 @@ func _load_edit(buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	return result
 
 
+# The generated-ground cache, one call at a time (robot play test 23 Nov 2026: "ERROR: database is locked" twice at load_block). The SQLite
+# stream gives each worker thread its own connection; a read on one while another thread's save was writing the stream's cached blocks out
+# waited about a second in SQLite, then failed, and the worker made the block again. With every call taken in turn under one lock, a read
+# waits at most for one write-out (tens of ms) and never fails (test_block_store_lock).
+func _cache_load(cache: VoxelStreamSQLite, buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	_cache_db_mutex.lock()
+	var result: int = cache.load_voxel_block(buffer, block, lod)
+	_cache_db_mutex.unlock()
+	return result
+
+
+func _cache_save(cache: VoxelStreamSQLite, buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+	_cache_db_mutex.lock()
+	cache.save_voxel_block(buffer, block, lod)
+	_cache_db_mutex.unlock()
+
+
 func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) -> void:
 	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		if not looks_zeroed(buffer):
@@ -458,7 +476,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 
 	var cache: VoxelStreamSQLite = _cache_now()
 
-	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_load(cache, buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		# A saved copy is checked again on the way out (2026-10-21, a solid block floating over the lake): one that
 		# fails is dropped and made again below.
 		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):
@@ -486,7 +504,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_time("sanity check", t2 - t1)
 
 	if sane:
-		cache.save_voxel_block(copy_of(buffer), block, lod)   # a copy: the buffer is served next (copy_of)
+		_cache_save(cache, copy_of(buffer), block, lod)   # a copy: the buffer is served next (copy_of)
 		_path(trace, "generated")
 		if _timing_on:
 			_time("save to sqlite", Time.get_ticks_usec() - t2)
@@ -495,7 +513,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_path(trace, "generated twice (the first build failed the check)")
 
 		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # a zeroed build is never stored (zeroed_block_note.md)
-			cache.save_voxel_block(copy_of(buffer), block, lod)
+			_cache_save(cache, copy_of(buffer), block, lod)
 	else:
 		_path(trace, "generated from a stand-in tile")
 
@@ -513,14 +531,14 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 
 	var cache: VoxelStreamSQLite = _cache_now()
 
-	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_load(cache, buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
 	var failed_before: int = generator.failed_tiles
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
 
 	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # never store a zeroed block
-		cache.save_voxel_block(buffer, block, lod)
+		_cache_save(cache, buffer, block, lod)
 
 	_count("generated")
 	return true
@@ -591,7 +609,7 @@ func dump_cell(x: float, y: float, z: float) -> String:
 	lines.append("server: freshly generated: " + _cell_text(fresh, local))
 	var cached: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
-	if _cache_now().load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_load(_cache_now(), cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
 		lines.append("server: generated-ground cache: " + _cell_text(cached, local) + ("" if _is_sane(cached, block, 0) else "   <-- FAILS THE SANITY CHECK"))
 	else:
 		lines.append("server: generated-ground cache: no copy of this block")
@@ -754,7 +772,9 @@ func save_revisions() -> void:
 func flush() -> void:
 	settle.close()
 	save_revisions()
+	_cache_db_mutex.lock()
 	_cache_now().flush()
+	_cache_db_mutex.unlock()
 	_edit_mutex.lock()
 	_edits.flush()
 	_edit_mutex.unlock()

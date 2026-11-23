@@ -172,10 +172,6 @@
    "text": "Three bolts of firewood, split. I am grateful.",
    "bytes": 24550
   },
-  "15286205": {
-   "text": "Three stones for the lesson. Now count with me.",
-   "bytes": 23938
-  },
   "a7b5978e": {
    "text": "Welcome to my stall, stranger. I am Hob.",
    "bytes": 25428
@@ -187,6 +183,10 @@
   "8388fe96": {
    "text": "Wolves were heard in the hills. Keep a fire lit.",
    "bytes": 21878
+  },
+  "a91dee27": {
+   "text": "A few stones for the lesson. Now count with me.",
+   "bytes": 25942
   }
  },
  "edda": {
