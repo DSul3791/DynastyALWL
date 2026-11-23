@@ -279,11 +279,16 @@ func _read_tile(coord: Vector2i):
 	return data
 
 
-# Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
 # The floor of the cave air at a point (a carved passage or chamber, or a mouth's open cut: tile_terrain_data.cave_floor_under), looked for
 # from the point and from 0.9 m under it (a low roof); NAN where the point is not in a cave's air or its tile is not loaded (never loads one).
 # surface_height does not know the caves (physical world audit round 6, 23 Nov 2026: a stack dropped in a cave hung 1.1 m over its floor,
-# and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it.
+# and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it. A floor less than
+# CAVE_UNDER_M under the generated surface is not taken (NAN): cave_floor_under measures the ground without its detail noise, so a point
+# just inside open ground near a cave would read that smoother ground instead.
+const CAVE_UNDER_M := 0.5
+const CAVE_PROBE_UP_M := 0.5   # callers look for a spot's cave floor from this far over its foot (server_items, server_carts)
+
+
 func cave_floor_at(point: Vector3) -> float:
 	if not tile_cached(point.x, point.z):
 		return NAN
@@ -295,9 +300,14 @@ func cave_floor_at(point: Vector3) -> float:
 
 	var at: Vector3 = Vector3(wrap_x(point.x), point.y, wrap_x(point.z))
 	var floor_y: float = data.cave_floor_under(at)
-	return data.cave_floor_under(at - Vector3(0.0, 0.9, 0.0)) if is_nan(floor_y) else floor_y
+
+	if is_nan(floor_y):
+		floor_y = data.cave_floor_under(at - Vector3(0.0, 0.9, 0.0))
+
+	return NAN if is_nan(floor_y) or floor_y > surface_height(point.x, point.z) - CAVE_UNDER_M else floor_y
 
 
+# Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
 # Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface (in a cave, the
 # cave's floor: cave_floor_at) with the saved digs and fills `edits` ([kind 0 dig / 1 fill, centre, radius], oldest first) laid over it, in order
 # (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them). Returns the resting height, or NAN when there

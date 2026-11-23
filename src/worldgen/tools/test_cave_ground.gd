@@ -70,6 +70,12 @@ func _init() -> void:
 	var open_ground: float = gen.surface_height(OPEN.x, OPEN.y)
 	check(is_nan(float(gen.cave_floor_at(Vector3(OPEN.x, open_ground + 1.0, OPEN.y)))), "in the open there is no cave floor")
 	check(absf(gen.floor_below(Vector3(OPEN.x, open_ground + 1.0, OPEN.y), []) - open_ground) <= 0.1, "in the open a stack comes to rest on the surface, as before")
+	var hill_over: float = gen.surface_height(ROOM.x, ROOM.y)
+
+	for into in [0.1, 0.3, 0.45]:
+		check(is_nan(float(gen.cave_floor_at(Vector3(ROOM.x, hill_over - into, ROOM.y)))), "on the hill over the room, %.2f m into its ground: no cave floor (the hill's own ground stands)" % into)
+
+	check(is_nan(float(gen.cave_floor_at(Vector3(20000.0, 5.0, 20000.0)))), "a tile not in memory: no cave floor, and none is loaded")
 	check(absf(gen.floor_below(Vector3(ROOM.x, floors[ROOM] + 1.0, ROOM.y), [[0, Vector3(ROOM.x, floors[ROOM], ROOM.y), 0.6]]) - (floors[ROOM] - 0.6)) < 0.15, "a dig in the cave floor: a stack falls into its hole")
 
 	# The server: drops, a laid fire, a chest and a torch in the room and the passage.
@@ -123,6 +129,14 @@ func _init() -> void:
 	items._place_torch(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of("torch")), false, 0, torch_at)
 	var torch: Dictionary = items._items.get(torch_before, {})
 	check(not torch.is_empty() and absf(float(torch["pos"].y) - torch_at.y) < 0.1, "a torch pushed into the passage floor stands there (%s, said %s)" % [str(torch.get("pos", "none")), str(said)])
+
+	said.clear()
+	var cut_at: Vector3 = Vector3(CUT.x, floors[CUT], CUT.y)
+	items.report_position(1, cut_at + Vector3(0.0, 0.0, -1.0))
+	items.give_to(1, "torch", 1)
+	var cut_before: int = items._next_id
+	items._place_torch(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of("torch")), false, 0, cut_at)
+	check(items._items.has(cut_before) and absf(float(items._items[cut_before]["pos"].y) - cut_at.y) < 0.1, "a torch pushed into the floor of the mouth's open cut stands there (said %s)" % str(said))
 
 	# Pressed into the rock over the cave: still refused.
 	said.clear()

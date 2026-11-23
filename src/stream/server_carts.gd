@@ -17,7 +17,8 @@ extends RefCounted
 
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
-const CAVE_PROBE_UP_M := 0.5   # a cart in a cave: its floor is looked for in the cave's air this far over its wheels
+const CAVE_PROBE_UP_M := 0.5   # a cart in a cave: its floor is looked for in the cave's air this far over its wheels (as terrain_generator and server_items CAVE_PROBE_UP_M)
+const CAVE_DROP_M := 1.0   # a cart in a cave goes no further where the floor falls more than this in one step (a spring pool's basin)
 const OP_GRAB := 0      # ACT_CART b: take the handle of cart a
 const OP_RELEASE := 1   # let go of the handle (a ignored)
 const OP_LOAD := 2      # a = a crate's world id: lift it onto the nearest free cart within that cart's load_reach_m of it
@@ -283,8 +284,14 @@ func _blocked(from: Vector3, to: Vector3, heading: Vector2, v: Dictionary) -> St
 
 	var fit: float = float(v.get("fit_m", 0.6))
 
-	if _in_cave_air(from, from.y) and float(host.ground_height.call(to.x, to.z)) > from.y + 0.05 and is_nan(_cave_floor(to.x, from.y, to.z)):
-		return "The %s will not fit through there." % noun_of(v)   # a cave wall: the cart stays in the cave's air
+	if _in_cave_air(from, from.y) and float(host.ground_height.call(to.x, to.z)) > from.y + 0.05:
+		var cave_to: float = _cave_floor(to.x, from.y, to.z)
+
+		if is_nan(cave_to):
+			return "The %s will not fit through there." % noun_of(v)   # a cave wall: the cart stays in the cave's air
+
+		if from.y - cave_to > CAVE_DROP_M:
+			return "The %s cannot go there." % noun_of(v)   # the edge of a spring pool's 20 m basin (the water checks read the surface water only)
 
 	if host.structure_blocks(to.x, to.z, fit) or host.structure_blocks_step(from.x, from.z, to.x, to.z, fit):   # the step too: a thin wall is never jumped
 		return "The %s will not fit through there." % noun_of(v)

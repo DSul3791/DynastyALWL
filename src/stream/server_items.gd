@@ -6224,7 +6224,7 @@ func _foundation_rows() -> Array:
 const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placement: the widest footprint and a 65 roof panel's run, with the edit spheres
 
 
-const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot
+const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot (as terrain_generator and server_carts CAVE_PROBE_UP_M)
 
 
 # The ground under a spot: the cave floor when the spot is under the generated surface `surface` and in a cave's air, else `surface`.
