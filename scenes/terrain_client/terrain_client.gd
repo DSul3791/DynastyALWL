@@ -1651,6 +1651,7 @@ func _welcome_body(info: Dictionary) -> void:
 	npc_view.goblin_called.connect(func(at: Vector3, mood: String) -> void: sound.creatures.call_at("goblin", at, mood))   # a camp goblin squaring up to a weapon (Dave 20 Nov 2026: "make angry sounds")
 	npc_view.goblin_maker = animal_view.make_goblin   # goblin tribe members wear the wild goblin's model (data/creatures/goblin_tribes.json)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
+	animal_view.player_at = func() -> Vector3: return body.global_position if body != null and body.is_inside_tree() else Vector3.INF   # the capsule's middle, about 1 m above the feet the server uses: only its xz matters (stop_toward's 2 m height gate is that much looser): a charge is never drawn inside the player
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
 		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
