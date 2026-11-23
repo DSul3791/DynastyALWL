@@ -26,6 +26,8 @@ var _fine: Dictionary = {}         # Vector2i FINE_M cell -> Array of set trap i
 var _marks_cache: Dictionary = {}  # owner key -> [game-free ms it was made, rows]: marks_of is asked every send, rebuilt at most every marks_refresh_s
 
 var _follow_at: Dictionary = {}    # peer -> where it stood at the last check_s look (Tracking: following a trail)
+var _sign_xp: Dictionary = {}      # owner key -> [[x, z, game s], ...]: the trail signs that character found (Tracking), kept sign_spot_s
+var _sign_levels: Dictionary = {}  # data/look/trail_signs.json, read once: the level a sign shows from
 var _snare_xp: Dictionary = {}     # owner key -> [[x, z, game s], ...]: where a snare set on a trail last trained its Tracking
 const GRID_M := 32.0               # the sweeps round players
 const FINE_M := 4.0                # passes: a step reads the few 4 m cells round it
@@ -774,3 +776,48 @@ func _follow_checks() -> void:
 
 		if last != p and trail_at(p) >= float(tc.get("follow_min", 0.5)):
 			host.practice(int(peer), "track_follow")
+
+
+# A trail sign the player at `peer` has just spotted (protocol 153; Dave 23 Nov 2026, "spotting animal markings should highlight the
+# markings, make a slight sound and give xp for finding them"). The client works the signs out from the routes and plays the highlight
+# and sound; this trains Tracking once per sign per character in sign_spot_s, and only for a spot the player is near (sign_reach_m), with
+# a trail within sign_trail_m (every sign lies on or beside one) and the Tracking to see the first signs (trail_signs.json see_level).
+# Work only when a player spots one: nothing per sign. Returns whether it trained.
+func sign_found(peer: int, at: Vector2) -> bool:
+	var tc: Dictionary = cfg.get("tracking", {})
+
+	if tc.is_empty() or not host._peer_pos.has(peer) or not host.run_distance.is_valid():
+		return false
+
+	var p: Vector3 = host._peer_pos[peer]
+
+	if Vector2(p.x, p.z).distance_to(at) > float(tc.get("sign_reach_m", 12.0)):
+		return false
+
+	if _sign_levels.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json"))
+		_sign_levels = parsed if typeof(parsed) == TYPE_DICTIONARY else {"see_level": 5}
+
+	if host.working_level(peer, "tracking") < float(_sign_levels.get("see_level", 5)) - 0.5:   # the client shows the whole level; a little rust does not refuse it
+		return false
+
+	if float(host.run_distance.call(at.x, at.y, -1)) > float(tc.get("sign_trail_m", 6.0)):
+		return false   # INF too: the ground there is not worked out
+
+	var key: String = str(host._peer_key.get(peer, ""))
+	var now: float = host._now_game_s()
+	var kept: Array = []
+	var known: bool = false
+
+	for spot in _sign_xp.get(key, []):
+		if now - float(spot[2]) < float(tc.get("sign_spot_s", 259200.0)):
+			kept.append(spot)
+			known = known or Vector2(float(spot[0]), float(spot[1])).distance_to(at) < float(tc.get("sign_same_m", 2.0))
+
+	var trained: bool = not known and host.practice(peer, "track_sign", 1.0, true) > 0.0   # its own 2 s cooldown: a follow or snare look just before does not eat it
+
+	if trained:
+		kept.append([at.x, at.y, now])
+
+	_sign_xp[key] = kept.slice(maxi(kept.size() - 256, 0))
+	return trained
