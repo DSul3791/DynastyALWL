@@ -234,14 +234,23 @@ def others(robot_logs):
 	# A pass-out (the cold) lies the body down on the server while the robot's own stance stays: drawn lying in the minute before it was moved is right
 	out_ms = collections.defaultdict(list)
 
+	faints = collections.defaultdict(list)   # who -> [[from ms, to ms]]: a strain faint (the server lies a fainted player down, #1788)
+
 	for _, who, p in lines(robot_logs, "step"):
 		if p[:3] == ["passed", "out", "at"]:
 			out_ms[who].append(int(p[3].rstrip(":")))
+		elif p[:3] == ["fainted", "from", "strain"] and len(p) > 4:
+			faints[who].append([int(p[4]), float("inf")])
+		elif p[:2] == ["woke", "at"] and faints[who] and faints[who][-1][1] == float("inf"):
+			faints[who][-1][1] = int(p[2])
 
 	for _, who, p in lines(robot_logs, "SEES"):
 		peer, ms, stance, x, z, clip = int(p[0]), int(p[1]), int(p[2]), float(p[3]), float(p[5]), p[6]
 
 		if stance == 3 and any(t - 20000 <= ms <= t + 3000 for t in out_ms.get(names.get(peer, ""), [])):   # the faint lies about 10 s
+			continue
+
+		if stance == 3 and any(a - 3000 <= ms <= b + 3000 for a, b in faints.get(names.get(peer, ""), [])):   # lying through its own faint
 			continue
 		track = [q for q in pose.get(peer, []) if ms - 1000 <= q[0] <= ms]
 		# steady from STEADY_MS before the look to one pose line after it: a stance taken and left between two pose lines is not steady

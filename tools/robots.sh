@@ -29,6 +29,7 @@ set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 [ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
 [ "$PLAN" = "together" ] || [ "$PLAN" = "seen" ] || [ "$PLAN" = "wiggle" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
+[ "$PLAN" = "kind_wolf" ] && ROBOTS=1   # a pack leaves a player with another within 10 m (animals.json wolves): one robot, unarmed until bitten
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)

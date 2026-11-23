@@ -56,6 +56,8 @@ var plan: String = "first_hours"
 var admin: bool = false
 var _timeout_s: float = INF
 var _thaw_ms: int = 0             # until this tick, steps are the catch-up after a long frame (a freeze): counted in _after_freeze, not judged
+var _thaw_s: float = 0.0          # the longest frame in the thaw window: a step after it may cover the frozen time, no more
+var _fainted: bool = false         # this robot's own strain faint (the server draws it lying meanwhile; robot_check.py excuses it)
 var _after_freeze: int = 0         # drawn steps over the allowance in the second after a frame over FREEZE_FRAME_S
 var _frame_usec: int = 0           # the last frame's engine microseconds (_process: the real frame length for the jump checks)
 
@@ -245,9 +247,15 @@ func _process(delta: float) -> void:
 	if frame_s > FREEZE_FRAME_S:
 		# A freeze (Lane A, 23 Nov 2026: 32 of 52 came as a bought animal model loaded on first sight): the drawn bodies catch up over the
 		# next frames, so a step in the next second is the freeze's echo, not a jump; the freeze itself is the FREEZE gap / HITCH line.
+		_thaw_s = maxf(_thaw_s, frame_s) if now < _thaw_ms else frame_s
 		_thaw_ms = now + THAW_MS
 
 	var thawing: bool = now < _thaw_ms
+	var fainted: bool = client.items != null and int(client.items.strain_state) >= 2   # 2 fainted, 3 waking (inventory_view.gd)
+
+	if fainted != _fainted:
+		_fainted = fainted
+		FreezeWatchScript.printer.line(("ROBOT %s step fainted from strain at %d" if fainted else "ROBOT %s step woke at %d") % [robot_name, _now_ms()])
 	var me: Vector3 = client.body.global_position
 	var view: Node = client._animal_view_node
 	var present: Dictionary = {}
@@ -269,14 +277,18 @@ func _process(delta: float) -> void:
 				var was: Array = _seen_animal[id]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 				var allowed: float = maxf(float(_top_mps.get(num, 15.0)) * frame_s * JUMP_SLACK, JUMP_FLOOR_M)
+				# After a freeze the body may catch up the frozen time at its top speed, never more (a teleport still fails).
+				var thaw_allowed: float = maxf(float(_top_mps.get(num, 15.0)) * (_thaw_s + frame_s) * JUMP_SLACK, JUMP_FLOOR_M) if thawing else allowed
+				var settled: bool = now - int(was[1]) > int(FRESH_S * 1000.0)
 
-				if now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed and thawing:
+				if settled and step > thaw_allowed:
+					_fail("jump", "animal%d" % id, "drawn animal %d (species %d) moved %.1f m in one %.0f ms frame (top speed %.1f m/s)%s, %s -> %s" % [
+						id, num, step, frame_s * 1000.0, float(_top_mps.get(num, 0.0)), " %.0f ms after a %.0f ms freeze" % [float(now - (_thaw_ms - THAW_MS)), _thaw_s * 1000.0] if thawing else "",
+						str(was[0].round()), str(pos.round())])
+				elif settled and step > allowed:
 					_after_freeze += 1
-				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed:
-					_fail("jump", "animal%d" % id, "drawn animal %d (species %d) moved %.1f m in one %.0f ms frame (top speed %.1f m/s), %s -> %s" % [
-						id, num, step, frame_s * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
 
-				if num == _kind_sp and now - int(was[1]) > int(FRESH_S * 1000.0) and not thawing:
+				if num == _kind_sp and settled and not thawing:
 					var st: Array = _kstat.get(num, [0, 0.0, 0.0, 0])
 					st[0] = int(st[0]) + 1
 					st[1] = maxf(float(st[1]), step)
@@ -3607,6 +3619,7 @@ func _quit() -> void:
 
 	await _wait(1.6)   # the last refusals get their 1.5 s for a message
 	_check_refusals(Time.get_ticks_msec() + 5000)
+	FreezeWatchScript.printer.line("ROBOT %s CATCHUP %d drawn-animal steps over a frame's allowance came within %d ms after a frame over %.0f ms (a freeze): not judged as jumps unless over the frozen time's run" % [robot_name, _after_freeze, THAW_MS, FREEZE_FRAME_S * 1000.0])
 	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1   # the client quits the usual way (the server keeps the character, as when a player closes the game)
 
@@ -3617,7 +3630,7 @@ const SEEN_POSE_S := 3.0       # each bow flag held this long
 const SEEN_CAST_M := 8.0       # Robot 1 must draw Robot 2's float within this of Robot 2
 const SEEN_AWAY_M := 8.0       # Robot 2 walks this far from its cast spot: the line comes in (the server's say_away)
 const WIGGLE_S := 15.0
-const WIGGLE_LEG_S := [0.5, 0.7, 0.4, 0.6]   # leg lengths in turn: uneven, so no draw delay fits a whole period later
+const WIGGLE_LEG_S := [0.5, 0.7, 0.6, 0.4]   # leg lengths in turn: uneven, so no draw delay fits a whole period later
 
 
 # Robot 2 raises its bow (held_item flags 1), draws it (2), lowers it; Robot 1 must see the more bits 2 then 4 and draw the bow pose and clip.
@@ -3713,6 +3726,8 @@ func _seen() -> void:
 	var fl: Vector3 = b_now.get("float_at", Vector3.INF) if not b_now.is_empty() else Vector3.INF
 	var b_pos: Vector3 = (b_now["node"] as Node3D).global_position if not b_now.is_empty() else Vector3.INF
 	var off: float = Vector2(fl.x - b_pos.x, fl.z - b_pos.z).length() if fl != Vector3.INF and b_pos != Vector3.INF else INF
+	var line_node: Node3D = b_now.get("line", null) as Node3D if not b_now.is_empty() else null
+	FreezeWatchScript.printer.line("ROBOT %s SEEN line at the cast: %s" % [robot_name, "none" if line_node == null or not is_instance_valid(line_node) else ("shown" if line_node.visible else "hidden")])
 	var away_m: String = await _tg_read("seen_away.txt", 30.0)
 	await _wait(3.0)
 	var b_after: Dictionary = _tg_other()
@@ -3720,9 +3735,6 @@ func _seen() -> void:
 	FreezeWatchScript.printer.line("ROBOT %s SEEN cast: Robot 2 %s (water %s, %s); drawn float %s, %.1f m from Robot 2; after it walked %s m off: float %s" % [
 		robot_name, cast, str(water.round()), "reached" if there else "short of it", str(fl.round()) if fl != Vector3.INF else "none", off, away_m, str(fl_after.round()) if fl_after != Vector3.INF else "none"])
 	_write(_share("seen_done.txt"), "done")
-
-	var line_node: Node3D = b_now.get("line", null) as Node3D if not b_now.is_empty() else null
-	FreezeWatchScript.printer.line("ROBOT %s SEEN line: drawn %s" % [robot_name, "none" if line_node == null or not is_instance_valid(line_node) else ("shown" if line_node.visible else "hidden")])
 
 	if fl == Vector3.INF:
 		_fail("seen", "cast", "Robot 2 cast a rod at the water (it was told %s); Robot 1 drew no float" % cast)
@@ -3874,17 +3886,14 @@ func _kind(kind_name: String) -> void:
 
 	if robot_name.ends_with("1") and _share(SERVER_CONTROL) != "":
 		_write(_share(SERVER_CONTROL), "where %d" % sp)   # the server's own place of the kind every 0.5 s (AUDIT where; robot_kinds.py)
-	_give("spear", 1)
-	await _check_pack("kind spear")
-	var spear: int = _slot_of("spear")
+	var wolf: bool = kind_name == "wolf"
 
-	if spear > 0:
-		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
-		await _check_pack("spear to hand")
-
-	if kind_name == "wolf":
-		# A pack within town_keep_m (300 m) of the starter town does not stalk, rush or hunt (animals.json wolves.town_keep_m): placed at the
-		# spawn it stood still and fell to jabs (Lane A, 23 Nov 2026). Both robots run out first, as plan wolves does.
+	if not wolf:
+		await _kind_spear()
+	else:
+		# A pack within town_keep_m (300 m) of the starter town does not stalk, rush or hunt (animals.json wolves.town_keep_m), and it leaves
+		# a healthy player with a spear on the hotbar or with another player within 10 m (animal thread, 23 Nov 2026). So kind_wolf is one
+		# robot (robots.sh), run out of town with no spear; it takes one only once bitten, to fight back.
 		var start: Vector3 = client.body.global_position
 		var _out: bool = await _run_to(start + Vector3(0.0, 0.0, -WOLF_FAR_M), 120.0, 6.0)
 		var out_m: float = Vector2(client.body.global_position.x - start.x, client.body.global_position.z - start.z).length()
@@ -3892,14 +3901,21 @@ func _kind(kind_name: String) -> void:
 		if out_m < 320.0:
 			_note("kind", "only %.0f m from the spawn after 120 s of running: the pack may keep off (town_keep_m)" % out_m)
 
-		await _tg_go("kind_out")
-
 	for round_n in KIND_ROUNDS:
 		if robot_name.ends_with("1"):
 			client.net.admin_place.rpc_id(1, "animal", client.body.global_position - client.body.global_transform.basis.z * 15.0, kind_name)
 
 		await _wait(3.0)
 		var round_end: int = Time.get_ticks_msec() + int(KIND_S * 1000.0)
+
+		if wolf and _slot_of("spear") < 0:
+			var h0: int = _health
+
+			while _health >= h0 and Time.get_ticks_msec() < round_end - 20000:
+				await _wait(0.25)   # unarmed, standing: the pack's stalk and rush (BITTEN lines at each health drop)
+
+			FreezeWatchScript.printer.line("ROBOT %s step kind wolf: %s, then a spear" % [robot_name, "bitten (health %d -> %d)" % [h0, _health] if _health < h0 else "never bitten unarmed"])
+			await _kind_spear()
 
 		while Time.get_ticks_msec() < round_end - 5000:
 			if not await _hunt(sp, float(round_end - Time.get_ticks_msec()) / 1000.0):
@@ -3916,6 +3932,16 @@ func _kind(kind_name: String) -> void:
 
 	if int(st[0]) == 0:
 		_fail("kind", kind_name, "no %s was ever drawn near: nothing measured" % kind_name)
+
+
+func _kind_spear() -> void:
+	_give("spear", 1)
+	await _check_pack("kind spear")
+	var spear: int = _slot_of("spear")
+
+	if spear > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
+		await _check_pack("spear to hand")
 
 
 func _kind_frame(id: int, pos: Vector3, a_now: bool) -> void:
