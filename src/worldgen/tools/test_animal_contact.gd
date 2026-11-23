@@ -237,6 +237,29 @@ func _init() -> void:
 	var under_from: Vector3 = Vector3(1.0, 0.0, 0.0)
 	check(AnimalContact.walker_stop(under_from, Vector3(0.6, 0.0, 0.0), el).is_equal_approx(Vector3(0.4, 0.0, 0.0)) and AnimalContact.walker_stop(under_from, Vector3(1.4, 0.0, 0.0), el) == Vector3.ZERO, "one the animal came onto goes no nearer, and steps away freely")
 	check(AnimalContact.walker_stop(walk_from, walk_to, [[Vector3(0.0, 3.0, 0.0), em]]) == Vector3.ZERO, "a body 3 m above or below is passed")
+	# A hitch frame long enough to cross the body stops where it would enter, not on its far side.
+	var hitch_end: Vector3 = Vector3(-em - 1.0, 0.0, 0.1) + AnimalContact.walker_stop(Vector3(em + 1.0, 0.0, 0.1), Vector3(-em - 1.0, 0.0, 0.1), el)
+	check(hitch_end.x > 0.0 and absf(Vector2(hitch_end.x, hitch_end.z).length() - em) < 0.01, "a hitch-frame step clean through the body stops on the near side (%.2f, %.2f)" % [hitch_end.x, hitch_end.z])
+	# Ringed by three wolves touching them: a step out between two is never shut in (only the body the move enters first stops it).
+	var wm: float = AnimalContact.contact_m("wolf")
+	var ring: Array = []
+
+	for k in 3:
+		ring.append([Vector3(cos(TAU * k / 3.0) * wm, 0.0, sin(TAU * k / 3.0) * wm), wm])
+
+	var out_at: Vector3 = Vector3.ZERO
+	var out_dir: Vector3 = Vector3(cos(PI / 3.0), 0.0, sin(PI / 3.0))   # between the first two
+
+	for f in 60:
+		var step_to: Vector3 = out_at + out_dir * 0.05
+		out_at = step_to + AnimalContact.walker_stop(out_at, step_to, ring)
+
+	check(Vector2(out_at.x, out_at.z).length() > wm * 1.5, "ringed by three wolves, a walker steps out between two (%.2f m out)" % Vector2(out_at.x, out_at.z).length())
+	# A blow reaches the body, not its middle: an elephant held off at its contact distance is within a knife's 2.5 m and a punch's 1.8 m.
+	var reach_s = _animals([Vector3(0.0, 10.0, 0.0)], [])
+	var eid: int = reach_s.spawn("elephant", em, 0.0)
+	reach_s.animals[eid]["pos"] = Vector3(em, 10.0, 0.0)
+	check(reach_s.target_along(Vector3(0.0, 11.6, 0.0), Vector3.RIGHT, 1.8) == eid and reach_s.target_along(Vector3(0.0, 11.6, 0.0), Vector3.RIGHT, em - AnimalContact.body_m("elephant") - 0.1) == 0, "an elephant at its contact distance is in a punch's reach (to its body), not in one short of its body")
 
 	print("test_animal_contact: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)

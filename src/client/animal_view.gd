@@ -452,7 +452,6 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 	return false
 
 
-# [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
 # The walker's frame move from `before` to `after` (feet) stopped at the animals drawn near: the correction to add (AnimalContact.walker_stop).
 # Bodies of WALKER_BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
 func walker_stop(before: Vector3, after: Vector3) -> Vector3:
@@ -460,7 +459,7 @@ func walker_stop(before: Vector3, after: Vector3) -> Vector3:
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
-		if str(b.get("kind", "")) == "" or AnimalContact.body_m(str(b["kind"])) < WALKER_BLOCK_M:
+		if AnimalContact.body_m(str(b["kind"])) < WALKER_BLOCK_M:
 			continue
 
 		var m: float = float(b["contact_m"])
@@ -472,6 +471,7 @@ func walker_stop(before: Vector3, after: Vector3) -> Vector3:
 	return AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
 
 
+# [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
 func drawn_positions() -> Array:
 	var out: Array = []
 
@@ -481,7 +481,8 @@ func drawn_positions() -> Array:
 	return out
 
 
-# [[drawn position, heading], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these (BowAim.zone_points).
+# [[drawn position, heading, body_m], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these
+# (BowAim.zone_points); a blow's reach is to the body, body_m short of its middle (held_item._animal_in_reach).
 func aim_rows(from: Vector3, range_m: float) -> Array:
 	var out: Array = []
 
@@ -489,7 +490,7 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position
 
 		if at.distance_to(from) <= range_m:
-			out.append([at, float(_bodies[id]["heading"])])
+			out.append([at, float(_bodies[id]["heading"]), AnimalContact.body_m(str(_bodies[id]["kind"]))])   # its reach from middle to nose: a blow reaches its body, not its middle
 
 	return out
 
