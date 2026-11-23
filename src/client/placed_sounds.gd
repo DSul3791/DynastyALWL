@@ -35,6 +35,7 @@ const NAMES := {
 }
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
 const StructureLook := preload("res://src/shared/structure_look.gd")   # which states make a placed sound, and which kind, is data (structures.json "sound")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
 var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
@@ -84,7 +85,7 @@ func quake(stage: int, strength: float, at: Vector3) -> void:
 		_quake_next["rumble"] = now + 2.3
 
 		if now >= float(_quake_next.get("log", 0.0)):   # where each rumble comes from (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave), at most every 10 s
-			print("sound rumble: tunnel quake stage %d strength %.2f from %s" % [stage, strength, str(at)])
+			FreezeWatchScript.printer.line("sound rumble: tunnel quake stage %d strength %.2f from %s" % [stage, strength, str(at)])
 			_quake_next["log"] = now + 10.0
 
 	if stage >= 3 and now >= _quake_next.get("dust", 0.0):

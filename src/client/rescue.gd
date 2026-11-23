@@ -1,5 +1,7 @@
 extends RefCounted
 
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+
 # Every way the client stands the player back on the surface: inside rock, under the ground with nothing below, and floating in empty
 # space under the world. One owner (Systems) for what used to be four functions in terrain_client.gd (Willy's rock rescue 625 and
 # the void rescue 644 merged). Each rescue writes a RESCUE line so we can see how often it fires.
@@ -125,7 +127,7 @@ func _free_if_in_void(now: int) -> void:
 	rescued += 1
 	embed_rescues += 1
 	_client._telemetry.event("RESCUE: player was in empty space under the world at %s, stood on the surface at y %.1f" % [str(here), float(hit["position"].y)])
-	print("Terrain client: void rescue from %s to y %.1f" % [str(here), float(hit["position"].y)])
+	FreezeWatchScript.printer.line("Terrain client: void rescue from %s to y %.1f" % [str(here), float(hit["position"].y)])
 
 
 # Off the floor for a while and below the highest collider overhead: the player slipped through the ground (a gap, or collision that

@@ -236,6 +236,12 @@ if reach.returncode != 0:   # encyclopedia obtainable_now must follow the data (
     else:   # the script itself failed (a data change it cannot read): show why
         bad("encyclopedia_reach failed: " + " | ".join(reach.stderr.strip().splitlines()[-3:]))
 
+no_use = subprocess.run([sys.executable, "tools/progression_check.py", "--unmarked"], capture_output=True, text=True)
+if no_use.returncode != 0:   # an item with no use yet must say so in the player's text (coordinator 23 Nov 2026: testers file it as a bug)
+    rows = no_use.stdout.split("## 11")[1].splitlines()[1:] if "## 11" in no_use.stdout else []
+    bad("no use yet and not marked: " + (", ".join(l[2:] for l in rows if l.startswith("- ")) or " | ".join(no_use.stderr.strip().splitlines()[-3:])) +
+        " (give it a use, or end its description with \"Nothing uses it yet.\")")
+
 placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
 if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
     for line in placeable.stdout.splitlines()[1:]:

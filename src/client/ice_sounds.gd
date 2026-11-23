@@ -13,6 +13,7 @@ extends Node
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const IceFeel := preload("res://src/client/ice_feel.gd")   # bands by thickness (docs/design/ice_walk_feel.md)
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const GENERATED_DIR := "res://assets/audio/ice/"
 const RECORDED_DIR := "res://assets/audio/recorded/ice/"
 
@@ -76,7 +77,7 @@ func update(delta: float, body: CharacterBody3D, underwater: bool) -> void:
 	if _rng.randf() < IceFeel.boom_share(IceFeel.band_of(cover), hour):
 		if near <= BOOM_REACH_M and play("ice_boom", square["at"], BOOM_DB + _rng.randf_range(-3.0, 2.0), 6.0, BOOM_REACH_M * 1.5, "Nature"):
 			booms_played += 1
-			print(IceFeel.log_line(IceFeel.band_of(cover), "boom", last, 1.0, INF))
+			FreezeWatchScript.printer.line(str(IceFeel.log_line(IceFeel.band_of(cover), "boom", last, 1.0, INF)))
 
 		return
 
@@ -105,7 +106,7 @@ func step(feet: Vector3, gait: int, boost_db: float, toward: Vector3 = Vector3.Z
 
 		if play("ice_zing", at, ZING_DB + _rng.randf_range(-3.0, 2.0), 8.0, ZING_REACH_M, "Nature"):
 			zings_played += 1
-			print(IceFeel.log_line(band, "zing", last, 1.0, INF))
+			FreezeWatchScript.printer.line(str(IceFeel.log_line(band, "zing", last, 1.0, INF)))
 
 	return cracked
 

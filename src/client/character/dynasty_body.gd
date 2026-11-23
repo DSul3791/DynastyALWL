@@ -20,6 +20,7 @@ const Proportions := preload("res://src/client/character/dynasty_proportions.gd"
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
 const HairModels := preload("res://src/client/character/hair_models.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -126,7 +127,7 @@ static func warm(models: Array = [], hairs: Array = []) -> void:
 			if not _loaded_here.has(path):
 				var t0: int = Time.get_ticks_msec()
 				_loaded_here[path] = load(path)
-				print("dynasty body: %s read on the main thread (headless) in %d ms" % [path.get_file(), Time.get_ticks_msec() - t0])
+				FreezeWatchScript.printer.line("dynasty body: %s read on the main thread (headless) in %d ms" % [path.get_file(), Time.get_ticks_msec() - t0])
 		elif ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			ResourceLoader.load_threaded_request(path, "", true)
 
@@ -182,7 +183,7 @@ static func available(model_id: String = BodyModels.DEFAULT) -> bool:
 					_checked[model_id] = true
 
 		if not _checked[model_id]:
-			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: %s this run (run godot --import once)" % [path, "using the previous body" if model_id == BodyModels.DEFAULT else "wearing the default body instead"])
+			FreezeWatchScript.printer.line("dynasty body: %s is not imported or has no skeleton, mesh or animations: %s this run (run godot --import once)" % [path, "using the previous body" if model_id == BodyModels.DEFAULT else "wearing the default body instead"])
 
 	return bool(_checked[model_id])
 
@@ -361,7 +362,7 @@ func _build_animations() -> void:
 				library.add_animation(game_name + "_torch", carry)
 
 		_libraries[model] = library
-		print("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
+		FreezeWatchScript.printer.line("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)

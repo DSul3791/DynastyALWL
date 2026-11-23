@@ -110,7 +110,7 @@ client only decides how the body gets from one drawn point to the next.
   `AnimalContact.draw_turn_rad_s` (a full turn in 0.5 s plus its body size: wolf 5.7 rad/s, elephant 2.3) and never snapped. The old facing
   lerped 10 a second toward each row's heading, so a row heading that spun 200+ rad/s (the probe) spun the body.
 - Every drawn body, not only a charge, is held out of the local player (`stop_toward`): the spring eases a little past a wolf's or dog's stop.
-- Server: `make_way`. A standing animal a player walks into steps out of them at its walking pace (robot play-testers, 23 Nov 2026: a dog
+- Server: `make_way`. A standing animal a player walks into steps out of them at up to half its flee speed (its walking pace at least) (robot play-testers, 23 Nov 2026: a dog
   0.02 m from a player's middle, a deer 0.22 m, a horse 0.15 m). Birds in the air, perched or burrowed animals, swimmers and a camp's tied
   horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain, which does the same for a wolf that stood
   this think (server_wolves `_make_way`), except in a rush. Cost: the nearest player's distance is already worked out each step; one compare.

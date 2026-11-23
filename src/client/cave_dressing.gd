@@ -12,6 +12,7 @@ extends Node3D
 # drip rings and a darker, wet tip.
 
 const BasicLook := preload("res://src/client/basic_look.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
 const BONE := Color(0.82, 0.76, 0.62)
 const STONE := Color(0.72, 0.68, 0.6)
@@ -106,7 +107,7 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 		_flicker.append([glow, 1.6, fposmod((fire as Transform3D).origin.x * 0.73 + (fire as Transform3D).origin.z * 1.31, TAU)])
 
 	if not (rows["goblin_fire"] as Array).is_empty() or not (rows["goblin_litter"] as Array).is_empty():
-		print("Cave dressing: tile %s has %d goblin den fires and %d litter piles" % [str(tile), (rows["goblin_fire"] as Array).size(), (rows["goblin_litter"] as Array).size()])
+		FreezeWatchScript.printer.line("Cave dressing: tile %s has %d goblin den fires and %d litter piles" % [str(tile), (rows["goblin_fire"] as Array).size(), (rows["goblin_litter"] as Array).size()])
 
 	for look in rows:
 		if (rows[look] as Array).is_empty():
