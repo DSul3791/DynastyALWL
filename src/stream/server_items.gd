@@ -8821,6 +8821,18 @@ static func restore_missing(path: String) -> String:
 	return done
 
 
+# The size of a file on disk, read with a handle that is closed before this returns (an open handle stops a rename on Windows); -1 if unreadable.
+static func _length_of(path: String) -> int:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	if file == null:
+		return -1
+
+	var size: int = file.get_length()
+	file.close()
+	return size
+
+
 # locked false: a small file only the main thread writes (traders, NPC flags, tile revisions, picked plants), which need not wait while the
 # background writer holds the lock through a big save.
 static func _write_file(path: String, text: String, locked: bool = true) -> bool:
@@ -8842,8 +8854,7 @@ static func _write_file(path: String, text: String, locked: bool = true) -> bool
 	var whole: bool = stored and (error == OK or error == ERR_FILE_EOF)
 
 	if whole:   # the last buffered bytes go out at the close: what landed is read back by its length
-		var check: FileAccess = FileAccess.open(path + ".tmp", FileAccess.READ)
-		whole = check != null and check.get_length() == text.to_utf8_buffer().size()
+		whole = _length_of(path + ".tmp") == text.to_utf8_buffer().size()
 
 	if not whole:
 		DirAccess.remove_absolute(path + ".tmp")   # a disk that filled part way: the torn .tmp is never moved over the whole file
@@ -8867,11 +8878,15 @@ static func _write_file(path: String, text: String, locked: bool = true) -> bool
 
 	var moved: bool = DirAccess.rename_absolute(path + ".tmp", path) == OK
 
+	if not moved:   # the save before goes back in place, as if this write never began
+		DirAccess.remove_absolute(path + ".tmp")
+		DirAccess.rename_absolute(path + ".prev", path)
+
 	if locked:
 		_file_lock.unlock()
 
 	if not moved:
-		push_error("SERVER SAVE FAILED: %s.tmp could not be moved into place: restored at the next start from the .tmp" % path)
+		push_error("SERVER SAVE FAILED: %s.tmp could not be moved into place: the save before is kept" % path)
 
 	return moved
 
