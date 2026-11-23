@@ -18102,8 +18102,9 @@ func passed_out(peer: int) -> bool:
 	return _cold_out.has(peer)
 
 
-# The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M, on
-# the ground; `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
+# The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points
+# about a tenth of the radius apart, never under SHORE_STEP_M), 2 m over the ground as every wake spot is set down (_rescue_ground,
+# dug_out_height); `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
 const SHORE_STEP_M := 3.0
 const SHORE_MAX_M := 200.0
 const SHORE_DRY_M := 0.05
@@ -18115,7 +18116,7 @@ func _dry_shore(from: Vector3) -> Vector3:
 	var r: float = SHORE_STEP_M
 
 	while r <= SHORE_MAX_M:
-		var steps: int = maxi(int(ceil(TAU * r / SHORE_STEP_M)), 8)
+		var steps: int = maxi(int(ceil(TAU * r / maxf(SHORE_STEP_M, r * 0.1))), 8)
 
 		for i in steps:
 			var a: float = TAU * float(i) / float(steps)
@@ -18124,7 +18125,7 @@ func _dry_shore(from: Vector3) -> Vector3:
 			var g: float = float(ground_height.call(x, z))
 
 			if not is_nan(g) and float(water_depth_at.call(Vector3(x, g, z))) <= SHORE_DRY_M:
-				return Vector3(x, g, z)
+				return Vector3(x, g + 2.0, z)
 
 		r += SHORE_STEP_M
 

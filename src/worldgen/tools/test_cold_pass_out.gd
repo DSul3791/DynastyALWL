@@ -171,10 +171,10 @@ func _init() -> void:
 	check(not fainted_again and int(items._strain[1]["state"]) == 0, "and they stay awake and free to move")
 
 	# With no rescue place anywhere they wake on the nearest dry shore, breathing (coordinator 23 Nov 2026), never at the spawn: a lake whose
-	# water ends at x 70 (the ground stands at 5 m throughout, as in this world).
+	# water ends at x 69.5 (the ground stands at 5 m throughout, as in this world).
 	items.rescue_spots = func(_pos): return []
 	items.ground_height = func(_x, _z): return 5.0
-	items.water_depth_at = func(pos: Vector3) -> float: return 3.0 if pos.x < 70.0 else 0.0
+	items.water_depth_at = func(pos: Vector3) -> float: return 3.0 if pos.x < 69.5 else 0.0
 	died.clear()
 	said.clear()
 	items.report_position(1, Vector3(55.0, 2.0, 0.0))
@@ -190,9 +190,10 @@ func _init() -> void:
 		items.tick(1.0)
 
 	var shore: Vector3 = items._peer_pos[1]
-	check(not items.passed_out(1) and died.size() == 1 and shore.x >= 70.0 and shore.x < 74.0 and absf(shore.z) < 4.0 and said.has(str(cfg["say_wake_water"]["here"])), "with nowhere to be carried they wake on the nearest dry shore (%s)" % str(shore))
+	check(not items.passed_out(1) and died.size() == 1 and shore.x >= 69.5 and shore.x < 74.0 and absf(shore.y - 7.0) < 0.01 and absf(shore.z) < 4.0 and said.has(str(cfg["say_wake_water"]["here"])), "with nowhere to be carried they wake on the nearest dry shore (%s)" % str(shore))
 	check(not bool(items._head_under.get(1, false)) and not items._suffocate.has(1) and not shore.is_equal_approx(items.respawn_point), "breathing, and not at the spawn")
-	items.water_depth_at = func(_pos: Vector3) -> float: return 0.0
+	items.ground_height = Callable()   # the rest of the file runs with no ground or water known, as before
+	items.water_depth_at = Callable()
 	items.rescue_spots = func(_pos): return [[Vector3(150.0, 5.0, 0.0), "goblin"]]
 
 	# Leaving while out clears the state.
