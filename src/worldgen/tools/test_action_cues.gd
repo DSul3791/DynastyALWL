@@ -2,7 +2,8 @@ extends SceneTree
 
 # Other players' work is heard where it happens (protocol 156, src/stream/server_action_cues.gd; Dave 23 Nov 2026: sound "very broad and hard
 # to pinpoint"). Server: a blow, a pick and a craft each send one cue to the other players within its earshot (never the one who did it),
-# at the point struck or the hands in front of the body, naming the tool; a miss, a knife on a carcass, a ground point out of reach and a second cue within GAP_MS send
+# at the point struck or the hands in front of the body, naming the tool (a knife on a carcass: flesh, where it lies); a craft again every
+# CRAFT_EVERY_MS while it is worked; a miss, a ground point out of reach and a second cue within GAP_MS send
 # nothing. Client: SoundStage.other_action plays the cue as a positional voice there (the own clips: hit_sounds, harvest_sounds, the craft work).
 #   godot --headless --path . --script res://src/worldgen/tools/test_action_cues.gd
 
@@ -12,6 +13,7 @@ const SoundStage := preload("res://src/client/sound_stage.gd")
 const HitSounds := preload("res://src/client/hit_sounds.gd")
 const HarvestSounds := preload("res://src/client/harvest_sounds.gd")
 const ItemSounds := preload("res://src/client/item_sounds.gd")
+const SpearSounds := preload("res://src/client/spear_sounds.gd")
 
 var failures: int = 0
 
@@ -48,6 +50,12 @@ class StubItems extends RefCounted:
 
 	func struct_kind_of(id: int) -> String:
 		return str(kinds.get(id, ""))
+
+	func item_pos_of(id: int) -> Variant:
+		if kinds.has(id):
+			return Vector3(1, 0, 1)
+
+		return null
 
 
 func _initialize() -> void:
@@ -105,9 +113,12 @@ func _server_checks() -> void:
 	clock[0] += 200
 	got.clear()
 	cues.note_action(1, Net.ACT_MINE, 1, 1, 0, Vector3(2, 0.5, 3))
-	cues.note_action(1, Net.ACT_PROCESS, 77, 0, 0, Vector3(1, 0, 0))
 	cues.note_action(1, Net.ACT_PICKUP, 3, 0, 0, Vector3.ZERO)
-	check(got.is_empty(), "a swing at nothing, a knife on a carcass and a pickup send nothing (%d)" % got.size())
+	check(got.is_empty(), "a swing at nothing and a pickup send nothing (%d)" % got.size())
+	cues.note_action(1, Net.ACT_PROCESS, 77, 0, 0, Vector3(1, 0, 0))
+	check(got.size() == 2 and int(got[0][3]) == Cues.MATERIALS.find("flesh") and (got[0][4] as Vector3).is_equal_approx(Vector3(1, Cues.HANDS_UP_M, 1)), "a knife on a carcass is flesh, where the carcass lies (%s)" % str(got))
+	clock[0] += 200
+	got.clear()
 	cues.note_action(1, Net.ACT_PROCESS, 78, 0, 0, Vector3(1, 0, 0))
 	check(got.size() == 2 and int(got[0][3]) == 8 + Cues.MATERIALS.find("wood"), "a blow on a loose log is wood (%s)" % str(got))
 
@@ -120,8 +131,21 @@ func _server_checks() -> void:
 	check(to == [2, 4] and int(got[0][3]) == 42, "a pick reaches 30 m with the species (%s)" % str(got))
 	clock[0] += 200
 	got.clear()
-	cues.craft_started(1, 7)
+	cues.craft_working(1, 7)
 	check(got.size() == 1 and int(got[0][0]) == 2 and int(got[0][2]) == Cues.CUE_CRAFT and int(got[0][3]) == 7, "a craft is heard within 25 m only, naming the recipe (%s)" % str(got))
+	var crafts: int = 0
+
+	for tick in 40:                                     # 10 s of server craft ticks (0.25 s) while it is worked
+		got.clear()
+		clock[0] += 250
+		cues.craft_working(1, 7)
+		crafts += got.size()
+
+	check(crafts == 2, "the craft is heard again as each work clip ends: 2 more in 10 s (%d)" % crafts)
+	got.clear()
+	clock[0] += 250
+	cues.craft_working(1, 8)
+	check(got.size() == 1 and int(got[0][3]) == 8, "a new recipe is heard at once (%s)" % str(got))
 	clock[0] += 200
 	got.clear()
 	check(not cues.cue(1, Cues.CUE_PICK, 1, Vector3(NAN, 0, 0)) and got.is_empty(), "a point that is not a number sends nothing")
@@ -149,6 +173,9 @@ func _client_checks() -> void:
 	stage.itemfx = ItemSounds.new()
 	stage.add_child(stage.itemfx)
 	stage.itemfx.setup(stage)
+	stage.spear = SpearSounds.new()
+	stage.add_child(stage.spear)
+	stage.spear.setup(stage)
 	var at: Vector3 = Vector3(5.0, 1.0, -4.0)
 
 	var cases: Array = [
@@ -156,6 +183,7 @@ func _client_checks() -> void:
 		[Cues.CUE_BLOW, 1 * 8 + Cues.MATERIALS.find("stone"), {}, {}, stage.hits, "a pick on stone"],
 		[Cues.CUE_BLOW, 0 * 8 + Cues.MATERIALS.find("brush"), {}, {}, stage.hits, "an axe on a bush"],
 		[Cues.CUE_PICK, 3, {"name": "blueberry", "yields": ["blueberries"], "shape": "bush"}, {}, stage.harvestfx, "a berry pick"],
+		[Cues.CUE_BLOW, Cues.MATERIALS.find("flesh"), {}, {}, stage.spear, "a knife on a carcass"],
 		[Cues.CUE_CRAFT, 2, {}, {"id": "stone_axe"}, stage, "a craft's work"],
 	]
 
