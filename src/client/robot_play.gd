@@ -635,6 +635,10 @@ func run() -> void:
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
 		await _route()
+	elif plan == "moves":
+		await _moves()
+	elif plan == "moves_built":
+		await _moves_built()
 	elif plan == "roam":
 		await _roam()
 	else:
@@ -3425,6 +3429,9 @@ func _quit_at_once() -> void:
 		f.store_string("")   # the pack is still changing: the plain rejoin compare is off for this quit
 		f.close()
 
+	if client.motion_audit != null:
+		client.motion_audit.summary()   # the walk's totals (motion_audit.gd)
+
 	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1
 
@@ -3499,6 +3506,218 @@ func _route() -> void:
 	FreezeWatchScript.printer.line("ROBOT %s ROUTE summary:" % robot_name)
 	for line in _route_lines:
 		FreezeWatchScript.printer.line("ROBOT %s ROUTE = %s" % [robot_name, line])
+
+
+# Plan moves (coordinator 23 Nov 2026: the player's own movement first, Dave: "motion must be fluid"): every way a player moves, on the real
+# keys, while the motion audit (motion_audit.gd) prints each stop, slow stretch, snap and push with what was touched and a summary per gait:
+# walking and running on open ground in four directions, a run with jumps, standing and crouched through the thickest woods and a thicket,
+# crouched along a game trail under trees (Dave's fern report), a strafe and a walk backwards, a run into the nearest water and a swim out
+# and back, and a long run over the hills. Prints ROBOT <name> MOVES <stretch>: <m> m in <s> s for each.
+func _moves() -> void:
+	var start: Vector3 = client.body.global_position
+	_route_begin("open walk")
+	for dir in [Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, 0, -1)]:
+		await _walk_for(dir, 4.0)
+	_route_end()
+
+	_route_begin("open run")
+	for dir in [Vector3(1, 0, 0), Vector3(0, 0, 1), Vector3(-1, 0, 0), Vector3(0, 0, -1)]:
+		_key("run", true)
+		await _walk_for(dir, 3.0)
+		_key("run", false)
+	_route_end()
+
+	_route_begin("strafe and back")
+	_face(Vector3(1, 0, 0))
+	for key in ["move_left", "move_right", "move_back"]:
+		_key(key, true)
+		await _wait(3.0)
+		_key(key, false)
+		await _wait(0.3)
+	_route_end()
+
+	_route_begin("jumps")
+	_face(Vector3(0, 0, 1))
+	_key("run", true)
+	_key("move_forward", true)
+	for n in range(10):
+		await _tap("jump")
+		await _wait(0.8)
+	_release_all()
+	_route_end()
+
+	_route_begin("crouch open")
+	await _stance_to(StanceScript.CROUCH)
+	for dir in [Vector3(1, 0, 1).normalized(), Vector3(-1, 0, 1).normalized()]:
+		await _walk_for(dir, 4.0)
+	await _stance_to(StanceScript.STAND)
+	_route_end()
+
+	_route_begin("woods standing")
+	var spot: Vector3 = _forest_spot()
+	if not is_nan(spot.x):
+		await _go_to(spot, 60.0, 4.0)
+		for n in range(8):
+			await _walk_for(Vector3(1, 0, 0).rotated(Vector3.UP, TAU * float(n) / 8.0), 3.0)
+	_route_end()
+
+	_route_begin("woods crouched")
+	await _forest_walk(40.0)
+	_route_end()
+
+	_route_begin("trail crouched")
+	await _trail_crouch(40.0)
+	_route_end()
+
+	_route_begin("thicket")
+	await _thicket_walk(20.0)
+	_route_end()
+
+	_route_begin("water")
+	var water: Vector3 = await _find_water()
+	if is_nan(water.x):
+		_note("moves", "no water in a loaded chunk")
+	else:
+		var from: Vector3 = client.body.global_position
+		await _run_to(water, 90.0, 2.0)
+		var out: Vector3 = Vector3(water.x - from.x, 0.0, water.z - from.z).normalized()
+		await _walk_for(out, 8.0)       # in and swimming
+		await _walk_for(-out, 10.0)     # back out over the edge
+	_route_end()
+
+	_route_begin("hills")
+	await _run_to(start + Vector3(-250.0, 0.0, -250.0), 60.0, 6.0)
+	await _run_to(start, 60.0, 6.0)
+	_route_end()
+
+	await _moves_built()
+
+	for line in _route_lines:
+		FreezeWatchScript.printer.line("ROBOT %s MOVES = %s" % [robot_name, line])
+
+
+# The built stretches of plan moves: two Refined foundations side by side with a wall, a doorway and stairs, set down and hammered up here
+# (each piece's lumber and twine given as it goes down); then in through the doorway, along the wall onto the second foundation, over the
+# stairs and down, off the edge onto the ground, back on from the side and out through the doorway, standing and crouched. The MOTION lines name every stop, slow, snap and push among the pieces.
+const MV_FOUNDATION_BP := 54    # wood_foundation: 8 lumber, 2 twine (4 x 4 m)
+const MV_WALL_BP := 1           # wall_section: 4 lumber, 1 twine
+const MV_DOORWAY_BP := 5        # doorway_section: 4 lumber, 1 twine
+const MV_STAIRS_BP := 36        # stairs_wood: 8 lumber, 2 twine
+
+func _moves_built() -> void:
+	await _tg_hammer()
+	var here: Vector3 = client.body.global_position
+	var base: int = -1
+
+	for off in [Vector3(0, 0, -5), Vector3(5, 0, 0), Vector3(-5, 0, 0), Vector3(0, 0, 5), Vector3(-6, 0, -6), Vector3(6, 0, 6)]:
+		base = await _mv_piece(MV_FOUNDATION_BP, here + off, 0, 8, 2)
+
+		if base >= 0:
+			break
+
+	if base < 0:
+		_note("moves", "no foundation would go down near %.0f,%.0f" % [here.x, here.z])
+		return
+
+	var f: Vector3 = client.items._world[base]["pos"]
+	var second: int = await _mv_piece(MV_FOUNDATION_BP, f + Vector3(4.0, 0.0, 0.0), 0, 8, 2)
+	var g: Vector3 = client.items._world[second]["pos"] if second >= 0 else f
+	var wall: int = await _mv_piece(MV_WALL_BP, f + Vector3(0.0, 0.0, -2.0), 0, 4, 1)
+	var door: int = await _mv_piece(MV_DOORWAY_BP, f + Vector3(0.0, 0.0, 2.0), 0, 4, 1)
+	var east: int = await _mv_piece(MV_WALL_BP, g + Vector3(2.0, 0.0, 0.0), 90, 4, 1)
+	var stairs: int = await _mv_piece(MV_STAIRS_BP, g, 0, 8, 2)
+	var rows: PackedStringArray = PackedStringArray()
+
+	for id in [base, second, wall, door, east, stairs]:
+		var w: Dictionary = client.items._world.get(id, {})
+		rows.append("%d %s at %s yaw %s" % [id, str(w.get("number", "-")), str((w.get("pos", Vector3.ZERO) as Vector3).snapped(Vector3(0.01, 0.01, 0.01))), str(w.get("yaw", "-"))])
+
+	FreezeWatchScript.printer.line("ROBOT %s MOVES built (foundation, second, wall, doorway, east wall, stairs): %s" % [robot_name, "; ".join(rows)])
+
+	var d: Vector3 = client.items._world.get(door, {}).get("pos", f + Vector3(0.0, 0.0, 2.0))   # the doorway snaps to a 2 m half of the edge
+
+	for crouched in [false, true]:
+		var how: String = " crouched" if crouched else ""
+		var stance: int = StanceScript.CROUCH if crouched else StanceScript.STAND
+		await _mv_leg("doorway in" + how, stance, Vector3(d.x, f.y, f.z + 5.0), Vector3(d.x, f.y, f.z - 0.5))
+		await _mv_leg("along the wall" + how, stance, f + Vector3(-1.0, 0.0, -1.0), g + Vector3(-1.0, 0.0, -1.5))
+		var st: Vector3 = client.items._world.get(stairs, {}).get("pos", g)   # its foot faces south (yaw 0): up from z +1.2 to its top at z -1.2
+		await _mv_leg("up the stairs" + how, stance, st + Vector3(0.0, 0.0, 4.0), st + Vector3(0.0, 0.0, -0.9))
+		await _mv_leg("down the stairs" + how, stance, client.body.global_position, st + Vector3(0.0, 0.0, 4.0), false)
+		await _mv_leg("off the edge" + how, stance, f, f + Vector3(-5.0, 0.0, 0.0))
+		await _mv_leg("back on from the side" + how, stance, f + Vector3(-5.0, 0.0, 1.0), f + Vector3(2.5, 0.0, 1.0))   # short of the stairs
+		await _mv_leg("out through the doorway" + how, stance, Vector3(d.x, f.y, f.z - 0.5), Vector3(d.x, f.y, f.z + 5.0))
+
+	await _stance_to(StanceScript.STAND)
+
+
+# One built leg: standing up to go round to `from` (unless `go_round` is false: from where it stands), then in `stance` straight toward `to` until within 0.5 m or twice the time its pace
+# needs: a ROUTE line, and the MOTION lines name anything that held it.
+func _mv_leg(stretch: String, stance: int, from: Vector3, to: Vector3, go_round: bool = true) -> void:
+	if go_round:
+		await _stance_to(StanceScript.STAND)
+		var _there: bool = await _go_to(from, 25.0, 0.6)
+
+	await _stance_to(stance)
+	_route_begin(stretch)
+	var pace: float = client.WALK_SPEED * float(StanceScript.SPEED[stance])
+	var end: int = Time.get_ticks_msec() + int(2000.0 * Vector2(to.x - from.x, to.z - from.z).length() / maxf(pace, 0.1)) + 2000
+	var dir: Vector3 = Vector3(to.x - client.body.global_position.x, 0.0, to.z - client.body.global_position.z).normalized()
+	_face(dir)
+	_key("move_forward", true)
+
+	while Time.get_ticks_msec() < end:
+		var left: Vector3 = Vector3(to.x - client.body.global_position.x, 0.0, to.z - client.body.global_position.z)
+
+		if left.length() < 0.5 or left.dot(dir) < 0.0:
+			break
+
+		await get_tree().process_frame
+
+	_key("move_forward", false)
+	await _wait(0.2)
+	var at: Vector3 = client.body.global_position
+	FreezeWatchScript.printer.line("ROBOT %s MOVES leg %s: %s, %.1f m short of the end" % [robot_name, stretch,
+		"reached" if Vector2(to.x - at.x, to.z - at.z).length() < 0.6 else "SHORT", Vector2(to.x - at.x, to.z - at.z).length()])
+	_route_end()
+
+
+# One piece set down at `spot` from 3 m south of it (on the ground there, or snapped onto the foundations by the server), its lumber and twine
+# given first, and hammered until it stands: its world id, or -1 when the server would not take it.
+func _mv_piece(bp: int, spot: Vector3, yaw: int, lumber: int, twine: int) -> int:
+	_give("lumber", lumber)   # only this piece's cost: a pack of lumber is heavy and slows the walk
+	_give("twine", twine)
+	await _check_pack("moves piece %d" % bp)
+	var _near_spot: bool = await _go_to(spot + Vector3(0.0, 0.0, 3.0), 20.0, 1.0)
+	var ground: float = float(client.items._ground_below.call(spot))
+	spot.y = ground if not is_nan(ground) else client.body.global_position.y - 0.9
+	var known: Dictionary = client.items._world.duplicate()
+	var heard: int = _notices.size()
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, bp, 0, yaw, spot)
+	var until: int = Time.get_ticks_msec() + 6000
+	var id: int = -1
+
+	while id < 0 and Time.get_ticks_msec() < until and not _notices.slice(heard).any(func(t): return str(t).contains("in the way") or str(t).contains("cannot")):
+		for w in client.items._world:
+			if not known.has(w) and Vector2(client.items._world[w]["pos"].x - spot.x, client.items._world[w]["pos"].z - spot.z).length() < 3.0:
+				id = int(w)
+
+		await get_tree().process_frame
+
+	if id < 0:
+		FreezeWatchScript.printer.line("ROBOT %s MOVES piece %d at %s refused: %s" % [robot_name, bp, str(spot.round()), str(_notices.slice(heard))])
+		return -1
+
+	var _near: bool = await _go_to(client.items._world.get(id, {}).get("pos", spot), 10.0, 2.5)
+
+	for _n in 24:
+		if client.items._world.get(id, {}).get("site") == null:
+			break
+
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, id, 1, 0, Vector3.ZERO)
+		await _wait(0.5)
+
+	return id
 
 
 # Plan roam (animals thread, coordinator 23 Nov 2026: stuck animals away from the fight): for ROAM_S, this robot goes from place to place and
@@ -3623,6 +3842,9 @@ func _quit() -> void:
 
 	await _wait(1.6)   # the last refusals get their 1.5 s for a message
 	_check_refusals(Time.get_ticks_msec() + 5000)
+	if client.motion_audit != null:
+		client.motion_audit.summary()   # the walk's totals (motion_audit.gd)
+
 	FreezeWatchScript.printer.line("ROBOT %s CATCHUP %d drawn-animal steps over a frame's allowance came within %d ms after a frame over %.0f ms (a freeze): not judged as jumps unless over the frozen time's run" % [robot_name, _after_freeze, THAW_MS, FREEZE_FRAME_S * 1000.0])
 	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1   # the client quits the usual way (the server keeps the character, as when a player closes the game)
