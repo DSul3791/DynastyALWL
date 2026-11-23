@@ -18882,7 +18882,16 @@ func _remains_surface(pos: Vector3, rows: Array) -> float:
 	if not is_nan(top):
 		return top
 
-	return _cave_ground(pos, _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array))   # in a cave: its floor, where the owner can reach them
+	var dug: float = _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
+	var floor_y: float = _cave_ground(pos, dug)   # in a cave: its floor, where the owner can reach them
+
+	if floor_y != dug and floor_y < pos.y - REMAINS_CAVE_DROP_M:
+		return pos.y   # over a cave spring pool's 20 m basin: they stay where they fell, at the water, not on its far bottom
+
+	return floor_y
+
+
+const REMAINS_CAVE_DROP_M := 3.0   # remains in a cave fall at most this far to its floor
 
 
 # --- Fall damage (job 62) ---

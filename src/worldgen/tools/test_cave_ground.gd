@@ -200,6 +200,13 @@ func _init() -> void:
 	check(not remains.is_empty() and absf(float(remains["pos"].y) - floors[CUT]) < 0.15, "and the settle pass leaves them there, not on the hill height %.2f (%s)" % [gen.surface_height(CUT.x, CUT.y), str(remains.get("pos", "none"))])
 	check(not remains.is_empty() and absf(items._remains_surface(Vector3(PASSAGE.x, floors[PASSAGE] + 0.1, PASSAGE.y), []) - floors[PASSAGE]) < 0.15, "remains in the passage rest on its floor (%.2f)" % items._remains_surface(Vector3(PASSAGE.x, floors[PASSAGE] + 0.1, PASSAGE.y), []))
 
+	# Over a deep floor (a spring pool's basin, here a stub 20 m down) remains stay where they fell.
+	var real_floor: Callable = items.cave_floor
+	items.cave_floor = func(p: Vector3) -> float: return p.y - 20.0
+	var deep_spot: Vector3 = Vector3(PASSAGE.x, floors[PASSAGE] + 0.1, PASSAGE.y)
+	check(is_equal_approx(items._remains_surface(deep_spot, []), deep_spot.y), "over a 20 m deep cave floor remains stay where they fell (%.2f)" % items._remains_surface(deep_spot, []))
+	items.cave_floor = real_floor
+
 	# A dug bush planted in the room grows from its floor; a tree seed is refused there.
 	items.season_now = func(): return "spring"
 	items.report_position(1, feet)
