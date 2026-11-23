@@ -453,8 +453,13 @@ func hand_flags() -> int:
 func _report_held(delta: float) -> void:
 	_held_wait -= delta
 
-	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
-		return   # no server to tell (offline, a headless check, or this is the server)
+	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree():
+		return
+
+	var line: MultiplayerPeer = _net.multiplayer.multiplayer_peer
+
+	if line == null or line.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED or _net.multiplayer.get_unique_id() == 1:
+		return   # no server to tell (offline, a headless check, a line closed on quitting, or this is the server)
 
 	var now: Array = [held_number(), off_number(), hand_flags()]
 
