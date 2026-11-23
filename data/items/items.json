@@ -3373,8 +3373,7 @@
 		"stone_pickaxe": {
 			"number": 297,
 			"name": "Stone - Pickaxe",
-			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly. No longer made: the Stone Hammer does its work.",
-			"legacy": true,
+			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "stone",

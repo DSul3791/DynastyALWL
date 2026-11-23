@@ -229,6 +229,15 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 		return
 
 	var view: Array = items._site_view(1, items._items[site])
+	# A world sync works out each player's on-hand counts once for all the sites near them (server load test 23 Nov 2026): the same list, and
+	# nothing kept after the sync, so a later change is counted.
+	items._site_memo = {}
+	var memo_first: Array = items._site_view(1, items._items[site])
+	var memo_again: Array = items._site_view(1, items._items[site])
+	items._site_memo = null
+	check(memo_first == view and memo_again == view, "during a sync the site's list is the same as outside it (%s, %s)" % [str(memo_first), str(view)])
+	items._sync_world_items()
+	check(items._site_memo == null, "the sync drops its on-hand counts when it ends")
 	_give("clay", 1)
 	items.drop_in_world(clay_n, mortar - 1, site_spot + Vector3(-2.0, 0.0, 0.0))
 	var view_after: Array = items._site_view(1, items._items[site])

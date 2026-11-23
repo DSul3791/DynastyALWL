@@ -35,8 +35,8 @@
 				],
 				[
 					"feather",
-					4,
-					8
+					12,
+					24
 				],
 				[
 					"bone",
@@ -97,8 +97,8 @@
 				],
 				[
 					"sinew",
-					2,
-					4
+					4,
+					8
 				],
 				[
 					"animal_fat",
@@ -138,8 +138,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"animal_fat",
@@ -180,8 +180,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"claw",
@@ -253,8 +253,8 @@
 				],
 				[
 					"feather",
-					3,
-					6
+					9,
+					18
 				],
 				[
 					"bone",
@@ -430,8 +430,8 @@
 				],
 				[
 					"sinew",
-					1,
-					2
+					2,
+					4
 				],
 				[
 					"claw",
@@ -472,8 +472,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"animal_fat",
@@ -519,8 +519,8 @@
 				],
 				[
 					"sinew",
-					2,
-					4
+					4,
+					8
 				],
 				[
 					"animal_fat",
@@ -561,8 +561,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"animal_fat",
@@ -608,8 +608,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"animal_fat",
@@ -645,8 +645,8 @@
 				],
 				[
 					"feather",
-					5,
-					9
+					15,
+					27
 				],
 				[
 					"bone",
@@ -667,8 +667,8 @@
 				],
 				[
 					"feather",
-					4,
-					8
+					12,
+					24
 				],
 				[
 					"down",
@@ -694,8 +694,8 @@
 				],
 				[
 					"feather",
-					8,
-					14
+					24,
+					42
 				],
 				[
 					"bone",
@@ -721,8 +721,8 @@
 				],
 				[
 					"feather",
-					3,
-					6
+					9,
+					18
 				],
 				[
 					"bone",
@@ -780,8 +780,8 @@
 				],
 				[
 					"feather",
-					4,
-					8
+					12,
+					24
 				],
 				[
 					"egg",
@@ -905,8 +905,8 @@
 				],
 				[
 					"feather",
-					4,
-					8
+					12,
+					24
 				],
 				[
 					"bone",
@@ -927,8 +927,8 @@
 				],
 				[
 					"feather",
-					6,
-					10
+					18,
+					30
 				],
 				[
 					"claw",
@@ -944,8 +944,8 @@
 			"parts": [
 				[
 					"feather",
-					2,
-					4
+					6,
+					12
 				]
 			],
 			"hunt_difficulty": 2.4,
@@ -956,8 +956,8 @@
 			"parts": [
 				[
 					"feather",
-					1,
-					2
+					3,
+					6
 				]
 			],
 			"hunt_difficulty": 2.0,
@@ -1029,8 +1029,8 @@
 				],
 				[
 					"sinew",
-					4,
-					6
+					8,
+					12
 				],
 				[
 					"animal_fat",
@@ -1066,8 +1066,8 @@
 				],
 				[
 					"sinew",
-					3,
-					4
+					6,
+					8
 				],
 				[
 					"animal_fat",
@@ -1155,8 +1155,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"animal_fat",
@@ -1202,8 +1202,8 @@
 				],
 				[
 					"sinew",
-					1,
-					2
+					2,
+					4
 				],
 				[
 					"animal_fat",
@@ -1305,8 +1305,8 @@
 				],
 				[
 					"feather",
-					2,
-					5
+					6,
+					15
 				],
 				[
 					"bone",
@@ -1379,8 +1379,8 @@
 				],
 				[
 					"sinew",
-					1,
-					2
+					2,
+					4
 				],
 				[
 					"animal_fat",
@@ -1411,8 +1411,8 @@
 				],
 				[
 					"feather",
-					3,
-					6
+					9,
+					18
 				],
 				[
 					"bone",
@@ -1465,8 +1465,8 @@
 				],
 				[
 					"sinew",
-					1,
-					2
+					2,
+					4
 				],
 				[
 					"gut",
@@ -1539,8 +1539,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"claw",
@@ -1576,8 +1576,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"animal_fat",
@@ -1618,8 +1618,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"animal_fat",
@@ -1660,8 +1660,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"claw",
@@ -1697,8 +1697,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"animal_fat",
@@ -1739,8 +1739,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"claw",
@@ -1776,8 +1776,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"claw",
@@ -1924,8 +1924,8 @@
 				],
 				[
 					"feather",
-					4,
-					8
+					12,
+					24
 				],
 				[
 					"bone",
@@ -1983,8 +1983,8 @@
 				],
 				[
 					"sinew",
-					2,
-					3
+					4,
+					6
 				],
 				[
 					"gut",
@@ -2057,8 +2057,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"claw",
@@ -2094,8 +2094,8 @@
 				],
 				[
 					"sinew",
-					3,
-					5
+					6,
+					10
 				],
 				[
 					"claw",
@@ -2107,5 +2107,6 @@
 			"blows": 6
 		}
 	},
-	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife."
+	"species_note": "Per-species `blows` (Sal, 2026-10-31) = knife blows to dress the body, by size: under 2 kg 1, under 15 kg 2, under 60 kg 3, under 150 kg 4, under 300 kg 6, larger 8. The server currently reads the single top-level `blows` (4) for every species; reading the per-species value is a small code change (server_items.gd make_carcass / _process_carcass). All species use tool_class knife.",
+	"note_feather_sinew": "23 Nov 2026 (Dave: \"we are not gate keeping by limiting resources\"; coordinator answer, recorded for his review): every bird's feathers x3 (a goose or turkey fletches 20 to 30 arrows; an arrow took about one feather) and sinew x2 on animals of 20 to 250 kg (a deer's back and leg tendons; the backpacks ask 20 and 40). Thread \"Walk the crafting progression end to end\"."
 }
