@@ -75,6 +75,10 @@ func _init() -> void:
 	for into in [0.1, 0.3, 0.45]:
 		check(is_nan(float(gen.cave_floor_at(Vector3(ROOM.x, hill_over - into, ROOM.y)))), "on the hill over the room, %.2f m into its ground: no cave floor (the hill's own ground stands)" % into)
 
+	for over in [ROOM, PASSAGE, Vector2(58275.0, 72118.0), Vector2(58262.0, 72110.0)]:
+		var top: float = gen.surface_height(over.x, over.y)
+		check(is_nan(float(gen.cave_floor_at(Vector3(over.x, top + 1.0, over.y)))) and absf(gen.floor_below(Vector3(over.x, top + 1.0, over.y), []) - top) <= 0.1, "a stack let go over the hill above the cave at %s rests on the hill %.2f (%.2f), not on the ground without its detail" % [str(over), top, gen.floor_below(Vector3(over.x, top + 1.0, over.y), [])])
+
 	check(is_nan(float(gen.cave_floor_at(Vector3(20000.0, 5.0, 20000.0)))), "a tile not in memory: no cave floor, and none is loaded")
 	check(absf(gen.floor_below(Vector3(ROOM.x, floors[ROOM] + 1.0, ROOM.y), [[0, Vector3(ROOM.x, floors[ROOM], ROOM.y), 0.6]]) - (floors[ROOM] - 0.6)) < 0.15, "a dig in the cave floor: a stack falls into its hole")
 

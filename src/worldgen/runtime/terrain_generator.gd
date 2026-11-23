@@ -282,11 +282,9 @@ func _read_tile(coord: Vector2i):
 # The floor of the cave air at a point (a carved passage or chamber, or a mouth's open cut: tile_terrain_data.cave_floor_under), looked for
 # from the point and from 0.9 m under it (a low roof); NAN where the point is not in a cave's air or its tile is not loaded (never loads one).
 # surface_height does not know the caves (physical world audit round 6, 23 Nov 2026: a stack dropped in a cave hung 1.1 m over its floor,
-# and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it. A floor less than
-# CAVE_UNDER_M under the generated surface is not taken (NAN): cave_floor_under measures the ground without its detail noise, so a point
-# just inside open ground near a cave would read that smoother ground instead. In a mouth's opened ground (tile_terrain_data.in_cave_opening)
-# the cut is taken right up to the surface, so a cart or a drop at the end of the cut stays on it.
-const CAVE_UNDER_M := 0.5
+# and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it. A floor within
+# CAVE_UNDER_M of the tile's ground (height_at, no detail noise) is the ground itself, not a cave's, and reads NAN.
+const CAVE_UNDER_M := 0.3   # cave_floor_under blends the 1 m voxel grid: its ground crossing lies up to 0.3 m off height_at
 const CAVE_PROBE_UP_M := 0.5   # callers look for a spot's cave floor from this far over its foot (server_items, server_carts)
 
 
@@ -305,8 +303,16 @@ func cave_floor_at(point: Vector3) -> float:
 	if is_nan(floor_y):
 		floor_y = data.cave_floor_under(at - Vector3(0.0, 0.9, 0.0))
 
-	var margin: float = 0.02 if data.in_cave_opening(at.x, at.z) else CAVE_UNDER_M   # a mouth's own cut is the cave's ground right to its end
-	return NAN if is_nan(floor_y) or floor_y > surface_height(point.x, point.z) - margin else floor_y
+	if is_nan(floor_y):
+		return NAN
+
+	# A floor at the ground's own height is not a cave's: from the open air (or just inside open ground, which the cave SDF counts as air) the
+	# search finds the ground without its detail noise, which lies inside a hill where the detail raises it. A cave's floor (a passage, a
+	# chamber, a mouth's cut) is carved under that ground.
+	if floor_y > float(data.height_at(at.x, at.z)) - CAVE_UNDER_M or floor_y > surface_height(point.x, point.z) - 0.02:
+		return NAN
+
+	return floor_y
 
 
 # Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface (in a cave, the
