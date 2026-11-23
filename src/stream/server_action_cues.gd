@@ -51,7 +51,7 @@ const HANDS_UP_M := 0.3                                           # position_of 
 const HANDS_OUT_M := 0.8                                          # and in front
 const MINE_POINT_M := 6.0                                         # a blow on the ground farther than this from the player is not its own (server_items MINE_REACH_M 4.5, plus the drift between reports)
 const LOUD_HOLD_MS := 5000                                        # a player stays loud to animals this long after a loud cue (a craft's work cue comes every CRAFT_EVERY_MS)
-const LOUD_RANK := {"blow": 3, "hurt": 2, "dig": 2, "craft": 1}   # loudest first, as animals.json senses.action_heard_x orders them (test_hearing_ranges)
+const LOUD_RANK := {"blow": 3, "hurt": 2, "dig": 2, "craft": 1}   # loudest first, as animals.json senses.action_heard_x orders them (test_hearing_ranges); hurt and dig tie
 const LOUD_NAMES := {CUE_BLOW: "blow", CUE_CRAFT: "craft", CUE_HURT: "hurt"}   # the cues animals hear (animals.json senses.action_heard_x); a pick, a chest, a gulp, a pickup and a knife cut are quiet
 
 var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of, item_pos_of, open_store_of, store_total, body_water_of, loose_item_of, inventory_of
@@ -62,7 +62,7 @@ var sent: int = 0                  # cues sent (one per receiver), for checks
 
 var _last_ms: Dictionary = {}      # peer -> ms of its last cue
 var _craft: Dictionary = {}        # peer -> [recipe, ms of its last craft cue]
-var _loud: Dictionary = {}         # peer -> [LOUD_NAMES name, ms it ends]
+var _loud: Dictionary = {}         # peer -> {loud name: ms it ends}
 
 
 # A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
@@ -261,29 +261,29 @@ func _due(peer: int) -> bool:
 	return int(now_ms.call()) - int(_last_ms.get(peer, -100000)) >= GAP_MS
 
 
-# `peer` did something loud (`name`, a LOUD_RANK key): it stays loud LOUD_HOLD_MS. A quieter thing never lowers a louder one still sounding
-# (a cry of pain between two axe blows keeps the blow's reach).
+# `peer` did something loud (`name`, a LOUD_RANK key): it stays loud for that LOUD_HOLD_MS. Each name keeps its own end, and the loudest
+# one still sounding counts (loud_kinds): a cry between two axe blows keeps the blow's reach, and crafting after one blow is craft work
+# once that blow's 5 s are up.
 func _mark_loud(peer: int, name: String) -> void:
-	var now: int = int(now_ms.call())
-	var row: Array = _loud.get(peer, ["", 0])
-
-	if now < int(row[1]) and int(LOUD_RANK.get(str(row[0]), 0)) > int(LOUD_RANK.get(name, 0)):
-		row[1] = now + LOUD_HOLD_MS   # the louder one goes on: a dig after blows is heard, and the hold runs on
-		_loud[peer] = row
-		return
-
-	_loud[peer] = [name, now + LOUD_HOLD_MS]
+	var ends: Dictionary = _loud.get(peer, {})
+	ends[name] = int(now_ms.call()) + LOUD_HOLD_MS
+	_loud[peer] = ends
 
 
-# The loud thing each player did lately, in items.peer_ids order (server_items.peer_positions is the same order): a LOUD_NAMES name or "dig",
-# or "" for none. server_animals reads it on its noise sample (player_loud).
+# The loud thing each player did lately, in items.peer_ids order (server_items.peer_positions is the same order): the loudest LOUD_RANK
+# name still sounding, or "" for none. server_animals reads it on its noise sample (player_loud).
 func loud_kinds() -> Array:
 	var out: Array = []
 	var now: int = int(now_ms.call())
 
 	for peer in (items.peer_ids() if items != null else []):
-		var row: Array = _loud.get(peer, ["", 0])
-		out.append(str(row[0]) if now < int(row[1]) else "")
+		var best: String = ""
+
+		for name in _loud.get(peer, {}):
+			if now < int(_loud[peer][name]) and (best == "" or int(LOUD_RANK.get(name, 0)) > int(LOUD_RANK.get(best, 0))):
+				best = str(name)
+
+		out.append(best)
 
 	return out
 

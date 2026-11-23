@@ -108,6 +108,11 @@ func _init() -> void:
 	check(cues.loud_kinds()[0] == "blow", "a tree blow just after a pick (inside the gap) still marks its player loud")
 	cues.hurt(1, 10.0)
 	check(cues.loud_kinds()[0] == "blow", "a cry between blows does not lower the blow's reach")
+	clock[0] += 3000
+	cues.cue(1, CuesScript.CUE_CRAFT, 4, Vector3.ZERO)
+	clock[0] += 2500
+	cues.cue(1, CuesScript.CUE_CRAFT, 4, Vector3.ZERO)
+	check(cues.loud_kinds()[0] == "craft", "crafting after one blow is craft work once the blow's hold is up (a quieter thing never stretches it)")
 	check(CuesScript.LOUD_HOLD_MS >= CuesScript.CRAFT_EVERY_MS, "a craft's repeating cue keeps its worker loud between cues")
 	cues.forget(1)
 	check(cues.loud_kinds()[0] == "", "a player who left is not loud")
