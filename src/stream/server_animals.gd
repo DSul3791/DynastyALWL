@@ -713,7 +713,8 @@ func moved_since(id: int, seen_ms: int, present_ms: int) -> Vector3:
 
 
 # The first animal whose chest sphere the segment from -> to passes through (a flying arrow): {"id", "at"} or {} when none. Hidden animals are skipped.
-func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float) -> Dictionary:
+# `seen_ms` and `present_ms` (judged_ms): each animal is taken where the shooter's screen showed it then; "point" is moved onto the body now.
+func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float, seen_ms: int = -1, present_ms: int = -1) -> Dictionary:
 	var best: Dictionary = {}
 	var best_t: float = INF
 	var seg: Vector3 = to - from
@@ -723,13 +724,14 @@ func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float
 		if int(animals[id]["state"]) == HIDDEN:
 			continue
 
-		var centre: Vector3 = animals[id]["pos"] + Vector3(0.0, chest_m, 0.0)
+		var body: Vector3 = pos_at(animals[id], judged_ms(animals[id], seen_ms, present_ms))
+		var centre: Vector3 = body + Vector3(0.0, chest_m, 0.0)
 		var t: float = clampf((centre - from).dot(seg) / len2, 0.0, 1.0)
 		var r: float = float(species_def(str(animals[id]["sp"])).get("hit_radius_m", radius))
 
 		if (from + seg * t).distance_to(centre) <= r and t < best_t:
 			best_t = t
-			best = {"id": int(id), "at": animals[id]["pos"], "point": from + seg * t}
+			best = {"id": int(id), "at": animals[id]["pos"], "point": from + seg * t + (animals[id]["pos"] - body)}
 			best["zone"] = hit_zone(int(id), best["point"])
 
 	return best

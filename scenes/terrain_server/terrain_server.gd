@@ -843,13 +843,16 @@ func _ready() -> void:
 		items.make_carcass(sp, pos, peer)
 	@warning_ignore("confusable_local_declaration")
 	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
-	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
+	items.hit_animal_path = func(shooter, from, to, amount, lag) -> Dictionary:
 		var member: String = tribes.member_on_segment(from, to)
 
 		if member != "":   # a goblin tribe member cannot be hurt (Dave's side, 19 Nov 2026): the tribe turns on the archer and the arrow flies on
 			tribes.harm(shooter, member)
 
-		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
+		var now: int = Time.get_ticks_msec()   # lag (server_items.shot_lag): the animals are taken where the shooter sees them at this moment
+		var seen_at: int = now - int(lag[0]) if lag.size() == 2 else -1
+		var present_at: int = now - int(lag[1]) if lag.size() == 2 and int(lag[1]) >= 0 else -1
+		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5, seen_at, present_at)
 
 		if found.is_empty():
 			return {}

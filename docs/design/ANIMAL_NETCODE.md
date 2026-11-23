@@ -127,5 +127,9 @@ in the sources above), with the server still the judge:
   the struck point where the animal was then (`pos_at`, `target_along`, `jab_point`). The damage, the zone and everything after happen now.
 - It never goes back more than `rewind_max_ms` (500): a client claiming an older moment is judged at 500 ms back, so a laggy or lying
   client cannot hit an animal that left long since. 500 rather than 250 because the honest delay of a normal internet game is about 0.4 s.
-- Not covered: arrows and thrown spears (the server flies them on its own clock); the charge still hits by where the animal is now.
+- Arrows and thrown spears (protocol 156): the client sends `ACT_SEEN` (the same two times) just before `ACT_SHOOT` or `ACT_THROW`. The
+  server keeps, with the flight, how far behind the server the shooter's screen was (`server_items.shot_lag`), and every step of the
+  flight takes each animal where that player sees it at that moment (`target_on_segment` with `pos_at`), so an arrow that meets a deer
+  on the archer's screen meets it on the server. The struck point is moved onto the body as it is now.
+- Not covered: the charge still hits by where the animal is now.
 
