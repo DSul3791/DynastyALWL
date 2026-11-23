@@ -485,7 +485,7 @@ static func conflicts() -> Array:
 # I and R for the goal hints ("Open the inventory (I)", "press R and pick Lean-to"; first-hour fixes 22 Nov 2026).
 # Tab and Shift for the first hints ("Press Tab to see Health ...", "Hold Shift to run"; client bug hunt 23 Nov 2026). A Shift that is part of
 # a fixed mouse combination ("Shift + right click") has no "Hold"/"Press" before it and is left alone.
-const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints", "Tab": "character", "Shift": "run"}
+const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints", "Tab": "character", "Shift": "run", "M": "map"}
 const MOVE_KEYS_TEXT := "W A S D"   # the first hint's movement keys, rewritten whole to the four bound keys
 static var _prompt_regex: RegEx = null
 
@@ -499,7 +499,7 @@ static func localize(text: String) -> String:
 		return text
 
 	if _prompt_regex == null:
-		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())(Tab|Shift|[EFZHIR])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
+		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())(Tab|Shift|[EFZHIRM])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
 
 	if text.contains(MOVE_KEYS_TEXT):
 		text = text.replace(MOVE_KEYS_TEXT, " ".join([label("move_forward"), label("move_left"), label("move_back"), label("move_right")]))
