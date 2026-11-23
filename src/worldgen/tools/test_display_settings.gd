@@ -25,5 +25,29 @@ func _initialize() -> void:
 	var src: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
 	check(src.contains("display.apply(get_window(), true)"), "joining a world keeps the player's window mode")
 	check(not FileAccess.get_file_as_string("res://src/client/game_menu.gd").contains("apply(_c.get_window(), true)"), "the Settings switches still set the window as chosen")
+	# Client bug hunt 23 Nov 2026: the 1920x1080 default window hung off a 1366x768 screen (the supported floor).
+	var fit: Callable = DisplaySettingsScript.fit_window
+	check(fit.call(Vector2i(1920, 1080), Vector2i(1366, 728)) == Vector2i(1294, 728), "1920x1080 on a 1366x768 screen (taskbar 40 px) shrinks to the biggest 16:9 that fits (got %s)" % str(fit.call(Vector2i(1920, 1080), Vector2i(1366, 728))))
+	check(fit.call(Vector2i(1920, 1080), Vector2i(2560, 1400)) == Vector2i(1920, 1080), "a window that fits keeps its chosen size")
+	check(fit.call(Vector2i(1600, 900), Vector2i(3440, 1400)) == Vector2i(1600, 900), "an ultrawide screen keeps the chosen size")
+	check(fit.call(Vector2i(1920, 1080), Vector2i(1366, 698)) == Vector2i(1240, 698) and fit.call(Vector2i(1920, 1080), Vector2i(1000, 1400)) == Vector2i(1000, 562), "the limiting side is exactly the room, height or width (got %s, %s)" % [str(fit.call(Vector2i(1920, 1080), Vector2i(1366, 698))), str(fit.call(Vector2i(1920, 1080), Vector2i(1000, 1400)))])
+	check(FileAccess.get_file_as_string("res://src/client/game_menu.gd").contains("DisplaySettingsScript.MOUSE_LOOK_MAX, DisplaySettingsScript.MOUSE_LOOK_MIN)"), "the sensitivity slider stops at 10 percent, so its label never shows a value the game does not use")
+	check(fit.call(Vector2i(1920, 1080), Vector2i.ZERO) == Vector2i(1920, 1080), "no screen size known: the chosen size")
+	# Mouse sensitivity is saved, read back and kept in range.
+	var temp: String = "user://test_display_settings.cfg"
+	var a = DisplaySettingsScript.new()
+	a.path = temp
+	a.mouse_look = 1.75
+	a.save()
+	var b = DisplaySettingsScript.new()
+	b.path = temp
+	b.load_saved()
+	check(absf(b.mouse_look - 1.75) < 0.001, "mouse sensitivity survives a restart (got %.2f)" % b.mouse_look)
+	a.mouse_look = 0.0
+	a.save()
+	b.load_saved()
+	check(b.mouse_look >= DisplaySettingsScript.MOUSE_LOOK_MIN, "a mouse sensitivity of 0 is never saved: the view would not turn")
+	check(src.contains("MOUSE_SENSITIVITY * display.mouse_look"), "the mouse look uses the saved sensitivity")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(temp))
 	print("display settings: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
