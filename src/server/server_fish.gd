@@ -37,6 +37,11 @@ static func unit(h: int) -> float:
 	return float(h & 0xffff) / 65536.0
 
 
+# A species that lives in water of `kind` in `season`, by its weight (roll 0..1); "" when none does.
+func species_for(kind: String, season: String, roll: float) -> String:
+	return _species_for(kind, season, roll)
+
+
 func _species_for(kind: String, season: String, roll: float) -> String:
 	var rows: Array = []
 	var total: float = 0.0
