@@ -30,7 +30,7 @@ All the page's links start with `/`. File names have no spaces.
 
 ## 2. Copy it up (Dave, one paste in PowerShell on his PC)
 
-The site script prints this line with the right folder; paste that, or set the build number on the first line here. If the name `dell-gameserver-01` does not resolve from the PC, put the server's LAN address there instead. Type the password when scp asks, or use your SSH key. No password goes in any file.
+The site script prints this line with the right folder and every top-level item of the site; paste that one. The line below is the same for a site without the testers' own pages. If the name `dell-gameserver-01` does not resolve from the PC, put the server's LAN address there instead. Type the password when scp asks, or use your SSH key. No password goes in any file.
 
 ```
 $build = "<N>"; $server = "dell-gameserver-01"
@@ -48,7 +48,7 @@ ssh "dave@${server}" "ls -l /data/game-web/site/downloads/; rm /data/game-web/si
 
 ## 2b. The bug and idea pages (one paste on the server, every time after step 2)
 
-The bug and idea pages and their small report service come from the "tester bug and idea pages" work (`deploy/testersite/`, pinned to commit 2f98c0a9). Its install puts its own front page (the same three boxes, now working, with the high scores) over the one from step 2. It also adds the `/api/` part to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe. Until that work is merged, step 2 brings back the "Opening soon" front page, so run this again after every upload:
+The bug and idea pages and their small report service come from the "tester bug and idea pages" work (`deploy/testersite/`, pinned to commit 2f98c0a9). Its install puts its own front page (the same three boxes, now working, with the high scores) over the one from step 2. It also adds the `/api/` part to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe. Until that work is merged, step 2 brings back the "Opening soon" front page (and the download page's report step points at boxes that do not work yet), so run this again after every upload:
 
 ```
 sudo mkdir -p /data/game-web/reports && cd /data/game-web/reports && sudo curl -fsSLO https://raw.githubusercontent.com/DSul3791/DynastyALWL/2f98c0a9a764765975fe984d6bcf802eda793039/deploy/testersite/service/install.sh && sudo BRANCH=2f98c0a9a764765975fe984d6bcf802eda793039 bash install.sh

@@ -27,7 +27,7 @@ $setup = Join-Path $Out "DynastySetup-$build.exe"
 if (-not (Test-Path -LiteralPath $setup)) { throw "make_testplayers_site: no $setup; run tools\make_release.ps1 first" }
 $pages = if ($PagesFrom) { (Resolve-Path -LiteralPath $PagesFrom).ProviderPath } else { Join-Path $Repo "deploy\testplayers" }
 foreach ($f in "index.html", "download.html", "site.css", "hero.jpg") {
-	if (-not (Test-Path -LiteralPath (Join-Path $pages $f))) { throw "make_testplayers_site: no $f in $pages (use -Repo with a checkout that has it)" }
+	if (-not (Test-Path -LiteralPath (Join-Path $pages $f))) { throw "make_testplayers_site: no $f in $pages (use -Repo or -PagesFrom with a folder that has it)" }
 }
 
 $site = Join-Path $Out "site"
@@ -99,4 +99,6 @@ foreach ($file in Get-ChildItem -LiteralPath $site -Recurse -File | Sort-Object 
 Write-Host "make_testplayers_site: $site"
 Write-Host "  index.html, download\, css\, images\, fonts\, latest.json, files.sha256, downloads\$zipName ($sizeMb MB, SHA-256 $hash)"
 Write-Host "  copy it up (deploy\testplayers\SERVER.md step 2; type the password when scp asks):"
-Write-Host "  Set-Location `"$site`"; scp -r index.html latest.json files.sha256 download css images fonts downloads `"dave@dell-gameserver-01:/data/game-web/site/`""
+# Every top-level file and folder the site has (the testers' own pages add more when they are in the checkout), in one scp.
+$top = (Get-ChildItem -LiteralPath $site | Sort-Object Name | ForEach-Object { $_.Name }) -join " "
+Write-Host "  Set-Location `"$site`"; scp -r $top `"dave@dell-gameserver-01:/data/game-web/site/`""
