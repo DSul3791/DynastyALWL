@@ -188,6 +188,7 @@ var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
 const MotionExtra := preload("res://src/client/character/motion_extra.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
 const PICK_SWING_S := MotionExtra.PICK_LENGTH
 const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
@@ -1360,6 +1361,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if carcass != 0:
 				_arm_play("use", 0.6)
+
+				if _sound != null:
+					_sound.spear.hit("flesh", (_inv._world[carcass]["pos"] as Vector3) + Vector3(0.0, 0.3, 0.0), _sound.KNIFE_CUT_STRENGTH)   # the cut is heard (others hear it too: action_cue)
+
 				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # the knife in hand (protocol 117)
 				return true
 
@@ -4268,22 +4273,22 @@ func run_net_test() -> void:
 	var net_n: int = table.number_of("shore_net")
 	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, net_n, 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(2.0).timeout
-	print("NET TEST: pack before: %s" % _net_test_pack())
+	FreezeWatchScript.printer.line("NET TEST: pack before: %s" % _net_test_pack())
 
 	for slot in range(8):
 		if _inv.inventory.numbers[slot] == net_n:
 			select(slot)
 
-	print("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
+	FreezeWatchScript.printer.line("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
 
 	for n in 4:
 		var used: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 		await get_tree().create_timer(0.3).timeout
 		mouse_button(MOUSE_BUTTON_LEFT, false)
 		await get_tree().create_timer(9.0).timeout   # the net sinks for hold_s (6 s) and is hauled back
-		print("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
+		FreezeWatchScript.printer.line("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
 
-	print("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
+	FreezeWatchScript.printer.line("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
 
 
 func _net_test_pack() -> String:
@@ -4319,14 +4324,14 @@ func run_test() -> void:
 		if _inv.inventory.numbers[slot] == table.number_of("wooden_spear"):
 			select(slot)
 
-	print("Spear test: holding %s" % held_id())
+	FreezeWatchScript.printer.line("Spear test: holding %s" % held_id())
 	var jabbed: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(0.5).timeout
 	mouse_button(MOUSE_BUTTON_RIGHT, true)
 	var aimed: bool = aiming
 	mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(5.0).timeout
-	print("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
+	FreezeWatchScript.printer.line("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
 	_net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 
@@ -4336,7 +4341,7 @@ func run_test() -> void:
 
 	var swung: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(1.0).timeout
-	print("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
+	FreezeWatchScript.printer.line("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
 	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var kit_slot: int = -1
@@ -4358,7 +4363,7 @@ func run_test() -> void:
 			lit += 1
 			states.append(_inv._world[id]["state"])
 
-	print("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
+	FreezeWatchScript.printer.line("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
 
 
 func inv_slots() -> int:

@@ -5,9 +5,11 @@ extends RefCounted
 # blows, picks and craft work at once; until now nobody else heard them. The server sends one small unreliable action_cue
 # (who, cue, detail, where) to the other players within the cue's earshot. One player's cues are spaced at least GAP_MS apart (a sickle
 # swing naming 40 grasses gives one cue), so a hostile or hitching client cannot flood its neighbours.
-#   CUE_BLOW  detail = tool * 8 + material (tool 0 axe, 1 pick: held_item.gd _hit_tool; MATERIALS below): an axe or pick blow on a tree, log, stump, bush, boulder or the ground
+#   CUE_BLOW  detail = tool * 8 + material (tool 0 axe, 1 pick: held_item.gd _hit_tool; MATERIALS below): an axe or pick blow on a tree, log, stump, bush, boulder or the
+#             ground, or a knife cut on a carcass (flesh, at the carcass)
 #   CUE_PICK  detail = the flora species id (flora id >> 16): a plant gathered by hand or cut by a sickle or scythe
-#   CUE_CRAFT detail = the recipe number: one craft of the queue began (knapping, twine, carving and the rest; item_sounds.gd work_type)
+#   CUE_CRAFT detail = the recipe number: a craft is being worked, sent again every CRAFT_EVERY_MS while it goes on, as the crafter's own work
+#             sound repeats (knapping, twine, carving and the rest; item_sounds.gd work_type)
 # Digging, filling and the hoe are heard already (every client hears the ground edits: dig_sounds.gd), as are animal hits (animal_hit,
 # protocol 96), the chopping block, the saws and the bellows (world state). A swing at nothing makes no sound for its own player either.
 # Cost: one distance test per connected player per cue, a few cues a second per working player.
@@ -17,20 +19,22 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const CUE_BLOW := 1
 const CUE_PICK := 2
 const CUE_CRAFT := 3
-const MATERIALS := ["wood", "stone", "soil", "ground", "brush"]   # ground: the client hears rock or soil under the point; brush: a bush (wood, softer)
+const MATERIALS := ["wood", "stone", "soil", "ground", "brush", "flesh"]   # ground: the client hears rock or soil under the point; brush: a bush (wood, softer); flesh: a knife on a carcass
 const HEAR_M := {CUE_BLOW: 60.0, CUE_PICK: 30.0, CUE_CRAFT: 25.0}   # hit_sounds unit 8 m (a blow at 60 m is about 18 dB under one at 8 m); harvest 40 m reach; craft work is quiet
 const GAP_MS := 120                                               # at most about eight cues a second from one player
+const CRAFT_EVERY_MS := 4500                                      # a craft work clip lasts about 4.5 s (item_sounds.gd watch starts the next as one ends)
 const HANDS_UP_M := 0.3                                           # position_of is the body's middle; the hands work a little above it
 const HANDS_OUT_M := 0.8                                          # and in front
 const MINE_POINT_M := 6.0                                         # a blow on the ground farther than this from the player is not its own (server_items MINE_REACH_M 4.5, plus the drift between reports)
 
-var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of
+var items                          # ServerItems: peer_ids, position_of, held_number, table, struct_kind_of, item_pos_of
 var yaw_of: Callable = func(_peer: int) -> float: return 0.0      # the body's facing (server_players.gd), for a blow with no point of its own
 var send_cue: Callable             # (to peer, about peer, cue, detail, at)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
 var sent: int = 0                  # cues sent (one per receiver), for checks
 
 var _last_ms: Dictionary = {}      # peer -> ms of its last cue
+var _craft: Dictionary = {}        # peer -> [recipe, ms of its last craft cue]
 
 
 # A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
@@ -45,7 +49,12 @@ func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3)
 			material = "stone" if b == Net.HIT_BOULDER else "wood"
 		Net.ACT_PROCESS:
 			if items != null and items.struct_kind_of(a) == "carcass":
-				return   # the knife's butchering is silent for its own player too (held_item.gd)
+				var lies: Variant = items.item_pos_of(a)
+
+				if lies != null and items.position_of(peer) != null and (lies as Vector3).distance_to(items.position_of(peer)) <= MINE_POINT_M:
+					cue(peer, CUE_BLOW, MATERIALS.find("flesh"), (lies as Vector3) + Vector3(0.0, HANDS_UP_M, 0.0))   # the knife's cut, where the carcass lies
+
+				return
 			material = "wood"
 		Net.ACT_HIT_SHRUB:
 			material = "brush"
@@ -85,12 +94,18 @@ func _hands(peer: int) -> Variant:
 	return (pos as Vector3) + Vector3(-sin(yaw) * HANDS_OUT_M, HANDS_UP_M, -cos(yaw) * HANDS_OUT_M)
 
 
-# A craft began for `peer` (server_items.gd _craft_tick): heard at its hands.
-func craft_started(peer: int, recipe: int) -> void:
+# `peer`'s craft is being worked this tick (server_items.gd _craft_tick, about four times a second): heard at its hands when it begins and
+# every CRAFT_EVERY_MS after, while it goes on. A cue held back by the gap is tried again on the next tick.
+func craft_working(peer: int, recipe: int) -> void:
+	var last: Array = _craft.get(peer, [0, -100000])
+
+	if int(last[0]) == recipe and int(now_ms.call()) - int(last[1]) < CRAFT_EVERY_MS:
+		return
+
 	var point: Variant = _hands(peer)
 
-	if point != null:
-		cue(peer, CUE_CRAFT, recipe, point)
+	if point != null and cue(peer, CUE_CRAFT, recipe, point):
+		_craft[peer] = [recipe, int(now_ms.call())]
 
 
 # Send one cue about `peer` to every other player within the cue's earshot of `at`. False when held back (too soon after its last, or unknown).
@@ -124,3 +139,4 @@ func _due(peer: int) -> bool:
 
 func forget(peer: int) -> void:
 	_last_ms.erase(peer)
+	_craft.erase(peer)

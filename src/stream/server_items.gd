@@ -184,7 +184,7 @@ var skill_level: Callable         # (peer, skill id) -> level factor around 1.0;
 var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
-var craft_began: Callable        # (peer, recipe number): one craft at the head of a queue began its work (server_action_cues.gd craft_started)
+var craft_working: Callable      # (peer, recipe number): the craft at the head of a queue is being worked this tick (server_action_cues.gd craft_working)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
@@ -775,6 +775,22 @@ func start_position_for(peer: int) -> Array:
 	_resume_to[peer] = [spot, Time.get_ticks_msec()]
 	print("Resume spot: peer %d starts at %s (saved %s, left %s)" % [peer, str(spot), str(pos), str(row["last"].get("left", "?"))])
 	return [spot.x, spot.y, spot.z]
+
+
+# The saved spots of the characters that left most recently (newest first, at most `limit`): the server builds the ground round them
+# at start-up, so the first join after the generated ground was thrown away (a new TERRAIN_VERSION) does not wait on it.
+func saved_spots(limit: int) -> Array:
+	var rows: Array = []
+
+	for key in _characters:
+		var last: Dictionary = _characters[key].get("last", {})
+		var pos: Array = last.get("pos", [])
+
+		if pos.size() == 3:
+			rows.append([int(last.get("t", 0)), Vector3(float(pos[0]), float(pos[1]), float(pos[2]))])
+
+	rows.sort_custom(func(a, b): return a[0] > b[0])
+	return rows.slice(0, limit).map(func(row): return row[1])
 
 
 # A saved spot that something was built over while the character was away: on a foundation, stand on its top; inside a wall or heavy station
@@ -6820,8 +6836,13 @@ func _fire_expire(it: Dictionary) -> bool:
 
 
 # A fire that goes (cold too long, or laid and never lit) leaves what its store still held beside it: food left cooking and spare wood are never
-# deleted with it. The store itself goes with the fire.
+# deleted with it. The store itself goes with the fire. A player's fire leaves its Campfire kit's parts too, as an empty fire picked up does
+# (_kit_parts: 16 stones, 2 sticks; coordinator 23 Nov 2026: the kit vanished with it); a camp's pit was never a kit.
 func _fire_spill_store(it: Dictionary) -> void:
+	if not it["fire"].has("camp") and int(it.get("number", 0)) == table.number_of("campfire_kit"):
+		for pair in _kit_parts(int(it["number"]), _fire_start_sticks()):
+			drop_in_world(int(pair[0]), int(pair[1]), it["pos"] + Vector3(-0.6, 0.0, 0.0))
+
 	var uid: int = int(it["fire"].get("uid", 0))
 	var box = _chests.get(uid)
 
@@ -7127,14 +7148,7 @@ func _box_holds_only(box, number: int) -> bool:
 # kit, which would give its sticks again on the next laying (to-do sweep 23 Nov 2026: lay, take the sticks, pick up, lay again made sticks
 # without end). All or nothing; false (and the player told) when it does not fit.
 func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
-	var makers: Array = recipes.makers_of(kit) if recipes != null else []
-	var parts: Array = []
-
-	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
-		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
-
-		if count > 0:
-			parts.append([int(need[0]), count])
+	var parts: Array = _kit_parts(kit, start)
 
 	if parts.is_empty():   # no recipe makes the kit (retired or renamed): the fire stays, never lost for nothing
 		_say(peer, "Empty it first.")
@@ -7151,6 +7165,20 @@ func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
 		inv.add(int(pair[0]), int(pair[1]))
 
 	return true
+
+
+# What a Campfire kit was made of less its first sticks (in the fire's store, or burnt): [[number, count], ...], empty when no recipe makes it.
+func _kit_parts(kit: int, start: int) -> Array:
+	var makers: Array = recipes.makers_of(kit) if recipes != null else []
+	var parts: Array = []
+
+	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
+		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
+
+		if count > 0:
+			parts.append([int(need[0]), count])
+
+	return parts
 
 
 func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
@@ -14602,8 +14630,16 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 
 # The whole load: the pack (with the bags in it) and what the worn bags hold (worn pieces themselves weigh nothing, as before).
 func carried_kg_of(peer: int) -> float:
+	if _in_vitals and _kg_cache.has(peer):
+		return float(_kg_cache[peer])
+
 	var inv = inventory_of(peer)
-	return (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+	var kg: float = (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+
+	if _in_vitals:
+		_kg_cache[peer] = kg   # the carry notice and the load ratio both weigh the pack each tick (load test 23 Nov: 15 ms a second at 32 players)
+
+	return kg
 
 
 func _worn_bags_kg(peer: int) -> float:
@@ -14711,6 +14747,22 @@ func effort_of(peer: int) -> float:
 # How far into the hindering band the load is: 0 up to 80 percent of the limit, 1 at the limit.
 var _load_cache: Dictionary = {}     # peer -> load ratio, valid only during one _vitals_tick (it asks four times per player)
 var _in_vitals: bool = false
+var _kg_cache: Dictionary = {}       # peer -> carried kg, valid only during one _vitals_tick
+var _cover_cache: Dictionary = {}    # position -> cover_at, valid only during one _vitals_tick (warmth and soak asked three times per player)
+
+
+# cover_at at `pos`, worked out once per position during a _vitals_tick. Nothing that changes cover (building, felling) runs inside it.
+func _vitals_cover(pos: Vector3) -> float:
+	if not cover_at.is_valid():
+		return 0.0
+
+	if not _in_vitals:
+		return float(cover_at.call(pos))
+
+	if not _cover_cache.has(pos):
+		_cover_cache[pos] = float(cover_at.call(pos))
+
+	return float(_cover_cache[pos])
 
 
 func _load_ratio(peer: int) -> float:
@@ -16038,6 +16090,11 @@ func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
 
 
+# Where a world item lies, null for none (server_action_cues.gd: a knife cut on a carcass is heard there).
+func item_pos_of(id: int) -> Variant:
+	return (_items.get(id, {}) as Dictionary).get("pos", null)
+
+
 # The structure kind of a world item ("carcass", "log", ...), "" for none (server_action_cues.gd: what a blow struck).
 func struct_kind_of(id: int) -> String:
 	return str((_items.get(id, {}) as Dictionary).get("struct", {}).get("kind", ""))
@@ -16307,6 +16364,8 @@ func _vitals_tick(spent: float) -> void:
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var game_s: float = spent * GAME_RATE
 	_load_cache.clear()
+	_kg_cache.clear()
+	_cover_cache.clear()
 	_lit_valid = false
 	_in_vitals = true
 
@@ -17044,12 +17103,12 @@ func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
-	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var covered: bool = _vitals_cover(pos) > 0.5
 	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
 	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
 	# at sea level, so the height is taken off here.
 	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
-	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
+	var roofed: bool = _vitals_cover(pos) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 
 	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
@@ -17299,7 +17358,7 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
-	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 	var soak: float = float(_soak.get(peer, 0.0))
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
@@ -24533,7 +24592,16 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
-	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
+	if queue.is_empty() or recipe.is_empty():
+		return
+
+	if not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe):
+		# Never a silent no (23 Nov 2026, the screens robot: Fish trap and Bird trap lit, pressed, nothing happened).
+		if bool(recipe.get("locked", false)):
+			_say(peer, "Nobody knows how to make %s yet" % table.in_sentence(str(recipe.get("name", "that"))))
+		else:
+			var at_station: String = (", standing at the %s" % _station_name(str(recipe["station"]))) if str(recipe.get("station", "")) != "" else ""
+			_say(peer, "You have not worked out how to make %s yet: carry what it needs in your pack%s, then try again" % [table.in_sentence(str(recipe.get("name", "that"))), at_station])
 		return
 
 	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
@@ -25065,12 +25133,13 @@ func _craft_tick(spent: float) -> void:
 		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
 			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
-		queue["elapsed"] = float(queue["elapsed"]) + spent
+		var worked_before: float = float(queue["elapsed"])
+		queue["elapsed"] = worked_before + spent
 
 		var starting: bool = not queue.has("need_s")
 
-		if starting and craft_began.is_valid():
-			craft_began.call(peer, int(head[0]))   # the others nearby hear the work begin (server_action_cues.gd, protocol 156)
+		if craft_working.is_valid() and worked_before < _head_need_s(peer, queue, recipe, variant):   # not a finished batch waiting for room
+			craft_working.call(peer, int(head[0]))   # the others nearby hear the work while it goes on, as the crafter does (server_action_cues.gd, protocol 156)
 
 		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):
 			if starting:

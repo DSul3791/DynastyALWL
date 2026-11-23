@@ -31,6 +31,7 @@ extends Node
 const LookSettings := preload("res://src/client/look_settings.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const CanopyMapScript := preload("res://src/client/canopy_map.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: lines printed on a worker (D-LAG-1)
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
@@ -261,6 +262,8 @@ var night_colour: float = 1.0           # share of the colour left by the night,
 var rainbow: float = 0.0                # 0 .. 1 the bow's strength now, eased (for checks)
 var _rain_memory: float = 0.0           # the recent rain, falling off over RAINBOW_HOLD_S
 var _rainbow_sent: float = -1.0
+var _sky_sent: Vector3 = Vector3(-1.0, -1.0, -1.0)   # coverage, gloom and flash last sent to the sky shader
+var _sky_hour_said: bool = false      # the game hour of the first sky step is printed once (lag logs: the sky's cost depends on the hour)
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -562,7 +565,7 @@ func _target() -> Dictionary:
 	if _client.sound != null and _client.sound.weather != null and (int(_client.sound_tests.weather_at) >= 0 or bool(_client.sound.weather.forced)):
 		if bool(_client.sound.weather.forced) and not _forced_logged:
 			_forced_logged = true
-			print("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
+			FreezeWatchScript.printer.line("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
 
 		return TEST.get(_client.sound.weather.kind, out)
 
@@ -726,6 +729,10 @@ func _process_body(delta: float) -> void:
 	if LookSettings.DAY_CYCLE and now_msec >= _sky_next_msec:
 		_sky_next_msec = now_msec + SKY_STEP_MSEC
 
+		if not _sky_hour_said and _client.get("game_clock") != null:
+			_sky_hour_said = true
+			FreezeWatchScript.printer.line("weather look: first sky step at game hour %.2f, day %d of the year" % [_client.game_clock.hour(), _client.game_clock.day_of_year()])
+
 		if _client.flora != null:
 			tq = FrameProbe.start()
 			_client.flora.set_day_sky(day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
@@ -760,9 +767,14 @@ func _process_body(delta: float) -> void:
 			_rainbow_sent = rainbow
 			sky_material.set_shader_parameter("rainbow", rainbow)
 
-		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
-		sky_material.set_shader_parameter("gloom", gloom)
-		sky_material.set_shader_parameter("flash", flash_level)
+		# Sent only when they change (23 Nov 2026): a changed sky parameter may redraw the sky's lighting cubemap (sky_clouds.gd make_sky).
+		var coverage: float = lerpf(0.62, 0.30, cloud_cover)
+
+		if absf(coverage - _sky_sent.x) > 0.002 or absf(gloom - _sky_sent.y) > 0.002 or flash_level != _sky_sent.z:
+			_sky_sent = Vector3(coverage, gloom, flash_level)
+			sky_material.set_shader_parameter("coverage", coverage)
+			sky_material.set_shader_parameter("gloom", gloom)
+			sky_material.set_shader_parameter("flash", flash_level)
 
 	# Light: the sun fades behind cloud, the sky's own light dims a little, lightning jumps both. Under rock (a cave, a tunnel
 	# dug into a hill) neither the sun nor the sky's light gets in, day or night: only torches and fires light it.

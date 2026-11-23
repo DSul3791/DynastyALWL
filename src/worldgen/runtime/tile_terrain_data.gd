@@ -489,6 +489,111 @@ func height_at(x: float, z: float) -> float:
 	return flat if wet >= 1.0 else lerpf(_smooth_height_at(x, z), flat, wet)
 
 
+# height_at over a grid of columns (xs across, zs down; row-major, xs.size() per row), every value the same as height_at's,
+# with the sample indices and weights of each column and row worked out once instead of once per point. wet_out gets wet_at
+# of each point (doubles, as wet_at returns them); inner_out gets the lowest and highest height (unrounded) of the points one in
+# from the grid's edges. Not for a placeholder tile.
+func heights_grid(xs: PackedFloat32Array, zs: PackedFloat32Array, wet_out: PackedFloat64Array, inner_out: PackedFloat64Array) -> PackedFloat32Array:
+	var nx: int = xs.size()
+	var nz: int = zs.size()
+	var last: int = samples - 1
+	# Per column: the cell (clamped), the bilinear weight (clamped) and the four Catmull-Rom columns and weights.
+	var ci: PackedInt32Array = PackedInt32Array()
+	var tul: PackedFloat64Array = PackedFloat64Array()
+	var wu: PackedFloat64Array = PackedFloat64Array()
+	var cc: PackedInt32Array = PackedInt32Array()
+	ci.resize(nx)
+	tul.resize(nx)
+	wu.resize(4 * nx)
+	cc.resize(4 * nx)
+
+	for n in range(nx):
+		var u: float = (xs[n] - x0) / spacing_m
+		var i: int = clampi(int(floor(u)), 0, samples - 2)
+		ci[n] = i
+		tul[n] = clampf(u - float(i), 0.0, 1.0)
+		var tu: float = u - float(i)
+		var tu2: float = tu * tu
+		var tu3: float = tu2 * tu
+		wu[4 * n] = 0.5 * (-tu3 + 2.0 * tu2 - tu)
+		wu[4 * n + 1] = 0.5 * (3.0 * tu3 - 5.0 * tu2 + 2.0)
+		wu[4 * n + 2] = 0.5 * (-3.0 * tu3 + 4.0 * tu2 + tu)
+		wu[4 * n + 3] = 0.5 * (tu3 - tu2)
+		cc[4 * n] = maxi(i - 1, 0)
+		cc[4 * n + 1] = i
+		cc[4 * n + 2] = i + 1
+		cc[4 * n + 3] = mini(i + 2, last)
+
+	var out: PackedFloat32Array = PackedFloat32Array()
+	out.resize(nx * nz)
+	wet_out.resize(nx * nz)
+	var h_min: float = INF
+	var h_max: float = -INF
+
+	for m in range(nz):
+		var v: float = (zs[m] - z0) / spacing_m
+		var j: int = clampi(int(floor(v)), 0, samples - 2)
+		var tvl: float = clampf(v - float(j), 0.0, 1.0)
+		var tv: float = v - float(j)
+		var tv2: float = tv * tv
+		var tv3: float = tv2 * tv
+		var wv0: float = 0.5 * (-tv3 + 2.0 * tv2 - tv)
+		var wv1: float = 0.5 * (3.0 * tv3 - 5.0 * tv2 + 2.0)
+		var wv2: float = 0.5 * (-3.0 * tv3 + 4.0 * tv2 + tv)
+		var wv3: float = 0.5 * (tv3 - tv2)
+		var r0: int = maxi(j - 1, 0) * samples
+		var r1: int = j * samples
+		var r2: int = (j + 1) * samples
+		var r3: int = mini(j + 2, last) * samples
+
+		for n in range(nx):
+			var i: int = ci[n]
+			var tu: float = tul[n]
+			var k: int = r1 + i
+			var a: float = 1.0 if water_class[k] != 0 else 0.0
+			var b: float = 1.0 if water_class[k + 1] != 0 else 0.0
+			var c: float = 1.0 if water_class[k + samples] != 0 else 0.0
+			var d: float = 1.0 if water_class[k + samples + 1] != 0 else 0.0
+			var wet: float = lerpf(lerpf(a, b, tu), lerpf(c, d, tu), tvl)
+			var at: int = m * nx + n
+			wet_out[at] = wet
+			var smooth: float = 0.0
+			var h: float = 0.0
+
+			if wet < 1.0:
+				var q: int = 4 * n
+				var w0: float = wu[q]
+				var w1: float = wu[q + 1]
+				var w2: float = wu[q + 2]
+				var w3: float = wu[q + 3]
+				var c0: int = cc[q]
+				var c1: int = cc[q + 1]
+				var c2: int = cc[q + 2]
+				var c3: int = cc[q + 3]
+				var ra: float = w0 * heights[r0 + c0] + w1 * heights[r0 + c1] + w2 * heights[r0 + c2] + w3 * heights[r0 + c3]
+				var rb: float = w0 * heights[r1 + c0] + w1 * heights[r1 + c1] + w2 * heights[r1 + c2] + w3 * heights[r1 + c3]
+				var rc: float = w0 * heights[r2 + c0] + w1 * heights[r2 + c1] + w2 * heights[r2 + c2] + w3 * heights[r2 + c3]
+				var rd: float = w0 * heights[r3 + c0] + w1 * heights[r3 + c1] + w2 * heights[r3 + c2] + w3 * heights[r3 + c3]
+				smooth = wv0 * ra + wv1 * rb + wv2 * rc + wv3 * rd
+
+			if wet <= 0.0:
+				h = smooth
+			else:
+				var flat: float = lerpf(lerpf(heights[k], heights[k + 1], tu), lerpf(heights[k + samples], heights[k + samples + 1], tu), tvl)
+				h = flat if wet >= 1.0 else lerpf(smooth, flat, wet)
+
+			out[at] = h
+
+			if n > 0 and m > 0 and n < nx - 1 and m < nz - 1:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	inner_out.resize(2)
+	inner_out[0] = h_min
+	inner_out[1] = h_max
+	return out
+
+
 # Bilinear height between the four samples round the point (the water's own interpolation).
 func _straight_height_at(x: float, z: float) -> float:
 	var u: float = (x - x0) / spacing_m

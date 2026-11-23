@@ -241,6 +241,27 @@ func _init() -> void:
 	t.updates_for(3, Vector3(128.0 + 4.0 * 256.0, 10.0, 128.0), 4000)   # walked four blocks off: the client forgets the old ones
 	check(t.updates_for(3, Vector3(128.0, 10.0, 128.0), 5000).size() == next.size(), "back again, the blocks and their trails are sent again")
 
+	# A player standing still while animals wear the grass around them (the stutter hunt, protocol 158): the worn cells go again, the
+	# routes do not; the client keeps the routes it has and does no work for them.
+	var cell_sends: int = 0
+	var route_sends: int = 0
+
+	for k in 6:   # three minutes, a pass every 31 s
+		for step in 5:
+			t.note(900 + k, "deer", Vector3(60.0 + 4.0 * float(step), 10.0, 60.0 + 8.0 * float(k)))
+		for u in t.updates_for(3, Vector3(128.0, 10.0, 128.0), 36000 + k * 31000):
+			cell_sends += 1
+			route_sends += 0 if (u[3] as PackedByteArray) == Codec.ROUTES_SAME else 1
+
+	check(cell_sends >= 5, "the worn cells changing still go out (%d sends in three minutes)" % cell_sends)
+	check(route_sends == 0, "but a standing player is never sent the same routes again (%d repeats)" % route_sends)
+	var sig_was: int = int(t._sent[3][Vector2i(0, 0)][2])
+	t._sent[3][Vector2i(0, 0)][2] = sig_was + 1   # as if the routes this peer has were older ones
+	t.note(950, "deer", Vector3(200.0, 10.0, 200.0))
+	var changed: Array = t.updates_for(3, Vector3(128.0, 10.0, 128.0), 36000 + 7 * 31000).filter(func(u): return u[0] == 0 and u[1] == 0)
+	check(changed.size() == 1 and (changed[0][3] as PackedByteArray) != Codec.ROUTES_SAME and not (changed[0][3] as PackedByteArray).is_empty(), "routes that changed go out in full again")
+	check(Codec.decode_routes(Codec.ROUTES_SAME, Vector2i(0, 0), Codec.ROUTE_BLOCK_M).is_empty() and Codec.ROUTES_SAME.size() < 6, "the unchanged mark is never a real routes block")
+
 	# The clock and the trips.
 	var a = AnimalsScript.new()
 	a.ground_height = func(x, z): return ground(x, z)

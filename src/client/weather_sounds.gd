@@ -59,6 +59,7 @@ const THUNDER_WIND_LOST_DB := 14.0       # at wind 1, past 10 km (Jamie: a faint
 const AirBands := preload("res://src/client/air_bands.gd")
 const OutdoorAir := preload("res://src/client/outdoor_air.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
@@ -519,7 +520,7 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 	_pending.append([thunder_delay(distance_m), voice, offset])
 	thunders_played += 1
 	last_thunder = "%s %.0f m, %s, heard in %.1f s" % [sound_name, distance_m, voice.bus, thunder_delay(distance_m)]
-	print("sound rumble: thunder ", last_thunder)   # far thunder grumbles like a rumble (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave)
+	FreezeWatchScript.printer.line("sound rumble: thunder " + str(last_thunder))   # far thunder grumbles like a rumble (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave)
 	return true
 
 

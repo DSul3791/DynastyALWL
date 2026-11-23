@@ -11,6 +11,7 @@ extends Node3D
 
 const CONFIG := "res://data/look/trail_signs.json"
 const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
 const PELLET_COLOR := Color(0.24, 0.18, 0.11)
@@ -73,8 +74,8 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 	_next_msec = Time.get_ticks_msec() + 500
 
 	for key in routes.keys():
-		if absi(key.x - int(floor(player.x / TrailCodec.ROUTE_BLOCK_M))) > 2 or absi(key.y - int(floor(player.z / TrailCodec.ROUTE_BLOCK_M))) > 2:
-			routes.erase(key)   # far behind: the grass view forgets these blocks too, and they come again on return
+		if absi(key.x - int(floor(player.x / TrailCodec.ROUTE_BLOCK_M))) > 3 or absi(key.y - int(floor(player.z / TrailCodec.ROUTE_BLOCK_M))) > 3:
+			routes.erase(key)   # far behind, one block past where the server forgets them (routes are sent once, protocol 158); they come again on return
 			_dirty = true
 
 	var moved: bool = _built_at == Vector3.INF or Vector2(player.x - _built_at.x, player.z - _built_at.z).length() > float(cfg.get("rebuild_move_m", 8.0))
@@ -426,7 +427,7 @@ func _spot(player: Vector3, level: int) -> void:
 		_spot_msec = Time.get_ticks_msec() + int(float(cfg.get("spot_gap_s", 2.2)) * 1000.0)   # the next one of a cluster after the server can train again
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
 		last_spot = where
-		print("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
+		FreezeWatchScript.printer.line("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
 		_glow(where, 1.6 if str(s[0]) == "prints" else 1.0)
 
 		if on_spot.is_valid():

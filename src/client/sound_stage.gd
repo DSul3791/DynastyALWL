@@ -65,6 +65,7 @@ const WaterVolume := preload("res://src/shared/water_volume.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "sound setup: <part>" splits of the join step (Steve, 4 Nov 2026: 0.87 s on Dave's PC)
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const VOICES := 6                       # footstep and swish players, reused in turn
 # Other players' footsteps (step_at): heard where the foot lands, as loud at OTHER_STEP_UNIT_M as the own step is at the own ears, falling
 # 6 dB per doubling past it (a walk on grass is lost by about 15 m, a run on gravel carries to 30 m or more), none past OTHER_STEP_REACH_M.
@@ -75,6 +76,7 @@ const OTHER_STEP_VOICES := 6           # other players' steps sounding at once (
 const CUE_BLOW := 1
 const CUE_PICK := 2
 const CUE_CRAFT := 3
+const KNIFE_CUT_STRENGTH := 0.35       # a knife cut on a carcass: the flesh hit clip, soft (held_item.gd plays the own; other_action material 5)
 const OTHER_WORK_UNIT_M := 1.5         # craft work is as loud at 1.5 m as the own is at the own ears (item_sounds WORK_DB, flat)
 const OTHER_WORK_REACH_M := 25.0
 const OTHER_WORK_DB := -18.0
@@ -607,13 +609,13 @@ func _sound_log_tick(body: CharacterBody3D) -> void:
 
 	if now > sound_log_until_msec:
 		sound_log_until_msec = 0
-		print("SOUND LOG finished")
+		FreezeWatchScript.printer.line("SOUND LOG finished")
 		return
 
 	for line in sound_log_lines(body.global_position, int(float(now - _sound_log_start_msec) / 1000.0)):
-		print(line)
+		FreezeWatchScript.printer.line(str(line))
 
-	print("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
+	FreezeWatchScript.printer.line("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
 
 
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
@@ -1117,8 +1119,8 @@ func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouch
 	return true
 
 
-# Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material),
-# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft began (`recipe` is its recipe row). The same clips
+# Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material; 5 a knife on a carcass),
+# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft being worked (`recipe` is its recipe row; sent again as each clip ends). The same clips
 # and levels as the own blow, pick and craft work, positional. False when nothing played (an unknown cue, no room). Counted in others_actions.
 func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}, recipe: Dictionary = {}) -> bool:
 	if not has_room() or not at.is_finite():
@@ -1132,7 +1134,9 @@ func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}
 			var tool: String = "pick" if detail / 8 == 1 else "axe"
 			var material: int = detail % 8
 
-			if material == 3:
+			if material == 5:
+				done = spear != null and spear.hit("flesh", at, KNIFE_CUT_STRENGTH)
+			elif material == 3:
 				done = hits != null and hits.hit_ground(tool, at, 1.0)
 			elif material in [0, 1, 2, 4]:
 				done = hits != null and hits.hit(tool, ["wood", "stone", "soil", "", "wood"][material], at, 0.7 if material == 4 else 1.0)
