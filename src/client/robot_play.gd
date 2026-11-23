@@ -590,6 +590,7 @@ func run() -> void:
 
 		await _stances()
 		await _forest_walk(45.0)
+		await _trail_crouch(40.0)
 
 		if admin:
 			await _hunt_all(50.0)
@@ -892,6 +893,124 @@ func _forest_walk(s: float) -> void:
 
 	await _stance_to(StanceScript.STAND)
 	FreezeWatchScript.printer.line("ROBOT %s step forest crouch: %.0f m in %.0f s past %d trunks, %d stops" % [robot_name, total, s, visited.size(), stuck])
+
+
+# Crouched along a game trail where it runs under trees (the ferns grow under them): Dave's report (23 Nov 2026) was a crouch walk stopped on
+# flat ground under a tree by a fern while standing walked on (#1775). The trail point nearest the thickest trees within 300 m, then the
+# trail's own line, a waypoint 4 m on at a time, for `s` seconds; a 2 s leg that moves under a quarter of the crouch pace is compared with
+# standing at the same spot (_compare_crouch: blocked FAIL or obstacle note). Prints a TRAIL line.
+func _trail_crouch(s: float) -> void:
+	_step = "trail crouch"
+	var me: Vector3 = client.body.global_position
+	var best: Array = []   # [route points, index]
+	var best_score: float = -INF
+	var all_trees: Array = _trees_near(310.0)   # once: the loaded trees (about 150 m round)
+
+	for block in client.trail_signs.routes:
+		for route in client.trail_signs.routes[block]:
+			var pts: PackedVector2Array = route[1]
+
+			for i in pts.size():
+				var d: float = Vector2(pts[i].x - me.x, pts[i].y - me.z).length()
+
+				if d > 300.0 or _wet(pts[i]):
+					continue
+
+				var trees: int = 0
+
+				for t in all_trees:
+					trees += 1 if Vector2(t[0].x - pts[i].x, t[0].z - pts[i].y).length() <= 8.0 else 0
+
+				var score: float = float(trees) * 20.0 - d   # many trees near the trail, then the nearer
+				if trees > 0 and score > best_score:
+					best_score = score
+					best = [pts, i]
+
+	if best.is_empty():
+		_note("trail", "no dry game trail under trees within 300 m of %s (%d route points known)" % [str(me.round()), _route_points().size()])
+		return
+
+	var pts: PackedVector2Array = best[0]
+	var i: int = best[1]
+	var start: Vector3 = Vector3(pts[i].x, me.y, pts[i].y)
+	var there: bool = await _go_to(start, 60.0, 2.5)
+	var line: PackedVector2Array = _every_m(pts, 4.0)
+	var k: int = 0
+	var near_d: float = INF
+
+	for j in line.size():
+		var d: float = line[j].distance_to(Vector2(client.body.global_position.x, client.body.global_position.z))
+
+		if d < near_d:
+			near_d = d
+			k = j
+
+	var step_dir: int = 1 if k < line.size() - 3 else -1   # along the trail toward its longer end
+	await _stance_to(StanceScript.CROUCH)
+	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
+	var crouch_step: float = client.WALK_SPEED * float(StanceScript.SPEED[StanceScript.CROUCH])
+	var total: float = 0.0
+	var stops: int = 0
+	var legs: int = 0
+	var trees_by: int = 0
+	var off_most: float = 0.0
+
+	while Time.get_ticks_msec() < end:
+		k += step_dir
+
+		if k < 0 or k >= line.size():
+			step_dir = -step_dir   # its end: back along it
+			k += 2 * step_dir
+
+			if k < 0 or k >= line.size():
+				break
+
+		var here: Vector3 = client.body.global_position
+		var to: Vector3 = Vector3(line[k].x - here.x, 0.0, line[k].y - here.z)
+
+		if to.length() < 0.3:
+			continue
+
+		var moved: float = await _walk_for(to.normalized(), 2.0)
+		legs += 1
+		total += moved
+		trees_by += 1 if not _trees_near(4.0).is_empty() else 0
+		off_most = maxf(off_most, _off_line(line, client.body.global_position))
+
+		if moved < 0.25 * crouch_step * 2.0:
+			stops += 1
+			await _compare_crouch(to.normalized(), moved, 2.0)
+
+	await _stance_to(StanceScript.STAND)
+	FreezeWatchScript.printer.line("ROBOT %s TRAIL crouch along a game trail %s at %s: %.0f m in %d legs of 2 s, %d under trees (4 m), %d stops, at most %.1f m off its line" % [
+		robot_name, "reached" if there else "short of it", str(start.round()), total, legs, trees_by, stops, off_most])
+
+
+# A polyline with a point every `m` metres.
+static func _every_m(pts: PackedVector2Array, m: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+
+	for i in range(pts.size() - 1):
+		var n: int = maxi(1, int(pts[i].distance_to(pts[i + 1]) / m))
+
+		for j in n:
+			out.append(pts[i].lerp(pts[i + 1], float(j) / float(n)))
+
+	if not pts.is_empty():
+		out.append(pts[pts.size() - 1])
+
+	return out
+
+
+# How far a place is from a polyline, on the ground.
+static func _off_line(line: PackedVector2Array, at: Vector3) -> float:
+	var p := Vector2(at.x, at.z)
+	var best: float = INF
+
+	for i in range(line.size() - 1):
+		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, line[i], line[i + 1])))
+
+	return best if line.size() > 1 else (p.distance_to(line[0]) if line.size() == 1 else INF)
 
 
 # Spear in hand, after one species at a time (rabbit, then deer, then wolf: the first hours' game). Every robot picks the same animal (the lowest
