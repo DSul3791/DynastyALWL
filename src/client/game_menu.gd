@@ -498,7 +498,7 @@ func _build_admin() -> void:
 	_button(admin, "Respawn showroom (take it away and fill it again)", func(): if _c.showroom != null: _c.showroom.respawn())
 	_button(admin, "Clear dropped items within 50 m", func(): _c.net.inventory_action.rpc_id(1, Net.ACT_CLEAR_DROPS, 50, 0, 0, Vector3.ZERO))
 	_button(admin, "Developer tools", func(): show_page("developer"))
-	_button(admin, "Back", func(): show_page("main"))
+	_button(_pages["admin"], "Back", func(): show_page("main"))   # outside the scroll list, always in view
 
 
 # What the programmers use to track a problem down; each line says in plain words what it does.
