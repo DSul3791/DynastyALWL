@@ -43,8 +43,8 @@ func _init() -> void:
 	friendly.animals[t]["tame"] = 1.0
 	friendly.animals[t]["timer"] = 100.0
 
-	for n in 40:
-		flighty.tick(0.05)
+	for n in 60:
+		flighty.tick(0.05)   # it stares first (reactions.startle_s, up to 1.75 s)
 		friendly.tick(0.05)
 
 	check(flighty.animals[f]["state"] == AnimalsScript.FLEE, "a flighty horse runs from a player at 30 m")

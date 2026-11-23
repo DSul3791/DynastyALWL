@@ -3,7 +3,7 @@ extends PanelContainer
 # The upper-right Goals box (docs/design/PLAYER_JOURNAL_GOALS_UI.md decision 3, GA-90/91): a thin-line rectangle with the heading "Goals" and the first two
 # unfinished goals in the authored order as bullet titles, one when only one is left, none (hidden) when all are done. The deliberate minimalist
 # exception to the Inventory/Crafting look: no trim, icons, progress bar, coins, hints or buttons. A goal with an amount shows its count after its title
-# ("Gather plant fibre 3/12", GoalBook.label; Dave 14 Nov 2026). It sits under the Comfort/Rested line (inventory_view.gd
+# ("Gather plant fibre 3/12", GoalBook.label; Dave 14 Nov 2026). It sits where the old Comfort/Rested line was (now the comfort flame beside the hotbar; inventory_view.gd
 # _comfort_label, top 18 px, 26 px text) and under the food effect lines when they show (food_effects_ui.gd), and hides while a screen (inventory, character, Journal, a talk) is open. View only: it tracks nothing.
 # One dim line under the titles names the key for the how-to ("G: how to do these", the player's own goals key) until the first
 # HOWTO_UNTIL goals are done (coordinator ruling 22 Nov 2026: a new tester could not find the hints; nothing else told them G or J).

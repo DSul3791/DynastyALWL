@@ -25,6 +25,7 @@ const WALL_LOOK_S := 0.2        # each charging step keeps this far (at its spee
                                 # when slower (ServerAnimals STAGGER: 0.13 s at 30 fps): two of them are covered with the nose and the 0.3 m wall
                                 # margin. shortcut: a 20 fps server (0.2 s legs) or a far-band charge (3 Hz) can still be drawn a little way in.
 const WALL_TRIES := 3           # charges again after one a wall kept from its foe, before it calms
+const CLOSE_PACE_X := 0.3       # a charge set off close runs no slower than this share of its charge_mps (paced to land at strike_min_s)
 
 var host                        # ServerAnimals
 var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list the wolves read)
@@ -114,8 +115,8 @@ func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
 		a["foe_peer"] = int(hurter.get("peer", 0))
 
 	if state == WARN or state == WARN_POP:
-		a["timer"] = 0.0
-		a["no_bluff"] = true   # hurt, it presses home
+		a["timer"] = minf(float(a["timer"]), warn_left(a))   # hurt, it presses home once it has growled warn_min_s
+		a["no_bluff"] = true
 		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 		return true
 
@@ -141,6 +142,7 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	else:
 		a.erase("foe_peer")
 
+	# No warning stand: the player is already running, and the chase's start is its roar (the client voices the charge as a threat call).
 	a["state"] = CHARGE
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["dir"] = a["heading"]
@@ -155,9 +157,23 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	return true
 
 
+# The least warning any warned charge gets (animals.json warn_min_s; Dave 23 Nov 2026: animals growl before they attack): a player running
+# off or a blow during the warning shortens it to no less. A hunter's chase of a runner has no stand: it roars as it sets off. Goblins and
+# bandits (defend give_way "player", fighters with their own short squaring-up) keep their own warn_s. `def`: the species' defend row.
+func warn_min_s(def: Dictionary) -> float:
+	return 0.0 if str(def.get("give_way", "")) == "player" else float(host.cfg.get("warn_min_s", 0.0))
+
+
+# How much of the least warning is still owed (0 once warn_min_s has gone by).
+func warn_left(a: Dictionary) -> float:
+	return maxf(warn_min_s(host.species_def(a["sp"]).get("defend", {})) - float(a.get("warned_s", 0.0)), 0.0)
+
+
 func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
 	a.erase("run_m")   # a warned charge runs the species' own charge_m
+	a["warned_s"] = 0.0
+	warn_s = maxf(warn_s, warn_min_s(def))
 	a.erase("walled")   # set again by the charge this warning ends in (a bluff never sets it)
 	a["state"] = WARN
 	a["timer"] = warn_s
@@ -213,8 +229,10 @@ func step(a: Dictionary, dt: float) -> void:
 		# or running in and stopping, gets the whole warning.
 		var away: Vector2 = Vector2(to.x - a["pos"].x, to.z - a["pos"].z).normalized()
 
+		a["warned_s"] = float(a.get("warned_s", 0.0)) + dt
+
 		if def.has("run_trigger_mps") and host.player_velocity_at(to).dot(away) > float(def["run_trigger_mps"]):
-			a["timer"] = 0.0
+			a["timer"] = minf(float(a["timer"]), warn_left(a))   # the growl is never cut below warn_min_s
 			a["no_bluff"] = true
 
 		if state == WARN and a["timer"] > 0.0 and a["timer"] <= float(a.get("huff_s", 0.0)):
@@ -254,11 +272,22 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		var speed: float = float(def.get("charge_mps", 11.0))
-		# strike_min_s (a defend row's): a blow lands only once the charge has run this long, so every client draws the strike before it
-		# lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step, still drawn
-		# warning). 0 (rows without it): as before.
+		var full_mps: float = speed   # a paced close charge still keeps its wall look at full speed (_charge_cross: the client may draw it on that far)
+		# strike_min_s (a defend row's, else the animals' own): a blow lands only once the charge has run this long, so every client draws the
+		# strike before it lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step,
+		# still drawn warning; robots over 120 ms, 23 Nov 2026: a warthog's charge from 1 m hit 0.18 s after it began, so its first blow was drawn
+		# 1.7 to 2.8 m short of the player, the lunge only starting on screen as the blow came).
 		a["charged_s"] = float(a.get("charged_s", 0.0)) + dt
-		var may_land: bool = float(a["charged_s"]) >= float(def.get("strike_min_s", 0.0)) - 0.0001
+		var strike_min: float = float(def.get("strike_min_s", host.cfg.get("strike_min_s", 0.0)))
+		var may_land: bool = float(a["charged_s"]) >= strike_min - 0.0001
+
+		# A charge that sets off close runs at the pace that brings it to the player as the blow may land, not at full speed into a hold
+		# beside them (robots over 120 ms, 23 Nov 2026: a rhino's charge from 3.6 m struck 0.33 s in, the charge row drawn 0.1 s after
+		# the blow; standing at the player, it ran on the spot). Never slower than CLOSE_PACE_X of its charge.
+		if not may_land and not near.is_empty() and not near.has("dog") and not a.has("run_m"):   # a chase of a runner keeps its full speed (HB-2)
+			var gap: float = Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length() - AnimalContact.contact_m(str(a["sp"]))
+			speed = clampf(gap / maxf(strike_min - float(a["charged_s"]), dt), speed * CLOSE_PACE_X, speed)
+
 		var step_m: float = speed * dt
 
 		if a.has("round_to") and not near.is_empty() and not host.wall_between(a["pos"], near["pos"]):
@@ -293,7 +322,7 @@ func step(a: Dictionary, dt: float) -> void:
 			ground_for = func(x: float, z: float) -> float: return host.swim_height(species, x, z)
 			blocked_for = Callable()
 
-		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), _charge_cross(a, near, speed))
+		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), _charge_cross(a, near, full_mps))
 		a["heading"] = float(a["dir"])
 		var start: Vector3 = a["pos"]   # the charge hits whoever is within hit_m of the ground it covered this step, the start included (a player under it)
 
@@ -313,7 +342,7 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		# A charge at a dog: the dog is hit when it is within hit_m (a player in the way is still hit below).
-		if may_land and not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
+		if not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):   # no strike_min_s wait for a dog: no screen's own body, and it is not held at (gate review of #1818)
 			var dog_at: Vector3 = host.animals[int(near["dog"])]["pos"]
 
 			if _off_path(dog_at, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and not host.wall_between(a["pos"], dog_at):
@@ -328,7 +357,9 @@ func step(a: Dictionary, dt: float) -> void:
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.blow_blocked(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
-					var wait_s: float = late_s(def, int(info["peer"]))
+					# A hunter's chase of a runner is not judged late: running from a predator is what gets you caught (ANIMAL_BEHAVIOUR.md HB-2,
+					# bear_threat_design.md), and a sprinter would be 3 to 4 m clear by then (gate review of #1824). Only chase() sets run_m.
+					var wait_s: float = 0.0 if a.has("run_m") else late_s(def, int(info["peer"]))
 
 					if wait_s > 0.0:
 						# A fair dodge over the link: judged once the player has seen the blow land and their step has come back (see late_s).

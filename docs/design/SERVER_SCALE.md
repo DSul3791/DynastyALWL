@@ -1,0 +1,89 @@
+# Server scale: from 32 players to hundreds, then thousands
+
+Dave, 23 Nov 2026: "Ultimately we want the server to hold hundred if not thousands of players."
+This is the measured starting point and the plan, in order of gain. Not yet played. The 32-player cap stays until Dave changes it.
+
+## How it was measured
+
+- Cloud box, 4 CPUs, dev `33487771`. Throwaway servers and stores only, never the live server.
+- `tools/load_test.sh` bots (walk, dig, chop, craft, hunt, lay blueprints), 120 s each. Clustered = all near one spot; spread = over 2 km.
+- The player cap was lifted in a throwaway copy only, so more than 32 could join.
+- The bots ran on the same 4 CPUs (at low priority), so the larger runs are a little worse than a real server would be.
+- Earlier work: the load test thread's CAPACITY_2026-11-23.md and NEXT_LIMITS_2026-11-23.md (project files, server-load-test), PRs #1637, #1658, #1677.
+
+## Results
+
+| Players | Joined | Frame gap p50 / p95 / max (ms) | Server fps | Server CPU | Memory | Sent per player |
+|---|---|---|---|---|---|---|
+| 32 clustered | 32 | 70 / 129 / 317 | 116 | 1.2 cores | 1.2 GB | 27 KB/s |
+| 64 clustered | 64 | 211 / 385 / 597 | 25 | 1.8 cores | 1.2 GB | 25 KB/s |
+| 128 clustered | 117 | 319 / 603 / 767 | 7 | 2.0 cores | 1.2 GB | 15 KB/s |
+| 256 clustered | 171 | 337 / 695 / 1063 | 5 | 1.6 cores | 1.2 GB | 10 KB/s |
+| 64 spread | 64 | 936 / 1491 / 1582 | 1 | 3.8 cores | 1.3 GB | 6 KB/s |
+| 128 spread | 104 | 574 / 1493 / 1747 | 3 | 3.6 cores | 1.3 GB | 2 KB/s |
+
+Closing save 2.5 to 7.5 s. Memory is not a limit (flat about 1.2 GB). At 128 and above, players could not even join: the
+server was too busy to answer the join handshake in time.
+
+**What breaks first: the main thread.** Almost all game logic runs on one thread. It is full at about 64 clustered players
+(at 32 it is already 72% busy). Spread players hit a second wall sooner: making new ground uses every CPU, and the bots waited a
+minute for ground.
+
+Per-player traffic (25 KB/s, about 0.2 Mbit/s) is the third limit: 100 players need about 20 Mbit/s upload from the server's line.
+
+## Top costs (main thread, ms per second, 64 clustered)
+
+| Cost | ms/s | Grows with |
+|---|---|---|
+| Items tick: world item sync (each player looks at every record near them, each second) | about 100 | players x records near them |
+| Items tick: vitals (warmth, strain, carry, energy) | about 26 | players |
+| Items tick: goals and hints | about 26 | players |
+| Network: incoming messages and the engine's sending | 200 to 300 | players |
+| Sending animals to each player: every animal looked at, rows built and turned into text, for every player 4 times a second | 69 | players x all animals |
+| Sending trails and map, blood trails, burrows | about 30 | players x their counts |
+| Animal brains (capped by a time budget, so animals step less often as players rise) | 90 to 130 | animals x all players |
+| Sending other players: every player compared with every other 8 times a second | 51 at 64, 82 at 256 | players x players |
+
+The items tick also does all players' vitals and goals in one frame, 4 times a second, so a 64-player server has a 100-400 ms
+frame each quarter second even when the average is fine.
+
+## Plan, in order of gain
+
+### Now: cheap and safe (normal PRs, measured before and after)
+
+1. **Animal rows built once, not once per player.** Each animal's row is made once per send pass; a player only picks the near
+   ones from a grid. Signatures by hash, not by turning rows into text. PR #1823: the send step went from 172 to 58 ms/s
+   at 64 clustered bots, 138 to 72 at 128.
+2. **Players found by grid.** Sending other players and the animal brains' "nearest player" look in nearby grid cells, not at
+   every player. Removes the two players-x-players costs.
+3. **Spread the quarter-second work.** Vitals and goals run for a share of the players each frame instead of all at once. Same
+   total, no 100-400 ms frames.
+4. **World item sync by change.** A player is sent what changed near them, not a fresh look at every record near them each
+   second. The biggest single cost when players crowd one town.
+5. **Lighter telemetry and logs at high counts** (the per-peer line grows with players).
+
+Together these should put about 100 to 150 clustered players on one main thread. That is a guess until measured.
+
+### Next: bigger work (needs a design and Dave's yes)
+
+6. **Interest management everywhere.** One shared grid of what is where (players, animals, NPCs, items, fires), used by every
+   "near" question and every send. Each player is sent only what is in its area, and far things less often.
+7. **Ground making off the critical path.** Spread players wait on new ground: pre-built ground for the whole map (a baked
+   world), more worker threads on a bigger box, or ground made on the client from the same seed with only edits sent.
+8. **Less traffic per player.** Smaller rows (numbers, not text), send only changes, slower updates for far things.
+   Needed before 100 players on a home internet line.
+9. **Work off the main thread.** Animal brains and vitals on worker threads, results applied on the main thread.
+
+### Thousands: a different shape (a big design for Dave)
+
+10. **Zones or shards.** The world split into regions, each run by its own server process (or machine); players are handed
+    over at the border. One process cannot hold thousands in GDScript.
+11. **A separate save service.** A database instead of JSON files, so many processes can save at once.
+12. **Hosting.** Thousands of players need data-centre servers and bandwidth, not a home server.
+
+## Rules kept
+
+- The 32-player cap is Dave's call; nothing here raises it.
+- No change may stop the 9257 live save loading (test_save_9257 stays green).
+- Nothing is based on where spawn is.
+- Load tests run only on throwaway servers in the cloud, never the live server.

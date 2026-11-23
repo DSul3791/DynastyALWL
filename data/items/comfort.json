@@ -1,9 +1,43 @@
 {
-	"_about": "Comfort (Dave 2026-10-31, from Valheim): the level a player enjoys near furniture and fire, and the Rested buff earned at a comfortable level. DESIGN AND DATA by Sal; server code by Tyler; models by Kathleen. Read by nothing yet. See docs/COMFORT_DESIGN.md for the rules and the code spec.",
+	"_about": "Comfort (Dave 2026-10-31, from Valheim; the meter Dave 2026-11-23): the furniture and fire a player enjoys nearby, and the comfort meter they feed. See docs/COMFORT_DESIGN.md.",
 	"radius_m": 9.0,
 	"height_m": 3.0,
 	"recheck_s": 1.5,
 	"max_level": 20,
+	"meter": {
+		"_about": "The comfort meter (Dave 23 Nov 2026): always on, 0 to max. It climbs toward the level the points below add up to and drifts down by what the player does. The bonus is the whole level shown x 10 percent of full_bonus (10 = all of it, 6 = 60 percent, 0 = none). Replaces the timed Rested buff (rested below is kept only for old saves, read by nothing).",
+		"max": 10,
+		"points": {
+			"sheltered": 1,
+			"by_fire": 1,
+			"food_over_25": 1,
+			"food_over_50": 1,
+			"water_over_50": 1,
+			"on_bed": 1,
+			"dressed": 1,
+			"dressed_fine": 1,
+			"furniture_max": 2
+		},
+		"points_note": "Dave 23 Nov 2026: shelter 1, warmed by a fire 1, food above 25 percent 1, above 50 percent 1, water above 50 percent 1, on a bed 1, clothing a point or two. dressed = something worn on body, legs and feet; dressed_fine = and none of it plant fibre. furniture (thread's pick for the rest of 10) = the points of the comfort kinds below in radius while sheltered, beds and fires left out (they have their own point), up to furniture_max.",
+		"rise_per_min": 1.0,
+		"rise_rest_mult": 2.0,
+		"fall_per_min": 0.15,
+		"fall_rest_mult": 0.4,
+		"fall_run_mult": 2.5,
+		"fall_wet_mult": 1.5,
+		"fall_cold_mult": 1.5,
+		"rates_note": "Points a REAL minute. Below the target it rises at rise_per_min (x rise_rest_mult sitting, lying or asleep). Above the target it falls at fall_per_min (about 1 point in 7 minutes walking about), x fall_rest_mult resting, up to x fall_run_mult at full exertion (running), x fall_wet_mult soaked through (scaled by how wet), x fall_cold_mult cold (under the cold line).",
+		"full_bonus": {
+			"damage_taken_mult": 0.5,
+			"exhaustion_mult": 0.5,
+			"hunger_thirst_mult": 0.5,
+			"regen_mult": 1.35,
+			"action_speed_mult": 1.05,
+			"skill_gain_mult": 1.1,
+			"cold_stress_mult": 0.92
+		},
+		"bonus_note": "At level 10. damage_taken 0.5 = health counts double (blows do half), so saved health values never change; exhaustion 0.5 = exertion (strain) and tiredness (energy) build at half speed; hunger_thirst 0.5 = food and water last twice as long. regen, action speed, skill gain and cold carry over from the old Rested top tier. Each scales in a straight line with the level; food effects still take the larger, never both."
+	},
 	"shelter": {
 		"points": 1,
 		"counts": [
@@ -373,7 +407,8 @@
 		],
 		"comfort_buff_real_minutes": 45,
 		"duration_note": "Dave 31 Oct: the buff ALWAYS lasts the same time, about 45 REAL minutes; the comfort level scales the BONUSES, not the time. Game-time length is computed from the game clock (GameClock.RATIO = 24 game hours per real hour, so 45 real minutes = 18 game hours); never hard-code game units. Resting again refreshes the 45 minutes while the comfort level is at least that of the current buff (a higher level replaces the tier); resting at a lower level changes nothing.",
-		"refresh_rule": "on a completed rest at level L: if no buff, or L >= buff.level: buff = {level: L, until: now + 45 real minutes}; else leave it"
+		"refresh_rule": "on a completed rest at level L: if no buff, or L >= buff.level: buff = {level: L, until: now + 45 real minutes}; else leave it",
+		"retired_note": "Retired 23 Nov 2026 by the comfort meter (meter above); kept so old saves and notes read; nothing reads the tiers."
 	},
 	"bed_json_fold": "data/items/bed.json comfort 1 for the rough bed stays; its regen_mult 1.25 and drain_mult 0.5 are the SLEEP bonus and stack with Rested only for regen (take the larger, do not multiply) so a comfortable bed cannot double up.",
 	"hud": {

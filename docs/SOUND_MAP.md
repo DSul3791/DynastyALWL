@@ -127,3 +127,15 @@ Animals sense a player by one rule (`server_animals.gd _sense_factor`): the play
 Being stalked, what the player hears of animals: an animal's steps within 60 m (unit 8 m, the 6 nearest at once), a slow stalk about half as loud as a run (`slot_sounds.gd footfall_strength`); calls by species out to their reach (`creature_sounds.gd`: rabbit 45 m, deer 260 m, fox 320 m, wolf howl 950 m, bear 320 m). A wolf or big cat that stalks walks in at about 1 m/s once it has noticed the player (`hunter.stalk_mps`), so its steps are quiet and close; its threat call comes before a charge.
 
 Not heard by animals (by design, quiet): picks, chests, gulps and pickups. Values are provisional with the RX table, for Dave's review.
+
+## Stand-in animal voices (23 Nov 2026, coordinator's ruling; for Dave's recordings)
+
+Dave, 23 Nov 2026: animals growl before attacking. Twelve kinds had no voice, so their warning and charge were silent. Until their own recordings exist they borrow a voice through `creature_sounds.gd` `CALL_AS`. A recording named for the kind in `assets/audio/recorded/creatures/` (for example `lion_growl_0.ogg`, with a row in `KINDS`) replaces its stand-in. Remove the kind from `CALL_AS` when it has its own row.
+
+| Kind | Stands in as | Alert (stare, flee) | Threat (warn, charge) |
+|---|---|---|---|
+| lion, tiger, leopard, puma, lynx, hyena | bear | bear_growl | bear_roar |
+| boar, warthog | moose | moose_snort | moose_bellow |
+| rhino, buffalo, elephant, mammoth | moose | moose_snort | moose_bellow |
+| black bear (since 22 Nov) | bear | bear_growl | bear_roar |
+| elk (since 22 Nov) | moose | moose_snort | moose_bellow |

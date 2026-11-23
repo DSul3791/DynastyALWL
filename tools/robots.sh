@@ -4,6 +4,8 @@
 #   tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 #   tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   Robot 1 walks, stops, swings, sleeps; Robot 2 draws it (robot_watch.py)
 #   ROBOT_S=900 tools/robots.sh 1 route; ROBOT_S=900 ROBOT_CLIENT_ARGS=--quality=0 tools/robots.sh 1 route   the moving route (src/client/robot_play.gd _route) at Low quality
+#   ROBOT_S=600 tools/robots.sh 2 pack_fuzz   two robots at random in the pack, the hotbar and one shared basket (src/client/robot_pack_fuzz.gd):
+#                                         the screens match the server, nothing doubled, lost or left on the cursor
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 #   tools/robots.sh 1 drops               the link dies mid-action (6 twine queued, a basket open, asleep, in a wolf rush) and the robot comes
 #                                         straight back; a 10 s freeze; two clients as one character (about 15 min)
@@ -28,7 +30,8 @@
 set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 [ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
-[ "$PLAN" = "together" ] || [ "$PLAN" = "seen" ] || [ "$PLAN" = "wiggle" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
+[ "$PLAN" = "together" ] || [ "$PLAN" = "seen" ] || [ "$PLAN" = "wiggle" ] || [ "$PLAN" = "pack_fuzz" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
+[ "$PLAN" = "kind_wolf" ] && ROBOTS=1   # a pack leaves a player with another within 10 m (animals.json wolves): one robot, unarmed until bitten
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)
@@ -105,7 +108,7 @@ drops() {
 
 START=$(date +%s)
 if [ "$PLAN" = "drops" ]; then drops; else pass "$PLAN" play; fi
-{ [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ]; } && { sleep 3; pass rejoin rejoin; }
+{ [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ] || [ "$PLAN" = "pack_fuzz" ]; } && { sleep 3; pass rejoin rejoin; }
 echo "robots: passes took $(( $(date +%s) - START )) s"
 kill $LP 2>/dev/null; sleep 1
 kill $SP 2>/dev/null; sleep 3

@@ -1451,7 +1451,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 137, unconfirm
 
 | Name | What | Where | How made | Stage | Evidence / flags |
 |---|---|---|---|---|---|
-| Thirst drop, oxygen bubble, cover house | status symbols | src/client/status_icons.gd drop_texture/bubble_texture/house_texture | drawn in code | 2 | owner 2026-10-20 list; simple glyphs |
+| Status strip symbols (food, water, injured leg, cold, soaked and the rest) | status symbols | data/ui/status_strip.json glyph names, drawn by src/client/ui/art_kit.gd glyph_shapes through src/client/status_icons.gd | drawn in code | 2 | owner 2026-10-20 list; Dave 23 Nov 2026 status strip beside the hotbar; placeholders for painted art |
 | Coin icons (copper, bronze, silver, gold) | filled circles in the coin colour | src/client/inventory_view.gd coin_icon (line 1093) | drawn in code | 1 | flat circle |
 
 ### HUD (4)

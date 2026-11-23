@@ -270,12 +270,11 @@ var equip_requested: Callable = Callable()   # (hotbar key) -> hold what is in t
 var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
 var pick_hand: Callable = Callable()         # (hotbar key 0-9) -> takes that key in hand, as the number keys do in the world (HeldItem.press_slot)
 var hotbar_strip                              # HotbarStrip, set by the client
+var status_strip                              # StatusIcons, the status strip left of the hotbar, set by the client
 var heart_pulse                               # HeartPulse (the line over the hotbar), set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
 var _character                         # CharacterScreen, built the first time Tab is pressed
 var _panel_bars: Dictionary = {}       # "Health", "Exertion", "Food", "Water" -> ProgressBar at the top of the inventory screen (the only bars in the game)
-var _vitals_back: Control
-var _vitals_warning: Label
 var _weight_label: Label
 var _purse_label: RichTextLabel
 var shoulder_id: String = ""                  # the first large log on the shoulder (protocol 64), "" when none: Mandy shows the carry pose from this; shoulder_logs() counts them all in the pack
@@ -343,6 +342,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.sick_received.connect(_on_sick)
 	net.body_received.connect(func(bpm, eta, phase): body_bpm = bpm; sleep_eta_s = eta; body_phase = phase)
 	net.limp_received.connect(func(percent): limp_share = clampf(float(percent) / 100.0, 0.1, 1.0))
+	net.soak_received.connect(func(percent: int, windy: bool): soak_percent = clampi(percent, 0, 100); soak_wind = windy)
 	net.remains_received.connect(_on_remains_marks)
 	net.worn_received.connect(_on_worn)
 	net.thought_received.connect(func(...args): _timed("_on_thought", _on_thought, args))
@@ -378,7 +378,6 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
 	else:
 		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
-	_build_vitals_hud()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
 	_auto_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -519,6 +518,9 @@ func toggle() -> void:
 
 	if _panel != null:
 		_panel.visible = open
+
+	if not open:
+		_end_drag()
 
 	if _you_part != null:
 		_you_part.set_active(open)
@@ -1638,8 +1640,9 @@ func _process_body(_delta: float) -> void:
 	if _thought_label != null and _thought_label.text != "" and now >= _thought_until_msec:
 		_thought_label.text = ""
 
+	# Over-exerted is the status strip's symbol now (its hover line says why and what to do): this note keeps only what to press while asleep.
 	if _strain_note != null:
-		_strain_note.text = KeyBindings.localize("Exhausted: you sleep until you are rested, about %d min left%s" % [maxi(int(ceil(float(sleep_eta_s) / 60.0)), 1), "; hold Space to wake early" if energy >= 30 else " (hold Space to wake early once energy is 30 percent)"]) if forced_sleep else "Asleep: any key wakes you" if asleep else ("You are exhausted: slow down" if strain_state == 1 else "")
+		_strain_note.text = KeyBindings.localize("Exhausted: you sleep until you are rested, about %d min left%s" % [maxi(int(ceil(float(sleep_eta_s) / 60.0)), 1), "; hold Space to wake early" if energy >= 30 else " (hold Space to wake early once energy is 30 percent)"]) if forced_sleep else "Asleep: any key wakes you" if asleep else ""
 
 	if _queue_head_button != null and now >= _queue_next_msec:
 		_queue_next_msec = now + 250
@@ -2225,41 +2228,10 @@ func _flush_refresh() -> void:
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
 
 # --- Hunger and health HUD, eating ---
-
-func _build_vitals_hud() -> void:
-	_vitals_back = Control.new()
-	_vitals_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_vitals_back.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
-	_layer.add_child(_vitals_back)
-	_vitals_warning = Label.new()
-	_vitals_warning.add_theme_font_size_override("font_size", 28)
-	_vitals_warning.add_theme_constant_override("outline_size", 5)
-	_vitals_warning.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
-	_vitals_warning.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_vitals_back.add_child(_vitals_warning)
-	_place_vitals()
-
+# Hunger, thirst and the rest are symbols in the status strip left of the hotbar (src/client/status_icons.gd, Dave 23 Nov 2026); the
+# old warning words at the bottom left ("You are low on food") are its hover lines now, so nothing is said twice.
 
 func _place_vitals() -> void:
-	var scale: float = maxf(_layer.get_viewport().get_visible_rect().size.y / 1080.0, 0.5)
-	_vitals_back.position = Vector2(24.0 * scale, -(170.0 * scale))
-	_vitals_warning.position = Vector2.ZERO
-	var warn: int = int(_vitals_cfg.get("warn_hunger", 15))
-	var warn_thirst: int = int(_vitals_cfg.get("warn_thirst", 15))
-	var lines: Array = []
-
-	if hunger <= 0:
-		lines.append("You are starving: you recover slowly")
-	elif hunger <= warn:
-		lines.append("You are low on food")
-
-	if thirst <= 0:
-		lines.append("You are parched: you do not recover")
-	elif thirst <= warn_thirst:
-		lines.append("You are low on water")
-
-	_vitals_warning.text = "\n".join(lines)
-
 	if _weight_label != null:
 		_refresh_weight()
 
@@ -2292,6 +2264,8 @@ var body_bpm: int = 0          # protocol 59: the heart in the ears, 0 awake
 var sleep_eta_s: int = 0       # real seconds until awake (asleep or fainted)
 var body_phase: int = 0        # 0 awake, 1 falling asleep, 2 out, 3 waking
 var limp_share: float = 1.0   # server: a crippling injury slows the walker (protocol 58); Mandy reads this for the limping gait
+var soak_percent: int = 0      # server (protocol 165): how rain-soaked the clothes are, in steps of 10 (warmth.json soak_*), for the status strip
+var soak_wind: bool = false    # and soaked in the wind, the case that cools fastest (body_703 wet_wind_say_*)
 
 
 func speed_factor() -> float:
@@ -3044,6 +3018,8 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 
 func _close_chest() -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	_open_asked_msec = -100000   # contents still on their way (another player's change, sent before the close arrived) must not open the window again:
+	                             # the server has it closed, so that window would never be brought up to date (hands-on screens fuzz, 23 Nov 2026)
 
 	if chest_event.is_valid() and _world.has(chest_id):
 		chest_event.call("close", _world[chest_id]["pos"])
@@ -3060,7 +3036,15 @@ func _close_chest() -> void:
 	if _panel != null:
 		_panel.visible = false
 
+	_end_drag()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+
+# A stack still on the pointer when the window closes goes back where it was (nothing is moved until a drop): without this the engine
+# kept the drag going over the game, the stack's picture on the cursor until the next click (hands-on screens fuzz, 23 Nov 2026).
+func _end_drag() -> void:
+	if is_inside_tree() and get_viewport().gui_is_dragging():
+		get_viewport().gui_cancel_drag()
 
 
 # Kept on the view for the tests: _container_part.is_fire (src/client/ui/inventory/container_panel.gd).
@@ -6182,39 +6166,34 @@ func _on_sick(hours: int) -> void:
 		_character.refresh()
 
 
-# The comfort line (protocol 80): "Comfort 7" and, while the buff runs, "Rested 38 min", small at the top right; hidden at comfort 0 with no buff.
-var comfort_level: int = 0
-var rested_level: int = 0
-var rested_minutes: int = 0
-var _comfort_label: Label
+# The comfort meter (protocol 164, src/client/ui/comfort_badge.gd): one small borderless flame and its level, left of the hotbar; hover for the tooltip.
+const ComfortBadgeScript := preload("res://src/client/ui/comfort_badge.gd")
+var comfort_level: int = 0       # the whole level shown, 0..10
+var comfort_tenths: int = 0      # the meter in tenths, 0..100
+var comfort_target: int = 0      # the level it heads for
+var comfort_trend: int = 0       # -1 falling, 0 steady, 1 rising
 var comfort_tip: String = ""
+var comfort_badge: Control       # the status strip beside the hotbar may reparent it into its row
 
 
-func _on_comfort(level: int, rested_tier_level: int, minutes: int, tip: String = "") -> void:
-	comfort_level = level
-	rested_level = rested_tier_level
-	rested_minutes = minutes
+func _on_comfort(tenths: int, target: int, trend: int, tip: String = "") -> void:
+	comfort_tenths = clampi(tenths, 0, 100)
+	comfort_level = ComfortBadgeScript.level_of(comfort_tenths)
+	comfort_target = target
+	comfort_trend = trend
 
-	if _comfort_label == null:
-		_comfort_label = Label.new()
-		_comfort_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		_comfort_label.anchor_left = 1.0
-		_comfort_label.anchor_right = 1.0
-		_comfort_label.offset_left = -420.0
-		_comfort_label.offset_right = -20.0
-		_comfort_label.offset_top = 18.0
-		_comfort_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_comfort_label.add_theme_font_size_override("font_size", 26)
-		_comfort_label.add_theme_constant_override("outline_size", 6)
-		_comfort_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-		_comfort_label.mouse_filter = Control.MOUSE_FILTER_STOP   # hover it (inventory open, cursor free) for the tooltip
-		_layer.add_child(_comfort_label)
+	if tip != "":
+		comfort_tip = tip
 
-	_comfort_label.text = comfort_text(level, rested_tier_level, minutes)
-	_comfort_label.tooltip_text = tip
-	comfort_tip = tip
-	_comfort_label.visible = _comfort_label.text != ""
-	_comfort_label.self_modulate = Color(1.0, 0.85, 0.55) if level >= 2 else Color(0.7, 0.7, 0.7)
+	if comfort_badge == null:
+		comfort_badge = ComfortBadgeScript.new()
+		_layer.add_child(comfort_badge)
+
+		if status_strip != null and is_instance_valid(status_strip):   # one symbol in the status strip's row (Dave: the symbols in a row)
+			status_strip.add_control("comfort", comfort_badge, func() -> Dictionary: return {"tone": 0})
+			status_strip.tick(0.0, true)
+
+	comfort_badge.set_meter(comfort_tenths, target, trend, tip)
 
 
 # Goals (protocol 119; docs/design/PLAYER_JOURNAL_GOALS_UI.md): the server's list and completions feed one book; the upper-right Goals box sits on the HUD
@@ -6242,19 +6221,6 @@ func _setup_goals() -> void:
 	goal_placard.setup(self, goal_book)
 	journal = JournalScript.new()
 	journal.setup(self, _layer, goal_book)
-
-
-# The words of the comfort line: "" when there is nothing to say.
-static func comfort_text(level: int, rested_tier_level: int, minutes: int) -> String:
-	var parts: PackedStringArray = PackedStringArray()
-
-	if level > 0:
-		parts.append("Comfort %d" % level)
-
-	if rested_tier_level > 0 and minutes > 0:
-		parts.append("Rested %d min" % minutes)
-
-	return "   ".join(parts)
 
 
 func _on_warmth(percent: int) -> void:
@@ -6367,6 +6333,9 @@ func _build_panel() -> void:
 	# The hotbar strip stays on top of the window's backdrop, in its place, so it can be read and dropped on with the window up (section 9).
 	if hotbar_strip != null and hotbar_strip._row != null and is_instance_valid(hotbar_strip._row) and hotbar_strip._row.get_parent() == _layer:
 		_layer.move_child(hotbar_strip._row, -1)
+
+	if status_strip != null and is_instance_valid(status_strip) and status_strip.get_parent() == _layer:
+		_layer.move_child(status_strip, -1)   # the status strip beside it too, so its hover lines can be read with the window up
 
 	if heart_pulse != null and is_instance_valid(heart_pulse) and heart_pulse.get_parent() == _layer:
 		_layer.move_child(heart_pulse, -1)     # the pulse line with it, over the backdrop
@@ -7178,7 +7147,7 @@ func _audit_text() -> void:
 			missing.append(key_label)
 
 	FreezeWatchScript.printer.line("Audit: carry bar %s" % str(_carry_bar != null and _carry_bar.is_inside_tree()))
-	FreezeWatchScript.printer.line("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s, panel bars %d, main-screen bars %d" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing), _panel_bars.size(), (1 if _vitals_back.find_children("*", "ColorRect", true, false).size() > 0 else 0)])
+	FreezeWatchScript.printer.line("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s, panel bars %d, main-screen bars %d" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing), _panel_bars.size(), (1 if status_strip != null and status_strip.find_children("*", "ColorRect", true, false).size() > 0 else 0)])
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
