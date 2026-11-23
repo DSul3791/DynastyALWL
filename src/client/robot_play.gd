@@ -969,12 +969,115 @@ func _screens() -> void:
 	if admin:
 		await _container_round(view)
 
+	# The hammer's build screen: opens on R with a hammer in hand, and every row it shows as covered is placed or refused with words.
+	if admin:
+		await _build_round()
+
 	# Quit with the screen open: the rejoin pass checks the pack came back.
 	_step = "quit with the screen open"
 
 	if not view.open and not view.chest_mode:
 		await _tap("inventory")
 		await _wait(0.8)
+
+
+func _build_round() -> void:
+	_step = "build screen"
+	var view = client.items
+
+	if view.open or view.chest_mode:
+		await _esc()
+		await _wait(0.5)
+
+	for kit in [["stone_hammer", 1], ["stick", 80], ["twine", 40], ["thatch", 120], ["log", 0]]:
+		if int(kit[1]) > 0:
+			_give(str(kit[0]), int(kit[1]))
+
+	await _check_pack("build given")
+	var hammer: int = _slot_of("stone_hammer")
+
+	if hammer < 0 or hammer > 9:
+		_note("build", "the hammer is in slot %d, not on the hotbar: build round skipped" % hammer)
+		return
+
+	client.held.press_slot(hammer)
+	await _wait(0.8)
+	await _tap("blueprints")
+	await _wait(1.0)
+
+	if not client.held.blueprints.is_open:
+		_fail("build", "open", "R with a hammer in hand opened no build screen")
+		return
+
+	var rows: Array = client.held.blueprints.rows(1).filter(func(r): return bool(r["can"]) and str(r["station"]) == "")
+	await _tap("blueprints")   # R shuts it again
+	await _wait(0.5)
+
+	if client.held.blueprints.is_open:
+		_fail("build", "close", "R did not shut the build screen")
+
+	# Away from Edda and Hob's camp (no building there) onto open ground, then one piece at a time 3 m ahead, stepping aside between them.
+	_step = "build walk"
+	await _go_to(client.body.global_position + Vector3(0.0, 0.0, 30.0), 25.0, 3.0)
+	var fwd: Vector3 = Vector3(0.0, 0.0, 1.0)
+	_face(fwd)
+	var side: Vector3 = fwd.cross(Vector3.UP)
+	var placed: int = 0
+	var refused: Array = []
+	var k: int = 0
+
+	for r in rows:
+		_step = "build " + str(r["name"])
+		if k > 0:
+			var stepped: float = await _walk_for(side if (k / 6) % 2 == 0 else -side, 1.2)
+
+			if stepped < 1.0:
+				_note("build", "stepping aside between pieces moved only %.2f m" % stepped)
+
+		var spot: Vector3 = client.body.global_position + fwd * 3.0
+		spot.y = client.body.global_position.y - 0.9
+		k += 1
+		var before: Dictionary = {}
+
+		for id in view._world:
+			before[id] = true
+
+		var heard: int = _notices.size()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(r["number"]), 0, 0, spot)
+		var end: int = Time.get_ticks_msec() + 2500
+		var grew: bool = false
+
+		while Time.get_ticks_msec() < end and not grew and _notices.size() == heard:
+			for id in view._world:
+				if not before.has(id):
+					grew = true
+					break
+
+			await get_tree().process_frame
+
+		await _wait(0.4)   # the site's world row and its words can come a frame apart
+
+		for id in view._world:
+			if not before.has(id):
+				grew = true
+				break
+
+		print("ROBOT %s build try %s at %s" % [robot_name, r["name"], str(spot.round())])
+
+		if grew or _notices.slice(heard).any(func(t): return str(t).begins_with("Blueprint down")):
+			placed += 1
+		elif _notices.size() > heard:
+			refused.append("%s: %s" % [r["name"], _notices.back()])
+		else:
+			_fail("build", str(r["name"]), "%s is shown as covered on the build screen, but placing it did nothing and said nothing" % r["name"])
+
+		if k >= 25:
+			break
+
+	print("ROBOT %s step build: %d covered rows tried, %d placed, %d refused with words" % [robot_name, k, placed, refused.size()])
+
+	for line in refused:
+		_note("build", "refused: %s" % line)
 
 
 func _container_round(view) -> void:
