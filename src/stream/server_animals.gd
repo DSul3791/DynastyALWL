@@ -828,7 +828,7 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 		if now_d < m and now_d < Vector2(was.x - at.x, was.z - at.z).length():
 			# A long step (a charge, a server that stepped late) can carry it across the player's middle: put on the circle on the far side
 			# it went through them. It stops where it came to them instead (gate review of #1716).
-			if Vector2(a["pos"].x - at.x, a["pos"].z - at.z).dot(Vector2(was.x - at.x, was.z - at.z)) < 0.0:
+			if absf(a["pos"].y - at.y) <= 2.0 and Vector2(a["pos"].x - at.x, a["pos"].z - at.z).dot(Vector2(was.x - at.x, was.z - at.z)) < 0.0:      # not under one on a ledge (keep_off leaves those too)
 				a["pos"] = AnimalContact.stop_at(at, was, a["pos"], m)
 			else:
 				a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)

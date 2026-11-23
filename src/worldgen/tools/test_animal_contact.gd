@@ -155,6 +155,9 @@ func _init() -> void:
 	var crossing: Dictionary = {"sp": "bear", "pos": Vector3(0.4, 0.0, 0.1), "state": 11}   # a 2.9 m step from x -2.5 across a lone player's middle
 	a.keep_off_players(crossing, Vector3(-2.5, 0.0, 0.0), [Vector3.ZERO])
 	check(crossing["pos"].x < 0.0 and Vector2(crossing["pos"].x, crossing["pos"].z).length() >= bm - 0.01, "a bear stepping across a lone player's middle stops on the side it came from (%s)" % str(crossing["pos"]))
+	var under: Dictionary = {"sp": "bear", "pos": Vector3(0.2, 0.0, 0.0), "state": 0}   # a short step under a player standing 5 m up (a ledge, a floor)
+	a.keep_off_players(under, Vector3(-0.3, 0.0, 0.0), [Vector3(0.0, 5.0, 0.0)])
+	check(under["pos"].is_equal_approx(Vector3(0.2, 0.0, 0.0)), "a bear walking under a player 5 m up goes on its way (%s)" % str(under["pos"]))
 	var squeezed: Dictionary = {"sp": "deer", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	var beside: Array = [Vector3(0.0, 10.0, 0.0), Vector3(dm + 0.3, 10.0, 0.0)]
 	check(not a.make_way(squeezed, beside[0], 0.1, beside) and squeezed["pos"].is_equal_approx(Vector3(0.2, 10.0, 0.0)), "a deer a player walked into does not step out into a second player beside them")
