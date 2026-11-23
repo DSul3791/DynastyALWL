@@ -123,6 +123,10 @@ func _init() -> void:
 		at += 4.0 * 86400.0
 
 	check(Web.train_problem(cfg, "woodcutting", bands, at) == "already at the top", "no fourth training")
+	var idle: Dictionary = {}
+	Web.train(cfg, "woodcutting", idle, day0)
+	idle["woodcutting"]["p"] = 1.0   # months idle: practice decayed far under the floor
+	check(Web.train_problem(cfg, "woodcutting", idle, day0 + 400.0 * 86400.0) == "", "a decayed trained skill can still be trained (it reads its floor)")
 	check(Web.train_problem(cfg, "woodcutting", {}, day0, 30.0, 1) == "the teacher is not skilled enough", "a teacher at 30 cannot train level 1 (needs 35)")
 
 	# The family floor: training a foundation lifts every descendant when read, with nothing written into them.
