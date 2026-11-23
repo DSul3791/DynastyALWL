@@ -142,6 +142,7 @@ var _boulder_rock: ShaderMaterial
 var _boulder_cracks: ShaderMaterial   # the cracks drawn over a worked boulder (BugsList entry 3), one material, its depth per boulder (instance uniforms)
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
 const OreRockLook := preload("res://src/client/ore_rock_look.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 # Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
 # an ore body within reach, or the boulder's own limestone, chalk or marble); the client draws it in the same granite-and-moss shader with the stone tinted
 # toward the ore's rock and mineral streaks through it, and the streaks keep the moss off. Subtle on purpose: read from about 10 m, not a neon tell.
@@ -3085,7 +3086,7 @@ func _timed(label: String, handler: Callable, args: Array) -> void:
 	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 
 	if ms > 20.0:
-		print("client slow: %s took %.0f ms" % [label, ms])
+		FreezeWatchScript.printer.line("client slow: %s took %.0f ms" % [label, ms])
 
 # Join stall (Dave 2 Nov 2026 log: "world items 1423 ms for 334 added"): a big list of world items was dressed in one frame. A list of more
 # than WORLD_SLICE_MIN rows (or any list while an earlier one is still waiting, to keep the order) is queued and dressed in _process,
@@ -3391,7 +3392,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		for key in prof:
 			parts.append("%s %.0f ms" % [key, float(prof[key]) / 1000.0])
 
-		print("client slow: world items %.0f ms for %d added, %d removed: %s (slowest row: %s, %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), _slowest_row, float(_slowest_row_usec) / 1000.0])
+		FreezeWatchScript.printer.line("client slow: world items %.0f ms for %d added, %d removed: %s (slowest row: %s, %.0f ms)" % [total_ms, added.size(), removed.size(), ", ".join(parts), _slowest_row, float(_slowest_row_usec) / 1000.0])
 
 
 var _slowest_row_usec: int = 0   # the slowest added row of the last world-items list, and what it was (the slow line)
@@ -5348,7 +5349,7 @@ func _warm_step() -> void:
 	_warm_frames += 1
 
 	if _warm_queue.is_empty():
-		print("client prewarm: loose item meshes %.0f ms over %d frames" % [float(_warm_usec) / 1000.0, _warm_frames])
+		FreezeWatchScript.printer.line("client prewarm: loose item meshes %.0f ms over %d frames" % [float(_warm_usec) / 1000.0, _warm_frames])
 
 
 func _prewarm_loose_meshes() -> void:
@@ -5375,7 +5376,7 @@ func _prewarm_loose_meshes() -> void:
 			_mesh_for(table.number_of(item_key))
 
 	var t_end: int = Time.get_ticks_usec()
-	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
+	FreezeWatchScript.printer.line("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
 	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
 	_prewarm_fires()
@@ -5401,7 +5402,7 @@ func _prewarm_felled() -> void:
 	if is_inside_tree():
 		get_tree().create_timer(5.0).timeout.connect(_drop_felled_warm)
 
-	print("client prewarm: stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	FreezeWatchScript.printer.line("client prewarm: stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 
 
 # Lag lane 23 Nov 2026: the first lit fire of a session (the starter town's bonfire, campfire_kit state 41, in every join's first world items)
@@ -5421,7 +5422,7 @@ func _prewarm_fires() -> void:
 			_root.add_child(fire)
 			_felled_warm.append(fire)
 
-	print("client prewarm: fires %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+	FreezeWatchScript.printer.line("client prewarm: fires %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 
 
 func _drop_felled_warm() -> void:
@@ -6625,14 +6626,14 @@ func run_test() -> void:
 	await get_tree().create_timer(2.0).timeout
 	admin_give_test_set()
 	await get_tree().create_timer(1.0).timeout
-	print("Items test: after give, stone %d" % inventory.count_of(table.number_of("stone")))
+	FreezeWatchScript.printer.line("Items test: after give, stone %d" % inventory.count_of(table.number_of("stone")))
 	var here: Vector3 = _player_position.call()
 	net.inventory_action.rpc_id(1, Net.ACT_DROP, 0, 0, 4, here)
 	await get_tree().create_timer(3.0).timeout
-	print("Items test: after drop, stone %d, %d on the ground" % [inventory.count_of(table.number_of("stone")), _world.size()])
+	FreezeWatchScript.printer.line("Items test: after drop, stone %d, %d on the ground" % [inventory.count_of(table.number_of("stone")), _world.size()])
 	pick_up_nearest()
 	await get_tree().create_timer(1.0).timeout
-	print("Items test: after pick up, stone %d, %d on the ground" % [inventory.count_of(table.number_of("stone")), _world.size()])
+	FreezeWatchScript.printer.line("Items test: after pick up, stone %d, %d on the ground" % [inventory.count_of(table.number_of("stone")), _world.size()])
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 1, 0, 0, Vector3.ZERO)
 	net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
@@ -6646,11 +6647,11 @@ func run_test() -> void:
 		if not child.is_queued_for_deletion():
 			shown += 1
 
-	print("Items test: panel open, recipes shown for 'stone' %d, selected %d" % [shown, _selected_recipe])
+	FreezeWatchScript.printer.line("Items test: panel open, recipes shown for 'stone' %d, selected %d" % [shown, _selected_recipe])
 	_recipe_search.text = ""
 	_refresh()
 	toggle()
-	print("Items test: crafted, twine %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("twine")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
+	FreezeWatchScript.printer.line("Items test: crafted, twine %d, stone axe %d, fibre %d" % [inventory.count_of(table.number_of("twine")), inventory.count_of(table.number_of("stone_axe")), inventory.count_of(table.number_of("plant_fibre"))])
 
 
 # Headless check (--gather): stand next to the nearest shrub or plant that drops something and gather it.
@@ -6666,7 +6667,7 @@ func run_arrival_test(client) -> void:
 	var ground: float = client._ground_below(client.body.global_position)
 	var above: float = client.body.global_position.y - ground if not is_nan(ground) else -1.0
 	await get_tree().create_timer(10.0).timeout
-	print("Arrival test: ground found %s, set down %.1f m above it, health %d, strain state %s" % [str(client.arrival_protect_until_msec > 0), above, health, str(strain_state)])
+	FreezeWatchScript.printer.line("Arrival test: ground found %s, set down %.1f m above it, health %d, strain state %s" % [str(client.arrival_protect_until_msec > 0), above, health, str(strain_state)])
 	_finish_early(client)
 
 
@@ -6695,8 +6696,8 @@ func run_strain_test(client) -> void:
 		peak_strain = maxf(peak_strain, strain)
 
 	var covered: float = Vector2(client.body.global_position.x - start_pos.x, client.body.global_position.z - start_pos.z).length()
-	print("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])
-	print("Strain test: peak strain %.2f" % peak_strain)
+	FreezeWatchScript.printer.line("Strain test: ran %.0f m in 25 s, strain %.2f -> %.2f, state %d" % [covered, start_strain, strain, strain_state])
+	FreezeWatchScript.printer.line("Strain test: peak strain %.2f" % peak_strain)
 
 	# The server's walk from normal to over-exerted to blackout is proven in test_server_items; here the client's side of it:
 	# over-exerted is a 10 percent slow-down with no speed cap and running still allowed, fainted locks movement.
@@ -6708,7 +6709,7 @@ func run_strain_test(client) -> void:
 		factors.append("%d: pace x%s cap %s" % [forced, str(snappedf(over_pace_factor(), 0.001)), str(move_cap())])
 
 	strain_state = real_state
-	print("Strain test: %s" % " | ".join(factors))
+	FreezeWatchScript.printer.line("Strain test: %s" % " | ".join(factors))
 
 
 func _pack_items() -> int:
@@ -6737,7 +6738,7 @@ func run_gather_test(client) -> void:
 				shrubs.append([held["positions"][n].distance_to(here), held["positions"][n]])
 
 	if shrubs.is_empty():
-		print("Gather test: no shrub loaded")
+		FreezeWatchScript.printer.line("Gather test: no shrub loaded")
 		return
 
 	shrubs.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
@@ -6751,21 +6752,21 @@ func run_gather_test(client) -> void:
 		client.body.velocity = Vector3.ZERO
 		await get_tree().create_timer(3.0).timeout
 		await get_tree().create_timer(0.6).timeout
-		print("Gather test: prompt \"%s\"" % plant_hint)
+		FreezeWatchScript.printer.line("Gather test: prompt \"%s\"" % plant_hint)
 		client.harvest.tap()
 		await get_tree().create_timer(2.0).timeout
 
 		if _pack_items() > items_before:
 			break
 
-	print("Gather test: pack items %d -> %d" % [items_before, _pack_items()])
-	print("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
+	FreezeWatchScript.printer.line("Gather test: pack items %d -> %d" % [items_before, _pack_items()])
+	FreezeWatchScript.printer.line("Gather test: sticks %d -> %d; loose things in view %d" % [before, inventory.count_of(sticks), _world.size()])
 	var after_tap: int = inventory.count_of(sticks)
 	client.harvest.update(0.0, true)
 	client.harvest.update(0.5, true)
 	client.harvest.update(0.3, true)
 	await get_tree().create_timer(1.5).timeout
-	print("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
+	FreezeWatchScript.printer.line("Gather test: sweep, sticks %d -> %d (a picked-bare shrub is skipped); prompt \"%s\"" % [after_tap, inventory.count_of(sticks), plant_hint])
 
 	# Held E (Dave 2026-10-21): one item a step from anything within 2 m, in view or not; the prompt only for what you look toward.
 	client.body.global_position = here + Vector3(0.0, 1.0, 0.0)
@@ -6783,7 +6784,7 @@ func run_gather_test(client) -> void:
 	view_direction = func(): return Vector3(1.0, 0.0, 0.0)
 	var east_in: bool = in_view(spot + Vector3(1.4, 0.0, 0.0))
 	var west_in: bool = in_view(spot + Vector3(-1.4, 0.0, 0.0))
-	print("Hold test: looking east, stone to the east in view %s, stone to the west in view %s, prompt \"%s\"" % [str(east_in), str(west_in), str(_probe_pickup().get("prompt", ""))])
+	FreezeWatchScript.printer.line("Hold test: looking east, stone to the east in view %s, stone to the west in view %s, prompt \"%s\"" % [str(east_in), str(west_in), str(_probe_pickup().get("prompt", ""))])
 	view_direction = Callable()
 	var held_before: int = inventory.count_of(stone_n)
 	var deltas: Array = []
@@ -6795,7 +6796,7 @@ func run_gather_test(client) -> void:
 		held_before = now_count
 
 	client.harvest.update(0.0, false)
-	print("Hold test: stones gained per held-E step %s" % str(deltas))
+	FreezeWatchScript.printer.line("Hold test: stones gained per held-E step %s" % str(deltas))
 	var most: int = 0
 	var total: int = 0
 
@@ -6803,12 +6804,12 @@ func run_gather_test(client) -> void:
 		most = maxi(most, gained)
 		total += gained
 
-	print("Hold test: most in one step %d, total %d, last two steps %d" % [most, total, deltas[deltas.size() - 1] + deltas[deltas.size() - 2]])
+	FreezeWatchScript.printer.line("Hold test: most in one step %d, total %d, last two steps %d" % [most, total, deltas[deltas.size() - 1] + deltas[deltas.size() - 2]])
 	view_direction = real_view
 
 	for look in ["stick", "stone", "log", "plant_fibre", "roast_forage"]:
 		var shape: Mesh = _mesh_for(table.number_of(look))
-		print("Item look: %s is a %s, %.2f x %.2f x %.2f m" % [look, shape.get_class(), shape.get_aabb().size.x, shape.get_aabb().size.y, shape.get_aabb().size.z])
+		FreezeWatchScript.printer.line("Item look: %s is a %s, %.2f x %.2f x %.2f m" % [look, shape.get_class(), shape.get_aabb().size.x, shape.get_aabb().size.y, shape.get_aabb().size.z])
 
 	for look in ["stick", "stone", "driftwood"]:
 		var seen: Dictionary = {}
@@ -6824,7 +6825,7 @@ func run_gather_test(client) -> void:
 		for real in seen.values():
 			sizes.append("%.2f m" % real.get_aabb().size.x)
 
-		print("Natural look: %s uses %d real meshes (%s)" % [look, seen.size(), ", ".join(sizes)])
+		FreezeWatchScript.printer.line("Natural look: %s uses %d real meshes (%s)" % [look, seen.size(), ", ".join(sizes)])
 
 		var smallest: float = 99.0
 		var largest: float = 0.0
@@ -6847,7 +6848,7 @@ func run_gather_test(client) -> void:
 			highest = maxf(highest, dressed.position.y + 0.12)
 			dressed.free()
 
-		print("Natural size: %s lies %.2f to %.2f m long, centre %.2f to %.2f m above its spot" % [look, smallest, largest, lowest, highest])
+		FreezeWatchScript.printer.line("Natural size: %s lies %.2f to %.2f m long, centre %.2f to %.2f m above its spot" % [look, smallest, largest, lowest, highest])
 
 
 # Headless check (--quickkeys): D drops, S splits and E eats the stack under the mouse.
@@ -6868,9 +6869,9 @@ func run_quickkey_test(_client) -> void:
 		if inventory.count_of(stone) > 0 and inventory.count_of(roast) > 0:
 			break
 
-	print("Quick key test: pack ready after the give, stone %d, roast %d" % [inventory.count_of(stone), inventory.count_of(roast)])
+	FreezeWatchScript.printer.line("Quick key test: pack ready after the give, stone %d, roast %d" % [inventory.count_of(stone), inventory.count_of(roast)])
 	toggle()
-	print("Quick key test: window open %s, %d slots" % [str(open), _buttons.size()])
+	FreezeWatchScript.printer.line("Quick key test: window open %s, %d slots" % [str(open), _buttons.size()])
 	var slot: int = inventory.numbers.find(stone)
 	var before: int = inventory.count_of(stone)
 	_hover = slot
@@ -6886,21 +6887,21 @@ func run_quickkey_test(_client) -> void:
 	var stacks_before: int = _stone_stacks(stone)
 	var handled: bool = press.call(KEY_S)
 	await get_tree().create_timer(1.0).timeout
-	print("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), stacks_before, _stone_stacks(stone)])
-	print("Quick key test: S added stacks %d" % (_stone_stacks(stone) - stacks_before))
+	FreezeWatchScript.printer.line("Quick key test: S handled %s, stacks of stone %d -> %d" % [str(handled), stacks_before, _stone_stacks(stone)])
+	FreezeWatchScript.printer.line("Quick key test: S added stacks %d" % (_stone_stacks(stone) - stacks_before))
 	_hover = inventory.numbers.find(stone)
 	var stones_now: int = inventory.count_of(stone)
 	press.call(KEY_D, true)
 	await get_tree().create_timer(1.0).timeout
-	print("Quick key test: Shift+D dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
-	print("Quick key test: Shift+D dropped %d" % (stones_now - inventory.count_of(stone)))
+	FreezeWatchScript.printer.line("Quick key test: Shift+D dropped one, stones %d -> %d" % [before, inventory.count_of(stone)])
+	FreezeWatchScript.printer.line("Quick key test: Shift+D dropped %d" % (stones_now - inventory.count_of(stone)))
 	_hover = inventory.numbers.find(roast)
 	var roasts: int = inventory.count_of(roast)
 	press.call(KEY_E)
 	await get_tree().create_timer(1.0).timeout
-	print("Quick key test: E ate, roasts %d -> %d" % [roasts, inventory.count_of(roast)])
-	print("Quick key test: E ate %d" % (roasts - inventory.count_of(roast)))
-	print("Quick key test: T outside a container handled %s, nothing moved" % str(press.call(KEY_T)))
+	FreezeWatchScript.printer.line("Quick key test: E ate, roasts %d -> %d" % [roasts, inventory.count_of(roast)])
+	FreezeWatchScript.printer.line("Quick key test: E ate %d" % (roasts - inventory.count_of(roast)))
+	FreezeWatchScript.printer.line("Quick key test: T outside a container handled %s, nothing moved" % str(press.call(KEY_T)))
 
 
 func _stone_stacks(number: int) -> int:
@@ -6948,7 +6949,7 @@ func run_text_test(client) -> void:
 		sizes[snappedf(_panel.size.x, 1.0) * 10000 + snappedf(_panel.size.y, 1.0)] = text_scale
 		var need: Vector2 = _panel.get_combined_minimum_size()
 		fits = fits and need.x <= _panel.size.x + 1.0 and need.y <= _panel.size.y + 1.0 and _frame.columns_fit()
-		print("Text step %d: scale %.2f, window %dx%d needs %dx%d; columns: %s" % [step, text_scale, _panel.size.x, _panel.size.y, need.x, need.y, _frame.fit_report()])
+		FreezeWatchScript.printer.line("Text step %d: scale %.2f, window %dx%d needs %dx%d; columns: %s" % [step, text_scale, _panel.size.x, _panel.size.y, need.x, need.y, _frame.fit_report()])
 
 		for button in _buttons:
 			valid = valid and is_instance_valid(button)
@@ -6967,9 +6968,9 @@ func run_text_test(client) -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_character.refresh()
-	print("Character screen: ", _character.report(), "; inventory closed ", str(not open), "; screen_open ", str(screen_open()))
+	FreezeWatchScript.printer.line("Character screen: " + str(_character.report()) + "; inventory closed " + str(not open) + "; screen_open " + str(screen_open()))
 	toggle_character()
-	print("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s, window sizes seen %d, contents fit %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open), sizes.size(), str(fits)])
+	FreezeWatchScript.printer.line("Text test: scale %.2f, %d slot buttons, all valid %s, every item shown %s, panel open %s, window sizes seen %d, contents fit %s" % [text_scale, _buttons.size(), str(valid), str(filled_ok), str(open), sizes.size(), str(fits)])
 	_finish_early(client)
 
 
@@ -7015,8 +7016,8 @@ func _audit_text() -> void:
 		if not labels.has(key_label):
 			missing.append(key_label)
 
-	print("Audit: carry bar %s" % str(_carry_bar != null and _carry_bar.is_inside_tree()))
-	print("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s, panel bars %d, main-screen bars %d" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing), _panel_bars.size(), (1 if _vitals_back.find_children("*", "ColorRect", true, false).size() > 0 else 0)])
+	FreezeWatchScript.printer.line("Audit: carry bar %s" % str(_carry_bar != null and _carry_bar.is_inside_tree()))
+	FreezeWatchScript.printer.line("Audit: smallest font %d px (%s), tooltip font %d px, sort options %d, button labels %s, key buttons missing %s, panel bars %d, main-screen bars %d" % [smallest, smallest_name, tooltip_px, _sort_menu.item_count, str(labels), str(missing), _panel_bars.size(), (1 if _vitals_back.find_children("*", "ColorRect", true, false).size() > 0 else 0)])
 
 
 # Headless check (--plantpick): pick several plants (kind 2, flowers and herbs) and see whether each one is gone
@@ -7071,11 +7072,11 @@ func run_plant_test(client) -> void:
 			if not still or bare:
 				break
 
-		print("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "bare until next season" if bare else ("STILL THERE" if still else "gone")])
+		FreezeWatchScript.printer.line("Plant test: %s %s" % [client.harvest._flora_by_id.get(int(spot[2]) >> 16, {}).get("name", "?"), "bare until next season" if bare else ("STILL THERE" if still else "gone")])
 		still = still and not bare
 		gone += 0 if still else 1
 
-	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
+	FreezeWatchScript.printer.line("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
 
 
 # The self-tests build with the hammer (or the knife for the Wicker basket, a knife row; the Wicker - Chest it replaced was retired 21 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
@@ -7131,7 +7132,7 @@ func run_leanto_test(_client) -> void:
 			seen += 1
 
 	var under: Vector3 = spot + Vector3(0.0, 1.0, 0.0)
-	print("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
+	FreezeWatchScript.printer.line("Lean-to test: %d lean-to rows in view, cover under it %s, in the open %s" % [seen, str(CoverScript.at(under, cover_index)), str(CoverScript.at(under + Vector3(8.0, 0.0, 0.0), cover_index))])
 
 
 # Headless check (--shoot): get a bow and arrows, draw fully and loose one arrow along the view, then say what the pack and the ground show.
@@ -7153,10 +7154,10 @@ func run_shoot_test(client) -> void:
 
 	var bow_slot: int = inventory.numbers.find(table.number_of("wooden_bow"))
 	var arrows_before: int = inventory.count_of(table.number_of("stone_arrow"))
-	print("SHOOT TEST: bow in slot %d, arrows %d" % [bow_slot, arrows_before])
+	FreezeWatchScript.printer.line("SHOOT TEST: bow in slot %d, arrows %d" % [bow_slot, arrows_before])
 
 	if bow_slot < 0 or arrows_before < 1:
-		print("SHOOT TEST FAILED: the pack did not get the bow or the arrows")
+		FreezeWatchScript.printer.line("SHOOT TEST FAILED: the pack did not get the bow or the arrows")
 		return
 
 	var camera: Camera3D = client.camera
@@ -7167,7 +7168,7 @@ func run_shoot_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_SHOOT, bow_slot, Time.get_ticks_msec() - started, 0, forward)
 	await get_tree().create_timer(1.5).timeout
 	var arrows_after: int = inventory.count_of(table.number_of("stone_arrow"))
-	print("SHOOT TEST: arrows %d -> %d after the shot" % [arrows_before, arrows_after])
+	FreezeWatchScript.printer.line("SHOOT TEST: arrows %d -> %d after the shot" % [arrows_before, arrows_after])
 	await get_tree().create_timer(15.0).timeout     # flight, landing and the world-item update
 	var landed: int = 0
 	var nearest: float = -1.0
@@ -7179,8 +7180,8 @@ func run_shoot_test(client) -> void:
 			landed += 1 if d < 90.0 else 0
 			nearest = d if nearest < 0.0 or d < nearest else nearest
 
-	print("SHOOT TEST: %d arrow(s) lying within 90 m after the flight, nearest %.1f m, %d world rows in all (an arrow can break, so 0 is possible; a stone arrow breaks about a fifth of the time)" % [landed, nearest, _world.size()])
-	print("SHOOT TEST %s" % ("PASS" if arrows_after == arrows_before - 1 else "FAILED: the shot did not take an arrow"))
+	FreezeWatchScript.printer.line("SHOOT TEST: %d arrow(s) lying within 90 m after the flight, nearest %.1f m, %d world rows in all (an arrow can break, so 0 is possible; a stone arrow breaks about a fifth of the time)" % [landed, nearest, _world.size()])
+	FreezeWatchScript.printer.line("SHOOT TEST %s" % ("PASS" if arrows_after == arrows_before - 1 else "FAILED: the shot did not take an arrow"))
 
 
 # Headless check (--place-foundation): a hand-made foundation (thatch floor) is given and placed 3 m ahead; says what the world shows there.
@@ -7202,7 +7203,7 @@ func run_foundation_test(client) -> void:
 	var slot: int = inventory.numbers.find(kit)
 
 	if slot < 0:
-		print("FOUNDATION TEST FAILED: no thatch floor kit in the pack")
+		FreezeWatchScript.printer.line("FOUNDATION TEST FAILED: no thatch floor kit in the pack")
 		return
 
 	var forward: Vector3 = -client.camera.global_transform.basis.z
@@ -7219,8 +7220,8 @@ func run_foundation_test(client) -> void:
 			near.append(table.id_of(int(_world[id]["number"])))
 
 	var kit_left: int = inventory.count_of(kit)
-	print("FOUNDATION TEST: spot %s, kit left %d, world rows %d -> %d, near the spot: %s" % [str(spot), kit_left, rows_before, _world.size(), str(near)])
-	print("FOUNDATION TEST %s" % ("PASS" if kit_left == 0 and not near.is_empty() else "FAILED: the floor was not placed"))
+	FreezeWatchScript.printer.line("FOUNDATION TEST: spot %s, kit left %d, world rows %d -> %d, near the spot: %s" % [str(spot), kit_left, rows_before, _world.size(), str(near)])
+	FreezeWatchScript.printer.line("FOUNDATION TEST %s" % ("PASS" if kit_left == 0 and not near.is_empty() else "FAILED: the floor was not placed"))
 
 
 # Waits up to 15 s for `count` of an item to show in the pack after an admin give; the give is sent once more at 8 s when nothing came
@@ -7266,7 +7267,7 @@ func run_cook_test(client) -> void:
 
 	for pair in [["campfire_kit", 1], ["plant_fibre", 3], ["raw_meat", 2]]:
 		if not await _smoke_give(str(pair[0]), int(pair[1])):
-			print("COOK TEST FAILED: the pack did not get %s" % str(pair[0]))
+			FreezeWatchScript.printer.line("COOK TEST FAILED: the pack did not get %s" % str(pair[0]))
 			return
 
 	var forward: Vector3 = -client.camera.global_transform.basis.z
@@ -7281,10 +7282,10 @@ func run_cook_test(client) -> void:
 		if (_world[id]["pos"] as Vector3).distance_to(spot) < 2.0 and int(_world[id]["state"]) in [9, 1, 40, 41]:
 			fire = id
 
-	print("COOK TEST: fire row %d, state %s" % [fire, str(_world[fire]["state"]) if fire >= 0 else "none"])
+	FreezeWatchScript.printer.line("COOK TEST: fire row %d, state %s" % [fire, str(_world[fire]["state"]) if fire >= 0 else "none"])
 
 	if fire < 0:
-		print("COOK TEST FAILED: the fire was not laid")
+		FreezeWatchScript.printer.line("COOK TEST FAILED: the fire was not laid")
 		return
 
 	for n in 3:   # a damp tinder can fail: up to three tries
@@ -7295,23 +7296,23 @@ func run_cook_test(client) -> void:
 		await get_tree().create_timer(2.0).timeout
 
 	if not _lit_state(int(_world[fire]["state"])):
-		print("COOK TEST FAILED: the fire did not light (state %s)" % str(_world[fire]["state"]))
+		FreezeWatchScript.printer.line("COOK TEST FAILED: the fire did not light (state %s)" % str(_world[fire]["state"]))
 		return
 
 	net.inventory_action.rpc_id(1, Net.ACT_COOK, fire, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(2.5).timeout
 	var roast: int = table.number_of("roast_meat")
-	print("COOK TEST: raw meat %d -> %d, roast meat %d" % [2, inventory.count_of(meat), inventory.count_of(roast)])
+	FreezeWatchScript.printer.line("COOK TEST: raw meat %d -> %d, roast meat %d" % [2, inventory.count_of(meat), inventory.count_of(roast)])
 
 	if inventory.count_of(roast) < 1:
-		print("COOK TEST FAILED: nothing was roasted")
+		FreezeWatchScript.printer.line("COOK TEST FAILED: nothing was roasted")
 		return
 
 	var fed_before: int = hunger
 	eat_slot(inventory.numbers.find(roast))
 	await get_tree().create_timer(2.0).timeout
-	print("COOK TEST: hunger %d -> %d, roast meat left %d" % [fed_before, hunger, inventory.count_of(roast)])
-	print("COOK TEST %s" % ("PASS" if inventory.count_of(roast) == 0 and hunger >= fed_before else "FAILED: the roast was not eaten"))
+	FreezeWatchScript.printer.line("COOK TEST: hunger %d -> %d, roast meat left %d" % [fed_before, hunger, inventory.count_of(roast)])
+	FreezeWatchScript.printer.line("COOK TEST %s" % ("PASS" if inventory.count_of(roast) == 0 and hunger >= fed_before else "FAILED: the roast was not eaten"))
 
 
 # Headless check (--sleep): a rough bed is set down beside the player, they lie on it, fall asleep for a few seconds and wake. Prints SLEEP TEST lines.
@@ -7319,12 +7320,12 @@ func run_sleep_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 
 	if not await _wait_inventory_ready():
-		print("SLEEP TEST FAILED: the pack never arrived")
+		FreezeWatchScript.printer.line("SLEEP TEST FAILED: the pack never arrived")
 		return
 
 
 	if not await _smoke_give("rough_bed_kit", 1):
-		print("SLEEP TEST FAILED: the pack did not get the rough bed")
+		FreezeWatchScript.printer.line("SLEEP TEST FAILED: the pack did not get the rough bed")
 		return
 
 	var forward: Vector3 = -client.camera.global_transform.basis.z
@@ -7334,10 +7335,10 @@ func run_sleep_test(client) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_PLACE, inventory.numbers.find(table.number_of("rough_bed_kit")), 0, 0, spot)
 	await get_tree().create_timer(2.5).timeout
 	var bed: int = _smoke_row_near(spot, "rough_bed", 2.0)
-	print("SLEEP TEST: bed row %d (no roof here is fine: it then behaves as ground)" % bed)
+	FreezeWatchScript.printer.line("SLEEP TEST: bed row %d (no roof here is fine: it then behaves as ground)" % bed)
 
 	if bed < 0:
-		print("SLEEP TEST FAILED: the bed was not set down")
+		FreezeWatchScript.printer.line("SLEEP TEST FAILED: the bed was not set down")
 		return
 
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_ENERGY, 0, 0, 60, Vector3.ZERO)   # a rested character cannot sleep: start tired
@@ -7353,8 +7354,8 @@ func run_sleep_test(client) -> void:
 	await get_tree().create_timer(2.0).timeout
 	request_stance(0)
 	await get_tree().create_timer(1.5).timeout
-	print("SLEEP TEST: lying %d, asleep %s, energy %d -> %d, after waking asleep %s" % [stance_in_sleep, str(slept), energy_before, energy, str(asleep)])
-	print("SLEEP TEST %s" % ("PASS" if slept and not asleep and energy >= energy_before else "FAILED: sleep did not start, did not end, or energy fell"))
+	FreezeWatchScript.printer.line("SLEEP TEST: lying %d, asleep %s, energy %d -> %d, after waking asleep %s" % [stance_in_sleep, str(slept), energy_before, energy, str(asleep)])
+	FreezeWatchScript.printer.line("SLEEP TEST %s" % ("PASS" if slept and not asleep and energy >= energy_before else "FAILED: sleep did not start, did not end, or energy fell"))
 
 
 # Headless check (--snare): a snare is set down and left; passes when a carcass lies by it (server checks every 30 s; run the server with traps.json test_chance above 0,
@@ -7363,12 +7364,12 @@ func run_snare_test(client) -> void:
 	await get_tree().create_timer(6.0).timeout
 
 	if not await _wait_inventory_ready():
-		print("SNARE TEST FAILED: the pack never arrived")
+		FreezeWatchScript.printer.line("SNARE TEST FAILED: the pack never arrived")
 		return
 
 
 	if not await _smoke_give("snare", 1):
-		print("SNARE TEST FAILED: the pack did not get a snare (are Sal's snare items in this build?)")
+		FreezeWatchScript.printer.line("SNARE TEST FAILED: the pack did not get a snare (are Sal's snare items in this build?)")
 		return
 
 	var forward: Vector3 = -client.camera.global_transform.basis.z
@@ -7382,21 +7383,21 @@ func run_snare_test(client) -> void:
 	if snare < 0:
 		snare = _smoke_row_near(spot, "snare", 2.0)
 
-	print("SNARE TEST: snare row %d" % snare)
+	FreezeWatchScript.printer.line("SNARE TEST: snare row %d" % snare)
 
 	if snare < 0:
-		print("SNARE TEST FAILED: the snare was not set down")
+		FreezeWatchScript.printer.line("SNARE TEST FAILED: the snare was not set down")
 		return
 
 	for n in 40:   # up to 200 s: the server looks every 30 s
 		await get_tree().create_timer(5.0).timeout
 
 		if _smoke_row_near(spot, "carcass", 3.0) >= 0:
-			print("SNARE TEST: a carcass lies by the snare after %d s" % ((n + 1) * 5))
-			print("SNARE TEST PASS")
+			FreezeWatchScript.printer.line("SNARE TEST: a carcass lies by the snare after %d s" % ((n + 1) * 5))
+			FreezeWatchScript.printer.line("SNARE TEST PASS")
 			return
 
-	print("SNARE TEST FAILED: no catch in 200 s (the server needs traps.json test_chance above 0 for a sure run)")
+	FreezeWatchScript.printer.line("SNARE TEST FAILED: no catch in 200 s (the server needs traps.json test_chance above 0 for a sure run)")
 
 
 # Headless check (--eat): eat a roast and apply a poultice.
@@ -7415,15 +7416,15 @@ func run_eat_test(client) -> void:
 			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("roast_forage"), 0, 2, Vector3.ZERO)
 			net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("poultice"), 0, 1, Vector3.ZERO)
 
-	print("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(inventory.numbers.find(table.number_of("roast_forage"))))])
+	FreezeWatchScript.printer.line("Eat test: start hunger %d health %d weight %.1f; edible slot 0 %s" % [hunger, health, weight_kg, str(edible_slot(inventory.numbers.find(table.number_of("roast_forage"))))])
 	var roasts_before: int = inventory.count_of(table.number_of("roast_forage"))
 	eat_slot(inventory.numbers.find(table.number_of("roast_forage")))
 	await get_tree().create_timer(1.0).timeout
-	print("Eat test: after a roast, hunger %d, roasts left %d" % [hunger, inventory.count_of(table.number_of("roast_forage"))])
-	print("Eat test: roasts eaten %d" % (roasts_before - inventory.count_of(table.number_of("roast_forage"))))   # a delta: the pack may hold more than was given
+	FreezeWatchScript.printer.line("Eat test: after a roast, hunger %d, roasts left %d" % [hunger, inventory.count_of(table.number_of("roast_forage"))])
+	FreezeWatchScript.printer.line("Eat test: roasts eaten %d" % (roasts_before - inventory.count_of(table.number_of("roast_forage"))))   # a delta: the pack may hold more than was given
 	eat_slot(inventory.numbers.find(table.number_of("poultice")))
 	await get_tree().create_timer(1.0).timeout
-	print("Eat test: poultice left %d, health %d" % [inventory.count_of(table.number_of("poultice")), health])
+	FreezeWatchScript.printer.line("Eat test: poultice left %d, health %d" % [inventory.count_of(table.number_of("poultice")), health])
 
 	# Sort view: the grid order follows the choice while every button keeps its own slot.
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 3, Vector3.ZERO)
@@ -7440,7 +7441,7 @@ func run_eat_test(client) -> void:
 			var slot: int = _buttons.find(_grid.get_child(position))
 			names.append(table.name_of(inventory.numbers[slot]) if inventory.numbers[slot] != 0 else "-")
 
-		print("Sort test: mode %d first four: %s" % [mode, ", ".join(names)])
+		FreezeWatchScript.printer.line("Sort test: mode %d first four: %s" % [mode, ", ".join(names)])
 
 	# Crafting queue: three twine line up, the screen shows the entry, pressing it cancels and refunds.
 	var fibre: int = table.number_of("plant_fibre")
@@ -7451,10 +7452,10 @@ func run_eat_test(client) -> void:
 	_recipe_part.craft_selected()
 	await get_tree().create_timer(1.0).timeout
 	var shown: int = _queue_box.get_child_count() - 1 if _queue_box.visible else 0
-	print("Queue test: entries %d, fibre %d -> %d, buttons shown %d, head \"%s\"" % [craft_entries.size(), fibre_before, inventory.count_of(fibre), shown, _queue_head_button.text if _queue_head_button != null else ""])
+	FreezeWatchScript.printer.line("Queue test: entries %d, fibre %d -> %d, buttons shown %d, head \"%s\"" % [craft_entries.size(), fibre_before, inventory.count_of(fibre), shown, _queue_head_button.text if _queue_head_button != null else ""])
 	_queue_head_button.pressed.emit()
 	await get_tree().create_timer(1.0).timeout
-	print("Queue test: after cancel entries %d, fibre %d, queue strip hidden %s" % [craft_entries.size(), inventory.count_of(fibre), str(not _queue_box.visible)])
+	FreezeWatchScript.printer.line("Queue test: after cancel entries %d, fibre %d, queue strip hidden %s" % [craft_entries.size(), inventory.count_of(fibre), str(not _queue_box.visible)])
 
 	# Boulders: a server row draws a solid boulder that shrinks as stones come out, and a strike ray finds it.
 	var spot: Vector3 = _player_position.call() + Vector3(6.0, 0.0, 0.0)
@@ -7465,9 +7466,9 @@ func run_eat_test(client) -> void:
 	var eighth_radius: float = float(_boulders[987654]["now"]) if _boulders.has(987654) else -1.0
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(spot + Vector3(0.0, 4.0, 0.0), spot + Vector3(0.0, -4.0, 0.0))
 	var ray: Dictionary = _root.get_world_3d().direct_space_state.intersect_ray(query)
-	print("Boulder test: radius %.2f, at an eighth of the stones %.2f, found by a strike %s, solid to a ray %s" % [full_radius, eighth_radius, str(boulder_near(spot) == 987654), str(not ray.is_empty() and ray["collider"] == _boulders[987654]["node"])])
+	FreezeWatchScript.printer.line("Boulder test: radius %.2f, at an eighth of the stones %.2f, found by a strike %s, solid to a ray %s" % [full_radius, eighth_radius, str(boulder_near(spot) == 987654), str(not ray.is_empty() and ray["collider"] == _boulders[987654]["node"])])
 	_on_world_items([], PackedInt32Array([987654]))
-	print("Boulder test: gone when the server drops it %s" % str(not _boulders.has(987654)))
+	FreezeWatchScript.printer.line("Boulder test: gone when the server drops it %s" % str(not _boulders.has(987654)))
 
 	# Tools: Use holds a tool, again puts it away; a tool in the backpack first moves into a hotbar slot (the hotbar is real slots, TEST-008).
 	var axe: int = table.number_of("stone_axe")
@@ -7481,12 +7482,12 @@ func run_eat_test(client) -> void:
 	eat_slot(axe_slot)
 	await get_tree().create_timer(0.5).timeout
 	var in_hand: int = held_slot_now.call() if held_slot_now.is_valid() else -2
-	print("Hotbar test: axe in slot %d, Use holds slot %d (matches %s), strip boxes %d" % [axe_slot, in_hand, str(in_hand == axe_slot), hotbar_strip._cells.size() if hotbar_strip != null else 0])
+	FreezeWatchScript.printer.line("Hotbar test: axe in slot %d, Use holds slot %d (matches %s), strip boxes %d" % [axe_slot, in_hand, str(in_hand == axe_slot), hotbar_strip._cells.size() if hotbar_strip != null else 0])
 	var model = client.held._model
-	print("Arms test: axe model in the right hand %s, arms shown %s" % [str(model != null and client.held._mounted and model.get_parent() == client.held._arms.hand_mount_r), str(client.held._arms.visible)])
+	FreezeWatchScript.printer.line("Arms test: axe model in the right hand %s, arms shown %s" % [str(model != null and client.held._mounted and model.get_parent() == client.held._arms.hand_mount_r), str(client.held._arms.visible)])
 	eat_slot(axe_slot)
 	await get_tree().create_timer(0.5).timeout
-	print("Hotbar test: Use again, hand slot %d (-1 = empty)" % [held_slot_now.call()])
+	FreezeWatchScript.printer.line("Hotbar test: Use again, hand slot %d (-1 = empty)" % [held_slot_now.call()])
 	net.inventory_action.rpc_id(1, Net.ACT_MOVE, axe_slot, 20, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	eat_slot(20)
@@ -7494,7 +7495,7 @@ func run_eat_test(client) -> void:
 	var moved_to: int = held_slot_now.call()
 	var on_key: bool = moved_to >= 0 and inventory.on_hotbar(moved_to)
 	equip_requested.call(int(held_key_now.call()))   # empty hands again
-	print("Hotbar test: axe parked in slot 20, Use moves it to the hotbar and holds it, slot %d (%s), on hotbar %s, slot 20 now empty %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(on_key), str(inventory.numbers[20] != axe)])
+	FreezeWatchScript.printer.line("Hotbar test: axe parked in slot 20, Use moves it to the hotbar and holds it, slot %d (%s), on hotbar %s, slot 20 now empty %s" % [moved_to, str(moved_to >= 0 and inventory.numbers[moved_to] == axe), str(on_key), str(inventory.numbers[20] != axe)])
 
 	# Every tool and weapon in the table can be held from the hotbar, with a model, and does something on left click.
 	var tool_ids: Array = []
@@ -7539,13 +7540,13 @@ func run_eat_test(client) -> void:
 		modelled += 1 if drawn else 0
 
 		if not held_here or not drawn:
-			print("Tools test: NOT held or no model: %s" % id)
+			FreezeWatchScript.printer.line("Tools test: NOT held or no model: %s" % id)
 
 		# Put it down: 190 tools in the pack outweigh the carrying limit, and the last heavy ones (the quern) were then never given (31 Oct 2026).
 		net.inventory_action.rpc_id(1, Net.ACT_DROP, tool_slot, 0, 1, _player_position.call() + Vector3(0.0, 0.0, 2.0))
 		await get_tree().create_timer(0.2).timeout
 
-	print("Tools test: %d tools and weapons, held %d, with a model %d" % [tool_ids.size(), held_ok, modelled])
+	FreezeWatchScript.printer.line("Tools test: %d tools and weapons, held %d, with a model %d" % [tool_ids.size(), held_ok, modelled])
 
 
 # Headless check (--chest): place a chest, open it, put stones in, take them out.
@@ -7570,14 +7571,14 @@ func run_chest_test(client) -> void:
 		waited += 0.5
 
 	if client.arrival_protect_until_msec == 0:
-		print("Chest test: the player never landed on the ground in 300 s")
+		FreezeWatchScript.printer.line("Chest test: the player never landed on the ground in 300 s")
 		_finish_early(client)
 		return
 
-	print("Chest test: landed after %.1f s" % waited)
+	FreezeWatchScript.printer.line("Chest test: landed after %.1f s" % waited)
 
 	if not await _wait_inventory_ready():
-		print("Chest test: the pack never arrived")
+		FreezeWatchScript.printer.line("Chest test: the pack never arrived")
 		_finish_early(client)
 		return
 
@@ -7615,7 +7616,7 @@ func run_chest_test(client) -> void:
 			break
 
 	if id == 0:
-		print("Chest test: no chest was placed (no ground or the place was refused)")
+		FreezeWatchScript.printer.line("Chest test: no chest was placed (no ground or the place was refused)")
 		_finish_early(client)
 		return
 
@@ -7628,23 +7629,23 @@ func run_chest_test(client) -> void:
 		await get_tree().create_timer(0.1).timeout
 
 	if chest_inv == null:
-		print("Chest test: the chest did not open (no contents arrived)")
+		FreezeWatchScript.printer.line("Chest test: the chest did not open (no contents arrived)")
 		_finish_early(client)
 		return
 
 	var stone: int = table.number_of("stone")
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_PUT, inventory.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: chest row %d, screen open %s, stones in chest %d, in pack %d" % [id, str(chest_mode), chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
+	FreezeWatchScript.printer.line("Chest test: chest row %d, screen open %s, stones in chest %d, in pack %d" % [id, str(chest_mode), chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 
 	if chest_inv == null:
-		print("Chest test: the chest closed before the take")
+		FreezeWatchScript.printer.line("Chest test: the chest closed before the take")
 		_finish_early(client)
 		return
 
 	net.inventory_action.rpc_id(1, Net.ACT_CHEST_TAKE, chest_inv.numbers.find(stone), id, 7, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
+	FreezeWatchScript.printer.line("Chest test: after taking out, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 
 	# Quick key T moves the hovered pack stack into the open chest.
 	var stone_slot: int = inventory.numbers.find(stone)
@@ -7654,7 +7655,7 @@ func run_chest_test(client) -> void:
 	press.pressed = true
 	quick_key(press)
 	await get_tree().create_timer(1.0).timeout
-	print("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
+	FreezeWatchScript.printer.line("Chest test: quick key T, stones in chest %d, in pack %d" % [chest_inv.count_of(stone) if chest_inv != null else -1, inventory.count_of(stone)])
 	_finish_early(client)
 
 
@@ -7683,7 +7684,7 @@ func run_chop_test(client) -> void:
 					best = [d, chunk, held["ids"][n], held["positions"][n]]
 
 	if best.is_empty():
-		print("Chop test: no tree loaded")
+		FreezeWatchScript.printer.line("Chop test: no tree loaded")
 		return
 
 	client.body.global_position = best[3] + Vector3(1.5, 1.0, 0.0)
@@ -7710,7 +7711,7 @@ func run_chop_test(client) -> void:
 		if _world[id]["state"] >= 3:
 			kinds.append(_world[id]["state"])
 
-	print("Chop test: %d blows, felled states in view %s" % [blows, str(kinds)])
+	FreezeWatchScript.printer.line("Chop test: %d blows, felled states in view %s" % [blows, str(kinds)])
 
 
 func _notification(what: int) -> void:

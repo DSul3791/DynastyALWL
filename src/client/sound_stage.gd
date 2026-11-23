@@ -65,6 +65,7 @@ const WaterVolume := preload("res://src/shared/water_volume.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "sound setup: <part>" splits of the join step (Steve, 4 Nov 2026: 0.87 s on Dave's PC)
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const VOICES := 6                       # footstep and swish players, reused in turn
 # Other players' footsteps (step_at): heard where the foot lands, as loud at OTHER_STEP_UNIT_M as the own step is at the own ears, falling
 # 6 dB per doubling past it (a walk on grass is lost by about 15 m, a run on gravel carries to 30 m or more), none past OTHER_STEP_REACH_M.
@@ -608,13 +609,13 @@ func _sound_log_tick(body: CharacterBody3D) -> void:
 
 	if now > sound_log_until_msec:
 		sound_log_until_msec = 0
-		print("SOUND LOG finished")
+		FreezeWatchScript.printer.line("SOUND LOG finished")
 		return
 
 	for line in sound_log_lines(body.global_position, int(float(now - _sound_log_start_msec) / 1000.0)):
-		print(line)
+		FreezeWatchScript.printer.line(str(line))
 
-	print("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
+	FreezeWatchScript.printer.line("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
 
 
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:

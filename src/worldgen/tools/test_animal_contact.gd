@@ -111,7 +111,7 @@ func _init() -> void:
 	var bird: Dictionary = {"sp": "crow", "pos": Vector3(0.1, 0.0, 0.0), "state": 0, "fly": true}
 	check(not a.keep_off_players(bird, Vector3(3.0, 0.0, 0.0), [Vector3.ZERO]), "a bird in the air is not held")
 
-	# A player walking into a standing animal: it steps out of them at its walking pace, away from them, and stops at the contact circle
+	# A player walking into a standing animal: it steps out of them at up to half its flee speed, away from them, and stops at the contact circle
 	# (robot play-testers 23 Nov 2026: a dog 0.02 m from a player, a deer 0.22 m, a horse 0.15 m). A bird in the air, a camp's horse stay.
 	var mw = _animals([Vector3.ZERO], [])
 	var calf: Dictionary = {"sp": "deer", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
@@ -121,7 +121,21 @@ func _init() -> void:
 	for i in 40:
 		mw.make_way(calf, Vector3(0.0, 10.0, 0.0), 0.1)
 
-	check(walked and first_step > 0.0 and first_step <= float(mw.species_def("deer").get("walk_mps", 1.5)) * 0.1 + 0.001 and absf(Vector2(calf["pos"].x, calf["pos"].z).length() - dm) < 0.01, "a deer walked into steps away at its walking pace and stands at the contact circle (first step %.2f m, ends %.2f m)" % [first_step, Vector2(calf["pos"].x, calf["pos"].z).length()])
+	var deer_pace: float = maxf(float(mw.species_def("deer").get("walk_mps", 1.5)), 0.5 * float(mw.species_def("deer").get("flee_mps", 0.0)))
+	check(walked and first_step > 0.0 and first_step <= deer_pace * 0.1 + 0.001 and absf(Vector2(calf["pos"].x, calf["pos"].z).length() - dm) < 0.01, "a deer walked into steps away, at most half its flee speed, and stands at the contact circle (first step %.2f m, ends %.2f m)" % [first_step, Vector2(calf["pos"].x, calf["pos"].z).length()])
+	# A player jogging into a dog at 4 m/s (robots 23 Nov 2026: a dog stayed 0.1 to 0.3 m inside a robot chasing it for 0.66 s): its 5 m/s
+	# (half its flee speed) keeps it out, ending each step on the contact circle. At a full 9 m/s run a player still gains on it for a moment.
+	var dog_m: float = AnimalContact.contact_m("dog")
+	var dog: Dictionary = {"sp": "dog", "pos": Vector3(dog_m, 10.0, 0.0), "state": 0}   # standing at the contact circle, the runner closing at 4 m/s
+	var runner: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var dog_worst: float = INF
+
+	for i in 10:
+		runner.x += 0.4
+		mw.make_way(dog, runner, 0.1)
+		dog_worst = minf(dog_worst, Vector2(dog["pos"].x - runner.x, dog["pos"].z - runner.z).length())
+
+	check(dog_worst >= dog_m - 0.01, "a dog a player jogs into at 4 m/s keeps out of them (nearest %.2f m, contact %.2f m)" % [dog_worst, dog_m])
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))
