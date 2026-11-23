@@ -654,6 +654,10 @@ func _process_body(delta: float) -> void:
 	if _client == null or _client._environment == null or _client.camera == null or _client.terrain == null:
 		return
 
+	# Lag lane 23 Nov 2026: "weather look" took 414-560 ms in one frame just after every PC join (8 ms headless, so on the graphics side): each
+	# engine-facing piece is timed by name, so the next play's HITCH line says which (FrameProbe sums the pieces of a frame).
+	var tq: int = 0
+
 	var target: Dictionary = _target()
 
 	for key in _s:
@@ -677,7 +681,9 @@ func _process_body(delta: float) -> void:
 	gloom = clampf(0.3 * cloud_cover + 0.45 * rain + 0.2 * snow + 0.6 * storm, 0.0, 1.0)
 	_dark = clampf(0.5 * cloud_cover + 0.35 * rain + 0.15 * snow + 0.35 * storm, 0.0, 1.0)
 
+	tq = FrameProbe.start()
 	_update_water_murk(delta, storm, rain)
+	FrameProbe.stop("weather look: water murk", tq)
 
 	if _flash_t >= 0.0:
 		_flash_t += delta
@@ -697,7 +703,9 @@ func _process_body(delta: float) -> void:
 
 	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
 		_day_next_msec = now_msec + DAY_STEP_MSEC
+		tq = FrameProbe.start()
 		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)
+		FrameProbe.stop("weather look: day cycle", tq)
 
 		if _client._sun != null:
 			_client._sun.basis = day.light_basis
@@ -708,7 +716,9 @@ func _process_body(delta: float) -> void:
 		var world_weather: Variant = _client.get("weather")
 		var fire_heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
 		var wind_now: float = float(_s["wind"])
+		tq = FrameProbe.start()
 		BuildingLook.set_fire_air(fire_wind_ms(wind_now), fire_heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
+		FrameProbe.stop("weather look: fire air", tq)
 
 	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
 	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
@@ -717,7 +727,9 @@ func _process_body(delta: float) -> void:
 		_sky_next_msec = now_msec + SKY_STEP_MSEC
 
 		if _client.flora != null:
+			tq = FrameProbe.start()
 			_client.flora.set_day_sky(day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
+			FrameProbe.stop("weather look: day sky", tq)
 
 		if _client.sea != null:
 			WaterMaterial.apply_day(_client.sea.material_override as ShaderMaterial, day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
@@ -888,16 +900,30 @@ func _process_body(delta: float) -> void:
 		var heading_now: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 		# The body belongs to the layer the eye is in or over: the land layer, or the sea fog only down at sea level (not inland).
 		var sea_here: float = sea_fog if eye_y < SEA_LEVEL_EYE_M else 0.0
+		tq = FrameProbe.start()
 		fog_body.update(delta, environment, _quality, _client.camera.global_position, mist_inside, maxf(land, sea_here) * under_rock, land_top if land >= sea_here else sea_top, MIST_EDGE_M, wind_ms(float(_s["wind"])), heading_now)
+		FrameProbe.stop("weather look: fog body", tq)
+		tq = FrameProbe.start()
 		_water_fog(environment, sea_top, MIST_HEIGHT_DENSITY * sea_fog * (1.0 - mist_inside) * under_rock if FogLook.sky_drawn(_quality) else 0.0, under_rock)
+		FrameProbe.stop("weather look: water fog", tq)
 	else:
+		tq = FrameProbe.start()
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
+		FrameProbe.stop("weather look: underwater fog", tq)
+		tq = FrameProbe.start()
 		fog_body.update(delta, environment, _quality, _client.camera.global_position, 0.0, 0.0, 0.0, MIST_EDGE_M, 0.0, 0.0)
+		FrameProbe.stop("weather look: fog body", tq)
+		tq = FrameProbe.start()
 		_water_fog(environment, environment.fog_height, environment.fog_height_density, 1.0)
+		FrameProbe.stop("weather look: water fog", tq)
 
+	tq = FrameProbe.start()
 	canopy.update(_client.flora, Vector2(_client.camera.global_position.x, _client.camera.global_position.z))
+	FrameProbe.stop("weather look: canopy map", tq)
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
+	tq = FrameProbe.start()
 	_update_ground(rain, snow)
+	FrameProbe.stop("weather look: ground", tq)
 	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
 	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
@@ -913,10 +939,16 @@ func _process_body(delta: float) -> void:
 		_bark_wind_sent = bark_wind
 		_client.flora.set_wet(bark_wet, bark_wind)
 
+	tq = FrameProbe.start()
 	_update_summits(delta, heading)
+	FrameProbe.stop("weather look: summits", tq)
+	tq = FrameProbe.start()
 	_update_particles(rain, snow, float(_s["wind"]))
+	FrameProbe.stop("weather look: particles", tq)
 	breath.update(delta)
+	tq = FrameProbe.start()
 	_update_tree_wind()
+	FrameProbe.stop("weather look: tree wind", tq)
 
 
 # The water shader writes its own fog (FOG), so it is fed the environment's fog each frame: the same distance and height fog,
