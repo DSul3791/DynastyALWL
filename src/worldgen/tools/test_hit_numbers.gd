@@ -93,6 +93,10 @@ func _init() -> void:
 	items.hit_animal = func(_peer, _origin, _aim, reach, amount) -> Dictionary:
 		punched.append([reach, amount])
 		return {"at": Vector3(10.0, 1.0, 11.0)}
+	for strength in [0, 100, 50]:   # at skill 1 a blow is exactly as before whatever the attributes
+		items.set_attribute(1, "strength", strength)
+		check(is_equal_approx(items.blow_skill_mult(1, "punch"), 1.0) and is_equal_approx(items.blow_skill_mult(1, "strike_sword"), 1.0), "at skill 1 the blow multiplier is 1.0 with strength %d" % strength)
+
 	var skill_before: float = items.working_level(1, "hand_to_hand")
 	items._last_strike.clear()
 	items._last_practice.clear()
