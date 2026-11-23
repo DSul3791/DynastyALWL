@@ -889,6 +889,7 @@ func _storage() -> void:
 		await _check_pack("knife to hand")
 
 	var known: Dictionary = client.items._world.duplicate()
+	var said_from: int = _notices.size()
 	var here: Vector3 = client.body.global_position
 	var side: float = TAU * float(robot_name.to_int() % 6) / 6.0 + 0.5
 	var spot: Vector3 = here + Vector3.FORWARD.rotated(Vector3.UP, side) * 2.5
@@ -909,7 +910,13 @@ func _storage() -> void:
 		await get_tree().process_frame
 
 	if basket < 0:
-		_fail("storage", "built", "placed the wicker basket blueprint at %s with the knife in hand and its materials; no new world item came there" % str(spot.round()))
+		var said: Array = _notices.slice(said_from)
+
+		if said.is_empty():
+			_fail("storage", "built", "placed the wicker basket blueprint at %s with the knife in hand and its materials; no new world item came there, and no message said why" % str(spot.round()))
+		else:
+			_note("storage", "the basket was refused at %s: %s" % [str(spot.round()), str(said)])   # a spot the rules refuse (a tree, a slope), said in words
+
 		return
 
 	var contents: Array = [null]
