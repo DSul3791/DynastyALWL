@@ -1262,6 +1262,7 @@ func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 		"shape": shape,
 		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
 		"log": str(entry.get("model", "")) == "fallen_log" and not (str(entry["name"]) in ["old_stump", "dead_tree"]),   # the dead tree stands (tree_builder _snag)
+		"snag": TreeTrunks.is_snag(entry),   # a standing dead tree: blocks like a tree (its own trunk collider)
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
@@ -3206,6 +3207,8 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			if radius > 0.0 and int(info["kind"]) == KIND_TREE:
 				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), radius)   # as wide as the model is drawn (tree_trunks.json)
+			elif bool(info.get("snag", false)):
+				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), TreeTrunks.snag_fallback(float(info["height"]), float(items["heights"][n])))
 
 			if radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
@@ -3533,7 +3536,7 @@ func _trunk_shape(radius: float) -> CylinderShape3D:
 	if shape == null:
 		shape = CylinderShape3D.new()
 		shape.radius = float(key) / 100.0
-		shape.height = 3.0
+		shape.height = 3.0 + 2.0 * maxf(shape.radius - 1.0, 0.0)   # a wide trunk (the everember's ~7 m) reaches down to the ground on its downhill side, up to a 45 degree slope
 		_trunk_shapes[key] = shape
 
 	return shape

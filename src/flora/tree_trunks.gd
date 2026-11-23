@@ -10,10 +10,11 @@ const MEASURE_Y_M := 1.0        # the height on the model the trunk is measured 
 const TABLE_PATH := "res://data/look/tree_trunks.json"
 const FLORA_PATH := "res://data/tables/flora.json"
 
-const SEARCH_TRUNK_M := 2.0     # the widest trunk the server's trunk searches reach (server_items ARROW_TRUNK_SEARCH_M, carts, digging): a drawn trunk wider than this keeps its old collider
+const SEARCH_TRUNK_M := 2.0     # the widest trunk the server's fixed trunk-search margins cover (server_items ARROW_TRUNK_SEARCH_M, carts): terrain_server _cached_trees lists wider ones on their own and finds them by their own radius
 
 static var _rows: Dictionary = {}   # species name -> [radii per variant at the reference height, reference height m, flora.json row]
 static var _loaded: bool = false
+static var _widest: float = 0.0   # the widest collider any tree reaches at its tallest (widest_m)
 
 
 # The collider radius for the tree `id` of species `species` and `height` m. `fallback`: the radius without the table (flora_placer.collider_radius,
@@ -28,9 +29,13 @@ static func standing_collider(species: String, id: int, height: float, fallback:
 		return fallback
 
 	var radii: Array = row[0]
-	var drawn: float = float(radii[drawn_variant(row[2], id, height) % radii.size()]) * height / float(row[1])
-	# Never past what the server's trunk searches reach, or the old size: the everember (drawn 6.7 m at 1 m up) keeps its 3.2 m until those searches widen.
-	return minf(drawn, maxf(fallback, SEARCH_TRUNK_M))
+	return float(radii[drawn_variant(row[2], id, height) % radii.size()]) * height / float(row[1])
+
+
+# The widest trunk collider in the world (an everember at its tallest, about 9 m): how far past a search radius terrain_server looks for wide trunks.
+static func widest_m() -> float:
+	_table()
+	return maxf(_widest, SEARCH_TRUNK_M)
 
 
 # Reads the table now (the main thread at start: flora_view and terrain_server), so no worker or tree listing parses the files.
@@ -67,6 +72,10 @@ static func _table() -> Dictionary:
 
 			if radii is Array and not (radii as Array).is_empty():
 				rows[str(entry["name"])] = [radii, _reference(entry), entry]
+				var tallest: float = float((entry.get("height_m", [0.0, 0.0]) as Array)[-1])
+
+				for r in radii:
+					_widest = maxf(_widest, float(r) * tallest / maxf(_reference(entry), 0.1))
 
 	_rows = rows   # warm() reads it on the main thread first; a late reader on a worker would only parse the files again
 	_loaded = true   # also when empty (no table): read once, then every collider keeps its fallback
@@ -78,13 +87,24 @@ static func _reference(entry: Dictionary) -> float:
 	return 0.5 * (float(span[0]) + float(span[1])) if span.size() >= 2 else 0.0
 
 
+# A standing dead tree (tree_builder FALLEN_LOGS kind "snag": the swamp's dead_tree): a plant row drawn as a standing trunk, so it blocks like a
+# tree (coordinator 23 Nov 2026), with the collider its model is drawn with.
+static func is_snag(entry: Dictionary) -> bool:
+	return str(entry.get("model", "")) == "fallen_log" and str((TreeBuilder.FALLEN_LOGS.get(str(entry.get("name", "")), {}) as Dictionary).get("kind", "")) == "snag"
+
+
+# The snag's collider before the table (its model's own butt radius, tree_builder _snag, built at `reference` m), for `height` m: standing_collider's fallback.
+static func snag_fallback(reference: float, height: float) -> float:
+	return clampf(reference * 0.035, 0.12, 0.3) * 1.25 * height / reference if reference > 0.0 else 0.0
+
+
 # Every tree species' drawn trunk radius per variant (make_tree_trunks.gd, test_tree_trunks.gd).
 static func measure_all() -> Dictionary:
 	var flora: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FLORA_PATH))
 	var out: Dictionary = {}
 
 	for entry in flora["entries"]:
-		if str(entry.get("kind", "")) == "tree" and float(entry.get("trunk_m", 0.0)) >= 0.1:
+		if (str(entry.get("kind", "")) == "tree" and float(entry.get("trunk_m", 0.0)) >= 0.1) or is_snag(entry):
 			out[str(entry["name"])] = measure(entry)
 
 	return out
