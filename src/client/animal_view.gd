@@ -38,7 +38,8 @@ const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit nea
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
-const FLY := 15                       # server_flight.FLY: a bird in flight
+const FLY := 15                       # server_flight.FLY: a bird in flight (climbing)
+const GLIDE := 17                     # server_flight.GLIDE: gliding; a glide that climbs again goes back to FLY, which is no new take-off
 const VOICED_STATES := [2, 3, 7, 10, 11, 16]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning
 const ATTACK_STATES := [7, 11]                # a wolf attacking, big game charging: the one biting you (attacker_near)
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
@@ -115,6 +116,12 @@ const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
+
+
+# A bird takes off when its row goes from the ground into flight (FLY); a glide climbing again (GLIDE to FLY) or a row sent again in
+# flight is the same flight. A body first drawn already flying starts in that state, so it is no take-off either.
+static func takes_off(was: int, now: int) -> bool:
+	return now == FLY and not was in [FLY, GLIDE]
 
 
 # A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
@@ -525,7 +532,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
-		elif int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) == FLY and KIND_OF_SPECIES.has(int(row[1])):
+		elif takes_off(int(_bodies[id]["state"]), int(row[4])) and KIND_OF_SPECIES.has(int(row[1])):
 			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
 
 		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.

@@ -1086,7 +1086,7 @@ func step_at(feet: Vector3, gait: int, crouched: bool = false) -> bool:
 	if depth > SWIM_M or not other_step_room():
 		return false
 
-	var ground: Dictionary = step_ground(feet, depth)
+	var ground: Dictionary = step_ground(feet, depth, "", false)
 	return play_other_step(feet, str(ground["surface"]), ground["tune"], gait, crouched)
 
 
@@ -1210,7 +1210,7 @@ func _step_depth(feet: Vector3) -> float:
 
 # What a foot landing at `feet` sounds on, for the own steps and other players' (step_at): {"surface", "tune" [dB, pitch], "soil", "built"}.
 # `own_floor` is the own built floor (set_floor); otherwise the floor ray (floor_under) is asked at the feet.
-func step_ground(feet: Vector3, depth: float, own_floor: String = "") -> Dictionary:
+func step_ground(feet: Vector3, depth: float, own_floor: String = "", own_feet: bool = true) -> Dictionary:
 	var soil: int = _ground_under(feet)
 	var kind: String = ""
 	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
@@ -1264,8 +1264,9 @@ func step_ground(feet: Vector3, depth: float, own_floor: String = "") -> Diction
 		kind = built
 		tune = [0.0, 1.0]
 
-	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches; not inside a cave, where none lies.
-	if weather != null and weather.snow_underfoot(SNOW_COVER) and kind in SNOW_SURFACES:
+	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches; not under the listener's own feet inside a cave,
+	# where none lies (another player's step is read by the snow outside: whether they are in a cave is not known here).
+	if weather != null and (weather.snow_underfoot(SNOW_COVER) if own_feet else weather.ground_snow >= SNOW_COVER) and kind in SNOW_SURFACES:
 		kind = "snow"
 		tune = [0.0, 1.0]
 

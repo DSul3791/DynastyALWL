@@ -8,7 +8,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_sound_by_place.gd
 
 const WeatherSounds := preload("res://src/client/weather_sounds.gd")
-const SNOW_COVER := 0.5   # sound_stage.gd SNOW_COVER
+const SNOW_COVER: float = preload("res://src/client/sound_stage.gd").SNOW_COVER
 const Weather := preload("res://src/shared/weather.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
 
@@ -109,6 +109,7 @@ func walk() -> void:
 	check(sounds.snow_underfoot(SNOW_COVER), "walking out, the snow crunches again")
 
 	seasons()
+	no_cave()
 	print("test_sound_by_place: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)
 
@@ -127,3 +128,29 @@ func seasons() -> void:
 	var takes: int = client.find("var season_here: String = _drink_season if _drink_season != \"\" else game_clock.season()")
 	check(here_at > 0 and takes > 0 and amb_at > takes and crit_at > takes, "the ambience and the critters take the season at the player's row (terrain_client)")
 	check(not client.contains("sound.ambient.set_conditions(game_clock.hour(), game_clock.season())"), "not the starter calendar's")
+
+
+# A sound stage with no cave layer (a test, a low tier without it): the open ground, as before.
+class NoCaveStage:
+	extends RefCounted
+	var interior: Dictionary = {"amount": 0.0}
+	var _flora = null
+
+	func under_cover(_body) -> float:
+		return 0.0
+
+	func rain_ground(_body) -> String:
+		return "soft"
+
+	func has_room() -> bool:
+		return false
+
+
+func no_cave() -> void:
+	var sounds = WeatherSounds.new()
+	root.add_child(sounds)
+	sounds._stage = NoCaveStage.new()
+	sounds._ambient = Ambient.new()
+	sounds.set_weather("rain", 1.0)
+	run(sounds, _body, 60.0)
+	check(sounds.in_rock == 0.0 and sounds.ground_wet > 0.9, "with no cave layer the rain soaks the ground as in the open (%.2f)" % sounds.ground_wet)

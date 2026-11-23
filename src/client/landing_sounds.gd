@@ -82,6 +82,7 @@ func land_at(feet: Vector3, drop_m: float) -> bool:
 	player.global_position = feet
 	player.finished.connect(player.queue_free)
 	player.play()
+	_stage.count_other_step(player)   # within the other players' step voices (OTHER_STEP_VOICES)
 	return true
 
 

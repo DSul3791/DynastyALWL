@@ -51,6 +51,10 @@ class WingsHeard extends Node:
 
 class BirdStage extends Node:
 	var ambient: WingsHeard = null
+	var room: bool = true
+
+	func has_room() -> bool:
+		return room
 
 
 class StepsHeard extends "res://src/client/sound_stage.gd":
@@ -171,6 +175,18 @@ func _strokes(world: Node3D, stage: SoundStage) -> void:
 			"strokes count with the other players' steps: at most %d at once (%d)" % [SoundStage.OTHER_STEP_VOICES, played])
 
 
+# One drawn fall: `flat` m/s along, from rest down `drop_m` under gravity (frames of 0.02 s), then standing; `after` frames of what follows.
+func _fall_frames(drop_m: float, flat: float) -> Array:
+	var frames: Array = []
+	var t: float = 0.0
+
+	while 0.5 * 9.8 * t * t < drop_m:
+		t += 0.02
+		frames.append(Vector3(flat, -9.8 * t, 0.0))
+
+	return frames
+
+
 func _falls(world: Node3D, stage: SoundStage) -> void:
 	var view = PlayerView.new()
 	world.add_child(view)
@@ -179,29 +195,52 @@ func _falls(world: Node3D, stage: SoundStage) -> void:
 	node.position = Vector3(-5.0, 3.0, 4.0)
 	var heard: Array = []
 	view.landed.connect(func(where: Vector3, drop_m: float) -> void: heard.append([where, drop_m]))
-	# [what, velocity while moving, seconds, distance to the listener, state, landings heard]
+	var slope: Array = []
+
+	for n in 200:
+		slope.append(Vector3(5.0, -4.0, 0.0))   # 4 s down a slope a little under 45 degrees: 16 m lower
+
+	var hop_carried: Array = _fall_frames(1.2, 0.0)
+	var dive: Array = _fall_frames(4.0, 0.0)
+	var teleport: Array = []
+
+	for n in 10:
+		teleport.append(Vector3(0.0, -75.0, 0.0))   # 15 m down in 0.2 s
+
+	# [what, frames of drawn path speed, distance to the listener, state, landings heard, drop from, drop to, carried frames after, swim after]
 	var cases: Array = [
-		["a fall of 4 m", Vector3(0.0, -8.0, 0.0), 0.5, 10.0, 0, 1],
-		["a running leap off a ledge, 6 m", Vector3(4.0, -10.0, 0.0), 0.6, 20.0, 0, 1],
-		["a hop down 1 m", Vector3(0.0, -5.0, 0.0), 0.2, 10.0, 0, 0],
-		["running down a steep slope 10 m", Vector3(5.0, -4.0, 0.0), 2.5, 10.0, 0, 0],
-		["a fall 4 m out of hearing", Vector3(0.0, -8.0, 0.0), 0.5, PlayerView.STEP_HEAR_M + 5.0, 0, 0],
-		["a swimmer sinking 4 m", Vector3(0.0, -8.0, 0.0), 0.5, 10.0, PlayerView.SWIM, 0],
+		["standing, off a 3 m ledge", _fall_frames(3.0, 0.0), 10.0, 0, 1, 2.7, 3.3, 0, false],
+		["sprinting off a 6.5 m ledge", _fall_frames(6.5, 9.0), 20.0, 0, 1, 6.0, 7.0, 0, false],
+		["a hop down 1 m", _fall_frames(1.0, 0.0), 10.0, 0, 0, 0.0, 0.0, 0, false],
+		["running down a steep slope 16 m", slope, 10.0, 0, 0, 0.0, 0.0, 0, false],
+		["down the slope and off a 3 m ledge", slope + _fall_frames(3.0, 5.0), 10.0, 0, 1, 2.7, 4.6, 0, false],
+		["a fall of 4 m out of hearing", _fall_frames(4.0, 0.0), PlayerView.STEP_HEAR_M + 5.0, 0, 0, 0.0, 0.0, 0, false],
+		["a swimmer sinking", _fall_frames(4.0, 0.0), 10.0, PlayerView.SWIM, 0, 0.0, 0.0, 0, false],
+		["a dive of 4 m into a lake", dive, 10.0, 0, 0, 0.0, 0.0, 0, true],
+		["a hop of 1.2 m, its next report lost (carried on)", hop_carried, 10.0, 0, 0, 0.0, 0.0, 20, false],
+		["a teleport 15 m down", teleport, 10.0, 0, 0, 0.0, 0.0, 0, false],
 	]
 
 	for c in cases:
 		heard.clear()
-		var b: Dictionary = {"node": node, "state": int(c[4])}
+		var b: Dictionary = {"node": node, "state": int(c[3])}
 
-		for n in int(float(c[2]) / 0.05):
-			view._count_fall(b, c[1], c[1], 0.05, float(c[3]))
+		for v in c[1]:
+			view._count_fall(b, v, false, 0.02, float(c[2]))
+
+		for n in int(c[7]):
+			view._count_fall(b, Vector3(0.0, -12.0, 0.0), true, 0.02, float(c[2]))   # the body carried on past its newest point: a guess, not counted
+
+		if bool(c[8]):
+			b["state"] = PlayerView.SWIM
 
 		for n in 4:
-			view._count_fall(b, Vector3.ZERO, Vector3.ZERO, 0.05, float(c[3]))
+			view._count_fall(b, Vector3.ZERO, false, 0.02, float(c[2]))
 
 		var feet: Vector3 = node.global_position - Vector3(0.0, PlayerView.FEET_M, 0.0)
 		var at_feet: bool = heard.all(func(h: Array) -> bool: return (h[0] as Vector3).is_equal_approx(feet))
-		check(heard.size() == int(c[5]) and at_feet, "another player, %s: %d landing heard (heard %d%s)" % [c[0], c[5], heard.size(), ", %.1f m" % float(heard[0][1]) if not heard.is_empty() else ""])
+		var drop_ok: bool = heard.all(func(h: Array) -> bool: return float(h[1]) >= float(c[5]) and float(h[1]) <= float(c[6]))
+		check(heard.size() == int(c[4]) and at_feet and drop_ok, "another player, %s: %d landing heard (heard %d%s)" % [c[0], c[4], heard.size(), ", %.1f m" % float(heard[0][1]) if not heard.is_empty() else ""])
 
 	var steps_stage := StepsHeard.new()
 	world.add_child(steps_stage)
@@ -230,7 +269,14 @@ func _falls(world: Node3D, stage: SoundStage) -> void:
 
 
 func _take_offs(world: Node3D) -> void:
-	check(AnimalView.FLY == ServerFlight.FLY and not (AnimalView.FLY in AnimalView.VOICED_STATES), "the drawn birds know the server's flight state (%d)" % AnimalView.FLY)
+	check(AnimalView.FLY == ServerFlight.FLY and AnimalView.GLIDE == ServerFlight.GLIDE and not (AnimalView.FLY in AnimalView.VOICED_STATES), "the drawn birds know the server's flight states (%d, %d)" % [AnimalView.FLY, AnimalView.GLIDE])
+	var rows: Array = [0, 3, 15, 15, 17, 15, 17, 15, 0, 15]   # rests, notices, flies (resent), glides and climbs twice, lands, flies again
+	var take_offs: int = 0
+
+	for n in range(1, rows.size()):
+		take_offs += int(AnimalView.takes_off(int(rows[n - 1]), int(rows[n])))
+
+	check(take_offs == 2, "one flight is one take-off, a glide climbing again none; flying again after landing is another (%d)" % take_offs)
 	var animals_cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	var fliers: Array = []
 
@@ -261,6 +307,12 @@ func _take_offs(world: Node3D) -> void:
 				"a %s taking off: %s %s where it rose (%s)" % [c[0], c[1], c[2], str(h)])
 
 	stage.ambient.heard.clear()
+	check(not creatures.took_off("grouse", at) and stage.ambient.heard.is_empty(), "a second grouse rising at once is the same whirr")
+	creatures._take_off_until.clear()
+	stage.room = false
+	check(not creatures.took_off("grouse", at) and stage.ambient.heard.is_empty(), "no take-off while the voice budget is full")
+	stage.room = true
+	creatures._take_off_until.clear()
 	check(not creatures.took_off("deer", at) and not creatures.took_off("duck", at) and stage.ambient.heard.is_empty(), "a deer or a duck has no take-off wings")
 
 
