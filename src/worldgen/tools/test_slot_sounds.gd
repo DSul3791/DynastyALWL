@@ -75,7 +75,7 @@ func _init() -> void:
 		_check_sites(names)
 		return
 
-	# One-shots: play, cooldown on the table group, skip beyond 30 m, voice cap and priority.
+	# One-shots: play, cooldown on the table group, skip beyond 30 m (an animal step 60 m), voice cap and priority.
 	var origin: Vector3 = Vector3.ZERO
 	check(slots.play("door_wood_open", Vector3(2, 0, 0), origin), "a near door plays")
 	check(not slots.play("door_wood_open", Vector3(40, 0, 0), origin), "a source beyond 30 m is skipped, not played quietly")
@@ -84,6 +84,12 @@ func _init() -> void:
 	check(not slots.play("wolf_step", Vector3(2, 0, 0), origin), "a creature step (low priority) waits when the voices are full")
 	check(slots.play("door_iron_close", Vector3(2, 0, 0), origin), "a door (high priority) still plays when the voices are full")
 	stage.playing = 0
+	var before: int = slots.get_child_count()
+	check(slots.play("wolf_step", Vector3(45, 0, 0), origin), "an animal's step 45 m off still plays (creature steps reach %.0f m)" % SlotSounds.CREATURE_STEP_REACH_M)
+	var step_voice: Node = slots.get_child(slots.get_child_count() - 1) if slots.get_child_count() > before else null
+	check(step_voice is AudioStreamPlayer3D and is_equal_approx((step_voice as AudioStreamPlayer3D).max_distance, SlotSounds.CREATURE_STEP_REACH_M) and is_equal_approx((step_voice as AudioStreamPlayer3D).unit_size, SlotSounds.CREATURE_STEP_UNIT_M),
+			"its voice has the creature step unit and reach (level pass 23 Nov 2026)")
+	check(not slots.play("wolf_step", Vector3(SlotSounds.CREATURE_STEP_REACH_M + 5.0, 0, 0), origin), "past that reach it is skipped")
 	check(slots.loaded_clips > 0 and slots.loaded_bytes > 0, "clips load on first use (%d clips, %.2f MB)" % [slots.loaded_clips, float(slots.loaded_bytes) / 1048576.0])
 	check(slots.loaded_clips < clips, "not every clip was loaded by touching a few slots (lazy)")
 
@@ -208,6 +214,8 @@ func _check_ambience() -> void:
 	night["season"] = "winter"
 	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_night", "a winter night gets the general night bed")
 	check(float(Ambience.BED_TRIM_DB["bed_night"]) <= -32.0, "the night bed sits at -32 dB or lower (Dave 4 Nov: still always too loud at -18)")
+	check(float(Ambience.BED_TRIM_DB.get("bed_crickets", 0.0)) <= -14.0 and float(Ambience.BED_TRIM_DB.get("bed_desert_wind", 0.0)) <= -11.0,
+			"the cricket and desert wind beds sit under an animal's step at 20 m (level pass 23 Nov 2026: -14 and -11 dB)")
 	var item_fx: GDScript = load("res://src/client/item_sounds.gd")
 	check(item_fx.get_script_method_list().all(func(m): return m["name"] != "watch_vitals") and not FileAccess.file_exists("res://assets/audio/cooking/stomach_growl_0.ogg"), "the stomach growl is gone (Dave 4 Nov: the odd repeating noise)")
 	check(Ambience.choose_bed(slots, "time_bed", summer_forest) == "", "no time bed by day")

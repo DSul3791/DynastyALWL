@@ -23,9 +23,10 @@ const SILENT_DB := -60.0
 # took it for the surf. He wants it kept, just much quieter: -18 dB (about -46 RMS), and it ducks near a lit fire. (The all-day metal-sheet sound is another source, not this.)
 # Dave 4 Nov: still the one sound always too loud (his sound panel: the only one left playing, at -18 dB, heard as wind). Down 14 dB more, to -32 (about -60 RMS).
 # 23 Nov 2026, level pass (assets/audio/level_pass.py, the coordinator: no everyday sound drowns an approaching animal): the warm-night cricket bed played
-# at -28.4 dB, louder than heavy rain and 31 dB over the night bed it replaces, 7.5 dB over a wolf's step at 20 m: down 14 dB (about -42). The desert wind
-# bed (-29.5) down 8 dB (about -37.5), under a wolf's step at 20 m. Not yet heard.
-const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -32.0, "bed_crickets": -14.0, "bed_desert_wind": -8.0}
+# at -28.4 dB, louder than heavy rain and 31 dB over the night bed it replaces, about 9 dB over a wolf's step at 20 m: down 14 dB (about -42; still 17 dB
+# over the night bed, and tonal chirps, not the low hush Dave turned down on 4 Nov: his ear decides). The desert wind bed (-29.5) down 11 dB (about -40.5),
+# under an animal's step at 20 m. Not yet heard.
+const BED_TRIM_DB := {"bed_forest_day": 0.0, "bed_forest_winter": 0.0, "bed_night": -32.0, "bed_crickets": -14.0, "bed_desert_wind": -11.0}
 const FIRE_DUCK_LAYERS := ["shore_bed", "time_bed"]   # was -12 for the old beds; Kathleen's new ones (kathleen-forest-bed f57c1bd9) are 15-20 dB quieter
 const GAP_S := [4.0, 20.0]
 const PITCH_SPREAD := 0.05

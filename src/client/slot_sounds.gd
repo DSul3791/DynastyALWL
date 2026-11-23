@@ -11,6 +11,11 @@ const Sound3D := preload("res://src/client/sound_3d.gd")
 const SLOTS_PATH := "res://data/sound/batch1_slots.json"
 const EXTRA_PATHS := ["res://data/sound/batch3_slots.json"]   # more slot files merged in (R1: bed lie and rise, net cast and haul, thatch pick, twine lash)
 const SKIP_M := 30.0                      # one-shots farther than this are not played at all
+# An animal's step (group "creature step") carries farther: Godot fades every voice to nothing at max_distance (gain x (1 - d / max_distance), measured
+# 23 Nov 2026: -20 dB from 5 to 20 m with a 30 m reach, -12 without), so with the 30 m reach a wolf's step at 20 m was 9.5 dB under the inverse law and
+# drowned by the beds (assets/audio/level_pass.py). The coordinator, 23 Nov 2026: no everyday sound drowns an approaching animal.
+const CREATURE_STEP_UNIT_M := 8.0
+const CREATURE_STEP_REACH_M := 60.0
 const START_M := 40.0                     # loops start inside this and stop past STOP_M (hysteresis)
 const STOP_M := 45.0
 const FADE_S := 0.3
@@ -189,7 +194,9 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 	if not has_slot(slot) or bool(_slots[slot].get("loop", false)):
 		return false
 
-	if listener != Vector3.INF and listener.distance_to(at) > SKIP_M:
+	var creature: bool = group_of(slot) == "creature step"
+
+	if listener != Vector3.INF and listener.distance_to(at) > (CREATURE_STEP_REACH_M if creature else SKIP_M):
 		return false
 
 	var now: int = Time.get_ticks_msec()
@@ -205,7 +212,7 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 	var pick: int = pick_index(list.size(), int(_last_pick.get(slot, -1)), _rng.randi())
 	_last_pick[slot] = pick
 	_cooldown_until[slot] = now + int(float(COOLDOWN_S.get(group_of(slot), 0.0)) * 1000.0)
-	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", 6.0, 30.0)
+	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", CREATURE_STEP_UNIT_M if creature else 6.0, CREATURE_STEP_REACH_M if creature else 30.0)
 	player.stream = list[pick]
 	player.volume_db = linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0)
 	player.pitch_scale = 1.0 + _rng.randf_range(-PITCH_SPREAD, PITCH_SPREAD)
