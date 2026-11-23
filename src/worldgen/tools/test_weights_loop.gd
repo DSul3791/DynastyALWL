@@ -160,7 +160,9 @@ func _data() -> void:
 	check(defaulted.is_empty(), "every item a player holds has its own weight, none falls to the default (%s)" % str(defaulted))
 	check(zero.is_empty(), "no item weighs nothing (%s)" % str(zero))
 	check(heavy_seed.is_empty(), "no plain seed weighs more than 50 g (%s)" % str(heavy_seed))
-	check(CarryRules.weight_text(kg("stone") * 7.0) == CarryRules.weight_text(7.0 * kg("stone")) and CarryRules.weight_text(0.000006) == "6 mg", "weights read in kg, g and mg (6 mg reads \"%s\")" % CarryRules.weight_text(0.000006))
+	var kiln_yield: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json")) as Dictionary)["kilns"]["yield"]
+	check(kg("charcoal") <= 0.05 + EPS and float(kiln_yield["log"]) * kg("charcoal") < kg("log"), "a log's charcoal weighs less than the log (coordinator 23 Nov: about 0.05 kg a piece; %d x %s against %s)" % [int(kiln_yield["log"]), CarryRules.weight_text(kg("charcoal")), CarryRules.weight_text(kg("log"))])
+	check(CarryRules.weight_text(0.000006) == "6 mg" and CarryRules.weight_text(0.25) == "250 g" and CarryRules.weight_text(3.5) == "3.50 kg", "weights read in kg, g and mg (6 mg reads \"%s\")" % CarryRules.weight_text(0.000006))
 
 
 # 2 and 3. A stack, the limit, and the same reading as the client's.
@@ -186,6 +188,32 @@ func _stack_and_limit() -> void:
 	act(Net.ACT_PICKUP, pile)
 	check(said.has("Too heavy to carry any more"), "at the limit it takes none and says so (%s)" % str(said))
 	check(near(items._load_ratio(1), CarryRules.load_fraction(load_of(1), body, cfg)) and CarryRules.speed_factor(load_of(1), body, cfg) <= float(cfg["min_speed"]) + EPS, "at the limit the server's load share is the client's, and the walk is at its slowest (%.2f)" % CarryRules.speed_factor(load_of(1), body, cfg))
+	# Held E on sticks (a batch of 10 from the heaps around, pickup_batch.json) at the limit says so too.
+	act(Net.ACT_DROP, items.inventory_of(1).numbers.find(n("stone")), 0, 1, 1, HERE + Vector3(-0.5, 0.0, -0.5))   # room for a few sticks, never none
+	var stick_pile: int = lay("stick", 20, HERE + Vector3(0.0, 0.0, 0.6))
+	var spare: int = int(floor((cap - load_of(1)) / kg("stick")))
+	said.clear()
+	before = load_of(1)
+	act(Net.ACT_PICKUP, stick_pile)
+	var sticks: int = int(round((load_of(1) - before) / kg("stick")))
+	check(sticks == spare and spare > 0 and spare < 10 and said.any(func(t): return str(t) == "Too heavy: you took %d of 10" % sticks), "a batch of sticks at the limit takes %d and says so (%s)" % [sticks, str(said)])
+	# The HUD line (inventory_view load_line), shown with the pack shut so a slow walk always has its reason on screen (carry feel, 23 Nov 2026).
+	var View := load("res://src/client/inventory_view.gd")
+	var comfort: float = CarryRules.comfort_kg(body, cfg)
+	check(View.load_line(comfort, body, cfg) == "" and CarryRules.speed_factor(comfort, body, cfg) == 1.0, "up to the comfortable load: full pace and no line")
+	check(str(View.load_line(comfort + 1.0, body, cfg)).begins_with("Heavy load") and CarryRules.speed_factor(comfort + 1.0, body, cfg) < 1.0, "past it: slower, and the HUD says \"%s\"" % View.load_line(comfort + 1.0, body, cfg))
+	check(str(View.load_line(load_of(1), body, cfg)).begins_with("At your carry limit"), "filled by pick-ups: \"%s\"" % View.load_line(load_of(1), body, cfg))
+	check(str(View.load_line(cap + 2.0, body, cfg)).begins_with("Over your carry limit"), "over it: \"%s\"" % View.load_line(cap + 2.0, body, cfg))
+	var steps: Array = []
+	var worst: float = 0.0
+
+	for i in 101:   # the slowdown ramps: no step of 1 percent of the limit cuts the pace by more than 4 percent of full pace
+		steps.append(CarryRules.speed_factor(comfort + (cap - comfort) * float(i) / 100.0, body, cfg))
+
+	for i in range(1, steps.size()):
+		worst = maxf(worst, float(steps[i - 1]) - float(steps[i]))
+
+	check(worst <= 0.04 and near(float(steps[100]), float(cfg["min_speed"])) and CarryRules.speed_factor(cap + 5.0, body, cfg) == float(steps[100]), "the slowdown eases from full pace to %.2f with no jump (worst step %.3f), and stays there past the limit" % [float(cfg["min_speed"]), worst])
 	# Over the limit without picking anything up (the body grows lighter, a backpack comes off): told once.
 	said.clear()
 	items.vitals_of(1)["weight"] = 60.0
@@ -229,7 +257,7 @@ func _moves() -> void:
 	check(kindling == 2 * int(rec["gives"][1]) and near(load_of(1), float(kindling) * kg("kindling")), "made, %d Kindling weigh %.3f kg" % [kindling, load_of(1)])
 	# Eating.
 	clear_pack(1)
-	items.vitals_of(1)["hunger"] = 10.0
+	items.vitals_of(1)["fed"] = 0.0   # an empty stomach, so the eat is never refused
 	var food: String = "dried_berries"
 	items.give(1, n(food), 3)
 	before = load_of(1)
@@ -335,7 +363,7 @@ func _save_9257() -> void:
 	var wrong: Array = []
 	var peer: int = 600
 
-	for key in snap["packs"]:
+	for key in snap["packs"]:   # no 9257 pack holds crop seeds or linseed, which _count_old_seeds would multiply on load (test_save_9257 in_todays_seeds)
 		var want: float = 0.0
 
 		for row in snap["packs"][key]:

@@ -7896,10 +7896,20 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		_reject(peer, 2)
 		return
 
-	if fits < want:   # the carry limit stops it part way: say so, as a take from a store does (weights loop, 23 Nov 2026)
-		_say(peer, "Too heavy: you took %d of %d" % [fits, want])
+	var over: int = inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {}))   # what the pack had no slot for (at MAX_SLOTS)
+	var took: int = fits - over
 
-	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {})) + (want - fits)
+	if took == 0:
+		_say(peer, "Your pack is full")
+		_reject(peer, 2)
+		return
+
+	if over > 0:
+		_say(peer, "Your pack is full: you took %d of %d" % [took, want])
+	elif fits < want:   # the carry limit stops it part way: say so, as a take from a store does (weights loop, 23 Nov 2026)
+		_say(peer, "Too heavy: you took %d of %d" % [took, want])
+
+	var left: int = int(it["count"]) - took
 
 	if it.has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
 		_goal_got(peer, int(it["number"]), int(it["count"]) - left)
@@ -7965,6 +7975,11 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 	heaps.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
 	var wanted: int = fits
 	var taken: int = 0
+	var full: bool = false
+	var lying: int = 0   # how many lie in reach: more than `fits` there means the carry limit, not the heaps, cut the take
+
+	for heap in heaps:
+		lying += int(_items[heap[1]]["count"])
 
 	for heap in heaps:
 		if wanted <= 0:
@@ -7981,10 +7996,17 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		wanted -= share - over
 
 		if over > 0:
+			full = true
 			break   # the pack is at MAX_SLOTS
 
 	if taken == 0:
+		if full:
+			_say(peer, "Your pack is full")
 		_reject(peer, 2)
+	elif full:
+		_say(peer, "Your pack is full: you took %d" % taken)
+	elif fits < mini(batch, table.COUNT_MAX) and lying > fits:   # held E on sticks at the limit: say why it stopped, as a single pick-up does
+		_say(peer, "Too heavy: you took %d of %d" % [taken, mini(batch, mini(lying, table.COUNT_MAX))])
 
 
 # `fresh` empty: the full sync (every SYNC_EVERY_S), which files every record in the grid. Otherwise a road's quick sync (_road_tick, every

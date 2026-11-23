@@ -2221,6 +2221,9 @@ func _flush_refresh() -> void:
 	_refresh_queued = false
 	_refresh()
 
+	if _vitals_back != null:
+		_place_vitals()   # the load line follows the pack at once: a drop clears "heavy load" with the pack shut
+
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
 
@@ -2257,6 +2260,11 @@ func _place_vitals() -> void:
 		lines.append("You are parched: you do not recover")
 	elif thirst <= warn_thirst:
 		lines.append("You are low on water")
+
+	var load_line: String = load_warning()
+
+	if load_line != "":
+		lines.append(load_line)
 
 	_vitals_warning.text = "\n".join(lines)
 
@@ -2536,6 +2544,26 @@ func _refresh_weight() -> void:
 		var fraction: float = CarryRules.bar_fraction(carried_kg(), carry_body_kg(), _carry_cfg)
 		_carry_bar.value = fraction * 100.0
 		_carry_bar.get_theme_stylebox("fill").bg_color = InventoryLook.carry_color(fraction)
+
+
+# The HUD line for a load that slows you (carry feel, 23 Nov 2026): shown with the pack shut, so a slow walk always has its reason on screen.
+func load_warning() -> String:
+	return load_line(carried_kg(), carry_body_kg(), _carry_cfg) if not _carry_cfg.is_empty() else ""
+
+
+static func load_line(load_kg: float, body_kg: float, cfg: Dictionary) -> String:
+	var limit: float = CarryRules.cap_kg(body_kg, cfg)
+
+	if load_kg <= CarryRules.comfort_kg(body_kg, cfg):
+		return ""
+
+	if load_kg > limit + 0.05:   # past the client's rounding of the body (up to 35 g, weights review)
+		return "Over your carry limit (%.1f of %.0f kg): put something down" % [load_kg, limit]
+
+	if load_kg >= limit * 0.98:   # within 2 percent: at the slowest walk, and little more will go in
+		return "At your carry limit (%.0f kg): you move slowly" % limit
+
+	return "Heavy load (%.1f of %.0f kg): you move slower" % [load_kg, limit]
 
 
 func _load_text() -> String:
