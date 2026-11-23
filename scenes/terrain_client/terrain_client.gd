@@ -358,6 +358,7 @@ var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
 var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
 var test_walk: bool = false
+var test_crouch_walk: bool = false      # --walk --crouchwalk: crouched walks past the trees near the drop point (Dave 23 Nov 2026, the crouch block)
 var shot_run: bool = false             # the shot runner's --shot-run: on foot along _walk_dir at run_speed while it measures frame times (running lag)
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
@@ -695,6 +696,8 @@ func _ready() -> void:
 			test_inspect = true
 		elif argument == "--walk":
 			test_walk = true
+		elif argument == "--crouchwalk":
+			test_crouch_walk = true
 		elif argument.begins_with("--runspeed="):
 			run_speed = float(argument.trim_prefix("--runspeed="))
 		elif argument == "--water-step":
@@ -3879,10 +3882,18 @@ func _cut_nearest_tree() -> void:
 	net.cut_flora.rpc_id(1, best[1], best[2])
 
 
+# The player body's collision margin. Godot's 1 mm default stopped a crouched player dead on flat forest ground (Dave 23 Nov 2026: "like I was
+# against an invisible wall but if I stood up I could walk"): at the crouch pace (0.64 m/s, about 1 cm a physics step) move_and_slide on the
+# terrain made no headway at about one walk in seven past trees near the town, touching only the floor; standing at that pace stuck as often,
+# so it is the pace, not the crouched shape. With 1 cm it never stuck (the --crouchwalk check, tools/items_check.py).
+const PLAYER_SAFE_MARGIN_M := 0.01
+
+
 func _make_player(root: Node3D, start: Vector3) -> void:
 	body = CharacterBody3D.new()
 	body.collision_mask = 3                # the ground (1) and ice sheets and floes (2)
 	body.wall_min_slide_angle = 0.0        # always slide along a wall, never stop dead against it
+	body.safe_margin = PLAYER_SAFE_MARGIN_M
 	_movement = JSON.parse_string(FileAccess.get_file_as_string("res://data/movement.json")) if FileAccess.file_exists("res://data/movement.json") else {}
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var capsule: CapsuleShape3D = CapsuleShape3D.new()
@@ -7433,10 +7444,15 @@ func _walk_step() -> void:
 				_walk_phase = 2
 				_walk_msec = now
 				_walk_dir = Vector3(1.0, 0.0, 0.0)
+
+				if test_crouch_walk:
+					_crouch_walk_start()
 			elif now - _walk_msec > 20000:
 				_walk_stats["landed_s"] = -1.0
 				_walk_phase = 4
 				_walk_report()
+		6:
+			_crouch_walk_step(now)
 		2:
 			var ground: float = _ground_below(body.global_position)
 			_walk_stats["frames"] += 1
@@ -7844,6 +7860,68 @@ func _ground_below(p: Vector3) -> float:
 
 
 # Puts the player 3 m west of the nearest tree with a trunk collider.
+# --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side, a crouched walk at the crouch pace past it from four sides, 3 s each;
+# a walk that covers under 60 percent of its distance is stuck. Prints "crouch walk: N of M stuck" and ends the walk test.
+var _crouch_trees: Array = []
+var _crouch_case: int = -1
+var _crouch_case_msec: int = 0
+var _crouch_from: Vector3 = Vector3.ZERO
+var _crouch_stuck: int = 0
+const CROUCH_WALK_TREES := 10
+const CROUCH_WALK_S := 3.0
+
+
+func _crouch_walk_start() -> void:
+	var here: Vector3 = body.global_position
+
+	for chunk in flora._chunks:
+		@warning_ignore("shadowed_variable")
+		var items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(items["ids"].size()):
+			var info: Dictionary = flora._species.get(items["ids"][n] >> 16, {})
+
+			if info.get("kind", 2) == 0 and float(info.get("trunk", 0.0)) >= 0.1 and (items["positions"][n] - here).length() < 120.0:
+				_crouch_trees.append([(items["positions"][n] - here).length(), items["positions"][n]])
+
+	_crouch_trees.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	_crouch_trees = _crouch_trees.slice(0, CROUCH_WALK_TREES)
+	_set_stance(StanceScript.CROUCH)
+	_walk_dir = Vector3.ZERO
+	_walk_phase = 6
+
+
+func _crouch_walk_step(now: int) -> void:
+	var want: float = WALK_SPEED * float(StanceScript.SPEED[StanceScript.CROUCH]) * CROUCH_WALK_S
+
+	if _crouch_case >= 0 and float(now - _crouch_case_msec) < CROUCH_WALK_S * 1000.0:
+		return
+
+	if _crouch_case >= 0 and Vector2(body.global_position.x - _crouch_from.x, body.global_position.z - _crouch_from.z).length() < want * 0.6:
+		_crouch_stuck += 1
+		print("Terrain client: crouch walk: stuck at %s heading %s" % [str(body.global_position), str(_walk_dir)])
+
+	_crouch_case += 1
+
+	if _crouch_case >= _crouch_trees.size() * 4:
+		print("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 4])
+		_set_stance(StanceScript.STAND)
+		_walk_dir = Vector3.ZERO
+		_walk_phase = 4
+		return
+
+	var tree: Vector3 = _crouch_trees[_crouch_case / 4][1]
+	var ang: float = deg_to_rad(90.0 * (_crouch_case % 4))
+	var toward: Vector3 = Vector3(-sin(ang), 0.0, -cos(ang))
+	var start: Vector3 = tree - toward * 2.0 + Vector3(toward.z, 0.0, -toward.x) * 0.8
+	body.global_position = Vector3(start.x, _ground_below(Vector3(start.x, tree.y + 30.0, start.z)) + 1.0, start.z)
+	body.velocity = Vector3.ZERO
+	body.rotation.y = atan2(-toward.x, -toward.z)
+	_crouch_from = body.global_position
+	_crouch_case_msec = now
+	_walk_dir = toward
+
+
 func _place_by_tree() -> bool:
 	var here: Vector3 = body.global_position
 	var best: Array = []

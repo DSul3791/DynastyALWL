@@ -109,6 +109,9 @@ CLIENTS = [
         ("over-exerted is 10 percent slower, not capped", r"1: pace x0.9 cap 0.0 \|", None, None),
         ("fainted locks movement", r"2: pace x1.0 cap -1.0", None, None),
     ]),
+    ("crouchwalk", ["--walk", "--crouchwalk"], 20000, [   # Dave 23 Nov 2026: crouched, an invisible wall on flat ground under a tree
+        ("crouched walks past trees never stop dead", r"crouch walk: (\d+) of \d+ stuck", 0, 0),
+    ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),
         ("none left standing", r"still standing (\d+)", 0, 0),
