@@ -594,10 +594,10 @@ func _make_line() -> MeshInstance3D:
 	return line
 
 
-# The far end of a held model in its own space (the tip of a rod): the corner of its meshes' box farthest from the grip (the origin).
+# The far end of a held model in its own space (the tip of a rod): the corner of its meshes' box highest along its own +y, butt to tip.
 static func tip_of(model: Node3D) -> Vector3:
 	var best: Vector3 = Vector3(0.0, 1.5, 0.0)
-	var best_d: float = -1.0
+	var best_d: float = -INF
 
 	for child in model.find_children("*", "MeshInstance3D", true, false):
 		var mi: MeshInstance3D = child as MeshInstance3D
@@ -611,8 +611,8 @@ static func tip_of(model: Node3D) -> Vector3:
 		for k in range(8):
 			var p: Vector3 = to_model * box.get_endpoint(k)
 
-			if p.length() > best_d:
-				best_d = p.length()
+			if p.y > best_d:   # held_item.gd HELD_BASIS "rod": butt to tip along +y (the cane is held at its middle, so the farthest corner was as often the butt)
+				best_d = p.y
 				best = p
 
 	return best
@@ -640,11 +640,16 @@ static func bow_pose(b: Dictionary) -> String:
 # The bow in the aim (162): upright before the body at the left fist with its top canted to the right (as the archer's own first-person bow,
 # held_item.gd _pose_bow), the string back at the right hand, the arrow nocked; lowered, it hangs at the side as before. Within FULL_M only.
 func _pose_bow(b: Dictionary, distance: float) -> void:
-	var model: Node3D = b.get("held_node", null) as Node3D
+	var held: Node3D = b.get("held_node", null) as Node3D
 	var pose: String = bow_pose(b)
 
-	if model == null or not is_instance_valid(model) or not model.is_inside_tree():
-		return
+	if (pose == "" and not b.has("bow_rest")) or held == null or not is_instance_valid(held) or not held.is_inside_tree():
+		return   # nothing to pose or put back (every body, every frame: no child walk)
+
+	# The bow's own mesh (limbs along its x, as the player's own held_item.gd _pose_bow poses it), not the holder that turns it for the
+	# hand mount: posing the holder pointed the limbs at the target, the bow lying flat (Lane A S8, 23 Nov 2026).
+	var meshes: Array = held.find_children("*", "MeshInstance3D", false, false)
+	var model: Node3D = meshes[0] as Node3D if meshes.size() == 1 else held
 
 	if pose == "" or distance > FULL_M:
 		if b.has("bow_rest"):
@@ -658,7 +663,7 @@ func _pose_bow(b: Dictionary, distance: float) -> void:
 	if not b.has("bow_rest"):
 		b["bow_rest"] = model.transform
 
-	var mount: Node3D = model.get_parent() as Node3D
+	var mount: Node3D = held.get_parent() as Node3D
 	var body: Node3D = b["node"]
 	var face: Vector3 = -body.global_basis.z
 	face = Vector3(face.x, 0.0, face.z).normalized() if Vector2(face.x, face.z).length() > 0.001 else Vector3.FORWARD
@@ -917,7 +922,17 @@ static func held_model(number: int, item_table) -> Node3D:
 	if id == "" or not HeldItem.BasicLook.has_look(id) or not HeldItem.HELD_LOOK_TURN.has(shape):
 		return null
 
-	return HeldItem.look_tool_node(id)
+	var node: Node3D = HeldItem.look_tool_node(id)
+
+	if shape == "bow" and node.get_child_count() == 1 and node.get_child(0) is MeshInstance3D:
+		# The hand's bow, as the player's own (held_item.gd _make_look_tool_model): no string in its mesh, two cords to the nock point and the
+		# nocked arrow, so another player's drawn bow shows its string back and an arrow (review of the S8 fix, 23 Nov 2026: they were never made).
+		var def: Dictionary = HeldItem.BasicLook.entry(id)
+		var bow: MeshInstance3D = node.get_child(0) as MeshInstance3D
+		bow.mesh = HeldItem.BasicLook.mesh("bow", Color.html(str(def.get("color", "#a8804a"))), float(def.get("size", 1.0)), (def.get("bits", []) as Array) + ["held"])
+		HeldItem.add_bow_parts(bow)
+
+	return node
 
 
 # The spear's place each frame, as held_item.gd _aim_spear in third person: its point (model -Z) along the body's facing lifted SPEAR_LIFT_DEG,

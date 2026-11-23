@@ -461,6 +461,7 @@ var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
+var motion_audit = null                 # --motion-audit or a robot: the walk measured against the keys (src/client/motion_audit.gd)
 var robot: Node = null                 # --robot=NAME: a robot play-tester drives this client by key presses (src/client/robot_play.gd, tools/robots.sh)
 var _block_port_override: int = 0      # --block-port=N: the block line connects here instead of the port the server named (a test relay, tools/lossy_link.py)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
@@ -843,7 +844,11 @@ func _ready() -> void:
 			test_chop = true
 		elif argument == "--lag-run":
 			lag_run = preload("res://src/client/lag_run.gd").new()
+		elif argument == "--motion-audit":
+			motion_audit = preload("res://src/client/motion_audit.gd").new()
 		elif argument.begins_with("--robot="):
+			if motion_audit == null:
+				motion_audit = preload("res://src/client/motion_audit.gd").new()   # every robot measures its own walk
 			robot = preload("res://src/client/robot_play.gd").new()
 			robot.prepare(argument.trim_prefix("--robot="), OS.get_cmdline_user_args())   # makes and picks its own character before hello
 		elif argument.begins_with("--block-port="):
@@ -4574,6 +4579,7 @@ var _act_test_next: int = 0
 var _tunnel_spam_count: int = 0
 var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
+var _step_hover_m: float = 0.0            # after a step-up: metres the body still moves held level onto the step (see _step_up)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
 var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
@@ -6004,6 +6010,8 @@ func _move_player(delta: float) -> void:
 		elif strain_cap < 0.0:
 			pace = 0.0   # fainted or waking: no control
 
+	var walked: bool = false   # this frame took the walk (or swim) branch: the motion audit judges only those
+
 	if test_speed > 0.0 and frames_left > 0:
 		if test_fly:
 			flying = true
@@ -6092,9 +6100,15 @@ func _move_player(delta: float) -> void:
 			feel.jump()
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
 
+		if _step_hover_m > 0.0:
+			if swimming or waiting_for_ground or velocity.y > 0.0 or Vector2(velocity.x, velocity.z).length_squared() < 0.0001:
+				_step_hover_m = 0.0   # swimming, a jump, or no longer walking: gravity as ever
+			else:
+				velocity.y = 0.0
+
 		body.velocity = velocity
 
-		if not swimming and not waiting_for_ground and body.is_on_floor():
+		if not swimming and not waiting_for_ground and body.is_on_floor() and _step_hover_m <= 0.0:
 			_step_up(Vector3(velocity.x, 0.0, velocity.z) * delta)
 
 		var fall_speed: float = -body.velocity.y
@@ -6107,6 +6121,18 @@ func _move_player(delta: float) -> void:
 		var carried: Vector3 = _slide_carry / delta if carrying else Vector3.ZERO
 		body.velocity += carried
 		body.move_and_slide()
+		var slid_at: Vector3 = body.global_position
+		var touched: Array = []
+
+		if motion_audit != null:
+			for i in range(body.get_slide_collision_count()):
+				var hit: KinematicCollision3D = body.get_slide_collision(i)
+				var what: Object = hit.get_collider()
+				touched.append([(str(what.get_parent().name) + "/" + str(what.name)) if what is Node and what.get_parent() != null else str(what), hit.get_normal()])
+
+		if _step_hover_m > 0.0:
+			_step_hover_m = StepUpScript.hover_left(body, slide_from, _step_hover_m)
+
 		var wall_n: Vector3 = body.get_wall_normal() if body.is_on_wall() else Vector3.ZERO
 		body.velocity -= carried.slide(Vector3(wall_n.x, 0.0, wall_n.z).normalized()) if body.is_on_wall() else carried   # the pace the animation, sounds and ice grip read stays the walker's own
 		Probe.stop("p slide", tm)
@@ -6133,12 +6159,24 @@ func _move_player(delta: float) -> void:
 			if landed > 0.0 and IceFeelScript.bears(_ice_feel_band) and _ice_underfoot:
 				feel.strike(0.0, 0.25)   # ice_walk_feel.md section 4: a hard landing on a sheet dips a little more (0.02 m)
 
+		var before_rescue: Vector3 = body.global_position
 		rescue.step()
 
+		if motion_audit != null:
+			var gait: String = "swim" if swimming else ("crouch" if stance.stance == StanceScript.CROUCH else ("prone" if stance.stance != StanceScript.STAND else ("run" if running else "walk")))
+			motion_audit.frame(delta, gait, wanted_move, slide_from, slid_at, before_rescue, body.global_position, touched, body.get_floor_normal().y if body.is_on_floor() else 0.0)
+
+		walked = true
 		var tb: int = Probe.start()
 		_update_bob(delta)
 		_ease_step_lift(delta)
 		Probe.stop("p bob", tb)
+
+	if not walked:
+		_step_hover_m = 0.0   # a seat, a bed, a ladder or flying: no hop's level hold carries over
+
+		if motion_audit != null:
+			motion_audit.reset()   # the next walk frame starts fresh
 
 	if flying:
 		_bob_amount = 0.0
@@ -6233,8 +6271,16 @@ func _carry_slide(from: Vector3, asked: Vector3) -> void:
 
 # Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
 # The step height is data/movement.json step_up_m. Anything higher is a wall and move_and_slide slides along it.
+# The hop lifts the body just clear of the step's top, but its round foot is still over the edge: at a walk or a crouch it fell back before it
+# got over and stood at the step (robots 23 Nov 2026: crouched it could not get onto a foundation, 0.3 m, nor walking onto a 0.45 m one; only a
+# run went up). After a hop the body is held level while it moves StepUpScript.HOVER_M on, so it walks onto the top at its own pace.
 func _step_up(motion: Vector3) -> void:
-	_step_lift += StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
+	var lift: float = StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
+	_step_lift += lift
+
+	if lift > StepUpScript.HOVER_MIN_LIFT_M:
+		_step_hover_m = StepUpScript.HOVER_M
+		body.velocity.y = 0.0
 
 
 # The window stays put while the body hops: the eye eases up the step (the lift fades) instead of jumping.
