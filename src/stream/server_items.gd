@@ -1318,7 +1318,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if count <= 0 or number <= 0:
 		return false
 
-	position = _settled(position)
+	position = _settled_loose(position)
 
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item.
 	# A pile stopped by a building or solid object moves the rest beside it, on the side away from the pile's centre where it fell, and looks
@@ -1398,7 +1398,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 			away = Vector2(1.0, 0.0)
 
 		away = away.normalized() * (_cone_radius_of(number, int(stopped["count"])) + MERGE_M)
-		position = _settled(Vector3(stopped["pos"].x + away.x, position.y, stopped["pos"].z + away.y))
+		position = _settled_loose(Vector3(stopped["pos"].x + away.x, position.y, stopped["pos"].z + away.y))
 
 	var first: int = mini(count, PILE_CAP)
 	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
@@ -3242,6 +3242,58 @@ func _settled(position: Vector3) -> Vector3:
 	return Vector3(position.x, rest, position.z) if not is_nan(rest) and rest < position.y - 0.05 else position
 
 
+# A loose stack let go at `position` comes down onto what is under it: the ground (_settled), a building floor or a boulder, whichever is higher (physical world
+# audit 23 Nov 2026: a stack dropped on a foundation came down to the ground under it, 0.3 m inside the slab where nobody saw it, and one dropped
+# upstairs fell through the ceiling to the ground floor). Only lowers it, as _settled.
+func _settled_loose(position: Vector3) -> Vector3:
+	var rest: Vector3 = _settled(position)
+	var top: float = _floor_top_below(position)
+	return Vector3(position.x, top, position.z) if not is_nan(top) and top > rest.y and top < position.y + 0.05 else rest
+
+
+const FLOOR_ROWS_REACH_M := 3.0   # a foundation's or floor's middle is at most this far from a point over it (4 m footprints: half the diagonal 2.83 m; boulders 2 m at most)
+const BOULDER_TOP_SHARE := 0.7   # a boulder's drawn top over its spot, as a share of its radius (world_audit --walk measured the hull)
+
+
+# The highest building floor top (a foundation's, or a floor piece's: the storey above's floor) or boulder top over `at` at most 5 cm above it, NAN
+# where none: only the records near it (_ids_near), never a walk of every record. A stack dropped standing on a boulder lay inside the rock.
+func _floor_top_below(at: Vector3) -> float:
+	var best: float = NAN
+
+	for id in _ids_near(at, FLOOR_ROWS_REACH_M):
+		var it: Dictionary = _items.get(id, {})
+
+		if it.has("boulder"):   # a boulder's drawn top (inventory_view _size_boulder: its hull rises BOULDER_TOP_SHARE x its radius over its spot), rounded off to its edge
+			var r: float = BoulderWear.radius_now(float(it["boulder"]["radius"]), int(it["count"]), int(it["boulder"]["total"]))
+			var d: float = Vector2(at.x - it["pos"].x, at.z - it["pos"].z).length()
+
+			if r > 0.0 and d < r:
+				var rock: float = float(it["pos"].y) + BOULDER_TOP_SHARE * r * sqrt(1.0 - (d / r) * (d / r))
+
+				if rock <= at.y + 0.05 and (is_nan(best) or rock > best):
+					best = rock
+
+			continue
+
+		if not it.has("struct"):
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if not (bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor"):
+			continue
+
+		if not PlacementRules.holds(def, {"pos": it["pos"], "yaw": float(it["struct"].get("yaw", 0.0))}, at):
+			continue
+
+		var y: float = float(it["pos"].y) + PlacementRules.anchor_top(def)
+
+		if y <= at.y + 0.05 and (is_nan(best) or y > best):
+			best = y
+
+	return best
+
+
 # The height a dropped stack lands at, from the server's own ground (main gate 21 Nov 2026: the client sends the ground it has under the player,
 # or the feet less 1 m when it has none yet; with a coarse or missing client ground a drop landed under the surface, and _settled only lowers
 # an item, so it stayed buried). The search starts DROP_LOOK_ABOVE_M over the higher of the player's reported feet and the sent height (that
@@ -3256,6 +3308,11 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 
 	var start: float = maxf(feet.y, minf(spot.y, feet.y + DROP_REACH_M)) + DROP_LOOK_ABOVE_M
 	var rest: float = float(floor_below.call(Vector3(spot.x, start, spot.z)))
+	var top: float = _floor_top_below(Vector3(spot.x, start, spot.z))   # a building floor over the ground: the stack lies on it
+
+	if not is_nan(top) and (is_nan(rest) or top > rest):
+		rest = top
+
 	return spot.y if is_nan(rest) else rest
 
 
@@ -3283,7 +3340,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 			continue
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
-			it["pos"] = _settled(it["pos"])
+			it["pos"] = _settled_loose(it["pos"])
 			_wake_log(id)   # a log on ground that was dug or filled under it may roll
 			_dirty = true
 
@@ -6016,7 +6073,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "You cannot place that there: %s." % PlacementRules.reason_text("float"))
 		return
 
-	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
+	var seat: float = ground if on_base or not ground_height.is_valid() else PlacementRules.seated_ground(_structures_cfg, kit_id, at, deg_to_rad(float(yaw_deg)), surface, ground)   # a station sits at the lowest ground under it: no corner in the air
+	var spot: Vector3 = Vector3(at.x, at.y if on_base else seat + lift, at.z)
 
 	if panel and ground_height.is_valid() and PlacementRules.roof_panel_buried(_structures_cfg, kit_id, spot, yaw_deg, surface):
 		_say(peer, "That end of the roof panel would sink into the ground.")

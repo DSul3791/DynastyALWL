@@ -2098,6 +2098,12 @@ func _update_blueprint() -> void:
 		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
 		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
 
+		if blueprint_state == "" and PlacementRules.seats_low(_placement, kit):   # shown where the server sets it: at the lowest ground under its footprint
+			var middle: float = float(probe.call(_blueprint_at.x, _blueprint_at.z))
+
+			if not is_nan(middle):
+				_blueprint.global_position.y = PlacementRules.seated_ground(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe, middle)
+
 	if blueprint_state == "":
 		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0
 		var terrain: float = _terrain_y(_blueprint_at.x, _blueprint_at.z, _blueprint_at.y, 14.0)   # 14 m reaches down past a stack of four foundations

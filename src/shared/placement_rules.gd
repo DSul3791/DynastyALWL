@@ -1241,8 +1241,25 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 # "steep" when the ground under the kit is not level enough to stand it on, else "" (design 10.1: the outline is red until the
 # terrain is a reasonable shape; leveling comes with blueprints later). The ground is sampled at the middle and the corners of the
 # footprint turned by `yaw` (radians, the camera's), or on a ring of 0.8 m for a campfire; `height` is Callable(x, z) -> float
-# (NAN where unknown). The allowed rise from lowest to highest sample is "max_rise_m" of the structure, else of the file.
+# (NAN where unknown). The allowed rise from lowest to highest sample is rise_limit.
 static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable) -> String:
+	var samples: PackedFloat32Array = ground_samples(cfg, kit_id, spot, yaw, height)
+
+	if samples.is_empty():
+		return ""
+
+	var low: float = INF
+	var high: float = -INF
+
+	for h in samples:
+		low = minf(low, h)
+		high = maxf(high, h)
+
+	return "steep" if high - low > rise_limit(cfg, kit_id) else ""
+
+
+# The ground heights `steep` samples (the middle and the footprint's corners, or the campfire's ring), the unknown ones left out.
+static func ground_samples(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable) -> PackedFloat32Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var offsets: Array = [Vector2.ZERO]
 
@@ -1258,20 +1275,59 @@ static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, he
 		for corner in [Vector2(hx, hz), Vector2(-hx, hz), Vector2(hx, -hz), Vector2(-hx, -hz)]:
 			offsets.append(Vector2(corner.x * cos(yaw) + corner.y * sin(yaw), -corner.x * sin(yaw) + corner.y * cos(yaw)))
 
-	var low: float = INF
-	var high: float = -INF
+	var out: PackedFloat32Array = PackedFloat32Array()
 
 	for o in offsets:
 		var h: float = float(height.call(spot.x + o.x, spot.z + o.y))
 
-		if is_nan(h):
-			continue
+		if not is_nan(h):
+			out.append(h)
 
+	return out
+
+
+# Stations and furniture on the ground (physical world audit, coordinator 23 Nov 2026): one stood at the ground under its middle, and the rise rule
+# let any of them stand across 1.0 m whatever its size (a 0.8 m crate on a 51 degree slope), so a corner hung up to 0.5 m in the air on an even
+# slope and 1.0 m on a crest. Now one sits at the lowest ground under its footprint (seated_ground: it never floats, the uphill side is in the
+# ground) and its rise limit grows with its size: STATION_RISE_PER_M of its longer side, at least STATION_RISE_MIN_M, never over the file's
+# max_rise_m. A foundation, a building piece, a structure with its own max_rise_m and the campfire keep their limits.
+const STATION_RISE_PER_M := 0.35
+const STATION_RISE_MIN_M := 0.15
+
+
+# Whether a kit is set down by the station rule: a structure that is neither a foundation nor a building piece and has no max_rise_m of its own.
+static func seats_low(cfg: Dictionary, kit_id: String) -> bool:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	return not def.is_empty() and not bool(def.get("foundation", false)) and not bool(def.get("piece", false)) and not def.has("max_rise_m")
+
+
+# How much higher the highest ground sample may be than the lowest (steep).
+static func rise_limit(cfg: Dictionary, kit_id: String) -> float:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if def.is_empty():
+		return float(cfg.get("campfire", {}).get("max_rise_m", 0.6))
+
+	var limit: float = float(def.get("max_rise_m", cfg.get("max_rise_m", 1.0)))
+
+	if seats_low(cfg, kit_id):
+		limit = minf(limit, maxf(STATION_RISE_MIN_M, STATION_RISE_PER_M * maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0)))))
+
+	return limit
+
+
+# The ground height a kit set on the ground stands at: for a station (seats_low) the lowest of the ground samples, so no corner hangs in the air;
+# else (and where nothing is known) `middle`, the ground under its middle.
+static func seated_ground(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable, middle: float) -> float:
+	if not seats_low(cfg, kit_id):
+		return middle
+
+	var low: float = middle
+
+	for h in ground_samples(cfg, kit_id, spot, yaw, height):
 		low = minf(low, h)
-		high = maxf(high, h)
 
-	var limit: float = float(def.get("max_rise_m", cfg.get("campfire", {}).get("max_rise_m", 0.6) if def.is_empty() else cfg.get("max_rise_m", 1.0)))
-	return "steep" if high - low > limit else ""
+	return low
 
 
 # "float" when a spot is too far above or below the terrain under it, else "" (the server's "You cannot place that there"; the ghost asks the same, wherever it can read the
