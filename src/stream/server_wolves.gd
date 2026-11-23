@@ -329,7 +329,16 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 			_make_way(m, infos, dt)   # a resting or prowling wolf a player walked into steps out of them (robot play-testers 23 Nov 2026)
 
 		pace(m, now_ms)
-		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
+		if pack["phase"] == "rush":
+			m["state"] = ATTACK if bool(m.get("lunge", false)) else STALK   # the battle ring: only the lunging wolf attacks, the rest circle
+		elif pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false)):
+			m["state"] = ATTACK
+		elif pack["phase"] in ["stalk", "den_guard"]:
+			m["state"] = STALK
+		elif float(m.get("play", 0.0)) > 0.0:
+			m["state"] = int(m["play_kind"])
+		else:
+			m["state"] = 1 if moved else 0
 
 
 # A pack wolf standing this think with a player inside its contact distance steps out (ServerAnimals.make_way; the pack brain moves wolves,
@@ -592,6 +601,8 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 	pack["phase"] = "rush"
 	pack["sprint"] = 0.0
 	pack["bite"] = {}
+	pack.erase("ring")   # each rush takes its ring places afresh (_ring_turns)
+	pack.erase("turn")
 	pack["meat_hits"] = 0
 	pack["for_meat"] = meaty and not hurt_weak and not starving   # only after the meat: dropping it ends the attack
 	_say_to(target, str(w.get("say_rush", "The wolves are coming for you!")))
@@ -633,14 +644,18 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 	pack["sprint"] += dt
 	var speed: float = float(def.get("sprint_mps", 10.5)) if pack["sprint"] <= float(def.get("sprint_s", 5.0)) else float(def.get("chase_mps", 7.0))
+	_ring_turns(pack, members, p, dt)
 
 	for m in members:
-		_walk(m, p, speed, dt, infos)
 		var id: int = int(m["id"])
 		pack["bite"][id] = float(pack["bite"].get(id, 0.0)) - dt
 
+		if not _ring_step(pack, m, p, speed, dt, infos):
+			continue   # circling, winding up or backing off: no bite this step
+
 		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
+			pack["turn"][id] = {"step": "back", "t": 0.0}   # one bite a lunge, then back to its place on the ring
 			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))   # a higher-level wolf bites harder
 
 			# Meat is the prize: a few bites in, the pack tears it out of the pack and runs (never in a fire's or torch's light).
@@ -665,6 +680,110 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 				return
 
 
+# The battle ring (Dave 23 Nov 2026: animals "so robotic", "not actually acting like animals"; RESEARCH_2026-11-23.md 7 and 9): in a rush each
+# wolf keeps a place on a ring ring_m round the player, from the side it came, the places spread evenly and drifting round. Only
+# lunge_at_once wolves attack at a time: one is given a turn, stands and winds up (windup_s, the crouch you can read), lunges in for one
+# bite (lunge_s at most), and backs off to its place (back_s); then the one that waited longest goes. The others circle and watch.
+func _ring_turns(pack: Dictionary, members: Array, p: Vector3, dt: float) -> void:
+	var w: Dictionary = cfgw()
+
+	if not pack.has("ring") or not pack.has("turn"):
+		pack["ring"] = {}
+		pack["turn"] = {}
+		pack["ring_dir"] = 1.0 if int(pack["id"]) % 2 == 0 else -1.0
+
+	var ring: Dictionary = pack["ring"]
+	var fresh: bool = false
+
+	for m in members:
+		if not ring.has(int(m["id"])):
+			ring[int(m["id"])] = atan2(m["pos"].z - p.z, m["pos"].x - p.x)   # from the side it came (then spread evenly in that order)
+			fresh = true
+
+	if fresh:   # spread evenly in the order they stand round the player
+		var order: Array = members.map(func(m): return int(m["id"]))
+		order.sort_custom(func(x, y): return float(ring[x]) < float(ring[y]))
+		var first: float = float(ring[order[0]])
+
+		for k in order.size():
+			ring[order[k]] = first + TAU * float(k) / float(order.size())
+
+	for id in ring.keys():
+		ring[id] = float(ring[id]) + float(pack["ring_dir"]) * float(w.get("ring_rad_s", 0.25)) * dt
+
+	var turn: Dictionary = pack["turn"]
+
+	for id in turn.keys():
+		if not members.any(func(m): return int(m["id"]) == int(id)):
+			turn.erase(id)
+
+	if turn.size() >= mini(int(w.get("lunge_at_once", 1)) + int(members.size() / 4.0), members.size()):
+		return
+
+	var best: Dictionary = {}
+	var best_wait: float = -1.0
+
+	for m in members:
+		var near_ring: bool = Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("ring_m", 6.0)) + 3.0
+		var waited: float = _clock - float(m.get("turn_ended", -1000.0))
+
+		if not turn.has(int(m["id"])) and near_ring and waited >= float(w.get("turn_gap_s", 1.5)) and waited > best_wait:
+			best_wait = waited
+			best = m
+
+	if not best.is_empty():
+		turn[int(best["id"])] = {"step": "windup", "t": 0.0}
+
+
+# One wolf's step in the ring; true when it is lunging and may bite now.
+func _ring_step(pack: Dictionary, m: Dictionary, p: Vector3, speed: float, dt: float, infos: Array) -> bool:
+	var w: Dictionary = cfgw()
+	var def: Dictionary = host.species_def("wolf")
+	var id: int = int(m["id"])
+	var place: Vector3 = p + Vector3(cos(float(pack["ring"][id])), 0.0, sin(float(pack["ring"][id]))) * float(w.get("ring_m", 6.0))
+	var face: float = atan2(p.z - m["pos"].z, p.x - m["pos"].x)
+	var t: Dictionary = pack["turn"].get(id, {})
+	m["lunge"] = false
+
+	if t.is_empty():   # circle: run to its place while far, trot round once there, always facing in when it stops
+		var far: bool = Vector2(m["pos"].x - place.x, m["pos"].z - place.z).length() > 4.0
+		_walk(m, place, speed if far else float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)
+
+		if not bool(m.get("moving", false)):
+			m["heading"] = face
+
+		return false
+
+	t["t"] = float(t["t"]) + dt
+
+	if str(t["step"]) == "windup":   # stands, crouched and facing the player: the tell
+		m["moving"] = false
+		m["heading"] = face
+
+		if float(t["t"]) < float(w.get("windup_s", 0.6)):
+			return false
+
+		t = {"step": "lunge", "t": 0.0}   # wound up: the lunge starts this same step (state 7 at once, no step of lag)
+		pack["turn"][id] = t
+
+	if str(t["step"]) == "lunge":
+		m["lunge"] = true
+		_walk(m, p, float(def.get("sprint_mps", 10.5)), dt, infos)
+
+		if float(t["t"]) >= float(w.get("lunge_s", 1.5)):
+			pack["turn"][id] = {"step": "back", "t": 0.0}
+
+		return true
+
+	_walk(m, place, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)   # backing off to its place: the gap to hit back in
+
+	if float(t["t"]) >= float(w.get("back_s", 1.2)):
+		pack["turn"].erase(id)
+		m["turn_ended"] = _clock
+
+	return false
+
+
 # Back off away from the victim; `wait` is how long before the pack may come back (a maimed player is remembered).
 func _retreat(pack: Dictionary, members: Array, c: Vector3, from: Vector3, wait_s: float, keep_target: bool) -> void:
 	var w: Dictionary = cfgw()
@@ -674,6 +793,11 @@ func _retreat(pack: Dictionary, members: Array, c: Vector3, from: Vector3, wait_
 	pack["phase"] = "wait"
 	pack["timer"] = wait_s
 	pack["hurt"] = false
+	pack.erase("ring")   # a fresh ring, from where they stand, when they come back
+	pack.erase("turn")
+
+	for m in members:
+		m["lunge"] = false
 
 	if not keep_target:
 		pack["target"] = -1
@@ -709,6 +833,8 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 	pack["phase"] = "rush"
 	pack["sprint"] = 0.0
 	pack["bite"] = {}
+	pack.erase("ring")   # each rush takes its ring places afresh (_ring_turns)
+	pack.erase("turn")
 	_say_to(target, str(w.get("say_return", "The wolves are back.")))
 
 
