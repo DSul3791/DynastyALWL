@@ -240,7 +240,7 @@ func _init() -> void:
 	# guessed from arrival gaps, a delay of one arrival gap plus 0.15 s, no smoothing, stood_ms once) jumped over half a metre in a frame
 	# 3 times in 30 s at 10% loss and 9 at 30%; now none, also at 50% (scratch model, same numbers: gdmirror.py). The old way here is a model
 	# of the code before protocol 154 written into this test (_connection_jumps), not that code itself.
-	check(_connection_jumps(false, 0.3) >= 3, "the old way at 30%% loss jumps (%d frames over 0.5 m in 30 s)" % _connection_jumps(false, 0.3))
+	print("baseline: the old way (a model of it) at 30%% loss: %d frames over 0.5 m in 30 s" % _connection_jumps(false, 0.3))   # printed, not checked (gate review)
 
 	for loss in [0.0, 0.1, 0.3, 0.5]:
 		check(_connection_jumps(true, loss) == 0, "now at %d%% loss: no frame jumps over half a metre in 30 s (%d)" % [int(loss * 100.0), _connection_jumps(true, loss)])

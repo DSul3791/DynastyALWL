@@ -83,6 +83,8 @@ static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vecto
 	var d0: float = Vector2(a0.x - p.x, a0.z - p.z).length()
 
 	if d0 < m:
-		return a1 if Vector2(a1.x - p.x, a1.z - p.z).length() >= d0 else a0
+		var from: Vector2 = Vector2(a0.x - p.x, a0.z - p.z)
+		var to: Vector2 = Vector2(a1.x - p.x, a1.z - p.z)
+		return a1 if to.length() >= d0 and to.dot(from) > 0.0 else a0   # off, on its own side only: never across the player (gate review)
 
 	return stop_at(p, a0, a1, m)

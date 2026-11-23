@@ -85,6 +85,7 @@ func _init() -> void:
 	var held: Vector3 = AnimalContact.stop_toward(Vector3.ZERO, Vector3(-2.0, 0, 0), Vector3(1.5, 0, 0), m)
 	check(held.is_equal_approx(Vector3(-2.0, 0, 0)), "a carried charge going past the player stays on the near side (%s)" % str(held))
 	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-1.5, 0, 0), m).is_equal_approx(Vector3(-1.5, 0, 0)) and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.0, 0, 0), Vector3(-0.5, 0, 0), m).is_equal_approx(Vector3(-1.0, 0, 0)), "one already inside moves off but not nearer")
+	check(AnimalContact.stop_toward(Vector3.ZERO, Vector3(-1.9999, 0, 0), Vector3(4, 0, 0), m).x < 0.0 and AnimalContact.stop_toward(Vector3.ZERO, Vector3(-0.5, 0, 0), Vector3(3, 0, 0), m).is_equal_approx(Vector3(-0.5, 0, 0)), "one just inside the circle, carried to the far side, stays on its own side")
 
 	# A real charge (full ticks): it hits, and never comes inside the player, at 20 steps a second and with a server stepping only twice a second.
 	for sp in ["elephant", "mammoth", "rhino", "buffalo", "moose", "bear", "boar", "deer"]:
