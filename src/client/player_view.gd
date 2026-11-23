@@ -318,7 +318,7 @@ static func held_kind(number: int, item_table) -> String:
 	var row: Dictionary = item_table.entry(id)
 	var tool_class: String = str(row.get("tool_class", ""))
 
-	if str(row.get("weapon_class", "")) in ["spear", "fish_spear"] or str(HeldItem.BasicLook.entry(id).get("shape", "")) == "shaft":
+	if str(row.get("weapon_class", "")) in ["spear", "fish_spear"] or HeldItem.shaft_look(id):
 		return "spear"   # a pike, lance or quarterstaff (a "shaft" look) too: its mesh lies point to -Z, as a spear's, not handle to head along +Y
 
 	if str(HeldItem.BasicLook.entry(id).get("shape", "")) == "bow":

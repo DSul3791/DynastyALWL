@@ -823,11 +823,17 @@ func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
 
 
-# Held the way a spear is held (placement only; the jab and throw stay the spear's): a spear, or any "shaft" look (pike, lance, quarterstaff),
-# whose mesh lies point to -Z, not handle to head along +Y. Laid along the fingers like a tool they sat 0.15-0.27 m off the hand (23 Nov 2026,
-# the check in test_remote_players found it on other players; the player's own body had the same).
+# Held the way a spear is held (placement only; the jab, throw and crosshair stay the spear's): a spear, or in third person any "shaft" look
+# (pike, lance, quarterstaff, halberd, javelin), whose mesh lies point to -Z, not handle to head along +Y. Laid along the fingers like a tool
+# they sat 0.15-0.27 m off the hand (23 Nov 2026, the check in test_remote_players found it on other players; the player's own body had the
+# same). First person keeps the hand clip's hold: a long shaft hung down from the view would swing its butt up past the eye.
 func _held_as_shaft() -> bool:
-	return _is_spear() or str(BasicLook.entry(held_id()).get("shape", "")) == "shaft"
+	return _is_spear() or (not _first_person and not (_is_placeable() or _is_look_item()) and shaft_look(held_id()))
+
+
+# A "shaft" look (looks.json shape): one rule for the player's own body and other players (player_view.gd held_kind).
+static func shaft_look(item_id: String) -> bool:
+	return str(BasicLook.entry(item_id).get("shape", "")) == "shaft"
 
 
 # The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
