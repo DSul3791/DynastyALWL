@@ -581,7 +581,6 @@ func set_debug(on: bool) -> void:
 	_material.set_shader_parameter("debug_sheet", float(debug_on))
 
 
-# A chunk's settled water (water_grid.gd decode: count x count points `spacing` apart from the chunk's corner) as a liquid image: R surface, G/B the current,
 # The surface a sheet draws at (x, z) from its image (texel (0, 0) centred on `corner`, texels `texel_m` apart), as the shader draws it: each texel's
 # height its level in red, or 0.4 m under that where it is dry (the vertex tucks under the bed there), blended bilinearly; NAN where the depth in alpha
 # read bilinearly (a chunk sheet's fragment, fetch_bilinear) is under wet_min (the fragment discards there), or outside the image. The game's water
@@ -608,6 +607,9 @@ static func drawn_surface(im: Image, corner: Vector2, texel_m: float, x: float, 
 	var c10: Color = im.get_pixel(i0 + 1, j0)
 	var c01: Color = im.get_pixel(i0, j0 + 1)
 	var c11: Color = im.get_pixel(i0 + 1, j0 + 1)
+	if maxf(maxf(c00.a, c10.a), maxf(c01.a, c11.a)) < 0.0005:
+		return NAN   # dry all round (most calls: grass_view asks for every grass point)
+
 	var t: Color = c00.lerp(c10, tx).lerp(c01.lerp(c11, tx), tz)
 
 	if t.a < _wet_min(t):
@@ -626,6 +628,7 @@ static func _drawn_height(t: Color) -> float:
 	return t.r if t.a > _wet_min(t) else t.r - 0.4
 
 
+# A chunk's settled water (water_grid.gd decode: count x count points `spacing` apart from the chunk's corner) as a liquid image: R surface, G/B the current,
 # A a depth stand-in (the client has no ground here): OPEN_DEPTH_M inside, SHORE_DEPTH_M next to a dry point, 0 on shore and dry points. Shore points
 # (`edge`) carry their own level; dry points take the mean of their wet neighbours' levels so the sheet tucks under the bank there. null when dry.
 static func image_from_grid(grid: Dictionary) -> Image:

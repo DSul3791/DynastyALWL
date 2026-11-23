@@ -76,10 +76,29 @@ func _init() -> void:
 	live.fill(Color(10.5, 0.0, 0.0, 0.0))
 	flora.set_liquid_live_image(live, Vector2(8.0, 8.0), 4.0)
 	_check(is_equal_approx(flora.water_surface_at(8.0, 8.0), 10.0), "a window drawing no water there gives way to the chunk's sheet")
+	# The window's texels are centred on its cells: at a texel centre the game reads that texel's own level, between two the mean.
+	var slope: Image = Image.create(3, 3, false, Image.FORMAT_RGBAF)
+
+	for j in 3:
+		for i in 3:
+			slope.set_pixel(i, j, Color(10.0 + float(i) + 3.0 * float(j), 0.0, 0.0, 1.0))
+
+	flora.set_liquid_live_image(slope, Vector2(8.0, 8.0), 4.0)
+	_check(is_equal_approx(flora.water_surface_at(12.0, 16.0), 17.0), "a live texel centre reads its own level (%.2f)" % flora.water_surface_at(12.0, 16.0))
+	_check(is_equal_approx(flora.water_surface_at(10.0, 8.0), 10.5), "half way between two texels the mean (%.2f)" % flora.water_surface_at(10.0, 8.0))
+	_check(is_nan(flora.water_surface_at(7.0, 8.0)) or not is_equal_approx(flora.water_surface_at(7.0, 8.0), 10.0 - 0.25), "outside the window's texel centres it is not read")
+	flora.set_liquid_live_image(null, Vector2.ZERO, 0.0)
+
+	# What only asks "water here?" keeps the wet corners: the lake's sheet runs on 60 % of the way to the shore points, the wet corners do not.
+	at = Vector2(1.6, 1.1) * 8.0
+	_check(not is_nan(flora.water_surface_at(at.x, at.y)) and is_nan(flora.water_wet_at(at.x, at.y)), "water_wet_at keeps the old reach (sounds, ambient life, trail prints)")
+	_check(is_equal_approx(flora.water_wet_at(8.0, 8.0), 10.0), "and finds the lake at a wet point")
 	flora.free()
 
 	# The terrain client hands each published window to flora (wading and swimming read it).
 	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
 	_check(client.contains("flora.set_liquid_live_image(im, origin, cell_m)"), "terrain_client passes the live window's image on")
+	_check(client.contains("flora.water_wet_at(x + d.x, z + d.y)"), "trail prints ask water_wet_at")
+	_check(FileAccess.get_file_as_string("res://src/client/water_sounds.gd").contains("_flora.water_wet_at(x, z)"), "the water's sounds ask water_wet_at")
 	print("water drawn test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

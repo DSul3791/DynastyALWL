@@ -1932,7 +1932,8 @@ func water_level_nearest(x: float, z: float) -> float:
 # NAN where neither draws. The 8 m wet corners alone (the old rule, kept where a chunk has no sheet image) disagreed with the drawing at shores: a
 # lake 4.5 m deep beside its shore points was dry to the player, who walked on the bed under the drawn water (x 65012 z 82328), and a thin steep brook
 # blended into 1.9 m of water a player swam in with nothing drawn (x 54264 z 72300) (physical world audit, 23 Nov 2026, world_audit --shores). The
-# sheet is drawn under the ground where the water ends, so a caller sets this against the ground (depth = surface - ground) as before.
+# sheet is drawn under the ground where the water ends, so a caller sets this against the ground (depth = surface - ground) as before; one that only
+# asks whether water is there reads water_wet_at. Not read: a dig region's 2 m sheet (Sullivan water), where the 8 m sheets are read under it.
 func water_surface_at(x: float, z: float) -> float:
 	var live: float = LiquidSurface.drawn_surface(_live_image, _live_corner, _live_cell_m, x, z)
 
@@ -1943,15 +1944,24 @@ func water_surface_at(x: float, z: float) -> float:
 	return grid_surface_at(_chunks.get(chunk, {}).get("grid", {}), Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), x, z)
 
 
-# A chunk's water surface at (x, z) from its grid (`corner` the chunk's world x, z): its liquid sheet where that draws, else (no sheet image: the old
-# look, a preview) the wet corners of the 8 m square blended, NAN when half the square or less is wet. world_audit --shores reads it too.
-static func grid_surface_at(grid: Dictionary, corner: Vector2, x: float, z: float) -> float:
+# Whether there is water at a point, for what only asks that (the water's sounds and its kind, ambient life by water, trail prints on wet ground): the
+# wet corners of the 8 m square blended, NAN when half the square or less is wet. water_surface_at also finds the sheet where it runs on under a bank
+# (depth 0 there), which would move those (gate review 23 Nov 2026: a brook counted as a river, a dry bank as water to stand in).
+func water_wet_at(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	return grid_surface_at(_chunks.get(chunk, {}).get("grid", {}), Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), x, z, false)
+
+
+# A chunk's water surface at (x, z) from its grid (`corner` the chunk's world x, z): its liquid sheet where that draws (`drawn`), else (no sheet image:
+# the old look, a preview; or not `drawn`) the wet corners of the 8 m square blended, NAN when half the square or less is wet. world_audit --shores
+# reads it too.
+static func grid_surface_at(grid: Dictionary, corner: Vector2, x: float, z: float, drawn: bool = true) -> float:
 	if int(grid.get("wet", 0)) == 0:
 		return NAN
 
 	var spacing: float = float(grid["spacing"])
 	var count: int = int(grid["count"])
-	var sheet: Image = grid.get("liquid_image") if LIQUID_CHUNKS else null
+	var sheet: Image = grid.get("liquid_image") if LIQUID_CHUNKS and drawn else null
 
 	if sheet != null:
 		return LiquidSurface.drawn_surface(sheet, corner, spacing * float(count - 1) / float(maxi(sheet.get_width() - 1, 1)), x, z)
