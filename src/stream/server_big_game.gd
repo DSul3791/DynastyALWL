@@ -33,6 +33,7 @@ var notice: Callable            # (peer, text)
 var struck: Callable            # (animal, peer, hurt result) after a charge lands (bandit camps stage 4b; it changes nothing about the blow)
 var weapon_of: Callable         # (animal) -> the items.json id of the weapon it strikes with, "" for its own body (a camp bandit's, by his level)
 var hurt_armed: Callable        # (peer, amount, lethal, cause, from, weapon id) -> as hurt_player, with the blow's damage mode and pen taken from that weapon
+var ping_ms: Callable           # (peer) -> the link's round trip in ms (ENet), for a fair dodge; unset: 0
 
 
 func handles(a: Dictionary) -> bool:
@@ -146,6 +147,7 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 	a["ran"] = 0.0
 	a["charged_s"] = 0.0
 	a["hit"] = false
+	a.erase("late")
 	a["bluff"] = false
 	a["run_m"] = run_m
 	return true
@@ -227,11 +229,16 @@ func step(a: Dictionary, dt: float) -> void:
 			a["ran"] = 0.0
 			a["charged_s"] = 0.0
 			a["hit"] = false
+			a.erase("late")
 			a["bluff"] = _bluffs(a, def)
 
 		return
 
 	if state == CHARGE:
+		if a.has("late"):
+			_judge_late(a, def, dt)
+			return
+
 		var speed: float = float(def.get("charge_mps", 11.0))
 		# strike_min_s (a defend row's): a blow lands only once the charge has run this long, so every client draws the strike before it
 		# lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step, still drawn
@@ -296,18 +303,14 @@ func step(a: Dictionary, dt: float) -> void:
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
-					var amount: float = float(def.get("damage", 25.0)) * host.level_x(a, "damage")   # a higher-level animal hits harder
-					var weapon: String = str(weapon_of.call(a)) if weapon_of.is_valid() else ""
-					# A bandit's blow cuts, pierces or batters as the weapon in his hand does (coordinator, 23 Nov 2026: every bandit blow counted blunt).
-					var landed: String
+					var wait_s: float = late_s(def, int(info["peer"]))
 
-					if weapon != "" and hurt_armed.is_valid():
-						landed = str(hurt_armed.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"], weapon))
-					else:
-						landed = str(hurt_player.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"]))
+					if wait_s > 0.0:
+						# A fair dodge over the link: judged once the player has seen the blow land and their step has come back (see late_s).
+						a["late"] = {"peer": int(info["peer"]), "left_s": wait_s, "from": start, "to": a["pos"] + Vector3(cos(float(a["dir"])), 0.0, sin(float(a["dir"]))) * float(def.get("hit_m", 2.2))}
+						return
 
-					if struck.is_valid():
-						struck.call(a, int(info["peer"]), landed)
+					_land(a, def, int(info["peer"]))
 					break
 
 		if bool(a["hit"]) or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"]:
@@ -362,6 +365,58 @@ func _charge_cross(a: Dictionary, near: Dictionary, speed: float) -> Callable:
 		return host.crosses_wall(x0, z0, x1 + on.x, z1 + on.y)
 
 
+# How long after the server's blow it is judged, in seconds (defend row fair_dodge; robots over a 120 ms link, 23 Nov 2026: 0 of 9 side-steps
+# got clear). A player sees the server's animals about dodge_view_ms behind (the row clock's draw delay plus the trip down) and their step
+# takes the trip back up, so the blow is judged a round trip plus that delay later, against where the player then is: where they had stepped
+# by the moment their screen showed the blow land. At most dodge_late_max_ms (a slow or lying link cannot stretch it), 0 without the row key.
+func late_s(def: Dictionary, peer: int) -> float:
+	if peer < 0 or not bool(def.get("fair_dodge", false)) or not ping_ms.is_valid():
+		return 0.0
+
+	var ms: float = float(host.cfg.get("dodge_view_ms", 350)) + maxf(float(ping_ms.call(peer)), 0.0)
+	return clampf(ms, 0.0, float(host.cfg.get("dodge_late_max_ms", 600))) / 1000.0
+
+
+# A blow held for a fair dodge: it stands at the player, drawn still charging, and when the time is up the blow lands only if the player is
+# still on its line (within hit_m of the stretch it charged, carried hit_m on past where it stopped, so backing straight off is no dodge),
+# level with it and not behind a wall. Either way it then recovers.
+func _judge_late(a: Dictionary, def: Dictionary, dt: float) -> void:
+	var late: Dictionary = a["late"]
+	late["left_s"] = float(late["left_s"]) - dt
+
+	if float(late["left_s"]) > 0.0:
+		return
+
+	a.erase("late")
+
+	for info in (player_info.call() if player_info.is_valid() else []):
+		var p: Vector3 = info["pos"]
+
+		if int(info["peer"]) == int(late["peer"]) and _off_path(p, late["from"], late["to"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p):
+			_land(a, def, int(info["peer"]))
+			break
+
+	a["state"] = RECOVER
+	a["timer"] = float(def.get("recover_s", 5.0))
+	a.erase("run_m")
+
+
+# The blow lands on `peer`: its damage (by level), the weapon's type of blow for an armed bandit, and the struck hook.
+func _land(a: Dictionary, def: Dictionary, peer: int) -> void:
+	var amount: float = float(def.get("damage", 25.0)) * host.level_x(a, "damage")   # a higher-level animal hits harder
+	var weapon: String = str(weapon_of.call(a)) if weapon_of.is_valid() else ""
+	# A bandit's blow cuts, pierces or batters as the weapon in his hand does (coordinator, 23 Nov 2026: every bandit blow counted blunt).
+	var landed: String
+
+	if weapon != "" and hurt_armed.is_valid():
+		landed = str(hurt_armed.call(peer, amount, false, str(a["sp"]), a["pos"], weapon))
+	else:
+		landed = str(hurt_player.call(peer, amount, false, str(a["sp"]), a["pos"]))
+
+	if struck.is_valid():
+		struck.call(a, peer, landed)
+
+
 # How far a point is, on the ground, from the stretch a charge covered this step (a0 to a1). A step can be longer than hit_m when the
 # server runs slowly, so the end point alone could pass a player by.
 static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
@@ -374,6 +429,7 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("walled")
 	a.erase("wall_tries")
+	a.erase("late")
 	a.erase("foe_dog")
 	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only
