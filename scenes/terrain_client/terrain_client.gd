@@ -1116,14 +1116,21 @@ func _show_lost_notice(reason: String) -> void:
 	box.add_child(label)
 	var note: Label = Label.new()
 	@warning_ignore("integer_division")
-	note.text = "At %s, after %d min in this session.\nReason: %s.\nRetry joins again. If the server has stopped, Quit and press Play." % [Time.get_time_string_from_system(), (Time.get_ticks_msec() - connected_msec) / 60000, reason]
+	note.text = "At %s, after %d min in this session.\nReason: %s.\n%s" % [Time.get_time_string_from_system(), (Time.get_ticks_msec() - connected_msec) / 60000, reason, "Retry joins again. If the server has stopped or restarts, Back to servers shows when it answers again." if _remote else "Retry joins again. If the server has stopped, Quit and press Play."]
 	note.add_theme_font_size_override("font_size", 20)
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.custom_minimum_size = Vector2(640.0, 0.0)
 	note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(note)
 
-	for entry in [["Retry", func(): AudioServer.set_bus_mute(0, false); get_tree().paused = false; get_tree().reload_current_scene()], ["Quit", func(): _finish(1)]]:
+	var choices: Array = [["Retry", func(): AudioServer.set_bus_mute(0, false); get_tree().paused = false; get_tree().reload_current_scene()]]
+
+	if _remote:
+		choices.append(["Back to servers", func(): AudioServer.set_bus_mute(0, false); _back_to_servers()])   # a joined player is never left with only Retry or Quit
+
+	choices.append(["Quit", func(): _finish(1)])
+
+	for entry in choices:
 		var button: Button = Button.new()
 		button.text = entry[0]
 		button.custom_minimum_size = Vector2(280.0, 48.0)
@@ -1166,7 +1173,7 @@ func _on_connection_failed() -> void:
 		return
 
 	if _remote:
-		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection. A full server (%d players) also turns new players away: if the server pick page showed it full, try again when someone leaves." % [_host, _port, 32])   # 32: terrain_server.gd MAX_PLAYERS (ENet turns the 33rd away before any message, so the game cannot tell "full" from "down")
+		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection. A full server also turns new players away without a word: if the server pick page showed it full, try again when someone leaves." % [_host, _port])   # ENet turns a player past MAX_PLAYERS away before any message, so the game cannot tell "full" from "down"
 		return
 
 	_finish(1)
@@ -1306,6 +1313,10 @@ func _on_auth_failed(_peer: int) -> void:
 
 	if _auth != null and not _auth.heard:
 		_on_join_refused("The server at %s:%d answered but does not speak this game's way of joining: it runs an older or newer build of the game. Update the game, or ask whoever runs the server to update it." % [_host, _port], "Different version")
+		return
+
+	if _remote and _connect_window != null and connected_msec <= 0:
+		_cannot_reach("The server at %s:%d answered, then dropped this join without saying why. It may be restarting or full. Wait a minute and try again." % [_host, _port])
 		return
 
 	_on_connection_failed()
