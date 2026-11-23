@@ -524,9 +524,10 @@ const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
 const PART_M_LOW := [256.0, 256.0, 256.0]   # Low, Medium and High: shrubs and plants also in one part per chunk (up to a quarter of the draws; Ultra keeps 128 m parts)
-# The share of far shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of the far ones
-# (the same ones every time; colliders and the server are unchanged). Shrubs in full-model reach are all drawn: every one of them can be gathered.
+# The share of shrubs drawn by quality (Low, Medium, High, Ultra): the thickets are dense, so lower tiers draw a hashed part of them (the same ones
+# every time; colliders and the server are unchanged), except within SHRUB_KEEP_M of the player, where every shrub is drawn because each can be gathered.
 const SHRUB_SHARE := [0.4, 0.6, 1.0, 1.0]
+const SHRUB_KEEP_M := 16.0   # within this of the player (by 32 m cell, CLOSE_CELL_M) no shrub is thinned: gather reach with room to spare
 # Distance thinning (Dave 3 Nov 2026: "thick and lush near me, less dense near the edge of my view"), the same rule and file as the grass
 # (data/look/grass_far.json): trees are drawn in full out to fade_start_share of the tree view distance, then the share drawn falls smoothly
 # to far_share at the edge. A stable hash per plant picks which stay; colliders are unaffected (only drawing).
@@ -2821,19 +2822,32 @@ func _launch_plans(from_position: Vector3) -> void:
 		_tasks.append(WorkerThreadPool.add_task(_plan_task.bind(chunk, int(entry["serial"]), int(entry["building"]), items, entry.get("building_masks", {})), false, "flora chunk"))
 
 
+# True when the shrub at `p` lies in a 32 m cell within SHRUB_KEEP_M of the player (masks from _close_masks), so it is drawn at every quality.
+func _shrub_kept(masks: Dictionary, p: Vector3) -> bool:
+	var cells: int = int(chunk_m / CLOSE_CELL_M)
+	var cx: int = posmod(int(floor(p.x / CLOSE_CELL_M)), cells)
+	var cz: int = posmod(int(floor(p.z / CLOSE_CELL_M)), cells)
+	return (int(masks.get(SHRUB_KEEP_M, 0)) >> (cz * cells + cx)) & 1 != 0
+
+
 # For each close distance a species asked for: a 64-bit mask over the chunk's 8 x 8 cells of CLOSE_CELL_M, set where the cell is within that
 # distance of the player. Only non-zero masks are kept, so far chunks compare equal and are not redrawn when the player moves.
 func _close_masks(chunk: Vector2i, from_position: Vector3) -> Dictionary:
 	var masks: Dictionary = {}
 
-	if _close_ms.is_empty():
+	var wanted: Array = _close_ms.keys()
+
+	if shrub_share < 1.0:
+		wanted.append(SHRUB_KEEP_M)   # the cells where Low and Medium draw every shrub (only then: High and Ultra re-plan no more often)
+
+	if wanted.is_empty():
 		return masks
 
 	var cells: int = int(chunk_m / CLOSE_CELL_M)
 	var x0: float = float(chunk.x) * chunk_m
 	var z0: float = float(chunk.y) * chunk_m
 
-	for close_m in _close_ms:
+	for close_m in wanted:
 		var mask: int = 0
 
 		for cz in range(cells):
@@ -3206,9 +3220,10 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 			if is_near == TIER_FAR:
 				variant = 0
 
-		# Lower qualities draw only a stable share of the FAR shrubs (thickets are dense). Near ones (full models) are all drawn: a berry bush,
-		# bramble or hazel is gathered with E, and at Low 6 in 10 were invisible but still there to pick (client bug hunt 23 Nov 2026).
-		if shrub_share < 1.0 and info["kind"] == KIND_SHRUB and is_near == 0 and float((int(ids[n]) * 2654435761) % 1000) / 1000.0 >= shrub_share:
+		# Lower qualities draw only a stable share of the shrubs (thickets are dense), but every shrub within SHRUB_KEEP_M is drawn: each one can
+		# be gathered with E, and at Low 6 in 10 berry bushes, brambles and hazels at arm's length were invisible but there to pick (client bug
+		# hunt 23 Nov 2026). The kept cells come from _close_masks, so a chunk re-plans when the player walks into a new one.
+		if shrub_share < 1.0 and info["kind"] == KIND_SHRUB and not _shrub_kept(masks, p) and float((int(ids[n]) * 2654435761) % 1000) / 1000.0 >= shrub_share:
 			continue
 
 		# Out of season a herb, flower or mushroom is not drawn at all (berry bushes and woody plants stay; GatherRules.hidden_out_of_season).
