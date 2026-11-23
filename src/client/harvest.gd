@@ -120,7 +120,7 @@ func _branch(radius: float, view_only: bool) -> Dictionary:
 func _pick_branch(branch: Dictionary) -> void:
 	_items.note_hold_took()
 	_net.inventory_action.rpc_id(1, Net.ACT_LITTER, 0, 0, 0, branch["pos"])
-	_client.grass.hide_branch(branch["cell"], int(branch["at"]))
+	_client.grass.take_branch(branch["pos"])   # hidden now and when its cell is built again (protocol 160; the others are told by the server)
 	_items.clear_prompt()
 	_hint_left = 0.0
 

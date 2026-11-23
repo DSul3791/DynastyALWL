@@ -217,11 +217,9 @@ void fragment() {
 	ROUGHNESS = 1.0;
 }
 """
-# OFF at every quality for now (23 Nov 2026, coordinator for Dave, bug fixes first): with the dots on, a player standing still got a 120-150 ms
-# hitch about every 10 s on Vulkan (Lane A, b192ce14 17-25 hitches a play; e51873ab with the dots off 5-7, all at the join). The hitch has no
-# script or physics time and no re-plan, so the cost is on the GPU/driver side and cannot be measured in the cloud. Was [0, 110, 150, 150];
-# put a reach back only with a Lane A standing-play run showing no periodic hitch.
-const FAR_FLOWER_M := [0.0, 0.0, 0.0, 0.0]   # far flower reach by quality (Low, Medium, High, Ultra); 0 draws none; never past full_m (_far_flower_reach)
+# Back on 23 Nov 2026 (lag lane): the standing hitch blamed on them was main-thread log prints (#1671, #1675). Lane A at 1b6dd01e, High,
+# dots on: 5/4/5 hitches, all at the join, standing clean, the same as a dots-off control (7).
+const FAR_FLOWER_M := [0.0, 110.0, 150.0, 150.0]   # far flower reach by quality (Low, Medium, High, Ultra); 0 draws none; never past full_m (_far_flower_reach)
 const FAR_FLOWER_IN_M := [45.0, 60.0]   # dots dither in over this, under the full models (view_m.plant), so the hand-over does not pop
 const FAR_FLOWER_OUT_M := 30.0          # and out over the last this much of the reach
 const FAR_FLOWER_MIN_PX := 2.0          # a dot is never smaller than this on the screen
@@ -574,7 +572,7 @@ var part_m: Array = PART_M            # the size of the square one shrub or plan
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
 var shadow_m: float = 60.0
-var far_flower_m: float = 0.0        # far flower dots reach (set_quality, FAR_FLOWER_M); 0 = none
+var far_flower_m: float = 150.0       # far flower dots reach (set_quality, FAR_FLOWER_M); 0 = none
 var _far_flower_material: ShaderMaterial = null
 var _far_flower_mesh: QuadMesh = null
 var instances: int = 0                 # items drawn now
@@ -669,6 +667,18 @@ var _liquid_hole: Vector4 = Vector4.ZERO   # the live window (world corner and s
 var _liquid_fine_holes: PackedVector4Array = PackedVector4Array()   # Sullivan water's fine sheets: chunk sheets step aside there too
 var _liquid_hole_inset: float = 8.0
 var _liquid_live: Texture2D = null         # the live window's texture: chunk sheets give way only where it draws water
+
+
+var _live_image: Image = null              # the live window's image as last published (water_surface_at reads the water it draws)
+var _live_corner: Vector2 = Vector2.ZERO    # its texel (0, 0) centre
+var _live_cell_m: float = 0.0
+
+
+# The live window's image, its texel (0, 0) centre and cell size, each publish (terrain_client _on_water_flow), for water_surface_at.
+func set_liquid_live_image(im: Image, corner: Vector2, cell_m: float) -> void:
+	_live_image = im
+	_live_corner = corner
+	_live_cell_m = cell_m
 
 
 func set_liquid_live(texture: Texture2D) -> void:
@@ -1262,6 +1272,7 @@ func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 		"shape": shape,
 		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
 		"log": str(entry.get("model", "")) == "fallen_log" and not (str(entry["name"]) in ["old_stump", "dead_tree"]),   # the dead tree stands (tree_builder _snag)
+		"snag": TreeTrunks.is_snag(entry),   # a standing dead tree: blocks like a tree (its own trunk collider)
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),
@@ -1916,22 +1927,47 @@ func water_level_nearest(x: float, z: float) -> float:
 	var j: int = clampi(int(round((z - float(chunk.y) * chunk_m) / spacing)), 0, count - 1)
 	return float(grid["levels"][j * count + i])
 
-# The water surface at a point for footsteps: the wet corners of the square,
-# blended by distance (bilinear weights over the wet corners only), NAN when
-# half the square or less is wet. Unlike water_level_at (the highest wet corner, which the
-# underwater check needs), it does not lift a dry bank to the level of
-# higher water beside it.
+# The water surface at a point (wading, swimming, drinking, footsteps, the view under water): the water a player sees there. The live window's sheet where
+# it draws water, else this chunk's liquid sheet where it draws (LiquidSurface.drawn_surface: the same image and the same least depth as the shader),
+# NAN where neither draws. The 8 m wet corners alone (the old rule, kept where a chunk has no sheet image) disagreed with the drawing at shores: a
+# lake 4.5 m deep beside its shore points was dry to the player, who walked on the bed under the drawn water (x 65012 z 82328), and a thin steep brook
+# blended into 1.9 m of water a player swam in with nothing drawn (x 54264 z 72300) (physical world audit, 23 Nov 2026, world_audit --shores). The
+# sheet is drawn under the ground where the water ends, so a caller sets this against the ground (depth = surface - ground) as before; one that only
+# asks whether water is there reads water_wet_at. Not read: a dig region's 2 m sheet (Sullivan water), where the 8 m sheets are read under it.
 func water_surface_at(x: float, z: float) -> float:
-	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
-	var grid: Dictionary = _chunks.get(chunk, {}).get("grid", {})
+	var live: float = LiquidSurface.drawn_surface(_live_image, _live_corner, _live_cell_m, x, z)
 
+	if not is_nan(live):
+		return live
+
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	return grid_surface_at(_chunks.get(chunk, {}).get("grid", {}), Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), x, z)
+
+
+# Whether there is water at a point, for what only asks that (the water's sounds and its kind, ambient life by water, trail prints on wet ground): the
+# wet corners of the 8 m square blended, NAN when half the square or less is wet. water_surface_at also finds the sheet where it runs on under a bank
+# (depth 0 there), which would move those (gate review 23 Nov 2026: a brook counted as a river, a dry bank as water to stand in).
+func water_wet_at(x: float, z: float) -> float:
+	var chunk: Vector2i = Vector2i(int(floor(x / chunk_m)), int(floor(z / chunk_m)))
+	return grid_surface_at(_chunks.get(chunk, {}).get("grid", {}), Vector2(float(chunk.x) * chunk_m, float(chunk.y) * chunk_m), x, z, false)
+
+
+# A chunk's water surface at (x, z) from its grid (`corner` the chunk's world x, z): its liquid sheet where that draws (`drawn`), else (no sheet image:
+# the old look, a preview; or not `drawn`) the wet corners of the 8 m square blended, NAN when half the square or less is wet. world_audit --shores
+# reads it too.
+static func grid_surface_at(grid: Dictionary, corner: Vector2, x: float, z: float, drawn: bool = true) -> float:
 	if int(grid.get("wet", 0)) == 0:
 		return NAN
 
 	var spacing: float = float(grid["spacing"])
 	var count: int = int(grid["count"])
-	var fx: float = (x - float(chunk.x) * chunk_m) / spacing
-	var fz: float = (z - float(chunk.y) * chunk_m) / spacing
+	var sheet: Image = grid.get("liquid_image") if LIQUID_CHUNKS and drawn else null
+
+	if sheet != null:
+		return LiquidSurface.drawn_surface(sheet, corner, spacing * float(count - 1) / float(maxi(sheet.get_width() - 1, 1)), x, z)
+
+	var fx: float = (x - corner.x) / spacing
+	var fz: float = (z - corner.y) / spacing
 	var i0: int = clampi(int(floor(fx)), 0, count - 2)
 	var j0: int = clampi(int(floor(fz)), 0, count - 2)
 	var tx: float = clampf(fx - float(i0), 0.0, 1.0)
@@ -3198,14 +3234,16 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 			groups[proxy_key].append(n)
 
-		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: walk-through, louder instead), only long fallen
-		# logs within the shrub model range (level bit 32).
+		# Trees from collision_m; shrubs and plants never block (Dave 5 Nov 2026: undergrowth is walk-through, louder instead), except long
+		# fallen logs and the standing dead tree (a snag, a trunk not undergrowth: coordinator 23 Nov 2026) within the shrub model range (level bit 32).
 		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
 
 			if radius > 0.0 and int(info["kind"]) == KIND_TREE:
 				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), radius)   # as wide as the model is drawn (tree_trunks.json)
+			elif bool(info.get("snag", false)):
+				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), TreeTrunks.snag_fallback(float(info["height"]), float(items["heights"][n])))
 
 			if radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])
@@ -3533,7 +3571,7 @@ func _trunk_shape(radius: float) -> CylinderShape3D:
 	if shape == null:
 		shape = CylinderShape3D.new()
 		shape.radius = float(key) / 100.0
-		shape.height = 3.0
+		shape.height = 3.0 + 2.0 * maxf(shape.radius - 1.0, 0.0)   # a wide trunk (the everember's ~7 m) reaches down to the ground on its downhill side, up to a 45 degree slope
 		_trunk_shapes[key] = shape
 
 	return shape

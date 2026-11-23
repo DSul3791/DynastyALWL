@@ -37,6 +37,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const VERSION := 4                       # world_items.json: 4 (18 Nov 2026, audit finding 2) is a header naming the area files in world_items/ (AREA_M squares, each with its own rows; only the areas that changed are written); 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const CHARACTERS_VERSION := 2           # characters.json: 2 (19 Nov 2026) has attributes on the 0 to 100 scale; a version 1 file's -10 to +10 values (and fitness training) are converted once at load
+const OLD_FLOOR_OVER_CAP := 5           # skills.json floor_over_cap until 23 Nov 2026 (build 9257): a character saved then keeps those floors (SkillWeb.keep_old_floors)
 const ATTRIBUTE_KEYS := ["luck", "fitness", "strength", "memory", "dexterity", "perception", "charisma"]
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
@@ -672,7 +673,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key] = {"train": 0.0, "skills_v": 3, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
 		_characters[key].merge(_new_attributes())
 		_dirty = true
 
@@ -824,6 +825,7 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	_taken_told.erase(peer)
 	_held.erase(peer)
 	_held_left.erase(peer)
 	_hand_flags.erase(peer)
@@ -984,6 +986,7 @@ func report_position(peer: int, position: Vector3) -> void:
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
 			_sync_goals(peer)   # the drink goal's hint names the way to water from here
 		_note_motion(peer, position)
+		_tell_taken_near(peer, position)   # the branches, tide-line nodes and nests taken round here (protocol 160)
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
 		_note_road_trip(peer, position)
 		var now: int = Time.get_ticks_msec()
@@ -3173,6 +3176,9 @@ func reset_world() -> int:
 	_fruit.clear()
 	_shore_taken.clear()
 	_nest_taken.clear()
+	_branch_taken.clear()
+	_nest_at.clear()
+	_tell_taken_cleared()   # the clients forget what was taken too
 	_fish_stock.clear()
 	_mined.clear()
 	_chops.clear()
@@ -3742,7 +3748,7 @@ func _arrow_fly(delta: float) -> void:
 
 
 # The share 0..1 along from -> to where the flight first meets a standing trunk, or -1 (BowAim.segment_trunk on each trunk near the segment).
-const ARROW_TRUNK_SEARCH_M := 2.0   # the thickest trunk collider and a little over (tree_trunks.gd SEARCH_TRUNK_M caps the colliders that grew to their drawn size)
+const ARROW_TRUNK_SEARCH_M := 2.0   # an ordinary trunk collider and a little over; wider trunks (tree_trunks.gd SEARCH_TRUNK_M) are found by their own radius (terrain_server _cached_trees)
 
 
 func _arrow_trunk(from: Vector3, to: Vector3) -> float:
@@ -5744,7 +5750,7 @@ func fill_units_of(peer: int) -> int:
 # A dead branch on the forest floor (Dave 2026-10-22: loose sticks you can see should be pickable): one stick. The branches are drawn
 # by the client, so the server only checks reach and pace (the same pace as a plant pick).
 func _pick_litter(peer: int, inv, at: Vector3) -> void:
-	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > Interact.server_reach_m():
+	if not at.is_finite() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > Interact.server_reach_m():
 		return
 
 	var now_ms: int = Time.get_ticks_msec()
@@ -5752,12 +5758,134 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 	if now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
 		return
 
+	_branches_today()
+
+	if _branch_gone(at):
+		return   # this branch was taken today (protocol 160: the clients hide one there)
+
 	_last_gather[peer] = now_ms
 	var before: Array = _snapshot(inv)
 	_take_in(peer, inv, table.number_of("stick"), 1)
 
 	_send_changes(peer, inv, before)
 	_dirty = true
+	var cell: Vector2i = _taken_cell_of(at)
+	var list: PackedVector3Array = _branch_taken.get(cell, PackedVector3Array())
+
+	if list.size() < BRANCH_SQUARE_MOST:
+		list.append(at)
+		_branch_taken[cell] = list
+		_tell_taken(TAKEN_BRANCH, at, _game_day(), peer)
+
+
+# --- Forest-floor pickups seen alike (protocol 160; coordinator 23 Nov 2026, two players see the same world) ---
+# Dead branches are drawn by each client (grass_view litter), tide-line nodes and bird nests from the cell and the day: a branch one player
+# picked stayed for the others, and a node or nest used up showed full to everyone else. The server keeps what was taken and tells the
+# players within TAKEN_SEND_M: at once when it goes, and as they walk TAKEN_TELL_CELLS squares from where they were last told (every taken
+# spot round them, so a newcomer sees the same). Each client draws its own branches (where depends on its graphics tier and on how it built
+# the ground), so a client hides its nearest branch to each taken point (grass_view.gd take_branch), not one at the very spot.
+# Branches grow back the next game day (one real hour; Dave: "we are not gate keeping by limiting resources"): the list is memory only,
+# cleared when the day turns, and at most BRANCH_SQUARE_MOST a 32 m square is kept (a made-up flood of picks costs nothing more).
+const TAKEN_BRANCH := 0
+const TAKEN_SHORE := 1
+const TAKEN_NEST := 2
+const TAKEN_CLEAR := 3               # everything forgotten (an admin world reset): the client clears its lists
+const TAKEN_CELL_M := 32.0
+const TAKEN_TELL_CELLS := 2          # told again after moving this many squares on either axis (no resend each time a player steps over a line)
+const TAKEN_SEND_M := 150.0
+const BRANCH_SAME_M := 0.25          # a pick within this of a taken point is that branch again (refused)
+const BRANCH_SQUARE_MOST := 400
+var send_taken: Callable             # (peer, kind, points PackedVector3Array, game days PackedInt32Array): ground_taken (protocol 160)
+var _branch_taken: Dictionary = {}   # Vector2i TAKEN_CELL_M square -> PackedVector3Array of branch points taken today
+var _branch_day: int = -1
+var _nest_at: Dictionary = {}        # nest id -> its spot, kept from the robbing (memory only: after a restart a robbed nest shows full to others until robbed again)
+var _taken_told: Dictionary = {}     # peer -> the TAKEN_CELL_M square it was last told about
+
+
+func _taken_cell_of(at: Vector3) -> Vector2i:
+	return Vector2i(int(floor(at.x / TAKEN_CELL_M)), int(floor(at.z / TAKEN_CELL_M)))
+
+
+func _branches_today() -> void:
+	var day: int = _game_day()
+
+	if day != _branch_day:
+		_branch_day = day
+		_branch_taken.clear()   # a new day: every branch has grown back
+
+
+func _branch_gone(at: Vector3) -> bool:
+	var cell: Vector2i = _taken_cell_of(at)
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for p in _branch_taken.get(cell + Vector2i(dx, dz), PackedVector3Array()):
+				if Vector2(p.x - at.x, p.z - at.z).length() <= BRANCH_SAME_M:
+					return true
+
+	return false
+
+
+func _shore_cell_middle(key: String) -> Vector3:
+	var cell_m: float = float(_shore_data().get("cell_m", 8.0))
+	return Vector3((float(key.get_slice(",", 0)) + 0.5) * cell_m, 0.0, (float(key.get_slice(",", 1)) + 0.5) * cell_m)
+
+
+# To the players near `at` but `skip` (the taker's own client has hidden the very branch it picked).
+func _tell_taken(kind: int, at: Vector3, day: int, skip: int = 0) -> void:
+	if not send_taken.is_valid():
+		return
+
+	for peer in _peer_pos:
+		if peer != skip and Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() <= TAKEN_SEND_M:
+			send_taken.call(peer, kind, PackedVector3Array([at]), PackedInt32Array([day]))
+
+
+# An admin world reset: every player forgets what was taken (the reset restores nests, shore finds and branches).
+func _tell_taken_cleared() -> void:
+	if send_taken.is_valid():
+		for peer in _peer_pos:
+			send_taken.call(peer, TAKEN_CLEAR, PackedVector3Array(), PackedInt32Array())
+
+
+# A player TAKEN_TELL_CELLS squares from where it was last told (or just joined): every taken spot within TAKEN_SEND_M, one message per kind.
+func _tell_taken_near(peer: int, here: Vector3) -> void:
+	var cell: Vector2i = _taken_cell_of(here)
+	var told: Variant = _taken_told.get(peer, null)
+
+	if not send_taken.is_valid() or (told != null and absi(cell.x - (told as Vector2i).x) < TAKEN_TELL_CELLS and absi(cell.y - (told as Vector2i).y) < TAKEN_TELL_CELLS):
+		return
+
+	_taken_told[peer] = cell
+	_branches_today()
+	var day: int = _game_day()
+	var reach: int = int(ceil(TAKEN_SEND_M / TAKEN_CELL_M))
+	var rows: Array = [[PackedVector3Array(), PackedInt32Array()], [PackedVector3Array(), PackedInt32Array()], [PackedVector3Array(), PackedInt32Array()]]
+	var near: Callable = func(p: Vector3) -> bool: return Vector2(p.x - here.x, p.z - here.z).length() <= TAKEN_SEND_M
+
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			for p in _branch_taken.get(cell + Vector2i(dx, dz), PackedVector3Array()):
+				if near.call(p):
+					rows[TAKEN_BRANCH][0].append(p)
+					rows[TAKEN_BRANCH][1].append(day)
+
+	for key in _shore_taken:
+		if int(_shore_taken[key]) == day:
+			var middle: Vector3 = _shore_cell_middle(str(key))
+
+			if near.call(middle):
+				rows[TAKEN_SHORE][0].append(middle)
+				rows[TAKEN_SHORE][1].append(day)
+
+	for id in _nest_at:
+		if _nest_taken.has(id) and near.call(_nest_at[id]):
+			rows[TAKEN_NEST][0].append(_nest_at[id])
+			rows[TAKEN_NEST][1].append(int(_nest_taken[id]))
+
+	for kind in range(rows.size()):
+		if not (rows[kind][0] as PackedVector3Array).is_empty():
+			send_taken.call(peer, kind, rows[kind][0], rows[kind][1])
 
 
 func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = false) -> void:   # struck_nothing: the client's ray hit nothing (a swing into the air): effort only, whatever lies under the point
@@ -14722,6 +14850,7 @@ func _become_new_player(peer: int) -> void:
 	_characters[key]["tried"] = {}
 	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
+	_soak.erase(peer)
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
 	_admin_mode_on.erase(peer)
@@ -17473,7 +17602,8 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
 	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
-	var soak: float = float(_soak.get(peer, 0.0))
+	var v: Dictionary = vitals_of(peer)
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else clampf(float(v.get("soak", 0.0)), 0.0, 1.0)   # wet clothes stay wet over a restart or a rejoin (survival walk 23 Nov 2026)
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
 	var hours: float = game_s / 3600.0
 
@@ -17503,6 +17633,9 @@ func _update_soak(peer: int, game_s: float) -> void:
 		soak = maxf(soak - float(_body_cfg().get("dry_cover_per_h", cfg.get("dry_cover_per_h", 1.0))) * share * hours, 0.0)
 
 	_soak[peer] = soak
+
+	if not v.is_empty() and (soak > 0.0 or v.has("soak")):
+		v["soak"] = soak   # saved with the vitals (vitals.json)
 
 
 func _sync_warmth(peer: int, force: bool) -> void:
@@ -17819,6 +17952,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_soak.erase(peer)   # dry clothes, as the saved vitals say
 	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
@@ -19271,6 +19405,7 @@ func gather_edge(peer: int, inv) -> bool:
 	give(peer, table.number_of(str(node["item"])), roll_amount(peer, rng, int(count[0]), int(count[1])))
 	_shore_taken[key] = day
 	_dirty = true
+	_tell_taken(TAKEN_SHORE, _shore_cell_middle(key), day)   # the others see the node gone too (protocol 160)
 	return true
 
 
@@ -19341,7 +19476,9 @@ func take_nest(peer: int, inv) -> bool:
 		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
 
 	_nest_taken[id] = day
+	_nest_at[id] = nest["pos"]
 	_dirty = true
+	_tell_taken(TAKEN_NEST, nest["pos"], day)   # the nest shows empty for everyone (protocol 160)
 	return true
 
 
@@ -26382,12 +26519,18 @@ func _load_characters() -> void:
 		if bool(parsed["players"][key].get("dead", false)):   # real death (death.json real_death): a dead character stays dead across a restart
 			_characters[str(key)]["dead"] = true
 
-		if int(parsed["players"][key].get("skills_v", 1)) < 2:
+		var skills_v: int = int(parsed["players"][key].get("skills_v", 1))
+
+		if skills_v < 2:
 			migrate_old_skills(str(key), parsed["players"][key])
-			_characters[str(key)]["skills_v"] = 2
 			_dirty = true
-		else:
-			_characters[str(key)]["skills_v"] = 2
+
+		# Build 9257 and before (skills_v 2): trainings gave a floor 5 over the band; the character keeps what its skills read then.
+		if skills_v < 3 and not _skills_cfg.is_empty():
+			if SkillWeb.keep_old_floors(_skills_cfg, _characters[str(key)]["skills"], OLD_FLOOR_OVER_CAP) > 0:
+				_dirty = true
+
+		_characters[str(key)]["skills_v"] = 3
 
 
 # Drink from the water at the player's feet (ACT_DRINK): one mouthful of thirst.drink_ml, paced like eating. The scene's water_near says whether water lies within reach.
@@ -26535,6 +26678,9 @@ func _load_vitals() -> void:
 		var row: Dictionary = parsed["players"][key]
 		var fresh: Dictionary = _new_vitals()
 		_vitals[str(key)] = {"fed": float(row.get("fed", fresh["fed"])), "weight": float(row.get("weight", fresh["weight"])), "health": float(row.get("health", fresh["health"])), "wet": float(row.get("wet", fresh["wet"])), "energy": clampf(float(row.get("energy", 100.0)), 0.0, 100.0), "warmth": clampf(float(row.get("warmth", 100.0)), 0.0, 100.0), "sick": maxf(float(row.get("sick", 0.0)), 0.0), "limp": maxf(float(row.get("limp", 0.0)), 0.0)}
+
+		if float(row.get("soak", 0.0)) > 0.0:
+			_vitals[str(key)]["soak"] = clampf(float(row["soak"]), 0.0, 1.0)   # wet clothes (_update_soak)
 
 		if typeof(row.get("sick_due", null)) == TYPE_ARRAY and not (row["sick_due"] as Array).is_empty():
 			_vitals[str(key)]["sick_due"] = row["sick_due"]   # pending sickness from raw food (docs/design/body_in_weather_design.md 5)

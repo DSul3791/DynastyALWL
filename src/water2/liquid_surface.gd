@@ -581,6 +581,53 @@ func set_debug(on: bool) -> void:
 	_material.set_shader_parameter("debug_sheet", float(debug_on))
 
 
+# The surface a sheet draws at (x, z) from its image (texel (0, 0) centred on `corner`, texels `texel_m` apart), as the shader draws it: each texel's
+# height its level in red, or 0.4 m under that where it is dry (the vertex tucks under the bed there), blended bilinearly; NAN where the depth in alpha
+# read bilinearly (a chunk sheet's fragment, fetch_bilinear) is under wet_min (the fragment discards there), or outside the image. The game's water
+# (wading, swimming, drinking: flora_view water_surface_at) reads this, so it acts on the water a player sees. Left out: the few cm the live window's
+# B-spline per pixel (sample_smooth) differs by, and the lift running water is drawn with over the ground's bumps (chunk_lift, thin_lift), which is
+# a look, not depth to wade in.
+static func drawn_surface(im: Image, corner: Vector2, texel_m: float, x: float, z: float) -> float:
+	if im == null or texel_m <= 0.0:
+		return NAN
+
+	var w: int = im.get_width()
+	var h: int = im.get_height()
+	var fx: float = (x - corner.x) / texel_m
+	var fz: float = (z - corner.y) / texel_m
+
+	if w < 2 or h < 2 or fx < 0.0 or fz < 0.0 or fx > float(w - 1) or fz > float(h - 1):
+		return NAN
+
+	var i0: int = mini(int(fx), w - 2)
+	var j0: int = mini(int(fz), h - 2)
+	var tx: float = fx - float(i0)
+	var tz: float = fz - float(j0)
+	var c00: Color = im.get_pixel(i0, j0)
+	var c10: Color = im.get_pixel(i0 + 1, j0)
+	var c01: Color = im.get_pixel(i0, j0 + 1)
+	var c11: Color = im.get_pixel(i0 + 1, j0 + 1)
+	if maxf(maxf(c00.a, c10.a), maxf(c01.a, c11.a)) < 0.0005:
+		return NAN   # dry all round (most calls: grass_view asks for every grass point)
+
+	var t: Color = c00.lerp(c10, tx).lerp(c01.lerp(c11, tx), tz)
+
+	if t.a < _wet_min(t):
+		return NAN
+
+	return lerpf(lerpf(_drawn_height(c00), _drawn_height(c10), tx), lerpf(_drawn_height(c01), _drawn_height(c11), tx), tz)
+
+
+# The shader's wet_min: the least depth that still draws, 4 mm for slow water, half a millimetre where it runs fast.
+static func _wet_min(t: Color) -> float:
+	return lerpf(0.004, 0.0005, smoothstep(0.6, 2.0, Vector2(t.g, t.b).length()))
+
+
+# A texel's vertex height (the shader's vertex(), without the lifts): its level, 0.4 m under it where dry.
+static func _drawn_height(t: Color) -> float:
+	return t.r if t.a > _wet_min(t) else t.r - 0.4
+
+
 # A chunk's settled water (water_grid.gd decode: count x count points `spacing` apart from the chunk's corner) as a liquid image: R surface, G/B the current,
 # A a depth stand-in (the client has no ground here): OPEN_DEPTH_M inside, SHORE_DEPTH_M next to a dry point, 0 on shore and dry points. Shore points
 # (`edge`) carry their own level; dry points take the mean of their wet neighbours' levels so the sheet tucks under the bank there. null when dry.

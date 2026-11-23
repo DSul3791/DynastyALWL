@@ -218,7 +218,7 @@ func ground_check_step(now: int) -> void:
 			var wx: float = snappedf(body.global_position.x + cos(a) * r, 0.5)
 			var wz: float = snappedf(body.global_position.z + sin(a) * r, 0.5)
 
-			if not is_nan(flora.water_surface_at(wx, wz)):
+			if not is_nan(flora.water_wet_at(wx, wz)):
 				x = wx
 				z = wz
 				break

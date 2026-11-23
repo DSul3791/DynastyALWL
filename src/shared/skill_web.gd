@@ -336,6 +336,40 @@ static func train(cfg: Dictionary, skill: String, records: Dictionary, now_s: fl
 	return ""
 
 
+# --- Build 9257 saves (training floors) ---
+
+# A training before 23 Nov 2026 set the family floor floor_over_cap (then 5) over the band: 30, 55, 80. Dave's rule since (SKILL_TRAINING.md)
+# puts it at the band floor: 25, 50, 75. A character trained under the old rule keeps what its skills read then: every skill whose family
+# floor under the old number is above what it reads now has its practice lifted to that old floor, once, when the save is read. Returns how
+# many records were lifted. A character never trained is not touched.
+static func keep_old_floors(cfg: Dictionary, records: Dictionary, old_over: int) -> int:
+	var system: Dictionary = cfg.get("system", {})
+	var lifted: int = 0
+
+	for skill in cfg.get("skills", {}):
+		var level: int = int(records.get(skill, {}).get("t", 0)) if typeof(records.get(skill, {})) == TYPE_DICTIONARY else 0
+
+		for a in ancestors(cfg, str(skill)):
+			if typeof(records.get(a, {})) == TYPE_DICTIONARY:
+				level = maxi(level, int(records.get(a, {}).get("t", 0)))
+
+		if level <= 0:
+			continue
+
+		var old_floor: float = minf(float(int(system.get("step", 25)) * level + old_over), float(system.get("max_value", 100)))
+
+		if effective(cfg, str(skill), records) >= old_floor - 0.0001:
+			continue
+
+		var record: Dictionary = records.get(skill, {}) if typeof(records.get(skill, {})) == TYPE_DICTIONARY else {}
+		record["p"] = maxf(float(record.get("p", 0.0)), units_for(cfg, str(skill), old_floor))
+		record["peak"] = maxf(float(record.get("peak", 0.0)), float(record["p"]))
+		records[skill] = record
+		lifted += 1
+
+	return lifted
+
+
 # --- Old saves (protocol 37) ---
 
 # The new record for an old one {p, peak, trained}: the same fraction of the way to the untrained cap.

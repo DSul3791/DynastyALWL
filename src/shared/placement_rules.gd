@@ -14,6 +14,8 @@ const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes o
 const POT_ATTACH_M := 2.0
 const STATION_HEIGHT_M := 1.6       # PROVISIONAL (PL-3): how tall a station or piece of furniture counts when checked against the walls round it (data height_m wins)
 const SUPPORT_REACH_M := 0.6        # a station aimed this near a floor's top (above or below) stands on that floor
+const LINE_FREE := ["wall_torch", "torch_sconce", "improved_torch_sconce", "iron_wall_lantern", "antler_mount", "tusk_mount", "sign", "storage_sign", "wooden_hanging_lantern", "iron_hanging_lantern", "chandelier", "hide_rug", "wool_rug"]   # hung on or set into a wall, hung from above, or flat on the floor (a mat in a doorway): free of _stands_in
+const LINE_KINDS := ["wall", "fence", "railing"]   # piece_kinds that stand along a line (_in_line)
 const OVERLAP_SLACK_M := 0.05       # boxes that only touch (a chest on a floor, a bench against a wall) do not clash
 const BED_GAP_M := 0.9              # PROVISIONAL: a bed's or plot's square metre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
 const FLOOR_SKIP := ["attach_to", "needs_base_lift_m", "needs_running_water", "min_water_m", "walkover", "support", "shelter", "water"]   # PROVISIONAL (PL-1): what never stands on a building floor: what hangs on something, the sawmill and water wheel (their own rules), a fish trap, a path or bed in the soil, a mine prop, a lean-to, a well or pump
@@ -914,8 +916,10 @@ static func stands_on_floor(def: Dictionary) -> bool:
 
 # Why `row` (a fire or structure standing, {pos, state, yaw degrees}) keeps a new `def` (a structures row with "kind"; not the campfire) at `spot` turned
 # `yaw_deg` from going there, else "": the server's check (server_items._place_structure) and the ghost's colour, so green always places.
-# - furniture (gap_exempt), a walkover patch or bed, a pot over a fire and a bed inside a lean-to never clash (as before);
-# - two building pieces never clash here (their own points and anchors decide);
+# - a walkover patch or bed, a pot over a fire and a bed inside a lean-to never clash; furniture (gap_exempt) clashes only when its middle stands in a
+#   wall, doorway or fence line ("overlap", _stands_in);
+# - two building pieces clash here only when both stand along a line (wall, doorway, fence, gate, railing), run the same way and their boxes meet
+#   ("overlap"); otherwise their own points and anchors decide;
 # - a building piece and a station or furniture clash only where their boxes meet ("overlap"): a station stands on a floor, beside a wall, under a
 #   ceiling, but never through a wall, a pillar, a fence or a doorway (Dave 17 Nov 2026). Roofs never meet a station (PROVISIONAL PL-4);
 # - anything else (two stations, a fire and anything but a floor it stands on) keeps the gap_m between middles ("close").
@@ -927,12 +931,26 @@ static func keeps_off(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: 
 	if not fire and other.is_empty():
 		return ""
 
-	if bool(def.get("gap_exempt", false)) or bool(other.get("gap_exempt", false)) or bool(other.get("walkover", false)) or (fire and str(def.get("attach_to", "")) == "fire") or bed_in_shelter(cfg, def, row, spot):
+	if bool(other.get("walkover", false)) or (fire and str(def.get("attach_to", "")) == "fire") or bed_in_shelter(cfg, def, row, spot):
+		return ""
+
+	var other_yaw: float = float(row.get("yaw", 0.0))
+
+	if bool(def.get("gap_exempt", false)) or bool(other.get("gap_exempt", false)):
+		# Furniture and garden things stand close to anything, but never in a wall, doorway or fence line (23 Nov 2026: a scarecrow or trellis in a doorway).
+		if not fire and (_stands_in(def, spot, other, row["pos"], other_yaw) or _stands_in(other, row["pos"], def, spot, yaw_deg)):
+			return "overlap"
+
 		return ""
 
 	var piece: bool = bool(def.get("piece", false))
 
 	if piece and bool(other.get("piece", false)):
+		# Pieces meet at their anchors and corners; two wall, doorway, fence, gate or railing pieces along the same line on the same stretch are one
+		# too many (23 Nov 2026: a gate put down over a fence section, a doorway over a wall).
+		if _in_line(def) and _in_line(other) and _parallel(yaw_deg, other_yaw) and _boxes_meet(_box(def, spot, yaw_deg), _box(other, row["pos"], other_yaw)):
+			return "overlap"
+
 		return ""
 
 	if not fire and piece != bool(other.get("piece", false)):
@@ -942,6 +960,36 @@ static func keeps_off(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: 
 		return "overlap" if _boxes_meet(_box(def, spot, yaw_deg), _box(other, row["pos"], float(row.get("yaw", 0.0)))) else ""
 
 	return "close" if (row["pos"] as Vector3).distance_to(spot) < float(cfg.get("gap_m", 2.5)) else ""
+
+
+# A wall, doorway, window, fence, gate or railing: a piece that stands along a line.
+static func _in_line(def: Dictionary) -> bool:
+	return str(def.get("piece_kind", "")) in LINE_KINDS
+
+
+# Two yaws (degrees) that run the same way, either direction.
+static func _parallel(a_deg: float, b_deg: float) -> bool:
+	return absf(wrapf(a_deg - b_deg, -90.0, 90.0)) < 1.0
+
+
+# Whether a thing standing on the ground (`free`: not a piece, not hung on or laid into something) has its middle inside line piece `line`'s room:
+# in the wall's thickness, the doorway's opening or the fence's run, from its foot to its top. Things set against a wall keep their middle outside.
+static func _stands_in(free: Dictionary, free_pos: Vector3, line: Dictionary, line_pos: Vector3, line_yaw: float) -> bool:
+	if not _in_line(line):
+		return false
+
+	if bool(free.get("piece", false)) or free.has("attach_to") or free.has("hand_laid") or str(free.get("kind", free.get("item", ""))) in LINE_FREE:
+		return false
+
+	var box: Array = _box(line, line_pos, line_yaw)
+
+	# The foot can be lower than the piece's own spot on a slope (a wall stands where its ends rise up to max_rise_m): only its top bounds it from above.
+	if free_pos.y < float(box[3]) - maxf(float(line.get("max_rise_m", 0.0)), OVERLAP_SLACK_M) or free_pos.y > float(box[4]) - OVERLAP_SLACK_M:
+		return false
+
+	var apart: Vector2 = Vector2(free_pos.x, free_pos.z) - (box[0] as Vector2)
+	var half: Vector2 = box[1]
+	return absf(apart.dot(_side(box, 0))) < half.x - OVERLAP_SLACK_M and absf(apart.dot(_side(box, 1))) < half.y + OVERLAP_SLACK_M
 
 
 static func _is_roof(def: Dictionary) -> bool:
