@@ -66,6 +66,8 @@ var _settle_until: float = -1.0  # after this computer's own stall: until then b
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
+var _scenes_of: Dictionary = {}   # species number -> its model files that exist (_species_scenes)
+var _scene_held: Dictionary = {}  # model file path -> its scene or texture, loaded on a worker (_scenes_ready) and kept so load() finds it cached
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
 var _mats: Dictionary = {}
@@ -549,6 +551,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			if _bodies.size() >= max_drawn:
 				continue
 
+			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it.
+			if not _scenes_ready(int(row[1])):
+				continue
+
 			var node: Node3D = _make_for_species(int(row[1]), id, young)
 
 			if node == null:
@@ -820,6 +826,66 @@ func _model_rows() -> Dictionary:
 			_models = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
 
 	return _models
+
+
+# Every model file a species may be drawn from (the scenes of its row, its variants and its young model, and their materials' colour
+# textures) that exists.
+func _species_scenes(number: int) -> PackedStringArray:
+	if not _scenes_of.has(number):
+		var row: Dictionary = _model_rows().get(str(KIND_OF_SPECIES.get(number, "")), {})
+		var rows: Array = [row] + (row.get("variants", []) as Array)
+
+		if row.get("young_model", null) is Dictionary:
+			rows.append(row["young_model"])
+
+		var out: PackedStringArray = PackedStringArray()
+
+		for r in rows:
+			if not r is Dictionary:
+				continue
+
+			var paths: Array = [str((r as Dictionary).get("scene", ""))]
+
+			for entry in ((r as Dictionary).get("materials", []) as Array):      # the colour textures _model_materials lays over the file's own
+				if entry is Dictionary:
+					paths.append(str((entry as Dictionary).get("albedo", "")))
+
+			for path in paths:
+				if path != "" and not out.has(path) and ResourceLoader.exists(path):
+					out.append(path)
+
+		_scenes_of[number] = out
+
+	return _scenes_of[number]
+
+
+# True when every model scene of the species is loaded, so drawing one does not read the file on the main thread. Lane A route plays,
+# 23 Nov 2026: the first moose, black bear, horse, wildebeest or warthog drawn was a 0.6 to 1.4 s freeze, about half the freezes of a
+# walk, because load() read the model (2 to 3 MB) on the main thread. A scene not loaded yet is asked of a worker and false returned;
+# one that fails to load counts as ready, and _make_model then falls back to the code-built body as before.
+func _scenes_ready(number: int) -> bool:
+	var all_in: bool = true
+
+	for path in _species_scenes(number):
+		if _scene_held.has(path):
+			continue
+
+		if ResourceLoader.has_cached(path):
+			_scene_held[path] = load(path)      # already in memory (another view loaded it): no file read
+			continue
+
+		var status: int = ResourceLoader.load_threaded_get_status(path)
+
+		if status == ResourceLoader.THREAD_LOAD_LOADED:
+			_scene_held[path] = ResourceLoader.load_threaded_get(path)
+		elif status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+			all_in = false
+		elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.load_threaded_request(path, "", true) == OK:
+			all_in = false
+		else:
+			_scene_held[path] = null      # it failed: _make_model's own load() says so and draws the code-built body
+
+	return all_in
 
 
 func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
