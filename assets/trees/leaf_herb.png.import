@@ -3,7 +3,7 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://efrc60e3402y"
-path="res://.godot/imported/leaf_herb.png-8a1f3c6e2d7b49058e1c4a9b6f2d7e30.ctex"
+path="res://.godot/imported/leaf_herb.png-49d1b5180aa7426b765b1ef4d939664f.ctex"
 metadata={
 "vram_texture": false
 }
@@ -11,7 +11,7 @@ metadata={
 [deps]
 
 source_file="res://assets/trees/leaf_herb.png"
-dest_files=["res://.godot/imported/leaf_herb.png-8a1f3c6e2d7b49058e1c4a9b6f2d7e30.ctex"]
+dest_files=["res://.godot/imported/leaf_herb.png-49d1b5180aa7426b765b1ef4d939664f.ctex"]
 
 [params]
 

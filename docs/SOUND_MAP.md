@@ -2,10 +2,13 @@
 
 Owner of the hooks: Jason (Dave, 1 Nov 2026). Event rules stay with the system owner; if an event is not exposed in their code, I ask them. First pass, read from the repo by grep only, nothing run or heard. `none?` = no sound call found by name; may be covered under another name, to verify. Slot lists: `assets/audio/SOUND_PACK.md`, `data/sound/*.json`.
 
+Direction (23 Nov 2026, Dave: "the sound is not overly directional"): `project.godot` `audio/general/3d_panning_strength` is 1.0 (Godot's default 0.5 left a sound to one side only 6 dB down in the other ear) and the ears are an `AudioListener3D` at the eye (`sound_3d.gd` `ears`), not the third-person camera. `test_world_sound_3d` measures it and lists the modules allowed flat players.
+
 ## Hook audit (event, where in code, sound)
 | Event | Sound call found | Owner of the event | State |
 |---|---|---|---|
 | Footstep on each ground, wet shoes, cloth | `sound_stage.gd`, `step_fx.gd` (`stepfx.step`) | Sonny (body) | wired |
+| Another player's footstep | `player_view.gd` `stepped` (a step per stride of drawn travel, own stride lengths) -> `sound_stage.step_at` (positional at the feet, the own step's ground choice and level, unit 2 m, reach 45 m; 23 Nov 2026: there were none) | Sonny (body) | wired, to hear |
 | Landing after a fall | `landing_sounds.gd`, called from `sound_stage.update` | Sonny | wired |
 | Stance change (crouch, sit, lie) | `terrain_client.gd:1087` `stance.set_stance` | Steve (stance rules) | wired |
 | Tool swing and hit (axe, pick, hammer, spade) | `held_item.gd` `_strike` `hits.hit(_hit_tool())`, `hits.hit_ground`; `_start_swing` `hits.swing` (3 Nov: the swing whoosh was never called; a pick now sounds as a pick, a boulder as stone) | Steve | wired for axe and pick; hammer and spade swings use their own paths |

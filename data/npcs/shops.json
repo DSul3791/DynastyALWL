@@ -98,11 +98,11 @@
 			"rep": 1,
 			"orders": [
 				{"needs": [["nettles", 10], ["raspberries", 20]], "pay": 8},
-				{"needs": [["plant_fibre", 30], ["thatch", 20]], "pay": 8},
+				{"needs": [["plant_fibre", 30], ["thatch", 60]], "pay": 8},
 				{"needs": [["blackberries", 25], ["leaves", 20]], "pay": 8},
-				{"needs": [["fiddleheads", 15], ["bark", 10]], "pay": 9},
+				{"needs": [["fiddleheads", 40], ["bark", 10]], "pay": 9},
 				{"needs": [["blueberries", 25], ["stick", 20]], "pay": 8},
-				{"needs": [["chanterelles", 6], ["wild_garlic_bulbs", 6]], "pay": 10},
+				{"needs": [["chanterelles", 6], ["wild_garlic_bulbs", 15]], "pay": 10},
 				{"needs": [["clay", 20], ["stone", 20]], "pay": 8}
 			]
 		},

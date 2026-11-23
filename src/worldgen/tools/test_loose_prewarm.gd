@@ -51,6 +51,19 @@ func _init() -> void:
 		print("FAIL stump not prewarmed (%d nodes)" % world.get_child_count())
 		failures += 1
 
+	# Lag lane 23 Nov 2026: the first lit fire took about 1 s at the join (the starter town's bonfire); one lit and one unlit fire of each size
+	# are made at load, out of sight, and dropped with the stump.
+	view._prewarm_fires()
+	var fires: int = 0
+
+	for child in world.get_children():
+		if child.position.y < -9000.0 and child.get_node_or_null("Light") != null:
+			fires += 1
+
+	if world.get_child_count() != 7 or fires != 3 or view._felled_warm.size() != 7:
+		print("FAIL fires not prewarmed (%d nodes, %d lit, %d to drop)" % [world.get_child_count(), fires, view._felled_warm.size()])
+		failures += 1
+
 	view._drop_felled_warm()
 	world.free()
 	view.free()
