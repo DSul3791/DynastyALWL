@@ -20,8 +20,11 @@ const CHARGE := 11
 const RECOVER := 12
 const WARN_POP := 16            # the second rung of the warning: the jaw-pop and ground swat (13 to 15 are the thief's and the flock's)
 const WALL_LOOK_S := 0.2        # each charging step keeps this far (at its speed) plus its own nose clear of a wall: the client draws a charge
-                                # carried on past its newest point by up to two legs (MotionBuffer.at, AHEAD_CARRY_S; a leg is one 0.1 s tick
-                                # near a player), so a charge run up to a wall was drawn into it for a moment (coordinator's walls audit, 23 Nov 2026)
+                                # carried on past its newest point by up to two legs (MotionBuffer.at, AHEAD_CARRY_S), so a charge run up to a wall
+                                # was drawn into it for a moment (coordinator's walls audit, 23 Nov 2026). A near leg is 0.1 s, or 4 server frames
+                                # when slower (ServerAnimals STAGGER: 0.13 s at 30 fps): two of them are covered with the nose and the 0.3 m wall
+                                # margin. shortcut: a 20 fps server (0.2 s legs) or a far-band charge (3 Hz) can still be drawn a little way in.
+const WALL_TRIES := 3           # charges again after one a wall kept from its foe, before it calms
 
 var host                        # ServerAnimals
 var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list the wolves read)
@@ -310,13 +313,24 @@ func step(a: Dictionary, dt: float) -> void:
 			a["state"] = RECOVER
 			a["timer"] = float(def.get("recover_s", 5.0))
 			a.erase("run_m")
+			a["walled"] = not bool(a["hit"]) and not near.is_empty() and not near.has("dog") and host.wall_between(a["pos"], near["pos"])   # kept from its foe by a wall
 
 		return
 
-	# RECOVER: it stands blowing, whatever happened; afterwards it is calm and will not warn again for a while.
+	# RECOVER: it stands blowing, whatever happened; afterwards it is calm and will not warn again for a while. One a wall kept from its
+	# foe is still angry: it warns again (short) and charges from where it stands, sliding on along the wall, up to WALL_TRIES times while
+	# the foe stays within calm_m behind it, so one short wall piece is no shield (coordinator, 23 Nov 2026); then it calms as after any charge.
 	a["timer"] -= dt
 
 	if a["timer"] <= 0.0:
+		var foe: Dictionary = _foe(a) if bool(a.get("walled", false)) else {}
+		a.erase("walled")
+
+		if not foe.is_empty() and not foe.has("dog") and int(a.get("wall_tries", 0)) < WALL_TRIES and host.wall_between(a["pos"], foe["pos"]):
+			a["wall_tries"] = int(a.get("wall_tries", 0)) + 1
+			_start_warn(a, foe["pos"], float(def.get("provoked_warn_s", 0.8)), bool(a.get("no_bluff", false)))
+			return
+
 		_calm(a, def)
 
 
@@ -355,6 +369,8 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 
 
 func _calm(a: Dictionary, def: Dictionary) -> void:
+	a.erase("walled")
+	a.erase("wall_tries")
 	a.erase("foe_dog")
 	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only

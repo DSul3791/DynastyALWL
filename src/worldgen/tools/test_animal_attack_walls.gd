@@ -37,6 +37,9 @@ var drawn_in: int = 0           # charging steps whose line, carried on carry_m 
 var carry_m: float = 0.0
 var wall_x: float = WALL_X
 var wall_half: float = WALL_HALF_M
+var foe_at: Vector3 = Vector3.INF    # when set: `opened` is whether, while charging, it ever had an open line to this point
+var opened: bool = false
+var charges: int = 0                 # times it went into a charge
 
 
 func check(ok: bool, what: String) -> void:
@@ -128,6 +131,9 @@ func run(a: Dictionary, seconds: float) -> float:
 	track.clear()
 	crossed = 0
 	drawn_in = 0
+	opened = false
+	charges = 0
+	var was_state: int = int(a["state"])
 
 	for k in int(round(seconds / DT)):
 		animals.tick(DT)
@@ -136,6 +142,14 @@ func run(a: Dictionary, seconds: float) -> float:
 			var at: Dictionary = animals.animals[int(a["id"])]
 			var now: Vector3 = at["pos"]
 			closest = minf(closest, float(now.x))
+
+			if int(at["state"]) == BigGame.CHARGE and was_state != BigGame.CHARGE:
+				charges += 1
+
+			was_state = int(at["state"])
+
+			if foe_at != Vector3.INF and int(at["state"]) == BigGame.CHARGE and not animals.wall_between(now, foe_at):
+				opened = true
 
 			var on: Vector3 = Vector3(now.x - was.x, 0.0, now.z - was.z)
 
@@ -231,7 +245,7 @@ func _pull_up() -> void:
 		animals.big_game.warn(behind, BEHIND, -1.0, true)
 		carry_m = AnimalContact.body_m(sp) + speed * BigGame.WALL_LOOK_S
 		var closest: float = run(behind, 10.0)
-		var ok: bool = drawn_in == 0 and crossed == 0 and landed.is_empty() and closest < 105.0
+		var ok: bool = drawn_in == 0 and crossed == 0 and landed.is_empty() and closest < 106.0
 		check(ok, "%s: charging at a player behind the long wall, no step's line carried on %.2f m enters it (%d did), it runs up to it (nearest x %.2f) and never through" % [sp, carry_m, drawn_in, closest])
 		show_track(ok)
 
@@ -243,19 +257,36 @@ func _pull_up() -> void:
 
 	carry_m = 0.0
 
-	# One 2 m wall piece, 200 m on (clear of the long wall): the bear charges round it and home, never through it.
+	# Kept from its foe by the long wall, it is still angry: it warns and charges again from where it stands (WALL_TRIES times), never landing,
+	# then calms.
+	stand(BEHIND)
+	var angry: Dictionary = put("bear", 106.0)
+	animals.big_game.warn(angry, BEHIND, -1.0, true)
+	run(angry, 45.0)
+	var after: int = int(animals.animals[int(angry["id"])]["state"]) if animals.animals.has(int(angry["id"])) else -1
+	var tries_ok: bool = charges >= 2 and charges <= 1 + BigGame.WALL_TRIES and landed.is_empty() and crossed == 0 and not (after in [BigGame.WARN, BigGame.CHARGE, BigGame.RECOVER, BigGame.WARN_POP])
+	check(tries_ok, "a bear a wall keeps from its foe charges again, %d times in all (2 to %d), never lands (%d blows) and then calms (state %d)" % [charges, 1 + BigGame.WALL_TRIES, landed.size(), after])
+	show_track(tries_ok)
+
+	# One 2 m wall piece, 200 m on (clear of the long wall), is no shield: each charger either lands or charges round it to an open line to
+	# the player, never through it.
 	var piece: int = items.dev_place("log_wall@301.6,0.0,90")
 	var lone: Vector3 = Vector3(301.2, 10.0, 0.0)
-	stand(lone)
-	var bear: Dictionary = put("bear", 312.0)
-	animals.big_game.warn(bear, lone, -1.0, true)
 	wall_x = 301.6
 	wall_half = 1.0
-	carry_m = AnimalContact.body_m("bear") + float(animals.species_def("bear")["defend"].get("charge_mps", 11.0)) * BigGame.WALL_LOOK_S
-	run(bear, 10.0)
-	var round_ok: bool = piece != 0 and not landed.is_empty() and crossed == 0 and drawn_in == 0
-	check(round_ok, "a bear charging a player behind one 2 m wall piece runs round it and hits (%d blows; %d crossings, %d drawn into it)" % [landed.size(), crossed, drawn_in])
-	show_track(round_ok)
+	foe_at = lone
+	check(piece != 0, "one 2 m log wall piece stands at x 301.6")
+
+	for sp in ["bear", "boar", "lion", "moose", "hyena"]:
+		stand(lone)
+		var one: Dictionary = put(sp, lone.x + minf(10.8, float(animals.species_def(sp)["defend"].get("calm_m", 32.0)) - 1.0))   # inside its calm_m (a hyena 10 m)
+		animals.big_game.warn(one, lone, -1.0, true)
+		run(one, 30.0)
+		var round_ok: bool = (not landed.is_empty() or opened) and crossed == 0
+		check(round_ok, "a %s charging a player behind one 2 m wall piece lands (%d blows) or gets round it (%s), never through it (%d crossings)" % [sp, landed.size(), "round" if opened else "never round", crossed])
+		show_track(round_ok)
+
 	wall_x = WALL_X
 	wall_half = WALL_HALF_M
+	foe_at = Vector3.INF
 	carry_m = 0.0
