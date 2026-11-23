@@ -23,6 +23,15 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+# The wolves' row for one player (server_items wolf_info), {} when there is none.
+func _wolf_row(items, peer: int) -> Dictionary:
+	for row in items.wolf_info():
+		if int(row["peer"]) == peer:
+			return row
+
+	return {}
+
+
 # Whether the torch in `slot` is out (its instance data), and putting it out or lighting it by hand as the old tests swapped numbers.
 func is_out() -> bool:
 	return bool(inv.inst_of(slot).get("out", false))
@@ -91,6 +100,7 @@ func _light_burn_checks(items) -> void:
 	check(bool(items._items[910001]["struct"].get("lit", false)) and is_equal_approx(float(items._items[910001]["struct"]["fuel_left"]), 3600.0), "E with a candle lights the lantern for a game day")
 	check(bool(items._items[910002]["struct"].get("lit", false)) and is_equal_approx(float(items._items[910002]["struct"]["fuel_left"]), 1800.0), "a stick lights the torch post for half a game day")
 	check(items._lit_fires().has(post_at) and is_equal_approx(items.fire_protect_m(post_at), 8.0), "the lit torch post keeps wolves off 8 m")
+	check(items.fire_spots().any(func(spot): return (spot[0] as Vector3).is_equal_approx(post_at) and is_equal_approx(float(spot[1]), 8.0)), "the animals' fire spots hold the post with the same 8 m")
 	check(not items._lit_fires().has(lantern_at), "a lantern with no protect_m does not")
 	items._lights_tick(600.0)
 	check(is_equal_approx(float(items._items[910001]["struct"]["fuel_left"]), 3000.0), "the fuel burns down in real seconds")
@@ -284,10 +294,13 @@ func _init() -> void:
 	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
 	check(inv.numbers[burning] == lit and inv.wear[burning] > 0, "a burning torch wears down")
 	check(items._lit_fires().has(Vector3(100.0, 5.0, 100.0)) and absf(items.fire_protect_m(Vector3(100.0, 5.0, 100.0)) - items.TORCH_PROTECT_M) < 0.01, "its bearer keeps wolves off")
+	check(items.fire_spots().any(func(spot): return (spot[0] as Vector3).is_equal_approx(Vector3(100.0, 5.0, 100.0)) and absf(float(spot[1]) - items.TORCH_PROTECT_M) < 0.01), "the animals' fire spots hold the bearer with the torch's keep-off radius")
+	check(_wolf_row(items, 7).get("torch", false) == true, "the wolves know the bearer carries a torch")
 	inv.wear[burning] = 17990
 	items._torch_seen[7] = Time.get_ticks_msec() - 1500
 	items.action(7, Net.ACT_TORCH_BURN, burning, 0, 0, Vector3.ZERO)
 	check(inv.numbers[burning] == 0, "after half an hour the torch is gone")
+	check(_wolf_row(items, 7).get("torch", true) == false, "and the wolves know it is gone (the carried gear is worked out again when the pack changes)")
 
 	_light_burn_checks(items)
 	print("torch douse tests: %d failures" % failures)

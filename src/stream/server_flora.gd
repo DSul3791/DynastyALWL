@@ -21,7 +21,9 @@ const LAYOUT_KEY := "layout"        # a removals file: the flora layout version 
 const REMOVED_DIR := "flora_removed"    # one file per chunk with removals, <cx>_<cz>.json: {"layout", "ids"} (audit 18 Nov 2026 finding 6)
 const LEGACY_FILE := "flora_removed.json"   # the one file of every chunk before 18 Nov 2026: read once, written out per chunk, kept as .migrated
 const MEMORY_CHUNKS := 2048
-const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
+const ITEMS_CHUNKS := 400             # chunks of placed items kept by items_of, the least recently asked dropped first: every player warms the 9 round them
+                                      # (terrain_server _warm_flora), so 160 thrashed at 32 players spread out and a blow on a tree placed its chunk again on
+                                      # the main thread, 0.5 to 2 s each (server load test 23 Nov 2026)
 const TREES_CHUNKS := 512             # trees-only placed lists kept (_placed; about 30 KB each)
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 const SLOW_LOCK_MS := 20.0            # a chunk holding the flora lock longer prints a "server flora:" line (the main thread's shelter checks wait for it)
@@ -85,8 +87,13 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 
 	while true:
 		_items_mutex.lock()
-		var kept: Dictionary = (_trees_kept if trees_only else _items).get(key, {})
+		var store: Dictionary = _trees_kept if trees_only else _items
+		var kept: Dictionary = store.get(key, {})
 		var start: bool = kept.is_empty() and not _placing.has(key)
+
+		if not kept.is_empty():
+			store.erase(key)
+			store[key] = kept   # asked again: last in the drop order (least recently used first)
 
 		if start:
 			_placing[key] = true

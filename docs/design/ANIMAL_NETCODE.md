@@ -115,3 +115,17 @@ client only decides how the body gets from one drawn point to the next.
   horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain and are not covered (a resting
   pack wolf a player walks into stays; a known gap). Cost: the nearest player's distance is already worked out each step; one compare.
 - Tests: test_animal_motion_buffer.gd (a corner run: within 0.5 m, speed eased, facing turn rate), test_animal_contact.gd (make_way).
+
+## Fair hits (PR 3, protocol 155)
+
+The player sees each animal about 0.35 s in the past (the row clock's delay) plus half the ping; the server used to judge a blow against
+where the animal is now, so a blow at a running deer that looked square missed. This is the usual fix (Valve's lag compensation, Bernier 2001,
+in the sources above), with the server still the judge:
+- The client sends, with each blow (`ACT_STRIKE` b and count), the server moment its screen showed the animals at
+  (`animal_view.seen_server_ms`: the draw time, and the present a committed charge is drawn at).
+- The server keeps each animal's last places (`note_past`: [ms, position] at each move, about 0.75 s of them) and finds the target and
+  the struck point where the animal was then (`pos_at`, `target_along`, `jab_point`). The damage, the zone and everything after happen now.
+- It never goes back more than `rewind_max_ms` (500): a client claiming an older moment is judged at 500 ms back, so a laggy or lying
+  client cannot hit an animal that left long since. 500 rather than 250 because the honest delay of a normal internet game is about 0.4 s.
+- Not covered: arrows and thrown spears (the server flies them on its own clock); the charge still hits by where the animal is now.
+

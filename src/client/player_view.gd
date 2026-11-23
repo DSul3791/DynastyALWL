@@ -27,6 +27,7 @@ const HeldItem := preload("res://src/client/held_item.gd")
 
 const MAX_DRAWN := 31
 const CARRY_S := 0.8                   # how long a body walks on past its newest point (MotionBuffer.at: at most two report legs)
+const SWING_LEAD_S := 0.2             # how much of the swing before its impact a remote blow still shows (the downswing)
 const REPORT_S := 0.2                  # a client reports its position every 0.2 s (terrain_client.gd report_position)
 const MAKE_PER_ROWS := 2               # bodies made per rows message: a crowd coming into range is built over a few sends, not in one frame
 const FULL_M := 15.0
@@ -275,7 +276,9 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 
 		if work != "" and not swimming and not carrying and (state & ASLEEP) == 0 and stance == StanceScript.STAND and player.has_animation(work):
 			player.play(work, 0.05)   # the blow restarts it, as the player's own body (terrain_client.gd held.swing_serial)
-			player.seek(0.0, true)
+			# The server hears of a blow at its impact: started SWING_LEAD_S before the impact frame, the drawn blow lands close to now.
+			var share: float = HeldItem.PICK_HIT_AT if work == "pick_overhead" else (HeldItem.HIT_AT if work == "chop" else 0.0)
+			player.seek(maxf(player.get_animation(work).length * share - SWING_LEAD_S, 0.0), true)
 			player.speed_scale = 1.0
 			return
 

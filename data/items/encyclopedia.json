@@ -5651,48 +5651,78 @@
 			"name": "Wheat seeds",
 			"kind": "material",
 			"description": "Seeds for sowing wheat. Plant them in a tilled bed in spring.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from tall grass (summer/autumn)",
+				"From a ripe wheat in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow wheat, 50 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"barley_seeds": {
 			"name": "Barley seeds",
 			"kind": "material",
 			"description": "Seeds for sowing barley. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from tall grass (summer/autumn)",
+				"From a ripe barley in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow barley, 50 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"carrot_seeds": {
 			"name": "Carrot seeds",
 			"kind": "material",
 			"description": "Seeds for sowing carrot. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from wild carrot (summer/autumn)",
+				"From a ripe carrot in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow carrot, 30 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"potato_seeds": {
 			"name": "Potato seeds",
 			"kind": "material",
 			"description": "Seeds for sowing potato. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from wild potato (spring/summer/autumn)",
+				"From a ripe potato in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow potato, 10 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"turnip_seeds": {
 			"name": "Turnip seeds",
 			"kind": "material",
 			"description": "Seeds for sowing turnip. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from wild turnip (spring/autumn)",
+				"From a ripe turnip in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow turnip, 30 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"flax_seeds": {
 			"name": "Flax seeds",
 			"kind": "material",
 			"description": "Seeds for sowing flax. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from wild flax (summer/autumn)",
+				"From a ripe flax in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow flax, 100 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"quern": {
@@ -6114,48 +6144,78 @@
 			"name": "Oats seeds",
 			"kind": "material",
 			"description": "Seeds for sowing oats. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from tall grass (summer/autumn)",
+				"From a ripe oats in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow oats, 50 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"rye_seeds": {
 			"name": "Rye seeds",
 			"kind": "material",
 			"description": "Seeds for sowing rye. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from tall grass (summer/autumn)",
+				"From a ripe rye in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow rye, 50 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"cabbage_seeds": {
 			"name": "Cabbage seeds",
 			"kind": "material",
 			"description": "Seeds for sowing cabbage. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from sea cabbage (summer)",
+				"From a ripe cabbage in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow cabbage, 30 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"onion_seeds": {
 			"name": "Onion seeds",
 			"kind": "material",
 			"description": "Seeds for sowing onion. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from wild leek (spring)",
+				"From a ripe onion in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow onion, 30 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"peas_seeds": {
 			"name": "Peas seeds",
 			"kind": "material",
 			"description": "Seeds for sowing peas. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from wild vetch (summer)",
+				"From a ripe peas in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow peas, 20 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"beet_seeds": {
 			"name": "Beet seeds",
 			"kind": "material",
 			"description": "Seeds for sowing beet. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"Picked from sea beet (summer)",
+				"From a ripe beet in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow beet, 20 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"oat_porridge": {
@@ -6677,9 +6737,12 @@
 			"kind": "material",
 			"description": "Seeds for sowing radish. Plant in a tilled bed.",
 			"how_to_get": [
-				"Not yet obtainable"
+				"Picked from wild radish (spring/summer/autumn)",
+				"From a ripe radish in a garden"
 			],
-			"used_for": [],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow radish, 20 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"lettuce_seeds": {
@@ -6687,9 +6750,12 @@
 			"kind": "material",
 			"description": "Seeds for sowing lettuce. Plant in a tilled bed.",
 			"how_to_get": [
-				"Not yet obtainable"
+				"Picked from prickly lettuce (spring/summer/autumn)",
+				"From a ripe lettuce in a garden"
 			],
-			"used_for": [],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow lettuce, 30 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"apple_early": {
@@ -10419,8 +10485,12 @@
 			"name": "Parsnip seeds",
 			"kind": "material",
 			"description": "Seeds for sowing parsnip. Plant in a tilled bed.",
-			"how_to_get": [],
-			"used_for": [],
+			"how_to_get": [
+				"From a ripe parsnip in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow parsnip, 30 seeds a spot"
+			],
 			"obtainable_now": false,
 			"status": "planned"
 		},
