@@ -11,7 +11,11 @@ extends Node
 #   AUDIT jump_detail / jump_after <animal id> ...   with a jump: its looks before and after, its accumulated step time, the longest frame
 #   AUDIT wolfpack <pack id> <unix ms> <phase> <target peer> <n> wolves   a wolf pack's phase or target changed
 #   AUDIT strike <peer> <unix ms> reach seen present judged ... target, hit or miss, the nearest animal then and now   each melee blow at an animal
-# Nothing changes in the game itself: no protocol change, and with the flag off this node is never made.
+#   AUDIT enemy_hit <peer> <unix ms> <cause[/weapon]> from <x,z> player <x,z> gap <m> result <hurt|maimed|...> shield <share>   each goblin,
+#     bandit or big game blow at a player (hurt_player / hurt_armed wrapped)
+#   AUDIT snare <id> ...   each snare set, with its trail share
+#   AUDIT control <unix ms> <command>   a robot's server_control.txt command done (plan cold): the only place this node changes the game
+# No protocol change, and with the flag off this node is never made.
 
 const RobotRules := preload("res://src/shared/robot_rules.gd")
 const SIG_EVERY_S := 0.25
@@ -258,9 +262,14 @@ func _wrap_enemy() -> void:
 
 
 # Robot runs only (plan cold): tools/robots.sh gives the server ROBOT_SHARE; a robot writes server_control.txt there, one command per line:
-#   cold <peer>             the weather the vitals read turns to -25 C with wind, and that peer starts at health 6, warmth 15 (cold hurts)
-#   health <peer> <value>   that peer's health is set (the 1-health floor under blows)
+#   cold <peer>             the weather turns to -25 C with wind (weather_now and weather_at, which the warmth reads; every player on
+#                           this server), and that peer starts at health 6, warmth 15 (cold hurts)
+#   warm <peer>             the weather is the world's own again
+#   health <peer> <value>   that peer's health is set, at least 1 (the 1-health floor under blows)
 # Each command is done once and printed as AUDIT control; the file is then emptied. Nothing of this exists without --robot-audit.
+var _weather_was: Array = []      # [weather_now, weather_at] before the cold
+
+
 func _read_control() -> void:
 	var share: String = OS.get_environment("ROBOT_SHARE")
 
@@ -286,24 +295,41 @@ func _read_control() -> void:
 		if p[0] == "cold" and not v.is_empty():
 			if not _cold:
 				_cold = true
-				var weather: Callable = items.weather_now
+				var now_was: Callable = items.weather_now
+				var at_was: Callable = items.weather_at
+				_weather_was = [now_was, at_was]
 				items.weather_now = func():
-					var w: Dictionary = (weather.call() if weather.is_valid() else {}).duplicate()
-					w["temp_c"] = -25.0
-					w["wind"] = 1.0
-					return w
+					return _frost((now_was.call() if now_was.is_valid() else {}) as Dictionary)
+				items.weather_at = func(pos: Vector3):
+					return _frost((at_was.call(pos) if at_was.is_valid() else (now_was.call() if now_was.is_valid() else {})) as Dictionary)
 
 			v["health"] = 6.0
 			v["warmth"] = 15.0
 			items._sync_vitals(peer, true)
-		elif p[0] == "health" and not v.is_empty() and p.size() > 2:
-			v["health"] = float(p[2])
+		elif p[0] == "warm" and not v.is_empty():
+			if _cold:
+				_cold = false
+				items.weather_now = _weather_was[0]
+				items.weather_at = _weather_was[1]
+
+			v["warmth"] = maxf(float(v.get("warmth", 0.0)), 60.0)
+			items._sync_vitals(peer, true)
+		elif p[0] == "health" and not v.is_empty() and p.size() > 2 and p[2].is_valid_float():
+			v["health"] = maxf(float(p[2]), 1.0)
 			items._sync_vitals(peer, true)
 		else:
 			print("AUDIT control refused: %s" % line)
 			continue
 
 		print("AUDIT control %d %s" % [RobotRules.now_ms(), line])
+
+
+# A copy of a weather state with a hard frost (the original may be a cached dictionary: never changed).
+static func _frost(w: Dictionary) -> Dictionary:
+	var out: Dictionary = w.duplicate()
+	out["temp_c"] = -25.0
+	out["wind"] = 1.0
+	return out
 
 
 # Each snare set: `AUDIT snare <id> <unix ms> <x> <z> trail <0..1> owner <key>`, the trail share server_traps.trail_at gives it (catch

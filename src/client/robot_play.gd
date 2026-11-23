@@ -2766,7 +2766,7 @@ func _fight(kind: String) -> void:
 		await get_tree().process_frame
 
 	if foe < 0:
-		_note("fight", "no %s came after admin_place: nothing measured" % kind)
+		_fail("fight", "foe", "no %s came after admin_place: nothing measured" % kind)
 		return
 
 	print("ROBOT %s step fight: %s %d set, shield in the left hand %s" % [robot_name, kind, foe, str(client.held.off_id())])
@@ -2859,6 +2859,11 @@ func _fight(kind: String) -> void:
 				if not hit_now:
 					print("ROBOT %s ENEMY miss %s %d warn %d charge %d gap %.2f dodge %s shield %s" % [robot_name, kind, foe, (charge_ms - warn_ms) if warn_ms > 0 else -1, now - charge_ms, closest, ("run" if charges % 4 == 0 else "walk") if dodge else "no", "up" if shield_up else "down"])
 				warn_ms = -1
+			elif (last_state == ST_WARN or last_state == ST_WARN_POP) and st != ST_WARN and st != ST_WARN_POP:
+				_shield(false)   # a warning that never became a charge: guard down, close in again after the calm
+				raise_ms = -1
+				warn_ms = -1
+				calm_since = now
 
 		if raise_ms > 0 and st != ST_CHARGE:
 			_face(at - me)   # shield up: keep it toward the foe (protection.json shield_arc_deg 120)
@@ -2957,8 +2962,9 @@ func _bear_group() -> void:
 # pass out and wake at the nearest goblin camp, bandit camp or town with a "traveler found you" message, the pack kept). The server's robot
 # audit turns the weather to a hard frost and starts this player at health 6, warmth 15 (server_control.txt, --robot-audit only). The robot
 # stands still and must: never read health 0 or die, pass out with words, be moved to a rescue spot, wake with words and health at least 10,
-# keep every item, and stand and walk after. Then the 1-health floor under blows: health set to 3, a goblin set 3 m off and jabbed each second; 40 s of
-# its blows must leave health at 1 or more and no death.
+# keep every item, and stand and walk after. Then the 1-health floor under blows, in the world's own weather again: health set to 1, a
+# goblin set 3 m off and jabbed each second; at least one blow must land (the server's AUDIT enemy_hit) and 40 s of them must leave health
+# at 1 and no death.
 const SERVER_CONTROL := "server_control.txt"
 
 
@@ -2966,7 +2972,7 @@ func _cold() -> void:
 	_step = "cold"
 
 	if not admin or _share(SERVER_CONTROL) == "":
-		_note("cold", "the cold plan needs --robot-admin and tools/robots.sh (ROBOT_SHARE): nothing done")
+		_fail("cold", "setup", "the cold plan needs --robot-admin and tools/robots.sh (ROBOT_SHARE): nothing measured")
 		return
 
 	_give("stone", 3)
@@ -3030,7 +3036,9 @@ func _cold() -> void:
 
 	await _run_to(client.body.global_position + Vector3(0.0, 0.0, -60.0), 20.0, 3.0)   # out of the town square (it woke there): foes there stood calm under jabs
 	_release_all()
-	_write(_share(SERVER_CONTROL), "health %d 3" % client.multiplayer.get_unique_id())
+	_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())   # the world's own weather again: no second pass-out mid-fight
+	await _wait(1.0)
+	_write(_share(SERVER_CONTROL), "health %d 1" % client.multiplayer.get_unique_id())
 	await _wait(2.0)
 	var me: Vector3 = client.body.global_position
 	var known: Dictionary = {}
@@ -3039,7 +3047,7 @@ func _cold() -> void:
 		known[int(row[0])] = true
 
 	client.net.admin_place.rpc_id(1, "animal", me - client.body.global_transform.basis.z * 3.0, "goblin")   # a goblin fights back (a bear at 3 m never struck in two runs)
-	var bear: int = -1
+	var foe: int = -1
 	var died_before: int = _died
 	low = 1 << 30
 	var h_seen: Array = []
@@ -3050,8 +3058,8 @@ func _cold() -> void:
 		var at: Vector3 = Vector3.INF
 
 		for row in client._animal_view_node.drawn_positions():
-			if not known.has(int(row[0])) and int(_species.get(int(row[0]), 0)) == 16 and (bear < 0 or int(row[0]) == bear):
-				bear = int(row[0])
+			if not known.has(int(row[0])) and int(_species.get(int(row[0]), 0)) == 16 and (foe < 0 or int(row[0]) == foe):
+				foe = int(row[0])
 				at = row[1]
 
 		if _health >= 0:
@@ -3060,7 +3068,7 @@ func _cold() -> void:
 			if h_seen.is_empty() or h_seen[-1] != _health:
 				h_seen.append(_health)
 
-		if at.is_finite():   # close in and jab once a second, so the bear keeps fighting
+		if at.is_finite():   # close in and jab once a second, so the goblin keeps fighting
 			var to: Vector3 = at - client.body.global_position
 			_face(to)
 			_key("move_forward", Vector2(to.x, to.z).length() > 2.0)
@@ -3081,14 +3089,18 @@ func _cold() -> void:
 		if line.begins_with("AUDIT enemy_hit %d " % client.multiplayer.get_unique_id()) and line.contains("goblin"):
 			blows.append(line.get_slice(" result ", 1).get_slice(" ", 0))
 
-	print("ROBOT %s FLOOR goblin %d, %d blows landed (%s), health seen %s, lowest %d, deaths %d" % [robot_name, bear, blows.size(), ",".join(blows), str(h_seen), low, _died - died_before])
+	print("ROBOT %s FLOOR goblin %d, %d blows landed (%s), health seen %s, lowest %d, deaths %d" % [robot_name, foe, blows.size(), ",".join(blows), str(h_seen), low, _died - died_before])
 
-	if bear < 0:
-		_note("floor", "no goblin came after admin_place: the floor under blows is not measured")
+	if not FileAccess.file_exists(_share("server.log")):
+		_fail("floor", "log", "no server.log in ROBOT_SHARE: the server's blows cannot be counted")
+	elif foe < 0:
+		_fail("floor", "foe", "no goblin came after admin_place: the floor under blows is not measured")
 	elif blows.is_empty():
-		_note("floor", "no goblin blow landed in 40 s (no AUDIT enemy_hit): the floor under blows is not measured")
+		_fail("floor", "blows", "no goblin blow landed in 40 s (no AUDIT enemy_hit): the floor under blows is not measured")
 	elif low < 1 or _died > died_before:
-		_fail("floor", "below", "at health 3 a goblin took this player to %d (deaths %d): at 1 health no more damage" % [low, _died - died_before])
+		_fail("floor", "below", "at health 1 a goblin took this player to %d (deaths %d): at 1 health no more damage" % [low, _died - died_before])
+	elif low > 1:
+		_fail("floor", "set", "health never read 1 after the control set it (lowest %d): the floor was not tested" % low)
 
 
 func _watch(s: float) -> void:
