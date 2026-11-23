@@ -6069,8 +6069,11 @@ func _move_player(delta: float) -> void:
 		_ease_step_lift(delta)
 		Probe.stop("p bob", tb)
 
-	if motion_audit != null and not walked:
-		motion_audit.reset()   # a seat, a bed, a ladder or flying: the next walk frame starts fresh
+	if not walked:
+		_step_hover_m = 0.0   # a seat, a bed, a ladder or flying: no hop's level hold carries over
+
+		if motion_audit != null:
+			motion_audit.reset()   # the next walk frame starts fresh
 
 	if flying:
 		_bob_amount = 0.0
@@ -6172,7 +6175,7 @@ func _step_up(motion: Vector3) -> void:
 	var lift: float = StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
 	_step_lift += lift
 
-	if lift > 0.0:
+	if lift > StepUpScript.HOVER_MIN_LIFT_M:
 		_step_hover_m = StepUpScript.HOVER_M
 		body.velocity.y = 0.0
 

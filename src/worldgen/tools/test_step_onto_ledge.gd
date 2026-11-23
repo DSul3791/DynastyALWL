@@ -9,8 +9,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_step_onto_ledge.gd
 
 const StepUp := preload("res://src/client/step_up.gd")
-const TICKS := 600
-const D := 1.0 / 600.0
+var D: float = 1.0 / 600.0
 
 var failures: int = 0
 
@@ -35,13 +34,22 @@ func _box(parent: Node3D, at: Vector3, size: Vector3) -> StaticBody3D:
 
 
 func _initialize() -> void:
-	Engine.physics_ticks_per_second = TICKS
 	var rn: Node3D = Node3D.new()
 	root.add_child.call_deferred(rn)
 	await process_frame
 	_box(rn, Vector3(0, -0.5, 0), Vector3(60, 1, 60))
 
-	for case in [[0.15, false], [0.3, false], [0.45, false], [0.6, false], [0.3, true], [0.45, true]]:
+	for ticks_s in [600, 60]:   # a fast tick keeps the test short; 60 a second is the game's own
+		Engine.physics_ticks_per_second = ticks_s
+		D = 1.0 / float(ticks_s)
+		await _ledges(rn, ticks_s)
+
+	print("step onto ledge: %d failures" % failures)
+	quit(1 if failures > 0 else 0)
+
+
+func _ledges(rn: Node3D, ticks_s: int) -> void:
+	for case in [[0.15, false], [0.3, false], [0.45, false], [0.5, false], [0.55, false], [0.6, false], [0.3, true], [0.45, true]]:
 		var h: float = float(case[0])
 		var ledge: StaticBody3D = _box(rn, Vector3(0, h * 0.5, -4.0), Vector3(4, h, 4))   # its face at z = -2
 		var lintel: StaticBody3D = _box(rn, Vector3(0, h + 2.2, -2.0), Vector3(4, 0.4, 0.2)) if bool(case[1]) else null   # a doorway on the edge: 2 m clear over its top
@@ -72,7 +80,7 @@ func _initialize() -> void:
 
 				body.velocity = v
 
-				if body.is_on_floor() and hover <= 0.0 and StepUp.try(body, Vector3(v.x, 0.0, v.z) * D, 0.5) > 0.0:
+				if body.is_on_floor() and hover <= 0.0 and StepUp.try(body, Vector3(v.x, 0.0, v.z) * D, 0.5) > StepUp.HOVER_MIN_LIFT_M:
 					hover = StepUp.HOVER_M
 					body.velocity.y = 0.0
 
@@ -87,10 +95,10 @@ func _initialize() -> void:
 			var z: float = body.global_position.z
 			var top: float = body.global_position.y - 0.9
 
-			if h <= 0.5:
-				_check(z < -2.6 and absf(top - h) < 0.05, "%s at %.2f m/s onto a %.2f m ledge%s: on it in the time 3 m takes (at z %.2f, feet %.2f m up)" % [gait[0], pace, h, where, z, top])
+			if h <= 0.51:
+				_check(z < -2.6 and absf(top - h) < 0.05, "%d Hz: %s at %.2f m/s onto a %.2f m ledge%s: on it in the time 3 m takes (at z %.2f, feet %.2f m up)" % [ticks_s, gait[0], pace, h, where, z, top])
 			else:
-				_check(z > -2.0 and top < 0.1, "%s at %.2f m/s at a %.2f m ledge (over step_up_m): stopped at its face (z %.2f)" % [gait[0], pace, h, z])
+				_check(z > -2.0 and top < 0.1, "%d Hz: %s at %.2f m/s at a %.2f m ledge (over step_up_m): stopped at its face (z %.2f)" % [ticks_s, gait[0], pace, h, z])
 
 			body.queue_free()
 			await physics_frame
@@ -101,6 +109,3 @@ func _initialize() -> void:
 			lintel.queue_free()
 
 		await physics_frame
-
-	print("step onto ledge: %d failures" % failures)
-	quit(1 if failures > 0 else 0)
