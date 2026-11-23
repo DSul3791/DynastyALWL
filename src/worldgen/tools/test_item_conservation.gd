@@ -241,6 +241,10 @@ func step(rng: RandomNumberGenerator) -> String:
 	elif roll >= 100:
 		var secs: int = (1 + rng.randi() % 3) * (60 if fire_mode else 1)
 
+		if fire_mode:
+			for id in ground_ids():   # hours pass: loose stacks would despawn (WORLD_ITEM_LIFETIME_S, a rule of its own, for Dave), which is not what this run checks
+				items._items[id]["left"] = maxf(float(items._items[id]["left"]), 1.0e7)
+
 		for k in secs:
 			items.tick(1.0)
 
