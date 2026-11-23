@@ -14,6 +14,7 @@ const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const BodyModelsScript := preload("res://src/client/character/body_models.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const MotionBufferScript := preload("res://src/client/motion_buffer.gd")
+const NetScript := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 
@@ -48,6 +49,11 @@ class FakeItems:
 
 	func carries_log(_peer: int) -> bool:
 		return false
+
+	var asleep: Dictionary = {}
+
+	func sleeping_of(peer: int) -> bool:
+		return asleep.has(peer)
 
 	func held_number(peer: int) -> int:
 		return int(held.get(peer, 0))
@@ -114,6 +120,25 @@ func _server() -> void:
 	players.tick(0.2)
 	check(sent.size() >= 2, "unchanged rows go again after a second (%d)" % sent.size())
 
+	# Swings and sleep ride in the state byte's high bits (no new field): a blow is news at once, a walk or a craft is not a swing.
+	sent.clear()
+	check(PlayersScript.SWING_ACTS.has(NetScript.ACT_HIT) and PlayersScript.SWING_ACTS.has(NetScript.ACT_MINE) and not PlayersScript.SWING_ACTS.has(NetScript.ACT_MOVE), "a hit and a mine blow are swings, a pack move is not")
+	players.note_action(2, NetScript.ACT_HIT)
+	players.note_action(2, NetScript.ACT_MOVE)
+	fake.asleep = {2: true}
+	clock[0] = 2700
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][0]) == 1, "a swing goes out to player 1 at the next send, with no new position")
+	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 1, "the swing count is 1 (a pack move is not a swing)")
+	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
+	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
+	fake.asleep = {}
+	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
+	for i in range(8):
+		players.note_action(2, NetScript.ACT_MINE)
+	check((int(players._swings[2][0])) == 1, "the swing count wraps at 8")
+	clock[0] = 2800
+
 	looks.clear()
 	players.worn_changed(2, PackedInt32Array([5, 0, 9]))
 	check(looks.is_empty(), "the same worn pieces send nothing")
@@ -124,7 +149,7 @@ func _server() -> void:
 	fake.pos.erase(2)
 	players.forget(2)
 	sent.clear()
-	clock[0] = 2700
+	clock[0] = 2900
 	players.tick(0.2)
 	check(sent.size() >= 1 and (sent[0][1] as PackedInt32Array).is_empty(), "a player who left is dropped from the rows")
 
@@ -227,6 +252,143 @@ func _client() -> void:
 		var swim_clip: String = str(view._bodies[7]["rig"].current())
 		check(swim_clip.begins_with("swim"), "a swimming player plays the swim clip (%s)" % swim_clip)
 
+	# A blow (the swing count in the state's high bits moves on): the body plays the tool's work clip once, then goes back to its stance clip.
+	check(PlayerViewScript.work_clip(axe, table) == "chop" and PlayerViewScript.work_clip(table.number_of("stone_pickaxe"), table) == "pick_overhead" and PlayerViewScript.work_clip(table.number_of("wooden_spear"), table) == "jab", "the work clip follows the tool: chop, pick, jab")
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3200]))
+
+	for i in range(5):
+		await process_frame
+
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3300]))
+
+	for i in range(3):
+		await process_frame
+
+	if DynastyBodyScript.available() and view._bodies.has(7):
+		var swing_clip: String = str(view._bodies[7]["rig"].current())
+		check(swing_clip == "chop", "a swing with the axe plays the chop (%s)" % swing_clip)
+		var swing_end: int = Time.get_ticks_msec() + 1600
+
+		while Time.get_ticks_msec() < swing_end:
+			await process_frame
+
+		var after_clip: String = str(view._bodies[7]["rig"].current())
+		check(after_clip != "chop" and not view._bodies[7]["rig"].is_one_shot_playing(), "the chop plays out and the body goes back to its stance clip (%s)" % after_clip)
+
+
+# Over a real connection (the coordinator's ask, 23 Nov 2026: smooth under 100 to 150 ms and a few percent loss): rows sent every 125 ms
+# carrying 0.2 s position reports, each delivered 100 to 260 ms late (a random wobble), one in twenty lost and once four in a row, for a walk at 3 m/s, then a
+# stop. The drawn body must never jump (no frame step over a normal one plus the easing's catch-up), keep moving through the walk (no stand
+# then jump at a lost batch), and come to rest near the last point without running past and back.
+func _check_lossy(burst_ms: int, tail_ms: int) -> void:
+	var table = ItemTableScript.load_default()
+	var view: Node3D = PlayerViewScript.new()
+	view.table = table
+	get_root().add_child(view)
+	var at: Vector3 = Vector3(1000.0, 30.0, 1000.0)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = at + Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	var peers: Array = [9, 10, 11]
+	var phase: Array = [0, 70, 140]   # each client reports on its own 0.2 s beat
+
+	for peer in peers:
+		view.on_look(peer, "Lossy", "body_1", "", PackedInt32Array())
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 1523
+	var start_ms: int = Time.get_ticks_msec()
+	var walk_ms: int = 3000
+	var end_ms: int = 4600
+	var queue: Array = []   # [deliver at ms, [server ms per peer], [position per peer]]
+	var sent_ms: Array = [-1, -1, -1]
+	var last_send: int = -1000
+
+	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report stamped when it reached the server.
+	for send in range(0, end_ms, 125):
+		var times: Array = []
+		var spots: Array = []
+		var news: bool = send - last_send >= 1000
+
+		for i in range(peers.size()):
+			var beat: int = send - int(phase[i])
+			var report: int = maxi(beat - posmod(beat, 200), 0) + int(phase[i])
+			var stamp: int = 20000 + report + (posmod(hash([i, report]), 61) if report > 0 else 0)   # the report's own trip up, with its wobble, once per report
+			var walked: float = 3.0 * float(mini(report, walk_ms)) / 1000.0
+			times.append(stamp)
+			spots.append(at + Vector3(walked, 0.0, 3.0 * i))
+			news = news or report > int(sent_ms[i])
+			sent_ms[i] = maxi(int(sent_ms[i]), report)
+
+		if not news:
+			continue
+
+		last_send = send
+
+		if rng.randf() < 0.05 or (send >= burst_ms and send < burst_ms + 500):
+			continue   # lost (ENet drops unreliable packets when the ping wobbles), and once four in a row (a throttle burst)
+
+		queue.append([send + rng.randi_range(100, 260), times, spots])
+
+	queue.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var worst_step: float = 0.0
+	var still_frames: int = 0
+	var last_p: Dictionary = {}
+	var past: float = 0.0   # the farthest any body went beyond its last point (9 m)
+	var last_t: int = Time.get_ticks_usec()
+
+	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + tail_ms:
+		var now: int = Time.get_ticks_msec() - start_ms
+
+		while not queue.is_empty() and int(queue[0][0]) <= now:
+			var row: Array = queue.pop_front()
+			view.on_rows(PackedInt32Array(peers), PackedVector3Array(row[2]), PackedFloat32Array([-PI * 0.5, -PI * 0.5, -PI * 0.5]), PackedByteArray([0, 0, 0]), PackedInt32Array([0, 0, 0]), PackedInt32Array(row[1]))
+
+		await process_frame
+		var dt: float = float(Time.get_ticks_usec() - last_t) / 1.0e6
+
+		if dt < 0.05:
+			continue   # measured over 50 ms windows (headless frames are far shorter than a millisecond clock can time)
+
+		last_t = Time.get_ticks_usec()
+
+		for peer in peers:
+			var b: Dictionary = view._bodies.get(peer, {})
+
+			if b.is_empty():
+				continue
+
+			var p: Vector3 = (b["node"] as Node3D).position
+
+			if last_p.has(peer) and now > 1200 and now < walk_ms + 100:   # while it walks (past the first second, before the stop is drawn)
+				var step: float = p.distance_to(last_p[peer]) / dt
+				worst_step = maxf(worst_step, step)
+
+				if step < 0.3:
+					still_frames += 1
+
+			last_p[peer] = p
+			past = maxf(past, p.x - at.x - 9.0)
+
+	var rest_ok: bool = true
+
+	for peer in peers:
+		rest_ok = rest_ok and view._bodies.has(peer) and absf(float((view._bodies[peer]["node"] as Node3D).position.x) - at.x - 9.0) < 0.15
+
+	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
+	check(worst_step < 3.0 * 1.5, "no jump on a lossy, late link: the fastest drawn speed %.1f m/s for a 3 m/s walk" % worst_step)
+	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
+	check(rest_ok, "each comes to rest at its last point (burst at %d ms)" % burst_ms)
+	check(past <= 3.0 * PlayerViewScript.CARRY_S + 0.3, "no body walks on more than %.1f m past its stop (%.2f m)" % [3.0 * PlayerViewScript.CARRY_S, past])
+	var hitch: Dictionary = MotionBufferScript.clock_new()
+	hitch["late"] = 1.5   # a 1.5 s hitch on this computer: the batch after it reads 1.5 s late
+	check(PlayerViewScript.draw_delay(hitch) <= MotionBufferScript.MAX_DELAY_S, "after a hitch the draw delay stays within %.1f s (%.2f)" % [MotionBufferScript.MAX_DELAY_S, PlayerViewScript.draw_delay(hitch)])
+	check(PlayerViewScript.draw_delay(MotionBufferScript.clock_new()) >= PlayerViewScript.REPORT_S, "and never under one report gap")
+	view.queue_free()
+	camera.queue_free()
+	await process_frame
+
 
 # Dave 23 Nov 2026 on 9257: another player's spear "floating in the air almost sticking out of his chest". Every item with a hand look, on
 # every body model, is put in a remote player's hand as the player's own third-person body holds it: under that body's hand mount (the left
@@ -300,6 +462,8 @@ func _check_holds() -> void:
 func _init() -> void:
 	_server()
 	await _client()
+	await _check_lossy(1750, 800)    # a burst of lost batches mid-walk
+	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
 	await _check_holds()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)

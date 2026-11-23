@@ -5,7 +5,9 @@ extends RefCounted
 # and the facing that came with each position report, and sends:
 #   - player_look to everyone when a player's look or worn pieces change, and every known look to a player who just sent theirs;
 #   - players rows, unreliable, about eight times a second: the other players within NEAR_M (nearest MAX_ROWS), each with its position,
-#     facing, state byte (stance 0..3, +4 swimming, +8 a log on the shoulder), the item in the hand and the server ms that position came in.
+#     facing, state byte (stance 0..3, +4 swimming, +8 a log on the shoulder, +16 asleep, bits 5..7 a count of its tool swings, so
+#     others play the chop, pick or jab clip: no new field, an older client ignores the high bits), the item in the hand and the server ms
+#     that position came in.
 #     A receiver gets them only when one of its rows has news, or every RESEND_MS; the client draws each between sent points (motion_buffer.gd).
 # Cost: one distance test per pair of players per send (32 players: about 1000 a send, 8000 a second), the per-player readings once a send.
 # Nothing here acts on another player: no collision, no damage, no looting (robbery.enabled and player-versus-player rules are Dave's).
@@ -20,8 +22,15 @@ const BODY_MAX := 32
 const CODE_MAX := 400              # a body code (body_generator.gd encode) is well under 200 characters
 const SWIM := 4
 const CARRY := 8
+const ASLEEP := 16
+const SWING_SHIFT := 5             # bits 5..7: the player's swing count, mod 8
+const Net := preload("res://src/stream/terrain_net.gd")
+# A blow with the tool in hand (one per swing, at its impact: held_item.gd), shown to the others as a swing.
+# Not ACT_TILL_GARDEN: the hoe's grid preview sends it as a check-only poll about once a second.
+const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Net.ACT_FILL, Net.ACT_TILL, Net.ACT_HIT_SHRUB,
+		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_ICEHOLE]
 
-var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log
+var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, sleeping_of
 var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
@@ -32,6 +41,7 @@ var _report_ms: Dictionary = {}    # peer -> server ms of its latest position re
 var _worn_sent: Dictionary = {}    # peer -> the worn numbers last told to everyone
 var _look_ms: Dictionary = {}      # peer -> server ms of its last accepted look
 var _sent: Dictionary = {}         # receiver -> [newest row ms sent, ids sent, ms sent]
+var _swings: Dictionary = {}       # peer -> [swing count mod 8, server ms of the latest]
 var _t: float = 0.0
 
 
@@ -78,7 +88,15 @@ func worn_changed(peer: int, numbers: PackedInt32Array) -> void:
 		_tell_all(peer)
 
 
+# A pack action came in (server_items action): a blow with the tool in hand counts a swing, so the others see it (the next rows).
+func note_action(peer: int, kind: int) -> void:
+	if kind in SWING_ACTS:
+		var count: int = int((_swings.get(peer, [0, 0]) as Array)[0])
+		_swings[peer] = [(count + 1) & 7, int(now_ms.call())]
+
+
 func forget(peer: int) -> void:
+	_swings.erase(peer)
 	_looks.erase(peer)
 	_yaw.erase(peer)
 	_report_ms.erase(peer)
@@ -114,8 +132,10 @@ func tick(delta: float) -> void:
 			continue   # a player is shown once its look and its first facing report came in
 
 		at[peer] = pos
-		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0)
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer])]
+		var swing: Array = _swings.get(peer, [0, 0])
+		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0) \
+				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(int(_report_ms[peer]), int(swing[1]))]
 
 	for receiver in at:
 		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
@@ -124,7 +144,7 @@ func tick(delta: float) -> void:
 
 		for row in rows:
 			ids.append(int(row[0]))
-			newest = maxi(newest, int(info[row[0]][3]))
+			newest = maxi(newest, int(info[row[0]][4]))   # a new position or a swing is news
 
 		var last: Array = _sent.get(receiver, [-1, PackedInt32Array(), -RESEND_MS])
 
