@@ -2787,7 +2787,7 @@ func _seed_rows(species_name: String, flora_key: String = "") -> Array:
 	if def.is_empty():
 		return []
 
-	var season: String = (_plant_season(flora_key) if flora_key != "" else _season()) if season_now.is_valid() or season_at.is_valid() else "all"
+	var season: String = (_plant_season(flora_key) if flora_key != "" else _season()) if season_now.is_valid() or season_at.is_valid() else "all"   # starter-calendar: the fallback with no plant key
 	return def.get("rows", []) if (def.get("seasons", []) as Array).has(season) else []
 
 
@@ -11372,7 +11372,7 @@ func _crown_leafy(tree: Dictionary, cfg: Dictionary, at: Vector3) -> bool:
 	if ((cfg.get("crown_leaves", {}) as Dictionary).get("fixed", []) as Array).has(species):
 		return false
 
-	return not (CoverScript.is_deciduous(species) and CoverScript.leafless_for(str(season_at.call(at)) if season_at.is_valid() else _season()))
+	return not (CoverScript.is_deciduous(species) and CoverScript.leafless_for(str(season_at.call(at)) if season_at.is_valid() else _season()))   # starter-calendar: the fallback with no season_at (tests)
 
 
 # A felled crown's sticks and leaves (Dave 10 Nov 2026: "drop like 30 sticks and a hundred leaves all over the forest floor in that circle"), as
@@ -18587,7 +18587,7 @@ func _spoil_tick(spent: float) -> void:
 	# stands, a thing on the ground where it lies. Places in the calendar's season keep the old running fractions ("pack", "chest", ...).
 	var season_bands: Dictionary = {}  # 1 km band of z -> season, for this tick (a season changes only at the equator's row edge, far wider)
 	var units_of: Dictionary = {}       # "place|season" -> units this tick
-	var calendar: String = _season()
+	var calendar: String = _season()   # starter-calendar: the calendar's season keeps the old running keys
 	var season_for: Callable = func(pos: Vector3) -> String:
 		if not season_at.is_valid() or not pos.is_finite():
 			return calendar
@@ -20682,7 +20682,7 @@ func _season() -> String:
 # The season at a place (Weather.season_at: half a year on across the equator from the starter's hemisphere), else the one calendar season. Sowing,
 # planting and a crop's winter go by the bed's own season (Dave: nothing is based on where spawn is; the hoe's list reads the player's, terrain_client).
 func _season_of(pos: Vector3) -> String:
-	return str(season_at.call(pos)) if season_at.is_valid() else _season()
+	return str(season_at.call(pos)) if season_at.is_valid() else _season()   # starter-calendar: the fallback with no season_at (tests)
 
 
 # The season count (game year x 4 + season) at a place: "taken this season" and "a new season" go by the place's own seasons. On the starter's
@@ -27755,7 +27755,7 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 
 	var weather: Dictionary = _weather_here(pos)
 	var rain_h: float = float(rain_hours_at.call(pos, maxf(float(cfg.get("rain_memory_h", 24.0)), float(cfg.get("flash_memory_h", 6.0))))) if rain_hours_at.is_valid() else (_now_game_s() - _last_rain_s) / 3600.0
-	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": rain_h, "raining": float(weather.get("rain", 0.0)) > 0.05,
+	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": rain_h, "raining": float(weather.get("rain", 0.0)) > 0.05,   # starter-calendar: the fallback with no season_at (tests)
 		"air_c": _air_here(pos, weather, 10.0), "wind": float(weather.get("wind", 0.0))}
 	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
 

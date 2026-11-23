@@ -15,6 +15,8 @@ const GameClock := preload("res://src/shared/game_clock.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 const TILE_M := 15360.0
 const EQUATOR_ROW := 0
@@ -27,16 +29,19 @@ const TAG := "starter-calendar"
 
 # Reads of the one calendar: the starter row's season, day and phase.
 const CALENDAR_READS := [
-	["game_clock\\.season\\(\\)", "the calendar's season"],
+	["\\.season\\(\\)", "the calendar's season (GameClock.season)"],
 	["\\bseason_index\\(\\)", "the calendar's season index"],
 	["\\bday_of_year\\(\\)", "the calendar's day of the year"],
 	["\\byear_phase\\(", "the calendar's year phase (Weather.year_phase_at takes the row)"],
-	["(?<![\\w.])season_of\\(", "the calendar's season (GameClock.season_of)"],
+	["(?<!\\w)season_of\\(", "the calendar's season (Weather.season_of)"],
 	["%\\s*365\\b", "a day of the year from the calendar"],
+	["posmod\\([^)]*\\b365\\b", "a day of the year from the calendar"],
+	["\\bDAYS_PER_YEAR\\b", "the calendar's year (Weather.day_of_year_at, year_phase_at take the row)"],
 ]
 const STREAM_READS := [
 	["season_now\\.call\\(\\)", "the server's calendar season (season_at takes the place)"],
 	["season_stamp\\.call\\(\\)", "the server's calendar season count (season_stamp_at takes the place)"],
+	["(?<![\\w.])_season\\(\\)", "server_items' calendar season (_season_of takes the place)"],
 ]
 
 # Calls that take a row: [name, prefix regex (empty: only bare, in its own file), file that defines it, arguments with the row and equator].
@@ -74,6 +79,7 @@ func _init() -> void:
 	_guard()
 	_helpers()
 	_items()
+	_spoilage()
 	_animals()
 	_flora()
 	print("season by place test: %d failures" % failures)
@@ -96,14 +102,17 @@ func _files(dir: String, out: Array) -> void:
 # The code part of a line (a "#" outside a string starts the comment).
 static func _code(line: String) -> String:
 	var quote: String = ""
+	var skip: bool = false
 
 	for i in line.length():
 		var c: String = line[i]
 
-		if quote != "":
+		if skip:
+			skip = false
+		elif quote != "":
 			if c == "\\":
-				continue
-			if c == quote:
+				skip = true   # the next character is escaped
+			elif c == quote:
 				quote = ""
 		elif c == "\"" or c == "'":
 			quote = c
@@ -193,7 +202,9 @@ func _guard() -> void:
 			for n in lines.size():
 				var code: String = code_lines[n]
 
-				if lines[n].contains(TAG) or code.strip_edges() == "":
+				var is_def: bool = code.strip_edges().begins_with("func ") or code.strip_edges().begins_with("static func ")
+
+				if lines[n].contains(TAG) or code.strip_edges() == "" or is_def:
 					continue
 
 				for r in reads:
@@ -205,9 +216,7 @@ func _guard() -> void:
 						if r[0].search(code) != null:
 							bad.append("%s:%d %s: %s" % [path, n + 1, r[1], lines[n].strip_edges()])
 
-				var is_def: bool = code.strip_edges().begins_with("func ") or code.strip_edges().begins_with("static func ")
-
-				if starter.search(code) != null and not is_def:
+				if starter.search(code) != null:
 					bad.append("%s:%d the starter row by name: %s" % [path, n + 1, lines[n].strip_edges()])
 
 		# Row-taking calls that leave the row out (the comment parts blanked, so the text keeps its offsets for line numbers).
@@ -274,7 +283,7 @@ func _helpers() -> void:
 		var doy: int = clock.day_of_year()
 		var doy_across: int = Weather.day_of_year_at(s, across, EQUATOR_ROW)
 
-		if Weather.day_of_year_at(s, row, EQUATOR_ROW) != doy or absi(posmod(doy_across - doy, GameClock.DAYS_PER_YEAR) - GameClock.DAYS_PER_YEAR / 2) > 1:
+		if Weather.day_of_year_at(s, row, EQUATOR_ROW) != doy or absf(float(posmod(doy_across - doy, GameClock.DAYS_PER_YEAR)) - GameClock.DAYS_PER_YEAR / 2.0) > 1.5:
 			days_ok = false
 
 	check(same, "on the starter's row the season count is the calendar's, year x 4 + season (saved stamps keep their meaning)")
@@ -312,6 +321,54 @@ func _items() -> void:
 	var clock = GameClock.new()
 	clock.seconds = _winter_s
 	check(items._stamp_at(Vector3(58160.0, 0.0, STARTER_Z)) == clock.year() * 4 + clock.season_index(), "a stamp by the starter town is the calendar's count")
+
+
+# Spoilage by place: in the starter's winter a pack by the starter town ages at winter's rate, one across the equator at summer's, each
+# with its own running fraction ("pack" is the calendar's, as before; "pack|summer" the other side's); the same for food on the ground.
+func _spoilage() -> void:
+	var dir: String = "user://test_season_by_place"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.season_now = func(): return "winter"   # starter-calendar: the calendar's season, as the server sets it
+	items.season_at = func(pos: Vector3): return Weather.season_at(_winter_s, pos.z, TILE_M, EQUATOR_ROW)
+	items.setup(ItemTableScript.load_default(), dir)
+	var roast: int = items.table.number_of("roast_forage")
+	var mults: Dictionary = items.table.spoilage().get("season_mult", {})
+	var packs: Array = []
+
+	for p in [[1, STARTER_Z], [2, ACROSS_Z]]:
+		items.peer_connected_hello(p[0], "season-key-000%d" % p[0])
+		items._characters[items._peer_key[p[0]]]["grace_s"] = 0.0
+		items.report_position(p[0], Vector3(58160.0, 5.0, p[1]))
+		items.action(p[0], Net.ACT_ADMIN_GIVE, roast, 0, 4, Vector3.ZERO)
+		packs.append(items.inventory_of(p[0]))
+
+	items.drop_in_world(roast, 2, Vector3(58170.0, 5.0, STARTER_Z), 0)
+	items.drop_in_world(roast, 2, Vector3(58170.0, 5.0, ACROSS_Z), 0)
+
+	for n in 20:
+		items._spoil_tick(15.0)
+
+	var home_wear: int = packs[0].wear[packs[0].numbers.find(roast)]
+	var far_wear: int = packs[1].wear[packs[1].numbers.find(roast)]
+	var want_home: int = int(20.0 * float(mults.get("winter", 1.0)) + 0.0001)
+	var want_far: int = int(20.0 * float(mults.get("summer", 1.0)) + 0.0001)
+	check(home_wear == want_home and far_wear == want_far, "a pack ages by its own place's season: winter %d (want %d), summer across the equator %d (want %d)" % [home_wear, want_home, far_wear, want_far])
+	check(items._spoil_acc.has("pack") and items._spoil_acc.has("pack|summer"), "each side keeps its own running fraction (%s)" % str(items._spoil_acc.keys()))
+	var ground: Dictionary = {}
+
+	for id in items._items:
+		if int(items._items[id]["number"]) == roast and not items._items[id].has("scatter"):
+			ground[signf(float(items._items[id]["pos"].z))] = int(items._items[id].get("wear", 0))
+
+	check(int(ground.get(-1.0, 0)) > int(ground.get(1.0, 0)), "food on the ground across the equator, in its summer, ages faster than by the starter town in winter (%s)" % str(ground))
 
 
 func _animals() -> void:

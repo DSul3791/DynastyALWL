@@ -361,8 +361,8 @@ func _ready() -> void:
 	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
-			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY
-			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY   # starter-calendar: the admin --game-day sets the one clock
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0   # starter-calendar: the admin --game-day sets the one clock
 			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])   # starter-calendar: a log line
 
 	for argument in OS.get_cmdline_user_args():
@@ -800,6 +800,7 @@ func _ready() -> void:
 	animals.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
 	animals.equator_row = settings.equator_tile_row
 	animals.season_at = items.season_at   # an animal's seasons (young, the rut's threat) where it is
+	flora.season_at = items.season_at   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md), by each spot's own season
 	var biome_names: Dictionary = {}
 
 	for biome_entry in tables.get_entries("biomes"):
@@ -1915,8 +1916,6 @@ func _update_weather() -> void:
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
-	if flora != null and not flora.season_at.is_valid():
-		flora.season_at = items.season_at   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md), by each spot's own season
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:

@@ -2552,6 +2552,8 @@ var _drink_cell_m: float = 8.0
 var _row_here: int = WeatherScript.STARTER_ROW   # starter-calendar: until the first weather step; the tile row the player stands in (set each second in _update_weather): its own seasons, sun and ice
 var _eq_row: int = 0                 # the world's equator tile row
 var _ice_across: bool = false        # the row is across the equator from the starter island (its year half a year on): ice answers kept for the other side are dropped
+var _view_season: String = ""       # the season the flora view draws: the player's, held near the equator's row edge (_update_weather)
+const VIEW_SEASON_EDGE_M := 64.0     # how far past that edge the player walks before the view takes the new side's season
 var _drink_season: String = ""      # the season and rain the server's drink rule reads (DrinkRules.brook_shows), set each second in _update_weather
 var _drink_raining: bool = false
 var _drink_heads: Dictionary = {}    # Vector2i cell (cell_m grid) -> PackedFloat32Array x, z of the spring heads in it, for the lush grass (_brook_spots)
@@ -3080,6 +3082,11 @@ func _update_weather() -> void:
 	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain
 	# over this spot (the server's weather_at, terrain_server._weather_here: this row and height, the same state as this sky).
 	_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z, tile_m, int(world.get("equator_row", 0)))
+	# The view's season (flora_view.set_season redraws every chunk on a change): it follows the player's, but over the equator's row edge
+	# only once they are VIEW_SEASON_EDGE_M past it, so a walk along the edge does not redraw the view every second.
+	if _view_season == "" or _drink_season == _view_season or (WeatherScript.season_at(game_clock.seconds, _anchor.z - VIEW_SEASON_EDGE_M, tile_m, _eq_row) == _drink_season
+			and WeatherScript.season_at(game_clock.seconds, _anchor.z + VIEW_SEASON_EDGE_M, tile_m, _eq_row) == _drink_season):
+		_view_season = _drink_season
 	_drink_raining = float(weather["rain"]) > 0.05
 	world_wind_dir = float(weather["wind_dir"])
 	weather = wind_onto(weather)
@@ -3811,7 +3818,7 @@ func _update_flora() -> void:
 	if fall_growth != null:
 		fall_growth.update(falls, p)
 
-	flora.set_season(season_here())   # the season where the player stands (shortcut: the whole view, a few km, draws that one season; it differs only over the equator's row edge)
+	flora.set_season(_view_season if _view_season != "" else season_here())   # the season where the player stands (shortcut: the whole view, a few km, draws that one season; it differs only over the equator's row edge)
 	grass.set_season(flora.season)   # the season the flora view shows (the game season, or the --flora-season preview)
 
 	for chunk in flora.update(p):
