@@ -70,6 +70,13 @@ foreach ($pair in @(@("index.html", "index.html"), @("download.html", "download\
 	New-Item -ItemType Directory -Force -Path (Split-Path $to -Parent) | Out-Null
 	[IO.File]::WriteAllText($to, $html, $utf8)
 }
+# The testers' own site (deploy/testersite/site/: the front page with the high scores, the bug and idea pages, their css and js), once it is
+# in this checkout, takes over the front page; it reads /latest.json itself. It is copied as it is, with nothing filled in.
+$tester = Join-Path $Repo "deploy\testersite\site"
+if (Test-Path -LiteralPath (Join-Path $tester "index.html")) {
+	Write-Host "== the testers' site from $tester replaces the front page"
+	Copy-Item -Path (Join-Path $tester "*") -Destination $site -Recurse -Force
+}
 New-Item -ItemType Directory -Force -Path (Join-Path $site "css") | Out-Null
 Copy-Item -LiteralPath (Join-Path $pages "site.css") -Destination (Join-Path $site "css")
 Copy-Item -LiteralPath (Join-Path $pages "hero.jpg") -Destination (Join-Path $site "images")
