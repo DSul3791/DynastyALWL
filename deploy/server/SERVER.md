@@ -48,8 +48,8 @@ Back up and restore the store with `tar --numeric-owner` (and `-p` on restore), 
 
 CPU setting (Dave 23 Nov 2026: "make the thread/core count a setting we can set for the server to be allowed to use"): `DYNASTY_SERVER_CPUS` in
 compose.yaml, default **4**, is how many CPU threads the server plans its own threads round: the main thread, `N - 1` ground makers
-and up to 2 idle builders (none at 1 or 2). Set it in a `.env` file beside compose.yaml (`DYNASTY_SERVER_CPUS=6`) or on the command line
-(`DYNASTY_SERVER_CPUS=6 docker compose up -d`); `--cpus=N` on the server's own command line wins over it. 0 means every CPU the
+and up to 2 idle builders (none at 1 or 2), which work only when the makers have nothing queued, so N is the busy-time count. Set it in a `.env` file beside compose.yaml (`DYNASTY_SERVER_CPUS=6`) or on the command line
+(`DYNASTY_SERVER_CPUS=6 docker compose up -d`); `--cpus=N` on the server's own command line wins over it (a thread-planning number, not docker's `--cpus` quota). 0 means every CPU the
 container may use. On a 6-core, 12-thread box running five other servers, 4 leaves the others room. The engine's own helper pool still
 sees the whole machine; to hold every thread to a set of CPUs, add a cpuset as below. The start line says what was chosen:
 `... with 3 worker threads and 2 idle builders (4 usable CPUs of 12, CPU setting 4)`.

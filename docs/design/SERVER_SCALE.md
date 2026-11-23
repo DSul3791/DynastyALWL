@@ -87,8 +87,8 @@ Together these should put about 100 to 150 clustered players on one main thread.
 - His line is 1 Gbit, so traffic is not the near limit; the CPU is.
 - **CPU setting.** "Make the thread/core count a setting we can set for the server to be allowed to use and design around that." His server
   box has 6 cores, 12 threads, and runs 5 other servers; about 15 players there for now, a dedicated server later.
-  `DYNASTY_SERVER_CPUS` (compose.yaml, default 4; `--cpus=N` wins) is that setting (deploy/server/SERVER.md, CPUs). Every later job moved off
-  the main thread sizes itself from it.
+  `DYNASTY_SERVER_CPUS` (compose.yaml, default 4; `--cpus=N` wins) is that setting (deploy/server/SERVER.md, CPUs). Today it sizes the ground makers
+  and idle builders; the plan is that every later job moved off the main thread sizes itself from it too.
 - **Prebuilt ground.** "The generator part should prebuild our entire world or the parts we are working with right now. The server
   doesn't build anything; it just serves the prebuilt stuff up to the clients." The region for now is the starting nine tiles. The
   plan for that is in its own section below once measured.
