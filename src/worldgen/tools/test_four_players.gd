@@ -212,8 +212,13 @@ func _init() -> void:
 	zoo.rng.seed = 4
 	var deaths: Array = []
 	zoo.died = func(sp, pos, p): deaths.append(items.make_carcass(sp, pos, p))
+	var struck: Dictionary = {}   # peer -> blows that landed on the deer
 	items.hit_animal = func(peer, origin, aim, reach, amount) -> bool:
 		var target: int = zoo.target_along(origin, aim, reach)
+
+		if target != 0:
+			struck[peer] = int(struck.get(peer, 0)) + 1
+
 		return target != 0 and (zoo.damage(target, amount, peer, "spear") or true)
 	var at: Vector3 = Vector3(30.0, 10.0, 0.0)
 
@@ -233,7 +238,7 @@ func _init() -> void:
 		if not zoo.animals.has(deer):
 			break
 
-	check(deer != 0 and not zoo.animals.has(deer), "four spears bring the deer down (%d blows)" % blows)
+	check(deer != 0 and not zoo.animals.has(deer) and struck.size() >= 3, "spears from all sides bring the deer down (%d blows, %d of the four landed one)" % [blows, struck.size()])
 	check(deaths.size() == 1 and int(deaths[0]) != 0 and items._items.has(int(deaths[0])), "it dies once and leaves one carcass (%d)" % deaths.size())
 
 	for i in PEERS.size():
@@ -244,7 +249,7 @@ func _init() -> void:
 
 	# 6. The carcass worked by four knives of different metals at once: its parts are handed out once, then it is gone.
 	var carcass: int = int(deaths[0]) if not deaths.is_empty() else 0
-	var knives: Array = ["stone_knife", "copper_knife", "iron_knife", "steel_knife"]
+	var knives: Array = ["iron_knife", "stone_knife", "copper_knife", "steel_knife"]   # a deer takes 4 blows by its knife's speed (carcass.json): iron 2, stone and copper 4, steel 2.5, so all four cut
 
 	for i in PEERS.size():
 		items.give(PEERS[i], table.number_of(knives[i]), 1)
@@ -260,6 +265,7 @@ func _init() -> void:
 		parts_before[id] = _total(items, table.number_of(id))
 
 	var rolled: Dictionary = {}
+	var cut: Dictionary = {}   # peer -> its blow changed the carcass (or finished it)
 
 	for round_n in range(12):
 		for i in PEERS.size():
@@ -267,13 +273,17 @@ func _init() -> void:
 				break
 
 			items._last_process.erase(PEERS[i])
+			var was: String = str(items._items[carcass]["struct"])
 			items.action(PEERS[i], Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(_slot_of(items.inventory_of(PEERS[i]), table.number_of(knives[i])) + 1), 0.0, 0.0))
+
+			if not items._items.has(carcass) or str(items._items[carcass]["struct"]) != was:
+				cut[PEERS[i]] = true
 
 			if rolled.is_empty() and items._items.has(carcass) and items._items[carcass]["struct"].has("parts"):
 				for part in items._items[carcass]["struct"]["parts"]:   # what is left after the first blow, plus what it gave: the rolled parts
 					rolled[str(part[0])] = int(part[1]) + _total(items, table.number_of(str(part[0]))) - int(parts_before[str(part[0])])
 
-	check(carcass != 0 and not items._items.has(carcass), "four knives work the carcass and it is gone")
+	check(carcass != 0 and not items._items.has(carcass) and cut.size() == 4, "four knives work the carcass and it is gone (%d of the four cut it)" % cut.size())
 	var given_ok: bool = not rolled.is_empty()
 
 	for id in rolled:

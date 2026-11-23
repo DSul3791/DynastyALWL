@@ -38,6 +38,7 @@ const SMOOTH_ROOM_X := 1.5
 const SMOOTH_CATCH_X := 0.5
 const SMOOTH_CATCH_MIN_MPS := 3.0
 const REPORT_S := 0.2                  # a client reports its position every 0.2 s (terrain_client.gd report_position)
+const BEAT_KEEP := 0.7                 # beat_ms: the share of a report's trip wobble taken out (the rest pulls it back to the server's clock)
 const MAKE_PER_ROWS := 2               # bodies made per rows message: a crowd coming into range is built over a few sends, not in one frame
 const FULL_M := 15.0
 const HALF_M := 40.0
@@ -98,6 +99,34 @@ func on_look(peer: int, char_name: String, body: String, code: String, worn: Pac
 		_dress(_bodies[peer])
 
 
+# The time (ms, the server's clock) to draw a report at. A row's time is when the report reached the server, so each 0.2 s report carries its
+# own trip's wobble (up to 60 ms on a home link): a steady 3 m/s walk was drawn leg by leg at 2.1 to 4.3 m/s, a frame of 0.17 m and a window
+# standing all but still at 60 fps (test_remote_players, 23 Nov 2026). A report one beat (0.12 to 0.28 s) after the last is put most of the
+# way (BEAT_KEEP) to one REPORT_S after the last one drawn; any other (a report just before a blow, one after lost sends, a pause) keeps its
+# own time. Each step still moves a share toward the real time, so it never drifts, and it never goes back past the last one drawn.
+static func beat_ms(b: Dictionary, raw: int) -> int:
+	var last_raw: int = int(b.get("beat_raw", -1))
+	var last: int = int(b.get("beat_ms", -1))
+
+	if last_raw < 0 or raw < last_raw - 2000:
+		b["beat_raw"] = raw
+		b["beat_ms"] = raw
+		return raw
+
+	if raw <= last_raw:
+		return raw + last - last_raw   # the same report again (or an older one, out of order): where it was drawn
+
+	var drawn: int = raw
+
+	if raw - last_raw >= int(REPORT_S * 600.0) and raw - last_raw <= int(REPORT_S * 1400.0):
+		drawn = int(round(lerpf(float(raw), float(last) + REPORT_S * 1000.0, BEAT_KEEP)))
+
+	drawn = maxi(drawn, last + 1)
+	b["beat_raw"] = raw
+	b["beat_ms"] = drawn
+	return drawn
+
+
 func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray(), cast: PackedInt32Array = PackedInt32Array()) -> void:
 	var n: int = mini(ids.size(), mini(positions.size(), mini(yaws.size(), mini(states.size(), mini(held.size(), times.size())))))
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
@@ -144,7 +173,7 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		b["more"] = more_now
 		b["held"] = int(held[i])
 		b["float_at"] = cast_point(positions[i], int(cast[i]) if i < cast.size() else 0)   # the rod's float, fixed in the world (162)
-		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
+		MotionBuffer.push_row(b, positions[i], yaws[i], beat_ms(b, times[i]), float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
 
 	for peer in _bodies.keys():
 		if not seen.has(peer):
