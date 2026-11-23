@@ -258,6 +258,8 @@ func _init() -> void:
 	var yaw: float = 0.0
 	var f_worst_turn: float = 0.0
 	var rate: float = 5.0
+	var yaw_east: float = 0.0
+	var yaw_north: float = 0.0
 
 	for i in 240:
 		fpt += (Vector3(6.0, 0, 0) if i < 90 else (Vector3(0, 0, -6.0) if i < 180 else Vector3.ZERO)) / 60.0
@@ -271,9 +273,33 @@ func _init() -> void:
 		f_worst_turn = maxf(f_worst_turn, absf(angle_difference(yaw, y2)))
 		yaw = y2
 
+		if i == 89:
+			yaw_east = yaw
+		elif i == 179:
+			yaw_north = yaw
+
 	check(f_worst_gap <= 0.5 and f_drawn.distance_to(fpt) < 0.05, "a run that turns a sharp corner and stops is drawn within 0.5 m of the server's point and ends on it (worst %.2f m)" % f_worst_gap)
 	check(f_worst_dv / 60.0 < 4.0, "its drawn speed eases: never 4 m/s more or less in one frame (worst %.2f m/s)" % (f_worst_dv / 60.0))
 	check(f_worst_turn <= rate / 60.0 + 0.0001, "its facing turns at most its turn rate a frame (worst %.3f rad)" % f_worst_turn)
+	check(absf(angle_difference(yaw_east, -PI * 0.5)) < 0.01 and absf(angle_difference(yaw_north, 0.0)) < 0.01, "it faces the way it runs: east -PI/2 (%.2f), north (-Z) 0 (%.2f)" % [yaw_east, yaw_north])
+	# A late batch: the point itself jumps 3 m back in one frame. The body is not flung (the point's speed is taken at most CARRY_MPS).
+	var lb: Dictionary = {}
+	var lp: Vector3 = Vector3.ZERO
+	MotionBuffer.follow(lb, lp, 1.0 / 60.0)
+
+	for i in 60:
+		lp += Vector3(6.0, 0, 0) / 60.0
+		MotionBuffer.follow(lb, lp, 1.0 / 60.0)
+
+	lp -= Vector3(3.0, 0, 0)
+	var lb_worst: float = 0.0
+
+	for i in 120:
+		lp += Vector3(6.0, 0, 0) / 60.0
+		var lq: Vector3 = MotionBuffer.follow(lb, lp, 1.0 / 60.0)
+		lb_worst = maxf(lb_worst, Vector2(lq.x - lp.x, lq.z - lp.z).length())
+
+	check(lb_worst < 3.05, "a 3 m jump back of the point is followed, never farther from it than the jump (worst %.2f m; a model gives 2.92)" % lb_worst)
 	var fs: Dictionary = {}
 	MotionBuffer.follow(fs, Vector3.ZERO, 1.0 / 60.0)
 	check(MotionBuffer.follow(fs, Vector3(40, 0, 0), 1.0 / 60.0).is_equal_approx(Vector3(40, 0, 0)), "a move farther than SNAP_M is put there at once")

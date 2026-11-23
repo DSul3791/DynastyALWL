@@ -212,13 +212,16 @@ static func follow(body: Dictionary, p: Vector3, delta: float) -> Vector3:
 	if not body.has("fw_p") or (body["fw_p"] as Vector3).distance_to(p) > SNAP_M or delta <= 0.0:
 		body["fw_p"] = p
 		body["fw_v"] = Vector3.ZERO
+		body["fw_pv"] = Vector3.ZERO
 		body["fw_last"] = p
 		return p
 
 	var q: Vector3 = body["fw_p"]
 	var v: Vector3 = body["fw_v"]
-	var pv: Vector3 = (p - (body["fw_last"] as Vector3)) / delta   # the point's own velocity this frame
-	var goal: Vector3 = p + Vector3(pv.x, 0.0, pv.z) * FOLLOW_S
+	var pv: Vector3 = (p - (body["fw_last"] as Vector3)) / delta   # the point's own velocity this frame...
+	pv = Vector3(pv.x, 0.0, pv.z).limit_length(CARRY_MPS)   # ...as fast as an animal runs: a jump of the point itself (a late batch) is not run at 9x
+	body["fw_pv"] = pv
+	var goal: Vector3 = p + pv * FOLLOW_S
 	var omega: float = 2.0 / FOLLOW_S
 	var x: float = omega * delta
 	var damp: float = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x)
@@ -237,14 +240,16 @@ static func follow_hold(body: Dictionary, p: Vector3, delta: float) -> void:
 	var v: Vector3 = (p - (body["fw_p"] as Vector3)) / maxf(delta, 0.001) if body.has("fw_p") else Vector3.ZERO
 	v.y = 0.0
 	body["fw_v"] = v.limit_length(CARRY_MPS)
+	body["fw_pv"] = body["fw_v"]
 	body["fw_p"] = p
 	body["fw_last"] = p
 
 
-# The heading a body is drawn with: the way its feet go when it moves (follow's velocity), the sent heading when it stands; turned at most
+# The heading a body is drawn with: the way the point it follows goes when it moves (not the spring's own velocity, which swings back past a
+# stop), the sent heading when it stands; turned at most
 # `turn_rad_s` a second (a standing body turns on the spot, a running one in an arc), never snapped. `yaw` is the node's rotation.y now.
 static func face(body: Dictionary, yaw: float, sent_heading: float, turn_rad_s: float, delta: float) -> float:
-	var v: Vector3 = body.get("fw_v", Vector3.ZERO)
+	var v: Vector3 = body.get("fw_pv", Vector3.ZERO)
 	var want: float = -sent_heading - PI * 0.5
 
 	if Vector2(v.x, v.z).length() > 0.4:

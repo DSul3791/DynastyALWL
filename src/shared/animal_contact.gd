@@ -90,8 +90,8 @@ static func stop_toward(p: Vector3, a0: Vector3, a1: Vector3, m: float) -> Vecto
 	return stop_at(p, a0, a1, m)
 
 
-# How fast the client turns a drawn body of species `sp` (MotionBuffer.face), radians a second: a full turn in half a second plus its body
+# How fast the client turns a drawn body of species `sp` (MotionBuffer.face; not big game's defend turn_rad_s, the charge's own steering), radians a second: a full turn in half a second plus its body
 # size, so a wolf (0.6 m) turns about 5.7 rad/s and an elephant (2.2 m) about 2.3 (Dave 23 Nov 2026: "really bad animatronics").
-static func turn_rad_s(sp: String) -> float:
+static func draw_turn_rad_s(sp: String) -> float:
 	var r: Dictionary = rows()
 	return TAU / (0.5 + float((r.get("body_m", {}) as Dictionary).get(sp, r.get("default_m", 0.4))))
