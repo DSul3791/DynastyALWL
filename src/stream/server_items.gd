@@ -3604,6 +3604,9 @@ func _process_carcass(peer: int, inv, id: int, held_slot: int) -> void:   # held
 	_last_process[peer] = now
 	var st: Dictionary = it["struct"]
 	var blows_total: int = int((_carcass_cfg.get("species", {}).get(str(st.get("species", "")), {}) as Dictionary).get("blows", _carcass_cfg.get("blows", 4)))   # per species (carcass.json species row), else the global number
+	# A better knife works it in fewer blows, the same parts (carcass.json knife_speed by the knife's material; tier consistency, 23 Nov 2026).
+	var speed: float = float((_carcass_cfg.get("knife_speed", {}) as Dictionary).get(str(table.entry(table.id_of(inv.numbers[knife])).get("material", "")), 1.0))
+	blows_total = maxi(ceili(float(blows_total) / maxf(speed, 0.1)), 1)
 	_wear_slot(peer, inv, knife, "carcass")
 
 	if not st.has("parts"):
@@ -4620,11 +4623,18 @@ func _hoe_ready(peer: int, inv, at: Vector3, held_slot: int) -> int:
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - int(_last_dig.get(peer, -100000)) < HOE_COOLDOWN_MS:
+	if now - int(_last_dig.get(peer, -100000)) < _hoe_ms(inv, hoe):
 		return -1
 
 	_last_dig[peer] = now
 	return hoe
+
+
+# The hoe's pace: HOE_COOLDOWN_MS divided by its items.json till_speed (Wooden 1 to Steel 2.5; tier consistency, coordinator 23 Nov 2026: every
+# hoe tilled at one pace, so a better one gave nothing but durability), for a click and for each step of a garden job.
+func _hoe_ms(inv, slot: int) -> int:
+	var speed: float = float(table.entry(table.id_of(inv.numbers[slot])).get("till_speed", 1.0)) if slot >= 0 else 1.0
+	return int(round(float(HOE_COOLDOWN_MS) / maxf(speed, 0.1)))
 
 
 # Pathen (Dave 2 Nov 2026; one level spot a click, 18 Nov 2026): the click levels the ground under the spot to its own average (_hoe_path), then lays a round
@@ -6090,7 +6100,10 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 	# boulders.json tools' rate for the tool in hand, never under one stone a blow (a stone axe keeps its one), a fraction carried in the
 	# patch's "part". A patch still takes MINE_STONES_PER_CELL blows before it rests, so a better pick takes more from it, not less.
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[tool]))
-	var rate: float = maxf(float((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 1.0)), 1.0)
+	var rates: Dictionary = (_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {})
+	# The class's ladder lifted so its stone tool gives one a blow (an axe's 0.5 to 2 becomes 1 to 2.5): every tier still breaks more than the one
+	# below (tier consistency, coordinator 23 Nov 2026: stone, copper and bronze axes all gave one), never under one.
+	var rate: float = maxf(float(rates.get(str(entry.get("material", "")), 1.0)) + maxf(1.0 - float(rates.get("stone", 1.0)), 0.0), 1.0)
 	_wear_slot(peer, inv, tool, "rock")   # after reading the tool: one that breaks on this blow leaves its slot empty
 	var part: float = float(state.get("part", 0.0)) + rate
 	var stones: int = int(floor(part + 0.001))
@@ -12750,8 +12763,18 @@ func _hammer_x(peer: int, held: int = -1) -> float:   # held: the hammer in hand
 	if slot < 0:
 		return 1.0
 
-	var tier: int = int(table.entry(table.id_of(inv.numbers[slot])).get("tier", 1))
-	return maxf(float((_wear_cfg.get("hammer_reach_x", {}) as Dictionary).get(str(tier), 1.0)), 1.0)
+	return _hammer_reach_of(table.entry(table.id_of(inv.numbers[slot])))
+
+
+# One hammer's reach factor: building_wear.json hammer_reach_material by its material where the tier is shared (copper sits between stone and
+# bronze, both tier 2 with stone; tier consistency, coordinator 23 Nov 2026: a better hammer always reaches farther), else hammer_reach_x by its tier.
+func _hammer_reach_of(entry: Dictionary) -> float:
+	var by_material: Dictionary = _wear_cfg.get("hammer_reach_material", {})
+
+	if by_material.has(str(entry.get("material", ""))):
+		return maxf(float(by_material[str(entry["material"])]), 1.0)
+
+	return maxf(float((_wear_cfg.get("hammer_reach_x", {}) as Dictionary).get(str(int(entry.get("tier", 1))), 1.0)), 1.0)
 
 
 # The heaviest working hammer on the hotbar (-1 none): a stone hammer in key 1 does not hide the iron one in key 4 that the player holds
@@ -12765,7 +12788,7 @@ func _heaviest_hammer_slot(inv) -> int:
 
 		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-		if str(entry.get("tool_class", "")) == "hammer" and (best < 0 or int(entry.get("tier", 1)) > int(table.entry(table.id_of(inv.numbers[best])).get("tier", 1))):
+		if str(entry.get("tool_class", "")) == "hammer" and (best < 0 or _hammer_reach_of(entry) > _hammer_reach_of(table.entry(table.id_of(inv.numbers[best])))):
 			best = slot
 
 	return best
@@ -21745,6 +21768,7 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 		_garden_ready_ms[peer] = now + GARDEN_COOLDOWN_MS
 
 	plan["give_up_ms"] = Time.get_ticks_msec() + GARDEN_GIVE_UP_MS
+	plan["step_ms"] = _hoe_ms(inv, _held_tool(inv, int(plan["slot"]), "hoe"))   # the pace of the hoe that took the job on, kept if it is put away
 	_garden_jobs[peer] = plan
 	_hoe_verdict(peer, Net.ACT_TILL_GARDEN, size % 10000000, at, 2, "")
 	_say(peer, "Levelling and tilling a %d by %d garden." % [int(plan["w"]), int(plan["d"])] if int(plan["mode"]) == TILL_GARDEN else "Tilling a 2 m patch of soil.")
@@ -21983,7 +22007,7 @@ func _garden_jobs_tick() -> void:
 		if now < int(job["next_ms"]):
 			continue
 
-		job["next_ms"] = now + HOE_COOLDOWN_MS
+		job["next_ms"] = now + int(job.get("step_ms", HOE_COOLDOWN_MS))
 		var inv = inventory_of(peer) if _peer_pos.has(peer) else null
 
 		if inv == null:
