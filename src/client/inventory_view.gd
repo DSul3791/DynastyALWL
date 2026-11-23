@@ -5401,6 +5401,21 @@ func _prewarm_felled() -> void:
 
 	print("client prewarm: stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 
+	# Lag lane 23 Nov 2026: the first lit fire of a session (the starter town's bonfire, campfire_kit state 41, in every join's first world items)
+	# took 975-1800 ms of the main thread on Dave's PC ("client slow: world items ... loose_mesh", 5 of 5 cold-play and first-load logs), 22 ms
+	# headless: its flame, smoke and spark materials (cached for the session) are first made for the GPU then. One lit fire of each size and an
+	# unlit one are made here, out of sight with the stump, so that cost falls in the welcome's loading instead of the first frames of play.
+	t0 = Time.get_ticks_usec()
+
+	for tier in [1, 2, 3]:
+		for lit in [true, false]:
+			var fire: Node3D = _make_fire(lit, false, tier)
+			fire.position = Vector3(0.0, -10000.0, 0.0)
+			_root.add_child(fire)
+			_felled_warm.append(fire)
+
+	print("client prewarm: fires %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+
 
 func _drop_felled_warm() -> void:
 	for node in _felled_warm:
