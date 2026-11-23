@@ -189,7 +189,7 @@ func _init() -> void:
 	notes.clear()
 	items._last_dig.clear()
 	check(items.plant_grid(1, items.inventory_of(1), hoe, n("wheat_seeds"), 202, Vector3(0.0, 10.0, 0.0)) == 0 and notes.has("You have none to plant."), "with none left nothing is sown and the player is told (%s)" % str(notes))
-	give("wheat_seeds", spare)
+	give("wheat_seeds", maxi(spare, 4 * pinch("wheat")))   # enough for the patch whatever the grass gave
 	items._crops.clear()
 	items._last_dig.clear()
 	items.plant_grid(1, items.inventory_of(1), hoe, n("wheat_seeds"), 202, Vector3(0.0, 10.0, 0.0))

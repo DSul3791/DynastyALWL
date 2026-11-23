@@ -21146,7 +21146,8 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 
 	if per_spot > 1:   # a spot takes a pinch of seed (crops.json sow_seeds)
 		var spots: String = "1 spot" if planted == 1 else "%d spots" % planted
-		_say(peer, "Sowed %s with %d %s." % [spots, seeds_used, what] if planted >= ok_spots.size() else "Sowed %s with %d %s: no more to sow." % [spots, seeds_used, what])
+		var seeds: String = "%d %s" % [seeds_used, what.trim_suffix("s") if seeds_used == 1 else what]   # "1 wheat seed"
+		_say(peer, "Sowed %s with %s." % [spots, seeds] if planted >= ok_spots.size() else "Sowed %s with %s: no more to sow." % [spots, seeds])
 	else:
 		_say(peer, "Planted %d %s." % [planted, what] if planted >= ok_spots.size() else "Planted %d: no more %s to plant." % [planted, what])
 

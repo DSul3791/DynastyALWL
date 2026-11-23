@@ -6737,9 +6737,12 @@
 			"kind": "material",
 			"description": "Seeds for sowing radish. Plant in a tilled bed.",
 			"how_to_get": [
-				"Not yet obtainable"
+				"Picked from wild radish (spring/summer/autumn)",
+				"From a ripe radish in a garden"
 			],
-			"used_for": [],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow radish, 20 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"lettuce_seeds": {
@@ -6747,9 +6750,12 @@
 			"kind": "material",
 			"description": "Seeds for sowing lettuce. Plant in a tilled bed.",
 			"how_to_get": [
-				"Not yet obtainable"
+				"Picked from prickly lettuce (spring/summer/autumn)",
+				"From a ripe lettuce in a garden"
 			],
-			"used_for": [],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow lettuce, 30 seeds a spot"
+			],
 			"obtainable_now": true
 		},
 		"apple_early": {
