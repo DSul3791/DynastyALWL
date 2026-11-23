@@ -363,6 +363,8 @@ var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes 
 var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
+var _wet_wind: Dictionary = {}      # peer -> true while soaked in the wind (warmth_target; body_703 wet_wind_say_*), for the line that says why
+var _wet_wind_told: Dictionary = {}   # peer -> true once that line was said this cold spell (cleared when warm again)
 var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _wood_in: float = 0.0           # real seconds since the last wet-wood step (_wood_tick)
 var _wood_acc: float = 0.0          # unspent fraction of a drying unit (a tenth of a game hour)
@@ -874,6 +876,8 @@ func peer_left(peer: int) -> void:
 	_cold_out.erase(peer)
 	_out_water.erase(peer)
 	_water_hint_at.erase(peer)
+	_wet_wind.erase(peer)
+	_wet_wind_told.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -3501,10 +3505,13 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 
 
 # After a dig or fill: loose items near it come down (or stay) onto what the ground is now (boulders first, so a stack on one follows it down).
-func settle_loose_near(centre: Vector3, radius: float) -> void:
+func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> void:
 	var loose: Array = []
 
-	for id in _items:
+	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 2 m), never a walk of every record
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 
 		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
@@ -3522,11 +3529,15 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 			continue
 
-		if it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+		if it.has("struct") and _follows_ground(str(it["struct"].get("kind", ""))) and not it["struct"].has("site"):
+			pass   # remains, a carcass, a snare and the hoe's patches lie on the ground like a stack: they follow it down into a dig and up onto a fill
+		elif it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
 			continue
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
 			loose.append(id)
+
+	_settle_saplings(centre, radius, fill)
 
 	if loose.is_empty():
 		return
@@ -3534,9 +3545,105 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 	var near: Array = _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M)   # the floors and boulders round the dig, looked up once
 
 	for id in loose:
-		_items[id]["pos"] = _settled_loose(_items[id]["pos"], near)
+		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near, fill)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
+
+
+# Round 7 (physical world audit, 23 Nov 2026: what players change in the ground): a fill left every stack, chest and fire under it buried and a dig
+# left every fire, chest, station, torch and young plant over it in the air.
+const EDIT_SETTLES := ["remains", "carcass", "snare_trap"]   # placed things that lie on the ground and follow it (the walkover ones too)
+const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a placed thing's foot
+const EDIT_LIFT_M := 0.3    # how far over a fill's top the ground under a buried stack is looked for
+
+
+# A placed kind that lies on the ground and follows it into a dig and onto a fill.
+func _follows_ground(kind: String) -> bool:
+	return EDIT_SETTLES.has(kind) or bool(_structures.get(kind, {}).get("walkover", false))
+
+
+# Where a stack (or remains, a patch) at `at` rests once the ground round an edit at `centre` changed: down onto what is under it (_settled_loose), or,
+# `fill` and buried inside the fill's sphere, up onto its top over it (looked for from just above the sphere: a stack on a tunnel floor under the
+# edit is outside it and stays).
+func _edit_rest(at: Vector3, centre: Vector3, radius: float, near: Array, fill: bool) -> Vector3:
+	var flat_sq: float = (at.x - centre.x) * (at.x - centre.x) + (at.z - centre.z) * (at.z - centre.z)
+
+	if fill and floor_below.is_valid() and flat_sq < radius * radius and at.y > centre.y - sqrt(radius * radius - flat_sq) - 0.1:
+		var over: Vector3 = Vector3(at.x, centre.y + sqrt(radius * radius - flat_sq) + EDIT_LIFT_M, at.z)
+
+		if over.y > at.y:
+			var top: Vector3 = _settled_loose(over, near)
+
+			if top.y > at.y + 0.05 and top.y < over.y - 0.01:
+				return top   # it was under the ground: up onto it
+
+	return _settled_loose(at, near)
+
+
+# Young plants and planted bushes (_saplings) round an edit come to rest on the ground as it is now, as a stack does.
+func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
+	var home: Vector2i = Vector2i(int(floor(centre.x / FLORA_CHUNK_M)), int(floor(centre.z / FLORA_CHUNK_M)))
+
+	for sapling in _saplings:
+		if absi(int(sapling["chunk"][0]) - home.x) > 1 or absi(int(sapling["chunk"][1]) - home.y) > 1:
+			continue   # the chunks round the edit only (the cheap test first)
+
+		var p: Vector3 = sapling["pos"]
+
+		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 0.5:
+			continue
+
+		var rest: Vector3 = _edit_rest(p, centre, radius, [], fill)
+
+		if absf(rest.y - p.y) > 0.02:
+			sapling["pos"] = Vector3(p.x, rest.y, p.z)
+			_dirty = true
+
+			if flora_changed.is_valid():
+				flora_changed.call(Vector2i(int(sapling["chunk"][0]), int(sapling["chunk"][1])))
+
+
+# The name of a placed thing a dig at `centre` would take the ground from under (`fill` false: the sphere reaches within EDIT_UNDER_M under its
+# foot, inside its footprint) or a fill would bury (`fill` true: the sphere rises over its foot there), "" when none. Fires, stations, chests,
+# torches, buildings and every other placed piece count; stacks, remains, patches and hung things (attach_to) do not: they follow the ground or a wall.
+func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
+	for id in _ids_near(centre, radius + FLOOR_ROWS_REACH_M + 1.0):
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+		var def: Dictionary = {}
+		var yaw: float = 0.0
+		var name: String = "The campfire"
+
+		if it.has("fire"):
+			def = {"footprint_x": 1.2, "footprint_z": 1.2, "height_m": 0.6}
+		elif it.has("struct"):
+			var kind: String = str(it["struct"].get("kind", ""))
+			def = _structures.get(kind, {})
+
+			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
+				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
+
+			yaw = float(it["struct"].get("yaw", 0.0))
+			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
+		else:
+			continue
+
+		var box: Array = PlacementRules._box(def, it["pos"], yaw)
+		var dy: float = float(box[3]) + (0.05 if fill else -EDIT_UNDER_M) - centre.y
+
+		if absf(dy) >= radius:
+			continue
+
+		var apart: Vector2 = Vector2(centre.x, centre.z) - (box[0] as Vector2)
+		var half: Vector2 = box[1]
+		var off: Vector2 = Vector2(maxf(absf(apart.dot(PlacementRules._side(box, 0))) - half.x, 0.0), maxf(absf(apart.dot(PlacementRules._side(box, 1))) - half.y, 0.0))
+
+		if off.length() < sqrt(radius * radius - dy * dy):
+			return name
+
+	return ""
 
 
 # A floor, foundation or boulder under loose stacks went (taken down, retired) or shrank (mined): the stacks within `reach` of `at` come down onto
@@ -4643,7 +4750,12 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	if float(now - int(_last_dig.get(peer, -100000))) < float(DIG_COOLDOWN_MS) * reach:
 		return
 
-	_last_dig[peer] = now
+	_last_dig[peer] = now   # a refused dig waits out the stroke too (no notice and look-up per packet)
+	var standing: String = _edit_blocker(at - Vector3(0.0, DIG_DEPTH_M, 0.0), DIG_RADIUS_M * reach, false)
+
+	if standing != "":
+		_say(peer, "%s stands on that ground: take it up before you dig under it." % standing)
+		return
 
 	for n in maxi(1, int(round(reach))):
 		_wear_slot(peer, inv, shovel, "dig")
@@ -4713,7 +4825,13 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_say(peer, "Nothing to fill with: dig some soil, sand or gravel first")
 		return
 
+	var heap_r: float = FILL_RADIUS_M * pow(float(mini(_shovel_pieces(inv, shovel), inv.count_of(table.number_of(material_item)))), 1.0 / 3.0)   # the largest heap this fill can make
 	_last_dig[peer] = now
+	var buried: String = _edit_blocker(at + Vector3(0.0, FILL_UP_M, 0.0), maxf(heap_r, FILL_RADIUS_M), true)
+
+	if buried != "":
+		_say(peer, "%s stands there: the fill would bury it." % buried)
+		return
 	var pieces: int = 0
 
 	for n in _shovel_pieces(inv, shovel):
@@ -4735,6 +4853,8 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_gain_source = SRC_RETURN
 		give(peer, table.number_of(material_item), pieces)   # the ground refused it: the shovelfuls come back
 		_gain_source = was_src
+	else:
+		settle_loose_near(at + Vector3(0.0, FILL_UP_M, 0.0), FILL_RADIUS_M * pow(float(pieces), 1.0 / 3.0), true)   # stacks, remains and young plants under the heap come up onto it
 
 	_dirty = true
 
@@ -5113,6 +5233,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
+		settle_loose_near(centre, sphere, best_off < 0.0)   # stacks, remains, patches and young plants follow the levelled ground (round 7)
 
 		if spots.size() > 64:
 			_bucket_add(grid, edits[-1])
@@ -5531,8 +5652,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
+				settle_loose_near(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
 			else:
 				fill_ground.call(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+				settle_loose_near(Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M, true)
 
 			edits += 1
 
@@ -5631,11 +5754,13 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			continue
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
-		var done: Variant = dig_ground.call(Vector3(x, h - depth + SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(Vector3(x, h + depth - SMOOTH_SPHERE_M, z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
+		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 		dug = true
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
+			settle_loose_near(sphere_at, SMOOTH_SPHERE_M, d <= 0.0)
 
 	if not dug:
 		_say(peer, "The ground here is already on the line.")
@@ -6035,7 +6160,7 @@ func _silt_hole(hole: Array) -> void:
 		print("Bog hole at (%.1f, %.1f) left open: its silting would reach open ground under it" % [float(hole[0]), float(hole[2])])
 		return
 	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
-	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
+	settle_loose_near(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, true)   # the refill sphere itself: what lay in the hole comes up onto it
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
@@ -18255,6 +18380,8 @@ func warmth_target(peer: int) -> float:
 		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
 		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
+	_wet_wind[peer] = not body.is_empty() and soak >= float(body.get("wet_wind_say_soak", 0.5)) and wind >= float(body.get("wet_wind_say_wind", 0.3)) and not roofed and not bool(_swimming.get(peer, false))   # under a roof the line would send them where they are
+
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 
 	if not body.is_empty():
@@ -18321,6 +18448,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
 	_strain_sent.erase(peer)
 	_peer_pos[peer] = to
@@ -18346,6 +18474,37 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 		_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
 
 	print("%s: peer %d woke at the %s at %s" % ["Water" if water else "Cold", peer, kind, str(to)])
+
+
+# Where a rod's float sits while its line is in the water (waiting or biting), INF otherwise: the others draw the line and the float
+# (server_players.gd cast_code, protocol 162). Look only.
+func fishing_float(peer: int) -> Vector3:
+	var state: Dictionary = _fishing.get(peer, {})
+
+	if not (str(state.get("phase", "")) in ["wait", "bite"]) or not state.has("float"):
+		return Vector3.INF
+
+	return state["float"]
+
+
+# The float's spot for a cast from `from` toward `at` (the client's cast point, 4 m ahead of the eye): at most `reach` m off level, on the
+# water's face there (the nearest lake or river surface; the sea's 0 m; else a metre under the body's middle, about the feet).
+func _float_spot(from: Vector3, at: Vector3, reach: float) -> Vector3:
+	var flat: Vector2 = Vector2(at.x - from.x, at.z - from.z)
+
+	if not at.is_finite() or flat.length() < 0.5:
+		flat = Vector2(0.0, -3.0)
+
+	flat = flat.limit_length(minf(reach, 12.0))
+	var spot: Vector3 = Vector3(from.x + flat.x, from.y - 1.0, from.z + flat.y)
+	var y: float = float(fresh_water_y.call(spot, 6.0)) if fresh_water_y.is_valid() else NAN
+
+	if is_finite(y) and absf(y - spot.y) < 12.0:
+		spot.y = y
+	elif water_kind_at.is_valid() and str((water_kind_at.call(spot.x, spot.z) as Dictionary).get("kind", "")).begins_with("sea") and absf(spot.y) < 12.0:
+		spot.y = 0.0
+
+	return spot
 
 
 func passed_out(peer: int) -> bool:
@@ -18435,6 +18594,12 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	elif level == 1 and w >= float(cfg.get("cold_clear", 52.0)):
 		_cold_level[peer] = 0
 		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
+		_wet_wind_told.erase(peer)
+
+	# Why the clothes do not help (coordinator 23 Nov 2026): soaked in the wind, said once a cold spell beside the cold lines.
+	if int(_cold_level.get(peer, 0)) > 0 and bool(_wet_wind.get(peer, false)) and not _wet_wind_told.has(peer) and not body.is_empty():
+		_wet_wind_told[peer] = true
+		_say(peer, str(body.get("say_wet_wind", "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.")))
 
 	_sync_warmth(peer, false)
 
@@ -18911,6 +19076,7 @@ func kill(peer: int, cause: String) -> bool:
 	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
 	if not novice_grace(peer):
@@ -19836,7 +20002,7 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var bites: bool = fish_stock(cell) > 0 and fate(peer, "fish", chance)
 	var wait_s: Array = cfg.get("wait_s", [6.0, 22.0])
 	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
-	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", ""))}
+	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", "")), "float": _float_spot(_peer_pos[peer], at, float(cfg.get("reach_m", 8.0)))}
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
