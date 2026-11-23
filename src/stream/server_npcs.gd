@@ -5,6 +5,7 @@ extends RefCounted
 # distance. Dialogue (step B) and the unwell fallback (step C) come later; the rows already carry a state the client animates.
 
 const Steering := preload("res://src/shared/steering.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const STAND := 0
 const WALK := 1
@@ -86,6 +87,9 @@ func town_point() -> Vector2:
 
 
 func _read(path: String) -> Dictionary:
+	if not path.begins_with("res://"):
+		ItemsScript.restore_missing(path)
+
 	if not FileAccess.file_exists(path):
 		return {}
 
@@ -557,8 +561,4 @@ func _save_admin() -> void:
 		if npcs[id]["home"] != Vector3.INF:
 			homes.append({"id": id, "x": npcs[id]["home"].x, "z": npcs[id]["home"].z})
 
-	var f: FileAccess = FileAccess.open(_dir + "/npc_admin.json", FileAccess.WRITE)
-
-	if f != null:
-		f.store_string(JSON.stringify({"version": 1, "markers": rows, "npc_homes": homes}))
-		f.close()
+	ItemsScript._write_file(_dir + "/npc_admin.json", JSON.stringify({"version": 1, "markers": rows, "npc_homes": homes}), false)   # whole to a .tmp, then moved over
