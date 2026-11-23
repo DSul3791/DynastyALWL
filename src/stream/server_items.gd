@@ -932,6 +932,7 @@ func peer_left(peer: int) -> void:
 	_overheat.erase(peer)
 	_by_fire.erase(peer)
 	_comfort_goal.erase(peer)
+	_comfort_cache.erase(peer)
 	_comfort_sent.erase(peer)
 	_comfort_tip_sent.erase(peer)
 	_comfort_tip_at.erase(peer)
@@ -15755,6 +15756,7 @@ func _become_new_player(peer: int) -> void:
 	_inventories[key] = InventoryScript.pack(table)
 	_characters[key]["worn"] = _clean_worn([])
 	_characters[key]["new_player"] = true
+	_characters[key]["comfort"] = 0.0   # a fresh start empties the comfort meter
 	_characters[key]["tried"] = {}
 	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
@@ -23719,7 +23721,10 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 	var height: float = float(cfg.get("height_m", 3.0))
 	var found: Dictionary = {}     # comfort kind id -> true (each kind once)
 
-	for id in _items:
+	for id in _ids_near(here, radius):   # the sync grid's cells near the player, not every record (the meter reads this for every sheltered player)
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 		var pos: Vector3 = it["pos"]
 
@@ -23997,7 +24002,7 @@ func _comfort_tick(_spent: float = 0.0) -> void:
 
 		var m: float = comfort_meter(peer)
 		var target: float = float(_comfort_goal.get(peer, m))
-		var told: Array = [int(round(m * 10.0)), int(target), 1 if target > m + 0.001 else (-1 if target < m - 0.001 else 0)]
+		var told: Array = [int(floor(m * 10.0 + 0.001)), int(target), 1 if target > m + 0.001 else (-1 if target < m - 0.001 else 0)]
 		var tip: String = ""
 
 		if now - int(_comfort_tip_at.get(peer, -100000)) >= int(COMFORT_TIP_S * 1000.0) or _comfort_sent.get(peer, []) != told:

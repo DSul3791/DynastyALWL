@@ -8,6 +8,7 @@ extends SceneTree
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Badge := preload("res://src/client/ui/comfort_badge.gd")
 
 var failures: int = 0
 var items
@@ -196,7 +197,6 @@ func _init() -> void:
 	items._comfort_goal[1] = 9.0
 	items._comfort_tick()
 	check(told.size() == 2 and told[1][1] == 9 and told[1][2] == 1 and str(told[1][3]) == "", "a higher target is told as rising, without resending the same tooltip")
-	var Badge := load("res://src/client/ui/comfort_badge.gd")
 	check(Badge.level_of(70) == 7 and Badge.level_of(69) == 6 and Badge.level_of(100) == 10 and Badge.level_of(0) == 0, "the HUD symbol shows the whole level of the tenths")
 
 	# Saved and cleared.
