@@ -19,9 +19,9 @@ It writes `..\dynasty_export\build-<N>\site\`, laid out exactly like `/data/game
 
 | On the server | Address |
 |---|---|
-| `index.html` | https://hannibalshouse.duckdns.org/ (the front page: Download latest, Submit a bug, Suggest an idea) |
+| `index.html`, `bug.html`, `idea.html`, `css/dynasty.css`, `js/tester.js` | the testers' own pages (`deploy/testersite/site/`): the front page https://hannibalshouse.duckdns.org/ (Download latest, Submit a bug, Suggest an idea, high scores) and the bug and idea forms |
 | `download/index.html` | https://hannibalshouse.duckdns.org/download/ (the zip, and how to install, join and report) |
-| `css/site.css`, `images/hero.jpg`, `fonts/` | the look (shared with the bug and idea pages), the picture, and the menu fonts with their licence |
+| `images/hero.jpg`, `fonts/` | the picture, and the menu fonts with their licence |
 | `downloads/Dynasty-build-<N>.zip` | https://hannibalshouse.duckdns.org/downloads/Dynasty-build-&lt;N&gt;.zip |
 | `latest.json` | the build number, zip, size and date, for the testers' bug and idea pages |
 | `files.sha256` | the SHA-256 of every other file |
@@ -30,28 +30,28 @@ All the page's links start with `/`. File names have no spaces.
 
 ## 2. Copy it up (Dave, one paste in PowerShell on his PC)
 
-The site script prints this line with the right folder and every top-level item of the site; paste that one. The line below is the same for a site without the testers' own pages. Type the password when scp asks, or use your SSH key. No password goes in any file.
+The site script prints this line with the right folder and every top-level item of the site; paste that one (the line below is the same). Type the password when scp asks, or use your SSH key. No password goes in any file.
 
 ```
 $build = "<N>"; $server = "192.168.0.108"
-Set-Location "E:\Software\godotDev\dynasty_export\build-$build\site"; scp -r index.html latest.json files.sha256 download css images fonts downloads "dave@${server}:/data/game-web/site/"
+Set-Location "E:\Software\godotDev\dynasty_export\build-$build\site"; scp -r bug.html css download downloads files.sha256 fonts idea.html images index.html js latest.json "dave@${server}:/data/game-web/site/"
 ```
 
-- scp makes `download/`, `css/`, `images/`, `fonts/` and `downloads/` if they are not there yet. It replaces only files with the same names, so `index.html` (the example page) is replaced and the build's zip is added. It deletes nothing. Caddy picks up the change without a restart.
+- scp makes the folders if they are not there yet. It replaces only files with the same names, so `index.html` (the example page) is replaced and the build's zip is added. It deletes nothing. Caddy picks up the change without a restart.
 - **Older zips stay** in `downloads/` until you remove them. The four testers can see them, because `/downloads/` shows a file list. To remove one:
 
 ```
 ssh "dave@${server}" "ls -l /data/game-web/site/downloads/; rm /data/game-web/site/downloads/Dynasty-build-<OLD>.zip"
 ```
 
-- Files from the example page, such as `css/` or `images/logo.png`, are not used by the new page. They stay until you delete them.
+- Files from the example page, such as `images/logo.png`, and `css/site.css` from earlier uploads are not used any more. They stay until you delete them.
 
-## 2b. The bug and idea pages (one paste on the server, every time after step 2)
+## 2b. The bug and idea service (one paste on the server, once)
 
-The bug and idea pages and their small report service come from the "tester bug and idea pages" work (`deploy/testersite/`, pinned to commit 2f98c0a9). Its install puts its own front page (the same three boxes, now working, with the high scores) over the one from step 2. It also adds the `/api/` part to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe. Until that work is merged, step 2 brings back the "Opening soon" front page (and the download page's report step points at boxes that do not work yet), so run this again after every upload:
+The bug and idea pages send their reports through a small report service (`deploy/testersite/`, merged in #1609 as da9574ab; `deploy/testersite/INSTALL.md`). Its install starts that service, adds the `/api/` part and the login-name lines to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe, and it is only needed again when the service itself changes, not for a new build:
 
 ```
-sudo mkdir -p /data/game-web/reports && cd /data/game-web/reports && sudo curl -fsSLO https://raw.githubusercontent.com/DSul3791/DynastyALWL/2f98c0a9a764765975fe984d6bcf802eda793039/deploy/testersite/service/install.sh && sudo BRANCH=2f98c0a9a764765975fe984d6bcf802eda793039 bash install.sh
+sudo mkdir -p /data/game-web/reports && cd /data/game-web/reports && sudo curl -fsSLO https://raw.githubusercontent.com/DSul3791/DynastyALWL/da9574abcd98cd05f1ba16b8c8d36dca99672595/deploy/testersite/service/install.sh && sudo BRANCH=da9574abcd98cd05f1ba16b8c8d36dca99672595 bash install.sh
 ```
 
 ## 3. Show who is logged in (done by step 2b)
