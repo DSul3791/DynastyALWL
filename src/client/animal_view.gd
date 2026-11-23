@@ -44,6 +44,10 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
+const WALKER_BLOCK_M := 0.6                   # a body this big (body_m) stops the local walker (walker_stop)
+const WALK_INTO_M := 0.1                      # the walker is stopped this far inside an animal's contact distance: the server then has it make way (server_animals make_way), slowly
+const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
+const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
@@ -54,6 +58,8 @@ var _look_points: Array = []     # this frame's look_points, fetched the first t
 var _look_frame: int = -1        # the _t-frame _look_points was fetched in
 var _frame: int = 0              # counts _process_body calls
 var _frame_s: float = -1.0       # when _process_body last ran (s, the ticks clock)
+var _held_since_ms: int = -1     # walker_stop: when the walker was first held at bodies this time, -1 when free
+var _held_last_ms: int = -100000 # and the last frame it was held
 var _settle_until: float = -1.0  # after this computer's own stall: until then bodies are drawn where their points are (MotionBuffer.settle)
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
@@ -451,6 +457,32 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 	return false
 
 
+# The walker's frame move from `before` to `after` (feet) stopped at the animals drawn near: the correction to add (AnimalContact.walker_stop).
+# Bodies of WALKER_BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
+func walker_stop(before: Vector3, after: Vector3) -> Vector3:
+	var bodies: Array = []
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+		if AnimalContact.body_m(str(b["kind"])) < WALKER_BLOCK_M:
+			continue
+
+		var m: float = float(b["contact_m"]) - WALK_INTO_M
+		var at: Vector3 = (b["node"] as Node3D).global_position
+
+		if Vector2(at.x - after.x, at.z - after.z).length() < m + 1.0:
+			bodies.append([at, m])
+
+	var stop: Vector3 = AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
+	var wanted: float = Vector2(after.x - before.x, after.z - before.z).length()
+	var made: float = Vector2(after.x + stop.x - before.x, after.z + stop.z - before.z).length()
+	var pinned: bool = stop.length() >= 0.001 and made < wanted * 0.3   # held, not sliding round it
+	var held: Array = AnimalContact.walker_held([_held_since_ms, _held_last_ms], Time.get_ticks_msec(), pinned, PINNED_MS, HELD_GAP_MS)
+	_held_since_ms = int(held[0])
+	_held_last_ms = int(held[1])
+	return Vector3.ZERO if bool(held[2]) else stop   # held so long they go through: a walker is never shut in
+
+
 # [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
 func drawn_positions() -> Array:
 	var out: Array = []
@@ -461,7 +493,8 @@ func drawn_positions() -> Array:
 	return out
 
 
-# [[drawn position, heading], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these (BowAim.zone_points).
+# [[drawn position, heading, body_m], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these
+# (BowAim.zone_points); a blow's reach is to the body, body_m short of its middle (held_item._animal_in_reach).
 func aim_rows(from: Vector3, range_m: float) -> Array:
 	var out: Array = []
 
@@ -469,7 +502,7 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position
 
 		if at.distance_to(from) <= range_m:
-			out.append([at, float(_bodies[id]["heading"])])
+			out.append([at, float(_bodies[id]["heading"]), AnimalContact.body_m(str(_bodies[id]["kind"]))])   # its reach from middle to nose: a blow reaches its body, not its middle
 
 	return out
 
@@ -711,7 +744,7 @@ func _process_body(delta: float) -> void:
 			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
 			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
 			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
-			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]), reach, int(b["state"]) != CHARGE)
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
 
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
