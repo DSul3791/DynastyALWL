@@ -490,8 +490,14 @@ func _containers() -> void:
 	for id in _count_ids:
 		totals[items.table.number_of(id)] = 0
 
-	for id in items._items:
-		var it: Dictionary = items._items[id]
+	# Without a count only the containers a player has open (a whole-world walk every 0.25 s would be a server hitch the audit then reads as animal faults).
+	var ids: Array = items._items.keys() if not _count_ids.is_empty() else items._chest_viewer.values()
+
+	for id in ids:
+		var it: Dictionary = items._items.get(id, {})
+
+		if it.is_empty():
+			continue
 
 		if not it.has("struct"):
 			if totals.has(int(it.get("number", 0))) and Vector2((it["pos"] as Vector3).x, (it["pos"] as Vector3).z).distance_to(_count_at) <= COUNT_M:

@@ -919,6 +919,7 @@ func peer_left(peer: int) -> void:
 	_spot_saved_msec.erase(peer)
 	_resume_to.erase(peer)
 	_station_said.erase(peer)
+	_refusal_said.erase(peer)
 	_hole_blows.erase(peer)
 	_fishing.erase(peer)
 	_last_fish.erase(peer)
@@ -3263,7 +3264,7 @@ func _reject_said(peer: int, reason: int, words: String) -> void:
 	var now: int = Time.get_ticks_msec()
 	var said: Dictionary = _refusal_said.get(peer, {})
 
-	if now - int(said.get(words, -HANDS_FULL_SAY_GAP_MS)) >= HANDS_FULL_SAY_GAP_MS:
+	if swath_mult <= 0.0 and now - int(said.get(words, -HANDS_FULL_SAY_GAP_MS)) >= HANDS_FULL_SAY_GAP_MS:   # a swath swing says nothing (_say), so it starts no gap
 		said[words] = now
 		_refusal_said[peer] = said
 		_say(peer, words)
@@ -27961,7 +27962,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		if _salt_only(peer, thirst):
 			_say(peer, str(thirst["sources"].get("say_salt", "Salt water. It would only make you thirstier.")))   # the sea (design section 2)
 		else:
-			_reject(peer, 0)
+			_reject_said(peer, 0, "No water within reach.")
 
 		return
 
