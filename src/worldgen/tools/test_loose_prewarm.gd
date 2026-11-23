@@ -14,6 +14,18 @@ func _init() -> void:
 	view._prewarm_loose_meshes()
 	var cached: int = view._meshes.size()
 
+	# The rock hulls are queued at the join, one a frame (lag lane 23 Nov 2026: 43-67 ms each on the first boulder of a shape while walking).
+	if view._hull_queue.size() != 10:
+		print("FAIL rock hulls queued: %d, want 10 (the granite boulder and 3 shapes x 3 variants)" % view._hull_queue.size())
+		failures += 1
+
+	while not view._hull_queue.is_empty():
+		view._hull_step()
+
+	if view._boulder_hulls.size() != 10 or view._boulder_hulls.values().any(func(h): return (h as PackedVector3Array).is_empty()):
+		print("FAIL rock hulls made: %d, some empty" % view._boulder_hulls.size())
+		failures += 1
+
 	if cached < 5:
 		print("FAIL prewarm cached only %d meshes" % cached)
 		failures += 1

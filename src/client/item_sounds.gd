@@ -40,6 +40,8 @@ const SHAPE_CLASS := {
 	"crossbow": "wood", "arrow": "wood", "garment": "cloth", "bag": "cloth", "bench_pack": "wood",
 }
 const MIN_GAP_MSEC := 60
+const OTHER_UNIT_M := 1.5               # another player's gulp or pickup (other_at): a small close sound
+const OTHER_REACH_M := 15.0
 const WORK_DB := -18.0
 const WORK_TYPES := {"twine": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
 # Eating and drinking food make no sound (Dave 17 Nov 2026: "doesnt need sound for eating remove the sound"); a mouthful of water
@@ -68,6 +70,7 @@ var _work_recipe: int = 0   # the recipe the work sound is playing for (0 none)
 var work_played: int = 0
 var eat_played: int = 0
 var _mouth: AudioStreamPlayer
+var others_played: int = 0              # other players' gulps and pickups played (other_at), for checks
 var _fuel_msec: int = -100000
 var _counts_by_number: Dictionary = {}  # item number -> count in the bag, last watch
 var last_work: String = ""
@@ -396,6 +399,35 @@ func play(sound_name: String, pitch: float = 1.0) -> bool:
 	_player.play()
 	played += 1
 	last = "%s_%d (%s)" % [sound_name, pick, SoundStage.tag(list[pick])]
+	return true
+
+
+# Another player's mouthful of water or a thing they picked up off the ground (sound_stage.gd other_action, action_cue CUE_DRINK and
+# CUE_PICKUP): the own clip and level, positional where it happens, close by only (unit OTHER_UNIT_M, reach OTHER_REACH_M).
+# `item_id` names what was picked up ("" for the mouthful): its material class, as the own pickup (SHAPE_CLASS). False when nothing played.
+func other_at(item_id: String, at: Vector3) -> bool:
+	var sound_name: String = "drink_gulp"
+	var db: float = float(EAT["drink"][1])
+
+	if item_id != "":
+		var shape: String = str(BasicLook.entry(item_id).get("shape", ""))
+		sound_name = "item_pickup_%s" % SHAPE_CLASS.get(shape, "")
+		sound_name = sound_name if NAMES.has(sound_name) else "item_pickup"
+		db = float(NAMES[sound_name])
+
+	var list: Array = _variants(sound_name)
+
+	if list.is_empty():
+		return false
+
+	var player: AudioStreamPlayer3D = SoundStage.Sound3D.make(self, "Foley", OTHER_UNIT_M, OTHER_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = db + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = _rng.randf_range(0.96, 1.04)
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+	others_played += 1
 	return true
 
 

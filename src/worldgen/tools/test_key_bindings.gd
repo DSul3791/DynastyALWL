@@ -27,6 +27,31 @@ func _key(code: int, ctrl: bool = false, shift: bool = false) -> InputEventKey:
 	return event
 
 
+# Client bug hunt 23 Nov 2026: the shield's B, the swim stroke's W / S and the talk window's E were read as fixed keys, so a player who rebound
+# them (Controls page) still had to press the old ones, and the pack's buttons and tooltips named the old letters. Every game key goes through
+# KeyBindings now: no game script reads a letter key directly, and the button texts follow the bound keys.
+func _no_fixed_letters() -> void:
+	check(Bindings.default_binding("block")["key"] == KEY_B and Bindings.held("block") == false, "the shield's raise key is a rebindable action, B by default")
+	check(Bindings.conflicts().is_empty(), "the default keys still have no clashes with the shield's B")
+	var letter: RegEx = RegEx.create_from_string("is_key_pressed\\(KEY_[A-Z]\\)|keycode == KEY_[A-Z]\\b")
+	var found: Array = []
+
+	for file in ["res://src/client/held_item.gd", "res://src/client/dialogue_view.gd", "res://scenes/terrain_client/terrain_client.gd", "res://src/client/inventory_view.gd", "res://src/client/ui/inventory/pack_grid.gd"]:
+		for hit in letter.search_all(FileAccess.get_file_as_string(file)):
+			found.append("%s: %s" % [file.get_file(), hit.get_string()])
+
+	check(found.is_empty(), "no game script reads a letter key directly (rebinding must move it): %s" % str(found))
+	Bindings.set_binding("split_item", KEY_V, false, false)
+	Bindings.set_binding("use_item", KEY_U, false, false)
+	var view_src: String = FileAccess.get_file_as_string("res://src/client/inventory_view.gd") + FileAccess.get_file_as_string("res://src/client/ui/inventory/pack_grid.gd") + FileAccess.get_file_as_string("res://src/client/dialogue_view.gd")
+
+	for fixed in ["\"Split (S)\"", "\"Use (E)\"", "\"Drop (D)\"", "\"Repair (R)\"", "Close (E)", "Keys: Split (S)", "Use (E) puts it on", "Use (E) drinks"]:
+		check(not view_src.contains(fixed), "the text %s names the bound key, not a fixed letter" % fixed)
+
+	check("Split (%s)" % Bindings.label("split_item") == "Split (V)" and "Use (%s)" % Bindings.label("use_item") == "Use (U)", "a rebound key shows in the button text")
+	Bindings.reset_all()
+
+
 # Writes a saved-bindings file the way an older build did (key, ctrl, shift per action) and makes the next lookup read it.
 func _write(saved: Dictionary) -> void:
 	var file: FileAccess = FileAccess.open(TEMP, FileAccess.WRITE)
@@ -222,6 +247,7 @@ func _init() -> void:
 	Bindings.reset_all()
 	_admin_rules()
 	Bindings.reset_all()
+	_no_fixed_letters()
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(TEMP))
 	Bindings.use_path(Bindings.PATH)
 	print("Test done: %d pass, %d fail" % [passes, failures])

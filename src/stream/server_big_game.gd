@@ -262,7 +262,7 @@ func step(a: Dictionary, dt: float) -> void:
 		if not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
 			var dog_at: Vector3 = host.animals[int(near["dog"])]["pos"]
 
-			if _off_path(dog_at, start, a["pos"]) <= float(def.get("hit_m", 2.2)):
+			if _off_path(dog_at, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and not host.wall_between(a["pos"], dog_at):
 				a["hit"] = true
 				host.damage(int(near["dog"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), -1, "charge")
 
@@ -270,7 +270,8 @@ func step(a: Dictionary, dt: float) -> void:
 			for info in (player_info.call() if player_info.is_valid() else []):
 				var p: Vector3 = info["pos"]
 
-				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and hurt_player.is_valid():
+				# Never through a wall: one stopped against a wall's near side is within hit_m of a player hard behind it (Dave: never hitting through walls).
+				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
 					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"]), a["pos"]))   # a higher-level animal hits harder

@@ -1616,6 +1616,11 @@ func _process_body(_delta: float) -> void:
 		_warm_step()
 		FrameProbe.stop("inventory: loose mesh prewarm", tw)
 
+	if not _hull_queue.is_empty():
+		var th: int = FrameProbe.start()
+		_hull_step()
+		FrameProbe.stop("inventory: rock hull prewarm", th)
+
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
@@ -2643,17 +2648,12 @@ func faint_state() -> Array:
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int, new_fitness: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
-	var drank: bool = new_thirst > thirst + 3   # a drink eaten from the pack (fruit juice, a tea, a soup): its gulp (23 Nov 2026: was silent)
-	var gulped: bool = false
-
-	if (ate or drank) and _eat_item != "" and eat_event.is_valid():
-		eat_event.call("drink" if drank else _eat_item)   # a gulp, or a medicine's sound; solid food is silent (ItemSounds.eat_kind; no chewing clip yet)
-		gulped = drank
+	if ate and _eat_item != "" and eat_event.is_valid():
+		eat_event.call(_eat_item)   # a medicine's sound; food and drinks from the pack are silent (Dave 17 Nov 2026: "doesnt need sound for eating"; ItemSounds.eat_kind)
 		_eat_item = ""
 
-	# A mouthful at the water's edge or from a water container (drink(), eat_slot) took effect: the gulp sound (Dave 2026-10-21: no sound when
-	# drinking). Once only, when a drink from the pack gulped already.
-	if not gulped and new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
+	# A mouthful at the water's edge or from a water container (drink(), eat_slot) took effect: the gulp sound (Dave 2026-10-21 reported there was no sound when drinking).
+	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
 		eat_event.call("drink")
 
 	if _vitals_seen and health - new_health >= HURT_MIN and hurt_event.is_valid():
@@ -2803,7 +2803,7 @@ func hotbar_tip(key: int) -> String:
 	var key_name: String = "0" if key == 9 else str(key + 1)
 
 	if slot >= 0:
-		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (E) moves it to the inventory" if open else "")
+		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (%s) moves it to the inventory" % KeyBindings.label("use_item") if open else "")
 
 	return "Drag an item here from the inventory. Key %s holds it." % key_name
 
@@ -3724,6 +3724,8 @@ func _show_boulder(id: int, row: Array) -> void:
 
 	if _boulder_mesh == null:
 		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
+
+	if _boulder_rock == null:
 		# Granite with moss (Kathleen, white-sphere fix): the plain mid-grey material drew server boulders near white in full sun, big smooth pale eggs. The scenery
 		# boulder shader of grass_view.gd (stone mottle, moss on the tops and north side) is used instead, with its per-instance custom data turned into
 		# uniforms and its distance fade switched off (a boulder the server sends must not melt away at 18 m).
@@ -3792,6 +3794,29 @@ const SHRINK_EASE_S := 0.15   # how long a blow takes to ease a boulder down to 
 
 
 var _boulder_hulls: Dictionary = {}   # rock mesh -> its convex hull points (unscaled), made once per mesh
+var _hull_queue: Array = []           # rock meshes whose hulls are still to make, one a frame from the join (_queue_rock_hulls)
+
+
+# Lag lane 23 Nov 2026 (robot route, cloud): each rock mesh's hull took 43-67 ms on the main thread the first time a boulder of that shape was
+# drawn, so walking into new ground hitched 50-200 ms ("world items ... slowest row: state 10"). The ten rock meshes' hulls are made at the
+# join instead, one a frame while the ground loads.
+func _queue_rock_hulls() -> void:
+	if _boulder_mesh == null:
+		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
+
+	OreRockLook.mesh_for(0.0)   # builds every rock shape (7 ms)
+	_hull_queue = [_boulder_mesh]
+
+	for shape in OreRockLook._meshes:
+		_hull_queue.append_array(shape)
+
+
+func _hull_step() -> void:
+	var mesh: Mesh = _hull_queue.pop_front()
+	_boulder_hull(mesh)
+
+	if _hull_queue.is_empty():
+		FreezeWatchScript.printer.line("client prewarm: rock hulls made (%d)" % _boulder_hulls.size())
 
 
 func _boulder_hull(mesh: Mesh) -> PackedVector3Array:
@@ -5370,6 +5395,7 @@ func _loose_prewarm_numbers() -> Array:
 
 
 func _start_loose_prewarm() -> void:
+	_queue_rock_hulls()
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
@@ -5398,6 +5424,7 @@ func _warm_step() -> void:
 
 
 func _prewarm_loose_meshes() -> void:
+	_queue_rock_hulls()
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
@@ -6536,7 +6563,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	if int(entry.get("capacity_ml", 0)) > 0:
-		text += "\nHolds %s of %s. Use (E) drinks from it; at the water, E fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"]))]
+		text += "\nHolds %s of %s. Use (%s) drinks from it; at the water, %s fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"])), KeyBindings.label("use_item"), KeyBindings.label("interact")]
 
 	if table.wood_class(number) != "" and fill_ml > 0:   # wet wood: the slot's wear is its drying left in tenths of a game hour (cooking.json wet_wood)
 		text += "\nWet: dry in about %d game hours, faster by a fire. Wet wood smokes, burns slower and gives less heat." % maxi(int(ceil(float(fill_ml) / 10.0)), 1)
@@ -6550,7 +6577,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 
 	if str(entry.get("slot", "")) != "":
 		var layer: String = str(entry.get("wear_layer", "base"))
-		text += "\nWorn on the %s%s. Use (E) puts it on." % [str(entry["slot"]), "" if layer in ["base", "footwear"] else ", %s layer" % layer]
+		text += "\nWorn on the %s%s. Use (%s) puts it on." % [str(entry["slot"]), "" if layer in ["base", "footwear"] else ", %s layer" % layer, KeyBindings.label("use_item")]
 
 		if float(entry.get("warmth", 0.0)) > 0.0:
 			text += " Keeps %d%% of your body heat in." % int(round(float(entry["warmth"]) * 100.0))
@@ -6566,7 +6593,8 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 		text += "\nEaten raw it ruins your health for a day. Cook it at a fire first."
 
 	if kcal > 0:
-		text += "\n%d kcal  (right click when held, or Eat / use)" % kcal
+		var fed: int = VitalsRules.eaten_kcal(kcal, table.freshness(number, fill_ml))   # what eating it gives now: stale food feeds less (server_items._eat)
+		text += "\n%d kcal%s  (right click when held, or Eat / use)" % [fed, " (%d fresh)" % kcal if fed < kcal else ""]
 
 	if heal > 0:
 		text += "\nrestores %d health  (right click when held, or Eat / use)" % heal
@@ -6589,7 +6617,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 	if int(entry.get("value", 0)) > 0 and str(entry.get("kind", "")) != "coin":
 		text += "\nWorth about %s" % coin_text(int(entry["value"]) * count) + (" (%s each)" % coin_text(int(entry["value"])) if count > 1 else "")
 
-	text += "\nKeys: Split (S), Drop (D), Use (E)"
+	text += "\nKeys: Split (%s), Drop (%s), Use (%s)" % [KeyBindings.label("split_item"), KeyBindings.label("drop_item"), KeyBindings.label("use_item")]
 
 	if int(entry.get("durability", 0)) > 0:
 		text += "\nlasts %d uses; " % SmithingRules.max_of(entry, item_inst)
@@ -7021,7 +7049,9 @@ func run_text_test(client) -> void:
 
 # Job 82: every control in the inventory window, read at the current text scale: the smallest font in use, the labels a
 # player sees (buttons, sort options, hints) and the key letters on the action buttons. Printed as "Audit:" lines.
-const ACTION_BUTTON_LABELS := ["Split (S)", "Drop (D)", "Use (E)", "Repair (R)"]
+# The action buttons name the bound keys (Split (S), Drop (D), Use (E), Repair (R) by default).
+func _action_button_labels() -> Array:
+	return ["Split (%s)" % KeyBindings.label("split_item"), "Drop (%s)" % KeyBindings.label("drop_item"), "Use (%s)" % KeyBindings.label("use_item"), "Repair (%s)" % KeyBindings.label("repair_item")]
 
 
 func _audit_text() -> void:
@@ -7057,7 +7087,7 @@ func _audit_text() -> void:
 	var tooltip_px: int = _panel.theme.get_font_size("font_size", "TooltipLabel") if _panel.theme != null else 16
 	var missing: Array = []
 
-	for key_label in ACTION_BUTTON_LABELS:
+	for key_label in _action_button_labels():
 		if not labels.has(key_label):
 			missing.append(key_label)
 

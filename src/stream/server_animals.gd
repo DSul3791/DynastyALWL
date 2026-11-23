@@ -53,6 +53,7 @@ var player_stances: Callable       # () -> Array of stances in player_positions 
 var canopy: Callable               # (Vector3) -> bool, whether a spot is under a tree crown (forest for sight and habitat)
 var canopy_ready: Callable         # (x, z) -> bool, whether the tree crowns round a spot are known yet (the flora chunks are made; a missing one is started on a worker)
 var undergrowth: Callable          # (Vector3) -> bool, the spot is in bushes, ferns or tall grass (server_flora.in_undergrowth): moving through it rustles
+var player_loud: Callable          # () -> Array of the loud thing each player did lately (server_action_cues.loud_kinds: "blow", "craft", "hurt", "dig" or ""), player_positions order
 var player_stalk: Callable         # () -> Array of hunting skill factors (skills.json actions.stalk, 1.0 for a beginner) in player_positions order
 var fires: Callable                # () -> Array of Vector3, burning fires and torch bearers (server_items._lit_fires; wolves read the same list)
 var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 8 m for a torch)
@@ -120,6 +121,7 @@ var _noise_acc: float = 0.0       # time since the last undergrowth sample (_sam
 var _noise_from: Array = []       # player positions at the last sample
 var _player_vel: Array = []       # per player (the _noise_from order): ground velocity (x, z) over the last noise sample, m/s
 var _noisy: Array = []            # per player (player_positions order): how much farther they are sensed for rustling undergrowth (1.0 none)
+var _heard: Array = []            # per player (player_positions order): how far a loud action carries (senses.action_heard_x; 0.0 none), past stance and cover
 
 
 # True when the step from (x0, z0) to (x1, z1) goes through a wall or heavy station, grown by the body margin.
@@ -129,6 +131,12 @@ func _init() -> void:
 
 func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 	return walls.is_valid() and bool(walls.call(x0, z0, x1, z1, float(cfg.get("wall_margin_m", 0.3))))
+
+
+# True when a wall or heavy station stands on the straight line between two points (no body margin): a blow never lands through one,
+# either way (an enemy's charge at a player behind a wall, a player's jab at an animal behind one; coordinator's fight walk, 23 Nov 2026).
+func wall_between(from: Vector3, to: Vector3) -> bool:
+	return walls.is_valid() and bool(walls.call(from.x, from.z, to.x, to.z, 0.0))
 
 
 func setup() -> void:
@@ -645,7 +653,7 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 		var to: Vector2 = Vector2(at.x - origin.x, at.z - origin.z)
 		var d: float = to.length()
 
-		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5:
+		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
 			best_d = d
 			best = id
 
@@ -826,7 +834,13 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 		var now_d: float = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length()
 
 		if now_d < m and now_d < Vector2(was.x - at.x, was.z - at.z).length():
-			a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)
+			# A long step (a charge, a server that stepped late) can carry it across the player's middle: put on the circle on the far side
+			# it went through them. It stops where it came to them instead (gate review of #1716).
+			if absf(a["pos"].y - at.y) <= 2.0 and Vector2(a["pos"].x - at.x, a["pos"].z - at.z).dot(Vector2(was.x - at.x, was.z - at.z)) < 0.0:      # not under one on a ledge (keep_off leaves those too)
+				a["pos"] = AnimalContact.stop_at(at, was, a["pos"], m)
+			else:
+				a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)
+
 			kept = true
 
 	# One player at a time can push it out of one body into another standing beside them (robot bear hunt 23 Nov 2026: two hunters 1.4 m
@@ -1071,7 +1085,7 @@ func tick(delta: float) -> void:
 				near_p = p
 
 			if d <= reach_m:
-				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0, float(_noisy[pi]) if pi < _noisy.size() else 1.0)
+				var sensed: float = d / _sense_factor(a, def_s, p, d, int(stances[pi]) if pi < stances.size() else 0, float(_noisy[pi]) if pi < _noisy.size() else 1.0, float(_heard[pi]) if pi < _heard.size() else 0.0)
 
 				if sensed < seen_d:
 					seen_d = sensed
@@ -2308,7 +2322,10 @@ func _sample_noise(players: Array, delta: float) -> void:
 
 	var stances: Array = player_stances.call() if player_stances.is_valid() else []
 	var stalk: Array = player_stalk.call() if player_stalk.is_valid() else []
+	var loud: Array = player_loud.call() if player_loud.is_valid() else []
+	var heard_x: Dictionary = sen.get("action_heard_x", {})
 	var fresh: Array = []
+	var heard: Array = []
 	var vel: Array = []
 
 	for pi in players.size():
@@ -2342,8 +2359,10 @@ func _sample_noise(players: Array, delta: float) -> void:
 				noise *= 1.0 + extra / (skill * skill)
 
 		fresh.append(noise)
+		heard.append(float(heard_x.get(str(loud[pi]), 0.0)) if pi < loud.size() else 0.0)
 
 	_noisy = fresh
+	_heard = heard
 	_player_vel = vel
 	_noise_from = players.duplicate()
 	_noise_acc = 0.0
@@ -2368,8 +2387,9 @@ func player_velocity_at(p: Vector3) -> Vector2:
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does
 # not; a crouching or lying player is harder to see; with the ground in the way only scent and sound are left. A player rustling
 # through undergrowth (noise, _sample_noise: a little, more the faster they go, less the better a hunter) is sensed a little farther
-# off. It is added last, so it also carries where the animal can't see the player.
-func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int, noise: float = 1.0) -> float:
+# off. It is added last, so it also carries where the animal can't see the player. A loud action (heard: a blow, a cry, craft work;
+# senses.action_heard_x, _sample_noise) carries that far whatever the stance and cover: a crouching woodcutter in the trees is still heard.
+func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance: int, noise: float = 1.0, heard: float = 0.0) -> float:
 	var sen: Dictionary = cfg.get("senses", {})
 	var f: float = 1.0
 
@@ -2397,7 +2417,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 		if sight < 1.0:
 			f *= lerpf(float(sen.get("blind_factor", 0.35)), 1.0, sight)
 
-	return f * noise
+	return maxf(f * noise, heard)
 
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
