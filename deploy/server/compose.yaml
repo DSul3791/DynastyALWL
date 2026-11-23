@@ -20,6 +20,7 @@ services:
       - dynasty-data:/data  # the world's store, characters, admin.json and logs: kept across restarts and new images
     environment:
       DYNASTY_SERVER_PASSWORD: ${DYNASTY_SERVER_PASSWORD:-}   # optional join password (SERVER.md step 5); empty = the store's server.json decides
+      DYNASTY_SERVER_CPUS: ${DYNASTY_SERVER_CPUS:-4}   # CPU threads the server may keep busy (SERVER.md, CPUs): 4 = main + 3 ground makers; 2 idle builders work only when the makers have nothing queued; not a docker quota
     # No cpus: quota here: a quota pause stops every server thread at once (50 ms stalls on David4). To limit CPUs use a
     # dedicated set instead, for example  cpuset: "6-11"  (SERVER.md, CPUs).
     stop_grace_period: 90s  # docker stop sends TERM, run_server.sh asks the server to save; past this docker kills it unsaved

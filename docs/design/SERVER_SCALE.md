@@ -29,7 +29,7 @@ server was too busy to answer the join handshake in time.
 (at 32 it is already 72% busy). Spread players hit a second wall sooner: making new ground uses every CPU, and the bots waited a
 minute for ground.
 
-Per-player traffic (25 KB/s, about 0.2 Mbit/s) is the third limit: 100 players need about 20 Mbit/s upload from the server's line.
+Per-player traffic is about 25 KB/s (0.2 Mbit/s): 100 players need about 20 Mbit/s upload. Dave's line is 1 Gbit, so this is not a near limit.
 
 ## Top costs (main thread, ms per second, 64 clustered)
 
@@ -80,6 +80,18 @@ Together these should put about 100 to 150 clustered players on one main thread.
     over at the border. One process cannot hold thousands in GDScript.
 11. **A separate save service.** A database instead of JSON files, so many processes can save at once.
 12. **Hosting.** Thousands of players need data-centre servers and bandwidth, not a home server.
+
+## Dave's rulings, 23 Nov 2026
+
+- "Plan for thousands and be happy when it works for hundreds right now." First target: 100+ players on one server.
+- His line is 1 Gbit, so traffic is not the near limit; the CPU is.
+- **CPU setting.** "Make the thread/core count a setting we can set for the server to be allowed to use and design around that." His server
+  box has 6 cores, 12 threads, and runs 5 other servers; about 15 players there for now, a dedicated server later.
+  `DYNASTY_SERVER_CPUS` (compose.yaml, default 4; `--cpus=N` wins) is that setting (deploy/server/SERVER.md, CPUs). Today it sizes the ground makers
+  and idle builders; the plan is that every later job moved off the main thread sizes itself from it too.
+- **Prebuilt ground.** "The generator part should prebuild our entire world or the parts we are working with right now. The server
+  doesn't build anything; it just serves the prebuilt stuff up to the clients." The region for now is the starting nine tiles. The
+  plan for that is in its own section below once measured.
 
 ## Rules kept
 

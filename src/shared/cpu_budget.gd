@@ -17,6 +17,29 @@ const CGROUP2_STAT := "/sys/fs/cgroup/cpu.stat"                  # "throttled_us
 const CGROUP1_STAT := "/sys/fs/cgroup/cpu/cpu.stat"              # "throttled_time N" in nanoseconds
 
 
+# The server's CPU setting (Dave 23 Nov 2026: "make the thread/core count a setting we can set for the server to be allowed to use"; his
+# server box has 6 cores, 12 threads, and runs 5 other servers). --cpus=N on the command line, else the DYNASTY_SERVER_CPUS environment
+# variable (deploy/server/compose.yaml sets it): the CPU threads the server may use in all, main thread included. 0, unset or not a number:
+# no setting (every usable CPU, as before).
+static func setting(args: PackedStringArray, env_value: String) -> int:
+	for argument in args:
+		if argument.begins_with("--cpus="):
+			var text: String = argument.trim_prefix("--cpus=")
+			return maxi(int(text), 0) if text.is_valid_int() else 0
+
+	return maxi(int(env_value), 0) if env_value.strip_edges().is_valid_int() else 0
+
+
+# The CPUs the server plans its threads round: the usable ones, held to the setting when there is one.
+static func allowed(usable_cpus: int, cpus_setting: int) -> int:
+	return mini(usable_cpus, cpus_setting) if cpus_setting > 0 else usable_cpus
+
+
+# The idle ground builders for a setting: none at 1 or 2 CPUs (the main thread and one block maker take them), else up to 2 (the default).
+static func idle_threads_for(cpus_setting: int, default_count: int) -> int:
+	return clampi(cpus_setting - 2, 0, default_count) if cpus_setting > 0 else default_count
+
+
 static func usable() -> int:
 	var count: int = maxi(OS.get_processor_count(), 1)
 
