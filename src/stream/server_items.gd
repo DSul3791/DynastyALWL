@@ -13958,8 +13958,40 @@ func _may_take_down(peer: int, it: Dictionary) -> bool:
 	if key != "" and str(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("attach_to", "")) == PlacementRules.DOOR_ATTACH and _frame_owner_at(it["pos"]) in [key, ""]:
 		return true   # a door another player hung in your doorway (or in an old frame open to all): you may take it out, or the frame could never come down
 
+	if key != "" and _base_owner_of(it) == key:
+		return true   # a piece another player built on your foundation (coordinator 23 Nov 2026): you may take it down; its materials stay there (_take_down)
+
 	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
 	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
+
+
+# The builder of the foundation a building piece stands on ("" for none, or one saved before owners): the foundation under it whose
+# footprint holds it across the ground (a roof's eaves BASE_EAVES_M over the edge) and whose top is at or below its foot. Anyone may build
+# on a foundation, and its owner may take down what others built there (coordinator 23 Nov 2026: a stranger cannot wall you in for good).
+const BASE_EAVES_M := 1.0
+
+
+func _base_owner_of(it: Dictionary) -> String:
+	if not bool(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("piece", false)):
+		return ""
+
+	for id in _items:
+		var base: Dictionary = _items[id]
+
+		if base == it or not base.has("struct") or (base["pos"] as Vector3).distance_to(it["pos"]) > 12.0:
+			continue
+
+		var def: Dictionary = _structures.get(str(base["struct"]["kind"]), {})
+
+		if not bool(def.get("foundation", false)) or float(base["pos"].y) > float(it["pos"].y) + 0.05:
+			continue
+
+		var local: Vector2 = PlacementRules.local_of({"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}, it["pos"])
+
+		if absf(local.x) <= float(def.get("footprint_x", 4.0)) * 0.5 + BASE_EAVES_M and absf(local.y) <= float(def.get("footprint_z", 4.0)) * 0.5 + BASE_EAVES_M and str(base["struct"].get("owner", "")) != "":
+			return str(base["struct"]["owner"])
+
+	return ""
 
 
 # The builder of the doorway frame a door hangs in ("" for a frame saved before owners, "-" when no frame is within DOOR_TAKEN_M).
@@ -14046,12 +14078,27 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take down what stands on it first.")
 		return
 
+	# Another player's piece on your foundation: it comes down, and what it gives back lies here for its builder, never in your pack.
+	var key: String = str(_peer_key.get(peer, ""))
+	var for_builder: bool = str(it["struct"].get("owner", "")) not in ["", key] and not (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))) and _base_owner_of(it) == key
+	var into = InventoryScript.pack(table) if for_builder else inv
+
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true, it["struct"].get("kinds", {})):
+		if not _refund_blueprint(peer, into, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true, it["struct"].get("kinds", {})):
 			return
-	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
+	elif into.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
 		_say(peer, "Make room in your pack first.")
 		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
+
+	if for_builder:
+		var floor_top: float = PlacementRules.foundation_top(_structures_cfg, it["pos"], _foundation_rows())
+		var floor_at: Vector3 = Vector3(it["pos"].x, floor_top, it["pos"].z) if not is_nan(floor_top) else it["pos"]   # a roof's or ceiling's give-back lands on the floor under it
+
+		for s in into.slot_count:
+			if into.numbers[s] != 0:
+				drop_in_world(into.numbers[s], into.counts[s], floor_at, into.wear[s], 0.0, NAN, NAN, "", into.inst_of(s))
+
+		_say(peer, "Taken down. It was another player's: what it was built from lies here for them.")
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
