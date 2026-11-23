@@ -156,7 +156,7 @@ func do_till(i: int) -> void:
 
 
 func do_sow(i: int) -> void:   # the hoe's Plant grid, one point on the bed (Dave play test 19 Nov 2026: only the hoe in hand sows)
-	items.give(1, n("wheat_seeds"), 1)
+	items.give(1, n("wheat_seeds"), maxi(int(items._crop_table()["wheat"].get("sow_seeds", 1)), 1))   # one spot's pinch of seed (crops.json sow_seeds)
 	items._last_dig.clear()
 	items.plant_grid(1, inv(), HeldTool.slot_of(items, "hoe"), n("wheat_seeds"), 101, items._items[beds()[i]]["pos"])
 

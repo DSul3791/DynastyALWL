@@ -106,6 +106,49 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 			_drop(peer)
 
 
+# Where the drawn players walked since the last call (tester report #7, 23 Nov 2026: "Grass doesn't mat down" under other players): points
+# along each one's way from where it was last asked, TRAIL_STEP_M apart (at most TRAIL_MOST a player, so a runner leaves an unbroken
+# trail at the client's 0.3 s pass), at the feet, for those within max_m of `from`. Nothing for a swimmer. Look only, client only: it reads
+# the positions the players rows already bring, no network or server work.
+const TRAIL_STEP_M := 0.8
+const TRAIL_MOST := 4
+const TRAIL_RADIUS_M := 0.8         # grass_trample.gd RADIUS_M, the player's own footprint
+const TRAIL_JUMP_M := 8.0           # farther in one pass (a snap, a respawn): only the new spot, no line across
+
+
+func trail_points(from: Vector3, max_m: float) -> Array:
+	var out: Array = []
+
+	for peer in _bodies:
+		var b: Dictionary = _bodies[peer]
+		var feet: Vector3 = (b["node"] as Node3D).position + Vector3(0.0, (b["rig"] as Node3D).position.y, 0.0)
+		if not b.has("trail_at"):
+			b["trail_at"] = feet   # the first pass only marks where it starts
+			continue
+
+		var last: Vector3 = b["trail_at"]
+		var d: float = Vector2(feet.x - last.x, feet.z - last.z).length()
+
+		if d < 0.5:
+			continue
+
+		b["trail_at"] = feet
+
+		if (int(b["state"]) & SWIM) != 0 or from.distance_to(feet) > max_m:
+			continue
+
+		if d > TRAIL_JUMP_M:
+			out.append(feet)
+			continue
+
+		var n: int = mini(ceili(d / TRAIL_STEP_M), TRAIL_MOST)
+
+		for i in range(1, n + 1):
+			out.append(last.lerp(feet, float(i) / float(n)))
+
+	return out
+
+
 func drawn_count() -> int:
 	return _bodies.size()
 
@@ -163,6 +206,9 @@ func _process(delta: float) -> void:
 		b["owed"] = 0.0
 		_animate(b, velocity, step)
 		player.advance(step)
+
+		if str(b.get("held_kind", "")) == "spear":
+			aim_spear(b["held_node"] as Node3D, b["rig"])   # after the pose: the spear keeps the facing, not the hand bone's angle
 
 
 
@@ -238,7 +284,10 @@ func _far_check(b: Dictionary, distance: float, delta: float) -> void:
 		WornSync.apply(rig, WornSync.ids_of(_looks.get(int(b["peer"]), {}).get("worn", PackedInt32Array()), table), far)
 
 
-# The item in the hand: its look (held_item.gd look_tool_node, held as third person holds it), or nothing for an item without a hand look.
+# The item in the hand: its look (held_item.gd look_tool_node), held as the player's own third-person body holds it (held_item.gd
+# _mount_model_third): a spear through the fist pointing ahead along the facing, placed every frame (aim_spear; Dave 23 Nov 2026 on 9257:
+# another player's spear "floating in the air almost sticking out of his chest", it was laid along the fingers like a knife), a bow in the
+# left hand, every other tool by third_hold with its own kind, with the closed fist round the grip. Nothing for an item without a hand look.
 func _show_held(b: Dictionary) -> void:
 	var number: int = int(b.get("held", 0))
 
@@ -252,20 +301,76 @@ func _show_held(b: Dictionary) -> void:
 		old.queue_free()
 
 	b["held_node"] = null
-	var model: Node3D = held_model(number, table)
+	b["held_kind"] = ""
 	var rig: Node3D = b["rig"]
-	var mount: Node3D = rig.get("hand_mount_r") as Node3D
+	var made: Array = hold_in(rig, number, table)
+
+	if not made.is_empty():
+		b["held_node"] = made[0]
+		b["held_kind"] = made[1]
+
+
+# Puts the held model of item `number` in `rig`'s hand as the player's own third-person body holds it: [model, kind], or [] for nothing.
+# kind is "spear", "bow", "kit", "torch", "knife", "axe" or "other" (held_item.gd _mount_model). A spear is aimed by aim_spear every frame.
+static func hold_in(rig: Node3D, number: int, item_table) -> Array:
+	var kind: String = held_kind(number, item_table)
+	var model: Node3D = held_model(number, item_table)
+	var mount: Node3D = rig.get("hand_mount_l" if kind == "bow" else "hand_mount_r") as Node3D
 
 	if model == null or mount == null:
 		if model != null:
 			model.free()
-		return
+		return []
 
 	mount.add_child(model)
-	b["held_node"] = model
+
+	if kind == "bow":
+		model.set_meta("grip_y", 0.03)   # a bow is held at its middle (held_item.gd _make_look_tool_model)
+
+	if kind == "spear":
+		aim_spear(model, rig)
+	else:
+		HeldItem.third_hold(model, kind if kind != "bow" else "other", str(item_table.entry(item_table.id_of(number)).get("tool_class", "")))
+
+	if kind != "kit" and kind != "bow":
+		var skin: Variant = rig.get("_skin_material")
+		var tint: Color = (skin as BaseMaterial3D).albedo_color if skin is BaseMaterial3D else Color.WHITE
+		HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b))
+
+	return [model, kind]
 
 
-# A held item's model in a third-person hand, or null (nothing in hand, no table, or no hand look for it).
+# How the player's own body holds an item (held_item.gd _mount_model's kind): from items.json weapon_class, tool_class and kind.
+static func held_kind(number: int, item_table) -> String:
+	if number <= 0 or item_table == null:
+		return ""
+
+	var id: String = item_table.id_of(number)
+	var row: Dictionary = item_table.entry(id)
+	var tool_class: String = str(row.get("tool_class", ""))
+
+	if str(row.get("weapon_class", "")) in ["spear", "fish_spear"] or HeldItem.shaft_look(id):
+		return "spear"   # a pike, lance or quarterstaff (a "shaft" look) too: its mesh lies point to -Z, as a spear's, not handle to head along +Y
+
+	if str(HeldItem.BasicLook.entry(id).get("shape", "")) == "bow":
+		return "bow"
+
+	if tool_class == "torch":
+		return "torch"
+
+	if tool_class == "knife":
+		return "knife"
+
+	if tool_class in ["axe", "pick"]:
+		return "axe"
+
+	if str(row.get("kind", "")) == "placeable":
+		return "kit"
+
+	return "other"
+
+
+# A held item's model, or null (nothing in hand, no table, or no hand look for it).
 static func held_model(number: int, item_table) -> Node3D:
 	if number <= 0 or item_table == null:
 		return null
@@ -276,9 +381,30 @@ static func held_model(number: int, item_table) -> Node3D:
 	if id == "" or not HeldItem.BasicLook.has_look(id) or not HeldItem.HELD_LOOK_TURN.has(shape):
 		return null
 
-	var model: Node3D = HeldItem.look_tool_node(id)
-	HeldItem.third_hold(model, "other", str(item_table.entry(id).get("tool_class", "")))
-	return model
+	return HeldItem.look_tool_node(id)
+
+
+# The spear's place each frame, as held_item.gd _aim_spear in third person: its point (model -Z) along the body's facing lifted SPEAR_LIFT_DEG,
+# the hand SPEAR_GRIP_Z behind the middle, whatever the hand bone's angle in the clip.
+static func aim_spear(model: Node3D, rig: Node3D) -> void:
+	if model == null or not model.is_inside_tree() or rig == null or not rig.is_inside_tree():
+		return
+
+	var front: Vector3 = rig.global_basis * Vector3.FORWARD
+	front.y = 0.0
+
+	if front.length_squared() < 1e-12:
+		return
+
+	var tip: Vector3 = (front.normalized() + Vector3.UP * tan(deg_to_rad(HeldItem.SPEAR_LIFT_DEG))).normalized()
+	var z: Vector3 = -tip
+	var x: Vector3 = Vector3.UP.cross(z).normalized()
+	var mount: Node3D = model.get_parent() as Node3D
+	model.global_transform = Transform3D(Basis(x, z.cross(x), z), mount.global_position + tip * HeldItem.SPEAR_GRIP_Z)
+	var fist: Node3D = model.get_node_or_null(HeldItem.THIRD_FIST_NAME) as Node3D
+
+	if fist != null:
+		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(HeldItem.THIRD_FIST_SCALE), Vector3.ZERO)   # back on the hand, as held_item.gd refits it each frame
 
 
 # The body files this look needs are read (warmed on loader threads by on_look): no main-thread read of a 28 MB glb in the middle of play.

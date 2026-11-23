@@ -3,7 +3,7 @@ extends SceneTree
 # The bronze path runs on the live data (Steve 10 Nov 2026; rebuilt for the creator's smelting progression, GOALS-REPAIR R2, master s2.7): every
 # step through the real server, the real recipes, blueprints, structures.json smelting and boulders.json, nothing stood in. A step that
 # refuses prints what the server said.
-#   1. a Stone - Hammer by hand (stick, stone, twine; the Stone - Pickaxe recipe is retired, TREE_WOOD_TOOLS_DESIGN.md W-12);
+#   1. a Stone - Hammer by hand (stick, stone, twine; the Stone - Pickaxe is made by hand too, restored 23 Nov 2026 over W-12);
 #   2. copper ore and tin ore broken out of a copper and a tin outcrop with it (boulders.json piece share as shipped); no iron ore (iron wants a pick);
 #   3. a Primitive smithy and a Primitive smelter from their blueprints with a wooden hammer: stone, clay and logs only, no metal, Planks or Nails;
 #   4. charcoal left in a lit campfire as its firewood burns;
@@ -213,7 +213,7 @@ func _init() -> void:
 	give("stone", 3)
 	give("twine", 2)
 	craft("stone_hammer", 1, 60)
-	check(have("stone_hammer") == 1 and recipe_number("stone_pickaxe") == 0, "1. a Stone - Hammer is made by hand (the Stone - Pickaxe recipe is retired)")
+	check(have("stone_hammer") == 1 and recipe_number("stone_pickaxe") > 0, "1. a Stone - Hammer is made by hand (the Stone - Pickaxe is made by hand too: restored 23 Nov 2026)")
 
 	# The amounts follow the live data: the bronze job (1 Copper ore + 1 Tin ore -> 2 Bronze ingots) and the pick's recipe.
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("bronze", {})
