@@ -1165,6 +1165,7 @@ func _ready() -> void:
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
 			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
+			bandits.captor_back(old_peer, peer)   # a bandit they tied waits for this connection now
 
 			_drop_replaced(old_peer)
 

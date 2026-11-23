@@ -1128,7 +1128,7 @@ func tick(delta: float) -> void:
 			seen_d = near_d
 			seen_p = near_p
 
-		if near_d > despawn_m:
+		if near_d > despawn_m and not (bandit_camps != null and a.has("camp") and bandit_camps.is_held(a)):   # a captive waits for his parked captor
 			gone.append(id)
 			continue
 

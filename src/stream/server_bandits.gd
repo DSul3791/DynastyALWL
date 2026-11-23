@@ -1395,6 +1395,23 @@ func claim_horse(id: int, peer: int) -> bool:
 	return true
 
 
+# A captive whose captor's line dropped (parked, server_items is_absent): he waits for them, and no animal-side despawn takes him meanwhile
+# (server_animals tick: a parked player is out of the players' list, so nobody seems near him).
+func is_held(a: Dictionary) -> bool:
+	return a.has("bound_by") and captor_absent.is_valid() and bool(captor_absent.call(int(a["bound_by"])))
+
+
+# The same character joined again on a new connection before the old line timed out (server_items peer_connected_hello): their captives
+# follow the new connection, so the rejoin is the captor back.
+func captor_back(old_peer: int, new_peer: int) -> void:
+	if animals == null:
+		return
+
+	for a in animals.animals.values():
+		if a.has("camp") and int(a.get("bound_by", -1)) == old_peer:
+			a["bound_by"] = new_peer
+
+
 # A bandit who gave up: sitting where he gave up, or tied and following his captor; a guard within guard_m takes him for the bounty. Left
 # escape_game_hours, or led past lead_slack_m, he slips free and goes back to camp (still badly hurt: one more blow and he gives up again).
 func _captive(a: Dictionary, dt: float) -> void:
@@ -1403,7 +1420,7 @@ func _captive(a: Dictionary, dt: float) -> void:
 
 	# His captor's line dropped (parked after 15 s): he waits, tied where he stands, and his time to slip free does not run (coordinator's
 	# ruling, 23 Nov 2026: a dropped line must not cost the player what they earned) until the captor is back or has left the game.
-	if peer >= 0 and captor_absent.is_valid() and bool(captor_absent.call(peer)):
+	if is_held(a):
 		var held: float = _now()
 		a["gave_up"] = float(a["gave_up"]) + held - float(a.get("held_at", held))
 		a["held_at"] = held

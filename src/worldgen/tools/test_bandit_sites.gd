@@ -821,14 +821,25 @@ func _clearing_camp() -> void:
 	b.captor_absent = func(peer): return int(peer) == 7 and parked[0]
 	var kept: Array = players.duplicate()
 	players.clear()   # a parked player is out of the players' list
+	low["pos"] = high["pos"] + Vector3(400.0, 0.0, 0.0)   # led off before the line dropped: over despawn_m from the one other player
 	var tied_at: Vector3 = low["pos"]
+	var other_player: Vector3 = high["pos"] - Vector3(250.0, 0.0, 0.0)   # near enough that his camp mate stays, 650 m from him
+	animals.player_positions = func(): return [other_player]
 	said.clear()
 
 	for n in 12:   # the game clock runs on while they are away, three game hours in all
+		for t in 4:
+			animals.tick(0.25)
+
 		b.step(low, 0.25)
 		clock[0] += float(c["escape_game_hours"]) * 3600.0 * 0.25
 
+	check(animals.animals.has(low_id) and animals.animals.has(int(high["id"])), "no player within despawn_m of him: still kept for his parked captor")
 	check(low.has("bound_by") and int(low["bound_by"]) == 7 and (low["pos"] as Vector3).distance_to(tied_at) < 0.01 and said.is_empty(), "his captor's line dropped: he waits, tied where he stands, three game hours on (%s)" % str(said))
+	animals.player_positions = func(): return []
+	b.captor_back(7, 9)   # rejoined on a new connection before the old line timed out: that is the captor back
+	check(int(low["bound_by"]) == 9, "a rejoin on a new connection takes the captive over (%d)" % int(low["bound_by"]))
+	b.captor_back(9, 7)
 	parked[0] = false
 	players.append_array(kept)
 	players[0]["pos"] = low["pos"] + Vector3(1.0, 0.0, 0.0)
