@@ -17,7 +17,8 @@ extends Node
 # Plans (--robot-plan=): first_hours (default: craft, drop and pick up, stances, forest crouch walk, hunt, sleep, quit), screens (every
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
-# nothing in the world), roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
+# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -38,6 +39,8 @@ const PLAYER_TOP_MPS := 9.5      # terrain_client RUN_SPEED 9.0
 const FRESH_S := 1.5             # a body just drawn may still settle onto its first samples
 const INSIDE_M := 0.3
 const RESPAWN_M := 40.0          # a drawn player farther than this in one frame was moved on purpose (respawn, rescue), not a jump
+var _lay_ms: Dictionary = {}      # peer -> when this client last drew that player lying (the jump check's rescue excuse)
+const RESCUE_FILE := "rescued.txt"   # ROBOT_SHARE: "<peer> <unix ms>" per line, written by a robot the cold moved to a rescue spot
 const HAND_M := 0.25             # the hand mount this far from the hand bone (it sits about 0.11 m off it) has come loose
 const SAVED_FILE := "user://robot_last_pack.txt"
 const MID_FILE := "user://robot_mid_craft.txt"
@@ -50,6 +53,7 @@ var robot_name: String = "Robot"
 var plan: String = "first_hours"
 var admin: bool = false
 var _timeout_s: float = INF
+var _frame_usec: int = 0           # the last frame's engine microseconds (_process: the real frame length for the jump checks)
 
 var _pack_msec: int = 0          # last pack message (full or slots) from the server
 var _notice_msec: int = 0
@@ -197,9 +201,14 @@ func _hook() -> void:
 		_lowest_health = mini(_lowest_health, int(health)))
 	client.multiplayer.server_disconnected.connect(_on_lost)
 	client.net.died_received.connect(func(cause, spawn):
-		if str(cause) == "passed out":   # the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
+		if str(cause) == "passed out" or str(cause) == "rescued":   # rescued from a cave's rock, or the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
 			_woke_at = spawn
-			FreezeWatchScript.printer.line("ROBOT %s step passed out: moved to %s" % [robot_name, str(spawn)])
+			FreezeWatchScript.printer.line("ROBOT %s step passed out at %d: moved to %s" % [robot_name, _now_ms(), str(spawn)])   # tools/robot_check.py: drawn lying before it is no wrong stance
+			if _share(RESCUE_FILE) != "":   # the others' jump check: this move is the rescue's
+				var f := FileAccess.open(_share(RESCUE_FILE), FileAccess.READ_WRITE) if FileAccess.file_exists(_share(RESCUE_FILE)) else FileAccess.open(_share(RESCUE_FILE), FileAccess.WRITE)
+				if f != null:
+					f.seek_end()
+					f.store_line("%d %d" % [client.multiplayer.get_unique_id(), _now_ms()])
 			return
 
 		_died += 1
@@ -221,6 +230,11 @@ func _process(delta: float) -> void:
 		return
 
 	_route_frame(delta)
+	# The frame's real length: the engine clips `delta` after a long frame, so a body that rightly moved on through a 1.6 s join freeze read
+	# as a 12 m jump in a "58 ms frame" (robots' bear group run, 23 Nov 2026: arms prebuild 1524 ms). The jump checks below use this.
+	var usec: int = Time.get_ticks_usec()
+	var frame_s: float = maxf(delta, float(usec - _frame_usec) / 1000000.0) if _frame_usec > 0 else delta
+	_frame_usec = usec
 
 	var now: int = Time.get_ticks_msec()
 	var me: Vector3 = client.body.global_position
@@ -243,17 +257,17 @@ func _process(delta: float) -> void:
 			if _seen_animal.has(id):
 				var was: Array = _seen_animal[id]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
-				var allowed: float = maxf(float(_top_mps.get(num, 15.0)) * delta * JUMP_SLACK, JUMP_FLOOR_M)
+				var allowed: float = maxf(float(_top_mps.get(num, 15.0)) * frame_s * JUMP_SLACK, JUMP_FLOOR_M)
 
 				if now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed:
 					_fail("jump", "animal%d" % id, "drawn animal %d (species %d) moved %.1f m in one %.0f ms frame (top speed %.1f m/s), %s -> %s" % [
-						id, num, step, delta * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
+						id, num, step, frame_s * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
 
 				if num == _kind_sp and now - int(was[1]) > int(FRESH_S * 1000.0):
 					var st: Array = _kstat.get(num, [0, 0.0, 0.0, 0])
 					st[0] = int(st[0]) + 1
 					st[1] = maxf(float(st[1]), step)
-					st[2] = maxf(float(st[2]), step / maxf(float(_top_mps.get(num, 15.0)) * delta, 0.001))
+					st[2] = maxf(float(st[2]), step / maxf(float(_top_mps.get(num, 15.0)) * frame_s, 0.001))
 					st[3] = int(st[3]) + (1 if step > 1.0 else 0)
 					_kstat[num] = st
 
@@ -281,14 +295,17 @@ func _process(delta: float) -> void:
 			var pos: Vector3 = row["pos"]
 			here[peer] = true
 
+			if pv._bodies.has(peer) and (int(pv._bodies[peer].get("state", 0)) & 3) == 3:
+				_lay_ms[peer] = now   # drawn lying (a faint, a pass-out): a rescue move may follow before its note is written
+
 			if _seen_player.has(peer):
 				var was: Array = _seen_player[peer]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 
-				if step > RESPAWN_M:
+				if step > RESPAWN_M or (step > JUMP_FLOOR_M and (_rescued(peer) or now - int(_lay_ms.get(peer, -100000)) < 20000)):
 					was[1] = now   # a respawn or a rescue moves a player far on purpose: treat it as a fresh body
-				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * delta * JUMP_SLACK, JUMP_FLOOR_M):
-					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, delta * 1000.0, str(was[0].round()), str(pos.round())])
+				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * frame_s * JUMP_SLACK, JUMP_FLOOR_M):
+					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, frame_s * 1000.0, str(was[0].round()), str(pos.round())])
 
 				was[0] = pos
 			else:
@@ -576,6 +593,10 @@ func run() -> void:
 	elif plan.begins_with("drop_"):
 		await _drop(plan.trim_prefix("drop_"))
 		return
+	elif plan == "together":
+		await _together()
+	elif plan == "trail":
+		await _trail_crouch(40.0)
 	elif plan.begins_with("kind_"):
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
@@ -891,6 +912,160 @@ func _forest_walk(s: float) -> void:
 
 	await _stance_to(StanceScript.STAND)
 	FreezeWatchScript.printer.line("ROBOT %s step forest crouch: %.0f m in %.0f s past %d trunks, %d stops" % [robot_name, total, s, visited.size(), stuck])
+
+
+# Crouched along a game trail where it runs under trees (the ferns grow under them): Dave's report (23 Nov 2026) was a crouch walk stopped on
+# flat ground under a tree by a fern while standing walked on (#1775). The trail point nearest the thickest trees within 170 m (the loaded trees), then the
+# trail's own line (plan trail), a waypoint 4 m on at a time, for `s` seconds; a 2 s leg that moves under a quarter of the crouch pace is compared with
+# standing at the same spot (_compare_crouch: blocked FAIL or obstacle note). Prints a TRAIL line.
+func _trail_crouch(s: float) -> void:
+	_step = "trail crouch"
+	var t0: int = Time.get_ticks_msec()
+
+	while _route_points().is_empty() and Time.get_ticks_msec() - t0 < 30000:   # the routes come with the trail blocks, a little after the join
+		await _wait(1.0)
+
+	var me: Vector3 = client.body.global_position
+	var best: Array = []   # [route points, index]
+
+	for attempt in range(2):   # none under trees near: run toward the nearest dry trail point (within 600 m) and look again
+		me = client.body.global_position
+		best = _trail_start(me)
+
+		if not best.is_empty() or attempt == 1:
+			break
+
+		var near_p: Vector2 = Vector2.INF
+
+		for rp in _route_points():
+			if not _wet(rp[1]) and (near_p == Vector2.INF or (rp[1] as Vector2).distance_to(Vector2(me.x, me.z)) < near_p.distance_to(Vector2(me.x, me.z))):
+				near_p = rp[1]
+
+		if near_p == Vector2.INF or near_p.distance_to(Vector2(me.x, me.z)) > 600.0:
+			break
+
+		await _run_to(Vector3(near_p.x, me.y, near_p.y), 90.0, 6.0)
+		await _wait(4.0)
+
+	if best.is_empty():
+		_fail("trail", "none", "no dry game trail under trees within 170 m of %s (%d route points known): nothing tested" % [str(me.round()), _route_points().size()])
+		return
+
+	var pts: PackedVector2Array = best[0]
+	var i: int = best[1]
+	var start: Vector3 = Vector3(pts[i].x, me.y, pts[i].y)
+	var there: bool = await _go_to(start, 60.0, 2.5)
+
+	if not there and Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length() > 20.0:
+		_fail("trail", "reach", "never reached the trail point %s in 60 s (still %.0f m off): nothing tested" % [str(start.round()), Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length()])
+		return
+
+	var line: PackedVector2Array = _every_m(pts, 4.0)
+	var k: int = 0
+	var near_d: float = INF
+
+	for j in line.size():
+		var d: float = line[j].distance_to(Vector2(client.body.global_position.x, client.body.global_position.z))
+
+		if d < near_d:
+			near_d = d
+			k = j
+
+	var step_dir: int = 1 if k < line.size() - 3 else -1   # along the trail toward its longer end
+	await _stance_to(StanceScript.CROUCH)
+	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
+	var crouch_step: float = client.WALK_SPEED * float(StanceScript.SPEED[StanceScript.CROUCH])
+	var total: float = 0.0
+	var stops: int = 0
+	var legs: int = 0
+	var trees_by: int = 0
+	var off_most: float = 0.0
+
+	while Time.get_ticks_msec() < end:
+		k += step_dir
+
+		if k < 0 or k >= line.size():
+			step_dir = -step_dir   # its end: back along it
+			k += 2 * step_dir
+
+			if k < 0 or k >= line.size():
+				break
+
+		var here: Vector3 = client.body.global_position
+		var to: Vector3 = Vector3(line[k].x - here.x, 0.0, line[k].y - here.z)
+
+		if to.length() < 0.3:
+			continue
+
+		var moved: float = await _walk_for(to.normalized(), 2.0)
+		legs += 1
+		total += moved
+		trees_by += 1 if not _trees_near(4.0).is_empty() else 0
+		off_most = maxf(off_most, _off_line(line, client.body.global_position))
+
+		if moved < 0.25 * crouch_step * 2.0:
+			stops += 1
+			await _compare_crouch(to.normalized(), moved, 2.0)
+
+	await _stance_to(StanceScript.STAND)
+	FreezeWatchScript.printer.line("ROBOT %s TRAIL crouch along a game trail %s at %s: %.0f m in %d legs of 2 s, %d under trees (4 m), %d stops, at most %.1f m off its line" % [
+		robot_name, "reached" if there else "short of it", str(start.round()), total, legs, trees_by, stops, off_most])
+
+
+# The dry game-trail point with the most trees within 8 m, then the nearest, within 170 m of `me` (trees load about 150 m round): [route points, index], or [].
+func _trail_start(me: Vector3) -> Array:
+	var best: Array = []
+	var best_score: float = -INF
+	var all_trees: Array = _trees_near(310.0)   # once: the loaded trees
+
+	for block in client.trail_signs.routes:
+		for route in client.trail_signs.routes[block]:
+			var pts: PackedVector2Array = route[1]
+
+			for i in pts.size():
+				var d: float = Vector2(pts[i].x - me.x, pts[i].y - me.z).length()
+
+				if d > 170.0 or _wet(pts[i]):   # trees load about 150 m round: no point farther can have one within 8 m
+					continue
+
+				var trees: int = 0
+
+				for t in all_trees:
+					trees += 1 if Vector2(t[0].x - pts[i].x, t[0].z - pts[i].y).length() <= 8.0 else 0
+
+				var score: float = float(trees) * 20.0 - d   # many trees near the trail, then the nearer
+				if trees > 0 and score > best_score:
+					best_score = score
+					best = [pts, i]
+
+	return best
+
+
+# A polyline with a point every `m` metres.
+static func _every_m(pts: PackedVector2Array, m: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+
+	for i in range(pts.size() - 1):
+		var n: int = maxi(1, int(pts[i].distance_to(pts[i + 1]) / m))
+
+		for j in n:
+			out.append(pts[i].lerp(pts[i + 1], float(j) / float(n)))
+
+	if not pts.is_empty():
+		out.append(pts[pts.size() - 1])
+
+	return out
+
+
+# How far a place is from a polyline, on the ground.
+static func _off_line(line: PackedVector2Array, at: Vector3) -> float:
+	var p := Vector2(at.x, at.z)
+	var best: float = INF
+
+	for i in range(line.size() - 1):
+		best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, line[i], line[i + 1])))
+
+	return best if line.size() > 1 else (p.distance_to(line[0]) if line.size() == 1 else INF)
 
 
 # Spear in hand, after one species at a time (rabbit, then deer, then wolf: the first hours' game). Every robot picks the same animal (the lowest
@@ -1225,6 +1400,11 @@ func _pose_lines(delta: float) -> void:
 		return
 
 	_pose_t = 0.0
+	var peer_now: MultiplayerPeer = client.multiplayer.multiplayer_peer
+
+	if peer_now == null or peer_now is OfflineMultiplayerPeer or peer_now.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return   # lost or quitting: no peer id to print (get_unique_id on a closed ENet peer is an engine error)
+
 	var me: Vector3 = client.body.global_position
 	var v: Vector3 = client.body.velocity
 	FreezeWatchScript.printer.line("ROBOT %s POSE %d %d %d %.2f %.2f %.2f %.2f" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), client.stance.stance, me.x, me.y, me.z, Vector2(v.x, v.z).length()])
@@ -3539,3 +3719,569 @@ func _slide_sample(id: int, pos: Vector3, b: Dictionary) -> void:
 
 	if ratio < 0.67 or ratio > 1.5:
 		_slide[5] = int(_slide[5]) + 1
+
+
+# --- plan together (players thread, 23 Nov 2026): two robots on the same thing in the same second, over the lossy link -------------------
+# Both robots stand at the spawn. Robot 1 builds a wicker basket; both open it. Then, each on one agreed unix ms (_tg_go: both write when
+# they are ready, both start TG_LEAD_MS after the later one): both put 2 twine in; both take 4 twine out; Robot 1 drops 3 stones and both pick
+# the stack up; Robot 2's link is held 20 s (lossy_link "hold <its port> 20": packets dropped both ways, the connection kept) while Robot 1
+# puts in and takes out of the open basket; then Robot 2 is back. After each, once quiet: the item's count over both packs, the basket (as
+# Robot 1's open window shows it) and the ground within TG_GROUND_M of Robot 1 must equal the count before (_tg_total, Robot 1 checks);
+# each robot's open window must equal the server's (AUDIT chest, the robot audit prints each open container's signature on a change).
+const TG_LEAD_MS := 1500
+const TG_GROUND_M := 8.0
+const TG_HOLD_S := 20.0
+
+var _tg_chest_id: int = -1
+var _tg_chest = null              # this robot's open window on the basket (chest_received)
+var _tg_chest_ms: int = 0
+
+
+func _together() -> void:
+	_step = "together"
+	var one: bool = robot_name.ends_with("1")
+
+	if not admin or _share("x") == "":
+		_fail("together", "setup", "plan together needs --robot-admin and tools/robots.sh (ROBOT_SHARE): nothing measured")
+		return
+
+	client.net.chest_received.connect(func(id: int, bytes: PackedByteArray):
+		if id == _tg_chest_id:
+			var inv = InventoryScript.new(client.items.table)
+			inv.from_bytes(bytes)
+			_tg_chest = inv
+			_tg_chest_ms = Time.get_ticks_msec())
+
+	# Out of the starter camp's ground (no building near its tree), both the same way; then the basket: Robot 1 builds it, both open it.
+	var _out: bool = await _run_to(Vector3(58202.0, client.body.global_position.y, 71364.0), 25.0, 2.0)
+	_release_all()
+
+	if one:
+		_give("stone_knife", 1)
+		await _check_pack("together knife")
+		var basket: int = await _build_basket()
+		_write(_share("tg_basket.txt"), str(basket))
+
+		if basket < 0:
+			_fail("together", "basket", "Robot 1 could not build the basket: nothing measured")
+			return
+
+	var said: String = await _tg_read("tg_basket.txt", 60.0)
+
+	if said == "" or int(said) < 0:
+		_fail("together", "basket", "no basket from Robot 1 in 60 s")
+		return
+
+	_tg_chest_id = int(said)
+	await _tg_near_basket()
+	_give("twine", 4)
+	await _check_pack("together twine")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_OPEN, _tg_chest_id, 0, 0, Vector3.ZERO)
+	await _wait(2.0)
+
+	if _tg_chest == null:
+		_fail("together", "open", "opened the basket (world item %d): no contents came" % _tg_chest_id)
+		return
+
+	var twine: int = _num("twine")
+	var stone: int = _num("stone")
+	var twine_all: int = await _tg_total("open", twine)
+
+	# 1. Both put 2 twine in, in the same second.
+	await _tg_go("put")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, _slot_of("twine"), _tg_chest_id, 2, Vector3.ZERO)
+	await _tg_after("put", twine, twine_all, "both put 2 twine in")
+
+	# 2. Both take 4 twine out (there are 4 in): one gets them, or both get 2; none is made or lost.
+	await _tg_go("take")
+	var slot: int = _tg_chest.numbers.find(twine) if _tg_chest != null else -1
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_TAKE, maxi(slot, 0), _tg_chest_id, 4, Vector3.ZERO)
+	await _tg_after("take", twine, twine_all, "both took 4 twine out")
+
+	# 3. One dropped stack, both pick it up at once.
+	var stack: int = -1
+
+	if one:
+		_give("stone", 3)
+		await _check_pack("together stones")
+		var here: Vector3 = client.body.global_position
+		var known: Dictionary = client.items._world.duplicate()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_DROP, _slot_of("stone"), 0, 3, Vector3(here.x + 1.0, here.y - 0.9, here.z))
+		var until: int = Time.get_ticks_msec() + 8000
+
+		while stack < 0 and Time.get_ticks_msec() < until:
+			for id in client.items._world:
+				if not known.has(id) and int(client.items._world[id].get("number", 0)) == stone:
+					stack = int(id)
+
+			await get_tree().process_frame
+
+		_write(_share("tg_stack.txt"), str(stack))
+
+	said = await _tg_read("tg_stack.txt", 30.0)
+	stack = int(said) if said != "" else -1
+
+	if stack < 0:
+		_fail("together", "stack", "Robot 1's dropped stones never showed as a world item")
+	else:
+		var until2: int = Time.get_ticks_msec() + 8000
+
+		while not client.items._world.has(stack) and Time.get_ticks_msec() < until2:
+			await get_tree().process_frame
+
+		var stones_all: int = await _tg_total("stones", stone)
+		await _tg_go("pick")
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PICKUP, stack, 0, 0, Vector3.ZERO)
+		await _tg_after("pick", stone, stones_all, "both picked up the same 3 stones")
+
+	# 4. Robot 2's link held 20 s while Robot 1 changes the open basket; then Robot 2 must see the basket as it is.
+	await _tg_go("hold")
+
+	if not one:
+		var port: int = (client.multiplayer.multiplayer_peer as ENetMultiplayerPeer).host.get_local_port()
+		_write(_share(CONTROL_FILE), "hold %d %d" % [port, int(TG_HOLD_S)])
+		FreezeWatchScript.printer.line("ROBOT %s step together: link held %.0f s (udp port %d)" % [robot_name, TG_HOLD_S, port])
+		var was_ms: int = _tg_chest_ms
+		await _wait(TG_HOLD_S + 2.0)
+		var until3: int = Time.get_ticks_msec() + 8000
+
+		while _tg_chest_ms == was_ms and Time.get_ticks_msec() < until3:
+			await get_tree().process_frame
+
+		FreezeWatchScript.printer.line("ROBOT %s step together: back after the hold, connected %s, the basket window %s" % [robot_name,
+			str(client.multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED), "updated" if _tg_chest_ms != was_ms else "never updated"])
+	else:
+		await _wait(4.0)   # Robot 2 is held now
+		_give("twine", 3)
+		await _check_pack("together twine while held")
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, _slot_of("twine"), _tg_chest_id, 3, Vector3.ZERO)
+		await _check_pack("put while the other is held")
+		await _wait(TG_HOLD_S)
+
+	var held_total: int = await _tg_total("held", twine)
+
+	if one and held_total != twine_all + 3:
+		_fail("together", "held", "Robot 1 put 3 more twine in while Robot 2 was held: twine over both packs, the basket and the ground %d, wanted %d" % [held_total, twine_all + 3])
+
+	await _tg_go("after_hold")
+	_tg_window("after_hold")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, _tg_chest_id, 0, 0, Vector3.ZERO)
+	await _tg_site()
+	await _tg_door()
+	await _tg_seen()
+	FreezeWatchScript.printer.line("ROBOT %s step together: done" % robot_name)
+
+
+const TG_CRATE_BP := 168      # data/items/blueprints.json wooden_crate: 5 lumber, 8 copper nails
+const TG_FRAME_BP := 5        # doorway_section: 4 lumber, 1 twine
+const TG_DOOR_BP := 276       # rustic_door: 5 lumber (hangs in a doorway_section)
+const TG_SWINGS := 4          # Robot 2's blows while Robot 1 watches
+const TG_SPOTS := [Vector3(0.0, 0.0, -3.0), Vector3(0.0, 0.0, 3.0), Vector3(-3.0, 0.0, 0.0), Vector3(3.0, 0.0, 0.0), Vector3(-3.0, 0.0, -3.0), Vector3(3.0, 0.0, 3.0)]   # where Robot 1 tries a blueprint, from its own place
+
+
+# The hammer in hand (pack slot 0), given first.
+func _tg_hammer() -> void:
+	if _slot_of("stone_hammer") < 0:
+		_give("stone_hammer", 1)
+		await _check_pack("together hammer")
+
+	if _slot_of("stone_hammer") > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of("stone_hammer"), 0, 0, Vector3.ZERO)
+		await _check_pack("hammer to hand")
+
+
+# Robot 1 sets a blueprint down with the hammer at the first of `offsets` (from its own place) the server takes: its world id (a new world
+# item there), or -1; written to `file` for Robot 2. A spot refused (something in the way) moves on to the next.
+func _tg_place(bp: int, offsets: Array, file: String) -> int:
+	var id: int = -1
+	var said_from: int = _notices.size()
+	var tried: Array = []
+
+	for off in offsets:
+		var spot: Vector3 = client.body.global_position + (off as Vector3)
+		var ground: float = float(client.items._ground_below.call(spot))
+		spot.y = ground if not is_nan(ground) else client.body.global_position.y - 0.9
+		tried.append(str(spot.round()))
+		var known: Dictionary = client.items._world.duplicate()
+		var heard: int = _notices.size()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, bp, 0, 0, spot)
+		var until: int = Time.get_ticks_msec() + 6000
+
+		while id < 0 and Time.get_ticks_msec() < until and not _notices.slice(heard).any(func(t): return str(t).contains("in the way")):   # a spot refused moves on; any other word waits the 6 s out
+			for w in client.items._world:
+				if not known.has(w) and Vector2(client.items._world[w]["pos"].x - spot.x, client.items._world[w]["pos"].z - spot.z).length() < 1.5:
+					id = int(w)
+
+			await get_tree().process_frame
+
+		if id >= 0:
+			break
+
+	if id < 0:
+		_fail("together", "place:%d" % bp, "blueprint %d at %s: no new world item came (said %s)" % [bp, str(tried), str(_notices.slice(said_from))])
+
+	_write(_share(file), str(id))
+	return id
+
+
+# The other robot as this client draws it (player_view.gd _bodies, the one other player): its row, or {}.
+func _tg_other() -> Dictionary:
+	var pv: Node = client._player_view
+
+	if pv == null:
+		return {}
+
+	for peer in pv._bodies:
+		if int(peer) != client.multiplayer.get_unique_id():
+			return pv._bodies[peer]
+
+	return {}
+
+
+# 7. Robot 1 watches Robot 2 (players thread, #1788): Robot 2 swings TG_SWINGS times, and Robot 1's rows for it must show its swing count
+# change; then Robot 2 is passed out by the cold (server_control.txt), and Robot 1 must draw it lying (stance 3) and, after it wakes, standing.
+func _tg_seen() -> void:
+	var one: bool = robot_name.ends_with("1")
+	await _tg_go("swing")
+
+	if not one:
+		for _n in TG_SWINGS:
+			_strike_at(-client.body.global_transform.basis.z)
+			await _wait(1.2)
+	else:
+		var changes: int = 0
+		var was: int = int(_tg_other().get("swings", -1))
+		var until: int = Time.get_ticks_msec() + int(TG_SWINGS * 1200 + 3000)
+
+		while Time.get_ticks_msec() < until:
+			var now: int = int(_tg_other().get("swings", -1))
+
+			if now != was and now >= 0 and was >= 0:
+				changes += 1
+
+			was = now
+			await get_tree().process_frame
+
+		FreezeWatchScript.printer.line("ROBOT %s TOGETHER seen swings: Robot 2 swung %d times, its swing count changed %d times in Robot 1's rows" % [robot_name, TG_SWINGS, changes])
+
+		if changes == 0:
+			_fail("together", "seen_swing", "Robot 2 swung %d times beside Robot 1; Robot 1's rows never showed its swing count change" % TG_SWINGS)
+
+	await _tg_go("out")
+
+	if not one:
+		_write(_share(SERVER_CONTROL), "cold %d" % client.multiplayer.get_unique_id())
+		var t0: int = Time.get_ticks_msec()
+
+		while _woke_at == null and Time.get_ticks_msec() - t0 < 240000:
+			await get_tree().process_frame
+
+		_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
+		await _wait(1.0)
+		_write(_share("tg_woke.txt"), "%s %.1f %.1f %.1f" % [str(_woke_at != null), client.body.global_position.x, client.body.global_position.y, client.body.global_position.z])
+		var _done: String = await _tg_read("tg_seen_done.txt", 30.0)   # stay in the world while Robot 1 looks
+		return
+
+	var lying_ms: int = 0
+	var stances: Dictionary = {}
+	var standing: int = -1   # the stance drawn after it lay: 0 once it is drawn standing again
+	var t1: int = Time.get_ticks_msec()
+	var woke_ms: int = -1
+
+	while Time.get_ticks_msec() - t1 < 250000 and (woke_ms < 0 or (standing != 0 and Time.get_ticks_msec() - woke_ms < 8000)):
+		var b: Dictionary = _tg_other()
+
+		if woke_ms < 0 and _tg_read_now("tg_woke.txt") != "":
+			woke_ms = Time.get_ticks_msec()
+
+		if not b.is_empty():
+			var st: int = int(b.get("state", 0)) & 3
+			stances[st] = int(stances.get(st, 0)) + 1
+
+			if st == 3:
+				lying_ms += int(get_process_delta_time() * 1000.0)
+			elif stances.has(3):
+				standing = st
+
+		await get_tree().process_frame
+
+	var woke: String = _tg_read_now("tg_woke.txt")
+	_write(_share("tg_seen_done.txt"), "done")
+
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER seen out: Robot 2 woke %s; stances drawn (stance: frames) %s, lying %d ms; after waking drawn stance %d" % [robot_name, woke, str(stances), lying_ms, standing])
+	_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
+
+	if not woke.begins_with("true"):
+		_fail("together", "seen_out", "Robot 2 never passed out from the cold in 240 s: nothing to watch")
+	elif not stances.has(3):
+		_fail("together", "seen_lying", "Robot 2 passed out; Robot 1 never drew it lying down (stance 3): stances drawn %s" % str(stances))
+	elif standing != 0:
+		_fail("together", "seen_stand", "Robot 2 woke; Robot 1 still draws stance %d for it 8 s later (wanted standing, 0; -1: not drawn)" % standing)
+
+
+# Whether a robot wrote that the cold moved `peer` to a rescue spot in the last 5 s (RESCUE_FILE): read only after a big drawn step.
+func _rescued(peer: int) -> bool:
+	if _share(RESCUE_FILE) == "" or not FileAccess.file_exists(_share(RESCUE_FILE)):
+		return false
+
+	for line in FileAccess.get_file_as_string(_share(RESCUE_FILE)).split("\n"):
+		var p: PackedStringArray = line.split(" ")
+
+		if p.size() == 2 and int(p[0]) == peer and absi(_now_ms() - int(p[1])) < 5000:
+			return true
+
+	return false
+
+
+# A share file's text now ("" when it is not there yet).
+func _tg_read_now(file: String) -> String:
+	var f := FileAccess.open(_share(file), FileAccess.READ)
+	return f.get_as_text().strip_edges() if f != null else ""
+
+
+# Up to `near_m` of a world item, so a hammer blow or E reaches it.
+func _tg_near(id: int) -> void:
+	var until: int = Time.get_ticks_msec() + 5000
+
+	while not client.items._world.has(id) and Time.get_ticks_msec() < until:
+		await get_tree().process_frame
+
+	if client.items._world.has(id):
+		var _near: bool = await _go_to(client.items._world[id]["pos"], 10.0, 1.6)
+
+
+# One look at a world item as this client draws it: its item number and state (a site, a standing piece, a door shut or open).
+func _tg_look(id: int) -> String:
+	var w: Dictionary = client.items._world.get(id, {})
+	return "gone" if w.is_empty() else "%d/%d%s" % [int(w.get("number", 0)), int(w.get("state", 0)), " site" if w.get("site") != null else ""]
+
+
+# Both robots' looks at one world item 2.5 s after a step: they must be the same (each writes its own, Robot 1 compares). Robot 1's look.
+func _tg_same_look(step: String, id: int) -> String:
+	await _wait(2.5)
+	var me: String = "1" if robot_name.ends_with("1") else "2"
+	_write(_share("tg_look_%s_%s.txt" % [step, me]), _tg_look(id))
+
+	if me != "1":
+		return ""
+
+	var them: String = await _tg_read("tg_look_%s_2.txt" % step, 60.0)
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER look %s: world item %d, mine %s, Robot 2 %s" % [robot_name, step, id, _tg_look(id), them])
+
+	if them != _tg_look(id):
+		_fail("together", "look:%s" % step, "world item %d: Robot 1 draws it %s, Robot 2 %s (2.5 s after)" % [id, _tg_look(id), them])
+
+	return _tg_look(id)
+
+
+# 5. One crate site hammered by both at once, each with part of what it needs: exactly its cost goes in (5 lumber, 8 nails), once.
+func _tg_site() -> void:
+	var one: bool = robot_name.ends_with("1")
+	await _tg_hammer()
+	_give("lumber", 3 if one else 4)
+
+	if not one:
+		_give("copper_nails", 10)
+
+	var lumber: int = _num("lumber")
+	var nails: int = _num("copper_nails")
+	var wood_all: int = await _tg_total("site_wood", lumber)
+	var nails_all: int = await _tg_total("site_nails", nails)
+	var site: int = await _tg_place(TG_CRATE_BP, TG_SPOTS, "tg_site.txt") if one else -1
+	var said: String = await _tg_read("tg_site.txt", 60.0)   # Robot 1 may try all six spots (6 s each)
+	site = int(said) if said != "" else -1
+
+	if site < 0:
+		return
+
+	await _tg_near(site)
+	await _tg_go("hammer")
+
+	for _n in 8:   # both hammer it, a blow each 0.8 s
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, site, 1, 0, Vector3.ZERO)
+		await _wait(0.8)
+
+	var wood_now: int = await _tg_total("site_wood_after", lumber)
+	var nails_now: int = await _tg_total("site_nails_after", nails)
+
+	if one and (wood_all - wood_now != 5 or nails_all - nails_now != 8):
+		_fail("together", "site", "both hammered one crate site: %d lumber went in (its cost 5), %d nails (8)" % [wood_all - wood_now, nails_all - nails_now])
+
+	var look: String = await _tg_same_look("site", site)
+
+	if one:
+		FreezeWatchScript.printer.line("ROBOT %s step together: crate site hammered by both, %d lumber and %d nails went in, drawn %s" % [robot_name, wood_all - wood_now, nails_all - nails_now, look])
+
+
+# 6. One door: Robot 1 builds a doorway frame and hangs a rustic door; both use it at once (the ruling: it toggles twice, so it ends as it
+# began), then each in turn: both must draw it the same each time.
+func _tg_door() -> void:
+	var one: bool = robot_name.ends_with("1")
+	var door: int = -1
+
+	if one:
+		_give("lumber", 12)
+		_give("twine", 2)
+		await _check_pack("together door wood")
+		var frame: int = await _tg_place(TG_FRAME_BP, TG_SPOTS, "tg_frame.txt")
+		var at: Vector3 = client.items._world.get(frame, {}).get("pos", client.body.global_position)
+		await _tg_near(frame)
+
+		for _n in 8:
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, frame, 1, 0, Vector3.ZERO)
+			await _wait(0.6)
+
+		await _wait(1.5)
+		var fpos: Vector3 = client.items._world.get(frame, {}).get("pos", at)
+		var known: Dictionary = client.items._world.duplicate()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, TG_DOOR_BP, 0, 0, fpos + Vector3(0.1, 0.4, 0.15))
+		var until: int = Time.get_ticks_msec() + 8000
+
+		while door < 0 and Time.get_ticks_msec() < until:
+			for w in client.items._world:
+				if not known.has(w) and int(w) != frame and Vector2(client.items._world[w]["pos"].x - fpos.x, client.items._world[w]["pos"].z - fpos.z).length() < 2.0:
+					door = int(w)
+
+			await get_tree().process_frame
+
+		for _n in 8:
+			if door >= 0:
+				client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, door, 1, 0, Vector3.ZERO)
+
+			await _wait(0.6)
+
+		if door < 0:
+			_fail("together", "door", "the rustic door blueprint at the doorway frame (%d, drawn %s) gave no world item: %s" % [frame, _tg_look(frame), str(_notices.slice(-3))])
+
+		_write(_share("tg_door.txt"), str(door))
+
+	var said: String = await _tg_read("tg_door.txt", 90.0)
+	door = int(said) if said != "" else -1
+
+	if door < 0:
+		return
+
+	await _tg_near(door)
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER door %d drawn %s, %.1f m off" % [robot_name, door, _tg_look(door), client.body.global_position.distance_to(client.items._world.get(door, {}).get("pos", Vector3.ZERO))])
+
+	var start: String = await _tg_same_look("door_start", door)
+	await _tg_go("door_both")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_USE_STRUCT, door, 0, 0, Vector3.ZERO)
+	var both: String = await _tg_same_look("door_both", door)
+
+	if one and both != start:
+		_fail("together", "door_both", "both used the door at once: it went %s -> %s (two uses toggle twice and end as it began)" % [start, both])
+
+	for who in ["1", "2"]:
+		await _tg_go("door_%s" % who)
+
+		if robot_name.ends_with(who):
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_USE_STRUCT, door, 0, 0, Vector3.ZERO)
+
+		var after: String = await _tg_same_look("door_%s" % who, door)
+
+		if one:
+			FreezeWatchScript.printer.line("ROBOT %s step together: Robot %s used the door: %s" % [robot_name, who, after])
+
+
+# Both robots near the basket (Robot 2 walks to it): CHEST_REACH_M on the server.
+func _tg_near_basket() -> void:
+	var w: Dictionary = {}
+	var until: int = Time.get_ticks_msec() + 8000
+
+	while w.is_empty() and Time.get_ticks_msec() < until:
+		w = client.items._world.get(_tg_chest_id, {})
+		await get_tree().process_frame
+
+	if not w.is_empty() and Vector2(w["pos"].x - client.body.global_position.x, w["pos"].z - client.body.global_position.z).length() > 1.8:
+		var _there: bool = await _go_to(w["pos"], 15.0, 1.5)
+
+
+func _tg_read(file: String, s: float) -> String:
+	var until: int = Time.get_ticks_msec() + int(s * 1000.0)
+
+	while Time.get_ticks_msec() < until:
+		if FileAccess.file_exists(_share(file)):
+			var t: String = FileAccess.get_file_as_string(_share(file)).strip_edges()
+
+			if t != "":
+				return t
+
+		await get_tree().process_frame
+
+	return ""
+
+
+# Both ready, then both go on one unix ms: TG_LEAD_MS after the later robot said ready.
+func _tg_go(step: String) -> void:
+	_step = "together %s" % step
+	var me: String = "1" if robot_name.ends_with("1") else "2"
+	var other: String = "2" if me == "1" else "1"
+	_write(_share("tg_ready_%s_%s.txt" % [step, me]), str(_now_ms()))
+	var them: String = await _tg_read("tg_ready_%s_%s.txt" % [step, other], 120.0)
+
+	if them == "":
+		_fail("together", step, "the other robot never got to %s in 120 s" % step)
+		return
+
+	var go: int = maxi(int(FileAccess.get_file_as_string(_share("tg_ready_%s_%s.txt" % [step, me]))), int(them)) + TG_LEAD_MS
+
+	while _now_ms() < go:
+		await get_tree().process_frame
+
+
+# The count of one item: this robot's pack, written for the other; Robot 1 adds the other's pack, its basket window and the ground near it.
+func _tg_total(step: String, number: int) -> int:
+	await _quiet()
+	await _wait(1.5)
+	var me: String = "1" if robot_name.ends_with("1") else "2"
+	_write(_share("tg_count_%s_%s.txt" % [step, me]), str(int(client.items.inventory.count_of(number))))
+
+	if me != "1":
+		return 0
+
+	var them: String = await _tg_read("tg_count_%s_2.txt" % step, 60.0)
+	var ground: int = 0
+
+	for id in client.items._world:
+		var w: Dictionary = client.items._world[id]
+
+		if int(w.get("number", 0)) == number and Vector2(w["pos"].x - client.body.global_position.x, w["pos"].z - client.body.global_position.z).length() < TG_GROUND_M:
+			ground += int(w.get("count", 1))
+
+	var in_box: int = int(_tg_chest.count_of(number)) if _tg_chest != null else 0
+	var total: int = int(client.items.inventory.count_of(number)) + int(them) + in_box + ground
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER %s %s: packs %d + %s, basket %d, ground %d = %d" % [robot_name, step, client.items.table.id_of(number), int(client.items.inventory.count_of(number)), them, in_box, ground, total])
+	return total
+
+
+# After a step: the totals as before (Robot 1), and this robot's basket window against the server's.
+func _tg_after(step: String, number: int, before: int, what: String) -> void:
+	var total: int = await _tg_total(step, number)
+
+	if robot_name.ends_with("1") and total != before:
+		_fail("together", step, "%s: %s over both packs, the basket and the ground went %d -> %d" % [what, client.items.table.id_of(number), before, total])
+
+	_tg_window(step)
+
+
+func _tg_window(step: String) -> void:
+	var server: String = ""
+	var text: String = ""
+	var log_file := FileAccess.open(_share("server.log"), FileAccess.READ) if FileAccess.file_exists(_share("server.log")) else null
+
+	if log_file != null:   # the tail only: the newest AUDIT chest line is near the end, and a whole log read is a hitch
+		log_file.seek(maxi(0, log_file.get_length() - 400000))
+		text = log_file.get_buffer(log_file.get_length() - log_file.get_position()).get_string_from_utf8()
+
+	for line in text.split("\n"):
+		if line.begins_with("AUDIT chest %d " % _tg_chest_id):
+			server = line.split(" ")[4]
+
+	var mine: String = RobotRules.signature(_tg_chest) if _tg_chest != null else "none"
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER window %s: mine %s, server %s" % [robot_name, step, mine, server])
+
+	if server == "":
+		_fail("together", "window:%s" % step, "no AUDIT chest line for basket %d in the server log: its contents never printed" % _tg_chest_id)
+	elif mine != server:
+		_fail("together", "window:%s" % step, "this robot's open basket window (%s) is not the server's (%s) once quiet" % [mine, server])
