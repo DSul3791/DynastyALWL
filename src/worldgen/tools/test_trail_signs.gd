@@ -114,6 +114,14 @@ func _init() -> void:
 	run_map.fill(0)
 	var origin: Vector2 = Vector2(0.0, 150.0)
 	var pressed: int = GrassScript.press_beds(routes[3][1], run_map, origin, c)
+	# Lane A 23 Nov: latrines, droppings and warrens sit on grass pressed short round them; other signs press nothing.
+	var patches: Array = SignsScript.patches_for([["latrine", Vector2(20.0, 160.0), 0.0], ["prints", Vector2(40.0, 160.0), 0.0], ["warren", Vector2(60.0, 170.0), 0.0]], c)
+	check(patches.size() == 2 and is_equal_approx(float(patches[1][1]), float(c["patch_m"]["warren"])), "a latrine and a warren get a pressed patch, prints none")
+	var patch_map: PackedByteArray = PackedByteArray()
+	patch_map.resize(GrassScript.RUN_TEXELS * GrassScript.RUN_TEXELS)
+	var patch_new: int = GrassScript.press_patches(patches, patch_map, origin)
+	var mid_t: int = 40 + 20 * GrassScript.RUN_TEXELS   # (20, 160) from the origin (0, 150) at half a metre a texel
+	check(patch_new > 0 and patch_map[mid_t] == 255 and patch_map[mid_t + 6] == 0, "a latrine's grass is pressed full in the middle, none past its radius")
 	var all_pressed: bool = pressed > 0
 
 	for b in beds:

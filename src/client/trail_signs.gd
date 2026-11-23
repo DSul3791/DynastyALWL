@@ -16,7 +16,7 @@ const BurrowView := preload("res://src/client/burrow_view.gd")   # its mound mes
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
-const PELLET_COLOR := Color(0.44, 0.36, 0.22)   # dry rabbit pellets, khaki: they stand out on the dark scratched patch (Lane A 23 Nov: none seen)
+const PELLET_COLOR := Color(0.16, 0.12, 0.08)   # dark rabbit pellets on the pale scratched earth of the latrine (Lane A 23 Nov: none seen on litter)
 const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
@@ -25,7 +25,7 @@ const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out
 const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
 const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
 const PELLET_LIFT_M := 0.02      # pellets sit this far up: on top of the leaf litter and the latrine's bare patch, not under them
-const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)
+const LATRINE_BED_COLOR := Color(0.46, 0.36, 0.24)   # scratched bare earth, paler than litter so the dark pellets stand out on it
 
 var cfg: Dictionary = {}
 var ground_height: Callable:       # (x, z) -> the ground's height there, NAN when not known (a new one forgets the heights kept)
@@ -44,6 +44,7 @@ var _nodes: Dictionary = {}        # "latrine_bed", "pellet", "deer_pellet", "sc
 var _signs: Array = []             # [kind, Vector2 spot, yaw, size, lead, toward] for the routes near the player, worked out at each rebuild
 var _logged: String = ""          # the last rebuild line, printed only when it changes
 var _told_loading: bool = false
+var _patches: Array = []           # the last patches sent (patches_changed fires only when they change)
 var unplaced: int = 0              # signs in reach whose ground had no collision yet at the last rebuild (they are worked out again soon)
 var _retry_msec: int = 0           # when unplaced > 0: rebuild again at this time, though the player has not moved (Lane A 23 Nov: none drawn)
 var _retries: int = 0              # such tries since the player last moved (at most ground_retries, so a spot with no ground costs nothing for long)
@@ -55,6 +56,7 @@ var on_spot: Callable              # (kind: String, spot: Vector3) when a sign i
 # A place of interest found (Dave wants what a player finds on the map): a warren or a deer's bedding place, the first time one of its
 # signs is spotted this session. The map listens; its own record keeps it. [kind "warren" or "bed", Vector3 on the ground].
 signal place_found(kind: String, at: Vector3)
+signal patches_changed(patches: Array)   # [[Vector2 spot, radius m], ...]: where the grass is grazed or scratched short round a sign (grass_view presses it)
 var found_places: Array = []       # the same, in the order found this session
 var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
 var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
@@ -117,6 +119,11 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 		if reach > 0.0 and trunks_near.is_valid():
 			_signs.append_array(rubs_for(near, trunks_near, cfg))
 		_draw(player, tracking)
+		var now_patches: Array = patches_for(_signs, cfg)
+
+		if now_patches != _patches:
+			_patches = now_patches
+			patches_changed.emit(_patches)
 
 		if unplaced > 0 and _retries < int(cfg.get("ground_retries", 15)):
 			_retry_msec = Time.get_ticks_msec() + int(float(cfg.get("ground_retry_s", 2.0)) * 1000.0)   # the ground there may not have collision yet: try again
@@ -127,6 +134,20 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 			FreezeWatchScript.printer.line(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane tells "no routes came" from "nothing drawn" (Lane A 23 Nov: signs not seen)
 
 	_spot(player, tracking)
+
+
+# Lane A 23 Nov 2026 (signs drawn but not seen: the latrines lay in knee-high grass): rabbits scratch a latrine bare and graze the grass
+# short round their warren, and droppings lie where an animal stood. The grass round them is pressed in the run map, as for the deer beds,
+# so a sign sits on a short, pale patch that reads from standing height. [[Vector2 spot, radius m], ...] for the signs worked out.
+static func patches_for(signs: Array, c: Dictionary) -> Array:
+	var out: Array = []
+	var r: Dictionary = c.get("patch_m", {"latrine": 0.7, "droppings": 0.6, "warren": 3.2})
+
+	for s in signs:
+		if r.has(str(s[0])):
+			out.append([s[1], float(r[str(s[0])])])
+
+	return out
 
 
 # The routes with a point within m of a spot, by block (each route kept whole, so its signs do not depend on where the player is).
@@ -514,7 +535,7 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 		size = float(bed[1]) + 0.4
 		long = float(bed[0]) + 0.4
 
-	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.02, spot.y), yaw, Vector3(size, 1.0, long)])
+	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.04, spot.y), yaw, Vector3(size, 1.0, long)])
 
 
 # The small pieces of one sign: [position, yaw, scale] rows into the mesh it uses.
@@ -671,6 +692,9 @@ func _mesh(layer: String) -> Mesh:
 			material.albedo_texture = _glow_tex()
 			var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
 			material.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]), 0.0)
+			material.emission_enabled = true   # as the spot glow, fainter (halo_emit)
+			material.emission = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+			material.emission_energy_multiplier = float(cfg.get("halo_emit", 0.25))
 			plane.material = material
 			return plane
 		"pellet", "deer_pellet":
@@ -778,11 +802,14 @@ func _glow(at: Vector3, size: float) -> void:
 	node.name = "TrailSignGlow"
 	node.mesh = plane
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	node.position = at + Vector3(0.0, 0.03, 0.0)
+	node.position = at + Vector3(0.0, 0.05, 0.0)   # over the leaf litter
 	add_child(node)
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
 	var peak: float = float(cfg.get("glow_alpha", 0.6))
 	var tween: Tween = node.create_tween()
+	material.emission_enabled = true   # a little light of its own so it shows on pale litter and in shade (Lane A 23 Nov: no glow seen)
+	material.emission = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	material.emission_energy_multiplier = float(cfg.get("glow_emit", 0.5))
 	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.15)
 
 	if glow_keep:

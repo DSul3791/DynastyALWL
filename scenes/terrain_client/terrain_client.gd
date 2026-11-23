@@ -1537,6 +1537,7 @@ func _welcome_body(info: Dictionary) -> void:
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
 	trail_signs.trunks_near = func(point: Vector3, radius: float) -> Array: return _trunks_round(point, radius) if flora != null else []   # rubbed trees by deer trails
+	trail_signs.patches_changed.connect(grass.set_sign_patches)   # the grass short round latrines, droppings and warrens (Lane A 23 Nov: unseen in tall grass)
 	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
 		if sound != null:
 			sound.slots.play("sign_spot", at)
