@@ -35,6 +35,8 @@ var _top_mps: Dictionary = {}    # species number -> fastest _mps in animals.jso
 var _names: Dictionary = {}      # species number -> name
 var _snares_seen: Dictionary = {}  # world item id -> true: each snare set is printed once with how much trail it sits on
 var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
+var _control_t: float = 0.0
+var _cold: bool = false            # plan cold: the weather the server's vitals read is a hard frost (control file)
 
 
 func setup(server_items, server_animals) -> void:
@@ -75,6 +77,12 @@ func _process(delta: float) -> void:
 			if _sig.get(peer, "") != sig:
 				_sig[peer] = sig
 				print("AUDIT pack %d %d %s %d" % [int(peer), RobotRules.now_ms(), sig, RobotRules.used(inv)])
+
+	_control_t += delta
+
+	if _control_t >= 0.5:
+		_control_t = 0.0
+		_read_control()
 
 	_animal_t += delta
 	_frame_max = maxf(_frame_max, delta)
@@ -247,6 +255,55 @@ func _wrap_enemy() -> void:
 			var answer: Variant = armed.call(peer, amount, lethal, cause, from, weapon)
 			say.call(peer, str(cause) + "/" + str(weapon), from, answer, shield)
 			return answer
+
+
+# Robot runs only (plan cold): tools/robots.sh gives the server ROBOT_SHARE; a robot writes server_control.txt there, one command per line:
+#   cold <peer>             the weather the vitals read turns to -25 C with wind, and that peer starts at health 6, warmth 15 (cold hurts)
+#   health <peer> <value>   that peer's health is set (the 1-health floor under blows)
+# Each command is done once and printed as AUDIT control; the file is then emptied. Nothing of this exists without --robot-audit.
+func _read_control() -> void:
+	var share: String = OS.get_environment("ROBOT_SHARE")
+
+	if share == "" or not FileAccess.file_exists(share.path_join("server_control.txt")):
+		return
+
+	var text: String = FileAccess.get_file_as_string(share.path_join("server_control.txt")).strip_edges()
+
+	if text == "":
+		return
+
+	var f: FileAccess = FileAccess.open(share.path_join("server_control.txt"), FileAccess.WRITE)
+
+	if f != null:
+		f.store_string("")
+		f.close()
+
+	for line in text.split("\n"):
+		var p: PackedStringArray = line.strip_edges().split(" ")
+		var peer: int = int(p[1]) if p.size() > 1 else 0
+		var v: Dictionary = items.vitals_of(peer) if peer != 0 else {}
+
+		if p[0] == "cold" and not v.is_empty():
+			if not _cold:
+				_cold = true
+				var weather: Callable = items.weather_now
+				items.weather_now = func():
+					var w: Dictionary = (weather.call() if weather.is_valid() else {}).duplicate()
+					w["temp_c"] = -25.0
+					w["wind"] = 1.0
+					return w
+
+			v["health"] = 6.0
+			v["warmth"] = 15.0
+			items._sync_vitals(peer, true)
+		elif p[0] == "health" and not v.is_empty() and p.size() > 2:
+			v["health"] = float(p[2])
+			items._sync_vitals(peer, true)
+		else:
+			print("AUDIT control refused: %s" % line)
+			continue
+
+		print("AUDIT control %d %s" % [RobotRules.now_ms(), line])
 
 
 # Each snare set: `AUDIT snare <id> <unix ms> <x> <z> trail <0..1> owner <key>`, the trail share server_traps.trail_at gives it (catch

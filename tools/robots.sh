@@ -31,7 +31,7 @@ fi
 PORT=$((21000 + RANDOM % 9000)); LINK=$((PORT + 10))
 D=$(mktemp -d /tmp/robots_XXXX); mkdir -p "$D/store"
 echo "robots: $ROBOTS robots, plan $PLAN, server port $PORT, link port $LINK, logs in $D"
-$GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$D/store" \
+ROBOT_SHARE="$D" $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$D/store" \
 	--quit-after=$(( ROBOT_S * 2 + 400 )) --open-admin --robot-audit > "$D/server.log" 2>&1 &
 SP=$!
 LP=""

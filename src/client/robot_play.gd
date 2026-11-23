@@ -77,6 +77,7 @@ var _hp: Dictionary = {}         # animal id -> its health share last seen in th
 var _fell: Dictionary = {}       # animal ids the client saw go down from a hit
 var _pose_t: float = 0.0
 var _died: int = 0
+var _woke_at = null              # where the cold's pass-out moved this player (plan cold), null before
 var last_touch: String = ""      # what the body touched at the end of the last _walk_for, keys still held
 var _stretch: String = ""        # plan route: the stretch being timed ("" none), its frames and slow frames (_route_frame)
 var _stretch_msec: int = 0
@@ -178,7 +179,12 @@ func _hook() -> void:
 		_health = int(health)
 		_lowest_health = mini(_lowest_health, int(health)))
 	client.multiplayer.server_disconnected.connect(_on_lost)
-	client.net.died_received.connect(func(cause, _spawn):
+	client.net.died_received.connect(func(cause, spawn):
+		if str(cause) == "passed out":   # the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
+			_woke_at = spawn
+			print("ROBOT %s step passed out: moved to %s" % [robot_name, str(spawn)])
+			return
+
 		_died += 1
 		_fail("died", str(_died), "the robot died (%s): the game does not want a player dead unless they do something deliberately stupid" % str(cause)))
 
@@ -514,6 +520,8 @@ func run() -> void:
 		await _bear_chase()
 	elif plan == "bear_group":
 		await _bear_group()
+	elif plan == "cold":
+		await _cold()
 	elif plan == "fight_goblin" or plan == "fight_bandit":
 		await _fight(plan.trim_prefix("fight_"))
 	elif plan == "light":
@@ -2772,6 +2780,7 @@ func _fight(kind: String) -> void:
 	var h_before: int = _health
 	var dodge: bool = false
 	var shield_up: bool = false
+	var raise_ms: int = -1           # when the shield went up (at the drawn warning, survival-loop thread 23 Nov 2026), -1 down
 	var last_jab: int = 0
 	var hit_now: bool = false        # this charge already landed (its end is not also a miss)
 	var calm_since: int = 0          # the last charge ended: after 4 s with none, close in and jab again
@@ -2806,48 +2815,68 @@ func _fight(kind: String) -> void:
 				_key("run", false)
 
 				if now - last_jab > 1000:
-					_strike_at((at - me).normalized())
+					_strike_at((at - me).normalized())   # again each second until it warns or charges (a jab can miss: the server judges from where it last had this player)
 					last_jab = now
-					started = true
 
 		if st != last_state:   # every warning and charge, also one that starts before the robot's jab
+			if st == ST_WARN or st == ST_WARN_POP or st == ST_CHARGE:
+				started = true
+				_key("move_forward", false)
+				_key("run", false)
+
 			if st == ST_WARN or st == ST_WARN_POP:
 				if warn_ms < 0:
 					warn_ms = now
+
+				if (charges + 1) % 2 == 1 and raise_ms < 0:   # odd charges: the shield goes up at the warning; even ones: a side step
+					_face(at - me)
+					_shield(true)
+					raise_ms = now
 			elif st == ST_CHARGE:
 				charge_ms = now
 				charges += 1
 				hit_now = false
 				closest = gap
 				dodge = charges % 2 == 0
-				shield_up = charges % 2 == 1   # odd charges: the shield up; even ones: a side step
+				shield_up = charges % 2 == 1
 				_face(at - me)
 
 				if dodge:
 					_key("move_left", true)
+					_key("run", charges % 4 == 0)   # every other side-step at run speed (a bandit's hit_m 1.6 needs a run to clear)
 
-				if shield_up:
+				if shield_up and raise_ms < 0:   # no warning drawn first: up now
 					_shield(true)
+					raise_ms = now
 			elif last_state == ST_CHARGE:
 				_key("move_left", false)
+				_key("run", false)
 				_shield(false)
+				raise_ms = -1
 				calm_since = now
 
 				if not hit_now:
-					print("ROBOT %s ENEMY miss %s %d warn %d charge %d gap %.2f dodge %s shield %s" % [robot_name, kind, foe, (charge_ms - warn_ms) if warn_ms > 0 else -1, now - charge_ms, closest, "yes" if dodge else "no", "up" if shield_up else "down"])
+					print("ROBOT %s ENEMY miss %s %d warn %d charge %d gap %.2f dodge %s shield %s" % [robot_name, kind, foe, (charge_ms - warn_ms) if warn_ms > 0 else -1, now - charge_ms, closest, ("run" if charges % 4 == 0 else "walk") if dodge else "no", "up" if shield_up else "down"])
 				warn_ms = -1
+
+		if raise_ms > 0 and st != ST_CHARGE:
+			_face(at - me)   # shield up: keep it toward the foe (protection.json shield_arc_deg 120)
 
 		if st == ST_CHARGE:
 			closest = minf(closest, gap)
 
 			if dodge and now - charge_ms > 800:
 				_key("move_left", false)
+				_key("run", false)
 
 		if _health < h_before:
 			hits += 1
 			hit_now = true
 			var warned: int = (charge_ms - warn_ms) if warn_ms > 0 and charge_ms > 0 else -1
-			print("ROBOT %s ENEMY hit %s %d warn %d charge %d gap %.2f dodge %s shield %s health %d -> %d state %d" % [robot_name, kind, foe, warned, (now - charge_ms) if charge_ms > 0 else -1, gap, "yes" if dodge else "no", "up" if shield_up else "down", h_before, _health, st])
+			var fwd: Vector3 = -client.body.global_transform.basis.z
+			var facing: float = rad_to_deg(absf(Vector2(fwd.x, fwd.z).angle_to(Vector2(at.x - me.x, at.z - me.z))))   # 0 = facing the foe; the shield covers 60 either way
+			print("ROBOT %s ENEMY hit %s %d warn %d charge %d gap %.2f dodge %s shield %s raised %d ms before facing %.0f deg health %d -> %d state %d" % [robot_name, kind, foe, warned, (now - charge_ms) if charge_ms > 0 else -1, gap,
+				("run" if charges % 4 == 0 else "walk") if dodge else "no", "up" if raise_ms > 0 else "down", (now - raise_ms) if raise_ms > 0 else -1, facing, h_before, _health, st])
 
 			if charge_ms < 0 or now - charge_ms > 3000:
 				_fail("fight", "unwarned:%d" % hits, "a %s hit (health %d -> %d) with no charge drawn before it (drawn state %d, warning drawn %s, %.2f m)" % [kind, h_before, _health, st, "yes" if warn_ms > 0 else "no", gap])
@@ -2921,6 +2950,133 @@ func _bear_group() -> void:
 		await get_tree().process_frame
 
 	print("ROBOT %s step bear group: bear %d %s, health %d, %.2f m from its spot" % [robot_name, bear, "gone" if bear >= 0 else "never seen", _health, Vector2(client.body.global_position.x - spot.x, client.body.global_position.z - spot.z).length()])
+
+
+# Plan cold (the core rule, Dave 23 Nov 2026: the game does not want you dead; at 1 health you take no more damage; cold takes you to 1, you
+# pass out and wake at the nearest goblin camp, bandit camp or town with a "traveler found you" message, the pack kept). The server's robot
+# audit turns the weather to a hard frost and starts this player at health 6, warmth 15 (server_control.txt, --robot-audit only). The robot
+# stands still and must: never read health 0 or die, pass out with words, be moved to a rescue spot, wake with words and health at least 10,
+# keep every item, and stand and walk after. Then the 1-health floor under blows: health set to 3, a goblin set 3 m off and jabbed each second; 40 s of
+# its blows must leave health at 1 or more and no death.
+const SERVER_CONTROL := "server_control.txt"
+
+
+func _cold() -> void:
+	_step = "cold"
+
+	if not admin or _share(SERVER_CONTROL) == "":
+		_note("cold", "the cold plan needs --robot-admin and tools/robots.sh (ROBOT_SHARE): nothing done")
+		return
+
+	_give("stone", 3)
+	await _check_pack("cold given")
+	var counts: String = _pack_counts()
+	var lay: Vector3 = client.body.global_position
+	var said_from: int = _notices.size()
+	_write(_share(SERVER_CONTROL), "cold %d" % client.multiplayer.get_unique_id())
+	var t0: int = Time.get_ticks_msec()
+	var low: int = 1 << 30
+	var out_said: bool = false
+
+	while _woke_at == null and Time.get_ticks_msec() - t0 < 240000:
+		if _health >= 0:
+			low = mini(low, _health)
+
+		await get_tree().process_frame
+
+	await _wait(3.0)
+	var said: Array = _notices.slice(said_from)
+
+	for t in said:
+		out_said = out_said or str(t).to_lower().contains("pass out")
+
+	var found: bool = said.any(func(t): return str(t).to_lower().contains("found you") or str(t).to_lower().contains("brought you"))
+	print("ROBOT %s COLD lowest health %d, passed out %s after %.0f s, moved %.0f m to %s, health now %d, said %s" % [robot_name, low, str(_woke_at != null), float(Time.get_ticks_msec() - t0) * 0.001,
+		client.body.global_position.distance_to(lay), str(_woke_at), _health, str(said)])
+
+	if _woke_at == null:
+		_fail("cold", "out", "a hard frost from health 6 never passed this player out in 240 s (lowest health %d, said %s)" % [low, str(said)])
+		return
+
+	if low < 1:
+		_fail("cold", "floor", "health read %d in the cold (the floor is 1)" % low)
+
+	if not out_said or not found:
+		_fail("cold", "words", "passed out and moved without the words (pass out said %s, traveler said %s): %s" % [str(out_said), str(found), str(said)])
+
+	if _health < 10:
+		_fail("cold", "wake", "woke with health %d (wake_health 10)" % _health)
+
+	await _check_pack("cold woke")
+
+	if _pack_counts() != counts:
+		_fail("cold", "pack", "the pack before the cold held %s; after waking %s" % [counts, _pack_counts()])
+
+	var from: Vector3 = client.body.global_position
+	var m: float = await _walk_for(Vector3.FORWARD, 2.0)
+
+	if m < 0.5:
+		_fail("cold", "stuck", "after waking, W for 2 s moved %.2f m (from %s)" % [m, str(from.round())])
+
+	# The 1-health floor under blows.
+	_step = "floor"
+	_give("spear", 1)
+	await _check_pack("floor spear")
+
+	if _slot_of("spear") > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of("spear"), 0, 0, Vector3.ZERO)
+		await _check_pack("spear to hand")
+
+	_write(_share(SERVER_CONTROL), "health %d 3" % client.multiplayer.get_unique_id())
+	await _wait(2.0)
+	var me: Vector3 = client.body.global_position
+	var known: Dictionary = {}
+
+	for row in client._animal_view_node.drawn_positions():
+		known[int(row[0])] = true
+
+	client.net.admin_place.rpc_id(1, "animal", me - client.body.global_transform.basis.z * 3.0, "goblin")   # a goblin fights back (a bear at 3 m never struck in two runs)
+	var bear: int = -1
+	var died_before: int = _died
+	low = 1 << 30
+	var h_seen: Array = []
+	var last_jab: int = 0
+	t0 = Time.get_ticks_msec()
+
+	while Time.get_ticks_msec() - t0 < 40000:
+		var at: Vector3 = Vector3.INF
+
+		for row in client._animal_view_node.drawn_positions():
+			if not known.has(int(row[0])) and int(_species.get(int(row[0]), 0)) == 16 and (bear < 0 or int(row[0]) == bear):
+				bear = int(row[0])
+				at = row[1]
+
+		if _health >= 0:
+			low = mini(low, _health)
+
+			if h_seen.is_empty() or h_seen[-1] != _health:
+				h_seen.append(_health)
+
+		if at.is_finite():   # close in and jab once a second, so the bear keeps fighting
+			var to: Vector3 = at - client.body.global_position
+			_face(to)
+			_key("move_forward", Vector2(to.x, to.z).length() > 2.0)
+
+			if Vector2(to.x, to.z).length() <= 2.5 and Time.get_ticks_msec() - last_jab > 1000:
+				_strike_at(to.normalized())
+				last_jab = Time.get_ticks_msec()
+
+		await get_tree().process_frame
+
+	_release_all()
+	print("ROBOT %s FLOOR goblin %d, health seen %s, lowest %d, deaths %d" % [robot_name, bear, str(h_seen), low, _died - died_before])
+
+	if bear < 0:
+		_note("floor", "no goblin came after admin_place: the floor under blows is not measured")
+	elif h_seen.size() < 2:
+		_note("floor", "the goblin never hurt this player in 40 s: the floor under blows is not measured")
+	elif low < 1 or _died > died_before:
+		_fail("floor", "below", "at health 3 a goblin took this player to %d (deaths %d): at 1 health no more damage" % [low, _died - died_before])
 
 
 func _watch(s: float) -> void:
