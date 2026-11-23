@@ -117,21 +117,21 @@ func _bare_rock() -> void:
 	check(int(got.get("steel_pickaxe", 0)) > int(got.get("iron_pickaxe", 0)) and int(got.get("iron_pickaxe", 0)) > int(got.get("bronze_pickaxe", 0)) and int(got.get("bronze_pickaxe", 0)) > int(got.get("stone_pickaxe", 1000)), "each pick tier breaks more off bare rock than the one below (%s)" % str(got))
 	check(int(got.get("stone_axe", 0)) == 6, "a stone axe still gives a stone a blow (the first tool's way to stone)")
 	# a tool that breaks on the blow still gives that blow's stone and leaves its slot empty (no disposable tool breaks more than one a blow yet)
-	var inv = items.inventory_of(1)
+	var last_inv = items.inventory_of(1)
 
-	for s in inv.slot_count:
-		inv.clear_slot(s)
+	for s in last_inv.slot_count:
+		last_inv.clear_slot(s)
 
-	inv.numbers[0] = n("stone_axe")
-	inv.counts[0] = 1
+	last_inv.numbers[0] = n("stone_axe")
+	last_inv.counts[0] = 1
 	var dur: int = int(items.table.entry("stone_axe").get("durability", 0))
 	var per_axe: int = int(items._drops.get("tool_wear", {}).get("per_use", {}).get("axe", {}).get("rock", 1))
-	inv.wear[0] = maxi(dur - per_axe, 0)
-	var at := Vector3(float(spot + 2) * 20.0, 10.0, 0.0)
-	items._peer_pos[1] = at
+	last_inv.wear[0] = maxi(dur - per_axe, 0)
+	var last_at := Vector3(float(spot + 2) * 20.0, 10.0, 0.0)
+	items._peer_pos[1] = last_at
 	items._last_mine.clear()
-	items._mine(1, inv, at, 0)
-	check(inv.numbers[0] == 0 and inv.count_of(n("stone")) == 1 and int(items._mined.values()[-1].get("taken", 0)) == 1, "a stone axe on its last use breaks, and its blow still gives its stone (slot %d, stones %d)" % [inv.numbers[0], inv.count_of(n("stone"))])
+	items._mine(1, last_inv, last_at, 0)
+	check(last_inv.numbers[0] == 0 and last_inv.count_of(n("stone")) == 1 and int(items._mined.values()[-1].get("taken", 0)) == 1, "a stone axe on its last use breaks, and its blow still gives its stone (slot %d, stones %d)" % [last_inv.numbers[0], last_inv.count_of(n("stone"))])
 
 
 # 2. The rule, over a restart: by use 1 to 24, a trainer jumps to 25 and opens 25 to 49, the next band waits for the next trainer.
