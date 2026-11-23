@@ -10,7 +10,8 @@ extends RefCounted
 # Cost follows quality (F2): Low has 3 noise octaves and no high streaks, Medium 4, High 5
 # with a second light sample, Ultra 6. (Half and quarter resolution sky passes were tried
 # and drew a white sky in the test renderer, so the clouds draw at full resolution.)
-# The sky's lighting cubemap (ambient light and reflections) is drawn with a cheap cloud cover and is not redrawn as the clouds move (PROCESS_MODE_INCREMENTAL, make_sky),
+# The sky's lighting cubemap (ambient light and reflections) is drawn with a cheap cloud cover and is not redrawn as the
+# clouds move (PROCESS_MODE_INCREMENTAL, make_sky),
 # so moving clouds cost no cubemap updates. TIME wraps once an hour (Godot default), so the
 # cloud field jumps once an hour; no weather system yet (coverage is fixed).
 
