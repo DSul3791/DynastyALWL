@@ -13,6 +13,7 @@ tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot 
 tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
 tools/robots.sh 2 wolves           # the same, and the second robot comes in 3 s into the rush
 ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, along it and off it; the server prints each one's trail share
+ROBOT_S=300 tools/robots.sh 3 bear # an admin bear 20 m from the spawn, every robot hunts it with a spear (inside and jump checks); about 4 min
 tools/robots.sh 1 drops            # the link dies mid-action and the robot comes straight back; a 10 s freeze; two clients as one character; about 15 min
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)

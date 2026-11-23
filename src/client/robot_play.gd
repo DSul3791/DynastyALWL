@@ -499,6 +499,8 @@ func run() -> void:
 			await _wolf_second(plan == "wolves")
 	elif plan == "snares":
 		await _snares()
+	elif plan == "bear":
+		await _bear_chase()
 	elif plan == "light":
 		await _stances()
 		await _forest_walk(40.0)
@@ -2359,6 +2361,31 @@ func _on_lost() -> void:
 		print("ROBOT %s TWIN first dropped by the server" % robot_name)
 	elif plan == "drop_freeze":
 		_fail("freeze", "dropped", "the server dropped this client after a %d s main-thread freeze" % (FREEZE_MS / 1000))
+# Plan bear (animal thread, 23 Nov 2026: a drawn bear held at a robot, then snapped 42 m): Robot 1 sets a bear 20 m ahead of the spawn,
+# every robot takes a spear and hunts it (2 or 3 robots on one bear). The inside and jump checks run every frame as in first_hours.
+func _bear_chase() -> void:
+	_step = "bear"
+
+	if not admin:
+		_note("bear", "the bear chase needs --robot-admin: nothing done")
+		return
+
+	_give("spear", 1)
+	await _check_pack("bear spear")
+	var spear: int = _slot_of("spear")
+
+	if spear > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
+		await _check_pack("spear to hand")
+
+	if robot_name.ends_with("1"):
+		client.net.admin_place.rpc_id(1, "animal", client.body.global_position - client.body.global_transform.basis.z * 20.0, "bear")
+
+	await _wait(3.0)
+	_step = "hunt bear"
+	var _found: bool = await _hunt(14, 90.0)
+
+
 func _watch(s: float) -> void:
 	_step = "watch"
 	await _wait(s)
