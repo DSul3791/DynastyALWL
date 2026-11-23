@@ -113,7 +113,7 @@ def main():
 				done = True
 				m = re.search(r"(\d+) remote held items measured", line)
 				held_looks += int(m.group(1)) if m else 0
-				play_logs += 1 if "_play" in name else 0
+				play_logs += 1 if "plan first_hours" in line else 0   # only that plan holds items in view of the others
 			elif " FAIL " in line:
 				findings.append("robot %s: %s" % (name, line.strip()))
 			elif " CHECK pack " in line:

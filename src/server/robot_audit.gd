@@ -15,8 +15,8 @@ const SIG_EVERY_S := 0.25
 const ANIMAL_EVERY_S := 0.1
 const INSIDE_M := 0.35          # a player capsule's radius is about 0.35 m; an animal's middle this close stands inside it
 const JUMP_SLACK := 1.6         # an animal step may run this much over its top speed (a lunge, a server hitch) before it counts as a jump
-const JUMP_FLOOR_M := 2.5
-const STEP_CAP_S := 1.0         # an animal steps at least once a second near a player (hz_mid 3); a longer still spell gives no allowance       # steps shorter than this never count (a turn, a settle onto the ground)
+const JUMP_FLOOR_M := 2.5       # steps shorter than this never count (a turn, a settle onto the ground)
+const STEP_CAP_S := 1.0         # an animal steps at least once a second near a player (hz_mid 3); a longer still spell gives no allowance
 
 var items          # server_items.gd
 var animals        # server_animals.gd

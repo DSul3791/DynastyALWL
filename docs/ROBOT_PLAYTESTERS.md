@@ -21,7 +21,7 @@ Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `
 | `src/client/robot_play.gd` | The real client, headless, driven by key presses (`--robot=NAME`, `--robot-plan=`, `--robot-admin`). Prints `ROBOT` lines. |
 | `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump or stand inside a player. Prints `AUDIT` lines. No protocol change. |
 | `tools/robots.sh` | Server, link, the robots at one spawn (so they meet the same animals and see each other), then a rejoin pass. |
-| `tools/robot_check.py` | Reads the logs and fails the run on a broken invariant. `tools/robot_known_errors.txt` lists engine ERROR lines allowed (none yet). |
+| `tools/robot_check.py` | Reads the logs and fails the run on a broken invariant. `tools/robot_known_errors.txt` lists engine ERROR lines allowed (only the leak notice at exit). |
 
 ## The plan a robot plays (first_hours)
 Join; given 45 plant fibre, 14 sticks and 10 stones (admin, local server only); queue and craft twine x12, stone axe, stone hammer, wooden

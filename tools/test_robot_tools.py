@@ -172,6 +172,7 @@ def test_check():
 		("a ROBOT FAIL line", "robot1_play.log", "ROBOT Robot 1 FAIL held remote player 9's held item is 0.8 m from its hand"),
 		("an AUDIT jump", "server.log", "AUDIT jump 4 deer 6000 9.0 0.10 (0, 0, 0) (9, 0, 0) state 2"),
 		("a SCRIPT ERROR", "server.log", "SCRIPT ERROR: Invalid call. Nonexistent function 'x'."),
+		("an engine ERROR not on the known list", "server.log", "ERROR: Cannot open file 'res://.godot/imported/x.scn'."),
 	]
 
 	for what, name, extra in cases:
@@ -183,6 +184,26 @@ def test_check():
 
 			r = run_check(d)
 			check(r.returncode == 1, "robot_check fails %s" % what)
+
+	with tempfile.TemporaryDirectory() as d:
+		good_logs(d)
+
+		with open(os.path.join(d, "server.log"), "a") as f:
+			f.write("ERROR: 5 resources still in use at exit (run with --verbose for details).\n")
+
+		r = run_check(d)
+		check(r.returncode == 0, "robot_check lets the known exit leak notice pass")
+
+	with tempfile.TemporaryDirectory() as d:
+		good_logs(d)
+		write(d, "robot1_play.log", ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)", "ROBOT Robot 1 done: plan first_hours, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)", "ROBOT Robot 2 done: plan first_hours, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		r = run_check(d)
+		check(r.returncode == 1 and "held check never ran" in r.stdout, "robot_check fails two first_hours robots that measured no held item")
+		write(d, "robot1_play.log", ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)", "ROBOT Robot 1 done: plan light, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		write(d, "robot2_play.log", ["ROBOT Robot 2 step joined: peer 8 at (0, 0, 0)", "ROBOT Robot 2 done: plan light, 0 fails, 0 notes, 3 drawn-animal ids seen, 0 remote held items measured"])
+		r = run_check(d)
+		check(r.returncode == 0, "robot_check does not ask a light plan for held items")
 
 	with tempfile.TemporaryDirectory() as d:
 		good_logs(d)

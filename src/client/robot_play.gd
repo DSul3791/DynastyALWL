@@ -1065,7 +1065,7 @@ func _quit_at_once() -> void:
 		f.store_string("")   # the pack is still changing: the plain rejoin compare is off for this quit
 		f.close()
 
-	print("ROBOT %s done: %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, _fails, _notes, _species.size(), _held_looks, _lowest_health])
+	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1
 
 
@@ -1081,5 +1081,5 @@ func _quit() -> void:
 
 	await _wait(1.6)   # the last refusals get their 1.5 s for a message
 	_check_refusals(Time.get_ticks_msec() + 5000)
-	print("ROBOT %s done: %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured" % [robot_name, _fails, _notes, _species.size(), _held_looks])
+	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1   # the client quits the usual way (the server keeps the character, as when a player closes the game)
