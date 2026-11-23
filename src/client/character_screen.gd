@@ -401,6 +401,7 @@ func refresh() -> void:
 			var who: Array = _teachers_of(str(id))
 			var wall: Label = _wrap(_label("needs training to go further" + (" (ask " + ", ".join(who) + ")" if not who.is_empty() else ""), BODY_PX - 4))
 			wall.modulate = Color(0.6, 0.85, 1.0)
+			wall.custom_minimum_size.x = _px(420)
 			notes.add_child(wall)
 
 		var lessons: Array = _lessons_of(str(id))
@@ -408,6 +409,7 @@ func refresh() -> void:
 		if not lessons.is_empty():
 			var teach: Label = _wrap(_label("Lessons: " + "; ".join(lessons), BODY_PX - 4))
 			teach.modulate = Color(0.6, 0.85, 1.0)
+			teach.custom_minimum_size.x = _px(560)   # a flow row does not stretch its labels: room for the lesson names before they wrap (review)
 			notes.add_child(teach)
 
 		if row.size() > 4 and int(row[4]) > 0:
