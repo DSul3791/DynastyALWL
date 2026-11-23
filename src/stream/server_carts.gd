@@ -18,6 +18,7 @@ extends RefCounted
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const CAVE_PROBE_UP_M := 0.5   # a cart in a cave: its floor is looked for in the cave's air this far over its wheels (as terrain_generator and server_items CAVE_PROBE_UP_M)
+const CAVE_WALL_M := 0.8   # ground ahead this far over a cart in a cave with no cave air there is the cave's wall (terrain_generator CAVE_UNDER_M 0.5 + 0.3)
 const CAVE_DROP_M := 1.0   # a cart in a cave goes no further where the floor falls more than this in one step (a spring pool's basin)
 const OP_GRAB := 0      # ACT_CART b: take the handle of cart a
 const OP_RELEASE := 1   # let go of the handle (a ignored)
@@ -287,10 +288,12 @@ func _blocked(from: Vector3, to: Vector3, heading: Vector2, v: Dictionary) -> St
 	if _in_cave_air(from, from.y) and float(host.ground_height.call(to.x, to.z)) > from.y + 0.05:
 		var cave_to: float = _cave_floor(to.x, from.y, to.z)
 
-		if is_nan(cave_to):
-			return "The %s will not fit through there." % noun_of(v)   # a cave wall: the cart stays in the cave's air
+		# A cave wall: the cart stays in the cave's air. Where the ground ahead is less than CAVE_WALL_M over the wheels it is the end of a mouth's
+		# cut rising to the surface (cave_floor_at reads no cave within its CAVE_UNDER_M of the surface): the cart goes on out.
+		if is_nan(cave_to) and float(host.ground_height.call(to.x, to.z)) - from.y > CAVE_WALL_M:
+			return "The %s will not fit through there." % noun_of(v)
 
-		if from.y - cave_to > CAVE_DROP_M:
+		if not is_nan(cave_to) and from.y - cave_to > CAVE_DROP_M:
 			return "The %s cannot go there." % noun_of(v)   # the edge of a spring pool's 20 m basin (the water checks read the surface water only)
 
 	if host.structure_blocks(to.x, to.z, fit) or host.structure_blocks_step(from.x, from.z, to.x, to.z, fit):   # the step too: a thin wall is never jumped

@@ -156,5 +156,28 @@ func _init() -> void:
 	var side: Vector3 = cart_at + Vector3(0.966, 0.0, -0.259) * 3.0   # across the 2.2 m passage: into its wall
 	check(carts._blocked(cart_at, side, Vector2(0.966, -0.259), {"fit_m": 0.6}) != "", "the cart cannot be pulled into the passage wall")
 
+	# Pulled out along the passage, through the open cut and past the mouth: never stopped (the end of the cut rises to the surface, where the
+	# cave floor reads as none within 0.5 m of it), and on the floor or the ground all the way.
+	var out_dir: Vector3 = Vector3(-0.259, 0.0, -0.966)
+	var pos: Vector3 = cart_at
+	var stopped: String = ""
+	var worst_gap: float = 0.0
+
+	for n in 120:
+		var to: Vector3 = pos + out_dir * 0.3
+		var why: String = carts._blocked(pos, to, Vector2(out_dir.x, out_dir.z), {"fit_m": 0.6})
+
+		if why != "":
+			stopped = "%s at %s" % [why, str(pos)]
+			break
+
+		to.y = carts._rest_y(to, pos.y)
+		var under: float = gen.cave_floor_at(Vector3(to.x, to.y + 0.5, to.z))
+		worst_gap = maxf(worst_gap, absf(to.y - (under if not is_nan(under) else gen.surface_height(to.x, to.z))))
+		pos = to
+
+	check(stopped == "" and Vector2(pos.x - 58264.0, pos.z - 72084.0).dot(Vector2(out_dir.x, out_dir.z)) > 3.0, "a cart pulled out of the passage leaves by the open cut and goes past the mouth (%s, ends at %s)" % [stopped, str(pos)])
+	check(worst_gap < 0.6, "on its way out it rests on the cave floor or the ground (worst %.2f m off)" % worst_gap)
+
 	print("test_cave_ground: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)

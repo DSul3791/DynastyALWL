@@ -284,7 +284,8 @@ func _read_tile(coord: Vector2i):
 # surface_height does not know the caves (physical world audit round 6, 23 Nov 2026: a stack dropped in a cave hung 1.1 m over its floor,
 # and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it. A floor less than
 # CAVE_UNDER_M under the generated surface is not taken (NAN): cave_floor_under measures the ground without its detail noise, so a point
-# just inside open ground near a cave would read that smoother ground instead.
+# just inside open ground near a cave would read that smoother ground instead. In a mouth's opened ground (tile_terrain_data.in_cave_opening)
+# the cut is taken right up to the surface, so a cart or a drop at the end of the cut stays on it.
 const CAVE_UNDER_M := 0.5
 const CAVE_PROBE_UP_M := 0.5   # callers look for a spot's cave floor from this far over its foot (server_items, server_carts)
 
@@ -304,10 +305,10 @@ func cave_floor_at(point: Vector3) -> float:
 	if is_nan(floor_y):
 		floor_y = data.cave_floor_under(at - Vector3(0.0, 0.9, 0.0))
 
-	return NAN if is_nan(floor_y) or floor_y > surface_height(point.x, point.z) - CAVE_UNDER_M else floor_y
+	var margin: float = 0.02 if data.in_cave_opening(at.x, at.z) else CAVE_UNDER_M   # a mouth's own cut is the cave's ground right to its end
+	return NAN if is_nan(floor_y) or floor_y > surface_height(point.x, point.z) - margin else floor_y
 
 
-# Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
 # Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface (in a cave, the
 # cave's floor: cave_floor_at) with the saved digs and fills `edits` ([kind 0 dig / 1 fill, centre, radius], oldest first) laid over it, in order
 # (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them). Returns the resting height, or NAN when there
@@ -315,11 +316,12 @@ func cave_floor_at(point: Vector3) -> float:
 func floor_below(from: Vector3, edits: Array) -> float:
 	var ground: float = surface_height(from.x, from.z)
 
-	if from.y < ground:   # under the generated surface: in a cave its floor is the ground (round 6: a drop there hung 1.1 m over the floor)
-		var cave: float = cave_floor_at(from)
+	# In a cave its floor is the ground (round 6: a drop there hung 1.1 m over the floor), from over the surface too: a mouth's open cut lies under
+	# the surface, which does not know it (a cart pulled out through the cut rode up onto the surface over it).
+	var cave: float = cave_floor_at(from)
 
-		if not is_nan(cave):
-			ground = cave
+	if not is_nan(cave) and cave < ground:
+		ground = cave
 
 	var y: float = from.y + 0.05
 
@@ -339,6 +341,7 @@ func floor_below(from: Vector3, edits: Array) -> float:
 	return NAN
 
 
+# Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
 func tile_cached(x: float, z: float) -> bool:
 	var coord: Vector2i = Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m)))
 	_mutex.lock()
