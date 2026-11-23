@@ -59,5 +59,15 @@ func _init() -> void:
 	check(not PlacementRules.over_trunk(items._structures_cfg, kit, TRUNK + Vector3(2.6, 0.0, 0.0), 0.0, row), "one whose edge stops short of the bark is not")
 	check(PlacementRules.over_trunk(items._structures_cfg, kit, TRUNK + Vector3(2.6, 0.0, 0.0), deg_to_rad(45.0), row), "the same spot turned 45 degrees: its corner reaches the trunk")
 	check(not PlacementRules.over_trunk(items._structures_cfg, kit, TRUNK + Vector3(0.0, 8.0, 0.0), 0.0, row), "a floor 8 m up over a 14 m tree is above its trunk")
+	# A narrow piece pins the turn's sign: a 4 x 1 m box turned 60 degrees reaches a trunk along its long side one way, not the other.
+	var narrow: Dictionary = {"structures": {"plank": {"kit": "plank_kit", "footprint_x": 4.0, "footprint_z": 1.0}}}
+	var side: Vector3 = Vector3(1.5 * cos(deg_to_rad(60.0)), 0.0, -1.5 * sin(deg_to_rad(60.0)))   # 1.5 m along the box's long axis turned +60 (Basis(UP, a) * x)
+	check(PlacementRules.over_trunk(narrow, "plank_kit", TRUNK - side, deg_to_rad(60.0), row), "a long piece turned 60 degrees covers a trunk along its length")
+	check(not PlacementRules.over_trunk(narrow, "plank_kit", TRUNK - side, deg_to_rad(-60.0), row), "turned the other way it does not")
+
+	# The ghost goes red the same way: its reason, the client's trunk list handed to it, and the check in its update.
+	check(PlacementRules.reason_text("tree") == "a tree is in the way: fell it first", "the ghost's red reason says why")
+	check(FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("held.trunks_round = _trunks_round"), "the client hands the ghost its trunks")
+	check(FileAccess.get_file_as_string("res://src/client/held_item.gd").contains("blueprint_state = \"tree\""), "and the ghost checks them")
 	print("tree in the way test: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

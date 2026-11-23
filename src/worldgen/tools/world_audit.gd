@@ -914,7 +914,8 @@ func _audit_lakes() -> Array:
 
 				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 					var i: int = k % n + d.x
-					var j: int = k / n + d.y
+					@warning_ignore("integer_division")
+					var j: int = k / n + d.y   # the sample's row
 
 					if i < 0 or j < 0 or i >= n or j >= n:
 						continue
