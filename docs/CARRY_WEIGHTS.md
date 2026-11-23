@@ -50,7 +50,7 @@ That is 64 percent of the free load, so a few dozen of each early gatherable doe
 
 ## Economy and kits
 - `tools/economy_first_day.py` uses prices and assumed picks per minute, not weights: no change. Lighter picks only mean a player can carry a whole trip to Hob, which the model already assumes.
-- The heavy-kit QA card `heavy-kits-carry` is about cut stone blocks (25 kg), bricks and mortar, and kit weights. None of those changed, so the card stands (stone wall kit still about 314 kg of ingredients).
+- The heavy-kit QA card `heavy-kits-carry` is about cut stone blocks (25 kg), bricks and mortar, and kit weights. None of those changed, so the card stands (stone wall kit still about 314 kg of ingredients). Kits are gone since then (no kits, #292, Dave 4 Nov), and a craft takes its ingredients from the ground and the player's own chests within 12 m (src/shared/craft_stock.gd), so a heavy recipe is made in trips; `tools/carry_audit.py` lists such recipes and no longer warns (23 Nov 2026).
 
 ## Tests
 `validate_items`, `inventory`, `server_items`, `economy` checks and Steve's `test_carry_many_light` (merged from 76c78d5f). Also passed: `test_logs_carry`, `test_trade`, `test_economy_guard`, all eight `items_check` steps, and the fruit tests (`test_fruit_tree`, `test_fruit_share`, `test_season_fruit`).
