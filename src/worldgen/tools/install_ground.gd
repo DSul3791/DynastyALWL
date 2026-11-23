@@ -28,6 +28,7 @@ func _init() -> void:
 		quit(1)
 		return
 
+	var started: int = Time.get_ticks_msec()
 	var problem: String = PackScript.install(pack_dir, store_dir, PackScript.wanted_version("res://worlds/base_world/tiles"), server_stopped)
 
 	if problem != "":
@@ -36,5 +37,5 @@ func _init() -> void:
 		quit(1)
 		return
 
-	print("install_ground: DONE: %s now holds the pack's ground (generation %d)" % [store_dir, PackScript.generation_of(store_dir)])
+	print("install_ground: DONE: %s now holds the pack's ground (generation %d) in %.0f s" % [store_dir, PackScript.generation_of(store_dir), float(Time.get_ticks_msec() - started) / 1000.0])
 	quit(0)

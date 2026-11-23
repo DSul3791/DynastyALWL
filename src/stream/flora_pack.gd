@@ -18,9 +18,13 @@ const FOLDER := "flora_pack"
 # What the placer reads besides the tiles (flora_placer.gd setup and its helpers): a change to any of them can move a plant.
 const SOURCES := [
 	"res://src/worldgen/runtime/flora_placer.gd", "res://src/worldgen/runtime/flora_layout.gd", "res://src/shared/near_water_growth.gd",
-	"res://src/flora/tree_trunks.gd", "res://src/flora/tree_builder.gd", "res://data/water/riparian.json", "res://data/npcs/markers.json",
-	"res://data/npcs/camp.json", "res://data/look/tree_trunks.json", "res://worlds/base_world/plan/tile_rules.json", "res://worlds/base_world/world.json",
+	"res://src/flora/tree_trunks.gd", "res://src/flora/tree_builder.gd", "res://src/worldgen/settings/worldgen_seed.gd",
+	"res://src/worldgen/runtime/tile_terrain_data.gd", "res://src/worldgen/runtime/mine_sites.gd", "res://src/worldgen/runtime/camp_caves.gd",
+	"res://src/water/water_store.gd", "res://data/water/riparian.json", "res://data/npcs/markers.json", "res://data/npcs/camp.json",
+	"res://data/creatures/goblin_tribes.json", "res://data/look/tree_trunks.json", "res://worlds/base_world/plan/tile_rules.json",
+	"res://worlds/base_world/world.json",
 ]
+const FOLDERS := [["res://data/tables", ".json"], ["res://worlds/base_world/water", ".water"]]   # every such file in them (the baked water: shore plants)
 
 var _index: Dictionary = {}     # Vector2i chunk -> [path, full offset, full size, full raw, trees offset, trees size, trees raw]
 var tiles: int = 0              # files in use
@@ -32,14 +36,28 @@ static func fingerprint(tiles_stamp: String) -> String:
 	var parts: PackedStringArray = PackedStringArray(["terrain %d" % Layout.TERRAIN_VERSION, "tiles " + tiles_stamp, "layout %d" % FloraLayout.VERSION])
 	var files: Array = SOURCES.duplicate()
 
-	for file in DirAccess.get_files_at("res://data/tables"):
-		if file.ends_with(".json"):
-			files.append("res://data/tables/" + file)
+	for folder in FOLDERS:
+		var found: Array = Array(DirAccess.get_files_at(folder[0])).filter(func(f): return String(f).ends_with(folder[1]))
+		found.sort()   # the same order on every machine
+
+		for file in found:
+			files.append(folder[0] + "/" + file)
 
 	for path in files:
-		parts.append("%s=%s" % [path, FileAccess.get_md5(path) if FileAccess.file_exists(path) else "-"])
+		parts.append("%s=%s" % [path, _md5_of(path)])
 
 	return "\n".join(parts).md5_text()
+
+
+# Text files are hashed with their line ends made "\n", so a pack built from a Windows checkout matches a server built from a Linux one.
+static func _md5_of(path: String) -> String:
+	if not FileAccess.file_exists(path):
+		return "-"
+
+	if path.ends_with(".gd") or path.ends_with(".json"):
+		return FileAccess.get_file_as_string(path).replace("\r\n", "\n").md5_text()
+
+	return FileAccess.get_md5(path)
 
 
 static func file_name(tile: Vector2i) -> String:
@@ -52,16 +70,16 @@ static func pack_list(list: Dictionary) -> Array:
 	return [raw.compress(FileAccess.COMPRESSION_ZSTD), raw.size()]
 
 
-# Writes one tile's lists: chunks = {Vector2i chunk: [pack_list(full list), pack_list(trees-only list)]}. Written beside and renamed, so a
+# Writes one tile's lists: lists = {Vector2i chunk: [pack_list(full list), pack_list(trees-only list)]}. Written beside and renamed, so a
 # stop never leaves half a file under the real name. Returns true when written.
-static func write_tile(path: String, print_text: String, chunks: Dictionary) -> bool:
-	var keys: Array = chunks.keys()
+static func write_tile(path: String, print_text: String, lists: Dictionary) -> bool:
+	var keys: Array = lists.keys()
 	keys.sort()
 	var blobs: Array = []
 
 	for chunk in keys:
-		blobs.append(chunks[chunk][0])
-		blobs.append(chunks[chunk][1])
+		blobs.append(lists[chunk][0])
+		blobs.append(lists[chunk][1])
 
 	var file: FileAccess = FileAccess.open(path + ".part", FileAccess.WRITE)
 
@@ -88,6 +106,7 @@ static func write_tile(path: String, print_text: String, chunks: Dictionary) -> 
 		file.store_buffer(blob[0])
 
 	file.close()
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))   # a rename onto a file fails on Windows
 	return DirAccess.rename_absolute(ProjectSettings.globalize_path(path + ".part"), ProjectSettings.globalize_path(path)) == OK
 
 

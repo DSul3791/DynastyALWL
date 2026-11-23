@@ -101,7 +101,9 @@ for all nine; goes on after a stop), `src/stream/ground_pack.gd` and `src/worldg
 tiles, an unfinished one, or a store whose server runs), test `test_ground_pack`. Steps: deploy/server/SERVER.md, "Prebuilt ground".
 Trees and plants: `src/stream/flora_pack.gd` (one file a tile, used only when its fingerprint of tiles, flora data and placer
 code matches the server's), built by the same tool (`--plants=0` skips them), copied by the install, test `test_flora_pack`; a
-wooded 256 m chunk takes about 3 CPU-seconds and 150 KB. Not built yet: step 3's switch-off of the idle builders inside the area with a log count, so
+wooded 256 m chunk takes about 3 CPU-seconds and 150 KB. Prebuilt plants are placed over the baked water, so a chunk first seen after
+a player dug a pond beside it no longer grows the pond's bank plants (a kept list never followed live water either); a tile re-bake
+on a running server drops the pack until one for the new tiles is installed. Not built yet: step 3's switch-off of the idle builders inside the area with a log count, so
 the server still makes ground and plants outside the pack. The plan as first written follows.
 
 Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client

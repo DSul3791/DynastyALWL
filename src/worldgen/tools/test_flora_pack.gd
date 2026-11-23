@@ -112,6 +112,20 @@ func _init() -> void:
 	served.chunk_bytes(OUTSIDE, true)
 	check(placer.calls >= 1, "a chunk outside the pack is still placed")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+	# Chunks west and north of 0 (the world starts at -153,600 m) and a broken file.
+	var odd: Dictionary = {"ids": PackedInt32Array([7]), "positions": PackedVector3Array([Vector3(-1.0, 2.0, -3.0)]), "heights": PackedFloat32Array([4.0]), "yaws": PackedFloat32Array([0.5])}
+	var odd_path: String = folder + "/" + FloraPackScript.file_name(Vector2i(-1, -1))
+	check(FloraPackScript.write_tile(odd_path, print_text, {Vector2i(-5, -7): [FloraPackScript.pack_list(odd), FloraPackScript.pack_list({})]}), "a tile file west of 0 is written")
+	check(FloraPackScript.write_tile(odd_path, print_text, {Vector2i(-5, -7): [FloraPackScript.pack_list(odd), FloraPackScript.pack_list({})]}), "and written again over itself")
+	var broken: FileAccess = FileAccess.open(folder + "/tile_9_9.fpk", FileAccess.WRITE)
+	broken.store_string("not a pack")
+	broken.close()
+	var west = FloraPackScript.new()
+	west.open(folder, print_text)
+	check(west.chunks() == 1 and west.stale == 1 and west.items(Vector2i(-5, -7), false) == odd and west.items(Vector2i(-5, -7), true) == {}, "negative chunk numbers read back, a broken file is not used")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(odd_path))
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(folder + "/tile_9_9.fpk"))
 	served.finish_tasks()
 	plain.finish_tasks()
 	print("Test done: %d pass, %d fail" % [passes, failures])

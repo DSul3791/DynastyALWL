@@ -14,7 +14,8 @@ extends SceneTree
 #   --lods=A,B,..    detail levels (default 0-6, every level the client asks for)
 #   --area=X,Z,M     only the M-metre square with corner X,Z (world metres) inside the tiles: for tests and quick looks
 #   --plants=0       ground only (default 1: the trees and plants of every 256 m chunk too, in the pack's flora_pack/ folder,
-#                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped)
+#                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped; with
+#                    --area the plants file is marked as part of a tile, which no server uses)
 #
 # Only blocks that hold the surface are built, one block above and below it (caves deeper down are still made by the server on first
 # visit). The pack's terrain_version.txt names the terrain version and tile files it was made from; ground_pack.gd's install refuses a
@@ -43,6 +44,7 @@ var _columns_done: int = 0
 var _made: int = 0
 var _skipped: int = 0
 var placer
+var _plants_s: float = 0.0
 var _chunks: Array = []                # plant chunks of the tile being built (home coordinates)
 var _chunk_next: int = 0
 var _chunk_done: int = 0
@@ -199,20 +201,25 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 	if plants:
 		placer = PlacerScript.new()
 		placer.setup(generator, tables, rules)
+		var plants_started: int = Time.get_ticks_msec()
 		var plants_error: int = _build_plants(tiles, out_dir, threads, area)
+		_plants_s = float(Time.get_ticks_msec() - plants_started) / 1000.0
 
 		if plants_error != 0:
 			return plants_error
 
 	var info: Dictionary = PackScript.describe(out_dir)
-	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "seconds": snappedf(seconds, 0.1)})
-	print("prebuild_ground: DONE %d blocks made, %d already there, in %.0f s; pack %.1f MB at %s" % [_made, _skipped, seconds, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])
+	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "seconds": snappedf(seconds, 0.1), "plants_seconds": snappedf(_plants_s, 0.1)})
+	print("prebuild_ground: DONE %d blocks made, %d already there; ground %.0f s, plants %.0f s; pack %.1f MB at %s" % [_made, _skipped, seconds, _plants_s, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])
 	return 0
 
 
 # The trees and plants of each tile into flora_pack/tile_X_Z.fpk (flora_pack.gd).
 func _build_plants(tiles: Array, out_dir: String, threads: int, area: Array) -> int:
 	var print_text: String = FloraPackScript.fingerprint(store.tiles_stamp)
+
+	if area.size() == 3:
+		print_text += " area"   # part of a tile only: never taken for the whole tile (here or by a server)
 	var folder: String = out_dir + "/" + FloraPackScript.FOLDER
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
 	var tile_m: float = generator.tile_size_m

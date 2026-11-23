@@ -1320,7 +1320,7 @@ func _trunks_near(at: Vector2, reach: float) -> PackedVector2Array:
 
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
-			var held: Dictionary = flora.placer.chunk_items(Vector2i(centre.x + dx, centre.y + dz))
+			var held: Dictionary = flora.items_of(Vector2i(centre.x + dx, centre.y + dz))   # kept, or prebuilt (flora_pack.gd): never placed again on the main thread
 
 			for n in range(held["ids"].size()):
 				var p: Vector3 = held["positions"][n]
@@ -3821,6 +3821,7 @@ func _process(delta: float) -> void:
 		# A bake finished: the ground is made again from the new tiles, and clients reload.
 		if store.check_tiles(now):
 			generator.forget_tiles()
+			flora.pack = null   # prebuilt plants stand on the old tiles: placed afresh until a pack for the new tiles is installed
 			flora.clear_memory()
 			WaterGridScript.forget_ground()
 

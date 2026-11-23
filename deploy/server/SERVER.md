@@ -65,7 +65,7 @@ before. The pack also holds the tiles' trees and plants (flora_pack/); the serve
 1. Build, on the PC, in a clone at the same commit as the server image (the pack must come from the same tiles; the install refuses
    one that does not). The starter tile takes about an hour (ground about 40 minutes, plants about 20) and 6-10 GB plus about 0.5 GB of plants; a stopped build goes on where it was when run again:
    `& <godot> --headless --path E:\Software\godotDev\dynasty_release --script res://src/worldgen/tools/prebuild_ground.gd -- --tiles=3_4 --out=E:/Software/godotDev/ground_pack`
-   (`--tiles=nine` for all nine tiles, about 6 hours and 55-90 GB; `--threads=N` to leave the PC some room). It ends with a
+   (`--tiles=nine` for all nine tiles, about 6 hours and 55-90 GB plus about 4.5 GB of plants; `--threads=N` to leave the PC some room). It ends with a
    `prebuild_ground: DONE` line.
 2. Copy it over: `scp -r E:\Software\godotDev\ground_pack dave@192.168.0.108:/home/dave/dynasty/`
 3. Install it, on the server, with the server stopped (a fresh world, or over the current one: digs and fills are kept):

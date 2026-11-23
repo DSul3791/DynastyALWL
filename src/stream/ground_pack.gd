@@ -113,7 +113,12 @@ static func _copy_plants(pack_dir: String, store_dir: String) -> String:
 		if not name.ends_with(".fpk"):
 			continue
 
-		if DirAccess.copy_absolute(from + "/" + name, to + "/" + name + ".part") != OK or DirAccess.rename_absolute(to + "/" + name + ".part", to + "/" + name) != OK:
+		var copied: bool = DirAccess.copy_absolute(from + "/" + name, to + "/" + name + ".part") == OK
+
+		if copied:
+			DirAccess.remove_absolute(to + "/" + name)   # a rename onto a file fails on Windows
+
+		if not copied or DirAccess.rename_absolute(to + "/" + name + ".part", to + "/" + name) != OK:
 			DirAccess.remove_absolute(to + "/" + name + ".part")
 			return "the ground is installed, but copying the plants file %s failed: run the install again" % name
 
