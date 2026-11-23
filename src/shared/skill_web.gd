@@ -293,7 +293,8 @@ static func train_problem(cfg: Dictionary, skill: String, records: Dictionary, n
 	if not cfg.get("skills", {}).has(skill):
 		return "unknown skill"
 
-	if level * int(system.get("step", 25)) >= int(system.get("max_value", 100)) + int(system.get("step", 25)):
+	# Three trainings reach the last band (caps 25, 50, 75, 100); a fourth would only jump the skill to the top.
+	if level * int(system.get("step", 25)) >= int(system.get("max_value", 100)):
 		return "already at the top"
 
 	if not unlocked(cfg, skill, records):

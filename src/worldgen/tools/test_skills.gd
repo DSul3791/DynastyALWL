@@ -105,7 +105,7 @@ func _init() -> void:
 	var fresh: Dictionary = {}
 	check(Web.train(cfg, "jumping", fresh, day0) == "" and absf(Web.raw_value(cfg, "jumping", fresh["jumping"]) - 25.0) < 0.01 and Web.cap_of(cfg, "jumping", fresh) == 50, "a beginner at 1 trained jumps straight to 25, cap 50")
 	var now: float = day0 + 500.0 * 86400.0
-	check(Web.train_problem(cfg, "jumping", records, now, 20.0, 1) != "", "a teacher at 20 is not skilled enough (needs 40)")
+	check(Web.train_problem(cfg, "jumping", records, now, 20.0, 1) != "", "a teacher at 20 is not skilled enough (needs 35)")
 	check(Web.train_problem(cfg, "jumping", records, now, 45.0, 0) == "the teacher is not trained that far", "and must be trained to the level taught")
 	check(Web.train(cfg, "jumping", records, now, 45.0, 1) == "", "a teacher at 45, trained to level 1, can train")
 	check(int(records["jumping"]["t"]) == 1 and Web.raw_value(cfg, "jumping", records["jumping"]) >= 24.99 and Web.cap_of(cfg, "jumping", records) == 50, "training jumps to 25 and raises the cap to 50")
@@ -113,6 +113,17 @@ func _init() -> void:
 	var speed_before: float = float(records["jumping"]["p"])
 	Web.practice(cfg, "jumping", {}, records, 1.0, now + 5.0 * 86400.0)
 	check(float(records["jumping"]["p"]) - speed_before > 6.0, "after training gains are faster (x1.2)")
+
+	# Every band (Dave 23 Nov 2026): three trainings, cooldowns waited out, give 25, 50 and 75 with caps 50, 75 and 100; no fourth.
+	var bands: Dictionary = {}
+	var at: float = day0
+
+	for want in [25.0, 50.0, 75.0]:
+		check(Web.train(cfg, "woodcutting", bands, at) == "" and absf(Web.raw_value(cfg, "woodcutting", bands["woodcutting"]) - want) < 0.01 and Web.cap_of(cfg, "woodcutting", bands) == int(want) + 25, "training %d jumps to %d, cap %d" % [int(want / 25.0), int(want), int(want) + 25])
+		at += 4.0 * 86400.0
+
+	check(Web.train_problem(cfg, "woodcutting", bands, at) == "already at the top", "no fourth training")
+	check(Web.train_problem(cfg, "woodcutting", {}, day0, 30.0, 1) == "the teacher is not skilled enough", "a teacher at 30 cannot train level 1 (needs 35)")
 
 	# The family floor: training a foundation lifts every descendant when read, with nothing written into them.
 	var fam: Dictionary = {"athletics": {"p": Web.units_for(cfg, "athletics", 22.0)}}
