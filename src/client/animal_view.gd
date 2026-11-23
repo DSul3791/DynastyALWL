@@ -44,7 +44,7 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
-const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (_stalled)
+const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}

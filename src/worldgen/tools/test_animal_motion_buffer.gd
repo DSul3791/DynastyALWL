@@ -186,7 +186,7 @@ func _init() -> void:
 	MotionBuffer.clock_note(own, 12.4, 1500, true)
 	check(float(own["late"]) == own_late and int(own["server_ms"]) == 1500, "rows read after this computer's own stall leave the lateness as it was (%.3f)" % float(own["late"]))
 	# The window: a 2 s gap since the last drawing, or a 2 s frame step, opens it for 0.25 s; a normal frame leaves it; it closes on its own.
-	check(MotionBuffer.stall_until(12.4, 10.4, -1.0, 0.016, 0.25) == 12.65 and MotionBuffer.stall_until(12.4, 12.38, -1.0, 2.0, 0.25) == 12.65, "a stall (a gap since the last drawing, or a long frame step) opens a 0.25 s settle window")
+	check(is_equal_approx(MotionBuffer.stall_until(12.4, 10.4, -1.0, 0.016, 0.25), 12.65) and is_equal_approx(MotionBuffer.stall_until(12.4, 12.38, -1.0, 2.0, 0.25), 12.65), "a stall (a gap since the last drawing, or a long frame step) opens a 0.25 s settle window")
 	check(MotionBuffer.stall_until(12.5, 12.48, 12.65, 0.016, 0.25) == 12.65 and MotionBuffer.stall_until(12.5, -1.0, -1.0, 0.016, 0.25) == -1.0 and not 12.7 <= MotionBuffer.stall_until(12.7, 12.68, 12.65, 0.016, 0.25), "a normal frame keeps the window as it was (none before the first drawing), and it closes on its own")
 	# And the bodies are drawn where their points are: no correction left to ease away, the feet start from there.
 	var settled: Dictionary = {"sm_p": Vector3.ZERO, "sm_err": Vector3(-13.0, 0.0, 0.0), "fw_p": Vector3.ZERO}
