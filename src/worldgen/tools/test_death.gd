@@ -279,6 +279,8 @@ func _init() -> void:
 	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "with stop_at_1 off a lethal bite kills")
 	wolf._death_cfg["stop_at_1"] = true
 
+	check(is_equal_approx(ItemsScript.dug_out_height(31.5, 30.0, NAN), 33.5) and is_equal_approx(ItemsScript.dug_out_height(10.0, 12.0, 14.0), 16.0) and is_equal_approx(ItemsScript.dug_out_height(-3.0, NAN, NAN), 2.0),
+		"a dug-out player stands on dry land's ground (no water is NAN), on a fill, or on the water over it")
 	# A tunnel collapse with stop_at_1: dug out onto the ground above, health 1, the pack kept, the client told "cave-in survived".
 	died.clear()
 	wolf._vitals["wolf-key-00001"]["health"] = 60.0

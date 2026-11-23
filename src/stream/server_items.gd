@@ -17203,6 +17203,18 @@ func kill(peer: int, cause: String) -> bool:
 
 # A tunnel collapse on a player when nothing kills (death.json stop_at_1, Dave 23 Nov 2026): dug out onto the ground above (`to`), health 1,
 # the pack kept. The client plays the cave-in sequence without the death lines. Returns false when stop_at_1 is off (the caller kills).
+# Where a dug-out player stands: 2 m over the highest of the ground, the edited ground (a fill on it) and any water over it (NAN: none, as
+# terrain_server _water_at gives on dry land), never under the sea's 0 m.
+static func dug_out_height(surface: float, edited: float, water: float) -> float:
+	var top: float = 0.0
+
+	for h in [surface, edited, water]:
+		if not is_nan(float(h)):
+			top = maxf(top, float(h))
+
+	return top + 2.0
+
+
 func survive_cave_in(peer: int, to: Vector3) -> bool:
 	var v: Dictionary = vitals_of(peer)
 
