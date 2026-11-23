@@ -278,6 +278,12 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 		packs.erase(pack["id"])
 		return
 
+	if str(pack["phase"]) in ["stalk", "rush"] and _info_of(infos, int(pack["target"])).is_empty():
+		# The player it hunts is gone (left, or a dropped line parked 15 s: server_items is_absent): it lets go, here before the frozen check
+		# below, so a pack frozen mid-rush does not take them up again on their return.
+		pack["phase"] = "prowl"
+		pack["target"] = -1
+
 	var c: Vector3 = _centre(members)
 	var active: float = float(host.cfg.get("active_radius_m", 200.0))
 	var near_any: bool = false
@@ -621,7 +627,6 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 	if info.is_empty():
 		pack["phase"] = "prowl"
-		pack["target"] = -1   # gone (left, or a dropped line parked 15 s: server_items is_absent): let go, not hunted on their return
 		return
 
 	var p: Vector3 = info["pos"]

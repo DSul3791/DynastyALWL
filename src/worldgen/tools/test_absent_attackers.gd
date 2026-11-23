@@ -13,6 +13,7 @@ const BigGame := preload("res://src/stream/server_big_game.gd")
 const DIR := "user://test_absent_attackers"
 const DT := 0.1
 const SPOT := Vector3(0.0, 10.0, 0.0)
+const OTHER := Vector3(-150.0, 10.0, 0.0)
 
 var failures: int = 0
 var items
@@ -44,6 +45,8 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), DIR)
 	items.peer_connected_hello(1, "absentattack01")
 	items.report_position(1, SPOT)
+	items.peer_connected_hello(2, "absentattack02")   # a second player stays, 150 m off (beyond the pack's notice and the bear's calm_m), so the
+	items.report_position(2, OTHER)                   # animals keep ticking when the first is parked (with nobody near they freeze or go)
 
 	animals = AnimalsScript.new()
 	animals.ground_height = func(_x, _z): return 10.0
@@ -93,6 +96,7 @@ func park() -> void:
 
 func run(seconds: float) -> void:
 	for k in int(round(seconds / DT)):
+		items.report_position(2, OTHER)   # the second player keeps reporting
 		animals.tick(DT)
 
 
@@ -110,7 +114,7 @@ func _wolves() -> void:
 	run(3.0)
 	var before: int = bites
 	park()
-	check(items.is_absent(1) and items.wolf_info().is_empty(), "a quiet player is parked: out of the attackers' list")
+	check(items.is_absent(1) and not items.is_absent(2) and items.wolf_info().size() == 1, "a quiet player is parked: out of the attackers' list (the other stays)")
 	run(2.0)
 	check(int(pack["target"]) != 1 and not (str(pack["phase"]) in ["rush", "stalk"]), "the pack lets go of a parked player (phase %s, target %d)" % [str(pack["phase"]), int(pack["target"])])
 	run(30.0)
@@ -138,5 +142,5 @@ func _bear() -> void:
 	run(15.0)
 	var state: int = int(animals.animals[id]["state"]) if animals.animals.has(id) else -1
 	check(blows == 0, "a bear's charge at a parked player lands nothing (%d blows)" % blows)
-	check(not (state in [BigGame.WARN, BigGame.WARN_POP, BigGame.CHARGE, BigGame.RECOVER]) and not animals.animals[id].has("foe_peer"), "and it calms, with no foe kept (state %d)" % state)
+	check(animals.animals.has(id) and not (state in [BigGame.WARN, BigGame.WARN_POP, BigGame.CHARGE, BigGame.RECOVER]) and int(animals.animals[id].get("foe_peer", -1)) != 1, "and it calms, with no foe kept (state %d)" % state)
 	back()
