@@ -148,7 +148,7 @@ var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last 
 var _npc_send_t: float = 0.0
 var _pulse_t: float = 0.0
 var _water_updates: int = 0
-var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
+var weather: Dictionary = {}           # the starter row's weather at sea level (WeatherScript.state), refreshed every second: the flora season, the log line, fallbacks
 var _weather_next_msec: int = 0
 var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
 var _weather_here_msec: int = -100000
@@ -160,8 +160,7 @@ var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sen
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
-var _swell: float = 0.0
-var _dry: float = 0.0
+var _river_rows: Dictionary = {}   # tile row -> [swell, dry]: each live row's rivers follow their own row's weather, lagged (not saved: they settle in WEATHER_LAG_S)
 var _weather_bucket: int = -1
 var _water_seen: Dictionary = {}        # tile -> msec a player was last in it (the live water set keeps a tile WATER_KEEP_MS after)
 var _water_live_next: int = 0
@@ -1049,6 +1048,7 @@ func _ready() -> void:
 	bandits.flush_world = func(): items.save()
 	animals.big_game.struck = func(struck_animal, struck_peer, struck_result): bandits.struck(struck_animal, struck_peer, struck_result)   # a landed charge (it changes nothing about the blow)
 	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
+	bandits.captor_absent = items.is_absent   # a captive waits for a captor whose line dropped
 	bandits.guards_at = func():
 		var guard_spots: Array = []
 
@@ -1164,6 +1164,7 @@ func _ready() -> void:
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
 			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
+			bandits.captor_back(old_peer, peer)   # a bandit they tied waits for this connection now
 
 			_drop_replaced(old_peer)
 
@@ -1897,7 +1898,7 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
+	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
@@ -1907,11 +1908,38 @@ func _update_weather() -> void:
 
 	if bucket != _weather_bucket:
 		_weather_bucket = bucket
-		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
+		print("server: starter row weather %s, rain %.2f snow %.2f storm %.2f, %.0f C; live water row %d rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.centre.y, water_live.runoff])
 
-	_swell += (WeatherScript.river_push(weather) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	_dry += (WeatherScript.river_dry(weather) - _dry) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	water_live.set_runoff(maxf(1.0 + WEATHER_SWELL * _swell - DRY_SHRINK * _dry, RUNOFF_FLOOR))
+	water_live.set_runoff(_river_runoff(game_s, water_live.centre.y))
+
+
+# The runoff for the running water tile (row `running`: the hub's centre, the first baked tile of set_live): its own row's rain and heat at
+# sea level, lagged WEATHER_LAG_S, so a river rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn
+# is). The rows of the next few live tiles are followed too, so a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
+# shortcut: a tile's rivers rise by their own tile row; an upstream stretch in another row is not weighted in (physical world thread
+# 23 Nov 2026: nearly every catchment sits inside its own tile or the next).
+func _river_runoff(game_s: float, running: int) -> float:
+	var rows: Array = [running]
+
+	for tile in _water_live_last.slice(0, 4):   # set_live's four at most
+		if not rows.has((tile as Vector2i).y):
+			rows.append((tile as Vector2i).y)
+
+	for row in _river_rows.keys():
+		if not rows.has(row):
+			_river_rows.erase(row)
+
+	var k: float = 1.0 - exp(-1.0 / WEATHER_LAG_S)
+
+	for row in rows:
+		var here: Dictionary = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+		var push: float = WeatherScript.river_push(here)
+		var dry: float = WeatherScript.river_dry(here)
+		var was: Array = _river_rows.get(row, [0.0, 0.0])   # a row newly live starts from its baked flow, as its new water window does, and swells from there
+		_river_rows[row] = [float(was[0]) + (push - float(was[0])) * k, float(was[1]) + (dry - float(was[1])) * k]
+
+	var run: Array = _river_rows[rows[0]]
+	return maxf(1.0 + WEATHER_SWELL * float(run[0]) - DRY_SHRINK * float(run[1]), RUNOFF_FLOOR)
 
 
 # The water sim follows the players (tech/WATER_NINE_TILES_PLAN.md): the tiles they stand in, kept
