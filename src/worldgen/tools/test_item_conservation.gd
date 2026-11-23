@@ -24,6 +24,7 @@ const BURN_OK := ["stick", "plant_fibre", "firewood", "linseed", "twine"]
 const GROW_OK := ["charcoal"]
 const FIRE_SEEDS := [5, 31]
 const YARD_SEEDS := [7, 41, 88]
+const LATE_STEP := 1000   # yard runs take the cart, the crate and the loom down only from this step on
 
 var failures: int = 0
 var items
@@ -34,6 +35,7 @@ var fire_mode: bool = false   # a run that lights, feeds, puts out and cooks at 
 var yard_mode: bool = false   # a run with a Loom and a Handcart (stations and carts)
 var clock: Array = [1.0e6]
 var said: Dictionary = {}     # peer -> the last notice, for the log
+var step_at: int = 0          # the run's step: the cart, the crate and the loom come down only in its last third
 var seen: Dictionary = {}     # what the yard runs did, over all seeds: each must have happened, or the run tested nothing
 
 
@@ -148,7 +150,13 @@ func totals() -> Dictionary:
 				var row: Dictionary = items._blueprints[int(items._blueprint_of_kit[kit_id])]
 
 				for need in row["cost"]:
-					for pair in items._kinds_back(str(need[0]), int(need[1]), it["struct"].get("kinds", {})):
+					var count: int = int(need[1])
+
+					for burnt in row.get("spent", []):   # a lantern's candle burns away (_refund_blueprint)
+						if str(burnt[0]) == str(need[0]):
+							count = maxi(count - int(burnt[1]), 0)
+
+					for pair in items._kinds_back(str(need[0]), count, it["struct"].get("kinds", {})):
 						add.call(int(pair[0]), int(pair[1]))
 
 				continue
@@ -269,7 +277,14 @@ func yard_step(peer: int, rng: RandomNumberGenerator) -> String:
 	var cart: int = cart_id()
 	var what: int = rng.randi() % 6
 
-	if rng.randf() < 0.03:   # empty the cart or the loom into the pack and take it down for its materials
+	for id in items._items:   # the crate taken down and laid again has a new world id
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "wooden_crate":
+			crate_id = id
+
+	for id in ground_ids():   # weaving and pulling pass time: loose stacks would despawn (WORLD_ITEM_LIFETIME_S), which is not what this run checks
+		items._items[id]["left"] = maxf(float(items._items[id]["left"]), 1.0e7)
+
+	if step_at >= LATE_STEP and rng.randf() < 0.03:   # empty the cart or the loom into the pack and take it down for its materials
 		var id: int = cart if cart != 0 and rng.randf() < 0.5 else loom_id()
 
 		if id == 0:
@@ -402,7 +417,7 @@ func step(rng: RandomNumberGenerator) -> String:
 	elif roll >= 100:
 		var secs: int = (1 + rng.randi() % 3) * (60 if fire_mode else 1)
 
-		if fire_mode:
+		if fire_mode or yard_mode:
 			for id in ground_ids():   # hours pass: loose stacks would despawn (WORLD_ITEM_LIFETIME_S, a rule of its own, for Dave), which is not what this run checks
 				items._items[id]["left"] = maxf(float(items._items[id]["left"]), 1.0e7)
 
@@ -473,7 +488,7 @@ func step(rng: RandomNumberGenerator) -> String:
 	elif roll < 97 and not boxes.is_empty():
 		var id: int = int(boxes[rng.randi() % boxes.size()])
 
-		if yard_mode and (id == crate_id or id == cart_id()) and rng.randf() < 0.95:
+		if yard_mode and (id == crate_id or id == cart_id()) and (step_at < LATE_STEP or rng.randf() < 0.9):
 			return "p%d keeps %d standing" % [peer, id]   # the cart and the crate come down now and then, late enough to have been pulled about
 
 		items.action(peer, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -551,6 +566,7 @@ func run(run_seed: int) -> void:
 	log_lines.clear()
 
 	for i in STEPS:
+		step_at = i
 		var had_cart: bool = cart_id() != 0
 		var had_loom: bool = loom_id() != 0
 		var did: String = step(rng)
