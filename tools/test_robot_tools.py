@@ -8,6 +8,7 @@
 2. robot_check: hand-written logs that hold every invariant pass (exit 0); a client pack that is not the server's, a ROBOT FAIL line,
    an AUDIT jump, a SCRIPT ERROR and a robot that never finished each fail (exit 1); a missing join is a broken run (exit 2).
 """
+import math
 import os
 import socket
 import subprocess
@@ -334,6 +335,7 @@ def test_twin():
 		("fails the same log when the server never said same character", twin, "1", [], 1),
 		("fails a dropped twin that exited 134", twin, "134", [same], 1),
 		("fails a twin log without the dropped line", twin[:1], "1", [same], 1),
+		("passes a twin told by the server first (join refused notice, no LOST line)", twin[:1] + ["Terrain client: join refused: This character joined the server again from another game window or computer, so this one was closed. Nothing was lost."], "1", [same], 0),
 		("still fails an engine ERROR in the server log beside an excused twin", twin, "1", [same, "ERROR: Cannot open file 'x'."], 1),
 	]:
 		with tempfile.TemporaryDirectory() as d:
@@ -349,6 +351,36 @@ def test_twin():
 
 			r = run_check(d)
 			check(r.returncode == want, "robot_check %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
+
+
+def test_kinds():
+	"""Plan kind_: robot_kinds.py reads both robots' A lines and the server's blows; the two clients' gap and the drawn-vs-server gap."""
+	import importlib.util
+	spec = importlib.util.spec_from_file_location("robot_kinds", os.path.join(os.path.dirname(os.path.abspath(__file__)), "robot_kinds.py"))
+	rk = importlib.util.module_from_spec(spec)
+	spec.loader.exec_module(rk)
+
+	with tempfile.TemporaryDirectory() as d:
+		for n, peer, off in ((1, 11, 0.0), (2, 12, 2.0)):
+			lines = ["ROBOT Robot %d step joined: peer %d at (0, 0, 0)" % (n, peer)]
+
+			for i in range(40):
+				ms = 10000 + i * 100
+				lines.append("ROBOT Robot %d P %d %.2f 0.00" % (n, ms, i * 0.1))
+				lines.append("ROBOT Robot %d A %d 7 %.2f 5.00 11" % (n, ms, i * 0.3 + off))
+
+			lines.append("ROBOT Robot %d KIND boar 8 frames 40 largest_step 0.30 m largest_x 1.00 over_1m 0 inside_other 0 lowest_health 100" % n)
+			write(d, "robot%d_play.log" % n, lines)
+
+		write(d, "server.log", ["AUDIT enemy_hit 11 12000 boar from 9.00,5.00 player 2.00,0.00 gap 1.00 result hurt shield 0.00"])
+		robots, hits = rk.read_run(d)
+		one, two = robots["robot1"], robots["robot2"]
+		check(len(one["a"][7]) == 40 and len(one["p"]) == 40 and one["peer"] == 11, "robot_kinds reads A, P and joined lines")
+		check(abs(rk.at(two["a"][7], 12050)[0] - (6.15 + 2.0)) < 0.01, "robot_kinds interpolates the other robot's drawn place")
+		check(len(hits) == 1 and hits[0]["peer"] == 11 and hits[0]["from"] == (9.0, 5.0), "robot_kinds reads AUDIT enemy_hit")
+		drawn = rk.at(one["a"][7], hits[0]["ms"])
+		check(abs(math.hypot(drawn[0] - 9.0, drawn[1] - 5.0) - 3.0) < 0.01, "the drawn-vs-server gap at a blow (drawn 6.0, server 9.0)")
+		check(rk.at(one["a"][7], 99999) is None, "no drawn place long after the last row")
 
 
 def watch_logs(d, jump=False, swing_clip="chop", still=False):
@@ -420,6 +452,7 @@ if __name__ == "__main__":
 	test_others()
 	test_solo()
 	test_twin()
+	test_kinds()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
 	sys.exit(1 if failures else 0)

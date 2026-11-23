@@ -225,7 +225,7 @@ func _process(delta: float) -> void:
 
 	if a_now:
 		_a_ms = now
-		print("ROBOT %s P %d %.2f %.2f" % [robot_name, _now_ms(), me.x, me.z])
+		FreezeWatchScript.printer.line("ROBOT %s P %d %.2f %.2f" % [robot_name, _now_ms(), me.x, me.z])
 
 	if view != null:
 		for row in view.drawn_positions():
@@ -3352,9 +3352,9 @@ func _kind(kind_name: String) -> void:
 		await _wait(2.0)
 
 	var st: Array = _kstat.get(sp, [0, 0.0, 0.0, 0])
-	print("ROBOT %s KIND %s %d frames %d largest_step %.2f m largest_x %.2f over_1m %d inside_other %d lowest_health %d" % [
+	FreezeWatchScript.printer.line("ROBOT %s KIND %s %d frames %d largest_step %.2f m largest_x %.2f over_1m %d inside_other %d lowest_health %d" % [
 		robot_name, kind_name, sp, int(st[0]), float(st[1]), float(st[2]), int(st[3]), _inside_other, _lowest_health])
-	print("ROBOT %s SLIDE %s model_samples %d moving %d standing_clip %d rate_top %d rate_bottom %d feet_off %d feet_ground %.2f..%.2f%s" % [
+	FreezeWatchScript.printer.line("ROBOT %s SLIDE %s model_samples %d moving %d standing_clip %d rate_top %d rate_bottom %d feet_off %d feet_ground %.2f..%.2f%s" % [
 		robot_name, kind_name, int(_slide[0]), int(_slide[1]), int(_slide[2]), int(_slide[3]), int(_slide[4]), int(_slide[5]),
 		float(_slide[6]) if int(_slide[1]) > 0 else 0.0, float(_slide[7]), "" if int(_slide[0]) > 0 else " (no bought models here: code-built bodies step by the ground speed)"])
 
@@ -3375,7 +3375,7 @@ func _kind_frame(id: int, pos: Vector3, a_now: bool) -> void:
 	if a_now:
 		var b: Dictionary = client._animal_view_node._bodies.get(id, {})
 		_slide_sample(id, pos, b)
-		print("ROBOT %s A %d %d %.2f %.2f %d" % [robot_name, _now_ms(), id, pos.x, pos.z, int(b.get("state", -1))])
+		FreezeWatchScript.printer.line("ROBOT %s A %d %d %.2f %.2f %d" % [robot_name, _now_ms(), id, pos.x, pos.z, int(b.get("state", -1))])
 
 
 func _kind_hurt(before: int, after: int) -> void:
@@ -3391,7 +3391,7 @@ func _kind_hurt(before: int, after: int) -> void:
 			best = int(row[0])
 
 	var b: Dictionary = client._animal_view_node._bodies.get(best, {})
-	print("ROBOT %s BITTEN %d health %d -> %d by %d drawn gap %.2f state %d at %.2f %.2f" % [robot_name, _now_ms(), before, after, best, gap, int(b.get("state", -1)), me.x, me.z])
+	FreezeWatchScript.printer.line("ROBOT %s BITTEN %d health %d -> %d by %d drawn gap %.2f state %d at %.2f %.2f" % [robot_name, _now_ms(), before, after, best, gap, int(b.get("state", -1)), me.x, me.z])
 
 
 # Feet against ground, every A sample of a body drawn with a bought model (an AnimationPlayer; none in cloud clones, tools/skip_models.sh).
