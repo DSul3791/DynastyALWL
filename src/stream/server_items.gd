@@ -7930,14 +7930,15 @@ func _clear_retired_pieces() -> void:
 		_load_row_of.erase(id)
 		_dirty = true
 
-		for item_id in give_back:
-			var number: int = _refund_number(table.number_of(str(item_id)))
+		var kinds: Dictionary = (it["struct"]["site"] as Dictionary).get("kinds", {}) if it["struct"].has("site") else it["struct"].get("kinds", {})
 
-			if number <= 0:
+		for item_id in give_back:
+			if table.number_of(str(item_id)) <= 0:
 				push_error("cleared %s: no item %s to give back" % [str(it["struct"]["kind"]), str(item_id)])
 				continue
 
-			drop_in_world(number, int(give_back[item_id]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
+			for pair in _kinds_back(str(item_id), int(give_back[item_id]), kinds):   # what went in (_note_kinds); a 9257 piece: a group's lowest member
+				drop_in_world(int(pair[0]), int(pair[1]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
 
 
 # An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.
@@ -12750,6 +12751,9 @@ func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 # take-down gives those back, not the cheapest member of a group cost (to-do sweep 23 Nov 2026: Bronze nails put in came back as Copper nails).
 # A site or piece from before (build 9257) has none: what it holds comes back as before.
 func _note_kinds(site: Dictionary, need_id: String, taken: Array) -> void:
+	if table.spend_order(table.number_of(need_id)).is_empty():
+		return   # a plain cost comes back as itself anyway: only a group cost is noted, so saves stay small
+
 	if not site.has("kinds"):
 		site["kinds"] = {}
 

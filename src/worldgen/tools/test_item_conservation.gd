@@ -115,6 +115,9 @@ func totals() -> Dictionary:
 	for id in items._items:
 		var it: Dictionary = items._items[id]
 
+		if it.has("struct") and str(it["struct"]["kind"]) == "remains":
+			continue   # a body: only what lies on it counts (its store, above)
+
 		if it.has("struct"):
 			var kit_id: String = str(items._structures.get(str(it["struct"]["kind"]), {}).get("kit", ""))
 			add.call(items.table.number_of(kit_id) if kit_id != "" else int(it["number"]), 1)
@@ -303,6 +306,10 @@ func step(rng: RandomNumberGenerator) -> String:
 		var spot: Vector3 = HERE + Vector3(rng.randf_range(-3.0, 3.0), 0.0, rng.randf_range(1.5, 3.5))
 		items.action(peer, Net.ACT_PLACE, s, 0, 0, spot)
 		return "p%d place slot %d at %s" % [peer, s, spot]
+	elif roll < 99 and rng.randf() < 0.25:
+		var died: bool = items.kill(peer, "test")
+		items.report_position(peer, HERE + Vector3(float(peer) * 0.5, 0.0, 0.0))
+		return "p%d died%s" % [peer, "" if died else " (refused)"]
 	elif roll < 99:
 		items.peer_left(peer)
 		join(peer)
