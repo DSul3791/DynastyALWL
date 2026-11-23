@@ -1068,12 +1068,40 @@ func _pose_lines(delta: float) -> void:
 func _sleep() -> void:
 	_step = "sleep"
 	await _stance_to(StanceScript.LIE)
-	client.net.inventory_action.rpc_id(1, NetScript.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	var slept: bool = await _fall_asleep()
 	await _wait(6.0)
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
 	await _wait(2.0)
+
+	if slept and client.items.asleep:
+		_fail("sleep", "wake", "still asleep 2 s after asking to wake")
+
 	await _stance_to(StanceScript.STAND)
-	print("ROBOT %s step sleep: lay down, slept, woke" % robot_name)
+	print("ROBOT %s step sleep: lay down, %s, woke" % [robot_name, "slept" if slept else "never fell asleep"])
+
+
+# Lying down: full energy cannot sleep (server_items _sleep, Dave 21 Oct 2026), so an admin robot is made tired first. True once the server
+# says it sleeps (items.asleep). A refusal without a reason is a FAIL only when the robot was tired.
+func _fall_asleep() -> bool:
+	if admin:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_ENERGY, 0, 0, 40, Vector3.ZERO)
+		await _wait(1.0)
+
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	var t0: int = Time.get_ticks_msec()
+
+	while Time.get_ticks_msec() - t0 < 4000:
+		if client.items.asleep:
+			return true
+
+		await get_tree().process_frame
+
+	if admin:
+		_fail("sleep", "asleep", "lying, energy set to 40, asked to sleep: not asleep after 4 s (notices: %s)" % str(_notices.slice(-3)))
+	else:
+		_note("sleep", "not asleep after 4 s (full energy cannot sleep)")
+
+	return false
 
 
 # --- plan watch: Robot 1 walks, stops, runs, swings and sleeps; Robot 2 stands and logs how it draws Robot 1 every frame (W lines).
@@ -1122,7 +1150,7 @@ func _walker() -> void:
 		await _wait(2.5)
 
 	await _stance_to(StanceScript.LIE)
-	client.net.inventory_action.rpc_id(1, NetScript.ACT_SLEEP, 1, 0, 0, Vector3.ZERO)
+	var _slept: bool = await _fall_asleep()
 	_event("sleep_on")
 	await _wait(6.0)
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_SLEEP, 0, 0, 0, Vector3.ZERO)
