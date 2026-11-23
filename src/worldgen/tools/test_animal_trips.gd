@@ -241,7 +241,7 @@ func _init() -> void:
 	t.updates_for(3, Vector3(128.0 + 4.0 * 256.0, 10.0, 128.0), 4000)   # walked four blocks off: the client forgets the old ones
 	check(t.updates_for(3, Vector3(128.0, 10.0, 128.0), 5000).size() == next.size(), "back again, the blocks and their trails are sent again")
 
-	# A player standing still while animals wear the grass around them (the stutter hunt, protocol 157): the worn cells go again, the
+	# A player standing still while animals wear the grass around them (the stutter hunt, protocol 158): the worn cells go again, the
 	# routes do not; the client keeps the routes it has and does no work for them.
 	var cell_sends: int = 0
 	var route_sends: int = 0

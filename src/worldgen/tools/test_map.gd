@@ -525,7 +525,7 @@ func trails_checks() -> void:
 	m.note_trails(71, Vector2i(0, 0), routes)
 	check(m.trail_updates_for(71).is_empty(), "the same routes again send nothing")
 	m.note_trails(71, Vector2i(0, 0), TrailCodec.ROUTES_SAME)
-	check(m.trail_updates_for(71).is_empty(), "routes marked unchanged (protocol 157) send nothing")
+	check(m.trail_updates_for(71).is_empty(), "routes marked unchanged (protocol 158) send nothing")
 	m.save()
 	m.forget_peer(71)
 	var again = make(dir)

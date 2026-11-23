@@ -234,7 +234,7 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 
 			var sent_routes: PackedByteArray = routes
 			if not rec.is_empty() and int(rec[2]) == route_sig:
-				sent_routes = Codec.ROUTES_SAME   # only the worn cells changed: the routes this peer has are still right, not sent again (protocol 157)
+				sent_routes = Codec.ROUTES_SAME   # only the worn cells changed: the routes this peer has are still right, not sent again (protocol 158)
 
 			known[key] = [ver, now_msec, route_sig]
 			out.append([key.x, key.y, Codec.encode(cells), sent_routes])

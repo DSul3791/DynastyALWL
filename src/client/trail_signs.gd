@@ -74,7 +74,7 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 
 	for key in routes.keys():
 		if absi(key.x - int(floor(player.x / TrailCodec.ROUTE_BLOCK_M))) > 3 or absi(key.y - int(floor(player.z / TrailCodec.ROUTE_BLOCK_M))) > 3:
-			routes.erase(key)   # far behind, one block past where the server forgets them (routes are sent once, protocol 157); they come again on return
+			routes.erase(key)   # far behind, one block past where the server forgets them (routes are sent once, protocol 158); they come again on return
 			_dirty = true
 
 	var moved: bool = _built_at == Vector3.INF or Vector2(player.x - _built_at.x, player.z - _built_at.z).length() > float(cfg.get("rebuild_move_m", 8.0))

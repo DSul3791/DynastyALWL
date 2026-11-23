@@ -518,7 +518,7 @@ func _rebuild_runs(player: Vector3) -> void:
 	var texels: int = 0
 
 	for key in _run_routes.keys():
-		if absi(key.x - here.x) > 3 or absi(key.y - here.y) > 3:   # one block wider than the server forgets at (server_trails.gd updates_for): routes are sent once (protocol 157), so the client never drops a block the server still counts as sent
+		if absi(key.x - here.x) > 3 or absi(key.y - here.y) > 3:   # one block wider than the server forgets at (server_trails.gd updates_for): routes are sent once (protocol 158), so the client never drops a block the server still counts as sent
 			_run_routes.erase(key)
 			continue
 

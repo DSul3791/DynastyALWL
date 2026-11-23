@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 157  # 157 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
+const PROTOCOL_VERSION := 158  # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
+# 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
 # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
 # 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 154 (23 Nov 2026, Dave on the real server: animals "teleporting and jumping right through us"): a standing animal's row carries the send time; ENet never drops unreliable packets on purpose (data/network.json packet_throttle_*); see PROTOCOL.md. Client and server must be updated together.
@@ -227,6 +228,7 @@ const ACT_TILL_GARDEN := 80   # a = the held pack slot, b = the grid's turn in d
 const ACT_PLANT_GRID := 82   # a = the held pack slot (the hoe), b = the item to plant, c = check * 10000000 + yaw * 10000 + width * 100 + length, at = the grid's centre: plant every usable point from the crafting stock (129)
 const ACT_DIG_TRENCH := 83   # a = the held pack slot (the hoe), b = the way the player faces in whole degrees, at = the ground point: dig one 2 m irrigation trench piece there, turned that way (135)
 const ACT_ADMIN_SKILL := 85   # admin only, tests and the look rig (--shot-skill): a = the skill's place in skills.json "skills", count = the value it is set to (no protocol change)
+const ACT_SEEN := 86   # b = the server ms this screen showed the animals at, count = the same for a committed charge (the row clock, as ACT_STRIKE's b and count), sent just before ACT_SHOOT or ACT_THROW: the arrow or spear is judged against the animals where this player saw them, at most rewind_max_ms back (protocol 157)
 const ACT_AUTOLOAD := 84   # a = a storage container's world id, b = the item number (0: stop its standing autoload), count = 1: keep loading it every 10 minutes: the container takes that item from the ground within 30 m of it, nearest first, as much as it holds (139); answered with autoload_info and a notice
 # 51 was ACT_SOW (E on a bed sowed a seed from the pack), retired 19 Nov 2026 (Dave play test: seeds went in without the hoe in hand); sowing is ACT_PLANT_GRID only. A server ignores an unknown kind, so no protocol bump.
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
@@ -988,7 +990,7 @@ func held_item(number: int) -> void:
 # index = local_x + local_z * 64 from the block's south-west corner; block = 256 m, cell = 4 m, see data/animals/trails.json).
 # Sent for the 3 x 3 blocks around the player when they enter a block and when a block changes (at most every 30 s a block).
 # routes (protocol 149): the block's trails between animal places, trail_codec.gd decode_routes (empty while not worked out).
-# routes is trail_codec.gd ROUTES_SAME (protocol 157) when this peer already has the block's routes and only the cells changed.
+# routes is trail_codec.gd ROUTES_SAME (protocol 158) when this peer already has the block's routes and only the cells changed.
 @rpc("authority", "call_remote", "reliable")
 func trails(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 	trails_received.emit(block_x, block_z, bytes, routes)

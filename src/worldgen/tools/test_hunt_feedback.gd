@@ -136,6 +136,13 @@ func _init() -> void:
 	st["moved_ms"] = now
 	e.note_past(st, Vector3(0.0, GROUND, 20.0), 100)   # a 0.1 s step
 	check(e.pos_at(st, now - 200).is_equal_approx(Vector3(0.0, GROUND, 20.0)), "an animal that stood, then stepped, was where it stood 200 ms ago (%s)" % str(e.pos_at(st, now - 200)))
+	# An arrow's step (target_on_segment) is judged the same way: across x 2, it misses the deer now at x 4, and hits where the archer saw it
+	# 300 ms ago; the struck point is moved onto the body as it is now.
+	var across_from: Vector3 = Vector3(2.0, GROUND + 0.5, -2.0)
+	var across_to: Vector3 = Vector3(2.0, GROUND + 0.5, 2.0)
+	check(e.target_on_segment(across_from, across_to, 0.6, 0.5).is_empty(), "an arrow across where it was, judged now, misses")
+	var shot: Dictionary = e.target_on_segment(across_from, across_to, 0.6, 0.5, now - 300, now - 300)
+	check(int(shot.get("id", 0)) == eid and absf((shot.get("point", Vector3.ZERO) as Vector3).x - 4.0) < 0.01 and (shot.get("at", Vector3.ZERO) as Vector3).is_equal_approx(ed["pos"]), "judged where the archer saw it, it hits, on the body as it is now (%s)" % str(shot))
 	ed["state"] = 10
 	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "a warning or charging animal is judged at the present the player's screen draws it at")
 
