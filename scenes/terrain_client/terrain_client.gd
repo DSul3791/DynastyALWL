@@ -820,7 +820,7 @@ func _ready() -> void:
 		elif argument == "--screenaudit":
 			test_screen_audit = true
 		elif argument.begins_with("--screenshots="):
-			test_screen_shots = argument.get_slice("=", 1)
+			test_screen_shots = argument.trim_prefix("--screenshots=")
 		elif argument == "--quickkeys":
 			test_quickkeys = true
 		elif argument == "--eat":
@@ -4325,7 +4325,7 @@ func _run_screen_audit() -> void:
 				var file_name: String = ("%s_%s.png" % [show[0], scale_name]).replace(" ", "_").replace(",", "")
 				DirAccess.make_dir_recursive_absolute(test_screen_shots)
 				var saved: int = picture.save_png(test_screen_shots.path_join(file_name)) if picture != null else ERR_CANT_CREATE
-				FreezeWatchScript.printer.line("Screen audit: picture %s %s (window %s)" % [file_name, "saved" if saved == OK else "FAILED", str(get_window().size)])
+				FreezeWatchScript.printer.line("Screen audit: picture %s %s (picture %s, window %s)" % [file_name, "saved" if saved == OK else "FAILED", str(picture.get_size()) if picture != null else "none", str(get_window().size)])
 
 			for line in problems:
 				FreezeWatchScript.printer.line("Screen audit:   " + line)
