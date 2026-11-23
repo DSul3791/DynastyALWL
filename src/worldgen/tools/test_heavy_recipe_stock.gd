@@ -2,7 +2,8 @@ extends SceneTree
 
 # A recipe heavier than a pack can hold is still made (tools/carry_audit.py "OVER CAP"): a craft takes from the player's own chests within 12 m
 # (craft_stock.gd; Dave 10 Nov 2026: "or they are within 12m of you"), so the Water wheel's 20 lumber (60 kg, over a 75 kg body's 52.5 kg cap)
-# come over in trips into a chest by the Stone workbench, and the wheel is made with the nails and tar from the pack.
+# come over in trips into a chest by the Stone workbench, and the wheel is made with the nails and tar from the pack. The 60 kg wheel is then put
+# down at the bench (over a bare back's limit); an Improved backpack (carry_bonus_kg 15) carries it.
 #   godot --headless --path . --script res://src/worldgen/tools/test_heavy_recipe_stock.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -64,6 +65,7 @@ func _init() -> void:
 
 	check(all_kg > cap, "the Water wheel needs %.1f kg (%.1f kg of it lumber), over the %.1f kg a 75 kg body carries" % [all_kg, lumber_kg, cap])
 
+	# A tripwire: if the wheel is ever made lighter than a bare back carries, this test's reason to exist is gone; retire it then.
 	var bench: int = items.dev_place("stone_workbench@3,0,0")
 	var chest: int = items.dev_place("chest@-3,0,0")
 	items._items[chest]["struct"]["owner"] = str(items._peer_key[1])
@@ -92,7 +94,7 @@ func _init() -> void:
 
 	check(on_ground == 1 and said.any(func(t): return str(t).begins_with("Too heavy to carry")), "the wheel is made from the chest's lumber; at %.0f kg it is too heavy for a bare back, so it is put down at the bench (%s)" % [CarryRules.weight_of("water_wheel", items._carry_cfg), str(said)])
 	check(items._chest_of(1, chest).count_of(n("lumber")) == 0 and items.inventory_of(1).count_of(n("nails")) == 0, "every ingredient used once")
-	check(items._stock_of(1)["near"].size() >= 1, "and it is crafting stock where it lies, for the Sawmill built beside it")
+	check(items._stock_of(1)["near"].size() >= 1, "and it counts as crafting stock where it lies")
 
 	# An Improved backpack (carry_bonus_kg) lifts the limit past the wheel's weight: the wheel can be carried to a river.
 	items.inventory_of(1).add(n("improved_backpack"), 1)
