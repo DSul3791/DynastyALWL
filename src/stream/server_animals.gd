@@ -916,8 +916,10 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 
 	var def: Dictionary = species_def(str(a["sp"]))
 
-	if swims(def):
-		return false   # a swimmer in the water keeps its line (its height is the water's)
+	# A swimmer in the water keeps its line (its height is the water's); on land it steps out like any other (robots 23 Nov 2026: every
+	# moose, a swimmer, was refused here on dry ground and stood 0.2 to 0.6 m inside a player for seconds, striking from there).
+	if swims(def) and in_water(def, a["pos"]):
+		return false
 
 	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
 	# At up to half its flee speed (robots 23 Nov 2026: a dog a running player chased stayed 0.1 to 0.3 m inside them for 0.66 s at walking pace).

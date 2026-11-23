@@ -204,6 +204,15 @@ func _init() -> void:
 	var deep_el: Dictionary = {"sp": "elephant", "pos": Vector3(el_m - 1.0, 10.0, 0.0), "state": 0}
 	mw.make_way(deep_el, Vector3(0.0, 10.0, 0.0), 0.1)
 	check(deep_el["pos"].x - (el_m - 1.0) > AnimalContact.LEANED_MPS * 0.1 + 0.01, "an elephant a player is well inside (a late line) still steps out at its own pace (%.2f m in 0.1 s)" % (deep_el["pos"].x - (el_m - 1.0)))
+	# A swimmer on dry land steps out like any other (robots 23 Nov 2026: a moose, which swims, recovering 0.53 m from a player's middle
+	# struck from there seven times; make_way refused every swimmer); in the water it keeps its line.
+	var dry_moose: Dictionary = {"sp": "moose", "pos": Vector3(0.53, 10.0, 0.0), "state": 12}
+	check(mw.make_way(dry_moose, Vector3(0.0, 10.0, 0.0), 0.1) and dry_moose["pos"].x > 0.53, "a moose a player is inside on dry land steps out (%s)" % str(dry_moose["pos"]))
+	var wet_moose: Dictionary = {"sp": "moose", "pos": Vector3(0.53, 10.0, 0.0), "state": 0}
+	var dry_level: Callable = mw.water_level
+	mw.water_level = func(_x: float, _z: float) -> float: return 10.2
+	check(not mw.make_way(wet_moose, Vector3(0.0, 10.0, 0.0), 0.1) and wet_moose["pos"].x == 0.53, "a moose swimming keeps its line")
+	mw.water_level = dry_level
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))
