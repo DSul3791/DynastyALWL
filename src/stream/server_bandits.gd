@@ -815,10 +815,7 @@ func camp_tick(delta: float, players: Array) -> void:
 			else:
 				members[id]["pos"] = animals.animals[id]["pos"]
 
-				if animals.animals[id].has("gave_up"):
-					members[id]["captive"] = _captive_row(animals.animals[id])
-				else:
-					members[id].erase("captive")
+				_note_captive(animals.animals[id])
 
 		_members[cell] = members
 		var near: bool = false
@@ -1433,6 +1430,7 @@ func hurt(a: Dictionary, peer: int) -> bool:
 		if drop_gear.is_valid() and not gear_of(int(a.get("level", 1))).is_empty():
 			drop_gear.call(gear_of(int(a.get("level", 1)))[0], a["pos"])   # he throws down his weapon
 
+	_note_captive(a)
 	save()   # his weapon down and he a captive (_captives_of): both kept over a crash
 	_tell(peer, "The bandit gives up. Strike him with rope or twine in hand to tie him.")
 	return true
@@ -1452,6 +1450,7 @@ func bind(id: int, peer: int) -> bool:
 	a["bound_key"] = str(key_of.call(peer)) if key_of.is_valid() else ""   # who tied him, by character: kept over a restart (_captives_of)
 	a["gave_up"] = _now()   # the escape clock starts again from the tying
 	_tell(peer, "You tie the bandit. Lead him to a guard for the bounty.")
+	_note_captive(a)
 	save()   # at once: a crash before the next save would lose him (shortcut: where he was led since is saved only at the next save)
 	return true
 
@@ -1506,7 +1505,33 @@ func _captives_of(cell: Vector2i) -> Array:
 
 func _captive_row(a: Dictionary) -> Dictionary:
 	return {"level": int(a.get("level", 1)), "hp": float(a["hp"]), "x": a["pos"].x, "z": a["pos"].z, "spent": maxf(_now() - float(a["gave_up"]), 0.0), "at": _now(),
-		"captor": str(a.get("bound_key", "")) if a.has("bound_by") else ""}
+		"captor": str(a.get("bound_key", "")) if _tied_now(a) else ""}
+
+
+# Tied to a captor who is still his: waiting for them (is_held), or led by them while they are on. One whose captor quit or whose line timed
+# out is saved untied (he slips free at his next step anyway), so a restart never keeps him waiting for a player who left.
+func _tied_now(a: Dictionary) -> bool:
+	if not a.has("bound_by"):
+		return false
+
+	if is_held(a):
+		return true
+
+	return int(a["bound_by"]) >= 0 and key_of.is_valid() and str(key_of.call(int(a["bound_by"]))) == str(a.get("bound_key", ""))
+
+
+# His member row's captive row as he is now (camp_tick refreshes it each second; this is for the moments he gives up, is tied or goes free).
+func _note_captive(a: Dictionary) -> void:
+	var member: Variant = _members.get(a.get("camp", Vector2i.ZERO), {}).get(int(a["id"]))
+
+	if member == null:
+		return
+
+	if a.has("gave_up"):
+		member["captive"] = _captive_row(a)
+		member["captor_peer"] = int(a.get("bound_by", -1))   # not saved: to ask, once he is gone, whether his captor is still his (_keep_captive)
+	else:
+		(member as Dictionary).erase("captive")
 
 
 # A member who gave up leaves the world unsaved (despawned with nobody near, or his site's people sent off): his last row (camp_tick keeps
@@ -1519,6 +1544,14 @@ func _keep_captive(cell: Vector2i, id: int) -> void:
 
 		if animals.animals[id].has("gave_up"):
 			row = _captive_row(animals.animals[id])
+
+	elif row != null and str(row["captor"]) != "":
+		var peer: int = int(_members[cell][id].get("captor_peer", -1))
+		var still: bool = peer < 0 or (captor_absent.is_valid() and bool(captor_absent.call(peer))) or (key_of.is_valid() and str(key_of.call(peer)) == str(row["captor"]))
+
+		if not still:
+			row = (row as Dictionary).duplicate()
+			row["captor"] = ""   # his captor quit or timed out since the row was taken: kept untied (_tied_now)
 
 	if row != null and sites.has(cell):
 		var kept: Array = sites[cell].get("captives", [])
@@ -1608,12 +1641,12 @@ func captor_back(old_peer: int, new_peer: int) -> void:
 # escape_game_hours, or led past lead_slack_m, he slips free and goes back to camp (still badly hurt: one more blow and he gives up again).
 func _captive(a: Dictionary, dt: float) -> void:
 	var c: Dictionary = _clearing()
-	var peer: int = int(a.get("bound_by", -1))
-
 	# His captor's line dropped (parked after 15 s): he waits, tied where he stands, and his time to slip free does not run (coordinator's
 	# ruling, 23 Nov 2026: a dropped line must not cost the player what they earned) until the captor is back or has left the game.
 	if int(a.get("bound_by", 0)) < 0:
 		_link_captor(a)
+
+	var peer: int = int(a.get("bound_by", -1))
 
 	if is_held(a):
 		var held: float = _now()
@@ -1663,6 +1696,7 @@ func _set_free(a: Dictionary, peer: int, why: String) -> void:
 	a.erase("bound_by")
 	a.erase("bound_key")
 	a.erase("wound")   # he walks back to his seat (badly hurt still)
+	_note_captive(a)
 	save()   # free: no longer a captive in the file
 
 	if peer >= 0:

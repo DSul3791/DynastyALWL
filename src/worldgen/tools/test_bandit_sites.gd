@@ -959,7 +959,8 @@ func _surrender_kept() -> void:
 	check(one.has("gave_up") and int(one["state"]) == BanditsScript.SIT and not animals.big_game.handles(one), "beaten down mid-warning he gives up at once, no charge")
 	check(dropped.size() == 1 and b.sites[cell]["disarmed"] == [1], "his weapon is down and the camp remembers it")
 
-	# He goes with the animals (no player near) and is made again on return: no weapon to drop a second time.
+	# He slips free, goes with the animals (no player near) and is made again on return at his seat: no weapon to drop a second time.
+	b._set_free(one, 9, "")
 	animals.animals.clear()
 	b.camp_tick(1.0, near)
 	var again: Dictionary = animals.animals.values()[0]
@@ -1077,6 +1078,7 @@ func _captives_restart() -> void:
 
 	b2.camp_tick(1.0, [])
 	check(not animals2.animals.has(int(sitter2["id"])) and b2.sites[cell].get("captives", []).filter(func(m): return int(m["level"]) == 2).size() == 1, "the sitter goes with the animals and is kept")
+	check(not animals2.animals.has(int(spare["id"])) and b2.sites[cell].get("captives", []).filter(func(m): return int(m["level"]) == 1).size() == 1, "the one let go is not kept as a captive (only the led-off one is)")
 	b2.save()
 	check(_sites(dir).sites[cell].get("captives", []).filter(func(m): return int(m["level"]) == 2).size() == 1, "and saved")
 
@@ -1131,6 +1133,36 @@ func _captives_restart() -> void:
 	check(paid == [[7, int(c["bounty_copper_per_level"])]] and b2.sites[cell]["levels"] == [1, 2], "the restored captive handed over: his captor paid, one level 1 gone (%s)" % str(b2.sites[cell]["levels"]))
 	var after: BanditsScript = _sites(dir)
 	check(not after.sites[cell].has("captives") and after.sites[cell]["levels"] == [1, 2], "the file: no captive left, the levels as they are")
+
+	# A captor who quits (no longer on) while nobody else is near: he goes with the animals untied, and his hour runs on.
+	var quit_dir: String = "user://test_bandit_captives_quit"
+	DirAccess.make_dir_recursive_absolute(quit_dir)
+
+	for file in DirAccess.get_files_at(quit_dir):
+		DirAccess.remove_absolute(quit_dir + "/" + file)
+
+	var qp: Array = []
+	var qn: Array = []
+	made = _captive_world(quit_dir, qp, qn)
+	var qb: BanditsScript = made[0]
+	var qa = made[1]
+	var on_now: Dictionary = {7: "captorkey007"}
+	qb.key_of = func(peer): return str(on_now.get(int(peer), ""))
+	qb.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [1], "horses": 0}
+	qb.camp_tick(1.0, [camp_near])
+	var q: Dictionary = qa.animals.values()[0]
+	qa.damage(int(q["id"]), float(q["hp"]) * 0.9, 7)
+	qb.bind(int(q["id"]), 7)
+	qb.camp_tick(1.0, [camp_near])
+	on_now.clear()   # the captor quit
+	for t in 4:
+		qa.tick(0.25)   # nobody near: he goes with the animals
+	qb.camp_tick(1.0, [])
+	var kept_q: Array = qb.sites[cell].get("captives", [])
+	check(not qa.animals.has(int(q["id"])) and kept_q.size() == 1 and str(kept_q[0]["captor"]) == "", "his captor quit: kept untied, not waiting for a player who left (%s)" % str(kept_q))
+	clock[0] += escape + 10.0
+	qb.camp_tick(1.0, [camp_near])
+	check(not qb.sites[cell].has("captives") and qa.animals.values().size() == 1 and not (qa.animals.values()[0] as Dictionary).has("gave_up"), "his hour over, he is back at his seat as one of the camp")
 
 	# An old file (no captives) loads with none, and the camp is made whole.
 	var old: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/bandit_sites.json"))
