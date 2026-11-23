@@ -200,7 +200,7 @@ func _server() -> void:
 	check(is_equal_approx(Driver.speed_scale("walk_bow_raised", 1.0), Driver.speed_scale("walk", 1.0)) and is_equal_approx(Driver.speed_scale("walk_bow_drawn", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_bow_raised") == -1.0 and Driver.slope_tilt(true, Vector3(0.0, 0.9, 0.4), 2.0, "idle_bow_drawn") == 0.0, "an archer's walk is paced and reversed as the plain walk")
 	check(is_equal_approx(Driver.speed_scale("walk_shield_up", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_shield_up") == -1.0, "a walk with the shield up is paced and reversed as the plain walk")
 	check(PlayerViewScript.arm_pose({"left_kind": "shield", "more": PlayerViewScript.MORE_SHIELD_UP}) == "shield_up" and PlayerViewScript.arm_pose({"left_kind": "shield", "more": 0}) == ""
-		and PlayerViewScript.arm_pose({"left_kind": "torch", "more": PlayerViewScript.MORE_SHIELD_UP}) == "", "the shield-up gait only with a shield raised in the left hand")
+		and PlayerViewScript.arm_pose({"left_kind": "torch", "more": PlayerViewScript.MORE_SHIELD_UP}) == "" and PlayerViewScript.arm_pose({"left_kind": "shield", "held_kind": "bow", "more": PlayerViewScript.MORE_SHIELD_UP}) == "", "the shield-up gait only with a shield raised in the left hand, and not with a bow (both hands)")
 	back_rig.free()
 	# 162: a rod's float rides beside the row as one int (cast_code), read back to the same spot within 5 cm; a new cast is news; none is 0.
 	var float_at: Vector3 = Vector3(115.5, 8.2, 96.3)
@@ -584,6 +584,72 @@ func _client() -> void:
 # carrying 0.2 s position reports, each delivered 100 to 260 ms late (a random wobble), one in twenty lost and once four in a row, for a walk at 3 m/s, then a
 # stop. The drawn body must never jump (no frame step over a normal one plus the easing's catch-up), keep moving through the walk (no stand
 # then jump at a lost batch), and come to rest near the last point without running past and back.
+# The robots' wiggle (23 Nov 2026): a player running back and forth over 3 m every 0.5 s on a late, lossy link was drawn up to 2.2 m past where
+# it turned, walked on along its last leg through a lost batch (player_view carry_for). Measured as how far the drawn body goes beyond the
+# ends of its run, at a player's 60 fps, on rows timed as the server times them.
+func _check_wiggle() -> void:
+	var fps_was: int = Engine.max_fps
+	Engine.max_fps = LOSSY_FPS
+	var view: Node3D = PlayerViewScript.new()
+	view.table = ItemTableScript.load_default()
+	get_root().add_child(view)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	var at: Vector3 = Vector3(1000.0, 30.0, 1000.0)
+	camera.position = at + Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	view.on_look(9, "Wiggle", "body_1", "", PackedInt32Array())
+	var x_of: Callable = func(ms: int) -> float: return 3.0 - absf(fmod(float(ms) / 500.0, 2.0) - 1.0) * 3.0   # 6 m/s, turning every 0.5 s
+	var stamper = PlayersScript.new()
+	var stamp_clock: Array = [0]
+	stamper.now_ms = func() -> int: return int(stamp_clock[0])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 2204
+	var end_ms: int = 8000
+	var stamp_of: Dictionary = {}
+
+	for report in range(0, end_ms + 400, 200):
+		stamp_clock[0] = 20000 + report + rng.randi_range(0, 60)
+		var v: float = (float(x_of.call(report)) - float(x_of.call(report - 200))) / 0.2   # as the client sends it: its move over its own gap since the last report
+		stamper.note_move(9, at + Vector3(float(x_of.call(report)), 0.0, 0.0), Vector3(v, 0.0, 0.0))
+		stamper.note_report(9, 0.0)
+		stamp_of[report] = int(stamper._report_ms[9])
+
+	var queue: Array = []
+
+	for send in range(0, end_ms, 125):
+		var report: int = send - posmod(send, 200)
+
+		if rng.randf() < 0.03 or (send >= 3000 and send < 3400):
+			continue   # lost, and once a burst
+
+		queue.append([send + rng.randi_range(90, 150), int(stamp_of[report]), at + Vector3(float(x_of.call(report)), 0.0, 0.0)])
+
+	queue.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var start_ms: int = Time.get_ticks_msec()
+	var worst: float = 0.0
+
+	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + 500:
+		var now: int = Time.get_ticks_msec() - start_ms
+
+		while not queue.is_empty() and int(queue[0][0]) <= now:
+			var row: Array = queue.pop_front()
+			view.on_rows(PackedInt32Array([9]), PackedVector3Array([row[2]]), PackedFloat32Array([-PI * 0.5]), PackedByteArray([0]), PackedInt32Array([0]), PackedInt32Array([int(row[1])]))
+
+		await process_frame
+		var b: Dictionary = view._bodies.get(9, {})
+
+		if not b.is_empty() and now > 1500:
+			var dx: float = float((b["node"] as Node3D).position.x) - at.x
+			worst = maxf(worst, maxf(dx - 3.0, -dx))
+
+	check(worst < 0.2, "a player running back and forth on a late, lossy link is not drawn past where it turned (%.2f m beyond at most)" % worst)
+	view.queue_free()
+	camera.queue_free()
+	Engine.max_fps = fps_was
+	await process_frame
+
+
 # Run at a player's 60 frames a second, on rows timed as the server times them (23 Nov 2026: the 1.5 times limit failed 3 to 4 runs in 10
 # under load, on dev before protocol 162 and after alike: headless runs near 1000 fps and a loaded computer near 100, and the test stamped
 # rows by their arrival, a wobble the server takes out: server_players note_move). No frame may move more than 1.5 frames of the walk plus
@@ -1006,6 +1072,7 @@ func _check_hand_follows() -> void:
 func _init() -> void:
 	_server()
 	await _client()
+	await _check_wiggle()
 	await _check_lossy(1750, 800)    # a burst of lost batches mid-walk
 	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
 	await _check_holds()

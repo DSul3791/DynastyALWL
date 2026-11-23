@@ -19,6 +19,8 @@ var blocks: Dictionary = {}   # Vector2i block -> {cell index: [q, height, water
 var traps: Array = []         # [[Vector2 world x/z, kind], ...]: the traps this character has set (protocol 150, net.trap_marks_received)
 var trails: Dictionary = {}   # Vector2i trail block -> [[kind, PackedVector2Array world x/z], ...]: game trails this character was near (protocol 152)
 var trails_tracking: int = 10 # the Tracking level from which the Map draws them (data/map.json trails_tracking)
+var marks: Dictionary = {}    # Vector2i block -> [[kind, Vector2 world x/z, label], ...]: landmarks this character has seen there (protocol 166)
+var paths: Dictionary = {}    # Vector2i block -> {cell index: 1 path, 2 road}
 var _steps: Dictionary = {}   # Vector2i trail block -> its surveyed steps (surveyed_trail_steps), dropped when its routes or a map block over it change
 
 
@@ -31,16 +33,38 @@ func _init() -> void:
 		trails_tracking = int(parsed.get("trails_tracking", trails_tracking))
 
 
-# net.map_block_received: a block replaces what was held for it.
-func receive(block_x: int, block_z: int, bytes: PackedByteArray) -> void:
-	set_block(Vector2i(block_x, block_z), Codec.decode(bytes))
+# net.map_block_received: a block replaces what was held for it, its landmarks and path cells with it.
+func receive(block_x: int, block_z: int, bytes: PackedByteArray, block_marks: Array = [], block_paths: PackedInt32Array = PackedInt32Array()) -> void:
+	set_block(Vector2i(block_x, block_z), Codec.decode(bytes), block_marks, block_paths)
 
 
-func set_block(block: Vector2i, cells: Dictionary) -> void:
+func set_block(block: Vector2i, cells: Dictionary, block_marks: Array = [], block_paths: PackedInt32Array = PackedInt32Array()) -> void:
 	if cells.is_empty():
 		blocks.erase(block)
 	else:
 		blocks[block] = cells
+
+	var kept: Array = []
+
+	for row in block_marks:
+		if not cells.is_empty() and typeof(row) == TYPE_ARRAY and row.size() >= 4 and typeof(row[1]) in [TYPE_FLOAT, TYPE_INT] and typeof(row[2]) in [TYPE_FLOAT, TYPE_INT]:
+			kept.append([str(row[0]), Vector2(float(row[1]), float(row[2])), str(row[3]).left(40)])
+
+	if kept.is_empty():
+		marks.erase(block)
+	else:
+		marks[block] = kept
+
+	var cells_paths: Dictionary = {}
+
+	for v in block_paths:
+		if cells.has(v >> 2) and (v & 3) > 0:
+			cells_paths[v >> 2] = v & 3
+
+	if cells_paths.is_empty():
+		paths.erase(block)
+	else:
+		paths[block] = cells_paths
 
 	# Trail blocks whose routes may run over this map block (a route can reach a block side past its own) are worked out again.
 	var side: float = TrailCodec.ROUTE_BLOCK_M
@@ -117,6 +141,12 @@ func cell_at(cell: Vector2i) -> Array:
 		return []
 
 	return cells.get((cell.x - block.x * block_cells) + (cell.y - block.y * block_cells) * block_cells, [])
+
+
+# 1 path, 2 road, 0 none at a world cell.
+func path_at(cell: Vector2i) -> int:
+	var block: Vector2i = Vector2i(int(floor(float(cell.x) / float(block_cells))), int(floor(float(cell.y) / float(block_cells))))
+	return int(paths.get(block, {}).get((cell.x - block.x * block_cells) + (cell.y - block.y * block_cells) * block_cells, 0))
 
 
 func is_empty() -> bool:
