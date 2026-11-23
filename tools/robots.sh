@@ -3,6 +3,7 @@
 #   tools/robots.sh                       3 robots, plan first_hours, the default internet link (60 ms +- 25 each way, 2% loss)
 #   tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 #   tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   Robot 1 walks, stops, swings, sleeps; Robot 2 draws it (robot_watch.py)
+#   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 # Robot play-testers (23 Nov 2026, after build 9257's first hour on Dave's server found faults no one-machine test saw).
 # Starts a headless server with --robot-audit (src/server/robot_audit.gd) and --open-admin on a spare port, a simulated internet link in
 # front of it (tools/lossy_link.py: delay, jitter, loss), and ROBOTS real clients (headless, dummy renderer) each run by
@@ -56,7 +57,7 @@ pass() {
 
 START=$(date +%s)
 pass "$PLAN" play
-[ "$PLAN" = "first_hours" ] && { sleep 3; pass rejoin rejoin; }
+{ [ "$PLAN" = "first_hours" ] || [ "$PLAN" = "screens" ]; } && { sleep 3; pass rejoin rejoin; }
 echo "robots: passes took $(( $(date +%s) - START )) s"
 kill $LP 2>/dev/null; sleep 1
 kill $SP 2>/dev/null; sleep 3

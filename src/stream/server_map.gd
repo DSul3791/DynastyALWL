@@ -10,6 +10,7 @@ extends RefCounted
 # Map Scrolls (make, share, sell, inherit) are not designed yet: blocks_of() and cell_rows() are the read side a scroll would use.
 
 const Codec := preload("res://src/shared/map_codec.gd")
+const TrailCodecScript := preload("res://src/shared/trail_codec.gd")
 const CONFIG_PATH := "res://data/map.json"
 
 var cfg: Dictionary = {}
@@ -271,7 +272,7 @@ func updates_for(peer: int, at_msec: int = -1) -> Array:
 func note_trails(peer: int, block: Vector2i, routes: PackedByteArray) -> void:
 	var key: String = str(_peer_key.get(peer, key_of.call(peer) if key_of.is_valid() else ""))
 
-	if key == "" or routes.is_empty():
+	if key == "" or routes.is_empty() or routes == TrailCodecScript.ROUTES_SAME:
 		return   # not worked out right now (nobody near long enough): the last routes known are kept
 
 	var rec: Dictionary = _record(key)

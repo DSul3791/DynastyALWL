@@ -108,6 +108,7 @@ const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 15
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
+const IDLE_SAVED_SPOTS := 8            # characters' saved spots (most recent) prebuilt at start-up, with the spawn
 
 var _commit: String = GitStamp.short_commit()   # read once at start (Dave 17 Nov 2026): a server left running after a pull must name the code it runs, not the checkout now on disk, or the client's out-of-date check is fooled
 var _server_settings = ServerSettingsScript.new()
@@ -339,6 +340,16 @@ func _ready() -> void:
 
 	print("server: name \"%s\"; %s" % [_server_settings.server_name, _server_settings.note])
 	_load_game_clock()
+
+	# Test plays (lag lane 23 Nov 2026): --game-hour=H starts the clock at hour H of its current day, so standing-play hitch counts taken on
+	# different days compare (the sky's cost depends on the hour). Nothing else changes; the clock runs on from there and is saved as usual.
+	# For throwaway test stores only: it can move the clock back up to a day, which skews item, trade and animal timers on a kept world.
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
+			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
+			game_clock.seconds = day_start + clampf(float(argument.trim_prefix("--game-hour=")), 0.0, 23.99) * 3600.0
+			print("server: --game-hour: the clock starts at hour %.2f of day %d" % [game_clock.hour(), game_clock.day_of_year()])
+
 	var problem: String = store.setup(generator, store_dir)
 
 	if _clear_generated_at_start:
@@ -443,14 +454,16 @@ func _ready() -> void:
 		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
 	players = PlayersScript.new()
 	players.items = items
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more)
+	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
+	items.send_flight = players.flight
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
 	net.facing_reported.connect(players.note_report)
 	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
 	cues.items = items
 	cues.yaw_of = players.yaw_of
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
-	items.craft_began = cues.craft_started
+	items.craft_working = cues.craft_working
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -686,7 +699,9 @@ func _ready() -> void:
 	tribes.setup(store_dir)
 	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, stand guard at a weapon in hand, and hide from a player who struck one
 	npcs.chores = tribes.chore_plan   # and keep busy round their camp (camp life, Dave 20 Nov 2026)
-	net.held_reported.connect(items.report_held)   # the item in each player's hand (protocol 146), for "a weapon in hand"
+	net.held_reported.connect(func(peer: int, number: int, left: int, flags: int) -> void:
+		if limits.allow(peer, "held_item"):   # a client flipping its hands as fast as it can would make every client near it rebuild a torch
+			items.report_held(peer, number, left, flags))   # the item in each player's hand (protocol 146), for "a weapon in hand"
 	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	items.tribe_stock_line = tribes.stock_line   # what a goblin camp's chest and racks hold (the light version, Dave 20 Nov 2026)
 	animals = AnimalsScript.new()
@@ -963,6 +978,17 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
+		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
+			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
+				return null
+
+		var feet: Array = []
+
+		for trunk in _arrow_trunks(Vector3(camp_at.x, 0.0, camp_at.y), camp_reach):
+			feet.append([Vector2(trunk[0].x, trunk[0].z), float(trunk[1])])
+
+		return feet
 	animals.bandit_camps = bandits
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
@@ -1137,6 +1163,7 @@ func _ready() -> void:
 		_idle_threads = maxi(int(OS.get_environment("DYNASTY_IDLE_THREADS")), 0)
 
 	_make_idle_offsets()
+	_seed_idle_spots()
 
 	for n in range(_idle_threads):
 		var idle: Thread = Thread.new()
@@ -3688,6 +3715,20 @@ func _make_idle_offsets() -> void:
 	_idle_offsets = list.map(func(item): return [item[1], item[2], item[3]])
 
 
+# The spawn and the most recent saved spots go in as idle anchors under ids below zero (no peer has one), so the idle
+# builders make and save the ground round them with no one connected: after a TERRAIN_VERSION change threw the
+# generated ground away, the first joins find it built. With the ground already saved this is only store look-ups.
+# Each such anchor is dropped once its circle is done; players' own anchors always go first.
+func _seed_idle_spots() -> void:
+	var spots: Array = [spawn]
+	spots.append_array(items.saved_spots(IDLE_SAVED_SPOTS))
+	var id: int = -1
+
+	for spot in spots:
+		_idle_anchor[id] = Vector3i(int(floor(spot.x / 16.0)), 0, int(floor(spot.z / 16.0)))
+		id -= 1
+
+
 # Idle thread: while no player is waiting for anything, makes and saves the
 # blocks around each player, starting with the ones closest to them. Real
 # requests always go first (checked before every block).
@@ -3715,8 +3756,13 @@ func _idle_loop() -> void:
 			continue
 
 		var worked: bool = false
+		# Players in the order they asked (ids above zero), then the start-up spots, spawn first.
+		var order: Array = anchors.keys().filter(func(id): return id > 0)
+		var spots: Array = anchors.keys().filter(func(id): return id < 0)
+		spots.sort_custom(func(a, b): return a > b)
+		order.append_array(spots)
 
-		for peer in anchors:
+		for peer in order:
 			var anchor: Vector3i = anchors[peer]
 			var cursor: Array = cursors.get(peer, [Vector3i(), 0])
 
@@ -3735,6 +3781,14 @@ func _idle_loop() -> void:
 					break
 
 			cursors[peer] = cursor
+
+			if peer < 0 and cursor[1] >= _idle_offsets.size():
+				_queue_mutex.lock()
+				var dropped: bool = _idle_anchor.erase(peer)   # the other idle thread may have finished it first
+				_queue_mutex.unlock()
+
+				if dropped:
+					print("server: ground round start-up spot %d is claimed (built, found saved, or being built by the other idle thread)" % -peer)
 
 			if worked:
 				break

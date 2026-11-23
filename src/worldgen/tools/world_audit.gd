@@ -15,6 +15,7 @@ extends SceneTree
 #     --out=NAME       JSON report, always under user:// (default world_audit.json); --merge=N1,N2,... merges those part reports, prints
 #                      the total and writes user://world_audit_total.json
 #     --examples=N     worst examples kept per fault (default 12)
+#     --camps          instead of chunks: the starter town, the goblin camps and every bandit candidate site (trunks, boulders, tilt, water, overlaps)
 #     --caves          instead of chunks: every cave of every baked tile (walking lines, dens, den mouths, goblin paths, floor items)
 #
 # Nothing is written to the world; the tool reads the tiles, the placer, the water grid and the server's scatter layout.
@@ -77,6 +78,11 @@ const FAULTS := {
 	"cave_item_on_pool": ["a cave stone or boulder laid over a spring pool's water (hangs over it or sits on it)", 0.0],
 	"cave_prop_off": ["cave floor dressing (bones, goblin litter or fire, den droppings or bedding) more than 0.15 m off the floor mesh (looks)", 0.15],
 	"cave_item_buried": ["a cave stone or mine leftover more than 0.15 m under the floor mesh", 0.15],
+	"camp_in_trunk": ["a camp piece (town marker, camp fire, spawn, goblin camp prop, bandit Lean-to, seat or tether) overlapping a tree trunk collider", 0.05],
+	"camp_on_boulder": ["a camp piece overlapping a boulder or ore rock", 0.05],
+	"camp_tilted": ["ground rising across a camp piece's footprint more than a player may build on (PlacementRules.steep: a Lean-to 1.0 m, a fire 0.6 m) or, for furniture and NPC spots, 0.30 m", 0.30],
+	"camp_in_water": ["a camp piece standing in drawn water more than 0.10 m deep", 0.10],
+	"camp_overlap": ["two pieces of one camp inside each other", 0.05],
 	"far_float_lod1": ["at LOD 1 (the view past the near ring), a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod2": ["at LOD 2, a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod3": ["at LOD 3, a plant or tree base more than 0.25 m off the mesh", 0.25],
@@ -116,6 +122,7 @@ func _init() -> void:
 	var out: String = "user://world_audit.json"
 	var probe: Vector2 = Vector2.INF
 	var caves: bool = false
+	var camps: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		var value: String = argument.get_slice("=", 1)
@@ -142,6 +149,8 @@ func _init() -> void:
 		elif argument.begins_with("--merge="):
 			quit(_merge(value.split(",")))
 			return
+		elif argument == "--camps":
+			camps = true
 		elif argument == "--caves":
 			caves = true
 		elif argument.begins_with("--probe="):
@@ -182,7 +191,9 @@ func _init() -> void:
 	var mine: Array = []
 	var started: int = Time.get_ticks_msec()
 
-	if caves:
+	if camps:
+		mine = _audit_camps(settings)
+	elif caves:
 		mine = _audit_caves(part)
 	else:
 		_setup_items(settings)
@@ -194,7 +205,7 @@ func _init() -> void:
 
 		print("world_audit: %d chunks picked, %d in part %d/%d" % [chunks.size(), mine.size(), part.x, part.y])
 
-	for n in range(0 if caves else mine.size()):
+	for n in range(0 if caves or camps else mine.size()):
 		var c: Vector2i = mine[n][0]
 		_biome_now = str(mine[n][1])
 		_audit_chunk(c, windows, lods)
@@ -1100,6 +1111,333 @@ func _check_cave_scatter(data) -> void:
 			_fault("cave_item_floats", p.y - f.x, p, "%s %.2f m up" % [name, p.y - f.x])
 		elif f.x - p.y > float(FAULTS["cave_item_buried"][1]):
 			_fault("cave_item_buried", f.x - p.y, p, "%s %.2f m under" % [name, f.x - p.y])
+
+
+# ---------------------------------------------------------------- camps
+
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
+# A town marker's footprint radius (data/npcs/markers.json kinds; judged: a bed, a chair, a post, a table, the square's middle, a shelter).
+const MARKER_R := {"bed": 1.0, "chair": 0.4, "post": 0.3, "table": 0.9, "square": 1.0, "shelter": 1.5}
+const FIRE_R := 0.7
+const TILT_LIMIT_M := 0.30   # ground falling more than this across a piece's footprint: one side floats or sinks
+
+var _flora_trees: Dictionary = {}   # chunk -> trees with a trunk collider ([position, radius, name])
+var _cell_boulders: Dictionary = {}   # 32 m scatter cell -> [[position, radius, name]] (boulders and ore rocks)
+
+
+# Every fixed piece the server lays where testers start and live: Edda and Hob's camp (fire, their spots, the town markers, the spawn), the
+# goblin tribes' camps (fire and props) and every bandit candidate site that passes the static wake tests (server_bandits.refusal: not near the
+# start, a goblin camp, a cave mouth, water or a slope over 15 degrees), laid as server_bandits.layout lays it. Each one checked against
+# trunks, boulders, ground tilt, water and the other pieces of its camp.
+func _audit_camps(settings) -> Array:
+	_setup_items(settings)
+	var camps: Array = []
+	var town: Array = []
+
+	for m in _markers():
+		town.append({"name": str(m.get("id", "marker")), "at": Vector2(float(m["x"]), float(m["z"])), "r": float(MARKER_R.get(str(m.get("kind", "")), 0.5))})
+
+	var fire: Vector2 = NpcCampScript.fire_spot()
+
+	if fire.x != INF:
+		town.append({"name": "camp fire", "at": fire, "r": FIRE_R, "rise": 0.6})
+
+	var spawn: Vector2 = SpawnPointScript.OVERRIDE
+	town.append({"name": "spawn", "at": spawn, "r": PLAYER_RADIUS_M})
+
+	camps.append(["starter town", town])
+	var structures: Dictionary = _structure_rows()
+
+	for camp in NpcCampScript.tribe_camps():
+		var pieces: Array = [{"name": "fire", "at": Vector2(float(camp["fire"]["x"]), float(camp["fire"]["z"])), "r": FIRE_R, "rise": 0.6}]
+
+		for prop in camp.get("props", []):
+			var row: Dictionary = structures.get(str(prop["kind"]), {})
+			pieces.append({"name": str(prop["kind"]), "at": Vector2(float(prop["x"]), float(prop["z"])), "half": Vector2(0.5 * float(row.get("footprint_x", 1.0)), 0.5 * float(row.get("footprint_z", 1.0))), "yaw": float(prop.get("yaw", 0.0))})
+
+		camps.append(["goblin camp " + str(camp["tribe"]), pieces])
+
+	camps.append_array(_bandit_sites(settings, structures))
+	var done: Array = []
+
+	for camp in camps:
+		_biome_now = "bandit site" if str(camp[0]).begins_with("bandit") else str(camp[0])
+		_check_camp(camp[1], str(camp[0]))
+		done.append([Vector2i.ZERO, camp[0]])
+
+	print("world_audit: %d camps checked (%d bandit candidate sites)" % [camps.size(), camps.size() - 1 - NpcCampScript.tribe_camps().size()])
+	return done
+
+
+func _markers() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json"))
+	return parsed.get("markers", []) if typeof(parsed) == TYPE_DICTIONARY else []
+
+
+func _structure_rows() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return {}
+
+	return parsed.get("structures", parsed)
+
+
+# The bandit candidate sites on the baked tiles that pass server_bandits.refusal's world tests (road and traffic tests left out: any could wake).
+func _bandit_sites(settings, structures: Dictionary) -> Array:
+	var bandits = BanditsScript.new()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/bandits.json"))
+	bandits.cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	bandits.world_seed = int(settings.master_seed)
+	bandits.town = TOWN
+	bandits.ground_height = func(x: float, z: float) -> float: return generator.surface_height(x, z)
+	bandits.in_water = func(x: float, z: float) -> bool: return _water_level(x, z) > generator.surface_height(x, z) + 0.10
+	bandits.trees_at = func(at: Vector2, reach: float) -> Array:   # as terrain_server gives it: every trunk with a collider round the fire
+		var feet: Array = []
+
+		for tree in _trees_round(at, reach):
+			feet.append([Vector2(tree[0].x, tree[0].z), float(tree[1])])
+
+		return feet
+	var cell_m: float = float(bandits.cfg.get("cell_m", 1000.0))
+	var tile_m: float = float(generator.tile_size_m)
+	var lean: Dictionary = structures.get("lean_to", {})
+	var half: Vector2 = Vector2(0.5 * float(lean.get("footprint_x", 4.16)), 0.5 * float(lean.get("footprint_z", 5.44)))
+	var out: Array = []
+	var why: Dictionary = {}
+
+	for file_name in DirAccess.get_files_at(WORLD + "/tiles"):
+		if not file_name.ends_with(".tile"):
+			continue
+
+		var parts: PackedStringArray = file_name.get_basename().split("_")
+		var tile: Vector2i = Vector2i(int(parts[1]), int(parts[2]))
+		var data = generator.get_tile(tile)
+
+		if data.placeholder:
+			continue
+
+		var per: int = int(round(tile_m / cell_m))
+
+		for cz in range(per):
+			for cx in range(per):
+				var cell: Vector2i = Vector2i(tile.x * per + cx, tile.y * per + cz)
+				var spot: Vector2 = bandits.candidate(cell)
+				var refused: String = "no candidate" if spot.x == INF else _bandit_refusal(bandits, data, spot)
+
+				if refused == "" and bandits._fitting_turn(cell, spot, bandits.trees_at.call(spot, BanditsScript.CAMP_REACH_M)) == INF:
+					refused = "cluttered"   # server_bandits.refusal: no turn of the camp fits among the trunks on level enough ground
+				why[refused] = int(why.get(refused, 0)) + 1
+
+				if refused != "":
+					continue
+
+				bandits.sites[cell] = {"x": spot.x, "z": spot.y, "levels": bandits.camp_levels(cell, spot)}
+				var plan: Dictionary = bandits.layout(cell)
+				var pieces: Array = [{"name": "fire", "at": plan["fire"], "r": FIRE_R, "rise": 0.6}]
+
+				for row in plan["lean_tos"]:
+					var yaw: float = deg_to_rad(float(row[1]))
+					var roof_mid: float = 0.5 * (BanditsScript.LEAN_TO_RIDGE_Z - half.y)   # the roof from the back to the ridge (the open front has no body)
+					pieces.append({"name": "lean-to", "at": (row[0] as Vector2) + Vector2(0.0, roof_mid).rotated(-yaw), "half": Vector2(half.x, 0.5 * (BanditsScript.LEAN_TO_RIDGE_Z + half.y)),
+						"yaw": float(row[1]), "rise": 1.0, "ground_at": row[0], "ground_half": half})
+
+				for seat in plan["seats"]:
+					pieces.append({"name": "seat", "at": seat, "r": PLAYER_RADIUS_M, "npc": true})
+
+				pieces.append({"name": "horse tether", "at": plan["tether"], "r": 0.5, "rise": 0.6})
+				out.append(["bandit site %d,%d" % [cell.x, cell.y], pieces])
+
+	print("world_audit: bandit candidates %s" % str(why))
+	return out
+
+
+func _bandit_refusal(bandits, data, spot: Vector2) -> String:
+	var cfg: Dictionary = bandits.cfg
+
+	if spot.distance_to(TOWN) < float(cfg.get("start_clear_m", 1500.0)):
+		return "start area"
+
+	for camp in NpcCampScript.tribe_camps():
+		if spot.distance_to(Vector2(float(camp["fire"]["x"]), float(camp["fire"]["z"]))) < float(cfg.get("tribe_clear_m", 1500.0)):
+			return "goblin camp near"
+
+	for mouth in data.cave_mouths:
+		if spot.distance_to(Vector2(mouth[0].x, mouth[0].z)) < float(cfg.get("cave_clear_m", 150.0)):
+			return "cave near"
+
+	var h: float = generator.surface_height(spot.x, spot.y)
+
+	if is_nan(h) or _water_level(spot.x, spot.y) > h:
+		return "water"
+
+	var step: float = float(cfg.get("slope_step_m", 5.0))
+	var most: float = tan(deg_to_rad(float(cfg.get("slope_max_deg", 15.0)))) * step
+
+	for d in [Vector2(step, 0.0), Vector2(-step, 0.0), Vector2(0.0, step), Vector2(0.0, -step)]:
+		if absf(generator.surface_height(spot.x + d.x, spot.y + d.y) - h) > most:
+			return "steep"
+
+	return ""
+
+
+func _check_camp(pieces: Array, camp: String) -> void:
+	for k in range(pieces.size()):
+		var p: Dictionary = pieces[k]
+		var at: Vector2 = p["at"]
+		var name: String = "%s: %s" % [camp, p["name"]]
+		var reach: float = float(p["r"]) if p.has("r") else (p["half"] as Vector2).length()
+		_checked("camp pieces")
+
+		for tree in _trees_round(at, reach + 4.0):
+			var q: Vector3 = tree[0]
+			var inside: float = _footprint_overlap(p, Vector2(q.x, q.z), float(tree[1]))
+
+			if inside > 0.05:
+				_fault("camp_in_trunk", inside, Vector3(at.x, generator.surface_height(at.x, at.y), at.y), "%s overlaps a %s trunk by %.2f m" % [name, tree[2], inside])
+
+		for rock in _boulders_round(at, reach + 2.0):
+			var q: Vector3 = rock[0]
+			var inside: float = _footprint_overlap(p, Vector2(q.x, q.z), float(rock[1]) * 0.8)
+
+			if inside > 0.05:
+				_fault("camp_on_boulder", inside, Vector3(at.x, q.y, at.y), "%s overlaps a %s by %.2f m" % [name, rock[2], inside])
+
+		var lo: float = INF
+		var hi: float = -INF
+
+		for corner in _footprint_ring(p):
+			var h: float = generator.surface_height(corner.x, corner.y)
+			lo = minf(lo, h)
+			hi = maxf(hi, h)
+
+		if hi - lo > float(p.get("rise", TILT_LIMIT_M)):
+			_fault("camp_tilted", hi - lo, Vector3(at.x, generator.surface_height(at.x, at.y), at.y), "%s: ground falls %.2f m across it" % [name, hi - lo])
+
+		var ground: float = generator.surface_height(at.x, at.y)
+		var water: float = _water_level(at.x, at.y)
+
+		if not is_nan(water) and water - ground > 0.10:
+			_fault("camp_in_water", water - ground, Vector3(at.x, ground, at.y), "%s in %.2f m of water" % [name, water - ground])
+
+		for j in range(k + 1, pieces.size()):
+			var o: Dictionary = pieces[j]
+
+			if p.has("npc") and o.has("npc"):
+				continue   # two NPC spots may share ground (seats round a fire)
+
+			var gap: float = _pieces_overlap(p, o)
+
+			if gap > 0.05:
+				_fault("camp_overlap", gap, Vector3(at.x, ground, at.y), "%s and %s overlap by %.2f m" % [name, o["name"], gap])
+
+
+# How far a circle (centre c, radius r) reaches into a piece's footprint (a circle "r" or a turned rectangle "half"/"yaw"); <= 0 when clear.
+func _footprint_overlap(p: Dictionary, c: Vector2, r: float) -> float:
+	var at: Vector2 = p["at"]
+
+	if p.has("r"):
+		return float(p["r"]) + r - at.distance_to(c)
+
+	var half: Vector2 = p["half"]
+	var local: Vector2 = (c - at).rotated(deg_to_rad(float(p.get("yaw", 0.0))))   # into the piece's frame (PlacementRules.steep's turn)
+	var nearest: Vector2 = Vector2(clampf(local.x, -half.x, half.x), clampf(local.y, -half.y, half.y))
+	return r - local.distance_to(nearest) if local != nearest else r + minf(half.x - absf(local.x), half.y - absf(local.y))
+
+
+func _pieces_overlap(a: Dictionary, b: Dictionary) -> float:
+	if b.has("r"):
+		return _footprint_overlap(a, b["at"], float(b["r"]))
+
+	if a.has("r"):
+		return _footprint_overlap(b, a["at"], float(a["r"]))
+
+	return _footprint_overlap(a, b["at"], minf((b["half"] as Vector2).x, (b["half"] as Vector2).y))   # two rectangles: the second as its inner circle
+
+
+# Points round a piece's footprint edge and its middle, for the ground's tilt under it.
+func _footprint_ring(p: Dictionary) -> Array:
+	var at: Vector2 = p.get("ground_at", p["at"])
+	var out: Array = [at]
+
+	for k in range(8):
+		var a: float = TAU * float(k) / 8.0
+
+		if p.has("r"):
+			out.append(at + Vector2.from_angle(a) * maxf(float(p["r"]), 0.3))
+		else:
+			if k % 2 == 1:   # a rectangle: its middle and four corners, as PlacementRules.steep samples a footprint
+				var half: Vector2 = p.get("ground_half", p["half"])
+				out.append(at + Vector2(signf(cos(a)) * half.x, signf(sin(a)) * half.y).rotated(-deg_to_rad(float(p.get("yaw", 0.0)))))
+
+	return out
+
+
+func _trees_round(at: Vector2, reach: float) -> Array:
+	var out: Array = []
+	var seen: Dictionary = {}
+
+	for d in [Vector2.ZERO, Vector2(reach, reach), Vector2(-reach, reach), Vector2(reach, -reach), Vector2(-reach, -reach)]:
+		var chunk: Vector2i = placer.chunk_of(at.x + d.x, at.y + d.y)
+
+		if seen.has(chunk):
+			continue
+
+		seen[chunk] = true
+
+		if not _flora_trees.has(chunk):
+			if _flora_trees.size() > 64:
+				_flora_trees.clear()
+
+			_flora_trees[chunk] = _trees_of(placer.chunk_items(chunk))
+
+		for tree in _flora_trees[chunk]:
+			var q: Vector3 = tree[0]
+
+			if Vector2(q.x - at.x, q.z - at.y).length() < reach + float(tree[1]):
+				out.append(tree)
+
+	return out
+
+
+func _boulders_round(at: Vector2, reach: float) -> Array:
+	var out: Array = []
+	var seen: Dictionary = {}
+
+	for d in [Vector2.ZERO, Vector2(reach, reach), Vector2(-reach, reach), Vector2(reach, -reach), Vector2(-reach, -reach)]:
+		var cell: Vector2i = Vector2i(int(floor((at.x + d.x) / float(WINDOW_M))), int(floor((at.y + d.y) / float(WINDOW_M))))
+
+		if seen.has(cell):
+			continue
+
+		seen[cell] = true
+
+		if not _cell_boulders.has(cell):
+			if _cell_boulders.size() > 256:
+				_cell_boulders.clear()
+
+			items._items.clear()
+			items._cells_done.clear()
+			items._lay_out_cell(cell, float(WINDOW_M), items._drops.get("ground_scatter", {}))
+			var list: Array = []
+
+			for id in items._items:
+				var it: Dictionary = items._items[id]
+
+				if it.has("boulder"):
+					list.append([it["pos"], float(it["boulder"].get("radius", 0.5)), "boulder" if int(it["number"]) == 0 else items.table.id_of(int(it["number"]))])
+
+			_cell_boulders[cell] = list
+
+		for rock in _cell_boulders[cell]:
+			var q: Vector3 = rock[0]
+
+			if Vector2(q.x - at.x, q.z - at.y).length() < reach + float(rock[1]):
+				out.append(rock)
+
+	return out
 
 
 # One spot (a place a player reported): the ground heights, the mesh at each level and the flora and water there.
