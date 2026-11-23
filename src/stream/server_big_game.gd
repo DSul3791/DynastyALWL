@@ -279,7 +279,12 @@ func step(a: Dictionary, dt: float) -> void:
 					var amount: float = float(def.get("damage", 25.0)) * host.level_x(a, "damage")   # a higher-level animal hits harder
 					var weapon: String = str(weapon_of.call(a)) if weapon_of.is_valid() else ""
 					# A bandit's blow cuts, pierces or batters as the weapon in his hand does (coordinator, 23 Nov 2026: every bandit blow counted blunt).
-					var landed: String = str(hurt_armed.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"], weapon) if weapon != "" and hurt_armed.is_valid() else hurt_player.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"]))
+					var landed: String
+
+					if weapon != "" and hurt_armed.is_valid():
+						landed = str(hurt_armed.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"], weapon))
+					else:
+						landed = str(hurt_player.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"]))
 
 					if struck.is_valid():
 						struck.call(a, int(info["peer"]), landed)

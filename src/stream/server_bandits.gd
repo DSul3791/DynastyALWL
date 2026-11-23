@@ -1468,7 +1468,6 @@ func _tell(peer: int, text: String) -> void:
 		tell.call(peer, text)
 
 
-# What a bandit of a level carries (camp gear): the highest row its level reaches.
 # The weapon a camp bandit strikes with (server_big_game weapon_of): his level's, while he still holds it; "" for anything else.
 func weapon_of(a: Dictionary) -> String:
 	if str(a.get("sp", "")) != "bandit" or a.has("gave_up"):
@@ -1483,6 +1482,7 @@ func weapon_of(a: Dictionary) -> String:
 	return str(gear[0]) if not gear.is_empty() else ""
 
 
+# What a bandit of a level carries (camp gear): the highest row its level reaches.
 func gear_of(level: int) -> Array:
 	var out: Array = []
 

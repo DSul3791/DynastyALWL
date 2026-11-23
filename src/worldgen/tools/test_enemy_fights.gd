@@ -30,6 +30,7 @@ var said: Array = []
 var landed: Array = []   # [time, amount, result] of every enemy blow on the player
 var clock: float = 0.0
 var facing: float = 0.0
+var camps
 
 
 func check(ok: bool, what: String) -> void:
@@ -81,7 +82,7 @@ func _init() -> void:
 		var r: String = items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
 		landed.append([clock, amount, r])
 		return r
-	var camps = BanditsScript.new()
+	camps = BanditsScript.new()
 	camps.setup("")
 	animals.big_game.weapon_of = camps.weapon_of   # as the server scene wires it: a bandit strikes with his level's weapon
 	animals.big_game.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
@@ -366,6 +367,17 @@ func _armour_and_shield() -> void:
 	var sword_share: float = 1.0 - (100.0 - float(items.vitals_of(1)["health"])) / float(landed[0][1])
 	var sword_with: String = str(landed[0][3]) if landed[0].size() > 3 else ""
 	check(club_with == "wooden_club" and sword_with == "iron_sword", "a level 1 bandit strikes with a wooden club, a level 5 one with an iron sword (%s, %s)" % [club_with, sword_with])
+	# A camp bandit's own row: one who threw his weapon down, or gave up, strikes with nothing (the plain blunt blow).
+	var cell := Vector2i(3, 4)
+	var probe: Dictionary = {"sp": "bandit", "id": 900, "camp": cell, "level": 5}
+	camps._members[cell] = {900: {"armed": true, "level": 5, "horse": false}}
+	var armed_with: String = camps.weapon_of(probe)
+	camps._members[cell][900]["armed"] = false
+	var thrown_down: String = camps.weapon_of(probe)
+	camps._members[cell][900]["armed"] = true
+	probe["gave_up"] = 1.0
+	check(armed_with == "iron_sword" and thrown_down == "" and camps.weapon_of(probe) == "", "a camp bandit holding his sword strikes with it; one who threw it down or gave up strikes with none (%s, %s)" % [armed_with, thrown_down])
+	camps._members.erase(cell)
 	check(sword_share > club_share + 0.1, "a mail hauberk stops more of the sword's cut (%.0f%%) than of the club's blow (%.0f%%)" % [sword_share * 100.0, club_share * 100.0])
 
 
