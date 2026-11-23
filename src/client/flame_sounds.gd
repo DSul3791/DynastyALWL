@@ -18,6 +18,11 @@ const KINDS := {"torch": {"file": "flame_torch", "db": -36.0}, "lantern": {"file
 const RAIN_DB := -44.0
 const FADE_DB_PER_SEC := 60.0
 const RUN_MPS := 11.0
+const OTHERS_MOST := 2                  # other players' carried flames heard at once (others), the nearest
+const OTHERS_REACH_M := 10.0            # a torch's flutter is a close sound
+const OTHERS_UNIT_M := 1.0
+const OTHERS_DB := {"torch": -28.0, "lantern": -32.0}   # positional at their hand: at 1 m about the own torch's level close to the ear
+const OTHERS_LOOK_S := 0.2
 
 var held: String = ""
 var open_sky: bool = true
@@ -27,6 +32,10 @@ var _stage                              # SoundStage (weather, wind)
 var _loops: Dictionary = {}             # kind or "rain" -> AudioStreamPlayer
 var _rng := RandomNumberGenerator.new()
 var _streams: Dictionary = {}
+var others: Callable                    # (from, max_m) -> [[point, "torch" or "lantern"], ...] nearest first (player_view.gd flames_near), set by terrain_client
+var others_heard: int = 0               # other players' flames sounding now, for checks
+var _other_loops: Array = []            # [AudioStreamPlayer3D, kind], at most OTHERS_MOST
+var _others_left: float = 0.0
 
 
 func setup(stage) -> void:
@@ -57,6 +66,49 @@ func update(delta: float, body: CharacterBody3D) -> void:
 
 	var rain_target: float = RAIN_DB + 10.0 * clampf(rain, 0.0, 1.0) if held == "torch" and open_sky and rain > 0.05 else -80.0
 	_fade("rain", "fire_rain", rain_target, delta)
+	_others_left -= delta
+
+	if _others_left <= 0.0 and body != null:
+		_others_left = OTHERS_LOOK_S
+		hear_others(others.call(body.global_position, OTHERS_REACH_M) if others.is_valid() else [])
+
+
+# Another player's burning torch or lantern (23 Nov 2026, the coordinator: heard only by the one carrying it): the same flutter, positional
+# at their hand, for the OTHERS_MOST nearest within OTHERS_REACH_M (`flames` from player_view.gd flames_near, nearest first). A loop is kept
+# while a flame of its kind stays in the list and moves with it; the rest stop.
+func hear_others(flames: Array) -> void:
+	var wanted: Array = flames.slice(0, OTHERS_MOST)
+
+	var keep: int = 0   # loops kept from the front while each still has its flame's kind; from the first that does not, all go (a survivor never plays another kind's clip)
+
+	while keep < _other_loops.size() and keep < wanted.size() and str(_other_loops[keep][1]) == str(wanted[keep][1]):
+		keep += 1
+
+	for n in range(_other_loops.size() - 1, keep - 1, -1):
+		(_other_loops[n][0] as AudioStreamPlayer3D).queue_free()
+		_other_loops.remove_at(n)
+
+	for n in wanted.size():
+		if n >= _other_loops.size():
+			var list: Array = _variants(str(KINDS[str(wanted[n][1])]["file"]))
+
+			if list.is_empty():
+				break
+
+			var player: AudioStreamPlayer3D = SoundStage.Sound3D.make(self, "Foley", OTHERS_UNIT_M, OTHERS_REACH_M)
+			player.stream = list[0]
+
+			if player.stream is AudioStreamOggVorbis:
+				player.stream.loop = true
+
+			player.volume_db = float(OTHERS_DB[str(wanted[n][1])])
+			player.global_position = wanted[n][0]
+			player.play(_rng.randf() * 4.0)
+			_other_loops.append([player, str(wanted[n][1])])
+
+		(_other_loops[n][0] as AudioStreamPlayer3D).global_position = wanted[n][0]
+
+	others_heard = _other_loops.size()
 
 
 func _fade(key: String, file: String, target: float, delta: float) -> void:

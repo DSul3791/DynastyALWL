@@ -209,6 +209,7 @@ var ground_open: Callable         # (points: Array of Vector3) -> bool: any of t
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
+var hurt_heard: Callable          # (peer, health lost): an attack landed on a player (hurt_player), for the others' ears (server_action_cues.gd)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
@@ -15999,6 +16000,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	var before: float = float(v["health"])
 	v["health"] = before - amount
 
+	if hurt_heard.is_valid():
+		hurt_heard.call(peer, amount)   # the others near hear the blow land (server_action_cues.gd hurt)
+
 	if lethal and bool(_death_cfg.get("stop_at_1", false)):
 		lethal = false   # nothing kills (death.json stop_at_1, Dave 23 Nov 2026): a lethal blow stops at 1 and counts as crippling again
 		floor_hp = 1.0
@@ -16543,6 +16547,23 @@ func peer_ids() -> Array:
 
 func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
+
+
+# A loose thing lying on the ground (not a structure, fire, tree or boulder): [number, count, where], [] for none (server_action_cues.gd: a
+# pickup is heard only when the thing went).
+func loose_item_of(id: int) -> Array:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+		return []
+
+	return [int(it["number"]), int(it["count"]), it["pos"]]
+
+
+# The water in `peer`'s body (vitals "wet", millilitres), -1 when not known (server_action_cues.gd: a drink is heard only when it went down).
+func body_water_of(peer: int) -> float:
+	var v: Dictionary = vitals_of(peer)
+	return float(v.get("wet", -1.0)) if not v.is_empty() else -1.0
 
 
 # The world id of the container `peer` has open, 0 for none, below 0 a worn bag (server_action_cues.gd: a store cue only once the open was let in).
