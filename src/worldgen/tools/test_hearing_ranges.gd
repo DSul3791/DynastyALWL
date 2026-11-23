@@ -39,8 +39,8 @@ func check(ok: bool, what: String) -> void:
 	failures += 0 if ok else 1
 
 
-# What a grazing deer at the origin does within a second of a player `dist` m off in stance `stance` who did `loud` ("" nothing):
-# "flee", "alert" or "graze".
+# What a grazing deer at the origin does within 2.5 s of a player `dist` m off in stance `stance` who did `loud` ("" nothing): "flee",
+# "alert" (it watched at some point) or "graze". 2.5 s: a deer about to run first stares, up to 1.75 s (reactions.startle_s).
 func deer_does(dist: float, stance: int, loud: String) -> String:
 	var a = AnimalsScript.new()
 	a.ground_height = func(_x, _z): return 10.0
@@ -60,15 +60,17 @@ func deer_does(dist: float, stance: int, loud: String) -> String:
 	a.animals[id]["timer"] = 100.0
 	a.animals[id]["protective"] = false
 	var fled: bool = false
+	var watched: bool = false
 
-	for n in 20:
+	for n in 50:
 		a.tick(0.05)
 		fled = fled or int(a.animals[id]["state"]) == AnimalsScript.FLEE
+		watched = watched or int(a.animals[id]["state"]) == AnimalsScript.ALERT
 
 	if fled:
 		return "flee"
 
-	return "alert" if int(a.animals[id]["state"]) == AnimalsScript.ALERT else "graze"
+	return "alert" if watched else "graze"
 
 
 # The SOUND_MAP row starting with `label`: its "another player hears it within" cell, as a number of metres (-1 when missing).
