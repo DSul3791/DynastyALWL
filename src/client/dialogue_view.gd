@@ -16,6 +16,7 @@ var player_position: Callable
 var voice_line: Callable = Callable()   # (voice_id, text) -> void; text to voice listens here
 
 var _panel: PanelContainer = null
+var _shop_close: Button = null             # its Close button, relabelled with the bound key each time it opens
 var _shop_panel: PanelContainer = null     # the trade window (protocol 62)
 var _shop_npc: String = ""
 var _shop_title: String = ""
@@ -252,6 +253,7 @@ func _build_shop(layer: CanvasLayer) -> void:
 	_shop_purse = items.make_coin_label(SHOP_PX)
 	head.add_child(_shop_purse)
 	var close_button: Button = Button.new()
+	_shop_close = close_button
 	close_button.text = "Close (%s)" % KeyBindings.label("interact")
 	close_button.add_theme_font_size_override("font_size", SHOP_PX)
 	close_button.pressed.connect(close)
@@ -330,6 +332,7 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		_shop_tired[tired_ids[i]] = float(tired_milli[i]) / 1000.0
 	_panel.visible = false
 	_shop_panel.visible = true
+	_shop_close.text = "Close (%s)" % KeyBindings.label("interact")   # the key may have been rebound since the window was built
 	_refresh_shop()
 
 	if not items.dialogue_open:

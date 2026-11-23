@@ -2323,7 +2323,6 @@ func _sample_noise(players: Array, delta: float) -> void:
 	var stances: Array = player_stances.call() if player_stances.is_valid() else []
 	var stalk: Array = player_stalk.call() if player_stalk.is_valid() else []
 	var loud: Array = player_loud.call() if player_loud.is_valid() else []
-	var heard_x: Dictionary = sen.get("action_heard_x", {})
 	var fresh: Array = []
 	var heard: Array = []
 	var vel: Array = []
@@ -2359,7 +2358,7 @@ func _sample_noise(players: Array, delta: float) -> void:
 				noise *= 1.0 + extra / (skill * skill)
 
 		fresh.append(noise)
-		heard.append(float(heard_x.get(str(loud[pi]), 0.0)) if pi < loud.size() else 0.0)
+		heard.append(heard_x(str(loud[pi])) if pi < loud.size() else 0.0)
 
 	_noisy = fresh
 	_heard = heard
@@ -2382,6 +2381,11 @@ func player_velocity_at(p: Vector3) -> Vector2:
 			best = _player_vel[pi]
 
 	return best if best_d <= float(cfg.get("senses", {}).get("velocity_match_m", 4.0)) else Vector2.ZERO
+
+
+# How far a loud action named `name` carries to animals (senses.action_heard_x; server_action_cues LOUD_RANK names), 0.0 for "" or a quiet one.
+func heard_x(name: String) -> float:
+	return float(cfg.get("senses", {}).get("action_heard_x", {}).get(name, 0.0))
 
 
 # How much farther or nearer a player seems to an animal: downwind of the player it smells them from farther off, upwind it does

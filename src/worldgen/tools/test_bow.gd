@@ -99,6 +99,7 @@ func _init() -> void:
 	check(alarms.size() == 1 and float(alarms[0][1]) == float(items._bow.cfg["noise_m"]), "the shot is heard within the noise radius")
 	fly(items, 2.0)
 	check(items._arrows.is_empty() and hits.size() == 1, "the arrow ends its flight on the deer")
+	check(alarms.size() == 1, "a hit sends no landing alarm (the deer reacts to the hit)")
 	check(absf(float(hits[0]) - 8.0) < 0.5, "a full draw does the stone arrow's damage (%.1f)" % float(hits[0] if hits.size() > 0 else 0.0))
 
 	# Fair arrows (ACT_SEEN, docs/design/ANIMAL_NETCODE.md "Fair hits"): the server ms the archer's screen showed the animals at, sent just
@@ -124,6 +125,8 @@ func _init() -> void:
 	check(said.has(items._bow.cfg["say_weak"]), "a weak draw is told")
 	fly(items, 6.0)
 	check(items._arrows.is_empty() and hits.is_empty(), "a weak shot does not reach a deer 60 m away")
+	var landed_at: Vector3 = alarms[alarms.size() - 1][0] if not alarms.is_empty() else Vector3.INF
+	check(not alarms.is_empty() and float(alarms[alarms.size() - 1][1]) == float(items._bow.cfg["land_alarm_m"]) and landed_at.z < -1.0 and landed_at.z > -60.0, "a miss startles the animals within land_alarm_m of where it came down (%s)" % str(alarms))
 
 	# Pace: a second press inside the pace does nothing.
 	items._last_shot.clear()

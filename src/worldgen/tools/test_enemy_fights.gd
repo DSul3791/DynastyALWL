@@ -4,9 +4,11 @@ extends SceneTree
 # server scene wires them (terrain_server.gd: hit_animal, the big game's hurt_player with its 10-health floor, the walls).
 #   1. every melee weapon, by type and tier, against a wild goblin and a level 1 and level 5 camp bandit: it lands, it wears by each blow,
 #      a higher tier of a type takes no more blows than the one below, and no fight takes a silly number of blows (a table is printed);
-#   2. an enemy's attack is readable as the animals' are: a warning, a strike, a recovery, and no second strike inside the recovery;
+#   2. an enemy's attack is readable as the animals' are: a warning, a strike, a recovery, and no second strike inside the recovery; from
+#      beside the player the strike is still drawn charging strike_min_s before it lands;
 #   3. it never lands from out of reach (a player who steps aside) nor through a wall between them;
-#   4. worn armour and a raised shield cut a bandit's blow, and both wear by it;
+#   4. worn armour and a raised shield cut a bandit's blow, and both wear by it; a bandit's blow is his weapon's kind (a level 5 bandit's iron
+#      sword cuts, so mail stops more of it than of a level 1 bandit's club);
 #   5. a lost fight: blow after blow never takes the player under the floor nor kills them (death.json stop_at_1); they are told and limp;
 #   6. a wild goblin killed drops what it stole.
 # Camps resetting (a cleared bandit camp dissolves, a goblin lair fills again) are test_bandit_sites and test_goblin_camp's.
@@ -16,6 +18,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const BigGame := preload("res://src/stream/server_big_game.gd")
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const DIR := "user://test_enemy_fights"
@@ -28,6 +31,7 @@ var said: Array = []
 var landed: Array = []   # [time, amount, result] of every enemy blow on the player
 var clock: float = 0.0
 var facing: float = 0.0
+var camps
 
 
 func check(ok: bool, what: String) -> void:
@@ -78,6 +82,14 @@ func _init() -> void:
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from):
 		var r: String = items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
 		landed.append([clock, amount, r])
+		return r
+	camps = BanditsScript.new()
+	camps.setup("")
+	animals.big_game.weapon_of = camps.weapon_of   # as the server scene wires it: a bandit strikes with his level's weapon
+	animals.big_game.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
+		var blow: Dictionary = ItemsScript.weapon_blow(items.table.entry(str(weapon)), {})
+		var r: String = items.hurt_player(peer, amount, lethal, cause, 10.0, str(blow["mode"]), float(blow["pen"]), from)
+		landed.append([clock, amount, r, str(weapon)])
 		return r
 	var dropped: Array = []
 	animals.drop_loot = func(number, count, pos):
@@ -240,6 +252,31 @@ func _readable() -> void:
 		check(landed.size() >= 1 and in_recovery == 0, "and no second blow inside its %.1f s recovery (%d blows in all)" % [float(def["recover_s"]), landed.size()])
 
 
+	# From right beside the player (the robots over a lossy link, 23 Nov 2026: a bandit warning from 1.4 m struck on the charge's first step,
+	# so no client ever drew the charge): the strike is held strike_min_s, in the charge state, before the blow lands.
+	for sp in ["goblin", "bandit"]:
+		var def: Dictionary = animals.species_def(sp)["defend"]
+
+		for d in [1.0, 1.4]:
+			fresh_player()
+			var id: int = enemy(sp, d)
+			animals.big_game.warn(animals.animals[id], Vector3(0.0, 10.0, 0.0), -1.0, true)
+			var charging: float = 0.0
+			var closest: float = INF
+
+			for k in int(4.0 / DT):
+				tick(DT)
+
+				if landed.is_empty() and animals.animals.has(id) and int(animals.animals[id]["state"]) == BigGame.CHARGE:
+					charging += DT
+
+				if animals.animals.has(id):
+					closest = minf(closest, Vector2(animals.animals[id]["pos"].x, animals.animals[id]["pos"].z).length())
+
+			check(landed.size() == 1 and charging >= float(def["strike_min_s"]) - 0.001, "a %s warning from %.1f m strikes once, after %.2f s drawn charging (at least %.2f)" % [sp, d, charging, float(def["strike_min_s"])])
+			check(closest >= 0.3, "and never runs into the player meanwhile (nearest %.2f m)" % closest)
+
+
 # 3. Out of reach and through walls.
 func _reach_and_walls() -> void:
 	for sp in ["goblin", "bandit"]:
@@ -341,11 +378,39 @@ func _armour_and_shield() -> void:
 	var armoured: float = _bandit_blow()
 	check(worn.size() > 0 and armoured < base * 0.95, "worn armour (%s) cuts a bandit's blow (%.1f to %.1f)" % [", ".join(worn), base, armoured])
 
+	# A bandit's blow is his weapon's kind: mail (strong against cuts, weak against blows, master items 3.7 rule 3) stops more of a level 5
+	# bandit's iron sword than of a level 1 bandit's wooden club.
+	for k in inv.slot_count:
+		inv.clear_slot(k)
+
+	items._characters[items._peer_key[1]]["worn"] = items._clean_worn([])   # the outfit above off
+	items.give(1, n("iron_mail_hauberk"), 1)
+	items.action(1, Net.ACT_WEAR, inv.numbers.find(n("iron_mail_hauberk")), 0, 0, Vector3.ZERO)
+	_bandit_blow(1)
+	var club_share: float = 1.0 - (100.0 - float(items.vitals_of(1)["health"])) / float(landed[0][1])
+	var club_with: String = str(landed[0][3]) if landed[0].size() > 3 else ""
+	_bandit_blow(5)
+	var sword_share: float = 1.0 - (100.0 - float(items.vitals_of(1)["health"])) / float(landed[0][1])
+	var sword_with: String = str(landed[0][3]) if landed[0].size() > 3 else ""
+	check(club_with == "wooden_club" and sword_with == "iron_sword", "a level 1 bandit strikes with a wooden club, a level 5 one with an iron sword (%s, %s)" % [club_with, sword_with])
+	# A camp bandit's own row: one who threw his weapon down, or gave up, strikes with nothing (the plain blunt blow).
+	var cell := Vector2i(3, 4)
+	var probe: Dictionary = {"sp": "bandit", "id": 900, "camp": cell, "level": 5}
+	camps._members[cell] = {900: {"armed": true, "level": 5, "horse": false}}
+	var armed_with: String = camps.weapon_of(probe)
+	camps._members[cell][900]["armed"] = false
+	var thrown_down: String = camps.weapon_of(probe)
+	camps._members[cell][900]["armed"] = true
+	probe["gave_up"] = 1.0
+	check(armed_with == "iron_sword" and thrown_down == "" and camps.weapon_of(probe) == "", "a camp bandit holding his sword strikes with it; one who threw it down or gave up strikes with none (%s, %s)" % [armed_with, thrown_down])
+	camps._members.erase(cell)
+	check(sword_share > club_share + 0.1, "a mail hauberk stops more of the sword's cut (%.0f%%) than of the club's blow (%.0f%%)" % [sword_share * 100.0, club_share * 100.0])
+
 
 # The health one level 1 bandit's landed charge takes off a fresh player at the origin, from the east.
-func _bandit_blow() -> float:
+func _bandit_blow(level: int = 1) -> float:
 	fresh_player()
-	var id: int = enemy("bandit", 4.0)
+	var id: int = enemy("bandit", 4.0, level)
 	animals.big_game.warn(animals.animals[id], Vector3(0.0, 10.0, 0.0), -1.0, true)
 
 	for k in int(4.0 / DT):

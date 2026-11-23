@@ -48,6 +48,13 @@ func _no_fixed_letters() -> void:
 	for fixed in ["\"Split (S)\"", "\"Use (E)\"", "\"Drop (D)\"", "\"Repair (R)\"", "Close (E)", "Keys: Split (S)", "Use (E) puts it on", "Use (E) drinks"]:
 		check(not view_src.contains(fixed), "the text %s names the bound key, not a fixed letter" % fixed)
 
+	var seen: int = Bindings.version
+	Bindings.set_binding("drop_item", KEY_O, false, false)
+	check(Bindings.version > seen, "a rebind moves KeyBindings.version, so buttons built once relabel")
+	var grid_src: String = FileAccess.get_file_as_string("res://src/client/ui/inventory/pack_grid.gd")
+	check(grid_src.contains("func refresh() -> void:\n\trelabel_keys()"), "the pack's action buttons relabel on every pack refresh")
+	check(grid_src.contains("_key_buttons.clear()") and grid_src.contains("_keys_seen = -1"), "a rebuilt pack panel (text size change) labels its new action buttons, not blank ones")
+	check(FileAccess.get_file_as_string("res://src/client/dialogue_view.gd").contains("_shop_close.text = \"Close (%s)\" % KeyBindings.label(\"interact\")"), "the shop's Close button is relabelled each time the shop opens")
 	check("Split (%s)" % Bindings.label("split_item") == "Split (V)" and "Use (%s)" % Bindings.label("use_item") == "Use (U)", "a rebound key shows in the button text")
 	Bindings.reset_all()
 
@@ -244,6 +251,13 @@ func _init() -> void:
 	check(Bindings.localize("Pick berries with E and eat them. Put raw meat in the fire with F; cook plants") == "Pick berries with Q and eat them. Put raw meat in the fire with V; cook plants", "'with E and' and 'with F;' follow the keys")
 	check(Bindings.localize("Put sticks on it with F, then press E near it") == "Put sticks on it with V, then press Q near it", "the fire hint follows both keys")
 	check(Bindings.localize("I think, I am. Roads and I. With R and B.") == "I think, I am. Roads and I. With R and B.", "a plain I or R in a sentence is left alone")
+	# The first hints (client bug hunt 23 Nov 2026): Tab, Shift and W A S D follow the keys too; a fixed Shift + click stays.
+	Bindings.set_binding("character", KEY_C, false, false)
+	Bindings.set_binding("run", KEY_ALT, false, false)
+	Bindings.set_binding("move_forward", KEY_UP, false, false)
+	check(Bindings.localize("Press Tab to see Health, Food, Water, Temperature and Energy.") == "Press C to see Health, Food, Water, Temperature and Energy.", "the bars hint names the bound character key")
+	check(Bindings.localize("Walk with W A S D. Hold Shift to run.") == "Walk with Up A S D. Hold Alt to run.", "the first hint names the bound walk and run keys")
+	check(Bindings.localize("Or Shift + right click to drop survey markers") == "Or Shift + right click to drop survey markers", "a fixed Shift + click is left alone")
 	Bindings.reset_all()
 	_admin_rules()
 	Bindings.reset_all()

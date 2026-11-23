@@ -36,6 +36,10 @@ var idle_minutes: int = 60               # Esc > Settings > Display, Idle timeou
 var damage_numbers: bool = true         # Esc > Settings > Gameplay, Damage numbers: floating text where a hit lands (Dave 2 Nov 2026, on by default)
 static var fahrenheit: bool = false      # Esc > Settings > Gameplay, Temperature: show body temperature in C or F (Dave 2 Nov 2026, saved; static so every screen reads it)
 static var reduce_motion: bool = false   # Esc > Settings > Gameplay, Reduce motion: the inventory's eases, fly-to-slot and shimmer become instant (look doc section 11; static so every slot reads it)
+var mouse_look: float = 1.0              # Esc > Settings > Gameplay, Mouse sensitivity: times the base turn rate (MOUSE_LOOK_MIN to MOUSE_LOOK_MAX)
+const MOUSE_LOOK_MIN := 0.1
+const MOUSE_LOOK_MAX := 3.0
+var fitted: Vector2i = Vector2i.ZERO      # the window size apply() last asked for (the chosen size, or smaller to fit the screen)
 var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (pitch black under rock without a light) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
 
@@ -57,6 +61,7 @@ func load_saved() -> void:
 	idle_minutes = clampi(int(file.get_value("display", "idle_minutes", 60)), 60, 120)
 	fahrenheit = bool(file.get_value("display", "fahrenheit", false))
 	reduce_motion = bool(file.get_value("display", "reduce_motion", false))
+	mouse_look = clampf(float(file.get_value("display", "mouse_look", 1.0)), MOUSE_LOOK_MIN, MOUSE_LOOK_MAX)
 	# Saved choices from before the six-way list: 2 weight and 3 value were highest first; they map to descending.
 	var saved_sort: int = int(file.get_value("display", "sort", 0))
 	var sort_version: int = int(file.get_value("display", "sort_version", 1))
@@ -79,6 +84,7 @@ func save() -> void:
 	file.set_value("display", "damage_numbers", damage_numbers)
 	file.set_value("display", "fahrenheit", fahrenheit)
 	file.set_value("display", "reduce_motion", reduce_motion)
+	file.set_value("display", "mouse_look", clampf(mouse_look, MOUSE_LOOK_MIN, MOUSE_LOOK_MAX))
 	file.set_value("display", "sort", sort_index)
 	file.set_value("display", "sort_version", 2)
 	file.save(path)
@@ -146,6 +152,19 @@ func render_size(quality_tier: int) -> Vector2i:
 	return Vector2i(roundi(width), roundi(width * 9.0 / 16.0))
 
 
+# The windowed size for `want` on a screen whose usable area is `room`: `want`, or the biggest 16:9 size inside `room` when it does not fit.
+static func fit_window(want: Vector2i, room: Vector2i) -> Vector2i:
+	if room.x <= 0 or room.y <= 0 or (want.x <= room.x and want.y <= room.y):
+		return want
+
+	if room.x * want.y <= room.y * want.x:   # the width limits: whole numbers, so the limiting side is exactly the room
+		@warning_ignore("integer_division")
+		return Vector2i(room.x, maxi(room.x * want.y / want.x, 1))
+
+	@warning_ignore("integer_division")
+	return Vector2i(maxi(room.y * want.x / want.y, 1), room.y)
+
+
 func size() -> Vector2i:
 	return SIZES[size_index]
 
@@ -181,8 +200,14 @@ func apply(window: Window, keep_current: bool = false) -> void:
 		return
 
 	window.mode = Window.MODE_WINDOWED
-	window.size = size()
+	# A window never larger than the screen's usable area (the 1366x768 floor with the 1920x1080 default would hang off the screen): the
+	# chosen size, else the biggest 16:9 size that fits. The 3D picture keeps the chosen size (render_size) and is scaled to it.
+	var decor: Vector2i = window.get_size_with_decorations() - window.size   # the title bar and borders: the usable area holds them too
+	fitted = fit_window(size(), DisplayServer.screen_get_usable_rect(window.current_screen).size - decor)
+	window.size = fitted
 	# Keep the window on the screen after it grew.
 	var screen: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	var outer: Vector2i = window.size + decor
+	var title: Vector2i = window.position - window.get_position_with_decorations()   # the client area's offset inside the frame (title bar, border)
 	@warning_ignore("integer_division")
-	window.position = Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - window.size.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - window.size.y) / 2))
+	window.position = title + Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - outer.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - outer.y) / 2))

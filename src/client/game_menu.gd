@@ -333,7 +333,7 @@ func _build_display() -> void:
 		_c._apply_quality()
 		_c._save_display()
 		refresh()
-		_c._report_display("Display reset: High, windowed 1920x1080, VSync on. "))
+		_c._report_display("Display reset: High, windowed, VSync on. "))
 	_button(display, "Back", func(): show_page("settings"))
 
 
@@ -371,6 +371,10 @@ func _build_gameplay() -> void:
 	_refresh_idle_button()
 	# Camera motion (head bob, landing dip, blow jolt, speed widening; feel_kicks.gd): 0 % turns it off for anyone it bothers, 150 % is the most. Saved at once.
 	_slider(gameplay, "Camera motion", float(_c.feel.intensity), func(value: float): _c.feel.set_intensity(value), 1.5)
+	# Mouse sensitivity: how fast the view turns with the mouse, 100 % the game's own rate, 10 % to 300 %; saved with the display choices.
+	_slider(gameplay, "Mouse sensitivity", float(_c.display.mouse_look), func(value: float):
+		_c.display.mouse_look = clampf(value, DisplaySettingsScript.MOUSE_LOOK_MIN, DisplaySettingsScript.MOUSE_LOOK_MAX)
+		_c._save_display(), DisplaySettingsScript.MOUSE_LOOK_MAX, DisplaySettingsScript.MOUSE_LOOK_MIN)
 	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
 		_c.display.damage_numbers = on
 		_c._save_display())
@@ -568,13 +572,13 @@ func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	return toggle
 
 
-func _slider(parent: VBoxContainer, text: String, value: float, changed: Callable, top: float = 1.0) -> void:
+func _slider(parent: VBoxContainer, text: String, value: float, changed: Callable, top: float = 1.0, low: float = 0.0) -> void:
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	parent.add_child(label)
 	var slider: HSlider = HSlider.new()
-	slider.min_value = 0.0
+	slider.min_value = low
 	slider.max_value = top
 	slider.step = 0.01
 	slider.value = value

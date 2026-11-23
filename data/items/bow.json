@@ -55,6 +55,8 @@
 	"hit_radius_m": 0.6,
 	"chest_m": 0.5,
 	"noise_m": 40.0,
+	"land_alarm_m": 12.0,
+	"land_alarm_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'; provisional for Dave): an arrow or sling stone that misses and comes down (ground, a trunk) startles every animal within land_alarm_m of where it landed into running from that point (server_animals alarm_near: never a pack, an animal already running, hidden, or standing its ground or charging). A hit animal reacts to the hit instead.",
 	"fire_arrow": {
 		"note": "Part C plan 6 (10 Nov 2026): an arrow with fire: true (the Fire arrow) is lit as it is loosed when a burning fire, a lit placed light or torch post, or a torch bearer is within light_m of the archer; otherwise it flies as a plain arrow. Lit, it does damage_mult on an animal, the shot's noise reaches alarm_mult as far, it lights a laid fire (wood on it) or an unlit torch post or other placed light within ignite_m of where it comes down (not in open rain, nor in water), and it is always burnt up. There is no fire spread: nothing else catches.",
 		"light_m": 3.0,

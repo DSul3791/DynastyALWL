@@ -150,6 +150,7 @@ const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const RECENT_CUT_MSEC := 60000   # how long a cut tree is kept out of flora chunks arriving late (BUG-024)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
@@ -1871,6 +1872,8 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.trunks_round = _trunks_round
+	held.trunks_version = func() -> int: return flora.canopy_version
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
 	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
@@ -3892,6 +3895,63 @@ func _tree_trunk_near(point: Vector3) -> Array:
 
 
 
+# The standing tree trunks within `radius` of `point` (flat), as the server's trunks_near lists them: [root, trunk radius m, height m], saplings left
+# out (no collider). The placement ghost turns red over one (PlacementRules.over_trunk, round 4 of the physical world audit, 23 Nov 2026). Each
+# chunk's trees are listed once (_trunk_index) and listed again when flora's trees change (canopy_version: a chunk in or out, a tree felled), so a
+# look reads the trees only, not every plant of a 256 m chunk.
+var _trunk_index: Dictionary = {}     # chunk -> [[root, trunk radius, height]]
+var _trunk_index_version: int = -1
+
+
+func _trunks_round(point: Vector3, radius: float) -> Array:
+	if flora.canopy_version != _trunk_index_version:
+		_trunk_index.clear()
+		_trunk_index_version = flora.canopy_version
+
+	var found: Array = []
+	var chunk_m: float = float(flora.chunk_m)
+	var reach: float = radius + TreeTrunks.widest_m()
+	var lo: Vector2i = Vector2i(int(floor((point.x - reach) / chunk_m)), int(floor((point.z - reach) / chunk_m)))
+	var hi: Vector2i = Vector2i(int(floor((point.x + reach) / chunk_m)), int(floor((point.z + reach) / chunk_m)))
+
+	for cz in range(lo.y, hi.y + 1):
+		for cx in range(lo.x, hi.x + 1):
+			var chunk: Vector2i = Vector2i(cx, cz)
+
+			if not flora._chunks.has(chunk):
+				continue
+
+			if not _trunk_index.has(chunk):
+				_trunk_index[chunk] = _chunk_trunks(flora._chunks[chunk]["items"])
+
+			for trunk in _trunk_index[chunk]:
+				var at: Vector3 = trunk[0]
+
+				if Vector2(at.x - point.x, at.z - point.z).length() <= radius + float(trunk[1]):
+					found.append(trunk)
+
+	return found
+
+
+# A held flora chunk's standing trees with a trunk collider (flora_view's own radius: the species trunk by height, the drawn model's where listed).
+func _chunk_trunks(held_items: Dictionary) -> Array:
+	var list: Array = []
+
+	for n in range(held_items["ids"].size()):
+		var info: Dictionary = flora._species.get(held_items["ids"][n] >> 16, {})
+
+		if int(info.get("kind", 2)) != 0:
+			continue
+
+		var height: float = float(held_items["heights"][n])
+		var r: float = PlacerScript.collider_radius(0, float(info["trunk"]), height / float(info["height"]), height)
+
+		if r > 0.0:
+			list.append([held_items["positions"][n], TreeTrunks.standing_collider(str(info["name"]), held_items["ids"][n], height, r), height])
+
+	return list
+
+
 # The bush or shrub an axe or pickaxe swing reaches (Dave 2 Nov 2026): the one whose middle lies closest to the swing line from the eye to where
 # it hit, within SHRUB_HIT_M; [chunk, id] or [].
 const SHRUB_HIT_M := 0.9
@@ -4098,8 +4158,11 @@ func _report_display(prefix: String = "") -> void:
 		text += " (window %dx%d). The game runs inside the editor, which owns the window: it cannot be resized or made fullscreen from here, only the 3D size changes. To change the real window size, resize the Game tab or turn embedding off (Project > Run without embedding)." % [win.x, win.y]
 	elif display.fullscreen:
 		text += " in a fullscreen windowed screen of %dx%d." % [win.x, win.y]
-	elif win != display.size():
-		text += ". The system kept the window at %dx%d (asked for %s)." % [win.x, win.y, display.size_text()]
+	elif display.fitted != Vector2i.ZERO and display.fitted != display.size() and win == display.fitted:
+		text += ", window %dx%d: the chosen %s is larger than this screen, so the window was fitted to it." % [win.x, win.y, display.size_text()]
+	elif win != (display.fitted if display.fitted != Vector2i.ZERO else display.size()):
+		var asked: Vector2i = display.fitted if display.fitted != Vector2i.ZERO else display.size()
+		text += ". The system kept the window at %dx%d (asked for %dx%d)." % [win.x, win.y, asked.x, asked.y]
 	else:
 		text += ", window %dx%d." % [win.x, win.y]
 
@@ -5100,13 +5163,13 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock and photo.active:
-		photo.orbit(event.relative.x, event.relative.y)   # the camera swings round the character; the character does not turn
+		photo.orbit(event.relative.x * display.mouse_look, event.relative.y * display.mouse_look)   # the camera swings round the character; the character does not turn
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		photo.zoom(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and spyglass.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		spyglass.wheel(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
-		var look: float = MOUSE_SENSITIVITY * (spyglass.mouse_scale() if spyglass.active else 1.0)   # through the spyglass the mouse slows by the zoom
+		var look: float = MOUSE_SENSITIVITY * display.mouse_look * (spyglass.mouse_scale() if spyglass.active else 1.0)   # through the spyglass the mouse slows by the zoom
 		body.rotate_y(-event.relative.x * look)
 		pitch = clampf(pitch - event.relative.y * look, -1.5, 1.5)
 		camera.rotation.x = pitch
