@@ -7896,6 +7896,9 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		_reject(peer, 2)
 		return
 
+	if fits < want:   # the carry limit stops it part way: say so, as a take from a store does (weights loop, 23 Nov 2026)
+		_say(peer, "Too heavy: you took %d of %d" % [fits, want])
+
 	var left: int = int(it["count"]) - want + inv.add(int(it["number"]), fits, int(it.get("wear", 0)), it.get("inst", {})) + (want - fits)
 
 	if it.has("scatter"):   # natural scatter is found, not dropped (goal got: counter)
