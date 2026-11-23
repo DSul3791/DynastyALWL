@@ -25,6 +25,8 @@ var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list
 var hurt_player: Callable       # (peer, amount, lethal, cause, from: the attacker's position, for a raised shield) -> "hurt" / "maimed" / "dead"
 var notice: Callable            # (peer, text)
 var struck: Callable            # (animal, peer, hurt result) after a charge lands (bandit camps stage 4b; it changes nothing about the blow)
+var weapon_of: Callable         # (animal) -> the items.json id of the weapon it strikes with, "" for its own body (a camp bandit's, by his level)
+var hurt_armed: Callable        # (peer, amount, lethal, cause, from, weapon id) -> as hurt_player, with the blow's damage mode and pen taken from that weapon
 
 
 func handles(a: Dictionary) -> bool:
@@ -274,7 +276,10 @@ func step(a: Dictionary, dt: float) -> void:
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
-					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"]), a["pos"]))   # a higher-level animal hits harder
+					var amount: float = float(def.get("damage", 25.0)) * host.level_x(a, "damage")   # a higher-level animal hits harder
+					var weapon: String = str(weapon_of.call(a)) if weapon_of.is_valid() else ""
+					# A bandit's blow cuts, pierces or batters as the weapon in his hand does (coordinator, 23 Nov 2026: every bandit blow counted blunt).
+					var landed: String = str(hurt_armed.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"], weapon) if weapon != "" and hurt_armed.is_valid() else hurt_player.call(int(info["peer"]), amount, false, str(a["sp"]), a["pos"]))
 
 					if struck.is_valid():
 						struck.call(a, int(info["peer"]), landed)

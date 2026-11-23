@@ -870,6 +870,9 @@ func _ready() -> void:
 	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
+	animals.big_game.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
+		var blow: Dictionary = ItemsScript.weapon_blow(items.table.entry(str(weapon)), {})
+		return items.hurt_player(peer, amount, lethal, cause, 10.0, str(blow["mode"]), float(blow["pen"]), from)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer):
 		if sp == "bandit" or sp == "horse":
@@ -1008,6 +1011,7 @@ func _ready() -> void:
 
 		return feet
 	animals.bandit_camps = bandits
+	animals.big_game.weapon_of = bandits.weapon_of   # a bandit's blow is his weapon's kind (a sword cuts), not a beast's
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)

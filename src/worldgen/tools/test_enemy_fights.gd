@@ -6,7 +6,8 @@ extends SceneTree
 #      a higher tier of a type takes no more blows than the one below, and no fight takes a silly number of blows (a table is printed);
 #   2. an enemy's attack is readable as the animals' are: a warning, a strike, a recovery, and no second strike inside the recovery;
 #   3. it never lands from out of reach (a player who steps aside) nor through a wall between them;
-#   4. worn armour and a raised shield cut a bandit's blow, and both wear by it;
+#   4. worn armour and a raised shield cut a bandit's blow, and both wear by it; a bandit's blow is his weapon's kind (a level 5 bandit's iron
+#      sword cuts, so mail stops more of it than of a level 1 bandit's club);
 #   5. a lost fight: blow after blow never takes the player under the floor nor kills them (death.json stop_at_1); they are told and limp;
 #   6. a wild goblin killed drops what it stole.
 # Camps resetting (a cleared bandit camp dissolves, a goblin lair fills again) are test_bandit_sites and test_goblin_camp's.
@@ -16,6 +17,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const BigGame := preload("res://src/stream/server_big_game.gd")
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const DIR := "user://test_enemy_fights"
@@ -78,6 +80,14 @@ func _init() -> void:
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from):
 		var r: String = items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
 		landed.append([clock, amount, r])
+		return r
+	var camps = BanditsScript.new()
+	camps.setup("")
+	animals.big_game.weapon_of = camps.weapon_of   # as the server scene wires it: a bandit strikes with his level's weapon
+	animals.big_game.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
+		var blow: Dictionary = ItemsScript.weapon_blow(items.table.entry(str(weapon)), {})
+		var r: String = items.hurt_player(peer, amount, lethal, cause, 10.0, str(blow["mode"]), float(blow["pen"]), from)
+		landed.append([clock, amount, r, str(weapon)])
 		return r
 	var dropped: Array = []
 	animals.drop_loot = func(number, count, pos):
@@ -341,11 +351,28 @@ func _armour_and_shield() -> void:
 	var armoured: float = _bandit_blow()
 	check(worn.size() > 0 and armoured < base * 0.95, "worn armour (%s) cuts a bandit's blow (%.1f to %.1f)" % [", ".join(worn), base, armoured])
 
+	# A bandit's blow is his weapon's kind: mail (strong against cuts, weak against blows, master items 3.7 rule 3) stops more of a level 5
+	# bandit's iron sword than of a level 1 bandit's wooden club.
+	for k in inv.slot_count:
+		inv.clear_slot(k)
+
+	items._characters[items._peer_key[1]]["worn"] = items._clean_worn([])   # the outfit above off
+	items.give(1, n("iron_mail_hauberk"), 1)
+	items.action(1, Net.ACT_WEAR, inv.numbers.find(n("iron_mail_hauberk")), 0, 0, Vector3.ZERO)
+	_bandit_blow(1)
+	var club_share: float = 1.0 - (100.0 - float(items.vitals_of(1)["health"])) / float(landed[0][1])
+	var club_with: String = str(landed[0][3]) if landed[0].size() > 3 else ""
+	_bandit_blow(5)
+	var sword_share: float = 1.0 - (100.0 - float(items.vitals_of(1)["health"])) / float(landed[0][1])
+	var sword_with: String = str(landed[0][3]) if landed[0].size() > 3 else ""
+	check(club_with == "wooden_club" and sword_with == "iron_sword", "a level 1 bandit strikes with a wooden club, a level 5 one with an iron sword (%s, %s)" % [club_with, sword_with])
+	check(sword_share > club_share + 0.1, "a mail hauberk stops more of the sword's cut (%.0f%%) than of the club's blow (%.0f%%)" % [sword_share * 100.0, club_share * 100.0])
+
 
 # The health one level 1 bandit's landed charge takes off a fresh player at the origin, from the east.
-func _bandit_blow() -> float:
+func _bandit_blow(level: int = 1) -> float:
 	fresh_player()
-	var id: int = enemy("bandit", 4.0)
+	var id: int = enemy("bandit", 4.0, level)
 	animals.big_game.warn(animals.animals[id], Vector3(0.0, 10.0, 0.0), -1.0, true)
 
 	for k in int(4.0 / DT):
