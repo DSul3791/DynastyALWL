@@ -32,6 +32,12 @@ func _init() -> void:
 	var copy: String = ProjectSettings.globalize_path("user://store_check_copy")
 	OS.execute("rm", ["-rf", copy])
 	OS.execute("cp", ["-a", store, copy])
+
+	if not FileAccess.file_exists(copy + "/world_items.json") and not FileAccess.file_exists(copy + "/world_items.json.prev"):
+		print("STORE {\"error\": \"the store could not be copied, or has no world_items.json\"}")   # never pass on a store not read
+		quit(2)
+		return
+
 	var before: Dictionary = {}
 
 	for name in SET:

@@ -13,7 +13,7 @@ on, times it against docker's stop_grace_period (deploy/server/compose.yaml) and
 
 Never point it at a live server or its volume: it makes its own store under --out. Exit 0 = every round held; 1 = a round broke a rule.
 """
-import argparse, json, os, random, signal, subprocess, sys, tarfile, tempfile, time
+import argparse, json, os, random, subprocess, sys, tarfile, tempfile, time
 
 GRACE_S = 90.0   # deploy/server/compose.yaml stop_grace_period
 
@@ -117,11 +117,11 @@ def main():
                 hit = writing(store)
                 if hit == "":
                     time.sleep(0.001)
-            os.kill(proc.pid, signal.SIGKILL)
+            proc.kill()   # SIGKILL on Linux, TerminateProcess on Windows: a hard stop either way
         elif mode == "random":
             time.sleep(random.uniform(0, 30))
             hit = writing(store)
-            os.kill(proc.pid, signal.SIGKILL)
+            proc.kill()   # SIGKILL on Linux, TerminateProcess on Windows: a hard stop either way
         else:
             t0 = time.time()
             open(os.path.join(store, "stop.now"), "w").close()
@@ -131,7 +131,7 @@ def main():
                 proc.kill()
             t_stop = time.time() - t0
         proc.wait()
-        bots.send_signal(signal.SIGKILL)
+        bots.kill()
         bots.wait()
         state, rc = check_store(a.godot, store, clog)
         row = {"round": r, "mode": mode, "start_s": round(took, 1), "killed_while": hit, "stop_s": round(t_stop, 1),

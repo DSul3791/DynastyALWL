@@ -8848,6 +8848,13 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 				_set_aside_unfinished(path)
 				return before
 
+			if before == null and _header_gen() >= 0:
+				# New to the store in the save that stopped: the whole save before did not have it, so it is read as absent (an item in it
+				# would otherwise also be where the save before had it).
+				push_error("server save: %s is from save %d, which stopped before it finished (the last whole save is %d), and the save before had no such file: read as absent, so the store is that whole save" % [path, int(parsed["gen"]), _header_gen()])
+				_set_aside_unfinished(path)
+				return null
+
 			push_error("server save: %s is from save %d, past the last whole save %d, and has no earlier copy of that save: read as it is" % [path, int(parsed["gen"]), _header_gen()])
 
 		return parsed
@@ -8881,7 +8888,9 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 static func _set_aside_unfinished(path: String) -> void:
 	_file_lock.lock()
 	DirAccess.rename_absolute(path, path + ".unfinished")
-	DirAccess.copy_absolute(path + ".prev", path)
+
+	if FileAccess.file_exists(path + ".prev"):
+		DirAccess.copy_absolute(path + ".prev", path)
 	_file_lock.unlock()
 
 
@@ -9097,6 +9106,8 @@ static func _skip_item_job(job: Dictionary, written: Array) -> void:
 	for path in written:
 		if FileAccess.file_exists(str(path) + ".prev"):
 			DirAccess.rename_absolute(str(path) + ".prev", str(path))
+		else:
+			DirAccess.remove_absolute(str(path))   # new in this save: the save before had no such file
 
 	_file_lock.unlock()
 

@@ -282,6 +282,12 @@ func _init() -> void:
 	var again = make(COPY)
 	check(state_of(again) == after and again.load_failures.is_empty(), "the next save after a restart reads back whole (%s)" % str(state_of(again)))
 	again._finish_writer()
+
+	# A file new in the save that stopped (no .prev: the save before had none) is read as absent: chests.json landed and the header did not, so
+	# the chests read empty, as the save before had them (no Stone in a chest as well as where the save before had it).
+	DirAccess.remove_absolute(COPY + "/chests.json.prev")
+	var fresh: Array = stopped_after(ORDER.find("chests.json") + 1, COPY, COPY)[0]
+	check(fresh[1] == 0 and fresh[3] == 0 and DirAccess.get_files_at(COPY).has("chests.json.unfinished"), "a file new in a save that stopped is read as absent, as the save before had it (%s)" % str(fresh))
 	items._finish_writer()
 	print("save set: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
