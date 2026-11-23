@@ -1942,6 +1942,12 @@ func _welcome_body(info: Dictionary) -> void:
 	if net.has_signal("item_received"):
 		net.connect("item_received", func(item_id: String, count: int, source: String): pickup_feed.push_id(item_id, count, source))
 
+	# Two actions on one key (an older key file meeting a newer default) both fire: say so once, after the world has had time to show.
+	var shared_keys: String = KeyBindings.shared_note()
+
+	if shared_keys != "":
+		get_tree().create_timer(12.0).timeout.connect(func() -> void: items.show_notice(shared_keys))
+
 	if test_items:
 		items.run_test()
 

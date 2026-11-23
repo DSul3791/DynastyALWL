@@ -1,4 +1,6 @@
 extends RefCounted
+
+const SettingsRead := preload("res://src/client/settings_read.gd")
 # The weight of first-person actions (2 Nov 2026, feel lane): a landing dips the eye and it springs back, a tool blow lands with a short jolt, and a blow throws a few chips from the spot hit.
 # Pure numbers (no nodes) except `chips`, so the springs are testable. The client adds `step()`'s result to the walking camera in terrain_client.gd (_update_bob).
 # How other first-person games do it: a damped spring driven by an impulse (landing: dip scales with fall speed and is capped; melee: a small, fast kick on the impact frame, not on the swing start).
@@ -61,7 +63,7 @@ func _init() -> void:
 	var file: ConfigFile = ConfigFile.new()
 
 	if file.load(SETTINGS_PATH) == OK:
-		intensity = clampf(float(file.get_value("feel", "intensity", 1.0)), 0.0, 1.5)
+		intensity = clampf(SettingsRead.number(file, "feel", "intensity", 1.0), 0.0, 1.5)
 
 
 # The Camera motion slider (Esc > Settings > Gameplay): takes effect at once and is kept in the settings file for the next run.
