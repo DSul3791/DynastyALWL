@@ -69,7 +69,8 @@ before. Trees and plants are not in the pack yet.
 3. Install it, on the server, with the server stopped (a fresh world, or over the current one: digs and fills are kept):
    `docker compose -f compose.yaml down`, then
    `docker compose -f compose.yaml run --rm --no-deps -v /home/dave/dynasty/ground_pack:/pack:ro --entrypoint godot dynasty-server --headless --path /game --script res://src/worldgen/tools/install_ground.gd -- --pack=/pack --store=/data/store`
-   which ends with `install_ground: DONE` (or `install_ground: FAILED: <why>`, the store left as it was), then
+   which ends with `install_ground: DONE` (or `install_ground: FAILED: <why>`, the store left as it was; after a crash the server's
+   run note still says running: add `--server-stopped` at the end once `docker ps` shows the server is down), then
    `docker compose -f compose.yaml up -d`. The copy needs the pack's size free again on the server's disk; the folder
    /home/dave/dynasty/ground_pack can be deleted afterwards.
 

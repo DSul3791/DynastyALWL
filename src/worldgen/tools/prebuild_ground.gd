@@ -86,6 +86,7 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array)
 
 	generator = GeneratorScript.new()
 	generator.setup(settings, rules, tables, world_dir + "/tiles")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(out_dir + "/" + PackScript.NOTE))   # the note marks a finished build: none while this one runs
 	store = StoreScript.new()
 	var problem: String = store.setup(generator, out_dir)
 
@@ -162,6 +163,11 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array)
 		if done >= _total:
 			break
 
+		if tasks.all(func(id): return WorkerThreadPool.is_task_completed(id)):
+			push_error("prebuild_ground: the workers stopped with %d of %d columns done (a script error above?); run it again to go on" % [done, _total])
+			store.flush()
+			return 1
+
 		if float(now - last_flush) / 1000.0 >= FLUSH_EVERY_S:
 			store.flush()
 			last_flush = now
@@ -173,6 +179,11 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array)
 
 	store.flush()
 	var seconds: float = float(Time.get_ticks_msec() - started) / 1000.0
+
+	if generator.failed_tiles > 0 or store.bad_blocks > 0:
+		push_error("prebuild_ground: %d tile reads failed and %d blocks failed the check, so some blocks were not saved; run it again to fill them (no finished note written)" % [generator.failed_tiles, store.bad_blocks])
+		return 1
+
 	var info: Dictionary = PackScript.describe(out_dir)
 	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "seconds": snappedf(seconds, 0.1)})
 	print("prebuild_ground: DONE %d blocks made, %d already there, in %.0f s; pack %.1f MB at %s" % [_made, _skipped, seconds, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])

@@ -40,12 +40,12 @@ func _init() -> void:
 	check(settings != null and errors.is_empty(), "world loads: %s" % str(errors))
 	generator = GeneratorScript.new()
 	generator.setup(settings, rules, tables, WORLD + "/tiles")
-	var root: String = "user://test_ground_pack"
-	_wipe(root)
+	var base: String = "user://test_ground_pack"
+	_wipe(base)
 	var wanted: String = PackScript.wanted_version(WORLD + "/tiles")
 
 	# The pack: a 64 m square at the finest level and one far block column, as prebuild_ground.gd builds them.
-	var pack_dir: String = root + "/pack"
+	var pack_dir: String = base + "/pack"
 	var pack = StoreScript.new()
 	check(pack.setup(generator, pack_dir) == "", "pack store opens")
 	var blocks: Array = []   # [block, lod]
@@ -74,7 +74,7 @@ func _init() -> void:
 	pack = null
 
 	# Refusals first: none may touch the store.
-	var refused_dir: String = root + "/refused"
+	var refused_dir: String = base + "/refused"
 	var problem: String = PackScript.install(pack_dir, refused_dir, wanted)
 	check(problem.contains("did not finish"), "an unfinished pack (no note) is refused: %s" % problem)
 	PackScript.write_note(pack_dir, {"tiles": ["test"], "blocks_made": made})
@@ -84,16 +84,16 @@ func _init() -> void:
 	_write(refused_dir + "/server_run.json", "{\"state\":\"running\"}")
 	problem = PackScript.install(pack_dir, refused_dir, wanted)
 	check(problem.contains("running"), "a store whose server runs is refused: %s" % problem)
-	check(not FileAccess.file_exists(refused_dir + "/generated_g1.sqlite") and not FileAccess.file_exists(refused_dir + "/generated_generation.txt"), "refusals leave the store as it was")
+	check(Array(DirAccess.get_files_at(ProjectSettings.globalize_path(refused_dir))) == ["server_run.json"], "refusals leave the store as it was (%s)" % str(DirAccess.get_files_at(ProjectSettings.globalize_path(refused_dir))))
 	check(PackScript.install(pack_dir, refused_dir, wanted, true) == "", "--server-stopped installs over a run note a crash left")
 
 	# A fresh world on the pack.
-	var fresh_dir: String = root + "/fresh"
+	var fresh_dir: String = base + "/fresh"
 	check(PackScript.install(pack_dir, fresh_dir, wanted) == "", "the pack installs into a fresh store")
 	var fresh = StoreScript.new()
 	check(fresh.setup(generator, fresh_dir) == "", "the fresh store opens on the pack")
 	var plain = StoreScript.new()
-	check(plain.setup(generator, root + "/plain") == "", "a plain store opens (makes its own ground)")
+	check(plain.setup(generator, base + "/plain") == "", "a plain store opens (makes its own ground)")
 	var same: int = 0
 
 	for entry in blocks:
@@ -107,17 +107,26 @@ func _init() -> void:
 	plain = null
 
 	# Over a world with a dig: the dig stays.
-	var world_dir: String = root + "/world"
+	var world_dir: String = base + "/world"
 	var world = StoreScript.new()
 	check(world.setup(generator, world_dir) == "", "an existing world opens")
 	var dug: Vector3i = blocks[1][0]
 	var at: Vector3 = Vector3(float(dug.x) * 16.0 + 8.0, generator.surface_height(float(dug.x) * 16.0 + 8.0, float(dug.z) * 16.0 + 8.0), float(dug.z) * 16.0 + 8.0)
-	world.dig_sphere(at, 2.0)
 	var dug_rows: Vector2i = PrebuildScript.surface_blocks(generator, dug.x, dug.z, 0)
+	var undug: Array = []
+
+	for by in range(dug_rows.x, dug_rows.y + 1):
+		undug.append(world.block_bytes(Vector3i(dug.x, by, dug.z), 0))
+
+	world.dig_sphere(at, 2.0)
 	var before: Array = []
+	var changed: int = 0
 
 	for by in range(dug_rows.x, dug_rows.y + 1):
 		before.append(world.block_bytes(Vector3i(dug.x, by, dug.z), 0))
+		changed += 1 if before[before.size() - 1] != undug[before.size() - 1] else 0
+
+	check(changed >= 1, "the dig changes the ground (%d of %d blocks)" % [changed, before.size()])
 
 	world.flush()
 	world = null
@@ -137,7 +146,7 @@ func _init() -> void:
 	check(kept == before.size(), "the dug blocks are the same after the install (%d of %d)" % [kept, before.size()])
 	check(not FileAccess.file_exists(world_dir + "/generated_g1.sqlite"), "the old generation's ground file is gone")
 	world = null
-	_wipe(root)
+	_wipe(base)
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 

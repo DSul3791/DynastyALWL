@@ -99,7 +99,8 @@ Built 23 Nov 2026 (Dave: "all needs to be part of the generator. make it a prior
 starts fresh, so the first use is a fresh world on the pack). Ground: `src/worldgen/tools/prebuild_ground.gd` (any tile list, `nine`
 for all nine; goes on after a stop), `src/stream/ground_pack.gd` and `src/worldgen/tools/install_ground.gd` (refuses a pack from other
 tiles, an unfinished one, or a store whose server runs), test `test_ground_pack`. Steps: deploy/server/SERVER.md, "Prebuilt ground".
-Next: trees and plants (step 4 below). The plan as first written follows.
+Not built yet: trees and plants (step 4 below) and step 3's switch-off of the idle builders inside the area with a log count, so
+the server still makes ground outside the pack and plants everywhere. The plan as first written follows.
 
 Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client
 asks for, surface blocks only; caves and deep blocks are left to be made as now), two 1 km squares: one round the starter town,
