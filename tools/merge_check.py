@@ -224,6 +224,14 @@ if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) 
     for line in text.stdout.splitlines()[:-1]:
         bad("text vs recipe: " + line)
 
+shown = subprocess.run([sys.executable, "tools/check_player_text.py"], capture_output=True, text=True)
+if shown.returncode != 0:   # text the game shows (descriptions, hints, goals) names only real things, with the amounts they really ask for (coordinator 23 Nov 2026)
+    rows = [line for line in shown.stdout.splitlines() if ": " in line and not line.startswith("player text:")]
+    for line in rows:
+        bad("player text: " + line)
+    if not rows:   # the check itself failed: never pass silently
+        bad("player text check failed: " + " | ".join(shown.stderr.strip().splitlines()[-3:]))
+
 goal_gaps = subprocess.run([sys.executable, "tools/goal_station_audit.py"], capture_output=True, text=True)
 if goal_gaps.returncode != 0:   # every goal comes after the goals that build the stations it needs (Dave 17 Nov 2026, the Hoe report)
     for line in goal_gaps.stdout.splitlines()[:-1]:

@@ -91,7 +91,7 @@ func _init() -> void:
 	var last: Dictionary = items._characters[KEY].get("last", {})
 	check(last.is_empty() or Vector3(float(last["pos"][0]), float(last["pos"][1]), float(last["pos"][2])).distance_to(HERE) > 1.0, "the stale connection leaving writes no old spot over the live one")
 	check(_count(items.inventory_of(2), stone) == 5 and _count(items.inventory_of(2), oak) == 1, "the live connection still has the stones and the log")
-	var server_code: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
+	var server_code: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").replace("\r\n", "\n")   # a Windows checkout ends lines with CRLF: the multi-line checks below read LF
 	check(server_code.contains("_drop_replaced(old_peer)") and server_code.contains("joined the server again from another game window") and server_code.contains("_on_peer_disconnected(old_peer)   # forgotten now") and server_code.contains("if not _peers.has(peer_id):\n\t\treturn   # forgotten already"), "the replaced connection is told why on its screen, then forgotten at once, not at its line's timeout (terrain_server.gd _drop_replaced)")
 
 	# 2. Asleep when the line drops: back awake on rejoin, with the energy it had.
@@ -222,7 +222,7 @@ func _init() -> void:
 
 	# A server restarted with players on (a stop.now from run_server.sh): each is told why and its game shows it at once on the "connection
 	# lost" window (tools/restart_notice_check.sh runs it for real: a server and a client here).
-	var client_code: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
+	var client_code: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").replace("\r\n", "\n")   # a Windows checkout ends lines with CRLF: the multi-line checks below read LF
 	check(server_code.contains("_quit_at_msec = now + _tell_closing()") and server_code.contains("net.notice.rpc_id(int(peer), NetScript.SERVER_CLOSING)") and server_code.contains("\t\t_close_players()\n") and server_code.contains("peer.disconnect_peer(int(id))"), "a stopping server tells each player why, waits for the word to go, then closes their connections (terrain_server.gd)")
 	check(client_code.contains("if text == NetScript.SERVER_CLOSING:") and client_code.contains("_show_lost_notice(lost_reason(_server_closing))"), "and the player's game puts it on its connection lost window (terrain_client.gd)")
 	check(Net.SERVER_CLOSING.contains("restarting") and Net.SERVER_CLOSING.contains("saved"), "the words say it is a restart and nothing is lost")

@@ -684,6 +684,7 @@ func _ready() -> void:
 	items.reset_terrain_edits = _reset_terrain_edits
 	items.restore_flora = func() -> void: flora.restore_all()
 	items.floor_below = _floor_below
+	items.cave_floor = generator.cave_floor_at
 	items.edits_near = func(point, radius): return store.ops.edits_near(point, radius)   # the hoe's levelling reads the ground through the saved digs and fills
 	items.water_flow_at = _water_flow_at
 	items.water_wheel = _water_wheel
@@ -2932,29 +2933,9 @@ func _water_wheel(a: Vector3, b: Vector3) -> Dictionary:
 	return WaterFlowScript.wheel(generator, water_live.data_of(generator.tile_of(a.x, a.z)), a, b, WaterFlowScript.load_rules(), items.water_depth_at)
 
 
-# Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface with the
-# saved digs and fills laid over it, in order (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them).
-# Natural caves are not known to this probe (only the surface height and the edits are), so an item dropped inside a natural cave
-# keeps its height. Returns the resting height, or NAN when there is no ground within 24 m below.
+# Where a loose item let go at `from` comes to rest (terrain_generator.floor_below: the generated ground, a cave's floor, the saved digs and fills).
 func _floor_below(from: Vector3) -> float:
-	var edits: Array = store.ops.edits_near(Vector3(from.x, from.y - 12.0, from.z), 12.0)   # every edit touching the 24 m column, oldest first
-	var surface: float = generator.surface_height(from.x, from.z)
-	var y: float = from.y + 0.05
-
-	for step in range(480):   # 0.05 m steps, 24 m
-		var p: Vector3 = Vector3(from.x, y, from.z)
-		var solid: bool = p.y < surface
-
-		for op in edits:
-			if p.distance_to(op[1]) <= float(op[2]):
-				solid = int(op[0]) == 1
-
-		if solid:
-			return y + 0.05
-
-		y -= 0.05
-
-	return NAN
+	return generator.floor_below(from, store.ops.edits_near(Vector3(from.x, from.y - 12.0, from.z), 12.0))   # every edit touching the 24 m column, oldest first
 
 
 # Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
