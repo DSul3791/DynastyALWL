@@ -5527,7 +5527,7 @@ func _move_player(delta: float) -> void:
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
 
 	# Gaits (CONTROLS.md): walk is plain WASD, run is Shift with W.
-	running = forward and KeyBindings.held("run") and strain_cap == 0.0
+	running = forward and KeyBindings.held("run") and strain_cap == 0.0 and not (held != null and held.blocking)   # a raised shield walks (protection.json note_shield)
 	var pace: float = RUN_SPEED if running else WALK_SPEED
 
 	if not flying and stance.stance != StanceScript.STAND:

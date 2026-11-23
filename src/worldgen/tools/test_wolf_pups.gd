@@ -46,7 +46,7 @@ func make():
 	w.fires = func(): return fires_at
 	w.notice = func(_p, _t): pass
 	w.game_seconds = func(): return now
-	w.hurt_player = func(peer, dmg, lethal, _cause):
+	w.hurt_player = func(peer, dmg, lethal, _cause, _from):
 		log_bites += 1
 		health[peer] = float(health.get(peer, 100.0)) - dmg
 		if lethal and health[peer] <= 0.0:

@@ -25,7 +25,7 @@ var host                          # the animals module (animals, cfg, rng, groun
 var take_meat: Callable           # (peer) -> int: takes every piece of meat out of the pack, returns how many
 var player_info: Callable         # () -> Array of {peer, pos, stance, hp 0..1, meat bool, spear bool, torch bool}
 var fires: Callable               # () -> Array of Vector3, burning fires
-var hurt_player: Callable         # (peer, damage, lethal, cause) -> "hurt" | "maimed" | "dead"
+var hurt_player: Callable         # (peer, damage, lethal, cause, from: the biter's position, for a raised shield) -> "hurt" | "maimed" | "dead"
 var notice: Callable              # (peer, text)
 var fire_radius: Callable         # (fire position) -> metres wolves keep from that fire (its tier's protect_m); invalid = animals.json fire_light_m
 var is_day: Callable              # () -> bool, play only by day (invalid = always)
@@ -656,7 +656,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
 			pack["turn"][id] = {"step": "back", "t": 0.0}   # one bite a lunge, then back to its place on the ring
-			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))   # a higher-level wolf bites harder
+			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves", m["pos"]))   # a higher-level wolf bites harder
 
 			# Meat is the prize: a few bites in, the pack tears it out of the pack and runs (never in a fire's or torch's light).
 			if result == "hurt" and bool(pack["for_meat"]) and not lit_target and take_meat.is_valid():
@@ -1224,7 +1224,7 @@ func _den_guard(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: 
 
 		if _flat(m["pos"], p) <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
-			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))
+			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves", m["pos"]))
 
 			if result == "maimed" or result == "dead":
 				if result == "maimed":
