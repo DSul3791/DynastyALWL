@@ -100,6 +100,8 @@ func _init() -> void:
 			"a herd's steps sound at most %d at once, and a near one took the place of the wolf 45 m off (%d of 8 played)" % [SlotSounds.CREATURE_STEP_VOICES, herd])
 	check(slots.play("chamois_step", Vector3(2, 0, 0), origin) and slots._step_voices.size() == SlotSounds.CREATURE_STEP_VOICES, "at the cap a nearer step still gets in")
 	check(not slots.play("goat_step", Vector3(30, 0, 0), origin), "a step farther than every one sounding still waits")
+	var sounding: Array = slots._step_voices.duplicate()
+	check(not slots.play("chamois_step", Vector3(1, 0, 0), origin) and slots._step_voices == sounding, "a nearer step refused by its cooldown cuts nothing short")
 
 	for voice in slots._step_voices:
 		voice.queue_free()   # they end: the footfall checks below start with room

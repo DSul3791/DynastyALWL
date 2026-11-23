@@ -203,6 +203,8 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 
 	var now: int = Time.get_ticks_msec()
 
+	var evict: AudioStreamPlayer3D = null
+
 	if creature:
 		_step_voices = _step_voices.filter(func(p) -> bool: return is_instance_valid(p) and not p.is_queued_for_deletion())
 
@@ -218,9 +220,7 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 			if far == null or (far.get_meta("at") as Vector3).distance_to(listener) <= at.distance_to(listener):
 				return false
 
-			far.stop()
-			far.queue_free()
-			_step_voices.erase(far)
+			evict = far   # stopped only once this step is sure to start (after the cooldown, room and clip checks)
 
 	if now < int(_cooldown_until.get(slot, 0)) or not _room(slot):
 		return false
@@ -233,6 +233,12 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 	var pick: int = pick_index(list.size(), int(_last_pick.get(slot, -1)), _rng.randi())
 	_last_pick[slot] = pick
 	_cooldown_until[slot] = now + int(float(COOLDOWN_S.get(group_of(slot), 0.0)) * 1000.0)
+
+	if evict != null:
+		evict.stop()
+		evict.queue_free()
+		_step_voices.erase(evict)
+
 	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", CREATURE_STEP_UNIT_M if creature else 6.0, CREATURE_STEP_REACH_M if creature else 30.0)
 	player.stream = list[pick]
 	player.volume_db = linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0)
