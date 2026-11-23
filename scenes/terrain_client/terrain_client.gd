@@ -40,6 +40,7 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # facing at the spawn (face_fire_yaw)
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")   # the ears at the eye (Sound3D.ears)
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
@@ -455,6 +456,8 @@ var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
 var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
+var robot: Node = null                 # --robot=NAME: a robot play-tester drives this client by key presses (src/client/robot_play.gd, tools/robots.sh)
+var _block_port_override: int = 0      # --block-port=N: the block line connects here instead of the port the server named (a test relay, tools/lossy_link.py)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
 var test_cook: bool = false              # --cook: lay and light a campfire, roast raw meat, eat it (COOK TEST lines)
 var test_sleep: bool = false             # --sleep: set down a rough bed, lie on it, sleep a few seconds, wake (SLEEP TEST lines)
@@ -828,6 +831,11 @@ func _ready() -> void:
 			test_chop = true
 		elif argument == "--lag-run":
 			lag_run = preload("res://src/client/lag_run.gd").new()
+		elif argument.begins_with("--robot="):
+			robot = preload("res://src/client/robot_play.gd").new()
+			robot.prepare(argument.trim_prefix("--robot="), OS.get_cmdline_user_args())   # makes and picks its own character before hello
+		elif argument.begins_with("--block-port="):
+			_block_port_override = int(argument.trim_prefix("--block-port="))
 		elif argument == "--shoot":
 			test_shoot = true
 		elif argument == "--place-foundation":
@@ -1391,7 +1399,8 @@ func _welcome_body(info: Dictionary) -> void:
 	stream.drop_xz = Vector2(float(info["spawn"].x), float(info["spawn"].z)) if test_start.is_finite() == false else Vector2(test_start.x, test_start.z)
 	link = BlockLinkScript.new()
 	link.stream = stream
-	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else int(info.get("block_port", 0)), multiplayer.get_unique_id())
+	var block_port: int = _block_port_override if _block_port_override > 0 else int(info.get("block_port", 0))   # --block-port: a test relay's port (tools/lossy_link.py)
+	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else block_port, multiplayer.get_unique_id())
 	stream.link = link
 	var root: Node3D = Node3D.new()
 	root.name = "World"
@@ -1717,6 +1726,9 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
+	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
+		if sound != null:
+			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -1908,6 +1920,11 @@ func _welcome_body(info: Dictionary) -> void:
 		lag_run.client = self
 		add_child(lag_run)
 		lag_run.run()
+
+	if robot != null and robot.get_parent() == null:
+		robot.client = self
+		add_child(robot)
+		robot.run()
 
 	if test_shoot:
 		items.run_shoot_test(self)
@@ -3861,6 +3878,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	quake_view.setup(self, camera)
 	drip_view.setup(self, self)
 	view_cam.current = true
+	Sound3D.ears(camera)   # heard from the eye, not from the drawn camera behind it in third person
 	_load_view()
 	var viewer: VoxelViewer = VoxelViewer.new()
 	viewer.view_distance = VIEW_DISTANCE
@@ -7890,6 +7908,10 @@ func _exit_tree() -> void:
 		stream.close()
 
 	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+	# The freeze lines' context is a lambda of this script held in a static var. Left there, the engine frees it last, after this script's
+	# own code is gone: "free(): invalid pointer" / "corrupted size vs. prev_size" and an abort at every quit after joining a world
+	# (headless robot clients, 23 Nov 2026, dev 2aa2ea24; GDScript lambda freed from Callable in GDScript's cleanup). A scene change makes a new one.
+	Probe.context = Callable()
 	if _ends_at_exit_tree():
 		_end_now()
 
