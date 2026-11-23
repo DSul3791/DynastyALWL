@@ -126,6 +126,7 @@ var _off_shown: int = 0
 var _inv                                  # InventoryView
 var _hanging_net: Mesh                    # the shore net as it hangs from the hand (BasicLook "hand_net_hanging"), built once
 var _net
+var report_now: Callable                  # () -> sends this client's position to the server now (terrain_client send_position_now), just before a blow
 var seen_ms: Callable                     # () -> [server ms, server ms] the animals are drawn at (animal_view.seen_server_ms; protocol 155), sent with a blow
 var _camera: Camera3D
 var _root: Node3D
@@ -1024,6 +1025,10 @@ func _animal_in_reach() -> bool:
 # One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
 func _melee_strike() -> void:
 	var seen: Array = seen_ms.call() if seen_ms.is_valid() else [0, 0]   # protocol 155: the blow is judged where this screen showed the animals
+
+	if report_now.is_valid():
+		report_now.call()   # and from where we stand now, not the last report up to 0.2 s back (server_items strike_origin)
+
 	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot if held_number() != 0 else -1, int(seen[0]), int(seen[1]), -_camera.global_transform.basis.z)   # -1: a bare-handed punch
 
 
@@ -1412,6 +1417,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
 			if not _is_fish_spear():
 				var seen_b: Array = seen_ms.call() if seen_ms.is_valid() else [0, 0]   # protocol 155
+
+				if report_now.is_valid():
+					report_now.call()   # judged from where we stand now (server_items strike_origin)
+
 				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, int(seen_b[0]), int(seen_b[1]), -_camera.global_transform.basis.z)
 
 			if _sound != null:
