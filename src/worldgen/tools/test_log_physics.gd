@@ -11,6 +11,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const LyingLogs := preload("res://src/shared/lying_logs.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 
 const DT := 1.0 / 60.0
 const WALK := 3.2      # terrain_client WALK_SPEED
@@ -297,6 +298,24 @@ func _run() -> void:
 	check(not kept.is_empty() and absf(float(kept.get("rot_y", -9.0)) - float(before["rot_y"])) < 0.001 and absf(float(kept.get("pitch", -9.0)) - float(before.get("pitch", 0.0))) < 0.001 and absf(float(kept.get("spin", -9.0)) - float(before.get("spin", 0.0))) < 0.001, "its spot, turn, pitch and spin are saved (%s)" % str(kept.get("pos")))
 	back._logs.clear()
 	back._finish_writer()
+
+	# --- 7b. A foundation in its way stops it too: before 23 Nov 2026 the rolling world held only the ground there and the log rolled through the slab ---
+	case_name = "foundation in the way"
+	var slab_w = make("user://test_log_physics_slab", steep_y)
+	var slab_id: int = 932000
+	slab_w._items[slab_id] = {"number": slab_w.table.number_of(str(slab_w._structures["foundation_section"]["item"])), "count": 1, "pos": Vector3(-6.0, 8.0, 0.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 90.0, "uid": slab_id}}
+	slab_w._grid_add(slab_id, slab_w._items[slab_id])
+	slab_w._sync_grid = {}
+	var slab_top: float = 8.0 + PlacementRules.anchor_top(slab_w._structures["foundation_section"])
+	var slab_log: int = drop(slab_w, "log_oak", Vector3(0.0, 10.0, 0.0), across)
+	await step(slab_w, 360)
+	var slab_c: Vector3 = centre(slab_w, slab_log)
+	var slab_r: float = slab_w._log_r(slab_w._items[slab_log])
+	check(slab_c.x < -1.0, "the log rolls down the hill to the foundation (x %.2f)" % slab_c.x)
+	check(slab_c.x > -4.0 + slab_r - 0.1 or slab_c.y - slab_r > slab_top - 0.08, "it is stopped at the slab's edge or rides on its top, never inside it (x %.2f, underside %.2f, top %.2f)" % [slab_c.x, slab_c.y - slab_r, slab_top])
+	check(slab_c.x > -8.5, "and it does not come out the far side (x %.2f)" % slab_c.x)
+	slab_w._logs.clear()
+	slab_w._finish_writer()
 
 	# --- 8. Logs stack and rest on each other and on rocks: one laid on two lying side by side (chocked by a rock each side, as a woodpile is) rests
 	# on them; one dropped across another rests with its middle on it and an end on the ground ---
