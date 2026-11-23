@@ -82,20 +82,43 @@ func _init() -> void:
 		landed.append([clock, amount, r])
 		return r
 	animals.big_game.ping_ms = func(_p): return ping_now
-	items.hit_animal = func(_peer, origin, dir, reach, amount) -> Dictionary:   # terrain_server.gd's, without the tribe and the rewind
+	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:   # terrain_server.gd's, without the tribe and the rewind
 		var target: int = animals.target_along(origin, dir, reach)
 
 		if target == 0:
 			return {}
 
 		var at: Vector3 = animals.animals[target]["pos"]
-		animals.damage(target, amount, 1, "spear")
+		animals.damage(target, amount, peer, "spear")
 		return {"at": at}
 
 	if OS.get_environment("FIGHT_ONE") != "":
 		var parts: PackedStringArray = OS.get_environment("FIGHT_ONE").split(",")
 		debug = true
 		print(fight(parts[0], parts[1], int(parts[2]), int(parts[3]) if parts.size() > 3 else 0))
+		quit(0)
+		return
+
+	animals.wolves.player_info = func(): return items.wolf_info()
+	animals.wolves.notice = func(_p, _t): pass
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause, from):   # terrain_server.gd's: a wolf's floor is maim_hp
+		var r: String = items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)), "", 0.0, from)
+		landed.append([clock, amount, r])
+		return r
+	animals.cfg["wolves"]["cell_share"] = 0.0   # no wild packs: the test makes its own
+
+	if OS.get_environment("TWO_ONLY") != "":
+		two_players()
+		quit(0)
+		return
+
+	if OS.get_environment("FLOOR_ONLY") != "":
+		at_the_floor()
+		quit(0)
+		return
+
+	if OS.get_environment("WOLF_ONLY") != "":
+		wolf_fights()
 		quit(0)
 		return
 
@@ -170,6 +193,9 @@ func _init() -> void:
 		print("  " + l)
 
 	chases(kinds)
+	wolf_fights()
+	at_the_floor()
+	two_players()
 	bleeding()
 
 	items._finish_writer()
@@ -431,6 +457,220 @@ func bleeding() -> void:
 		check(died and (away < 10.0 or follow), "a %s wounded by one blow bleeds to death, and its blood leads to the body" % sp)
 
 	animals.died = Callable()
+
+
+# 5. A wolf pack's rush on a hurt lone player (wolves have no defend row: server_wolves.gd's battle ring). One wolf at a time winds up
+# (windup_s, the crouch), lunges in for one bite and stands in reach recover_s (the opening); one blow that lands sends the whole pack off
+# (on_hit: the pack is hurt). A player at half health who faces them and strikes whatever is in reach, over a 60 ms link: how many bites
+# before the first blow lands, and does the pack go.
+func wolf_fights() -> void:
+	print("\nWOLVES (a pack rushes a player at half health; the player faces it and strikes what is in reach, 60 ms)")
+	print("  weapon         | bites taken  health  | first blow landed  | the pack")
+	var ping: int = 60
+	ping_now = ping
+
+	for weapon in ["", "stone_knife", "stone_axe", "bronze_sword", "iron_sword"]:
+		animals.animals.clear()
+		animals.wolves.packs.clear()
+		landed.clear()
+		var v: Dictionary = items.vitals_of(1)
+		v["health"] = 50.0
+		v.erase("limp")
+		var inv = items.inventory_of(1)
+
+		for s in inv.slot_count:
+			inv.clear_slot(s)
+
+		var slot: int = -1
+
+		if weapon != "":
+			inv.add(n(weapon), 1)
+			slot = inv.numbers.find(n(weapon))
+
+		var me: Vector3 = Vector3(0.0, 10.0, 0.0)
+		items.report_position(1, me)
+		var pid: int = animals.wolves.spawn_pack(40.0, 0.0)
+		animals.wolves.packs[pid]["den"] = Vector3(5000.0, 0.0, 0.0)   # far from its den: no extra boldness
+		var seen_lag: float = (float(animals.cfg.get("dodge_view_ms", 350)) + float(ping) * 0.5) / 1000.0 + REACT_S
+		var history: Array = []   # [time, {id: pos}]
+		var start: float = clock
+		var first_blow: float = -1.0
+		var bites_before: int = 0
+		var rushed: bool = false
+		var next_blow: float = 0.0
+		var reach: float = melee_reach(weapon)
+		var gone: String = "still on the player"
+
+		while clock - start < 120.0:
+			clock += DT
+			var now: Dictionary = {}
+
+			for id in animals.animals:
+				if str(animals.animals[id]["sp"]) == "wolf":
+					now[id] = animals.animals[id]["pos"]
+
+			history.append([clock, now])
+			var view: Dictionary = history[0][1]
+
+			for h in history:
+				if float(h[0]) <= clock - seen_lag:
+					view = h[1]
+
+			var phase: String = str(animals.wolves.packs[pid]["phase"]) if animals.wolves.packs.has(pid) else "gone"
+			rushed = rushed or phase == "rush"
+
+			if rushed and phase != "rush":
+				gone = "left (%s) after %.0f s" % [phase, clock - start]
+				break
+
+			# Strike the nearest wolf the player sees within reach.
+			var best: int = 0
+			var best_d: float = INF
+
+			for id in view:
+				var d: float = Vector2(view[id].x - me.x, view[id].z - me.z).length() - AnimalContact.body_m("wolf")
+
+				if d < best_d and animals.animals.has(id):
+					best_d = d
+					best = int(id)
+
+			if best != 0 and best_d <= reach - 0.1 and clock >= next_blow:
+				var to: Vector3 = view[best] - me
+				to.y = 0.0
+				facing = atan2(-to.x, -to.z)
+				next_blow = clock + recover_s(weapon)
+				items._last_strike.clear()
+				var before: float = float(animals.animals[best]["hp"])
+				items._strike(1, inv, slot, to.normalized())
+
+				if first_blow < 0.0 and (not animals.animals.has(best) or float(animals.animals[best]["hp"]) < before):
+					first_blow = clock - start
+					bites_before = landed.size()
+
+			animals.tick(DT)
+
+		print("  %-14s | %5d  %10.0f  | %s | %s" % [weapon if weapon != "" else "bare hands", landed.size(), float(v["health"]), ("after %d bites, %.0f s" % [bites_before, first_blow]) if first_blow >= 0.0 else "never", gone])
+		check(rushed or first_blow >= 0.0, "a pack rushes a lone player at half health, or is struck first while it stalks (%s)" % weapon)
+		check(first_blow >= 0.0 and bites_before <= 3, "a player facing the pack with %s lands a blow within three bites" % (weapon if weapon != "" else "bare hands"))
+
+	ping_now = 0
+
+
+# 6. At the floor (the big game's 10): a player an animal has crippled limps off (vitals limp: half speed). Does the animal let them go, or
+# charge them again and again while they cannot get away?
+func at_the_floor() -> void:
+	print("\nAT THE FLOOR (a player at 11 health in a provoked animal's face, limping away at the speed given, 60 s)")
+	print("  kind           | walking away 1.6 m/s    | running away 4.5 m/s")
+
+	for sp in ["boar", "moose", "bear", "buffalo", "lion", "rhino", "elephant", "warthog", "hyena"]:
+		var cells: Array = []
+
+		for mps in [1.6, 4.5]:
+			animals.animals.clear()
+			landed.clear()
+			var v: Dictionary = items.vitals_of(1)
+			v["health"] = 11.0
+			v.erase("limp")
+			var me: Vector3 = Vector3(0.0, 10.0, 0.0)
+			items.report_position(1, me)
+			var id: int = animals.spawn(sp, AnimalContact.body_m(sp) + 2.5, 0.0)
+			var a: Dictionary = animals.animals[id]
+			a["level"] = 1
+			a["cool"] = 0.0
+			a["heading"] = PI
+			animals.big_game.provoke(a, me, 1.0)
+			var first: float = -1.0
+			var start: float = clock
+
+			while clock - start < 60.0:
+				clock += DT
+
+				if not landed.is_empty():
+					if first < 0.0:
+						first = clock
+					me.x -= mps * DT
+					items.report_position(1, me)
+
+				animals.tick(DT)
+
+			var after: int = maxi(landed.size() - 1, 0)
+			check(not landed.is_empty() and after == 0, "a %s lets a player it crippled limp off at %.1f m/s (%d more blows)" % [sp, mps, after])
+			cells.append("%d more blows, %.0f m off" % [after, Vector2(animals.animals[id]["pos"].x - me.x, animals.animals[id]["pos"].z - me.z).length() if animals.animals.has(id) else -1.0])
+
+		print("  %-14s | %-23s | %s" % [sp, cells[0], cells[1]])
+
+
+# 7. Two players on one animal, spears, from opposite sides, each striking it whenever it is in their reach (no lag): who does it hurt,
+# and how long does it take.
+func two_players() -> void:
+	print("\nTWO PLAYERS (spears, from opposite sides, 0 ms)")
+	print("  kind           | result          | blows on A  B | A's and B's health")
+	items.peer_connected_hello(2, "animalfights002")
+	items.vitals_of(2)["weight"] = 1.0e6
+
+	for sp in ["boar", "moose", "bear", "buffalo", "lion", "rhino", "elephant", "warthog", "hyena", "tiger"]:
+		animals.animals.clear()
+		landed.clear()
+		var hurt_of: Dictionary = {1: 0, 2: 0}
+		var keep: Callable = animals.big_game.hurt_player
+		animals.big_game.hurt_player = func(peer, amount, lethal, cause, from):
+			hurt_of[peer] = int(hurt_of[peer]) + 1
+			return keep.call(peer, amount, lethal, cause, from)
+		var invs: Array = []
+
+		for peer in [1, 2]:
+			items.vitals_of(peer)["health"] = 100.0
+			items.vitals_of(peer).erase("limp")
+			var inv = items.inventory_of(peer)
+
+			for s in inv.slot_count:
+				inv.clear_slot(s)
+
+			inv.add(n("spear"), 1)
+			invs.append(inv)
+
+		var body: float = AnimalContact.body_m(sp)
+		var reach: float = melee_reach("spear")
+		var pos: Array = [Vector3(-(body + reach - 0.4), 10.0, 0.0), Vector3(body + reach - 0.4, 10.0, 0.0)]
+		var id: int = animals.spawn(sp, 0.0, 0.0)
+		animals.animals[id]["level"] = 1
+		animals.animals[id]["cool"] = 0.0
+		var next: Array = [0.0, 0.3]
+		var start: float = clock
+		var result: String = "time up"
+
+		while clock - start < 120.0:
+			clock += DT
+
+			if not animals.animals.has(id):
+				result = "killed %.0f s" % (clock - start)
+				break
+
+			var at: Vector3 = animals.animals[id]["pos"]
+
+			for k in 2:
+				var to: Vector3 = at - pos[k]
+				to.y = 0.0
+
+				if to.length() - body > reach - 0.3:
+					pos[k] += to.normalized() * minf(WALK_MPS * DT, to.length() - body - (reach - 0.4))
+				elif animals.animals.has(id) and clock >= float(next[k]) and int(animals.animals[id]["state"]) != BigGame.CHARGE:
+					facing = atan2(-to.x, -to.z)
+					next[k] = clock + recover_s("spear")
+					items._last_strike.clear()
+					items._strike(k + 1, invs[k], invs[k].numbers.find(n("spear")), to.normalized())
+
+				items.report_position(k + 1, pos[k])
+
+			animals.tick(DT)
+
+			if float(items.vitals_of(1)["health"]) <= 10.01 and float(items.vitals_of(2)["health"]) <= 10.01:
+				result = "both down"
+				break
+
+		animals.big_game.hurt_player = keep
+		check(result.begins_with("killed") and int(hurt_of[2]) > 0, "two players kill a %s, and it turns on the one who hurt it last (%d and %d blows)" % [sp, int(hurt_of[1]), int(hurt_of[2])])
+		print("  %-14s | %-15s | %5d %3d    | %3.0f %3.0f" % [sp, result, int(hurt_of[1]), int(hurt_of[2]), float(items.vitals_of(1)["health"]), float(items.vitals_of(2)["health"])])
 
 
 func melee_reach(weapon: String) -> float:
