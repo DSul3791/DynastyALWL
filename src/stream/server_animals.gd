@@ -772,6 +772,35 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 	return kept
 
 
+# A standing animal a player at `at` has walked into steps out of their body at its walking pace, `dt` s of it, away from them; not into
+# ground it cannot walk on. Birds in the air or on a perch, animals in a burrow or cave and a bandit camp's tied horses stay. True when it moved.
+func make_way(a: Dictionary, at: Vector3, dt: float) -> bool:
+	if at == Vector3.INF or a.has("fly") or a.has("camp") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
+		return false
+
+	# Big game warning, charging or recovering is stepped out too (Lane B 23 Nov 2026: a deer that warned at a player it stood inside struck
+	# from inside them and stayed there): it is then on the contact circle, where a charge's stop_at holds it, so it does not flap.
+
+	var def: Dictionary = species_def(str(a["sp"]))
+
+	if swims(def):
+		return false   # a swimmer in the water keeps its line (its height is the water's)
+
+	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
+	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(float(def.get("walk_mps", 1.5)) * dt)
+
+	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):
+		return false
+
+	var to: Vector3 = a["pos"] + step
+
+	if ground_height.is_valid():
+		to.y = float(ground_height.call(to.x, to.z))
+
+	a["pos"] = to   # its sent heading stays; the client draws it facing the way it steps while it steps. Tick stamps it moving (moved_ms) as for any step
+	return true
+
+
 # A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
 # the ground as it is now, so one dug out from under drops and one buried under a fill climbs onto it (Dave 19 Nov 2026 play test). Animals in
 # the air, on a perch, in a burrow, in a cave or on water keep their height. Cost: one pass over the animals and a ground read for each one there.
@@ -996,6 +1025,8 @@ func tick(delta: float) -> void:
 
 		if animals.has(id) and a["pos"] != was:
 			keep_off_players(a, was, players)   # never into a player's body (Dave 23 Nov 2026: "jumping right through us")
+		elif animals.has(id) and near_d < AnimalContact.contact_m(str(a["sp"])):
+			make_way(a, near_p, dt)   # a player walked into it standing: it steps aside (robot play-testers 23 Nov 2026: a dog 0.02 m from a player)
 
 		if animals.has(id) and a["pos"] != was:
 			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline

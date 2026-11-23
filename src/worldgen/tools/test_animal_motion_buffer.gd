@@ -246,6 +246,72 @@ func _init() -> void:
 	for loss in [0.0, 0.1, 0.3, 0.5]:
 		check(_connection_jumps(true, loss) == 0, "now at %d%% loss: no frame jumps over half a metre in 30 s (%d)" % [int(loss * 100.0), _connection_jumps(true, loss)])
 
+	# PR 2, the body's own feet (Dave 23 Nov 2026: "really bad animatronics", "more freedom client side"): a point running 6 m/s east that
+	# turns sharply north, then stops, is drawn on a curve: its speed never changes by more than 4 m/s in a frame (the point's changes by 6),
+	# it is never more than 0.5 m from the point (a model gives 0.25), and ends on it; the facing turns at most its rate a frame.
+	var fb: Dictionary = {}
+	var fpt: Vector3 = Vector3.ZERO
+	var f_worst_gap: float = 0.0
+	var f_worst_dv: float = 0.0
+	var f_was_v: Vector3 = Vector3.ZERO
+	var f_drawn: Vector3 = MotionBuffer.follow(fb, fpt, 1.0 / 60.0)
+	var yaw: float = 0.0
+	var f_worst_turn: float = 0.0
+	var rate: float = 5.0
+	var yaw_east: float = 0.0
+	var yaw_north: float = 0.0
+
+	for i in 240:
+		fpt += (Vector3(6.0, 0, 0) if i < 90 else (Vector3(0, 0, -6.0) if i < 180 else Vector3.ZERO)) / 60.0
+		var q: Vector3 = MotionBuffer.follow(fb, fpt, 1.0 / 60.0)
+		var v_now: Vector3 = (q - f_drawn) * 60.0
+		f_worst_dv = maxf(f_worst_dv, (v_now - f_was_v).length() * 60.0) if i > 0 else 0.0
+		f_was_v = v_now
+		f_drawn = q
+		f_worst_gap = maxf(f_worst_gap, Vector2(q.x - fpt.x, q.z - fpt.z).length())
+		var y2: float = MotionBuffer.face(fb, yaw, 0.0, rate, 1.0 / 60.0)
+		f_worst_turn = maxf(f_worst_turn, absf(angle_difference(yaw, y2)))
+		yaw = y2
+
+		if i == 89:
+			yaw_east = yaw
+		elif i == 179:
+			yaw_north = yaw
+
+	check(f_worst_gap <= 0.5 and f_drawn.distance_to(fpt) < 0.05, "a run that turns a sharp corner and stops is drawn within 0.5 m of the server's point and ends on it (worst %.2f m)" % f_worst_gap)
+	check(f_worst_dv / 60.0 < 4.0, "its drawn speed eases: never 4 m/s more or less in one frame (worst %.2f m/s)" % (f_worst_dv / 60.0))
+	check(f_worst_turn <= rate / 60.0 + 0.0001, "its facing turns at most its turn rate a frame (worst %.3f rad)" % f_worst_turn)
+	check(absf(angle_difference(yaw_east, -PI * 0.5)) < 0.01 and absf(angle_difference(yaw_north, 0.0)) < 0.01, "it faces the way it runs: east -PI/2 (%.2f), north (-Z) 0 (%.2f)" % [yaw_east, yaw_north])
+	# A late batch: the point itself jumps 3 m back in one frame. The body is not flung (the point's speed is taken at most CARRY_MPS).
+	var lb: Dictionary = {}
+	var lp: Vector3 = Vector3.ZERO
+	MotionBuffer.follow(lb, lp, 1.0 / 60.0)
+
+	for i in 60:
+		lp += Vector3(6.0, 0, 0) / 60.0
+		MotionBuffer.follow(lb, lp, 1.0 / 60.0)
+
+	lp -= Vector3(3.0, 0, 0)
+	var lb_worst: float = 0.0
+	var lb_move: float = 0.0
+	var lb_was: Vector3 = lb["fw_p"]
+
+	for i in 120:
+		lp += Vector3(6.0, 0, 0) / 60.0
+		var lq: Vector3 = MotionBuffer.follow(lb, lp, 1.0 / 60.0)
+		lb_worst = maxf(lb_worst, Vector2(lq.x - lp.x, lq.z - lp.z).length())
+		lb_move = maxf(lb_move, lq.distance_to(lb_was))
+		lb_was = lq
+
+	check(lb_move < 0.5, "and it never moves more than 0.5 m in a frame doing so (worst %.2f m; a model gives 0.17)" % lb_move)
+	check(lb_worst < 3.05, "a 3 m jump back of the point is followed, never farther from it than the jump (worst %.2f m; a model gives 2.92)" % lb_worst)
+	var fs: Dictionary = {}
+	MotionBuffer.follow(fs, Vector3.ZERO, 1.0 / 60.0)
+	check(MotionBuffer.follow(fs, Vector3(40, 0, 0), 1.0 / 60.0).is_equal_approx(Vector3(40, 0, 0)), "a move farther than SNAP_M is put there at once")
+	var standing: Dictionary = {}
+	var yaw_still: float = MotionBuffer.face(standing, 0.0, 0.0, 100.0, 1.0)
+	check(is_equal_approx(yaw_still, -PI * 0.5), "a standing body turns to its sent heading (heading 0, east, is rotation -PI/2)")
+
 	print("test_animal_motion_buffer: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)
 
