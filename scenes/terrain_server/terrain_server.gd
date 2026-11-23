@@ -689,6 +689,8 @@ func _ready() -> void:
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
 		return
 
+	items.cut_felled_flora(flora)   # a stump saved before its tree's removal was (a crash between them): the tree stays cut
+
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
@@ -3642,7 +3644,9 @@ func _process(delta: float) -> void:
 		_events.mark("checks: revisions file")
 		store.save_revisions()
 		_events.mark("checks: flora removed file")
-		flora.save_removed()
+
+		if items.fells_on_disk():   # a felled tree's removal is written after its stump and logs (server_items fells_on_disk)
+			flora.save_removed()
 
 	_events.mark("checks: flags, report")
 	var flag_path: String = _store_path + "/clear_generated.now"

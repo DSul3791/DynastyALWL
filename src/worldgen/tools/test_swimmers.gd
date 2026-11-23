@@ -77,6 +77,43 @@ func _init() -> void:
 	check(a._habitat_score(a.species_def("moose"), -10.0, 0.0, 10.0) == 1.0, "water is open to a moose (score 1)")
 	check(a._habitat_score(a.species_def("moose"), 60.0, 0.0, 10.0) != -1.0 or not a.swims(a.species_def("moose")), "a moose still lives inland by its own rules")
 
+	# Nothing that keeps out of deep water picks a walk across it (robots' roam 23 Nov 2026: frogs and bears stood at the bank facing water).
+	var frog_def: Dictionary = a.species_def("frog")
+	check(a.dry_line(frog_def, Vector3(5.0, 10.0, 0.0), Vector3(1.0, 10.0, 3.0)), "a frog may walk along the bank")
+	check(not a.dry_line(frog_def, Vector3(5.0, 10.0, 0.0), Vector3(-2.0, 10.0, 0.0)), "a frog may not walk into the lake")
+	check(not a.dry_line(frog_def, Vector3(5.0, 10.0, 0.0), Vector3(5.0, 10.0, 0.0) + Vector3(-12.0, 0.0, 0.5)), "nor across it")
+	check(a.dry_line(gator, Vector3(5.0, 10.0, 0.0), Vector3(-20.0, 10.0, 0.0)), "a swimmer may")
+
+	# A herd leader whose drift points into the lake turns back: its home never goes out over the water.
+	var frog_id: int = a.spawn("frog", 1.0, 0.0)
+	a.animals[frog_id]["herd"] = 77
+	a._herds[77] = [frog_id]
+	a.animals[frog_id]["drift_dir"] = PI      # due west, into the water
+	var wettest: float = INF
+
+	for _n in 30:
+		a._group_target(a.animals[frog_id], frog_def)
+		wettest = minf(wettest, float(a.animals[frog_id]["home"].x))
+
+	check(wettest >= 0.0, "a herd's drift never takes its home into the lake (westmost home x %.1f)" % wettest)
+	a.animals.erase(frog_id)
+	a._herds.erase(77)
+
+	# A bear on the bank forages and fishes only where it can walk to without crossing the lake.
+	var bear_id: int = a.spawn("bear", 3.0, 0.0)
+	var bear: Dictionary = a.animals[bear_id]
+	bear["den"] = Vector3(3.0, 10.0, 0.0)
+	var bear_wet: int = 0
+
+	for _n in 60:
+		var spot: Vector3 = a._den_target(bear, a.species_def("bear"))
+
+		if not a.dry_line(a.species_def("bear"), bear["pos"], spot):
+			bear_wet += 1
+
+	check(bear_wet == 0, "a bear never picks a spot across the lake (%d of 60 did)" % bear_wet)
+	a.animals.erase(bear_id)
+
 	print("swimmers: %d checks failed" % failures)
 	print("Test done: ", "FAIL" if failures > 0 else "PASS")
 	quit(1 if failures > 0 else 0)

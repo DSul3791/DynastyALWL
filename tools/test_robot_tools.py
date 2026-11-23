@@ -229,6 +229,19 @@ def test_link_cut():
 		a = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		ta = socket.create_connection(("127.0.0.1", listen + 1))
 		before = [udp_ask(a), tcp_ask(ta)]
+		c = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		c_first = udp_ask(c)
+
+		with open(ctl, "w") as f:
+			f.write("hold %d 1.5" % c.getsockname()[1])
+
+		time.sleep(0.5)
+		held = [udp_ask(c), udp_ask(a)]
+		time.sleep(1.2)
+		back = udp_ask(c)
+		check(c_first and held == [False, True] and back, "lossy_link --control: \"hold PORT 1.5\" drops only that client, then it passes again on the same connection (%s %s %s)" % (c_first, held, back))
+		check(open(ctl).read() == "done", "lossy_link --control: the control file says done after a hold")
+		c.close()
 
 		with open(ctl, "w") as f:
 			f.write("cut")
@@ -458,6 +471,21 @@ def test_solo():
 		check("others:" not in r.stdout, "robot_check: a solo robot's play and rejoin passes are not two robots (%s)" % r.stdout.strip().splitlines()[-1])
 
 
+def test_held_link():
+	"""Plan together: a held step needs the link's own LINK hold line with a client held."""
+	for what, link, want in [("a hold the link made", "LINK hold 1000: udp port 5000, 20 s, 1 clients held (packets dropped both ways, the connection kept)", 0),
+			("a hold of no client", "LINK hold 1000: udp port 5000, 20 s, 0 clients held (packets dropped both ways, the connection kept)", 1), ("no LINK hold line", "LINK listening", 1)]:
+		with tempfile.TemporaryDirectory() as d:
+			good_logs(d)
+
+			with open(os.path.join(d, "robot1_play.log"), "a") as f:
+				f.write("ROBOT Robot 1 step together: link held 20 s (udp port 5000)\n")
+
+			write(d, "link.log", [link])
+			r = run_check(d)
+			check(r.returncode == want, "robot_check together: %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
+
+
 def test_watch():
 	for what, kw, want in [("a smooth walker passes", {}, 0), ("a 1 m jump fails", {"jump": True}, 1), ("a swing never shown fails", {"swing_clip": "idle"}, 1), ("a walker that never moved fails", {"still": True}, 1)]:
 		with tempfile.TemporaryDirectory() as d:
@@ -474,6 +502,7 @@ if __name__ == "__main__":
 	test_solo()
 	test_twin()
 	test_kinds()
+	test_held_link()
 	test_stuck()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))

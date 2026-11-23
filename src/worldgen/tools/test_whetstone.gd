@@ -215,6 +215,42 @@ func _init() -> void:
 	items.action(1, Net.ACT_REPAIR, ks, 0, 0, Vector3.ZERO)
 	run(float(c["grindstone"]["full_s"]) + 1.0)
 	check(inv.count_of(knife) == 0 and said.has("Your bronze knife broke and is gone."), "and a disposable one is gone (%s)" % str(said))
+	_cut_off(dir)
 	print("whetstone tests: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)
+
+
+# A sharpening job cut off by a logout or a server stop (the coordinator, 23 Nov 2026): the tool and the whetstone never left the pack, so both
+# are there after it, the tool as dull as before the job (the job is not saved: its work is only put on the edge when it ends or stops while
+# the player is on) and the stone unworn by it. Nothing is eaten; the player sharpens again.
+func _cut_off(dir: String) -> void:
+	var tool: int = n("bronze_axe")
+	var stone: int = n("whetstone")
+	inv.add(tool, 1)
+	inv.add(stone, 1)
+	inv.add(n("waterskin"), 1, 500)
+	var slot: int = inv.numbers.find(tool)
+	dull(slot, 1.0)
+	var sharp_before: int = inv.sharpness_used(slot)
+	var stone_wear: int = inv.wear[inv.numbers.find(stone)]
+	items.action(1, Net.ACT_REPAIR, slot, 0, 0, Vector3.ZERO)
+	run(5.0)
+	check(items._sharpening.has(1), "a job under way")
+	items.note_spots_on_close()
+	items.save()
+	items._finish_writer()   # the server stops here, mid-job
+	var back = ItemsScript.new()
+	back.send_full = func(_p, _b): pass
+	back.send_slots = func(_p, _b): pass
+	back.send_world_items = func(_p, _a, _r): pass
+	back.send_notice = func(_p, _t): pass
+	back.ground_height = func(_x, _z): return 10.0
+	back.setup(ItemTableScript.load_default(), dir)
+	back.peer_connected_hello(5, "whet-key-00000001")
+	var pack = back.inventory_of(5)
+	var s2: int = pack.numbers.find(tool)
+	check(s2 >= 0 and pack.sharpness_used(s2) == sharp_before and pack.count_of(stone) >= 1 and pack.wear[pack.numbers.find(stone)] == stone_wear and not back._sharpening.has(5),
+		"after a stop mid-job: the axe (as dull as before) and the whetstone (unworn) are in the pack, and no job runs")
+	items.peer_left(1)
+	check(not items._sharpening.has(1), "a logout mid-job ends it the same way")

@@ -146,6 +146,30 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 	return walls.is_valid() and bool(walls.call(x0, z0, x1, z1, float(cfg.get("wall_margin_m", 0.3))))
 
 
+const DRY_LINE_STEP_M := 2.0   # dry_line looks for deep water this often along the way
+const PICK_TRIES := 4          # fresh picks of a wander, a herd drift or a forage spot before the animal stays where it is
+
+
+# Whether a walker that keeps out of deep water (`blocked`) can go straight from `from` to `to`: no deep water every DRY_LINE_STEP_M along the
+# line, nor at its end. A swimmer always can. A wander, a herd's drift or a bear's forage picked across a river or into a lake left the animal
+# at the bank, its legs refused at every step (robots' hour-long roam 23 Nov 2026: frogs stood up to 11 minutes, bears up to a minute, facing
+# water). Cost: one water read per 2 m of the pick, once a pick (seconds apart per animal).
+func dry_line(def: Dictionary, from: Vector3, to: Vector3) -> bool:
+	if swims(def) or not blocked.is_valid():
+		return true
+
+	var gap: Vector2 = Vector2(to.x - from.x, to.z - from.z)
+	var n: int = maxi(ceili(gap.length() / DRY_LINE_STEP_M), 1)
+
+	for i in range(1, n + 1):
+		var p: Vector2 = Vector2(from.x, from.z) + gap * (float(i) / float(n))
+
+		if bool(blocked.call(p.x, p.y)):
+			return false
+
+	return true
+
+
 # True when a wall or heavy station stands on the straight line between two points (no body margin): a blow never lands through one,
 # either way (an enemy's charge at a player behind a wall, a player's jab at an animal behind one; coordinator's fight walk, 23 Nov 2026).
 func wall_between(from: Vector3, to: Vector3) -> bool:
@@ -932,8 +956,10 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 
 	var def: Dictionary = species_def(str(a["sp"]))
 
-	if swims(def):
-		return false   # a swimmer in the water keeps its line (its height is the water's)
+	# A swimmer in the water keeps its line (its height is the water's); on land it steps out like any other (robots 23 Nov 2026: every
+	# moose, a swimmer, was refused here on dry ground and stood 0.2 to 0.6 m inside a player for seconds, striking from there).
+	if swims(def) and in_water(def, a["pos"]):
+		return false
 
 	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
 	# At up to half its flee speed (robots 23 Nov 2026: a dog a running player chased stayed 0.1 to 0.3 m inside them for 0.66 s at walking pace).
@@ -1522,6 +1548,17 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 					var again: float = _upwind_angle(def, rng.randf() * TAU)   # luck-exempt: another try along the wood edge in fog
 					a["target"] = a["home"] + Vector3(cos(again), 0.0, sin(again)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
 
+			for _try in PICK_TRIES - 1:
+				if dry_line(def, a["pos"], a["target"]):
+					break
+
+				var dry: float = rng.randf() * TAU   # luck-exempt: another way, not across deep water
+				a["target"] = a["home"] + Vector3(cos(dry), 0.0, sin(dry)) * rng.randf_range(1.0, wander)   # luck-exempt: as above
+
+			if not dry_line(def, a["pos"], a["target"]):
+				a["home"] = a["pos"]   # its home is out in the water or over it: where it stands is home now, and it stays this graze
+				a["target"] = a["pos"]
+
 			if a["herd"] != 0 and _groups_on():
 				a["target"] = _group_target(a, def)   # herd groups: the leader drifts, the rest keep their place round it
 
@@ -1718,14 +1755,24 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 				var ahead: Vector3 = spot + dir * 3.0
 
 				if not is_nan(float(water_level.call(ahead.x, ahead.z))):
+					if not dry_line(def, a["pos"], spot):
+						break   # the bank is the far side of the river from it: another way
+
 					a["fishing"] = true
 					return spot
 
 				dist += 2.0
 
 	a["fishing"] = false
-	var angle: float = rng.randf() * TAU   # luck-exempt: where it forages next
-	return den + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, range_m)   # luck-exempt: as above
+
+	for _try in PICK_TRIES:
+		var angle: float = rng.randf() * TAU   # luck-exempt: where it forages next
+		var forage: Vector3 = den + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, range_m)   # luck-exempt: as above
+
+		if dry_line(def, a["pos"], forage):
+			return forage
+
+	return a["pos"]   # every way it looked was across deep water: it stays this graze
 
 
 # Keep each player's share topped up: new animals out of sight (spawn_min_m..spawn_max_m away), never near any player.
@@ -2639,6 +2686,18 @@ func _group_target(a: Dictionary, def: Dictionary) -> Vector3:
 				dir = _upwind_angle(def, rng.randf() * TAU)   # luck-exempt: another heading along the wood edge in fog
 				next_home = a["home"] + Vector3(cos(dir), 0.0, sin(dir)) * drift
 
+		# Never into deep water: the drift keeps its heading graze after graze, so one pointing at a river walked the herd's home out into it
+		# and the herd stood at the bank (robots' roam 23 Nov 2026). It turns back the other way instead, from where the leader stands.
+		for _try in PICK_TRIES:
+			if dry_line(def, a["pos"], next_home):
+				break
+
+			dir += PI + rng.randf_range(-0.6, 0.6)   # luck-exempt: which way the herd turns from the water
+			next_home = a["pos"] + Vector3(cos(dir), 0.0, sin(dir)) * drift
+
+		if not dry_line(def, a["pos"], next_home):
+			next_home = a["pos"]
+
 		a["drift_dir"] = dir
 		a["home"] = next_home
 		return a["home"] + Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0))   # luck-exempt: where the leader stops
@@ -2647,7 +2706,12 @@ func _group_target(a: Dictionary, def: Dictionary) -> Vector3:
 	var slot: int = maxi((_herds.get(a["herd"], []) as Array).find(a["id"]), 1)
 	var angle: float = float(slot) * 2.39996 + float(lead.get("drift_dir", 0.0))
 	a["home"] = lead["pos"] + Vector3(cos(angle), 0.0, sin(angle)) * spacing * sqrt(float(slot))
-	return a["home"] + Vector3(rng.randf_range(-0.5, 0.5), 0.0, rng.randf_range(-0.5, 0.5))   # luck-exempt: a little either way
+	var place: Vector3 = a["home"] + Vector3(rng.randf_range(-0.5, 0.5), 0.0, rng.randf_range(-0.5, 0.5))   # luck-exempt: a little either way
+
+	if not dry_line(def, a["pos"], place):
+		return a["pos"]   # its place round the leader is in the water or across it: it waits where it is for the leader to move on
+
+	return place
 
 
 func _herd_centre(hid: int) -> Vector3:
