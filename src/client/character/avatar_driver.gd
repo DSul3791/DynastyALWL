@@ -125,6 +125,12 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 		if stance == StanceScript.STAND and bool(avatar.get_meta("torch_left", false)) and player.has_animation(plain + "_torch"):
 			return plain + "_torch"
 
+		# The bow raised or drawn (meta `bow_pose` "bow_raised" / "bow_drawn", set by player_view for another player; dynasty_body.gd _bow_aim): idle or walking.
+		var bow_pose: String = str(avatar.get_meta("bow_pose", ""))
+
+		if stance == StanceScript.STAND and bow_pose != "" and not carrying and player.has_animation(plain + "_" + bow_pose):
+			return plain + "_" + bow_pose
+
 		return plain
 
 	var local: Vector3 = basis.inverse() * velocity

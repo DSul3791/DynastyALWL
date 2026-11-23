@@ -51,6 +51,7 @@ func _init() -> void:
 	check(stock >= 4 and stock <= 12, "a cell holds a few fish (%d)" % stock)
 	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3.ZERO)
 	check(items._fishing.has(1) and str(items._fishing[1]["phase"]) == "wait", "a cast waits for a bite")
+	check(items.fishing_float(1).is_finite(), "the line is in: the others see its float (162)")
 	check(items.inventory_of(1).wear[slot] >= 1, "a cast wears the rod")
 
 	# The bite opens a window; the second click lands the fish and uses up stock.
@@ -58,6 +59,8 @@ func _init() -> void:
 	items._fishing[1]["at"] = Time.get_ticks_msec() - 1
 	items._fish_tick()
 	check(str(items._fishing[1]["phase"]) == "bite" and said.has(items._fishing_data()["say_bite"]), "something bites")
+	var bob: Vector3 = items.fishing_float(1)
+	check(bob.is_finite() and Vector2(bob.x - 5.0, bob.z - 5.0).length() <= float(items._fishing_data().get("reach_m", 8.0)) + 0.01, "the float stays in the water for the others to see while it bites (%s, 162)" % str(bob))
 	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3.ZERO)
 	var caught: int = 0
 

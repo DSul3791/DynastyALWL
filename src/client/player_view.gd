@@ -98,7 +98,7 @@ func on_look(peer: int, char_name: String, body: String, code: String, worn: Pac
 		_dress(_bodies[peer])
 
 
-func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray()) -> void:
+func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray(), cast: PackedInt32Array = PackedInt32Array()) -> void:
 	var n: int = mini(ids.size(), mini(positions.size(), mini(yaws.size(), mini(states.size(), mini(held.size(), times.size())))))
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	var newest: int = -1
@@ -143,6 +143,7 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 
 		b["more"] = more_now
 		b["held"] = int(held[i])
+		b["float_at"] = cast_point(positions[i], int(cast[i]) if i < cast.size() else 0)   # the rod's float, fixed in the world (162)
 		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
 
 	for peer in _bodies.keys():
@@ -256,6 +257,8 @@ func _process(delta: float) -> void:
 		_far_check(b, distance, delta)
 		_show_held(b)
 		_show_left(b, distance)
+		_show_line(b, distance)
+		_pose_bow(b, distance)
 		var player: AnimationPlayer = rig.get("animation_player") as AnimationPlayer
 
 		if player == null:
@@ -393,7 +396,8 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 	var flat: Vector3 = Vector3(velocity.x, 0.0, velocity.z)
 	var pace: float = flat.length()
 	rig.set_meta("torch_in_hand", str(b.get("held_kind", "")) == "torch")
-	rig.set_meta("torch_left", str(b.get("left_kind", "")) == "torch")   # the arm carries it up in front (dynasty_body.gd _torch_carry), as held_item.gd torch_in_left
+	rig.set_meta("torch_left", str(b.get("left_kind", "")) == "torch")
+	rig.set_meta("bow_pose", bow_pose(b))   # the bow raised or drawn (162): both arms in the aim (dynasty_body.gd _bow_aim)   # the arm carries it up in front (dynasty_body.gd _torch_carry), as held_item.gd torch_in_left
 	var clip: String = AvatarDriver.clip_for(rig, stance, flat, node.global_transform.basis, true, pace, rig.current(), carrying, step)
 	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": (state & ASLEEP) != 0, "stance": stance, "drink_stamp": 1 + (int(b.get("more", 0)) >> MORE_MEAL_SHIFT)}, pace, step)
 
@@ -474,6 +478,159 @@ func _show_held(b: Dictionary) -> void:
 	if not made.is_empty():
 		b["held_node"] = made[0]
 		b["held_kind"] = made[1]
+		b["tip_local"] = tip_of(made[0])   # where a rod's line leaves it
+		b.erase("bow_rest")
+
+
+# The rod's line and float (162, 23 Nov 2026: an angler looked idle to the others): a thin line from the rod's tip sagging to a small float
+# on the water where the server says the cast landed, while the line is in (waiting or biting). Within LINE_M only; look only.
+const LINE_M := 40.0
+const LINE_POINTS := 10
+const LINE_SAG := 0.12              # metres of sag per metre of line
+const FLOAT_R := 0.035
+const CAST_ON := 1 << 24            # server_players.gd cast_code
+const CAST_STEP_M := 0.1
+
+
+# The float's world spot from a row's `cast` int (server_players.gd cast_code) beside the row's position; INF for none.
+static func cast_point(body: Vector3, code: int) -> Vector3:
+	if (code & CAST_ON) == 0 or not body.is_finite():
+		return Vector3.INF
+
+	var x: int = (code >> 16) & 255
+	var y: int = (code >> 8) & 255
+	var z: int = code & 255
+	return body + Vector3(x - 256 if x > 127 else x, y - 256 if y > 127 else y, z - 256 if z > 127 else z) * CAST_STEP_M
+
+
+func _show_line(b: Dictionary, distance: float) -> void:
+	var float_at: Vector3 = b.get("float_at", Vector3.INF)
+	var held_node: Node3D = b.get("held_node", null) as Node3D
+	var line: MeshInstance3D = b.get("line", null) as MeshInstance3D
+	var on: bool = float_at.is_finite() and distance <= LINE_M and held_node != null and is_instance_valid(held_node) and held_node.is_inside_tree()
+
+	if not on:
+		if line != null and is_instance_valid(line):
+			line.visible = false
+
+		return
+
+	if line == null or not is_instance_valid(line):
+		line = _make_line()
+		(b["node"] as Node3D).add_child(line)
+		b["line"] = line
+
+	line.visible = true
+	var tip: Vector3 = held_node.global_transform * (b.get("tip_local", Vector3(0.0, 1.5, 0.0)) as Vector3)
+	var mesh: ImmediateMesh = line.mesh as ImmediateMesh
+	mesh.clear_surfaces()
+	mesh.surface_begin(Mesh.PRIMITIVE_LINE_STRIP)
+
+	for i in range(LINE_POINTS + 1):
+		var t: float = float(i) / float(LINE_POINTS)
+		mesh.surface_add_vertex(line_point(tip, float_at, t))
+
+	mesh.surface_end()
+	(line.get_node("Float") as Node3D).global_position = float_at
+
+
+# A point `t` (0 the tip, 1 the float) along a line that sags below the straight way between them.
+static func line_point(tip: Vector3, float_at: Vector3, t: float) -> Vector3:
+	return tip.lerp(float_at, t) - Vector3(0.0, LINE_SAG * tip.distance_to(float_at) * 4.0 * t * (1.0 - t), 0.0)
+
+
+func _make_line() -> MeshInstance3D:
+	var line: MeshInstance3D = MeshInstance3D.new()
+	line.name = "RodLine"
+	line.top_level = true   # its vertices are world points
+	line.mesh = ImmediateMesh.new()
+	line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var thread: StandardMaterial3D = StandardMaterial3D.new()
+	thread.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	thread.albedo_color = Color(0.85, 0.85, 0.8)
+	line.material_override = thread
+	var bob: MeshInstance3D = MeshInstance3D.new()
+	bob.name = "Float"
+	var ball: SphereMesh = SphereMesh.new()
+	ball.radius = FLOAT_R
+	ball.height = FLOAT_R * 2.0
+	ball.radial_segments = 8
+	ball.rings = 4
+	var paint: StandardMaterial3D = StandardMaterial3D.new()
+	paint.albedo_color = Color(0.8, 0.15, 0.1)
+	ball.material = paint
+	bob.mesh = ball
+	bob.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	line.add_child(bob)
+	return line
+
+
+# The far end of a held model in its own space (the tip of a rod): the corner of its meshes' box farthest from the grip (the origin).
+static func tip_of(model: Node3D) -> Vector3:
+	var best: Vector3 = Vector3(0.0, 1.5, 0.0)
+	var best_d: float = -1.0
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = child as MeshInstance3D
+
+		if mi.mesh == null:
+			continue
+
+		var to_model: Transform3D = model.global_transform.affine_inverse() * mi.global_transform if model.is_inside_tree() else mi.transform
+		var box: AABB = mi.mesh.get_aabb()
+
+		for k in range(8):
+			var p: Vector3 = to_model * box.get_endpoint(k)
+
+			if p.length() > best_d:
+				best_d = p.length()
+				best = p
+
+	return best
+
+
+# "bow_raised", "bow_drawn" or "" (the bow down, or not a bow in hand): the more byte's bow flags (the client's held_item.gd hand_flags, 162).
+static func bow_pose(b: Dictionary) -> String:
+	if str(b.get("held_kind", "")) != "bow":
+		return ""
+
+	var more_now: int = int(b.get("more", 0))
+	return "bow_drawn" if (more_now & MORE_BOW_DRAWN) != 0 else ("bow_raised" if (more_now & MORE_BOW_RAISED) != 0 else "")
+
+
+# The bow in the aim (162): upright before the body at the left fist with its top canted to the right (as the archer's own first-person bow,
+# held_item.gd _pose_bow), the string back at the right hand, the arrow nocked; lowered, it hangs at the side as before. Within FULL_M only.
+func _pose_bow(b: Dictionary, distance: float) -> void:
+	var model: Node3D = b.get("held_node", null) as Node3D
+	var pose: String = bow_pose(b)
+
+	if model == null or not is_instance_valid(model) or not model.is_inside_tree():
+		return
+
+	if pose == "" or distance > FULL_M:
+		if b.has("bow_rest"):
+			model.transform = b["bow_rest"]
+			b.erase("bow_rest")
+			HeldItem._set_bow_string(model, Vector3.ZERO)
+			HeldItem._place_nocked_arrow(model, Vector3.ZERO, false)
+
+		return
+
+	if not b.has("bow_rest"):
+		b["bow_rest"] = model.transform
+
+	var mount: Node3D = model.get_parent() as Node3D
+	var body: Node3D = b["node"]
+	var face: Vector3 = -body.global_basis.z
+	face = Vector3(face.x, 0.0, face.z).normalized() if Vector2(face.x, face.z).length() > 0.001 else Vector3.FORWARD
+	var right: Vector3 = face.cross(Vector3.UP).normalized()
+	var up: Vector3 = (Vector3.UP * cos(deg_to_rad(HeldItem.BOW_CANT_DEG)) + right * sin(deg_to_rad(HeldItem.BOW_CANT_DEG))).normalized()
+	var across: Vector3 = face.cross(up).normalized()
+	var frame: Basis = Basis(up, across, up.cross(across).normalized())
+	model.global_transform = Transform3D(frame, mount.global_position - frame.z * HeldItem.BasicLook.BOW_BRACE_M)
+	var nock: Vector3 = Vector3(HeldItem.BOW_NOCK_ABOVE_M, -HeldItem.BOW_ARROW_SIDE_M, -HeldItem.BOW_DRAW_MAX_M if pose == "bow_drawn" else -0.12)
+	HeldItem._set_bow_string(model, nock)
+	HeldItem._place_nocked_arrow(model, nock, true)
 
 
 # The left hand (159): a torch, lantern or shield made by the player's own held_item.gd makers, so it looks the same; a torch burns (its
