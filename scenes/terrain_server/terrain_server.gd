@@ -53,6 +53,7 @@ const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const PlayersScript := preload("res://src/stream/server_players.gd")
+const CuesScript := preload("res://src/stream/server_action_cues.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
@@ -128,6 +129,7 @@ var identity = IdentityScript.new()      # who a peer is (src/stream/identity_pr
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var players                            # ServerPlayers: what each player sees of the others (protocol 151)
+var cues                               # ServerActionCues: other players' blows, picks and crafts heard nearby (protocol 156)
 var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
@@ -444,6 +446,11 @@ func _ready() -> void:
 	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
 	net.facing_reported.connect(players.note_report)
+	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
+	cues.items = items
+	cues.yaw_of = players.yaw_of
+	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
+	items.craft_began = cues.craft_started
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -1109,6 +1116,9 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		if cues != null:
+			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+
 		items.action(peer, kind, a, b, count, at)
 
 		if players != null:
@@ -1504,6 +1514,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_burrows_sent.erase(peer_id)
 	_trap_marks_sent.erase(peer_id)
 	players.forget(peer_id)
+	cues.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -2467,6 +2478,9 @@ func _pick_flora(peer_id: int, chunk: Vector2i, id: int, near_m: float = -1.0) -
 
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
+
+	if gave and cues != null:
+		cues.cue(peer_id, CuesScript.CUE_PICK, id >> 16, all["positions"][at] + Vector3(0.0, minf(float(all["heights"][at]) * 0.5, 1.5), 0.0))   # the others nearby hear it picked (protocol 156; a swath's many plants give one: the cue gap)
 
 	if gave and fruit_tree:
 		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).
