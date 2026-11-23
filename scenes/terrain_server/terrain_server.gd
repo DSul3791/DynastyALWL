@@ -460,7 +460,7 @@ func _ready() -> void:
 	cues.items = items
 	cues.yaw_of = players.yaw_of
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
-	items.craft_began = cues.craft_started
+	items.craft_working = cues.craft_working
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
