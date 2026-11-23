@@ -1885,6 +1885,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.trunks_round = _trunks_round
 	held.trunks_version = func() -> int: return flora.canopy_version
+	held.report_now = send_position_now   # a fresh position report just before each blow (server_items strike_origin)
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
 	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
@@ -6146,6 +6147,23 @@ func _note_after_welcome(delta: float) -> void:
 		_after_welcome = null
 
 
+
+# Tells the server where we are and how fast we move (every 0.2 s from _process, and just before a blow, held_item report_now, so the server
+# judges the blow from where we stand: server_items strike_origin).
+func send_position_now() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _aim_msec < 20:
+		return   # one went this moment: fresh enough
+	var here: Vector3 = _anchor
+	var seconds: float = maxf(float(now - _aim_msec) / 1000.0, 0.02)
+
+	if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
+		net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds, body.rotation.y)   # protocol 151: the facing, for the other players
+
+	_aim_msec = now
+	_aim_pos = here
+
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
 	_note_after_welcome(delta)
@@ -6357,14 +6375,7 @@ func _process(delta: float) -> void:
 
 	# Tell the server where we are heading so it makes that ground first.
 	if now - _aim_msec >= 200:
-		var here: Vector3 = _anchor
-		var seconds: float = float(now - _aim_msec) / 1000.0
-
-		if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
-			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds, body.rotation.y)   # protocol 151: the facing, for the other players
-
-		_aim_msec = now
-		_aim_pos = here
+		send_position_now()
 
 	if now >= _budget_check_msec:
 		# Writing the pending blocks and counting the cache folder's size are disk work (on a

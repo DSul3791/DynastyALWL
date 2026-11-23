@@ -10,6 +10,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Rules := preload("res://src/shared/placement_rules.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 var items
@@ -174,6 +175,28 @@ func _init() -> void:
 	var kept: bool = not take_down(street_wall)
 	var took: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	check(kept and took < 50.0, "a wall in a street of %d pieces under a roof stays, the check taking %.1f ms (under 50)" % [items._items.size(), took])
+
+	# A character saved where a rock pile's wider solid now stands (round 5 widened it from 1.2 to 2.5 m) resumes beside it, not in the stones.
+	var pile: int = items._next_id
+	items.report_position(1, Vector3(5000.0, 10.0, 498.5))
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
+	items.place_item(1, items.table.number_of("rock_pile"), Vector3(5000.0, 10.0, 500.0), 0)
+
+	while pile < items._next_id and not (items._items.has(pile) and items._items[pile].has("struct") and str(items._items[pile]["struct"]["kind"]) == "rock_pile"):
+		pile += 1
+
+	check(items._items.has(pile), "a rock pile stands (%s)" % str(said))
+
+	if not items._items.has(pile):
+		quit(1)
+		return
+
+	var key: String = str(items._peer_key[1])
+	items._characters[key]["last"] = {"pos": [5000.9, 10.0, 500.4], "left": "quit", "t": 1}
+	var back: Array = items.start_position_for(1)
+	var pile_def: Dictionary = cfg["structures"]["rock_pile"]
+	var out_of_it: bool = back.size() == 3 and not Rules.holds(pile_def, {"pos": items._items[pile]["pos"], "yaw": float(items._items[pile]["struct"]["yaw"])}, Vector3(float(back[0]), float(back[1]), float(back[2])))
+	check(out_of_it and Vector2(float(back[0]) - 5000.9, float(back[2]) - 500.4).length() < 2.5, "saved inside the pile's footprint, the character resumes just outside it (%s)" % str(back))
 
 	# No daylight through a closed room of any tier.
 	var view = load("res://src/client/inventory_view.gd").new()

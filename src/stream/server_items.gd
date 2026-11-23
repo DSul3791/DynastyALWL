@@ -240,6 +240,7 @@ var _swimming: Dictionary = {}      # peer -> true while the server reads them a
 var _soak: Dictionary = {}          # peer -> 0..1, how rain-soaked they are (warmth.json soak_*: rain wets, only shelter dries; Dave 5 Nov on the rain card)
 var _overheat: Dictionary = {}      # peer -> 0..1, the worn heat load times how hot it feels, at the last warmth reading (warmth.json layers; adds to exertion)
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
+var _peer_move: Dictionary = {}     # peer -> [velocity reported with it, server ms it came]: a blow is judged from where the striker is now (strike_origin)
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
@@ -809,7 +810,9 @@ func _safe_resume(peer: int, spot: Vector3) -> Vector3:
 	if not is_nan(top) and spot.y < top + SwimRules.BODY_HEIGHT_M * 0.5 and spot.y > top - SwimRules.BODY_HEIGHT_M * 0.5:
 		spot.y = top + SwimRules.BODY_HEIGHT_M * 0.5   # the slab laid through the body; one above a tunnel or cellar leaves them there
 
-	if not structure_blocks(spot.x, spot.z, RESUME_CLEAR_M):
+	var drawn: Array = _drawn_solids_near(spot)
+
+	if not structure_blocks(spot.x, spot.z, RESUME_CLEAR_M) and not _in_drawn_solid(drawn, spot):
 		return spot
 
 	for ring in range(1, int(RESUME_SEARCH_M / 0.5) + 1):
@@ -817,10 +820,33 @@ func _safe_resume(peer: int, spot: Vector3) -> Vector3:
 			var a: float = TAU * float(n) / 16.0
 			var at: Vector3 = spot + Vector3(cos(a), 0.0, sin(a)) * (0.5 * float(ring))
 
-			if not structure_blocks(at.x, at.z, RESUME_CLEAR_M):
+			if not structure_blocks(at.x, at.z, RESUME_CLEAR_M) and not _in_drawn_solid(drawn, at):
 				return at
 
 	return rest_point_for(peer, spot)
+
+
+# The pieces near `spot` that are solid where they are drawn but not in the walking grid (structures.json "solid_drawn": the rock pile, widened in
+# round 5, 23 Nov 2026): a character saved where an old pile's wider solid now stands resumes beside it, as one inside a wall does. [def, row] pairs.
+func _drawn_solids_near(spot: Vector3) -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() > RESUME_SEARCH_M + 2.0 or absf(float(it["pos"].y) - spot.y) > 1.5:
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if bool(def.get("solid_drawn", false)) and not it["struct"].has("site"):
+			out.append([def, {"pos": it["pos"], "yaw": float(it["struct"].get("yaw", 0.0))}])
+
+	return out
+
+
+func _in_drawn_solid(drawn: Array, at: Vector3) -> bool:
+	return drawn.any(func(pair): return PlacementRules.holds(pair[0], pair[1], at))
 
 
 # The server is closing with players still in (an admin stop, a reset, the window of a hosted game): their spots now, as a disconnect (DECISIONS collapse-offline 5).
@@ -904,6 +930,7 @@ func peer_left(peer: int) -> void:
 	_speed3.erase(peer)
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
+	_peer_move.erase(peer)
 	_known.erase(peer)
 	_last_throw.erase(peer)
 	strike_seen.erase(peer)
@@ -1020,7 +1047,7 @@ func _park_quiet(now: int) -> void:
 			print("Absent: peer %d not heard from for %.0f s: out of the world until it reports again" % [peer, float(now - int(_heard_ms.get(peer, now))) / 1000.0])
 
 
-func report_position(peer: int, position: Vector3) -> void:
+func report_position(peer: int, position: Vector3, velocity: Vector3 = Vector3.ZERO) -> void:
 	if _peer_key.has(peer):
 		_heard_ms[peer] = Time.get_ticks_msec()
 
@@ -1028,6 +1055,7 @@ func report_position(peer: int, position: Vector3) -> void:
 			print("Absent: peer %d is back" % peer)
 
 		_peer_pos[peer] = position
+		_peer_move[peer] = [velocity if velocity.is_finite() else Vector3.ZERO, Time.get_ticks_msec()]
 
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
 			_sync_goals(peer)   # the drink goal's hint names the way to water from here
@@ -2259,6 +2287,8 @@ func _save_copy(id: int) -> Dictionary:
 
 	if out.has("struct") and _traps != null and _traps.is_kind(str(out["struct"].get("kind", ""))):
 		out["struct"]["state_json"] = _traps.saved_state(_items[id])
+	elif out.has("struct") and out["struct"].has("rolled_s"):
+		out["struct"]["state_json"] = JSON.stringify({"rolled_s": float(out["struct"]["rolled_s"])})   # a fish trap: up to when its hours are fished
 	elif out.has("struct") and _kept_transient(out["struct"]):
 		var st: Dictionary = out["struct"]
 		out["struct"]["state_json"] = JSON.stringify({"species": str(st.get("species", "")), "blows": int(st.get("blows", 0)), "parts": st.get("parts", null), "snared": bool(st.get("snared", false)), "left": float(out.get("left", CARCASS_LIFE_S))})
@@ -2531,7 +2561,7 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
 
 		if it["struct"].has("state_json"):
-			(items[items.size() - 1] as Array).append(str(it["struct"]["state_json"]))   # row 24: a set trap's state (server_traps.saved_state) or a carcass's (_save_copy)
+			(items[items.size() - 1] as Array).append(str(it["struct"]["state_json"]))   # row 24: a set trap's state (server_traps.saved_state), a fish trap's fished hours or a carcass's (_save_copy)
 
 		return
 
@@ -3519,7 +3549,7 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		return
 
 	_last_strike[peer] = now
-	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var eye: Vector3 = strike_origin(peer, now) + Vector3(0.0, 1.4, 0.0)
 
 	if BIND_ITEMS.has(table.id_of(inv.numbers[slot])) and bind_animal.is_valid() and bool(bind_animal.call(peer, eye, direction, 2.5)):
 		var before: Array = _snapshot(inv)
@@ -3545,6 +3575,29 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		practice(peer, skill_action)
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+const STRIKE_LEAD_S := 0.3     # a blow's origin: the last reported position carried on its velocity this long at most (a report every 0.2 s, one lost)
+const STRIKE_LEAD_M := 1.5     # and this far at most
+
+# Where a striker is when their blow comes (robots 23 Nov 2026, 120 ms and 3% loss: a player who walked up to a bandit and jabbed at once was
+# judged from their last position report, a metre behind, and missed 5 of 5): the last report carried on its own velocity for the time since it
+# came, at most STRIKE_LEAD_S and STRIKE_LEAD_M, on the ground; not through a wall or shut door (then the report itself). The client also sends
+# a report just before a blow (terrain_client send_position_now), which makes the time since it nearly nothing.
+func strike_origin(peer: int, now: int) -> Vector3:
+	var at: Vector3 = _peer_pos[peer]
+	var move: Array = _peer_move.get(peer, [Vector3.ZERO, now])
+	var to: Vector3 = carried_on(at, move[0], float(now - int(move[1])) / 1000.0)
+
+	if to != at and structure_blocks_step(at.x, at.z, to.x, to.z, 0.0):
+		return at
+
+	return to
+
+
+static func carried_on(at: Vector3, velocity: Vector3, age_s: float) -> Vector3:
+	var on: Vector3 = Vector3(velocity.x, 0.0, velocity.z) * clampf(age_s, 0.0, STRIKE_LEAD_S)
+	return at + on.limit_length(STRIKE_LEAD_M)
 
 
 # What a fighting skill does to a blow: its factor over the factor this character would have at skill 1, so a blow at skill 1 is exactly
@@ -3594,7 +3647,7 @@ func _punch(peer: int, direction: Vector3) -> void:
 		return
 
 	_last_strike[peer] = now
-	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var eye: Vector3 = strike_origin(peer, now) + Vector3(0.0, 1.4, 0.0)
 	var damage: float = maxf(float(row.get("damage", 2.0)) * blow_skill_mult(peer, "punch"), 0.5)
 	var reach: float = float(row.get("reach_m", 1.8))
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)
@@ -8322,6 +8375,12 @@ func _load_world_items() -> void:
 				if row.size() > 24 and typeof(row[24]) == TYPE_STRING and str(row[24]) != "":
 					_traps.restore_state(entry, str(row[24]))   # its run note, away clock and held catch (laid again by _traps.after_load)
 
+			if bool(_structures.get(str(entry["struct"]["kind"]), {}).get("fish_trap", false)) and row.size() > 24 and typeof(row[24]) == TYPE_STRING:
+				var trap_state: Variant = JSON.parse_string(str(row[24]))
+
+				if typeof(trap_state) == TYPE_DICTIONARY and trap_state.has("rolled_s"):
+					entry["struct"]["rolled_s"] = float(trap_state["rolled_s"])
+
 			if str(entry["struct"]["kind"]) == "carcass":
 				var body: Variant = JSON.parse_string(str(row[24])) if row.size() > 24 and typeof(row[24]) == TYPE_STRING else null
 
@@ -13040,6 +13099,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	if _traps.is_kind(str(def["kind"])):
 		_traps.on_placed(peer, _next_id - 1)
 
+	if bool(_structures.get(str(def["kind"]), {}).get("fish_trap", false)):
+		entry["struct"]["rolled_s"] = _now_game_s()   # its first hour starts now (_fish_trap_catch_up)
+
 	if attaching:
 		_refresh_pots()   # the fire under it takes the firewood cap now
 
@@ -14915,6 +14977,9 @@ func _chest_of(peer: int, id: int):
 		# A take-only store (a body's remains) never takes anything in, and holds the whole pack it came from, which may have grown past its
 		# slots (protocol 116): every slot is in use, so Take all reaches them all.
 		chest.usable = chest.slot_count if bool(def.get("take_only", false)) else _store_usable(str(it["struct"]["kind"]), chest)
+
+		if bool(def.get("fish_trap", false)):
+			_fish_trap_catch_up(id, it, chest)   # its hours are fished when someone comes to look
 
 	return chest
 
@@ -19625,59 +19690,45 @@ func _fish_bait_slot(inv, cfg: Dictionary) -> int:
 	return -1
 
 
-var _trap_rolled: Dictionary = {}   # fish trap uid -> game second up to which its hours are rolled (not saved: after a restart its hour starts again)
-var _traps_at_s: float = -1.0e18    # game second of the last _fish_traps_tick pass
-const FISH_TRAP_LOOK_S := 600.0     # the traps are looked over every ten game minutes; each rolls once per whole game hour it has stood
-
-
 # Fish traps (structures.json "fish_trap": true, fishing.json "trap"; Part C plan 2): each game hour a trap rolls the fishing cell's stock at
 # hour_chance, or bait_chance with a bait from trap.bait in its slots, which a catch uses up. The fish goes into its slots, so E takes it out
 # like a chest; a full trap or a frozen one catches nothing. Every fish counts against the cell's stock, so traps cannot empty a pond faster
-# than it refills. Hours missed while the clock jumped (sleep) are rolled, at most catch_up_h of them.
-func _fish_traps_tick() -> void:
+# than it refills. No regular server work (the coordinator, 23 Nov 2026: traps follow the snare ruling, no limit per chunk and no cost while
+# nobody is there): the hours a trap has stood since struct.rolled_s (game seconds, set when it is placed, saved in row 24) are rolled when
+# someone opens it, at most catch_up_h of them, ice as it is at that moment.
+func _fish_trap_catch_up(id: int, it: Dictionary, box) -> void:
 	var cfg: Dictionary = _fishing_data().get("trap", {})
-	var now_s: float = _now_game_s()
 
-	if cfg.is_empty() or now_s - _traps_at_s < FISH_TRAP_LOOK_S:
+	if cfg.is_empty():
 		return
 
-	_traps_at_s = now_s
-	var seen: Dictionary = {}
+	var st: Dictionary = it["struct"]
+	var now_s: float = _now_game_s()
 
-	for id in _items:
-		var it: Dictionary = _items[id]
+	if not st.has("rolled_s"):
+		st["rolled_s"] = now_s   # a trap saved before its hours were kept: they start now
+		_dirty = true
+		return
 
-		if not it.has("struct") or not it["struct"].has("uid") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("fish_trap", false)):
-			continue
+	var whole_h: int = floori((now_s - float(st["rolled_s"])) / 3600.0)
 
-		var uid: int = int(it["struct"]["uid"])
-		var box = _chests.get(uid)
+	if whole_h <= 0:
+		return
 
-		if box == null:
-			continue
+	st["rolled_s"] = float(st["rolled_s"]) + float(whole_h) * 3600.0
+	_dirty = true
 
-		seen[uid] = true
-		var since: float = float(_trap_rolled.get(uid, now_s))
-		var whole_h: int = floori((now_s - since) / 3600.0)
-		_trap_rolled[uid] = since + float(maxi(whole_h, 0)) * 3600.0
+	if _on_ice(it["pos"]):
+		return
 
-		if whole_h <= 0 or _on_ice(it["pos"]):
-			continue
+	var caught: int = 0
 
-		box.usable = _store_usable(str(it["struct"]["kind"]), box)
-		var caught: int = 0
+	for h in mini(whole_h, int(cfg.get("catch_up_h", 24))):
+		if _fish_trap_roll(it["pos"], box, cfg):
+			caught += 1
 
-		for h in mini(whole_h, int(cfg.get("catch_up_h", 24))):
-			if _fish_trap_roll(it["pos"], box, cfg):
-				caught += 1
-
-		if caught > 0:
-			_dirty = true
-			_push_box(id, box)
-
-	for uid in _trap_rolled.keys():
-		if not seen.has(uid):
-			_trap_rolled.erase(uid)
+	if caught > 0:
+		_push_box(id, box)
 
 
 # One game hour of one trap: true when a fish went into it.
@@ -22460,7 +22511,6 @@ func crop_stage(crop: Dictionary) -> int:
 # makes it a wet day, and a dry day grows the crop only dry_growth of a day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
 	_plots_tick()
-	_fish_traps_tick()
 
 	if _crops.is_empty():
 		return
