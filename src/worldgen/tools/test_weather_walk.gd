@@ -147,6 +147,14 @@ func _init() -> void:
 	check(not bool(f._items[904]["struct"].get("lit", false)), "the same torch at the rainy coast goes out")
 	f._items.erase(903)   # test-made rows without a placed piece's yaw: not for the save below
 	f._items.erase(904)
+	var stick: int = f.table.number_of("stick")
+	f._items[905] = {"number": stick, "count": 1, "pos": PEAK + Vector3(0.0, 0.0, 3.0), "left": 1.0e9}
+	f._items[906] = {"number": stick, "count": 1, "pos": COAST + Vector3(0.0, 0.0, 3.0), "left": 1.0e9}
+	f._wood_tick(60.0)
+	check(f.table.wet_units(stick) > 0 and int(f._items[905].get("wear", 0)) == 0, "a stick lying on the snowy peak stays dry")
+	check(int(f._items[906].get("wear", 0)) == f.table.wet_units(stick), "the same stick at the rainy coast is soaked")
+	f._items.erase(905)
+	f._items.erase(906)
 	check(lit(f, 901), "a fire on the snowy peak burns on (snow puts no fire out)")
 	check(not lit(f, 902), "the same fire at the rainy coast goes out")
 	check(f._rain_here(PEAK) == 0.0 and f._rain_here(COAST) >= ItemsScript.RAIN_PUTS_OUT, "the server's rain at each spot is the rain its client draws")
