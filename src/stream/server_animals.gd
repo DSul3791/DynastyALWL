@@ -1559,6 +1559,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["state"] = GRAZE
 			a["timer"] = _graze_time(def)
 			a["target"] = a["pos"]   # the walk the watch broke off is over: it grazes here
+			a.erase("startle")   # a stare the player walked out of: its next watch is an ordinary one
 
 		return
 
@@ -1692,7 +1693,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["timer"] = rng.randf_range(float(hide[0]), float(hide[1]))   # luck-exempt: how long an animal stays in its burrow
 			return
 
-	if a["state"] == HOP and a.has("trip") and _trip_step(a, r):
+	var on_trip: bool = a["state"] == HOP and a.has("trip")
+
+	if on_trip and _trip_step(a, r):
 		return
 
 	if r["arrived"] or not r["moved"]:
@@ -1717,10 +1720,11 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["state"] = GRAZE
 		a["timer"] = _graze_time(def)
 
-		if not r["arrived"]:
+		if not r["arrived"] and not on_trip:
 			# Blocked short of where it was going (a wall, a rock, another animal): it pauses a moment and picks another way, not stand
 			# a whole graze nose to the block with the old way kept (Lane B's roam rerun at 109a0b6a, 23 Nov 2026: 9 stuck spells, each a
-			# graze long, in state 0 with the target 2 to 45 m off).
+			# graze long, in state 0 with the target 2 to 45 m off). A trail walk stopped on the way keeps its whole graze: its route is
+			# rebuilt at the next routine_trip, not every BLOCKED_PAUSE_S.
 			a["target"] = a["pos"]
 			a["timer"] = minf(float(a["timer"]), BLOCKED_PAUSE_S)
 
@@ -2527,6 +2531,8 @@ func info_of(id: int) -> Dictionary:
 
 
 func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
+	a.erase("startle")   # whatever sent it off (the stare's end, an alarm, a wound), the stare is over
+
 	if def.has("flight") and flight != null:
 		flight.take_off(a, from)   # a bird with a flight row flies instead of running (bird_flight_server_design.md)
 		return

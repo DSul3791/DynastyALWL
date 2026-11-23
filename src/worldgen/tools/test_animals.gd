@@ -169,7 +169,7 @@ func _init() -> void:
 	var lead: Vector3 = deer_zoo.animals[deer[0]]["pos"]
 	var watcher: Array = deer_zoo.player_positions.call()
 	watcher[0] = Vector3(lead.x - 15.0, 10.0, lead.z)
-	run(deer_zoo, 0.5)
+	run(deer_zoo, 2.0)   # it stares first (about 1 s at 15 m: reactions.startle_s)
 	var fleeing: int = 0
 
 	for id in deer:
