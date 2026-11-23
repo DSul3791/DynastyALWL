@@ -160,8 +160,7 @@ var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sen
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
-var _swell: float = 0.0
-var _dry: float = 0.0
+var _river_rows: Dictionary = {}   # tile row -> [swell, dry]: each live row's rivers follow their own row's weather, lagged (not saved: they settle in WEATHER_LAG_S)
 var _weather_bucket: int = -1
 var _water_seen: Dictionary = {}        # tile -> msec a player was last in it (the live water set keeps a tile WATER_KEEP_MS after)
 var _water_live_next: int = 0
@@ -1909,9 +1908,39 @@ func _update_weather() -> void:
 		_weather_bucket = bucket
 		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
 
-	_swell += (WeatherScript.river_push(weather) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	_dry += (WeatherScript.river_dry(weather) - _dry) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	water_live.set_runoff(maxf(1.0 + WEATHER_SWELL * _swell - DRY_SHRINK * _dry, RUNOFF_FLOOR))
+	water_live.set_runoff(_river_runoff(game_s))
+
+
+# The runoff for the running water tile (set_live's first): its own row's rain and heat at sea level, lagged WEATHER_LAG_S, so a river
+# rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn is). Every live or kept row is followed so
+# a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
+# shortcut: a tile's rivers rise by their own tile row; an upstream stretch in another row is not weighted in (physical world thread
+# 23 Nov 2026: nearly every catchment sits inside its own tile or the next).
+func _river_runoff(game_s: float) -> float:
+	var rows: Array = []
+
+	for tile in _water_live_last:
+		if not rows.has((tile as Vector2i).y):
+			rows.append((tile as Vector2i).y)
+
+	if rows.is_empty():
+		rows = [WeatherScript.STARTER_ROW]
+
+	for row in _river_rows.keys():
+		if not rows.has(row):
+			_river_rows.erase(row)
+
+	var k: float = 1.0 - exp(-1.0 / WEATHER_LAG_S)
+
+	for row in rows:
+		var here: Dictionary = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+		var push: float = WeatherScript.river_push(here)
+		var dry: float = WeatherScript.river_dry(here)
+		var was: Array = _river_rows.get(row, [0.0, 0.0])   # a row newly live starts from its baked flow, as its new water window does, and swells from there
+		_river_rows[row] = [float(was[0]) + (push - float(was[0])) * k, float(was[1]) + (dry - float(was[1])) * k]
+
+	var run: Array = _river_rows[rows[0]]
+	return maxf(1.0 + WEATHER_SWELL * float(run[0]) - DRY_SHRINK * float(run[1]), RUNOFF_FLOOR)
 
 
 # The water sim follows the players (tech/WATER_NINE_TILES_PLAN.md): the tiles they stand in, kept
