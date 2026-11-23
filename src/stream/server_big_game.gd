@@ -272,6 +272,7 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		var speed: float = float(def.get("charge_mps", 11.0))
+		var full_mps: float = speed   # a paced close charge still keeps its wall look at full speed (_charge_cross: the client may draw it on that far)
 		# strike_min_s (a defend row's, else the animals' own): a blow lands only once the charge has run this long, so every client draws the
 		# strike before it lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step,
 		# still drawn warning; robots over 120 ms, 23 Nov 2026: a warthog's charge from 1 m hit 0.18 s after it began, so its first blow was drawn
@@ -321,7 +322,7 @@ func step(a: Dictionary, dt: float) -> void:
 			ground_for = func(x: float, z: float) -> float: return host.swim_height(species, x, z)
 			blocked_for = Callable()
 
-		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), _charge_cross(a, near, speed))
+		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), _charge_cross(a, near, full_mps))
 		a["heading"] = float(a["dir"])
 		var start: Vector3 = a["pos"]   # the charge hits whoever is within hit_m of the ground it covered this step, the start included (a player under it)
 
