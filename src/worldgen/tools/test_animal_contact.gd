@@ -213,6 +213,37 @@ func _init() -> void:
 	mw.water_level = func(_x: float, _z: float) -> float: return 10.2
 	check(not mw.make_way(wet_moose, Vector3(0.0, 10.0, 0.0), 0.1) and is_equal_approx(wet_moose["pos"].x, 0.53), "a moose swimming keeps its line")   # approx: a Vector3 holds 32-bit floats
 	mw.water_level = dry_level
+	# Between two players, inside both (robots 23 Nov 2026: a rhino between two hunters stood inside one, refused both ways): it goes out sideways.
+	var rh_m: float = AnimalContact.contact_m("rhino")
+	var hunter_a: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var hunter_b: Vector3 = Vector3(3.0, 10.0, 0.0)
+	var between: Dictionary = {"sp": "rhino", "pos": Vector3(1.2, 10.0, 0.0), "state": 0}
+
+	for _i in 30:
+		var pressed: Vector3 = hunter_a if between["pos"].distance_to(hunter_a) < between["pos"].distance_to(hunter_b) else hunter_b
+		mw.make_way(between, pressed, 0.1, [hunter_a, hunter_b])
+
+	var gap_a: float = Vector2(between["pos"].x - hunter_a.x, between["pos"].z - hunter_a.z).length()
+	var gap_b: float = Vector2(between["pos"].x - hunter_b.x, between["pos"].z - hunter_b.z).length()
+	check(gap_a >= rh_m - 0.05 and gap_b >= rh_m - 0.05, "a rhino inside two hunters 3 m apart steps out of both (%.2f and %.2f m, contact %.2f)" % [gap_a, gap_b, rh_m])
+	# A charge from right beside a player lands its blow only strike_min_s into the charge, so every screen draws the lunge first (robots
+	# 23 Nov 2026: a warthog warning from 1 m hit 0.18 s into its charge, drawn 1.7 to 2.8 m short of the player).
+	var close_hurt: Array = []
+	var close_players: Array = [Vector3(0.0, 10.0, 0.0)]
+	var near_mw = _animals(close_players, close_hurt)
+	var hog_id: int = near_mw.spawn("warthog", 1.3, 0.0)
+	near_mw.animals[hog_id]["temper"] = "defensive"
+	near_mw.animals[hog_id]["protective"] = false
+	near_mw.big_game.warn(near_mw.animals[hog_id], close_players[0], 0.1, true)
+	var hog_charging: float = 0.0
+
+	for _k in 160:
+		near_mw.tick(0.025)
+
+		if close_hurt.is_empty() and near_mw.animals.has(hog_id) and int(near_mw.animals[hog_id]["state"]) == near_mw.big_game.CHARGE:
+			hog_charging += 0.025
+
+	check(close_hurt.size() >= 1 and hog_charging >= float(near_mw.cfg["strike_min_s"]) - 0.11, "a warthog warning from 1.3 m strikes after %.2f s drawn charging (strike_min_s %.2f)" % [hog_charging, float(near_mw.cfg["strike_min_s"])])
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))

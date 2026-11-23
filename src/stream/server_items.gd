@@ -924,6 +924,7 @@ func peer_left(peer: int) -> void:
 	_stuck_msec.erase(peer)
 	_resume_to.erase(peer)
 	_station_said.erase(peer)
+	_refusal_said.erase(peer)
 	_hole_blows.erase(peer)
 	_fishing.erase(peer)
 	_last_fish.erase(peer)
@@ -3289,6 +3290,31 @@ func _reject(peer: int, reason: int) -> void:
 		send_reject.call(peer, reason)
 
 
+# A refusal with words the player can act on (hands-on screens check, 23 Nov 2026: these were the refusal sound alone). The words come at
+# most once every HANDS_FULL_SAY_GAP_MS a player, since a held swing or a held E asks many times a second; the sound comes every time.
+var _refusal_said: Dictionary = {}   # peer -> {words: msec last said}
+
+
+func _reject_said(peer: int, reason: int, words: String) -> void:
+	var now: int = Time.get_ticks_msec()
+	var said: Dictionary = _refusal_said.get(peer, {})
+
+	if swath_mult <= 0.0 and now - int(said.get(words, -HANDS_FULL_SAY_GAP_MS)) >= HANDS_FULL_SAY_GAP_MS:   # a swath swing says nothing (_say), so it starts no gap
+		said[words] = now
+		_refusal_said[peer] = said
+		_say(peer, words)
+
+	_reject(peer, reason)
+
+
+func _reject_far(peer: int) -> void:
+	_reject_said(peer, 0, "Too far away: step closer.")
+
+
+func _reject_tool(peer: int, tool: String) -> void:
+	_reject_said(peer, 1, "That needs %s in your hand." % tool)
+
+
 func _say(peer: int, text: String) -> void:
 	if swath_mult > 0.0:
 		return   # a sickle or scythe swing cuts many plants at once: what one of them refuses is not told (swath_swing says when nothing was cut)
@@ -4831,13 +4857,13 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var shovel: int = _swing_tool(peer, inv, held_slot, "shovel")
 
 	if shovel < 0:
-		_reject(peer, 1)
+		_reject_tool(peer, "a shovel")
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -4892,13 +4918,13 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var shovel: int = _swing_tool(peer, inv, held_slot, "shovel")
 
 	if shovel < 0:
-		_reject(peer, 1)
+		_reject_tool(peer, "a shovel")
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -4994,13 +5020,13 @@ func _hoe_ready(peer: int, inv, at: Vector3, held_slot: int) -> int:
 		return -1
 
 	if _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return -1
 
 	var hoe: int = _swing_tool(peer, inv, held_slot, "hoe")
 
 	if hoe < 0:
-		_reject(peer, 1)
+		_reject_tool(peer, "a hoe")
 		return -1
 
 	var now: int = Time.get_ticks_msec()
@@ -6466,7 +6492,7 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 		return
 
 	if _peer_pos[peer].distance_to(at) > MINE_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var tool: int = _held_tool(inv, held_slot, "pick")   # the pick or axe in hand breaks a stone off bare rock (an axe wears 5 a blow, drops.json tool_wear rock)
@@ -6744,8 +6770,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "The ground there is not ready yet. Try again in a moment.")   # the terrain under the ghost has not streamed in
 		return
 
-	if ground < 1.0:
-		_say(peer, "The ground is too wet here.")
+	if ground < PlacementRules.WET_GROUND_M:
+		_say(peer, "The ground is too wet here.")   # the ghost's own rule (held_item "wet")
 		return
 
 	if PlacementRules.off_ground(_structures_cfg, kit_id, at.y, ground, on_base, on_grid.size() > 3) == "float":   # a piece on a foundation is exempt: the ground under it was the foundation's check (BUG-009)
@@ -7870,7 +7896,7 @@ func _pick_up_fire(peer: int, inv, id: int) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var fire: Dictionary = it["fire"]
@@ -7971,7 +7997,7 @@ func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	if is_shoulder_item(int(it["number"])):
@@ -10477,7 +10503,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var flat: Vector2 = Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z)
 
 	if flat.length() > HIT_REACH_M + size_now:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var rate: float = float(tool[1])
@@ -10833,7 +10859,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 	var flat: float = Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length()
 
 	if flat > HIT_REACH_M + float(info["trunk"]):
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	_last_hit[peer] = now
@@ -12178,7 +12204,7 @@ func _hit_shrub(peer: int, inv, flora_id: int, chunk: Vector2i, held_slot: int) 
 	var spot: Vector3 = info["position"]
 
 	if Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length() > HIT_REACH_M + 1.0:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var cfg: Dictionary = _drops.get("shrub_work", {})
@@ -12235,7 +12261,7 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return
 
 	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
@@ -15741,6 +15767,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	var kind: String = str(_items.get(id, {}).get("struct", {}).get("kind", ""))
 
 	if bool(_structures.get(kind, {}).get("take_only", false)):
+		_say(peer, "Nothing goes back in here: you can only take from it.")   # remains and a carcass (structures.json take_only): a drag in was only the refusal sound
 		_reject(peer, 3)
 		return 0
 
@@ -20607,7 +20634,7 @@ func _cut_hole(peer: int, inv, slot: int) -> void:
 		return
 
 	if not str(table.entry(table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["axe", "pick"] or _is_broken(inv, slot):
-		_reject(peer, 1)
+		_reject_tool(peer, "an axe or a pick that is not broken")
 		return
 
 	if not _on_ice(_peer_pos[peer]):
@@ -26004,7 +26031,7 @@ func _view_in_reach(peer: int, vid: int) -> Dictionary:
 		return {}
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m() + 1.0:
-		_reject(peer, 0)
+		_reject_far(peer)
 		return {}
 
 	return it
@@ -28301,7 +28328,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		if _salt_only(peer, thirst):
 			_say(peer, str(thirst["sources"].get("say_salt", "Salt water. It would only make you thirstier.")))   # the sea (design section 2)
 		else:
-			_reject(peer, 0)
+			_reject_said(peer, 0, "No water within reach.")
 
 		return
 
