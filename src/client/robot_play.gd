@@ -3588,7 +3588,310 @@ func _together() -> void:
 	await _tg_go("after_hold")
 	await _tg_window("after_hold")
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, _tg_chest_id, 0, 0, Vector3.ZERO)
+	await _tg_site()
+	await _tg_door()
+	await _tg_seen()
 	FreezeWatchScript.printer.line("ROBOT %s step together: done" % robot_name)
+
+
+const TG_CRATE_BP := 168      # data/items/blueprints.json wooden_crate: 5 lumber, 8 copper nails
+const TG_FRAME_BP := 5        # doorway_section: 4 lumber, 1 twine
+const TG_DOOR_BP := 276       # rustic_door: 5 lumber (hangs in a doorway_section)
+const TG_SWINGS := 4          # Robot 2's blows while Robot 1 watches
+const TG_SPOTS := [Vector3(0.0, 0.0, -3.0), Vector3(0.0, 0.0, 3.0), Vector3(-3.0, 0.0, 0.0), Vector3(3.0, 0.0, 0.0), Vector3(-3.0, 0.0, -3.0), Vector3(3.0, 0.0, 3.0)]   # where Robot 1 tries a blueprint, from its own place
+
+
+# The hammer in hand (pack slot 0), given first.
+func _tg_hammer() -> void:
+	if _slot_of("stone_hammer") < 0:
+		_give("stone_hammer", 1)
+		await _check_pack("together hammer")
+
+	if _slot_of("stone_hammer") > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of("stone_hammer"), 0, 0, Vector3.ZERO)
+		await _check_pack("hammer to hand")
+
+
+# Robot 1 sets a blueprint down with the hammer at the first of `offsets` (from its own place) the server takes: its world id (a new world
+# item there), or -1; written to `file` for Robot 2. A spot refused (something in the way) moves on to the next.
+func _tg_place(bp: int, offsets: Array, file: String) -> int:
+	var id: int = -1
+	var said_from: int = _notices.size()
+	var tried: Array = []
+
+	for off in offsets:
+		var spot: Vector3 = client.body.global_position + (off as Vector3)
+		var ground: float = float(client.items._ground_below.call(spot))
+		spot.y = ground if not is_nan(ground) else client.body.global_position.y - 0.9
+		tried.append(str(spot.round()))
+		var known: Dictionary = client.items._world.duplicate()
+		var heard: int = _notices.size()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, bp, 0, 0, spot)
+		var until: int = Time.get_ticks_msec() + 6000
+
+		while id < 0 and Time.get_ticks_msec() < until and _notices.size() == heard:
+			for w in client.items._world:
+				if not known.has(w) and Vector2(client.items._world[w]["pos"].x - spot.x, client.items._world[w]["pos"].z - spot.z).length() < 1.5:
+					id = int(w)
+
+			await get_tree().process_frame
+
+		if id >= 0:
+			break
+
+	if id < 0:
+		_fail("together", "place:%d" % bp, "blueprint %d at %s: no new world item came (said %s)" % [bp, str(tried), str(_notices.slice(said_from))])
+
+	_write(_share(file), str(id))
+	return id
+
+
+# The other robot as this client draws it (player_view.gd _bodies, the one other player): its row, or {}.
+func _tg_other() -> Dictionary:
+	var pv: Node = client._player_view
+
+	if pv == null:
+		return {}
+
+	for peer in pv._bodies:
+		if int(peer) != client.multiplayer.get_unique_id():
+			return pv._bodies[peer]
+
+	return {}
+
+
+# 7. Robot 1 watches Robot 2 (players thread, #1788): Robot 2 swings TG_SWINGS times, and Robot 1's rows for it must show its swing count
+# change; then Robot 2 is passed out by the cold (server_control.txt), and Robot 1 must draw it lying (stance 3) and, after it wakes, standing.
+func _tg_seen() -> void:
+	var one: bool = robot_name.ends_with("1")
+	await _tg_go("swing")
+
+	if not one:
+		for _n in TG_SWINGS:
+			_strike_at(-client.body.global_transform.basis.z)
+			await _wait(1.2)
+	else:
+		var changes: int = 0
+		var was: int = int(_tg_other().get("swings", -1))
+		var until: int = Time.get_ticks_msec() + int(TG_SWINGS * 1200 + 3000)
+
+		while Time.get_ticks_msec() < until:
+			var now: int = int(_tg_other().get("swings", -1))
+
+			if now != was and now >= 0 and was >= 0:
+				changes += 1
+
+			was = now
+			await get_tree().process_frame
+
+		FreezeWatchScript.printer.line("ROBOT %s TOGETHER seen swings: Robot 2 swung %d times, its swing count changed %d times in Robot 1's rows" % [robot_name, TG_SWINGS, changes])
+
+		if changes == 0:
+			_fail("together", "seen_swing", "Robot 2 swung %d times beside Robot 1; Robot 1's rows never showed its swing count change" % TG_SWINGS)
+
+	await _tg_go("out")
+
+	if not one:
+		_write(_share(SERVER_CONTROL), "cold %d" % client.multiplayer.get_unique_id())
+		var t0: int = Time.get_ticks_msec()
+
+		while _woke_at == null and Time.get_ticks_msec() - t0 < 240000:
+			await get_tree().process_frame
+
+		_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
+		await _wait(1.0)
+		_write(_share("tg_woke.txt"), "%s %.1f %.1f %.1f" % [str(_woke_at != null), client.body.global_position.x, client.body.global_position.y, client.body.global_position.z])
+		return
+
+	var lying_ms: int = 0
+	var stances: Dictionary = {}
+	var t1: int = Time.get_ticks_msec()
+
+	while _tg_read_now("tg_woke.txt") == "" and Time.get_ticks_msec() - t1 < 250000:
+		var b: Dictionary = _tg_other()
+
+		if not b.is_empty():
+			var st: int = int(b.get("state", 0)) & 3
+			stances[st] = int(stances.get(st, 0)) + 1
+
+			if st == 3:
+				lying_ms += int(get_process_delta_time() * 1000.0)
+
+		await get_tree().process_frame
+
+	var woke: String = _tg_read_now("tg_woke.txt")
+	var after: Array = woke.split(" ")
+
+	if after.size() >= 4:
+		var _near: bool = await _go_to(Vector3(float(after[1]), float(after[2]), float(after[3])), 30.0, 4.0)
+
+	var standing: int = -1
+	var t2: int = Time.get_ticks_msec()
+
+	while standing != 0 and Time.get_ticks_msec() - t2 < 8000:
+		standing = int(_tg_other().get("state", -1)) & 3 if not _tg_other().is_empty() else -1
+		await get_tree().process_frame
+
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER seen out: Robot 2 woke %s; stances drawn (stance: frames) %s, lying %d ms; after waking drawn stance %d" % [robot_name, woke, str(stances), lying_ms, standing])
+	_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
+
+	if not woke.begins_with("true"):
+		_fail("together", "seen_out", "Robot 2 never passed out from the cold in 240 s: nothing to watch")
+	elif not stances.has(3):
+		_fail("together", "seen_lying", "Robot 2 passed out; Robot 1 never drew it lying down (stance 3): stances drawn %s" % str(stances))
+	elif standing != 0:
+		_fail("together", "seen_stand", "Robot 2 woke; Robot 1 still draws stance %d for it 8 s later (wanted standing, 0)" % standing)
+
+
+# A share file's text now ("" when it is not there yet).
+func _tg_read_now(file: String) -> String:
+	var f := FileAccess.open(_share(file), FileAccess.READ)
+	return f.get_as_text().strip_edges() if f != null else ""
+
+
+# Up to `near_m` of a world item, so a hammer blow or E reaches it.
+func _tg_near(id: int) -> void:
+	var until: int = Time.get_ticks_msec() + 5000
+
+	while not client.items._world.has(id) and Time.get_ticks_msec() < until:
+		await get_tree().process_frame
+
+	if client.items._world.has(id):
+		var _near: bool = await _go_to(client.items._world[id]["pos"], 10.0, 1.6)
+
+
+# One look at a world item as this client draws it: its item number and state (a site, a standing piece, a door shut or open).
+func _tg_look(id: int) -> String:
+	var w: Dictionary = client.items._world.get(id, {})
+	return "gone" if w.is_empty() else "%d/%d%s" % [int(w.get("number", 0)), int(w.get("state", 0)), " site" if w.get("site") != null else ""]
+
+
+# Both robots' looks at one world item 2.5 s after a step: they must be the same (each writes its own, Robot 1 compares). Robot 1's look.
+func _tg_same_look(step: String, id: int) -> String:
+	await _wait(2.5)
+	var me: String = "1" if robot_name.ends_with("1") else "2"
+	_write(_share("tg_look_%s_%s.txt" % [step, me]), _tg_look(id))
+
+	if me != "1":
+		return ""
+
+	var them: String = await _tg_read("tg_look_%s_2.txt" % step, 60.0)
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER look %s: world item %d, mine %s, Robot 2 %s" % [robot_name, step, id, _tg_look(id), them])
+
+	if them != _tg_look(id):
+		_fail("together", "look:%s" % step, "world item %d: Robot 1 draws it %s, Robot 2 %s (2.5 s after)" % [id, _tg_look(id), them])
+
+	return _tg_look(id)
+
+
+# 5. One crate site hammered by both at once, each with part of what it needs: exactly its cost goes in (5 lumber, 8 nails), once.
+func _tg_site() -> void:
+	var one: bool = robot_name.ends_with("1")
+	await _tg_hammer()
+	_give("lumber", 3 if one else 4)
+
+	if not one:
+		_give("copper_nails", 10)
+
+	var lumber: int = _num("lumber")
+	var nails: int = _num("copper_nails")
+	var wood_all: int = await _tg_total("site_wood", lumber)
+	var nails_all: int = await _tg_total("site_nails", nails)
+	var site: int = await _tg_place(TG_CRATE_BP, TG_SPOTS, "tg_site.txt") if one else -1
+	var said: String = await _tg_read("tg_site.txt", 30.0)
+	site = int(said) if said != "" else -1
+
+	if site < 0:
+		return
+
+	await _tg_near(site)
+	await _tg_go("hammer")
+
+	for _n in 8:   # both hammer it, a blow each 0.8 s
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, site, 1, 0, Vector3.ZERO)
+		await _wait(0.8)
+
+	var wood_now: int = await _tg_total("site_wood_after", lumber)
+	var nails_now: int = await _tg_total("site_nails_after", nails)
+
+	if one and (wood_all - wood_now != 5 or nails_all - nails_now != 8):
+		_fail("together", "site", "both hammered one crate site: %d lumber went in (its cost 5), %d nails (8)" % [wood_all - wood_now, nails_all - nails_now])
+
+	var look: String = await _tg_same_look("site", site)
+
+	if one:
+		FreezeWatchScript.printer.line("ROBOT %s step together: crate site hammered by both, %d lumber and %d nails went in, drawn %s" % [robot_name, wood_all - wood_now, nails_all - nails_now, look])
+
+
+# 6. One door: Robot 1 builds a doorway frame and hangs a rustic door; both use it at once (the ruling: it toggles twice, so it ends as it
+# began), then each in turn: both must draw it the same each time.
+func _tg_door() -> void:
+	var one: bool = robot_name.ends_with("1")
+	var door: int = -1
+
+	if one:
+		_give("lumber", 12)
+		_give("twine", 2)
+		await _check_pack("together door wood")
+		var frame: int = await _tg_place(TG_FRAME_BP, TG_SPOTS, "tg_frame.txt")
+		var at: Vector3 = client.items._world.get(frame, {}).get("pos", client.body.global_position)
+		await _tg_near(frame)
+
+		for _n in 8:
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, frame, 1, 0, Vector3.ZERO)
+			await _wait(0.6)
+
+		await _wait(1.5)
+		var fpos: Vector3 = client.items._world.get(frame, {}).get("pos", at)
+		var known: Dictionary = client.items._world.duplicate()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, TG_DOOR_BP, 0, 0, fpos + Vector3(0.1, 0.4, 0.15))
+		var until: int = Time.get_ticks_msec() + 8000
+
+		while door < 0 and Time.get_ticks_msec() < until:
+			for w in client.items._world:
+				if not known.has(w) and int(w) != frame and Vector2(client.items._world[w]["pos"].x - fpos.x, client.items._world[w]["pos"].z - fpos.z).length() < 2.0:
+					door = int(w)
+
+			await get_tree().process_frame
+
+		for _n in 8:
+			if door >= 0:
+				client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, door, 1, 0, Vector3.ZERO)
+
+			await _wait(0.6)
+
+		if door < 0:
+			_fail("together", "door", "the rustic door blueprint at the doorway frame (%d, drawn %s) gave no world item: %s" % [frame, _tg_look(frame), str(_notices.slice(-3))])
+
+		_write(_share("tg_door.txt"), str(door))
+
+	var said: String = await _tg_read("tg_door.txt", 90.0)
+	door = int(said) if said != "" else -1
+
+	if door < 0:
+		return
+
+	await _tg_near(door)
+	FreezeWatchScript.printer.line("ROBOT %s TOGETHER door %d drawn %s, %.1f m off" % [robot_name, door, _tg_look(door), client.body.global_position.distance_to(client.items._world.get(door, {}).get("pos", Vector3.ZERO))])
+
+	var start: String = await _tg_same_look("door_start", door)
+	await _tg_go("door_both")
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_USE_STRUCT, door, 0, 0, Vector3.ZERO)
+	var both: String = await _tg_same_look("door_both", door)
+
+	if one and both != start:
+		_fail("together", "door_both", "both used the door at once: it went %s -> %s (two uses toggle twice and end as it began)" % [start, both])
+
+	for who in ["1", "2"]:
+		await _tg_go("door_%s" % who)
+
+		if robot_name.ends_with(who):
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_USE_STRUCT, door, 0, 0, Vector3.ZERO)
+
+		var after: String = await _tg_same_look("door_%s" % who, door)
+
+		if one:
+			FreezeWatchScript.printer.line("ROBOT %s step together: Robot %s used the door: %s" % [robot_name, who, after])
 
 
 # Both robots near the basket (Robot 2 walks to it): CHEST_REACH_M on the server.
