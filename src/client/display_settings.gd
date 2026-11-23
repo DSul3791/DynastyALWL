@@ -102,6 +102,18 @@ static func air_text(air_c: float) -> String:
 	return "%.0f °C" % air_c
 
 
+# What apply(keep_current) does with the window's present mode: MODE_FULLSCREEN when the player has it fullscreen (either kind), MODE_MAXIMIZED
+# when maximised and the saved choice is windowed, else -1 (the saved choice is applied as usual).
+static func keep_mode(current: int, saved_fullscreen: bool) -> int:
+	if current == Window.MODE_FULLSCREEN or current == Window.MODE_EXCLUSIVE_FULLSCREEN:
+		return Window.MODE_FULLSCREEN
+
+	if current == Window.MODE_MAXIMIZED and not saved_fullscreen:
+		return Window.MODE_MAXIMIZED
+
+	return -1
+
+
 # Back to the first-run choices (the game puts the quality back to High).
 func reset() -> void:
 	size_index = DEFAULT_SIZE
@@ -142,15 +154,27 @@ func size_text() -> String:
 	return "%dx%d" % [size().x, size().y]
 
 
-# Puts the choices on the window (nothing in a headless run).
-func apply(window: Window) -> void:
+# Puts the choices on the window (nothing in a headless run). keep_current (joining a world, opening the title page): a window the player
+# made larger themselves (maximised, or fullscreen from the title bar or the keyboard) stays as it is (Dave 23 Nov 2026: he went fullscreen
+# before joining and the join shrank the window; "we need consistency"); a fullscreen one is saved as the Fullscreen choice. The Settings
+# switches pass false, so turning Fullscreen off still makes a window.
+func apply(window: Window, keep_current: bool = false) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
+
+	var mode: int = keep_mode(window.mode, fullscreen) if keep_current else -1
+
+	if mode == Window.MODE_FULLSCREEN and not fullscreen:
+		fullscreen = true
+		save()
 
 	DisplayServer.window_set_vsync_mode(VSYNC_MODES[vsync_index])
 	window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	window.content_scale_size = BASE
+
+	if mode == Window.MODE_MAXIMIZED:
+		return   # maximised by the player: left so
 
 	if fullscreen:
 		window.mode = Window.MODE_FULLSCREEN
