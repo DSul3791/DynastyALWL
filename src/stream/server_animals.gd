@@ -78,9 +78,10 @@ var biome_at: Callable             # (x, z) -> biome name of the ground there ("
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
 var sunrise_now: Callable          # (z) -> today's sunrise hour at that ground row (weather.gd sunrise_hour, the sun the sky there draws; NAN z: the
                                    # starter row's); unset keeps the fixed hours of period_of
-var _sun: Dictionary = {}          # ground row (or "" for NAN) -> [msec read, sunrise hour]: the sunrise moves a few minutes a game day, read again every 5 s
+var _sun: Dictionary = {}          # ground row (NO_ROW for NAN) -> [msec read, sunrise hour]: the sunrise moves a few minutes a game day, read again every 5 s
 var sun_z: float = NAN             # the z of the animal (or player) being thought about now: its periods and trips go by the sun of its own row
                                    # (south of the equator the seasons are the other way round). Set by the tick before each step and the top-up per player.
+const NO_ROW := -2147483648       # the _sun key for "no place given" (the starter row's sun)
 var sun_row_m: float = 15360.0     # the tile rows the sun is read by (world.json tile_size_m, set by the server): one sunrise a row, as the sky draws a row's
 var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var no_spawn: Callable                # (x, z) -> bool: true within no_spawn_m of something a player put down (server_items.spawn_blocked; Dave 17 Nov 2026): no animal is made there
@@ -2030,10 +2031,10 @@ func sunrise_hour() -> float:
 	if not sunrise_now.is_valid():
 		return 6.0
 
-	var row: Variant = "" if is_nan(sun_z) else floori(sun_z / sun_row_m)
+	var row: int = NO_ROW if is_nan(sun_z) else floori(sun_z / sun_row_m)
 
 	if not _sun.has(row) or Time.get_ticks_msec() - int(_sun[row][0]) > 5000:
-		_sun[row] = [Time.get_ticks_msec(), float(sunrise_now.call((float(row) + 0.5) * sun_row_m if row is int else NAN))]
+		_sun[row] = [Time.get_ticks_msec(), float(sunrise_now.call(NAN if row == NO_ROW else (float(row) + 0.5) * sun_row_m))]
 
 	return float(_sun[row][1])
 
