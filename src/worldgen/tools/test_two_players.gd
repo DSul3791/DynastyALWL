@@ -11,6 +11,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 
@@ -194,6 +195,38 @@ func _init() -> void:
 	check(client_code.contains("if chest_mode and chest_id >= 0 and removed.has(chest_id):\n\t\t_close_chest()"), "the client closes an open container's window when it goes from the world (inventory_view.gd)")
 	items.action(2, Net.ACT_CHEST_TAKE, 0, chest, 5, Vector3.ZERO)
 	check(_total(items, stone) == all, "a take on the gone chest makes nothing (%d, was %d)" % [_total(items, stone), all])
+
+	# 6. A blueprint site hammered by both, each with part of what it needs: the materials go in once, from whoever has them, and a hit
+	# after it stands takes nothing (a second player's hammer on the finished crate is a repair of nothing).
+	var crate_bp: Dictionary = {}
+
+	for number in items._blueprints:
+		if str(items._blueprints[number].get("structure", "")) == "wooden_crate":
+			crate_bp = items._blueprints[number]
+
+	var lumber: int = table.number_of("lumber")
+	var nails: int = table.number_of("copper_nails")
+	items.give(1, table.number_of("stone_hammer"), 1)
+	items.give(2, table.number_of("stone_hammer"), 1)
+	items.give(1, lumber, 3)
+	items.give(2, lumber, 4)
+	items.give(2, nails, 10)
+	var wood_all: int = _total(items, lumber)
+	var nails_all: int = _total(items, nails)
+	var site_spot: Vector3 = HERE + Vector3(-1.5, 0.0, 0.0)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(crate_bp.get("number", -1)), 0, 0, site_spot)
+	var site: int = HeldTool.site_of(items, "wooden_crate")
+	check(site >= 0, "player A sets down a crate blueprint")
+	HeldTool.hit_site(items, site, 1)
+	check(site >= 0 and items._items.has(site) and items._items[site]["struct"].has("site"), "player A's hammer puts in what A has (3 lumber): still a site")
+	HeldTool.hit_site(items, site, 2)
+	check(site >= 0 and items._items.has(site) and not items._items[site]["struct"].has("site"), "player B's hammer puts in the rest: the crate stands")
+	var wood_used: int = wood_all - _total(items, lumber)
+	var nails_used: int = nails_all - _total(items, nails)
+	check(wood_used == 5 and nails_used == 8, "exactly its cost went in, once: %d lumber of 5, %d nails of 8" % [wood_used, nails_used])
+	HeldTool.hit_site(items, site, 1)
+	HeldTool.hit_site(items, site, 2)
+	check(wood_all - _total(items, lumber) == 5 and nails_all - _total(items, nails) == 8, "more hammer hits on the standing crate take nothing (%d, %d)" % [wood_all - _total(items, lumber), nails_all - _total(items, nails)])
 
 	print("test_two_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
