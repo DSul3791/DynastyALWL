@@ -5165,7 +5165,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and spyglass.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		spyglass.wheel(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock:
-		var look: float = MOUSE_SENSITIVITY * (spyglass.mouse_scale() if spyglass.active else 1.0)   # through the spyglass the mouse slows by the zoom
+		var look: float = MOUSE_SENSITIVITY * display.mouse_look * (spyglass.mouse_scale() if spyglass.active else 1.0)   # through the spyglass the mouse slows by the zoom
 		body.rotate_y(-event.relative.x * look)
 		pitch = clampf(pitch - event.relative.y * look, -1.5, 1.5)
 		camera.rotation.x = pitch
