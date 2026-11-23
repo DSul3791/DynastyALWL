@@ -6937,7 +6937,7 @@
 			"needs": [
 				[
 					"linseed",
-					4
+					400
 				]
 			],
 			"gives": [
@@ -7927,12 +7927,12 @@
 		},
 		"prep_mushroom_skewer": {"number": 430, "name": "Uncooked mushroom skewers", "category": "Food and drink", "needs": [["mushrooms", 3], ["wild_garlic_leaves", 1]], "gives": ["uncooked_mushroom_skewers", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"cook_mushroom_skewer_grill": {"number": 431, "name": "Mushroom skewer (grill)", "category": "Food and drink", "needs": [["uncooked_mushroom_skewers", 4]], "gives": ["mushroom_skewer", 4], "craft_s": 8.0, "station": "grill", "known": true},
-		"prep_chestnut_cakes": {"number": 432, "name": "Unbaked chestnut cakes", "category": "Food and drink", "needs": [["chestnuts", 3], ["honeyspindle_nectar", 1], ["linseed", 1]], "gives": ["unbaked_chestnut_cakes", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"prep_chestnut_cakes": {"number": 432, "name": "Unbaked chestnut cakes", "category": "Food and drink", "needs": [["chestnuts", 3], ["honeyspindle_nectar", 1], ["linseed", 100]], "gives": ["unbaked_chestnut_cakes", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"cook_chestnut_cakes_griddle": {"number": 433, "name": "Chestnut cakes (griddle)", "category": "Food and drink", "needs": [["unbaked_chestnut_cakes", 3]], "gives": ["chestnut_cakes", 3], "craft_s": 10.0, "station": "griddle", "known": true},
 		"cook_hunters_stew_cooking_pot": {"number": 434, "name": "Hunter's stew (cooking pot)", "category": "Food and drink", "needs": [["raw_meat", 3], ["wild_carrot_roots", 3], ["wild_garlic_leaves", 3]], "gives": ["hunters_stew", 6], "craft_s": 24.0, "station": "cooking_pot", "known": true},
 		"cook_forager_stew_cooking_pot": {"number": 435, "name": "Forager's stew (cooking pot)", "category": "Food and drink", "needs": [["nettles", 6], ["burdock_roots", 3], ["chanterelles", 3]], "gives": ["forager_stew", 6], "craft_s": 24.0, "station": "cooking_pot", "known": true},
 		"cook_fish_stew_cooking_pot": {"number": 436, "name": "Fish stew (cooking pot)", "category": "Food and drink", "needs": [["perch", 3], ["watercress", 3], ["wild_carrot_roots", 3]], "gives": ["fish_stew", 6], "craft_s": 24.0, "station": "cooking_pot", "known": true},
-		"prep_trail_bread": {"number": 437, "name": "Unbaked trail bread", "category": "Food and drink", "needs": [["linseed", 2], ["hazelnuts", 2], ["animal_fat", 1]], "gives": ["unbaked_trail_bread", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
+		"prep_trail_bread": {"number": 437, "name": "Unbaked trail bread", "category": "Food and drink", "needs": [["linseed", 200], ["hazelnuts", 2], ["animal_fat", 1]], "gives": ["unbaked_trail_bread", 3], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"cook_hearty_pottage_cooking_pot": {"number": 438, "name": "Hearty pottage (cooking pot)", "category": "Food and drink", "needs": [["flour", 3], ["wild_carrot_roots", 3], ["herbs", 3], ["animal_fat", 3]], "gives": ["hearty_pottage", 9], "craft_s": 28.0, "station": "cooking_pot", "known": true},
 		"prep_flatbread": {"number": 439, "name": "Unbaked flatbread", "category": "Food and drink", "needs": [["flour", 1], ["water", 1]], "gives": ["unbaked_flatbread", 2], "craft_s": 4.0, "station": "food_preparation_table", "known": true},
 		"cook_flatbread_griddle": {"number": 440, "name": "Flatbread (griddle)", "category": "Food and drink", "needs": [["unbaked_flatbread", 2]], "gives": ["flatbread", 2], "craft_s": 8.0, "station": "griddle", "known": true},
