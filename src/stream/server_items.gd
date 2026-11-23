@@ -7600,7 +7600,7 @@ func _pick_up_fire(peer: int, inv, id: int) -> void:
 	var whole: bool = box != null and box.count_of(stick) == start and _box_holds_only(box, stick)   # its first sticks are still in it: they go back into the kit
 
 	if box != null and not box.is_empty() and not whole:
-		_say(peer, "Empty it first, or leave just its %d Sticks to pack it as a Campfire kit." % start)
+		_say(peer, "Empty it first, or leave just its %d sticks to pack it up as a Campfire." % start)
 		return
 
 	if whole:
