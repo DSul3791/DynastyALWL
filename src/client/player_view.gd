@@ -30,6 +30,12 @@ const HeldItem := preload("res://src/client/held_item.gd")
 const MAX_DRAWN := 31
 const CARRY_S := 0.8                   # how long a body walks on past its newest point (MotionBuffer.at: at most two report legs)
 const SWING_LEAD_S := 0.2             # how much of the swing before its impact a remote blow still shows (the downswing)
+# How a correction is eased in for another player (MotionBuffer.smooth): the animals' 1.3 times their speed (#1670) left another player
+# drawn 2 m behind while it ran and up to 6 m behind for 10 s after a 1.4 s freeze on this client (robots, 23 Nov 2026, dev 0b0c3247):
+# a player speeds up and stops faster than its measured speed says, so a step of 1.5 frames is shown and the rest catches up at 3 m/s at least.
+const SMOOTH_ROOM_X := 1.5
+const SMOOTH_CATCH_X := 0.5
+const SMOOTH_CATCH_MIN_MPS := 3.0
 const REPORT_S := 0.2                  # a client reports its position every 0.2 s (terrain_client.gd report_position)
 const MAKE_PER_ROWS := 2               # bodies made per rows message: a crowd coming into range is built over a few sends, not in one frame
 const FULL_M := 15.0
@@ -214,7 +220,7 @@ func _process(delta: float) -> void:
 			var at: Array = MotionBuffer.at(b["samples"], drawn_at, CARRY_S)   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
 			b["path_p"] = at[0]
 			# A late batch or a lost one never jumps the body: the step beyond a normal one is eased in (MotionBuffer.smooth, as the animals).
-			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta)
+			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta, SMOOTH_ROOM_X, SMOOTH_CATCH_X, SMOOTH_CATCH_MIN_MPS)
 			node.rotation.y = lerp_angle(node.rotation.y, float(at[1]), clampf(delta * 12.0, 0.0, 1.0))
 
 		# The legs follow the path's own speed, not the easing (a correction slid in is not a step).

@@ -56,9 +56,12 @@ var undergrowth: Callable          # (Vector3) -> bool, the spot is in bushes, f
 var player_loud: Callable          # () -> Array of the loud thing each player did lately (server_action_cues.loud_kinds: "blow", "craft", "hurt", "dig" or ""), player_positions order
 var player_stalk: Callable         # () -> Array of hunting skill factors (skills.json actions.stalk, 1.0 for a beginner) in player_positions order
 var fires: Callable                # () -> Array of Vector3, burning fires and torch bearers (server_items._lit_fires; wolves read the same list)
-var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 8 m for a torch)
+var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 9 m for a torch or lantern burning in hand, a placed light's protect_m)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
-var weather_ahead: Callable        # (hours) -> the weather dictionary that many game hours from now (WeatherScript.state; animals_in_weather_design.md 3)
+var weather_at: Callable          # (pos) -> the weather over that spot (terrain_server _weather_here: its tile row and 10 m height band, cached a second); unset: the one weather
+var weather_ahead: Callable        # (hours) -> the weather dictionary that many game hours from now (WeatherScript.state; animals_in_weather_design.md 3); tests
+var weather_ahead_at: Callable     # (hours, pos) -> the weather over that spot's row that many game hours from now; set, it is used instead
+var row_of: Callable               # (pos) -> the tile row a spot is in (the storm look-ahead is kept per row)
 var died: Callable                 # (species, position, source peer) when an animal is killed
 var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
@@ -113,6 +116,7 @@ const FOG_GROUNDS_MAX := 16        # windows kept (players together share one)
 const CLEAR_SIGHT_M := 800.0      # in clear air with no fog the haze takes under FogShape's 53 % this near (about 900 m): sight needs no sums
 var _water_spots: Dictionary = {}  # animals at water: Vector2i 50 m cell of the asker and reach -> [[stand spot, water point] or [], msec found]
 var _storm_ahead: bool = false     # a storm (storm 0.5 or more) 12 to 24 game hours ahead: the falling pressure prey feel (lesson 4)
+var _storm_rows: Dictionary = {}   # row -> its _storm_ahead (weather_ahead_at), looked at once a row every weather.ahead_every_s real seconds
 var _ahead_acc: float = INF        # real seconds since weather_ahead was last sampled
 var _dogs: Array = []              # this tick's companion dogs as a presence for wild animals: [animal id, position, barking] (dog_companion_design.md 11)
 var _herds: Dictionary = {}       # herd id -> Array of animal ids (3 to 6 deer)
@@ -790,13 +794,21 @@ func report_hit(id: int, zone: int, at: Vector3) -> void:
 
 # A loud noise: every animal within `radius` of the point that is not already running bolts away from it.
 func alarm_near(point: Vector3, radius: float) -> void:
+	var kept: Array = [_wx, _wind_s, _wind_dir, _storm_ahead]   # called between ticks: each bolts by the sky over itself, then the one weather again
+
 	for id in animals:
 		var a: Dictionary = animals[id]
 
 		if int(a["state"]) == HIDDEN or int(a["state"]) == FLEE or int(a["state"]) >= WARN or a["pos"].distance_to(point) > radius or a.has("pack"):
 			continue
 
+		_weather_for(a["pos"])   # a flushed bird flies by the wind and rain where it sits (server_flight)
 		_bolt(a, point, species_def(str(a["sp"])))
+
+	_wx = kept[0]
+	_wind_s = kept[1]
+	_wind_dir = kept[2]
+	_storm_ahead = kept[3]
 
 
 # One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
@@ -1058,8 +1070,16 @@ func tick(delta: float) -> void:
 	_wind_s = float(weather.get("wind", 0.0))
 	_wind_dir = Vector2.from_angle(float(weather.get("wind_dir", 0.0)))
 	_read_weather(weather, delta)
+	var wx_all: Dictionary = _wx
+	var wind_all: float = _wind_s
+	var dir_all: Vector2 = _wind_dir
+	var storm_all: bool = _storm_ahead
 	_fog_ground_tick(players)
 	_thunder_tick(players)
+	_wx = wx_all   # the thunder's flushed birds took the sky over themselves (_weather_for): the one weather until the animals' steps
+	_wind_s = wind_all
+	_wind_dir = dir_all
+	_storm_ahead = storm_all
 	_dogs = _dog_presences()
 	_sample_noise(players, delta)
 	_fire_cache = []
@@ -1079,6 +1099,8 @@ func tick(delta: float) -> void:
 
 		if k > 0 and Time.get_ticks_usec() - started > budget_us:
 			continue   # out of budget: this one waits (its acc keeps growing, so its next step is longer, not lost)
+
+		_weather_for(a["pos"])   # its own sky: what it senses and does by (rain, snow, wind, fog, cold) is the weather where it stands
 
 		var near_d: float = INF
 		var near_p: Vector3 = Vector3.INF
@@ -1106,7 +1128,7 @@ func tick(delta: float) -> void:
 			seen_d = near_d
 			seen_p = near_p
 
-		if near_d > despawn_m:
+		if near_d > despawn_m and not (bandit_camps != null and a.has("camp") and bandit_camps.is_held(a)):   # a captive waits for his parked captor
 			gone.append(id)
 			continue
 
@@ -1163,6 +1185,11 @@ func tick(delta: float) -> void:
 		if snare_pass.is_valid() and animals.has(id) and a["pos"] != was and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			snare_pass.call(id, str(a["sp"]), was, a["pos"])
 
+	_wx = wx_all   # the one weather again after the animals' own steps
+	_wind_s = wind_all
+	_wind_dir = dir_all
+	_storm_ahead = storm_all
+
 	for id in gone:
 		if trails != null:
 			trails.forget(id)
@@ -1185,7 +1212,7 @@ func tick(delta: float) -> void:
 		companions.tick(delta)
 
 	if wolves != null:   # wild packs are always on, so the wolves always tick (they place packs round the players)
-		wolves.tick(delta)
+		wolves.tick(delta)   # each pack by the weather at its centre (server_wolves._think)
 
 	_spawn_acc += delta
 
@@ -1193,7 +1220,13 @@ func tick(delta: float) -> void:
 	if not players.is_empty() and _spawn_acc >= float(cfg.get("spawn_every_s", 2.0)) / float(players.size()):
 		_spawn_acc = 0.0
 		_top_idx = (_top_idx + 1) % players.size()
+		_weather_for(players[_top_idx])   # who turns up round a player (wind, storm) by the sky over that player
 		_top_up(players, _top_idx)
+
+	_wx = wx_all   # the one weather again for what reads it between ticks (alarms, hits)
+	_wind_s = wind_all
+	_wind_dir = dir_all
+	_storm_ahead = storm_all
 
 
 # How close a player may come before this animal runs: the species' spook_m, scaled by a horse's own tame value (a flighty one
@@ -2585,6 +2618,40 @@ func _wx_on() -> bool:
 	return bool(_wx_rules().get("on", false))
 
 
+# The weather over an animal's spot for its step (weather_at, Dave's rule that nothing is based on where the spawn is: not the starter row
+# at sea level, weather and seasons walk 23 Nov 2026): Weather.state's own dictionary, read as _wx (the same keys), and its wind. Without
+# weather_at (tests) the tick's one weather stays. Cost: one cached lookup an animal step.
+func _weather_for(pos: Vector3) -> void:
+	if not weather_at.is_valid():
+		return
+
+	var here: Dictionary = weather_at.call(pos)
+
+	if not is_same(here, _wx):   # the same dictionary: the last animal's row and band, nothing to change
+		_wx = here
+		_wind_s = float(here.get("wind", 0.0))
+		_wind_dir = Vector2.from_angle(float(here.get("wind_dir", 0.0)))
+
+	if not weather_ahead_at.is_valid() or not row_of.is_valid() or not _wx_on():
+		return
+
+	var row: int = int(row_of.call(pos))
+
+	if not _storm_rows.has(row):
+		_storm_rows[row] = _storm_in(func(hours): return weather_ahead_at.call(hours, pos))
+
+	_storm_ahead = bool(_storm_rows[row])
+
+
+# True when a storm (weather.storm_from) is due on one of weather.ahead_hours (12 to 24 game hours) by `ahead` ((hours) -> weather).
+func _storm_in(ahead: Callable) -> bool:
+	for hours in _wx_rules().get("ahead_hours", [12, 15, 18, 21, 24]):
+		if float((ahead.call(float(hours)) as Dictionary).get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)):
+			return true
+
+	return false
+
+
 # This tick's weather, and every weather.ahead_every_s real seconds a look 12 to 24 game hours ahead for a storm.
 func _read_weather(weather: Dictionary, delta: float) -> void:
 	_wx = {"rain": float(weather.get("rain", 0.0)), "snow": float(weather.get("snow", 0.0)), "storm": float(weather.get("storm", 0.0)),
@@ -2593,18 +2660,12 @@ func _read_weather(weather: Dictionary, delta: float) -> void:
 		"sea_fog_top_m": float(weather.get("sea_fog_top_m", 0.0))}
 	_ahead_acc += delta
 
-	if not _wx_on() or not weather_ahead.is_valid() or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
+	if not _wx_on() or not (weather_ahead.is_valid() or weather_ahead_at.is_valid()) or _ahead_acc < float(_wx_rules().get("ahead_every_s", 2.5)):
 		return
 
 	_ahead_acc = 0.0
-	_storm_ahead = false
-
-	for hours in _wx_rules().get("ahead_hours", [12, 15, 18, 21, 24]):
-		var later: Dictionary = weather_ahead.call(float(hours))
-
-		if float(later.get("storm", 0.0)) >= float(_wx_rules().get("storm_from", 0.5)):
-			_storm_ahead = true
-			return
+	_storm_rows.clear()   # each row looks ahead again when an animal there steps next (_weather_for)
+	_storm_ahead = _storm_in(weather_ahead) if weather_ahead.is_valid() else false
 
 
 # True in a storm or a heavy snowfall: most animals bed down (lesson 5).
@@ -3049,6 +3110,9 @@ func _seeks_cover(a: Dictionary, def: Dictionary) -> bool:
 func _air_c(a: Dictionary) -> float:
 	if air_at.is_valid():   # the one temperature (#620): the zone's own air at the animal's height, less the rain's cooling as in Weather.state
 		return float(air_at.call(a["pos"])) - WeatherRules.RAIN_COOL_C * float(_wx.get("rain", 0.0))
+
+	if weather_at.is_valid():
+		return float(_wx.get("temp_c", 10.0))   # weather_at's air is the air at the animal's own height band already
 
 	return float(_wx.get("temp_c", 10.0)) - maxf(a["pos"].y, 0.0) * float(_wx_rules().get("lapse_c_per_m", 0.0065))
 
@@ -3793,6 +3857,7 @@ func _thunder_tick(players: Array) -> void:
 					continue
 
 				a.erase("perched")
+				_weather_for(a["pos"])   # how far it flies in a gale: the wind where it sits
 				flight.take_off(a, Vector3(at.x, a["pos"].y, at.z))
 			elif flocks != null and flocks.handles(a):
 				flocks.take_off(a, Vector3(at.x, a["pos"].y, at.z))

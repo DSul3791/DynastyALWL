@@ -2,7 +2,7 @@ extends SceneTree
 
 # Gathering and skills walked for bugs (coordinator, 23 Nov 2026), the parts no other test covers:
 #   1. bare rock (server_items _mine): every pick and axe tier, stones a patch gives, wear and Mining practice. A better tool breaks more off a
-#      blow (boulders.json tools' rate, never under one), and a patch still takes its blows before it rests;
+#      blow (boulders.json tools' rate, its class's ladder lifted so its stone tool gives one), and a patch still takes its blows before it rests;
 #   2. Dave's skills rule over a restart for every skill a player can practise: practice by use stops under 25, a trainer jumps it to 25,
 #      the next band needs the next trainer, and all of it reloads;
 #   3. every skill that exists can be trained by use: an action practises it, or a child's practice feeds it (a table of the ones that
@@ -106,7 +106,8 @@ func _bare_rock() -> void:
 			items._mine(1, inv, at, slot)
 
 		var stones: int = inv.count_of(n("stone"))
-		var rate: float = maxf(float(rates[str(items.table.entry(id)["tool_class"])][str(items.table.entry(id)["material"])]), 1.0)
+		var ladder: Dictionary = rates[str(items.table.entry(id)["tool_class"])]
+		var rate: float = maxf(float(ladder[str(items.table.entry(id)["material"])]) + maxf(1.0 - float(ladder.get("stone", 1.0)), 0.0), 1.0)   # lifted so the stone tool gives one
 		got[id] = stones
 		print("%-18s %4.2f | %17d | %4d | %.1f" % [id, rate, stones, inv.wear[slot] - w0, float(items._skill_records(1).get("mining", {}).get("p", 0.0)) - p0])
 		check(stones == int(floor(rate * 6.0 + 0.001)), "%s: six blows give %d stones (got %d, rate %.2f a blow), and the seventh nothing (the patch rests)" % [id, int(floor(rate * 6.0 + 0.001)), stones, rate])
