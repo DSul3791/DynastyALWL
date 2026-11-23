@@ -1,10 +1,10 @@
 {
 	"version": 2,
-	"note": "Skills web (Dave 2026-10-21; design items/SKILLS_WEB_DESIGN.md, approved by Steve). Every skill is 1 to 100; everyone starts at 1. A skill's practice (xp, 'p' in the record) maps to a value by value = 1 + ln(1 + xp/generation_mult^depth x (growth-1)/base_cost) / ln(growth), so the cost of the next point is base_cost x growth^(value-1) x generation_mult^depth (depth = generations below the trait roots). Untrained cap 25; each training level adds step (25): caps 25, 50, 75, 100. Training sets a family floor of cap+5 (30, 55, 80): a skill's effective value is max(own value, the floor from training of itself or any ancestor), read at use, never written into descendants; the first time a skill is practised below its floor its xp is lifted to the floor (lazy catch-up). Gain slows to zero in the last slow_last points under the cap; training gives train_speed per level. A skill with `needs` is locked until every entry {skill, value} holds (effective values); locked skills cannot be practised. parents: weighted links (side links welcome); practice goes specific_share to the skill and the rest up the parents, feed_ratio per generation; the working value adds parent_bonus x the weighted parents above 1. traits: weighted trait roots; they change learning speed (trait_speed per point) and effectiveness (trait_effect per point), never the cap. factor = 1 + (max_factor-1) x (working-1)/(max_value-1), times (1 + trait_effect x weighted trait points), never under min_factor: 1.0 exactly for a fresh average character. Decay is as before (lazy, floor at floor_share of the peak, regain x). The graph also drives the family-tree screen (depth = row, order = place among siblings). Every number is data so Dave can tune in playtest.",
+	"note": "Skills web (Dave 2026-10-21; design items/SKILLS_WEB_DESIGN.md, approved by Steve). Every skill is 1 to 100; everyone starts at 1. A skill's practice (xp, 'p' in the record) maps to a value by value = 1 + ln(1 + xp/generation_mult^depth x (growth-1)/base_cost) / ln(growth), so the cost of the next point is base_cost x growth^(value-1) x generation_mult^depth (depth = generations below the trait roots). Untrained cap 25; each training level adds step (25): caps 25, 50, 75, 100. Training (Dave 23 Nov 2026: 1 to 24 by use alone, a trainer is needed for 25 to 49; a trainer visit before 25 jumps the skill straight to 25, and so on for every band; docs/design/SKILL_TRAINING.md) can be done at any value in a band (train_near_cap = step) and sets a family floor at the old cap (floor_over_cap 0: 25, 50, 75): a skill's effective value is max(own value, the floor from training of itself or any ancestor), read at use, never written into descendants; the first time a skill is practised below its floor its xp is lifted to the floor (lazy catch-up). Gain slows to zero in the last slow_last points under the cap; training gives train_speed per level. A skill with `needs` is locked until every entry {skill, value} holds (effective values); locked skills cannot be practised. parents: weighted links (side links welcome); practice goes specific_share to the skill and the rest up the parents, feed_ratio per generation; the working value adds parent_bonus x the weighted parents above 1. traits: weighted trait roots; they change learning speed (trait_speed per point) and effectiveness (trait_effect per point), never the cap. factor = 1 + (max_factor-1) x (working-1)/(max_value-1), times (1 + trait_effect x weighted trait points), never under min_factor: 1.0 exactly for a fresh average character. Decay is as before (lazy, floor at floor_share of the peak, regain x). The graph also drives the family-tree screen (depth = row, order = place among siblings). Every number is data so Dave can tune in playtest.",
 	"system": {
 		"max_value": 100,
 		"step": 25,
-		"floor_over_cap": 5,
+		"floor_over_cap": 0,
 		"slow_last": 6,
 		"base_cost": 40.0,
 		"growth": 1.045,
@@ -25,7 +25,7 @@
 		"floor_share": 0.2,
 		"regain_mult": 3.0,
 		"rusty_below": 0.7,
-		"train_near_cap": 5,
+		"train_near_cap": 25,
 		"train_cooldown_days": 3.0,
 		"teacher_margin": 10,
 		"send_every_s": 5.0

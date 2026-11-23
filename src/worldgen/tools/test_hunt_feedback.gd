@@ -108,5 +108,43 @@ func _init() -> void:
 	check(not d.animals.has(did) and sent.size() == 1, "and when it kills (%d sent)" % sent.size())
 	players = []
 
+	# 6. Fair hits (protocol 155, Dave 23 Nov 2026: "battle was almost impossible"): a blow is judged where the player's screen showed the
+	# animal, up to rewind_max_ms back. A deer ran from x 0 to 2 (300 ms ago) and on to 4 (100 ms ago).
+	var e = make()
+	var eid: int = deer_at(e)
+	var ed: Dictionary = e.animals[eid]
+	var now: int = Time.get_ticks_msec()
+	ed["pos"] = Vector3(2.0, GROUND, 0.0)
+	ed["moved_ms"] = now - 300
+	e.note_past(ed, Vector3(0.0, GROUND, 0.0))
+	ed["pos"] = Vector3(4.0, GROUND, 0.0)
+	ed["moved_ms"] = now - 100
+	e.note_past(ed, Vector3(2.0, GROUND, 0.0))
+	check(e.pos_at(ed, now - 300).is_equal_approx(Vector3(2.0, GROUND, 0.0)) and e.pos_at(ed, now - 200).is_equal_approx(Vector3(3.0, GROUND, 0.0)) and e.pos_at(ed, now).is_equal_approx(Vector3(4.0, GROUND, 0.0)) and e.pos_at(ed, -1).is_equal_approx(Vector3(4.0, GROUND, 0.0)), "where it was: x 2 at 300 ms ago, 3 at 200, 4 now (%s, %s)" % [str(e.pos_at(ed, now - 300)), str(e.pos_at(ed, now - 200))])
+	var eye: Vector3 = Vector3(2.0, GROUND + 0.5, -2.0)
+	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5) == 0, "a jab at where it was 300 ms ago, judged now, misses (it has run on)")
+	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5, now - 300, now - 300) == eid, "judged at the moment the player saw it, it hits")
+	check(absf(e.jab_point(eid, eye, Vector3(0.0, 0.0, 1.0), 2.5, 0.5, now - 300, now - 300).z) < 0.01, "and lands where the player saw it")
+	var long_ago: int = maxi(now - 5000, 1)   # a headless test starts a second or two after the clock does: a positive time, still too old
+	check(e.judged_ms(ed, long_ago, long_ago) >= now - int(e.cfg.get("rewind_max_ms", 500)) - 1 and e.judged_ms(ed, 0, 0) == -1, "never judged more than rewind_max_ms back; a client that sends none is judged now")
+	check(e.moved_since(eid, now - 300, now - 300).is_equal_approx(Vector3(2.0, 0.0, 0.0)), "it has gone 2 m since, so the struck spot is moved onto the body as it is now")
+	# One that stood 10 s and then stepped: until the step it was where it stood.
+	var st: Dictionary = e.animals[deer_at(e, 20.0)]
+	st["moved_ms"] = now - 10000
+	e.note_past(st, Vector3(0.0, GROUND, 19.0))
+	st["pos"] = Vector3(1.0, GROUND, 20.0)
+	st["moved_ms"] = now
+	e.note_past(st, Vector3(0.0, GROUND, 20.0), 100)   # a 0.1 s step
+	check(e.pos_at(st, now - 200).is_equal_approx(Vector3(0.0, GROUND, 20.0)), "an animal that stood, then stepped, was where it stood 200 ms ago (%s)" % str(e.pos_at(st, now - 200)))
+	# An arrow's step (target_on_segment) is judged the same way: across x 2, it misses the deer now at x 4, and hits where the archer saw it
+	# 300 ms ago; the struck point is moved onto the body as it is now.
+	var across_from: Vector3 = Vector3(2.0, GROUND + 0.5, -2.0)
+	var across_to: Vector3 = Vector3(2.0, GROUND + 0.5, 2.0)
+	check(e.target_on_segment(across_from, across_to, 0.6, 0.5).is_empty(), "an arrow across where it was, judged now, misses")
+	var shot: Dictionary = e.target_on_segment(across_from, across_to, 0.6, 0.5, now - 300, now - 300)
+	check(int(shot.get("id", 0)) == eid and absf((shot.get("point", Vector3.ZERO) as Vector3).x - 4.0) < 0.01 and (shot.get("at", Vector3.ZERO) as Vector3).is_equal_approx(ed["pos"]), "judged where the archer saw it, it hits, on the body as it is now (%s)" % str(shot))
+	ed["state"] = 10
+	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "a warning or charging animal is judged at the present the player's screen draws it at")
+
 	print("test_hunt_feedback: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

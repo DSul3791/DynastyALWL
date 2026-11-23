@@ -125,6 +125,7 @@ var _off_shown: int = 0
 var _inv                                  # InventoryView
 var _hanging_net: Mesh                    # the shore net as it hangs from the hand (BasicLook "hand_net_hanging"), built once
 var _net
+var seen_ms: Callable                     # () -> [server ms, server ms] the animals are drawn at (animal_view.seen_server_ms; protocol 155), sent with a blow
 var _camera: Camera3D
 var _root: Node3D
 var _ground_below: Callable
@@ -725,6 +726,7 @@ func _loose() -> void:
 	_aim_dir = -_camera.global_transform.basis.z   # through the cross in the middle of the screen
 	var draw_ms: int = int(_draw_t * 1000.0)
 	var arrow: int = arrow_to_shoot()
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
 
 	if arrow != 0:
@@ -1004,7 +1006,8 @@ func _animal_in_reach() -> bool:
 
 # One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
 func _melee_strike() -> void:
-	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot if held_number() != 0 else -1, 0, 0, -_camera.global_transform.basis.z)   # -1: a bare-handed punch
+	var seen: Array = seen_ms.call() if seen_ms.is_valid() else [0, 0]   # protocol 155: the blow is judged where this screen showed the animals
+	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot if held_number() != 0 else -1, int(seen[0]), int(seen[1]), -_camera.global_transform.basis.z)   # -1: a bare-handed punch
 
 
 func _is_axe() -> bool:
@@ -1385,7 +1388,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_arm_play("jab", JAB_S)
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
 			if not _is_fish_spear():
-				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+				var seen_b: Array = seen_ms.call() if seen_ms.is_valid() else [0, 0]   # protocol 155
+				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, int(seen_b[0]), int(seen_b[1]), -_camera.global_transform.basis.z)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -1395,9 +1399,17 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
+func _send_seen() -> void:
+	if seen_ms.is_valid():
+		var seen: Array = seen_ms.call()
+		_net.inventory_action.rpc_id(1, Net.ACT_SEEN, 0, int(seen[0]), int(seen[1]), Vector3.ZERO)
+
+
 func _throw() -> void:
 	_arm_play("throw", 0.8)
 	var direction: Vector3 = -_camera.global_transform.basis.z
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_THROW, held_slot, 0, 0, direction)
 	aiming = false
 	var node: Node3D = _make_spear_model()

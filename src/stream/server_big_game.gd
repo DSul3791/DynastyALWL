@@ -51,12 +51,28 @@ func _nearest(pos: Vector3) -> Dictionary:
 	return best
 
 
-# What this animal is warning at or charging: the dog it stood to (foe_dog, while that dog lives), else the nearest player.
+# What this animal is warning at or charging: the dog it stood to (foe_dog, while that dog lives), else the player it took on (foe_peer)
+# for as long as it fights and that player stays within calm_m, else the nearest player, who is then its foe (Dave 23 Nov 2026, the real
+# server: with two players near it turned from one to the other every step, as the nearest changed by a step, and never pressed a charge home).
 func _foe(a: Dictionary) -> Dictionary:
 	if a.has("foe_dog") and host.animals.has(int(a["foe_dog"])):
 		return {"pos": host.animals[int(a["foe_dog"])]["pos"], "dog": int(a["foe_dog"])}
 
-	return _nearest(a["pos"])
+	if a.has("foe_peer") and handles(a):
+		var calm: float = float(host.species_def(a["sp"]).get("defend", {}).get("calm_m", 32.0))
+
+		for info in (player_info.call() if player_info.is_valid() else []):
+			if int(info.get("peer", 0)) == int(a["foe_peer"]) and Vector2(info["pos"].x - a["pos"].x, info["pos"].z - a["pos"].z).length() <= calm:
+				return info
+
+	var near: Dictionary = _nearest(a["pos"])
+
+	if near.is_empty():
+		a.erase("foe_peer")
+	else:
+		a["foe_peer"] = int(near.get("peer", 0))
+
+	return near
 
 
 # Start a warning at a player (or a short one when provoked). Returns true when the animal took it. Its temperament decides
@@ -83,6 +99,10 @@ func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
 	var state: int = int(a["state"])
 
 	a.erase("foe_dog")   # the one hurting it is the foe now, not a dog it stood to
+	var hurter: Dictionary = _nearest(at)
+
+	if not hurter.is_empty() and Vector2(hurter["pos"].x - at.x, hurter["pos"].z - at.z).length() < 3.0:
+		a["foe_peer"] = int(hurter.get("peer", 0))
 
 	if state == WARN or state == WARN_POP:
 		a["timer"] = 0.0
@@ -105,6 +125,13 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 		return false
 
 	a.erase("foe_dog")
+	var runner: Dictionary = _nearest(at)   # the player it chases is its foe (_foe), not one it warned at before
+
+	if not runner.is_empty() and Vector2(runner["pos"].x - at.x, runner["pos"].z - at.z).length() < 3.0:
+		a["foe_peer"] = int(runner.get("peer", 0))
+	else:
+		a.erase("foe_peer")
+
 	a["state"] = CHARGE
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["dir"] = a["heading"]
@@ -124,6 +151,12 @@ func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> voi
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["target"] = a["pos"]
 	a["no_bluff"] = forced   # a mother for her young presses home
+	var foe: Dictionary = _nearest(at)   # the player it warns at (or who hurt it) is its foe until it is done (_foe)
+
+	if not foe.is_empty() and Vector2(foe["pos"].x - at.x, foe["pos"].z - at.z).length() < 3.0:
+		a["foe_peer"] = int(foe.get("peer", 0))
+	else:
+		a.erase("foe_peer")
 
 
 # Whether the charge about to start is a bluff: bluff_share, scaled by the temperament (bluff_x) and at the den (den_bluff_x); never after
@@ -271,6 +304,7 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 
 func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("foe_dog")
+	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))

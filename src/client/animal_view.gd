@@ -414,6 +414,18 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 	return out
 
 
+# The server moments this screen shows the animals at now (protocol 155, a blow sends them; docs/design/ANIMAL_NETCODE.md "Fair hits"):
+# [the row clock's draw time, the present a committed charge is drawn at], in server ms; [0, 0] before any rows came.
+func seen_server_ms() -> Array:
+	var off: float = float(_clock["off"])
+
+	if off == INF:
+		return [0, 0]
+
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	return [int(round((now_s - MotionBuffer.clock_delay(_clock) - off) * 1000.0)), int(round((now_s - float(_clock["late"]) - off) * 1000.0))]
+
+
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6

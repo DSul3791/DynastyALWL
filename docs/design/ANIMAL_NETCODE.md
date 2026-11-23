@@ -112,6 +112,26 @@ client only decides how the body gets from one drawn point to the next.
 - Every drawn body, not only a charge, is held out of the local player (`stop_toward`): the spring eases a little past a wolf's or dog's stop.
 - Server: `make_way`. A standing animal a player walks into steps out of them at its walking pace (robot play-testers, 23 Nov 2026: a dog
   0.02 m from a player's middle, a deer 0.22 m, a horse 0.15 m). Birds in the air, perched or burrowed animals, swimmers and a camp's tied
-  horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain and are not covered (a resting
-  pack wolf a player walks into stays; a known gap). Cost: the nearest player's distance is already worked out each step; one compare.
+  horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain, which does the same for a wolf that stood
+  this think (server_wolves `_make_way`), except in a rush. Cost: the nearest player's distance is already worked out each step; one compare.
 - Tests: test_animal_motion_buffer.gd (a corner run: within 0.5 m, speed eased, facing turn rate), test_animal_contact.gd (make_way).
+
+## Fair hits (PR 3, protocol 155)
+
+The player sees each animal about 0.35 s in the past (the row clock's delay) plus half the ping; the server used to judge a blow against
+where the animal is now, so a blow at a running deer that looked square missed. This is the usual fix (Valve's lag compensation, Bernier 2001,
+in the sources above), with the server still the judge:
+- The client sends, with each blow (`ACT_STRIKE` b and count), the server moment its screen showed the animals at
+  (`animal_view.seen_server_ms`: the draw time, and the present a committed charge is drawn at).
+- The server keeps each animal's last places (`note_past`: [ms, position] at each move, about 0.75 s of them) and finds the target and
+  the struck point where the animal was then (`pos_at`, `target_along`, `jab_point`). The damage, the zone and everything after happen now.
+- It never goes back more than `rewind_max_ms` (500): a client claiming an older moment is judged at 500 ms back, so a laggy or lying
+  client cannot hit an animal that left long since. 500 rather than 250 because the honest delay of a normal internet game is about 0.4 s.
+- Arrows and thrown spears (protocol 157): the client sends `ACT_SEEN` (the same two times) just before `ACT_SHOOT` or `ACT_THROW`. The
+  server keeps, with the flight, how far behind the server the shooter's screen was (`server_items.shot_lag`), and every step of the
+  flight takes each animal where that player sees it at that moment (`target_on_segment` with `pos_at`), so an arrow that meets a deer
+  on the archer's screen meets it on the server. The struck point is moved onto the body as it is now.
+- Not covered: the charge still hits by where the animal is now.
+- A held foe (server_big_game `_foe`, `foe_peer`): big game that warns at a player, or is hurt by one, keeps that player as its foe for as
+  long as it fights and they stay within calm_m, instead of turning to whichever player is nearest that step. With two players near, it
+  turned between them every step and never pressed a charge home.
