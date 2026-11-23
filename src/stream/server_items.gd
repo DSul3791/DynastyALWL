@@ -184,6 +184,7 @@ var skill_level: Callable         # (peer, skill id) -> level factor around 1.0;
 var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
+var craft_working: Callable      # (peer, recipe number): the craft at the head of a queue is being worked this tick (server_action_cues.gd craft_working)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
@@ -281,6 +282,8 @@ var _food_cfg: Dictionary = {}      # data/items/food_effects.json
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
+var _cold_out: Dictionary = {}      # peer -> seconds passed out from cold so far (warmth.json pass_out; Dave 23 Nov 2026)
+var rescue_spots: Callable          # (position) -> Array of [Vector3 ground point, "goblin" | "bandit" | "town"]: where a player passed out from cold can wake; set by the server scene
 var _strain_sent: Dictionary = {}
 var send_body: Callable             # (peer, bpm, seconds until awake, phase 0 awake 1 falling asleep 2 asleep or fainted 3 waking), protocol 59
 var _body_sent: Dictionary = {}
@@ -301,7 +304,8 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
-var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
+var hit_animal_path: Callable        # (peer, from, to, damage, lag) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server); lag = the shooter's [seen, present] ms behind the server at the shot (shot_lag), [] for judged now
+var shot_seen: Dictionary = {}      # peer -> [seen ms, present ms] from ACT_SEEN, taken by that player's next shot or throw (shot_lag)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
 var strike_seen: Dictionary = {}    # peer -> [server ms its screen showed the animals at, the same for a committed charge] of its last blow (protocol 155; hit_animal reads it)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
@@ -804,6 +808,7 @@ func note_spots_on_close() -> void:
 
 func peer_left(peer: int) -> void:
 	_held.erase(peer)
+	_cold_out.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
@@ -870,6 +875,8 @@ func peer_left(peer: int) -> void:
 	_peer_pos.erase(peer)
 	_known.erase(peer)
 	_last_throw.erase(peer)
+	strike_seen.erase(peer)
+	shot_seen.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
 	_push_last.erase(peer)   # their last log push (ACT_PUSH_LOG)
@@ -1560,6 +1567,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_relight(peer, inv, a, b)
 	elif kind == Net.ACT_PLACE_TORCH:
 		_place_torch(peer, inv, a, b == 1, count, at)
+	elif kind == Net.ACT_SEEN:
+		shot_seen[peer] = [b, count]
 	elif kind == Net.ACT_STRIKE:
 		strike_seen[peer] = [b, count]   # protocol 155: when its screen showed the animals (0 from a client that sends none: judged now)
 		_strike(peer, inv, a, at)
@@ -2404,7 +2413,7 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 		return
 
 	if it.has("struct"):
-		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0))])
+		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
 		return
 
 	var at: Vector3 = it["pos"]
@@ -3470,7 +3479,20 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
 	var thrown: Dictionary = inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0, "lag": shot_lag(peer, now)})
+
+
+# How far behind the server the shooter's screen showed the animals when it shot or threw (ACT_SEEN just before): [ms behind for a seen
+# animal, ms behind for a committed charge, or -1 when it sent none], or [] for judged now. The flight keeps it, so every step of an arrow
+# is judged where that player sees the animals at that moment (docs/design/ANIMAL_NETCODE.md "Fair hits"; at most rewind_max_ms back).
+func shot_lag(peer: int, now: int) -> Array:
+	var seen: Array = shot_seen.get(peer, [])
+	shot_seen.erase(peer)
+
+	if seen.size() < 2 or int(seen[0]) <= 0:
+		return []
+
+	return [now - int(seen[0]), now - int(seen[1]) if int(seen[1]) > 0 else -1]
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -3527,7 +3549,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var aflame: bool = bool(arrow.get("fire", false)) and not fire_cfg.is_empty() and _flame_near(_peer_pos[peer], float(fire_cfg.get("light_m", 3.0)))
 	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
 	_arrows.append({"peer": peer, "number": number, "inst": shot_inst, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id), "lag": shot_lag(peer, now)})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)) * (float(fire_cfg.get("alarm_mult", 2.0)) if aflame else 1.0))
@@ -3615,7 +3637,7 @@ func _arrow_fly(delta: float) -> void:
 			var stuck: bool = false
 
 			if hit_animal_path.is_valid():
-				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]))
+				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]), ar.get("lag", []))
 
 				if not hit.is_empty():
 					landed = true
@@ -3713,7 +3735,7 @@ func _fly(delta: float) -> void:
 		var throw_damage: float = float(table.entry(table.id_of(int(flight["number"]))).get("throw_damage", 0.0))
 
 		if throw_damage > 0.0 and hit_animal_path.is_valid() and flight.has("peer"):
-			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage)
+			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage, flight.get("lag", []))
 
 			if not hit.is_empty():
 				var at: Vector3 = hit["at"]
@@ -6798,8 +6820,13 @@ func _fire_expire(it: Dictionary) -> bool:
 
 
 # A fire that goes (cold too long, or laid and never lit) leaves what its store still held beside it: food left cooking and spare wood are never
-# deleted with it. The store itself goes with the fire.
+# deleted with it. The store itself goes with the fire. A player's fire leaves its Campfire kit's parts too, as an empty fire picked up does
+# (_kit_parts: 16 stones, 2 sticks; coordinator 23 Nov 2026: the kit vanished with it); a camp's pit was never a kit.
 func _fire_spill_store(it: Dictionary) -> void:
+	if not it["fire"].has("camp") and int(it.get("number", 0)) == table.number_of("campfire_kit"):
+		for pair in _kit_parts(int(it["number"]), _fire_start_sticks()):
+			drop_in_world(int(pair[0]), int(pair[1]), it["pos"] + Vector3(-0.6, 0.0, 0.0))
+
 	var uid: int = int(it["fire"].get("uid", 0))
 	var box = _chests.get(uid)
 
@@ -7105,14 +7132,7 @@ func _box_holds_only(box, number: int) -> bool:
 # kit, which would give its sticks again on the next laying (to-do sweep 23 Nov 2026: lay, take the sticks, pick up, lay again made sticks
 # without end). All or nothing; false (and the player told) when it does not fit.
 func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
-	var makers: Array = recipes.makers_of(kit) if recipes != null else []
-	var parts: Array = []
-
-	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
-		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
-
-		if count > 0:
-			parts.append([int(need[0]), count])
+	var parts: Array = _kit_parts(kit, start)
 
 	if parts.is_empty():   # no recipe makes the kit (retired or renamed): the fire stays, never lost for nothing
 		_say(peer, "Empty it first.")
@@ -7129,6 +7149,20 @@ func _give_kit_parts(peer: int, inv, kit: int, start: int) -> bool:
 		inv.add(int(pair[0]), int(pair[1]))
 
 	return true
+
+
+# What a Campfire kit was made of less its first sticks (in the fire's store, or burnt): [[number, count], ...], empty when no recipe makes it.
+func _kit_parts(kit: int, start: int) -> Array:
+	var makers: Array = recipes.makers_of(kit) if recipes != null else []
+	var parts: Array = []
+
+	for need in (recipes.recipe(int(makers[0])).get("needs", []) if not makers.is_empty() else []):
+		var count: int = int(need[1]) - (start if int(need[0]) == table.number_of("stick") else 0)
+
+		if count > 0:
+			parts.append([int(need[0]), count])
+
+	return parts
 
 
 func _pickup(peer: int, inv, id: int, wanted: int = 0) -> void:
@@ -7294,6 +7328,8 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	var grid: Dictionary = {}
 	var lit: Array = []
 	_site_memo = {}   # each player's on-hand counts for the sites' lists, worked out once this sync (_site_view)
+	var rec_memo: Dictionary = {}   # world id -> _sync_record, worked out once this sync for every player near it
+	_file_site_cells(quick)
 
 	for id in ([] if quick else _items.keys()):   # a quick sync files nothing: the road's ids came since the full sync, and _ids_near adds those
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
@@ -7342,47 +7378,23 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 			if it["pos"].distance_to(here) <= NEAR_M:
 				near[id] = true
 
-				var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (_struct_state(it) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
-				var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))   # the height too: an item that comes down onto the ground after a dig is sent again
+				var rec: Array = rec_memo.get(id, [])
 
-				if it.has("struct") and bool(it["struct"].get("lit", false)):
-					signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
+				if rec.is_empty():
+					rec = _sync_record(int(id), it)
+					rec_memo[id] = rec
 
-				if it.has("struct"):
-					signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
-					signature += 211 * int(round(float(it["struct"].get("len", 0.0)) * 20.0)) + 409 * int(floor(_barrel_water_l(id) / 5.0))   # a pipe run split shorter, a barrel's water by 5 L
-
-				var bin_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {}) if it.has("struct") else {}
-				var bin_box = _chests.get(int(it["struct"].get("uid", -1))) if BinRules.is_bin(bin_def) and it["struct"].has("uid") else null
-				var fill: int = _store_fill(it) if it.has("struct") and (_keeps_products(str(it["struct"]["kind"])) or _smelters.is_smelter(bin_def) or BinRules.is_bin(bin_def)) else -1
-
-				if bin_box != null:
-					signature += 29 * int(round(BinRules.fill_share(bin_def, bin_box) * 50.0)) + 31 * BinRules.assigned(bin_box)   # a bin's surface moves by a fiftieth, or it holds another kind: sent again
-
-				if fill >= 0:
-					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
-
-				var bellows_by: int = _smelters.bellows_peer(id) if fill >= 0 else -1
+				var state: int = int(rec[0])
+				var signature: int = int(rec[1])
+				var bin_def: Dictionary = rec[2]
+				var bin_box = rec[3]
+				var fill: int = int(rec[4])
+				var bellows_by: int = int(rec[5])
+				var crop_extra: Dictionary = rec[6]
+				var smithy_look: int = int(rec[7])
 
 				if bellows_by >= 0:
 					signature += 523 * (2 if bellows_by == peer else 1)   # someone starts or stops working a smelter's bellows: sent again
-
-				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
-
-				if crop_extra.has("crop"):
-					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997) + 13 * (str(crop_extra.get("cells", "")).hash() % 991)   # a crop sown, grown a stage or gone (harvested, frost), in any square metre of a plot, is sent again
-
-				if crop_extra.has("moist"):
-					signature += 433 * (1 + int(crop_extra["moist"]))   # a bed's soil wetter or drier by a step is sent again (the look-at line shows it)
-
-				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
-					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
-
-				var smithy_look: int = -1   # a smithy's fire: 0 cold, 1 red coals (fuel in it), 2 the flare (a craft worked there)
-
-				if it.has("struct") and not it["struct"].has("site") and _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})):
-					smithy_look = 2 if _busy_ms.has(id) else (1 if _smithy_fuelled(it, _structures[str(it["struct"]["kind"])]) else 0)
-					signature += 547 * (smithy_look + 1)   # a smithy fuelled, emptied, set working or idle is sent again
 
 				var site_view: Array = []
 
@@ -7392,11 +7404,6 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 					for line in site_view:
 						signature += 101 * int(line[1]) + 7 * mini(int(line[2]), int(line[1]) + 1)   # a deposit, or having enough on hand, sends it again
-
-				if it.has("fire"):
-					signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
-					signature += 17 * int(floor(_fire_glow(it) * 10.0))   # coals and warm ash are sent again each tenth of their time (the client dims them)
-					signature += 19 * int(it["fire"].get("smoke", 0))   # a fire that starts or stops smoking is sent again
 
 				if not known.has(id) or known[id] != signature:
 					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") or it.has("fall") or it.has("pitch") else {}))))])
@@ -7471,11 +7478,62 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
 	_site_memo = null
+	_site_cells = {}
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
 	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
 	_sync_detail = "(%d records: grid %.0f, scan %.0f, bog %.1f (built %d fields in %.1f), send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0,
 		total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0 - float(bog_usec) / 1000.0, float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0,
 		float(send_usec) / 1000.0, sent]
+
+
+# The part of a record's sync signature and row extras that is the same for every player (_sync_world_items): [state, signature, structure row,
+# resource bin box, store fill, bellows worker peer, crop extras, smithy look]. Worked out once per record per sync, not once per player: with 16
+# players around 500 records the per-player work held the tick about 100 ms each sync (load test 23 Nov 2026).
+func _sync_record(id: int, it: Dictionary) -> Array:
+	var state: int = int(it["fire"]["state"]) if it.has("fire") else (int(it["tree"]["state"]) if it.has("tree") else (_struct_state(it) if it.has("struct") else (BOULDER_STATE if it.has("boulder") else 0)))
+	var signature: int = int(it["count"]) + 1000 * state + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))   # the height too: an item that comes down onto the ground after a dig is sent again
+
+	if it.has("struct") and bool(it["struct"].get("lit", false)):
+		signature += 7      # a fixture lit or put out is sent again (the client draws or drops its flame)
+
+	if it.has("struct"):
+		signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
+		signature += 211 * int(round(float(it["struct"].get("len", 0.0)) * 20.0)) + 409 * int(floor(_barrel_water_l(id) / 5.0))   # a pipe run split shorter, a barrel's water by 5 L
+
+	var bin_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {}) if it.has("struct") else {}
+	var bin_box = _chests.get(int(it["struct"].get("uid", -1))) if BinRules.is_bin(bin_def) and it["struct"].has("uid") else null
+	var fill: int = _store_fill(it) if it.has("struct") and (_keeps_products(str(it["struct"]["kind"])) or _smelters.is_smelter(bin_def) or BinRules.is_bin(bin_def)) else -1
+
+	if bin_box != null:
+		signature += 29 * int(round(BinRules.fill_share(bin_def, bin_box) * 50.0)) + 31 * BinRules.assigned(bin_box)   # a bin's surface moves by a fiftieth, or it holds another kind: sent again
+
+	if fill >= 0:
+		signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
+
+	var bellows_by: int = _smelters.bellows_peer(id) if fill >= 0 else -1
+	var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
+
+	if crop_extra.has("crop"):
+		signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997) + 13 * (str(crop_extra.get("cells", "")).hash() % 991)   # a crop sown, grown a stage or gone (harvested, frost), in any square metre of a plot, is sent again
+
+	if crop_extra.has("moist"):
+		signature += 433 * (1 + int(crop_extra["moist"]))   # a bed's soil wetter or drier by a step is sent again (the look-at line shows it)
+
+	if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
+		signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
+
+	var smithy_look: int = -1   # a smithy's fire: 0 cold, 1 red coals (fuel in it), 2 the flare (a craft worked there)
+
+	if it.has("struct") and not it["struct"].has("site") and _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})):
+		smithy_look = 2 if _busy_ms.has(id) else (1 if _smithy_fuelled(it, _structures[str(it["struct"]["kind"])]) else 0)
+		signature += 547 * (smithy_look + 1)   # a smithy fuelled, emptied, set working or idle is sent again
+
+	if it.has("fire"):
+		signature += 13 * int(it["fire"].get("fed", 0))      # wood laid on a fire is sent again (its burn time for the inspection label)
+		signature += 17 * int(floor(_fire_glow(it) * 10.0))   # coals and warm ash are sent again each tenth of their time (the client dims them)
+		signature += 19 * int(it["fire"].get("smoke", 0))   # a fire that starts or stops smoking is sent again
+
+	return [state, signature, bin_def, bin_box, fill, bellows_by, crop_extra, smithy_look]
 
 
 func _send_changes(peer: int, inv, before: Array) -> void:
@@ -7783,6 +7841,15 @@ func _load_world_items() -> void:
 				if typeof(saved_site) == TYPE_DICTIONARY:
 					entry["struct"]["site"] = {"bp": int((saved_site as Dictionary).get("bp", 0)), "have": (saved_site as Dictionary).get("have", {})}
 
+					if typeof((saved_site as Dictionary).get("kinds", null)) == TYPE_DICTIONARY:
+						entry["struct"]["site"]["kinds"] = saved_site["kinds"]   # which items went in (_note_kinds); a 9257 site has none
+
+			if row.size() > 23 and str(row[23]) != "":
+				var saved_kinds: Variant = JSON.parse_string(str(row[23]))
+
+				if typeof(saved_kinds) == TYPE_DICTIONARY:
+					entry["struct"]["kinds"] = saved_kinds   # a built piece's materials as they went in (_finish_site); a 9257 row has 23 values
+
 			if row.size() > 12 and _traps != null and _traps.is_kind(str(row[9])):
 				entry["struct"]["owner"] = str(row[11])
 				entry["struct"]["seq"] = float(row[12])
@@ -7923,14 +7990,15 @@ func _clear_retired_pieces() -> void:
 		_load_row_of.erase(id)
 		_dirty = true
 
-		for item_id in give_back:
-			var number: int = _refund_number(table.number_of(str(item_id)))
+		var kinds: Dictionary = (it["struct"]["site"] as Dictionary).get("kinds", {}) if it["struct"].has("site") else it["struct"].get("kinds", {})
 
-			if number <= 0:
+		for item_id in give_back:
+			if table.number_of(str(item_id)) <= 0:
 				push_error("cleared %s: no item %s to give back" % [str(it["struct"]["kind"]), str(item_id)])
 				continue
 
-			drop_in_world(number, int(give_back[item_id]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
+			for pair in _kinds_back(str(item_id), int(give_back[item_id]), kinds):   # what went in (_note_kinds); a 9257 piece: a group's lowest member
+				drop_in_world(int(pair[0]), int(pair[1]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
 
 
 # An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.
@@ -9963,7 +10031,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 			_crushed(int(peer), hurt)
 
 	if hit_animal_path.is_valid() and float(crush.get("animal", 0.0)) > 0.0:
-		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0))
+		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0), [])
 
 	# Down: each log is a body in the log space from here on (_wake_log), so one that came down on a rock, a stump, another tree's logs or a wall is
 	# pushed off it and rolls away the way physics says. Its own stump is left behind: the logs lie from just clear of it.
@@ -12286,11 +12354,10 @@ func _tools_for(tool_class: String, tier_needed: int) -> String:
 # All the materials back into the pack, or none (with a word) when they do not fit.
 # A blueprint's materials back in the pack, all or nothing. `taken_down`: the piece stood, so what it burned is gone (blueprints.json "spent", [item,
 # count], also counted in "cost": a lantern's candle or lamp oil; coordinator ruling 10 Nov 2026) and only the rest comes back.
-func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false) -> bool:
+func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false, kinds: Dictionary = {}) -> bool:   # kinds: the built piece's struct["kinds"] (_note_kinds)
 	var given: Array = []
 
 	for need in row["cost"]:
-		var number: int = table.number_of(str(need[0]))
 		var count: int = int(need[1])
 
 		if taken_down:
@@ -12301,9 +12368,12 @@ func _refund_blueprint(peer: int, inv, row: Dictionary, taken_down: bool = false
 		if count <= 0:
 			continue
 
-		number = _refund_number(number)   # a group cost gives back its lowest member (we do not record which member was used)
-		var left: int = inv.add(number, count)
-		given.append([number, count - left])
+		var left: int = 0
+
+		for pair in _kinds_back(str(need[0]), count, kinds):   # what was put in; a piece from before kinds were kept: a group cost's lowest member
+			var short: int = inv.add(int(pair[0]), int(pair[1]))
+			given.append([int(pair[0]), int(pair[1]) - short])
+			left += short
 
 		if left > 0:
 			for put in given:
@@ -12736,6 +12806,47 @@ func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 # "have": {item id: count}}; taking a site down gives back what was put in.
 
 
+# Which items a site's materials really were (site["kinds"] = {cost item id: {item id: count}}, kept on the built piece as struct["kinds"]), so a
+# take-down gives those back, not the cheapest member of a group cost (to-do sweep 23 Nov 2026: Bronze nails put in came back as Copper nails).
+# A site or piece from before (build 9257) has none: what it holds comes back as before.
+func _note_kinds(site: Dictionary, need_id: String, taken: Array) -> void:
+	if table.spend_order(table.number_of(need_id)).is_empty():
+		return   # a plain cost comes back as itself anyway: only a group cost is noted, so saves stay small
+
+	if not site.has("kinds"):
+		site["kinds"] = {}
+
+	var row: Dictionary = site["kinds"].get(need_id, {})
+
+	for unit in taken:
+		if (unit[1] as Dictionary).has("liquid_ml") or int(unit[3]) <= 0:
+			continue
+
+		var member: String = table.id_of(int(unit[0]))
+		row[member] = int(row.get(member, 0)) + int(unit[3])
+
+	site["kinds"][need_id] = row
+
+
+# `count` of the cost item `need_id` back as the items they were (`kinds`, from _note_kinds), any rest as its cheapest member: [[number, count], ...].
+func _kinds_back(need_id: String, count: int, kinds: Dictionary) -> Array:
+	var out: Array = []
+	var row: Dictionary = kinds.get(need_id, {}) if typeof(kinds.get(need_id, {})) == TYPE_DICTIONARY else {}
+
+	for member in row:
+		var number: int = table.number_of(str(member))
+		var n: int = mini(count, int(row[member]))
+
+		if n > 0 and number > 0:
+			out.append([table.current_number(number), n])
+			count -= n
+
+	if count > 0:
+		out.append([_refund_number(table.number_of(need_id)), count])
+
+	return out
+
+
 func _site_of(it: Dictionary) -> Dictionary:
 	if it.has("struct") and it["struct"].has("site"):
 		return it["struct"]["site"]
@@ -12762,7 +12873,51 @@ const BUILD_STOCK_M := 4.0
 # During a world sync (_site_memo not null) a player's hammer reach, containers and each item's on-hand count are worked out once for all the sites
 # near them: nothing changes within the sync, and doing it per site walked every world record twice per site and player (server load test
 # 23 Nov 2026: 16 players beside 130 sites held the tick 1.0 to 1.4 s in every full sync).
-var _site_memo = null   # null outside a sync; peer -> {"inv", "reach", "boxes", "hand": {item number: on hand}}
+var _site_memo = null   # null outside a sync; peer -> {"reach", "boxes", "ground": [[item number, count], ...], "hand": {item number: on hand}}
+const SITE_CELL_M := 16.0   # the full sync also files every record in cells this size, so a player's containers and ground stock are found without a walk over the world
+var _site_cells: Dictionary = {}   # cell -> [world id, ...], filled by the full sync, empty outside one
+
+
+# Files every record in its SITE_CELL_M cell for a full sync's site lists (a quick sync files none: its few sites take the full walks).
+func _file_site_cells(quick: bool) -> void:
+	_site_cells = {}
+
+	for id in ([] if quick else _items.keys()):
+		var cell: Vector2i = Vector2i(floori(_items[id]["pos"].x / SITE_CELL_M), floori(_items[id]["pos"].z / SITE_CELL_M))
+
+		if not _site_cells.has(cell):
+			_site_cells[cell] = []
+
+		_site_cells[cell].append(id)
+
+
+# A player's reach, containers and loose stacks beside them for the sites' lists of one sync, from the records in the SITE_CELL_M cells within
+# reach (the same records _craft_boxes and _ground_count would find by walking every one); the full walks when the sync filed no cells (a quick sync).
+func _site_memo_of(peer: int) -> Dictionary:
+	var reach_x: float = _hammer_x(peer)
+
+	if _site_cells.is_empty():
+		return {"reach": reach_x, "boxes": _craft_boxes(peer, reach_x), "ground": null, "hand": {}}
+
+	var here: Vector3 = _peer_pos[peer]
+	var key: String = str(_peer_key.get(peer, ""))
+	var stock: Dictionary = {"boxes": [], "near": [], "kitchens": []}
+	var ground: Array = []
+	var r: float = maxf(maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M), BUILD_STOCK_M) * reach_x
+	var lo: Vector2i = Vector2i(floori((here.x - r) / SITE_CELL_M), floori((here.z - r) / SITE_CELL_M))
+	var hi: Vector2i = Vector2i(floori((here.x + r) / SITE_CELL_M), floori((here.z + r) / SITE_CELL_M))
+
+	for cx in range(lo.x, hi.x + 1):
+		for cz in range(lo.y, hi.y + 1):
+			for sid in _site_cells.get(Vector2i(cx, cz), []):
+				_stock_note(stock, sid, here, key, reach_x)
+				var g: Dictionary = _items[sid]
+
+				if not g.has("struct") and not g.has("fire") and not g.has("tree") and not g.has("inst") and (g["pos"] as Vector3).distance_to(here) <= BUILD_STOCK_M * reach_x:
+					ground.append([int(g.get("number", 0)), int(g["count"])])   # as _ground_count counts
+
+	(stock["boxes"] as Array).sort_custom(func(a, b): return [a[3], float(a[2])] < [b[3], float(b[2])])
+	return {"reach": reach_x, "boxes": stock["boxes"], "ground": ground, "hand": {}}
 
 
 func _site_view(peer: int, it: Dictionary) -> Array:
@@ -12776,8 +12931,7 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 
 	if _site_memo != null:
 		if not (_site_memo as Dictionary).has(peer):
-			var reach_here: float = _hammer_x(peer)
-			_site_memo[peer] = {"reach": reach_here, "boxes": _craft_boxes(peer, reach_here), "hand": {}}
+			_site_memo[peer] = _site_memo_of(peer)
 
 		memo = _site_memo[peer]
 
@@ -12791,7 +12945,15 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 			out.append([str(need[0]), int(need[1]), int(memo["hand"][number])])
 			continue
 
-		var on_hand: int = inv.count_fill(number, true) + _ground_count(number, _peer_pos[peer], BUILD_STOCK_M * reach_x)
+		var on_hand: int = inv.count_fill(number, true)
+
+		if not memo.is_empty() and memo["ground"] != null:
+			var fills: PackedInt32Array = _fills(number)
+
+			for row in memo["ground"]:
+				on_hand += int(row[1]) if fills.has(int(row[0])) else 0
+		else:
+			on_hand += _ground_count(number, _peer_pos[peer], BUILD_STOCK_M * reach_x)
 
 		for box in boxes:
 			on_hand += box[1].count_fill(number, true)
@@ -12842,8 +13004,9 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 		var number: int = table.number_of(str(need[0]))
 		var fills: PackedInt32Array = inv.fills_of(number)
 		var put: int = mini(left, inv.count_fill(number, true))   # building takes plain units only
+		var taken: Array = []   # [number, inst, wear, count] rows of what came out of the pack and the containers: the members, for a refund
 
-		if put > 0 and not inv.remove_fill(number, put, [], true):
+		if put > 0 and not inv.remove_fill(number, put, taken, true):
 			put = 0
 
 		for src in _spend_sorted(sources, number, func(s): return int(_items[s[1]]["number"]) if not bool(s[2]) and _items.has(s[1]) and fills.has(int(_items[s[1]]["number"])) else 0):
@@ -12854,13 +13017,14 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 				var box = _chests[int(_items[src[1]]["struct"]["uid"])]
 				var from_box: int = mini(left - put, box.count_fill(number, true))
 
-				if from_box > 0 and box.remove_fill(number, from_box, [], true):
+				if from_box > 0 and box.remove_fill(number, from_box, taken, true):
 					put += from_box
 					_push_box(int(src[1]), box)
 			elif _items.has(src[1]) and fills.has(int(_items[src[1]]["number"])) and not _items[src[1]].has("inst"):
 				var g: Dictionary = _items[src[1]]
 				var from_ground: int = mini(left - put, int(g["count"]))
 				put += from_ground
+				taken.append([int(g["number"]), {}, 0, from_ground])
 
 				if from_ground >= int(g["count"]):
 					if g.has("scatter"):
@@ -12872,6 +13036,7 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 
 		if put > 0:
 			have[str(need[0])] = int(have.get(str(need[0]), 0)) + put
+			_note_kinds(site, str(need[0]), taken)
 			pulled.append("%d %s" % [put, _item_name_lower(str(need[0]))])
 
 	var missing: PackedStringArray = []
@@ -12902,6 +13067,10 @@ func _item_name_lower(item_id: String) -> String:
 # Every material is in: the site becomes the real piece.
 func _finish_site(peer: int, id: int) -> void:
 	var it: Dictionary = _items[id]
+
+	if not (it["struct"]["site"] as Dictionary).get("kinds", {}).is_empty():
+		it["struct"]["kinds"] = it["struct"]["site"]["kinds"]   # a take-down gives back what was put in (_refund_blueprint)
+
 	it["struct"].erase("site")
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 	_grid_add(id, it)
@@ -12928,7 +13097,10 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 		if count > 0:
 			var was_src: String = _gain_source
 			_gain_source = SRC_RETURN
-			give(peer, _refund_number(table.number_of(str(item_id))), count)
+
+			for pair in _kinds_back(str(item_id), count, _site_of(it).get("kinds", {})):
+				give(peer, int(pair[0]), int(pair[1]))
+
 			_gain_source = was_src
 
 	_items.erase(id)
@@ -13142,7 +13314,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		return
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
+		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true, it["struct"].get("kinds", {})):
 			return
 	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
 		_say(peer, "Make room in your pack first.")
@@ -15148,8 +15320,15 @@ func peer_stalk_factors() -> Array:
 
 # What the wolf pack brain may know about each player: where, how they stand, health share, whether they carry raw meat, a
 # spear or a torch on the hotbar (the server does not know the selected slot).
+# The wolves ask every frame; the carried gear is worked out again only when the pack or what they wear changed (a native hash of the pack's
+# slots, counts, wear and instance data and the worn rows): walking every player's pack and bags each frame took a fifth of the server's main
+# thread at 16 players (load test 23 Nov 2026).
+var _wolf_gear: Dictionary = {}   # peer -> [signature, meat, meat_cooked, spear, torch]
+
+
 func wolf_info() -> Array:
 	var out: Array = []
+	var gear_now: Dictionary = {}
 
 	for peer in _peer_pos:
 		var inv = inventory_of(peer)
@@ -15157,11 +15336,19 @@ func wolf_info() -> Array:
 		if inv == null:
 			continue
 
+		var sig: int = hash([inv.numbers, inv.counts, inv.wear, inv.inst, _characters.get(_peer_key.get(peer, ""), {}).get("worn", [])])
+		var gear: Array = _wolf_gear.get(peer, [])
+
+		if gear.is_empty() or int(gear[0]) != sig:
+			gear = [sig, carried_count(peer, "raw_meat") > 0, carried_count(peer, "roast_meat") > 0, _tool_slot(inv, "spear") >= 0, _tool_slot(inv, "torch") >= 0]
+
+		gear_now[peer] = gear
 		var v: Dictionary = vitals_of(peer)
 		out.append({"peer": peer, "pos": _peer_pos[peer], "stance": int(_stance.get(peer, 0)),
 			"hp": float(v.get("health", 100.0)) / maxf(float(_vitals_cfg.get("health_max", 100)), 1.0),
-			"meat": carried_count(peer, "raw_meat") > 0, "meat_cooked": carried_count(peer, "roast_meat") > 0, "spear": _tool_slot(inv, "spear") >= 0, "torch": _tool_slot(inv, "torch") >= 0})
+			"meat": gear[1], "meat_cooked": gear[2], "spear": gear[3], "torch": gear[4]})
 
+	_wolf_gear = gear_now   # a player who left is dropped
 	return out
 
 
@@ -15374,6 +15561,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 
 	if v.is_empty():
 		return "hurt"
+
+	if _cold_out.has(peer):
+		return "hurt"   # passed out from cold: nothing hurts them until they wake (warmth.json pass_out)
 
 	var stopped: float = protection_of(peer, mode if mode != "" else attack_mode(cause), pen)
 	_wear_armour(peer, amount)
@@ -15858,6 +16048,16 @@ func peer_ids() -> Array:
 
 func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
+
+
+# Where a world item lies, null for none (server_action_cues.gd: a knife cut on a carcass is heard there).
+func item_pos_of(id: int) -> Variant:
+	return (_items.get(id, {}) as Dictionary).get("pos", null)
+
+
+# The structure kind of a world item ("carcass", "log", ...), "" for none (server_action_cues.gd: what a blow struck).
+func struct_kind_of(id: int) -> String:
+	return str((_items.get(id, {}) as Dictionary).get("struct", {}).get("kind", ""))
 
 
 func key_of(peer: int) -> String:
@@ -16761,10 +16961,30 @@ func _lit_fires() -> Array:
 	for row in _lit_rows():
 		found.append(row[0])
 
-	for row in _guard_rows():   # a lit torch post or other placed light with protect_m keeps them off too (buildables plan, batch B4)
+	for row in _guard_cache_rows:   # a lit torch post or other placed light with protect_m keeps them off too (buildables plan, batch B4); filled by the _lit_rows scan just above
 		found.append(row[0])
 
 	return found
+
+
+# [[position, keep-off metres], ...] of everything _lit_fires lists, with fire_protect_m's radius, from one pass over the world items (the server
+# works it out a few times a second for the animals: _lit_fires and fire_protect_m per fire walked every record several times a frame; load test
+# 23 Nov 2026).
+func fire_spots() -> Array:
+	var spots: Array = []
+	var now: int = Time.get_ticks_msec()
+
+	for peer in _torch_seen:
+		if now - int(_torch_seen[peer]) <= TORCH_REPORT_MS and _peer_pos.has(peer):
+			spots.append([_peer_pos[peer], TORCH_PROTECT_M])
+
+	for row in _lit_rows():
+		spots.append([row[0], float(((_cooking.get("fire_tiers", {}) as Dictionary).get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("protect_m", 10.0))])
+
+	for row in _guard_cache_rows:
+		spots.append([row[0], float(row[1])])
+
+	return spots
 
 
 # How far wolves keep from the lit fire at this spot: its tier's protect_m (cooking.json fire_tiers; 10 m when unknown).
@@ -16918,6 +17138,68 @@ func warmth_target(peer: int) -> float:
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
 
 
+# Cold down to 1 point: the player passes out (the over-exertion faint's look: movement locked, the HUD fading to the heartbeat; nothing can
+# hurt them while out), then wakes at the nearest goblin camp, bandit camp or the starter town with a message (Dave 23 Nov 2026: "you will then
+# wake up at the nearest goblin camp or bandit camp or temple ... or at the starter spawn"). warmth.json pass_out. Dave 23 Nov 2026: the whole pack
+# is kept and the player is simply rescued wherever they wake, no capture or theft for now ("bandits might steal it in the future. and goblins will
+# depend on if they are the good type or the bad type"): the wake place's kind (_cold_out_tick) is where that would hang. Not built.
+func _cold_pass_out(peer: int) -> void:
+	_cold_out[peer] = 0.0
+	var st: Dictionary = _strain.get(peer, {})
+
+	if st.is_empty():
+		st = {"s": 0.0, "state": 0, "t": 0.0}
+		_strain[peer] = st
+
+	st["state"] = 2   # fainted: the client locks movement and fades the HUD (exertion.json faint_s)
+	st["t"] = 0.0
+	_strain_sent.erase(peer)
+	_end_sleep(peer)
+	_say(peer, str(_warmth_cfg.get("pass_out", {}).get("say_out", "The cold takes you. You pass out.")))
+	print("Cold: peer %d passed out at %s" % [peer, str(_peer_pos.get(peer, "?"))])
+
+
+func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> void:
+	var cfg: Dictionary = _warmth_cfg.get("pass_out", {})
+	_cold_out[peer] = float(_cold_out[peer]) + spent
+
+	if float(_cold_out[peer]) < float(cfg.get("out_s", 6.0)):
+		return
+
+	_cold_out.erase(peer)
+	var here: Vector3 = _peer_pos.get(peer, respawn_point)
+	var best: Array = []
+
+	for spot in rescue_spots.call(here):
+		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
+			best = spot
+
+	# No camp and no town square anywhere (a test world): they come to where they lay, never at the spawn (nothing is based on the spawn).
+	var to: Vector3 = best[0] if not best.is_empty() else here
+	var kind: String = str(best[1]) if not best.is_empty() else "here"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
+	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
+	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
+	_cold_level.erase(peer)
+	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
+	_strain_sent.erase(peer)
+	_peer_pos[peer] = to
+	_resume_to.erase(peer)
+	_motion.erase(peer)
+	_sync_vitals(peer, true)
+	_sync_warmth(peer, true)
+	_dirty = true
+
+	if send_died.is_valid() and not best.is_empty():
+		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
+
+	_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
+	print("Cold: peer %d woke at the %s at %s" % [peer, kind, str(to)])
+
+
+func passed_out(peer: int) -> bool:
+	return _cold_out.has(peer)
+
+
 func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
 	if _warmth_cfg.is_empty():
 		return
@@ -16932,10 +17214,19 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	v["warmth"] = w
 	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
 
+	if _cold_out.has(peer):
+		_cold_out_tick(peer, v, spent, hurt_at)
+		return
+
 	if w < hurt_at:
 		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
 		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
+
+		# Only with a known position: never moved to the spawn point (review 23 Nov 2026).
+		if float(v["health"]) <= 1.0 and bool(cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+			_cold_pass_out(peer)
+			return
 
 	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
@@ -17373,6 +17664,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
 	_waking.erase(peer)
@@ -17442,6 +17734,7 @@ func survive_cave_in(peer: int, to: Vector3) -> bool:
 	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
 		return false
 
+	_cold_out.erase(peer)   # a cave-in on a player passed out from cold ends that faint; still frozen at 1 health, the cold passes them out again and they are carried to shelter
 	v["health"] = minf(float(v["health"]), 1.0)
 	_peer_pos[peer] = to
 	_resume_to.erase(peer)
@@ -24789,9 +25082,13 @@ func _craft_tick(spent: float) -> void:
 		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
 			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
-		queue["elapsed"] = float(queue["elapsed"]) + spent
+		var worked_before: float = float(queue["elapsed"])
+		queue["elapsed"] = worked_before + spent
 
 		var starting: bool = not queue.has("need_s")
+
+		if craft_working.is_valid() and worked_before < _head_need_s(peer, queue, recipe, variant):   # not a finished batch waiting for room
+			craft_working.call(peer, int(head[0]))   # the others nearby hear the work while it goes on, as the crafter does (server_action_cues.gd, protocol 156)
 
 		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):
 			if starting:

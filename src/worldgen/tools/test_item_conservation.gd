@@ -16,12 +16,16 @@ const HERE := Vector3(5.0, 10.0, 0.0)
 const KEYS := {1: "conserveone01", 2: "conservetwo02"}
 const STEPS := 1500
 const SEEDS := [11, 23, 57]
+const BURN_OK := ["stick", "plant_fibre", "firewood", "linseed", "twine"]
+const GROW_OK := ["charcoal"]
+const FIRE_SEEDS := [5, 31]
 
 var failures: int = 0
 var items
 var chest_id: int = 0
 var crate_id: int = 0
 var log_lines: Array = []
+var fire_mode: bool = false   # a run that lights, feeds, puts out and cooks at the fire, hours passing: wood and tinder may only go down, charcoal only up
 
 
 func check(ok: bool, what: String) -> void:
@@ -114,6 +118,9 @@ func totals() -> Dictionary:
 
 	for id in items._items:
 		var it: Dictionary = items._items[id]
+
+		if it.has("struct") and str(it["struct"]["kind"]) == "remains":
+			continue   # a body: only what lies on it counts (its store, above)
 
 		if it.has("struct"):
 			var kit_id: String = str(items._structures.get(str(it["struct"]["kind"]), {}).get("kit", ""))
@@ -219,8 +226,24 @@ func step(rng: RandomNumberGenerator) -> String:
 		var at: int = rng.randi() % 3
 		items.action(peer, Net.ACT_CRAFT_CANCEL, at, 0, 0, Vector3.ZERO)
 		return "p%d cancel %d" % [peer, at]
+	elif roll >= 100 and fire_mode and rng.randf() < 0.6:
+		var fires: Array = boxes.filter(func(i): return items._items.has(i) and items._items[i].has("fire"))
+
+		if fires.is_empty():
+			return "p%d no fire" % peer
+
+		var f: int = int(fires[rng.randi() % fires.size()])
+		var what: int = rng.randi() % 4
+		var names: Array = ["light", "fuel", "put out", "cook"]
+		var acts: Array = [Net.ACT_LIGHT, Net.ACT_FUEL, Net.ACT_USE_STRUCT, Net.ACT_COOK]
+		items.action(peer, acts[what], f, 0, 0, Vector3.ZERO)
+		return "p%d %s fire %d (state %d)" % [peer, names[what], f, int(items._items[f]["fire"]["state"]) if items._items.has(f) else -1]
 	elif roll >= 100:
-		var secs: int = 1 + rng.randi() % 3
+		var secs: int = (1 + rng.randi() % 3) * (60 if fire_mode else 1)
+
+		if fire_mode:
+			for id in ground_ids():   # hours pass: loose stacks would despawn (WORLD_ITEM_LIFETIME_S, a rule of its own, for Dave), which is not what this run checks
+				items._items[id]["left"] = maxf(float(items._items[id]["left"]), 1.0e7)
 
 		for k in secs:
 			items.tick(1.0)
@@ -303,6 +326,10 @@ func step(rng: RandomNumberGenerator) -> String:
 		var spot: Vector3 = HERE + Vector3(rng.randf_range(-3.0, 3.0), 0.0, rng.randf_range(1.5, 3.5))
 		items.action(peer, Net.ACT_PLACE, s, 0, 0, spot)
 		return "p%d place slot %d at %s" % [peer, s, spot]
+	elif roll < 99 and rng.randf() < 0.25:
+		var died: bool = items.kill(peer, "test")
+		items.report_position(peer, HERE + Vector3(float(peer) * 0.5, 0.0, 0.0))
+		return "p%d died%s" % [peer, "" if died else " (refused)"]
 	elif roll < 99:
 		items.peer_left(peer)
 		join(peer)
@@ -312,7 +339,7 @@ func step(rng: RandomNumberGenerator) -> String:
 		return "server restart"
 
 
-func run(seed: int) -> void:
+func run(run_seed: int) -> void:
 	DirAccess.make_dir_recursive_absolute(DIR + "/" + ItemsScript.AREA_DIR)
 
 	for sub in [DIR, DIR + "/" + ItemsScript.AREA_DIR]:
@@ -341,7 +368,7 @@ func run(seed: int) -> void:
 		items.drop_in_world(n("stick"), 7, HERE + Vector3(float(k) - 3.0, 0.0, -2.0))
 
 	var rng := RandomNumberGenerator.new()
-	rng.seed = seed
+	rng.seed = run_seed
 	var start: Dictionary = totals()
 	var broke: String = ""
 	log_lines.clear()
@@ -350,6 +377,25 @@ func run(seed: int) -> void:
 		var did: String = step(rng)
 		log_lines.append("%d %s" % [i, did])
 		var now: Dictionary = totals()
+
+		if fire_mode:
+			var bad: String = ""
+
+			for number in start.keys() + now.keys():
+				var id: String = items.table.id_of(number)
+				var a0: int = int(start.get(number, 0))
+				var a1: int = int(now.get(number, 0))
+
+				if (a1 > a0 and not GROW_OK.has(id)) or (a1 < a0 and not BURN_OK.has(id)):
+					bad += "%s %d -> %d " % [id, a0, a1]
+
+			if bad != "":
+				broke = "step %d (%s): %s" % [i, did, bad]
+				print("  last actions:\n    " + "\n    ".join(log_lines.slice(maxi(log_lines.size() - 12, 0))))
+				break
+
+			start = now
+			continue
 
 		if now != start:
 			broke = "step %d (%s): %s" % [i, did, diff(start, now)]
@@ -370,7 +416,7 @@ func run(seed: int) -> void:
 		twined += items._inventories[key].count_of(n("twine"))
 
 	print("  end: %d in containers, %d ground stacks, %d worn, %d twine in packs (12 given)" % [in_boxes, ground_ids().size(), worn, twined])
-	check(broke == "", "seed %d: %d random actions by two players keep every total (%s)" % [seed, STEPS, broke if broke != "" else "%d kinds" % start.size()])
+	check(broke == "", "seed %d: %d random actions by two players keep every total (%s)" % [run_seed, STEPS, broke if broke != "" else "%d kinds" % start.size()])
 	items._finish_writer()
 
 
@@ -389,7 +435,7 @@ func campfire_round() -> void:
 	var inv = items.inventory_of(1)
 	var start: Dictionary = totals()
 
-	for round in range(3):   # before the fix each round came back a whole kit and laid 4 more sticks; now the first round ends it
+	for lap in range(3):   # before the fix each round came back a whole kit and laid 4 more sticks; now the first round ends it
 		items.action(1, Net.ACT_PLACE, inv.numbers.find(n("campfire_kit")), 0, 0, HERE + Vector3(0.0, 0.0, -1.5))
 		var fire_id: int = box_ids()[0] if not box_ids().is_empty() else 0
 		items.action(1, Net.ACT_CHEST_OPEN, fire_id, 0, 0, Vector3.ZERO)
@@ -425,14 +471,27 @@ func campfire_round() -> void:
 	items.action(1, Net.ACT_CHEST_TAKE, store.numbers.find(n("firewood")), laid, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_PICKUP, laid, 0, 0, Vector3.ZERO)
 	check(not items._items.has(laid) and inv.count_of(n("campfire_kit")) == 1 and inv.count_of(n("firewood")) == 1 and totals() == start, "with the Firewood out it comes back as a whole kit")
+	# Laid and left: when it goes (FIRE_LAID_S unlit), its sticks and the kit's parts lie where it stood (the kit used to vanish with it).
+	items.action(1, Net.ACT_PLACE, inv.numbers.find(n("campfire_kit")), 0, 0, HERE + Vector3(0.0, 0.0, -1.5))
+	start = totals()
+
+	for k in range(int(ItemsScript.FIRE_LAID_S / 60.0) + 2):
+		items.tick(60.0)
+
+	check(box_ids().is_empty() and totals() == start, "a laid fire left unlit goes and leaves its parts and sticks (%s)" % diff(start, totals()))
 	items._finish_writer()
 
 
 func _init() -> void:
 	campfire_round()
 
-	for seed in SEEDS:
-		run(seed)
+	for one_seed in SEEDS:
+		run(one_seed)
+
+	fire_mode = true
+
+	for one_seed in FIRE_SEEDS:
+		run(one_seed)
 
 	print("item conservation: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -71,6 +71,14 @@ const VOICES := 6                       # footstep and swish players, reused in 
 const OTHER_STEP_UNIT_M := 2.0
 const OTHER_STEP_REACH_M := 45.0
 const OTHER_STEP_VOICES := 6           # other players' steps sounding at once (judged: three players running close by)
+# Other players' blows, picks and craft work (other_action, protocol 156): cue numbers as server_action_cues.gd sends them.
+const CUE_BLOW := 1
+const CUE_PICK := 2
+const CUE_CRAFT := 3
+const KNIFE_CUT_STRENGTH := 0.35       # a knife cut on a carcass: the flesh hit clip, soft (held_item.gd plays the own; other_action material 5)
+const OTHER_WORK_UNIT_M := 1.5         # craft work is as loud at 1.5 m as the own is at the own ears (item_sounds WORK_DB, flat)
+const OTHER_WORK_REACH_M := 25.0
+const OTHER_WORK_DB := -18.0
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
 # Soil ids (data/tables/soils.json) to footstep surfaces. Rock (MATERIAL_ROCK
@@ -146,6 +154,7 @@ const SHELTER_HITS := 16
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
 var others_steps: int = 0               # other players' footsteps played (step_at)
+var others_actions: int = 0             # other players' blows, picks and craft work played (other_action)
 var _other_step_voices: Array = []      # their voices still sounding (other_step_room)
 var swishes_played: int = 0
 var puddles_played: int = 0
@@ -1106,6 +1115,61 @@ func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouch
 	player.play()
 	_other_step_voices.append(player)
 	others_steps += 1
+	return true
+
+
+# Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material; 5 a knife on a carcass),
+# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft being worked (`recipe` is its recipe row; sent again as each clip ends). The same clips
+# and levels as the own blow, pick and craft work, positional. False when nothing played (an unknown cue, no room). Counted in others_actions.
+func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}, recipe: Dictionary = {}) -> bool:
+	if not has_room() or not at.is_finite():
+		return false
+
+	var done: bool = false
+
+	match cue:
+		CUE_BLOW:
+			@warning_ignore("integer_division")
+			var tool: String = "pick" if detail / 8 == 1 else "axe"
+			var material: int = detail % 8
+
+			if material == 5:
+				done = spear != null and spear.hit("flesh", at, KNIFE_CUT_STRENGTH)
+			elif material == 3:
+				done = hits != null and hits.hit_ground(tool, at, 1.0)
+			elif material in [0, 1, 2, 4]:
+				done = hits != null and hits.hit(tool, ["wood", "stone", "soil", "", "wood"][material], at, 0.7 if material == 4 else 1.0)
+		CUE_PICK:
+			done = harvestfx != null and harvestfx.pick(flora_row, at)
+		CUE_CRAFT:
+			done = _other_work(recipe, at)
+
+	if done:
+		others_actions += 1
+
+	return done
+
+
+# One craft's work sound (item_sounds.gd work_type: knap, twine, carve ...) at another player's hands: quiet, close by.
+func _other_work(recipe: Dictionary, at: Vector3) -> bool:
+	if itemfx == null or recipe.is_empty():
+		return false
+
+	var list: Array = itemfx._variants("craft_" + str(itemfx.work_type(recipe)))
+
+	if list.is_empty():
+		list = itemfx._variants("craft_knap")
+
+	if list.is_empty():
+		return false
+
+	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", OTHER_WORK_UNIT_M, OTHER_WORK_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = OTHER_WORK_DB + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = _rng.randf_range(0.97, 1.03)
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
 	return true
 
 

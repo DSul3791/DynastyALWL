@@ -358,6 +358,7 @@ var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
 var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
 var test_walk: bool = false
+var test_crouch_walk: bool = false      # --walk --crouchwalk: crouched walks past the trees near the drop point (Dave 23 Nov 2026, the crouch block)
 var shot_run: bool = false             # the shot runner's --shot-run: on foot along _walk_dir at run_speed while it measures frame times (running lag)
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
@@ -695,6 +696,8 @@ func _ready() -> void:
 			test_inspect = true
 		elif argument == "--walk":
 			test_walk = true
+		elif argument == "--crouchwalk":
+			test_crouch_walk = true
 		elif argument.begins_with("--runspeed="):
 			run_speed = float(argument.trim_prefix("--runspeed="))
 		elif argument == "--water-step":
@@ -1677,6 +1680,11 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.spear.hit("flesh", at, 1.0)
 
 		animal_view.flinch(id))
+	# Another player's blow, pick or craft (protocol 156; server_action_cues.gd sends it only within earshot): heard where it happened.
+	net.action_cue_received.connect(func(_peer: int, cue: int, detail: int, at: Vector3) -> void:
+		if sound != null:
+			sound.other_action(cue, detail, at, harvest._flora_by_id.get(detail, {}) if cue == sound.CUE_PICK and harvest != null else {},
+					items.recipes.recipe(detail) if cue == sound.CUE_CRAFT and items != null and items.recipes != null else {}))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 
@@ -1689,6 +1697,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
+
+		if routes == TrailCodec.ROUTES_SAME:
+			return   # only the worn cells changed (protocol 158): the routes kept are right, nothing to decode, rebuild or log
 		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M)
 		grass.set_trail_routes(bx, bz, decoded)   # the trails between animal places (protocol 149)
 		trail_signs.set_routes(bx, bz, decoded)
@@ -3874,10 +3885,20 @@ func _cut_nearest_tree() -> void:
 	net.cut_flora.rpc_id(1, best[1], best[2])
 
 
+# The player body's collision margin. Godot's 1 mm default stopped a crouched player dead on flat forest ground (Dave 23 Nov 2026: "like I was
+# against an invisible wall but if I stood up I could walk"): at the crouch pace (0.64 m/s, about 1 cm a physics step) move_and_slide on the
+# terrain made no headway at about one walk in seven past trees near the town, touching only the floor; standing at that pace stuck as often,
+# so it is the pace, not the crouched shape. The 1 cm margin cleared the crouch pace but not slower ones; _carry_slide covers those
+# (the crouchwalk and crouchslow checks, tools/items_check.py).
+const PLAYER_SAFE_MARGIN_M := 0.01
+var _slide_carry: Vector3 = Vector3.ZERO   # see _carry_slide
+
+
 func _make_player(root: Node3D, start: Vector3) -> void:
 	body = CharacterBody3D.new()
 	body.collision_mask = 3                # the ground (1) and ice sheets and floes (2)
 	body.wall_min_slide_angle = 0.0        # always slide along a wall, never stop dead against it
+	body.safe_margin = PLAYER_SAFE_MARGIN_M
 	_movement = JSON.parse_string(FileAccess.get_file_as_string("res://data/movement.json")) if FileAccess.file_exists("res://data/movement.json") else {}
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	var capsule: CapsuleShape3D = CapsuleShape3D.new()
@@ -5626,8 +5647,20 @@ func _move_player(delta: float) -> void:
 		var was_on_floor: bool = body.is_on_floor()
 		var tm: int = Probe.start()
 		var wanted_move: Vector3 = body.velocity
+		var slide_from: Vector3 = body.global_position
+		var carrying: bool = was_on_floor and not swimming and not waiting_for_ground and delta > 0.0
+
+		var carried: Vector3 = _slide_carry / delta if carrying else Vector3.ZERO
+		body.velocity += carried
 		body.move_and_slide()
+		if not body.is_on_wall():
+			body.velocity -= carried   # the pace the animation, sounds and ice grip read stays the walker's own
 		Probe.stop("p slide", tm)
+
+		if carrying:
+			_carry_slide(slide_from, Vector3(wanted_move.x, 0.0, wanted_move.z) * delta)
+		else:
+			_slide_carry = Vector3.ZERO
 
 		if items != null and not swimming and not waiting_for_ground:
 			# Loose logs are bodies in the server's physics, not in this world: the walker stops at one they walk into and pushes it (inventory_view.walker_logs).
@@ -5692,6 +5725,25 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 	_follow_sea()
 	_update_underwater()
 	return true
+
+
+# Dave 23 Nov 2026, crouched "like I was against an invisible wall but if I stood up I could walk": on the voxel terrain under Jolt a
+# move_and_slide of only a few millimetres on the floor (a slow crouch, a loaded or tired walker) often goes nowhere at all, though nothing
+# but the floor is touched. When a floor move made under 30% of the asked headway and no wall stopped it, the asked move is carried into the
+# next frame's, so the body moves in steps of a centimetre or two instead of standing still. A real wall clears the carry (it stops you as
+# before); SLIDE_CARRY_MAX_M caps it.
+const SLIDE_CARRY_MAX_M := 0.05
+
+
+func _carry_slide(from: Vector3, asked: Vector3) -> void:
+	var want: Vector3 = asked + _slide_carry
+	var got: float = Vector2(body.global_position.x - from.x, body.global_position.z - from.z).length()
+
+	if asked.length_squared() < 0.00000001 or body.is_on_wall() or got >= want.length() * 0.3:
+		_slide_carry = Vector3.ZERO
+		return
+
+	_slide_carry = (_slide_carry + asked).limit_length(SLIDE_CARRY_MAX_M)
 
 
 # Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
@@ -7400,7 +7452,7 @@ func _note_sound_now(delta: float) -> void:
 	if top != _sound_now_logged and now - _sound_now_log_msec >= 10000:
 		_sound_now_logged = top
 		_sound_now_log_msec = now
-		print("sound now: %s at %s" % [_sound_now, str(body.global_position.round())])
+		FreezeWatchScript.printer.line("sound now: %s at %s" % [_sound_now, str(body.global_position.round())])   # on a worker (D-LAG-1: a main-thread line here was followed by a 0.8-1.3 s freeze in the PC standing plays, 23 Nov 2026)
 
 
 func _walk_step() -> void:
@@ -7428,10 +7480,15 @@ func _walk_step() -> void:
 				_walk_phase = 2
 				_walk_msec = now
 				_walk_dir = Vector3(1.0, 0.0, 0.0)
+
+				if test_crouch_walk:
+					_crouch_walk_start()
 			elif now - _walk_msec > 20000:
 				_walk_stats["landed_s"] = -1.0
 				_walk_phase = 4
 				_walk_report()
+		6:
+			_crouch_walk_step(now)
 		2:
 			var ground: float = _ground_below(body.global_position)
 			_walk_stats["frames"] += 1
@@ -7836,6 +7893,75 @@ func _ground_below(p: Vector3) -> float:
 	query.exclude = [body.get_rid()]
 	var hit: Dictionary = body.get_world_3d().direct_space_state.intersect_ray(query)
 	return float(hit["position"].y) if not hit.is_empty() else NAN
+
+
+# --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side, a crouched walk at the crouch pace (or --runspeed) up beside it from four sides, 3 s each;
+# a walk that covers under 60 percent of its distance is stuck. Prints "crouch walk: N of M stuck" and ends the walk test.
+var _crouch_trees: Array = []
+var _crouch_case: int = -1
+var _crouch_case_msec: int = 0
+var _crouch_from: Vector3 = Vector3.ZERO
+var _crouch_stuck: int = 0
+const CROUCH_WALK_TREES := 10
+const CROUCH_WALK_S := 3.0
+
+
+func _crouch_walk_start() -> void:
+	var here: Vector3 = body.global_position
+
+	for chunk in flora._chunks:
+		@warning_ignore("shadowed_variable")
+		var items: Dictionary = flora._chunks[chunk]["items"]
+
+		for n in range(items["ids"].size()):
+			var info: Dictionary = flora._species.get(items["ids"][n] >> 16, {})
+
+			if info.get("kind", 2) == 0 and float(info.get("trunk", 0.0)) >= 0.1 and (items["positions"][n] - here).length() < 120.0:
+				_crouch_trees.append([(items["positions"][n] - here).length(), items["positions"][n]])
+
+	_crouch_trees.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	_crouch_trees = _crouch_trees.slice(0, CROUCH_WALK_TREES)
+	_set_stance(StanceScript.CROUCH)
+	_walk_dir = Vector3.ZERO
+	_walk_phase = 6
+
+
+func _crouch_walk_step(now: int) -> void:
+	var want: float = (run_speed if run_speed > 0.0 else WALK_SPEED * float(StanceScript.SPEED[StanceScript.CROUCH])) * CROUCH_WALK_S
+
+	if _crouch_case >= 0 and float(now - _crouch_case_msec) < CROUCH_WALK_S * 1000.0:
+		return
+
+	if _crouch_case >= 0 and not (Vector2(body.global_position.x - _crouch_from.x, body.global_position.z - _crouch_from.z).length() >= want * 0.6):   # NAN (no ground) counts as stuck
+		_crouch_stuck += 1
+		print("Terrain client: crouch walk: stuck at %s heading %s" % [str(body.global_position), str(_walk_dir)])
+
+	_crouch_case += 1
+
+	if _crouch_trees.is_empty():
+		print("Terrain client: crouch walk: no trees within 120 m, nothing tested")
+		_walk_phase = 4
+		return
+
+	if _crouch_case >= _crouch_trees.size() * 4:
+		print("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 4])
+		_set_stance(StanceScript.STAND)
+		_walk_dir = Vector3.ZERO
+		_walk_phase = 4
+		return
+
+	var tree: Vector3 = _crouch_trees[floori(_crouch_case / 4.0)][1]
+	var ang: float = deg_to_rad(90.0 * (_crouch_case % 4))
+	var toward: Vector3 = Vector3(-sin(ang), 0.0, -cos(ang))
+	var start: Vector3 = tree - toward * 2.0 + Vector3(toward.z, 0.0, -toward.x) * 0.8
+	var ground: float = _ground_below(Vector3(start.x, tree.y + 30.0, start.z))
+	body.global_position = Vector3(start.x, (tree.y if is_nan(ground) else ground) + 1.0, start.z)
+	body.velocity = Vector3.ZERO
+	_slide_carry = Vector3.ZERO
+	body.rotation.y = atan2(-toward.x, -toward.z)
+	_crouch_from = body.global_position
+	_crouch_case_msec = now
+	_walk_dir = toward
 
 
 # Puts the player 3 m west of the nearest tree with a trunk collider.

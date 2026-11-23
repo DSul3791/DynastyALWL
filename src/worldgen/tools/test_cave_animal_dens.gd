@@ -67,7 +67,7 @@ func _init() -> void:
 	var data = TileTerrainData.new()
 	data._load_caves([floor_cave, cave(yes, "medium")])
 	var mouths: PackedVector2Array = data.animal_den_mouths.get("wolf", PackedVector2Array())
-	check(mouths.size() == 1 and mouths[0].is_equal_approx(Vector2(0.0, 0.0)), "the wolf cave's mouth is listed (%s)" % str(data.animal_den_mouths))
+	check(mouths.size() == 1 and mouths[0].length() <= 12.0 and not data.in_cave_opening(mouths[0].x, mouths[0].y), "the wolf cave's mouth is listed, its doorstep just outside the mouth's cut (%s)" % str(data.animal_den_mouths))
 	var kinds: Dictionary = {}
 
 	for n in range(0, data.cave_bones.size(), 5):

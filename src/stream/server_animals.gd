@@ -713,7 +713,8 @@ func moved_since(id: int, seen_ms: int, present_ms: int) -> Vector3:
 
 
 # The first animal whose chest sphere the segment from -> to passes through (a flying arrow): {"id", "at"} or {} when none. Hidden animals are skipped.
-func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float) -> Dictionary:
+# `seen_ms` and `present_ms` (judged_ms): each animal is taken where the shooter's screen showed it then; "point" is moved onto the body now.
+func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float, seen_ms: int = -1, present_ms: int = -1) -> Dictionary:
 	var best: Dictionary = {}
 	var best_t: float = INF
 	var seg: Vector3 = to - from
@@ -723,13 +724,14 @@ func target_on_segment(from: Vector3, to: Vector3, radius: float, chest_m: float
 		if int(animals[id]["state"]) == HIDDEN:
 			continue
 
-		var centre: Vector3 = animals[id]["pos"] + Vector3(0.0, chest_m, 0.0)
+		var body: Vector3 = pos_at(animals[id], judged_ms(animals[id], seen_ms, present_ms))
+		var centre: Vector3 = body + Vector3(0.0, chest_m, 0.0)
 		var t: float = clampf((centre - from).dot(seg) / len2, 0.0, 1.0)
 		var r: float = float(species_def(str(animals[id]["sp"])).get("hit_radius_m", radius))
 
 		if (from + seg * t).distance_to(centre) <= r and t < best_t:
 			best_t = t
-			best = {"id": int(id), "at": animals[id]["pos"], "point": from + seg * t}
+			best = {"id": int(id), "at": animals[id]["pos"], "point": from + seg * t + (animals[id]["pos"] - body)}
 			best["zone"] = hit_zone(int(id), best["point"])
 
 	return best
@@ -3666,6 +3668,10 @@ func _thunder_cfg() -> Dictionary:
 	return cfg.get("thunder", {})
 
 
+const THUNDER_ASK_MS := 250
+var _thunder_asked_ms: int = -THUNDER_ASK_MS
+
+
 func _thunder_tick(players: Array) -> void:
 	var tc: Dictionary = _thunder_cfg()
 
@@ -3675,8 +3681,11 @@ func _thunder_tick(players: Array) -> void:
 	var now_g: float = float(game_seconds.call())
 	var now_ms: int = Time.get_ticks_msec()
 	var flush_m: float = float(tc.get("flush_m", 800.0))
+	# The strikes are asked for THUNDER_ASK_MS apart, over the whole game time since the last ask (none is missed; a clap starts up to that much
+	# later): asking for every player every frame took an eighth of the server's main thread at 16 players (load test 23 Nov 2026).
+	var ask: bool = now_ms - _thunder_asked_ms >= THUNDER_ASK_MS
 
-	if not is_nan(_thunder_t) and now_g > _thunder_t:
+	if ask and not is_nan(_thunder_t) and now_g > _thunder_t:
 		var seen: Dictionary = {}
 
 		for p in players:
@@ -3687,7 +3696,10 @@ func _thunder_tick(players: Array) -> void:
 					seen[key] = true
 					_claps.append([s[0], now_ms, {}])
 
-	_thunder_t = now_g
+	if ask:
+		_thunder_t = now_g
+		_thunder_asked_ms = now_ms
+
 	var kept: Array = []
 	var sound_mps: float = float(tc.get("sound_mps", 343.0))
 

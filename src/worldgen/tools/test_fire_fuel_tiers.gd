@@ -217,6 +217,7 @@ func _init() -> void:
 	check(is_equal_approx(f.fire_protect_m(at), float(tiers["firewood"]["protect_m"])), "10 m from the medium fire")
 	f._items[bare_id]["fire"]["state"] = 41
 	check(is_equal_approx(f.fire_protect_m(at), float(tiers["log"]["protect_m"])), "20 m from the large fire")
+	check(f.fire_spots().any(func(spot): return (spot[0] as Vector3).is_equal_approx(at) and is_equal_approx(float(spot[1]), f.fire_protect_m(at))), "the animals' fire spots give the large fire the same keep-off radius (fire_spots, load test 23 Nov 2026)")
 
 
 	# Several logs go on one fire, one after another (Dave: the second log was refused), even beside a pot or with sticks in the pack.
