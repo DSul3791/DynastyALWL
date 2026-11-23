@@ -33,6 +33,7 @@ var _after: Dictionary = {}      # animal id -> looks still to print after a jum
 var _frame_max: float = 0.0      # the longest server frame since the last animal look
 var _top_mps: Dictionary = {}    # species number -> fastest _mps in animals.json
 var _names: Dictionary = {}      # species number -> name
+var _snares_seen: Dictionary = {}  # world item id -> true: each snare set is printed once with how much trail it sits on
 var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
 
 
@@ -83,6 +84,7 @@ func _process(delta: float) -> void:
 	_animal_t = 0.0
 	var now: int = RobotRules.now_ms()
 	_wolf_packs(now)
+	_snares(now)
 	var players: Array = []
 
 	for peer in items.peer_ids():
@@ -208,3 +210,25 @@ func _wrap_hits() -> void:
 		print("AUDIT strike %d %d reach %.1f seen %d present %d judged %d (server now %d) target %d %s, nearest judged %.2f m, now %.2f m; judged/now %s" % [int(peer), RobotRules.now_ms(), float(reach),
 			int(seen[0]), int(seen[1]), judged, Time.get_ticks_msec(), target, "hit" if (answer is Dictionary and not (answer as Dictionary).is_empty()) or (answer is bool and answer) else "miss", then, near, " ".join(judged_at)])
 		return answer
+
+
+# Each snare set: `AUDIT snare <id> <unix ms> <x> <z> trail <0..1> owner <key>`, the trail share server_traps.trail_at gives it (catch
+# chance and Tracking practice need on_trail_min / snare_min of it).
+func _snares(now: int) -> void:
+	var traps = items.get("_traps")
+
+	if traps == null:
+		return
+
+	for id in items._items:
+		if _snares_seen.has(id):
+			continue
+
+		var it: Dictionary = items._items[id]
+
+		if str((it.get("struct", {}) as Dictionary).get("kind", "")) != "snare_trap":
+			continue
+
+		_snares_seen[id] = true
+		var at: Vector3 = it["pos"]
+		print("AUDIT snare %d %d %.1f %.1f trail %.2f owner %s" % [int(id), now, at.x, at.z, float(traps.trail_at(at)), str((it["struct"] as Dictionary).get("owner", ""))])

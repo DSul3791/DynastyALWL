@@ -1158,10 +1158,16 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		var store_was: Array = []
+
 		if cues != null:
 			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+			store_was = cues.store_before(peer, kind, b)
 
 		items.action(peer, kind, a, b, count, at)
+
+		if cues != null and not store_was.is_empty():
+			cues.store_after(peer, kind, a, b, store_was)   # after: a container is heard only when the server let the open, close, put or take through
 
 		if players != null:
 			players.note_action(peer, kind))

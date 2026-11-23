@@ -2402,7 +2402,7 @@
 				"walk": "Walk-IP",
 				"run": "Run-IP",
 				"trot": "Trot-IP",
-				"hit": "Hit_HeadR_Heavy-IP",
+				"hit": ["Hit_HeadR_Heavy-IP", "Hit_ChestR_Heavy-IP", "Hit_ChestL_Heavy-IP"],
 				"die": "Death_01-IP",
 				"bite": "Attack_HornR-IP"
 			},
@@ -2438,7 +2438,7 @@
 				"12": "Stand_00-IP",
 				"walk": "Walk-IP",
 				"run": "Run-IP",
-				"hit": "Hit_Head_Right-IP",
+				"hit": ["Hit_Head_Right-IP", "Hit_Chest_Right-IP", "Hit_Chest_Left-IP"],
 				"die": "Death_01-IP",
 				"bite": "Attack_Head_01-IP"
 			},
