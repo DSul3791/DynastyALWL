@@ -161,10 +161,10 @@ func _under_the_ground() -> bool:
 	# 23 Nov 2026: a player who slipped into the rock of the Ragtooth camp cave was stood on the hillside 6 m over its room).
 	var to: Vector3 = Vector3(here.x, float(hit["position"].y) + SURFACE_LIFT_M, here.z)
 
-	var reach: AABB = AABB(here + Vector3(-3.5, -float(POCKET_DOWN_M) - 1.0, -3.5), Vector3(7.0, float(POCKET_UP_M + POCKET_DOWN_M) + 2.0, 7.0))
+	var reach: AABB = AABB(here + Vector3(-3.5, -float(POCKET_DOWN_M) - 1.0, -3.5), Vector3(7.0, float(POCKET_UP_M + POCKET_DOWN_M + POCKET_HEADROOM) + 2.0, 7.0))
+	var tool: VoxelTool = _client.terrain.get_voxel_tool() if inside else null
 
-	if inside and _client.terrain.get_voxel_tool().is_area_editable(reach):   # every voxel searched loaded: no floor made up at an unloaded block's edge
-		var tool: VoxelTool = _client.terrain.get_voxel_tool()
+	if inside and tool.is_area_editable(reach):   # every voxel searched loaded: no floor made up at an unloaded block's edge
 		tool.channel = VoxelBuffer.CHANNEL_SDF
 		var pocket: Vector3 = pocket_near(func(cell: Vector3i) -> float: return tool.get_voxel_f(cell), here, float(hit["position"].y))
 
@@ -182,7 +182,7 @@ func _under_the_ground() -> bool:
 
 
 # The nearest place to stand in the air under the ground round `here`: the lowest floor of air with POCKET_HEADROOM voxels over it in each of
-# the columns at POCKET_SIDE_M round `here`, from POCKET_DOWN_M under the feet to POCKET_UP_M over them and under `roof_y` (the surface over it),
+# the columns at POCKET_SIDE_M round `here`, from POCKET_DOWN_M under the body's middle to POCKET_UP_M over it and under `roof_y` (the surface over it),
 # the body's middle BODY_HALF_M + 5 cm over that floor (the SDF's zero between the solid voxel and the air over it). `here` is the body's middle.
 # shortcut: the air is not followed to an exit, so a sealed bubble near the player counts (the player can dig out of it); no flood fill.
 # Vector3(NAN, NAN, NAN) when there is none.
