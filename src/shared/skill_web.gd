@@ -293,13 +293,15 @@ static func train_problem(cfg: Dictionary, skill: String, records: Dictionary, n
 	if not cfg.get("skills", {}).has(skill):
 		return "unknown skill"
 
-	if level * int(system.get("step", 25)) >= int(system.get("max_value", 100)) + int(system.get("step", 25)):
+	# Three trainings reach the last band (caps 25, 50, 75, 100); a fourth would only jump the skill to the top.
+	if level * int(system.get("step", 25)) >= int(system.get("max_value", 100)):
 		return "already at the top"
 
 	if not unlocked(cfg, skill, records):
 		return "locked"
 
-	if raw_value(cfg, skill, record) < float(cap_of(cfg, skill, records) - int(system.get("train_near_cap", 5))):
+	# The value it reads as (a decayed or unpractised skill still reads its training floor), with a hair of slack for float round trips.
+	if effective(cfg, skill, records) + 0.001 < float(cap_of(cfg, skill, records) - int(system.get("train_near_cap", 5))):
 		return "not near the cap yet"
 
 	if now_s - float(record.get("tlast", -1.0e12)) < float(system.get("train_cooldown_days", 3.0)) * DAY_S:

@@ -282,6 +282,8 @@ var _food_cfg: Dictionary = {}      # data/items/food_effects.json
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
+var _cold_out: Dictionary = {}      # peer -> seconds passed out from cold so far (warmth.json pass_out; Dave 23 Nov 2026)
+var rescue_spots: Callable          # (position) -> Array of [Vector3 ground point, "goblin" | "bandit" | "town"]: where a player passed out from cold can wake; set by the server scene
 var _strain_sent: Dictionary = {}
 var send_body: Callable             # (peer, bpm, seconds until awake, phase 0 awake 1 falling asleep 2 asleep or fainted 3 waking), protocol 59
 var _body_sent: Dictionary = {}
@@ -302,7 +304,8 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
-var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
+var hit_animal_path: Callable        # (peer, from, to, damage, lag) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server); lag = the shooter's [seen, present] ms behind the server at the shot (shot_lag), [] for judged now
+var shot_seen: Dictionary = {}      # peer -> [seen ms, present ms] from ACT_SEEN, taken by that player's next shot or throw (shot_lag)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
 var strike_seen: Dictionary = {}    # peer -> [server ms its screen showed the animals at, the same for a committed charge] of its last blow (protocol 155; hit_animal reads it)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
@@ -805,6 +808,7 @@ func note_spots_on_close() -> void:
 
 func peer_left(peer: int) -> void:
 	_held.erase(peer)
+	_cold_out.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
@@ -871,6 +875,8 @@ func peer_left(peer: int) -> void:
 	_peer_pos.erase(peer)
 	_known.erase(peer)
 	_last_throw.erase(peer)
+	strike_seen.erase(peer)
+	shot_seen.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
 	_push_last.erase(peer)   # their last log push (ACT_PUSH_LOG)
@@ -1561,6 +1567,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_relight(peer, inv, a, b)
 	elif kind == Net.ACT_PLACE_TORCH:
 		_place_torch(peer, inv, a, b == 1, count, at)
+	elif kind == Net.ACT_SEEN:
+		shot_seen[peer] = [b, count]
 	elif kind == Net.ACT_STRIKE:
 		strike_seen[peer] = [b, count]   # protocol 155: when its screen showed the animals (0 from a client that sends none: judged now)
 		_strike(peer, inv, a, at)
@@ -3471,7 +3479,20 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
 	var thrown: Dictionary = inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0, "lag": shot_lag(peer, now)})
+
+
+# How far behind the server the shooter's screen showed the animals when it shot or threw (ACT_SEEN just before): [ms behind for a seen
+# animal, ms behind for a committed charge, or -1 when it sent none], or [] for judged now. The flight keeps it, so every step of an arrow
+# is judged where that player sees the animals at that moment (docs/design/ANIMAL_NETCODE.md "Fair hits"; at most rewind_max_ms back).
+func shot_lag(peer: int, now: int) -> Array:
+	var seen: Array = shot_seen.get(peer, [])
+	shot_seen.erase(peer)
+
+	if seen.size() < 2 or int(seen[0]) <= 0:
+		return []
+
+	return [now - int(seen[0]), now - int(seen[1]) if int(seen[1]) > 0 else -1]
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -3528,7 +3549,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var aflame: bool = bool(arrow.get("fire", false)) and not fire_cfg.is_empty() and _flame_near(_peer_pos[peer], float(fire_cfg.get("light_m", 3.0)))
 	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
 	_arrows.append({"peer": peer, "number": number, "inst": shot_inst, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id), "lag": shot_lag(peer, now)})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)) * (float(fire_cfg.get("alarm_mult", 2.0)) if aflame else 1.0))
@@ -3616,7 +3637,7 @@ func _arrow_fly(delta: float) -> void:
 			var stuck: bool = false
 
 			if hit_animal_path.is_valid():
-				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]))
+				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]), ar.get("lag", []))
 
 				if not hit.is_empty():
 					landed = true
@@ -3714,7 +3735,7 @@ func _fly(delta: float) -> void:
 		var throw_damage: float = float(table.entry(table.id_of(int(flight["number"]))).get("throw_damage", 0.0))
 
 		if throw_damage > 0.0 and hit_animal_path.is_valid() and flight.has("peer"):
-			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage)
+			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage, flight.get("lag", []))
 
 			if not hit.is_empty():
 				var at: Vector3 = hit["at"]
@@ -10010,7 +10031,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 			_crushed(int(peer), hurt)
 
 	if hit_animal_path.is_valid() and float(crush.get("animal", 0.0)) > 0.0:
-		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0))
+		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0), [])
 
 	# Down: each log is a body in the log space from here on (_wake_log), so one that came down on a rock, a stump, another tree's logs or a wall is
 	# pushed off it and rolls away the way physics says. Its own stump is left behind: the logs lie from just clear of it.
@@ -15541,6 +15562,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	if v.is_empty():
 		return "hurt"
 
+	if _cold_out.has(peer):
+		return "hurt"   # passed out from cold: nothing hurts them until they wake (warmth.json pass_out)
+
 	var stopped: float = protection_of(peer, mode if mode != "" else attack_mode(cause), pen)
 	_wear_armour(peer, amount)
 	amount *= 1.0 - stopped
@@ -17109,6 +17133,68 @@ func warmth_target(peer: int) -> float:
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
 
 
+# Cold down to 1 point: the player passes out (the over-exertion faint's look: movement locked, the HUD fading to the heartbeat; nothing can
+# hurt them while out), then wakes at the nearest goblin camp, bandit camp or the starter town with a message (Dave 23 Nov 2026: "you will then
+# wake up at the nearest goblin camp or bandit camp or temple ... or at the starter spawn"). warmth.json pass_out. Dave 23 Nov 2026: the whole pack
+# is kept and the player is simply rescued wherever they wake, no capture or theft for now ("bandits might steal it in the future. and goblins will
+# depend on if they are the good type or the bad type"): the wake place's kind (_cold_out_tick) is where that would hang. Not built.
+func _cold_pass_out(peer: int) -> void:
+	_cold_out[peer] = 0.0
+	var st: Dictionary = _strain.get(peer, {})
+
+	if st.is_empty():
+		st = {"s": 0.0, "state": 0, "t": 0.0}
+		_strain[peer] = st
+
+	st["state"] = 2   # fainted: the client locks movement and fades the HUD (exertion.json faint_s)
+	st["t"] = 0.0
+	_strain_sent.erase(peer)
+	_end_sleep(peer)
+	_say(peer, str(_warmth_cfg.get("pass_out", {}).get("say_out", "The cold takes you. You pass out.")))
+	print("Cold: peer %d passed out at %s" % [peer, str(_peer_pos.get(peer, "?"))])
+
+
+func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> void:
+	var cfg: Dictionary = _warmth_cfg.get("pass_out", {})
+	_cold_out[peer] = float(_cold_out[peer]) + spent
+
+	if float(_cold_out[peer]) < float(cfg.get("out_s", 6.0)):
+		return
+
+	_cold_out.erase(peer)
+	var here: Vector3 = _peer_pos.get(peer, respawn_point)
+	var best: Array = []
+
+	for spot in rescue_spots.call(here):
+		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
+			best = spot
+
+	# No camp and no town square anywhere (a test world): they come to where they lay, never at the spawn (nothing is based on the spawn).
+	var to: Vector3 = best[0] if not best.is_empty() else here
+	var kind: String = str(best[1]) if not best.is_empty() else "here"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
+	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
+	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
+	_cold_level.erase(peer)
+	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
+	_strain_sent.erase(peer)
+	_peer_pos[peer] = to
+	_resume_to.erase(peer)
+	_motion.erase(peer)
+	_sync_vitals(peer, true)
+	_sync_warmth(peer, true)
+	_dirty = true
+
+	if send_died.is_valid() and not best.is_empty():
+		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
+
+	_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
+	print("Cold: peer %d woke at the %s at %s" % [peer, kind, str(to)])
+
+
+func passed_out(peer: int) -> bool:
+	return _cold_out.has(peer)
+
+
 func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
 	if _warmth_cfg.is_empty():
 		return
@@ -17123,10 +17209,19 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	v["warmth"] = w
 	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
 
+	if _cold_out.has(peer):
+		_cold_out_tick(peer, v, spent, hurt_at)
+		return
+
 	if w < hurt_at:
 		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
 		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
+
+		# Only with a known position: never moved to the spawn point (review 23 Nov 2026).
+		if float(v["health"]) <= 1.0 and bool(cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+			_cold_pass_out(peer)
+			return
 
 	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
@@ -17564,6 +17659,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
 	_waking.erase(peer)
@@ -17633,6 +17729,7 @@ func survive_cave_in(peer: int, to: Vector3) -> bool:
 	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
 		return false
 
+	_cold_out.erase(peer)   # a cave-in on a player passed out from cold ends that faint; still frozen at 1 health, the cold passes them out again and they are carried to shelter
 	v["health"] = minf(float(v["health"]), 1.0)
 	_peer_pos[peer] = to
 	_resume_to.erase(peer)
