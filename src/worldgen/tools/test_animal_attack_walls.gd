@@ -32,6 +32,7 @@ var animals
 var landed: Array = []
 var track: PackedStringArray = PackedStringArray()
 var crossed: int = 0
+var charging_x: float = INF     # the smallest x it reached while charging
 
 
 func check(ok: bool, what: String) -> void:
@@ -122,6 +123,7 @@ func run(a: Dictionary, seconds: float) -> float:
 	var was: Vector3 = a["pos"]
 	track.clear()
 	crossed = 0
+	charging_x = INF
 
 	for k in int(round(seconds / DT)):
 		animals.tick(DT)
@@ -130,6 +132,9 @@ func run(a: Dictionary, seconds: float) -> float:
 			var at: Dictionary = animals.animals[int(a["id"])]
 			var now: Vector3 = at["pos"]
 			closest = minf(closest, float(now.x))
+
+			if int(at["state"]) == BigGame.CHARGE:
+				charging_x = minf(charging_x, float(now.x))
 
 			if (was.x - WALL_X) * (now.x - WALL_X) < 0.0 or (now.x == WALL_X and was.x != WALL_X):
 				var z: float = lerpf(was.z, now.z, (WALL_X - was.x) / (now.x - was.x)) if now.x != was.x else now.z
@@ -216,8 +221,9 @@ func _pull_up() -> void:
 		stand(BEHIND)
 		var behind: Dictionary = put(sp, 112.0)
 		animals.big_game.warn(behind, BEHIND, -1.0, true)
-		var closest: float = run(behind, 10.0)
-		check(closest >= face + short_m - 0.01, "%s: a charge at a player behind the wall pulls up %.2f m short of it, nose and all (stood %.2f m off)" % [sp, short_m, closest - face])
+		run(behind, 10.0)
+		check(charging_x >= face + short_m - 0.01 and charging_x < 108.0, "%s: a charge at a player behind the wall pulls up %.2f m short of it, nose and all (charged to %.2f m off)" % [sp, short_m, charging_x - face])
+		show_track(charging_x >= face + short_m - 0.01 and charging_x < 108.0)
 
 		stand(Vector3(face + 1.0, 10.0, 0.0))
 		var backed: Dictionary = put(sp, 112.0)
