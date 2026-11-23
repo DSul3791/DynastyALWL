@@ -111,10 +111,14 @@ func _process(delta: float) -> void:
 		# Measured from its last change of place, not from the last look: an animal farther off, or one the tick budget skipped, steps
 		# less often and further each time (server_animals.gd hz_near, hz_mid, tick_budget_ms).
 		if not _last.has(id):
-			_last[id] = [pos, now]
+			_last[id] = [pos, now, int(a.get("moved_ms", -1))]
 		elif pos != _last[id][0]:
 			var was: Array = _last[id]
-			var dt: float = clampf(float(now - int(was[1])) / 1000.0, ANIMAL_EVERY_S, STEP_CAP_S)   # capped: a rest is not credit for a jump
+			# The server's own step times (moved_ms) when it keeps them: an animal far off steps every 1/hz with its whole accumulated time,
+			# which the looks may halve (animals thread, 23 Nov 2026); else the time between looks. Capped: a rest is not credit for a jump.
+			var moved: int = int(a.get("moved_ms", -1))
+			var span_ms: int = moved - int(was[2]) if moved > 0 and int(was[2]) > 0 and moved > int(was[2]) else now - int(was[1])
+			var dt: float = clampf(float(span_ms) / 1000.0, 0.05, STEP_CAP_S)
 			var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 			var allowed: float = float(_top_mps.get(num, 15.0)) * dt * JUMP_SLACK
 
@@ -126,7 +130,7 @@ func _process(delta: float) -> void:
 					int(a.get("moved_ms", -1)), _frame_max * 1000.0])
 				_after[id] = 3
 
-			_last[id] = [pos, now]
+			_last[id] = [pos, now, int(a.get("moved_ms", -1))]
 
 		var look: String = "%d:%.1f,%.1f:%d" % [now, pos.x, pos.z, int(a.get("state", 0))]
 		var tr: Array = _trail.get(id, [])
