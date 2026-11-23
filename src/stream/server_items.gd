@@ -11758,10 +11758,7 @@ func _cook(peer: int, inv, id: int) -> void:
 			_last_cook[peer] = now
 			var raw: Dictionary = inv.take_from_slot(slot, 1)
 			var cooked: int = table.number_of(str(_cooking.get("cooks_into", {}).get(table.id_of(int(raw["number"])), _cooking.get("gives", "roast_forage"))))
-			# Cooking: the roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, about 3 at most), never more than the roast's own shelf life.
-			var left_units: float = float(table.shelf_units(int(raw["number"])) - int(raw.get("wear", 0))) if table.shelf_units(int(raw["number"])) > 0 else 1.0e9
-			var life: int = table.shelf_units(cooked)
-			var age: int = maxi(life - int(minf(left_units * float(_cooking.get("cooked_life_mult", 2.0)), float(life))), 0)
+			var age: int = _cooked_age(raw, cooked)
 			var was_src: String = _gain_source
 			_gain_source = SRC_CRAFT   # a roast is made, not gathered (goal got: counter)
 			_take_in(peer, inv, cooked, 1, age)
@@ -11774,6 +11771,15 @@ func _cook(peer: int, inv, id: int) -> void:
 	if now - int(_last_cook.get(peer, -100000)) > 5000:
 		_last_cook[peer] = now
 		_say(peer, "The campfire cooks meat and fish. Plants go in a pot or on the clay hearth.")
+
+
+# Cooking: the roast keeps for cooked_life_mult times what the raw item had left (Tyler: 1.5 to 2.5 times, about 3 at most), never more than the
+# roast's own shelf life. Returns the roast's age (wear). Roasting by hand and in the fire store both use it, so meat near rotting in the store
+# does not come out as a fresh roast.
+func _cooked_age(raw: Dictionary, cooked: int) -> int:
+	var left_units: float = float(table.shelf_units(int(raw["number"])) - int(raw.get("wear", 0))) if table.shelf_units(int(raw["number"])) > 0 else 1.0e9
+	var life: int = table.shelf_units(cooked)
+	return maxi(life - int(minf(left_units * float(_cooking.get("cooked_life_mult", 2.0)), float(life))), 0)
 
 
 # Food that should have been cooked (cooking.json raw_sick, hours of sickness by item id or id suffix; Tyler: raw meat 24 h,
@@ -14270,7 +14276,7 @@ func _tend_fire(id: int, _it: Dictionary, fire: Dictionary, delta: float) -> voi
 			var raw: Dictionary = box.take_from_slot(slot, 1)
 			var cooked: int = table.number_of(str(_cooking.get("cooks_into", {}).get(table.id_of(int(raw["number"])), _cooking.get("gives", "roast_forage"))))
 
-			if box.add(cooked, 1) > 0:
+			if box.add(cooked, 1, _cooked_age(raw, cooked)) > 0:
 				box.add(int(raw["number"]), 1, int(raw.get("wear", 0)))
 
 			_dirty = true
