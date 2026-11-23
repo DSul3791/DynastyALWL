@@ -140,11 +140,16 @@ class Reach:
         for iid in code_sources():
             if iid not in twins:   # a doused twin (the dark lanterns) comes only from its lit item, below
                 self.give(iid, "handed out by the code (CODE_SOURCES)")
-        yields = {str(y) for e in self.flora for y in e.get("yields", [])}
+        # terrain_server._gather_plant never gathers a tree (only a fruit tree's fruit, drops.json fruit_tree, through harvest rows): a tree's
+        # flora yields reach a player only through its felled pieces (drops.json trunk), below.
+        yields = {str(y) for e in self.flora if e.get("kind") != "tree" for y in e.get("yields", [])}
         for iid in self.gathered:
             if iid in yields:
                 self.give(iid, "a flora yield")
+        trees = {e.get("name") for e in self.flora if e.get("kind") == "tree"} - set(self.drops.get("fruit_tree", {}))
         for key, row in self.drops.get("harvest_yield", {}).items():
+            if key in trees:   # never gathered (above): a bark_species tree's row is the bark its felled trunk gives (step, _bark_row)
+                continue
             for r in row.get("by_season", {}).values() or [row]:   # a by-season row (wild rose) gives each season's product
                 self.give(r.get("item"), "harvested from %s" % key)
         for key, row in self.drops.get("berry_yield", {}).items():
@@ -198,6 +203,9 @@ class Reach:
             for sp, rows in trunk.get("by_species", {}).items():
                 for r in rows:
                     changed |= g(r[0], "a felled %s trunk" % sp)
+            for sp in trunk.get("bark_species", []):   # server_items._bark_row: a felled oak gives its harvest_yield row (Tannin bark) once
+                row = self.drops.get("harvest_yield", {}).get(sp, {})
+                changed |= g(row.get("item"), "the bark of a felled %s (%s)" % (sp, axe))
             for r in trunk.get("branch", []):
                 changed |= g(r[0], "a felled trunk's branches")
             for sp, seed in trunk.get("felled_seeds", {}).get("by_species", {}).items():   # every felled tree drops 1 to 5 of its seed (server_items._felled_seeds)

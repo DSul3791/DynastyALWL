@@ -92,10 +92,44 @@ func _init() -> void:
 	view.set_routes(0, 0, routes)
 	view.update(Vector3(120.0, 5.0, 110.0), 80, true)
 	check(view.shown == 0 and view.get_child_count() == 0, "nothing is made while the world loads round the player")
+	var found: Array = []
+	view.on_spot = func(kind: String, spot: Vector3) -> void: found.append([kind, spot])
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown > 20 and view.get_child_count() >= 2, "once loaded the signs near the player are drawn (%d pieces)" % view.shown)
 	var drawn: int = view.shown
+	# Spotting: standing on a sign, the signs within spot_m are spotted one at a time (one every spot_gap_s), each once, and glow.
+	var target: Vector2 = Vector2.INF
+
+	for sg in view._signs:
+		if target.x == INF and SignsScript.shows(str(sg[0]), 80, c) and (sg[1] as Vector2).distance_to(Vector2(120.0, 110.0)) <= 20.0:
+			target = sg[1]
+
+	check(target.x != INF, "there is a sign near the test spot to stand on")
+	var stand: Vector3 = Vector3(target.x, 5.0, target.y)
+	var within: int = 0
+	found.clear()
+	view._spot_msec = 0
+	view._next_msec = 0
+	view.update(stand, 80, false)
+
+	for sg in view._signs:
+		within += 1 if SignsScript.shows(str(sg[0]), 80, c) and (sg[1] as Vector2).distance_to(target) <= float(c["spot_m"]) else 0
+
+	check(found.size() == 1 and view.get_children().any(func(n): return str(n.name).begins_with("TrailSignGlow")), "standing on a sign it is spotted and glows (%d of %d within spot_m)" % [found.size(), within])
+	view._next_msec = 0
+	view.update(stand, 80, false)
+	check(found.size() == 1, "the next one waits spot_gap_s (the server's practice cooldown)")
+
+	for n in within + 3:
+		view._spot_msec = 0
+		view._next_msec = 0
+		view.update(stand, 80, false)
+
+	check(found.size() == within and _unique(found), "each sign within reach is spotted once, never again this session (%d of %d)" % [found.size(), within])
+	view._built_at = Vector3.INF   # back where the drawn count was taken
+	view._next_msec = 0
+	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), see - 1, false)
 	check(view.shown == 0, "a player without the skill sees none (%d)" % view.shown)
@@ -156,3 +190,17 @@ func _init() -> void:
 	view.queue_free()
 	print("test_trail_signs: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+func _unique(found: Array) -> bool:
+	var seen: Dictionary = {}
+
+	for f in found:
+		var k: String = str(Vector2i(roundi(f[1].x * 2.0), roundi(f[1].z * 2.0)))
+
+		if seen.has(k):
+			return false
+
+		seen[k] = true
+
+	return true
