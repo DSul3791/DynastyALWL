@@ -1,8 +1,8 @@
 extends RefCounted
 
 # Temporary food effects on the HUD and the replace question (master s3.16 [D16, D17]; Mission 001 phase 7; protocol 110).
-# The server decides everything (server_items.gd "Temporary food effects"): this part shows food_effects as lines under the comfort
-# line, and food_ask as a small window whose buttons send ACT_EAT back with the answer.
+# The server decides everything (server_items.gd "Temporary food effects"): this part keeps food_effects for the status strip's symbols
+# (lines() are their hover words), and shows food_ask as a small window whose buttons send ACT_EAT back with the answer.
 # shortcut: plain placeholder lines and panel in the inventory's colours (NOT visually complete); revisit with Art.
 
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -12,7 +12,6 @@ const ArtKit := preload("res://src/client/ui/art_kit.gd")
 var view   # the InventoryView (src/client/inventory_view.gd)
 var cfg: Dictionary = FoodEffects.load_config()
 var rows: Array = []        # the last food_effects
-var _label: Label
 var _ask_panel: PanelContainer
 var _ask_note: Label
 var _ask_row: HFlowContainer
@@ -31,7 +30,7 @@ func close() -> void:
 		_ask_panel.visible = false
 
 
-# One HUD line per live effect: "Main meal (Roast joint): Fitness XP +15 %, health regeneration +10 %, 14 min".
+# One line per live effect (the status strip's hover words): "Main meal (Roast joint): Fitness XP +15 %, health regeneration +10 %, 14 min".
 func lines() -> PackedStringArray:
 	var out: PackedStringArray = PackedStringArray()
 
@@ -44,31 +43,18 @@ func lines() -> PackedStringArray:
 	return out
 
 
+# The live effects are symbols in the status strip left of the hotbar (Dave 23 Nov 2026: "effects symbols"; terrain_client
+# _setup_status_strip): each shows its minutes left and, hovered, its line. The lines at the top right are gone so nothing is said twice.
 func on_effects(new_rows: Array) -> void:
 	rows = new_rows
 
-	if _label == null:
-		_label = Label.new()
-		_label.set_anchors_preset(Control.PRESET_TOP_RIGHT)
-		_label.anchor_left = 1.0
-		_label.anchor_right = 1.0
-		_label.offset_left = -720.0
-		_label.offset_right = -20.0
-		_label.offset_top = 56.0
-		_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_label.add_theme_font_size_override("font_size", 20)
-		_label.add_theme_constant_override("outline_size", 5)
-		_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.85))
-		_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		view._layer.add_child(_label)
-
-	_label.text = "\n".join(lines())
-	_label.visible = not rows.is_empty()
+	if view.status_strip != null and is_instance_valid(view.status_strip):
+		view.status_strip.tick(0.0, true)
 
 
-# Where the food effect lines end on the screen (the Goals box sits under them), or 0 while none show.
+# Where the food effect lines ended on the screen (the Goals box sat under them): they are in the status strip now, so always 0.
 func bottom_px() -> float:
-	return _label.position.y + _label.size.y if _label != null and _label.visible else 0.0
+	return 0.0
 
 
 func on_ask(slot: int, number: int, groups: PackedInt32Array) -> void:

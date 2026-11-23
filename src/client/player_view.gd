@@ -98,6 +98,33 @@ func on_look(peer: int, char_name: String, body: String, code: String, worn: Pac
 		_dress(_bodies[peer])
 
 
+# How long a body walks on past its newest point (MotionBuffer.at): CARRY_S, or none while it is turning back and forth (any two of its last
+# REVERSE_LEGS legs turned back on each other, by more than REVERSE_DEG): a dodging player's next step cannot be guessed, and walking on along
+# the last leg drew it up to 2.2 m the wrong way (robots' wiggle plan, 23 Nov 2026: a run back and forth every 0.5 s on a 120 +- 30 ms link
+# with 3% loss). It then stands at its newest point until the next row; one walking or running on keeps the carry through lost batches.
+const REVERSE_DEG := 100.0
+const REVERSE_LEGS := 4
+
+
+static func carry_for(samples: Array) -> float:
+	var n: int = samples.size()
+	var after: Vector3 = Vector3.ZERO
+
+	for k in range(n - 1, maxi(n - 1 - REVERSE_LEGS, 0), -1):
+		var leg: Vector3 = (samples[k][0] as Vector3) - (samples[k - 1][0] as Vector3)
+		leg.y = 0.0
+
+		if leg.length() < 0.05:
+			continue
+
+		if after != Vector3.ZERO and leg.normalized().dot(after) < cos(deg_to_rad(REVERSE_DEG)):
+			return 0.0
+
+		after = leg.normalized()
+
+	return CARRY_S
+
+
 func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray(), cast: PackedInt32Array = PackedInt32Array()) -> void:
 	var n: int = mini(ids.size(), mini(positions.size(), mini(yaws.size(), mini(states.size(), mini(held.size(), times.size())))))
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
@@ -236,7 +263,7 @@ func _process(delta: float) -> void:
 			MotionBuffer.settle(b)   # after this computer's own stall the others are drawn where they are, not eased in from metres behind
 
 		if not (b["samples"] as Array).is_empty():
-			var at: Array = MotionBuffer.at(b["samples"], drawn_at, CARRY_S)   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
+			var at: Array = MotionBuffer.at(b["samples"], drawn_at, carry_for(b["samples"]))   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
 			b["path_p"] = at[0]
 			# A late batch or a lost one never jumps the body: the step beyond a normal one is eased in (MotionBuffer.smooth, as the animals).
 			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta, SMOOTH_ROOM_X, SMOOTH_CATCH_X, SMOOTH_CATCH_MIN_MPS)
@@ -598,7 +625,7 @@ static func arm_pose(b: Dictionary) -> String:
 	if bow != "":
 		return bow
 
-	return "shield_up" if str(b.get("left_kind", "")) == "shield" and (int(b.get("more", 0)) & MORE_SHIELD_UP) != 0 else ""
+	return "shield_up" if str(b.get("left_kind", "")) == "shield" and str(b.get("held_kind", "")) != "bow" and (int(b.get("more", 0)) & MORE_SHIELD_UP) != 0 else ""
 
 
 # "bow_raised", "bow_drawn" or "" (the bow down, or not a bow in hand): the more byte's bow flags (the client's held_item.gd hand_flags, 162).
@@ -679,6 +706,7 @@ func _show_left(b: Dictionary, distance: float) -> void:
 		return
 
 	var kind: String = str(b.get("left_kind", ""))
+	model.visible = str(b.get("held_kind", "")) != "bow"   # a bow takes both hands: the left item is put away, as the player's own (held_item.gd _off_model)
 
 	if kind == "lantern":
 		model.global_basis = Basis.IDENTITY   # hangs straight down by its bail
@@ -764,8 +792,8 @@ func flames_near(from: Vector3, max_m: float) -> Array:
 	for peer in _bodies:
 		var b: Dictionary = _bodies[peer]
 
-		if (int(b.get("more", 0)) & MORE_LIT) == 0 or not (b.get("node") is Node3D):
-			continue
+		if (int(b.get("more", 0)) & MORE_LIT) == 0 or not (b.get("node") is Node3D) or str(b.get("held_kind", "")) == "bow":
+			continue   # unlit, or put away for the bow (_show_left)
 
 		var kind: String = "lantern" if "lantern" in [str(b.get("left_kind", "")), str(b.get("held_kind", ""))] else "torch"
 		var at: Vector3 = (b["node"] as Node3D).global_position + Vector3(0.0, DRAW_UP_M, 0.0)
@@ -784,7 +812,7 @@ func _light_pass() -> void:
 	for peer in _bodies:
 		var model: Node3D = _bodies[peer].get("left_node", null) as Node3D
 
-		if model != null and is_instance_valid(model) and model.get_node_or_null("Light") != null:
+		if model != null and is_instance_valid(model) and model.visible and model.get_node_or_null("Light") != null:   # one put away for a bow takes no slot
 			lit.append([float(_bodies[peer].get("distance", 0.0)), model])
 
 	lit.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
