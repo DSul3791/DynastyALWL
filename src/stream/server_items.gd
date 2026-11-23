@@ -7894,6 +7894,11 @@ static func restore_missing(path: String) -> String:
 		return ""
 
 	_file_lock.lock()
+
+	if FileAccess.file_exists(path):
+		_file_lock.unlock()   # a save landed it while this waited for the lock (the writer's own remove-then-rename gap)
+		return ""
+
 	var done: String = ""
 
 	if FileAccess.file_exists(path + ".tmp") and typeof(JSON.parse_string(FileAccess.get_file_as_string(path + ".tmp"))) == TYPE_DICTIONARY:

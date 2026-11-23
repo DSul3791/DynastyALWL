@@ -7,7 +7,7 @@
 #   2. two short starts of the installed game (1200 frames each, a window opens): the default driver, then --rendering-driver d3d12;
 #      FAIL when a start has no driver line or used another driver than asked
 #   Every game run is judged by what it left, not by its exit code: the exported Windows game ends with OS.kill, which gives exit 0
-#   on every path (Z5 review C2). A run fails when Windows logged an Application Error for Dynasty.exe while it ran (a crash, also
+#   on every path (Z5 review C2; the short starts quit through the engine, so their exit code still counts). A run fails when Windows logged an Application Error for Dynasty.exe while it ran (a crash, also
 #   one in the engine's teardown after the game's own quit), and the cold play also fails when its log never reaches the game's
 #   "EXIT:" line (it did not quit by its own path, or the log was not flushed before the process ended: Z5 review C3).
 #   3. server package: docker load of dynasty-server-build-<N>.tar, then its compose.yaml up as a throwaway project (dynasty-firstrun,
@@ -65,7 +65,7 @@ function Run-Limited([string]$file, [string]$arguments, [int]$limit, [string]$wh
 function Check-Crashes([string]$what, [datetime]$since) {
 	Start-Sleep -Seconds 5
 	$events = @(Get-WinEvent -FilterHashtable @{ LogName = "Application"; ProviderName = "Application Error"; StartTime = $since } -ErrorAction SilentlyContinue |
-		Where-Object { $_.Message -match "Dynasty\.exe" })
+		Where-Object { $_.Message -match "Dynasty\.exe" -and $_.Message -like "*$install*" })   # this run's install only, not another Dynasty on this PC
 	foreach ($e in $events) {
 		Fail "$what crashed: Windows Application Error at $($e.TimeCreated.ToString('HH:mm:ss')): $((($e.Message -split "`r?`n") | Select-Object -First 3) -join ' | ')"
 	}
@@ -92,7 +92,7 @@ function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$wan
 	finally {
 		$env:APPDATA = $saved[0]; $env:LOCALAPPDATA = $saved[1]; $env:TEMP = $saved[2]; $env:TMP = $saved[3]
 	}
-	Write-Host "   exit $code (not judged: the exported game exits 0 on every path), log $log"
+	Write-Host "   exit $code, log $log"
 	Check-Crashes $name $since
 	if ($NeedExit) {
 		$quit = $null
@@ -109,6 +109,8 @@ function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$wan
 	Write-Host "   $($line.Line)"
 	# The game may fall back to the other driver by itself (project.godot fallback_to_*), so the line must name the one asked for.
 	if ($want -and $line.Line -notmatch $want) { Fail "asked for $want, the game used another driver" }
+	# A short start quits through the engine (--quit-after), so its exit code is real; the cold play ends with OS.kill (exit 0 always).
+	elseif (-not $NeedExit -and $code -ne 0 -and $code -ne -1) { Fail "exit $code" }
 	return $log
 }
 
