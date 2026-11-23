@@ -6,6 +6,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const SkillWebScript := preload("res://src/shared/skill_web.gd")
 const DisplayScript := preload("res://src/client/display_settings.gd")
 const HitNumbers := preload("res://src/client/hit_numbers.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -62,10 +63,13 @@ func _init() -> void:
 		struck.append([reach, amount])
 		return true
 
+	items._skill_records(1).clear()   # the jabs above trained a little; the melee rows are checked at skill 1 (factor 1.0)
+
 	for id in ["stone_axe", "steel_axe", "berries"]:
 		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 1, Vector3.ZERO)
 		items._last_strike.clear()
 		items.action(1, Net.ACT_STRIKE, items.inventory_of(1).numbers.find(items.table.number_of(id)), 0, 0, Vector3(0.0, 0.0, 1.0))
+		items._skill_records(1).clear()
 
 	var axe_row: Dictionary = melee["tool"]["tool_axe"]
 	check(struck.size() == 3 and is_equal_approx(float(struck[0][1]), float(axe_row["damage"])) and is_equal_approx(float(struck[1][1]), float(axe_row["damage"]) + 3.0 * float(melee["tier_step"])),
@@ -82,6 +86,55 @@ func _init() -> void:
 	items._last_strike.clear()
 	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
 	check(sent.size() == 1, "an empty answer is a miss: no number")
+
+	# Bare hands punch (Dave 23 Nov 2026): slot -1 (nothing in hand) or an empty slot strikes for melee.json bare_hand times the Hand to hand
+	# skill factor, at its short reach, and a punch that lands trains Hand to hand.
+	var punched: Array = []
+	items.hit_animal = func(_peer, _origin, _aim, reach, amount) -> Dictionary:
+		punched.append([reach, amount])
+		return {"at": Vector3(10.0, 1.0, 11.0)}
+	for strength in [0, 100, 50]:   # at skill 1 a blow is exactly as before whatever the attributes
+		items.set_attribute(1, "strength", strength)
+		check(is_equal_approx(items.blow_skill_mult(1, "punch"), 1.0) and is_equal_approx(items.blow_skill_mult(1, "strike_sword"), 1.0), "at skill 1 the blow multiplier is 1.0 with strength %d" % strength)
+
+	var skill_before: float = items.working_level(1, "hand_to_hand")
+	items._last_strike.clear()
+	items._last_practice.clear()
+	items.action(1, Net.ACT_STRIKE, -1, 0, 0, Vector3(0.0, 0.0, 1.0))
+	var bare: Dictionary = melee["bare_hand"]
+	var want: float = float(bare["damage"]) * items.blow_skill_mult(1, "punch")
+	check(punched.size() == 1 and is_equal_approx(float(punched[0][0]), float(bare["reach_m"])) and absf(float(punched[0][1]) - want) < 0.5 and float(punched[0][1]) > 0.0,
+			"an empty hand punches for bare_hand times the skill (%s, want about %.2f)" % [str(punched), want])
+	# Everyone starts at 1 in every skill and gains by doing (Dave 23 Nov 2026; SKILLS_WEB_DESIGN.md 1, 5): Hand to hand is the design's Brawling
+	# under Fighting, locked until Fighting 15 (and Fighting until Athleticism 15), so a new player's punch trains the nearest unlocked parent.
+	var records: Dictionary = items._skill_records(1)
+	check(float(records.get("athletics", {}).get("p", 0.0)) > 0.0 and not records.has("hand_to_hand"), "a new player's punch trains Athleticism, which unlocks Fighting (%s)" % str(records.keys()))
+	check(items.working_level(1, "hand_to_hand") >= skill_before, "and never lowers Hand to hand")
+	var web: Dictionary = items._skills_cfg
+	records["athletics"] = {"p": SkillWebScript.units_for(web, "athletics", 16.0)}
+	records["fighting"] = {"p": SkillWebScript.units_for(web, "fighting", 16.0)}
+	items._last_strike.clear()
+	items._last_practice.clear()
+	items.action(1, Net.ACT_STRIKE, -1, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(float(records.get("hand_to_hand", {}).get("p", 0.0)) > 0.0, "once Fighting is 15 a punch trains Hand to hand itself")
+	punched.clear()
+	items._last_strike.clear()
+	items._last_practice.clear()
+	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(float(records.get("spear", {}).get("p", 0.0)) > 0.0, "a spear blow that lands trains Spear")
+	check(ItemsScript._blow_action("steel_rapier", items.table.entry("steel_rapier")) == "strike_rapier" and ItemsScript._blow_action("iron_sword", items.table.entry("iron_sword")) == "strike_sword"
+		and ItemsScript._blow_action("stone_axe", items.table.entry("stone_axe")) == "strike_fighting" and ItemsScript._blow_action("stone_knife", items.table.entry("stone_knife")) == "strike_knife", "each weapon trains its skill")
+	records.erase("hand_to_hand")
+	records.erase("spear")
+	records.erase("fighting")
+	records["athletics"] = {"p": 0.0}
+	items.action(1, Net.ACT_STRIKE, -1, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(punched.size() == 1, "punches keep bare_hand's pace (recover_ms)")
+	var empty_slot: int = items.inventory_of(1).numbers.find(0)
+	items._last_strike.clear()
+	items.action(1, Net.ACT_STRIKE, empty_slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(empty_slot >= 0 and punched.size() == 2, "an empty slot in hand punches too")
+	sent.clear()
 	sent.clear()
 	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> bool: return lands[0]
 

@@ -5718,6 +5718,9 @@ func _build_bars_row() -> VBoxContainer:
 
 # The character died (protocol 34): a message and a fade out and in over death.json respawn_delay_s. The terrain client moves the body.
 func _on_died(cause: String, _spawn: Vector3) -> void:
+	if cause == "cave-in survived":
+		return   # dug out alive: the cave-in sequence plays and the server says what happened (death.json stop_at_1)
+
 	if cause != "cave-in":   # the cave-in has its own long sequence (cavein_death.gd)
 		_death_msec = Time.get_ticks_msec()
 

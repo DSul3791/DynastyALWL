@@ -17,6 +17,11 @@ const LINES := [
 	[23.5, 26.5, "Better luck next time, eh?"],
 ]
 
+const SURVIVED_LINES := [
+	[16.0, 21.0, "Darkness, and the weight of the rock..."],
+	[21.5, 26.5, "Then voices, and hands pulling you out."],
+]
+
 var active: bool = false
 
 var _client
@@ -28,12 +33,15 @@ var _layer: CanvasLayer
 var _black: ColorRect
 var _skull: Control
 var _text: Label
+var _survived: bool = false
 
 
 # `client` is the terrain client (body, quake_view, sound); `spawn_point` is where the character comes back.
-func start(client, spawn_point: Vector3) -> void:
+func start(client, spawn_point: Vector3, survived: bool = false) -> void:
 	if active:
 		return
+
+	_survived = survived   # dug out alive (death.json stop_at_1): no skull, no death lines
 
 	_client = client
 	_spawn = spawn_point
@@ -104,11 +112,11 @@ func _process(delta: float) -> void:
 		dark = 1.0 - clampf((_t - COME_BACK_S) / CLEAR_S, 0.0, 1.0)
 
 	_black.color.a = dark
-	_skull.modulate.a = smoothstep(SKULL_IN.x, SKULL_IN.y, _t) * (1.0 - smoothstep(SKULL_OUT.x, SKULL_OUT.y, _t))
+	_skull.modulate.a = 0.0 if _survived else smoothstep(SKULL_IN.x, SKULL_IN.y, _t) * (1.0 - smoothstep(SKULL_OUT.x, SKULL_OUT.y, _t))
 	_skull.queue_redraw()
 	var line: String = ""
 
-	for row in LINES:
+	for row in (SURVIVED_LINES if _survived else LINES):
 		if _t >= float(row[0]) and _t < float(row[1]):
 			line = str(row[2])
 

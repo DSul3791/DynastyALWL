@@ -1890,6 +1890,9 @@ var load_failures: Array = []
 
 
 func save() -> void:
+	if _dir != "" and not _dirty and load_failures.is_empty() and not _water_kind.is_empty():
+		_dirty = _water_tanks_save() != _tanks_written   # a tank's litres moved (rain, a pump, a pipe) and nothing else changed (restart drill 23 Nov 2026)
+
 	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
 
@@ -1914,7 +1917,8 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
+	_tanks_written = _water_tanks_save()
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _tanks_written, "wells": _wells_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
 	_save_item_files(_item_job())
@@ -2862,7 +2866,11 @@ func practice(peer: int, action_name: String, difficulty: float = 1.0) -> float:
 	if def.is_empty() or not _characters.has(_peer_key.get(peer, "")):
 		return 0.0
 
-	var skill: String = str(def.get("skill", ""))
+	var skill: String = SkillWeb.trainable(_skills_cfg, str(def.get("skill", "")), records)   # a locked skill's practice goes to its nearest unlocked parent
+
+	if skill == "":
+		return 0.0
+
 	var system: Dictionary = _skills_cfg.get("system", {})
 	var now: int = Time.get_ticks_msec()
 	var last: Dictionary = _last_practice.get(peer, {})
@@ -3234,7 +3242,11 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 # food or a stone weakly; PROVISIONAL MELEE-1). The item is the slot the client names as in hand, checked first (Dave 13 Nov 2026); a broken one
 # does nothing, and logs on the shoulder leave no hand free.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+	if slot >= inv.slot_count or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+		return
+
+	if slot < 0 or inv.numbers[slot] == 0:
+		_punch(peer, direction)
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -3259,6 +3271,8 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var skill_action: String = _blow_action(table.id_of(inv.numbers[slot]), entry)
+	damage *= blow_skill_mult(peer, skill_action)   # exactly 1.0 at skill 1, so a new player's blows are as before
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)   # {"at": where it struck} from the server (or true from older hooks), {} or false for a miss
 	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
@@ -3269,8 +3283,70 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		var at: Vector3 = (answer as Dictionary).get("at", ahead) if answer is Dictionary else ahead
 		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
 		_wear_slot(peer, inv, slot, "strike")
+		practice(peer, skill_action)
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+# What a fighting skill does to a blow: its factor over the factor this character would have at skill 1, so a blow at skill 1 is exactly
+# as before whatever the attributes (the trait effect shows only as the skill grows), up to about max_factor at 100.
+func blow_skill_mult(peer: int, action_name: String) -> float:
+	var skill: String = str(_skills_cfg.get("actions", {}).get(action_name, {}).get("skill", ""))
+
+	if skill == "" or skill_level.is_valid():
+		return 1.0
+
+	return skill_factor(peer, action_name) / maxf(SkillWeb.factor(_skills_cfg, skill, 1.0, attributes_of(peer)), 0.01)
+
+
+# The skills.json action a blow with this item trains (the design's web: Fighting -> Brawling (Hand to hand), Swordplay, Spear, ...; Knives;
+# Swordplay -> Rapier, Broadswords; Knives -> Daggers). Anything else in hand (a mace, a club, an axe, a stone) trains Fighting. PROVISIONAL.
+static func _blow_action(id: String, entry: Dictionary) -> String:
+	var weapon: String = str(entry.get("weapon_class", ""))
+
+	if weapon == "sword":
+		if id.contains("rapier"):
+			return "strike_rapier"
+
+		if id.contains("greatsword") or id.contains("broadsword") or id.contains("longsword"):
+			return "strike_broadsword"
+
+		return "strike_sword"
+
+	if id.contains("dagger"):
+		return "strike_dagger"
+
+	if weapon in ["spear", "javelin", "fish_spear"]:
+		return "strike_spear"
+
+	if str(entry.get("tool_class", "")) == "knife":
+		return "strike_knife"
+
+	return "strike_fighting"
+
+
+# A bare-handed blow (Dave 23 Nov 2026: punching "should be a basic thing ... a skill like hand to hand"): melee.json bare_hand's damage times the
+# Hand to hand skill factor (skills.json action punch), at the animal in front within its reach; one that lands trains the skill. PROVISIONAL.
+func _punch(peer: int, direction: Vector3) -> void:
+	var row: Dictionary = _melee_cfg.get("bare_hand", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_strike.get(peer, -100000)) < float(row.get("recover_ms", STRIKE_COOLDOWN_MS)):
+		return
+
+	_last_strike[peer] = now
+	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var damage: float = maxf(float(row.get("damage", 2.0)) * blow_skill_mult(peer, "punch"), 0.5)
+	var reach: float = float(row.get("reach_m", 1.8))
+	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)
+	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
+
+	if hit:
+		var at: Vector3 = (answer as Dictionary).get("at", eye + direction.normalized() * minf(reach, 1.5)) if answer is Dictionary else eye + direction.normalized() * minf(reach, 1.5)
+		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
+		practice(peer, "punch")
+
+	_note_work(peer, "")   # a punch tires like any blow (BUG-001)
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
@@ -15178,7 +15254,8 @@ func _take_from_bags(peer: int, number: int) -> int:
 # which take health directly. Worn armour stops its share first (protection_of in the attack's damage mode: `mode`, else protection.json
 # attack_modes by the cause, else its default_mode; `pen` is a weapon's armour penetration), and every piece that protects wears by the hit.
 # Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling injury; the pack then backs off). Lethal (a player already
-# maimed): health can reach zero and the character dies. Returns "hurt", "maimed" or "dead".
+# maimed): with death.json stop_at_1 (on) it stops at 1 and reports "maimed" again; off, health can reach zero and the character dies.
+# Returns "hurt", "maimed" or "dead".
 func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0, mode: String = "", pen: float = 0.0) -> String:
 	var v: Dictionary = vitals_of(peer)
 
@@ -15190,6 +15267,10 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	amount *= 1.0 - stopped
 	var before: float = float(v["health"])
 	v["health"] = before - amount
+
+	if lethal and bool(_death_cfg.get("stop_at_1", false)):
+		lethal = false   # nothing kills (death.json stop_at_1, Dave 23 Nov 2026): a lethal blow stops at 1 and counts as crippling again
+		floor_hp = 1.0
 
 	if lethal and float(v["health"]) <= 0.0:
 		v["health"] = 0.0
@@ -15749,8 +15830,11 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 			_say(peer, "You are out of air")
 
 		if t >= float(cfg.get("faint_after_s", 15.0)) and int(_strain.get(peer, {}).get("state", 0)) == 2 and bool(cfg.get("can_die", false)):
-			_death_cause[peer] = "drowning"
-			v["health"] = 0.0
+			if bool(_death_cfg.get("stop_at_1", false)):
+				v["health"] = minf(float(v["health"]), 1.0)   # fainted under water: near death, not dead (death.json stop_at_1)
+			else:
+				_death_cause[peer] = "drowning"
+				v["health"] = 0.0
 	else:
 		_suffocate.erase(peer)
 
@@ -17222,6 +17306,40 @@ func kill(peer: int, cause: String) -> bool:
 	if _items.has(remains_id) and _remains_hold(_items[remains_id]):   # the set made above: a new player has no shelter and must be told where their things went
 		_say(peer, "Your things are on your remains where you fell. Press Tab to see which way.")
 
+	return true
+
+
+# A tunnel collapse on a player when nothing kills (death.json stop_at_1, Dave 23 Nov 2026): dug out onto the ground above (`to`), health 1,
+# the pack kept. The client plays the cave-in sequence without the death lines. Returns false when stop_at_1 is off (the caller kills).
+# Where a dug-out player stands: 2 m over the highest of the ground, the edited ground (a fill on it) and any water over it (NAN: none, as
+# terrain_server _water_at gives on dry land), never under the sea's 0 m.
+static func dug_out_height(surface: float, edited: float, water: float) -> float:
+	var top: float = 0.0
+
+	for h in [surface, edited, water]:
+		if not is_nan(float(h)):
+			top = maxf(top, float(h))
+
+	return top + 2.0
+
+
+func survive_cave_in(peer: int, to: Vector3) -> bool:
+	var v: Dictionary = vitals_of(peer)
+
+	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
+		return false
+
+	v["health"] = minf(float(v["health"]), 1.0)
+	_peer_pos[peer] = to
+	_resume_to.erase(peer)
+	_motion.erase(peer)
+	_sync_vitals(peer, true)
+	_dirty = true
+
+	if send_died.is_valid():
+		send_died.call(peer, "cave-in survived", to)
+
+	_say(peer, "The tunnel came down on you. Someone heard you under the rock and dug you out, barely alive.")
 	return true
 
 
@@ -18863,6 +18981,7 @@ var _water_kind: Dictionary = {}        # item id -> structure kind of a piece i
 var _water_dirty: bool = false
 var _water_at_s: float = -1.0           # real second of the last solve
 var _water_next_s: float = INF          # the network's next event, real seconds
+var _tanks_written: Dictionary = {}      # save(): the tanks' litres as last written (a change alone makes the next save write)
 var _water_tanks_saved: Dictionary = {} # crops.json "tanks": position key -> litres, read at load
 var _wells_saved: Dictionary = {}       # crops.json "wells": position key -> [litres, game second], read at load
 var _well_store: Dictionary = {}        # item id of a well with a daily yield -> [litres it held, game second then]

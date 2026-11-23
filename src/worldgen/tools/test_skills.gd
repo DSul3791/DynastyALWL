@@ -53,6 +53,15 @@ func _init() -> void:
 	bad = cfg.duplicate(true)
 	bad["skills"]["parry"]["needs"] = [{"skill": "rapier_master", "value": 65}]
 	check(not Web.validate(bad).is_empty(), "an unlock chain that loops is reported")
+	bad = cfg.duplicate(true)
+	bad["skills"]["athletics"]["needs"] = [{"skill": "jumping", "value": 15}]
+	bad["skills"]["jumping"]["needs"] = [{"skill": "athletics", "value": 15}]
+	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("locked skill")), "an action whose skill and every parent are locked is reported (%s)" % str(Web.validate(bad)))
+	check(Web.trainable(cfg, "hand_to_hand", {}) == "athletics" and Web.trainable(cfg, "woodcutting", {}) == "woodcutting", "a locked skill trains its nearest unlocked parent; an open one itself")
+	bad = cfg.duplicate(true)
+	bad["skills"]["athletics"]["parents"] = {"hand_to_hand": 1.0}
+	bad["skills"]["athletics"]["needs"] = [{"skill": "jumping", "value": 15}]
+	check(Web.trainable(bad, "hand_to_hand", {}) == "", "a locked loop ends instead of recursing for ever")
 
 	# Everyone starts at 1; a fresh average character has factor exactly 1.0 everywhere.
 	var all_one: bool = true
