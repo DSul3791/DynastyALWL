@@ -54,6 +54,10 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - (a) Data: settle each lake to its lip, lowering it 0.3 to 0.6 m. This re-bakes water in the live world's tiles: **Dave's call**.
 - (b) Drawing: draw a lake's outlet over its lip as a fall rather than a stretched sheet. This is looks work: **parked**.
 
+### Piece 0d. Animals and the dark (weather walk, 23 Nov 2026; for Dave)
+- Animals see as far at midnight as at noon. The moon and the night sky are drawn by the client only; the server's animals never ask how dark it is. Fog and mist already shorten their sight (`visibility_m`). Real animals differ: deer and wolves see well at night, birds hardly at all. Open: should a player be harder to spot at night (less so under a full moon), by species? **Decision** for Dave or the coordinator; nothing is built.
+- Rivers' rise after rain (`terrain_server._update_weather`, `water_live`) still follows the starter row's rain. It is the one weather left that is not read where it falls.
+
 ### Piece 0b. Server check of running speed (coordinator 23 Nov 2026: leave for now, note it)
 - The server checks no gait speed: walk, run, crouch and a raised shield's walk-only rule (#1688, terrain_client.gd `held.blocking`) are the client's alone. A modified client could run with a shield up, or run faster than RUN_SPEED. When it matters (player versus player, robbery), the server could compare reported positions against the gait's top speed, and ignore the shield flag (hand_flags & 4) while the player moves faster than walking pace.
 - Also open from the no-use audit (#1674, #1688): materials still marked "Nothing uses it yet." wait for Dave or a design doc (withies, thorny canes, thorny wood, burrs, banana leaves, oil, elderflowers, hawthorn blossom, raspberry leaves, cactus pads, fine leather, seeds, brinebells); feeding animals and fodder; the rapier moves; the trellis; ale and mead.

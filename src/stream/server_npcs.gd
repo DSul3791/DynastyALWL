@@ -20,7 +20,8 @@ var hour_now: Callable          # () -> hour of the game day, 0..24
 var ground_height: Callable     # (x, z) -> height
 var blocked: Callable           # (x, z) -> bool: water or anything an NPC may not enter (may be invalid)
 var player_positions: Callable  # () -> Array of Vector3
-var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain)
+var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain); tests
+var rain_at: Callable           # (pos) -> rain strength 0..1 over that spot (terrain_server _weather_here); set, it is used instead
 var wary: Callable              # (npc record) -> ServerTribes.avoid's answer for a tribe member: back off, hide, hold or watch (may be invalid)
 var back_off_mps: float = 2.4   # how fast a tribe member backs away (goblin_tribes.json back_off_mps)
 var chores: Callable            # (npc record, now seconds) -> ServerTribes.chore_plan's answer: where a tribe member goes or what it does (may be invalid)
@@ -214,7 +215,9 @@ func package_of(npc: Dictionary, hour: float) -> String:
 	var planned: String = str(table[int(floor(fposmod(hour + float(npc["jitter_h"]), 24.0))) % 24])
 
 	# Rain sends outdoor packages to the nearest roofed marker; the day goes on when it stops.
-	if rain_now.is_valid() and float(rain_now.call()) >= float(cfg.get("shelter_rain", 0.35)) and cfg.get("shelter_from", []).has(planned):
+	var rain: float = float(rain_at.call(npc.get("pos", Vector3.ZERO))) if rain_at.is_valid() else (float(rain_now.call()) if rain_now.is_valid() else 0.0)   # the rain where they are
+
+	if rain >= float(cfg.get("shelter_rain", 0.35)) and cfg.get("shelter_from", []).has(planned):
 		return "shelter"
 
 	return planned

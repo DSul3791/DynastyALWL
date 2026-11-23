@@ -373,7 +373,7 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 		rough = float(v.get("rough", {}).get(ground, 1.0))
 
 		# shortcut (W-16): "wet grass" is any rain at all over a soft grass soil (no per-cell wetness, and under a roof it still reads as rain); revisit with a wetness query.
-		if not wet.is_empty() and host.rain_now.is_valid() and float(host.rain_now.call()) >= float(wet.get("rain", 0.2)):
+		if not wet.is_empty() and host._rain_here(cart["pos"]) >= float(wet.get("rain", 0.2)):   # the rain where the cart is
 			rough = float(wet.get("rough", {}).get(ground, rough))
 
 	# A laid path or road (a path_patch within path_speed.json range_m near the puller: the server shares its one-second path look-up with the player, so the cart position is used only when that is stale) slows a vehicle with a "path" multiplier: the sled's runners drag on it.

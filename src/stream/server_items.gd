@@ -354,6 +354,7 @@ var zone_messages: int = 0
 var vent_messages: int = 0
 var zone_usec: int = 0
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
+var rain_hours_at: Callable   # (pos, max_h) -> game hours since it last rained over that spot (its row and height), INF past max_h (terrain_server); unset: _last_rain_s
 var weather_at: Callable            # (pos) -> the weather over that spot, its own tile row and height, as the player's client works it out (terrain_server _weather_here); unset: weather_now
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset, insulation_worn is used (tests set it)
 var send_warmth: Callable           # (peer, warmth percent 0..100)
@@ -27067,7 +27068,8 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 			rows[i] = (rows[i] as Dictionary).merged({"iced": icy == 1})
 
 	var weather: Dictionary = _weather_here(pos)
-	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": (_now_game_s() - _last_rain_s) / 3600.0, "raining": float(weather.get("rain", 0.0)) > 0.05,
+	var rain_h: float = float(rain_hours_at.call(pos, maxf(float(cfg.get("rain_memory_h", 24.0)), float(cfg.get("flash_memory_h", 6.0))))) if rain_hours_at.is_valid() else (_now_game_s() - _last_rain_s) / 3600.0
+	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": rain_h, "raining": float(weather.get("rain", 0.0)) > 0.05,
 		"air_c": _air_here(pos, weather, 10.0), "wind": float(weather.get("wind", 0.0))}
 	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
 

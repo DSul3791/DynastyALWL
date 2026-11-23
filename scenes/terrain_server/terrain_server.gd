@@ -152,6 +152,8 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
 var _weather_here_msec: int = -100000
+var _rain_hours_cache: Dictionary = {}   # Vector3i(tile row, height band, hours looked back) -> _rain_hours_at's answer, for the game hour it was made
+var _rain_hours_hour: int = -1
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
@@ -707,6 +709,7 @@ func _ready() -> void:
 		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
 	npcs.player_positions = func(): return items.peer_positions()
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
+	npcs.rain_at = func(pos): return float(_weather_here(pos).get("rain", 0.0))   # town people shelter from the rain over the town, not the starter row's
 	npcs.setup(store_dir)
 	tribes = TribesScript.new()
 	tribes.items = items
@@ -765,11 +768,16 @@ func _ready() -> void:
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
+	items.rain_hours_at = _rain_hours_at   # the drink rule's hours since rain, where the player drinks
+	animals.weather_at = _weather_here   # each animal by the weather where it stands (its row and height), as players are
 	coarse_ground.net = net
 	coarse_ground.tiles_dir = world_dir + "/tiles"
 	coarse_ground.tile_size_m = float(settings.tile_size_m)
 	animals.fog_world = {"tiles_dir": world_dir + "/tiles", "tile_size_m": float(settings.tile_size_m)}   # the cold-air floor for animals' sight in fog (fog_ground.gd)
-	animals.weather_ahead = func(hours): return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(4), 0.0, 0.0)   # the starter tile's row, as _update_weather (animals_in_weather_design.md 3)
+	animals.weather_ahead_at = func(hours, pos):   # a storm coming to the animal's own row (animals_in_weather_design.md 3; not the starter row's)
+		var row: int = floori(pos.z / float(settings.tile_size_m))
+		return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+	animals.row_of = func(pos): return floori(pos.z / float(settings.tile_size_m))
 	animals.canopy = func(point): return flora.covered(point)
 	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
@@ -1852,6 +1860,29 @@ func _weather_here(pos: Vector3) -> Dictionary:
 		_weather_here_cache[key] = WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, 0.0, row, settings.equator_tile_row)
 
 	return _weather_here_cache[key]
+
+
+# Game hours since it last rained over a spot (Weather.rain_hours_ago at its row and 10 m band, as _weather_here), up to max_h; INF when it
+# did not. The drink rule's brooks (DrinkRules.runs) run after the rain that fell where the player stands, not the starter row's (Dave:
+# nothing is based on where the spawn is). Worked out once a row and band a game hour.
+func _rain_hours_at(pos: Vector3, max_h: float) -> float:
+	var hour: int = floori(game_clock.seconds / 3600.0)
+
+	if hour != _rain_hours_hour:
+		_rain_hours_cache.clear()
+		_rain_hours_hour = hour
+
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	var height: float = WeatherScript.band_height(pos.y)
+	var look: int = ceili(maxf(max_h, 0.0))
+	var key := Vector3i(row, int(round(height)), look)
+
+	if _rain_hours_cache.has(key):
+		return float(_rain_hours_cache[key])
+
+	var ago: float = WeatherScript.rain_hours_ago(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, row, settings.equator_tile_row, float(look))
+	_rain_hours_cache[key] = ago
+	return ago
 
 
 # The weather over the starter tile (zone from its row, season and time from the game clock,
