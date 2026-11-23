@@ -46,6 +46,14 @@ The store under bad luck (#1822). Lines to watch for in `docker logs dynasty-ser
 - `server save: X is from save N, which stopped before it finished ...` appears after a hard stop (a kill or power loss mid-save). X is read from the last whole save, so packs and chests agree, and the half-written file is kept beside it as `X.unfinished`. The `.unfinished` files are safe to leave or to delete once the server has started.
 Back up and restore the store with `tar --numeric-owner` (and `-p` on restore), so the files stay owned by the `dynasty` user. `tools/crash_drill.py --from-store <copy or tar>` kills a server on a throwaway copy of a store, round after round, and checks the store each time. Never point it at the live volume.
 
+CPU setting (Dave 23 Nov 2026: "make the thread/core count a setting we can set for the server to be allowed to use"): `DYNASTY_SERVER_CPUS` in
+compose.yaml, default **4**, is how many CPU threads the server plans its own threads round: the main thread, `N - 1` ground makers
+and up to 2 idle builders (none at 1 or 2). Set it in a `.env` file beside compose.yaml (`DYNASTY_SERVER_CPUS=6`) or on the command line
+(`DYNASTY_SERVER_CPUS=6 docker compose up -d`); `--cpus=N` on the server's own command line wins over it. 0 means every CPU the
+container may use. On a 6-core, 12-thread box running five other servers, 4 leaves the others room. The engine's own helper pool still
+sees the whole machine; to hold every thread to a set of CPUs, add a cpuset as below. The start line says what was chosen:
+`... with 3 worker threads and 2 idle builders (4 usable CPUs of 12, CPU setting 4)`.
+
 CPUs (coordinator decision D-STALL-1, 22 Nov 2026, from David4 tests): never give the server container a CPU quota (`--cpus`, compose `cpus:`). On David4 a 5-CPU quota (cgroup `cpu.max`) with a server and two clients inside gave 50 ms server stalls, because a quota pause stops every thread of the group at once. To keep the server and David4 apart, give the server its own CPUs with a cpuset instead, which never pauses: for example `cpuset: "6-11"` under the service (`docker run --cpuset-cpus 6-11`), with David4 pinned to other CPUs too (on Docker Desktop the numbers are the WSL 2 machine's CPUs, not Windows'). The server counts a cpuset when it picks its thread count (`src/shared/cpu_budget.gd`). Run no game clients inside the server's container. If a quota is set anyway (by hand or on the host), the server log's "items tick slow" line says "container CPU quota throttling rose X ms this tick" (#1481); without a quota that part is not printed.
 
 ## Join it
