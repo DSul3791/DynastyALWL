@@ -6179,7 +6179,7 @@ func _on_sick(hours: int) -> void:
 		_character.refresh()
 
 
-# The comfort meter (protocol 163, src/client/ui/comfort_badge.gd): one small borderless flame and its level, left of the hotbar; hover for the tooltip.
+# The comfort meter (protocol 164, src/client/ui/comfort_badge.gd): one small borderless flame and its level, left of the hotbar; hover for the tooltip.
 const ComfortBadgeScript := preload("res://src/client/ui/comfort_badge.gd")
 var comfort_level: int = 0       # the whole level shown, 0..10
 var comfort_tenths: int = 0      # the meter in tenths, 0..100

@@ -184,9 +184,9 @@ func _init() -> void:
 	items._lights_tick(5.0)
 	check(not bool(items._items[lamp]["struct"].get("lit", false)) and level() == before_lamp, "and goes out when the stick is used up")
 
-	# The HUD message (protocol 163): tenths, target, trend and the tooltip; told once, again when something changes; the tip only when it changed.
+	# The HUD message (protocol 164): tenths, target, trend and the tooltip; told once, again when something changes; the tip only when it changed.
 	var told: Array = []
-	items.send_comfort = func(_p, t, g, d, tip): told.append([t, g, d, tip])
+	items.send_comfort = func(_p, t, g, d, words): told.append([t, g, d, words])
 	items._comfort_goal[1] = 7.0
 	items._comfort_tick()
 	items._comfort_tick()

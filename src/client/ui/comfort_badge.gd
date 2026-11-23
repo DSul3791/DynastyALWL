@@ -1,5 +1,5 @@
 extends Control
-# The comfort meter on the HUD (Dave 23 Nov 2026; protocol 163): one small borderless symbol with its number, down low in the row left of the
+# The comfort meter on the HUD (Dave 23 Nov 2026; protocol 164): one small borderless symbol with its number, down low in the row left of the
 # hotbar, the same height as the hotbar (Dave: "keep all the hud down low and mostly minimalist", "no borders, just the symbols in a row").
 # A flame that warms from grey to amber with the level, the whole level 0 to 10 beside it, and a small arrow while it rises or falls.
 # Hover (cursor free) for the server's list of what counts and what is missing. View only: the server owns the meter. The status strip
@@ -38,7 +38,7 @@ func set_meter(new_tenths: int, new_target: int, new_trend: int, tip: String) ->
 
 
 static func level_of(meter_tenths: int) -> int:
-	return clampi(meter_tenths / 10, 0, 10)
+	return clampi(int(floor(float(meter_tenths) / 10.0)), 0, 10)
 
 
 func _process(delta: float) -> void:

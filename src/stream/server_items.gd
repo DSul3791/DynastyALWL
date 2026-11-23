@@ -23940,7 +23940,7 @@ func comfort_tip(peer: int) -> String:
 	lines.append("Comfort %d of %d (heading for %d)" % [level, mx, target])
 
 	if level > 0:
-		lines.append("Bonus %d%%:" % (level * 100 / maxi(mx, 1)))
+		lines.append("Bonus %d%%:" % int(round(float(level) * 100.0 / float(maxi(mx, 1)))))
 		lines.append("  health counts x%.1f" % (1.0 / maxf(comfort_bonus(peer, "damage_taken_mult"), 0.01)))
 		lines.append("  exertion and tiredness build %d%% slower" % int(round((1.0 - comfort_bonus(peer, "exhaustion_mult")) * 100.0)))
 		lines.append("  food and water last x%.1f" % (1.0 / maxf(comfort_bonus(peer, "hunger_thirst_mult"), 0.01)))
@@ -23978,7 +23978,7 @@ func _comfort_lit_fire_near(pos: Vector3, radius: float) -> bool:
 	return false
 
 
-# The HUD meter (protocol 163): (peer, meter in tenths 0..100, target level, trend -1 falling / 0 / 1 rising, tooltip or "" when unchanged).
+# The HUD meter (protocol 164): (peer, meter in tenths 0..100, target level, trend -1 falling / 0 / 1 rising, tooltip or "" when unchanged).
 var send_comfort: Callable
 var _comfort_sent: Dictionary = {}      # peer -> [tenths, target, trend]
 var _comfort_tip_sent: Dictionary = {}  # peer -> the last tooltip sent
@@ -23987,15 +23987,12 @@ const COMFORT_TIP_S := 1.5
 
 
 func _comfort_tick(_spent: float = 0.0) -> void:
-	if not send_comfort.is_valid():
-		return
-
 	var now: int = Time.get_ticks_msec()
 
 	for peer in _peer_key.keys():
 		_sync_food(peer, false)
 
-		if not _peer_pos.has(peer) or vitals_of(peer).is_empty():
+		if not send_comfort.is_valid() or not _peer_pos.has(peer) or vitals_of(peer).is_empty():
 			continue
 
 		var m: float = comfort_meter(peer)
