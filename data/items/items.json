@@ -774,7 +774,7 @@
 		"roast_meat": {
 			"number": 69,
 			"name": "Roast meat",
-			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
+			"description": "Meat roasted over a fire. Filling, and it keeps 5 to 8 game days in a pack.",
 			"kind": "food",
 			"stack": 10,
 			"value": 14,
@@ -903,7 +903,7 @@
 		"roast_fish": {
 			"number": 80,
 			"name": "Roast fish",
-			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
+			"description": "Fish cooked over a fire. Filling, and it keeps 4 to 6 game days in a pack.",
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
@@ -4636,7 +4636,7 @@
 		"apple_cooking": {
 			"number": 435,
 			"name": "Cooking apple",
-			"description": "A big sour apple that goes soft and sweet when cooked. Keeps a month.",
+			"description": "A big sour apple that goes soft and sweet when cooked. Keeps about 120 game days in a pack.",
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
@@ -4654,7 +4654,7 @@
 		"pear_autumn": {
 			"number": 437,
 			"name": "Autumn pear",
-			"description": "A juicy pear of September and October. Keeps a couple of weeks.",
+			"description": "A juicy pear of September and October. Keeps about 60 game days in a pack.",
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
