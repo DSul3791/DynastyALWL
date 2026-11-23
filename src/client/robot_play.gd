@@ -906,30 +906,32 @@ func _forest_walk(s: float) -> void:
 # standing at the same spot (_compare_crouch: blocked FAIL or obstacle note). Prints a TRAIL line.
 func _trail_crouch(s: float) -> void:
 	_step = "trail crouch"
+	var t0: int = Time.get_ticks_msec()
+
+	while _route_points().is_empty() and Time.get_ticks_msec() - t0 < 30000:   # the routes come with the trail blocks, a little after the join
+		await _wait(1.0)
+
 	var me: Vector3 = client.body.global_position
 	var best: Array = []   # [route points, index]
-	var best_score: float = -INF
-	var all_trees: Array = _trees_near(310.0)   # once: the loaded trees (about 150 m round)
 
-	for block in client.trail_signs.routes:
-		for route in client.trail_signs.routes[block]:
-			var pts: PackedVector2Array = route[1]
+	for attempt in range(2):   # none under trees near: run toward the nearest dry trail point (within 600 m) and look again
+		me = client.body.global_position
+		best = _trail_start(me)
 
-			for i in pts.size():
-				var d: float = Vector2(pts[i].x - me.x, pts[i].y - me.z).length()
+		if not best.is_empty() or attempt == 1:
+			break
 
-				if d > 170.0 or _wet(pts[i]):   # trees load about 150 m round: no point farther can have one within 8 m
-					continue
+		var near_p: Vector2 = Vector2.INF
 
-				var trees: int = 0
+		for rp in _route_points():
+			if not _wet(rp[1]) and (near_p == Vector2.INF or (rp[1] as Vector2).distance_to(Vector2(me.x, me.z)) < near_p.distance_to(Vector2(me.x, me.z))):
+				near_p = rp[1]
 
-				for t in all_trees:
-					trees += 1 if Vector2(t[0].x - pts[i].x, t[0].z - pts[i].y).length() <= 8.0 else 0
+		if near_p == Vector2.INF or near_p.distance_to(Vector2(me.x, me.z)) > 600.0:
+			break
 
-				var score: float = float(trees) * 20.0 - d   # many trees near the trail, then the nearer
-				if trees > 0 and score > best_score:
-					best_score = score
-					best = [pts, i]
+		await _run_to(Vector3(near_p.x, me.y, near_p.y), 90.0, 6.0)
+		await _wait(4.0)
 
 	if best.is_empty():
 		_note("trail", "no dry game trail under trees within 170 m of %s (%d route points known)" % [str(me.round()), _route_points().size()])
@@ -994,6 +996,35 @@ func _trail_crouch(s: float) -> void:
 	await _stance_to(StanceScript.STAND)
 	FreezeWatchScript.printer.line("ROBOT %s TRAIL crouch along a game trail %s at %s: %.0f m in %d legs of 2 s, %d under trees (4 m), %d stops, at most %.1f m off its line" % [
 		robot_name, "reached" if there else "short of it", str(start.round()), total, legs, trees_by, stops, off_most])
+
+
+# The dry game-trail point with the most trees within 8 m, then the nearest, within 170 m of `me` (trees load about 150 m round): [route points, index], or [].
+func _trail_start(me: Vector3) -> Array:
+	var best: Array = []
+	var best_score: float = -INF
+	var all_trees: Array = _trees_near(310.0)   # once: the loaded trees
+
+	for block in client.trail_signs.routes:
+		for route in client.trail_signs.routes[block]:
+			var pts: PackedVector2Array = route[1]
+
+			for i in pts.size():
+				var d: float = Vector2(pts[i].x - me.x, pts[i].y - me.z).length()
+
+				if d > 170.0 or _wet(pts[i]):   # trees load about 150 m round: no point farther can have one within 8 m
+					continue
+
+				var trees: int = 0
+
+				for t in all_trees:
+					trees += 1 if Vector2(t[0].x - pts[i].x, t[0].z - pts[i].y).length() <= 8.0 else 0
+
+				var score: float = float(trees) * 20.0 - d   # many trees near the trail, then the nearer
+				if trees > 0 and score > best_score:
+					best_score = score
+					best = [pts, i]
+
+	return best
 
 
 # A polyline with a point every `m` metres.
