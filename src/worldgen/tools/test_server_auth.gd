@@ -8,6 +8,7 @@ extends SceneTree
 const ServerAuth := preload("res://src/shared/server_auth.gd")
 const ServerSettings := preload("res://src/stream/server_settings.gd")
 const BlockLinkServer := preload("res://src/stream/block_link_server.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 var port: int = 7700 + randi() % 150
@@ -21,13 +22,14 @@ func check(ok: bool, what: String) -> void:
 
 
 # One join: a server (open when password is "") and a client that answers each ask from `answers` in turn. Returns what happened.
-func join(password: String, answers: Array, server_auth = null) -> Dictionary:
+# Both sides speak protocol `server_protocol` / `client_protocol` (server_auth.gd 161; 0 is the handshake from before 161, as a 9257 build).
+func join(password: String, answers: Array, server_auth = null, server_protocol: int = Net.PROTOCOL_VERSION, client_protocol: int = Net.PROTOCOL_VERSION) -> Dictionary:
 	port += 1
 	var server_mp: SceneMultiplayer = SceneMultiplayer.new()
 	var client_mp: SceneMultiplayer = SceneMultiplayer.new()
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var client_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var result: Dictionary = {"connected": false, "asked": [], "refused": "", "accepted": ""}
+	var result: Dictionary = {"connected": false, "asked": [], "refused": "", "accepted": "", "outdated": "", "heard": false}
 
 	if server_auth == null:
 		server_auth = ServerAuth.new()
@@ -37,7 +39,10 @@ func join(password: String, answers: Array, server_auth = null) -> Dictionary:
 		server_auth.password_hash = ServerAuth.hash_password(server_auth.salt, password)
 
 	server_auth.address_of = func(_peer: int) -> String: return "127.0.0.1"
+	server_auth.protocol = server_protocol
 	var client_auth = ServerAuth.new()
+	client_auth.protocol = client_protocol
+	client_auth.outdated.connect(func(text: String) -> void: result["outdated"] = text)
 	client_auth.password_needed.connect(func(left: int, wrong: bool) -> void:
 		result["asked"].append([left, wrong])
 		var index: int = result["asked"].size() - 1
@@ -59,7 +64,7 @@ func join(password: String, answers: Array, server_auth = null) -> Dictionary:
 		client_mp.poll()
 		await process_frame
 
-		if result["connected"] or result["refused"] != "" or (result["asked"].size() > answers.size()):
+		if result["connected"] or result["refused"] != "" or result["outdated"] != "" or (result["asked"].size() > answers.size()):
 			break
 
 	for i in 90:    # let a drop arrive
@@ -67,6 +72,7 @@ func join(password: String, answers: Array, server_auth = null) -> Dictionary:
 		client_mp.poll()
 		await process_frame
 
+	result["heard"] = client_auth.heard
 	client_peer.close()
 	server_peer.close()
 	return result
@@ -93,6 +99,23 @@ func _initialize() -> void:
 	check(not fourth["connected"] and fourth["refused"] == "busy" and fourth["asked"].size() == 2, "the fifth wrong from one address within a minute: refused (busy)")
 	var fifth: Dictionary = await join("", [], guard)
 	check(not fifth["connected"] and fifth["refused"] == "busy" and fifth["asked"].is_empty(), "the next join from that address is refused at once, before any ask")
+
+	# Protocol 161: a game and a server of different versions say so at the first word, before any call either would misread (a build 9257
+	# client on a newer server, 23 Nov 2026: every call landed on the wrong method and the player was never told).
+	var p: int = Net.PROTOCOL_VERSION
+	var older: Dictionary = await join("", [], null, p, p - 1)
+	check(not older["connected"] and older["outdated"].contains("older than the server") and older["outdated"].contains("Install the new version"), "an older game on this server: not let in, told to install the new version (%s)" % older["outdated"].replace("\n", " "))
+	var newer: Dictionary = await join("Hannibal", [], null, p, p + 1)
+	check(not newer["connected"] and newer["outdated"].contains("newer than the server") and newer["asked"].is_empty(), "a newer game: told the server is not updated yet, never asked for a password")
+	var before: Dictionary = await join("", [], null, p, 0)
+	check(not before["connected"] and not before["heard"], "a game from before 161 (no hi) hears nothing: its own wait says the server runs another build")
+	var old_server: Dictionary = await join("", [], null, 0, p)
+	check(not old_server["connected"] and old_server["outdated"].contains("newer than the server") and old_server["outdated"].contains("before version 161"), "this game on a server from before 161: told the server is older")
+	var locked_old: Dictionary = await join("Hannibal", [], null, 0, p)
+	check(not locked_old["connected"] and locked_old["outdated"] != "" and locked_old["asked"].is_empty(), "and never asked for that older server's password")
+	check(ServerAuth.outdated_text(150, 161).contains("Your character and world are kept"), "the update words say nothing is lost")
+	var hello_old: Dictionary = await join("", [], null, 0, 0)
+	check(hello_old["connected"], "the handshake from before 161 still works between two old sides (the tests above use it)")
 
 	var dir: String = OS.get_cache_dir().path_join("dynasty_test_auth_%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(dir)
