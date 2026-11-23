@@ -58,6 +58,11 @@ func robbed(spot: Vector3, day: int) -> void:
 	_redraw()
 
 
+func clear_robbed() -> void:
+	_robbed.clear()
+	_redraw()
+
+
 func is_robbed(spot: Vector3, kind: String) -> bool:
 	for r in _robbed:
 		if Vector2((r[0] as Vector3).x - spot.x, (r[0] as Vector3).z - spot.z).length() <= ROBBED_SAME_M and _day - int(r[1]) < int(_refill.get(kind, 3)):

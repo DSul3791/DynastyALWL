@@ -261,9 +261,12 @@ func _check_taken() -> void:
 
 	check(to_three.has(ItemsScript.TAKEN_BRANCH) and (to_three[ItemsScript.TAKEN_BRANCH] as PackedVector3Array).size() == 2, "a newcomer is told both taken branches as it walks in (%s)" % str(to_three.get(ItemsScript.TAKEN_BRANCH, [])))
 	items._nest_taken["n1"] = items._game_day()
+	items._nest_at["n1"] = Vector3(1.0, 10.0, 1.0)
 	items._shore_taken["0,0"] = items._game_day()
 	told.clear()
-	items.report_position(3, HERE + Vector3(40.0, 0.0, 0.0))   # a new 32 m square
+	items.report_position(3, HERE + Vector3(40.0, 0.0, 0.0))   # one square over: not yet
+	check(told.is_empty(), "stepping into the next 32 m square sends nothing again (no resend at every line)")
+	items.report_position(3, HERE + Vector3(70.0, 0.0, 0.0))   # two squares on
 	to_three = {}
 
 	for t in told:
@@ -272,11 +275,16 @@ func _check_taken() -> void:
 
 	check(to_three.has(ItemsScript.TAKEN_NEST) and to_three.has(ItemsScript.TAKEN_SHORE), "walking into a new square tells the robbed nest and the used tide-line node round it (%s)" % str(to_three.keys()))
 	told.clear()
-	items.report_position(3, HERE + Vector3(41.0, 0.0, 0.0))
+	items.report_position(3, HERE + Vector3(71.0, 0.0, 0.0))
 	check(told.is_empty(), "inside the same square nothing is sent again")
-	clock[0] += 86400.0 * float(ItemsScript.BRANCH_REGROW_DAYS)
+	clock[0] += 86400.0
 	items.action(2, Net.ACT_LITTER, 0, 0, 0, branch)
 	check(items.inventory_of(2).count_of(stick) == 2, "a game day later the branch has grown back")
+	items.action(2, Net.ACT_LITTER, 0, 0, 0, Vector3(NAN, 10.0, 0.0))
+	check(items.inventory_of(2).count_of(stick) == 2, "a pick at a made-up point gives nothing and is not kept")
+	told.clear()
+	items.reset_world()
+	check(told.filter(func(t): return int(t[1]) == ItemsScript.TAKEN_CLEAR).size() == 3, "a world reset tells every player to forget what was taken")
 
 
 # The client side of ground_taken: the grass view hides a taken branch (and again when its cell is rebuilt); a robbed nest shows empty until it refills.
@@ -296,13 +304,21 @@ func _check_taken_drawn() -> void:
 		buffer[o + 7] = 10.0
 		buffer[o + 11] = 19.0
 
-	grass._cells[cell] = {"bufs": {layer: buffer}}
-	grass.take_branch(Vector3(13.1, 10.0, 19.0))   # the first branch's middle
+	grass.today = 400
+	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}
+	grass.take_branch(Vector3(13.6, 10.0, 19.3), 400)   # another client's middle for the first branch, half a metre off: its nearest is hidden
 	var after: PackedFloat32Array = grass._cells[cell]["bufs"][layer]
-	check(absf(after[0]) < 0.001 and absf(after[16] - 1.2) < 0.001, "the taken branch is hidden, the one beside it stays")
-	grass._cells[cell] = {"bufs": {layer: buffer}}   # the cell built again with both
+	check(absf(after[0]) < 0.001 and absf(after[16] - 1.2) < 0.001, "a branch another player took is hidden here (the nearest one), the one beside it stays")
+	grass.take_branch(Vector3(13.1, 10.0, 19.0), 400)   # this client's own pick of that branch, echoed: already hidden, nothing more goes
+	check(absf((grass._cells[cell]["bufs"][layer] as PackedFloat32Array)[16] - 1.2) < 0.001, "a point already done hides no second branch")
+	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}   # the cell built again with both
 	grass._hide_taken(cell)
-	check(absf((grass._cells[cell]["bufs"][layer] as PackedFloat32Array)[0]) < 0.001, "and stays hidden when its cell is built again")
+	after = grass._cells[cell]["bufs"][layer]
+	check(absf(after[0]) < 0.001 and absf(after[16] - 1.2) < 0.001, "and it stays hidden when its cell is built again")
+	grass.today = 401
+	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}
+	grass._hide_taken(cell)
+	check(absf((grass._cells[cell]["bufs"][layer] as PackedFloat32Array)[0] - 1.2) < 0.001, "the next game day it has grown back")
 	grass.free()
 	var nests = preload("res://src/client/nest_view.gd").new()
 	nests._ready()

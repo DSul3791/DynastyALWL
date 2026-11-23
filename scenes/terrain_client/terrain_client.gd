@@ -3631,11 +3631,21 @@ func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32A
 # Protocol 160: forest-floor pickups taken by anyone (this player too), as the server keeps them: a dead branch is hidden, a tide-line
 # node is used for that day, a nest shows empty until it refills (server_items.gd _tell_taken_near).
 func _on_ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array) -> void:
+	if kind == 3 and points.is_empty():
+		points = PackedVector3Array([Vector3.ZERO])   # the clear carries no points
+
 	for i in points.size():
 		var day: int = days[i] if i < days.size() else int(floor(game_clock.seconds / 86400.0))
 
-		if kind == 0 and grass != null:
-			grass.take_branch(points[i])
+		if kind == 3:
+			if grass != null:
+				grass.clear_taken()
+			_shore_used.clear()
+			if nest_view != null:
+				nest_view.clear_robbed()
+			return
+		elif kind == 0 and grass != null:
+			grass.take_branch(points[i], day)
 		elif kind == 1:
 			_shore_used[ShoreRules.cell_key(_shore_cfg, points[i])] = day
 		elif kind == 2 and nest_view != null:
@@ -6114,6 +6124,9 @@ func _process(delta: float) -> void:
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
 	game_clock.tick()
+
+	if grass != null:
+		grass.today = int(floor(game_clock.seconds / 86400.0))   # taken branches of an earlier day have grown back (protocol 160)
 	_update_weather()
 	Probe.stop("clock, weather", tp)
 
