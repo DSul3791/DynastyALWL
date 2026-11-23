@@ -424,7 +424,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": []}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": [], "contact_m": AnimalContact.contact_m(str(KIND_OF_SPECIES.get(int(row[1]), ""))), "turn_rad_s": AnimalContact.draw_turn_rad_s(str(KIND_OF_SPECIES.get(int(row[1]), "")))}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
@@ -591,9 +591,19 @@ func _process_body(delta: float) -> void:
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
 		var t_drawn: float = present if ahead else drawn_at
 		var drawn: Array = MotionBuffer.at(b["samples"], t_drawn, (MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else -1.0)   # only a charge carries on; the others stand
-		var spot: Vector3 = AnimalContact.stop_toward(me, b.get("sm_p", before), drawn[0], AnimalContact.contact_m(str(b["kind"]))) if ahead and me != Vector3.INF else drawn[0]   # a charge carried on stops at the player, as the server's does
+		var spot: Vector3 = drawn[0]
+
+		if not ahead:
+			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
+
+		if me != Vector3.INF:
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]))   # never drawn into the local player: a carried charge, or the feet's ease past a wolf's stop
+
+		if ahead:
+			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
+
 		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
-		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		b["spd"] = spd

@@ -206,10 +206,12 @@ func _init() -> void:
 	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 	check(float(fire["burn_left"]) <= 0.0 and int(fire["state"]) == 8, "an empty store: no burn time, the fire is out (burn %s, state %d)" % [str(fire["burn_left"]), int(fire["state"])])
 
-	# Hold E on an unlit fire with an empty store picks it up.
+	# Hold E on an unlit fire with an empty store picks it up: its first sticks are gone, so the kit's stones and other sticks come back, not a
+	# whole kit (which would lay its sticks again: to-do sweep 23 Nov 2026).
 	var kits_before: int = f.inventory_of(1).count_of(f.table.number_of("campfire_kit"))
+	var stones_before: int = f.inventory_of(1).count_of(f.table.number_of("stone"))
 	f.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(not f._items.has(id) and f.inventory_of(1).count_of(f.table.number_of("campfire_kit")) == kits_before + 1, "an unlit fire with an empty store is picked up as a kit")
+	check(not f._items.has(id) and f.inventory_of(1).count_of(f.table.number_of("campfire_kit")) == kits_before and f.inventory_of(1).count_of(f.table.number_of("stone")) == stones_before + 16, "an unlit fire with an empty store is picked up as the kit's parts (16 stones)")
 
 	print("fire store: %d failures" % failures)
 	f._finish_writer()

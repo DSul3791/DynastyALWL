@@ -160,7 +160,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   train it as before. Signs show from Tracking 5 (latrines, droppings) and 25 (scrapes, prints), was 25 and 50. Tracking 10 (the map's
   trails) is about 970 units: about 1.5 hours of steady trail following at 5.4 units a practice, held to about 3.2 to 3.7 hours by the
   skill's soft day cap (gain falls toward nothing at 300 units a game day, an hour); by kills alone it would be about 360 kills. Spotting a sign (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp
-  for finding them"; protocol 153): the first time a shown sign comes within 6 m it glows softly for 1.6 s, a slight sound plays there
+  for finding them"; protocol 153): the first time a shown sign comes within 6 m a soft pale patch round it lightens for about 4 s (lit like the ground, so dark at night), a slight sound plays there
   (sign_spot, a soft intake of breath, assets/audio/make_sign.py) and the server trains Tracking once per sign per character in 3 game
   days (within 12 m of the player, a trail within 6 m, from Tracking 5). Dave's skill rule: 1 to 24 by use, a trainer for 25 to 49, so the
   richer signs at 25 come with the trainer; the trainer is not part of this. The look rig sets a level with --skill tracking:N.
@@ -171,7 +171,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   about one catch in six there is a fox (which animal it was goes through the owner's luck, the fox being the bigger catch).
 - TR-11 players' paths: 0.04 a pass (half a deer's 0.08), drawn from about 6 walks there and back, fading 0.14 a game day (a
   well-walked path is gone in about a game week, against 4 days for an animal trail), none more than 1.5 m above the ground.
-- TR-13 signs: see data/look/trail_signs.json (latrine 1-3 m off, 8-15 pellets; scrape where runs pass within 2 m, 5 m clear of
+- TR-13 signs: see data/look/trail_signs.json (latrine 1-3 m off, 30-50 pellets of about 2 cm on a dark scratched patch, lifted over the litter (Lane A Job S 23 Nov: the first 8-15 tiny pellets did not show); scrape where runs pass within 2 m, 5 m clear of
   a warren; prints 4-6 on water within 3 m, one line per 30 m; droppings within 4 m of a bed; Tracking 5 and 25 (TR-14); 15 to 30 m).
 - TR-12 choke point: within 1.2 m of a tree's root or a boulder's edge, on a rabbit run (the snare's prey), x1.5; the Bird trap takes no lift.
 

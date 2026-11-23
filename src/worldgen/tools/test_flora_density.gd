@@ -65,6 +65,9 @@ func _init() -> void:
 	_check(K.collider_radius(K.KIND_SHRUB, 0.3, 1.0, 7.0) == 0.0, "a 7 m hazel or elder is walked through")
 	_check(K.collider_radius(K.KIND_PLANT, 0.0, 1.0, 1.8) == 0.0, "a 1.8 m tall grass plant has no collider")
 	_check(K.collider_radius(K.KIND_TREE, 0.4, 1.0, 20.0) > 0.3, "a tree keeps its trunk collider")
+	_check(K.collider_radius(K.KIND_TREE, 0.4, 0.05, 1.0) == 0.0, "a 1 m sapling has no collider (no invisible pole)")
+	_check(K.collider_radius(K.KIND_TREE, 0.4, 0.09, K.SAPLING_M - 0.01) == 0.0, "a tree just under SAPLING_M is pushed through")
+	_check(K.collider_radius(K.KIND_TREE, 0.4, 0.1, K.SAPLING_M) > 0.0, "a young tree of SAPLING_M keeps its trunk collider")
 	var step: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/movement.json"))["step_up_m"])
 
 	# Fallen-log colliders: short logs are walk-through, long ones get a capsule of the model's radius that a 0.5 m step-up can only clear when low.
