@@ -873,11 +873,11 @@ static func _deeper_in(to: Vector3, from: Vector3, players: Array, m: float) -> 
 	return false
 
 
-# An animal a player at `at` has walked or run into steps out of their body at up to half its flee speed (its walking pace at least), `dt` s
-# of it, away from them; not into
-# ground it cannot walk on. Birds in the air or on a perch, animals in a burrow or cave and a bandit camp's tied horses stay. True when it moved.
+# An animal a player at `at` has walked or run into steps out of their body at up to half its flee speed (its walking pace at least; a
+# goblin or bandit, defend give_way "player", at the player's pace), `dt` s of it, away from them; not into ground it cannot walk on. Birds
+# in the air or on a perch, animals in a burrow or cave, a bandit camp's tied horses and a bandit who gave up stay. True when it moved.
 func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool:
-	if at == Vector3.INF or a.has("fly") or a.has("camp") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
+	if at == Vector3.INF or a.has("fly") or (a.has("camp") and (a.has("gave_up") or str(species_def(str(a["sp"])).get("defend", {}).get("give_way", "")) != "player")) or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
 		return false
 
 	# Big game warning, charging or recovering is stepped out too (Lane B 23 Nov 2026: a deer that warned at a player it stood inside struck
@@ -891,6 +891,14 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
 	# At up to half its flee speed (robots 23 Nov 2026: a dog a running player chased stayed 0.1 to 0.3 m inside them for 0.66 s at walking pace).
 	var pace_mps: float = maxf(float(def.get("walk_mps", 1.5)), 0.5 * float(def.get("flee_mps", 0.0)))
+
+	# A fighter (defend give_way "player": goblins and bandits) gives way as fast as the player pushes, a little more, and out of where the
+	# player will be by its next step, not where they are (robots 23 Nov 2026: a goblin 0.21 to 0.25 m inside a player who walked into it
+	# to strike, giving way at 2.75 m/s against the player's 5, one step every tenth of a second).
+	if str(def.get("defend", {}).get("give_way", "")) == "player":
+		var push: Vector2 = player_velocity_at(at)
+		pace_mps = maxf(pace_mps, push.length() + 1.0)
+		out = AnimalContact.keep_off(a["pos"], at + Vector3(push.x, 0.0, push.y) * dt, AnimalContact.contact_m(str(a["sp"])))
 	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):
