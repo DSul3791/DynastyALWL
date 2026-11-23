@@ -120,7 +120,7 @@
 		{
 			"id": "spear",
 			"trigger": "workbench_placed",
-			"text": "Make a Wooden - Spear, then bind it with 2 twine.",
+			"text": "Make a Wooden - Spear, then bind a stone on with 2 twine.",
 			"goal": "spear"
 		},
 		{
