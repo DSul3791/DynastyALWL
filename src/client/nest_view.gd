@@ -4,7 +4,7 @@ extends Node3D
 # basic_look.gd's ground "nest" (a ring of dry grass round a hollow, pale eggs in it), drawn larger as on the beach (shore_props.gd):
 # a grouse scrape in heather and long grass is wide and low; a songbird cup is smaller and a little darker. In the kind's laying
 # seasons (data/items/nests.json) the nest shows eggs; out of season it is an old empty nest, as the server says when you look in.
-# A nest robbed this season still shows eggs here: the robbed record is on the server only. One MultiMesh per kind and season look,
+# A nest robbed lately (by anyone: ground_taken, protocol 160) shows empty until its refill_days pass. One MultiMesh per kind and season look,
 # so all nests are at most four draw calls.
 #
 # Shared with Jason's nest calls (5 Nov): spots and kinds are the last set the server sent, kind 0 grouse, 1 songbird; nearest()
@@ -22,6 +22,10 @@ var kinds: PackedByteArray = PackedByteArray()
 var _season: String = ""
 var _seasons: Dictionary = {}                               # kind -> the seasons it lays in (nests.json)
 var _multi: Dictionary = {}                                 # "kind:full" or "kind:empty" -> MultiMeshInstance3D
+var _robbed: Array = []                                     # [[spot, game day robbed], ...] (ground_taken kind 2)
+var _refill: Dictionary = {}                                # kind -> refill_days (nests.json)
+var _day: int = 0
+const ROBBED_SAME_M := 0.5
 
 
 func _ready() -> void:
@@ -30,6 +34,7 @@ func _ready() -> void:
 
 	for kind in KINDS:
 		_seasons[kind] = rows.get(kind, {}).get("seasons", [])
+		_refill[kind] = int(rows.get(kind, {}).get("refill_days", 3))
 
 
 func on_nests(points: PackedVector3Array, kind_ids: PackedByteArray) -> void:
@@ -39,10 +44,26 @@ func on_nests(points: PackedVector3Array, kind_ids: PackedByteArray) -> void:
 
 
 # Called with the game season (terrain_client, beside the shore props); a change of season swaps eggs in or out.
-func set_season(season: String) -> void:
-	if season != _season:
+func set_season(season: String, day: int = 0) -> void:
+	if season != _season or day != _day:
 		_season = season
+		_day = day
 		_redraw()
+
+
+# A nest robbed on game `day` (by anyone): empty until its kind's refill_days have passed.
+func robbed(spot: Vector3, day: int) -> void:
+	_robbed = _robbed.filter(func(r): return Vector2((r[0] as Vector3).x - spot.x, (r[0] as Vector3).z - spot.z).length() > ROBBED_SAME_M)
+	_robbed.append([spot, day])
+	_redraw()
+
+
+func is_robbed(spot: Vector3, kind: String) -> bool:
+	for r in _robbed:
+		if Vector2((r[0] as Vector3).x - spot.x, (r[0] as Vector3).z - spot.z).length() <= ROBBED_SAME_M and _day - int(r[1]) < int(_refill.get(kind, 3)):
+			return true
+
+	return false
 
 
 # The index of the nearest nest within reach metres of a point (flat distance), or -1.
@@ -65,7 +86,7 @@ func _redraw() -> void:
 
 	for i in spots.size():
 		var kind: String = KINDS[clampi(int(kinds[i]) if i < kinds.size() else 0, 0, KINDS.size() - 1)]
-		var key: String = kind + (":full" if _seasons.get(kind, []).has(_season) else ":empty")
+		var key: String = kind + (":full" if _seasons.get(kind, []).has(_season) and not is_robbed(spots[i], kind) else ":empty")
 
 		if not groups.has(key):
 			groups[key] = []

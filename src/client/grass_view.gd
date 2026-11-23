@@ -1164,6 +1164,56 @@ func branch_near(here: Vector3, radius: float) -> Dictionary:
 	return best
 
 
+# A dead branch taken by anyone (protocol 160 ground_taken; this player's own pick too): hidden now and whenever its cell is built again.
+# Kept by grass cell; a branch's middle can lie in the next cell from its record's, so the cells round it are looked at.
+const TAKEN_SAME_M := 0.25
+var _taken_branches: Dictionary = {}   # Vector2i grass cell -> PackedVector3Array of taken branch middles
+
+
+func take_branch(at: Vector3) -> void:
+	var cell: Vector2i = Vector2i(int(floor(at.x / CELL_M)), int(floor(at.z / CELL_M)))
+	var list: PackedVector3Array = _taken_branches.get(cell, PackedVector3Array())
+	list.append(at)
+	_taken_branches[cell] = list
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			_hide_taken(cell + Vector2i(dx, dz))
+
+
+func _hide_taken(cell: Vector2i) -> void:
+	var entry: Dictionary = _cells.get(cell, {})
+	var layer: int = GRASS_LAYERS + 1
+
+	if entry.is_empty() or not entry.get("bufs", {}).has(layer):
+		return
+
+	var taken: PackedVector3Array = PackedVector3Array()
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			taken.append_array(_taken_branches.get(cell + Vector2i(dx, dz), PackedVector3Array()))
+
+	if taken.is_empty():
+		return
+
+	var buffer: PackedFloat32Array = entry["bufs"][layer]
+
+	@warning_ignore("integer_division")
+	for n in range(buffer.size() / 16):
+		var o: int = n * 16
+
+		if Vector2(buffer[o], buffer[o + 2]).length() < 0.01:
+			continue   # hidden already
+
+		var mid: Vector2 = Vector2(buffer[o + 3] + buffer[o] * 0.5, buffer[o + 11] + buffer[o + 2] * 0.5)   # as branch_near
+
+		for p in taken:
+			if mid.distance_to(Vector2(p.x, p.z)) <= TAKEN_SAME_M:
+				hide_branch(cell, n)
+				break
+
+
 # Hides one dead branch (a stick was picked up): its record is scaled to nothing and the group redrawn.
 func hide_branch(cell: Vector2i, at: int) -> void:
 	var entry: Dictionary = _cells.get(cell, {})
@@ -2267,6 +2317,7 @@ func _build(cell: Vector2i) -> int:
 			entry["count"] += count
 			tufts += count
 
+	_hide_taken(cell)   # a branch someone took stays gone when its cell is built again (protocol 160)
 	return rays
 
 

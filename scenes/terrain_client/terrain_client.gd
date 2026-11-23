@@ -1740,6 +1740,7 @@ func _welcome_body(info: Dictionary) -> void:
 	net.flight_seen_received.connect(func(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 		if held != null:
 			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 159)
+	net.ground_taken_received.connect(_on_ground_taken)   # branches, tide-line nodes and nests others took (protocol 160)
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
@@ -2435,7 +2436,7 @@ func _shore_prompt() -> String:
 			break
 
 	if nest_view != null:
-		nest_view.set_season(game_clock.season())   # eggs show in the laying season only
+		nest_view.set_season(game_clock.season(), int(floor(game_clock.seconds / 86400.0)))   # eggs show in the laying season only, and not in a nest robbed lately
 
 	if shore_props != null:
 		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
@@ -3625,6 +3626,20 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 
 func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
 	flora.set_fruit_taken(chunk, ids, taken)
+
+
+# Protocol 160: forest-floor pickups taken by anyone (this player too), as the server keeps them: a dead branch is hidden, a tide-line
+# node is used for that day, a nest shows empty until it refills (server_items.gd _tell_taken_near).
+func _on_ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array) -> void:
+	for i in points.size():
+		var day: int = days[i] if i < days.size() else int(floor(game_clock.seconds / 86400.0))
+
+		if kind == 0 and grass != null:
+			grass.take_branch(points[i])
+		elif kind == 1:
+			_shore_used[ShoreRules.cell_key(_shore_cfg, points[i])] = day
+		elif kind == 2 and nest_view != null:
+			nest_view.robbed(points[i], day)
 
 
 func _on_flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:

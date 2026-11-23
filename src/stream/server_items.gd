@@ -824,6 +824,7 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	_taken_told.erase(peer)
 	_held.erase(peer)
 	_held_left.erase(peer)
 	_hand_flags.erase(peer)
@@ -984,6 +985,7 @@ func report_position(peer: int, position: Vector3) -> void:
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
 			_sync_goals(peer)   # the drink goal's hint names the way to water from here
 		_note_motion(peer, position)
+		_tell_taken_near(peer, position)   # the branches, tide-line nodes and nests taken round here (protocol 160)
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
 		_note_road_trip(peer, position)
 		var now: int = Time.get_ticks_msec()
@@ -3173,6 +3175,8 @@ func reset_world() -> int:
 	_fruit.clear()
 	_shore_taken.clear()
 	_nest_taken.clear()
+	_branch_taken.clear()
+	_taken_told.clear()   # everyone is told again where they stand (nothing is taken now)
 	_fish_stock.clear()
 	_mined.clear()
 	_chops.clear()
@@ -5752,12 +5756,115 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 	if now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
 		return
 
+	if _branch_gone(at):
+		return   # another player took this branch (protocol 160: their client hides it as this one's did)
+
 	_last_gather[peer] = now_ms
 	var before: Array = _snapshot(inv)
 	_take_in(peer, inv, table.number_of("stick"), 1)
 
 	_send_changes(peer, inv, before)
 	_dirty = true
+	var cell: Vector2i = _taken_cell_of(at)
+
+	if not _branch_taken.has(cell):
+		_branch_taken[cell] = []
+
+	(_branch_taken[cell] as Array).append([at, _game_day()])
+	_tell_taken(TAKEN_BRANCH, at, _game_day())
+
+
+# --- Forest-floor pickups seen alike (protocol 160; coordinator 23 Nov 2026, two players see the same world) ---
+# Dead branches are drawn by each client (grass_view litter), tide-line nodes and bird nests from the cell and the day: a branch one player
+# picked stayed for the others (and could be picked again by each of them), and a node or nest used up showed full to everyone else. The
+# server keeps what was taken and tells the players within TAKEN_SEND_M: at once when it goes, and as they walk into a new TAKEN_CELL_M
+# square (every taken spot round them, so a newcomer sees the same). Branches are kept in memory only, for BRANCH_REGROW_DAYS game days.
+const TAKEN_BRANCH := 0
+const TAKEN_SHORE := 1
+const TAKEN_NEST := 2
+const TAKEN_CELL_M := 32.0
+const TAKEN_SEND_M := 150.0
+const BRANCH_REGROW_DAYS := 1
+const BRANCH_SAME_M := 0.25          # a branch within this of a taken one is the same branch (each client works out its middle in float32)
+var send_taken: Callable             # (peer, kind, points PackedVector3Array, game days PackedInt32Array): ground_taken (protocol 160)
+var _branch_taken: Dictionary = {}   # Vector2i TAKEN_CELL_M square -> [[point, game day], ...]
+var _taken_told: Dictionary = {}     # peer -> the TAKEN_CELL_M square it was last told about
+
+
+func _taken_cell_of(at: Vector3) -> Vector2i:
+	return Vector2i(int(floor(at.x / TAKEN_CELL_M)), int(floor(at.z / TAKEN_CELL_M)))
+
+
+func _branch_gone(at: Vector3) -> bool:
+	var day: int = _game_day()
+	var cell: Vector2i = _taken_cell_of(at)
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for row in _branch_taken.get(cell + Vector2i(dx, dz), []):
+				if day - int(row[1]) < BRANCH_REGROW_DAYS and Vector2((row[0] as Vector3).x - at.x, (row[0] as Vector3).z - at.z).length() <= BRANCH_SAME_M:
+					return true
+
+	return false
+
+
+func _shore_cell_middle(key: String) -> Vector3:
+	var cell_m: float = float(_shore_data().get("cell_m", 8.0))
+	return Vector3((float(key.get_slice(",", 0)) + 0.5) * cell_m, 0.0, (float(key.get_slice(",", 1)) + 0.5) * cell_m)
+
+
+func _tell_taken(kind: int, at: Vector3, day: int) -> void:
+	if not send_taken.is_valid():
+		return
+
+	for peer in _peer_pos:
+		if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() <= TAKEN_SEND_M:
+			send_taken.call(peer, kind, PackedVector3Array([at]), PackedInt32Array([day]))
+
+
+# A player in a new TAKEN_CELL_M square (or just joined): every taken spot within TAKEN_SEND_M, one message per kind that has any.
+func _tell_taken_near(peer: int, here: Vector3) -> void:
+	var cell: Vector2i = _taken_cell_of(here)
+
+	if _taken_told.get(peer, null) == cell or not send_taken.is_valid():
+		return
+
+	_taken_told[peer] = cell
+	var day: int = _game_day()
+	var reach: int = int(ceil(TAKEN_SEND_M / TAKEN_CELL_M))
+	var rows: Array = [[PackedVector3Array(), PackedInt32Array()], [PackedVector3Array(), PackedInt32Array()], [PackedVector3Array(), PackedInt32Array()]]
+	var near: Callable = func(p: Vector3) -> bool: return Vector2(p.x - here.x, p.z - here.z).length() <= TAKEN_SEND_M
+
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			var key: Vector2i = cell + Vector2i(dx, dz)
+			var kept: Array = (_branch_taken.get(key, []) as Array).filter(func(r): return day - int(r[1]) < BRANCH_REGROW_DAYS)
+
+			if kept.is_empty():
+				_branch_taken.erase(key)   # regrown: forgotten as players pass
+				continue
+
+			_branch_taken[key] = kept
+
+			for row in kept:
+				if near.call(row[0]):
+					rows[TAKEN_BRANCH][0].append(row[0])
+					rows[TAKEN_BRANCH][1].append(int(row[1]))
+
+	for key in _shore_taken:
+		if int(_shore_taken[key]) == day and near.call(_shore_cell_middle(str(key))):
+			rows[TAKEN_SHORE][0].append(_shore_cell_middle(str(key)))
+			rows[TAKEN_SHORE][1].append(day)
+
+	if not _nest_taken.is_empty() and nests_near.is_valid():
+		for nest in nests_near.call(here, TAKEN_SEND_M):
+			if _nest_taken.has(str(nest["id"])):
+				rows[TAKEN_NEST][0].append(nest["pos"])
+				rows[TAKEN_NEST][1].append(int(_nest_taken[str(nest["id"])]))
+
+	for kind in range(rows.size()):
+		if not (rows[kind][0] as PackedVector3Array).is_empty():
+			send_taken.call(peer, kind, rows[kind][0], rows[kind][1])
 
 
 func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = false) -> void:   # struck_nothing: the client's ray hit nothing (a swing into the air): effort only, whatever lies under the point
@@ -19271,6 +19378,7 @@ func gather_edge(peer: int, inv) -> bool:
 	give(peer, table.number_of(str(node["item"])), roll_amount(peer, rng, int(count[0]), int(count[1])))
 	_shore_taken[key] = day
 	_dirty = true
+	_tell_taken(TAKEN_SHORE, _shore_cell_middle(key), day)   # the others see the node gone too (protocol 160)
 	return true
 
 
@@ -19342,6 +19450,7 @@ func take_nest(peer: int, inv) -> bool:
 
 	_nest_taken[id] = day
 	_dirty = true
+	_tell_taken(TAKEN_NEST, nest["pos"], day)   # the nest shows empty for everyone (protocol 160)
 	return true
 
 

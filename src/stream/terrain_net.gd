@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 159  # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+const PROTOCOL_VERSION := 160  # 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a branch another player took gives no stick. Client and server must be updated together.
+# 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
 # 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
 # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
@@ -148,6 +149,7 @@ signal player_look_received(peer_id: int, char_name: String, body: String, code:
 signal action_cue_received(peer_id: int, cue: int, detail: int, at: Vector3)
 signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray)
 signal flight_seen_received(number: int, from: Vector3, velocity: Vector3, fire: bool)
+signal ground_taken_received(kind: int, points: PackedVector3Array, days: PackedInt32Array)
 signal animals_received(rows: Array, server_ms: int)
 signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
@@ -420,6 +422,14 @@ func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 @rpc("authority", "call_remote", "unreliable")   # look only: a lost one is a missed arrow, and it never holds up the reliable channel
 func flight_seen(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 	flight_seen_received.emit(number, from, velocity, fire)
+
+
+# Protocol 160: forest-floor pickups seen alike. kind 0 dead branches picked (the litter's branch middles), 1 tide-line nodes used (their
+# shore cell's middle, y 0), 2 bird nests robbed (the nest's spot); days = the game day each was taken. Sent when one is taken to the players
+# within 150 m, and every one round a player as it walks into a new 32 m square (server_items.gd _tell_taken_near).
+@rpc("authority", "call_remote", "reliable")
+func ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array) -> void:
+	ground_taken_received.emit(kind, points, days)
 
 
 # Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material; material 5 a knife cut on a carcass),
