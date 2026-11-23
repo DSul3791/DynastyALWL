@@ -27,7 +27,7 @@ $build = (Split-Path $Out -Leaf) -replace '^build-', ''
 if ($build -notmatch '^\d+$') { throw "make_testplayers_site: $Out is not a build-<N> folder" }
 $setup = Join-Path $Out "DynastySetup-$build.exe"
 if (-not (Test-Path -LiteralPath $setup)) { throw "make_testplayers_site: no $setup; run tools\make_release.ps1 first" }
-$pages = if ($PagesFrom) { (Resolve-Path -LiteralPath $PagesFrom).ProviderPath } else { Join-Path $Repo "deploy\testplayers" }
+$pages = (Resolve-Path -LiteralPath $(if ($PagesFrom) { $PagesFrom } else { Join-Path $Repo "deploy\testplayers" })).ProviderPath.TrimEnd('\')
 foreach ($f in "download.html", "hero.jpg") {
 	if (-not (Test-Path -LiteralPath (Join-Path $pages $f))) { throw "make_testplayers_site: no $f in $pages (use -Repo or -PagesFrom with a folder that has it)" }
 }
@@ -67,7 +67,7 @@ function Fill([string]$html) {
 
 # The testers' own site (deploy/testersite/site/: the front page with the high scores, the bug and idea pages, their css and js), copied as
 # it is; it reads /latest.json itself.
-Copy-Item -Path (Join-Path $tester "*") -Destination $site -Recurse -Force
+Get-ChildItem -LiteralPath $tester | Copy-Item -Destination $site -Recurse -Force
 # The download page (every link from the site root). The login name, top right: Caddy's templates fill it in as the page is sent (SERVER.md,
 # step 3; the front page has the same placeholder).
 $utf8 = New-Object System.Text.UTF8Encoding($false)   # UTF-8 without a byte order mark
