@@ -73,3 +73,17 @@ Next: read each owner's code for the `none?` rows, ask owners (Steve, MikeW, Son
 | Knapping, twine, carving, binding (craft work) | `craft_knap`, `craft_twine`, `craft_carve`, `craft_bind` loops while the craft bar runs, then `craft_done` | covered |
 | Fire-starting (kit placed, tinder, lit) | place sound from `placed`, `fire_light` when the fire turns lit, `fire_fuel` for fuel, `fire_out` | covered |
 | Torch/lantern held | `flame_torch`, `flame_lantern` | covered |
+
+## First-hours pass (23 Nov 2026, the coordinator: silent, wrong, heard only by the doer, or not from where it happens)
+Read from the code and checked headless (`test_world_sound_gaps`, `test_action_cues`, `test_spear_hold`); not yet heard.
+| Action | Before | Now |
+|---|---|---|
+| Lit kiln, smelter or smithy (any station store the server marks lit) | silent (only the bellows strokes sounded) | crackles where it stands for everyone near (`fire_sounds.gd station_fire`: coals small, worked bellows or a smithy's flare large; no rain sizzle under its dome) |
+| Iron or steel piece set in place (27 pieces: fences, gates, railings, lanterns) | the soft thump | the metal clank (`placed_sounds.gd` `place_metal`, borrowing `item_drop_metal` until a recording) |
+| Another player's arrow or thrown spear | seen flying, silent | the twang where it was loosed and the thunk where it lands; a spear's heave, flight and landing (`held_item.gd add_seen_flight`) |
+| Another player swimming | silent (their steps stop in deep water) | a stroke every 1.4 s to 0.6 s by speed, where they swim (`player_view.gd stroked`, `swim_sounds.gd stroke_at`) |
+| A drink eaten from the pack (fruit juice, a tea, a soup) | silent (a mouthful at the water's edge or from a waterskin gulped) | the gulp (`inventory_view.gd _on_vitals`: thirst rose after the item; one gulp when both would) |
+| Another player at a chest, barrel, crate, basket or station store | heard only by the one at it | a chest's lid opening and shutting, things put in and taken out, at the container, within 25 m, only once the server let it through (`action_cue` cue 4, no new protocol number: an older client plays nothing for it) |
+Still heard only by the doer (each needs a server message or a decision): another player hurt (no gasp for others), another player eating or drinking (the players row says a meal happened, not which), another player picking up a stick or stone from the ground, another player's torch or lantern (no flame loop), another player drawing a bow. A fish's bite and catch sound 1.5 m in front of the angler, not at the float (the server line has no point).
+Faked or missing, needing a recording (Dave only): eating solid food (no chewing clip: silent for everyone); a snare springing and the caught animal struggling (silent); the hoe (a soft spade scrape stands in); a fishing rod's cast (the shore net's throw stands in); an iron piece set in place (the dropped-item clank stands in); boar, grouse, seal and seabird calls (none).
+Fine as they are: tool blows on every material, gathering, crafting, digging, filling, tree falls, doors and hatches (world rows, at the door, its own material), building pieces placed and taken down, campfires lit, fed and put out, wading (water steps for everyone), own swimming, landing, stance, sleep, hurt, weather and day and night beds (assets/audio/LEVELS.md). A swing at nothing stays silent (Dave 10 Nov 2026: no whoosh).
