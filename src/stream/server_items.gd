@@ -112,8 +112,8 @@ const DIG_COOLDOWN_MS := 700
 const DIG_RADIUS_M := 0.9
 const DIG_DEPTH_M := 0.25      # the hole is centred this far below the point struck
 const MINE_CELL_M := 8.0                 # one outcrop patch
-const MINE_STONES_PER_CELL := 6          # stones a patch gives before it is spent...
-const MINE_REGROW_S := 300.0             # ...and one comes back this often (real seconds)
+const MINE_STONES_PER_CELL := 6          # blows a patch takes before it rests (each breaks the tool's rate, boulders.json tools, never under 1)...
+const MINE_REGROW_S := 300.0             # ...and one blow comes back this often (real seconds)
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
@@ -504,7 +504,7 @@ var rot_scanned: int = 0              # felled records looked at in the last rot
 var rot_removed: int = 0              # and how many rotted away in it
 var _saplings: Array = []           # {slot, chunk [cx, cz], species (flora id), pos, planted_at}
 var _flora_by_id: Dictionary = {}
-var _mined: Dictionary = {}         # Vector2i patch -> {taken, since msec}
+var _mined: Dictionary = {}         # Vector2i patch -> {taken blows, since msec, part: the stone fraction carried between blows}
 var _taken: Dictionary = {}         # scatter key int -> true: loose items already picked up (stay gone)
 var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
@@ -6064,7 +6064,6 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a swing at soil or into empty air (b = 1, a point 2.5 m ahead: rock_at is x/z only, so over bare rock a claimed miss still gives nothing): it tires, it breaks no stone, wears nothing, trains nothing
 		return
 
-	_wear_slot(peer, inv, tool, "rock")
 	var patch: Vector2i = Vector2i(int(floor(at.x / MINE_CELL_M)), int(floor(at.z / MINE_CELL_M)))
 	var state: Dictionary = _mined.get(patch, {"taken": 0, "since": now})
 	var regrown: int = int((now - int(state["since"])) / (MINE_REGROW_S * 1000.0))
@@ -6075,12 +6074,22 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 
 	if int(state["taken"]) >= MINE_STONES_PER_CELL:
 		_mined[patch] = state
+		_note_work(peer, str(table.entry(table.id_of(inv.numbers[tool])).get("tool_class", "")))   # a resting patch: the swing tires, and wears nothing (it broke nothing)
 		return
 
+	# A better tool breaks more off a blow (coordinator's gathering walk, 23 Nov 2026: every pick and axe gave one stone a blow on bare rock):
+	# boulders.json tools' rate for the tool in hand, never under one stone a blow (a stone axe keeps its one), a fraction carried in the
+	# patch's "part". A patch still takes MINE_STONES_PER_CELL blows before it rests, so a better pick takes more from it, not less.
+	var entry: Dictionary = table.entry(table.id_of(inv.numbers[tool]))
+	var rate: float = maxf(float((_boulder_cfg.get("tools", {}) as Dictionary).get(str(entry.get("tool_class", "")), {}).get(str(entry.get("material", "")), 1.0)), 1.0)
+	_wear_slot(peer, inv, tool, "rock")   # after reading the tool: one that breaks on this blow leaves its slot empty
+	var part: float = float(state.get("part", 0.0)) + rate
+	var stones: int = int(floor(part + 0.001))
+	state["part"] = part - float(stones)
 	state["taken"] = int(state["taken"]) + 1
 	_mined[patch] = state
 	var before: Array = _snapshot(inv)
-	_take_in(peer, inv, table.number_of("stone"), 1)
+	_take_in(peer, inv, table.number_of("stone"), stones)
 	practice(peer, "mine_rock")
 
 	_send_changes(peer, inv, before)
