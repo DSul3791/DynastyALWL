@@ -1303,6 +1303,7 @@ func _wolf_fight() -> void:
 	var strikes: int = 0
 	var strike_ms: int = 0
 	var most_close: int = 0
+	var closest: float = INF         # the nearest any wolf was drawn during the rush
 	var rush_ms: int = 0
 	var armed: bool = false
 	var quiet_since: int = 0
@@ -1356,9 +1357,20 @@ func _wolf_fight() -> void:
 
 		most_close = maxi(most_close, close)
 
-		if armed and nearest != Vector3.INF and Vector2(nearest.x - me.x, nearest.z - me.z).length() < 2.8 and now - strike_ms > 800:
+		if rush_ms > 0 and nearest != Vector3.INF:
+			closest = minf(closest, Vector2(nearest.x - me.x, nearest.z - me.z).length())
+
+		var gap: float = Vector2(nearest.x - me.x, nearest.z - me.z).length() if nearest != Vector3.INF else INF
+
+		if armed and gap < 4.0 and now - strike_ms > 800:   # as a player would: a step in when it is just out of reach, then the jab
 			var to: Vector3 = Vector3(nearest.x - me.x, 0.0, nearest.z - me.z).normalized()
 			_face(to)
+
+			if gap > 2.6:
+				_key("move_forward", true)
+				await _wait(0.2)
+				_key("move_forward", false)
+
 			_strike_at(to)
 			strikes += 1
 			strike_ms = now
@@ -1388,8 +1400,8 @@ func _wolf_fight() -> void:
 	for i in range(1, bites.size()):
 		gaps.append("%.1f" % (float(bites[i] - bites[i - 1]) / 1000.0))
 
-	print("ROBOT %s WOLVES outcome %s, rush %s, %d bites (gaps s: %s), %d strikes, %d hits on wolves, most wolves within 3 m %d, health %d -> %d, %.0f s" % [
-		robot_name, outcome, "yes" if rush_ms > 0 else "no", bites.size(), ",".join(gaps) if not gaps.is_empty() else "-", strikes, wolf_hits, most_close, h0, _health,
+	print("ROBOT %s WOLVES outcome %s, rush %s, %d bites (gaps s: %s), %d strikes, %d hits on wolves, most wolves within 3 m %d, nearest drawn %.2f m, health %d -> %d, %.0f s" % [
+		robot_name, outcome, "yes" if rush_ms > 0 else "no", bites.size(), ",".join(gaps) if not gaps.is_empty() else "-", strikes, wolf_hits, most_close, closest, h0, _health,
 		float(_now_ms() - (rush_ms if rush_ms > 0 else _now_ms())) / 1000.0])
 	await _wait(3.0)
 
@@ -1397,7 +1409,7 @@ func _wolf_fight() -> void:
 # The second player: stays at the spawn (come = false) or, 15 s into the rush, runs to Robot 1.
 func _wolf_second(come: bool) -> void:
 	_step = "wolves second"
-	var end: int = Time.get_ticks_msec() + 360000
+	var end: int = Time.get_ticks_msec() + 240000
 	var path: String = _share_path()
 
 	if come:   # out after Robot 1, waiting 40 m short of it (well beyond the pack's group_m 10 m), so it can come in a few seconds into the rush

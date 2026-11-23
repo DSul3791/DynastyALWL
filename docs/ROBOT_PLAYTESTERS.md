@@ -9,6 +9,9 @@ internet link, and check what they see against what the server believes.
 ```
 tools/robots.sh                    # 3 robots, plan first_hours, 60 ms +- 25 ms each way, 2% loss; about 6.5 minutes on 4 CPUs
 tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
+tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot draws another; robot_watch.py prints PASS/FAIL; about 3 min
+tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
+tools/robots.sh 2 wolves           # the same, and the second robot comes in 3 s into the rush
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
 ```
@@ -21,13 +24,25 @@ Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `
 | `src/client/robot_play.gd` | The real client, headless, driven by key presses (`--robot=NAME`, `--robot-plan=`, `--robot-admin`). Prints `ROBOT` lines. |
 | `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump or stand inside a player. Prints `AUDIT` lines. No protocol change. |
 | `tools/robots.sh` | Server, link, the robots at one spawn (so they meet the same animals and see each other), then a rejoin pass. |
+| `tools/robot_watch.py` | Plan `watch` only: per leg of the walker, the fastest drawn speed over 50 ms against its real speed (above 1.5x fails), stalls, overshoot and settle at the stop; held item at a hand mount; swing clip within 1 s; asleep bit. |
 | `tools/robot_check.py` | Reads the logs and fails the run on a broken invariant. `tools/robot_known_errors.txt` lists engine ERROR lines allowed (only the leak notice at exit). |
 
 ## The plan a robot plays (first_hours)
 Join; given 45 plant fibre, 14 sticks and 10 stones (admin, local server only); queue and craft twine x12, stone axe, stone hammer, wooden
 spear, stone spear, snare, stone knife; drop a stick and pick it up; walk each way standing and crouched; walk to the thickest trees within
-150 m and crouch from trunk to trunk; spear in hand, chase the nearest ground game (rabbit, deer, wolf first) and strike, with the other
-robots after the same animal; lie down, sleep, wake; quit. Then rejoin (plan `rejoin`) and check the pack came back. Plan `light` (walk,
+150 m and crouch from trunk to trunk; spear in hand, hunt a rabbit, a deer and a wolf in turn, every robot on the same animal (the lowest id
+within 120 m; with none of those near, the nearest other wild ground animal), striking with the screen time a player's blow carries (protocol
+155), and print one `HUNT` line per fight (strikes, hits, its health share, down or up, the robot's health before and after); build a wicker
+basket (knife), put twine in and take it out; eat wild apples and drink at the nearest water; made tired (admin energy 40), lie down, sleep
+(the server must say asleep), wake; queue a craft and quit mid-craft. Then rejoin (plan `rejoin`): the pack came back, and the mid-craft quit
+lost nothing (fibre plus 3 x twine the same). Every robot also prints `POSE` (its stance, place, speed) and `SEES` (each other player as
+drawn: stance, place, clip) twice a second; robot_check.py compares them (wrong stance or clip held 2 s, drawn over 1.5 m off its track).
+
+Plan `watch`: Robot 1 walks and runs six legs with the axe in hand, swings three times, sleeps; Robot 2 logs how it draws Robot 1 every frame.
+Plan `wolves` / `wolves_alone`: Robot 1 runs about 380 m out of town (beyond the packs' town_keep_m) with 3 raw meat, an admin pack is placed
+25 m off, and the robot is given a spear only once the rush starts (a spear on the hotbar keeps a pack off, by design). It prints one `WOLVES`
+line (outcome, bites and the gaps between them, strikes, hits on wolves, most wolves within 3 m, health); the server prints each pack's phase
+(`AUDIT wolfpack`). Then rejoin (plan `rejoin`) and check the pack came back. Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
 ## Invariants
