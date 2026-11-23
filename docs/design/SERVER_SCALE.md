@@ -52,7 +52,8 @@ frame each quarter second even when the average is fine.
 ### Now: cheap and safe (normal PRs, measured before and after)
 
 1. **Animal rows built once, not once per player.** Each animal's row is made once per send pass; a player only picks the near
-   ones from a grid. Signatures by hash, not by turning rows into text. Expect about 60 ms/s back at 64 players.
+   ones from a grid. Signatures by hash, not by turning rows into text. PR #1823: the send step went from 172 to 58 ms/s
+   at 64 clustered bots, 138 to 72 at 128.
 2. **Players found by grid.** Sending other players and the animal brains' "nearest player" look in nearby grid cells, not at
    every player. Removes the two players-x-players costs.
 3. **Spread the quarter-second work.** Vitals and goals run for a share of the players each frame instead of all at once. Same

@@ -249,8 +249,8 @@ func tick(delta: float) -> void:
 		else:
 			var pool: Dictionary = heard.duplicate()
 			pool[receiver] = at[receiver]   # a silent player is still sent the others (its rows wait in the line)
-			rows = rows_for(receiver, pool)
-   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
+			rows = rows_for(receiver, pool)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
+
 		var ids: PackedInt32Array = PackedInt32Array()
 		var newest: int = 0
 
