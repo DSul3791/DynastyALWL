@@ -13,6 +13,7 @@ const Sketch := preload("res://src/client/map_sketch.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 var observed: Array = []      # every (x, z) the server looked at
@@ -521,6 +522,18 @@ func landmark_checks() -> void:
 		path_cells += rec["blocks"][block].get("paths", {}).size()
 
 	check(path_cells == 3, "the path and road cells are kept (%d)" % path_cells)
+	# One thing in one place is its own mark: two campfires 10 m apart are two, two bog iron patches 10 m apart are one field.
+	var pair_world: Array = [["campfire", 1010.0, 1000.0, ""], ["campfire", 1020.0, 1000.0, ""], ["bog_iron", 1030.0, 1005.0, "Bog iron"], ["bog_iron", 1040.0, 1005.0, "Bog iron"]]
+	var pair_m = make("")
+	keys[72] = "map-key-pair"
+	pair_m.landmarks_near = func(_p, _r): return pair_world
+
+	for k in 4:
+		pair_m.note_position(72, Vector3(990.0 + float(k) * 8.0, 10.0, 1000.0))
+
+	var pair_kinds: Array = all_marks(pair_m, "map-key-pair").map(func(r): return str(r[0]))
+	check(pair_kinds.count("campfire") == 2 and pair_kinds.count("bog_iron") == 1, "two fires side by side are two marks, a bog iron field is one (%s)" % str(pair_kinds))
+	check(MapScript._label_rank("Olive grove") > MapScript._label_rank("Olive trees") and MapScript._label_rank("Apple orchard") > MapScript._label_rank("Apple trees") and MapScript._label_rank("Olive trees") > MapScript._label_rank("Olive tree"), "a grove ranks with an orchard over trees, and trees over one tree")
 	world[0] = [["bog_iron", 1030.0, 1005.0, "Bog iron"], ["fruit:apple", 1001.0, 1021.0, "Apple orchard"], ["path", 1000.0, 1000.0, ""]]
 	m.note_catch(70, Vector3(1020.0, 10.0, 1000.0))
 	m.note_catch(70, Vector3(1022.0, 10.0, 1002.0))
@@ -605,6 +618,15 @@ func landmark_checks() -> void:
 	var near: Array = items.map_marks_near(Vector3.ZERO, 60.0).map(func(r): return "%s %s" % [r[0], r[3]])
 	near.sort()
 	check(near == [" ".join(["campfire", ""]), "ore_rock:copper Copper", "path ", "road "], "a campfire, a copper rock started, a path and a road; not a bandit sign, a whole rock, a plain rock or far off (%s)" % str(near))
+	# A blow the rock never took (out of reach, or inside the blow cooldown) makes no look: the rock's id comes from the client.
+	var looks: Array = []
+	items.map_look = func(peer, at): looks.append([peer, at])
+	items._hit(9, null, 3, Vector2i(Net.HIT_BOULDER, 1), 0)
+	items._peer_pos[9] = Vector3(10.0, 0.0, 2.0)
+	items._last_hit[9] = Time.get_ticks_msec()
+	items._hit(9, null, 3, Vector2i(Net.HIT_BOULDER, 1), 0)
+	items._hit(9, null, 5, Vector2i(Net.HIT_BOULDER, 1), 0)
+	check(looks.is_empty(), "a refused blow on a rock (no position, inside the cooldown) looks at nothing (%d)" % looks.size())
 
 
 # Every mark a character's map holds.

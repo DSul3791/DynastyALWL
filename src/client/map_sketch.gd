@@ -185,15 +185,15 @@ static func paint(grid: Dictionary) -> Dictionary:
 		hmin = minf(hmin, v)
 		hmax = maxf(hmax, v)
 
-	if hmax - hmin >= CONTOUR_M * 0.5:
-		var level: float = ceil(hmin / CONTOUR_M) * CONTOUR_M
-		var dry: PackedFloat32Array = f_wet
+	# Every level the block's heights cross is drawn, with no gate on how hilly the block is: the levels are the same in every block, so a hill
+	# line runs on over a block edge instead of stopping where the next block happened to be flatter.
+	var level: float = ceil(hmin / CONTOUR_M) * CONTOUR_M
 
-		while level <= hmax:
-			for line in _contours(f_h, f_known, lw, lh, level, dry, true):
-				_add(strokes, line, lat0, step, f_q, lw, noise, 0.8, 0.26, true)
+	while level <= hmax:
+		for line in _contours(f_h, f_known, lw, lh, level, f_wet, true):
+			_add(strokes, line, lat0, step, f_q, lw, noise, 0.8, 0.26, true)
 
-			level += CONTOUR_M
+		level += CONTOUR_M
 
 	_cell_lines(grid, first, cells_x, cells_y, strokes, noise)
 	_cell_marks(grid, first, cells_x, cells_y, strokes)
@@ -488,6 +488,7 @@ static func _cell_lines(grid: Dictionary, first: Vector2i, cells_x: int, cells_y
 				continue
 
 			var river: bool = water[n] == WATER_RIVER and not _open_water(water, known, cw, ch, i, j)
+			var open: bool = not river and water[n] in [WATER_RIVER, WATER_INLAND, WATER_SEA]
 			var path: int = paths[n]
 
 			for d in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(-1, 1)]:
@@ -500,7 +501,12 @@ static func _cell_lines(grid: Dictionary, first: Vector2i, cells_x: int, cells_y
 				var corner_a: int = j * cw + i + d.x
 				var corner_b: int = (j + d.y) * cw + i
 
-				if river and water[m] in [WATER_RIVER, WATER_INLAND, WATER_SEA]:
+				# A river runs on to river or open water, whichever side that water is on: the links go forward only, so open water ahead of a
+				# river that lies behind it (a river reaching the sea from the east or north) links from the water's side.
+				var joins: bool = river and water[m] in [WATER_RIVER, WATER_INLAND, WATER_SEA]
+				joins = joins or (open and water[m] == WATER_RIVER and not _open_water(water, known, cw, ch, i + d.x, j + d.y))
+
+				if joins:
 					if not diagonal or not (water[corner_a] == WATER_RIVER or water[corner_b] == WATER_RIVER):
 						links["river"].append([Vector2i(i, j), Vector2i(i, j) + d])
 

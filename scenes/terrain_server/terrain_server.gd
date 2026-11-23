@@ -1347,21 +1347,40 @@ func _map_observe(x: float, z: float) -> Array:
 # tribe's camp under its name, a bandit camp once it stands, and the world items (server_items.map_marks_near: campfires, ore rocks
 # started and left, paths and roads). Every source is a list kept for its own work: nothing here scans the world.
 func _map_landmarks(point: Vector3, radius: float) -> Variant:
-	if not generator.tile_cached(point.x, point.z):
-		return null
+	# Every terrain tile and flora chunk the circle touches must be in memory: a look that cannot see part of the circle changes nothing,
+	# so a cave or a stand of trees across an unloaded edge is never taken off the map.
+	var tiles: Array = []
 
-	if flora != null and flora.items_cached(Vector2i(int(floor(point.x / flora.placer.chunk_m)), int(floor(point.z / flora.placer.chunk_m)))).is_empty():
-		return null
+	for corner in [Vector2(-radius, -radius), Vector2(radius, -radius), Vector2(-radius, radius), Vector2(radius, radius)]:
+		var x: float = point.x + corner.x
+		var z: float = point.z + corner.y
 
-	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
+		if not generator.tile_cached(x, z):
+			return null
 
-	if tile_data == null:
-		return null
+		var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+		if tile_data == null:
+			return null
+
+		if not tiles.has(tile_data):
+			tiles.append(tile_data)
+
+	if flora != null:
+		var size: float = flora.placer.chunk_m
+
+		for cz in range(int(floor((point.z - radius) / size)), int(floor((point.z + radius) / size)) + 1):
+			for cx in range(int(floor((point.x - radius) / size)), int(floor((point.x + radius) / size)) + 1):
+				if not flora.chunk_cached(Vector2i(cx, cz)):
+					return null
 
 	var here: Vector2 = Vector2(point.x, point.z)
 	var out: Array = items.map_marks_near(point, radius)
 
-	if not tile_data.placeholder:
+	for tile_data in tiles:
+		if tile_data.placeholder:
+			continue
+
 		for row in tile_data.cave_mouths:
 			var mouth: Vector2 = Vector2((row[0] as Vector3).x, (row[0] as Vector3).z)
 

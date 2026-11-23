@@ -294,8 +294,13 @@ func look_round(peer: int, pos: Vector3, reach: float, path_reach: float = -1.0)
 		for bx in range(lo_b.x, hi_b.x + 1):
 			var block: Vector2i = Vector2i(bx, bz)
 
-			for mkey in rec["blocks"].get(block, {}).get("marks", {}):
-				existing.append([block, mkey, rec["blocks"][block]["marks"][mkey]])
+			var block_marks: Dictionary = rec["blocks"].get(block, {}).get("marks", {})
+
+			for mkey in block_marks:
+				var mark: Array = block_marks[mkey]
+
+				if Vector2(float(mark[1]), float(mark[2])).distance_to(here) <= reach + merge:
+					existing.append([block, mkey, mark])
 
 	for old in existing:
 		var mark: Array = old[2]
@@ -307,7 +312,7 @@ func look_round(peer: int, pos: Vector3, reach: float, path_reach: float = -1.0)
 		var stands: bool = false
 
 		for row in seen:
-			if str(row[0]) == str(mark[0]) and Vector2(float(row[1]), float(row[2])).distance_to(at) <= merge:
+			if str(row[0]) == str(mark[0]) and Vector2(float(row[1]), float(row[2])).distance_to(at) <= _merge_for(str(mark[0]), merge):
 				stands = true
 
 				if str(row[3]) != str(mark[3]) and _label_rank(str(row[3])) > _label_rank(str(mark[3])):
@@ -327,7 +332,7 @@ func look_round(peer: int, pos: Vector3, reach: float, path_reach: float = -1.0)
 		for old in existing:
 			var mark: Array = old[2]
 
-			if str(mark[0]) == str(row[0]) and Vector2(float(mark[1]), float(mark[2])).distance_to(at) <= merge and rec["blocks"][old[0]].get("marks", {}).has(old[1]):
+			if str(mark[0]) == str(row[0]) and Vector2(float(mark[1]), float(mark[2])).distance_to(at) <= _merge_for(str(row[0]), merge) and rec["blocks"][old[0]].get("marks", {}).has(old[1]):
 				marked = true
 				break
 
@@ -336,6 +341,15 @@ func look_round(peer: int, pos: Vector3, reach: float, path_reach: float = -1.0)
 
 			if marked:
 				existing.append([_block_of(_cell_of(at.x, at.y)), _mark_key(row), row])
+
+
+# How far apart two of one kind are still one mark: merge_m for the kinds that stand for a spread of things (data/map.json merge_kinds: a stand
+# of fruit trees, a bog iron field), and point_merge_m for one thing in one place (a campfire, a cave, a rock), so two fires side by side are two.
+func _merge_for(kind: String, merge: float) -> float:
+	if (cfg.get("merge_kinds", ["fruit", "bog_iron"]) as Array).has(kind.get_slice(":", 0)):
+		return merge
+
+	return float(cfg.get("point_merge_m", 1.5))
 
 
 # A mark's key in its block: its kind and its spot to the metre.
@@ -367,8 +381,8 @@ func _touch(rec: Dictionary, block: Vector2i) -> void:
 
 # Fruit tree labels grow with what is seen: one tree, then trees, then an orchard.
 static func _label_rank(label: String) -> int:
-	if label.ends_with(" orchard"):
-		return 2
+	if label.ends_with(" orchard") or label.ends_with(" grove"):
+		return 2   # map.json fruit_groups "many": an orchard, or a grove of olives or dates
 
 	return 1 if label.ends_with("s") else 0
 

@@ -10547,11 +10547,16 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 # stays (a record in _items with a "tree" entry, saved in tree_states.json) and the tree comes down in its logs (_fell_record).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if chunk.x == Net.HIT_BOULDER:
-		var rock_spot: Variant = _items.get(tree_id, {}).get("pos", null)
+		var rock: Dictionary = _items.get(tree_id, {})
+		var rock_spot: Variant = rock.get("pos", null)
+		var ore_rock: bool = (rock.get("boulder", {}) as Dictionary).has("ore")
+		var hit_before: int = int(_last_hit.get(peer, -100000))
 		_hit_boulder(peer, inv, tree_id, chunk.y - 1)   # a boulder blow's count is the held pack slot plus one
 
-		if rock_spot != null and map_look.is_valid():
-			map_look.call(peer, rock_spot)   # a rock started is marked on the Map, and the mark goes with its last stone
+		# Only a blow the rock took (past the cooldown, reach and tool checks, which set _last_hit) on a rock with ore: a rock started is marked
+		# on the Map, and the mark goes with its last stone. A refused or spammed blow costs nothing here and shows nothing the player cannot see.
+		if ore_rock and rock_spot != null and int(_last_hit.get(peer, -100000)) != hit_before and map_look.is_valid():
+			map_look.call(peer, rock_spot)
 
 		return
 
