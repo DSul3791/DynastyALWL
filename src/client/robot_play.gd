@@ -283,6 +283,10 @@ func _check_held(pv: Node) -> void:
 			continue
 
 		var hand: Vector3 = (skel.global_transform * skel.get_bone_global_pose(bone)).origin
+
+		if mount is BoneAttachment3D:
+			(mount as BoneAttachment3D).on_skeleton_update()   # the attachment follows the skeleton's deferred update, later in the frame: bring it to this pose first (players thread, 23 Nov 2026)
+
 		var d: float = mount.global_position.distance_to(hand)
 		_held_looks += 1
 
@@ -492,6 +496,8 @@ func run() -> void:
 			await _wolf_fight()
 		else:
 			await _wolf_second(plan == "wolves")
+	elif plan == "snares":
+		await _snares()
 	elif plan == "light":
 		await _stances()
 		await _forest_walk(40.0)
@@ -1865,6 +1871,196 @@ func _container_round(view) -> void:
 	# Open again and quit with it open: the rejoin pass checks the pack.
 	view._ask_open(basket)
 	await _wait(1.5)
+
+
+# --- plan snares: set on a game trail, set again beside it, set off any trail (Dave's rulings: no limit; on a trail a chance, off a trail
+# none; a snare set on a trail trains Tracking, not twice at one spot). Then wait by them for a catch. Prints `SNARE` lines.
+const SNARE_WAIT_S := 150.0
+
+func _tracking_row() -> Array:
+	var idx: int = int(client.items.get("_tracking_index"))
+
+	for row in client.items.skill_rows:
+		if int(row[0]) == idx:
+			return (row as Array).duplicate()
+
+	return []
+
+
+func _route_points() -> Array:
+	var out: Array = []   # [kind, point] every 2 m along every known route (the routes are polylines with few points)
+
+	for block in client.trail_signs.routes:
+		for route in client.trail_signs.routes[block]:
+			var pts: PackedVector2Array = route[1]
+
+			for i in range(pts.size() - 1):
+				var n: int = maxi(1, int(pts[i].distance_to(pts[i + 1]) / 2.0))
+
+				for k in range(n):
+					out.append([str(route[0]), pts[i].lerp(pts[i + 1], float(k) / float(n))])
+
+			if not pts.is_empty():
+				out.append([str(route[0]), pts[pts.size() - 1]])
+
+	return out
+
+
+func _wet(p: Vector2) -> bool:
+	var wet: Callable = client.trail_signs.wet
+	return wet.is_valid() and bool(wet.call(p.x, p.y))
+
+
+func _set_snare(tag: String, spot: Vector3) -> Dictionary:
+	var slot: int = _slot_of("snare")
+
+	if slot < 0:
+		_fail("snare", tag, "no snare left in the pack to set")
+		return {}
+
+	var ground: float = float(client.items._ground_below.call(spot))
+	spot.y = ground if not is_nan(ground) else client.body.global_position.y - 0.9
+	var row0: Array = _tracking_row()
+	var said_from: int = _notices.size()
+	client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE, slot, 0, 0, spot)
+	await _wait(3.0)
+	var id: int = client.items._smoke_row_near(spot, "snare_trap", 2.0)
+
+	if id < 0:
+		id = client.items._smoke_row_near(spot, "snare", 2.0)
+
+	var t0: int = Time.get_ticks_msec()
+
+	while Time.get_ticks_msec() - t0 < 4000 and _tracking_row() == row0:   # the skills come back when they change
+		await get_tree().process_frame
+
+	var xp: bool = _tracking_row() != row0
+	var said: Array = _notices.slice(said_from)
+	print("ROBOT %s SNARE %s set %s at %s, tracking %s (%s -> %s)%s" % [robot_name, tag, "yes" if id >= 0 else "no", str(spot.snapped(Vector3.ONE * 0.1)),
+		"trained" if xp else "not trained", str(row0), str(_tracking_row()), "" if said.is_empty() else ", said " + str(said)])
+
+	if id < 0 and said.is_empty():
+		_fail("snare", tag, "a snare set at %s did not appear and no message said why" % str(spot.round()))
+
+	return {"id": id, "xp": xp, "spot": spot}
+
+
+func _snares() -> void:
+	_step = "snares"
+
+	if not admin:
+		_note("snares", "the snare plan needs --robot-admin (the snares are admin gifts): nothing done")
+		return
+
+	_give("snare", 7)
+	await _check_pack("snares given")
+	var t0: int = Time.get_ticks_msec()
+
+	while _route_points().is_empty() and Time.get_ticks_msec() - t0 < 30000:
+		await _wait(1.0)
+
+	var me: Vector3 = client.body.global_position
+	var best: Array = []
+	var best_d: float = 600.0
+
+	for attempt in range(2):   # run toward the nearest known trail, then look again (the blocks near it send their routes on arrival)
+		me = client.body.global_position
+		best = []
+		best_d = 600.0
+
+		for rp in _route_points():
+			var d: float = Vector2(rp[1].x - me.x, rp[1].y - me.z).length()
+
+			if d < best_d and d > 3.0 and not _wet(rp[1]):   # a trail runs down to the water: a snare goes on its dry stretch
+				best_d = d
+				best = rp
+
+		if best.is_empty() or best_d < 60.0 or attempt == 1:
+			break
+
+		var toward: Vector3 = Vector3(best[1].x, me.y, best[1].y)
+		await _run_to(toward + (me - toward).normalized() * 30.0, 90.0, 4.0)
+		await _wait(4.0)
+
+	if best.is_empty():
+		var nearest: float = INF
+
+		for rp in _route_points():
+			nearest = minf(nearest, Vector2(rp[1].x - me.x, rp[1].y - me.z).length())
+
+		_note("snares", "no game trail within 600 m of %s (%d route points known, the nearest %.0f m)" % [str(me.round()), _route_points().size(), nearest])
+		return
+
+	var on: Vector3 = Vector3(best[1].x, me.y, best[1].y)
+	print("ROBOT %s step snares: nearest %s trail point %.0f m off at %s" % [robot_name, best[0], best_d, str(on.round())])
+	await _run_to(on + (me - on).normalized() * 1.5, 90.0, 1.0)
+	var first: Dictionary = await _set_snare("on_trail", on)
+
+	# Four more along trails within 80 m, 15 m apart, dry: the server prints each one's trail share (AUDIT snare).
+	var probes: Array = [Vector2(on.x, on.z)]
+
+	for rp in _route_points():
+		if probes.size() >= 5:
+			break
+
+		var far_enough: bool = true
+
+		for q in probes:
+			far_enough = far_enough and (q as Vector2).distance_to(rp[1]) >= 15.0
+
+		if far_enough and (rp[1] as Vector2).distance_to(Vector2(on.x, on.z)) < 80.0 and not _wet(rp[1]):
+			probes.append(rp[1])
+
+	for i in range(1, probes.size()):
+		var at: Vector3 = Vector3(probes[i].x, client.body.global_position.y, probes[i].y)
+		await _run_to(at + Vector3(1.5, 0.0, 0.0), 40.0, 1.0)
+		await _set_snare("probe%d" % i, at)
+
+	await _run_to(on + Vector3(1.5, 0.0, 0.0), 40.0, 1.0)
+	var again: Dictionary = await _set_snare("again", on + Vector3(4.0, 0.0, 0.0))
+
+	if not first.is_empty() and not bool(first.get("xp", false)):
+		_note("snares", "a snare set on a %s trail point trained no Tracking (the server's worn-trail strength there may be under snare_min 0.5)" % best[0])
+
+	if bool(again.get("xp", false)):
+		_fail("snare", "again", "a second snare 2 m from the first trained Tracking again (snare_spot_m 15 should stop it)")
+
+	# Off any trail: 40 m or more from every route point, on one of eight bearings from the trail spot.
+	var off: Vector3 = Vector3.INF
+
+	for k in range(8):
+		var c: Vector3 = on + Vector3.FORWARD.rotated(Vector3.UP, TAU * float(k) / 8.0) * 45.0
+		var clear: bool = not _wet(Vector2(c.x, c.z))
+
+		for rp in _route_points():
+			clear = clear and Vector2(rp[1].x - c.x, rp[1].y - c.z).length() >= 40.0
+
+		if clear:
+			off = c
+			break
+
+	if off == Vector3.INF:
+		_note("snares", "no spot 40 m from every trail near %s" % str(on.round()))
+	else:
+		await _run_to(off, 60.0, 1.5)
+		var o: Dictionary = await _set_snare("off_trail", client.body.global_position + (-client.body.global_transform.basis.z) * 1.5)
+
+		if bool(o.get("xp", false)):
+			_fail("snare", "off", "a snare off every trail trained Tracking")
+
+	# Wait 20 m from the trail snare (animals step only near players), watching for a carcass by any snare.
+	await _run_to(on + Vector3(20.0, 0.0, 0.0), 40.0, 3.0)
+	var caught: String = "none"
+	var end: int = Time.get_ticks_msec() + int(SNARE_WAIT_S * 1000.0)
+
+	while Time.get_ticks_msec() < end and caught == "none":
+		await _wait(5.0)
+
+		for d in [first, again]:
+			if not d.is_empty() and client.items._smoke_row_near(d["spot"], "carcass", 3.0) >= 0:
+				caught = "by the trail snare"
+
+	print("ROBOT %s SNARE wait %.0f s: catch %s; tracking index %d, skill rows %s" % [robot_name, SNARE_WAIT_S, caught, int(client.items.get("_tracking_index")), str(client.items.skill_rows)])
 
 
 # Stand and look around: the watchers keep checking the animals and players drawn.
