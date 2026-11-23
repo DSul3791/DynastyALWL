@@ -14024,8 +14024,9 @@ func _holds_up(base: Dictionary, base_id: int) -> bool:
 		var row: Dictionary = {"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "id": int(id)}
 		rows.append(row)
 
-		# Walls and fences stand on a foundation's anchors or the ground, never on a wall: they rest on nothing a take-down of `base` can pull out.
-		if int(id) != base_id and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)) and not (str(odef.get("piece_kind", "")) in ["wall", PlacementRules.FENCE_KIND]):
+		# Fences stand on a foundation's anchors or the ground: they rest on nothing a take-down of `base` can pull out. An upper storey's wall stands on a
+		# ceiling or a lower wall's top (PlacementRules.storey_tops_at), so it is asked like a ceiling.
+		if int(id) != base_id and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)) and str(odef.get("piece_kind", "")) != PlacementRules.FENCE_KIND:
 			near.append(row)
 
 	for row in near:
@@ -14034,7 +14035,9 @@ func _holds_up(base: Dictionary, base_id: int) -> bool:
 		var others: Array = rows.filter(func(r): return int(r["id"]) != int(row["id"]) and Vector2(r["pos"].x, r["pos"].z).distance_to(at) <= HOLDS_UP_SNAP_M)
 		var without: Array = others.filter(func(r): return int(r["id"]) != base_id)
 
-		for mode in [0, 1]:
+		var roof: bool = str(_structures[str(_items[int(row["id"])]["struct"]["kind"])].get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]
+
+		for mode in ([0, 1] if roof else [0]):   # the second mode is a roof's other slope: walls and ceilings snap the same either way
 			var with_it: Array = PlacementRules.snap(_structures_cfg, kit, row["pos"], int(round(float(row["yaw"]))), others, mode)
 
 			if not bool(with_it[2]) or (with_it[0] as Vector3).distance_to(row["pos"]) > 0.05:
@@ -18266,6 +18269,11 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 
 func passed_out(peer: int) -> bool:
 	return _cold_out.has(peer)
+
+
+# Fainted from strain, or passed out from cold or in water, and not yet up again (strain state 2 fainted, 3 waking): the others see the body lying.
+func fainted_of(peer: int) -> bool:
+	return int(_strain.get(peer, {}).get("state", 0)) >= 2
 
 
 # The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points

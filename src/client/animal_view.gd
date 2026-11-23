@@ -27,6 +27,7 @@ const DRINK := 21                     # server_animals.DRINK: standing at the ba
 const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
+signal took_off(kind: String, at: Vector3)                       # a bird bursts up into flight (server_flight.FLY): its wings, where it rose (creature_sounds.took_off)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
@@ -37,6 +38,8 @@ const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit nea
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
+const FLY := 15                       # server_flight.FLY: a bird in flight (climbing)
+const GLIDE := 17                     # server_flight.GLIDE: gliding; a glide that climbs again goes back to FLY, which is no new take-off
 const VOICED_STATES := [2, 3, 7, 10, 11, 16]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning
 const ATTACK_STATES := [7, 11]                # a wolf attacking, big game charging: the one biting you (attacker_near)
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
@@ -44,6 +47,8 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
+const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
+const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
@@ -54,6 +59,8 @@ var _look_points: Array = []     # this frame's look_points, fetched the first t
 var _look_frame: int = -1        # the _t-frame _look_points was fetched in
 var _frame: int = 0              # counts _process_body calls
 var _frame_s: float = -1.0       # when _process_body last ran (s, the ticks clock)
+var _held_since_ms: int = -1     # walker_stop: when the walker was first held at bodies this time, -1 when free
+var _held_last_ms: int = -100000 # and the last frame it was held
 var _settle_until: float = -1.0  # after this computer's own stall: until then bodies are drawn where their points are (MotionBuffer.settle)
 var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
@@ -113,6 +120,12 @@ const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
+
+
+# A bird takes off when its row goes from the ground into flight (FLY); a glide climbing again (GLIDE to FLY) or a row sent again in
+# flight is the same flight. A body first drawn already flying starts in that state, so it is no take-off either.
+static func takes_off(was: int, now: int) -> bool:
+	return now == FLY and not was in [FLY, GLIDE]
 
 
 # A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
@@ -451,6 +464,32 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 	return false
 
 
+# The walker's frame move from `before` to `after` (feet) stopped at the animals drawn near: the correction to add (AnimalContact.walker_stop).
+# Bodies of AnimalContact.BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
+func walker_stop(before: Vector3, after: Vector3) -> Vector3:
+	var bodies: Array = []
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+		if AnimalContact.body_m(str(b["kind"])) < AnimalContact.BLOCK_M:
+			continue
+
+		var m: float = float(b["contact_m"]) - AnimalContact.WALK_INTO_M
+		var at: Vector3 = (b["node"] as Node3D).global_position
+
+		if Vector2(at.x - after.x, at.z - after.z).length() < m + 1.0:
+			bodies.append([at, m])
+
+	var stop: Vector3 = AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
+	var wanted: float = Vector2(after.x - before.x, after.z - before.z).length()
+	var made: float = Vector2(after.x + stop.x - before.x, after.z + stop.z - before.z).length()
+	var pinned: bool = stop.length() >= 0.001 and made < wanted * 0.3   # held, not sliding round it
+	var held: Array = AnimalContact.walker_held([_held_since_ms, _held_last_ms], Time.get_ticks_msec(), pinned, PINNED_MS, HELD_GAP_MS)
+	_held_since_ms = int(held[0])
+	_held_last_ms = int(held[1])
+	return Vector3.ZERO if bool(held[2]) else stop   # held so long they go through: a walker is never shut in
+
+
 # [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
 func drawn_positions() -> Array:
 	var out: Array = []
@@ -461,7 +500,8 @@ func drawn_positions() -> Array:
 	return out
 
 
-# [[drawn position, heading], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these (BowAim.zone_points).
+# [[drawn position, heading, body_m], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these
+# (BowAim.zone_points); a blow's reach is to the body, body_m short of its middle (held_item._animal_in_reach).
 func aim_rows(from: Vector3, range_m: float) -> Array:
 	var out: Array = []
 
@@ -469,7 +509,7 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position
 
 		if at.distance_to(from) <= range_m:
-			out.append([at, float(_bodies[id]["heading"])])
+			out.append([at, float(_bodies[id]["heading"]), AnimalContact.body_m(str(_bodies[id]["kind"]))])   # its reach from middle to nose: a blow reaches its body, not its middle
 
 	return out
 
@@ -523,6 +563,8 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
+		elif takes_off(int(_bodies[id]["state"]), int(row[4])) and KIND_OF_SPECIES.has(int(row[1])):
+			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
 
 		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.
 		if int(_bodies[id]["state"]) in ATTACK_STATES and not int(row[4]) in ATTACK_STATES:
@@ -711,7 +753,7 @@ func _process_body(delta: float) -> void:
 			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
 			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
 			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
-			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]), reach, int(b["state"]) != CHARGE)
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - AnimalContact.WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
 
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it

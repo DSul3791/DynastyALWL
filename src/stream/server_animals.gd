@@ -186,11 +186,12 @@ func species_def(sp: String) -> Dictionary:
 	return cfg.get("species", {}).get(sp, {})
 
 
-# Admin and tests: put an animal down at once (x, z; the ground gives y). Returns its id or 0.
-func spawn(sp: String, x: float, z: float) -> int:
+# Admin and tests: put an animal down at once (x, z; the ground gives y). Returns its id or 0. over_cap: a player's own companion made
+# beside them (server_companions._make_live) is never refused by server_cap; it still counts toward it, so the wild ones make room.
+func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 	var def: Dictionary = species_def(sp)
 
-	if def.is_empty() or animals.size() >= int(cfg.get("server_cap", 150)):
+	if def.is_empty() or (animals.size() >= int(cfg.get("server_cap", 150)) and not over_cap):
 		return 0
 
 	var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else 0.0
@@ -643,7 +644,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	return false
 
 
-# The animal a jab from `origin` along `dir` reaches: nearest within reach and about 35 degrees of the aim; 0 for none.
+# The animal a jab from `origin` along `dir` reaches: the nearest body (its middle less body_m) within reach and about 35 degrees of the aim; 0 for none.
 func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1, present_ms: int = -1) -> int:
 	var flat: Vector2 = Vector2(dir.x, dir.z).normalized()
 	var best: int = 0
@@ -655,9 +656,11 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 
 		var at: Vector3 = pos_at(animals[id], judged_ms(animals[id], seen_ms, present_ms))   # where the player saw it (protocol 155)
 		var to: Vector2 = Vector2(at.x - origin.x, at.z - origin.z)
-		var d: float = to.length()
+		var body: float = AnimalContact.body_m(str(animals[id]["sp"]))
+		var d: float = to.length() - body   # to its body, not its middle: an animal held off a player at body_m + player_m (keep_off_players)
+		# stays within reach of the blows (an elephant's middle 2.55 m off, out of a knife's 2.5 m and a punch's 1.8 m: robots 23 Nov 2026)
 
-		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
+		if d <= best_d and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
 			best_d = d
 			best = id
 
@@ -911,6 +914,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 		var push: Vector2 = player_velocity_at(at)
 		pace_mps = maxf(pace_mps, push.length() + 1.0)
 		out = AnimalContact.keep_off(a["pos"], at + Vector3(push.x, 0.0, push.y) * dt, AnimalContact.contact_m(str(a["sp"])))
+	elif AnimalContact.body_m(str(a["sp"])) >= AnimalContact.BLOCK_M and Vector2(out.x - a["pos"].x, out.z - a["pos"].z).length() <= AnimalContact.LEAN_M:
+		pace_mps = minf(pace_mps, AnimalContact.LEANED_MPS)   # a walker stopped at its body leans on it (animal_view walker_stop): it shifts, never shoved along
 	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):

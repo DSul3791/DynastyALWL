@@ -12,6 +12,7 @@ extends SceneTree
 #            --stance=N      0 standing, 1 crouched, 2 sitting, 3 lying (stance.gd; the state byte)
 #            --left=ID       the item in the left hand (torch, lantern, shield); --lit: a torch burning; --night: dark sky, no sun (to see its light)
 #            --asleep        the asleep bit (with --stance=3: a sleeping player)
+#            --carry         a log on the shoulder (the carry bit); --swim: the swimming bit; --shield-up: the shield raised (the more byte's hand flag)
 #            --swing         a blow before each picture (the swing count moves on), taken SWING_LEAD_S into the remote clip: the impact
 #            --angles="name:deg:dist;..."  camera deg round the body from its front (0 front, 90 its left, -90 its right, 180 behind), dist m away;
 #                            under 2 m it aims at the held item, else at the chest (default right:-90:2.4;left:90:2.4;front:0:2.4;hand:-90:1.0)
@@ -38,6 +39,9 @@ var _walk: float = 0.0
 var _stance: int = 0
 var _held: int = 0
 var _asleep: bool = false
+var _carry: bool = false
+var _swim: bool = false
+var _shield_up: bool = false
 var _left: int = 0
 var _lit: bool = false
 var _swings: int = 0
@@ -76,6 +80,12 @@ func _init() -> void:
 			night = true
 		elif a == "--asleep":
 			_asleep = true
+		elif a == "--carry":
+			_carry = true
+		elif a == "--swim":
+			_swim = true
+		elif a == "--shield-up":
+			_shield_up = true
 		elif a == "--swing":
 			swing = true
 		elif a.begins_with("--settle="):
@@ -243,4 +253,4 @@ func _aim_y() -> float:
 func _send_row() -> void:
 	_server_ms += ROW_MS
 	_at += Vector3(0.0, 0.0, -_walk * float(ROW_MS) / 1000.0)
-	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]), PackedInt32Array([_left]), PackedByteArray([PlayerViewScript.MORE_LIT if _lit else 0]))
+	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | (PlayerViewScript.CARRY if _carry else 0) | (PlayerViewScript.SWIM if _swim else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]), PackedInt32Array([_left]), PackedByteArray([(PlayerViewScript.MORE_LIT if _lit else 0) | (PlayerViewScript.MORE_SHIELD_UP if _shield_up else 0)]))

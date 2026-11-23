@@ -187,6 +187,23 @@ func _init() -> void:
 		dog_worst = minf(dog_worst, Vector2(dog["pos"].x - runner.x, dog["pos"].z - runner.z).length())
 
 	check(dog_worst >= dog_m - 0.01, "a dog a player jogs into at 4 m/s keeps out of them (nearest %.2f m, contact %.2f m)" % [dog_worst, dog_m])
+	# A walker stopped at a big body leans on it (animal_view walker_stop, WALK_INTO_M inside): it shifts aside slowly, never shoved along at
+	# half its flee speed (robots 23 Nov 2026: two robots pressing an elephant pushed it about at 3 to 5 m/s, drawn 2 to 5 m off the server).
+	var el_m: float = AnimalContact.contact_m("elephant")
+	var leaned: Dictionary = {"sp": "elephant", "pos": Vector3(el_m - AnimalContact.WALK_INTO_M, 10.0, 0.0), "state": 0}
+	var leaner: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var leaned_moved: float = 0.0
+
+	for i in 20:
+		var was_el: Vector3 = leaned["pos"]
+		mw.make_way(leaned, leaner, 0.1)
+		leaned_moved += Vector2(leaned["pos"].x - was_el.x, leaned["pos"].z - was_el.z).length()
+		leaner.x = leaned["pos"].x - (el_m - AnimalContact.WALK_INTO_M)   # the walker follows, held at its body
+
+	check(leaned_moved > 0.0 and leaned_moved <= AnimalContact.LEANED_MPS * 2.0 + 0.001, "an elephant a walker leans on for 2 s shifts %.2f m, at most %.1f m/s" % [leaned_moved, AnimalContact.LEANED_MPS])
+	var deep_el: Dictionary = {"sp": "elephant", "pos": Vector3(el_m - 1.0, 10.0, 0.0), "state": 0}
+	mw.make_way(deep_el, Vector3(0.0, 10.0, 0.0), 0.1)
+	check(deep_el["pos"].x - (el_m - 1.0) > AnimalContact.LEANED_MPS * 0.1 + 0.01, "an elephant a player is well inside (a late line) still steps out at its own pace (%.2f m in 0.1 s)" % (deep_el["pos"].x - (el_m - 1.0)))
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))
@@ -220,6 +237,96 @@ func _init() -> void:
 	check(int(_row_of(s.rows_near(players[0]), rid)[5]) == second_ms + 1, "a moving one carries the time of its step")
 	OS.delay_msec(20)
 	check(int(_row_of(s.rows_near(players[0]), rid)[5]) == second_ms + 1, "and still that time while it is between steps")
+
+	# The walker stops at a body (robots 23 Nov 2026, AUDIT where: a robot walking through a standing elephant shoved its drawn body 5 m from
+	# where the server had it). Straight in: they stand at its contact distance; across it: they slide round; one the animal came onto goes
+	# no nearer and may step away; one 3 m above (a bridge) passes.
+	var em: float = AnimalContact.contact_m("elephant")
+	var el: Array = [[Vector3.ZERO, em]]
+	var walk_from: Vector3 = Vector3(em + 0.5, 0.0, 0.0)
+	var walk_to: Vector3 = Vector3(em - 0.6, 0.0, 0.0)
+	var walk_end: Vector3 = walk_to + AnimalContact.walker_stop(walk_from, walk_to, el)
+	check(absf(Vector2(walk_end.x, walk_end.z).length() - em) < 0.001, "walking straight into an elephant they stand against it, %.2f m from its middle (%.2f)" % [em, Vector2(walk_end.x, walk_end.z).length()])
+	var cross_from: Vector3 = Vector3(em, 0.0, -0.3)
+	var cross_to: Vector3 = Vector3(em - 0.2, 0.0, 0.3)
+	var cross_end: Vector3 = cross_to + AnimalContact.walker_stop(cross_from, cross_to, el)
+	check(absf(Vector2(cross_end.x, cross_end.z).length() - em) < 0.001 and cross_end.z > 0.2, "walking across its side they slide round it (%.2f, %.2f)" % [cross_end.x, cross_end.z])
+	var under_from: Vector3 = Vector3(1.0, 0.0, 0.0)
+	check(AnimalContact.walker_stop(under_from, Vector3(0.6, 0.0, 0.0), el).is_equal_approx(Vector3(0.4, 0.0, 0.0)) and AnimalContact.walker_stop(under_from, Vector3(1.4, 0.0, 0.0), el) == Vector3.ZERO, "one the animal came onto goes no nearer, and steps away freely")
+	check(AnimalContact.walker_stop(walk_from, walk_to, [[Vector3(0.0, 3.0, 0.0), em]]) == Vector3.ZERO, "a body 3 m above or below is passed")
+	# A hitch frame long enough to cross the body stops where it would enter, not on its far side.
+	var hitch_end: Vector3 = Vector3(-em - 1.0, 0.0, 0.1) + AnimalContact.walker_stop(Vector3(em + 1.0, 0.0, 0.1), Vector3(-em - 1.0, 0.0, 0.1), el)
+	check(hitch_end.x > 0.0 and absf(Vector2(hitch_end.x, hitch_end.z).length() - em) < 0.01, "a hitch-frame step clean through the body stops on the near side (%.2f, %.2f)" % [hitch_end.x, hitch_end.z])
+	var over_end: Vector3 = Vector3(-1.0, 0.0, 0.1) + AnimalContact.walker_stop(Vector3(em + 0.3, 0.0, 0.1), Vector3(-1.0, 0.0, 0.1), el)
+	check(over_end.x > 0.0 and absf(Vector2(over_end.x, over_end.z).length() - em) < 0.01, "a hitch step over its middle into its far half also stops on the near side (%.2f, %.2f)" % [over_end.x, over_end.z])
+	# Ringed by three wolves touching them: a step out between two is never shut in (only the body the move enters first stops it).
+	var ring_m: float = AnimalContact.contact_m("wolf")
+	var ring: Array = []
+
+	for k in 3:
+		ring.append([Vector3(cos(TAU * k / 3.0) * ring_m, 0.0, sin(TAU * k / 3.0) * ring_m), ring_m])
+
+	var out_at: Vector3 = Vector3.ZERO
+	var out_dir: Vector3 = Vector3(cos(PI / 3.0), 0.0, sin(PI / 3.0))   # between the first two
+
+	for f in 60:
+		var step_to: Vector3 = out_at + out_dir * 0.05
+		out_at = step_to + AnimalContact.walker_stop(out_at, step_to, ring)
+
+	check(Vector2(out_at.x, out_at.z).length() > ring_m * 1.5, "ringed by three wolves, a walker steps out between two (%.2f m out)" % Vector2(out_at.x, out_at.z).length())
+	# Never shut in: held short at bodies for 2.5 s on end the walker goes through; a slide or a break of over 0.4 s starts the count again.
+	var hold: Array = [-1, -100000]
+	hold = AnimalContact.walker_held(hold, 1000, true, 2500, 400)
+	check(int(hold[0]) == 1000 and not bool(hold[2]), "held at a body: the count starts")
+	hold = AnimalContact.walker_held(hold, 3400, true, 2500, 400)
+	check(not bool(hold[2]), "2.4 s held: still stopped")
+	hold = AnimalContact.walker_held(hold, 3600, true, 2500, 400)
+	check(bool(hold[2]), "2.6 s held on end: let through")
+	hold = AnimalContact.walker_held(hold, 3700, false, 2500, 400)
+	hold = AnimalContact.walker_held(hold, 4200, false, 2500, 400)
+	check(int(hold[0]) == -1, "free for over 0.4 s: the next hold counts from its start")
+	# The walker pressing into a standing elephant on this screen never shoves its drawn body: the walker stops 0.1 m inside its contact
+	# distance, the drawing keeps it off only 0.12 m inside (animal_view, the review of #1774).
+	var drawn_el: Vector3 = Vector3(3.0, 0.0, 0.0)
+	var presser: Vector3 = Vector3.ZERO
+
+	for f in 120:
+		var press_to: Vector3 = presser + Vector3(0.08, 0.0, 0.0)
+		presser = press_to + AnimalContact.walker_stop(presser, press_to, [[drawn_el, em - 0.1]])
+		drawn_el = AnimalContact.stop_toward(presser, drawn_el, Vector3(3.0, 0.0, 0.0), em - 0.12)
+
+	check(drawn_el.distance_to(Vector3(3.0, 0.0, 0.0)) < 0.01 and absf(presser.distance_to(drawn_el) - (em - 0.1)) < 0.01, "a walker pressing into a standing elephant stops at it and its drawn body stays put (%.2f m moved)" % drawn_el.distance_to(Vector3(3.0, 0.0, 0.0)))
+	# Stopped just inside its contact distance, a standing animal the walker presses into makes way on the server (make_way), slowly
+	# (LEANED_MPS), so even without the let-through (animal_view PINNED_MS) the walker gets past one standing in their way.
+	var pass_players: Array = [Vector3(0.0, 10.0, 0.0)]
+	var ps = _animals(pass_players, [])
+	ps.cfg["senses"] = {}
+
+	for key in ["spook_m", "alert_m", "threat_m"]:
+		ps.cfg["species"]["cow"][key] = 0.0   # it stands, unafraid: only make_way moves it
+
+	ps.cfg["species"]["cow"].erase("defend")
+	var cow: int = ps.spawn("cow", 3.0, 0.0)
+	ps.animals[cow]["pos"] = Vector3(3.0, 10.0, 0.0)
+	var cm: float = AnimalContact.contact_m("cow") - AnimalContact.WALK_INTO_M
+	var walker: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var passed_s: float = INF
+
+	for f in 900:
+		var goal: Vector3 = walker + Vector3(3.0 / 60.0, 0.0, 0.0)
+		walker = goal + AnimalContact.walker_stop(walker, goal, [[ps.animals[cow]["pos"], cm]] if ps.animals.has(cow) else [])
+		pass_players[0] = walker
+		ps.tick(1.0 / 60.0)
+
+		if walker.x > 6.0 and passed_s == INF:
+			passed_s = float(f) / 60.0
+
+	check(passed_s < 14.0, "a walker pressing into a standing cow in their way is not held: it makes way, 3 m on in %.1f s" % passed_s)
+	# A blow reaches the body, not its middle: an elephant held off at its contact distance is within a knife's 2.5 m and a punch's 1.8 m.
+	var reach_s = _animals([Vector3(0.0, 10.0, 0.0)], [])
+	var eid: int = reach_s.spawn("elephant", em, 0.0)
+	reach_s.animals[eid]["pos"] = Vector3(em, 10.0, 0.0)
+	check(reach_s.target_along(Vector3(0.0, 11.6, 0.0), Vector3.RIGHT, 1.8) == eid and reach_s.target_along(Vector3(0.0, 11.6, 0.0), Vector3.RIGHT, em - AnimalContact.body_m("elephant") - 0.1) == 0, "an elephant at its contact distance is in a punch's reach (to its body), not in one short of its body")
 
 	print("test_animal_contact: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)
