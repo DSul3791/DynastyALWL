@@ -70,6 +70,9 @@ var _scenes_of: Dictionary = {}   # species number -> its model files that exist
 var _scene_held: Dictionary = {}  # model file path -> its scene or texture, loaded on a worker (_scenes_ready) and kept so load() finds it cached
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
+var _alpha_tasks: Dictionary = {}  # texture path -> the worker task finding its alpha (_scenes_ready)
+var _alpha_done: Dictionary = {}   # texture path -> its alpha, written by _alpha_job under _alpha_mutex
+var _alpha_mutex: Mutex = Mutex.new()
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var water_level: Callable        # (x, z) -> water surface height or NAN; set by the client: a swimmer below it plays its "swim" clip
@@ -886,10 +889,48 @@ func _scenes_ready(number: int) -> bool:
 		else:
 			_scene_held[path] = null      # it failed: _make_model's own load() says so and draws the code-built body
 
+		# A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them. The unpacking of a 4096 texture is the slow
+		# part: it is done on a worker too, before the animal is drawn. The read back stays here, on the main thread, so the worker only
+		# touches its own Image (no renderer call to wait on, so _exit_tree can wait for it).
+		if _scene_held.get(path) is Texture2D and not _alpha_of.has(path):
+			if not _alpha_tasks.has(path):
+				var img: Image = (_scene_held[path] as Texture2D).get_image()
+				_alpha_tasks[path] = WorkerThreadPool.add_task(_alpha_job.bind(img, path), false, "animal texture alpha")
+				all_in = false
+			elif WorkerThreadPool.is_task_completed(int(_alpha_tasks[path])):
+				WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
+				_alpha_tasks.erase(path)
+				_alpha_mutex.lock()
+				_alpha_of[path] = bool(_alpha_done.get(path, false))
+				_alpha_done.erase(path)
+				_alpha_mutex.unlock()
+			else:
+				all_in = false
+
 	return all_in
 
 
+# On a worker (_scenes_ready): whether a texture's pixels `img` have see-through ones, as _has_alpha works it out. Only this Image is touched.
+func _alpha_job(img: Image, path: String) -> void:
+	if img != null and img.is_compressed():
+		img.decompress()      # its own copy: the main thread let go of it
+
+	var has: bool = img != null and img.detect_alpha() != Image.ALPHA_NONE
+	_alpha_mutex.lock()
+	_alpha_done[path] = has
+	_alpha_mutex.unlock()
+
+
+# Alpha tests still running on a worker are waited for: their bound calls hold this view.
+func _exit_tree() -> void:
+	for path in _alpha_tasks:
+		WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
+
+	_alpha_tasks.clear()
+
+
 func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
+	_clip_maps.clear()      # the last model's rig is drawn now, or freed: its maps are not wanted
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
@@ -1505,39 +1546,96 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 	return box
 
 
+# Which of a clip's tracks move which bone of the rig's skeleton, and which move the nodes between the skeleton and the rig, worked out
+# once per clip and rig: _clip_bones samples a walk 41 times and every role's first frame, and resolving each track's node and bone by
+# name on every sample was most of the first moose's 0.8 s (Lane A route plays, 23 Nov 2026). Empty with no skeleton.
+# The rig's nodes must not be renamed or moved between calls (they are not: the model is set up before it is drawn).
+var _clip_maps: Dictionary = {}
+
+func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Dictionary:
+	var key: String = "%d:%d" % [anim.get_instance_id() if anim != null else 0, rig.get_instance_id()]
+
+	if _clip_maps.has(key):
+		return _clip_maps[key]
+
+	if _clip_maps.size() >= 64:
+		_clip_maps.clear()      # one model's clips at a time are all that is wanted; an old rig's nodes may be freed
+
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var map: Dictionary = {}
+
+	if not skeletons.is_empty():
+		var sk: Skeleton3D = skeletons[0]
+		var base: Node = player.get_node_or_null(player.root_node) if anim != null else null
+		var bones: Array = []
+		var chain: Array = []
+
+		if anim != null:
+			for t in anim.get_track_count():
+				var kind: int = anim.track_get_type(t)
+
+				if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
+					continue
+
+				var path: NodePath = anim.track_get_path(t)
+
+				if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
+					continue
+
+				var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+
+				if bone < 0 or anim.track_get_key_count(t) == 0:
+					continue
+
+				bones.append([t, bone, kind])
+
+		var up: Node = sk
+
+		while up != null and up != rig:
+			if up is Node3D:
+				var tracks: Array = []
+
+				if anim != null and up != sk:
+					for t in anim.get_track_count():
+						var tp: NodePath = anim.track_get_path(t)
+
+						if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base == null or base.get_node_or_null(NodePath(str(tp.get_concatenated_names()))) != up:
+							continue
+
+						var kind: int = anim.track_get_type(t)
+
+						if kind == Animation.TYPE_POSITION_3D or kind == Animation.TYPE_ROTATION_3D or kind == Animation.TYPE_SCALE_3D:
+							tracks.append([t, kind])
+
+				chain.append([up, tracks])
+
+			up = up.get_parent()
+
+		map = {"sk": sk, "bones": bones, "chain": chain}
+
+	_clip_maps[key] = map
+	return map
+
+
 # The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
 # and the bone rests: no running player needed.
 func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: float = 0.0) -> PackedVector3Array:
-	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var map: Dictionary = _clip_map(player, anim, rig)
 
-	if skeletons.is_empty():
+	if map.is_empty():
 		return PackedVector3Array()
 
-	var sk: Skeleton3D = skeletons[0]
+	var sk: Skeleton3D = map["sk"]
 	var local: Array = []
 
 	for i in sk.get_bone_count():
 		local.append(sk.get_bone_pose(i))      # the pose as imported (the bear stands in it on the animal sheet)
 
 	if anim != null:
-		var base: Node = player.get_node_or_null(player.root_node)
-
-		for t in anim.get_track_count():
-			var kind: int = anim.track_get_type(t)
-
-			if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
-				continue
-
-			var path: NodePath = anim.track_get_path(t)
-
-			if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
-				continue
-
-			var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
-
-			if bone < 0 or anim.track_get_key_count(t) == 0:
-				continue
-
+		for entry in (map["bones"] as Array):      # [track, bone, track type]
+			var t: int = entry[0]
+			var bone: int = entry[1]
+			var kind: int = entry[2]
 			var bone_xf: Transform3D = local[bone]
 
 			if kind == Animation.TYPE_POSITION_3D:
@@ -1552,37 +1650,28 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 	# Tracks on the nodes above the skeleton (RigRoot) count too: a clip can scale or turn the whole rig (the elk's second Walk
 	# shrinks it to a hundredth).
 	var to_rig: Transform3D = Transform3D.IDENTITY
-	var up: Node = sk
 
-	while up != null and up != rig:
-		if up is Node3D:
-			var xf: Transform3D = (up as Node3D).transform
+	for link in (map["chain"] as Array):      # [node, [[track, track type]]], from the skeleton up to the rig
+		var up: Node3D = link[0]
+		var xf: Transform3D = up.transform
 
-			if anim != null and up != sk:
-				var base_node: Node = player.get_node_or_null(player.root_node)
-				var origin: Vector3 = xf.origin
-				var turn: Quaternion = xf.basis.get_rotation_quaternion()
-				var size: Vector3 = xf.basis.get_scale()
+		if anim != null and up != sk:
+			var origin: Vector3 = xf.origin
+			var turn: Quaternion = xf.basis.get_rotation_quaternion()
+			var size: Vector3 = xf.basis.get_scale()
 
-				for t in anim.get_track_count():
-					var tp: NodePath = anim.track_get_path(t)
+			for track in (link[1] as Array):
+				match int(track[1]):
+					Animation.TYPE_POSITION_3D:
+						origin = anim.position_track_interpolate(int(track[0]), time)
+					Animation.TYPE_ROTATION_3D:
+						turn = anim.rotation_track_interpolate(int(track[0]), time)
+					Animation.TYPE_SCALE_3D:
+						size = anim.scale_track_interpolate(int(track[0]), time)
 
-					if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base_node == null or base_node.get_node_or_null(NodePath(str(tp.get_concatenated_names()))) != up:
-						continue
+			xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
 
-					match anim.track_get_type(t):
-						Animation.TYPE_POSITION_3D:
-							origin = anim.position_track_interpolate(t, time)
-						Animation.TYPE_ROTATION_3D:
-							turn = anim.rotation_track_interpolate(t, time)
-						Animation.TYPE_SCALE_3D:
-							size = anim.scale_track_interpolate(t, time)
-
-				xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
-
-			to_rig = xf * to_rig
-
-		up = up.get_parent()
+		to_rig = xf * to_rig
 
 	var world: Array = []
 	world.resize(sk.get_bone_count())
