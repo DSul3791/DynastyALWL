@@ -4027,7 +4027,7 @@ func _log_supported(it: Dictionary) -> bool:
 		return false
 
 	var rest: float = float(_drops.get("rolling", {}).get("rest_m", 0.6))
-	var floor_top: float = _floor_top_below(at + Vector3(0.0, 0.1, 0.0), [], false)
+	var floor_top: float = _floor_top_below(at + Vector3(0.0, 0.1, 0.0), [], false) if at.y > ground + 0.05 else NAN   # only a log above the ground looks
 
 	if not is_nan(floor_top) and floor_top > ground + 0.05 and at.y - floor_top < 0.15:
 		return false   # lying on a building floor: the rolling world has only the ground (and boulders, which push a log off), so it would roll through the slab
