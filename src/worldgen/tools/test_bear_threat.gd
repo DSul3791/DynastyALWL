@@ -28,7 +28,7 @@ func make():
 	a.traits = false   # every animal "defensive", no young: the ladder alone
 	a.rng.seed = 3
 	a.big_game.player_info = func(): return players
-	a.big_game.hurt_player = func(peer, amount, _lethal, _cause):
+	a.big_game.hurt_player = func(peer, amount, _lethal, _cause, _from):
 		hurt_log.append([peer, amount])
 		return "hurt"
 	return a
