@@ -68,6 +68,7 @@ Keep these separate from the design: they own assignments, implementation state,
 
 | Work area | Records | Purpose |
 |---|---|---|
+| Robot play-testers | [Robot play-testers](ROBOT_PLAYTESTERS.md) | Headless robot players over a simulated internet link (delay, jitter, loss) checking pack sync, animal and player jumps, held items, crouch movement and rejoin against the server. |
 | To-do list | [TODO](TODO.md), [current bugs](../BugsList_Current.md), [fixed bugs](../BugsList_Fixed.md) | What is not built yet, grouped into thread-sized pieces; Dave's play-test problems until he has played the fix. |
 | Goal authoring | [Working walkthrough draft](design/PLAYER_GOALS_REWARDS_DRAFT.md), [corrected review catalog](design/PLAYER_GOALS_CATALOG_CORRECTED.md) | Current walkthrough authoring/regeneration inputs; use mission decisions for approvals, amounts and activation. |
 | Goals/progression repair | [State](ai-team/missions/GOALS-REPAIR/STATE.md), [decisions](ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md) | Current mission state and scoped decisions/assumptions. |
