@@ -58,7 +58,10 @@ sleep 1
 launch() {
 	local i=$1 plan=$2 tag=$3 data=$4 cache=$5
 	mkdir -p "$data" "$cache"
-	( XDG_DATA_HOME="$data" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
+	# Each robot's own user data (its character id, settings): XDG_DATA_HOME on Linux, APPDATA on Windows (Godot reads %APPDATA% there;
+	# Lane A 23 Nov 2026: without it every robot shared one character, and the second to join closed the first as a twin).
+	local appdata="$data"; command -v cygpath > /dev/null 2>&1 && appdata=$(cygpath -w "$data")
+	( XDG_DATA_HOME="$data" APPDATA="$appdata" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
 		res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$LINK --block-port=$((LINK + 1)) \
 		--cache="$cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin ${ROBOT_CLIENT_ARGS:-} > "$D/robot${i}_$tag.log" 2>&1
 	  echo $? > "$D/robot${i}_$tag.exit" ) &   # the client's exit code: 0 after a clean quit (134 was the quit abort, fixed by #1647)

@@ -942,7 +942,7 @@ func _trail_crouch(s: float) -> void:
 		await _wait(4.0)
 
 	if best.is_empty():
-		_note("trail", "no dry game trail under trees within 170 m of %s (%d route points known)" % [str(me.round()), _route_points().size()])
+		_fail("trail", "none", "no dry game trail under trees within 170 m of %s (%d route points known): nothing tested" % [str(me.round()), _route_points().size()])
 		return
 
 	var pts: PackedVector2Array = best[0]
@@ -951,7 +951,7 @@ func _trail_crouch(s: float) -> void:
 	var there: bool = await _go_to(start, 60.0, 2.5)
 
 	if not there and Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length() > 20.0:
-		_note("trail", "never reached the trail point %s in 60 s (still %.0f m off): no crouch along it" % [str(start.round()), Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length()])
+		_fail("trail", "reach", "never reached the trail point %s in 60 s (still %.0f m off): nothing tested" % [str(start.round()), Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length()])
 		return
 
 	var line: PackedVector2Array = _every_m(pts, 4.0)
@@ -1394,6 +1394,11 @@ func _pose_lines(delta: float) -> void:
 		return
 
 	_pose_t = 0.0
+	var peer_now: MultiplayerPeer = client.multiplayer.multiplayer_peer
+
+	if peer_now == null or peer_now is OfflineMultiplayerPeer or peer_now.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return   # lost or quitting: no peer id to print (get_unique_id on a closed ENet peer is an engine error)
+
 	var me: Vector3 = client.body.global_position
 	var v: Vector3 = client.body.velocity
 	FreezeWatchScript.printer.line("ROBOT %s POSE %d %d %d %.2f %.2f %.2f %.2f" % [robot_name, client.multiplayer.get_unique_id(), _now_ms(), client.stance.stance, me.x, me.y, me.z, Vector2(v.x, v.z).length()])
