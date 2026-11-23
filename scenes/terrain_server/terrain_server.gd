@@ -3692,6 +3692,7 @@ func _idle_prebuild_column(anchor: Vector3i, offset: Array) -> bool:
 func _load_game_clock() -> void:
 	var path: String = _store_path + "/game_clock.json"
 	_clock_saved_msec = Time.get_ticks_msec()
+	ItemsScript.restore_missing(path)
 
 	if not FileAccess.file_exists(path):
 		return

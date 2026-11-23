@@ -7778,6 +7778,7 @@ func _clear_retired_pieces() -> void:
 # A file that does not parse is set aside as .bad; one of another version is set aside and not replaced, as _read_json_version does.
 func _read_area(key: String, gen: int) -> Dictionary:
 	var path: String = "%s/%s/%s.json" % [_dir, AREA_DIR, key]
+	restore_missing(path)
 	var main: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 
 	if typeof(main) == TYPE_DICTIONARY and int(main.get("version", 0)) > VERSION:
@@ -7819,6 +7820,7 @@ func _read_area(key: String, gen: int) -> Dictionary:
 # not the world. A file from another version is set aside as .bad and NOT replaced by the older copy.
 func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant:
 	var path: String = _dir + "/" + name
+	restore_missing(path)
 
 	if not FileAccess.file_exists(path):
 		return null
@@ -7881,6 +7883,31 @@ func _note_save_part(name: String, t0: int) -> void:
 # One write at a time: the background writer and a save from anywhere else (shutdown, a test's last save) used the same path.tmp, and the second rename failed with an error
 # line ("Error calling utility function", exit 1 or 139 in the gates, 31 Oct 2026). The lock makes the files land in order.
 static var _file_lock: Mutex = Mutex.new()
+
+
+# A save file that is missing while its .tmp or .prev is there is put back before it is read (22 Nov 2026, the #1597/#1598 reviews). On Windows
+# Godot's rename removes the old file before it moves the .tmp over it, so a hard stop between the two leaves only path.tmp (whole: it was closed
+# before the rename) and path.prev; every loader saw "no file" and started that part empty, and the next save wrote the empty one over the players'.
+# The .tmp is the newer copy and is used when it parses; else the .prev. Returns what was done ("" when the file is there or nothing can be used).
+static func restore_missing(path: String) -> String:
+	if path == "" or FileAccess.file_exists(path):
+		return ""
+
+	_file_lock.lock()
+	var done: String = ""
+
+	if FileAccess.file_exists(path + ".tmp") and typeof(JSON.parse_string(FileAccess.get_file_as_string(path + ".tmp"))) == TYPE_DICTIONARY:
+		done = "from its .tmp (the save that was being moved into place)" if DirAccess.rename_absolute(path + ".tmp", path) == OK else ""
+
+	if done == "" and FileAccess.file_exists(path + ".prev") and DirAccess.copy_absolute(path + ".prev", path) == OK:
+		done = "from its .prev (the save before it)"
+
+	_file_lock.unlock()
+
+	if done != "":
+		push_error("server save: %s was missing; restored %s" % [path, done])
+
+	return done
 
 
 static func _write_file(path: String, text: String) -> bool:
