@@ -24391,16 +24391,19 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 # The head entry starts: the parts an earlier step made leave the pack now. False (the entry and what depends on it are cancelled and refunded)
 # when they are not there any more.
+# It runs from the craft tick, not from a player's action, so it sends the pack's changed slots after a take itself: before 23 Nov 2026 the twine an axe took
+# here stayed in the client's pack until a later full update, and the next recipe that needed twine showed as craftable (Dave's Stone hammer).
 func _start_deferred(peer: int, head: Array) -> bool:
 	var inv = inventory_of(peer)
 	var times: int = int(head[1])
 	var stock: Dictionary = _stock_of(peer)   # parts made at a station wait in its output (master s2.5): the craft stock reaches them there
+	var before: Array = _snapshot(inv) if inv != null else []
 
 	for need in head[3]:
 		if inv == null or _stock_have(inv, int(need[0]), stock) < int(need[1]) * times:
 			_cancel_craft(peer, 0)
 			_say(peer, "%s was cancelled: the parts it needed are gone" % str(recipes.recipe(int(head[0])).get("name", "That")))
-			return false
+			return false   # the refund sends its own changes (give)
 
 	for need in head[3]:
 		var held: Array = []
@@ -24422,6 +24425,8 @@ func _start_deferred(peer: int, head: Array) -> bool:
 
 	head[3] = []
 	_dirty = true
+	_send_changes(peer, inv, before)
+	_send_stock(peer)   # a part taken from the ground or a chest nearby leaves the crafting stock too
 	return true
 
 
