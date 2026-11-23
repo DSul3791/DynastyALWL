@@ -68,7 +68,7 @@ pass() {
 # server may still hold the dead connection. If it cannot get in, once more after 35 s (the server's timeout for a dead peer).
 drops() {
 	ROBOTS=1
-	for c in twine chest asleep wolf; do
+	for c in twine chest asleep; do
 		pass drop_$c drop_$c
 		pass drop_back back_$c
 		if ! grep -q "step joined" "$D/robot1_back_$c.log"; then
@@ -81,6 +81,9 @@ drops() {
 	sleep 30
 	launch 1 drop_twin2 twin2 "$D/r1/data" "$D/r1/cache2"; local p2=$!   # the same user data folder: the same character
 	wait $p1 $p2
+	# The wolf case last: its raw meat ages in the pack, and an ageing pack would read as changed in the freeze and twin checks.
+	pass drop_wolf drop_wolf
+	pass drop_back back_wolf
 	grep -h "same character" "$D/server.log" | head -3
 }
 
