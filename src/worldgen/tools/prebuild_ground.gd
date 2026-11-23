@@ -163,7 +163,7 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array)
 		if done >= _total:
 			break
 
-		if tasks.all(func(id): return WorkerThreadPool.is_task_completed(id)):
+		if tasks.all(func(id): return WorkerThreadPool.is_task_completed(id)) and _done_now() < _total:   # read again: the last ones may just have ended
 			push_error("prebuild_ground: the workers stopped with %d of %d columns done (a script error above?); run it again to go on" % [done, _total])
 			store.flush()
 			return 1
@@ -188,6 +188,13 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array)
 	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "seconds": snappedf(seconds, 0.1)})
 	print("prebuild_ground: DONE %d blocks made, %d already there, in %.0f s; pack %.1f MB at %s" % [_made, _skipped, seconds, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])
 	return 0
+
+
+func _done_now() -> int:
+	_mutex.lock()
+	var done: int = _columns_done
+	_mutex.unlock()
+	return done
 
 
 func _work() -> void:
