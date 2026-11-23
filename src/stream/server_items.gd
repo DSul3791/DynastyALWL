@@ -7016,7 +7016,7 @@ func _wood_tick(spent: float) -> void:
 	var units: int = int(_wood_acc)
 	_wood_acc -= float(units)
 	var fire_x: int = maxi(int(round(float(cfg.get("fire_dry_x", 6.0)))), 1)
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= float(cfg.get("rain_from", 0.2))
+	var rain_from: float = float(cfg.get("rain_from", 0.2))   # rain where each piece lies (_rain_here): snow up a mountain wets no wood
 	var peer_of_key: Dictionary = {}
 
 	for peer in _peer_key:
@@ -7053,7 +7053,7 @@ func _wood_tick(spent: float) -> void:
 
 		if it.has("fire"):
 			if not it["fire"].has("camp"):   # the camp fire holds no wood
-				_wood_tick_fire(id, it, units, fire_x, raining)
+				_wood_tick_fire(id, it, units, fire_x, _rain_here(it["pos"]) >= rain_from)
 
 			continue
 
@@ -7062,7 +7062,7 @@ func _wood_tick(spent: float) -> void:
 
 		var full: int = table.wet_units(int(it["number"]))
 
-		if raining and not (cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5):
+		if _rain_here(it["pos"]) >= rain_from and not (cover_at.is_valid() and float(cover_at.call(it["pos"])) > 0.5):
 			if int(it.get("wear", 0)) < full:
 				it["wear"] = full
 				_dirty = true
