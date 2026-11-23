@@ -80,6 +80,11 @@ const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
+# Lag lane 23 Nov 2026 (cloud join, timestamped): a new player's far ground reaches the neighbour tiles (a client's coarse LOD blocks go out
+# several km), and those tiles were read only when the first such block was asked for, one after another at 1.4-2.6 s each: the ground was
+# ready 13.5 s after the welcome, 6 s of it waiting for tiles (4, 4), (3, 5) and (4, 5). Every tile within this of the spawn is now read at
+# start-up, and of a returning player's spot at the hello, each on its own worker, so the reads overlap and are mostly done before they are needed.
+const JOIN_TILE_MARGIN_M := 6000.0
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ServerAuthScript := preload("res://src/shared/server_auth.gd")
@@ -1039,6 +1044,7 @@ func _ready() -> void:
 	# in 90 starts; this makes the first call of every placer function happen on one thread.
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)), int(floor(spawn.z / placer.chunk_m))), true)
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)) + 1, int(floor(spawn.z / placer.chunk_m))), false)
+	generator.prefetch_around(spawn.x, spawn.z, JOIN_TILE_MARGIN_M)   # the tiles the first join's far ground needs, read in parallel now, after the flora warm-up above (JOIN_TILE_MARGIN_M)
 	_link = BlockLinkScript.new()
 	_link.on_request = _on_blocks_requested
 	_link.is_peer = _is_connected_peer
@@ -1111,6 +1117,7 @@ func _ready() -> void:
 
 		if resume.size() == 3:
 			net.start_at.rpc_id(peer, _resume_spot(Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
+			generator.prefetch_around(float(resume[0]), float(resume[2]), JOIN_TILE_MARGIN_M)   # a returning player's far ground, read in parallel (JOIN_TILE_MARGIN_M)
 
 		_slow_rpc("hello: done", t0))
 	net.logout_requested.connect(func(leaving): items.note_logout(leaving))
