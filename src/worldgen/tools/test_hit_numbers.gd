@@ -170,7 +170,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
 	check(wall != 0 and origins.size() == 1 and is_equal_approx(float(origins[0].z), 10.0), "never carried on through a wall: from the report itself (%s)" % str(origins))
 	var client_src: String = FileAccess.get_file_as_string("res://src/client/held_item.gd")
-	check(client_src.count("report_now.call()") == 2 and FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("held.report_now = report_now"), "the client sends a fresh report just before each blow")
+	check(client_src.count("report_now.call()") == 2 and FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("held.report_now = send_position_now"), "the client sends a fresh report just before each blow")
 	check(FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").contains("items.report_position(peer_id, position, velocity)"), "the server keeps the reported velocity")
 
 	# A tree or a boulder shows its share of 100 a blow; tiny shares still show 1.

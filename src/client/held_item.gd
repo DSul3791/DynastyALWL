@@ -126,7 +126,7 @@ var _off_shown: int = 0
 var _inv                                  # InventoryView
 var _hanging_net: Mesh                    # the shore net as it hangs from the hand (BasicLook "hand_net_hanging"), built once
 var _net
-var report_now: Callable                  # () -> sends this client's position to the server now (terrain_client report_now), just before a blow
+var report_now: Callable                  # () -> sends this client's position to the server now (terrain_client send_position_now), just before a blow
 var seen_ms: Callable                     # () -> [server ms, server ms] the animals are drawn at (animal_view.seen_server_ms; protocol 155), sent with a blow
 var _camera: Camera3D
 var _root: Node3D

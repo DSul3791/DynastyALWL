@@ -3513,7 +3513,7 @@ const STRIKE_LEAD_M := 1.5     # and this far at most
 # Where a striker is when their blow comes (robots 23 Nov 2026, 120 ms and 3% loss: a player who walked up to a bandit and jabbed at once was
 # judged from their last position report, a metre behind, and missed 5 of 5): the last report carried on its own velocity for the time since it
 # came, at most STRIKE_LEAD_S and STRIKE_LEAD_M, on the ground; not through a wall or shut door (then the report itself). The client also sends
-# a report just before a blow (terrain_client report_now), which makes the time since it nearly nothing.
+# a report just before a blow (terrain_client send_position_now), which makes the time since it nearly nothing.
 func strike_origin(peer: int, now: int) -> Vector3:
 	var at: Vector3 = _peer_pos[peer]
 	var move: Array = _peer_move.get(peer, [Vector3.ZERO, now])
