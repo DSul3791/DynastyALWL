@@ -159,14 +159,19 @@ func drawn() -> Array:
 	return out
 
 
+# How far in the past the players are drawn: the rows' jitter buffer, never under one body's own report gap plus lateness (with several
+# players near, the batches' newest time moves on more often than any one of them reports), never over MAX_DELAY_S (a hitch on this
+# computer makes `late` jump; deeper than the kept points, bodies would step from point to point).
+static func draw_delay(clock: Dictionary) -> float:
+	return minf(maxf(MotionBuffer.clock_delay(clock), REPORT_S + float(clock["late"]) + 0.05), MotionBuffer.MAX_DELAY_S)
+
+
 func _process(delta: float) -> void:
 	var camera: Camera3D = get_viewport().get_camera_3d()
 	var eye: Vector3 = camera.global_position if camera != null else Vector3.ZERO
 	var frame: int = Engine.get_process_frames()
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-	# One delay for every player: the batches' jitter buffer, but never less than one body's own report gap (with several players near
-	# the batches' newest time moves on more often than any one of them reports).
-	var drawn_at: float = now_s - maxf(MotionBuffer.clock_delay(_clock), REPORT_S + float(_clock["late"]) + 0.05)
+	var drawn_at: float = now_s - draw_delay(_clock)
 
 	for peer in _bodies:
 		var b: Dictionary = _bodies[peer]
@@ -182,7 +187,7 @@ func _process(delta: float) -> void:
 			node.rotation.y = lerp_angle(node.rotation.y, float(at[1]), clampf(delta * 12.0, 0.0, 1.0))
 
 		# The legs follow the path's own speed, not the easing (a correction slid in is not a step).
-		var moved: Vector3 = ((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)
+		var moved: Vector3 = (((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)).limit_length(MotionBuffer.CARRY_MPS)   # a carried-on point taken back is not a sprint
 		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(delta * 8.0, 0.0, 1.0))
 		b["velocity"] = velocity
 		var distance: float = eye.distance_to(node.global_position)

@@ -280,7 +280,7 @@ func _client() -> void:
 # carrying 0.2 s position reports, each delivered 100 to 260 ms late (a random wobble), one in twenty lost and once four in a row, for a walk at 3 m/s, then a
 # stop. The drawn body must never jump (no frame step over a normal one plus the easing's catch-up), keep moving through the walk (no stand
 # then jump at a lost batch), and come to rest near the last point without running past and back.
-func _check_lossy() -> void:
+func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var table = ItemTableScript.load_default()
 	var view: Node3D = PlayerViewScript.new()
 	view.table = table
@@ -326,7 +326,7 @@ func _check_lossy() -> void:
 
 		last_send = send
 
-		if rng.randf() < 0.05 or (send >= 1750 and send < 2250):
+		if rng.randf() < 0.05 or (send >= burst_ms and send < burst_ms + 500):
 			continue   # lost (ENet drops unreliable packets when the ping wobbles), and once four in a row (a throttle burst)
 
 		queue.append([send + rng.randi_range(100, 260), times, spots])
@@ -335,9 +335,10 @@ func _check_lossy() -> void:
 	var worst_step: float = 0.0
 	var still_frames: int = 0
 	var last_p: Dictionary = {}
+	var past: float = 0.0   # the farthest any body went beyond its last point (9 m)
 	var last_t: int = Time.get_ticks_usec()
 
-	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + 800:
+	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + tail_ms:
 		var now: int = Time.get_ticks_msec() - start_ms
 
 		while not queue.is_empty() and int(queue[0][0]) <= now:
@@ -368,6 +369,7 @@ func _check_lossy() -> void:
 					still_frames += 1
 
 			last_p[peer] = p
+			past = maxf(past, p.x - at.x - 9.0)
 
 	var rest_ok: bool = true
 
@@ -377,7 +379,12 @@ func _check_lossy() -> void:
 	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
 	check(worst_step < 3.0 * 1.5, "no jump on a lossy, late link: the fastest drawn speed %.1f m/s for a 3 m/s walk" % worst_step)
 	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
-	check(rest_ok, "each comes to rest at its last point, not past it")
+	check(rest_ok, "each comes to rest at its last point (burst at %d ms)" % burst_ms)
+	check(past <= 3.0 * PlayerViewScript.CARRY_S + 0.3, "no body walks on more than %.1f m past its stop (%.2f m)" % [3.0 * PlayerViewScript.CARRY_S, past])
+	var hitch: Dictionary = MotionBufferScript.clock_new()
+	hitch["late"] = 1.5   # a 1.5 s hitch on this computer: the batch after it reads 1.5 s late
+	check(PlayerViewScript.draw_delay(hitch) <= MotionBufferScript.MAX_DELAY_S, "after a hitch the draw delay stays within %.1f s (%.2f)" % [MotionBufferScript.MAX_DELAY_S, PlayerViewScript.draw_delay(hitch)])
+	check(PlayerViewScript.draw_delay(MotionBufferScript.clock_new()) >= PlayerViewScript.REPORT_S, "and never under one report gap")
 	view.queue_free()
 	camera.queue_free()
 	await process_frame
@@ -455,7 +462,8 @@ func _check_holds() -> void:
 func _init() -> void:
 	_server()
 	await _client()
-	await _check_lossy()
+	await _check_lossy(1750, 800)    # a burst of lost batches mid-walk
+	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
 	await _check_holds()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
