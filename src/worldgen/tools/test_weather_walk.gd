@@ -11,7 +11,8 @@ extends SceneTree
 #      a bedroll on the peak is not woken by rain that falls only at the coast;
 #   3. a server restart in the middle keeps the peak fire lit, and the snow still does not put it out;
 #   4. snares, carts, town people, the drink rule's hours since rain and the animals (their rain, snow, air and a storm coming) go by the
-#      weather where they are too.
+#      weather where they are too;
+#   5. rivers rise by the rain over their own tile row, not the starter row's.
 #   godot --headless --path . --script res://src/worldgen/tools/test_weather_walk.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -20,6 +21,8 @@ const Weather := preload("res://src/shared/weather.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const ServerScript := preload("res://scenes/terrain_server/terrain_server.gd")
+const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
 
 const DIR := "user://test_weather_walk"
 const SEED := 574716103
@@ -269,6 +272,57 @@ func _init() -> void:
 	check(float(an._wx.get("rain", 1.0)) == 0.0 and float(an._wx.get("snow", 1.0)) == 0.0 and absf(an._wind_s - 0.1) < 0.001 and not an._storm_ahead, "after a tick the one weather is back (rain %.2f, snow %.2f, wind %.2f)" % [float(an._wx.get("rain", 1.0)), float(an._wx.get("snow", 1.0)), an._wind_s])
 	an.alarm_near(PEAK, 50.0)
 	check(float(an._wx.get("rain", 1.0)) == 0.0 and float(an._wx.get("snow", 1.0)) == 0.0, "and after an alarm between ticks")
+
+	# 5. Rivers rise by the rain over their own tile row (terrain_server._river_runoff), not the starter row's.
+	var errors: Array = []
+	var settings = WorldSettingsScript.load_from_file("res://worlds/base_world/world.json", errors)
+	var ts = ServerScript.new()
+	ts.settings = settings
+	var other_row: int = -1
+
+	for r in range(0, 200):
+		if settings.get_zone_group_for_row(r) != settings.get_zone_group_for_row(Weather.STARTER_ROW):
+			other_row = r
+			break
+
+	check(other_row >= 0, "a tile row in another climate zone (row %d, %s)" % [other_row, settings.get_zone_group_for_row(maxi(other_row, 0))])
+	var push_t: float = -1.0
+	var tt: float = 0.0
+
+	while tt < 365.0 * 86400.0 and other_row >= 0:
+		var a_push: float = Weather.river_push(Weather.state(settings.master_seed, tt, settings.get_zone_group_for_row(Weather.STARTER_ROW), 0.0, 0.0, Weather.STARTER_ROW, settings.equator_tile_row))
+		var b_push: float = Weather.river_push(Weather.state(settings.master_seed, tt, settings.get_zone_group_for_row(other_row), 0.0, 0.0, other_row, settings.equator_tile_row))
+
+		if absf(a_push - b_push) > 0.3:
+			push_t = tt
+			break
+
+		tt += 3600.0
+
+	check(push_t >= 0.0, "an hour when that row's rain and the starter row's differ (day %d)" % int(push_t / 86400.0))
+	ts._water_live_last = [Vector2i(3, Weather.STARTER_ROW)]
+	var start_run: float = 0.0
+
+	for n in 6000:   # ten lag times: settled
+		start_run = ts._river_runoff(push_t, Weather.STARTER_ROW)
+
+	ts._water_live_last = [Vector2i(3, other_row), Vector2i(3, Weather.STARTER_ROW)]
+	var other_run: float = 0.0
+
+	for n in 6000:
+		other_run = ts._river_runoff(push_t, other_row)
+
+	ts._water_live_last = [Vector2i(3, Weather.STARTER_ROW)]
+	var back_run: float = ts._river_runoff(push_t, Weather.STARTER_ROW)
+	var placeholder_first: Array = [Vector2i(3, 6), Vector2i(3, Weather.STARTER_ROW)]   # an unbaked tile first: the hub runs the baked one
+	ts._water_live_last = placeholder_first
+	check(absf(ts._river_runoff(push_t, Weather.STARTER_ROW) - start_run) < 0.01, "with an unbaked tile first, the running tile's own row still decides (x%.2f)" % ts._river_runoff(push_t, Weather.STARTER_ROW))
+	ts._water_live_last = [Vector2i(3, Weather.STARTER_ROW)]
+	ts._river_runoff(push_t, Weather.STARTER_ROW)
+	check(absf(other_run - start_run) > 0.1, "a player in that row runs its rivers by its own rain (x%.2f there, x%.2f in the starter row)" % [other_run, start_run])
+	check(absf(back_run - start_run) < 0.01, "the starter row, kept live meanwhile, is still at its own (x%.2f)" % back_run)
+	check(not ts._river_rows.has(other_row), "a row nobody is in any more is forgotten")
+	ts.free()
 
 	print("test_weather_walk: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)

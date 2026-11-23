@@ -287,6 +287,7 @@ var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _cold_out: Dictionary = {}      # peer -> seconds passed out from cold so far (warmth.json pass_out; Dave 23 Nov 2026)
+var _out_water: Dictionary = {}     # peer -> true: that pass-out was a faint under water, not the cold (the same rescue, its own lines)
 var rescue_spots: Callable          # (position) -> Array of [Vector3 ground point, "goblin" | "bandit" | "town"]: where a player passed out from cold can wake; set by the server scene
 var _strain_sent: Dictionary = {}
 var send_body: Callable             # (peer, bpm, seconds until awake, phase 0 awake 1 falling asleep 2 asleep or fainted 3 waking), protocol 59
@@ -330,7 +331,7 @@ var _fishing_cfg: Dictionary = {}
 var _station_said: Dictionary = {}
 var _torch_seen: Dictionary = {}    # peer -> msec of the last burning-torch report (ACT_TORCH_BURN): while recent, the torch bearer scares animals like a small fire
 const TORCH_REPORT_MS := 3000
-const TORCH_PROTECT_M := 8.0        # how far wolves keep from a bearer of a burning torch (a campfire's tiers are 5, 10, 20 m); Dave 6 Nov 2026: torches give the best protection of what you carry. Tune.
+const TORCH_PROTECT_M := 9.0        # how far wolves keep from a bearer of a burning torch or lantern (a campfire's tiers are 5, 10, 20 m); Dave 6 Nov 2026: torches give the best protection of what you carry. One number with animals.json wolves torch_light_m (coordinator 23 Nov 2026, fire and light walk)
 var _wear_carry: Dictionary = {}     # peer -> fraction of a wear point not yet charged (tool_care skill)
 var _clothing: Dictionary = {}
 var send_limp: Callable             # (peer, percent of normal speed, 100 = none)
@@ -867,6 +868,7 @@ func peer_left(peer: int) -> void:
 	_held_left.erase(peer)
 	_hand_flags.erase(peer)
 	_cold_out.erase(peer)
+	_out_water.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
@@ -7161,10 +7163,9 @@ func _wood_tick(spent: float) -> void:
 			_dirty = true
 
 	var heat: Array = []
-	var tiers: Dictionary = _cooking.get("fire_tiers", {})
 
-	for row in _lit_rows():
-		heat.append([row[0], float((tiers.get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("heat_radius_m", 4.0))])
+	for row in _heat_rows():   # lit campfires and lit Fireplaces and braziers dry the wood round them alike
+		heat.append([row[0], float((row[1] as Dictionary).get("heat_radius_m", 4.0))])
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -16063,7 +16064,7 @@ func peer_stalk_factors() -> Array:
 # The wolves ask every frame; the carried gear is worked out again only when the pack or what they wear changed (a native hash of the pack's
 # slots, counts, wear and instance data and the worn rows): walking every player's pack and bags each frame took a fifth of the server's main
 # thread at 16 players (load test 23 Nov 2026).
-var _wolf_gear: Dictionary = {}   # peer -> [signature, meat, meat_cooked, spear, torch]
+var _wolf_gear: Dictionary = {}   # peer -> [signature, meat, meat_cooked, spear] (the torch is torch_burning, read live)
 
 
 func wolf_info() -> Array:
@@ -16080,13 +16081,13 @@ func wolf_info() -> Array:
 		var gear: Array = _wolf_gear.get(peer, [])
 
 		if gear.is_empty() or int(gear[0]) != sig:
-			gear = [sig, carried_count(peer, "raw_meat") > 0, carried_count(peer, "roast_meat") > 0, _tool_slot(inv, "spear") >= 0, _tool_slot(inv, "torch") >= 0]
+			gear = [sig, carried_count(peer, "raw_meat") > 0, carried_count(peer, "roast_meat") > 0, _tool_slot(inv, "spear") >= 0]
 
 		gear_now[peer] = gear
 		var v: Dictionary = vitals_of(peer)
 		out.append({"peer": peer, "pos": _peer_pos[peer], "stance": int(_stance.get(peer, 0)),
 			"hp": float(v.get("health", 100.0)) / maxf(float(_vitals_cfg.get("health_max", 100)), 1.0),
-			"meat": gear[1], "meat_cooked": gear[2], "spear": gear[3], "torch": gear[4]})
+			"meat": gear[1], "meat_cooked": gear[2], "spear": gear[3], "torch": torch_burning(peer)})   # a torch or lantern burning in hand, as the keep-off ring (fire_spots): not one put out or left on the hotbar
 
 	_wolf_gear = gear_now   # a player who left is dropped
 	return out
@@ -17000,6 +17001,12 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 		if t >= float(cfg.get("faint_after_s", 15.0)) and int(_strain.get(peer, {}).get("state", 0)) == 2 and bool(cfg.get("can_die", false)):
 			if bool(_death_cfg.get("stop_at_1", false)):
 				v["health"] = minf(float(v["health"]), 1.0)   # fainted under water: near death, not dead (death.json stop_at_1)
+
+				# Passed out under water: rescued as from the cold (warmth.json pass_out), or the faint and the wake would come round for ever with
+				# the head still under and movement locked (no auto-rise, BUG-029).
+				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+					_out_water[peer] = true
+					_cold_pass_out(peer)
 			else:
 				_death_cause[peer] = "drowning"
 				v["health"] = 0.0
@@ -17876,6 +17883,7 @@ func _lit_rows() -> Array:
 	var found: Array = []
 	_coal_cache_rows = []
 	_guard_cache_rows = []
+	_heat_cache_rows = []
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -17884,8 +17892,14 @@ func _lit_rows() -> Array:
 			found.append([it["pos"], int(it["fire"]["state"])])
 		elif it.has("fire") and int(it["fire"]["state"]) == FIRE_STATE_COALS:
 			_coal_cache_rows.append(it["pos"])
-		elif it.has("struct") and bool(it["struct"].get("lit", false)) and float(_structures.get(str(it["struct"]["kind"]), {}).get("protect_m", 0.0)) > 0.0:
-			_guard_cache_rows.append([it["pos"], float(_structures[str(it["struct"]["kind"])]["protect_m"])])
+		elif it.has("struct") and bool(it["struct"].get("lit", false)):
+			var lit_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+			if float(lit_def.get("protect_m", 0.0)) > 0.0:
+				_guard_cache_rows.append([it["pos"], float(lit_def["protect_m"])])
+
+			if lit_def.has("heat_tier"):   # a lit Fireplace or brazier warms as a campfire of that size (structures.json note_fire_lights)
+				_heat_cache_rows.append([it["pos"], str(lit_def["heat_tier"])])
 
 	if _in_vitals:
 		_lit_cache_rows = found
@@ -17897,6 +17911,22 @@ func _lit_rows() -> Array:
 # The positions of glowing coals (state 76): they warm coals.heat_c within coals.heat_m and keep nothing off. The same scan as _lit_rows.
 var _coal_cache_rows: Array = []
 var _guard_cache_rows: Array = []   # [position, protect_m] of every lit placed light whose structures.json row has protect_m (the same scan)
+var _heat_cache_rows: Array = []    # [position, fire_tiers class] of every lit placed light whose row has heat_tier (the same scan)
+
+
+# [position, cooking.json fire_tiers row] of everything burning that warms a body: lit campfires by their tier, lit Fireplaces and braziers
+# by their heat_tier (warmth_target and drying by a fire read the same list).
+func _heat_rows() -> Array:
+	var tiers: Dictionary = _cooking.get("fire_tiers", {})
+	var rows: Array = []
+
+	for row in _lit_rows():
+		rows.append([row[0], tiers.get(_fire_class_of_state(int(row[1])), {})])
+
+	for row in _heat_cache_rows:
+		rows.append([row[0], tiers.get(str(row[1]), {})])
+
+	return rows
 
 
 func _guard_rows() -> Array:
@@ -17940,10 +17970,9 @@ func warmth_target(peer: int) -> float:
 	_overheat[peer] = heat_load(peer) * minf(hot / maxf(float(_layers_cfg().get("heat_span_c", 10.0)), 0.01), 1.0) if hot > 0.0 and not bool(_swimming.get(peer, false)) else 0.0
 
 	var heat: float = 0.0
-	var tiers: Dictionary = _cooking.get("fire_tiers", {})
 
-	for row in _lit_rows():
-		var tier_row: Dictionary = tiers.get(_fire_class_of_state(int(row[1])), {})
+	for row in _heat_rows():
+		var tier_row: Dictionary = row[1]
 		var reach: float = float(tier_row.get("heat_radius_m", radius))
 
 		if (row[0] as Vector3).distance_to(pos) <= reach:
@@ -18011,8 +18040,9 @@ func _cold_pass_out(peer: int) -> void:
 	st["t"] = 0.0
 	_strain_sent.erase(peer)
 	_end_sleep(peer)
-	_say(peer, str(_warmth_cfg.get("pass_out", {}).get("say_out", "The cold takes you. You pass out.")))
-	print("Cold: peer %d passed out at %s" % [peer, str(_peer_pos.get(peer, "?"))])
+	var cfg: Dictionary = _warmth_cfg.get("pass_out", {})
+	_say(peer, str(cfg.get("say_out_water", "The water closes over you. You black out.")) if _out_water.has(peer) else str(cfg.get("say_out", "The cold takes you. You pass out.")))
+	print("%s: peer %d passed out at %s" % ["Water" if _out_water.has(peer) else "Cold", peer, str(_peer_pos.get(peer, "?"))])
 
 
 func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> void:
@@ -18023,6 +18053,8 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 		return
 
 	_cold_out.erase(peer)
+	var water: bool = _out_water.has(peer)
+	_out_water.erase(peer)
 	var here: Vector3 = _peer_pos.get(peer, respawn_point)
 	var best: Array = []
 
@@ -18041,6 +18073,13 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_peer_pos[peer] = to
 	_resume_to.erase(peer)
 	_motion.erase(peer)
+
+	if water and not best.is_empty():   # carried out of the water: breathing again (the client's next report says where the head is)
+		_head_under[peer] = false
+		_suffocate.erase(peer)
+		_breath.erase(peer)
+		_sync_breath(peer, -1)
+
 	_sync_vitals(peer, true)
 	_sync_warmth(peer, true)
 	_dirty = true
@@ -18048,8 +18087,12 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	if send_died.is_valid() and not best.is_empty():
 		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
 
-	_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
-	print("Cold: peer %d woke at the %s at %s" % [peer, kind, str(to)])
+	if water:
+		_say(peer, str((cfg.get("say_wake_water", {}) as Dictionary).get(kind, "You wake up coughing water. Someone pulled you from the water and brought you here.")))
+	else:
+		_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
+
+	print("%s: peer %d woke at the %s at %s" % ["Water" if water else "Cold", peer, kind, str(to)])
 
 
 func passed_out(peer: int) -> bool:
@@ -18180,10 +18223,9 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var hours: float = game_s / 3600.0
 
 	var by_fire: bool = false
-	var tiers: Dictionary = _cooking.get("fire_tiers", {})
 
-	for row in _lit_rows():   # within a lit fire's heat reach, as warmth_target counts it
-		var tier_row: Dictionary = tiers.get(_fire_class_of_state(int(row[1])), {})
+	for row in _heat_rows():   # within a lit fire's heat reach (a Fireplace or brazier too), as warmth_target counts it
+		var tier_row: Dictionary = row[1]
 
 		if (row[0] as Vector3).distance_to(pos) <= float(tier_row.get("heat_radius_m", cfg.get("fire_radius_m", 4.0))):
 			by_fire = true
@@ -18526,6 +18568,7 @@ func kill(peer: int, cause: String) -> bool:
 	_strain.erase(peer)
 	_soak.erase(peer)   # dry clothes, as the saved vitals say
 	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
+	_out_water.erase(peer)
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
 	_waking.erase(peer)
@@ -18595,6 +18638,7 @@ func survive_cave_in(peer: int, to: Vector3) -> bool:
 	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
 		return false
 
+	_out_water.erase(peer)
 	_cold_out.erase(peer)   # a cave-in on a player passed out from cold ends that faint; still frozen at 1 health, the cold passes them out again and they are carried to shelter
 	v["health"] = minf(float(v["health"]), 1.0)
 	_peer_pos[peer] = to
@@ -22794,10 +22838,16 @@ func _lights_tick(spent: float) -> void:
 				_dirty = true
 				continue
 
-			if bool(lit_def.get("leaves_charcoal", false)):
-				_light_leave_charcoal(it, lit_def, minf(spent, float(it["struct"].get("fuel_left", 0.0))))
+			var burnt: float = spent
 
-			it["struct"]["fuel_left"] = float(it["struct"].get("fuel_left", 0.0)) - spent
+			# An open log fire (a brazier) burns on in heavy rain, faster (structures.json note_fire_lights; as the large campfire on its coals).
+			if lit_def.has("rain_burn_x") and _rain_here(it["pos"]) >= float(lit_def.get("rain_burn_from", 0.6)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
+				burnt *= float(lit_def["rain_burn_x"])
+
+			if bool(lit_def.get("leaves_charcoal", false)):
+				_light_leave_charcoal(it, lit_def, minf(burnt, float(it["struct"].get("fuel_left", 0.0))))
+
+			it["struct"]["fuel_left"] = float(it["struct"].get("fuel_left", 0.0)) - burnt
 
 			if float(it["struct"]["fuel_left"]) <= 0.0:
 				it["struct"]["lit"] = false
