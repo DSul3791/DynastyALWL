@@ -800,6 +800,26 @@ func sent_trail_checks() -> void:
 	lay(items, Vector3(spot.x, 10.0, spot.y))
 	check(pts_of.call() > before, "and set there it trains Tracking (%.1f -> %.1f)" % [before, pts_of.call()])
 
+	# Snares set at a place's home and its stops (the robots: one by a deer's water stop dropped the deer's trails, so it read no trail):
+	# a trap never settles the ground, so the trails stay and the snare still reads one.
+	r.no_spawn = func(x, z): return items.spawn_blocked(x, z)
+	var key0: Vector2i = Vector2i(226, 278)
+	var count0: int = TrailCodec.decode_routes(r.wire(key0, 50000), key0, TrailCodec.ROUTE_BLOCK_M).size()
+	var set_at: int = 0
+
+	for place in r.blocks[key0]["places"]:
+		for q in [place["home"]] + (place["outs"] as Array):
+			var sid: int = lay(items, Vector3(q.x, 10.0, q.y))
+			items._spawn_zones.add(sid, q.x, q.y)
+			set_at += 1
+
+	var count1: int = TrailCodec.decode_routes(r.wire(key0, 70000), key0, TrailCodec.ROUTE_BLOCK_M).size()
+	var some: Dictionary = r.blocks[key0]["places"][0]
+	check(set_at > 3 and count0 > 0 and count1 == count0 and items._traps.trail_at(Vector3(some["home"].x, 10.0, some["home"].y)) > 0.0, "snares at %d homes and stops settle nothing: the trails stay (%d -> %d routes)" % [set_at, count0, count1])
+	var hut: int = lay(items, Vector3(some["home"].x, 10.0, some["home"].y), "lean_to")
+	items._spawn_zones.add(hut, some["home"].x, some["home"].y)
+	check(items.spawn_blocked(some["home"].x, some["home"].y), "but a shelter there does")
+
 
 # Snares and bird traps (Dave 22 and 23 Nov 2026: no limit): 60 cm apart is enough, nearer says why plainly, and a chunk takes any number.
 func gap_checks() -> void:
