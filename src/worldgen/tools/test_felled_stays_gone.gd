@@ -115,5 +115,47 @@ func _init() -> void:
 	var late: Dictionary = PlacerScript.without(FakePlacer.new().chunk_items(chunk), {victim: 1})
 	check(late["ids"].size() == 2 and late["ids"].find(victim) < 0 and late["positions"].size() == 2, "a late chunk with the cut tree in it is filtered")
 
+	# 3. A stop or crash mid-fall (the coordinator, 23 Nov 2026): the tree comes back felled with its logs, never standing and never gone.
+	var dir3: String = "user://test_felled_crash_%d" % Time.get_ticks_usec()
+	var w3 = make_items(dir3)
+	var flora3 = ServerFloraScript.new()
+	flora3.setup(FakePlacer.new(), dir3)
+	var home3: Vector2i = Vector2i(1, 1)
+	var tree3: int = (1 << 16) | 3
+	var origin3: Vector2 = Vector2(home3) * 64.0
+	check(w3.fells_on_disk(), "nothing felled: the flora may write its removals")
+	check(flora3.cut(home3, tree3), "the tree is cut from the flora")
+	var stump3: int = w3._fell_record(home3, {"name": "oak", "position": Vector3(origin3.x + 40.0, 1.0, origin3.y + 40.0), "height": 16.0, "trunk": 0.3, "id": tree3}, Vector2(1.0, 0.0))
+	var logs3: Array = range(stump3 + 1, w3._next_id)
+	check(not w3.fells_on_disk() and w3._event_save, "felled: a save is asked for soon, and the flora's removal waits for it")
+	w3._async_writes = true
+	w3.save()   # the event save, as the tick runs it: the files go to the writer
+	w3._async_writes = false
+	w3._start_writer()
+	check(not w3.fells_on_disk() or w3._writer == null, "while the writer writes, the removal still waits")
+	w3._finish_writer()
+	check(w3.fells_on_disk(), "the stump and logs on disk: the removal may be written now")
+
+	# A hard stop after the stump and logs were written but before the flora's removal was: the next start cuts the tree again.
+	var w3b = make_items(dir3)
+	var flora3b = ServerFloraScript.new()
+	flora3b.setup(FakePlacer.new(), dir3)   # its removals were never written
+	check(not flora3b.removed_in(home3).has(tree3), "(the flora alone would stand the tree up again)")
+
+	for felled in w3b.felled_flora():
+		if not flora3b.removed_in(felled[0]).has(int(felled[1])):
+			flora3b.cut(felled[0], int(felled[1]))
+
+	var stumps3: int = 0
+	var logs_back: int = 0
+
+	for k in w3b._items:
+		stumps3 += 1 if w3b._items[k].has("tree") else 0
+		logs_back += 1 if not w3b._items[k].has("tree") and not w3b._items[k].has("fall") else 0
+
+	check(flora3b.removed_in(home3).has(tree3) and stumps3 == 1 and logs_back >= logs3.size() and logs3.size() > 0, "after the restart it is felled: cut from the flora, its stump and its %d logs there (%d stumps, %d loose)" % [logs3.size(), stumps3, logs_back])
+	var again3: Dictionary = PlacerScript.decode(flora3b.chunk_bytes(home3, true), origin3)
+	check(again3["ids"].find(tree3) < 0, "and no client is sent it standing")
+
 	print("test_felled_stays_gone: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)

@@ -256,6 +256,7 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 const EVENT_SAVE_GAP_S := 5.0      # PROVISIONAL (D-TODO-2): the least real time between a save and the next one a big event brings forward
 var _event_save: bool = false      # a big event asked for a save (save_soon)
+var _fell_unsaved: bool = false    # a tree was felled since the last save copied the world (fells_on_disk)
 var _since_save: float = 0.0       # real seconds since the last tick save
 var _event_saves: int = 0          # saves that carried a big event's request (tests)
 var _dirty: bool = false
@@ -2031,6 +2032,27 @@ func save_soon(ids: Array = []) -> void:
 	_event_save = true
 
 
+# True once every tree felled so far is in files on disk (its stump and logs saved and the writer idle). The server writes the flora's
+# removals only then (terrain_server), so a crash never leaves a felled tree gone with no stump and no logs (the coordinator, 23 Nov 2026);
+# the other way round, a stump on disk whose tree's removal is not, is put right at the next start (felled_flora).
+func fells_on_disk() -> bool:
+	return not _fell_unsaved and _writer == null and _pending_writes.is_empty()
+
+
+# Every saved stump that was a standing flora tree, as [chunk Vector2i, flora id]: the server cuts each again at start (a no-op for one
+# already cut), so a stump saved before the flora's removals were written never stands beside its tree again.
+func felled_flora() -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var tree: Variant = _items[id].get("tree")
+
+		if tree != null and (tree as Dictionary).has("flora_id") and typeof(tree.get("chunk")) == TYPE_ARRAY and (tree["chunk"] as Array).size() == 2:
+			out.append([Vector2i(int(tree["chunk"][0]), int(tree["chunk"][1])), int(tree["flora_id"])])
+
+	return out
+
+
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
 func _event_save_due() -> bool:
 	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
@@ -2065,6 +2087,7 @@ func save() -> void:
 	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
+	_fell_unsaved = false   # this save carries every stump and log felled so far (on disk once the writer is idle: fells_on_disk)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	for key in _picked.keys():
@@ -10516,6 +10539,9 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	var tree: Dictionary = {"species": str(info["name"]), "yaw": yaw, "pitch": pitch, "length": float(info["height"]), "radius": radius, "felled_at": now_s}
 	tree["crown"] = _crown_circle(spot, info, yaw, pitch)   # where its crown lands: the client flattens the grass there, the litter falls in it
 	var stump: Dictionary = {"species": tree["species"], "yaw": yaw, "pitch": pitch, "length": tree["length"], "radius": radius, "felled_at": now_s, "state": 4, "chunk": [chunk.x, chunk.y], "crown": tree["crown"], "fresh": true}
+
+	if info.has("id"):
+		stump["flora_id"] = int(info["id"])   # the standing tree it was: kept cut on load if a crash wrote this stump but not the flora's removals (felled_flora)
 	var stump_id: int = _next_id
 	_items[stump_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}   # "fresh" until it lands: the client plays the fall from the stump row
 	_next_id += 1
@@ -10551,6 +10577,8 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	_falls[stump_id] = {"shared": fall, "pieces": pieces, "hinge": hinge, "along": along, "length": float(tree["length"]), "radius": radius, "small": _is_small_tree(tree, _drops.get("trunk", {})), "peer": feller_peer}
 	_dirty = true
 	_sync_in = 0.0   # bug 6: the pieces go out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
+	save_soon([stump_id] + pieces)   # a big event: the stump and its logs are on disk within seconds (the flora's removal waits for it: fells_on_disk)
+	_fell_unsaved = true
 	return stump_id
 
 
