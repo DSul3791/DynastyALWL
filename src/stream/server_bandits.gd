@@ -218,15 +218,6 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 		if is_nan(other_h) or absf(other_h - h) > most:
 			return "steep"
 
-	if trees_at.is_valid():
-		var trees: Variant = trees_at.call(spot, CAMP_REACH_M)
-
-		if trees == null:
-			return "unloaded"
-
-		if _fitting_turn(cell, spot, trees) == INF:
-			return "cluttered"   # no turn puts its Lean-tos, seats and tether clear of the trunks on level enough ground (a wood, a hillside)
-
 	var at: Vector3 = Vector3(spot.x, h, spot.y)
 	var off: Array = cfg.get("road_off_m", [100.0, 300.0])
 	var road: float = float(road_distance.call(at, float(off[1]))) if road_distance.is_valid() else INF
@@ -236,6 +227,15 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 
 	if building_near.is_valid() and bool(building_near.call(at, float(cfg.get("building_clear_m", 150.0)))):
 		return "buildings near"
+
+	if trees_at.is_valid():   # last: the dearest test (the trunks round it and up to 12 turns of ground samples)
+		var trees: Variant = trees_at.call(spot, CAMP_REACH_M)
+
+		if trees == null:
+			return "unloaded"
+
+		if _fitting_turn(cell, spot, trees) == INF:
+			return "cluttered"   # no turn puts its Lean-tos, seats and tether clear of the trunks on level enough ground (a wood, a hillside)
 
 	return ""
 
@@ -551,16 +551,8 @@ func camp_levels(cell: Vector2i, spot: Vector2) -> Array:
 func layout(cell: Vector2i) -> Dictionary:
 	var site: Dictionary = sites[cell]
 	var fire: Vector2 = Vector2(float(site["x"]), float(site["z"]))
-	var row: Dictionary = _camp()
-	var lean_tos: int = 1
-
-	for pair in row.get("lean_tos", [[2, 1], [5, 2]]):
-		if int(site["levels"].size()) <= int(pair[0]):
-			lean_tos = int(pair[1])
-			break
-
-	var seats: int = maxi(int(site["levels"].size()), 1)
-	var out: Dictionary = _plan(fire, _turn_of(cell, fire, lean_tos, seats), lean_tos, seats)
+	var levels: int = int(site["levels"].size())
+	var out: Dictionary = _plan(fire, _turn_of(cell, fire, levels), _lean_tos_for(levels), maxi(levels, 1))
 	out["stage"] = int(site.get("stage", CAMP))
 
 	if not site.has("road") and road_point.is_valid():   # where the road passes nearest, found once (the tracks leave it, the lookout watches it)
@@ -604,8 +596,21 @@ const LEAN_TO_HALF_Z := 2.72   # footprint_z / 2
 const LEAN_TO_RIDGE_Z := 0.64  # the roof's front edge, in front of the Lean-to's middle (BuildingLook LEANTO_RIDGE_Z x LEANTO_SCALE)
 const CAMP_REACH_M := 14.0   # the trees looked at round a fire: past the Lean-tos (5 m out, 2.7 m half length) and the tether (9 m)
 
-func _turn_of(cell: Vector2i, fire: Vector2, lean_tos: int, seats: int) -> float:
-	var seeded: float = float(absi(hash([cell.x, cell.y, world_seed, "lay"])) % 360)
+# The Lean-tos a camp of `levels` bandits has (bandits.json camp "lean_tos": [most bandits, Lean-tos] pairs).
+func _lean_tos_for(levels: int) -> int:
+	for pair in _camp().get("lean_tos", [[2, 1], [5, 2]]):
+		if levels <= int(pair[0]):
+			return int(pair[1])
+
+	return 1
+
+
+func _seeded_turn(cell: Vector2i) -> float:
+	return float(absi(hash([cell.x, cell.y, world_seed, "lay"])) % 360)
+
+
+func _turn_of(cell: Vector2i, fire: Vector2, levels: int) -> float:
+	var seeded: float = _seeded_turn(cell)
 
 	if _turns.has(cell):
 		return float(_turns[cell])
@@ -618,32 +623,32 @@ func _turn_of(cell: Vector2i, fire: Vector2, lean_tos: int, seats: int) -> float
 	if trees == null:
 		return seeded   # the flora round it is not made yet: asked again next time (_lay waits for it)
 
-	var turn: float = _fitting_turn(cell, fire, trees, lean_tos, seats)
+	var turn: float = _fitting_turn(cell, fire, trees, levels)
 	_turns[cell] = seeded if turn == INF else turn
 	return float(_turns[cell])
 
 
-# The first turn from the seed's at which the camp fits among `trees` (INF for none). lean_tos and seats: the camp's counts, -1 to take them
-# from the seed's levels for the cell (a sleeping candidate).
-func _fitting_turn(cell: Vector2i, fire: Vector2, trees: Array, lean_tos: int = -1, seats: int = -1) -> float:
-	if lean_tos < 0:
-		var levels: int = camp_levels(cell, fire).size()
-		lean_tos = 1
+# The first turn from the seed's at which the camp fits among `trees` (INF for none), for `levels` bandits (-1: the seed's levels for the cell,
+# a sleeping candidate) and for every smaller camp the kills leave (fallen() takes a level away: fewer seats, perhaps one Lean-to less), so the
+# kept turn still fits after a death (gate review 23 Nov).
+func _fitting_turn(cell: Vector2i, fire: Vector2, trees: Array, levels: int = -1) -> float:
+	if levels < 0:
+		levels = camp_levels(cell, fire).size()
 
-		for pair in _camp().get("lean_tos", [[2, 1], [5, 2]]):
-			if levels <= int(pair[0]):
-				lean_tos = int(pair[1])
-				break
-
-		seats = maxi(levels, 1)
-
-	var seeded: float = float(absi(hash([cell.x, cell.y, world_seed, "lay"])) % 360)
+	var seeded: float = _seeded_turn(cell)
 	var half: Vector2 = Vector2(LEAN_TO_HALF_X, LEAN_TO_HALF_Z)
+	var rise: float = float(_camp().get("lean_to_rise_m", 1.0))
 
 	for k in TURN_TRIES:
 		var turn: float = seeded + 360.0 * float(k) / float(TURN_TRIES)
+		var fits: bool = true
 
-		if _camp_fits(_plan(fire, turn, lean_tos, seats), trees, half, float(_camp().get("lean_to_rise_m", 1.0))):
+		for count in range(maxi(levels, 1), 0, -1):
+			if not _camp_fits(_plan(fire, turn, _lean_tos_for(count), count), trees, half, rise):
+				fits = false
+				break
+
+		if fits:
 			return turn
 
 	return INF
@@ -742,6 +747,7 @@ func camp_tick(delta: float, players: Array) -> void:
 		var plan: Dictionary = layout(cell)
 		var fire: Vector2 = plan["fire"]
 		_lay(cell, plan)
+		plan = layout(cell)   # _lay may have found the turn: the people sit at the laid camp's seats
 		var members: Dictionary = _members.get(cell, {})
 
 		for id in members.keys():
@@ -1049,10 +1055,10 @@ func _lay(cell: Vector2i, plan: Dictionary) -> void:
 		return   # never read a tile on the main thread: the next second tries again
 
 	if camp and trees_at.is_valid() and not _turns.has(cell):
-		if trees_at.call(fire, CAMP_REACH_M) == null:
-			return   # the trees round it are not made yet: laid when they are, so the camp misses them
+		plan = layout(cell)   # finds and keeps the turn once the trees round the fire are made
 
-		plan = layout(cell)
+		if not _turns.has(cell):
+			return   # the trees round it are not made yet: laid when they are, so the camp misses them
 
 	for row in plan["lean_tos"]:
 		if not _ready_at(row[0]):

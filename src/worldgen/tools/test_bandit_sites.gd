@@ -189,6 +189,11 @@ func _waking() -> void:
 	var fresh: BanditsScript = _sites()
 	_traffic(fresh, spot, need + 1.0)
 	check(fresh.refusal(cell, spot, clock[0]) == "", "the busy candidate may wake (%s)" % fresh.refusal(cell, spot, clock[0]))
+	fresh.trees_at = func(_at, _r): return null
+	check(fresh.refusal(cell, spot, clock[0]) == "unloaded", "a candidate whose trees are not made waits (%s)" % fresh.refusal(cell, spot, clock[0]))
+	fresh.trees_at = func(_at, _r): return []
+	check(fresh.refusal(cell, spot, clock[0]) == "", "and wakes once they are, in the open")
+	fresh.trees_at = Callable()
 	fresh.town = spot + Vector2(100.0, 0.0)
 	check(fresh.refusal(cell, spot, clock[0]) == "start area", "none near the starter town")
 	fresh.town = Vector2(INF, INF)
@@ -437,6 +442,28 @@ func _camp_clear_of_trees() -> void:
 	slope.trees_at = func(_at, _r): return []
 	slope.sites[cell] = b.sites[cell].duplicate()
 	check(slope.layout(cell)["lean_tos"] == seeded["lean_tos"], "where no turn fits, the seed's turn")
+	var half: Vector2 = Vector2(BanditsScript.LEAN_TO_HALF_X, BanditsScript.LEAN_TO_HALF_Z)
+	var one: Dictionary = b._plan(spot, 0.0, 1, 1)
+	var one_lean: Array = one["lean_tos"][0]
+	var one_front: Vector2 = Vector2(sin(deg_to_rad(float(one_lean[1]))), cos(deg_to_rad(float(one_lean[1]))))
+	check(not b._camp_fits(one, [[(one_lean[0] as Vector2) - one_front * 2.0, 0.2]], half, 0.0), "a trunk 2 m behind a Lean-to's middle is under its roof")
+	check(b._camp_fits(one, [[(one_lean[0] as Vector2) + one_front * 2.0, 0.2]], half, 0.0), "a trunk 2 m in front of it is in the open front strip")
+	var kept: float = float(b._turns[cell])
+	check(b._camp_fits(b._plan(spot, kept, 1, 2), unknown[0], half, 1.0) and b._camp_fits(b._plan(spot, kept, 1, 1), unknown[0], half, 1.0), "the kept turn fits the smaller camps the kills leave")
+	var waits: BanditsScript = _sites()
+	var laid: Array = []
+	waits.lay_camp = func(_camp_key, _camp_fire, camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at):
+		laid.append(camp_lean_tos)
+		return [900]
+	waits.laid_still = func(_ids): return true
+	waits.sites[cell] = b.sites[cell].duplicate()
+	var made: Array = [null]
+	waits.trees_at = func(_at, _r): return made[0]
+	waits.camp_tick(1.0, [])
+	check(laid.is_empty(), "a camp is not laid while the trees round it are not made")
+	made[0] = unknown[0]
+	waits.camp_tick(1.0, [])
+	check(laid.size() == 1 and waits._turns.has(cell) and laid[0].size() == turned["lean_tos"].size() and (laid[0][0][0] as Vector3).is_equal_approx(Vector3(turned["lean_tos"][0][0].x, (laid[0][0][0] as Vector3).y, turned["lean_tos"][0][0].y)), "once they are, it is laid at the turn that misses them (%s)" % str(laid))
 
 
 func _camp_items() -> void:

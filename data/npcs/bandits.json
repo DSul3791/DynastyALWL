@@ -121,6 +121,7 @@
 			]
 		],
 		"lean_to_m": 5.0,
+		"lean_to_rise_m": 1.0,
 		"sit_m": 2.2,
 		"horses": 2,
 		"horse_m": 9.0,
