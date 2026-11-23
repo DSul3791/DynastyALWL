@@ -323,6 +323,34 @@ def test_check():
 		check(r.returncode == 2, "robot_check calls a robot that never joined a broken run (exit 2)")
 
 
+def test_twin():
+	"""Plan drops: the first of two clients of one character, dropped by the server on purpose, is excused only for that."""
+	twin = ["ROBOT Robot 1 step joined: peer 5 at (0, 0, 0)", "ROBOT Robot 1 LOST the server at 3000 (step twin, notices [])",
+		"ROBOT Robot 1 TWIN first dropped by the server", "ERROR: Trying to call an RPC via a multiplayer peer which is not connected."]
+	same = "Peer 6 is the same character as peer 5: the older connection is dropped"
+
+	for what, lines, code, server_extra, want in [
+		("passes a twin the server dropped as the same character (exit 1, no done line, an error after)", twin, "1", [same], 0),
+		("fails the same log when the server never said same character", twin, "1", [], 1),
+		("fails a dropped twin that exited 134", twin, "134", [same], 1),
+		("fails a twin log without the dropped line", twin[:1], "1", [same], 1),
+		("still fails an engine ERROR in the server log beside an excused twin", twin, "1", [same, "ERROR: Cannot open file 'x'."], 1),
+	]:
+		with tempfile.TemporaryDirectory() as d:
+			good_logs(d)
+
+			with open(os.path.join(d, "server.log"), "a") as f:
+				f.write("".join(x + "\n" for x in server_extra))
+
+			write(d, "robot1_twin1.log", lines)
+
+			with open(os.path.join(d, "robot1_twin1.exit"), "w") as f:
+				f.write(code + "\n")
+
+			r = run_check(d)
+			check(r.returncode == want, "robot_check %s (%s)" % (what, r.stdout.strip().splitlines()[-1]))
+
+
 def watch_logs(d, jump=False, swing_clip="chop", still=False):
 	"""A walker that walks 3 m/s east for 4 s from x 0, stops, swings, sleeps; a watcher drawing it 300 ms late every 20 ms."""
 	ev = ["ROBOT Robot 1 step joined: peer 7 at (0, 0, 0)",
@@ -391,6 +419,7 @@ if __name__ == "__main__":
 	test_check()
 	test_others()
 	test_solo()
+	test_twin()
 	test_watch()
 	print("test_robot_tools: %d failures" % len(failures))
 	sys.exit(1 if failures else 0)

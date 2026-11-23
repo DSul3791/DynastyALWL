@@ -2599,7 +2599,7 @@ func _drop_freeze() -> void:
 	await _wait(8.0)
 	var still: bool = client.multiplayer.multiplayer_peer != null and client.multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 	var after: Vector3 = client.body.global_position
-	print("ROBOT %s FREEZE %d s at %d: still connected %s, moved %.1f m across it, notices %s" % [robot_name, FREEZE_MS / 1000, t0, str(still), after.distance_to(before), str(_notices.slice(said_from))])
+	print("ROBOT %s FREEZE %d s at %d: still connected %s, moved %.1f m across it, notices %s" % [robot_name, int(FREEZE_MS * 0.001), t0, str(still), after.distance_to(before), str(_notices.slice(said_from))])
 
 	if not still:
 		return   # dropped: _on_lost said so
@@ -2639,6 +2639,7 @@ func _drop_twin(second: bool) -> void:
 
 	if not FileAccess.file_exists(flag):
 		_note("twin", "the second client never joined: nothing measured")
+		await _quit()   # run() returns after this plan without its own quit
 		return
 
 	print("ROBOT %s TWIN first: the second is in, waiting to be dropped (%s)" % [robot_name, _pack_sig()])
@@ -2661,7 +2662,7 @@ func _on_lost() -> void:
 		print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 		print("ROBOT %s TWIN first dropped by the server" % robot_name)
 	elif plan == "drop_freeze":
-		_fail("freeze", "dropped", "the server dropped this client after a %d s main-thread freeze" % (FREEZE_MS / 1000))
+		_fail("freeze", "dropped", "the server dropped this client after a %d s main-thread freeze" % (int(FREEZE_MS * 0.001)))
 # Plan bear (animal thread, 23 Nov 2026: a drawn bear held at a robot, then snapped 42 m): Robot 1 sets a bear 20 m ahead of the spawn,
 # every robot takes a spear and hunts it (2 or 3 robots on one bear). The inside and jump checks run every frame as in first_hours.
 func _bear_chase() -> void:
@@ -2697,7 +2698,6 @@ const FIGHT_REACH := {"goblin": 1.0, "bandit": 1.6}   # data/animals/animals.jso
 const FIGHT_S := 75.0
 const ST_WARN := 10
 const ST_CHARGE := 11
-const ST_RECOVER := 12
 const ST_WARN_POP := 16
 
 

@@ -82,11 +82,13 @@ def main():
 	known = known_errors()
 	errors = collections.Counter()
 
+	same_char = "is the same character as peer" in open(server_log, encoding="utf-8", errors="replace").read()   # the server dropped a twin on purpose
+
 	for path in [server_log] + robot_logs:
 		dropped = False   # plan drops: a twin the server dropped on purpose; its game's lines after that are not faults
 
 		for line in open(path, encoding="utf-8", errors="replace"):
-			dropped = dropped or "TWIN first dropped by the server" in line
+			dropped = dropped or (same_char and path != server_log and "TWIN first dropped by the server" in line)
 
 			if dropped:
 				continue
@@ -140,7 +142,10 @@ def main():
 					findings.append("pack %s: after %s the client's pack is %s, the server's is %s (peer %d)" % (name, step, sig, before[-1][1], peer))
 
 		exit_path = path[:-4] + ".exit"
-		twin_dropped = "TWIN first dropped by the server" in open(path, encoding="utf-8", errors="replace").read()   # dropped on purpose: exit 1, no done line
+		code = open(exit_path).read().strip() if os.path.exists(exit_path) else ""
+		# Plan drops: the first of two clients of one character, dropped on purpose by the server (its "same character" line): a dropped
+		# headless client exits 1 with no done line. Any other exit code, or a drop the server did not make for a twin, still fails.
+		twin_dropped = "TWIN first dropped by the server" in open(path, encoding="utf-8", errors="replace").read() and code in ("1", "") and same_char
 
 		if twin_dropped:
 			pass
