@@ -11623,9 +11623,7 @@ func _learn_food(peer: int, item_id: String, what: String) -> void:
 # A food that harms: in the first hour an unknown one costs food and water only, otherwise the stomach pays. Either way it is remembered.
 func _harm_bite(peer: int, item_id: String, hours: float, line: String) -> void:
 	var unknown: bool = not tried_of(peer).has(item_id)
-
-	if not (unknown and grace_of(peer) > 0.0 and _infection_cfg().get("odds", {}).has(item_id)):
-		_learn_food(peer, item_id, "harm")   # a food that only sometimes harms (raw meat) is not marked in the first hour: the first bite after it is a first bite (coordinator 22 Nov 2026)
+	_learn_food(peer, item_id, "harm")
 
 	if unknown and grace_of(peer) > 0.0:
 		var v: Dictionary = vitals_of(peer)

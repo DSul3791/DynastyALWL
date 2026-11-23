@@ -57,23 +57,21 @@ func _init() -> void:
 	eat(items, "raw_meat")
 	check(not items.is_sick(1), "unknown raw meat in the first hour does not make you sick")
 	check(float(v["fed"]) <= fed_start + meat_kcal - 140.0 and float(v["wet"]) < 1400.0, "but it costs food and water")
-	check(not items.tried_of(1).has("raw_meat"), "raw meat only sometimes harms: not marked in the first hour, so the first bite after it is a first bite (coordinator 22 Nov 2026)")
+	check(items.tried_of(1).get("raw_meat", "") == "harm", "and the harm is remembered")
 	check(said.has(items._eat_cfg_value("say_first_hour", "?")), "the player is told")
+
+	said.clear()
+	var packed: int = items.inventory_of(1).count_of(items.table.number_of("raw_meat"))
+	eat(items, "raw_meat")
+	check(items.inventory_of(1).count_of(items.table.number_of("raw_meat")) == packed, "the same food again is stopped, still in the pack")
+	check(said.has(items._eat_cfg_value("say_warn", "?")) and thoughts.back()[2] == "hint_harm", "with a notice and the inner-voice hint")
+	check(not items.is_sick(1), "and nobody is sick")
+	eat(items, "raw_meat")
+	check(items.inventory_of(1).count_of(items.table.number_of("raw_meat")) == packed - 1, "a second press within the window eats it")
+	check(items.is_sick(1), "and a known harm costs the full sickness, as today")
 	v["sick"] = 0.0
 	eat(items, "rotten_food")
 	check(not items.is_sick(1) and items.tried_of(1).get("rotten_food", "") == "harm", "rotten food, unknown, in the first hour: no sickness, remembered")
-
-	said.clear()
-	var packed: int = items.inventory_of(1).count_of(items.table.number_of("rotten_food"))
-	eat(items, "rotten_food")
-	check(items.inventory_of(1).count_of(items.table.number_of("rotten_food")) == packed, "the same food again is stopped, still in the pack")
-	check(said.has(items._eat_cfg_value("say_warn", "?")) and thoughts.back()[2] == "hint_harm", "with a notice and the inner-voice hint")
-	check(not items.is_sick(1), "and nobody is sick")
-	eat(items, "rotten_food")
-	check(items.inventory_of(1).count_of(items.table.number_of("rotten_food")) == packed - 1, "a second press within the window eats it")
-	check(items.is_sick(1), "and a known harm costs the full sickness, as today")
-	v["sick"] = 0.0
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("rotten_food"), 0, 2, Vector3.ZERO)
 
 	# After the hour: full price.
 	items._characters[items._peer_key[1]]["grace_s"] = 0.0
@@ -98,7 +96,7 @@ func _init() -> void:
 	var again = make(dir)
 	again.peer_connected_hello(1, "eat-once-key-01")
 	check(is_equal_approx(again._last_rain_s, 1234.0), "the last rain survives a restart, so seasonal brooks keep running (%s)" % str(again._last_rain_s))
-	check(again.tried_of(1).get("rotten_food", "") == "harm" and absf(again.grace_of(1) - 70.0) < 0.01, "tried foods and the remaining hour survive a reload")
+	check(again.tried_of(1).get("raw_meat", "") == "harm" and absf(again.grace_of(1) - 70.0) < 0.01, "tried foods and the remaining hour survive a reload")
 
 	# An old save without the fields loads with defaults and no protection.
 	var old = make("user://test_eat_once_old")
