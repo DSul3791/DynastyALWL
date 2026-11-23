@@ -100,9 +100,10 @@ func _init() -> void:
 	view._vitals_cfg = VitalsRules.load_config()
 	var food: int = roast
 	var full: int = VitalsRules.food_value(items.table.id_of(food), view._vitals_cfg)
-	var tip_stale: String = view._tooltip(food, 1, life / 2)
+	var half_age: int = life >> 1
+	var tip_stale: String = view._tooltip(food, 1, half_age)
 	var tip_fresh: String = view._tooltip(food, 1, 0)
-	var shown: int = VitalsRules.eaten_kcal(full, items.table.freshness(food, life / 2))
+	var shown: int = VitalsRules.eaten_kcal(full, items.table.freshness(food, half_age))
 	check(full > 0 and tip_stale.contains("\n%d kcal (%d fresh)" % [shown, full]), "stale food's tooltip shows the kcal eating gives (%d of %d): %s" % [shown, full, tip_stale.replace("\n", " | ")])
 	check(tip_fresh.contains("\n%d kcal  (" % full), "fresh food's tooltip shows its full kcal: %s" % tip_fresh.replace("\n", " | "))
 	view.free()
