@@ -283,7 +283,7 @@ func step(a: Dictionary, dt: float) -> void:
 		# A charge that sets off close runs at the pace that brings it to the player as the blow may land, not at full speed into a hold
 		# beside them (robots over 120 ms, 23 Nov 2026: a rhino's charge from 3.6 m struck 0.33 s in, the charge row drawn 0.1 s after
 		# the blow; standing at the player, it ran on the spot). Never slower than CLOSE_PACE_X of its charge.
-		if not may_land and not near.is_empty() and not near.has("dog"):
+		if not may_land and not near.is_empty() and not near.has("dog") and not a.has("run_m"):   # a chase of a runner keeps its full speed (HB-2)
 			var gap: float = Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length() - AnimalContact.contact_m(str(a["sp"]))
 			speed = clampf(gap / maxf(strike_min - float(a["charged_s"]), dt), speed * CLOSE_PACE_X, speed)
 
