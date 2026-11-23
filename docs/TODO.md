@@ -43,11 +43,11 @@ Checked against the code and dev history, not against the lists' own tick marks.
 
 Grouped so that each piece can be one thread. Order is a suggestion (section 4). Already running elsewhere and **not repeated here**: world resource distribution, goal list and recipe check, natural animal movement and behaviour. The pieces held for the second merge on 21 Nov (#1455, #1456, #1457, #1459, #1460, #1461 and the Primitive smithy model) are all in dev now.
 
-### Piece 0. Sea drawn over fen flats below sea level (known look fault in the first package; first job after it)
-- **Cause (22 Nov 2026, Lane A pictures fen_wide_cmp2.png and fen3_all.png):** the fen sand flats round 58408,71560 lie between -0.5 and +0.3 m (a sample of the generated heights), and the sea plane is at 0 m. So the sea covers them by a few centimetres. Its surf foam, drawn wherever the sea is under 0.5 m deep (water_material.gd, `line` and `surf`), draws whole flats as flat white sheets with hard edges, on Vulkan and d3d12 alike. It is not the ground shader: #1596 (pool roughness, NaN guards) stays, and #1602 (dark pools) was reverted in #1604.
-- **Confirm in game:** Ctrl+Shift+F8 colours the water by type (red running, blue still, green foam). The white should turn green.
-- **To decide:** either keep the sea off inland ground below sea level, or lift wetland ground above it. No world reset unless Dave agrees.
-- **Check it works, not just the look:** what the server thinks that water is. Can a player drink or fill salt water on a fen flat? Do animals treat it as sea?
+### Piece 0. Sea drawn over fen flats below sea level: DONE in dev (23 Nov 2026, not yet played)
+- Cause: fen flats round 58408,71560 lie -0.5 to +0.3 m, cut off from the sea by sand above 0 m; the sea plane covered them and its surf foam drew flat white sheets.
+- #1613 (2152df4f): the sea plane is drawn only over ground below sea level joined to the open sea (fog_ground.gd sea_reach, sea_low). Lane A at 1666e044: the fen's white sheets are gone at hours 7 and 12; the coast at 58560,71560 keeps its sea and surf (fenfix_1666e044_*.png).
+- #1617 (23bc5177): the server agrees: a cut-off hollow gives no sea water to fill, no sea fish, no wading (cell_reads.water_at cut_off, from the animals' fog windows).
+- Still to see in a play: at 58428,71580, filling a container from the ground says "There is no sea water here." and the player does not wade.
 
 ### Piece 1. Lag leftovers (BugsList 108, still open part)
 - **Gate Z result (not BugsList 108; delete this line once Dave decides):** the cold first-join freeze grew from 24.0 s to 25.2 s. This is the same freeze as BugsList 93, measured by the gate's A5 rule: the longest FREEZE, median of 3 cold windowed Play runs, limit 24.85 s (set from main's 23.96 s). Dave, 21 Nov 2026, on that freeze: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that." (the message is built, PR #1405). The second main merge waits on Dave's choice: accept, or fix and re-gate.
