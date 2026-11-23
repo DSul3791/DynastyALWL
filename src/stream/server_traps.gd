@@ -893,7 +893,8 @@ func load_marks(parsed: Variant) -> void:
 # A trail sign the player at `peer` has just spotted (protocol 153; Dave 23 Nov 2026, "spotting animal markings should highlight the
 # markings, make a slight sound and give xp for finding them"). The client works the signs out from the routes and plays the highlight
 # and sound; this trains Tracking once per sign per character in sign_spot_s, and only for a spot the player is near (sign_reach_m), with
-# a trail within sign_trail_m (every sign lies on or beside one) and the Tracking to see the first signs (trail_signs.json see_level).
+# a trail within sign_trail_m (every sign lies on or beside one) and the Tracking to see the first signs (trail_signs.json see_level: 0 since
+# Dave's 23 Nov 2026 ruling that signs are there for everyone, so this gate stays only as a knob).
 # Work only when a player spots one: nothing per sign. Returns whether it trained.
 func sign_found(peer: int, at: Vector2) -> bool:
 	var tc: Dictionary = cfg.get("tracking", {})
