@@ -6,6 +6,7 @@ extends RefCounted
 # nodes through the getters below and writes only its own state.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
 var _client
 var check_enabled: bool = true            # --no-ground-check turns the self-check off
@@ -126,7 +127,7 @@ func dump_ground_here(at: Vector3 = Vector3.INF) -> void:
 
 func on_dump_received(text: String) -> void:
 	var all: String = _dump_client + "\n" + text
-	print("Terrain client: ground dump\n" + all)
+	FreezeWatchScript.printer.line("Terrain client: ground dump\n" + all)
 
 	if _check_dump_at.is_finite():
 		_ground_check_log(all)
@@ -181,7 +182,7 @@ func hole_probe_step(now: int) -> void:
 
 		if missing == 0:
 			_hole_settled = true
-			print("Terrain client: hole probe: all 49 cells have ground %.1f s after the stop (worst %d missing right after it)" % [float(now - _fly_stop_msec) / 1000.0, _hole_max_after])
+			FreezeWatchScript.printer.line("Terrain client: hole probe: all 49 cells have ground %.1f s after the stop (worst %d missing right after it)" % [float(now - _fly_stop_msec) / 1000.0, _hole_max_after])
 
 	_hole_samples += 1
 	_hole_missing_total += missing
@@ -189,8 +190,8 @@ func hole_probe_step(now: int) -> void:
 	var engine: Dictionary = VoxelEngine.get_stats()
 	var tasks: Dictionary = engine.get("tasks", {})
 	var pool: Dictionary = engine.get("thread_pools", {}).get("general", {})
-	print("Terrain client: engine tasks: streaming %d, meshing %d, generation %d, main thread %d; pool %d tasks on %d threads (%d active); blocks loaded %d, waiting %d, lod_count %d view %d" % [int(tasks.get("streaming", 0)), int(tasks.get("meshing", 0)), int(tasks.get("generation", 0)), int(tasks.get("main_thread", 0)), int(pool.get("tasks", 0)), int(pool.get("thread_count", 0)), int(pool.get("active_threads", 0)), stream.loads, stream.pending(), terrain.lod_count, terrain.view_distance])
-	print("Terrain client: holes %d of 49 at %s; worst so far: %d cells missing at once, one cell missing %.1f s (cell %s); average %.1f" % [missing, str(body.global_position.round()), _hole_max_count, float(_hole_worst_msec) / 1000.0, str(_hole_worst_cell * 50), float(_hole_missing_total) / float(_hole_samples)])
+	FreezeWatchScript.printer.line("Terrain client: engine tasks: streaming %d, meshing %d, generation %d, main thread %d; pool %d tasks on %d threads (%d active); blocks loaded %d, waiting %d, lod_count %d view %d" % [int(tasks.get("streaming", 0)), int(tasks.get("meshing", 0)), int(tasks.get("generation", 0)), int(tasks.get("main_thread", 0)), int(pool.get("tasks", 0)), int(pool.get("thread_count", 0)), int(pool.get("active_threads", 0)), stream.loads, stream.pending(), terrain.lod_count, terrain.view_distance])
+	FreezeWatchScript.printer.line("Terrain client: holes %d of 49 at %s; worst so far: %d cells missing at once, one cell missing %.1f s (cell %s); average %.1f" % [missing, str(body.global_position.round()), _hole_max_count, float(_hole_worst_msec) / 1000.0, str(_hole_worst_cell * 50), float(_hole_missing_total) / float(_hole_samples)])
 
 
 func ground_check_step(now: int) -> void:
@@ -241,7 +242,7 @@ func _ground_check_compare(x: float, z: float, server_y: float) -> void:
 	check_last = "%.0f, %.0f: client %.1f, server %.1f" % [x, z, client_y, server_y]
 
 	if OS.has_environment("GROUND_CHECK_VERBOSE"):
-		print("Terrain client: ground check " + check_last + ", column loaded " + str(stream.column_loaded(x, z)))
+		FreezeWatchScript.printer.line("Terrain client: ground check " + check_last + ", column loaded " + str(stream.column_loaded(x, z)))
 
 	if client_y - server_y <= GROUND_CHECK_TOLERANCE_M:
 		return
@@ -249,7 +250,7 @@ func _ground_check_compare(x: float, z: float, server_y: float) -> void:
 	check_mismatches += 1
 	var inside: Vector3 = hit["position"] - hit["normal"] * 0.5
 	var line: String = "%s build %d GROUND MISMATCH at x %.1f z %.1f: client ground %.1f m, server %.1f m (%.1f m too high); player %s; voxel %s; lod_count %d, view %d; digs near: see the server dump" % [Time.get_datetime_string_from_system(true), _client.BUILD, x, z, client_y, server_y, client_y - server_y, str(body.global_position.round()), str(Vector3i(floori(inside.x), floori(inside.y), floori(inside.z))), terrain.lod_count, terrain.view_distance]
-	print("Terrain client: " + line)
+	FreezeWatchScript.printer.line("Terrain client: " + line)
 	_ground_check_log(line)
 
 	if Time.get_ticks_msec() - _check_dump_msec > 20000:

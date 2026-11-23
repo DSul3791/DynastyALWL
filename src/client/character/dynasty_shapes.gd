@@ -1,5 +1,7 @@
 extends RefCounted
 
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+
 # Width sliders for Dave's body (Kathreen 3 Nov 2026): Build, Muscle, Belly, Hips and Chest as blend shapes made in code from the bind pose, because Dave's glb has none and a
 # non-uniform bone scale shears under animation (dynasty_proportions.gd does the lengths). Made once per run, shared by every Dynasty body, and set per body with
 # MeshInstance3D.set_blend_shape_value (the creator slider value -1..1 is the weight; a negative weight makes the body thinner, flatter or narrower).
@@ -93,7 +95,7 @@ static func wait() -> void:
 	_cache[mesh.get_rid()] = _finish(_pending["data"])
 	_keep.append(mesh)
 	_pending = {}
-	print("dynasty shapes: made on a worker, finished in %d ms" % (Time.get_ticks_msec() - t0))
+	FreezeWatchScript.printer.line("dynasty shapes: made on a worker, finished in %d ms" % (Time.get_ticks_msec() - t0))
 
 
 # The shaped copy of `body.mesh` for `skin`, made on first use; null when the mesh is not one skinned surface with bones and weights.
@@ -114,7 +116,7 @@ static func shaped(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 	var made: ArrayMesh = _make(mesh, skin, skeleton)
 	_cache[key] = made
 	_keep.append(mesh)
-	print("dynasty shapes: %s in %d ms" % ["made" if made != null else "not made", Time.get_ticks_msec() - t0])
+	FreezeWatchScript.printer.line("dynasty shapes: %s in %d ms" % ["made" if made != null else "not made", Time.get_ticks_msec() - t0])
 	return made
 
 

@@ -11,6 +11,7 @@ extends Node3D
 
 const CONFIG := "res://data/look/trail_signs.json"
 const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
 const PELLET_COLOR := Color(0.24, 0.18, 0.11)
@@ -426,7 +427,7 @@ func _spot(player: Vector3, level: int) -> void:
 		_spot_msec = Time.get_ticks_msec() + int(float(cfg.get("spot_gap_s", 2.2)) * 1000.0)   # the next one of a cluster after the server can train again
 		var where: Vector3 = Vector3(spot.x, y, spot.y)
 		last_spot = where
-		print("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
+		FreezeWatchScript.printer.line("trail signs: spotted %s at %.1f,%.1f" % [str(s[0]), spot.x, spot.y])   # a lane finds what was spotted, and where
 		_glow(where, 1.6 if str(s[0]) == "prints" else 1.0)
 
 		if on_spot.is_valid():

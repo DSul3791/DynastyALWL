@@ -8,6 +8,7 @@ extends RefCounted
 # protocol number then, nothing changes here).
 
 const WornLook := preload("res://src/client/worn_look.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const FAR_M := 30.0
 const HYSTERESIS_M := 3.0
 
@@ -40,7 +41,7 @@ static func known_ids(names: Array) -> Array:
 			ids.append(str(name))
 		elif not _warned.has(str(name)):
 			_warned[str(name)] = true
-			print("worn_sync: '%s' has no worn.json row, skipped" % str(name))
+			FreezeWatchScript.printer.line("worn_sync: '%s' has no worn.json row, skipped" % str(name))
 
 	return ids
 
