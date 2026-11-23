@@ -22,7 +22,7 @@ Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `
 |---|---|
 | `tools/lossy_link.py` | UDP and TCP relay in front of the server: delay, jitter and loss each way (the block line too, through the client's test flag `--block-port=`). Standard library only. |
 | `src/client/robot_play.gd` | The real client, headless, driven by key presses (`--robot=NAME`, `--robot-plan=`, `--robot-admin`). Prints `ROBOT` lines. |
-| `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump or stand inside a player. Prints `AUDIT` lines. No protocol change. |
+| `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump (measured over the animal's own step time, with the looks around it) or stand inside a player, wolf pack phases, and every melee blow at an animal with what it struck at the judged moment. Prints `AUDIT` lines. No protocol change. |
 | `tools/robots.sh` | Server, link, the robots at one spawn (so they meet the same animals and see each other), then a rejoin pass. |
 | `tools/robot_watch.py` | Plan `watch` only: per leg of the walker, the fastest drawn speed over 50 ms against its real speed (above 1.5x fails), stalls, overshoot and settle at the stop; held item at a hand mount; swing clip within 1 s; asleep bit. |
 | `tools/robot_check.py` | Reads the logs and fails the run on a broken invariant. `tools/robot_known_errors.txt` lists engine ERROR lines allowed (only the leak notice at exit). |
@@ -42,7 +42,8 @@ Plan `watch`: Robot 1 walks and runs six legs with the axe in hand, swings three
 Plan `wolves` / `wolves_alone`: Robot 1 runs about 380 m out of town (beyond the packs' town_keep_m) with 3 raw meat, an admin pack is placed
 25 m off, and the robot is given a spear only once the rush starts (a spear on the hotbar keeps a pack off, by design). It prints one `WOLVES`
 line (outcome, bites and the gaps between them, strikes, hits on wolves, most wolves within 3 m, health); the server prints each pack's phase
-(`AUDIT wolfpack`). Then rejoin (plan `rejoin`) and check the pack came back. Plan `light` (walk,
+(`AUDIT wolfpack`); each jab prints a `JAB` line (the animals drawn within 6 m) beside the server's `AUDIT strike`. No rejoin pass follows
+watch or the wolf plans. Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
 ## Invariants
@@ -55,6 +56,10 @@ stances, forest, watch) builds, drops and takes nothing, for a live server; it s
 - **blocked**: keys held crouched and no movement where standing at the same spot moves freely.
 - **rejoin**: the pack after quit and rejoin is the pack at quit.
 - **refusals**: each refusal is listed as a NOTE, with or without words (many are a sound only, by design).
+- **hunt**: a fight of 10 or more strikes with no hit is a finding (each fight is listed either way).
+- **others**: each robot's view of another (`SEES`) is on the path that one walked (its `POSE` lines) within 1.5 m, in the stance it held for 2 s and with a clip of that stance, four misses or more is a finding; robots that played together with no view matched fail too.
+- **watch** (plan watch, robot_watch.py): jumps over 1.5x the walker's speed, stalls, overshoot, settle, held item, swing, sleep, and at least 4 of the 6 legs measured.
+- **exit**: every robot client exits 0 (an abort or a timeout is a finding).
 - **errors**: no SCRIPT ERROR (or unlisted engine ERROR) in any log; every robot joined and finished.
 
 ## Where it fits (an unapproved proposal for the coordinator; the gate rules are only those in `ai-team/TEST_GATES.md`)

@@ -1305,6 +1305,11 @@ func _wolves_drawn() -> Dictionary:
 
 func _wolf_fight() -> void:
 	_step = "wolves out"
+
+	if not admin:
+		_note("wolves", "the wolf fight needs --robot-admin (raw meat, the pack and the spear are admin gifts): nothing done")
+		return
+
 	var start: Vector3 = client.body.global_position
 	_give("raw_meat", 3)
 	await _check_pack("raw meat")
@@ -1439,7 +1444,7 @@ func _wolf_fight() -> void:
 	await _wait(3.0)
 
 
-# The second player: stays at the spawn (come = false) or, 15 s into the rush, runs to Robot 1.
+# The second player: stays at the spawn (come = false), or waits 40 m short of Robot 1 and, 3 s into the rush, runs to it.
 func _wolf_second(come: bool) -> void:
 	_step = "wolves second"
 	var end: int = Time.get_ticks_msec() + 240000

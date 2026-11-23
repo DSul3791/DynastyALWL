@@ -166,6 +166,15 @@ def lines(robot_logs, tag):
 				yield os.path.basename(path), line.split(" %s " % tag, 1)[0][6:], line.split(" %s " % tag, 1)[1].split()
 
 
+def seg_dist(x, z, a, b):
+	"""Ground distance from (x, z) to the segment between pose lines a and b."""
+	ax, az, bx, bz = a[2], a[3], b[2], b[3]
+	dx, dz = bx - ax, bz - az
+	length2 = dx * dx + dz * dz
+	t = 0.0 if length2 == 0.0 else max(0.0, min(1.0, ((x - ax) * dx + (z - az) * dz) / length2))
+	return ((x - ax - t * dx) ** 2 + (z - az - t * dz) ** 2) ** 0.5
+
+
 # One-shot clips (avatar_driver.gd HOOK_CLIPS) play over any stance: waking plays while the body still lies, drinking while it crouches.
 ONE_SHOTS = {"wake_up", "drink", "sit_down", "stand_up"}
 
@@ -196,7 +205,9 @@ def others(robot_logs):
 
 		seen += 1
 		key = (who, names.get(peer, str(peer)))
-		d = min(((x - q[2]) ** 2 + (z - q[3]) ** 2) ** 0.5 for q in track)
+		# The nearest point of the path it walked (between consecutive pose lines, 0.5 s apart: a runner's lines lie 4.5 m apart)
+		path = sorted(q for q in pose.get(peer, []) if ms - 1500 <= q[0] <= ms)
+		d = min([seg_dist(x, z, a, b) for a, b in zip(path, path[1:])] + [((x - q[2]) ** 2 + (z - q[3]) ** 2) ** 0.5 for q in track])
 
 		if d > OTHERS_M:
 			off[key] += 1
@@ -231,6 +242,10 @@ def others(robot_logs):
 			out.append("others %s draws %s with the wrong clip %d times: %s" % (key[0], key[1], n, example[("clip",) + key]))
 
 	print("robot_check: %d views of other robots compared with where they were" % seen)
+
+	if len(names) >= 2 and seen == 0:
+		out.append("others: %d robots played together and no robot's view of another matched its pose lines (the others check never ran)" % len(names))
+
 	return out
 
 

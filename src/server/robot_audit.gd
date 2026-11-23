@@ -8,6 +8,9 @@ extends Node
 #   AUDIT reject <peer> <unix ms> <reason>                   each refusal sent (reject())
 #   AUDIT jump <animal id> <species> <unix ms> <metres> <seconds> <from> <to>   an animal that moved farther in one step than its top speed allows
 #   AUDIT inside <animal id> <species> <peer> <unix ms> <metres>   an animal's middle inside a player's capsule (closer than INSIDE_M, level with them)
+#   AUDIT jump_detail / jump_after <animal id> ...   with a jump: its looks before and after, its accumulated step time, the longest frame
+#   AUDIT wolfpack <pack id> <unix ms> <phase> <target peer> <n> wolves   a wolf pack's phase or target changed
+#   AUDIT strike <peer> <unix ms> reach seen present judged ... target, hit or miss, the nearest animal then and now   each melee blow at an animal
 # Nothing changes in the game itself: no protocol change, and with the flag off this node is never made.
 
 const RobotRules := preload("res://src/shared/robot_rules.gd")
@@ -176,6 +179,7 @@ func _wrap_hits() -> void:
 	var hit: Callable = items.hit_animal
 
 	if not hit.is_valid():
+		print("AUDIT strike off: items.hit_animal is not set, melee blows are not audited")
 		return
 
 	items.hit_animal = func(peer, origin, dir, reach, amount):

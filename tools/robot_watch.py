@@ -32,6 +32,7 @@ HELD_M = 0.25
 SWING_MS = 1000
 SWING_CLIPS = ("chop", "pick_overhead", "jab")
 ASLEEP = 16
+MIN_LEGS = 4    # of the walker's 6
 
 
 def read(d):
@@ -113,6 +114,8 @@ def main():
 				nxt = next((s for s in events[i + 1:] if s["kind"] in ("walk", "swing", "sleep_on", "end")), None)
 				legs.append((e, stop, nxt["ms"] if nxt else stop["ms"] + 3500))
 
+	measured = 0
+
 	for n, (walk, stop, after_ms) in enumerate(legs, 1):
 		speed = float(stop["extra"][0])
 		name = "leg %d (%s, real %.2f m/s)" % (n, walk["extra"][2] if len(walk["extra"]) > 2 else "walk", speed)
@@ -121,6 +124,8 @@ def main():
 		if len(seg) < 4 or speed < 0.5:
 			print("SKIP %s: %d frames drawn, the walker barely moved" % (name, len(seg)))
 			continue
+
+		measured += 1
 
 		moved = next((r for r in seg if dist(r["pos"], walk["pos"]) > 0.2), None)
 		arrived = next((r for r in seg if dist(r["pos"], stop["pos"]) < max(0.5, speed * 0.15)), None)
@@ -145,6 +150,8 @@ def main():
 		off = dist(end["pos"], stop["pos"]) if end else float("inf")
 		say(off <= SETTLE_M, "settle %s: %.2f m from the stop point %d ms after it" % (name, off, (end["ms"] - stop["ms"]) if end else -1))
 
+	need = max(1, min(MIN_LEGS, len(legs)))
+	say(measured >= need, "legs: %d of %d legs measured (at least %d: a walker that never moved, or a watcher that drew nothing, is not a pass)" % (measured, len(legs), need))
 	held = [r for r in rows if r["held"] >= 0.0]
 	bad = [r for r in held if r["held"] > HELD_M]
 	say(bool(held) and not bad, "held: %d frames with the item drawn, %d over %.2f m from a hand mount, farthest %.2f m" % (
