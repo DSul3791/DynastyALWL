@@ -19946,8 +19946,6 @@ func _plots_tick() -> void:
 
 	_plots_at_s = now_s
 	_crop_table()
-	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
-	var rain: float = float(rain_now.call()) if rain_now.is_valid() else float(weather.get("rain", 0.0))
 	var seen: Dictionary = {}
 
 	for id in _items:
@@ -19960,6 +19958,8 @@ func _plots_tick() -> void:
 		var row: Array = _plot_water.get(key, [float(_moisture_cfg.get("start_pct", 50.0)), now_s])
 		var factor: float = float(_structures.get(str(it["struct"]["kind"]), {}).get("moisture_factor", 1.0))
 		var dt_days: float = maxf(now_s - float(row[1]), 0.0) / PlotWater.DAY_S
+		var weather: Dictionary = _weather_here(it["pos"])   # the bed's own sky: rain or snow, and the air at its height
+		var rain: float = _rain_here(it["pos"])
 		_plot_water[key] = [PlotWater.step(_moisture_cfg, float(row[0]), dt_days, float(weather.get("temp_c", 15.0)), float(weather.get("wind", 0.0)), rain, factor), now_s]
 		seen[key] = true
 
@@ -21174,7 +21174,6 @@ func _barrels_tick() -> void:
 		return
 
 	_barrel_next_s = now_s + BARREL_TICK_S
-	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
 	for id in _water_kind:
 		var piece: Dictionary = _water.pieces.get(id, {})
@@ -21193,6 +21192,8 @@ func _barrels_tick() -> void:
 		var lpm: float = 0.0
 
 		var rim: Vector3 = (_items[id]["pos"] as Vector3) + Vector3(0.0, 1.0 + float(block.get("level_base_m", 0.0)), 0.0)   # over its rim (the raised cistern's 2 m up)
+
+		var rain: float = _rain_here(rim)   # the rain over the barrel itself (snow fills nothing)
 
 		if rain > 0.05 and not goods and not (cover_at.is_valid() and float(cover_at.call(rim)) >= 0.5):
 			lpm = snappedf(rain * BARREL_RAIN_LPM_M2 * float(block.get("rain_m2", 0.0)), 0.01)
@@ -22490,8 +22491,6 @@ func _apply_lit_rows(rows: Array) -> void:
 
 
 func _lights_tick(spent: float) -> void:
-	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
-
 	for id in _tick_list("lit"):   # a light that burns wood may drop charcoal (a new world item) on this pass
 		if not _items.has(id):
 			continue   # gone since the list was made
@@ -22509,7 +22508,7 @@ func _lights_tick(spent: float) -> void:
 				continue
 
 			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
-			if rain >= FlameRules.RAIN_DOUSE and bool(_structures.get(str(it["struct"]["kind"]), {}).get("rain_douses", false)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
+			if _rain_here(it["pos"]) >= FlameRules.RAIN_DOUSE and bool(_structures.get(str(it["struct"]["kind"]), {}).get("rain_douses", false)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
 				it["struct"]["lit"] = false
 				it["struct"].erase("fuel_left")
 				_dirty = true

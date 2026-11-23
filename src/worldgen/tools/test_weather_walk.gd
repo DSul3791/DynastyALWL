@@ -6,7 +6,7 @@ extends SceneTree
 #   1. a full game year, every third hour: up a mountain it snows while it rains at the coast on hundreds of hours; the server's answer per
 #      10 m of height (terrain_server._weather_here) agrees with the client's exact height on all but a handful of hours at the snow line;
 #      the calendar's season (crops, items) is the sky's season at the starter row every hour; days are longer in summer than in winter;
-#   2. on such an hour, through the real ServerItems (weather_at): a fire on the snowy peak burns on, the same fire at the rainy coast
+#   2. on such an hour, through the real ServerItems (weather_at): a fire or a standing torch on the snowy peak burns on, the same fire at the rainy coast
 #      goes out; the body on the peak feels the client's air (no rain cooling, the height already in it); snow wets clothes as rain does;
 #      a bedroll on the peak is not woken by rain that falls only at the coast;
 #   3. a server restart in the middle keeps the peak fire lit, and the snow still does not put it out.
@@ -139,6 +139,14 @@ func _init() -> void:
 	for n in 30:
 		f._fires(1.0)
 
+	var torch_n: int = f.table.number_of("standing_torch")
+	f._items[903] = {"number": torch_n, "count": 1, "pos": PEAK + Vector3(-2.0, 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "standing_torch", "lit": true, "fuel_left": 3000.0}}
+	f._items[904] = {"number": torch_n, "count": 1, "pos": COAST + Vector3(-2.0, 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "standing_torch", "lit": true, "fuel_left": 3000.0}}
+	f._lights_tick(5.0)
+	check(bool(f._items[903]["struct"].get("lit", false)), "a standing torch on the snowy peak burns on")
+	check(not bool(f._items[904]["struct"].get("lit", false)), "the same torch at the rainy coast goes out")
+	f._items.erase(903)   # test-made rows without a placed piece's yaw: not for the save below
+	f._items.erase(904)
 	check(lit(f, 901), "a fire on the snowy peak burns on (snow puts no fire out)")
 	check(not lit(f, 902), "the same fire at the rainy coast goes out")
 	check(f._rain_here(PEAK) == 0.0 and f._rain_here(COAST) >= ItemsScript.RAIN_PUTS_OUT, "the server's rain at each spot is the rain its client draws")
