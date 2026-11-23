@@ -5055,7 +5055,7 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 	if sized != 1.0:   # a look shared by pieces of different sizes (chests by slot count, Dave 18 Nov 2026), drawn and its ghost at their own size
 		model.scale = Vector3.ONE * sized   # uniform, so any collision box in it scales true
 
-	_add_missing_solid(model, _structure_by_state(state), look)
+	_add_missing_solid(model, _structure_by_state(state))
 
 	# A blueprint never burns (Dave 17 Nov 2026: the Primitive smithy's blueprint "has a fire ... burning before you make it"): the one place every
 	# forge, smithy and smelter look's flames and smoke are put out for a placement ghost or a site waiting for materials. Lights stay off unlit.
@@ -5072,9 +5072,10 @@ const SOLID_LOOKS := ["chest", "workbench", "chopping_block", "tool_rack", "vice
 
 
 # Gives a model with no solid one box of its drawn size (inside its footprint, at most 2.2 m tall) when its piece blocks the way (SOLID_LOOKS or
-# structures.json blocks_walk). A model that has a solid keeps it.
-func _add_missing_solid(model: Node3D, def: Dictionary, look: String) -> void:
-	if def.is_empty() or str(def.get("attach_to", "")) != "" or not (look in SOLID_LOOKS or bool(def.get("blocks_walk", false))) or _has_solid(model):
+# structures.json blocks_walk). A model that has a solid keeps it. The piece's own "look" is asked, not the look it is drawn with: a pipe or tap
+# with no look of its own is drawn as the chopping block for now, and it must stay walk-over.
+func _add_missing_solid(model: Node3D, def: Dictionary) -> void:
+	if def.is_empty() or str(def.get("attach_to", "")) != "" or not (str(def.get("look", "")) in SOLID_LOOKS or bool(def.get("blocks_walk", false))) or _has_solid(model):
 		return
 
 	var box: AABB = _bounds_in(model, model)

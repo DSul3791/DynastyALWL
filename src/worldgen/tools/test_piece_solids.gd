@@ -67,6 +67,13 @@ func _init() -> void:
 		check(fits, "%s: solid, inside its footprint (%s)" % [kind, str(box)])
 		model.free()
 
+	for kind in ["clay_pipe_run", "iron_pipe", "iron_tap", "copper_tap_open"]:   # no look of their own (drawn as the fallback chopping block): walk-over still
+		var piece: Node3D = view._model_for_state(int(cfg["structures"][kind]["state"]), {})
+		check(piece == null or not view._has_solid(piece), "%s: a pipe or tap gets no box" % kind)
+
+		if piece != null:
+			piece.free()
+
 	var crane: Node3D = view._model_for_state(int(cfg["structures"]["fireplace_cooking_crane"]["state"]), {})
 	check(not view._has_solid(crane), "a piece that hangs in a fireplace gets no box (it would fill the hearth)")
 	crane.free()
