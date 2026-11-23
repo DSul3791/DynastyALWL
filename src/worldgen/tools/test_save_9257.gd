@@ -187,7 +187,7 @@ func differences(a: Variant, b: Variant, path: String, out: Array) -> void:
 
 # Seeds are counted one by one since 23 Nov 2026 (#1628): a 9257 seed comes back as today's pinch (crops.json sow_seeds, old_seed_units),
 # once, so what 9257 read is put in today's units before it is compared (test_save_9257_life.gd checks the counting itself).
-func in_todays_seeds(snap: Dictionary, table) -> void:
+func in_todays_seeds(snap: Dictionary) -> void:
 	var crops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
 	var per: Dictionary = {}
 
@@ -219,7 +219,7 @@ func _init() -> void:
 	copy_fixture()
 	var expected: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE + "/expected_snapshot.json"))
 	var items = boot()
-	in_todays_seeds(expected, items.table)
+	in_todays_seeds(expected)
 	var got: Dictionary = snapshot(items)
 	var out: Array = []
 	differences(expected, got, "", out)
