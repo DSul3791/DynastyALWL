@@ -49,6 +49,69 @@ static func keep_off(pos: Vector3, at: Vector3, m: float, from: Vector3 = Vector
 	return Vector3(at.x + off.x, pos.y, at.z + off.y)
 
 
+# The local walker stops at an animal's body (contact_m round its drawn middle): of a frame's move from `before` to `after` (feet), the part
+# that would take them nearer than `m` to a body is taken off, so they stand against it or slide round it; a move long enough to cross a
+# body (a hitch frame) stops where it would enter. Never a push: a walker the animal came onto (already nearer than m) goes no nearer, and is
+# free to step away. Only the body the move enters first stops it, so a walker among several (a ring of wolves, two deer either side of a
+# gap) is never shut in. `bodies` is [[position, m], ...]; the correction to add to `after` is returned. Before, a walker went into a
+# standing animal and its drawn body was shoved along ahead of them, 5 to 8 m from where the server had it for seconds after (robots
+# 23 Nov 2026, AUDIT where: an elephant in recover pushed 5 m by a robot walking through it).
+static func walker_stop(before: Vector3, after: Vector3, bodies: Array) -> Vector3:
+	var first: Vector3 = Vector3.INF
+	var first_f: float = INF
+
+	for row in bodies:
+		var c: Vector3 = row[0]
+
+		if absf(c.y - after.y) > 2.0:
+			continue
+
+		var d0: float = Vector2(before.x - c.x, before.z - c.z).length()
+		var keep: float = minf(float(row[1]), d0)
+
+		if keep <= 0.01:
+			continue
+
+		var d1: Vector2 = Vector2(after.x - c.x, after.z - c.z)
+		var at: Vector3 = Vector3.INF
+		var f: float = INF
+
+		if d1.length() < keep:
+			# Ends inside: on the circle where it ends (a slide round the body), or where it entered when it ran over the body's middle.
+			var entry: Vector3 = stop_at(c, before, after, keep)
+			var past_middle: bool = d1.dot(Vector2(before.x - c.x, before.z - c.z)) <= 0.0   # a hitch step over its middle into its far half
+			at = entry if d1.length_squared() < 0.0001 or (past_middle and entry != before) else Vector3(c.x + d1.normalized().x * keep, after.y, c.z + d1.normalized().y * keep)
+			f = 0.0 if entry == before else before.distance_to(entry) / maxf(before.distance_to(after), 0.0001)
+		elif d0 > keep + 0.001:   # from outside: did the move run clean through it?
+			var crossed: Vector3 = stop_at(c, before, after, keep)
+
+			if crossed != after:   # ran clean through it (a hitch frame): stopped where it would enter
+				at = Vector3(crossed.x, after.y, crossed.z)
+				f = before.distance_to(crossed) / maxf(before.distance_to(after), 0.0001)
+
+		if at != Vector3.INF and f < first_f:
+			first = at
+			first_f = f
+
+	return first - after if first != Vector3.INF else Vector3.ZERO
+
+
+# The walker held at bodies (walker_stop stopped them) for `pinned_ms` on end lets them through: a herd round them, one standing in a doorway
+# or a cave passage that will not make way, never shuts them in. `held` is [since ms (-1 when free), last held ms]; `stopped` whether this
+# frame's move was stopped short (most of it taken off: not a slide round the body). A hold broken for over `gap_ms` starts again. Returns [since, last, let through].
+static func walker_held(held: Array, now: int, stopped: bool, pinned_ms: int, gap_ms: int) -> Array:
+	var since: int = int(held[0])
+	var last: int = int(held[1])
+
+	if not stopped:
+		return [-1 if now - last > gap_ms else since, last, false]
+
+	if since < 0:
+		since = now
+
+	return [since, now, now - since > pinned_ms]
+
+
 # Where a charge from a0 to a1 stops when it reaches a player at `p`: the first point of the stretch `m` (the species' contact distance)
 # from them on the ground, so it stands against the player, not inside or past them (Dave 23 Nov 2026, the real server: animals were
 # "jumping right through us"). The start when it was already that close (a player under it); a1 when the stretch never comes that close.

@@ -32,10 +32,12 @@ const MORE_HANDS_SHIFT := 1        # ...the client's hand flags (held_item.gd HA
 const MORE_MEAL_SHIFT := 5         # ...and bits 5..7 a count of eats and drinks, mod 8 (the others play the drink clip)
 const MEAL_ACTS := [Net.ACT_EAT, Net.ACT_DRINK]
 # Not ACT_TILL_GARDEN: the hoe's grid preview sends it as a check-only poll about once a second.
+# A strike (a fight blow, any item or bare hands), a hammer blow on a building piece or blueprint site, a rod's cast and pull, and a split on
+# the chopping block (ACT_USE_STRUCT with the held slot in count) are blows the others see too (23 Nov 2026: they stood still before).
 const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Net.ACT_FILL, Net.ACT_TILL, Net.ACT_HIT_SHRUB,
-		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_ICEHOLE]
+		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_ICEHOLE, Net.ACT_STRIKE, Net.ACT_REPAIR_STRUCT, Net.ACT_FISH]
 
-var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
+var items                          # ServerItems: peer_ids, position_of, stance_of, fainted_of, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
 var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array, left PackedInt32Array, more PackedByteArray)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
 var send_flight: Callable          # (to peer, item number, from, velocity, burning): flight_seen (159)
@@ -144,11 +146,11 @@ func worn_changed(peer: int, numbers: PackedInt32Array) -> void:
 
 
 # A pack action came in (server_items action): a blow with the tool in hand counts a swing, so the others see it (the next rows).
-func note_action(peer: int, kind: int) -> void:
+func note_action(peer: int, kind: int, held_slot: int = 0) -> void:
 	if kind in MEAL_ACTS:
 		_meals[peer] = (int(_meals.get(peer, 0)) + 1) & 7
 
-	if kind in SWING_ACTS:
+	if kind in SWING_ACTS or (kind == Net.ACT_USE_STRUCT and held_slot > 0):
 		var count: int = int((_swings.get(peer, [0, 0]) as Array)[0])
 		_swings[peer] = [(count + 1) & 7, int(now_ms.call())]
 
@@ -221,7 +223,10 @@ func tick(delta: float) -> void:
 			heard[peer] = pos
 
 		var swing: Array = _swings.get(peer, [0, 0])
-		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0) \
+		var down: bool = items.fainted_of(peer)
+		var stance: int = 3 if down else clampi(int(items.stance_of(peer)), 0, 3)   # fainted, or passed out from cold or in water: drawn lying, as it is
+		# a body down in water is not shown treading water (the swim clip wins over lying)
+		var state: int = stance | (SWIM if items.is_swimming(peer) and not down else 0) | (CARRY if items.carries_log(peer) else 0) \
 				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
 		var left: int = int(items.left_hand_number(peer))
 		var more: int = (MORE_LIT if items.torch_burning(peer) else 0) | ((int(items.hand_flags(peer)) & 15) << MORE_HANDS_SHIFT) | (int(_meals.get(peer, 0)) << MORE_MEAL_SHIFT)
