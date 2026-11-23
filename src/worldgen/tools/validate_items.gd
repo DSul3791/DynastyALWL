@@ -452,6 +452,23 @@ func _init() -> void:
 			want_item.call(String(row[0]), "drops.json seed_drops.%s" % key)
 			obtainable[String(row[0])] = true
 
+	# A plant's own yield by the dozen (drops.json plant_yield.counts, Dave 23 Nov 2026: "you should get plenty of seeds"): a real item, [lo, hi] with 1 <= lo <= hi.
+	var yield_counts: Dictionary = (drops.get("plant_yield", {}) as Dictionary).get("counts", {})
+
+	for yid in yield_counts:
+		want_item.call(String(yid), "drops.json plant_yield.counts")
+		var span: Array = yield_counts[yid] if typeof(yield_counts[yid]) == TYPE_ARRAY else []
+
+		if span.size() != 2 or int(span[0]) < 1 or int(span[0]) > int(span[1]):
+			fail("drops.json plant_yield.counts.%s: want [lo, hi] with 1 <= lo <= hi" % yid)
+
+	# Every crop sows a pinch of seed per planting spot (crops.json sow_seeds, at least 1).
+	var crop_rows: Dictionary = _read("crops.json").get("crops", {})
+
+	for cid in crop_rows:
+		if typeof(crop_rows[cid]) == TYPE_DICTIONARY and int(crop_rows[cid].get("sow_seeds", 0)) < 1:
+			fail("crops.json %s: sow_seeds missing or below 1 (seeds one planting spot takes)" % cid)
+
 	var trunk: Dictionary = drops.get("trunk", {})
 
 	if trunk.has("roots"):

@@ -21116,7 +21116,6 @@ func _season_refusal(seed_id: String) -> String:
 	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
 
 
-# The crop record of a seed just sown (the seed already taken).
 # Why nothing is planted when the pack holds too few: none at all, or fewer than one spot's sowing (crops.json sow_seeds).
 func _none_to_plant(item_id: String, per_spot: int, held_n: int) -> String:
 	if held_n <= 0:
@@ -21125,6 +21124,7 @@ func _none_to_plant(item_id: String, per_spot: int, held_n: int) -> String:
 	return "You need %d %s to sow one spot." % [per_spot, str(table.entry(item_id).get("name", item_id)).to_lower()]
 
 
+# The crop record of a seed just sown (the seed already taken).
 func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void:
 	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false}
 

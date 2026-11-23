@@ -395,7 +395,7 @@ func _init() -> void:
 		print("  %s | %s | %d | %d | %d | %s | %s | %s" % [species_name, row["item"], have_1, have_3, sticks_after - sticks_before, "yes" if stays else "NO", "nothing" if not second_try else "GAVE MORE", "yes" if bool(verdict["ok"]) else "NO"])
 		check(ok, "harvest row %s: product, counts, no sticks, stays, once a season, label agrees" % species_name)
 
-	# Wild rose (D-ROSE-1): petals in summer, hips and 1 to 2 seeds in autumn, nothing in spring though the bush is in leaf; the client's prompt agrees.
+	# Wild rose (D-ROSE-1): petals in summer, hips and plenty of seeds in autumn (drops.json seed_drops), nothing in spring though the bush is in leaf; the client's prompt agrees.
 	var rose_flora: Dictionary = flora_rows["wild_rose"]
 	var rose_avg: float = (float(rose_flora["height_m"][0]) + float(rose_flora["height_m"][1])) * 0.5
 	var rose_got: Dictionary = {}
@@ -412,7 +412,7 @@ func _init() -> void:
 	print("wild rose by season [picked, petals, hips, seeds, prompt]: %s" % str(rose_got))
 	check(rose_got["spring"] == [false, 0, 0, 0, false], "a wild rose gives nothing in spring and the prompt says not in season")
 	check(rose_got["summer"][0] and rose_got["summer"][1] >= 20 and rose_got["summer"][2] == 0 and rose_got["summer"][3] == 0 and rose_got["summer"][4], "a wild rose gives petals only in summer")
-	check(rose_got["autumn"][0] and rose_got["autumn"][1] == 0 and rose_got["autumn"][2] >= 150 and rose_got["autumn"][3] >= 1 and rose_got["autumn"][3] <= 2 and rose_got["autumn"][4], "a wild rose gives hips and 1 to 2 seeds in autumn")
+	check(rose_got["autumn"][0] and rose_got["autumn"][1] == 0 and rose_got["autumn"][2] >= 150 and rose_got["autumn"][3] >= int(g._drops["seed_drops"]["wild_rose"]["rows"][0][1]) and rose_got["autumn"][3] <= int(g._drops["seed_drops"]["wild_rose"]["rows"][0][2]) and rose_got["autumn"][4], "a wild rose gives hips and its seed row's seeds in autumn")
 	check(str(GatherRulesScript.harvest_row(g._drops, "wild_rose").get("item", "")) == "rose_petals" and GatherRulesScript.harvest_row(g._drops, "wild_rose", "winter").is_empty(), "with no season the first row names the product; a season without a row has none")
 	check(GatherRulesScript.harvest_count({"count": 10}, 0.01) == 1 and GatherRulesScript.harvest_count({"count": 0}, 0.5) == 1, "a harvest count is never 0")
 	check(GatherRulesScript.harvest_count({"count": 10}, 3.0) == 30 and GatherRulesScript.harvest_count({"count": 7}, 1.2) == 9, "counts are the table number times size, rounded up")
