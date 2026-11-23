@@ -37,6 +37,7 @@ func _init() -> void:
 	server_clock.follow(5016000)     # a normal frame
 	server_clock.follow(8016000)     # a 3 s freeze: Godot's delta for that frame would be about 0.13 s
 	check(is_equal_approx(server_clock.seconds - start, 3.016 * GameClockScript.RATIO), "the server's game clock keeps real time through a 3 s freeze (%.2f game s, want %.2f)" % [server_clock.seconds - start, 3.016 * GameClockScript.RATIO])
+	check(FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").contains("game_clock.follow(Time.get_ticks_usec())"), "the server moves its clock by follow (real time), not by the frame's delta")
 	var client_clock = GameClockScript.new()
 	client_clock.sync(server_clock.seconds)
 	check(is_equal_approx(client_clock.seconds, server_clock.seconds), "a client takes the server's clock at the welcome")
@@ -76,7 +77,7 @@ func _init() -> void:
 		items.place_piece(1, kit_id, at)
 
 	items.report_position(1, HERE)
-	print("placed %d records from %d kits" % [items.world_item_count(), kits.size()])
+	check(items.world_item_count() > 100, "the kits placed %d records from %d kits" % [items.world_item_count(), kits.size()])
 	_settle(items)
 	_compare(items, "the placed pieces")
 
@@ -159,6 +160,7 @@ func _compare(items, what: String) -> void:
 	items.report_position(_newcomer, HERE)
 	_settle(items, 1.2)
 	var fresh: Dictionary = seen.get(_newcomer, {})
+	check(fresh.size() > 100, "%s: the newcomer is sent the world (%d rows)" % [what, fresh.size()])
 
 	for watcher in [1, 2]:
 		var old: Dictionary = seen.get(watcher, {})

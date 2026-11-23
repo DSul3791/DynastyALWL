@@ -44,6 +44,7 @@ var _follow_usec: int = -1
 # Godot clips a long frame's delta (about 0.13 s however long the frame took: a 3 s freeze gave 0.18 s), so the server's clock fell behind
 # the clients' (which follow their own tick counter from the welcome) by every hitch and freeze: players who joined at different times saw
 # different times of day, and the sky disagreed with the server's crops, fires and seasons (two players see the same world, 23 Nov 2026).
+# The server's own frame timers (a fire's burn, animals, NPCs) still run on the clipped delta, so in a freeze they fall behind the clock.
 func follow(now_usec: int) -> void:
 	if _follow_usec >= 0 and now_usec > _follow_usec:
 		advance(float(now_usec - _follow_usec) / 1000000.0)
