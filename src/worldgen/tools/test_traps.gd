@@ -828,8 +828,8 @@ func gap_checks() -> void:
 	var state: int = int(cfg["structures"]["snare_trap"]["state"])
 	var rows: Array = [{"pos": Vector3(10.0, 10.0, 10.0), "state": state, "yaw": 0.0}]
 	check(PlacementRules.blocked(cfg, "snare", Vector3(11.0, 10.0, 10.0), rows) == "", "a second snare 1 m from the first goes down (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(11.0, 10.0, 10.0), rows))
-	var near: String = PlacementRules.blocked(cfg, "snare", Vector3(10.3, 10.0, 10.0), rows)
-	check(near == "spaced" and PlacementRules.reason_text(near).contains("60 cm"), "30 cm away it is refused, saying how far apart (%s: %s)" % [near, PlacementRules.reason_text(near)])
+	var too_near: String = PlacementRules.blocked(cfg, "snare", Vector3(10.3, 10.0, 10.0), rows)
+	check(too_near == "spaced" and PlacementRules.reason_text(too_near).contains("60 cm"), "30 cm away it is refused, saying how far apart (%s: %s)" % [too_near, PlacementRules.reason_text(too_near)])
 
 	for n in 40:
 		rows.append({"pos": Vector3(1.0 + float(n % 8), 10.0, 1.0 + float(n >> 3)), "state": state, "yaw": 0.0})
