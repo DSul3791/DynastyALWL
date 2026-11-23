@@ -375,8 +375,12 @@ func _ready() -> void:
 		store.clear_generated()
 		print("server: cleared the generated ground as asked (--clear-generated)")
 
+	if problem == "" and not _store_writable(store_dir):
+		problem = "the store folder %s cannot be written (read-only, full, or not this user's)" % store_dir
+
 	if problem != "":
-		push_error("Terrain server: %s" % problem)
+		push_error("Terrain server: cannot start: %s. The store is left as it was; nothing is saved over it." % problem)
+		_refused_start = true   # no frame runs on a half-made server, and nothing is saved at exit
 		get_tree().quit(1)
 		return
 
@@ -3439,6 +3443,18 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 			animals.spawn(arg, pos.x, pos.z)
 	elif kind == "carcass":
 		items.make_carcass(arg, pos)
+
+
+# A small file written whole and taken away again: a read-only store, or one with no room for a save, stops the start with a clear line
+# instead of a server that plays on and saves nothing.
+func _store_writable(dir: String) -> bool:
+	var probe: String = dir + "/write_check.json"
+	var ok: bool = ItemsScript._write_file(probe, JSON.stringify({"version": 1, "checked": Time.get_unix_time_from_system(), "room": " ".repeat(65536)}))
+
+	for one in [probe, probe + ".prev", probe + ".tmp"]:
+		DirAccess.remove_absolute(one)
+
+	return ok
 
 
 func _process(delta: float) -> void:
