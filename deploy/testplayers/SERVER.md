@@ -48,35 +48,22 @@ ssh "dave@${server}" "ls -l /data/game-web/site/downloads/; rm /data/game-web/si
 
 ## 2b. The bug and idea pages (one paste on the server, every time after step 2)
 
-The bug and idea pages and their small report service come from the "tester bug and idea pages" work (branch `claude/project-thread-sq5q8u`, `deploy/testersite/`). Its install puts its own front page (the same three boxes, now working, with the high scores) over the one from step 2. It also adds the `/api/` part to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe. Until that work is merged, step 2 brings back the "Opening soon" front page, so run this again after every upload:
+The bug and idea pages and their small report service come from the "tester bug and idea pages" work (`deploy/testersite/`, pinned to commit 2f98c0a9). Its install puts its own front page (the same three boxes, now working, with the high scores) over the one from step 2. It also adds the `/api/` part to the Caddyfile, checks it, and puts the old file back if the check fails. It asks once for the GitHub token. Running it again is safe. Until that work is merged, step 2 brings back the "Opening soon" front page, so run this again after every upload:
 
 ```
-sudo mkdir -p /data/game-web/reports && cd /data/game-web/reports && sudo curl -fsSLO https://raw.githubusercontent.com/DSul3791/DynastyALWL/claude/project-thread-sq5q8u/deploy/testersite/service/install.sh && sudo BRANCH=claude/project-thread-sq5q8u bash install.sh
+sudo mkdir -p /data/game-web/reports && cd /data/game-web/reports && sudo curl -fsSLO https://raw.githubusercontent.com/DSul3791/DynastyALWL/2f98c0a9a764765975fe984d6bcf802eda793039/deploy/testersite/service/install.sh && sudo BRANCH=2f98c0a9a764765975fe984d6bcf802eda793039 bash install.sh
 ```
 
-## 3. Show who is logged in (one Caddyfile line, once)
+## 3. Show who is logged in (done by step 2b)
 
-The pages show the login name at the top right. Caddy fills it in as it sends the page, using its `templates` feature and the `{http.auth.user.id}` value that the login sets (Caddy docs: basic_auth, templates). Until this is on, the pages simply hide the name.
-
-1. Keep a copy first: `sudo cp /data/game-web/config/Caddyfile /data/game-web/config/Caddyfile.bak`
-2. In `/data/game-web/config/Caddyfile`, inside the `hannibalshouse.duckdns.org { ... }` block, add these two lines just above the `file_server browse` line. Change nothing else.
+The pages show the login name at the top right. Step 2b's install adds the two Caddyfile lines for it, once, if the Caddyfile has no `templates` line yet; nothing to do by hand. For the record, the lines it adds just above `file_server browse` are:
 
 ```
 	@home path / /index.html /download/ /download/index.html
 	templates @home
 ```
 
-3. Check that the container sees the new lines, check the file, then apply it:
-
-```
-sudo docker exec game-web grep -n templates /etc/caddy/Caddyfile
-sudo docker exec game-web caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-sudo docker exec game-web caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
-```
-
-- The first command must print the `templates @home` line. If it prints nothing, the container still has the old file: run `sudo docker restart game-web`.
-- `@home` keeps the templates to the two pages. When the bug and idea pages arrive, their paths join that line. The zip, the picture, the fonts and the file list pass through untouched.
-- To undo it: `sudo cp /data/game-web/config/Caddyfile.bak /data/game-web/config/Caddyfile`, then run the last two commands.
+They keep Caddy's templates to the two pages, so the zip, the pictures, the fonts and the file list pass through untouched. To undo them by hand, delete the two lines, then run `sudo docker exec game-web caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile` and `sudo docker exec game-web caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile`.
 
 ## 4. Check it (Dave, in a browser)
 
