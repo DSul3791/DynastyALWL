@@ -36,7 +36,7 @@ def bad(msg):
 
 # 1. conflict markers in code and data (not in .md, which may quote them)
 for f in sh("git", "ls-files").splitlines():
-    if f.endswith((".md", ".png", ".ogg", ".wav", ".glb", ".dat", ".sqlite", ".idx", ".json.gz")) or not os.path.isfile(f):
+    if f.endswith((".md", ".png", ".ogg", ".wav", ".glb", ".dat", ".sqlite", ".idx", ".json.gz")) or f.startswith("assets/animals/") or not os.path.isfile(f):   # the models: 2.6 GB of LFS binaries
         continue
     try:
         txt = open(f, encoding="utf-8", errors="ignore").read()
