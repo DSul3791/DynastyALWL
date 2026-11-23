@@ -170,6 +170,7 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const TrailSignsScript := preload("res://src/client/trail_signs.gd")
+const FreshTracksScript := preload("res://src/client/fresh_tracks.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const HarvestScript := preload("res://src/client/harvest.gd")
@@ -508,6 +509,7 @@ var hud_fade                          # HudFade: passing out fades the whole HUD
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
 var trail_signs                       # TrailSigns: signs along the animals' trails (stage 2d)
+var fresh_tracks                      # FreshTracks: prints left by live animals near the player, fading (hunting thread)
 var map_knowledge = MapKnowledgeScript.new()   # this character's surveyed map cells (protocol 120); the Journal's Map page draws them (map_page.gd)
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
@@ -1542,6 +1544,10 @@ func _welcome_body(info: Dictionary) -> void:
 		if net != null and multiplayer.has_multiplayer_peer():
 			net.sign_spotted.rpc_id(1, at.x, at.z)
 	root.add_child(trail_signs)
+	fresh_tracks = FreshTracksScript.new()
+	fresh_tracks.name = "FreshTracks"
+	fresh_tracks.player_at = func() -> Vector3: return body.global_position if body != null else Vector3.INF
+	root.add_child(fresh_tracks)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
@@ -1728,6 +1734,8 @@ func _welcome_body(info: Dictionary) -> void:
 		if sound != null and sound.creatures != null:
 			sound.creatures.took_off(kind, at))      # a grouse, pheasant or guineafowl bursts up with a whirr of wings, a crow caws and flaps off
 	animal_view.stepped.connect(func(kind: String, at: Vector3) -> void:
+		if fresh_tracks != null:
+			fresh_tracks.on_step(kind, at)      # a print where the foot landed, fading over minutes (fresh_tracks.gd)
 		sound.slots.play("rabbit_hop" if kind == "rabbit" else kind + "_step", at, body.global_position)      # hoof and paw sounds by species (slots without a clip, like a wolf pack far away, are skipped)
 		if weather_look != null and weather_look.puddles != null and weather_look.puddles.shown > 0.001:
 			weather_look.puddles.animal_step(kind, at, sound._ground_under(at))      # a foot in a puddle splashes (puddles.gd)
@@ -6663,6 +6671,10 @@ func _process(delta: float) -> void:
 
 	if body != null and items != null and trail_signs != null:
 		trail_signs.update(body.global_position, int(items.skill_level_of("tracking")), _world_loading())   # at most twice a second, never while loading
+
+	if fresh_tracks != null and items != null:
+		fresh_tracks.tracking = int(items.skill_level_of("tracking"))
+		fresh_tracks.update()
 
 	if (not flying or grass_while_flying) and body != null:
 		var tg: int = Probe.start()

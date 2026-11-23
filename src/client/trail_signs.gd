@@ -542,8 +542,8 @@ func _fill(layer: String, rows: Array) -> void:
 
 	for n in rows.size():
 		var row: Array = rows[n]
-		var scale: Vector3 = row[2] if row[2] is Vector3 else Vector3.ONE * float(row[2])
-		var rot: Basis = Basis(Vector3.UP, PI * 0.5 - float(row[1])) * Basis.from_scale(scale)   # the mesh's long side (z) along the yaw
+		var stretch: Vector3 = row[2] if row[2] is Vector3 else Vector3.ONE * float(row[2])
+		var rot: Basis = Basis(Vector3.UP, PI * 0.5 - float(row[1])) * Basis.from_scale(stretch)   # the mesh's long side (z) along the yaw
 		mm.set_instance_transform(n, Transform3D(rot, row[0] + Vector3(0.0, 0.01, 0.0)))
 
 
