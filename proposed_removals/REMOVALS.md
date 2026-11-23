@@ -193,3 +193,4 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | tools/make_testplayers_page.ps1, deploy/testplayers/Caddyfile, compose.web.yaml (HOSTING.md archived in docs/archive/2026-11/) | Claude, packaging thread | 23 Nov | made and hosted the page in a /dynasty/testplayers/ folder on a web server we would set up; Dave set up his own, with its own login | tools/make_testplayers_site.ps1, deploy/testplayers/SERVER.md |
+| deploy/testplayers/index.html, deploy/testplayers/site.css | Claude, packaging thread | 23 Nov | the "Opening soon" front page and its look, a stand-in until the testers' own pages were merged (#1609) | deploy/testersite/site/index.html and css/dynasty.css; /download/ now uses dynasty.css |
