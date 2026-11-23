@@ -3931,6 +3931,12 @@ func _fly(delta: float) -> void:
 			if not is_nan(ground):
 				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
 
+			if animal_alarm.is_valid():
+				if _bow == null:
+					_bow = BowScript.new()   # its cfg holds the landing radius (as _shoot makes it at the first shot)
+
+				animal_alarm.call(spot, float(_bow.cfg.get("land_alarm_m", 0.0)))   # a thrown spear that missed thuds down: as a missed arrow (hearing-range pass)
+
 			_land_thrown(flight, spot)
 			_flights.erase(flight)
 

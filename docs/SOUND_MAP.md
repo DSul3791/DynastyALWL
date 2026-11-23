@@ -108,7 +108,7 @@ Animals sense a player by one rule (`server_animals.gd _sense_factor`): the play
 | Thing picked up off the ground | 12 m | 1.5 m | as the player |
 | Carried torch or lantern | 10 m | 1 m | animals keep out of its light (the fire rule, not hearing) |
 | Bow drawn | 30 m | 6 m | as the player |
-| Arrow or spear loosed and landing | 150 m (the flight is sent that far) | 8 m (12 m in flight) | the shot startles animals within 40 m of the archer (`bow.json noise_m`); a miss that comes down startles those within 12 m of where it lands (`land_alarm_m`) |
+| Arrow or spear loosed and landing | 150 m (the flight is sent that far) | 8 m (12 m in flight) | a bow, crossbow or sling shot startles animals within 40 m of the shooter (`bow.json noise_m`); an arrow, stone or thrown spear that misses startles those within 12 m of where it comes down, a fire arrow too (`land_alarm_m`) |
 | Tree falling | 260 m | 10 to 18 m | the crash startles animals within 40 m of the fallen tree, 20 m for a small one (`drops.json felling.crush.alarm_m`) |
 | Building piece set or taken down | 120 m | 7 m | as the player |
 | Campfire | 35 m (fades out by 52 m) | world fire | animals keep out of its light |

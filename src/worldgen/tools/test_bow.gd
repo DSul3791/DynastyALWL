@@ -126,7 +126,7 @@ func _init() -> void:
 	fly(items, 6.0)
 	check(items._arrows.is_empty() and hits.is_empty(), "a weak shot does not reach a deer 60 m away")
 	var landed_at: Vector3 = alarms[alarms.size() - 1][0] if not alarms.is_empty() else Vector3.INF
-	check(float(alarms[alarms.size() - 1][1]) == float(items._bow.cfg["land_alarm_m"]) and landed_at.z < -1.0 and landed_at.z > -60.0, "a miss startles the animals within land_alarm_m of where it came down (%s)" % str(alarms[alarms.size() - 1]))
+	check(not alarms.is_empty() and float(alarms[alarms.size() - 1][1]) == float(items._bow.cfg["land_alarm_m"]) and landed_at.z < -1.0 and landed_at.z > -60.0, "a miss startles the animals within land_alarm_m of where it came down (%s)" % str(alarms))
 
 	# Pace: a second press inside the pace does nothing.
 	items._last_shot.clear()

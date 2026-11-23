@@ -456,9 +456,11 @@ func _prowl(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		if in_town(info["pos"]):
 			continue   # the town keep-out: a player in town is not stalked
 
+		var heard: float = float(heard_of.call(int(info["peer"]))) if heard_of.is_valid() else 0.0
+
 		for m in members:
 			var d: float = Vector2(info["pos"].x - m["pos"].x, info["pos"].z - m["pos"].z).length()
-			var seen: float = d / host._sense_factor(m, def, info["pos"], d, int(info.get("stance", 0)), 1.0, float(heard_of.call(int(info["peer"]))) if heard_of.is_valid() else 0.0) / (1.0 + boldness(pack, info["pos"]) * float(w.get("den_notice_gain", 1.0)))
+			var seen: float = d / host._sense_factor(m, def, info["pos"], d, int(info.get("stance", 0)), 1.0, heard) / (1.0 + boldness(pack, info["pos"]) * float(w.get("den_notice_gain", 1.0)))
 			calm = calm and seen > float(w.get("notice_m", 35.0)) * 2.0
 
 			if seen < best_d:
