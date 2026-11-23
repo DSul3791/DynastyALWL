@@ -15,6 +15,15 @@ var _phase_since_msec: int = 0
 var _phase_max: Dictionary = {}         # phase -> longest ms this second
 var _watchdog: Thread
 var _stop: bool = false
+# Load tests (server --profile=S, tools/load_test.sh): every S seconds a PROFILE line with each step's total and longest time in
+# microseconds since the last line, so a load test can say which step grows with players. 0 = off (no extra clock reads).
+var profile_every_msec: int = 0
+var profile_frame_phase: String = ""  # the step each frame starts with: a frame is counted (and the line written) when it comes round
+var _profile_sum: Dictionary = {}       # phase -> usec this window
+var _profile_max: Dictionary = {}       # phase -> longest usec this window
+var _profile_frames: int = 0
+var _profile_since_usec: int = 0
+var _phase_since_usec: int = 0
 
 
 # The file goes into the project's crash_reports folder (the one the game is played from, so it shows up in GitHub Desktop),
@@ -27,7 +36,11 @@ func start(name: String, folder: String = "res://crash_reports") -> void:
 
 func event(text: String) -> void:
 	var t: Dictionary = Time.get_time_dict_from_system()
-	_writer.add("[%02d:%02d:%02d.%03d] %s" % [t["hour"], t["minute"], t["second"], Time.get_ticks_msec() % 1000, text])
+	var line: String = "[%02d:%02d:%02d.%03d] %s" % [t["hour"], t["minute"], t["second"], Time.get_ticks_msec() % 1000, text]
+	_writer.add(line)
+
+	if profile_every_msec > 0:
+		print("TELEMETRY ", line)   # load tests read the whole run from the output; the file keeps only its last lines
 
 
 # Writes the queued lines now (before something reads the file, or the process ends).
@@ -71,8 +84,39 @@ func mark(phase: String) -> void:
 	if _phase != "":
 		_phase_max[_phase] = maxi(int(_phase_max.get(_phase, 0)), now - _phase_since_msec)
 
+	if profile_every_msec > 0:
+		_profile_mark(phase)
+
 	_phase = phase
 	_phase_since_msec = now
+
+
+func _profile_mark(phase: String) -> void:
+	var now: int = Time.get_ticks_usec()
+
+	if _phase != "" and _phase_since_usec > 0:
+		var used: int = now - _phase_since_usec
+		_profile_sum[_phase] = int(_profile_sum.get(_phase, 0)) + used
+		_profile_max[_phase] = maxi(int(_profile_max.get(_phase, 0)), used)
+
+	_phase_since_usec = now
+
+	if _profile_since_usec == 0:
+		_profile_since_usec = now
+	elif phase == profile_frame_phase:
+		_profile_frames += 1
+
+		if now - _profile_since_usec >= profile_every_msec * 1000:
+			var parts: PackedStringArray = PackedStringArray()
+
+			for name in _profile_sum:
+				parts.append("%s=%d/%d" % [name, int(_profile_sum[name]), int(_profile_max[name])])
+
+			event("PROFILE window_us=%d frames=%d | %s" % [now - _profile_since_usec, _profile_frames, " ; ".join(parts)])
+			_profile_sum.clear()
+			_profile_max.clear()
+			_profile_frames = 0
+			_profile_since_usec = now
 
 
 func _slowest_phases() -> String:
