@@ -10,6 +10,8 @@ and other files nothing in the game reads are left out.
 2. Amounts in hints and goals. Each "<N> <ingredient>" in a sentence (2 twine, 16 stones) must be an amount that one of the
    recipes or blueprints the sentence names (or the goal's own target) really asks for. A recipe or blueprint is named by its
    name or by the name of what it makes, with or without its "Tier - " part. An amount that matches none of them is reported.
+3. Keeping. "<N> game days" in a food's description is how long it really keeps in a pack (spoilage.json shelf life times
+   gentle_mult; summer ages it faster, so anything from the summer to the spring figure counts).
 
 Exit status 1 when anything is wrong. Usage: python3 tools/check_player_text.py
 """
@@ -168,10 +170,42 @@ def amount_problems(text, check):
     return problems
 
 
+# --- 3. how long food keeps -------------------------------------------------------------------------------------------------
+
+SPOIL = load("spoilage.json")
+
+
+def keep_days(item_id):
+    """(fewest, most) game days the item keeps in a pack, summer to spring or autumn (winter is slower still); None if it never spoils."""
+    hours = SPOIL["by_id"].get(item_id)
+    if hours is None:
+        hours = next((h for suffix, h in SPOIL.get("by_suffix", {}).items() if item_id.endswith(suffix)), None)
+    if not isinstance(hours, (int, float)) or hours <= 0:
+        return None
+    life = hours * float(SPOIL.get("gentle_mult", 1)) / 24.0
+    season = [float(v) for k, v in SPOIL.get("season_mult", {}).items() if k != "winter"] or [1.0]
+    return life / max(season), life / min(season)
+
+
+def keep_problems(item_id, text):
+    span = keep_days(item_id)
+    problems = []
+    for m in re.finditer(r"(\d+)(?: to (\d+))? game days", text):
+        if span is None:
+            problems.append("says it keeps %s game days, but it never spoils" % m.group(1))
+            continue
+        for n in [int(g) for g in m.groups() if g]:
+            if not span[0] - 1.0 <= n <= span[1] + 1.0:
+                problems.append("says %d game days; in a pack it keeps %.0f to %.0f (spoilage.json, times gentle_mult)" % (n, span[0], span[1]))
+    return problems
+
+
 def main():
     bad = 0
     for where, text, check in texts():
         problems = name_problems(text) + (amount_problems(text, check) if where.split(" ")[0] in ("hints.json", "starter_goals.json", "camp_goals.json") else [])
+        if where.startswith("items.json "):
+            problems += keep_problems(where.split(" ")[1], text)
         for p in problems:
             print("%s: %s" % (where, p))
             bad += 1
