@@ -60,9 +60,19 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - **Models off their footprint, left as they are.** The Saw mill draws from x -2.6 to 2.4 on a 3 m footprint centred on its spot; its water wheel must stand over running water past the footprint (needs_running_water), so the footprint stays and the wheel got a solid (round 5). The handcart, small log sled and small wagon draw 2.0 x 0.6 m on footprints laid the other way (1.2 x 2.0, 0.8 x 2.0, 1.4 x 2.6); carts are pulled, not placed against things. The fireplace draws from its back wall forward on a footprint centred on its spot.
 - Left as is, too small to chase: a pinhole about 1 ray in 2,000 at the ridge of the Stone and Engineered roof corners. A wall's blueprint site under a roof can still be taken down, because sites skip the "Take down what stands on it first." check.
 
+### Piece 0e. Animals and the dark (weather walk, 23 Nov 2026; for Dave)
+- Animals see as far at midnight as at noon. The moon and the night sky are drawn by the client only; the server's animals never ask how dark it is. Fog and mist already shorten their sight (`visibility_m`). Real animals differ: deer and wolves see well at night, birds hardly at all. Open: should a player be harder to spot at night (less so under a full moon), by species? **Decision** for Dave or the coordinator; nothing is built.
+- Rivers' rise after rain (`terrain_server._update_weather`, `water_live`) still follows the starter row's rain. It and the companions' and goblins' ticks (they read no rain, snow or wind today) are the only weather readers left on the starter row.
+
 ### Piece 0b. Server check of running speed (coordinator 23 Nov 2026: leave for now, note it)
 - The server checks no gait speed: walk, run, crouch and a raised shield's walk-only rule (#1688, terrain_client.gd `held.blocking`) are the client's alone. A modified client could run with a shield up, or run faster than RUN_SPEED. When it matters (player versus player, robbery), the server could compare reported positions against the gait's top speed, and ignore the shield flag (hand_flags & 4) while the player moves faster than walking pace.
 - Also open from the no-use audit (#1674, #1688): materials still marked "Nothing uses it yet." wait for Dave or a design doc (withies, thorny canes, thorny wood, burrs, banana leaves, oil, elderflowers, hawthorn blossom, raspberry leaves, cactus pads, fine leather, seeds, brinebells); feeding animals and fodder; the rapier moves; the trellis; ale and mead.
+
+### Piece 0d. Features the gathering and tier walk found (coordinator 23 Nov 2026: for Dave's list, not bugs)
+- **Trainers:** only Hob (trades) and Edda (swordplay) train, so every other skill stops at 24 under Dave's skills rule (a trainer is needed for 25 to 49). Each skill needs a trainer somewhere.
+- **Unpractised masteries:** nothing practises parry, strike, sweep or rapier_master yet. They wait for the rapier moves (see Piece 0b).
+- **Fishing tiers:** one Fishing rod and one Shore net, with no better rod.
+- Questions from the same walk: the Chest (18 slots) holds less than the Small chest (24), so it is unclear which comes first. A tool swung as a weapon hits by its tier, so a Copper knife or hammer hits no harder than a Stone one (shared tier 2).
 
 ### Piece 1. Lag leftovers (BugsList 108, still open part)
 - **Gate Z result (not BugsList 108; delete this line once Dave decides):** the cold first-join freeze grew from 24.0 s to 25.2 s. This is the same freeze as BugsList 93, measured by the gate's A5 rule: the longest FREEZE, median of 3 cold windowed Play runs, limit 24.85 s (set from main's 23.96 s). Dave, 21 Nov 2026, on that freeze: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that." (the message is built, PR #1405). The second main merge waits on Dave's choice: accept, or fix and re-gate.
