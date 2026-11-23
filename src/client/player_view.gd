@@ -14,6 +14,7 @@ extends Node3D
 
 signal stepped(at: Vector3, gait: int, crouched: bool)
 signal stroked(at: Vector3)               # another player's swimming stroke, where they swim (swim_sounds.gd stroke_at)
+signal drew(at: Vector3)                  # another player drew their bow (the more byte's bow-drawn flag came on): the creak at their shoulder
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -56,6 +57,7 @@ const STEP_M := [1.2, 3.0]               # terrain_client.gd STEP_M: metres per 
 const RUN_FROM_MPS := 6.0                # drawn pace from which a player counts as running (walk 3.2, run 9.0 m/s)
 const STEP_FROM_MPS := 1.0               # slower than this makes no steps (terrain_client.gd _update_bob)
 const STEP_HEAR_M := 45.0                # sound_stage.gd OTHER_STEP_REACH_M: farther steps are not counted
+const DRAW_UP_M := 0.5                   # the bow's string at the shoulder, above the body's middle
 const STROKE_FROM_MPS := 0.5             # swim_sounds.gd STROKE_MIN_MPS: slower than this makes no strokes
 const FEET_M := 0.9                      # the sent position is the standing body's middle
 
@@ -116,7 +118,12 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		b["swings"] = swings
 		b["state"] = int(states[i])
 		b["left"] = int(left[i]) if i < left.size() else 0
-		b["more"] = int(more[i]) if i < more.size() else 0
+		var more_now: int = int(more[i]) if i < more.size() else 0
+
+		if b.has("more") and (more_now & MORE_BOW_DRAWN) != 0 and (int(b["more"]) & MORE_BOW_DRAWN) == 0:
+			drew.emit((b["node"] as Node3D).global_position + Vector3(0.0, DRAW_UP_M, 0.0))   # the string pulled back (the first rows only note it)
+
+		b["more"] = more_now
 		b["held"] = int(held[i])
 		MotionBuffer.push_row(b, positions[i], yaws[i], times[i], float(_clock["off"]), INF)   # no pause guessing: a standing player's reports keep coming
 
@@ -493,6 +500,27 @@ static func left_in(rig: Node3D, number: int, lit: bool, item_table, made_by) ->
 		HeldItem.third_fist_on(model, Color(HeldItem.THIRD_SKIN.r * tint.r, HeldItem.THIRD_SKIN.g * tint.g, HeldItem.THIRD_SKIN.b * tint.b))
 
 	return [model, kind]
+
+
+# Where other players carry a burning torch or lantern (the more byte's lit flag, the left or right hand's kind), within `max_m` of `from`,
+# nearest first: [[point, "torch" or "lantern"], ...] (flame_sounds.gd others: the flame heard at their hand). Look only, a few bodies.
+func flames_near(from: Vector3, max_m: float) -> Array:
+	var out: Array = []
+
+	for peer in _bodies:
+		var b: Dictionary = _bodies[peer]
+
+		if (int(b.get("more", 0)) & MORE_LIT) == 0 or not (b.get("node") is Node3D):
+			continue
+
+		var kind: String = "lantern" if "lantern" in [str(b.get("left_kind", "")), str(b.get("held_kind", ""))] else "torch"
+		var at: Vector3 = (b["node"] as Node3D).global_position + Vector3(0.0, DRAW_UP_M, 0.0)
+
+		if at.distance_to(from) <= max_m:
+			out.append([at, kind])
+
+	out.sort_custom(func(p: Array, q: Array) -> bool: return (p[0] as Vector3).distance_squared_to(from) < (q[0] as Vector3).distance_squared_to(from))
+	return out
 
 
 # Only the LIT_MOST nearest other players' torches and lanterns cast light (once a frame, a few bodies at most).

@@ -955,7 +955,9 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					anim = player.get_animation(anim_name)
 					_model_note(kind, "role %s loops %s from %.3f to %.3f s" % [str(key), anim_name, float(loop_spec[0]), float(loop_spec[1])])
 
-				_fit_clip_units(player, anim, kind, anim_name)
+				if not _fit_clip_units(player, anim, kind, anim_name):
+					refused[refuse_as] = true
+					continue
 
 				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
@@ -1029,7 +1031,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					continue
 
 				var idle_anim: Animation = player.get_animation(idle_full)
-				_fit_clip_units(player, idle_anim, kind, idle_full)
+				if not _fit_clip_units(player, idle_anim, kind, idle_full):
+					continue
 
 				var idle_h: float = _clip_height(player, idle_anim, rig)
 
@@ -1485,18 +1488,18 @@ const UNIT_FIT_MAX := 1500.0   # a clip further off its skeleton than this is no
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
 # played as they are, every bone falls into the body. The middle ratio of rest length to the clip's first key over the
 # position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it; beyond UNIT_FIT_MAX the clip is
-# broken, not in other units, and keeps only its turns. Once per clip.
+# broken, not in other units: false, and the caller does not use it. Once per clip.
 
 
-func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> void:
+func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> bool:
 	if anim.has_meta("units_fitted"):
-		return
+		return not anim.has_meta("units_broken")
 
 	anim.set_meta("units_fitted", true)
 	var base: Node = player.get_node_or_null(player.root_node)
 
 	if base == null:
-		return
+		return true
 
 	var ratios: Array = []
 	var tracks: Array = []
@@ -1524,31 +1527,29 @@ func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, ani
 			ratios.append(rest_len / key_len)
 
 	if ratios.size() < 3:
-		return
+		return true
 
 	ratios.sort()
 	var k: float = float(ratios[int(ratios.size() * 0.5)])
 
 	if k > 0.2 and k < 5.0:
-		return
+		return true
 
 	# No real unit is a thousand times off (centimetres, inches, millimetres are 100, 39, 1000): a clip whose positions are nearly all
-	# zero (the elephant's hit clips, about a millionth of the skeleton: Lane A tall check, 23 Nov 2026) is played with its turns only,
-	# each bone at its rest position, instead of being blown up to four times the elephant's height.
+	# zero (the elephant's hit clips, about a millionth of the skeleton) is broken. Scaled up it stood four times the elephant's height
+	# (Lane A tall check, 23 Nov 2026); played with its turns only it crumpled the elephant into a ball floating a body-height up (Lane A
+	# one-shot check of #1712). It is not used.
 	if k > UNIT_FIT_MAX or k < 1.0 / UNIT_FIT_MAX:
-		tracks.reverse()
-
-		for t in tracks:
-			anim.remove_track(t)
-
-		_model_note(kind, "clip %s bone positions about x%.0f off the skeleton: its positions are left out, its turns kept" % [anim_name, k])
-		return
+		anim.set_meta("units_broken", true)
+		_model_note(kind, "clip %s bone positions about x%.0f off the skeleton: broken, not used" % [anim_name, k])
+		return false
 
 	for t in tracks:
 		for i in anim.track_get_key_count(t):
 			anim.track_set_key_value(t, i, (anim.track_get_key_value(t, i) as Vector3) * k)
 
 	_model_note(kind, "clip %s bone positions rescaled x%.4f to the skeleton" % [anim_name, k])
+	return true
 
 
 # Some clips carry the animal forward themselves (root motion). In the WildMesh files the travel sits on the RigRoot node above
