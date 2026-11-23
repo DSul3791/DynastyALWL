@@ -30,6 +30,8 @@ func _initialize() -> void:
 	check(fit.call(Vector2i(1920, 1080), Vector2i(1366, 728)) == Vector2i(1294, 728), "1920x1080 on a 1366x768 screen (taskbar 40 px) shrinks to the biggest 16:9 that fits (got %s)" % str(fit.call(Vector2i(1920, 1080), Vector2i(1366, 728))))
 	check(fit.call(Vector2i(1920, 1080), Vector2i(2560, 1400)) == Vector2i(1920, 1080), "a window that fits keeps its chosen size")
 	check(fit.call(Vector2i(1600, 900), Vector2i(3440, 1400)) == Vector2i(1600, 900), "an ultrawide screen keeps the chosen size")
+	check(fit.call(Vector2i(1920, 1080), Vector2i(1366, 698)) == Vector2i(1240, 698) and fit.call(Vector2i(1920, 1080), Vector2i(1000, 1400)) == Vector2i(1000, 562), "the limiting side is exactly the room, height or width (got %s, %s)" % [str(fit.call(Vector2i(1920, 1080), Vector2i(1366, 698))), str(fit.call(Vector2i(1920, 1080), Vector2i(1000, 1400)))])
+	check(FileAccess.get_file_as_string("res://src/client/game_menu.gd").contains("DisplaySettingsScript.MOUSE_LOOK_MAX, DisplaySettingsScript.MOUSE_LOOK_MIN)"), "the sensitivity slider stops at 10 percent, so its label never shows a value the game does not use")
 	check(fit.call(Vector2i(1920, 1080), Vector2i.ZERO) == Vector2i(1920, 1080), "no screen size known: the chosen size")
 	# Mouse sensitivity is saved, read back and kept in range.
 	var temp: String = "user://test_display_settings.cfg"

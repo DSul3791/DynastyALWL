@@ -4157,7 +4157,9 @@ func _report_display(prefix: String = "") -> void:
 		text += " (window %dx%d). The game runs inside the editor, which owns the window: it cannot be resized or made fullscreen from here, only the 3D size changes. To change the real window size, resize the Game tab or turn embedding off (Project > Run without embedding)." % [win.x, win.y]
 	elif display.fullscreen:
 		text += " in a fullscreen windowed screen of %dx%d." % [win.x, win.y]
-	elif win != display.size():
+	elif display.fitted != Vector2i.ZERO and display.fitted != display.size() and win == display.fitted:
+		text += ", window %dx%d: the chosen %s is larger than this screen, so the window was fitted to it." % [win.x, win.y, display.size_text()]
+	elif win != (display.fitted if display.fitted != Vector2i.ZERO else display.size()):
 		text += ". The system kept the window at %dx%d (asked for %s)." % [win.x, win.y, display.size_text()]
 	else:
 		text += ", window %dx%d." % [win.x, win.y]
@@ -5159,7 +5161,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock and photo.active:
-		photo.orbit(event.relative.x, event.relative.y)   # the camera swings round the character; the character does not turn
+		photo.orbit(event.relative.x * display.mouse_look, event.relative.y * display.mouse_look)   # the camera swings round the character; the character does not turn
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
 		photo.zoom(event.button_index == MOUSE_BUTTON_WHEEL_DOWN)
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and spyglass.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):

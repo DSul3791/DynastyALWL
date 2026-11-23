@@ -39,6 +39,7 @@ static var reduce_motion: bool = false   # Esc > Settings > Gameplay, Reduce mot
 var mouse_look: float = 1.0              # Esc > Settings > Gameplay, Mouse sensitivity: times the base turn rate (MOUSE_LOOK_MIN to MOUSE_LOOK_MAX)
 const MOUSE_LOOK_MIN := 0.1
 const MOUSE_LOOK_MAX := 3.0
+var fitted: Vector2i = Vector2i.ZERO      # the window size apply() last asked for (the chosen size, or smaller to fit the screen)
 var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (pitch black under rock without a light) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
 
@@ -156,8 +157,12 @@ static func fit_window(want: Vector2i, room: Vector2i) -> Vector2i:
 	if room.x <= 0 or room.y <= 0 or (want.x <= room.x and want.y <= room.y):
 		return want
 
-	var scale: float = minf(float(room.x) / float(want.x), float(room.y) / float(want.y))
-	return Vector2i(maxi(floori(float(want.x) * scale), 1), maxi(floori(float(want.y) * scale), 1))
+	if room.x * want.y <= room.y * want.x:   # the width limits: whole numbers, so the limiting side is exactly the room
+		@warning_ignore("integer_division")
+		return Vector2i(room.x, maxi(room.x * want.y / want.x, 1))
+
+	@warning_ignore("integer_division")
+	return Vector2i(maxi(room.y * want.x / want.y, 1), room.y)
 
 
 func size() -> Vector2i:
@@ -197,7 +202,9 @@ func apply(window: Window, keep_current: bool = false) -> void:
 	window.mode = Window.MODE_WINDOWED
 	# A window never larger than the screen's usable area (the 1366x768 floor with the 1920x1080 default would hang off the screen): the
 	# chosen size, else the biggest 16:9 size that fits. The 3D picture keeps the chosen size (render_size) and is scaled to it.
-	window.size = fit_window(size(), DisplayServer.screen_get_usable_rect(window.current_screen).size)
+	var decor: Vector2i = window.get_size_with_decorations() - window.size   # the title bar and borders: the usable area holds them too
+	fitted = fit_window(size(), DisplayServer.screen_get_usable_rect(window.current_screen).size - decor)
+	window.size = fitted
 	# Keep the window on the screen after it grew.
 	var screen: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
 	@warning_ignore("integer_division")
