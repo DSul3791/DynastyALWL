@@ -68,5 +68,27 @@ func _init() -> void:
 	items._split(inv, 0, 1, 1)
 	check(inv.counts[0] == 2 and last().contains("no free slot"), "a split in a full pack is refused and said (\"%s\")" % last())
 
+	# Refusals that were only the refusal sound now say why, once in a while however often the request comes (hands-on screens, 23 Nov 2026).
+	var cues: Array = []
+	items.send_reject = func(_p, reason): cues.append(int(reason))
+	said.clear()
+	items._reject_far(1)
+	items._reject_far(1)
+	items._reject_tool(1, "a shovel")
+	check(cues == [0, 0, 1] and said == ["Too far away: step closer.", "That needs a shovel in your hand."], "a far or tool refusal says why once, the sound every time (said %s, sounds %s)" % [str(said), str(cues)])
+	items._refusal_said[1]["Too far away: step closer."] -= items.HANDS_FULL_SAY_GAP_MS
+	items._reject_far(1)
+	check(said.size() == 3 and said[2] == "Too far away: step closer.", "after the gap it is said again")
+	var src_lines: PackedStringArray = FileAccess.get_file_as_string("res://src/stream/server_items.gd").split("\n")
+	var bare: int = 0
+
+	for i in src_lines.size():
+		if src_lines[i].strip_edges() in ["_reject(peer, 0)", "_reject(peer, 1)"] and not "\n".join(src_lines.slice(maxi(i - 5, 0), i)).contains("_say"):
+			bare += 1
+
+	check(bare == 0, "no out-of-reach or wrong-tool refusal is the sound alone (%d found)" % bare)
+	var src: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")
+	check(src.contains('_say(peer, "Nothing goes back in here: you can only take from it.")'), "a put into remains or a carcass says why")
+
 	print("test_refusal_says: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
