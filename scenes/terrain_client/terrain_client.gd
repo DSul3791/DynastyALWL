@@ -1745,6 +1745,9 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
+	_player_view.stroked.connect(func(at: Vector3) -> void:
+		if sound != null and sound.swim != null:
+			sound.swim.stroke_at(at))   # and their strokes where they swim
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
