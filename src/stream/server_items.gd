@@ -1283,6 +1283,14 @@ func _give_shoulder(peer: int, number: int, count: int, item_inst: Dictionary = 
 
 		return 0
 
+	if _carts.puller_of.has(peer):   # both hands are on the handle: as a log on the shoulder keeps a cart's handle out of reach (server_carts _grab)
+		_say(peer, "Both hands are on the %s: let go of it first." % _carts.noun_for(int(_carts.puller_of[peer])))
+
+		if drop_rest:
+			drop_in_world(number, count, here, 0, 0.0, NAN, NAN, "", item_inst)
+
+		return 0
+
 	var before: Array = _snapshot(inv)
 	var took: int = 1 if _fit(peer, inv, number, 1, item_inst) > 0 and inv.add(number, 1, 0, item_inst) == 0 else 0
 	_send_changes(peer, inv, before)
@@ -15551,6 +15559,19 @@ func _sync_energy(peer: int, force: bool) -> void:
 
 # An energy supplement (vitals.json energy_aids; master s3.16 [D17]): no permanent cost and never refused. Its energy comes at once only
 # when its food group's slot is newly filled or had run out (step "fresh"), so it cannot stand in for sleep.
+# A medicine or energy aid that is also a drink (the herbal teas, vitals.json drink: a cup of water, coordinator ruling for Dave, 23 Nov 2026)
+# adds its millilitres to thirst, up to the cap, beside its cure or energy. True when it added any.
+func _tea_quenches(v: Dictionary, item_id: String) -> bool:
+	var ml: int = VitalsRules.drink_value(item_id, _vitals_cfg)
+	var cap: float = float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400))
+
+	if ml <= 0 or float(v.get("wet", 0.0)) >= cap - 1.0:
+		return false
+
+	v["wet"] = minf(float(v.get("wet", 0.0)) + float(ml), cap)
+	return true
+
+
 func _use_energy_aid(peer: int, inv, slot: int, v: Dictionary, aid: Dictionary, step: Dictionary) -> void:
 	var item_id: String = table.id_of(inv.numbers[slot])
 	_last_eat[peer] = Time.get_ticks_msec()
@@ -15560,6 +15581,9 @@ func _use_energy_aid(peer: int, inv, slot: int, v: Dictionary, aid: Dictionary, 
 		v["energy"] = minf(float(v.get("energy", 100.0)) + float(aid.get("energy", 0)), 100.0)
 	else:
 		_say(peer, "It does not lift you again so soon.")
+
+	if _tea_quenches(v, item_id):   # a herbal tea is a cup of water too
+		_sync_vitals(peer, true)
 
 	_food_apply(peer, item_id, step, false)
 	_sync_energy(peer, true)
@@ -26627,6 +26651,14 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 	if not cure.is_empty():
 		if float(v.get("sick", 0.0)) <= 0.0:
 			if FoodEffects.profile(item_id, _food_cfg).is_empty() or choice == FoodEffects.DECLINE:
+				if _tea_quenches(v, item_id):   # a cup of tea is a cup of water: drunk for thirst while well
+					_last_eat[peer] = now
+					_warm_bite(v, item_id)
+					inv.take_from_slot(slot, 1)
+					_sync_vitals(peer, true)
+					_dirty = true
+					return
+
 				_say(peer, "Your health is fine")
 				return
 
@@ -26635,8 +26667,10 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 
 			_last_eat[peer] = now   # a medicinal tea while well: its Beverage effect only (s3.16 [D17]), never refused
 			_warm_bite(v, item_id)
+			_tea_quenches(v, item_id)
 			inv.take_from_slot(slot, 1)
 			_food_apply(peer, item_id, step)
+			_sync_vitals(peer, true)
 			return
 
 		if _food_asked(peer, ask_slot, item_id, step):
@@ -26653,11 +26687,16 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 			_say(peer, str(_sick_cfg.get("say_too_soon", "")))
 
 		_warm_bite(v, item_id)
+		var quenched: bool = _tea_quenches(v, item_id)
 		_last_dose[peer] = now
 		inv.take_from_slot(slot, 1)
 		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0 * strength, 0.0)
 		_say(peer, str(_sick_cfg.get("say_medicine", "")))
 		_sync_sick(peer, true)
+
+		if quenched:
+			_sync_vitals(peer, true)   # the thirst bar shows the tea's water now
+
 		_food_apply(peer, item_id, step)
 		_dirty = true
 		return
