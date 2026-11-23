@@ -88,7 +88,7 @@ func _init() -> void:
 	var stop: Array = []
 	MotionBuffer.push(stop, Vector3(0, 0, 0), 0.0, 60.0, 0.25)
 	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.25, 0.25)
-	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # stood_ms
+	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # a standing row: the send time (protocol 153)
 	check(absf((MotionBuffer.at(stop, 60.75)[0] as Vector3).x - 2.5) < 0.001, "a stopped runner stays where it stopped (%.2f)" % (MotionBuffer.at(stop, 60.75)[0] as Vector3).x)
 
 	# Repeated rows the way the client gets them (gate review of PR #1433): the offset creeps between batches, so the same server ms lands a
@@ -163,5 +163,148 @@ func _init() -> void:
 
 	check(narrowest > 8.5 and widest < 11.5, "an elephant running at 10 m/s is drawn at 8.5 to 11.5 m/s every frame through a hitch (%.1f to %.1f)" % [narrowest, widest])
 
+	# Over a real connection (Dave 23 Nov 2026, the real server: animals "teleporting and jumping right through us"; docs/design/ANIMAL_NETCODE.md).
+	# The row clock: the interval between batches leaves out holes, a hole raises the delay, lateness raises it fast and lowers it slowly.
+	var clock: Dictionary = MotionBuffer.clock_new()
+	MotionBuffer.clock_note(clock, 10.0, 1000)
+	MotionBuffer.clock_note(clock, 10.25, 1250)
+	check(absf(MotionBuffer.clock_delay(clock) - (float(clock["interval"]) + float(clock["late"]) + 0.05)) < 0.0001, "a steady feed: one interval, the lateness and 0.05 s (%.3f)" % MotionBuffer.clock_delay(clock))
+	var steady: float = MotionBuffer.clock_delay(clock)
+	MotionBuffer.clock_note(clock, 11.0, 2000)   # two batches lost
+	check(absf(float(clock["interval"]) - 0.25) < 0.001 and float(clock["hole"]) > 0.0 and MotionBuffer.clock_delay(clock) > steady, "a hole is not taken for the interval, and it deepens the buffer (%.3f > %.3f)" % [MotionBuffer.clock_delay(clock), steady])
+	MotionBuffer.clock_note(clock, 11.55, 2250)   # this one 0.3 s late
+	check(float(clock["late"]) > 0.29, "a late batch raises the lateness at once (%.3f)" % float(clock["late"]))
+	var late_then: float = float(clock["late"])
+	MotionBuffer.clock_note(clock, 11.5, 2500)
+	check(float(clock["late"]) < late_then and float(clock["late"]) > late_then * 0.9, "and an on-time one lowers it only slowly (%.3f)" % float(clock["late"]))
+	check(MotionBuffer.clock_delay({"interval": 5.0, "hole": 1.0, "late": 5.0}) == MotionBuffer.MAX_DELAY_S and MotionBuffer.clock_delay({"interval": 0.0, "hole": 0.0, "late": 0.0}) == MotionBuffer.MIN_DELAY_S, "the delay stays within %.1f to %.1f s" % [MotionBuffer.MIN_DELAY_S, MotionBuffer.MAX_DELAY_S])
+
+	# smooth: a target that jumps 3 m in a frame is not drawn there at once; a standing body walks the rest at 1 m/s (CATCH_X of the 2 m/s
+	# floor), so it is caught up within 4 s; a 40 m jump is shown at once.
+	var sm: Dictionary = {}
+	MotionBuffer.smooth(sm, Vector3.ZERO, 0.0, 1.0 / 60.0)
+	var first: Vector3 = MotionBuffer.smooth(sm, Vector3(3, 0, 0), 0.0, 1.0 / 60.0)
+	var later: Vector3 = first
+
+	for f in 240:
+		later = MotionBuffer.smooth(sm, Vector3(3, 0, 0), 0.0, 1.0 / 60.0)
+
+	check(first.x < 0.1 and absf(later.x - 3.0) < 0.05, "a 3 m jump of the target: drawn %.2f m on in that frame, %.2f m 4 s later" % [first.x, later.x])
+	check(MotionBuffer.smooth(sm, Vector3(45, 0, 0), 0.0, 1.0 / 60.0).is_equal_approx(Vector3(45, 0, 0)), "a 40 m jump is shown at once")
+
+	# The whole path, as the client gets it from a real server: an animal stepped ten times a second runs 3 s at 10 m/s (turning 40 degrees
+	# either way every 1.2 s), stands 2 s, again; rows every 0.25 s; 40 to 70 ms on the way; a share of the batches lost. The old way (a stand
+	# guessed from arrival gaps, a delay of one arrival gap plus 0.15 s, no smoothing, stood_ms once) jumped over half a metre in a frame
+	# 3 times in 30 s at 10% loss and 9 at 30%; now none, also at 50% (scratch model, same numbers: gdmirror.py).
+	check(_connection_jumps(false, 0.3) >= 3, "the old way at 30%% loss jumps (%d frames over 0.5 m in 30 s)" % _connection_jumps(false, 0.3))
+
+	for loss in [0.0, 0.1, 0.3, 0.5]:
+		check(_connection_jumps(true, loss) == 0, "now at %d%% loss: no frame jumps over half a metre in 30 s (%d)" % [int(loss * 100.0), _connection_jumps(true, loss)])
+
 	print("test_animal_motion_buffer: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)
+
+
+# A small fixed random sequence (the same numbers on every machine).
+func _lcg(state: Array) -> float:
+	state[0] = (int(state[0]) * 1103515245 + 12345) % 2147483648
+	return float(state[0]) / 2147483648.0
+
+
+# Frames (60 a second, over 29 s) in which the drawn body moved more than 0.5 m, for the path above: `fixed` the protocol 153 path (standing
+# rows stamped every send, the row clock, smooth), otherwise the old one; `loss` the share of batches lost.
+func _connection_jumps(fixed: bool, loss: float, seconds: float = 30.0) -> int:
+	var rng: Array = [7]
+	var steps: Array = []   # [ms, position, moving, moved_ms, stood_ms]
+	var pos: Vector3 = Vector3.ZERO
+	var moving: bool = false
+	var moved_ms: int = -1
+	var stood_ms: int = -1
+
+	for k in int(seconds * 10.0) + 1:
+		var t: float = float(k) * 0.1
+		var was: Vector3 = pos
+
+		if k > 0 and fmod(t, 5.0) < 3.0:
+			var hd: float = 0.7 if int(t / 1.2) % 2 == 0 else -0.7
+			pos += Vector3(cos(hd), 0.0, sin(hd))
+
+		if pos != was:
+			moved_ms = k * 100
+			moving = true
+		elif moving:
+			moving = false
+			stood_ms = k * 100
+
+		steps.append([k * 100, pos, moving, moved_ms, stood_ms])
+
+	var arrivals: Array = []   # [local s, send ms, row ms, position]
+	var row_pos: Vector3 = Vector3.INF
+	var row_ms: int = -1
+
+	for j in int(seconds * 4.0):
+		var send_ms: int = 250 * j + 50
+		var st: Array = steps[mini(int(floor(float(send_ms) / 100.0)), steps.size() - 1)]
+
+		if row_pos != st[1]:
+			row_pos = st[1]
+			row_ms = int(st[3]) if int(st[3]) > row_ms else send_ms
+		elif fixed and not bool(st[2]):
+			row_ms = send_ms
+		elif not fixed and int(st[4]) > row_ms:
+			row_ms = int(st[4])
+
+		var lost: float = _lcg(rng)
+		var jitter: float = _lcg(rng)
+
+		if lost >= loss:
+			arrivals.append([500.0 + float(send_ms) / 1000.0 + 0.04 + 0.03 * jitter * jitter, send_ms, row_ms, st[1]])
+
+	arrivals.sort_custom(func(l, r): return float(l[0]) < float(r[0]))
+	var body: Dictionary = {"samples": []}
+	var c: Dictionary = MotionBuffer.clock_new()
+	var gap: float = 0.25
+	var rows_at: float = -1.0
+	var off: float = INF
+	var last_ms: int = -1
+	var i: int = 0
+	var prev: Variant = null
+	var jumps: int = 0
+	var frame: float = 1.0 / 60.0
+
+	for f in int((seconds - 1.0) * 60.0):
+		var now: float = 500.5 + float(f) * frame
+
+		while i < arrivals.size() and float(arrivals[i][0]) <= now:
+			var a: Array = arrivals[i]
+			i += 1
+
+			if fixed:
+				MotionBuffer.clock_note(c, float(a[0]), int(a[1]))
+				MotionBuffer.push_row(body, a[3], 0.0, int(a[2]), float(c["off"]), INF)
+			else:
+				if rows_at >= 0.0:
+					gap = lerpf(gap, clampf(float(a[0]) - rows_at, 0.05, 0.5), 0.2)
+
+				rows_at = float(a[0])
+				off = MotionBuffer.clock_off(off, float(a[0]), int(a[1]), last_ms)
+				last_ms = int(a[1])
+				MotionBuffer.push_row(body, a[3], 0.0, int(a[2]), off, gap)
+
+		if (body["samples"] as Array).is_empty():
+			continue
+
+		var d: Vector3
+
+		if fixed:
+			d = MotionBuffer.smooth(body, MotionBuffer.at(body["samples"], now - MotionBuffer.clock_delay(c))[0], MotionBuffer.speed_of(body["samples"]), frame)
+		else:
+			d = MotionBuffer.at(body["samples"], now - MotionBuffer.delay_s(gap))[0]
+
+		if prev != null and now > 501.5 and d.distance_to(prev) > 0.5:
+			jumps += 1
+
+		prev = d
+
+	return jumps
+

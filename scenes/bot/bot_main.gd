@@ -9,6 +9,13 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 # --work (load tests, 22 Nov 2026): the bot works like an early player. It is given a wooden shovel, a stone axe and plant fibre (the
 # server needs --open-admin), digs with the shovel in hand at the real ground height, queues twine crafts, asks for the trees around it,
 # walks to the nearest and chops it with the axe, then the next. The final line adds how many digs, blows and crafts it sent.
+# --probe-animals (Dave 23 Nov 2026, the real server: animals "teleporting and jumping right through us"; tools/animal_net_probe.sh): the
+# bot draws the animals sent to it through the client's MotionBuffer and prints a PROBE line (src/worldgen/tools/animal_net_probe.gd).
+#   --lag=MS,JITTER_MS,LOSS_PERCENT  its connection goes through an in-process relay with that delay, jitter and loss, both ways
+#   --old-draw                       the drawing before protocol 153 (delay of one arrival gap + 0.15 s, a stand guessed from gaps, no smoothing)
+#   --old-throttle                   ENet's default packet throttle (drops unreliable packets when the ping wobbles) on this connection
+#   --stand-after=S                  stands still after S seconds (animals come near a still player)
+#   --spawn=SP,SP                    (server with --open-admin) places one of each species 15 to 25 m away at the start
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
@@ -21,6 +28,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const FLORA_CHUNK_M := 256.0      # flora_placer chunk_m (no rules override)
 const CRAFT_EVERY_MS := 30000
 const TWINE_RECIPE := 1           # Twine: 3 plant fibre, by hand
+const ProbeScript := preload("res://src/worldgen/tools/animal_net_probe.gd")
 
 var _net
 var _host: String = "127.0.0.1"
@@ -65,6 +73,11 @@ var _gave: bool = false
 var _digs: int = 0
 var _hits: int = 0
 var _crafts: int = 0
+var _probe = null                    # --probe-animals: ProbeScript.Probe
+var _relay = null                    # --lag: ProbeScript.Relay
+var _old_throttle: bool = false
+var _stand_after: float = -1.0
+var _spawn: PackedStringArray = PackedStringArray()
 
 
 func _ready() -> void:
@@ -84,12 +97,32 @@ func _ready() -> void:
 			_dig_every = float(argument.trim_prefix("--dig-every="))
 		elif argument == "--work":
 			_work = true
+		elif argument == "--probe-animals":
+			_probe = ProbeScript.Probe.new()
+		elif argument == "--old-draw":
+			_probe = _probe if _probe != null else ProbeScript.Probe.new()
+			_probe.old_draw = true
+		elif argument == "--old-throttle":
+			_old_throttle = true
+		elif argument.begins_with("--stand-after="):
+			_stand_after = float(argument.trim_prefix("--stand-after="))
+		elif argument.begins_with("--spawn="):
+			_spawn = argument.trim_prefix("--spawn=").split(",", false)
+		elif argument.begins_with("--lag="):
+			var parts: PackedStringArray = argument.trim_prefix("--lag=").split(",")
+			_relay = ProbeScript.Relay.new()
+			_relay.lag_ms = int(parts[0])
+			_relay.jitter_ms = int(parts[1]) if parts.size() > 1 else 0
+			_relay.loss = float(parts[2]) / 100.0 if parts.size() > 2 else 0.0
 
 	_rng.seed = hash(_name)
 	_net = $TerrainNet
 	_net.welcome_received.connect(_on_welcome)
 	_net.blocks_received.connect(_on_blocks)
 	_net.pulse_received.connect(_on_pulse)
+
+	if _probe != null:
+		_net.animals_received.connect(_probe.on_rows)
 
 	if _work:
 		_table = ItemTableScript.load_default()
@@ -115,7 +148,21 @@ func _ready() -> void:
 		print("BOT %s: the join handshake failed (%s)" % [_name, "dropped" if _auth.heard else "the server never answered it: another build?"])
 		_finish())
 
-	if peer.create_client(_host, _port) != OK:
+	var host: String = _host
+	var port: int = _port
+
+	if _relay != null:
+		Engine.max_fps = 250   # the relay is polled each frame: 4 ms is its finest step
+		port = _port + 1000 + _rng.randi_range(0, 400)
+
+		if not _relay.start(port, _host, _port):
+			print("BOT %s: cannot start the lag relay on %d" % [_name, port])
+			get_tree().quit(1)
+			return
+
+		host = "127.0.0.1"
+
+	if peer.create_client(host, port) != OK:
 		print("BOT %s: cannot connect" % _name)
 		get_tree().quit(1)
 		return
@@ -123,6 +170,9 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(func():
 		NetSettings.apply(peer.get_peer(1))
+
+		if _old_throttle:
+			peer.get_peer(1).throttle_configure(5000, 2, 2)   # ENet's defaults; ENet tells the server's end too
 		_net.hello.rpc_id(1, "loadbot_" + _name, BuildStamp.stamped_build())   # 8 to 64 characters (server_items _valid_key): "bot_b1" was refused, so no bot was ever a player
 		_net.my_look.rpc_id(1, "Bot " + _name, "", ""))   # protocol 151: players see a bot as a plain body with its name
 	multiplayer.server_disconnected.connect(func():
@@ -135,6 +185,13 @@ func _on_welcome(info: Dictionary) -> void:
 	_welcome_msec = Time.get_ticks_msec()
 	_joined_msec = _welcome_msec
 	_position = Vector3(info.get("spawn", Vector3.ZERO)) + Vector3(_rng.randf_range(-6.0, 6.0), 0.0, _rng.randf_range(-6.0, 6.0))
+
+	if _old_throttle:
+		(multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1).throttle_configure(5000, 2, 2)   # again, after the server set its own
+
+	for sp in _spawn:
+		var bearing: float = _rng.randf() * TAU
+		_net.admin_place.rpc_id(1, "animal", _position + Vector3(cos(bearing), 0.0, sin(bearing)) * _rng.randf_range(15.0, 25.0), sp)
 	_next_dig_msec = _welcome_msec + int(_dig_every * 1000.0) if _dig_every > 0.0 else 0
 
 
@@ -166,6 +223,12 @@ func _on_blocks(keys: PackedInt32Array, payloads: Array) -> void:
 func _process(delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 
+	if _relay != null:
+		_relay.poll()
+
+	if _probe != null:
+		_probe.tick(delta)
+
 	if _welcome_msec == 0:
 		if now - _started_msec > 60000:
 			print("BOT %s: no welcome in 60 s" % _name)
@@ -193,6 +256,7 @@ func _process(delta: float) -> void:
 		_heading_until = t + 1.0
 
 	var near_tree: bool = not _target.is_empty() and Vector2(_position.x - _target[2].x, _position.z - _target[2].z).length() < 2.0
+	near_tree = near_tree or (_stand_after >= 0.0 and t >= _stand_after)   # --stand-after: still from then on
 	_position += Vector3.ZERO if near_tree else Vector3(cos(_heading), 0.0, sin(_heading)) * 3.2 * delta
 	var block: Vector3i = Vector3i(int(floor(_position.x / BLOCK_M)), int(floor(_position.y / BLOCK_M)), int(floor(_position.z / BLOCK_M)))
 
@@ -332,6 +396,12 @@ func _finish() -> void:
 	var p95: int = int(_latencies[mini(int(count * 0.95), count - 1)]) if count > 0 else -1
 	print("BOT %s: welcome %d ms after start; pulses %d, worst heartbeat gap %d ms, gaps over 500 ms %d; blocks %d (%d KB), asked %d, still unanswered %d, block wait median %d ms p95 %d ms worst %d ms" % [
 		_name, _welcome_msec - _started_msec, _pulses, _worst_gap_ms, _gaps_over_500, _blocks, int(_bytes / 1024.0), _blocks + _asked.size(), _asked.size(), median, p95, int(_latencies[count - 1]) if count > 0 else -1])
+
+	if _probe != null:
+		print("%s (%s)" % [_probe.summary(), _name])
+
+	if _relay != null:
+		print("RELAY %s: lag %d ms, jitter %d ms, loss %.0f%%: passed %d packets, dropped %d" % [_name, _relay.lag_ms, _relay.jitter_ms, _relay.loss * 100.0, _relay.passed, _relay.dropped])
 
 	if _work:
 		print("BOT %s: work sent: digs %d, axe blows %d, twine crafts %d; trees seen %d, given up %d; pack %s" % [_name, _digs, _hits, _crafts, _trees.size(), _tried.size(), _pack_summary()])

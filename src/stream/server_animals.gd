@@ -6,6 +6,7 @@ extends RefCounted
 # shared Steering module with NPCs. Ticks by distance to the nearest player (10 / 3 / 0.5 Hz), so far animals cost almost nothing.
 
 const Steering := preload("res://src/shared/steering.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near an animal comes to a player (keep_off_players)
 const WolvesScript := preload("res://src/stream/server_wolves.gd")
 const BigGameScript := preload("res://src/stream/server_big_game.gd")
 const ThievesScript := preload("res://src/stream/server_thieves.gd")
@@ -740,6 +741,31 @@ func walk_step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: C
 	return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross)
 
 
+# After a step from `was`: an animal that came nearer a player than its contact distance (data/animals/contact.json) is put back on that
+# circle round the player, on its own side, so it stops at the player or slides round them, never through (Dave 23 Nov 2026, the real
+# server: animals were "jumping right through us"). A step that takes it away is left alone (one already too near walks out). `players`:
+# their feet, or the wolves' player infos ({pos}). Cost: one distance per player. Returns whether it was moved.
+func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
+	if a.has("fly") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)) or int(a.get("state", 0)) == HIDDEN:
+		return false
+
+	var m: float = AnimalContact.contact_m(str(a["sp"]))
+	var kept: bool = false
+
+	for p in players:
+		var at: Vector3 = p if p is Vector3 else (p as Dictionary)["pos"]
+		var now_d: float = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length()
+
+		if now_d < m and now_d < Vector2(was.x - at.x, was.z - at.z).length():
+			a["pos"] = AnimalContact.keep_off(a["pos"], at, m, was)
+			kept = true
+
+	if kept and Vector2(a["pos"].x - was.x, a["pos"].z - was.z).length() < 0.05:
+		a["pos"] = was   # held at the player: it stands there, not a few centimetres to and fro
+
+	return kept
+
+
 # A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
 # the ground as it is now, so one dug out from under drops and one buried under a fill climbs onto it (Dave 19 Nov 2026 play test). Animals in
 # the air, on a perch, in a burrow, in a cave or on water keep their height. Cost: one pass over the animals and a ground read for each one there.
@@ -962,11 +988,13 @@ func tick(delta: float) -> void:
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
 
 		if animals.has(id) and a["pos"] != was:
+			keep_off_players(a, was, players)   # never into a player's body (Dave 23 Nov 2026: "jumping right through us")
+
+		if animals.has(id) and a["pos"] != was:
 			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline
 			a["moving"] = true
-		elif bool(a.get("moving", false)):
-			a["moving"] = false
-			a["stood_ms"] = Time.get_ticks_msec()   # the first step it stood still: sent once, so the client stops it there instead of carrying it on
+		else:
+			a["moving"] = false   # standing: rows_near stamps its row with the send time
 
 		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
@@ -2019,14 +2047,16 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			# Field 5 (protocol 147): the server milliseconds it reached this position: its step's time (tick), or now for a move made
+			# Field 5 (protocol 147): the server milliseconds it was at this position: its step's time (tick), or now for a move made
 			# elsewhere (the pack brain, a companion). The client draws each animal on these times, not on when the rows came (Dave 21 Nov
-			# 2026 play test: "animals are still teleporting and not actually running").
+			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 153 (Dave 23 Nov 2026, the real server):
+			# a standing animal's row carries the send time, every send, so the client knows it stood until just before it moved. It used to
+			# guess a stand from a gap in arrivals, and over the internet a lost batch looks the same: the animal stood, then jumped.
 			if a.get("row_pos") != a["pos"]:
 				a["row_pos"] = a["pos"]
 				a["row_ms"] = int(a["moved_ms"]) if int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) else Time.get_ticks_msec()
-			elif int(a.get("stood_ms", -1)) > int(a["row_ms"]):
-				a["row_ms"] = int(a["stood_ms"])   # still here at that later moment: the client's last leg has no length, so it stops dead
+			elif not bool(a.get("moving", false)):
+				a["row_ms"] = Time.get_ticks_msec()
 
 			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), _wire_state(a), int(a["row_ms"])]
 

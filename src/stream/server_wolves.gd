@@ -328,16 +328,15 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
 
 
-# The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and the
-# first think it stood (stood_ms), so rows_near sends the server's move times and the client draws a steady trot that stops dead.
+# The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and
+# whether it moved this think (moving), so rows_near sends the server's move times, and a standing wolf's row the send time (protocol 153),
+# and the client draws a steady trot that stops dead.
 func pace(m: Dictionary, now_ms: int) -> void:
-	if m["pos"] != m.get("paced_pos"):
+	m["moving"] = m["pos"] != m.get("paced_pos")
+
+	if bool(m["moving"]):
 		m["paced_pos"] = m["pos"]
 		m["moved_ms"] = now_ms
-		m["paced_moving"] = true
-	elif bool(m.get("paced_moving", false)):
-		m["paced_moving"] = false
-		m["stood_ms"] = now_ms
 
 
 # A player's dog within reach comes first (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md: wolves go for the dog); otherwise the nearest deer or moose.
@@ -401,8 +400,12 @@ func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) 
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:
+		var was: Vector3 = m["pos"]
 		m["pos"] = r["pos"]
 		m["heading"] = r["heading"]
+
+		if host.keep_off_players(m, was, infos) and m["pos"] == was:
+			m["moving"] = false   # up against the player: it stands there and bites, not running on the spot (Dave 23 Nov 2026)
 
 	return bool(r["arrived"])
 
@@ -991,8 +994,12 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:
+		var was: Vector3 = m["pos"]
 		m["pos"] = r["pos"]
 		m["heading"] = r["heading"]
+
+		if host.keep_off_players(m, was, infos) and m["pos"] == was:
+			m["moving"] = false   # up against the player: it stands there and bites, not running on the spot (Dave 23 Nov 2026)
 
 
 # The den guard: the pack stands between the den and the player for warn_s (circling, growling); a player who backs out past guard_m

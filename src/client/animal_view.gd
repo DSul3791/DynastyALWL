@@ -12,6 +12,7 @@ const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a body comes to the player (data/animals/contact.json)
 const AnimalGait := preload("res://src/client/animal_gait.gd")   # which leg clip and how fast, smoothed (Dave 21 Nov 2026: no running without moving the feet)
 const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
 const LIE := 19        # lying down to rest: a companion at heel, or a wild grazer bedded down (protocol 148)
@@ -19,6 +20,7 @@ const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown 
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
+const CHARGE := 11                    # server_big_game.CHARGE: a locked charge (AHEAD_STATES)
 const DRINK := 21                     # server_animals.DRINK: standing at the bank drinking (docs/design/animals_at_water_server.md)
 const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
@@ -35,13 +37,15 @@ const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "d
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
+# Drawn at the present, not a delay behind (Dave 23 Nov 2026: "battle was almost impossible"): warn, charge, recover and the jaw-pop. A charge's
+# line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
+# player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
+const AHEAD_STATES := [10, 11, 12, 16]
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
-var _rows_at: float = -1.0       # seconds the last rows came (Time ticks)
-var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
-var _clock_off: float = INF      # local seconds minus server seconds, the smallest seen (the fastest delivery): MotionBuffer.clock_off
-var _server_ms: int = -1         # the server clock on the last batch
+var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
+var player_at: Callable          # () -> Vector3: the local player's feet, so a charge is never drawn inside them (AnimalContact.keep_off); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
@@ -391,13 +395,7 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-
-	if _rows_at >= 0.0:
-		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
-
-	_rows_at = now_s
-	_clock_off = MotionBuffer.clock_off(_clock_off, now_s, server_ms, _server_ms)
-	_server_ms = server_ms
+	MotionBuffer.clock_note(_clock, now_s, server_ms)
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -434,7 +432,9 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
-		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), _clock_off, _gap)   # when the server moved it, on this clock; a repeat is skipped
+		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 153 a standing animal's
+		# row carries the send time, so every leg between two points is one the animal really made.
+		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), float(_clock["off"]), INF)
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()
@@ -574,7 +574,10 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_t += delta
-	var drawn_at: float = float(Time.get_ticks_usec()) / 1.0e6 - MotionBuffer.delay_s(_gap)
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
+	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
+	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -585,8 +588,10 @@ func _process_body(delta: float) -> void:
 			state = 10
 
 		var before: Vector3 = node.position
-		var drawn: Array = MotionBuffer.at(b["samples"], drawn_at)
-		node.position = drawn[0]
+		var ahead: bool = int(b["state"]) in AHEAD_STATES
+		var drawn: Array = MotionBuffer.at(b["samples"], present, MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else MotionBuffer.at(b["samples"], drawn_at)   # only a charge carries on; the others stand
+		var spot: Vector3 = AnimalContact.keep_off(drawn[0], me, AnimalContact.contact_m(str(b["kind"])), before) if ahead else drawn[0]   # a charge carried on stops at the player, as the server's does
+		node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_of(b["samples"]), delta)
 		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
