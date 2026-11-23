@@ -1890,6 +1890,9 @@ var load_failures: Array = []
 
 
 func save() -> void:
+	if _dir != "" and not _dirty and load_failures.is_empty() and not _water_kind.is_empty():
+		_dirty = _water_tanks_save() != _tanks_written   # a tank's litres moved (rain, a pump, a pipe) and nothing else changed (restart drill 23 Nov 2026)
+
 	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
 
@@ -1914,7 +1917,8 @@ func save() -> void:
 	_save_vitals()
 	_save_characters()
 	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
+	_tanks_written = _water_tanks_save()
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _tanks_written, "wells": _wells_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
 	_save_item_files(_item_job())
@@ -18863,6 +18867,7 @@ var _water_kind: Dictionary = {}        # item id -> structure kind of a piece i
 var _water_dirty: bool = false
 var _water_at_s: float = -1.0           # real second of the last solve
 var _water_next_s: float = INF          # the network's next event, real seconds
+var _tanks_written: Dictionary = {}      # save(): the tanks' litres as last written (a change alone makes the next save write)
 var _water_tanks_saved: Dictionary = {} # crops.json "tanks": position key -> litres, read at load
 var _wells_saved: Dictionary = {}       # crops.json "wells": position key -> [litres, game second], read at load
 var _well_store: Dictionary = {}        # item id of a well with a daily yield -> [litres it held, game second then]
