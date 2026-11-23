@@ -186,6 +186,31 @@ func _client() -> void:
 		var clip: String = str(body["rig"].current())
 		check(clip in ["walk", "jog", "walk_torch", "jog_torch"], "walking plays a gait clip (%s)" % clip)
 
+	# Tester report #7 (23 Nov 2026): other players mat the grass. The first pass marks the start; after a walk the points run along the way,
+	# at the feet, no more than TRAIL_STEP_M apart (up to TRAIL_MOST), and none beyond the reach.
+	check(view.trail_points(node.position, 60.0).is_empty(), "the first trail pass only marks where the player is")
+	var trail_from: Vector3 = node.position
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(6.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2000]))
+	var walk_until: int = Time.get_ticks_msec() + 900
+
+	while Time.get_ticks_msec() < walk_until:
+		await process_frame
+
+	check(node.position.x - trail_from.x > 0.5, "the body walked on")
+	check(view.trail_points(node.position + Vector3(1000.0, 0.0, 0.0), 60.0).is_empty(), "nothing is stamped beyond the reach")
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(8.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2600]))
+	var walk_more: int = Time.get_ticks_msec() + 900
+
+	while Time.get_ticks_msec() < walk_more:
+		await process_frame
+
+	var before_x: float = float((view._bodies[7]["trail_at"] as Vector3).x)
+	var spots: Array = view.trail_points(node.position, 60.0)
+	var feet_y: float = node.position.y - 0.9
+	check(not spots.is_empty() and spots.size() <= PlayerViewScript.TRAIL_MOST, "a walk leaves trail points (%d)" % spots.size())
+	check(spots.all(func(p): return absf(float(p.y) - feet_y) < 0.01 and float(p.x) > before_x - 0.01), "the points are at the feet, along the way walked")
+	check(spots.size() < 2 or absf(float(spots[1].x) - float(spots[0].x)) <= PlayerViewScript.TRAIL_STEP_M + 0.01, "no more than TRAIL_STEP_M between points")
+
 	view.on_rows(PackedInt32Array(), PackedVector3Array(), PackedFloat32Array(), PackedByteArray(), PackedInt32Array(), PackedInt32Array())
 	check(view.drawn_count() == 0, "a player out of range is removed")
 	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([2 | PlayerViewScript.SWIM]), PackedInt32Array([0]), PackedInt32Array([t0 + 3000]))

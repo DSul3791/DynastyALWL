@@ -97,6 +97,49 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 			_drop(peer)
 
 
+# Where the drawn players walked since the last call (tester report #7, 23 Nov 2026: "Grass doesn't mat down" under other players): points
+# along each one's way from where it was last asked, TRAIL_STEP_M apart (at most TRAIL_MOST a player, so a runner leaves an unbroken
+# trail at the client's 0.3 s pass), at the feet, for those within max_m of `from`. Nothing for a swimmer. Look only, client only: it reads
+# the positions the players rows already bring, no network or server work.
+const TRAIL_STEP_M := 0.8
+const TRAIL_MOST := 4
+const TRAIL_RADIUS_M := 0.8         # grass_trample.gd RADIUS_M, the player's own footprint
+const TRAIL_JUMP_M := 8.0           # farther in one pass (a snap, a respawn): only the new spot, no line across
+
+
+func trail_points(from: Vector3, max_m: float) -> Array:
+	var out: Array = []
+
+	for peer in _bodies:
+		var b: Dictionary = _bodies[peer]
+		var feet: Vector3 = (b["node"] as Node3D).position + Vector3(0.0, (b["rig"] as Node3D).position.y, 0.0)
+		if not b.has("trail_at"):
+			b["trail_at"] = feet   # the first pass only marks where it starts
+			continue
+
+		var last: Vector3 = b["trail_at"]
+		var d: float = Vector2(feet.x - last.x, feet.z - last.z).length()
+
+		if d < 0.5:
+			continue
+
+		b["trail_at"] = feet
+
+		if (int(b["state"]) & SWIM) != 0 or from.distance_to(feet) > max_m:
+			continue
+
+		if d > TRAIL_JUMP_M:
+			out.append(feet)
+			continue
+
+		var n: int = mini(ceili(d / TRAIL_STEP_M), TRAIL_MOST)
+
+		for i in range(1, n + 1):
+			out.append(last.lerp(feet, float(i) / float(n)))
+
+	return out
+
+
 func drawn_count() -> int:
 	return _bodies.size()
 
