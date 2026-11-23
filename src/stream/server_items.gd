@@ -13974,21 +13974,32 @@ func _may_take_down(peer: int, it: Dictionary) -> bool:
 	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
 
 
-# The builders of the foundation a building piece stands on: the foundations with the highest top at or below its foot (a stacked one: only
-# the slab it is on) whose footprint holds it across the ground (a wall on the edge between two: both; a roof panel or corner by its eaves,
-# BASE_EAVES_M over the edge). A piece on the ground beside a foundation stands on none. Anyone may build on a foundation, and its owner may
-# take down what others built there (coordinator 23 Nov 2026: a stranger cannot wall you in for good). Owners saved as "" are left out.
-const BASE_EAVES_M := 1.0
+# The builders of the foundation a building piece stands on. A wall, ceiling, door or other piece: the foundations with the highest top at or
+# below its foot (a stacked one: only the slab it is on) whose footprint holds it across the ground (BASE_EDGE_M; a wall on the edge between
+# two: both). A roof panel or corner: the owners of what it rests on (_rests_on: the wall tops, ceiling edges or panel ends it snaps to),
+# however far its eaves reach out, so a stranger's eave cannot pin your walls, and a neighbour's eave near your edge is not yours. A piece on the
+# ground beside a foundation stands on none. Anyone may build on a foundation, and its owner may take down what others built there
+# (coordinator 23 Nov 2026: a stranger cannot wall you in for good). Owners saved as "" are left out.
 const BASE_EDGE_M := 0.1
+const BASE_ROOF_DEPTH := 6   # a chain of panels this long is followed down to its walls
 
 
-func _base_owners_of(it: Dictionary) -> Array:
+func _base_owners_of(it: Dictionary, depth: int = 0) -> Array:
 	var def_it: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
 
-	if not bool(def_it.get("piece", false)):
+	if not bool(def_it.get("piece", false)) or depth > BASE_ROOF_DEPTH:
 		return []
 
-	var margin: float = BASE_EAVES_M if str(def_it.get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND] else BASE_EDGE_M
+	if str(def_it.get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]:
+		var from: Array = []
+
+		for rid in _rests_on(it):
+			for o in _base_owners_of(_items[rid], depth + 1):
+				if not from.has(o):
+					from.append(o)
+
+		return from
+
 	var best_top: float = -INF
 	var owners: Array = []
 
@@ -14006,7 +14017,7 @@ func _base_owners_of(it: Dictionary) -> Array:
 		var top: float = float(base["pos"].y) + PlacementRules.anchor_top(def)
 		var local: Vector2 = PlacementRules.local_of({"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}, it["pos"])
 
-		if top > float(it["pos"].y) + 0.05 or absf(local.x) > float(def.get("footprint_x", 4.0)) * 0.5 + margin or absf(local.y) > float(def.get("footprint_z", 4.0)) * 0.5 + margin:
+		if top > float(it["pos"].y) + 0.05 or absf(local.x) > float(def.get("footprint_x", 4.0)) * 0.5 + BASE_EDGE_M or absf(local.y) > float(def.get("footprint_z", 4.0)) * 0.5 + BASE_EDGE_M:
 			continue
 
 		if top > best_top + 0.05:
@@ -14017,6 +14028,49 @@ func _base_owners_of(it: Dictionary) -> Array:
 			owners.append(str(base["struct"].get("owner", "")))
 
 	return owners.filter(func(o): return o != "")
+
+
+# The building pieces a placed piece rests on: each one without which it no longer snaps where it stands (as _holds_up asks the other way round),
+# and each one that alone would hold it there.
+func _rests_on(it: Dictionary) -> Array:
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+	var at: Vector2 = Vector2(it["pos"].x, it["pos"].z)
+	var rows: Array = []
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other == it or not other.has("struct") or other["struct"].has("site") or Vector2(other["pos"].x, other["pos"].z).distance_to(at) > HOLDS_UP_SNAP_M:
+			continue
+
+		var odef: Dictionary = _structures.get(str(other["struct"]["kind"]), {})
+
+		if bool(odef.get("foundation", false)) or bool(odef.get("piece", false)):
+			rows.append({"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "id": int(id)})
+
+	var kit: String = str(def.get("kit", ""))
+	var yaw: int = int(round(float(it["struct"].get("yaw", 0.0))))
+	var out: Array = []
+
+	for mode in [0, 1]:
+		var with_all: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, rows, mode)
+
+		if not bool(with_all[2]) or (with_all[0] as Vector3).distance_to(it["pos"]) > 0.05:
+			continue
+
+		for row in rows:
+			if float(row["pos"].y) > float(it["pos"].y) + 0.05:
+				continue   # nothing above it holds it up
+
+			var without: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, rows.filter(func(r): return r != row), mode)
+			var only: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, [row], mode)
+
+			if not bool(without[2]) or (without[0] as Vector3).distance_to(it["pos"]) > 0.05 or (bool(only[2]) and (only[0] as Vector3).distance_to(it["pos"]) <= 0.05):
+				out.append(int(row["id"]))   # it needs this one, or this one alone holds it (a panel on two walls rests on both)
+
+		break
+
+	return out
 
 
 # The builder of the doorway frame a door hangs in ("" for a frame saved before owners, "-" when no frame is within DOOR_TAKEN_M).

@@ -284,3 +284,24 @@ func _two_builders(items) -> void:
 	check(far_wall.size() == 1 and not items._may_take_down(1, items._items[far_wall[0]]) and items._may_take_down(3, items._items[far_wall[0]]), "on the neighbour's foundation that abuts it, only the neighbour may take player 2's wall down")
 	check(shared.size() == 1 and items._may_take_down(1, items._items[shared[0]]) and items._may_take_down(3, items._items[shared[0]]), "a wall on the edge the two foundations share may be taken down by either owner")
 
+	# Eaves: player 1's own wall on their foundation's north edge, player 2 hangs two panels out over the edge, one on the other's end. Player 1
+	# owns both, the outer one 5 m out (they rest on player 1's foundation through the wall), so a stranger's eave can never pin player 1's wall.
+	var home := Vector3(160.0, GROUND, 140.0)
+	put(items, "wood_foundation_kit", home, 0)
+	put(items, "wall_section_kit", Vector3(home.x + 1.0, floor_y, home.z - 2.0), 0)
+	var own_wall: Array = pieces_at(items, "wall_section", home).filter(func(w): return str(items._items[w]["struct"]["owner"]) == "shelterwalk01")
+	items.report_position(2, home + Vector3(1.0, 0.3, -3.0))
+	items.place_piece(2, "roof_section_kit", Vector3(home.x + 1.0, floor_y + 2.4, home.z - 2.1), 0, 0)   # rising from the wall top, outward
+	var eave: Array = pieces_at(items, "roof_section", home + Vector3(0.0, 0.0, -2.0)).filter(func(r): return float(items._items[r]["pos"].z) < home.z - 2.0)
+	var eave2: Array = []
+
+	if eave.size() == 1:
+		var high: Vector3 = items._items[eave[0]]["pos"] + Vector3(0.0, 1.0, -1.0)   # its high end, 3 m out from the foundation's middle
+		items.report_position(2, Vector3(high.x, GROUND, high.z - 1.0))
+		items.place_piece(2, "roof_section_kit", high + Vector3(0.0, 0.0, -0.1), 0, 0)
+		eave2 = pieces_at(items, "roof_section", home + Vector3(0.0, 0.0, -5.0)).filter(func(r): return float(items._items[r]["pos"].z) < float(items._items[eave[0]]["pos"].z) - 1.0)
+
+	check(own_wall.size() == 1 and eave.size() == 1 and eave2.size() == 1, "player 2 hangs two panels out from player 1's wall, one going on from the other's end (%s; %s)" % [str(said.slice(-1)), str(eave2.map(func(r): return items._items[r]["pos"]))])
+
+	if eave.size() == 1 and eave2.size() == 1:
+		check(items._may_take_down(1, items._items[eave[0]]) and items._may_take_down(1, items._items[eave2[0]]), "the foundation's owner may take down both (the outer rests on the inner, the inner on their wall)")
