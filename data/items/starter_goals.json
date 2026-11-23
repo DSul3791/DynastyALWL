@@ -169,7 +169,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
+			"hint": "Hold your hammer, press R and pick Wooden - Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
 			"after": [
 				"hammer"
 			],
