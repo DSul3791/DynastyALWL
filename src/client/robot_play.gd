@@ -197,7 +197,7 @@ func _hook() -> void:
 		_lowest_health = mini(_lowest_health, int(health)))
 	client.multiplayer.server_disconnected.connect(_on_lost)
 	client.net.died_received.connect(func(cause, spawn):
-		if str(cause) == "passed out":   # the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
+		if str(cause) == "passed out" or str(cause) == "rescued":   # rescued from a cave's rock, or the cold's pass-out (server_items.gd _cold_pass_out): moved to a rescue spot, no death
 			_woke_at = spawn
 			FreezeWatchScript.printer.line("ROBOT %s step passed out: moved to %s" % [robot_name, str(spawn)])
 			return

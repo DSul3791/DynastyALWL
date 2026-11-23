@@ -503,6 +503,7 @@ func _ready() -> void:
 	items.weather_at = _weather_here   # the weather over the spot itself (its row and height), as its player's client works it out
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
+	items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos)   # a player stuck in a cave's rock goes to the nearest campfire (Dave 23 Nov 2026)
 	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
@@ -3069,11 +3070,14 @@ func _tunnel_tick() -> void:
 		for victim in collapse["victims"]:
 			var was: Variant = items.position_of(int(victim))
 			var above: Vector3 = items.respawn_point
+			var fire: Array = _cave_rescue(was) if was != null else []   # dug out and carried to the nearest campfire (Dave 23 Nov 2026)
 
-			if was != null:   # the top of the ground (a fill on it counts) or of the water over it, never inside rock or under a lake
+			if not fire.is_empty():
+				above = fire[0][0]
+			elif was != null:   # no fire out of the rock: the top of the ground (a fill on it counts) or of the water over it, never inside rock or under a lake
 				above = Vector3(was.x, ItemsScript.dug_out_height(float(generator.surface_height(was.x, was.z)), float(animals.ground_height.call(was.x, was.z)), float(_water_at(Vector3(was.x, 0.0, was.z))[0])), was.z)
 
-			if not items.survive_cave_in(int(victim), above):   # death.json stop_at_1: dug out onto the ground above, health 1
+			if not items.survive_cave_in(int(victim), above, not fire.is_empty()):   # death.json stop_at_1: dug out onto the ground above, health 1
 				items.kill(int(victim), "cave-in")
 
 		for fill in collapse["fills"]:
@@ -4227,6 +4231,12 @@ func _rescue_spots(near: Vector3) -> Array:
 	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
 	var out: Array = []
 
+	if _under_rock(near):   # passed out in a cave or tunnel: to the nearest campfire out of the rock (Dave 23 Nov 2026), else as below
+		var fire: Array = _cave_rescue(near)
+
+		if not fire.is_empty():
+			return fire
+
 	for tribe in tribes.tribes():
 		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
 		var at: Dictionary = camp.get("fire", {})   # only a camp with a fire: a cave mouth alone has no warmth to wake in
@@ -4265,6 +4275,39 @@ func _rescue_spots(near: Vector3) -> Array:
 	return [] if best.is_empty() else [[_rescue_ground(best[0]), best[1]]]
 
 
+# Under rock: in a generated cave (_in_cave), or with more than CAVE_ROOF_M of ground over it as dug and filled (a dug tunnel; an open pit is not).
+func _under_rock(p: Vector3) -> bool:
+	if _in_cave(p):
+		return true
+
+	var top: float = float(animals.ground_height.call(p.x, p.z)) if animals != null and animals.ground_height.is_valid() else NAN
+	return not is_nan(top) and top - p.y > CAVE_ROOF_M
+
+
+# A player rescued in a cave or tunnel (Dave 23 Nov 2026: "if you are in a cave and end up getting rescued they should deposit you at the
+# nearest civilization and for these purposes that means campfire for now"): the nearest campfire that is not itself under rock, any owner's,
+# lit or not, the town's and the goblin and bandit camps' fires included, set down off_fire_m off it inside its warmth as every wake spot
+# (_rescue_ground). [[spot, "campfire" | "town" | "goblin" | "bandit"]], or [] when there is no fire out of the rock (the caller's own place stands).
+func _cave_rescue(near: Vector3) -> Array:
+	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
+	var fires: Array = items.campfires()
+
+	for tribe in tribes.tribes():
+		var at: Dictionary = ((tribes.tribes()[tribe] as Dictionary).get("camp", {}) as Dictionary).get("fire", {})
+
+		if at.has("x"):
+			fires.append([Vector3(float(at["x"]), NAN, float(at.get("z", 0.0))), "goblin"])
+
+	for cell in bandits.sites:
+		var site: Dictionary = bandits.sites[cell]
+
+		if int(site.get("stage", 0)) >= int(bandits.CAMP):
+			fires.append([Vector3(float(site.get("x", 0.0)), NAN, float(site.get("z", 0.0))), "bandit"])
+
+	var best: Array = ItemsScript.nearest_fire_out_of_rock(fires, near, func(p: Vector3) -> bool: return _under_rock(p), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)))
+	return [] if best.is_empty() else [[_rescue_ground(Vector2(best[0].x + off_m, best[0].z)), best[1]]]
+
+
 # A step off a tree or wet ground stays within search_m (warmth.json pass_out wake_search_m) of the spot, so the player still wakes in the fire's warmth.
 func _rescue_ground(at: Vector2) -> Vector3:
 	var search_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("wake_search_m", 1.5))
@@ -4275,7 +4318,8 @@ func _rescue_ground(at: Vector2) -> Vector3:
 
 	if clear == at and not SpawnPointScript._trunk_free(at, trunks, 1.3):
 		clear = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at)   # a thicket round the fire: out of a tree first, the warmth second
-	return Vector3(clear.x, maxf(generator.surface_height(clear.x, clear.y), 0.0) + 2.0, clear.y)
+	var edited: float = float(animals.ground_height.call(clear.x, clear.y)) if animals != null and animals.ground_height.is_valid() else NAN
+	return Vector3(clear.x, ItemsScript.dug_out_height(float(generator.surface_height(clear.x, clear.y)), edited, NAN), clear.y)   # 2 m over the ground, a fill on it too
 
 
 func _resource_dangers() -> Array:
