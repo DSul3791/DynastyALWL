@@ -3,7 +3,8 @@ extends RefCounted
 # Water kind for fishing (plan B, design/FISH_AND_FISHING_PLAN.md): water_kind_at(x, z) answers {"kind": brook | river | lake | pond |
 # sea_shallow | sea_mid | sea_deep, "depth": metres of water} or kind "" where there is no water (land is never water).
 # It shares the land-type map's baked class numbers and wet depth (LandType.BAKED_*, WET_M) instead of a second classifier. Pure function over
-# a probe: `probe.call(x, z)` -> [water surface (NAN dry), ground height, baked water_class]. Read only; dug or filled ground and rising water
+# a probe: `probe.call(x, z)` -> [water surface (NAN dry), ground height, baked water_class] and, optionally, whether ground below sea level
+# there is joined to the open sea (fog_ground.gd: a fen hollow cut off from it is not the sea; without it all ground at or under 0 m is). Read only; dug or filled ground and rising water
 # are respected because the probe reads the live hooks, and an answer is kept for cache_ttl_s so a school module can ask every second.
 
 const LandType := preload("res://src/water/land_type.gd")
@@ -79,7 +80,7 @@ func _classify(key: Vector2i, step: float) -> Dictionary:
 
 	var baked: int = int(at[2])
 
-	if baked == SEA_BAKED or float(at[1]) <= 0.0:
+	if baked == SEA_BAKED or (float(at[1]) <= 0.0 and (at.size() < 4 or bool(at[3]))):
 		var kind: String = "sea_shallow" if depth < float(_value("sea_shallow_max_m", 5.0)) else ("sea_mid" if depth < float(_value("sea_mid_max_m", 30.0)) else "sea_deep")
 		return {"kind": kind, "depth": depth}
 

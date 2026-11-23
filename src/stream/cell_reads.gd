@@ -11,8 +11,8 @@ const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
 
 
 # {"ground": (x, z) -> height, "water_near": (pos, reach) -> bool, "water_depth_at": (pos) -> metres, "ore_near": (pos, reach, names, depth) -> ore}
-# for the tile under (x, z). `water_live` may be null (no running water yet): the depth is then 0, as _water_at gives.
-static func bound(generator, water_live, x: float, z: float) -> Dictionary:
+# for the tile under (x, z). `water_live` may be null (no running water yet): the depth is then 0, as _water_at gives. `cut_off` as water_at's.
+static func bound(generator, water_live, x: float, z: float, cut_off: Callable = Callable()) -> Dictionary:
 	var tile: Vector2i = generator.tile_of(x, z)
 	var data = generator.get_tile(tile)
 	var water_data = water_live.data_of(tile) if water_live != null else null
@@ -29,7 +29,7 @@ static func bound(generator, water_live, x: float, z: float) -> Dictionary:
 		var ground_y: float = generator.surface_height_on(tile_for.call(pos.x, pos.z), pos.x, pos.z)
 		var surface: float = NAN
 
-		if ground_y <= 0.0:
+		if ground_y <= 0.0 and not (cut_off.is_valid() and bool(cut_off.call(pos.x, pos.z))):
 			surface = 0.0
 		elif water_live != null:
 			var sim: PackedFloat32Array = own_water.sim_snapshot() if own_water != null else PackedFloat32Array()
@@ -44,11 +44,13 @@ static func bound(generator, water_live, x: float, z: float) -> Dictionary:
 
 # [water surface or NAN, ground] at a position, on its tile `data` and the running water's tile `water_data` (terrain_server._water_at reads
 # through here; bound()'s depth writes the same out): the sea at 0 over ground at or under 0, else the live sim's level, NAN with no sim (or no running water at all, has_live false).
-static func water_at(generator, data, water_data, has_live: bool, position: Vector3) -> Array:
+# `cut_off` (x, z) -> bool, optional: true where ground below sea level is cut off from the open sea (fog_ground.gd under_land, the fen
+# flats, Lane A 22 Nov 2026); there it is not the sea, and the live sim's level stands instead, as on land.
+static func water_at(generator, data, water_data, has_live: bool, position: Vector3, cut_off: Callable = Callable()) -> Array:
 	var ground: float = generator.surface_height_on(data, position.x, position.z)
 	var surface: float = NAN
 
-	if ground <= 0.0:
+	if ground <= 0.0 and not (cut_off.is_valid() and bool(cut_off.call(position.x, position.z))):
 		surface = 0.0
 	elif has_live:
 		var sim: PackedFloat32Array = water_data.sim_snapshot() if water_data != null else PackedFloat32Array()

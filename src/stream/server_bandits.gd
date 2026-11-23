@@ -421,6 +421,8 @@ func load_file() -> void:
 	dormant.clear()
 	stash_left.clear()
 
+	ItemsScript.restore_missing(_path)
+
 	if _path == "" or not FileAccess.file_exists(_path):
 		return
 

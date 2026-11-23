@@ -616,6 +616,9 @@ func save() -> void:
 
 
 func load_records() -> void:
+	if store_dir != "":
+		ItemsScript.restore_missing(store_dir + "/" + FILE)
+
 	if store_dir == "" or not FileAccess.file_exists(store_dir + "/" + FILE):
 		return
 

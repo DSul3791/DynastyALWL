@@ -47,6 +47,8 @@ Each step has a hard time limit that closes whatever it started:
 5. `compose stop`: the server must save and exit 0 inside the 90 s grace. Then `compose down -v` removes the test container and its volume.
 6. Uninstall silently. The install folder and the uninstall entry must be gone.
 
+Every game start also FAILs when Windows logged an Application Error for that install's Dynasty.exe while it ran (a crash, including one in the engine's teardown). The cold play ends with `OS.kill`, so its exit code is always 0: it is judged by that event check and by its log reaching the game's `EXIT:` line. The two short starts quit through the engine, so a non-zero exit still FAILs them.
+
 Docker steps have time limits too. A test container or install left by a cut-off run is removed at the next run. The `docker load` also tags the image `dynasty-server:latest` on that PC, as `make_release.ps1` already did. `-NoServer` skips steps 3 to 5. Logs are in `..\dynasty_export\build-<N>\first_run\`; record the driver lines, the ground ready line and the longest FREEZE with the run.
 
 On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then `docker load -i dynasty-server-build-<N>.tar` and `docker compose -f compose.yaml up -d` (SERVER.md has admin keys, password and ports).

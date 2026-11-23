@@ -4432,7 +4432,7 @@ func _under_land(p: Vector3) -> bool:
 	return weather_look != null and weather_look.fog_ground.under_land(p.x, p.z)
 
 
-# The sea plane is not drawn under the island, so a tunnel below 0 m shows no sheet of sea across it: the window's ground ("low", the
+# The sea plane is not drawn under the island, so a tunnel below 0 m (or a fen flat below 0 m cut off from the sea) shows no sheet of sea across it: the window's ground ("sea_low", the
 # lowest within 64 m) goes to the sea shader as a small texture (water_material.gd land_low), made again only when a new window comes.
 var _sea_land_grid: Dictionary = {}
 
@@ -4449,7 +4449,7 @@ func _mask_sea_under_land() -> void:
 		return
 
 	var n: int = int(_sea_land_grid["n"])
-	var low: PackedFloat32Array = _sea_land_grid["low"]
+	var low: PackedFloat32Array = _sea_land_grid["sea_low"]
 	material.set_shader_parameter("land_low", ImageTexture.create_from_image(Image.create_from_data(n, n, false, Image.FORMAT_RF, low.to_byte_array())))
 	material.set_shader_parameter("land_origin", _sea_land_grid["origin"])
 	material.set_shader_parameter("land_size_m", float(n) * FogGroundScript.CELL_M)
@@ -7895,7 +7895,7 @@ func _end_now() -> void:
 		link.close()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()   # the server sees a disconnect now, not a timeout
-	print("EXIT: process ends after exit_tree (exported Windows game)")
+	printerr("EXIT: process ends after exit_tree (exported Windows game)")   # an error-level line: the log file is flushed before the kill (release_first_run.ps1 reads it)
 	OS.kill(OS.get_process_id())   # Windows: TerminateProcess with exit code 0
 
 
