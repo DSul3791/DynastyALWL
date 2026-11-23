@@ -753,7 +753,13 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 	var kept: bool = false
 
 	for p in players:
-		var at: Vector3 = p if p is Vector3 else (p as Dictionary)["pos"]
+		var at: Vector3 = Vector3.INF
+
+		if p is Vector3:
+			at = p
+		else:
+			at = (p as Dictionary)["pos"]
+
 		var now_d: float = Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length()
 
 		if now_d < m and now_d < Vector2(was.x - at.x, was.z - at.z).length():
