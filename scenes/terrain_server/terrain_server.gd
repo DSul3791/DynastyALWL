@@ -147,7 +147,7 @@ var dialogue                           # ServerDialogue: talking to NPCs
 var trade                              # ServerTrade: shops (coins)
 var _npc_sent_ms: Dictionary = {}
 var _animal_sent_ms: Dictionary = {}
-var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
+var _npc_sent: Dictionary = {}         # peer -> hash of the NPC rows last sent
 var _npc_send_t: float = 0.0
 var _pulse_t: float = 0.0
 var _water_updates: int = 0
@@ -3381,6 +3381,8 @@ func _send_npcs(delta: float) -> void:
 			animals.watched[int(watched_id)] = true   # the animal an admin watches through the spyglass keeps living (server_animals tick)
 
 	# Each player is looked at about four times a second, a fifth of them per pass, so the work never lands on one tick.
+	animals.begin_send_pass()   # each animal's row built once this pass, the animals found by grid (docs/design/SERVER_SCALE.md)
+
 	for n in range(_send_round % 5, peers.size(), 5):
 		var peer: int = int(peers[n])
 		var at: Variant = items.position_of(peer)
@@ -3389,13 +3391,13 @@ func _send_npcs(delta: float) -> void:
 			continue
 
 		var rows: Array = npcs.rows_near(at)
-		var signature: String = str(rows)
+		var signature: int = hash(rows)   # not str(rows): turning every player's rows into text 4 times a second was the dearest part (load test 23 Nov 2026)
 
 		# The rows ride an unreliable channel and an idle crowd never changes, so a lost first packet (or one that came before the
 		# client had built its NPC view) was never sent again: Dave's Ctrl+N saw "roster 2, drawn 0". Resend unchanged rows every 2 s.
 		var now_ms: int = Time.get_ticks_msec()
 
-		if _npc_sent.get(peer, "") != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
+		if not _npc_sent.has(peer) or int(_npc_sent[peer]) != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
 			_npc_sent[peer] = signature
 			_npc_sent_ms[peer] = now_ms
 			net.npcs.rpc_id(peer, rows)
@@ -3405,7 +3407,7 @@ func _send_npcs(delta: float) -> void:
 		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
 		var reach: Array = items.spyglass_reach(peer, animals.cfg.get("spyglass", {}))
 		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at)
-		var sig: String = str(beasts)
+		var sig: int = hash(beasts)
 
 		if spy == -1:
 			items.spyglass.erase(peer)
@@ -3413,7 +3415,7 @@ func _send_npcs(delta: float) -> void:
 		elif spy > 0:
 			net.animal_info.rpc_id(peer, spy, animals.info_of(spy))
 
-		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
+		if not _animal_sent.has(peer) or int(_animal_sent[peer]) != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
 			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
@@ -3472,6 +3474,8 @@ func _send_npcs(delta: float) -> void:
 		if int(_far_fires_sent.get(peer, 0)) != far_sig:
 			_far_fires_sent[peer] = far_sig
 			net.far_fires.rpc_id(peer, far_rows[0], far_rows[1])
+
+	animals.end_send_pass()
 
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
