@@ -1054,10 +1054,19 @@ func report_position(peer: int, position: Vector3, velocity: Vector3 = Vector3.Z
 	if _peer_key.has(peer):
 		_heard_ms[peer] = Time.get_ticks_msec()
 
-		if _parked.erase(peer):
-			print("Absent: peer %d is back" % peer)
-
+		var was_parked: bool = _parked.erase(peer)
 		_peer_pos[peer] = position
+
+		if was_parked:
+			print("Absent: peer %d is back" % peer)
+			var open_id: int = int(_chest_viewer.get(peer, 0))
+
+			if open_id > 0 and _items.has(open_id):
+				var open_box = _chest_of(peer, open_id)
+
+				if open_box != null:
+					_push_box(open_id, open_box)   # what the others put in or took out while it was away: its open window shows the truth again
+
 		_peer_move[peer] = [velocity if velocity.is_finite() else Vector3.ZERO, Time.get_ticks_msec()]
 
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
@@ -11771,7 +11780,7 @@ func _flora_of_plant(item_id: String) -> Dictionary:
 
 # Why a bush or tree seed cannot go into the ground at `spot` (its height the ground's), "" when it can.
 func _sapling_refusal(item_id: String, spot: Vector3) -> String:
-	if _season() == "winter":
+	if _season_of(spot) == "winter":
 		return "The ground is frozen hard: nothing can be planted in winter."   # the hoe's list greys it out too (FarmRules.plantable_now)
 
 	var gap: float = PLANT_TREE_GAP_M if tree_seed_species(item_id) != "" else PLANT_BUSH_GAP_M
@@ -14020,6 +14029,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
+
+	for viewer in _chest_viewer.keys():
+		if int(_chest_viewer[viewer]) == id:
+			_chest_viewer.erase(viewer)   # another player who had it open: nothing more is pushed for it (its window closes as the row goes)
 
 	if bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor":
 		_resettle_on(it["pos"], FLOOR_ROWS_REACH_M)   # what lay on it comes down
@@ -20276,6 +20289,18 @@ func _season() -> String:
 	return str(season_now.call()) if season_now.is_valid() else "spring"
 
 
+# The season at a place (Weather.season_at: half a year on across the equator from the starter's hemisphere), else the one calendar season. Sowing,
+# planting and a crop's winter go by the bed's own season (Dave: nothing is based on where spawn is; the hoe's list reads the player's, terrain_client).
+func _season_of(pos: Vector3) -> String:
+	return str(season_at.call(pos)) if season_at.is_valid() else _season()
+
+
+# A bed key's ground position (the _bed_key steps back to metres), for its season.
+func _bed_key_pos(key: String) -> Vector3:
+	var parts: PackedStringArray = key.trim_prefix("b").split(",")
+	return Vector3(float(parts[0]) * BED_SNAP_M, 0.0, float(parts[1]) * BED_SNAP_M) if key.begins_with("b") and parts.size() == 2 else Vector3.ZERO
+
+
 func _bed_at(id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
 	return it if (not it.is_empty() and it.has("struct") and not it["struct"].has("site") and _is_plot_kind(str(it["struct"].get("kind", "")))) else {}   # a blueprint site of a plot is not a bed yet
@@ -22454,7 +22479,7 @@ func _plant_point(peer: int, kind: String, item_id: String, flat: Vector2, grid:
 	var why: String = _sow_refusal(key, item_id)
 
 	if why == "season":
-		why = _season_refusal(item_id)
+		why = _season_refusal(item_id, _bed_key_pos(key))
 
 	if why == "":
 		used[key] = true
@@ -22484,10 +22509,11 @@ func _sow_refusal(key: String, seed_id: String) -> String:
 	if crop_id == "":
 		return "That cannot be sown."
 
-	return "" if FarmRules.plantable_now(_crop_table(), seed_id, "seed", _season()) else "season"   # the hoe's list greys out the same rows (farm_rules.gd)
+	return "" if FarmRules.plantable_now(_crop_table(), seed_id, "seed", _season_of(_bed_key_pos(key))) else "season"   # the hoe's list greys out the same rows (farm_rules.gd)
 
 
-func _season_refusal(seed_id: String) -> String:
+func _season_refusal(seed_id: String, at: Vector3) -> String:
+	var season: String = _season_of(at)
 	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
 	var def: Dictionary = _crop_table().get(crop_id, {})
 	var seasons: Array = FarmRules.sow_seasons(def).filter(func(x): return str(x) != "winter")
@@ -22496,10 +22522,10 @@ func _season_refusal(seed_id: String) -> String:
 	if names.is_empty():
 		return "The ground is frozen hard: %s cannot be sown." % table.in_sentence(str(def.get("name", crop_id)))   # a crop the data sows only in winter
 	var when: String = names[0] if names.size() == 1 else ", ".join(names.slice(0, names.size() - 1)) + " or " + names[names.size() - 1]
-	if _season() == "winter":
+	if season == "winter":
 		return "The ground is frozen hard: nothing can be sown in winter. Sow %s in %s." % [table.in_sentence(str(def.get("name", crop_id))), when]
 
-	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
+	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, season]   # names when it can go in, so a summer start knows to wait or sow another
 
 
 # The crop record of a seed just sown (the seed already taken).
@@ -22649,7 +22675,7 @@ func _crops_tick() -> void:
 
 		while int(crop["day"]) < today:
 			crop["day"] = int(crop["day"]) + 1
-			var winter: bool = _season() == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
+			var winter: bool = _season_of(_bed_key_pos(key)) == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
 
 			if winter:
 				if crop_stage(crop) == 0 and not bool(def.get("overwinters", false)):   # overwinters (data): winter wheat, rye and autumn onions sit out the frost as seedlings and grow on in spring
