@@ -57,8 +57,9 @@ kept as `Caddyfile.before-reports`). The login, the HTTPS certificate and `compo
 ### 3. Check (in a browser)
 
 1. Open https://hannibalshouse.duckdns.org/ and log in. The three boxes show the build number, and the high-score table shows all four testers at 0.
-2. Press **Submit a bug**, fill in a test bug and send it. It should answer "It is on GitHub as issue #N".
-3. Open the link: the issue says it was sent by your login name. Close it on GitHub, then take it off the table:
+2. Press **Submit a bug**, fill in a test bug and send it. It should answer "Thank you, it is in!" with your score, and three
+   buttons: Submit Bug, Suggest Idea, Home. (Dave 23 Nov: no link to GitHub anywhere on the tester pages.)
+3. Open https://github.com/DSul3791/DynastyALWL-QA/issues yourself: the new issue says it was sent by your login name. Close it on GitHub, then take it off the table:
    `sudo docker exec dynasty-reports python /app/reports.py list`, then `sudo docker exec dynasty-reports python /app/reports.py remove <id>`.
 
 ## Later

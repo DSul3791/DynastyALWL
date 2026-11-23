@@ -90,8 +90,7 @@
           li.appendChild(el("span", "tag", r.kind === "bug" ? "BUG" : "IDEA"));
           var t = el("span", "t");
           var title = (r.title || "").replace(/^\[(Bug|Idea)\]\s*/, "");
-          if (r.issue_url) { var a = el("a", "", title); a.href = r.issue_url; a.target = "_blank"; a.rel = "noopener"; t.appendChild(a); }
-          else t.textContent = title + " (on its way)";
+          t.textContent = title;
           li.appendChild(t);
           li.appendChild(el("span", "by", r.user));
           list.appendChild(li);
@@ -126,14 +125,11 @@
         out.className = "result ok";
         out.appendChild(el("strong", "", "Thank you, it is in!"));
         if (j.score) out.appendChild(el("span", "big", "Your score: " + j.score.total));
-        var links = el("div", "note");
-        var again = el("a", "", "Send another"); again.href = location.pathname; links.appendChild(again);
-        links.appendChild(document.createTextNode(" \u00b7 "));
-        var home = el("a", "", "Front page"); home.href = "/"; links.appendChild(home);
-        if (j.issue_url) {
-          links.appendChild(document.createTextNode(" \u00b7 "));
-          var a = el("a", "", "See it on GitHub"); a.href = j.issue_url; a.target = "_blank"; a.rel = "noopener"; links.appendChild(a);
-        }
+        // Dave 23 Nov: three buttons, and no link to GitHub anywhere on the tester pages.
+        var links = el("div", "after");
+        [["Submit Bug", "/bug.html"], ["Suggest Idea", "/idea.html"], ["Home", "/"]].forEach(function (b) {
+          var a = el("a", "button small", b[0]); a.href = b[1]; links.appendChild(a);
+        });
         out.appendChild(links);
         form.hidden = true;
       }).catch(function (e) {
