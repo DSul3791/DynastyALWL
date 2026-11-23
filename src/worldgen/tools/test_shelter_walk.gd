@@ -305,3 +305,25 @@ func _two_builders(items) -> void:
 
 	if eave.size() == 1 and eave2.size() == 1:
 		check(items._may_take_down(1, items._items[eave[0]]) and items._may_take_down(1, items._items[eave2[0]]), "the foundation's owner may take down both (the outer rests on the inner, the inner on their wall)")
+
+	# A ridge between two owners: player 3's foundation abuts player 1's to the north. Player 1's wall stands on player 1's south edge, with
+	# a panel rising north from it to the ridge; player 3's wall stands on the shared edge, with a panel rising south from it to the same ridge.
+	# Player 1's panel rests on player 1's wall alone: player 3 gains nothing over it by building its mate.
+	var south := Vector3(200.0, GROUND, 140.0)
+	put(items, "wood_foundation_kit", south, 0)
+	put(items, "wall_section_kit", Vector3(south.x + 1.0, floor_y, south.z - 2.0), 0)
+	put(items, "roof_section_kit", Vector3(south.x + 1.0, floor_y + 2.4, south.z - 1.9), 180, 0)   # rising north from the wall
+	var p1: Array = pieces_at(items, "roof_section", south).filter(func(r): return str(items._items[r]["struct"]["owner"]) == "shelterwalk01")
+	var north := south + Vector3(0.0, 0.0, 4.0)
+	items.report_position(3, north + Vector3(1.0, 0.0, 3.0))
+	items.place_piece(3, "wood_foundation_kit", north, 0)
+	items.report_position(3, north + Vector3(1.0, 0.3, -1.0))
+	items.place_piece(3, "wall_section_kit", Vector3(north.x + 1.0, floor_y, north.z - 2.0), 0)   # on the shared edge
+	items.report_position(3, south + Vector3(1.0, 0.3, 1.0))
+	items.place_piece(3, "roof_section_kit", Vector3(south.x + 1.0, floor_y + 2.4, south.z + 1.9), 0, 0)   # rising south from it
+	var p3: Array = pieces_at(items, "roof_section", south).filter(func(r): return str(items._items[r]["struct"]["owner"]) == "shelterwalk03")
+	check(p1.size() == 1 and p3.size() == 1 and absf(float(items._items[p1[0]]["pos"].z) - (south.z - 1.0)) < 0.05 and absf(float(items._items[p3[0]]["pos"].z) - (south.z + 1.0)) < 0.05, "two owners' panels meet at a ridge (%s, %s)" % [str(p1.map(func(r): return items._items[r]["pos"])), str(p3.map(func(r): return items._items[r]["pos"]))])
+
+	if p1.size() == 1 and p3.size() == 1:
+		check(not items._may_take_down(3, items._items[p1[0]]), "player 3 may not take down player 1's panel by building its mate")
+		check(items._may_take_down(1, items._items[p3[0]]), "player 3's panel rests on the wall on the shared edge, so player 1 may take it down, as either owner may that wall")

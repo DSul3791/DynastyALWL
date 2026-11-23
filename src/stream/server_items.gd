@@ -13984,7 +13984,7 @@ const BASE_EDGE_M := 0.1
 const BASE_ROOF_DEPTH := 6   # a chain of panels this long is followed down to its walls
 
 
-func _base_owners_of(it: Dictionary, depth: int = 0) -> Array:
+func _base_owners_of(it: Dictionary, depth: int = 0, seen: Dictionary = {}) -> Array:   # seen: the roof pieces already followed (each once)
 	var def_it: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
 
 	if not bool(def_it.get("piece", false)) or depth > BASE_ROOF_DEPTH:
@@ -13992,9 +13992,14 @@ func _base_owners_of(it: Dictionary, depth: int = 0) -> Array:
 
 	if str(def_it.get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]:
 		var from: Array = []
+		var walked: Dictionary = seen if depth > 0 else {}
+		walked[it] = true
 
 		for rid in _rests_on(it):
-			for o in _base_owners_of(_items[rid], depth + 1):
+			if walked.has(_items[rid]):
+				continue
+
+			for o in _base_owners_of(_items[rid], depth + 1, walked):
 				if not from.has(o):
 					from.append(o)
 
@@ -14031,7 +14036,8 @@ func _base_owners_of(it: Dictionary, depth: int = 0) -> Array:
 
 
 # The building pieces a placed piece rests on: each one without which it no longer snaps where it stands (as _holds_up asks the other way round),
-# and each one that alone would hold it there.
+# and each wall, ceiling or foundation that alone would hold it there (never a neighbouring panel that merely meets its end: owners come from
+# walls, floors and foundations, so a mate built on your ridge from a neighbour's wall gives that neighbour nothing).
 func _rests_on(it: Dictionary) -> Array:
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 	var at: Vector2 = Vector2(it["pos"].x, it["pos"].z)
@@ -14065,8 +14071,10 @@ func _rests_on(it: Dictionary) -> Array:
 			var without: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, rows.filter(func(r): return r != row), mode)
 			var only: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, [row], mode)
 
-			if not bool(without[2]) or (without[0] as Vector3).distance_to(it["pos"]) > 0.05 or (bool(only[2]) and (only[0] as Vector3).distance_to(it["pos"]) <= 0.05):
-				out.append(int(row["id"]))   # it needs this one, or this one alone holds it (a panel on two walls rests on both)
+			var roof_row: bool = str(_structures.get(str(_items[int(row["id"])]["struct"]["kind"]), {}).get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]
+
+			if not bool(without[2]) or (without[0] as Vector3).distance_to(it["pos"]) > 0.05 or (not roof_row and bool(only[2]) and (only[0] as Vector3).distance_to(it["pos"]) <= 0.05):
+				out.append(int(row["id"]))   # it needs this one, or this wall or ceiling alone holds it (a panel on two walls rests on both); a panel meeting its end at a ridge only when it needs it
 
 		break
 
