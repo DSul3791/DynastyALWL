@@ -12,6 +12,7 @@ levels, tools and smelting) and the stage model of tools/goal_stage_audit.py (st
     python3 tools/progression_check.py            # the report (markdown) on stdout
     python3 tools/progression_check.py --check    # exit 1 on a hard break: an unknown id, an active row that can never run, a station
                                                   # short of the level asked, a circular need (all 0 on dev 2aa2ea24)
+    python3 tools/progression_check.py --unmarked # exit 1 when an unused material's player text does not say "Nothing uses it yet." (section 11)
 
 Sections:
   1 unknown ids       a recipe, blueprint, smelting job, crop, cooking row or goal names an id no data file defines
@@ -25,6 +26,7 @@ Sections:
   9 stingy yields     a recipe or blueprint needing more of a limited gathered input (a plant's harvest, a carcass part, a seed) than
                       two gathers of its best source give; plentiful inputs (stone, clay, wood, fibre) are effort, not scarcity
  10 farming seasons   every crop has a sowing season and a reachable seed
+ 11 unmarked          section 6 items whose description (what the pack shows) does not end with "Nothing uses it yet."
 """
 import json
 import os
@@ -292,6 +294,20 @@ def unused(r):
     return out
 
 
+NO_USE_MARK = "Nothing uses it yet."   # said in the player's own text (the pack tooltip shows the description) for an item with no use yet
+
+
+def unmarked(r, unused_rows):
+    """Unused reached materials whose player text does not say they have no use yet: a tester who finds one doing nothing would file a bug
+    (coordinator 23 Nov 2026: mark it honestly where the player sees it). Give it a use, or end its description with NO_USE_MARK."""
+    out = []
+    for iid, name, _note in unused_rows:
+        text = str(r.all.get(iid, {}).get("description", "")) or str(r.gathered.get(iid, {}).get("description", ""))
+        if NO_USE_MARK not in text:
+            out.append((iid, name))
+    return out
+
+
 def stage_order(items_stage):
     data = er.read("items.json")["items"]
     out = []
@@ -450,6 +466,12 @@ def main(argv):
     p("\n## 10 Farming")
     for x in sec["farming"]:
         p("- " + x)
+    sec["unmarked"] = unmarked(r, sec["unused"])
+    p("\n## 11 Unused and not marked (no use, and the player's text does not say \"%s\")" % NO_USE_MARK)
+    for iid, name in sec["unmarked"]:
+        p("- `%s` %s" % (iid, name))
+    if "--unmarked" in argv:
+        return 1 if sec["unmarked"] else 0
     hard = len(sec["unknown"]) + len(sec["dead"]) + len(st_bad) + len(sec["circular"])
     return 1 if "--check" in argv and hard else 0
 
