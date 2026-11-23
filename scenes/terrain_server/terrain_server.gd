@@ -1017,6 +1017,7 @@ func _ready() -> void:
 		return feet
 	animals.bandit_camps = bandits
 	animals.big_game.weapon_of = bandits.weapon_of   # a bandit's blow is his weapon's kind (a sword cuts), not a beast's
+	animals.big_game.ping_ms = func(ping_peer): return _ping_ms(int(ping_peer))   # a fair dodge: a goblin's or bandit's blow judged once the player's step has come back
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
@@ -1296,6 +1297,17 @@ func _pool_summary() -> String:
 	var landscape: bool = items != null and items._resource_task != -1
 	return "pool jobs: tile reads %d, undergrowth %d, cover %d, landscape %s; block line sends in progress %d" % [generator._prefetch_tasks.busy() if generator != null else 0,
 		flora._brush_tasks.busy() if flora != null else 0, _cover_tasks.busy(), "on" if landscape else "off", _link.sending() if _link != null else 0]
+
+
+# A peer's round trip in ms as ENet measures it (0 when there is no such peer), for a fair dodge (server_big_game late_s).
+func _ping_ms(peer_id: int) -> int:
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+
+	if enet == null or not _peers.has(peer_id):
+		return 0
+
+	var link: ENetPacketPeer = enet.get_peer(peer_id)
+	return int(link.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)) if link != null else 0
 
 
 # The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
