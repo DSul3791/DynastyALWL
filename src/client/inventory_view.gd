@@ -3825,14 +3825,31 @@ func _size_boulder(entry: Dictionary) -> void:
 
 	# The collider is the drawn rock's hull at its new size (world audit 23 Nov 2026: a sphere of 0.85 x the radius half a radius up stood 0.65 of a
 	# radius above the drawn top, about 1.35 against 0.7, so a player stood on air over every boulder, and its sides were inside the rock at the shins).
-	var hull: PackedVector3Array = _boulder_hull(entry["lump"].mesh as Mesh)
-	var points: PackedVector3Array = PackedVector3Array()
-	points.resize(hull.size())
+	# Rebuilt only when the size changed (a resend or a settle keeps it); a mesh with no hull keeps a sphere at the drawn height.
+	if not (was >= 0.0 and is_equal_approx(was, radius)):
+		var hull: PackedVector3Array = _boulder_hull(entry["lump"].mesh as Mesh)
 
-	for k in hull.size():
-		points[k] = hull[k] * scale + lump_at
+		if hull.is_empty():
+			push_warning("boulder mesh has no convex hull: a sphere collider instead")
+			var ball: SphereShape3D = SphereShape3D.new()
+			ball.radius = radius * 0.6
+			entry["shape"].shape = ball
+			entry["shape"].position = Vector3(0.0, radius * 0.1, 0.0)
+		else:
+			var points: PackedVector3Array = PackedVector3Array()
+			points.resize(hull.size())
 
-	(entry["shape"].shape as ConvexPolygonShape3D).points = points
+			for k in hull.size():
+				points[k] = hull[k] * scale + lump_at
+
+			var convex: ConvexPolygonShape3D = entry["shape"].shape as ConvexPolygonShape3D
+
+			if convex == null:
+				convex = ConvexPolygonShape3D.new()
+				entry["shape"].shape = convex
+				entry["shape"].position = Vector3.ZERO
+
+			convex.points = points
 	lump_node.set_instance_shader_parameter("crack", BoulderWear.crack(int(entry["left"]), int(entry["total"])))   # cracks from the first blow, more and wider as the rock is used up
 	lump_node.set_instance_shader_parameter("crack_scale", 1.0 / unit)
 
