@@ -183,6 +183,7 @@ func _init() -> void:
 	check(Rules.blocked(cfg, "wooden_trellis_kit", Vector3(400.0, 10.0, 400.2), doorway, 0.0) == "", "a trellis against the doorway's wall stands")
 	check(Rules.blocked(cfg, "thatch_scarecrow_kit", Vector3(400.0, 10.0, 400.6), doorway, 0.0) == "", "a scarecrow beside the doorway stands")
 	check(Rules.blocked(cfg, "thatch_doorway_kit", Vector3(400.0, 10.0, 400.0), [{"pos": Vector3(400.0, 10.0, 400.0), "state": 164, "yaw": 0.0}], 0.0) == "overlap", "a doorway put up through a scarecrow is refused")
+	check(Rules.blocked(cfg, "antler_mount_kit", Vector3(400.0, 10.0, 400.1), doorway, 0.0) == "", "an antler mount set into the wall's face stands")
 	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(400.0, 10.0, 410.0), fence, 0.0) == "overlap", "a gate over a fence section is refused")
 	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(401.0, 10.0, 410.0), fence, 0.0) == "overlap", "a gate half over a fence section is refused")
 	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(402.0, 10.0, 410.0), fence, 0.0) == "", "a gate at the end of a fence section stands (a gate in the gap)")

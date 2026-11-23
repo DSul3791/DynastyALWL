@@ -14,6 +14,7 @@ const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes o
 const POT_ATTACH_M := 2.0
 const STATION_HEIGHT_M := 1.6       # PROVISIONAL (PL-3): how tall a station or piece of furniture counts when checked against the walls round it (data height_m wins)
 const SUPPORT_REACH_M := 0.6        # a station aimed this near a floor's top (above or below) stands on that floor
+const WALL_HUNG := ["wall_torch", "torch_sconce", "improved_torch_sconce", "iron_wall_lantern", "antler_mount", "tusk_mount", "sign", "storage_sign"]   # hung on or set into a wall's face: free of _stands_in
 const OVERLAP_SLACK_M := 0.05       # boxes that only touch (a chest on a floor, a bench against a wall) do not clash
 const BED_GAP_M := 0.9              # PROVISIONAL: a bed's or plot's square metre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
 const FLOOR_SKIP := ["attach_to", "needs_base_lift_m", "needs_running_water", "min_water_m", "walkover", "support", "shelter", "water"]   # PROVISIONAL (PL-1): what never stands on a building floor: what hangs on something, the sawmill and water wheel (their own rules), a fish trap, a path or bed in the soil, a mine prop, a lean-to, a well or pump
@@ -973,7 +974,7 @@ static func _parallel(a_deg: float, b_deg: float) -> bool:
 # Whether a thing standing on the ground (`free`: not a piece, not hung on or laid into something) has its middle inside line piece `line`'s room:
 # in the wall's thickness, the doorway's opening or the fence's run, from its foot to its top. Things set against a wall keep their middle outside.
 static func _stands_in(free: Dictionary, free_pos: Vector3, line: Dictionary, line_pos: Vector3, line_yaw: float) -> bool:
-	if bool(free.get("piece", false)) or free.has("attach_to") or free.has("hand_laid") or not _in_line(line):
+	if bool(free.get("piece", false)) or free.has("attach_to") or free.has("hand_laid") or str(free.get("kind", free.get("item", ""))) in WALL_HUNG or not _in_line(line):
 		return false
 
 	var box: Array = _box(line, line_pos, line_yaw)
