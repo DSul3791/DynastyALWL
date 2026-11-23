@@ -37,8 +37,8 @@ const MEAL_ACTS := [Net.ACT_EAT, Net.ACT_DRINK]
 const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Net.ACT_FILL, Net.ACT_TILL, Net.ACT_HIT_SHRUB,
 		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_ICEHOLE, Net.ACT_STRIKE, Net.ACT_REPAIR_STRUCT, Net.ACT_FISH]
 
-var items                          # ServerItems: peer_ids, position_of, stance_of, fainted_of, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
-var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array, left PackedInt32Array, more PackedByteArray)
+var items                          # ServerItems: peer_ids, position_of, stance_of, fainted_of, fishing_float, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
+var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array, left PackedInt32Array, more PackedByteArray, cast PackedInt32Array)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
 var send_flight: Callable          # (to peer, item number, from, velocity, burning): flight_seen (159)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
@@ -230,13 +230,14 @@ func tick(delta: float) -> void:
 				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
 		var left: int = int(items.left_hand_number(peer))
 		var more: int = (MORE_LIT if items.torch_burning(peer) else 0) | ((int(items.hand_flags(peer)) & 15) << MORE_HANDS_SHIFT) | (int(_meals.get(peer, 0)) << MORE_MEAL_SHIFT)
+		var cast: int = cast_code(pos, items.fishing_float(peer))
 		var shown: Array = _shown.get(peer, [])
 
-		if shown.is_empty() or int(shown[0]) != left or int(shown[1]) != more:
-			shown = [left, more, now]
+		if shown.is_empty() or int(shown[0]) != left or int(shown[1]) != more or int(shown[3]) != cast:
+			shown = [left, more, now, cast]
 			_shown[peer] = shown
 
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more]
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more, cast]
 
 	for receiver in at:
 		var pool: Dictionary = heard
@@ -269,6 +270,7 @@ func tick(delta: float) -> void:
 		var times: PackedInt32Array = PackedInt32Array()
 		var lefts: PackedInt32Array = PackedInt32Array()
 		var mores: PackedByteArray = PackedByteArray()
+		var casts: PackedInt32Array = PackedInt32Array()
 
 		for row in rows:
 			var one: Array = info[row[0]]
@@ -279,12 +281,27 @@ func tick(delta: float) -> void:
 			times.append(int(one[3]))
 			lefts.append(int(one[5]))
 			mores.append(int(one[6]))
+			casts.append(int(one[7]))
 
-		send_rows.call(receiver, ids, positions, yaws, states, held, times, lefts, mores)
+		send_rows.call(receiver, ids, positions, yaws, states, held, times, lefts, mores, casts)
 
 	for gone in _sent.keys():
 		if not peers.has(gone):
 			_sent.erase(gone)
+
+
+# A rod's float (`float_at`, INF for none) as one int beside a row at `body`: bit 24 set, then x, y and z from the body in signed 0.12 m
+# steps, 8 bits each (within 15.2 m: a cast lands within the rod's reach, fishing.json reach_m 8, and the angler may walk 6 m before the
+# line is taken in, move_cancel_m). 0 = no line in the water. player_view.gd cast_point reads it back.
+const CAST_ON := 1 << 24
+const CAST_STEP_M := 0.12
+
+static func cast_code(body: Vector3, float_at: Vector3) -> int:
+	if not float_at.is_finite() or not body.is_finite():
+		return 0
+
+	var d: Vector3 = (float_at - body) / CAST_STEP_M
+	return CAST_ON | ((clampi(roundi(d.x), -127, 127) & 255) << 16) | ((clampi(roundi(d.y), -127, 127) & 255) << 8) | (clampi(roundi(d.z), -127, 127) & 255)
 
 
 # The others near `me`, nearest first, at most MAX_ROWS: [[peer, position], ...]. `at` is peer -> position of the players that can be shown.

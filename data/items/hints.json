@@ -57,6 +57,12 @@
 			"text": "Your tree is down. Gather what fell: sticks, leaves, bark and logs."
 		},
 		{
+			"id": "hammer",
+			"trigger": "tree_down",
+			"text": "Craft a Stone - Hammer: 1 stone, 1 stick, 1 twine. You build with it.",
+			"goal": "hammer"
+		},
+		{
 			"id": "kit",
 			"trigger": "6_sticks_16_stones",
 			"text": "Craft a Campfire: 6 sticks and 16 stones."
@@ -132,7 +138,7 @@
 		{
 			"id": "fish",
 			"trigger": "workbench_placed",
-			"text": "Make a fishing rod and fish at the water.",
+			"text": "Catch a fish: jab your spear into shallow water, or make a fishing rod (its hook is carved from a bone).",
 			"goal": "fish"
 		},
 		{
