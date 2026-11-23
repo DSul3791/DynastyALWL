@@ -13,6 +13,8 @@ extends SceneTree
 #   --threads=N      worker threads (default: processors minus one)
 #   --lods=A,B,..    detail levels (default 0-6, every level the client asks for)
 #   --area=X,Z,M     only the M-metre square with corner X,Z (world metres) inside the tiles: for tests and quick looks
+#   --plants=0       ground only (default 1: the trees and plants of every 256 m chunk too, in the pack's flora_pack/ folder,
+#                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped)
 #
 # Only blocks that hold the surface are built, one block above and below it (caves deeper down are still made by the server on first
 # visit). The pack's terrain_version.txt names the terrain version and tile files it was made from; ground_pack.gd's install refuses a
@@ -24,6 +26,8 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PackScript := preload("res://src/stream/ground_pack.gd")
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const FloraPackScript := preload("res://src/stream/flora_pack.gd")
 
 const NINE := ["2_3", "2_4", "2_5", "3_3", "3_4", "3_5", "4_3", "4_4", "4_5"]
 const COLUMNS_PER_TAKE := 32           # columns a worker takes at once
@@ -38,6 +42,11 @@ var _mutex: Mutex = Mutex.new()
 var _columns_done: int = 0
 var _made: int = 0
 var _skipped: int = 0
+var placer
+var _chunks: Array = []                # plant chunks of the tile being built (home coordinates)
+var _chunk_next: int = 0
+var _chunk_done: int = 0
+var _lists: Dictionary = {}            # chunk -> [packed full list, packed trees-only list]
 
 
 func _init() -> void:
@@ -46,6 +55,7 @@ func _init() -> void:
 	var threads: int = maxi(OS.get_processor_count() - 1, 1)
 	var lods: Array = [0, 1, 2, 3, 4, 5, 6]
 	var area: Array = []
+	var plants: bool = true
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tiles="):
@@ -60,6 +70,8 @@ func _init() -> void:
 
 			for part in argument.trim_prefix("--lods=").split(",", false):
 				lods.append(int(part))
+		elif argument == "--plants=0":
+			plants = false
 		elif argument.begins_with("--area="):
 			for part in argument.trim_prefix("--area=").split(",", false):
 				area.append(float(part))
@@ -69,10 +81,10 @@ func _init() -> void:
 		quit(1)
 		return
 
-	quit(_run(tiles, out_dir, threads, lods, area))
+	quit(_run(tiles, out_dir, threads, lods, area, plants))
 
 
-func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array) -> int:
+func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array, plants: bool) -> int:
 	var world_dir: String = "res://worlds/base_world"
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world_dir + "/world.json", errors)
@@ -184,10 +196,125 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array)
 		push_error("prebuild_ground: %d tile reads failed and %d blocks failed the check, so some blocks were not saved; run it again to fill them (no finished note written)" % [generator.failed_tiles, store.bad_blocks])
 		return 1
 
+	if plants:
+		placer = PlacerScript.new()
+		placer.setup(generator, tables, rules)
+		var plants_error: int = _build_plants(tiles, out_dir, threads, area)
+
+		if plants_error != 0:
+			return plants_error
+
 	var info: Dictionary = PackScript.describe(out_dir)
 	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "seconds": snappedf(seconds, 0.1)})
 	print("prebuild_ground: DONE %d blocks made, %d already there, in %.0f s; pack %.1f MB at %s" % [_made, _skipped, seconds, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])
 	return 0
+
+
+# The trees and plants of each tile into flora_pack/tile_X_Z.fpk (flora_pack.gd).
+func _build_plants(tiles: Array, out_dir: String, threads: int, area: Array) -> int:
+	var print_text: String = FloraPackScript.fingerprint(store.tiles_stamp)
+	var folder: String = out_dir + "/" + FloraPackScript.FOLDER
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+	var tile_m: float = generator.tile_size_m
+	var chunk_m: float = placer.chunk_m
+
+	for name in tiles:
+		var parts: PackedStringArray = String(name).split("_")
+		var tile: Vector2i = Vector2i(int(parts[0]), int(parts[1]))
+		var path: String = folder + "/" + FloraPackScript.file_name(tile)
+
+		if FloraPackScript.print_of(path) == print_text:
+			print("prebuild_ground: plants of tile %s already built" % name)
+			continue
+
+		var x0: float = float(tile.x) * tile_m
+		var z0: float = float(tile.y) * tile_m
+		var x1: float = x0 + tile_m
+		var z1: float = z0 + tile_m
+
+		if area.size() == 3:
+			x0 = maxf(x0, area[0])
+			z0 = maxf(z0, area[1])
+			x1 = minf(x1, area[0] + area[2])
+			z1 = minf(z1, area[1] + area[2])
+
+		_chunks = []
+		_lists = {}
+		_chunk_next = 0
+		_chunk_done = 0
+
+		for cz in range(int(floor(z0 / chunk_m)), int(floor((z1 - 0.01) / chunk_m)) + 1):
+			for cx in range(int(floor(x0 / chunk_m)), int(floor((x1 - 0.01) / chunk_m)) + 1):
+				_chunks.append(placer.normalize(Vector2i(cx, cz)))
+
+		var started: int = Time.get_ticks_msec()
+		var last_print: int = started
+		var tasks: Array = []
+
+		for n in range(threads):
+			tasks.append(WorkerThreadPool.add_task(_place_work))
+
+		while true:
+			_mutex.lock()
+			var done: int = _chunk_done
+			_mutex.unlock()
+
+			if done >= _chunks.size():
+				break
+
+			if tasks.all(func(id): return WorkerThreadPool.is_task_completed(id)):
+				_mutex.lock()
+				done = _chunk_done
+				_mutex.unlock()
+
+				if done < _chunks.size():
+					push_error("prebuild_ground: the plant workers stopped with %d of %d chunks of tile %s done (a script error above?)" % [done, _chunks.size(), name])
+					return 1
+
+			var now: int = Time.get_ticks_msec()
+
+			if now - last_print >= 10000:
+				last_print = now
+				var spent_s: float = float(now - started) / 1000.0
+				print("prebuild_ground: plants of tile %s: %d of %d chunks, %.0f s, about %.0f min left" % [name, done, _chunks.size(), spent_s, spent_s / float(maxi(done, 1)) * float(_chunks.size() - done) / 60.0])
+
+			OS.delay_msec(500)
+
+		for id in tasks:
+			WorkerThreadPool.wait_for_task_completion(id)
+
+		if generator.failed_tiles > 0:
+			push_error("prebuild_ground: a tile read failed while placing plants; run it again")
+			return 1
+
+		if not FloraPackScript.write_tile(path, print_text, _lists):
+			push_error("prebuild_ground: cannot write %s" % path)
+			return 1
+
+		var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+		print("prebuild_ground: plants of tile %s: %d chunks in %.0f s, %.1f MB" % [name, _chunks.size(), float(Time.get_ticks_msec() - started) / 1000.0, float(file.get_length()) / 1048576.0])
+		_lists = {}
+
+	return 0
+
+
+func _place_work() -> void:
+	while true:
+		_mutex.lock()
+		var index: int = _chunk_next
+		_chunk_next += 1
+		_mutex.unlock()
+
+		if index >= _chunks.size():
+			return
+
+		var home: Vector2i = _chunks[index]
+		var full: Array = FloraPackScript.pack_list(placer.chunk_items(home, false))
+		var trees: Array = FloraPackScript.pack_list(placer.chunk_items(home, true))
+		_mutex.lock()
+		_lists[home] = [full, trees]
+		_chunk_done += 1
+		_mutex.unlock()
 
 
 func _done_now() -> int:

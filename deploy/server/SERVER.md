@@ -59,9 +59,11 @@ CPUs (coordinator decision D-STALL-1, 22 Nov 2026, from David4 tests): never giv
 Prebuilt ground (Dave 23 Nov 2026: "the server doesnt build anything it just serves the prebuilt stuff up to the clients"; plan in
 docs/design/SERVER_SCALE.md, "Prebuilt ground for the nine tiles"). The ground of chosen tiles is built on a fast PC and installed into
 the store, so the server serves it instead of making it as players walk. Ground not in the pack (caves, other tiles) is still made as
-before. Trees and plants are not in the pack yet.
+before. The pack also holds the tiles' trees and plants (flora_pack/); the server's start line says
+`server flora: prebuilt plants for N chunks in N tiles`, or that a plants file was made from other game files and is not used
+(build the pack again from the same commit as the image).
 1. Build, on the PC, in a clone at the same commit as the server image (the pack must come from the same tiles; the install refuses
-   one that does not). The starter tile takes about 40 minutes and 6-10 GB; a stopped build goes on where it was when run again:
+   one that does not). The starter tile takes about an hour (ground about 40 minutes, plants about 20) and 6-10 GB plus about 0.5 GB of plants; a stopped build goes on where it was when run again:
    `& <godot> --headless --path E:\Software\godotDev\dynasty_release --script res://src/worldgen/tools/prebuild_ground.gd -- --tiles=3_4 --out=E:/Software/godotDev/ground_pack`
    (`--tiles=nine` for all nine tiles, about 6 hours and 55-90 GB; `--threads=N` to leave the PC some room). It ends with a
    `prebuild_ground: DONE` line.

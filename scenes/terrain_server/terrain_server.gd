@@ -80,6 +80,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const FloraPackScript := preload("res://src/stream/flora_pack.gd")   # prebuilt plants (Dave 23 Nov 2026)
 const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
@@ -398,6 +399,14 @@ func _ready() -> void:
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
 	flora.setup(placer, store_dir)
+	var flora_pack = FloraPackScript.new()
+	flora_pack.open(store_dir + "/" + FloraPackScript.FOLDER, FloraPackScript.fingerprint(store.tiles_stamp))
+
+	if flora_pack.chunks() > 0:
+		flora.pack = flora_pack
+
+	if flora_pack.chunks() > 0 or flora_pack.stale > 0:
+		print("server flora: prebuilt plants for %d chunks in %d tiles%s" % [flora_pack.chunks(), flora_pack.tiles, ("; %d tile files were made from other tiles, data or placer code and are not used (build them again)" % flora_pack.stale) if flora_pack.stale > 0 else ""])
 	items = ItemsScript.new()
 	@warning_ignore("confusable_local_declaration")
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)

@@ -33,6 +33,7 @@ const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or tall
 const BRUSH_CHUNKS := 64              # chunks kept in the undergrowth index (oldest dropped first; a dropped one is made again on a worker)
 
 var placer
+var pack = null                             # prebuilt plants (flora_pack.gd), read before the placer; null = none
 var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
 var chunks_made: int = 0
 var layout_cleared: bool = false            # true when setup dropped saved removals because the flora layout changed
@@ -111,7 +112,11 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 		OS.delay_msec(5)
 
 	# Taken untyped: a script error inside the placer returns null, and the key must still be freed or every later asker would wait forever.
-	var got = placer.chunk_items(home, trees_only)
+	var got = pack.items(home, trees_only) if pack != null else null   # prebuilt by the generator (flora_pack.gd); null = not in it
+
+	if got == null:
+		got = placer.chunk_items(home, trees_only)
+
 	var made: Dictionary = got if got is Dictionary else {}
 	_items_mutex.lock()
 
