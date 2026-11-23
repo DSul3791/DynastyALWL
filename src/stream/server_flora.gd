@@ -341,6 +341,9 @@ func _fill_cover(home: Vector2i, crowns: Dictionary) -> void:
 		cover.remove_chunk(_cover_order.pop_front())
 
 
+var season_at: Callable   # (position) -> the season there (Weather.season_at); unset: set_season's one season
+
+
 # The game season, for bare winter broadleaves (Cover.leafless_for; docs/design/cover_by_season_design.md). Cheap to call every tick.
 func set_season(season: String) -> void:
 	var bare: bool = CoverScript.leafless_for(season)
@@ -353,9 +356,14 @@ func set_season(season: String) -> void:
 	_mutex.unlock()
 
 
-# Whether a spot is under a tree's canopy (Cover.at on the server's index).
+# Whether a spot is under a tree's canopy (Cover.at on the server's index). With season_at the broadleaves are bare by the spot's own season
+# (half a year on across the equator), else by set_season's.
 func covered(pos: Vector3) -> bool:
+	var bare_here: int = -1 if not season_at.is_valid() else (1 if CoverScript.leafless_for(str(season_at.call(pos))) else 0)
 	_lock_noting("covered")
+
+	if bare_here >= 0:
+		cover.leafless = bare_here == 1
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
 	return yes

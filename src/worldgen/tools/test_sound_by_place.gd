@@ -126,10 +126,11 @@ func seasons() -> void:
 	check(starter == "summer" and far_side == "winter", "midsummer on the starter's side is midwinter across the equator (%s, %s)" % [starter, far_side])
 	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
 	var here_at: int = client.find("_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z")
-	var amb_at: int = client.find("sound.ambient.set_conditions(game_clock.hour(), season_here)")
-	var crit_at: int = client.find("critters.update(delta, body.global_position, sound.ambient.weights, season_here,")
-	var takes: int = client.find("var season_here: String = _drink_season if _drink_season != \"\" else game_clock.season()")
-	check(here_at > 0 and takes > 0 and amb_at > takes and crit_at > takes, "the ambience and the critters take the season at the player's row (terrain_client)")
+	var amb_at: int = client.find("sound.ambient.set_conditions(game_clock.hour(), here_season)")
+	var crit_at: int = client.find("critters.update(delta, body.global_position, sound.ambient.weights, here_season,")
+	var takes: int = client.find("var here_season: String = season_here()")
+	var helper: bool = client.contains("func season_here() -> String:\n\treturn _drink_season if _drink_season != \"\" else game_clock.season()")
+	check(here_at > 0 and helper and takes > 0 and amb_at > takes and crit_at > takes, "the ambience and the critters take the season at the player's row (terrain_client)")
 	check(not client.contains("sound.ambient.set_conditions(game_clock.hour(), game_clock.season())"), "not the starter calendar's")
 
 
