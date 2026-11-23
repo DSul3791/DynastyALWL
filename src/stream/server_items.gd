@@ -2214,14 +2214,23 @@ func _save_copy(id: int) -> Dictionary:
 	var out: Dictionary = _items[id].duplicate(true)
 
 	if out.has("struct") and _traps != null and _traps.is_kind(str(out["struct"].get("kind", ""))):
-		out["struct"]["trap_state"] = _traps.saved_state(_items[id])
+		out["struct"]["state_json"] = _traps.saved_state(_items[id])
+	elif out.has("struct") and _kept_transient(out["struct"]):
+		var st: Dictionary = out["struct"]
+		out["struct"]["state_json"] = JSON.stringify({"species": str(st.get("species", "")), "blows": int(st.get("blows", 0)), "parts": st.get("parts", null), "snared": bool(st.get("snared", false)), "left": float(out.get("left", CARCASS_LIFE_S))})
 
 	return out
 
 
 # Not saved in an area file: as _world_item_row skips (scatter, trunks and stumps, the showroom, the camp fire, a transient structure).
 static func _not_in_area(it: Dictionary) -> bool:
-	return it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")) or (it.has("struct") and bool(it["struct"].get("transient", false)))
+	return it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")) or (it.has("struct") and bool(it["struct"].get("transient", false)) and not _kept_transient(it["struct"]))
+
+
+# A transient structure that is saved all the same: a carcass, whole or half cut (the coordinator, 23 Nov 2026: a kill or a catch was
+# lost at every restart). Its species, blows, the parts still in it and its time left go in row 24 (_save_copy).
+static func _kept_transient(st: Dictionary) -> bool:
+	return str(st.get("kind", "")) == "carcass"
 
 
 # The hash of what a world item's saved row holds, its countdowns in AREA_STEP_S steps. The live record is changed only for the native hash and put
@@ -2471,14 +2480,14 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 	if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
 		return   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
-	if it.has("struct") and bool(it["struct"].get("transient", false)):
+	if it.has("struct") and bool(it["struct"].get("transient", false)) and not _kept_transient(it["struct"]):
 		return
 
 	if it.has("struct"):
 		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0)), JSON.stringify(it["struct"]["kinds"]) if it["struct"].has("kinds") else ""])
 
-		if it["struct"].has("trap_state"):
-			(items[items.size() - 1] as Array).append(str(it["struct"]["trap_state"]))   # row 24: a set trap's state (server_traps.saved_state)
+		if it["struct"].has("state_json"):
+			(items[items.size() - 1] as Array).append(str(it["struct"]["state_json"]))   # row 24: a set trap's state (server_traps.saved_state) or a carcass's (_save_copy)
 
 		return
 
@@ -3555,7 +3564,7 @@ func _punch(peer: int, direction: Vector3) -> void:
 	_note_work(peer, "")   # a punch tires like any blow (BUG-001)
 
 
-# A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.
+# A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Saved over a restart (_kept_transient), rots in 2 game days.
 func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 	if not _carcass_cfg.get("species", {}).has(species) or not _structures.has("carcass"):
 		return 0
@@ -8244,6 +8253,24 @@ func _load_world_items() -> void:
 
 				if row.size() > 24 and typeof(row[24]) == TYPE_STRING and str(row[24]) != "":
 					_traps.restore_state(entry, str(row[24]))   # its run note, away clock and held catch (laid again by _traps.after_load)
+
+			if str(entry["struct"]["kind"]) == "carcass":
+				var body: Variant = JSON.parse_string(str(row[24])) if row.size() > 24 and typeof(row[24]) == TYPE_STRING else null
+
+				if typeof(body) != TYPE_DICTIONARY or not _carcass_cfg.get("species", {}).has(str(body.get("species", ""))):
+					continue   # a carcass row with nothing to say what it was
+
+				entry["number"] = table.number_of("carcass")
+				entry["left"] = clampf(float(body.get("left", CARCASS_LIFE_S)), 1.0, CARCASS_LIFE_S)
+				entry["struct"]["transient"] = true
+				entry["struct"]["species"] = str(body["species"])
+				entry["struct"]["blows"] = maxi(int(body.get("blows", 0)), 0)
+
+				if typeof(body.get("parts", null)) == TYPE_ARRAY:
+					entry["struct"]["parts"] = (body["parts"] as Array).map(func(p): return [str(p[0]), int(p[1])])
+
+				if bool(body.get("snared", false)):
+					entry["struct"]["snared"] = true
 
 			_load_row_of[_next_id] = row_n
 			_items[_next_id] = entry
@@ -18981,6 +19008,34 @@ func fish_stock(cell: Vector2i) -> int:
 var _schools = null     # server_fish.gd, made when the first cast needs it and the water kind hook is set
 
 
+func _fish_schools():
+	if _schools == null:
+		var has_item: Callable = func(species: String) -> bool: return table.number_of(species) != 0
+		_schools = FishSchoolsScript.new(water_kind_at, has_item, {}, float(_fishing_data().get("cell_m", 128.0)))
+
+	return _schools
+
+
+# The water kind at the first of the point and eight directions at half and full reach that is water ("" when none is).
+func _water_kind_near(pos: Vector3, reach: float) -> String:
+	for k in 17:
+		var at: Vector3 = pos
+
+		if k > 0:
+			if reach <= 0.0:
+				break
+
+			var a: float = float((k - 1) % 8) * TAU / 8.0
+			at = pos + Vector3(cos(a), 0.0, sin(a)) * (reach if k > 8 else reach * 0.5)
+
+		var kind: String = str((water_kind_at.call(at.x, at.z) as Dictionary).get("kind", ""))
+
+		if kind != "":
+			return kind
+
+	return ""
+
+
 # The best school factor for a line or net thrown from `pos` with `reach` m of reach: the stand point and eight directions at half and full reach
 # (the water is somewhere out there, the shore is under the feet). {"factor", "species", "active"}; factor 1.0 and not active when plan C has nothing to say.
 func school_hit(pos: Vector3, reach: float) -> Dictionary:
@@ -18989,10 +19044,7 @@ func school_hit(pos: Vector3, reach: float) -> Dictionary:
 	if not water_kind_at.is_valid():
 		return none
 
-	if _schools == null:
-		var has_item: Callable = func(species: String) -> bool: return table.number_of(species) != 0
-		_schools = FishSchoolsScript.new(water_kind_at, has_item, {}, float(_fishing_data().get("cell_m", 128.0)))
-
+	_fish_schools()
 	var day: int = int(floor(_now_game_s() / 86400.0))
 	var season: String = str(season_now.call()) if season_now.is_valid() else "summer"
 	var stock: Callable = func(cell: Vector2i) -> int: return fish_stock(cell)
@@ -19045,11 +19097,25 @@ func _fish_chance(peer: int, _cell: Vector2i, bait: bool, hit: Dictionary = {}) 
 	return clampf(chance, float(cfg.get("min_chance", 0.02)), float(cfg.get("max_chance", 0.93)))
 
 
-func _fish_species(cell: Vector2i, hit: Dictionary = {}) -> String:
+# The species a catch is. A school the line or net is in or near gives its own; otherwise, when the water kind hook is set, a species that lives in
+# the water at `near` (the first water among the point and eight directions at half and full `reach`, as school_hit looks): fishing outside
+# every school in the sea, a river or a brook gave pond and lake fish (23 Nov 2026, the hunting and fishing loop test). With no hook or no
+# water found, the old stream/pond/lake roll by the cell's position.
+func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3.INF, reach: float = 0.0) -> String:
 	var cfg: Dictionary = _fishing_data()
 
 	if str(hit.get("species", "")) != "":
 		return str(hit["species"])   # the school the line or net is in or near
+
+	if near.is_finite() and water_kind_at.is_valid():
+		var kind: String = _water_kind_near(near, reach)
+
+		if kind != "":
+			var by_water: String = _fish_schools()._species_for(kind, str(season_now.call()) if season_now.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+
+			if by_water != "":
+				return by_water
+
 	var types: Array = cfg.get("types", ["pond"])
 	@warning_ignore("integer_division")
 	var water: String = str(types[(_cell_hash(cell) / 7) % types.size()])
@@ -19211,7 +19277,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 		if fate(peer, "fish", chance):
 			_fish_stock[cell_key][0] = int(_fish_stock[cell_key][0]) - 1
-			var species: String = _fish_species(cell, hit)
+			var species: String = _fish_species(cell, hit, state.get("landed", state.get("spot", Vector3.INF)))
 			_take_in(peer, inv, table.number_of(species), 1)
 			caught.append(table.sentence_name(table.number_of(species)))
 			_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25: first catch of this kind
@@ -19293,7 +19359,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 	if fish_stock(cell) > 0 and fate(peer, "fish", chance):
 		var key: String = "%d,%d" % [cell.x, cell.y]
 		_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-		var species: String = _fish_species(cell)
+		var species: String = _fish_species(cell, {}, at)
 		_take_in(peer, inv, table.number_of(species), 1, 0, pos)
 
 		practice(peer, "fish")
@@ -19469,7 +19535,7 @@ func _fish_trap_roll(pos: Vector3, box, cfg: Dictionary) -> bool:
 	if _fate_rng.randf() >= chance:   # luck-exempt: nobody stands at a trap while it fishes
 		return false
 
-	var number: int = table.number_of(_fish_species(cell))
+	var number: int = table.number_of(_fish_species(cell, {}, pos))
 
 	if number == 0:
 		return false
@@ -19497,7 +19563,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 		return
 
 	_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))})
+	var species: String = _fish_species(cell, {"species": str(state.get("species", ""))}, state.get("spot", Vector3.INF), float(_fishing_data().get("reach_m", 8.0)))
 	_take_in(peer, inv, table.number_of(species), 1)
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
