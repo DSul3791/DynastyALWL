@@ -48,6 +48,7 @@ func _init() -> void:
 	_clearing_camp()
 	_tying_strike()
 	_surrender_kept()
+	_captives_restart()
 	_claimed_horses()
 	_toll_switch()
 	_robbery()
@@ -968,6 +969,148 @@ func _surrender_kept() -> void:
 	animals.damage(int(again["id"]), float(again["hp"]) * 10.0, 9)
 	dropped.clear()
 	check(b.fallen("bandit", at) == cell and dropped == b.gear_of(1).slice(1) and (b.sites[cell]["disarmed"] as Array).is_empty(), "killed, he drops only his clothes (%s)" % str(dropped))
+
+
+# A restart keeps the bandits who gave up (the coordinator, 23 Nov 2026: every restart lost them): one tied and led off, one sitting where he
+# gave up. Each is made again where he was once a player comes near him, given up still and his time to slip free part spent; the tied one
+# waits for his captor (never despawned, his time not running) until that character joins, then follows them. The camp's others come again
+# at their seats, no level made twice. An old file has no captives and loads as ever.
+func _captive_world(dir: String, players: Array, near_at: Array) -> Array:
+	var b: BanditsScript = _sites(dir)
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return near_at
+	animals.setup()
+	animals.traits = false
+
+	for sp in animals.cfg["species"]:
+		animals.cfg["species"][sp]["target_per_player"] = 0
+
+	animals.cfg["wolves"]["cell_share"] = 0.0
+	b.animals = animals
+	animals.bandit_camps = b
+	animals.big_game.player_info = func(): return players
+	b.key_of = func(peer): return {7: "captorkey007", 8: "otherkey008"}.get(int(peer), "")
+	b.lay_camp = func(_camp_key, _camp_fire, _camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at): return [600]
+	b.laid_still = func(_ids): return true
+	b.drop_gear = func(_gear_key, _gear_at): pass
+	b.tell = func(_peer, _text): pass
+	b.guards_at = func(): return []
+	return [b, animals]
+
+
+func _captives_restart() -> void:
+	var dir: String = "user://test_bandit_captives"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	clock[0] = 990000.0
+	var players: Array = []
+	var near_at: Array = []
+	var made: Array = _captive_world(dir, players, near_at)
+	var b: BanditsScript = made[0]
+	var animals = made[1]
+	var c: Dictionary = b.cfg["clearing"]
+	var cell: Vector2i = _cell_with_site(b, 210)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [1, 2, 3], "horses": 0}
+	var camp_near: Vector3 = Vector3(spot.x + 20.0, 50.0, spot.y)
+	b.camp_tick(1.0, [camp_near])
+	var men: Array = animals.animals.values()
+	var tied: Dictionary = men.filter(func(a): return int(a["level"]) == 1)[0]
+	var sitter: Dictionary = men.filter(func(a): return int(a["level"]) == 2)[0]
+	animals.damage(int(tied["id"]), float(tied["hp"]) * 0.9, 7)
+	animals.damage(int(sitter["id"]), float(sitter["hp"]) * 0.9, 7)
+	check(tied.has("gave_up") and sitter.has("gave_up") and b.bind(int(tied["id"]), 7), "two give up; one is tied by player 7")
+	var led_to: Vector3 = Vector3(spot.x + 600.0, 50.0, spot.y)   # led well away from the camp (over spawn_m)
+	tied["pos"] = led_to
+	players.append({"peer": 7, "pos": led_to + Vector3(2.0, 0.0, 0.0)})
+	var sat_at: Vector3 = sitter["pos"]
+	var hurt_hp: float = float(tied["hp"])
+	var spent_s: float = float(c["escape_game_hours"]) * 3600.0 * 0.4
+	clock[0] += spent_s
+	b.save()   # the shutdown save
+	var level3_ids: Array = men.filter(func(a): return int(a["level"]) == 3).map(func(a): return int(a["id"]))
+
+	# The restart: a new server reads the file.
+	players.clear()
+	var players2: Array = []
+	var near2: Array = []
+	made = _captive_world(dir, players2, near2)
+	var b2: BanditsScript = made[0]
+	var animals2 = made[1]
+	var saved: Array = b2.sites.get(cell, {}).get("captives", [])
+	check(saved.size() == 2, "both who gave up are saved (%d)" % saved.size())
+	var row1: Array = saved.filter(func(m): return int(m["level"]) == 1)
+	check(row1.size() == 1 and str(row1[0]["captor"]) == "captorkey007" and absf(float(row1[0]["spent"]) - spent_s) < 2.0 and Vector2(float(row1[0]["x"]), float(row1[0]["z"])).distance_to(Vector2(led_to.x, led_to.z)) < 0.01,
+		"the tied one with his captor's character, where he was led and his time spent (%s)" % str(row1))
+	check(saved.filter(func(m): return int(m["level"]) == 2 and str(m["captor"]) == "").size() == 1, "the sitter, untied")
+	b2.save()
+	check(_sites(dir).sites[cell].get("captives", []).size() == 2, "saved again before anyone comes near: still both")
+
+	# Someone comes to the camp: its others at their seats, the sitter where he sat; the led-off one is far from them and waits unmade.
+	b2.camp_tick(1.0, [camp_near])
+	var at_camp: Array = animals2.animals.values()
+	check(at_camp.size() == 2 and at_camp.filter(func(a): return int(a["level"]) == 3).size() == 1 and at_camp.filter(func(a): return int(a["level"]) == 1).is_empty(),
+		"the camp: its level 3 once and the sitter; no level 1 at a seat (%s)" % str(at_camp.map(func(a): return int(a["level"]))))
+	var sitter2: Dictionary = at_camp.filter(func(a): return int(a["level"]) == 2)[0]
+	check(sitter2.has("gave_up") and not sitter2.has("bound_by") and Vector2(sitter2["pos"].x, sitter2["pos"].z).distance_to(Vector2(sat_at.x, sat_at.z)) < 0.01, "the sitter is made where he sat, given up still")
+	check(at_camp.filter(func(a): return int(a["level"]) == 3 and not a.has("gave_up")).size() == 1, "the level 3 bandit is as before")
+
+	# Player 8 (not the captor) walks by where he was led: he is made there, tied and waiting for his captor.
+	b2.camp_tick(1.0, [camp_near, led_to + Vector3(30.0, 0.0, 0.0)])
+	var tied2: Array = animals2.animals.values().filter(func(a): return int(a["level"]) == 1)
+	check(tied2.size() == 1 and not b2.sites[cell].has("captives"), "the led-off one is made once a player is near him")
+	var t2: Dictionary = tied2[0]
+	check(int(t2.get("bound_by", 0)) == -1 and str(t2.get("bound_key", "")) == "captorkey007" and b2.is_held(t2) and is_equal_approx(float(t2["hp"]), hurt_hp), "tied, waiting for his captor, as hurt as he was")
+	near2.clear()   # everyone walks off: nobody near him
+
+	for n in 8:
+		for t in 4:
+			animals2.tick(0.25)
+
+		b2.step(t2, 0.25)
+		clock[0] += float(c["escape_game_hours"]) * 3600.0 * 0.25
+
+	b2.step(t2, 0.25)   # the server steps him every frame: the last of the time away counted as held too
+	check(animals2.animals.has(int(t2["id"])) and t2.has("bound_by") and Vector2(t2["pos"].x, t2["pos"].z).distance_to(Vector2(led_to.x, led_to.z)) < 0.01, "two game hours with his captor away: he waits, tied where he was, and is not despawned")
+	b2.save()
+	check(_sites(dir).sites[cell].get("captives", []).filter(func(m): return int(m["level"]) == 1 and str(m["captor"]) == "captorkey007").size() == 1, "saved again while he waits: still tied to his captor")
+
+	# The captor joins: he is theirs again and follows; his time to slip free runs on from what was spent.
+	players2.append({"peer": 7, "pos": t2["pos"] + Vector3(6.0, 0.0, 0.0)})
+	b2.captor_joined(7)
+	check(int(t2["bound_by"]) == 7 and not b2.is_held(t2), "the captor joins: tied to them again")
+
+	for n in 40:
+		b2.step(t2, 0.25)
+
+	var lead: float = Vector2(players2[0]["pos"].x - t2["pos"].x, players2[0]["pos"].z - t2["pos"].z).length()
+	check(t2.has("bound_by") and lead <= float(c["follow_m"]) + 0.5, "and he follows them (%.2f m)" % lead)
+	clock[0] += float(c["escape_game_hours"]) * 3600.0 - spent_s - 30.0
+	b2.step(t2, 0.25)
+	check(t2.has("bound_by"), "the time away not counted: tied until his game hour is spent")
+	clock[0] += 60.0
+	b2.step(t2, 0.25)
+	check(not t2.has("bound_by") and not t2.has("bound_key"), "then he slips his bonds as ever")
+
+	# An old file (no captives) loads with none, and the camp is made whole.
+	var old: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/bandit_sites.json"))
+
+	for name in old["sites"]:
+		old["sites"][name].erase("captives")
+
+	var f: FileAccess = FileAccess.open(dir + "/bandit_sites.json", FileAccess.WRITE)
+	f.store_string(JSON.stringify(old))
+	f.close()
+	made = _captive_world(dir, [], [])
+	check(not (made[0] as BanditsScript).sites[cell].has("captives"), "a file from before has no captives")
+	(made[0] as BanditsScript).camp_tick(1.0, [camp_near])
+	check((made[1].animals.values() as Array).size() == 3 and (made[1].animals.values() as Array).all(func(a): return not a.has("gave_up")), "and its camp is made whole, as ever")
+	check(level3_ids.size() == 1, "one level 3 in the first run")
 
 
 # Stage 5b: a camp horse is claimed with Rope or Twine only once its camp has no bandit left; it is then that player's companion (saved in

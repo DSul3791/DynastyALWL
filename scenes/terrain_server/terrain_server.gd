@@ -1170,6 +1170,7 @@ func _ready() -> void:
 
 			_drop_replaced(old_peer)
 
+		bandits.captor_joined(peer)   # a bandit they tied before a restart is theirs again
 		_slow_rpc("hello: peer_connected_hello", t0)
 		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 134: the client's Admin menu follows it
 		net.npc_roster.rpc_id(peer, npcs.roster())
