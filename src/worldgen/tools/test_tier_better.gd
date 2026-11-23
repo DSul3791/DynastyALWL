@@ -181,6 +181,9 @@ func _knife_blows() -> void:
 		for e in _ladder("knife"):
 			var got: int = _carcass_blows(str(sp), str(table.id_of(int(e["number"]))))
 
+			if got < 1 or got >= 100:
+				worse.append("%s %s no result (%d blows)" % [sp, str(table.id_of(int(e["number"]))), got])
+
 			if got > last:
 				worse.append("%s %s" % [sp, str(table.id_of(int(e["number"])))])
 
