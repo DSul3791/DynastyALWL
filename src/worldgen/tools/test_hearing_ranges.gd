@@ -41,7 +41,6 @@ func check(ok: bool, what: String) -> void:
 
 # What a grazing deer at the origin does within 2.5 s of a player `dist` m off in stance `stance` who did `loud` ("" nothing): "flee",
 # "alert" (it watched at some point) or "graze". 2.5 s: a deer about to run first stares, up to 1.75 s (reactions.startle_s).
-# "flee", "alert" or "graze".
 func deer_does(dist: float, stance: int, loud: String) -> String:
 	var a = AnimalsScript.new()
 	a.ground_height = func(_x, _z): return 10.0
