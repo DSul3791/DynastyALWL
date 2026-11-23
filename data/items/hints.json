@@ -132,7 +132,7 @@
 		{
 			"id": "fish",
 			"trigger": "workbench_placed",
-			"text": "Make a fishing rod and try the pond.",
+			"text": "Make a fishing rod and fish at the water.",
 			"goal": "fish"
 		},
 		{

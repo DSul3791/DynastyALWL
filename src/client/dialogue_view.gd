@@ -5,6 +5,7 @@ extends Node
 # a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 20 px on the 1920x1080 canvas (26 on the old 2880x1620 one), readable on a 55 inch 4K.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const TradePrices := preload("res://src/shared/trade_prices.gd")   # the server's own price sums (server_trade.gd)
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const FONT_PX := 20
 const MAX_CHOICES := 5
@@ -32,6 +33,7 @@ var _extras_below: int = 50                 # and only stacks worth less than th
 var _repair_rate: float = 0.4              # data/items/coins.json trade.repair.rate
 var _shop_till: int = -1                   # the coin in the trader's purse, -1 = unlimited
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
+var _shop_rules: Dictionary = {}           # item id -> this trader's buy rule (data/npcs/shops.json buy_rules: lot, lot_value)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
 var _trader_ids: Array = []                 # npc ids in data/npcs/shops.json (they get the extras button)
@@ -317,6 +319,7 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 	var shops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
 	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_shop_repairs = typeof(shops) == TYPE_DICTIONARY and bool(shops.get(npc_id, {}).get("repairs", false))
+	_shop_rules = (shops.get(npc_id, {}).get("buy_rules", {}) as Dictionary) if typeof(shops) == TYPE_DICTIONARY else {}
 	_repair_rate = float(coins.get("trade", {}).get("repair", {}).get("rate", 0.4)) if typeof(coins) == TYPE_DICTIONARY else 0.4
 
 	if typeof(coins) == TYPE_DICTIONARY:
@@ -340,18 +343,19 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
-# What the trader pays for a stack slot of the pack (each), the same rule as the server: worn tools and old food pay less.
-func _price_to_get(slot: int) -> int:
+# What the trader pays for a stack slot of the pack, the same rule as the server: [the lot he buys it in, what he pays a lot] (a lot is one unit
+# for most goods; cheap goods go by items.json sell_lot, and his own buy rule wins). Worn tools and old food pay less; [1, 0] when he pays nothing.
+func _price_to_get(slot: int) -> Array:
 	var number: int = items.inventory.numbers[slot]
 	var entry: Dictionary = items.table.entry(items.table.id_of(number))
-	var value: int = int(entry.get("value", 0))
+	var terms: Array = TradePrices.sell_terms(entry, _shop_rules.get(items.table.id_of(number), {}), SmithingRules.value_mult(items.inventory.inst_of(slot)))   # craftsmanship raises it, as on the server
+	var value: int = int(terms[1])
 
 	if value <= 0 or not (_shop_buys.has("all") or _shop_buys.has(str(entry.get("kind", "")))):
-		return 0
+		return [1, 0]
 
 	var life: float = 1.0
 	var durability: int = items.inventory.max_durability(slot)
-	value = int(round(float(value) * SmithingRules.value_mult(items.inventory.inst_of(slot))))   # craftsmanship raises it, as on the server
 
 	if durability > 0:
 		life = clampf(1.0 - float(items.inventory.wear[slot]) / float(durability), 0.0, 1.0)
@@ -360,7 +364,12 @@ func _price_to_get(slot: int) -> int:
 		life = minf(life, items.table.freshness(number, items.inventory.wear[slot]))
 
 	var tired: float = float(_shop_tired.get(items.table.id_of(number), 1.0))
-	return maxi(int(floor(float(value) * _shop_get * tired * life + 0.0001)), 1) if life > 0.0 else 0
+	return [int(terms[0]), TradePrices.lot_to_get(value, _shop_get * tired, life)]
+
+
+# " each", or " for 60" for goods sold by the lot.
+func _lot_note(lot: int) -> String:
+	return "  each" if lot <= 1 else "  for %d" % lot
 
 
 # The smith's price for the pack slot, the same rule as the server's repair_cost.
@@ -403,9 +412,11 @@ func _refresh_shop() -> void:
 	for i in _shop_ids.size():
 		var id: String = _shop_ids[i]
 		var number: int = items.table.number_of(id)
-		var price: int = maxi(int(ceil(float(items.table.entry(id).get("value", 0)) * _shop_pay * float(_shop_supply.get(id, 1.0)) - 0.0001)), 1) if int(items.table.entry(id).get("value", 0)) > 0 else 0
+		var price: int = TradePrices.lot_to_pay(int(items.table.entry(id).get("value", 0)), _shop_pay * float(_shop_supply.get(id, 1.0)))   # a lot's price, as the server charges
+		var lot: int = TradePrices.shelf_lot(items.table.entry(id))
 		var left: int = int(_shop_stock.get(id, 0))
-		_shop_row(_shop_buy_box, "%s  x%d  -" % [items.table.name_of(number), left] if left > 0 else "%s  -  sold out" % items.table.name_of(number), items._tooltip(number, 1) + "\nYou pay %s each." % items.coin_text(price), i, 0, left > 0 and items.purse_copper >= price, price if left > 0 else -1)
+		var first: int = TradePrices.total_to_pay(price, lot, mini(lot, maxi(left, 1)))   # what one click buys (a lot, or what is left of one)
+		_shop_row(_shop_buy_box, "%s  x%d  -" % [items.table.name_of(number), left] if left > 0 else "%s  -  sold out" % items.table.name_of(number), items._tooltip(number, 1) + "\nYou pay %s%s." % [items.coin_text(price), _lot_note(lot)], i, 0, left > 0 and items.purse_copper >= first, price if left > 0 else -1, "" if lot <= 1 else _lot_note(lot), lot)
 
 	var any: bool = false
 	_sell_all_slots.clear()
@@ -415,7 +426,9 @@ func _refresh_shop() -> void:
 		if items.inventory.numbers[slot] == 0:
 			continue
 
-		var each: int = _price_to_get(slot)
+		var quote: Array = _price_to_get(slot)
+		var lot2: int = int(quote[0])
+		var each: int = int(quote[1])
 
 		if each <= 0:
 			continue
@@ -425,10 +438,10 @@ func _refresh_shop() -> void:
 
 		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below:
 			_sell_all_slots.append(slot)
-			_sell_all_total += each * items.inventory.counts[slot]
+			_sell_all_total += each * floori(float(items.inventory.counts[slot]) / float(lot2))   # whole lots only, as the server pays
 
 		var number2: int = items.inventory.numbers[slot]
-		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true, each, "  each")
+		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s%s." % [items.coin_text(each), _lot_note(lot2)], slot, 1, items.inventory.counts[slot] >= lot2, each, _lot_note(lot2), lot2)
 
 	if bool(_shop_repairs):
 		for slot in items.inventory.numbers.size():
@@ -479,7 +492,8 @@ func _on_sell_all_pressed() -> void:
 	_refresh_shop()
 
 
-func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kind: int, enabled: bool, price: int = -1, price_note: String = "") -> void:
+# `step`: the units one click buys or sells (a lot of goods sold by the lot); x10 buys ten of those, All sells the stack.
+func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kind: int, enabled: bool, price: int = -1, price_note: String = "", step: int = 1) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	parent.add_child(row)
 	var button: Button = Button.new()
@@ -489,7 +503,7 @@ func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kin
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", SHOP_PX)
 	button.disabled = not enabled
-	button.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, 1))
+	button.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, step if kind != 2 else 1))
 	row.add_child(button)
 
 	if price >= 0:
@@ -502,5 +516,5 @@ func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kin
 	more.text = "x10" if kind == 0 else "All"
 	more.add_theme_font_size_override("font_size", SHOP_PX - 4)
 	more.disabled = not enabled
-	more.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, 10 if kind == 0 else 999))
+	more.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, mini(10 * step, 999) if kind == 0 else 999))
 	row.add_child(more)
