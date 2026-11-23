@@ -1588,7 +1588,8 @@ func _welcome_body(info: Dictionary) -> void:
 	var layer: CanvasLayer = CanvasLayer.new()
 	add_child(layer)
 	link_bars = LinkBarsScript.new()
-	link_bars.setup(func() -> ENetPacketPeer: return (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else null)
+	# a closed line (after quitting, _close_line) has no peers to ask for: get_peer would print an engine error each check
+	link_bars.setup(func() -> ENetPacketPeer: return (multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1) if multiplayer.multiplayer_peer is ENetMultiplayerPeer and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else null)
 	link_bars.on_drop = func(text: String) -> void: _telemetry.event(text)
 	link_bars.position = Vector2(12.0, 8.0)
 	link_bars.size = Vector2(80.0, 36.0)

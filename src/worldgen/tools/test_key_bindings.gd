@@ -258,6 +258,8 @@ func _init() -> void:
 	check(Bindings.localize("Press Tab to see Health, Food, Water, Temperature and Energy.") == "Press C to see Health, Food, Water, Temperature and Energy.", "the bars hint names the bound character key")
 	check(Bindings.localize("Walk with W A S D. Hold Shift to run.") == "Walk with Up A S D. Hold Alt to run.", "the first hint names the bound walk and run keys")
 	check(Bindings.localize("Or Shift + right click to drop survey markers") == "Or Shift + right click to drop survey markers", "a fixed Shift + click is left alone")
+	Bindings.set_binding("map", KEY_N, false, false)
+	check(Bindings.localize("Press M for your map. It fills in as you explore.") == "Press N for your map. It fills in as you explore.", "the map hint names the bound map key")
 	Bindings.reset_all()
 	_admin_rules()
 	Bindings.reset_all()

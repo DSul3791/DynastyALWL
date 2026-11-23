@@ -322,7 +322,7 @@
 			"end": true
 		},
 		"teach": {
-			"text": "Three stones for the lesson. Now count with me.",
+			"text": "A few stones for the lesson. Now count with me.",
 			"effects": [
 				{
 					"train_skill": [
