@@ -118,6 +118,15 @@ func _label(text: String, size: int) -> Label:
 	return label
 
 
+# Long side notes wrap inside the panel instead of widening it past the screen
+# at large text sizes (the screen audit found them off the right edge).
+func _wrap(label: Label) -> Label:
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.custom_minimum_size.x = _px(260)
+	return label
+
+
 func _build() -> void:
 	if _panel != null and is_instance_valid(_panel):
 		_panel.queue_free()
@@ -139,9 +148,15 @@ func _build() -> void:
 	var theme: Theme = Theme.new()
 	theme.set_font_size("font_size", "TooltipLabel", _px(BODY_PX - 6))
 	_panel.theme = theme
+	# Everything below scrolls (screen audit 23 Nov 2026: with the skill list the page was 2077 px tall at the smallest text, nearly twice the
+	# 1080 canvas, and the lower skills were cut off under the screen's edge with no way to reach them).
+	var scroll: ScrollContainer = ScrollContainer.new()
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_panel.add_child(scroll)
 	var box: VBoxContainer = VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	box.add_theme_constant_override("separation", _px(14))
-	_panel.add_child(box)
+	scroll.add_child(box)
 	var head: HBoxContainer = HBoxContainer.new()
 	box.add_child(head)
 	var title: Label = _label("Character", TITLE_PX)
@@ -244,7 +259,7 @@ func refresh() -> void:
 		child.queue_free()
 
 	if _items.rep_names.is_empty():
-		_rep_box.add_child(_label("Nobody knows you yet. Do someone a favour.", BODY_PX - 6))
+		_rep_box.add_child(_wrap(_label("Nobody knows you yet. Do someone a favour.", BODY_PX - 6)))
 
 	for i in _items.rep_names.size():
 		_rep_box.add_child(_label("%s: %s" % [_items.rep_names[i], _items.rank_word(int(_items.rep_points[i]))], BODY_PX - 4))
@@ -289,13 +304,13 @@ func refresh() -> void:
 			line.add_child(_label("%.1f kg carried" % carried, BODY_PX - 4))
 
 		if row[2] != "":
-			var note: Label = _label(row[2], BODY_PX - 6)
+			var note: Label = _wrap(_label(row[2], BODY_PX - 6))
 			note.modulate = Color(1.0, 1.0, 1.0, 0.7)
 			line.add_child(note)
 
 		_attributes.add_child(line)
 
-	var more: Label = _label("More attributes will appear here as they are designed.", BODY_PX - 6)
+	var more: Label = _wrap(_label("More attributes will appear here as they are designed.", BODY_PX - 6))
 	more.modulate = Color(1.0, 1.0, 1.0, 0.55)
 	_attributes.add_child(more)
 
@@ -360,50 +375,56 @@ func refresh() -> void:
 			line.add_child(level_bar)   # a locked skill shows no bar (Tyler 16)
 
 		line.add_child(_label("%d / %d" % [effective, cap] if unmet == "" else "locked", BODY_PX))
+		# The notes after the level flow onto more lines when they do not fit beside it (a skill at a cap wall, trained, rusty and practised
+		# today at the largest text was wider than the screen: screen audit 23 Nov 2026).
+		var notes: HFlowContainer = HFlowContainer.new()
+		notes.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		notes.add_theme_constant_override("h_separation", _px(14))
+		line.add_child(notes)
 
 		var planned: bool = bool(def.get("placeholder", false))   # skills.json "placeholder": nothing in the game practises it yet
 
 		if planned:   # locked or not, a tester should not wait for it to grow
 			var soon: Label = _label("planned: nothing practises it yet", BODY_PX - 4)
 			soon.modulate = Color(0.75, 0.75, 0.75)
-			line.add_child(soon)
+			notes.add_child(soon)
 		elif unmet == "" and row.size() > 7 and effective < cap - 1:   # the last point under a cap is never reached by use (skills.json slow_last): no "% to" it
 			var next_level: Label = _label("%d%% to %d" % [int(row[7]), effective + 1], BODY_PX - 4)
 			next_level.modulate = Color(0.8, 0.8, 0.8)
-			line.add_child(next_level)
+			notes.add_child(next_level)
 
 		if unmet != "":
 			var locked: Label = _label("needs " + unmet, BODY_PX - 4)
 			locked.modulate = Color(0.75, 0.75, 0.75)
-			line.add_child(locked)
+			notes.add_child(locked)
 		elif effective >= cap - 1 and cap < 100:
 			var who: Array = _teachers_of(str(id))
-			var wall: Label = _label("needs training to go further" + (" (ask " + ", ".join(who) + ")" if not who.is_empty() else ""), BODY_PX - 4)
+			var wall: Label = _wrap(_label("needs training to go further" + (" (ask " + ", ".join(who) + ")" if not who.is_empty() else ""), BODY_PX - 4))
 			wall.modulate = Color(0.6, 0.85, 1.0)
-			line.add_child(wall)
+			notes.add_child(wall)
 
 		var lessons: Array = _lessons_of(str(id))
 
 		if not lessons.is_empty():
-			var teach: Label = _label("Lessons: " + "; ".join(lessons), BODY_PX - 4)
+			var teach: Label = _wrap(_label("Lessons: " + "; ".join(lessons), BODY_PX - 4))
 			teach.modulate = Color(0.6, 0.85, 1.0)
-			line.add_child(teach)
+			notes.add_child(teach)
 
 		if row.size() > 4 and int(row[4]) > 0:
 			var trained: Label = _label("trained %d" % int(row[4]), BODY_PX - 4)
 			trained.modulate = Color(0.6, 0.9, 0.6)
-			line.add_child(trained)
+			notes.add_child(trained)
 
 		if row.size() > 5 and int(row[5]) == 1:
 			var today: Label = _label("practised today", BODY_PX - 4)
 			today.text = "practised today, %d%% of the day's gain left" % int(row[8]) if row.size() > 8 else "practised today"
 			today.modulate = Color(0.9, 0.9, 0.6)
-			line.add_child(today)
+			notes.add_child(today)
 
 		if row.size() > 2 and int(row[2]) == 1:
 			var rusty: Label = _label("rusty", BODY_PX - 4)
 			rusty.modulate = Color(1.0, 0.8, 0.4)
-			line.add_child(rusty)
+			notes.add_child(rusty)
 
 		_skills_box.add_child(line)
 
