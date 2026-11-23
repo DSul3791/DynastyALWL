@@ -125,8 +125,7 @@ func _init() -> void:
 		agree(kit, Vector3(x - 0.5, upper, 0.6), 0, true, "%s on the upper floor" % kit)
 		var back_z: float = -2.0 + float(items._structures["thatch_wall"]["footprint_z"]) * 0.5 + float(Rules.structure_of_kit(cfg, kit)["footprint_z"]) * 0.5 + 0.03   # its back 3 cm off the wall's face
 		agree(kit, Vector3(x - 0.5, top, back_z), 0, true, "%s against the wall, not in it" % kit)
-		var through: bool = bool(items._structures[str(Rules.structure_of_kit(cfg, kit)["kind"])].get("gap_exempt", false))   # furniture is still free of walls, as before (wall mounts stand in them)
-		agree(kit, Vector3(x - 0.5, top, -2.0), 0, through, "%s through the wall%s" % [kit, " (furniture: allowed, as before)" if through else ""])
+		agree(kit, Vector3(x - 0.5, top, -2.0), 0, false, "%s through the wall (furniture too since 23 Nov 2026; wall mounts still go in it)" % kit)
 		var low: Array = ghost(kit, Vector3(x + 0.3, top, 0.4), 0)
 		check(is_equal_approx((low[0] as Vector3).y, top), "%s: aimed at the ground floor under a ceiling it stands on the foundation, not the floor above (%s)" % [kit, str(low[0])])
 		check(not bool(Rules.snap(cfg, kit, Vector3(x + 3.0, 10.0, 0.0), 0, items._foundation_rows())[2]), "%s: off the foundation it stands on the ground" % kit)

@@ -91,7 +91,7 @@ func _init() -> void:
 	animals.died = func(sp, p, _peer): items.make_carcass(sp, p)
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.fires = func(): return items._lit_fires()
-	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause)
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 25.0, "", 0.0, from)
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
 	animals.cfg["wolves"]["exclude"] = [0.0, 0.0, 0.0]
 	animals.cfg["wolves"]["cell_m"] = 600.0   # dense: the worst case for the brain

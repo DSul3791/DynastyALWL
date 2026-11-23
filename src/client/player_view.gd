@@ -242,6 +242,8 @@ func _process(delta: float) -> void:
 
 		if str(b.get("held_kind", "")) == "spear":
 			aim_spear(b["held_node"] as Node3D, b["rig"])   # after the pose: the spear keeps the facing, not the hand bone's angle
+		elif b.get("held_node", null) != null:
+			follow_hand(b["held_node"] as Node3D)
 
 
 
@@ -606,11 +608,25 @@ static func aim_spear(model: Node3D, rig: Node3D) -> void:
 	var z: Vector3 = -tip
 	var x: Vector3 = Vector3.UP.cross(z).normalized()
 	var mount: Node3D = model.get_parent() as Node3D
+	follow_hand(model)   # the hand of this step, or the spear is turned by the last step's swing
 	model.global_transform = Transform3D(Basis(x, z.cross(x), z), mount.global_position + tip * HeldItem.SPEAR_GRIP_Z)
 	var fist: Node3D = model.get_node_or_null(HeldItem.THIRD_FIST_NAME) as Node3D
 
 	if fist != null:
 		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(HeldItem.THIRD_FIST_SCALE), Vector3.ZERO)   # back on the hand, as held_item.gd refits it each frame
+
+
+# A held item's hand mount moved to this step's hand now. The mount is on a BoneAttachment3D, which follows the bones only at the skeleton's
+# deferred update, so straight after advance() it still held the last step's hand: 0.32 m off it at a run (robots 23 Nov 2026, measured
+# in a node's _process after this one), until the frame's end. Drawn right either way; this keeps what code reads in the frame true.
+static func follow_hand(model: Node3D) -> void:
+	if model == null or not is_instance_valid(model) or not model.is_inside_tree():
+		return
+
+	var attach: BoneAttachment3D = model.get_parent().get_parent() as BoneAttachment3D if model.get_parent() != null else null
+
+	if attach != null:
+		attach.on_skeleton_update()
 
 
 # The body files this look needs are read (warmed on loader threads by on_look): no main-thread read of a 28 MB glb in the middle of play.

@@ -31,7 +31,7 @@ func _animals(players: Array, hurt: Array) -> Object:
 
 	a.rng.seed = 7
 	a.big_game.player_info = func(): return [{"peer": 1, "pos": players[0], "stance": 0, "hp": 1.0}]
-	a.big_game.hurt_player = func(peer, amount, _lethal, _cause):
+	a.big_game.hurt_player = func(peer, amount, _lethal, _cause, _from):
 		hurt.append([peer, amount])
 		return "hurt"
 	return a

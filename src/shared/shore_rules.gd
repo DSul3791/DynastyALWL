@@ -2,7 +2,7 @@ extends RefCounted
 
 # Gathering at the sea's edge, the rules both sides share (Sonny, 31 Oct 2026; the server half is Tyler's ACT_GATHER_EDGE in server_items.gd, data/items/shore_nodes.json).
 # node_at is the tide-line node of a cell on a game day (the same on the server and in the client's prompt); prompt says what E would do right now, or "" when nothing can be gathered, so the
-# client shows no prompt that the server would refuse. The client cannot know that a node was used up by someone else today: it knows only its own gathers (`used`).
+# client shows no prompt that the server would refuse. `used` holds this client's own gathers and, from protocol 160, the nodes others used today (ground_taken).
 
 
 # The node of the 8 m cell holding `pos` on a game day: {} when none, else the row of cfg["nodes"].

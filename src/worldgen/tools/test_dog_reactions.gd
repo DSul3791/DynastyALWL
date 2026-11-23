@@ -34,7 +34,7 @@ func make():
 	a.wolves.player_info = func(): return players
 	a.wolves.fires = func(): return []
 	a.wolves.notice = func(_p, _t): pass
-	a.wolves.hurt_player = func(_peer, _dmg, _lethal, _cause): return "hurt"
+	a.wolves.hurt_player = func(_peer, _dmg, _lethal, _cause, _from): return "hurt"
 	a.wolves.game_seconds = func(): return 200.0 * 86400.0 + 12.0 * 3600.0   # day 200 noon: no pups
 	return a
 

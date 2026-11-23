@@ -347,7 +347,7 @@ func _read_rows(rows: int) -> void:
 		for i in range(count):
 			var x: float = _cx + float(i - HALF) * SPACING_M
 			var z: float = _cz + float(j - HALF) * SPACING_M
-			_level[j * count + i] = _flora.water_surface_at(x, z)
+			_level[j * count + i] = _flora.water_wet_at(x, z)
 			_speed[j * count + i] = _flora.water_speed_at(x, z) if not is_nan(_level[j * count + i]) else -1.0
 
 		_row += 1

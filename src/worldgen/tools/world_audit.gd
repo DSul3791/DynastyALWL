@@ -26,7 +26,10 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
+const FloraView := preload("res://src/flora/flora_view.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -83,6 +86,11 @@ const FAULTS := {
 	"camp_tilted": ["ground rising across a camp piece's footprint more than a player may build on (PlacementRules.steep: a Lean-to 1.0 m, a fire 0.6 m) or, for furniture and NPC spots, 0.30 m", 0.30],
 	"camp_in_water": ["a camp piece standing in drawn water more than 0.10 m deep", 0.10],
 	"camp_overlap": ["two pieces of one camp inside each other", 0.05],
+	"water_deep_no_swim": ["water drawn 1.3 m or more deep (swimming depth) where the game finds no water or under 1.0 m: a player walks on the bed under the drawn surface", 0.3],
+	"water_swim_undrawn": ["the game's water 1.3 m or more deep (a player swims) with no drawn surface within 0.3 m of it: swimming in air or under a surface drawn elsewhere", 0.3],
+	"water_film": ["water drawn more than 0.3 m over the ground where the game finds no water: it looks wet but is dry to the player (and to a dropped item, a drink, a fish)", 0.3],
+	"walk_trap": ["ground a walking player cannot leave: every way out climbs more than a jump (1.2 m in 1 m) or a slope over 45 degrees (a swimmer: a bank over 0.6 m); severity = its area m2", 0.0],
+	"walk_trap_deep": ["a walk trap 3 m or more below the lowest ground it could climb to (a pit or a shaft, not a dip)", 3.0],
 	"far_float_lod1": ["at LOD 1 (the view past the near ring), a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod2": ["at LOD 2, a plant or tree base more than 0.25 m off the mesh", 0.25],
 	"far_float_lod3": ["at LOD 3, a plant or tree base more than 0.25 m off the mesh", 0.25],
@@ -123,6 +131,8 @@ func _init() -> void:
 	var probe: Vector2 = Vector2.INF
 	var caves: bool = false
 	var camps: bool = false
+	var walk: bool = false
+	var shores: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		var value: String = argument.get_slice("=", 1)
@@ -153,6 +163,10 @@ func _init() -> void:
 			camps = true
 		elif argument == "--caves":
 			caves = true
+		elif argument == "--walk":
+			walk = true
+		elif argument == "--shores":
+			shores = true
 		elif argument.begins_with("--probe="):
 			probe = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 
@@ -208,7 +222,13 @@ func _init() -> void:
 	for n in range(0 if caves or camps else mine.size()):
 		var c: Vector2i = mine[n][0]
 		_biome_now = str(mine[n][1])
-		_audit_chunk(c, windows, lods)
+
+		if walk:
+			_audit_walk(c)
+		elif shores:
+			_audit_shores(c)
+		else:
+			_audit_chunk(c, windows, lods)
 		print("world_audit: chunk %d/%d %s (%s) done, %.0f s" % [n + 1, mine.size(), str(c), _biome_now, float(Time.get_ticks_msec() - started) / 1000.0])
 
 	var report: Dictionary = {"counts": counts, "checked": checked, "by_biome": by_biome, "examples": examples, "chunks": mine.size()}
@@ -496,7 +516,7 @@ func _trees_of(flora: Dictionary) -> Array:
 		if sp.is_empty() or int(sp["kind"]) != PlacerScript.KIND_TREE:
 			continue
 
-		var r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n]))
+		var r: float = TreeTrunks.standing_collider(str(sp["name"]), ids[n], float(flora["heights"][n]), PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(sp["trunk"]), float(flora["heights"][n]) / float(sp["height_ref"]), float(flora["heights"][n])))
 
 		if r > 0.0 and float(flora["heights"][n]) < PlacerScript.SAPLING_M:
 			_fault("sapling_collider", PlacerScript.SAPLING_M - float(flora["heights"][n]), flora["positions"][n], "%s %.2f m tall, trunk collider r %.3f m" % [sp["name"], float(flora["heights"][n]), r])
@@ -1464,6 +1484,44 @@ func _probe(at: Vector2) -> int:
 		if Vector2(p.x - at.x, p.z - at.y).length() < 4.0:
 			print("  flora %s at %s height %.2f" % [placer.species_of(flora["ids"][n]).get("name", "?"), str(p), float(flora["heights"][n])])
 
+	var grid: Dictionary = _water_grid(chunk)   # the water grid round it: level / shore level / ground at each 8 m point, the game's and the drawn surface
+	var o: Vector2 = placer.chunk_origin(chunk)
+	var sp: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var gi: int = int(floor((at.x - o.x) / sp))
+	var gj: int = int(floor((at.y - o.y) / sp))
+	var edge: PackedFloat32Array = grid.get("edge", PackedFloat32Array())
+
+	for j in range(maxi(gj - 2, 0), mini(gj + 4, count)):
+		var row: String = "  z %7.1f:" % (o.y + float(j) * sp)
+
+		for i in range(maxi(gi - 2, 0), mini(gi + 4, count)):
+			var n: int = j * count + i
+			row += "  [%s/%s g%.2f]" % ["%.2f" % grid["levels"][n] if not is_nan(grid["levels"][n]) else "--", "%.2f" % edge[n] if not edge.is_empty() and not is_nan(edge[n]) else "--", generator.surface_height(o.x + float(i) * sp, o.y + float(j) * sp)]
+
+		print(row)
+
+	var sheet: Image = LiquidSurface.image_from_grid(grid)
+	var held: Dictionary = grid.duplicate()
+	held["liquid_image"] = sheet
+	var rng := RandomNumberGenerator.new()   # the cost per call (grass_view asks once per grass point): the sheet read against the wet corners blend
+	var spots: PackedVector2Array = PackedVector2Array()
+
+	for n in 50000:
+		spots.append(o + Vector2(rng.randf(), rng.randf()) * placer.chunk_m)
+
+	var t0: int = Time.get_ticks_usec()
+
+	for p in spots:
+		FloraView.grid_surface_at(grid, o, p.x, p.y)
+
+	var t1: int = Time.get_ticks_usec()
+
+	for p in spots:
+		FloraView.grid_surface_at(held, o, p.x, p.y)
+
+	print("  cost per call: wet corners %.2f us, sheet %.2f us" % [float(t1 - t0) / 50000.0, float(Time.get_ticks_usec() - t1) / 50000.0])
+	print("  game surface %.3f (before 23 Nov %.3f), drawn %.3f" % [FloraView.grid_surface_at(held, o, at.x, at.y), _game_surface(grid, o, at.x, at.y), LiquidSurface.drawn_surface(sheet, o, sp * float(count - 1) / float(sheet.get_width() - 1), at.x, at.y) if sheet != null else NAN])
 	return 0
 
 
@@ -1527,3 +1585,284 @@ func _merge(files: PackedStringArray) -> int:
 	_print_report(total)
 	print("by biome: %s" % JSON.stringify(total["by_biome"]))
 	return 0
+
+
+# ---------------------------------------------------------------- walkability (--walk)
+
+# Can a walking player leave every spot? On a 1 m grid over the chunk and WALK_PAD_M round it: the ground (surface_height), water over it
+# (a swimmer moves at the surface) and boulders (their drawn hull top, 0.7 x the radius over the ground, inventory_view _size_boulder).
+# A step to a neighbour is always possible downhill; uphill only from ground a player stands on (under 45 degrees: Godot's floor angle,
+# where a jump works) and at most WALK_JUMP_M, or from water at most WALK_BANK_M.
+# Into deep water a player wades in over its bed and swims up. Every spot that cannot reach the window's edge by such steps is trapped. Not seen: trunks (gaps are finer than the grid), caves
+# (--caves), structures and player digs.
+const WALK_PAD_M := 24
+const WALK_JUMP_M := 1.2   # a jump: 7 m/s at 20 m/s2 lifts the feet 1.22 m
+const WALK_BANK_M := 0.6
+const WALK_SWIM_M := 1.3   # water this deep is swum (swim.gd SWIM_DEPTH_M); shallower is waded
+
+
+func _audit_walk(chunk: Vector2i) -> void:
+	var o: Vector2 = placer.chunk_origin(chunk)
+	var n: int = int(placer.chunk_m) + 2 * WALK_PAD_M
+	var x0: float = o.x - float(WALK_PAD_M) + 0.5
+	var z0: float = o.y - float(WALK_PAD_M) + 0.5
+	var ground: PackedFloat32Array = PackedFloat32Array()
+	var top: PackedFloat32Array = PackedFloat32Array()   # where the player's feet are: ground, boulder top or the water's surface
+	var swim: PackedByteArray = PackedByteArray()
+	ground.resize(n * n)
+	top.resize(n * n)
+	swim.resize(n * n)
+
+	for j in n:
+		for i in n:
+			var x: float = x0 + float(i)
+			var z: float = z0 + float(j)
+			var h: float = float(generator.surface_height(x, z))
+
+			if is_nan(h):
+				h = -INF   # no ground known (an unbaked tile): a way out, never a trap
+			var level: float = _water_level(x, z)
+			ground[j * n + i] = h
+			top[j * n + i] = h
+
+			if not is_nan(level) and level - h >= WALK_SWIM_M:
+				top[j * n + i] = level
+				swim[j * n + i] = 1
+
+	var base: PackedFloat32Array = ground.duplicate()
+
+	for cz in range(int(floor((z0 - 0.5) / float(WINDOW_M))), int(floor((z0 + float(n)) / float(WINDOW_M))) + 1):
+		for cx in range(int(floor((x0 - 0.5) / float(WINDOW_M))), int(floor((x0 + float(n)) / float(WINDOW_M))) + 1):
+			var centre: Vector2 = (Vector2(cx, cz) + Vector2(0.5, 0.5)) * float(WINDOW_M)
+
+			for rock in _boulders_round(centre, float(WINDOW_M) * 0.75):   # past the cell's corners
+				var q: Vector3 = rock[0]
+				var r: float = float(rock[1])
+
+				if Vector2i(int(floor(q.x / float(WINDOW_M))), int(floor(q.z / float(WINDOW_M)))) != Vector2i(cx, cz):
+					continue   # each rock once: from its own cell
+
+				_checked("walk rocks")
+				var reach: int = int(ceil(r))
+
+				for dj in range(-reach, reach + 1):
+					for di in range(-reach, reach + 1):
+						var i: int = int(floor(q.x - x0 + 0.5)) + di
+						var j: int = int(floor(q.z - z0 + 0.5)) + dj
+
+						if i < 0 or j < 0 or i >= n or j >= n or swim[j * n + i] == 1:
+							continue
+
+						if Vector2(x0 + float(i) - q.x, z0 + float(j) - q.z).length() < r * 0.9:
+							top[j * n + i] = maxf(top[j * n + i], base[j * n + i] + r * 0.7)   # from the bare ground, so overlapping rocks do not stack
+							ground[j * n + i] = top[j * n + i]   # the rock is the floor there
+
+	var stand: PackedByteArray = PackedByteArray()   # 1: a floor a player stands and jumps on (under 45 degrees) or water
+	stand.resize(n * n)
+
+	for j in n:
+		for i in n:
+			var k: int = j * n + i
+
+			if swim[k] == 1:
+				stand[k] = 1
+				continue
+
+			# The floor's own slope (ground and rocks; a swum neighbour's water surface is not floor).
+			var gx: float = (ground[j * n + mini(i + 1, n - 1)] - ground[j * n + maxi(i - 1, 0)]) / float(mini(i + 1, n - 1) - maxi(i - 1, 0))
+			var gz: float = (ground[mini(j + 1, n - 1) * n + i] - ground[maxi(j - 1, 0) * n + i]) / float(mini(j + 1, n - 1) - maxi(j - 1, 0))
+			stand[k] = 1 if gx * gx + gz * gz <= 1.0 else 0
+
+	# Backwards from the window's edge: a spot is free when it has a step to a free spot.
+	var can_leave: PackedByteArray = PackedByteArray()
+	can_leave.resize(n * n)
+	var queue: PackedInt32Array = PackedInt32Array()
+
+	for k in n:
+		for edge in [k, (n - 1) * n + k, k * n, k * n + n - 1]:
+			if can_leave[edge] == 0:
+				can_leave[edge] = 1
+				queue.append(edge)
+
+	var head: int = 0
+	var steps: Array = [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]
+
+	while head < queue.size():
+		var b: int = queue[head]
+		head += 1
+		var bi: int = b % n
+		var bj: int = int(float(b) / float(n))
+
+		for d in steps:
+			var ai: int = bi + d.x
+			var aj: int = bj + d.y
+
+			if ai < 0 or aj < 0 or ai >= n or aj >= n:
+				continue
+
+			var a: int = aj * n + ai
+
+			if can_leave[a] == 1:
+				continue
+
+			var rise: float = (minf(top[b], maxf(ground[b], top[a])) if swim[b] == 1 else top[b]) - top[a]   # into water: wade in from its bed, then swim up
+			var can: bool = rise <= 0.0 or (stand[a] == 1 and rise <= (WALK_BANK_M if swim[a] == 1 else WALK_JUMP_M))
+
+			if can:
+				can_leave[a] = 1
+				queue.append(a)
+
+	# The trapped spots inside the chunk, gathered into pits.
+	var seen: PackedByteArray = PackedByteArray()
+	seen.resize(n * n)
+	var trapped: int = 0
+
+	for j in range(WALK_PAD_M, n - WALK_PAD_M):
+		for i in range(WALK_PAD_M, n - WALK_PAD_M):
+			var k: int = j * n + i
+			_checked("walk spots")
+
+			if can_leave[k] == 1 or seen[k] == 1:
+				continue
+
+			var pit: PackedInt32Array = PackedInt32Array([k])
+			seen[k] = 1
+			var p_head: int = 0
+			var low: int = k
+			var rim: float = INF
+
+			while p_head < pit.size():
+				var c: int = pit[p_head]
+				p_head += 1
+
+				if top[c] < top[low]:
+					low = c
+
+				for d in steps:
+					var ni: int = c % n + d.x
+					var nj: int = int(float(c) / float(n)) + d.y
+
+					if ni < 0 or nj < 0 or ni >= n or nj >= n:
+						continue
+
+					var m: int = nj * n + ni
+
+					if can_leave[m] == 1:
+						rim = minf(rim, top[m])
+					elif seen[m] == 0:
+						seen[m] = 1
+						pit.append(m)
+
+			var inner: int = 0
+
+			for c in pit:
+				var ci: int = c % n
+				var cj: int = int(float(c) / float(n))
+				inner += 1 if ci >= WALK_PAD_M and cj >= WALK_PAD_M and ci < n - WALK_PAD_M and cj < n - WALK_PAD_M else 0
+
+			trapped += inner
+			var at: Vector3 = Vector3(x0 + float(low % n), top[low], z0 + floorf(float(low) / float(n)))
+			var note: String = "%d m2 (%d in this chunk), floor y %.1f, lowest way out y %.1f%s" % [pit.size(), inner, top[low], rim, ", water" if swim[low] == 1 else ""]
+			_fault("walk_trap", float(pit.size()), at, note)
+
+			if rim - top[low] >= float(FAULTS["walk_trap_deep"][1]):
+				_fault("walk_trap_deep", rim - top[low], at, note)
+
+	if trapped > 0:
+		_checked("walk spots trapped", trapped)
+
+
+# ---------------------------------------------------------------- shores (--shores)
+
+# The water a player sees against the water the game acts on, at every 0.5 m of a chunk's wet squares (baked water, WaterGridScript
+# chunk_levels, the same the server starts from): the drawn surface is the chunk's liquid sheet (liquid_surface.gd image_from_grid, read
+# bilinearly as its shader does: LiquidSurface.drawn_surface), the game's surface is flora_view grid_surface_at (water_surface_at outside the live
+# window: wading, swimming, drinking). Since 23 Nov 2026 the game reads the sheet itself, so the faults guard that the two stay one; "shore points the
+# old rule had wrong" counts where the rule before (the wet corners of a grid square, more than half of it wet) parted from the drawing. Not seen: the
+# live window the server's running water draws round a player (its sim state is not baked; the game reads that window's own image there).
+const SHORE_STEP_M := 0.5
+const SWIM_DEEP_M := 1.3   # swim.gd SWIM_DEPTH_M
+
+
+func _audit_shores(chunk: Vector2i) -> void:
+	var grid: Dictionary = _water_grid(chunk)
+
+	if int(grid.get("wet", 0)) == 0:
+		return
+
+	var o: Vector2 = placer.chunk_origin(chunk)
+	var sheet: Image = LiquidSurface.image_from_grid(grid)
+
+	if sheet == null:
+		return
+
+	var held: Dictionary = grid.duplicate()   # as the client holds it (terrain_client _decode_in): the grid with its sheet image
+	held["liquid_image"] = sheet
+	var texel_m: float = float(grid["spacing"]) * float(int(grid["count"]) - 1) / float(sheet.get_width() - 1)
+
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var levels: PackedFloat32Array = grid["levels"]
+	var steps: int = int(round(spacing / SHORE_STEP_M))
+
+	for j in range(count - 1):
+		for i in range(count - 1):
+			var wet: bool = false
+
+			for c in [j * count + i, j * count + i + 1, (j + 1) * count + i, (j + 1) * count + i + 1]:
+				wet = wet or not is_nan(levels[c])
+
+			if not wet:
+				continue
+
+			for b in steps:
+				for a in steps:
+					var x: float = o.x + (float(i) + (float(a) + 0.5) / float(steps)) * spacing
+					var z: float = o.y + (float(j) + (float(b) + 0.5) / float(steps)) * spacing
+					var ground: float = float(generator.surface_height(x, z))
+					var game: float = FloraView.grid_surface_at(held, o, x, z)
+					var seen: float = LiquidSurface.drawn_surface(sheet, o, texel_m, x, z)
+					var at: Vector3 = Vector3(x, seen if not is_nan(seen) else game, z)
+					_checked("shore points")
+					var old: float = _game_surface(grid, o, x, z)   # the rule before 23 Nov (wet corners only): where it parted from the drawing
+
+					if is_nan(old) != is_nan(seen) or (not is_nan(old) and absf(old - seen) > 0.3 and maxf(old, seen) > ground + 0.3):
+						_checked("shore points the old rule had wrong")
+
+					if is_nan(old) and not is_nan(game) and game <= ground:
+						_checked("shore points now wet under the ground (were dry; depth 0)")
+
+					if not is_nan(seen) and seen - ground >= SWIM_DEEP_M and (is_nan(game) or game - ground < SWIM_DEEP_M - float(FAULTS["water_deep_no_swim"][1])):
+						_fault("water_deep_no_swim", seen - ground - (0.0 if is_nan(game) else maxf(game - ground, 0.0)), at, "drawn %.2f m deep, the game %s" % [seen - ground, "dry" if is_nan(game) else "%.2f m" % (game - ground)])
+
+					if not is_nan(game) and game - ground >= SWIM_DEEP_M and (is_nan(seen) or absf(seen - game) > float(FAULTS["water_swim_undrawn"][1])):
+						_fault("water_swim_undrawn", absf(game - seen) if not is_nan(seen) else game - ground, at, "the game %.2f m deep, drawn %s" % [game - ground, "nothing" if is_nan(seen) else "at %.2f m (%+.2f)" % [seen - ground, seen - game]])
+
+					if not is_nan(seen) and is_nan(game) and seen - ground > float(FAULTS["water_film"][1]):
+						_fault("water_film", seen - ground, at, "drawn %.2f m over dry ground" % (seen - ground))
+
+
+# flora_view.gd water_surface_at before 23 Nov 2026 (the wet corners of the 8 m square only, more than half of it wet), to count where it parted from the drawing.
+func _game_surface(grid: Dictionary, o: Vector2, x: float, z: float) -> float:
+	var spacing: float = float(grid["spacing"])
+	var count: int = int(grid["count"])
+	var fx: float = (x - o.x) / spacing
+	var fz: float = (z - o.y) / spacing
+	var i0: int = clampi(int(floor(fx)), 0, count - 2)
+	var j0: int = clampi(int(floor(fz)), 0, count - 2)
+	var tx: float = clampf(fx - float(i0), 0.0, 1.0)
+	var tz: float = clampf(fz - float(j0), 0.0, 1.0)
+	var total: float = 0.0
+	var weight: float = 0.0
+
+	for c in range(4):
+		var level: float = float(grid["levels"][(j0 + (c >> 1)) * count + i0 + (c & 1)])
+
+		if is_nan(level):
+			continue
+
+		var w: float = (tx if c & 1 else 1.0 - tx) * (tz if c >> 1 else 1.0 - tz) + 0.0001
+		total += level * w
+		weight += w
+
+	return total / weight if weight > 0.5 else NAN

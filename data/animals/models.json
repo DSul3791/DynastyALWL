@@ -66,7 +66,17 @@
 						"12": "Idle_Breathing_01",
 						"walk": "Walk",
 						"run": "Run",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Idle_F01",
+						"die": "Death_Idle_R01",
+						"bite": "Attack_Run_01_AttackF"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_1",
+							"Idle_2",
+							"IdleHind_Idle_01"
+						]
 					}
 				},
 				{
@@ -86,7 +96,15 @@
 						"12": "Idle_Breathing_01",
 						"walk": "Walk",
 						"run": "Run",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Stand_F01",
+						"die": "Death_Stand_R01",
+						"bite": "Attack_BiteForward"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_02"
+						]
 					}
 				}
 			],
@@ -230,7 +248,15 @@
 						"walk": "WalkMedium_F",
 						"run": "RunFast_F",
 						"10": "Idle_Breathing",
-						"trot": "TrotFast_F"
+						"trot": "TrotFast_F",
+						"hit": "HitInRunHead_F"
+					},
+					"idle_variants": {
+						"0": [
+							"GrazingOnSpotB_2",
+							"GrazingOnSpotB_3",
+							"Idle_Breathing"
+						]
 					}
 				},
 				{
@@ -264,9 +290,16 @@
 						],
 						"run": "Run",
 						"10": "Idle_Breathing_01",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Idle_L01",
+						"die": "Death_Idle_R01"
 					},
-					"note": "Buck (stag)"
+					"note": "Buck (stag)",
+					"idle_variants": {
+						"0": [
+							"Idle_1"
+						]
+					}
 				},
 				{
 					"scene": "res://assets/animals/deer_red_stag/SK_RedDeerMale.fbx",
@@ -284,7 +317,9 @@
 						"walk": "Walk",
 						"run": "Run",
 						"10": "Idle",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Stand_L01",
+						"die": "Death_Stand_R01"
 					},
 					"size_clip": "Idle",
 					"note": "Red deer stag"
@@ -316,10 +351,17 @@
 						],
 						"run": "Run",
 						"10": "Idle_Breathing_01",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Idle_L01",
+						"die": "Death_Idle_R01"
 					},
 					"length_m": 1.8,
-					"note": "Doe"
+					"note": "Doe",
+					"idle_variants": {
+						"0": [
+							"Idle_1"
+						]
+					}
 				},
 				{
 					"scene": "res://assets/animals/deer_doe_1/SK_Doe_1.fbx",
@@ -363,11 +405,18 @@
 						"walk": "Walk",
 						"run": "Run",
 						"10": "Idle_Breathing_01",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Stand_L01",
+						"die": "Death_Stand_R01"
 					},
 					"size_clip": "Idle",
 					"length_m": 1.8,
-					"note": "Hind"
+					"note": "Hind",
+					"idle_variants": {
+						"0": [
+							"Idle_Breathing_01"
+						]
+					}
 				},
 				{
 					"scene": "res://assets/animals/deer_1/SK_Deer_1.fbx",
@@ -412,7 +461,8 @@
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F",
 				"swim": "WalkSlow_F",
-				"trot": "TrotSlow_F"
+				"trot": "TrotSlow_F",
+				"hit": "HitLegFL2RunFast_F"
 			},
 			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget). Swim clip (8 Nov 2026): its file has no swim clip: the slow walk, mostly under water. gait_fallback swim: a hand-made paddling walk with the neck and head lifted out of the water; rename to gait to use it instead of the slow walk (axes a first guess until a creature check).",
 			"length_m": 3.0,
@@ -500,7 +550,15 @@
 					}
 				}
 			},
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotA_3",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -551,7 +609,15 @@
 						"12": "Idle",
 						"walk": "walk_fwd_01",
 						"run": "run_fwd_01",
-						"trot": "trot_fwd_01"
+						"trot": "trot_fwd_01",
+						"hit": "hit_hip_lft_01",
+						"bite": "attack_02"
+					},
+					"idle_variants": {
+						"0": [
+							"idle_eat_look_around_01",
+							"idle_eat_look_up_short"
+						]
 					}
 				},
 				{
@@ -577,7 +643,15 @@
 							"GrazingWalkMedium_F"
 						],
 						"run": "RunFast_F",
-						"trot": "TrotFast_F"
+						"trot": "TrotFast_F",
+						"hit": "HitLegFL2RunFast_F"
+					},
+					"idle_variants": {
+						"0": [
+							"GrazingOnSpotA_2",
+							"GrazingOnSpotA_3",
+							"Idle_Breathing"
+						]
 					}
 				}
 			],
@@ -624,7 +698,13 @@
 						"walk": "WalkMedium_F",
 						"run": "RunFast_F",
 						"6": "AlarmBark",
-						"trot": "TrotFast_F"
+						"trot": "TrotFast_F",
+						"hit": "HitLegFL2RunFast"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle"
+						]
 					}
 				},
 				{
@@ -642,7 +722,17 @@
 						"12": "Idle_3",
 						"walk": "Walk",
 						"run": "Run",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Stand_L01",
+						"die": "Death_Stand_L01",
+						"bite": "Attack_BiteForward"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle",
+							"Idle_2",
+							"Idle_3"
+						]
 					}
 				}
 			],
@@ -698,6 +788,12 @@
 						"run": "RunFast_F",
 						"10": "Bark_2x",
 						"trot": "TrotFast_F"
+					},
+					"idle_variants": {
+						"0": [
+							"GrazingOnSpotB_1",
+							"Idle"
+						]
 					}
 				},
 				{
@@ -716,7 +812,16 @@
 						"walk": "Walk",
 						"run": "Run",
 						"10": "Idle",
-						"trot": "Trot"
+						"trot": "Trot",
+						"hit": "Hit_Stand_R01",
+						"die": "Death_Stand_L01"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle",
+							"Idle_3",
+							"Idle_4"
+						]
 					}
 				}
 			],
@@ -786,7 +891,17 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Horse",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"Idle_Fidget_01",
+					"Idle_Fidget_02",
+					"Idle_Fidget_03",
+					"Idle_Fidget_04",
+					"Idle_Fidget_05",
+					"Idle_03"
+				]
+			}
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey/SK_Donkey.fbx",
@@ -864,6 +979,16 @@
 						"walk": "Walk",
 						"run": "Gallop",
 						"trot": "Trot"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_Fidget_01",
+							"Idle_Fidget_02",
+							"Idle_Fidget_03",
+							"Idle_Fidget_04",
+							"Idle_Fidget_05",
+							"Idle_03"
+						]
 					}
 				},
 				{
@@ -886,7 +1011,8 @@
 						"12": "idle",
 						"walk": "walk",
 						"run": "run",
-						"trot": "trot"
+						"trot": "trot",
+						"bite": "rear leg kick"
 					},
 					"note": "Dark donkey (Realistic Animals/Donkey): its own clips."
 				}
@@ -907,7 +1033,8 @@
 				"walk": "walk_fwd_01",
 				"run": "run_fwd_01",
 				"10": "idle_call_02",
-				"trot": "trot_fwd_01"
+				"trot": "trot_fwd_01",
+				"hit": "hit_chest_lft_01"
 			},
 			"note": "WildMesh Lynx (Realistic Animals/Lynx/SK_Lynx.fbx, textures in its Textures folder). 95 clips; units are metres. Fur cards are the M_lynx_cards surface.",
 			"length_m": 1.0,
@@ -922,7 +1049,13 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Lynx",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"idle_shake_01",
+					"idle_stretching_01"
+				]
+			}
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
@@ -939,7 +1072,8 @@
 				"12": "Idle",
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "A_HitHead2Frighten_F"
 			},
 			"note": "WildMesh BlackBear (Realistic Animals/BlackBear/SK_BlackBear.fbx). 136 clips; units are centimetres (rescaled by length_m).",
 			"length_m": 1.7,
@@ -950,7 +1084,15 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/BlackBear",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing",
+					"A_BrownBear_Sniffing5x"
+				]
+			}
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -966,7 +1108,9 @@
 				"12": "Idle_Breathing_01",
 				"walk": "Walk_2",
 				"run": "Run",
-				"trot": "Trot"
+				"trot": "Trot",
+				"hit": "Hit_Idle_L01",
+				"die": "Death_Idle_R01"
 			},
 			"note": "WildMesh Elk (Realistic Animals/Elk/SK_Elk.fbx). 58 clips; antler surface is called Chifre. Body texture may be 4096: set its import size limit to 2048 like the moose. Clips checked with tools/creature_check.gd (7 Nov 2026): Idle grazes head down; Food_Eating_01_Wolf lays it flat; the file has two clips called Walk, one static and one shrinking the rig to a hundredth, so the walk is Walk_2.",
 			"length_m": 2.4,
@@ -1006,7 +1150,8 @@
 				"run": "RunFast_F",
 				"10": "Stomping_1",
 				"21": "GrazingOnSpotA_1",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "HitLegFL2RunFast_F"
 			},
 			"note": "WildMesh Bighorn Sheep (Realistic Animals/BighornSheep/SK_BighornSheep.fbx). 114 clips; units are centimetres. Idle_Breathing lies down, so alert and recover stand in Idle (creature check, 7 Nov 2026).",
 			"length_m": 1.6,
@@ -1021,7 +1166,15 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/BighornSheep",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing",
+					"bleat"
+				]
+			}
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -1037,7 +1190,8 @@
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F",
 				"10": "Idle_Breathing",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "HitInRunHead_F"
 			},
 			"note": "WildMesh Mountain Goat (Realistic Animals/MountainGoat/SK_MountainGoat.fbx). 116 clips; units are centimetres. Horn surface is called MountainGoat_Antle.",
 			"length_m": 1.4,
@@ -1052,7 +1206,15 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/MountainGoat",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing",
+					"Idle_SecondaryMoveCalm_1"
+				]
+			}
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -1067,7 +1229,10 @@
 				"12": "Idle",
 				"walk": "Walk_F_IP",
 				"run": "Run_F_IP",
-				"swim": "Walk_F_IP"
+				"swim": "Walk_F_IP",
+				"hit": "Hit_Front",
+				"die": "Death",
+				"bite": "Attack"
 			},
 			"note": "WildMesh Beaver (Realistic Animals/Beaver/SK_Beaver.fbx). 20 clips; units are centimetres. No graze clip: Idle_2 stands in. Swim clip (8 Nov 2026): its file has no swim clip: the forward walk paddles. gait_fallback swim: a hand-made swim (hind feet paddling in turn, front legs held still, tail sculling side to side, head up); rename to gait to use it instead of the walk (axes a first guess until a creature check).",
 			"length_m": 0.8,
@@ -1160,6 +1325,11 @@
 						]
 					}
 				}
+			},
+			"idle_variants": {
+				"0": [
+					"Idle"
+				]
 			}
 		},
 		"chamois": {
@@ -1178,7 +1348,9 @@
 				"run": "Run",
 				"10": "Alert",
 				"19": "Sleeping",
-				"trot": "Trot"
+				"trot": "Trot",
+				"hit": "Damage",
+				"die": "Death"
 			},
 			"note": "WildMesh Chamois male (Realistic Animals/ChamoisMale/SK_ChamoisMale.fbx). Checked 7 Nov 2026: Idle_3 grazes head down, Alert stands head up; clips are in place.",
 			"length_m": 1.25,
@@ -1188,7 +1360,13 @@
 					"albedo": "res://assets/animals/chamois/Textures/T_ChamoisMale.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"Idle",
+					"Idle_2"
+				]
+			}
 		},
 		"mink": {
 			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
@@ -1205,7 +1383,8 @@
 				"walk": "starttrot_fwd_01",
 				"run": "startsprint_fwd_01",
 				"10": "idle_alerted_shared_bark_01",
-				"19": "rest_idle_01"
+				"19": "rest_idle_01",
+				"hit": "hit_chest_front_01"
 			},
 			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs. clip_loop (8 Nov 2026, Dave: give it a walk): its walk loops starttrot_fwd_01 from 0.133 to 0.600 s and its run startsprint_fwd_01 from 0.183 to 0.483 s, the windows tools/find_loop.gd found with the closest ends (7 and 12 degrees per bone), eased together over the last 0.12 and 0.1 s. gait_fallback: a hand-made walk (four-beat) and run (bound) from its own bones, kept ready; rename it to gait to use it in place of the clip_loop walk and run (the axes are a first guess until a creature check).",
 			"length_m": 0.6,
@@ -1343,6 +1522,11 @@
 						]
 					}
 				}
+			},
+			"idle_variants": {
+				"0": [
+					"idle_shake_01"
+				]
 			}
 		},
 		"raccoon": {
@@ -1361,7 +1545,8 @@
 				"run": "sprint fwd",
 				"10": "idle alerted shared bark",
 				"19": "rest idle",
-				"trot": "trot fwd"
+				"trot": "trot fwd",
+				"hit": "hit chest front"
 			},
 			"note": "WildMesh Raccoon (Realistic Animals/Racoon/SK_Racoon.fbx).",
 			"length_m": 0.75,
@@ -1375,7 +1560,13 @@
 					"albedo": "res://assets/animals/raccoon/Textures/T_Racoon_Body.png"
 				}
 			],
-			"trot_mps": 2.0
+			"trot_mps": 2.0,
+			"idle_variants": {
+				"0": [
+					"idle eat 2",
+					"idle stretch"
+				]
+			}
 		},
 		"rat": {
 			"scene": "res://assets/animals/rat/SK_Rat.fbx",
@@ -1391,7 +1582,9 @@
 				"12": "NeutralStand00",
 				"walk": "Walk",
 				"run": "Run",
-				"19": "Lying01"
+				"19": "Lying01",
+				"hit": "Damage",
+				"die": "Death"
 			},
 			"note": "WildMesh Rat (Realistic Animals/Rat/SK_Rat.fbx).",
 			"length_m": 0.4,
@@ -1447,6 +1640,11 @@
 					0,
 					-25
 				]
+			},
+			"idle_variants": {
+				"0": [
+					"Look2"
+				]
 			}
 		},
 		"pheasant": {
@@ -1471,7 +1669,13 @@
 					"match": "",
 					"albedo": "res://assets/animals/pheasant/Textures/T_Pheasant.png"
 				}
-			]
+			],
+			"idle_variants": {
+				"0": [
+					"StandGrazingB",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"goose": {
 			"scene": "res://assets/animals/goose/SK_Goose.fbx",
@@ -1497,7 +1701,13 @@
 					"albedo": "res://assets/animals/goose/Textures/T_Goose.png"
 				}
 			],
-			"swim_mps": 0.8
+			"swim_mps": 0.8,
+			"idle_variants": {
+				"0": [
+					"StandGrazingB",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
@@ -1515,7 +1725,9 @@
 				"run": "Run_600",
 				"10": "Alert",
 				"19": "Lying",
-				"trot": "Trot_300"
+				"trot": "Trot_300",
+				"hit": "Damage",
+				"die": "Death"
 			},
 			"note": "WildMesh Cow (Realistic Animals/Cow/SK_Cow.fbx).",
 			"length_m": 2.4,
@@ -1544,7 +1756,13 @@
 				],
 				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young."
 			},
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"Idle_2",
+					"Idle_3"
+				]
+			}
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -1561,7 +1779,8 @@
 				"walk": "walk",
 				"run": "run",
 				"10": "idle",
-				"trot": "trot"
+				"trot": "trot",
+				"bite": "rear kick"
 			},
 			"note": "WildMesh Goat (Realistic Animals/Goat/SK_Goat.fbx). T_Goat.png's alpha is nearly all zero (not a cut-out): its material entry is opaque, or the goat is invisible.",
 			"length_m": 1.3,
@@ -1572,7 +1791,12 @@
 					"opaque": true
 				}
 			],
-			"trot_mps": 2.5
+			"trot_mps": 2.5,
+			"idle_variants": {
+				"0": [
+					"idle"
+				]
+			}
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1587,7 +1811,9 @@
 				"3": "Idle2",
 				"12": "Idle",
 				"walk": "Walk",
-				"run": "Run"
+				"run": "Run",
+				"hit": "GetHit",
+				"die": "Death"
 			},
 			"note": "WildMesh Chicken (Realistic Animals/Chicken/SK_Chicken.fbx).",
 			"length_m": 0.45,
@@ -1615,7 +1841,16 @@
 						"3": "Alert",
 						"12": "NeutralStand",
 						"walk": "Walk",
-						"run": "Run"
+						"run": "Run",
+						"hit": "Damage",
+						"die": "Death"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle_3",
+							"Idle_4",
+							"Oneleg01"
+						]
 					}
 				}
 			]
@@ -1636,7 +1871,8 @@
 				"run": "Run",
 				"10": "Idle",
 				"19": "Sit",
-				"trot": "Trot"
+				"trot": "Trot",
+				"die": "Death"
 			},
 			"note": "WildMesh Cat (Realistic Animals/Cat/SK_Cat.fbx).",
 			"length_m": 0.7,
@@ -1646,7 +1882,13 @@
 					"albedo": "res://assets/animals/cat/Textures/T_Cat.png"
 				}
 			],
-			"trot_mps": 2.0
+			"trot_mps": 2.0,
+			"idle_variants": {
+				"0": [
+					"Idle02",
+					"Idle03"
+				]
+			}
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -1694,10 +1936,22 @@
 						"walk": "walk fwd",
 						"run": "run fwd",
 						"trot": "trot fwd"
+					},
+					"idle_variants": {
+						"0": [
+							"idle shake"
+						]
 					}
 				}
 			],
-			"trot_mps": 2.5
+			"trot_mps": 2.5,
+			"idle_variants": {
+				"0": [
+					"Idle",
+					"idle_shake_01",
+					"idle_one_off_dig_01"
+				]
+			}
 		},
 		"buffalo": {
 			"scene": "res://assets/animals/buffalo/SK_Buffalo.fbx",
@@ -1715,7 +1969,8 @@
 				"12": "Idle",
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "HitInRunHead_F"
 			},
 			"note": "WildMesh Wild ox (Realistic Animals/Buffalo/SK_Buffalo.fbx).",
 			"length_m": 3.0,
@@ -1729,7 +1984,14 @@
 					"albedo": "res://assets/animals/buffalo/Textures/T_Buffalo_Body.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Standstraight_Breathing"
+				]
+			}
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1779,7 +2041,9 @@
 				"walk": "walk_fwd",
 				"run": "run_fwd",
 				"19": "idle_rest_grooming",
-				"trot": "trot_fwd"
+				"trot": "trot_fwd",
+				"hit": "hit_chest_lft",
+				"bite": "attack_fwd"
 			},
 			"note": "WildMesh Puma (Realistic Animals/Puma/SK_Puma.fbx). Imported crouched: sized by its standing 'idle pose' (size_clip); length_m 2.0 is nose to tail tip. Checked 7 Nov 2026.",
 			"length_m": 2.0,
@@ -1811,7 +2075,9 @@
 				"walk": "Walk_2",
 				"run": "Run",
 				"10": "Idle_Breathing_01",
-				"trot": "Trot"
+				"trot": "Trot",
+				"hit": "Hit_Idle_L01",
+				"die": "Death_Idle_R01"
 			},
 			"note": "WildMesh Pronghorn (Realistic Animals/Pronghorn/SK_Pronghorn.fbx). Same rig as the elk: Idle grazes head down, the real walk is Walk_2. Checked 7 Nov 2026.",
 			"length_m": 1.45,
@@ -1850,7 +2116,8 @@
 					"GrazingWalkMedium_F"
 				],
 				"run": "RunFast_F",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "HitLegFL2RunFast_F"
 			},
 			"note": "WildMesh Warthog (Realistic Animals/Warthog/SK_Warthog.fbx). Imported mid-run: sized by its Idle (size_clip). GrazingOnSpotA2IdleThreat drops onto its haunches, so warn stands in Idle_Breathing. Checked 7 Nov 2026.",
 			"length_m": 1.4,
@@ -1865,7 +2132,14 @@
 				}
 			],
 			"size_clip": "Idle",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"hyena": {
 			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
@@ -1886,7 +2160,8 @@
 					"GrazingWalkMedium_F"
 				],
 				"run": "RunFast_F",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "HitInRunHead_F"
 			},
 			"note": "WildMesh Hyena (Realistic Animals/Hyena/SK_Hyena.fbx). Laughs when it warns. Checked 7 Nov 2026.",
 			"length_m": 1.5,
@@ -1896,7 +2171,14 @@
 					"albedo": "res://assets/animals/hyena/Textures/T_Hyena.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -1917,7 +2199,8 @@
 					"GrazingWalkMedium_F"
 				],
 				"run": "RunFast_F",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"hit": "HitInRunHead_F"
 			},
 			"note": "WildMesh Wildebeest (Realistic Animals/Wildebeest/SK_Wildebeest.fbx). Checked 7 Nov 2026.",
 			"length_m": 2.3,
@@ -1931,7 +2214,14 @@
 					"albedo": "res://assets/animals/wildebeest/Textures/T_Wildebeest_Body.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_3",
+					"GrazingOnSpotB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
@@ -1982,7 +2272,16 @@
 						"walk": "walk_fwd_01",
 						"run": "run_fwd_01",
 						"19": "idle_rest_grooming_01",
-						"trot": "trot_fwd_01"
+						"trot": "trot_fwd_01",
+						"hit": "hit_chest_lft_01",
+						"bite": "attack_fwd_01"
+					},
+					"idle_variants": {
+						"0": [
+							"idle_shake_01",
+							"idle_stretching_01",
+							"idle_smell_01"
+						]
 					}
 				},
 				{
@@ -2004,7 +2303,13 @@
 						"walk": "WalkMedium_F",
 						"run": "RunFast_F",
 						"19": "LyingBreathing",
-						"trot": "TrotFast_F"
+						"trot": "TrotFast_F",
+						"hit": "HitInRunHead_F"
+					},
+					"idle_variants": {
+						"0": [
+							"Idle"
+						]
 					}
 				},
 				{
@@ -2033,9 +2338,18 @@
 						"walk": "walk_fwd_01",
 						"run": "run_fwd_01",
 						"19": "idle_rest_grooming_01",
-						"trot": "trot_fwd_01"
+						"trot": "trot_fwd_01",
+						"hit": "hit_chest_lft_01",
+						"bite": "attack_fwd_01"
 					},
-					"size_clip": "Idle"
+					"size_clip": "Idle",
+					"idle_variants": {
+						"0": [
+							"idle_shake_01",
+							"idle_stretching_01",
+							"idle_smell_01"
+						]
+					}
 				}
 			],
 			"size_clip": "Idle",
@@ -2057,7 +2371,9 @@
 				"12": "Idle",
 				"walk": "Walk-IP",
 				"run": "Run-IP",
-				"trot": "Trot-IP"
+				"trot": "Trot-IP",
+				"die": "Death_Stand_Left-IP1",
+				"bite": "Attack_Head_01-IP"
 			},
 			"note": "WildMesh Leopard (Realistic Animals/Leopard/SK_Leopard.fbx). Checked 7 Nov 2026.",
 			"length_m": 2.0,
@@ -2085,7 +2401,10 @@
 				"12": "Idle_2",
 				"walk": "Walk-IP",
 				"run": "Run-IP",
-				"trot": "Trot-IP"
+				"trot": "Trot-IP",
+				"hit": "Hit_HeadR_Heavy-IP",
+				"die": "Death_01-IP",
+				"bite": "Attack_HornR-IP"
 			},
 			"note": "WildMesh Rhinoceros (Realistic Animals/Rhinoceros/SK_Rhinoceros.fbx). Checked 7 Nov 2026.",
 			"length_m": 3.6,
@@ -2095,7 +2414,13 @@
 					"albedo": "res://assets/animals/rhino/Textures/T_Rhinoceros.png"
 				}
 			],
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"Idle_2",
+					"Idle_3"
+				]
+			}
 		},
 		"elephant": {
 			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
@@ -2112,7 +2437,10 @@
 				"11": "Sprint-IP",
 				"12": "Stand_00-IP",
 				"walk": "Walk-IP",
-				"run": "Run-IP"
+				"run": "Run-IP",
+				"hit": "Hit_Head_Right-IP",
+				"die": "Death_01-IP",
+				"bite": "Attack_Head_01-IP"
 			},
 			"note": "WildMesh African Elephant (Realistic Animals/AfricanElephant/SK_AfricanElephant.fbx). Checked 7 Nov 2026.",
 			"length_m": 6.0,
@@ -2129,7 +2457,13 @@
 					"match": "",
 					"albedo": "res://assets/animals/elephant/Textures/T_AfricanElephant_Body.png"
 				}
-			]
+			],
+			"idle_variants": {
+				"0": [
+					"Idle_2",
+					"Idle_3"
+				]
+			}
 		},
 		"camel": {
 			"scene": "res://assets/animals/camel/SK_Camel.fbx",
@@ -2145,7 +2479,9 @@
 				"12": "Idle",
 				"walk": "Walk_RootMotion",
 				"run": "Run_RootMotion",
-				"10": "Idle"
+				"10": "Idle",
+				"hit": "HitLeft_RootMotion",
+				"die": "Death_RootMotion"
 			},
 			"note": "WildMesh Camel (Realistic Animals/Camel/SK_Camel.fbx). Its two texture sets go by material name (Body_02 takes T_Camel_Body2, or a leg is drawn pink). Sized by its Idle. Checked 7 Nov 2026.",
 			"length_m": 3.0,
@@ -2185,7 +2521,13 @@
 					"albedo": "res://assets/animals/guineafowl/Textures/T_Guineafowl.png"
 				}
 			],
-			"size_clip": "Idle"
+			"size_clip": "Idle",
+			"idle_variants": {
+				"0": [
+					"StandGrazingB_1",
+					"Idle_Breathing"
+				]
+			}
 		},
 		"honey_badger": {
 			"scene": "res://assets/animals/honey_badger/SK_HoneyBadger.fbx",
@@ -2217,7 +2559,13 @@
 					"albedo": "res://assets/animals/honey_badger/Textures/T_HoneyBadger.png"
 				}
 			],
-			"trot_mps": 2.5
+			"trot_mps": 2.5,
+			"idle_variants": {
+				"0": [
+					"GrazingOnSpotA_2",
+					"GrazingOnSpotB_1"
+				]
+			}
 		},
 		"kangaroo": {
 			"scene": "res://assets/animals/kangaroo/SK_Kangaroo.fbx",
@@ -2239,7 +2587,9 @@
 				],
 				"run": "sprint_fwd_01",
 				"19": "rest_idle_01",
-				"trot": "trot_fwd_01"
+				"trot": "trot_fwd_01",
+				"hit": "hit_chest_front_01",
+				"bite": "aggressive kick fwd"
 			},
 			"note": "WildMesh Kangaroo (Realistic Animals/Kangaroo/SK_Kangaroo.fbx). Checked 7 Nov 2026. Grazes head down in idle_eat: it bends to a third of its standing height, so flat_share 0.25 lets the flat-clip guard keep it (8 Nov 2026, Dino's strips).",
 			"length_m": 1.8,
@@ -2254,7 +2604,13 @@
 				}
 			],
 			"flat_share": 0.25,
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"idle_variants": {
+				"0": [
+					"idle_eat_search_01",
+					"idle_eat_look_around_01"
+				]
+			}
 		},
 		"mammoth": {
 			"scene": "res://assets/animals/mammoth/SK_Mammoth.fbx",
@@ -2272,7 +2628,9 @@
 				"12": "A - Mammoth-Idle",
 				"walk": "Mammoth-Move-Fwd",
 				"run": "Mammoth-Charge-Fwd",
-				"21": "Mammoth-Graze"
+				"21": "Mammoth-Graze",
+				"hit": "Mammoth-Hurt-Big-Rit",
+				"bite": "Mammoth-Attack-Tusk-Jab"
 			},
 			"note": "WildMesh Mammoth (Realistic Animals/Mammoth/SK_Mammoth.fbx). Trumpets when it warns. Checked 7 Nov 2026.",
 			"length_m": 6.5,
@@ -2307,7 +2665,9 @@
 				"12": "Idle",
 				"walk": "Walk-IP",
 				"run": "Run-IP",
-				"trot": "Trot-IP"
+				"trot": "Trot-IP",
+				"die": "Death_L-IP",
+				"bite": "Attack_Bite_01-IP"
 			},
 			"note": "WildMesh Tiger (Realistic Animals/Tiger/SK_Tiger.fbx). Same rig as the leopard. Checked 7 Nov 2026.",
 			"length_m": 3.0,

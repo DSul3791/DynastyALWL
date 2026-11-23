@@ -1740,6 +1740,7 @@ func _welcome_body(info: Dictionary) -> void:
 	net.flight_seen_received.connect(func(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 		if held != null:
 			held.add_seen_flight(number, from, velocity, fire))   # another player's arrow or thrown spear in the air (protocol 159)
+	net.ground_taken_received.connect(_on_ground_taken)   # branches, tide-line nodes and nests others took (protocol 160)
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
@@ -2438,7 +2439,7 @@ func _shore_prompt() -> String:
 			break
 
 	if nest_view != null:
-		nest_view.set_season(game_clock.season())   # eggs show in the laying season only
+		nest_view.set_season(game_clock.season(), int(floor(game_clock.seconds / 86400.0)))   # eggs show in the laying season only, and not in a nest robbed lately
 
 	if shore_props != null:
 		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
@@ -3296,7 +3297,7 @@ func _ice_feel_velocity(velocity: Vector3, water: Dictionary, delta: float) -> V
 		var now_v: Vector2 = IceFeelScript.grip_step(Vector2(body.velocity.x, body.velocity.z), want, IceFeelScript.grip_rate(_ice_feel_band, snow), delta)
 		velocity.x = now_v.x
 		velocity.z = now_v.y
-	elif not water.is_empty() and body.is_on_floor() and sound != null and sound.water.still_near():
+	elif not water.is_empty() and not float(water["surface"]) <= float(water.get("ground", NAN)) and body.is_on_floor() and sound != null and sound.water.still_near():   # in the water, not on the bank its sheet runs under
 		var slow: float = IceFeelScript.wade_mult(_ice_feel_band)
 		velocity.x *= slow
 		velocity.z *= slow
@@ -3436,6 +3437,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		_flow_tex.update(im)
 
 	_liquid.show_window(im, origin, cell_m, _flow_tex)
+	flora.set_liquid_live_image(im, origin, cell_m)   # wading and swimming read the water this window draws (flora_view water_surface_at)
 	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in (told only when the window moves).
 	var hole: Rect2 = Rect2(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m)
 
@@ -3628,6 +3630,30 @@ func _on_water_received(chunk: Vector2i, water: PackedByteArray) -> void:
 
 func _on_flora_fruit(chunk: Vector2i, ids: PackedInt32Array, taken: PackedInt32Array) -> void:
 	flora.set_fruit_taken(chunk, ids, taken)
+
+
+# Protocol 160: forest-floor pickups taken by anyone (this player too), as the server keeps them: a dead branch is hidden, a tide-line
+# node is used for that day, a nest shows empty until it refills (server_items.gd _tell_taken_near).
+func _on_ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array) -> void:
+	if kind == 3 and points.is_empty():
+		points = PackedVector3Array([Vector3.ZERO])   # the clear carries no points
+
+	for i in points.size():
+		var day: int = days[i] if i < days.size() else int(floor(game_clock.seconds / 86400.0))
+
+		if kind == 3:
+			if grass != null:
+				grass.clear_taken()
+			_shore_used.clear()
+			if nest_view != null:
+				nest_view.clear_robbed()
+			return
+		elif kind == 0 and grass != null:
+			grass.take_branch(points[i], day)
+		elif kind == 1:
+			_shore_used[ShoreRules.cell_key(_shore_cfg, points[i])] = day
+		elif kind == 2 and nest_view != null:
+			nest_view.robbed(points[i], day)
 
 
 func _on_flora_stripped(chunk: Vector2i, ids: PackedInt32Array) -> void:
@@ -5535,7 +5561,7 @@ func _move_player(delta: float) -> void:
 	var strain_cap: float = items.move_cap() if items != null and not flying else 0.0
 
 	# Gaits (CONTROLS.md): walk is plain WASD, run is Shift with W.
-	running = forward and KeyBindings.held("run") and strain_cap == 0.0
+	running = forward and KeyBindings.held("run") and strain_cap == 0.0 and not (held != null and held.blocking)   # a raised shield walks (protection.json note_shield)
 	var pace: float = RUN_SPEED if running else WALK_SPEED
 
 	if not flying and stance.stance != StanceScript.STAND:
@@ -5661,8 +5687,8 @@ func _move_player(delta: float) -> void:
 		var carried: Vector3 = _slide_carry / delta if carrying else Vector3.ZERO
 		body.velocity += carried
 		body.move_and_slide()
-		if not body.is_on_wall():
-			body.velocity -= carried   # the pace the animation, sounds and ice grip read stays the walker's own
+		var wall_n: Vector3 = body.get_wall_normal() if body.is_on_wall() else Vector3.ZERO
+		body.velocity -= carried.slide(Vector3(wall_n.x, 0.0, wall_n.z).normalized()) if body.is_on_wall() else carried   # the pace the animation, sounds and ice grip read stays the walker's own
 		Probe.stop("p slide", tm)
 
 		if carrying:
@@ -5737,21 +5763,31 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 
 # Dave 23 Nov 2026, crouched "like I was against an invisible wall but if I stood up I could walk": on the voxel terrain under Jolt a
 # move_and_slide of only a few millimetres on the floor (a slow crouch, a loaded or tired walker) often goes nowhere at all, though nothing
-# but the floor is touched. When a floor move made under 30% of the asked headway and no wall stopped it, the asked move is carried into the
-# next frame's, so the body moves in steps of a centimetre or two instead of standing still. A real wall clears the carry (it stops you as
-# before); SLIDE_CARRY_MAX_M caps it.
+# but the floor is touched, and the same at a wall or trunk it is sliding along. When a floor move made under 30% of the asked headway, the
+# asked move (against a wall only the part along it) is carried into the next frame's, so the body moves in steps of a centimetre or two
+# instead of standing still. Walking straight into a wall carries nothing (it stops you as before); SLIDE_CARRY_MAX_M caps it.
 const SLIDE_CARRY_MAX_M := 0.05
 
 
 func _carry_slide(from: Vector3, asked: Vector3) -> void:
-	var want: Vector3 = asked + _slide_carry
+	var carry: Vector3 = _slide_carry
+
+	if body.is_on_wall() and asked.length_squared() >= 0.00000001:
+		# Against a wall or a trunk only the move along it counts (robots 23 Nov 2026: crouched, sliding along a tree trunk went nowhere while standing
+		# slid past): head on, nothing is carried and the wall stops you.
+		var wall: Vector3 = Vector3(body.get_wall_normal().x, 0.0, body.get_wall_normal().z).normalized()
+		var along: Vector3 = asked.slide(wall)
+		asked = along if along.length() >= asked.length() * 0.2 else Vector3.ZERO
+		carry = carry.slide(wall)
+
+	var want: Vector3 = asked + carry
 	var got: float = Vector2(body.global_position.x - from.x, body.global_position.z - from.z).length()
 
-	if asked.length_squared() < 0.00000001 or body.is_on_wall() or got >= want.length() * 0.3:
+	if asked.length_squared() < 0.00000001 or got >= want.length() * 0.3:
 		_slide_carry = Vector3.ZERO
 		return
 
-	_slide_carry = (_slide_carry + asked).limit_length(SLIDE_CARRY_MAX_M)
+	_slide_carry = (carry + asked).limit_length(SLIDE_CARRY_MAX_M)
 
 
 # Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
@@ -6102,6 +6138,9 @@ func _process(delta: float) -> void:
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
 	game_clock.tick()
+
+	if grass != null:
+		grass.today = int(floor(game_clock.seconds / 86400.0))   # taken branches of an earlier day have grown back (protocol 160)
 	_update_weather()
 	Probe.stop("clock, weather", tp)
 
@@ -7890,7 +7929,7 @@ func _wet_near(x: float, z: float, m: float) -> bool:
 		return false
 
 	for d in [Vector2.ZERO, Vector2(m, 0.0), Vector2(-m, 0.0), Vector2(0.0, m), Vector2(0.0, -m)]:
-		if not is_nan(float(flora.water_surface_at(x + d.x, z + d.y))):
+		if not is_nan(float(flora.water_wet_at(x + d.x, z + d.y))):
 			return true
 
 	return false
@@ -7903,14 +7942,14 @@ func _ground_below(p: Vector3) -> float:
 	return float(hit["position"].y) if not hit.is_empty() else NAN
 
 
-# --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side, a crouched walk at the crouch pace (or --runspeed) up beside it from four sides, 3 s each;
+# --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side (clear of the trunk) and 0.35 m (brushing it), a crouched walk at the crouch pace (or --runspeed) up beside it from four sides, 3 s each;
 # a walk that covers under 60 percent of its distance is stuck. Prints "crouch walk: N of M stuck" and ends the walk test.
 var _crouch_trees: Array = []
 var _crouch_case: int = -1
 var _crouch_case_msec: int = 0
 var _crouch_from: Vector3 = Vector3.ZERO
 var _crouch_stuck: int = 0
-const CROUCH_WALK_TREES := 10
+const CROUCH_WALK_TREES := 5    # each from four sides, past and brushing: 40 walks
 const CROUCH_WALK_S := 3.0
 
 
@@ -7951,17 +7990,18 @@ func _crouch_walk_step(now: int) -> void:
 		_walk_phase = 4
 		return
 
-	if _crouch_case >= _crouch_trees.size() * 4:
-		FreezeWatchScript.printer.line("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 4])
+	if _crouch_case >= _crouch_trees.size() * 8:
+		FreezeWatchScript.printer.line("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 8])
 		_set_stance(StanceScript.STAND)
 		_walk_dir = Vector3.ZERO
 		_walk_phase = 4
 		return
 
-	var tree: Vector3 = _crouch_trees[floori(_crouch_case / 4.0)][1]
+	var tree: Vector3 = _crouch_trees[floori(_crouch_case / 8.0)][1]
 	var ang: float = deg_to_rad(90.0 * (_crouch_case % 4))
 	var toward: Vector3 = Vector3(-sin(ang), 0.0, -cos(ang))
-	var start: Vector3 = tree - toward * 2.0 + Vector3(toward.z, 0.0, -toward.x) * 0.8
+	var aside: float = 0.8 if _crouch_case % 8 < 4 else 0.35   # past the trunk, then brushing it (the robots' stops: against the trunk, sliding along it)
+	var start: Vector3 = tree - toward * 2.0 + Vector3(toward.z, 0.0, -toward.x) * aside
 	var ground: float = _ground_below(Vector3(start.x, tree.y + 30.0, start.z))
 	body.global_position = Vector3(start.x, (tree.y if is_nan(ground) else ground) + 1.0, start.z)
 	body.velocity = Vector3.ZERO

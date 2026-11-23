@@ -3747,7 +3747,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	var body: StaticBody3D = StaticBody3D.new()
 	body.set_meta("boulder", true)   # the look label names it (terrain_client _inspect_target: it showed the soil under it, TEST-013)
 	var shape: CollisionShape3D = CollisionShape3D.new()
-	shape.shape = SphereShape3D.new()
+	shape.shape = ConvexPolygonShape3D.new()   # the drawn rock's own hull (_size_boulder)
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
 	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
@@ -3791,6 +3791,17 @@ func _boulder_material(ore: String) -> ShaderMaterial:
 const SHRINK_EASE_S := 0.15   # how long a blow takes to ease a boulder down to its new size (look only; PROVISIONAL BW-3)
 
 
+var _boulder_hulls: Dictionary = {}   # rock mesh -> its convex hull points (unscaled), made once per mesh
+
+
+func _boulder_hull(mesh: Mesh) -> PackedVector3Array:
+	if not _boulder_hulls.has(mesh):
+		var convex: ConvexPolygonShape3D = mesh.create_convex_shape(true, true)
+		_boulder_hulls[mesh] = convex.points if convex != null else PackedVector3Array()
+
+	return _boulder_hulls[mesh]
+
+
 # Scale to the radius still left (BoulderWear: in a straight line with the stones left, from the first blow), sunk a fifth into the ground like Art's scenery boulders.
 func _size_boulder(entry: Dictionary) -> void:
 	var box: AABB = (entry["lump"].mesh as Mesh).get_aabb()
@@ -3817,8 +3828,33 @@ func _size_boulder(entry: Dictionary) -> void:
 		lump_node.scale = Vector3.ONE * scale
 		lump_node.position = lump_at
 
-	entry["shape"].shape.radius = radius * 0.85
-	entry["shape"].position = Vector3(0.0, radius * 0.5, 0.0)
+	# The collider is the drawn rock's hull at its new size (world audit 23 Nov 2026: a sphere of 0.85 x the radius half a radius up stood 0.65 of a
+	# radius above the drawn top, about 1.35 against 0.7, so a player stood on air over every boulder, and its sides were inside the rock at the shins).
+	# Rebuilt only when the size changed (a resend or a settle keeps it); a mesh with no hull keeps a sphere at the drawn height.
+	if not (was >= 0.0 and is_equal_approx(was, radius)):
+		var hull: PackedVector3Array = _boulder_hull(entry["lump"].mesh as Mesh)
+
+		if hull.is_empty():
+			push_warning("boulder mesh has no convex hull: a sphere collider instead")
+			var ball: SphereShape3D = SphereShape3D.new()
+			ball.radius = radius * 0.6
+			entry["shape"].shape = ball
+			entry["shape"].position = Vector3(0.0, radius * 0.1, 0.0)
+		else:
+			var points: PackedVector3Array = PackedVector3Array()
+			points.resize(hull.size())
+
+			for k in hull.size():
+				points[k] = hull[k] * scale + lump_at
+
+			var convex: ConvexPolygonShape3D = entry["shape"].shape as ConvexPolygonShape3D
+
+			if convex == null:
+				convex = ConvexPolygonShape3D.new()
+				entry["shape"].shape = convex
+				entry["shape"].position = Vector3.ZERO
+
+			convex.points = points
 	lump_node.set_instance_shader_parameter("crack", BoulderWear.crack(int(entry["left"]), int(entry["total"])))   # cracks from the first blow, more and wider as the rock is used up
 	lump_node.set_instance_shader_parameter("crack_scale", 1.0 / unit)
 

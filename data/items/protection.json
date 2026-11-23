@@ -8,6 +8,8 @@
 	"wear_per_damage": 1.0,
 	"effort_per_kg": 0.01,
 	"effort_free_kg": 8.0,
+	"shield_arc_deg": 120,
+	"note_shield": "A raised shield (B with a shield in the left hand; coordinator for Dave, 23 Nov 2026, PROVISIONAL): a blow from within shield_arc_deg of the way the body faces loses the shield's items.json block share (Wicker 0.35, Plank 0.45, Iron buckler 0.5, Bronze 0.55, Iron 0.65, Steel 0.75) before armour, and the shield wears by what it stopped (wear_per_damage). Nothing from the side or behind. Raised, the player walks (no run). server_items.gd shield_share.",
 	"default_mode": "blunt",
 	"attack_modes": {
 		"note": "A bite or a tusk pierces, claws slash, a charge, kick, butt or club is blunt (the default).",

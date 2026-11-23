@@ -219,7 +219,15 @@ func _init() -> void:
 		r5.tick([Vector3(128.0, 10.0, 128.0)], 10000 + k)
 
 	check(r5.is_ready(Vector2i(0, 0)) and str(all_places(r5)) == str(all_places(r2)), "and the same places once it is in")
-	check(is_inf(r5.route_distance(128.0, 506.0)), "next to a block not worked out, a run's distance is not known")
+	var unknown: int = 0
+	var found_far: int = 0
+
+	for n in 32:   # along the edge next to block 0,2 (not worked out): a trail found in the blocks worked out is the answer, else not known
+		var d: float = r5.route_distance(float(n) * 8.0 + 4.0, 506.0)
+		unknown += 1 if is_inf(d) else 0
+		found_far += 1 if not is_inf(d) and d >= 10.0 else 0
+
+	check(unknown > 0 and found_far == 0, "next to a block not worked out, a run's distance is not known unless a trail is found (%d of 32 not known)" % unknown)
 
 	# The trail block carries the routes, and goes out at once when they are first worked out.
 	var t = TrailsScript.new()

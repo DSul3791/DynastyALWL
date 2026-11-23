@@ -3,8 +3,8 @@ extends SceneTree
 # The slow tick's lists (audit 18 Nov 2026 finding 3): each part walks its own list of items instead of every world item. An item is on a list
 # by what it is, never by a state that changes in place. This test runs two copies of the same world side by side, one on the lists and one on
 # the old walk over every item (_tick_lists_off), through every state a fire, a light, a kiln, a smelter, a pot and an item's lifetime pass
-# (a lit fire burns down to coals, warm ash, cold and is cleared; a torch is lit in place and burns out; a kept pile is given a lifetime in place
-# and ages away; rain comes and goes), and compares every item after each slow tick. Then the small cases: a fire lit since the last full
+# (a lit fire burns down to coals, warm ash, cold and is cleared; a torch is lit in place and burns out; a kept pile stays kept when more is dropped on it;
+# rain comes and goes), and compares every item after each slow tick. Then the small cases: a fire lit since the last full
 # sort burns on the next tick, an item gone from the world is skipped.
 #   godot --headless --path . --script res://src/worldgen/tools/test_tick_lists.gd      Prints "Test done: N pass, N fail".
 
@@ -103,7 +103,7 @@ func _init() -> void:
 				w._lit_valid = false
 
 			if step == 7:
-				w.drop_in_world(stone, 1, Vector3(50.0, 10.0, 140.0), 0, 1200.0)   # onto the kept pile: it is given a lifetime in place
+				w.drop_in_world(stone, 1, Vector3(50.0, 10.0, 140.0), 0, 1200.0)   # onto the kept pile: it stays kept (a never-expiring heap stays so, 23 Nov 2026)
 
 			w.tick(60.0)
 
@@ -133,7 +133,7 @@ func _init() -> void:
 	for id in lists._items:
 		pile_left = pile_left or (int(lists._items[id]["number"]) == stone and lists._items[id]["pos"].distance_to(Vector3(50.0, 10.0, 140.0)) < 1.0)
 
-	check(not pile_left, "the kept pile given a lifetime in place aged away")
+	check(pile_left, "the kept pile with an ordinary drop on it is still there (a never-expiring heap stays so)")
 
 	# A fire lit since the last full sort burns on the next tick; an item gone from the world is skipped; an item made by an earlier part of
 	# a tick (a lit brazier's charcoal) ages in that same tick, as with the full walk.

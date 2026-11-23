@@ -5,7 +5,9 @@ extends SceneTree
 #   1. Amadou ("takes a spark and holds an ember") is tinder: it lights warm ash like tinder fungus, and is used up.
 #   2. The raw greens whose text says "eaten raw" or "eaten fresh" can be eaten (40 kcal, as fiddleheads).
 #   3. The rapier moves (skills.json "placeholder") say "planned" in the skills screen; nothing practises them yet.
-#   4. Every shield says that blocking does not stop blows yet. (Materials with no use: tools/progression_check.py --unmarked, run by merge_check.)
+#   4. Every shield blocks (items.json block) and its text says how much.
+#   5. Comfrey roots, "not for eating", cannot be eaten; a mortar and pestle grinds one into a poultice.
+#   6. Tree roots burn in a fire like firewood. (Materials with no use: tools/progression_check.py --unmarked, run by merge_check.)
 #   godot --headless --path . --script res://src/worldgen/tools/test_no_use_yet.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -89,7 +91,7 @@ func _init() -> void:
 
 	check(planned.size() >= 4 and screen.contains("planned: nothing practises it yet"), "the skills screen source marks %s as planned (a source check: no UI here)" % ", ".join(planned))
 
-	# 4. Every shield says its block does nothing yet.
+	# 4. Every shield says what its raised block stops (test_shield_block.gd plays it).
 	var shields: Array = []
 
 	for id in JSON.parse_string(FileAccess.get_file_as_string("res://data/items/items.json"))["items"].keys():
@@ -99,7 +101,17 @@ func _init() -> void:
 	check(shields.size() >= 6, "%d shields found" % shields.size())
 
 	for id in shields:
-		check(n(id) > 0 and str(items.table.entry(id).get("description", "")).contains("Blocking does not stop blows yet."), "%s says blocking does not stop blows yet" % id)
+		var share: int = int(round(float(items.table.entry(id).get("block", 0.0)) * 100.0))
+		check(share > 0 and str(items.table.entry(id).get("description", "")).contains("Raised, it stops %d%% of a frontal blow." % share), "%s blocks %d%% and says so" % [id, share])
+
+	# 5. Comfrey roots ("not for eating") are not food, though their id ends with "roots".
+	check(VitalsRules.food_value("comfrey_roots", items._vitals_cfg) == 0, "comfrey roots cannot be eaten")
+	var recipes: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json"))["recipes"]
+	var root_poultice: Dictionary = recipes.get("poultice_comfrey_root", {})
+	check(str(root_poultice.get("station", "")) == "mortar_pestle" and str(root_poultice.get("needs", [])) == str([["comfrey_roots", 1.0]]) and str(root_poultice.get("gives", [])) == str(["poultice", 1.0]), "but a mortar and pestle grinds one into a poultice, as their text says")
+
+	# 6. Tree roots ("roots: food and medicine, fuel", RECIPE_GRAPH.md) burn like firewood.
+	check(float(items._cooking.get("fuel", {}).get("tree_roots", 0.0)) > 0.0 and str(items._cooking.get("fuel_class", {}).get("tree_roots", "")) == "firewood" and (items._cooking.get("fuel_order", []) as Array).has("tree_roots"), "tree roots are firewood-class fuel")
 
 	items._finish_writer()
 	print("Test done: %d failure(s)" % failures)

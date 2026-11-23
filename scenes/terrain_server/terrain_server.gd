@@ -48,6 +48,7 @@ const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const BogIronScript := preload("res://src/shared/bog_iron.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # Edda and Hob's fire: where a player rescued to the town wakes (_rescue_spots)
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
@@ -78,6 +79,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
 # Lag lane 23 Nov 2026 (cloud join, timestamped): a new player's far ground reaches the neighbour tiles (a client's coarse LOD blocks go out
@@ -463,11 +465,14 @@ func _ready() -> void:
 	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more)
 	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
 	items.send_flight = players.flight
+	items.send_taken = func(peer, kind, points, days): net.ground_taken.rpc_id(peer, kind, points, days)   # protocol 160
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
+	net.position_reported.connect(players.note_move)   # before facing_reported (report_position emits both, position first): the row's time
 	net.facing_reported.connect(players.note_report)
 	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
 	cues.items = items
 	cues.yaw_of = players.yaw_of
+	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
 	items.craft_working = cues.craft_working
 	net.look_reported.connect(players.set_look)
@@ -833,7 +838,7 @@ func _ready() -> void:
 	animals.fires = func(): return _fire_at
 	animals.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
-	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)), "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
 	@warning_ignore("confusable_local_declaration")
@@ -863,7 +868,7 @@ func _ready() -> void:
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
-	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
+	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer):
 		if sp == "bandit" or sp == "horse":
@@ -984,8 +989,10 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	TreeTrunks.warm()   # the trunk collider table (_cached_trees), read once at start
 	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
-		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
+		var made: float = camp_reach + TreeTrunks.widest_m()   # a wide trunk (everember) is listed from its root, up to widest_m beyond the camp
+		for corner in [Vector2(-made, -made), Vector2(made, -made), Vector2(-made, made), Vector2(made, made)]:
 			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
 				return null
 
@@ -2235,6 +2242,7 @@ func _berries_near_cached(point: Vector3, radius: float) -> PackedVector3Array:
 # flora stream (a worker) has made it.
 const TREE_LISTS_KEPT := 200
 const TREE_CELL_M := 16.0
+const WIDE_CELL := Vector2i(2147483647, 2147483647)   # _tree_lists key of a chunk's trunks wider than TreeTrunks.SEARCH_TRUNK_M
 var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name, trunk collider radius, height]
 var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
 
@@ -2268,7 +2276,8 @@ func _arrow_trunks(point: Vector3, radius: float) -> Array:
 func _cached_trees(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
-	var reach: int = maxi(int(ceil(radius / size)), 1)
+	var widest: float = TreeTrunks.widest_m()
+	var reach: int = maxi(int(ceil((radius + widest) / size)), 1)
 	var found: Array = []
 
 	if _tree_names.is_empty():
@@ -2287,7 +2296,7 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 			var near_x: float = clampf(point.x, corner.x, corner.x + size)
 			var near_z: float = clampf(point.z, corner.y, corner.y + size)
 
-			if Vector2(near_x - point.x, near_z - point.z).length() > radius:
+			if Vector2(near_x - point.x, near_z - point.z).length() > radius + widest:
 				continue
 
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
@@ -2316,8 +2325,17 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 						if not cells.has(cell):
 							cells[cell] = []
 
-						# The trunk collider the client makes (flora_placer.collider_radius): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
-						cells[cell].append([ids[n], at, tree_name, PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall), tall])
+						# The trunk collider the client makes (tree_trunks.gd standing_collider: as wide as it is drawn): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
+						var trunk_r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall)
+						var tree: Array = [ids[n], at, tree_name, TreeTrunks.standing_collider(str(tree_name), ids[n], tall, trunk_r), tall]
+
+						if float(tree[3]) > TreeTrunks.SEARCH_TRUNK_M:
+							cell = WIDE_CELL   # a trunk wider than the callers' search margins (the everember): found by its own radius below
+
+							if not cells.has(cell):
+								cells[cell] = []
+
+						cells[cell].append(tree)
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
@@ -2345,6 +2363,19 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 
 						if not gone.has(tree[0]):
 							found.append(tree)
+
+			# The wide trunks of this chunk: within `radius` of the point or reaching it (their own radius past it), so a caller's fixed
+			# margin for an ordinary trunk still finds them (an arrow at an everember's bark, a cart beside it).
+			for tree in listed.get(WIDE_CELL, []):
+				if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() > radius + float(tree[3]):
+					continue
+
+				if not gone_read:
+					gone = flora.removed_in(chunk)
+					gone_read = true
+
+				if not gone.has(tree[0]):
+					found.append(tree)
 
 	return found
 
@@ -3301,7 +3332,7 @@ func _process(delta: float) -> void:
 	if store == null:
 		return
 
-	game_clock.advance(delta)
+	game_clock.follow(Time.get_ticks_usec())   # real time, not the clipped frame delta (game_clock.gd follow)
 	var frame_now: int = Time.get_ticks_msec()
 
 	if _last_frame_msec > 0 and frame_now - _last_frame_msec >= IDLE_YIELD_GAP_MS:
@@ -3992,19 +4023,19 @@ func _exit_tree() -> void:
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
-# Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town's square
-# (data/npcs/markers.json "square", else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
+# Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town (Edda and
+# Hob's fire; without one the square of data/npcs/markers.json, else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
 # off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
 # [[Vector3, "goblin" | "bandit" | "town"]], or [] when there is none. Not on the tick: only when someone passes out.
 func _rescue_spots(near: Vector3) -> Array:
-	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 4.0))
+	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
 	var out: Array = []
 
 	for tribe in tribes.tribes():
 		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
-		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+		var at: Dictionary = camp.get("fire", {})   # only a camp with a fire: a cave mouth alone has no warmth to wake in
 
-		if not at.is_empty():
+		if at.has("x"):
 			out.append([Vector2(float(at.get("x", 0.0)) + off_m, float(at.get("z", 0.0))), "goblin"])
 
 	for cell in bandits.sites:
@@ -4013,11 +4044,18 @@ func _rescue_spots(near: Vector3) -> Array:
 		if int(site.get("stage", 0)) >= int(bandits.CAMP):
 			out.append([Vector2(float(site.get("x", 0.0)) + off_m, float(site.get("z", 0.0))), "bandit"])
 
-	var town: Vector2 = animals.town
+	# The town: beside Edda and Hob's fire (it always burns), not on the square 19 m off it, out of its warmth (coordinator 23 Nov 2026: "you wake
+	# inside the warmth of its fire"). Its tree stands on the fire's west side (data/npcs/camp.json), so off_m east is clear of the trunk.
+	var town: Vector2 = NpcCampScript.fire_spot()
 
-	for row in npcs._read("res://data/npcs/markers.json").get("markers", []):
-		if str(row.get("kind", "")) == "square" and not row.has("npc"):
-			town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+	if town.x != INF:
+		town.x += off_m
+	else:
+		town = animals.town
+
+		for row in npcs._read("res://data/npcs/markers.json").get("markers", []):
+			if str(row.get("kind", "")) == "square" and not row.has("npc"):
+				town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
 
 	if town.x != INF:
 		out.append([town, "town"])
@@ -4031,9 +4069,16 @@ func _rescue_spots(near: Vector3) -> Array:
 	return [] if best.is_empty() else [[_rescue_ground(best[0]), best[1]]]
 
 
+# A step off a tree or wet ground stays within search_m (warmth.json pass_out wake_search_m) of the spot, so the player still wakes in the fire's warmth.
 func _rescue_ground(at: Vector2) -> Vector3:
-	var clear: Vector2 = SpawnPointScript.clear_of(at, _trunks_near(at, 32.0), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)),
-		func(x: float, z: float) -> bool: return _baked_wet(x, z))
+	var search_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("wake_search_m", 1.5))
+	var trunks: PackedVector2Array = _trunks_near(at, 32.0)
+	var ground_at: Callable = func(x: float, z: float) -> float: return float(generator.surface_height(x, z))
+	var wet_at: Callable = func(x: float, z: float) -> bool: return _baked_wet(x, z)
+	var clear: Vector2 = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at, {"search_m": search_m, "ring_m": 0.5, "clear_m": 1.3})
+
+	if clear == at and not SpawnPointScript._trunk_free(at, trunks, 1.3):
+		clear = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at)   # a thicket round the fire: out of a tree first, the warmth second
 	return Vector3(clear.x, maxf(generator.surface_height(clear.x, clear.y), 0.0) + 2.0, clear.y)
 
 
