@@ -873,41 +873,49 @@ func _scenes_ready(number: int) -> bool:
 	var all_in: bool = true
 
 	for path in _species_scenes(number):
-		if _scene_held.has(path):
-			continue
+		if not _scene_held.has(path):
+			var status: int = ResourceLoader.load_threaded_get_status(path)
 
-		var status: int = ResourceLoader.load_threaded_get_status(path)
-
-		if status == ResourceLoader.THREAD_LOAD_LOADED:
-			_scene_held[path] = ResourceLoader.load_threaded_get(path)
-		elif status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
-			all_in = false
-		elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.has_cached(path):
-			_scene_held[path] = load(path)      # already in memory (another view loaded it): no file read
-		elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.load_threaded_request(path, "", true) == OK:
-			all_in = false
-		else:
-			_scene_held[path] = null      # it failed: _make_model's own load() says so and draws the code-built body
-
-		# A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them. The unpacking of a 4096 texture is the slow
-		# part: it is done on a worker too, before the animal is drawn. The read back stays here, on the main thread, so the worker only
-		# touches its own Image (no renderer call to wait on, so _exit_tree can wait for it).
-		if _scene_held.get(path) is Texture2D and not _alpha_of.has(path):
-			if not _alpha_tasks.has(path):
-				var img: Image = (_scene_held[path] as Texture2D).get_image()
-				_alpha_tasks[path] = WorkerThreadPool.add_task(_alpha_job.bind(img, path), false, "animal texture alpha")
+			if status == ResourceLoader.THREAD_LOAD_LOADED:
+				_scene_held[path] = ResourceLoader.load_threaded_get(path)
+			elif status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 				all_in = false
-			elif WorkerThreadPool.is_task_completed(int(_alpha_tasks[path])):
-				WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
-				_alpha_tasks.erase(path)
-				_alpha_mutex.lock()
-				_alpha_of[path] = bool(_alpha_done.get(path, false))
-				_alpha_done.erase(path)
-				_alpha_mutex.unlock()
+			elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.has_cached(path):
+				_scene_held[path] = load(path)      # already in memory (another view loaded it): no file read
+			elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.load_threaded_request(path, "", true) == OK:
+				all_in = false
 			else:
-				all_in = false
+				_scene_held[path] = null      # it failed: _make_model's own load() says so and draws the code-built body
+
+		if _scene_held.get(path) is Texture2D and not _alpha_ready(path, _scene_held[path]):
+			all_in = false
 
 	return all_in
+
+
+# A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them. The unpacking of a 4096 texture is the slow
+# part: it is done on a worker, before the animal is drawn (_scenes_ready). The read back stays here, on the main thread, so the worker
+# only touches its own Image (no renderer call to wait on, so _exit_tree can wait for it). `source` is the Texture2D, or its Image
+# (tests). False until the answer is in _alpha_of; the first call starts the worker.
+func _alpha_ready(path: String, source: Variant) -> bool:
+	if _alpha_of.has(path):
+		return true
+
+	if not _alpha_tasks.has(path):
+		var img: Image = source as Image if source is Image else (source as Texture2D).get_image()
+		_alpha_tasks[path] = WorkerThreadPool.add_task(_alpha_job.bind(img, path), false, "animal texture alpha")
+		return false
+
+	if not WorkerThreadPool.is_task_completed(int(_alpha_tasks[path])):
+		return false
+
+	WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
+	_alpha_tasks.erase(path)
+	_alpha_mutex.lock()
+	_alpha_of[path] = bool(_alpha_done.get(path, false))
+	_alpha_done.erase(path)
+	_alpha_mutex.unlock()
+	return true
 
 
 # On a worker (_scenes_ready): whether a texture's pixels `img` have see-through ones, as _has_alpha works it out. Only this Image is touched.
