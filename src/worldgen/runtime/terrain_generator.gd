@@ -88,6 +88,12 @@ var _granite: int = 5
 var _basalt: int = 7
 
 
+# Lag lane 23 Nov 2026: tile prefetches run on the pool's high-priority threads. As low-priority tasks they shared one thread (of 4 in the cloud)
+# with the island resource build (about 6 s at start-up), so the tiles a first join needs were read one after another after it.
+func _init() -> void:
+	_prefetch_tasks.high_priority = true
+
+
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
 func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) -> void:
 	tiles_dir = tiles_directory

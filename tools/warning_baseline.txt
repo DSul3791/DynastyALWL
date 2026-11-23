@@ -20,7 +20,7 @@
       4 src/worldgen/tile/tile_sites.gd
       4 src/worldgen/tile/tile_preview.gd
       4 src/worldgen/sketch/river_network.gd
-      4 src/stream/server_wolves.gd
+      3 src/stream/server_wolves.gd
       4 src/client/character/dynasty_arms.gd
       4 src/client/basic_look.gd
       3 tools/lake_share.gd

@@ -661,6 +661,26 @@ func _init() -> void:
 			ck_aged = ck_aged or absi(int(ck_inv.wear[sl]) - ck_want) <= 1
 
 	check(ck_aged, "a roast carries twice the raw life left (wear %d wanted)" % ck_want)
+	# The same in the fire's store (it used to give a fresh roast, so meat near rotting came out with the roast's whole life).
+	var ck_fire: Dictionary = f._items[open_id]["fire"]
+	var ck_box = f._chests[int(ck_fire["uid"])]
+	var ck_roasts_before: int = ck_box.count_of(ck_roast_n)
+	ck_box.add(ck_meat, 1, int(f.table.shelf_units(ck_meat) / 2))
+
+	for n in range(10):
+		f._tend_fire(open_id, f._items[open_id], ck_fire, 2.0)
+
+	var ck_box_aged: bool = false
+
+	for sl in range(ck_box.slot_count):
+		if ck_box.numbers[sl] == ck_roast_n:
+			ck_box_aged = ck_box_aged or absi(int(ck_box.wear[sl]) - ck_want) <= 1
+
+	check(ck_box.count_of(ck_roast_n) == ck_roasts_before + 1 and ck_box_aged, "the fire's store roasts half-stale meat with twice its life left, not a fresh roast (wear %d wanted, store %s)" % [ck_want, str(ck_box.wear)])
+
+	for sl in range(ck_box.slot_count):
+		if ck_box.numbers[sl] == ck_roast_n:
+			ck_box.take_from_slot(sl, ck_box.counts[sl])
 	f.vitals_of(1)["warmth"] = 50.0
 	f._last_eat.clear()
 

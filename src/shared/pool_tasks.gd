@@ -8,6 +8,7 @@ extends RefCounted
 var _mutex: Mutex = Mutex.new()
 var _tasks: PackedInt64Array = PackedInt64Array()
 var _closed: bool = false   # after finish(): add() starts nothing
+var high_priority: bool = false   # true: the pool's high-priority threads (Godot gives low-priority tasks only low_priority_thread_ratio 0.3 of them: one thread of 4)
 
 
 # Starts `work` on the pool. Finished tasks are waited for (which frees them) as new ones start, so the list stays short. False after finish().
@@ -26,7 +27,7 @@ func add(work: Callable, what: String = "") -> bool:
 		else:
 			still.append(task)
 
-	still.append(WorkerThreadPool.add_task(work, false, what))
+	still.append(WorkerThreadPool.add_task(work, high_priority, what))
 	_tasks = still
 	_mutex.unlock()
 	return true

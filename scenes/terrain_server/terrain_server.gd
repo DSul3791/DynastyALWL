@@ -81,6 +81,11 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
+# Lag lane 23 Nov 2026 (cloud join, timestamped): a new player's far ground reaches the neighbour tiles (a client's coarse LOD blocks go out
+# several km), and those tiles were read only when the first such block was asked for, one after another at 1.4-2.6 s each: the ground was
+# ready 13.5 s after the welcome, 6 s of it waiting for tiles (4, 4), (3, 5) and (4, 5). Every tile within this of the spawn is now read at
+# start-up, and of a returning player's spot at the hello, each on its own worker, so the reads overlap and are mostly done before they are needed.
+const JOIN_TILE_MARGIN_M := 6000.0
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ServerAuthScript := preload("res://src/shared/server_auth.gd")
@@ -175,6 +180,7 @@ var _queue: Array = []                 # urgent [peer, key Vector4i], oldest fir
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
 var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _flora_running: int = 0            # workers making a flora chunk now (under _queue_mutex); at most _max_running - 1, so one is always free for ground
 var _key_budget: Dictionary = {}       # peer -> [keys left, msec of the last refill] (queue mutex)
 var _water_queue: Array = []           # [peer, chunk Vector2i] water to pack on a worker thread (never on the main thread), oldest first
 var _water_done: Array = []            # [peer, chunk, bytes] packed, waiting to be sent by the main thread
@@ -455,12 +461,15 @@ func _ready() -> void:
 		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
 	players = PlayersScript.new()
 	players.items = items
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more)
+	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
+	items.send_flight = players.flight
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
 	net.facing_reported.connect(players.note_report)
 	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
 	cues.items = items
 	cues.yaw_of = players.yaw_of
+	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
 	items.craft_working = cues.craft_working
 	net.look_reported.connect(players.set_look)
@@ -698,7 +707,9 @@ func _ready() -> void:
 	tribes.setup(store_dir)
 	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, stand guard at a weapon in hand, and hide from a player who struck one
 	npcs.chores = tribes.chore_plan   # and keep busy round their camp (camp life, Dave 20 Nov 2026)
-	net.held_reported.connect(items.report_held)   # the item in each player's hand (protocol 146), for "a weapon in hand"
+	net.held_reported.connect(func(peer: int, number: int, left: int, flags: int) -> void:
+		if limits.allow(peer, "held_item"):   # a client flipping its hands as fast as it can would make every client near it rebuild a torch
+			items.report_held(peer, number, left, flags))   # the item in each player's hand (protocol 146), for "a weapon in hand"
 	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	items.tribe_stock_line = tribes.stock_line   # what a goblin camp's chest and racks hold (the light version, Dave 20 Nov 2026)
 	animals = AnimalsScript.new()
@@ -824,7 +835,7 @@ func _ready() -> void:
 	animals.fires = func(): return _fire_at
 	animals.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
-	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)), "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
 	@warning_ignore("confusable_local_declaration")
@@ -854,7 +865,7 @@ func _ready() -> void:
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
-	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
+	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer):
 		if sp == "bandit" or sp == "horse":
@@ -1053,6 +1064,7 @@ func _ready() -> void:
 	# in 90 starts; this makes the first call of every placer function happen on one thread.
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)), int(floor(spawn.z / placer.chunk_m))), true)
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)) + 1, int(floor(spawn.z / placer.chunk_m))), false)
+	generator.prefetch_around(spawn.x, spawn.z, JOIN_TILE_MARGIN_M)   # the tiles the first join's far ground needs, read in parallel now, after the flora warm-up above (JOIN_TILE_MARGIN_M)
 	_link = BlockLinkScript.new()
 	_link.on_request = _on_blocks_requested
 	_link.is_peer = _is_connected_peer
@@ -1124,6 +1136,7 @@ func _ready() -> void:
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
+			generator.prefetch_around(float(resume[0]), float(resume[2]), JOIN_TILE_MARGIN_M)   # a returning player's far ground, read in parallel, started before _resume_spot's own tile read (JOIN_TILE_MARGIN_M)
 			net.start_at.rpc_id(peer, _resume_spot(Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
 
 		_slow_rpc("hello: done", t0))
@@ -3601,6 +3614,11 @@ func _send(peer_id: int, batch: Array) -> void:
 	_peers[peer_id]["bytes"] += int(batch[2])
 
 
+# True while a flora chunk may take a worker: flora leaves one worker for the ground (the join, lag lane 23 Nov 2026); one worker in all takes both.
+static func flora_may_start(flora_running: int, max_running: int) -> bool:
+	return flora_running < max_running - 1 or max_running <= 1
+
+
 # Worker thread: takes the next block, urgent ones first, and makes it.
 func _worker_loop() -> void:
 	while true:
@@ -3612,8 +3630,11 @@ func _worker_loop() -> void:
 		# Order: urgent blocks, flora chunks, prefetch blocks.
 		var water_item: Array = []
 
-		if _queue.is_empty() and not _flora_queue.is_empty():
+		# Lag lane 23 Nov 2026 (cloud join, timestamped): the joining player's first flora chunks (about 1 s each) took all three workers, and
+		# urgent ground waited behind them: 3 blocks in the first 6 s after the welcome. Flora now leaves one worker for the ground.
+		if _queue.is_empty() and not _flora_queue.is_empty() and flora_may_start(_flora_running, _max_running):
 			flora_item = _flora_queue.pop_front()
+			_flora_running += 1
 		elif _queue.is_empty() and not _water_queue.is_empty():
 			water_item = _water_queue.pop_front()
 
@@ -3645,6 +3666,13 @@ func _worker_loop() -> void:
 			_done_mutex.lock()
 			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes, flora_item[2]])
 			_done_mutex.unlock()
+			_queue_mutex.lock()
+			_flora_running -= 1
+			var flora_left: bool = not _flora_queue.is_empty()
+			_queue_mutex.unlock()
+
+			if flora_left:
+				_work.post()   # a flora chunk passed over at the cap above gets a worker now
 			continue
 
 		if item.is_empty():
