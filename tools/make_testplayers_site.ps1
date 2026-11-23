@@ -6,6 +6,7 @@
 #   index.html                        the test players' page, https://hannibalshouse.duckdns.org/
 #   images\hero.jpg, fonts\           its picture and the menu fonts with their SIL OFL licence
 #   downloads\Dynasty-build-<N>.zip   the installer, zipped, https://hannibalshouse.duckdns.org/downloads/Dynasty-build-<N>.zip
+#   latest.json                       {"build", "zip", "size_mb", "sha256", "date"} for the bug and idea pages
 #   files.sha256                      every other file's SHA-256 with its path, for the check on the server (sha256sum -c)
 # Copy it up with the scp line it prints (deploy/testplayers/SERVER.md, which also has the one Caddyfile line for the login name). Nothing is uploaded from here and no password is written anywhere.
 # -Repo is the checkout whose deploy\testplayers and assets\ui\fonts are used; by default the one this script sits in.
@@ -71,6 +72,10 @@ foreach ($f in "Cinzel-Bold.ttf", "EBGaramond-Regular.ttf", "EBGaramond-SemiBold
 	Copy-Item -LiteralPath (Join-Path $Repo "assets\ui\fonts\$f") -Destination (Join-Path $site "fonts")
 }
 
+# The latest build for the testers' own bug and idea pages (they fill their Build box from it; missing = left empty).
+$isoDate = (Get-Date).ToString("yyyy-MM-dd", [Globalization.CultureInfo]::InvariantCulture)
+[IO.File]::WriteAllText((Join-Path $site "latest.json"), "{`"build`": $build, `"zip`": `"/downloads/$zipName`", `"size_mb`": $sizeMb, `"sha256`": `"$hash`", `"date`": `"$isoDate`"}`n", $utf8)
+
 # Every file's SHA-256 with its path from the site root, in sha256sum's format (LF), so the server check is: sha256sum -c.
 $lines = New-Object System.Collections.Generic.List[string]
 foreach ($file in Get-ChildItem -LiteralPath $site -Recurse -File | Sort-Object FullName) {
@@ -82,4 +87,4 @@ foreach ($file in Get-ChildItem -LiteralPath $site -Recurse -File | Sort-Object 
 Write-Host "make_testplayers_site: $site"
 Write-Host "  index.html, images\hero.jpg, fonts\, files.sha256, downloads\$zipName ($sizeMb MB, SHA-256 $hash)"
 Write-Host "  copy it up (deploy\testplayers\SERVER.md step 2; type the password when scp asks):"
-Write-Host "  Set-Location `"$site`"; scp -r index.html files.sha256 images fonts downloads `"dave@dell-gameserver-01:/data/game-web/site/`""
+Write-Host "  Set-Location `"$site`"; scp -r index.html latest.json files.sha256 images fonts downloads `"dave@dell-gameserver-01:/data/game-web/site/`""

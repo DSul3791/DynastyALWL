@@ -22,6 +22,7 @@ It writes `..\dynasty_export\build-<N>\site\`, laid out exactly like `/data/game
 | `index.html` | https://hannibalshouse.duckdns.org/ (the page: download, install, join, report) |
 | `images/hero.jpg`, `fonts/` | the page's picture and the menu fonts, with their licence |
 | `downloads/Dynasty-build-<N>.zip` | https://hannibalshouse.duckdns.org/downloads/Dynasty-build-&lt;N&gt;.zip |
+| `latest.json` | the build number, zip, size and date, for the testers' bug and idea pages |
 | `files.sha256` | the SHA-256 of every other file |
 
 All the page's links start with `/`. File names have no spaces.
@@ -32,7 +33,7 @@ The site script prints this line with the right folder; paste that, or set the b
 
 ```
 $build = "<N>"; $server = "dell-gameserver-01"
-Set-Location "E:\Software\godotDev\dynasty_export\build-$build\site"; scp -r index.html files.sha256 images fonts downloads "dave@${server}:/data/game-web/site/"
+Set-Location "E:\Software\godotDev\dynasty_export\build-$build\site"; scp -r index.html latest.json files.sha256 images fonts downloads "dave@${server}:/data/game-web/site/"
 ```
 
 - scp makes `images/`, `fonts/` and `downloads/` if they are not there yet. It replaces only files with the same names, so `index.html` (the example page) is replaced and the build's zip is added. It deletes nothing. Caddy picks up the change without a restart.
