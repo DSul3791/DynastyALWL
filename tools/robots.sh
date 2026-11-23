@@ -8,7 +8,7 @@
 # Starts a headless server with --robot-audit (src/server/robot_audit.gd) and --open-admin on a spare port, a simulated internet link in
 # front of it (tools/lossy_link.py: delay, jitter, loss), and ROBOTS real clients (headless, dummy renderer) each run by
 # src/client/robot_play.gd as a new player: craft twine, axe, hammer, spear, snare and knife, drop and pick up, walk every stance,
-# crouch through the forest, hunt the nearest animal together, lie down and sleep, quit. Then each robot rejoins (plan rejoin) and
+# crouch through the forest, hunt a rabbit, a deer and a wolf together, build a basket, eat and drink, lie down and sleep, quit. Then each robot rejoins (plan rejoin) and
 # checks its pack came back. tools/robot_check.py then reads every log and fails the run on any broken invariant.
 # Run from the repository root; needs `godot` on PATH (GODOT=path overrides) and python3. Logs stay in the printed folder.
 # Exit 0 = every invariant held; 1 = a FAIL (listed); 2 = the run itself broke (a robot never joined, the server died).
@@ -32,7 +32,8 @@ $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/
 	--quit-after=$(( ROBOT_S * 2 + 400 )) --open-admin --robot-audit > "$D/server.log" 2>&1 &
 SP=$!
 LP=""
-cleanup() { [ -n "$LP" ] && kill $LP 2>/dev/null; [ -n "$SP" ] && kill $SP 2>/dev/null; }
+# On exit or Ctrl-C: the link, the server and any robot client still running (each has --port=$LINK on its command line).
+cleanup() { [ -n "$LP" ] && kill $LP 2>/dev/null; [ -n "$SP" ] && kill $SP 2>/dev/null; [ -n "${LINK:-}" ] && pkill -f -- "--port=$LINK " 2>/dev/null; }
 trap cleanup EXIT
 for i in $(seq 1 120); do grep -q "^Terrain server listening" "$D/server.log" && break; kill -0 $SP 2>/dev/null || break; sleep 1; done
 if ! grep -q "^Terrain server listening" "$D/server.log"; then echo "robots: the server never came up"; tail -20 "$D/server.log"; exit 2; fi
@@ -62,5 +63,5 @@ echo "robots: passes took $(( $(date +%s) - START )) s"
 kill $LP 2>/dev/null; sleep 1
 kill $SP 2>/dev/null; sleep 3
 python3 tools/robot_check.py "$D"; RC=$?
-if [ "$PLAN" = "watch" ]; then python3 tools/robot_watch.py "$D"; WC=$?; [ $RC -eq 0 ] && RC=$WC; fi
+if [ "$PLAN" = "watch" ]; then python3 tools/robot_watch.py "$D"; WC=$?; [ $WC -gt $RC ] && RC=$WC; fi   # the worse of the two: 2 broken over 1 a finding
 exit $RC
