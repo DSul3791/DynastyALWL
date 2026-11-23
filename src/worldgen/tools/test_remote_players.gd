@@ -560,39 +560,12 @@ func _client() -> void:
 # carrying 0.2 s position reports, each delivered 100 to 260 ms late (a random wobble), one in twenty lost and once four in a row, for a walk at 3 m/s, then a
 # stop. The drawn body must never jump (no frame step over a normal one plus the easing's catch-up), keep moving through the walk (no stand
 # then jump at a lost batch), and come to rest near the last point without running past and back.
-# Run at a player's 60 frames a second: headless runs near 1000 and a loaded computer near 100, and the drawn speed moved with it (23 Nov
-# 2026: the 1.5 times limit failed 3 to 4 runs in 10 under load, on dev before protocol 162 and after alike, and at 60 fps with no load,
-# from each report's trip wobble: player_view beat_ms). No frame may move more than 1.5 frames of the walk plus the 3 m/s catch-up
-# (player_view SMOOTH_*: 0.125 m at 60 fps, so any jump fails), and no 50 ms window over 1.5 times the walk.
+# Run at a player's 60 frames a second, on rows timed as the server times them (23 Nov 2026: the 1.5 times limit failed 3 to 4 runs in 10
+# under load, on dev before protocol 162 and after alike: headless runs near 1000 fps and a loaded computer near 100, and the test stamped
+# rows by their arrival, a wobble the server takes out: server_players note_move). No frame may move more than 1.5 frames of the walk plus
+# the 3 m/s catch-up (player_view SMOOTH_*: 0.125 m at 60 fps, so any jump fails), and no 50 ms window over 1.5 times the walk.
 const LOSSY_FPS := 60
 const LOSSY_FRAME_MPS := 3.0 * PlayerViewScript.SMOOTH_ROOM_X + PlayerViewScript.SMOOTH_CATCH_MIN_MPS
-
-
-# player_view beat_ms: a row's time is when its report reached the server, so a steady 0.2 s beat arrives with the trip's wobble.
-func _check_beat() -> void:
-	var b: Dictionary = {}
-	var wobble: Array = [0, 55, 5, 60, 10, 45, 0, 50, 15, 60]
-	var drawn: Array = []
-
-	for i in range(wobble.size()):
-		drawn.append(PlayerViewScript.beat_ms(b, 20000 + i * 200 + int(wobble[i])))
-
-	var worst_raw: int = 0
-	var worst: int = 0
-
-	for i in range(1, drawn.size()):
-		worst_raw = maxi(worst_raw, absi(200 + int(wobble[i]) - int(wobble[i - 1]) - 200))
-		worst = maxi(worst, absi(int(drawn[i]) - int(drawn[i - 1]) - 200))
-
-	check(worst * 2 <= worst_raw, "a steady beat with up to 60 ms of trip wobble is drawn steadier (legs off the beat by %d ms at most, %d raw)" % [worst, worst_raw])
-	check(absi(int(drawn[drawn.size() - 1]) - (20000 + (drawn.size() - 1) * 200 + 30)) <= 40, "and it keeps to the server's clock (%d)" % (int(drawn[drawn.size() - 1]) - 20000))
-	var last: int = int(drawn[drawn.size() - 1])
-	check(PlayerViewScript.beat_ms(b, 20000 + 9 * 200 + 60) == last, "the same report again is drawn where it was")
-	check(PlayerViewScript.beat_ms(b, 20000 + 8 * 200 + 15) < last, "an older one (out of order) is drawn before the newest")
-	var blow: int = PlayerViewScript.beat_ms(b, 20000 + 9 * 200 + 60 + 50)
-	check(blow == 20000 + 9 * 200 + 60 + 50, "a report off the beat (sent just before a blow) keeps its own time (%d)" % (blow - 20000))
-	var after_loss: int = PlayerViewScript.beat_ms(b, 20000 + 12 * 200 + 20)
-	check(after_loss == 20000 + 12 * 200 + 20, "and so does the one after lost sends")
 
 
 func _check_lossy(burst_ms: int, tail_ms: int) -> void:
@@ -622,6 +595,28 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var sent_ms: Array = [-1, -1, -1]
 	var last_send: int = -1000
 
+	# The row times as the server stamps them (server_players note_move: the client's send time, from its moved gap), each report arriving
+	# with its own trip's wobble (0 to 60 ms, a later one can come first).
+	var stamper = PlayersScript.new()
+	var stamp_clock: Array = [0]
+	stamper.now_ms = func() -> int: return int(stamp_clock[0])
+	var arrivals: Array = []   # [arrives ms, peer index, report ms]
+
+	for i in range(peers.size()):
+		for report in range(int(phase[i]), end_ms + 400, 200):
+			arrivals.append([20000 + report + posmod(hash([i, report]), 61), i, report])
+
+	arrivals.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var stamp_of: Dictionary = {}   # [peer index, report ms] -> the row time
+
+	for a in arrivals:
+		var r: int = int(a[2])
+		var moving: bool = r > 0 and r <= walk_ms
+		stamp_clock[0] = int(a[0])
+		stamper.note_move(int(peers[int(a[1])]), at + Vector3(3.0 * float(mini(r, walk_ms)) / 1000.0, 0.0, 3.0 * int(a[1])), Vector3(3.0 if moving else 0.0, 0.0, 0.0))
+		stamper.note_report(int(peers[int(a[1])]), 0.0)
+		stamp_of[[int(a[1]), r]] = int(stamper._report_ms[int(peers[int(a[1])])])
+
 	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report stamped when it reached the server.
 	for send in range(0, end_ms, 125):
 		var times: Array = []
@@ -631,7 +626,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		for i in range(peers.size()):
 			var beat: int = send - int(phase[i])
 			var report: int = maxi(beat - posmod(beat, 200), 0) + int(phase[i])
-			var stamp: int = 20000 + report + (posmod(hash([i, report]), 61) if report > 0 else 0)   # the report's own trip up, with its wobble, once per report
+			var stamp: int = int(stamp_of.get([i, report], 20000 + report))
 			var walked: float = 3.0 * float(mini(report, walk_ms)) / 1000.0
 			times.append(stamp)
 			spots.append(at + Vector3(walked, 0.0, 3.0 * i))
@@ -915,7 +910,6 @@ func _check_hand_follows() -> void:
 func _init() -> void:
 	_server()
 	await _client()
-	_check_beat()
 	await _check_lossy(1750, 800)    # a burst of lost batches mid-walk
 	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
 	await _check_holds()
