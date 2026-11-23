@@ -915,7 +915,7 @@ func places_near(sp: String, at: Vector3, reach: float) -> Array:
 	return found.map(func(f): return f[1])
 
 
-# Settled: a player has put something down within no_spawn_m of the place's home or any out spot; the animals leave it.
+# Settled: a player has put something down (not a trap, spawn_zones.gd TRAP_KINDS) within no_spawn_m of the place's home or any out spot; the animals leave it.
 func settled(place: Dictionary) -> bool:
 	if not no_spawn.is_valid():
 		return false
