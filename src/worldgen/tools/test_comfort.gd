@@ -1,8 +1,9 @@
 extends SceneTree
 
-# Comfort and the Rested buff (docs/COMFORT_DESIGN.md section 7; Tyler 31 Oct 2026): level 0 outside cover; sheltered alone = 1; a rough bed adds its point; five chairs count once;
-# an unlit campfire adds 0, a lit one 1; only the best bed counts; far and other-floor pieces do not count; a rest at comfort 2 or more earns a 45 real minute buff with the tier of
-# its level; a rest at a lower level does not shorten or lower it, an equal or higher one refreshes it; it is saved; death clears it.
+# Comfort (docs/COMFORT_DESIGN.md): the furniture level near a player (level 0 outside cover; sheltered alone = 1; a rough bed adds its point; five
+# chairs count once; an unlit campfire adds 0, a lit one 1; only the best bed counts; far and other-floor pieces do not count), and the comfort meter
+# (Dave 23 Nov 2026, s11): the points it heads for, its slow climb and fall, the bonus by level (half harm, slower exertion, food and water last
+# longer), the HUD message, saving, and death emptying it.
 #   godot --headless --path . --script res://src/worldgen/tools/test_comfort.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -83,32 +84,91 @@ func _init() -> void:
 	check(level() == 9, "a table on another floor (10 m up) adds nothing")
 	items._items.erase(upstairs)
 
-	# The Rested buff.
+	# The comfort meter (Dave 23 Nov 2026).
+	var v: Dictionary = items.vitals_of(1)
+	var cfg: Dictionary = items._meter_cfg()
+	check(int(cfg.get("max", 0)) == 10, "the meter runs 0 to 10")
+	v["fed"] = 2400.0
+	v["wet"] = 2400.0
+	items._by_fire[1] = false
+	items._comfort_cache.clear()
+	var target: float = items.comfort_target(1)
+	# sheltered 1 + food >25 1 + food >50 1 + water >50 1 + furniture (chair, workbench, basket, torch... sheltered) 2 = 6; not by a fire, not on a bed, not dressed
+	check(target == 6.0, "sheltered, fed, watered, furniture near: the meter heads for 6 (%.0f)" % target)
+	items._by_fire[1] = true
+	check(items.comfort_target(1) == 7.0, "warmed by a fire adds 1 (7)")
+	v["fed"] = 1000.0
+	check(items.comfort_target(1) == 6.0, "food at 42 percent loses the over-50 point (6)")
+	v["fed"] = 400.0
+	v["wet"] = 1000.0
+	check(items.comfort_target(1) == 4.0, "food at 17 percent and water at 42 percent: shelter, fire and furniture (2) only (4)")
 	covered[0] = false
-	check(not items.rest_completed(1), "resting unsheltered earns nothing")
+	items._comfort_cache.clear()
+	items._by_fire[1] = false
+	check(items.comfort_target(1) == 0.0, "out in the open, hungry and away from a fire: 0, furniture does not count unsheltered")
 	covered[0] = true
-	check(items.rest_completed(1) and absf(items.rested_seconds_left(1) - 45.0 * 60.0) < 5.0, "a rest at comfort 9 earns 45 real minutes (%.0f s)" % items.rested_seconds_left(1))
+	items._comfort_cache.clear()
+	v["fed"] = 2400.0
+	v["wet"] = 2400.0
+	items._by_fire[1] = true
+	items._characters[items._peer_key[1]]["comfort"] = 0.0
+	items._stance[1] = 0
+	items._comfort_meter_tick(1, v, 60.0)
+	check(absf(items.comfort_meter(1) - 1.0) < 0.01, "standing about it climbs 1 point a minute (%.2f)" % items.comfort_meter(1))
+	items._stance[1] = 2
+	items._comfort_meter_tick(1, v, 60.0)
+	check(absf(items.comfort_meter(1) - 3.0) < 0.01, "sitting it climbs twice as fast (%.2f)" % items.comfort_meter(1))
+	items._comfort_meter_tick(1, v, 600.0)
+	check(absf(items.comfort_meter(1) - 7.0) < 0.01, "and stops at the target, 7 (%.2f)" % items.comfort_meter(1))
+	check(items.comfort_level(1) == 7 and absf(items.comfort_bonus(1, "damage_taken_mult") - 0.65) < 0.001 and absf(items.comfort_bonus(1, "hunger_thirst_mult") - 0.65) < 0.001, "at 7 the bonus is 70 percent: harm x0.65, food and water x0.65")
 	var tier: Dictionary = items.rested_tier(1)
-	check(float(tier["regen_mult"]) == 1.2 and float(tier["exhaustion_mult"]) == 0.85, "comfort 9 gets the 5-to-9 tier (regen x%.2f, exhaustion x%.2f)" % [float(tier["regen_mult"]), float(tier["exhaustion_mult"])])
-	items._characters[items._peer_key[1]]["rested"]["until"] = Time.get_unix_time_from_system() + 600.0
-	items._items.erase(fire)
-	items._items.erase(torch)
-	var lower: int = level()
-	items.rest_completed(1)
-	check(lower < 9 and items.rested_seconds_left(1) <= 605.0 and items.rested_tier(1).get("regen_mult", 0.0) == 1.2, "a rest at a lower level (%d) does not refresh or lower the buff (%.0f s left)" % [lower, items.rested_seconds_left(1)])
-	add_struct("hide_rug", Vector3(2.0, 10.0, -2.0))
-	add_struct("wool_rug", Vector3(2.5, 10.0, -2.0))
-	add_struct("table", Vector3(-3.0, 10.0, -3.0))
+	check(absf(float(tier.get("exhaustion_mult", 1.0)) - 0.65) < 0.001 and absf(float(tier.get("regen_mult", 1.0)) - 1.245) < 0.001, "the old Rested hooks read the meter (exhaustion x%.3f, regen x%.3f)" % [float(tier.get("exhaustion_mult", 1.0)), float(tier.get("regen_mult", 1.0))])
+	# It falls when the target drops: slow sitting, faster walking, faster again running in the wet cold.
+	covered[0] = false
+	items._comfort_cache.clear()
+	items._by_fire[1] = false
+	v["fed"] = 0.0
+	v["wet"] = 0.0
+	items._comfort_meter_tick(1, v, 60.0)
+	var sat_fall: float = 7.0 - items.comfort_meter(1)
+	check(absf(sat_fall - 0.06) < 0.005, "sitting, it falls 0.06 a minute (%.3f)" % sat_fall)
+	items._stance[1] = 0
+	items._exertion[1] = 0.4
+	var m0: float = items.comfort_meter(1)
+	items._comfort_meter_tick(1, v, 60.0)
+	var walk_fall: float = m0 - items.comfort_meter(1)
+	check(absf(walk_fall - 0.15) < 0.005, "walking about, 0.15 a minute: about 1 point in 7 minutes (%.3f)" % walk_fall)
+	items._exertion[1] = 1.0
+	v["soak"] = 1.0
+	items._soak[1] = 1.0
+	v["warmth"] = 30.0
+	m0 = items.comfort_meter(1)
+	items._comfort_meter_tick(1, v, 60.0)
+	var storm_fall: float = m0 - items.comfort_meter(1)
+	check(absf(storm_fall - 0.15 * 2.5 * 1.5 * 1.5) < 0.01, "running soaked in the cold, %.2f a minute (x2.5 x1.5 x1.5)" % storm_fall)
+	items._comfort_meter_tick(1, v, 3600.0)
+	check(items.comfort_meter(1) == 0.0 and items.rested_tier(1).is_empty() and items.comfort_bonus(1, "damage_taken_mult") == 1.0, "it bottoms out at 0 with no bonus")
+	items._exertion[1] = 0.0
+	v["soak"] = 0.0
+	items._soak[1] = 0.0
+	v["warmth"] = 100.0
+	covered[0] = true
+	items._comfort_cache.clear()
+	# The bonus on harm: at 10 a blow does half.
+	items._characters[items._peer_key[1]]["comfort"] = 10.0
+	v["health"] = 100.0
+	items.hurt_player(1, 20.0, false, "test")
+	check(absf(float(v["health"]) - 90.0) < 0.01, "at comfort 10 a 20 point blow takes 10 (health counts double): %.1f" % float(v["health"]))
+	items._characters[items._peer_key[1]]["comfort"] = 0.0
+	v["health"] = 100.0
+	items.hurt_player(1, 20.0, false, "test")
+	check(absf(float(v["health"]) - 80.0) < 0.01, "at 0 it takes the full 20: %.1f" % float(v["health"]))
+	items._characters[items._peer_key[1]]["comfort"] = 7.0
+	items._stance[1] = 0
+	items._items.erase(torch)   # the lights below start from no lit torch
 	var place: int = add_struct("fireplace", Vector3(5.0, 10.0, -1.0))
 	items._items[place]["struct"]["lit"] = true
 	items._items[place]["struct"]["fuel_left"] = 7200.0
-	var higher: int = level()
-	items.rest_completed(1)
-	check(higher >= 15 and items.rested_seconds_left(1) > 44.0 * 60.0 and float(items.rested_tier(1)["regen_mult"]) == 1.35, "a rest at a higher level (%d) refreshes it to 45 minutes with the better tier" % higher)
-
-	# Action speed (Rested tier at 15+: x1.05) paces crafting and trunk work.
-	check(absf(items._pace_factor(1, "craft") - items.skill_factor(1, "craft") * 1.05) < 0.0001, "the very-well-rested tier speeds the work pace by 5 percent")
-	check(float(items.rested_tier(1).get("cold_stress_mult", 1.0)) == 0.92, "and carries the cold stress multiplier 0.92 that warmth_target applies")
 
 	# Lights: E with the fuel lights a wall torch; it counts while it burns and goes out when the fuel is used up.
 	var lamp: int = add_struct("wall_torch", Vector3(-5.0, 10.0, -2.0))
@@ -124,48 +184,24 @@ func _init() -> void:
 	items._lights_tick(5.0)
 	check(not bool(items._items[lamp]["struct"].get("lit", false)) and level() == before_lamp, "and goes out when the stick is used up")
 
-	# The HUD message (protocol 80): level, buff level, whole minutes; told once, again when something changes.
+	# The HUD message (protocol 163): tenths, target, trend and the tooltip; told once, again when something changes; the tip only when it changed.
 	var told: Array = []
-	items.send_comfort = func(_p, l, r, m, t): told.append([l, r, m, t])
+	items.send_comfort = func(_p, t, g, d, tip): told.append([t, g, d, tip])
+	items._comfort_goal[1] = 7.0
 	items._comfort_tick()
 	items._comfort_tick()
-	check(told.size() == 1 and told[0][0] == level() and told[0][1] > 0 and told[0][2] > 40, "the client is told the comfort level, the buff and its minutes once (%s)" % str(told))
-	items._characters[items._peer_key[1]].erase("rested")
-	items._comfort_tick()
-	check(told.size() == 2 and told[1][1] == 0 and told[1][2] == 0, "and again when the buff ends")
+	check(told.size() == 1 and told[0][0] == 70 and told[0][1] == 7 and told[0][2] == 0, "the client is told 70 tenths, target 7, steady, once (%s)" % str(told).left(80))
 	var tip: String = str(told[0][3])
-	check(tip.contains("Comfort %d of 20" % int(told[0][0])) and tip.contains("+1  Shelter") and tip.contains("Could add:") and tip.contains("rested") and tip.contains("health regeneration"), "the tooltip lists what counts, what could be added and the Rested bonuses")
-	check(tip.contains("min left"), "and the minutes left")
-	covered[0] = false
-	items._comfort_cache.clear()
-	check(items.comfort_tip(1).contains("not under a roof"), "unsheltered, the tooltip says why the level is 0")
-	covered[0] = true
-	items._comfort_cache.clear()
-	var View := load("res://src/client/inventory_view.gd")
-	check(View.comfort_text(7, 2, 38) == "Comfort 7   Rested 38 min" and View.comfort_text(0, 0, 0) == "" and View.comfort_text(3, 0, 0) == "Comfort 3", "the HUD words: 'Comfort 7   Rested 38 min'")
-
-	# Sitting on a seat for 30 s earns the buff too (a chair stands at 2,0).
-	items.report_position(1, Vector3(1.6, 10.0, 0.0))
-	items._stance[1] = 2
-	items._rest_credit.erase(1)
-	items._characters[items._peer_key[1]].erase("rested")
-	items._comfort_tick(20.0)
-	check(items.rested_tier(1).is_empty(), "20 s on the chair is not enough")
-	items._comfort_tick(15.0)
-	check(not items.rested_tier(1).is_empty(), "35 s sitting on a chair earns the Rested buff")
-	items._stance[1] = 0
-	items._comfort_tick(1.0)
-	items._stance[1] = 2
-	items.report_position(1, Vector3(30.0, 10.0, 30.0))
-	items._characters[items._peer_key[1]].erase("rested")
-	items._comfort_tick(40.0)
-	check(items.rested_tier(1).is_empty(), "sitting on the bare ground far from any seat earns nothing")
-	items._stance[1] = 0
-	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-
-	items.rest_completed(1)   # earn it again for the save check below
+	check(tip.contains("Comfort 7 of 10") and tip.contains("Bonus 70%") and tip.contains("health counts x1.5") and tip.contains("You have:") and tip.contains("Missing:") and tip.contains("Lying on a bed"), "the tooltip gives the bonus, what counts and what is missing")
+	items._comfort_goal[1] = 9.0
+	items._comfort_tick()
+	check(told.size() == 2 and told[1][1] == 9 and told[1][2] == 1 and str(told[1][3]) == "", "a higher target is told as rising, without resending the same tooltip")
+	var Badge := load("res://src/client/ui/comfort_badge.gd")
+	check(Badge.level_of(70) == 7 and Badge.level_of(69) == 6 and Badge.level_of(100) == 10 and Badge.level_of(0) == 0, "the HUD symbol shows the whole level of the tenths")
 
 	# Saved and cleared.
+	items._characters[items._peer_key[1]]["comfort"] = 6.5
+	items._characters[items._peer_key[1]]["rested"] = {"level": 9, "until": 1.0e12}   # an old save's Rested row: dropped, never read
 	items._save_characters()
 	items._finish_writer()
 	var again = ItemsScript.new()
@@ -191,8 +227,9 @@ func _init() -> void:
 	fresh._items[cold] = {"number": 0, "count": 1, "pos": Vector3(16.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "wall_torch", "yaw": 0.0}}
 	fresh._apply_lit_rows([[16.0, 10.0, 0.0, 900.0]])
 	check(bool(fresh._items[cold]["struct"].get("lit", false)) and float(fresh._items[cold]["struct"]["fuel_left"]) == 900.0, "a saved lit torch is lit again, with its fuel, after a load")
-	check(again.rested_seconds_left(1) > 40.0 * 60.0, "the buff is saved with the character (%.0f s left after a reload)" % again.rested_seconds_left(1))
-	items._characters[items._peer_key[1]].erase("rested")
-	check(items.rested_tier(1).is_empty(), "without a buff there is no tier")
+	check(absf(again.comfort_meter(1) - 6.5) < 0.001 and not again._characters[again._peer_key[1]].has("rested"), "the meter is saved with the character (%.2f after a reload); an old Rested row is dropped" % again.comfort_meter(1))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	items.kill(1, "test")
+	check(items.comfort_meter(1) == 0.0, "death empties the meter")
 	print("comfort: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

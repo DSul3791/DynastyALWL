@@ -40,7 +40,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 162  # 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
+const PROTOCOL_VERSION := 163  # 163 (23 Nov 2026, Dave: the comfort meter): comfort(tenths, target, trend, tip) replaces comfort(level, rested level, rested minutes, tip): the always-on meter 0..10 in tenths, the level it heads for, rising or falling, and the tooltip ("" = unchanged). Client and server must be updated together. 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
 # 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
 # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
@@ -166,7 +166,7 @@ signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: Stri
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
-signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
+signal comfort_received(tenths: int, target: int, trend: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
 signal hit_number_received(at: Vector3, amount: int)
@@ -868,10 +868,11 @@ func body(bpm: int, eta_s: int, phase: int) -> void:
 	body_received.emit(bpm, eta_s, phase)
 
 
-# Comfort level and the Rested buff (protocol 80, docs/COMFORT_DESIGN.md): at hello and whenever the level, the buff's level or its whole minutes left change. rested_level 0 = no buff.
+# The comfort meter (protocol 163, docs/COMFORT_DESIGN.md s11): the meter in tenths (0..100), the level it heads for (0..10), the trend (-1 falling,
+# 0 steady, 1 rising) and the tooltip ("" = unchanged since the last one). At hello and whenever the tenths, the target or the trend change.
 @rpc("authority", "call_remote", "reliable")
-func comfort(level: int, rested_level: int, rested_minutes: int, tip: String) -> void:
-	comfort_received.emit(level, rested_level, rested_minutes, tip)
+func comfort(tenths: int, target: int, trend: int, tip: String) -> void:
+	comfort_received.emit(tenths, target, trend, tip)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.
