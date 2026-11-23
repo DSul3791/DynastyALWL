@@ -237,6 +237,10 @@ func _init() -> void:
 		run(a, 30.0)
 		check(a.animals.has(deer) == walled, "%s, the hunted deer is %s" % ["with a wall between them" if walled else "with no wall", "alive" if a.animals.has(deer) else "taken"])
 
+		if walled:
+			run(a, 40.0)      # past the 60 s feed time
+			check(a.animals.has(deer) and phase_of(a, pid) != "feed", "walled off for the whole feed time, the pack gives the deer up (%s)" % phase_of(a, pid))
+
 	# 6. Boldness: at the den a healthy lone player is attacked; far away not.
 	a = make()
 	log_bites = 0

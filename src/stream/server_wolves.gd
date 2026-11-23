@@ -859,6 +859,12 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		pack["timer"] = 0.0
 		return
 
+	if prey_id != 0 and host.animals.has(prey_id) and float(pack["timer"]) <= 0.0 and host.wall_between(c, host.animals[prey_id]["pos"]):
+		pack["prey"] = 0   # walled off (a player's dog in its pen) for the whole feed time: the pack gives it up rather than wait at the pen for ever
+		pack["phase"] = "prowl"
+		pack["home"] = c
+		return
+
 	if prey_id != 0 and host.animals.has(prey_id):
 		var prey: Dictionary = host.animals[prey_id]
 

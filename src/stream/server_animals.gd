@@ -844,8 +844,8 @@ func keep_off_players(a: Dictionary, was: Vector3, players: Array) -> bool:
 	# One player at a time can push it out of one body into another standing beside them (robot bear hunt 23 Nov 2026: two hunters 1.4 m
 	# apart, a charging bear put on the second one's circle, inside the first, 0.22 m from their middle): ending inside anyone and nearer them
 	# than it was, it stays where it was.
-	if kept and _deeper_in(a["pos"], was, players, m):
-		a["pos"] = was
+	if kept and (_deeper_in(a["pos"], was, players, m) or wall_between(was, a["pos"])):
+		a["pos"] = was   # nor put out through a wall or a shut door behind it
 
 	if kept and Vector2(a["pos"].x - was.x, a["pos"].z - was.z).length() < 0.05:
 		a["pos"] = was   # held at the player: it stands there, not a few centimetres to and fro

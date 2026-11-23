@@ -6,7 +6,8 @@ extends SceneTree
 #   1. every big game charge (bear, boar, moose, buffalo, the big cats, hyena, rhino, elephant, dog) lands in the open, and never on a
 #      player standing hard behind the wall; the animal stays on its own side;
 #   2. a hunter's chase (a puma at a runner) the same;
-#   3. a player who pins an animal against the wall does not push it out through the other side (make_way).
+#   3. a player who pins an animal against the wall does not push it out through the other side (make_way), nor does keeping a step
+#      off them (keep_off_players).
 # The wolves' bites and kills: test_wolves 6b and 5c, test_wolf_pups 5b. Shut doors and gates: test_animal_gates (the same hook).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_attack_walls.gd
 
@@ -72,10 +73,10 @@ func _init() -> void:
 
 	var walls: Array = []
 
-	for z in [-4.0, -2.0, 0.0, 2.0, 4.0]:   # five 2 m log walls turned to run north and south: 10 m of wall, too long to go round in a charge
-		walls.append(items.dev_place("log_wall@%.1f,%.1f,90" % [WALL_X, z]))
+	for n in 36:   # 2 m log walls turned to run north and south: 72 m of wall (a charge slides along a wall it meets; a 25 m one gets round 10 m)
+		walls.append(items.dev_place("log_wall@%.1f,%.1f,90" % [WALL_X, -35.0 + 2.0 * float(n)]))
 
-	check(not walls.has(0) and animals.wall_between(Vector3(103.0, 10.0, 0.0), BEHIND), "a 10 m log wall stands across the way at x %.1f" % WALL_X)
+	check(not walls.has(0) and animals.wall_between(Vector3(103.0, 10.0, 0.0), BEHIND), "a 72 m log wall stands across the way at x %.1f" % WALL_X)
 
 	_charges()
 	_chase()
@@ -120,14 +121,15 @@ func run(a: Dictionary, seconds: float) -> float:
 # 1. A forced warning (no bluff) and its charge: in the open it lands; at a player hard behind the wall it never does.
 func _charges() -> void:
 	for sp in CHARGERS:
+		var start_m: float = minf(8.0, float(animals.species_def(sp)["defend"].get("calm_m", 32.0)) - 1.0)      # inside its calm_m, or it calms (a dog 5 m, a lynx 6 m)
 		stand(Vector3(0.0, 10.0, 0.0))
-		var open: Dictionary = put(sp, 8.0)
+		var open: Dictionary = put(sp, start_m)
 		var warned: bool = animals.big_game.warn(open, Vector3(0.0, 10.0, 0.0), -1.0, true)
 		run(open, 8.0)
 		check(warned and not landed.is_empty(), "%s: its charge lands on a player in the open (%d blows)" % [sp, landed.size()])
 
 		stand(BEHIND)
-		var walled: Dictionary = put(sp, 106.0)
+		var walled: Dictionary = put(sp, BEHIND.x + start_m)
 		animals.big_game.warn(walled, BEHIND, -1.0, true)
 		var closest: float = run(walled, 12.0)
 		check(landed.is_empty() and closest > WALL_X, "%s: its charge at a player behind the wall never lands (%d blows) and it stays on its side (nearest x %.2f)" % [sp, landed.size(), closest])
@@ -158,4 +160,11 @@ func _pinned() -> void:
 		animals.make_way(deer, player, 0.1, [player])
 
 	check(float(deer["pos"].x) > face, "a deer a player pins against the wall does not step out through it (x %.2f, the face at %.2f)" % [float(deer["pos"].x), face])
+
+	# Nor does keeping a step off a player put it out through the wall behind it: a deer stepping in toward a player along the wall, put back
+	# on the contact circle along the line from the player, would land at x 101.5, across the face.
+	var stepper: Dictionary = put("deer", 102.03)
+	stepper["pos"] = Vector3(102.03, 10.0, 0.3)
+	animals.keep_off_players(stepper, Vector3(102.03, 10.0, 1.2), [player])
+	check(float(stepper["pos"].x) > face, "a step kept off a player is never put out through the wall behind it (x %.2f)" % float(stepper["pos"].x))
 
