@@ -78,17 +78,17 @@ func make_items():
 	return items
 
 
-# A stone thrown from 3 m over `at`, straight down: where it comes down (the landing thud) and where the stack lies.
-func throw_onto(items, at: Vector3) -> Array:
+# A stone thrown from `start` at `vel`: where it comes down (the landing thud) and where the stack lies. Server frames of 1/30 s.
+func throw_from(items, start: Vector3, vel: Vector3) -> Array:
 	alarms.clear()
 	var before: int = items._next_id
-	items._flights.append({"number": items.table.number_of("stone"), "wear": 0, "inst": {}, "peer": 1, "pos": at + Vector3(0.0, 3.0, 0.0), "vel": Vector3(0.0, -2.0, 0.0), "age": 0.0, "lag": []})
+	items._flights.append({"number": items.table.number_of("stone"), "wear": 0, "inst": {}, "peer": 1, "pos": start, "vel": vel, "age": 0.0, "lag": []})
 
-	for k in 200:
+	for k in 300:
 		if items._flights.is_empty():
 			break
 
-		items._fly(0.02)
+		items._fly(1.0 / 30.0)
 
 	var lying: float = NAN
 
@@ -99,22 +99,30 @@ func throw_onto(items, at: Vector3) -> Array:
 	return [float(alarms[0].y) if not alarms.is_empty() else NAN, lying]
 
 
-# An arrow shot straight down from 3 m over `at`: where it comes down (the landing thud).
-func shoot_onto(items, at: Vector3) -> float:
+func throw_onto(items, at: Vector3) -> Array:
+	return throw_from(items, at + Vector3(0.0, 3.0, 0.0), Vector3(0.0, -8.0, 0.0))
+
+
+# An arrow shot from `start` at `vel` (the bow's own 0.05 s steps): where it comes down (the landing thud).
+func shoot_from(items, start: Vector3, vel: Vector3) -> float:
 	alarms.clear()
 
 	if items._bow == null:
 		items._bow = BowScript.new()
 
-	items._arrows.append({"peer": 1, "number": items.table.number_of("stone"), "inst": {}, "tip": "wood", "damage": 0.0, "fire": false, "pos": at + Vector3(0.0, 3.0, 0.0), "vel": Vector3(0.0, -20.0, 0.0), "flown": 0.0, "age": 0.0, "range": 100.0, "sticks": true, "lag": []})
+	items._arrows.append({"peer": 1, "number": items.table.number_of("stone"), "inst": {}, "tip": "wood", "damage": 0.0, "fire": false, "pos": start, "vel": vel, "flown": 0.0, "age": 0.0, "range": 100.0, "sticks": true, "lag": []})
 
 	for k in 200:
 		if items._arrows.is_empty():
 			break
 
-		items._fly(0.02)
+		items._fly(1.0 / 30.0)
 
 	return float(alarms[0].y) if not alarms.is_empty() else NAN
+
+
+func shoot_onto(items, at: Vector3) -> float:
+	return shoot_from(items, at + Vector3(0.0, 3.0, 0.0), Vector3(0.0, -40.0, 0.0))
 
 
 func _init() -> void:
@@ -140,7 +148,7 @@ func _init() -> void:
 	items.peer_connected_hello(1, "groundland0001")
 
 	# A carcass: where the animal fell.
-	for row in [["in the pit", PIT, pit_floor, pit_floor], ["on the mound", MOUND, mound_top, mound_top], ["in the tunnel", TUNNEL, tunnel_floor, tunnel_floor]]:
+	for row in [["in the pit", PIT, pit_floor, pit_floor], ["on the mound", MOUND, mound_top, mound_top], ["in the tunnel", TUNNEL, tunnel_floor + 0.25, tunnel_floor]]:
 		var id: int = items.make_carcass("deer", Vector3(row[1].x, float(row[2]), row[1].z))
 		var y: float = float((items._items[id]["pos"] as Vector3).y) if items._items.has(id) else NAN
 		check(absf(y - float(row[3])) <= 0.1, "a deer killed %s lies on that ground: y %.2f, ground %.2f" % [row[0], y, float(row[3])])
@@ -150,19 +158,32 @@ func _init() -> void:
 		var got: Array = throw_onto(items, Vector3(row[1].x, float(row[2]), row[1].z))
 		check(absf(float(got[0]) - float(row[2])) <= 0.15 and absf(float(got[1]) - float(row[2])) <= 0.15, "a stone thrown %s comes down on it (%.2f) and lies there (%.2f), ground %.2f" % [row[0], float(got[0]), float(got[1]), float(row[2])])
 
-	var in_tunnel: Array = throw_onto(items, Vector3(TUNNEL.x, tunnel_floor - 2.0, TUNNEL.z))
-	check(absf(float(in_tunnel[0]) - tunnel_floor) <= 0.15 and absf(float(in_tunnel[1]) - tunnel_floor) <= 0.15, "a stone dropped in the tunnel comes down on its floor (%.2f, lies %.2f), not on the hill over it, floor %.2f" % [float(in_tunnel[0]), float(in_tunnel[1]), tunnel_floor])
+	# In the tunnel (the hill over it at 10): a stone dropped from 1 m and one thrown hard down and along, at the server's frame step, come
+	# down on its floor and not on the hill; so does one thrown into its wall.
+	for row in [["dropped in the tunnel", Vector3(TUNNEL.x, tunnel_floor + 1.0, TUNNEL.z), Vector3.ZERO], ["thrown down along the tunnel", Vector3(TUNNEL.x - 0.8, tunnel_floor + 1.6, TUNNEL.z), Vector3(4.0, -9.0, 0.0)], ["thrown into the tunnel wall", Vector3(TUNNEL.x, tunnel_floor + 0.6, TUNNEL.z), Vector3(12.0, -1.0, 0.0)]]:
+		var got: Array = throw_from(items, row[1], row[2])
+		check(float(got[0]) < tunnel_floor + 1.0 and float(got[1]) < tunnel_floor + 1.0, "a stone %s comes down in it (%.2f, lies %.2f), not on the hill over it at 10, floor %.2f" % [row[0], float(got[0]), float(got[1]), tunnel_floor])
 
 	# An arrow: where it comes down.
 	for row in [["into the pit", PIT, pit_floor], ["onto the mound", MOUND, mound_top]]:
 		var y: float = shoot_onto(items, Vector3(row[1].x, float(row[2]), row[1].z))
 		check(absf(y - float(row[2])) <= 0.15, "an arrow shot %s comes down on it (%.2f), ground %.2f" % [row[0], y, float(row[2])])
 
-	# Tree litter and a regrown plant use the same ground (the cut is in _seed_litter, _crown_litter and _maybe_sapling).
-	check(absf(items._ground_under(Vector3(PIT.x, 10.5, PIT.z)) - pit_floor) <= 0.01 and absf(items._ground_under(Vector3(MOUND.x, 10.5, MOUND.z)) - mound_top) <= 0.01, "litter falling from 0.5 m over the old ground lands in the pit and on the mound")
-	var src: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")
-	var sapling: String = src.substr(src.find("func _maybe_sapling("), 2000)
-	check(sapling.contains("ground_now.call(spot.x, spot.z)"), "a regrown sapling stands on the ground as dug and filled (_maybe_sapling)")
+	for row in [["along the tunnel", Vector3(TUNNEL.x - 1.2, tunnel_floor + 1.2, TUNNEL.z), Vector3(45.0, -6.0, 0.0)], ["down into the tunnel floor", Vector3(TUNNEL.x, tunnel_floor + 1.4, TUNNEL.z), Vector3(5.0, -40.0, 0.0)]]:
+		var y: float = shoot_from(items, row[1], row[2])
+		check(y < tunnel_floor + 1.0, "an arrow shot %s comes down in it (%.2f), not on the hill over it at 10, floor %.2f" % [row[0], y, tunnel_floor])
+
+	# A felled tree's seeds land in its crown circle on the ground as dug and filled: a crown over the pit and over the mound.
+	for row in [["pit", PIT, pit_floor], ["mound", MOUND, mound_top]]:
+		var tree: Dictionary = {"species": "oak", "crown": [row[1].x, row[1].z, 0.4]}
+		var litter: Array = items._seed_litter(7, tree, Vector3(row[1].x + 8.0, 10.0, row[1].z))
+		var y: float = float((litter[0][2] as Vector3).y) if not litter.is_empty() else NAN
+		check(litter.is_empty() or absf(y - 0.1 - float(row[2])) <= 0.15, "a tree's seeds over the %s land on it (%s), ground %.2f" % [row[0], "none for oak" if litter.is_empty() else "%.2f" % y, float(row[2])])
+
+	# The generated ground where the server gives no edited ground (the tests that set only ground_height); NAN ground leaves a station spot as it was.
+	var plain = ItemsScript.new()
+	plain.ground_height = func(_x, _z): return 10.0
+	check(is_equal_approx(plain._ground_under(Vector3(PIT.x, 12.0, PIT.z)), 10.0) and is_nan(ItemsScript.new()._ground_under(Vector3(PIT.x, 12.0, PIT.z))), "no edited ground: the generated one; none at all: NAN")
 	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
 	check(server.contains("items.ground_now = edited_ground.height"), "terrain_server gives the items the edited ground")
 

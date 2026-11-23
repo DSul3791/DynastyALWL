@@ -4241,14 +4241,21 @@ func _arrow_fly(delta: float) -> void:
 					at_foot = not stuck
 					at = from.lerp(to, into)
 
-			var ground: float = _ground_under(to) if ground_height.is_valid() or ground_now.is_valid() else -1000000.0
+			var knows: bool = ground_height.is_valid() or ground_now.is_valid()
+			var down: Vector3 = _landing(from, to) if knows else Vector3.INF
 
-			if at_foot and not is_nan(ground):
-				at.y = _ground_under(at)
+			if at_foot and knows:
+				var foot: float = _ground_under(at)
+				at.y = foot if not is_nan(foot) else at.y
 
-			if not landed and ((not is_nan(ground) and to.y <= ground) or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
+			if not landed and (down.x != INF or float(ar["flown"]) >= float(ar.get("range", _bow.range_m())) or float(ar["age"]) >= THROW_MAX_S * 2.0):
 				landed = true
-				at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
+
+				if down.x != INF:
+					at = down
+				else:   # out of range or time in the air: down on the ground under it
+					var ground: float = _ground_under(to) if knows else -1000000.0
+					at = Vector3(to.x, ground if not is_nan(ground) else to.y, to.z)
 
 			ar["pos"] = to
 
@@ -4333,13 +4340,15 @@ func _fly(delta: float) -> void:
 				_flights.erase(flight)
 				continue
 
-		var ground: float = _ground_under(flight["pos"]) if ground_height.is_valid() or ground_now.is_valid() else -1000000.0
+		var knows: bool = ground_height.is_valid() or ground_now.is_valid()
+		var down: Vector3 = _landing(from, flight["pos"]) if knows else Vector3.INF
 
-		if (not is_nan(ground) and flight["pos"].y <= ground) or flight["age"] >= THROW_MAX_S:
-			var spot: Vector3 = flight["pos"]
+		if down.x != INF or flight["age"] >= THROW_MAX_S:
+			var spot: Vector3 = down if down.x != INF else flight["pos"]
 
-			if not is_nan(ground):
-				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
+			if down.x == INF and knows:   # out of time in the air: not under the ground
+				var ground: float = _ground_under(spot)
+				spot.y = maxf(ground, spot.y) if not is_nan(ground) else spot.y
 
 			if animal_alarm.is_valid():
 				if _bow == null:
@@ -6648,17 +6657,49 @@ const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placem
 const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot (as terrain_generator and server_carts CAVE_PROBE_UP_M)
 
 
-# Where a thing coming down at `p` lands (round 7, 23 Nov 2026: a carcass, an arrow, a thrown stack or a regrown plant kept to the generated
-# ground, floating over a dug pit or buried in a fill): the ground as dug and filled, or under it (in a cave or a dug tunnel) the floor of the
-# air `p` is in. Cheap above ground (edited_ground keeps its cells); floor_below only under it.
+# Where a thing let go at `p` comes to rest (round 7, 23 Nov 2026: a carcass or a regrown plant kept to the generated ground, floating over a
+# dug pit or buried in a fill): the ground as dug and filled, or under it (in a cave or a dug tunnel) the floor of the air `p` is in. Cheap
+# above that top (edited_ground keeps its cells); floor_below, a scan of the edits near, only under it. floor_below from inside rock answers
+# at once just over the point (terrain_generator.floor_below): `p` is not in an open space, so the top.
 func _ground_under(p: Vector3) -> float:
-	var top: float = float(ground_now.call(p.x, p.z)) if ground_now.is_valid() else (float(ground_height.call(p.x, p.z)) if ground_height.is_valid() else NAN)
+	var top: float = _ground_top(p.x, p.z)
 
 	if is_nan(top) or p.y >= top - 0.05 or not floor_below.is_valid():
 		return top
 
 	var under: float = float(floor_below.call(p))
 	return top if is_nan(under) or under > p.y + 0.05 else under
+
+
+# Where a flight stepping from `from` to `to` comes down (round 7: arrows and thrown things kept to the generated ground, so over a pit they
+# stopped in the air, in a fill they went in, and in a tunnel or a cave they came out on the hill above): Vector3.INF while it is still in
+# the air (or there is no ground to know). Over the ground as dug and filled it strikes that ground; under it (a tunnel, a cave) the floor of
+# the open column it came down, or, struck into a wall, the floor where it last was in the open. A flight is only looked at after the step
+# that took it into the rock, so the open air is read from `from`, never `to`.
+func _landing(from: Vector3, to: Vector3) -> Vector3:
+	var top: float = _ground_top(to.x, to.z)
+
+	if is_nan(top) or to.y > top:
+		return Vector3.INF
+
+	if from.y >= top - 0.05 or not floor_below.is_valid():
+		return Vector3(to.x, top, to.z)   # in from over the ground
+
+	var under: float = float(floor_below.call(Vector3(to.x, from.y, to.z)))   # down to's column from the height it was last in the air
+
+	if not is_nan(under) and under <= from.y + 0.05:
+		return Vector3(to.x, under, to.z) if to.y <= under else Vector3.INF
+
+	var floor_y: float = float(floor_below.call(from))   # that column is rock there: it struck a wall
+	return Vector3(from.x, floor_y if not is_nan(floor_y) and floor_y <= from.y + 0.05 else from.y, from.z)
+
+
+# The ground as dug and filled at (x, z), the top of its highest solid span; the generated ground where the server has not given it.
+func _ground_top(x: float, z: float) -> float:
+	if ground_now.is_valid():
+		return float(ground_now.call(x, z))
+
+	return float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
 
 
 # The ground under a spot: the cave floor when the spot is under the generated surface `surface` and in a cave's air, else `surface`.
@@ -11819,8 +11860,8 @@ func _seed_litter(id: int, tree: Dictionary, fallback: Vector3) -> Array:
 		var far: float = sqrt(rng.randf()) * float(circle[2]) * 0.5   # luck-exempt: where it lands, no player
 		spot = Vector3(float(circle[0]) + cos(angle) * far, fallback.y, float(circle[1]) + sin(angle) * far)
 
-		if ground_height.is_valid():
-			var ground: float = _ground_under(Vector3(spot.x, fallback.y + 0.5, spot.z))   # a pit's floor, a fill's top
+		if ground_height.is_valid() or ground_now.is_valid():
+			var ground: float = _ground_top(spot.x, spot.z)   # a pit's floor, a fill's top (a tree's litter never lands in a tunnel)
 			spot.y = ground + 0.1 if not is_nan(ground) else spot.y
 
 	return [[int(seeds[0]), int(seeds[1]), spot]]
@@ -11911,8 +11952,8 @@ func _crown_litter(id: int, tree: Dictionary, cfg: Dictionary, at: Vector3) -> A
 			var z: float = float(circle[1]) + sin(angle) * far
 			var y: float = at.y
 
-			if ground_height.is_valid():   # on the ground where it lands, not at the stump's height (a slope), as dug and filled
-				var ground: float = _ground_under(Vector3(x, at.y + 0.5, z))
+			if ground_height.is_valid() or ground_now.is_valid():   # on the ground where it lands, not at the stump's height (a slope), as dug and filled
+				var ground: float = _ground_top(x, z)
 				y = ground + 0.1 if not is_nan(ground) else y
 
 			rows.append([number, floori(float(total) / float(heaps)) + (1 if k < total % heaps else 0), Vector3(x, y, z)])
@@ -12037,7 +12078,7 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, at: Ve
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. The dice come from the seed and the spot,
 # so a restart gives the same answer.
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
-	if not standing_near.is_valid() or not ground_height.is_valid():
+	if not standing_near.is_valid() or not (ground_height.is_valid() or ground_now.is_valid()):
 		return
 
 	var tree: Dictionary = stump["tree"]
@@ -12054,7 +12095,7 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 
 	var angle: float = rng.randf() * TAU   # luck-exempt: world regrowth, no player
 	var spot: Vector3 = near[0] + Vector3(cos(angle), 0.0, sin(angle)) * rng.randf_range(2.0, RESPAWN_PLACE_M)   # luck-exempt: world regrowth, no player
-	var ground: float = float(ground_now.call(spot.x, spot.z)) if ground_now.is_valid() else float(ground_height.call(spot.x, spot.z))   # in a dug pit or on a fill, not in the air over it
+	var ground: float = _ground_top(spot.x, spot.z)   # in a dug pit or on a fill, not in the air over it
 	var species_entry: Dictionary = _flora_by_name.get(str(tree["species"]), {})
 
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
@@ -19838,8 +19879,9 @@ func _step_to_station(peer: int, station_id: int) -> Vector3:
 			spot = candidate
 			break
 
-	if ground_height.is_valid():
-		spot.y = _ground_under(spot + Vector3(0.0, 0.5, 0.0))   # a station on a fill or in a dug floor: stood on that ground, not inside it
+	if ground_height.is_valid() or ground_now.is_valid():
+		var stand: float = _ground_under(spot + Vector3(0.0, 0.5, 0.0))   # a station on a fill or in a dug floor: stood on that ground, not inside it
+		spot.y = stand if not is_nan(stand) else spot.y
 
 	_peer_pos[peer] = spot
 	var look: Vector3 = centre - spot
