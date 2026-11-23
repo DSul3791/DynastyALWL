@@ -7,6 +7,7 @@ extends RefCounted
 # FRESH_S from another process: the player sees "Dynasty is already open" with Quit and Open anyway. A crash leaves a stale note, never asked about.
 # Not asked: a restart of the game itself (--to-servers, set_restart_on_exit: the old process may still be closing), tests (--test), headless runs.
 
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer (no bare print in client code)
 const PATH := "user://game_open.json"
 const EVERY_S := 5.0
 const FRESH_S := 60.0   # longer than the longest first-start freeze (about 25 s), when a tester is most likely to start the game again
@@ -107,3 +108,4 @@ static func ask(parent: Node, go_on: Callable) -> void:
 
 	parent.add_child(layer)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	FreezeWatchScript.printer.line("Launcher: another copy of the game is open; asked Quit or Open anyway")   # tools/way_in_eyes.sh reads it
