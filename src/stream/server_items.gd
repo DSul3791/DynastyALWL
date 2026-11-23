@@ -11780,7 +11780,7 @@ func _flora_of_plant(item_id: String) -> Dictionary:
 
 # Why a bush or tree seed cannot go into the ground at `spot` (its height the ground's), "" when it can.
 func _sapling_refusal(item_id: String, spot: Vector3) -> String:
-	if _season() == "winter":
+	if _season_of(spot) == "winter":
 		return "The ground is frozen hard: nothing can be planted in winter."   # the hoe's list greys it out too (FarmRules.plantable_now)
 
 	var gap: float = PLANT_TREE_GAP_M if tree_seed_species(item_id) != "" else PLANT_BUSH_GAP_M
@@ -17017,7 +17017,7 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 				# Passed out under water: rescued as from the cold (warmth.json pass_out), or the faint and the wake would come round for ever with
 				# the head still under and movement locked (no auto-rise, BUG-029).
-				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and _peer_pos.has(peer):
 					_out_water[peer] = true
 					_cold_pass_out(peer)
 			else:
@@ -18071,13 +18071,16 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	var here: Vector3 = _peer_pos.get(peer, respawn_point)
 	var best: Array = []
 
-	for spot in rescue_spots.call(here):
+	for spot in (rescue_spots.call(here) if rescue_spots.is_valid() else []):
 		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
 			best = spot
 
 	# No camp and no town square anywhere (a test world): they come to where they lay, never at the spawn (nothing is based on the spawn).
 	var to: Vector3 = best[0] if not best.is_empty() else here
 	var kind: String = str(best[1]) if not best.is_empty() else "here"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
+
+	if water and best.is_empty():
+		to = _dry_shore(here)   # no place to be carried to: the nearest dry shore, never the spawn (coordinator 23 Nov 2026)
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
@@ -18087,7 +18090,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_resume_to.erase(peer)
 	_motion.erase(peer)
 
-	if water and not best.is_empty():   # carried out of the water: breathing again (the client's next report says where the head is)
+	if water:   # carried out of the water: breathing again (the client's next report says where the head is; with no shore found, a full breath to swim up awake)
 		_head_under[peer] = false
 		_suffocate.erase(peer)
 		_breath.erase(peer)
@@ -18097,7 +18100,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_sync_warmth(peer, true)
 	_dirty = true
 
-	if send_died.is_valid() and not best.is_empty():
+	if send_died.is_valid() and not to.is_equal_approx(here):
 		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
 
 	if water:
@@ -18110,6 +18113,36 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 
 func passed_out(peer: int) -> bool:
 	return _cold_out.has(peer)
+
+
+# The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points
+# about a tenth of the radius apart, never under SHORE_STEP_M), 2 m over the ground as every wake spot is set down (_rescue_ground,
+# dug_out_height); `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
+const SHORE_STEP_M := 3.0
+const SHORE_MAX_M := 200.0
+const SHORE_DRY_M := 0.05
+
+func _dry_shore(from: Vector3) -> Vector3:
+	if not ground_height.is_valid() or not water_depth_at.is_valid():
+		return from
+
+	var r: float = SHORE_STEP_M
+
+	while r <= SHORE_MAX_M:
+		var steps: int = maxi(int(ceil(TAU * r / maxf(SHORE_STEP_M, r * 0.1))), 8)
+
+		for i in steps:
+			var a: float = TAU * float(i) / float(steps)
+			var x: float = from.x + cos(a) * r
+			var z: float = from.z + sin(a) * r
+			var g: float = float(ground_height.call(x, z))
+
+			if not is_nan(g) and float(water_depth_at.call(Vector3(x, g, z))) <= SHORE_DRY_M:
+				return Vector3(x, g + 2.0, z)
+
+		r += SHORE_STEP_M
+
+	return from
 
 
 func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
@@ -20254,6 +20287,18 @@ func _game_day() -> int:
 
 func _season() -> String:
 	return str(season_now.call()) if season_now.is_valid() else "spring"
+
+
+# The season at a place (Weather.season_at: half a year on across the equator from the starter's hemisphere), else the one calendar season. Sowing,
+# planting and a crop's winter go by the bed's own season (Dave: nothing is based on where spawn is; the hoe's list reads the player's, terrain_client).
+func _season_of(pos: Vector3) -> String:
+	return str(season_at.call(pos)) if season_at.is_valid() else _season()
+
+
+# A bed key's ground position (the _bed_key steps back to metres), for its season.
+func _bed_key_pos(key: String) -> Vector3:
+	var parts: PackedStringArray = key.trim_prefix("b").split(",")
+	return Vector3(float(parts[0]) * BED_SNAP_M, 0.0, float(parts[1]) * BED_SNAP_M) if key.begins_with("b") and parts.size() == 2 else Vector3.ZERO
 
 
 func _bed_at(id: int) -> Dictionary:
@@ -22434,7 +22479,7 @@ func _plant_point(peer: int, kind: String, item_id: String, flat: Vector2, grid:
 	var why: String = _sow_refusal(key, item_id)
 
 	if why == "season":
-		why = _season_refusal(item_id)
+		why = _season_refusal(item_id, _bed_key_pos(key))
 
 	if why == "":
 		used[key] = true
@@ -22464,10 +22509,11 @@ func _sow_refusal(key: String, seed_id: String) -> String:
 	if crop_id == "":
 		return "That cannot be sown."
 
-	return "" if FarmRules.plantable_now(_crop_table(), seed_id, "seed", _season()) else "season"   # the hoe's list greys out the same rows (farm_rules.gd)
+	return "" if FarmRules.plantable_now(_crop_table(), seed_id, "seed", _season_of(_bed_key_pos(key))) else "season"   # the hoe's list greys out the same rows (farm_rules.gd)
 
 
-func _season_refusal(seed_id: String) -> String:
+func _season_refusal(seed_id: String, at: Vector3) -> String:
+	var season: String = _season_of(at)
 	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
 	var def: Dictionary = _crop_table().get(crop_id, {})
 	var seasons: Array = FarmRules.sow_seasons(def).filter(func(x): return str(x) != "winter")
@@ -22476,10 +22522,10 @@ func _season_refusal(seed_id: String) -> String:
 	if names.is_empty():
 		return "The ground is frozen hard: %s cannot be sown." % table.in_sentence(str(def.get("name", crop_id)))   # a crop the data sows only in winter
 	var when: String = names[0] if names.size() == 1 else ", ".join(names.slice(0, names.size() - 1)) + " or " + names[names.size() - 1]
-	if _season() == "winter":
+	if season == "winter":
 		return "The ground is frozen hard: nothing can be sown in winter. Sow %s in %s." % [table.in_sentence(str(def.get("name", crop_id))), when]
 
-	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
+	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, season]   # names when it can go in, so a summer start knows to wait or sow another
 
 
 # The crop record of a seed just sown (the seed already taken).
@@ -22629,7 +22675,7 @@ func _crops_tick() -> void:
 
 		while int(crop["day"]) < today:
 			crop["day"] = int(crop["day"]) + 1
-			var winter: bool = _season() == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
+			var winter: bool = _season_of(_bed_key_pos(key)) == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
 
 			if winter:
 				if crop_stage(crop) == 0 and not bool(def.get("overwinters", false)):   # overwinters (data): winter wheat, rye and autumn onions sit out the frost as seedlings and grow on in spring
