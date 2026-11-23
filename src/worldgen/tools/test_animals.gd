@@ -192,6 +192,29 @@ func _init() -> void:
 	check(rows.size() == 30, "at most 30 rows are sent (%d)" % rows.size())
 	check(rows[0][2].distance_to(players[0]) <= rows[29][2].distance_to(players[0]) + 0.01, "nearest first")
 
+	# A send pass (terrain_server _send_npcs; load test 23 Nov 2026): the animals found by grid and each row built once. Same animals, same order.
+	for n in 25:
+		a.spawn("deer", -300.0 + 25.0 * float(n), -90.0 + 7.0 * float(n))
+
+	var ids_of: Callable = func(list: Array) -> Array: return list.map(func(r): return int(r[0]))
+	var spots: Array = [players[0], Vector3(-200.0, 10.0, -60.0), Vector3(63.9, 10.0, 0.1), Vector3(-64.0, 10.0, -64.0), Vector3(5000.0, 10.0, 0.0)]
+	var plain: Array = []
+
+	for at in spots:
+		plain.append([ids_of.call(a.rows_near(at)), ids_of.call(a.rows_near(at, 300.0, 60))])
+
+	a.begin_send_pass()
+	var in_pass: Array = []
+
+	for at in spots:
+		in_pass.append([ids_of.call(a.rows_near(at)), ids_of.call(a.rows_near(at, 300.0, 60))])
+
+	var twice: Array = [a.rows_near(players[0]), a.rows_near(players[0])]
+	a.end_send_pass()
+	check(in_pass == plain, "in a send pass, rows_near finds the same animals, nearest first, as looking at every animal")
+	check(not twice[0].is_empty() and is_same(twice[0][0], twice[1][0]), "and each animal's row is built once per pass")
+	check(not a._in_pass and a._pass_rows.is_empty(), "the pass ends clean")
+
 	# Far away: frozen, then dropped.
 	players[0] = Vector3(260.0, 10.0, 0.0)
 	var probe: Vector3 = a.animals[one]["pos"]

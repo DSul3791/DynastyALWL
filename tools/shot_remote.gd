@@ -13,6 +13,8 @@ extends SceneTree
 #            --left=ID       the item in the left hand (torch, lantern, shield); --lit: a torch burning; --night: dark sky, no sun (to see its light)
 #            --asleep        the asleep bit (with --stance=3: a sleeping player)
 #            --carry         a log on the shoulder (the carry bit); --swim: the swimming bit; --shield-up: the shield raised (the more byte's hand flag)
+#            --bow=raised|drawn  with --item=wooden_bow: the bow flag in the more byte (protocol 162: the aim clips, the bow upright, the string back)
+#            --rod=M         with --item=fishing_rod: a line in the water, its float M m ahead of the body on the floor (protocol 162 cast)
 #            --swing         a blow before each picture (the swing count moves on), taken SWING_LEAD_S into the remote clip: the impact
 #            --angles="name:deg:dist;..."  camera deg round the body from its front (0 front, 90 its left, -90 its right, 180 behind), dist m away;
 #                            under 2 m it aims at the held item, else at the chest (default right:-90:2.4;left:90:2.4;front:0:2.4;hand:-90:1.0)
@@ -42,6 +44,9 @@ var _asleep: bool = false
 var _carry: bool = false
 var _swim: bool = false
 var _shield_up: bool = false
+var _bow_flag: int = 0
+var _float_at: Vector3 = Vector3.INF   # the rod's float in the world (--rod)
+const PlayersScript := preload("res://src/stream/server_players.gd")   # cast_code, as the server sends it
 var _left: int = 0
 var _lit: bool = false
 var _swings: int = 0
@@ -86,6 +91,11 @@ func _init() -> void:
 			_swim = true
 		elif a == "--shield-up":
 			_shield_up = true
+		elif a.begins_with("--bow="):
+			_bow_flag = PlayerViewScript.MORE_BOW_DRAWN if a.trim_prefix("--bow=") == "drawn" else PlayerViewScript.MORE_BOW_RAISED
+		elif a.begins_with("--rod="):
+			var ahead: float = clampf(float(a.trim_prefix("--rod=")), 1.0, 12.0)
+			_float_at = Vector3(_at.x, 0.02, _at.z - ahead)   # north (-Z) of the body, on the floor
 		elif a == "--swing":
 			swing = true
 		elif a.begins_with("--settle="):
@@ -253,4 +263,4 @@ func _aim_y() -> float:
 func _send_row() -> void:
 	_server_ms += ROW_MS
 	_at += Vector3(0.0, 0.0, -_walk * float(ROW_MS) / 1000.0)
-	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | (PlayerViewScript.CARRY if _carry else 0) | (PlayerViewScript.SWIM if _swim else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]), PackedInt32Array([_left]), PackedByteArray([(PlayerViewScript.MORE_LIT if _lit else 0) | (PlayerViewScript.MORE_SHIELD_UP if _shield_up else 0)]))
+	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | (PlayerViewScript.CARRY if _carry else 0) | (PlayerViewScript.SWIM if _swim else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]), PackedInt32Array([_left]), PackedByteArray([(PlayerViewScript.MORE_LIT if _lit else 0) | (PlayerViewScript.MORE_SHIELD_UP if _shield_up else 0) | _bow_flag]), PackedInt32Array([PlayersScript.cast_code(_at, _float_at)]))

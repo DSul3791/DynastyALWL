@@ -126,7 +126,7 @@ func _init() -> void:
 	steps(a, b, 6.0)
 	check(hurt_log.size() == 1, "a mother's charge is real (%d hits)" % hurt_log.size())
 
-	# 7. A row without the new keys (the moose) behaves as before: one warning state, every charge real.
+	# 7. A row without the bear's threat keys (the moose: no bluffs or growl; it has the fair dodge since #1824) behaves as before: one warning state, every charge real.
 	hurt_log = []
 	var id: int = a.spawn("moose", 0.0, 0.0)
 	var m: Dictionary = a.animals[id]
