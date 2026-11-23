@@ -13,6 +13,7 @@ on one machine, so their unix ms share a clock. Measures:
           drawn gap to the robot; per BITTEN line (every blow, also wolves): the drawn gap and drawn state
   slides  per robot, the SLIDE line: samples of a bought-model body moving over 0.5 m/s with a standing clip, its rate held at the top or
           bottom, or its feet off the drawn ground speed by over a third (none without the models: cloud clones leave them out)
+  shoved  per robot, its own body faster than SHOVE_MPS over half-second windows: a body pushing the player along (a player runs at 9 m/s: terrain_client RUN_SPEED)
   inside  FAIL inside lines (a body in this robot) and the KIND line's inside_other (a body in the other drawn robot), in frames
 Exit 0 read, 2 nothing to read. It judges nothing: the numbers go to the animal thread.
 """
@@ -24,12 +25,15 @@ import re
 import statistics
 import sys
 
+SHOVE_WINDOW_MS = 500
+SHOVE_MPS = 11.0   # terrain_client RUN_SPEED 9.0 m/s, with room for a frame hitch
+
 
 def read_run(d):
 	robots = {}
 
 	for path in sorted(glob.glob(os.path.join(d, "robot*_play.log"))):
-		r = {"a": {}, "kind": None, "bitten": [], "inside": 0, "slide": None, "peer": None, "name": os.path.basename(path).split("_")[0]}
+		r = {"p": [], "a": {}, "kind": None, "bitten": [], "inside": 0, "slide": None, "peer": None, "name": os.path.basename(path).split("_")[0]}
 
 		for line in open(path, encoding="utf-8", errors="replace"):
 			if not line.startswith("ROBOT "):
@@ -37,7 +41,9 @@ def read_run(d):
 
 			p = line.split()
 
-			if len(p) > 8 and p[3] == "A":
+			if len(p) > 6 and p[3] == "P":
+				r["p"].append((int(p[4]), float(p[5]), float(p[6])))
+			elif len(p) > 8 and p[3] == "A":
 				r["a"].setdefault(int(p[5]), []).append((int(p[4]), float(p[6]), float(p[7]), int(p[8])))
 			elif len(p) > 4 and p[3] == "SLIDE":
 				r["slide"] = line.split("SLIDE ", 1)[1].strip()
@@ -106,6 +112,21 @@ def report(d):
 	for name, r in robots.items():
 		print("  jumps %s: %s; inside this robot %d frames" % (name, r["kind"] or "no KIND line (the plan never finished)", r["inside"]))
 		print("  slides %s: %s" % (name, r["slide"] or "no SLIDE line"))
+		fast = []   # over windows of at least SHOVE_WINDOW_MS: a frame hitch's physics catch-up lands in the next sample, and two short samples would read as a burst
+		j = 0
+
+		for i, a in enumerate(r["p"]):
+			j = max(j, i + 1)
+
+			while j < len(r["p"]) and r["p"][j][0] - a[0] < SHOVE_WINDOW_MS:
+				j += 1
+
+			if j < len(r["p"]) and r["p"][j][0] - a[0] <= 2 * SHOVE_WINDOW_MS:
+				b = r["p"][j]
+				fast.append(math.hypot(b[1] - a[1], b[2] - a[2]) / ((b[0] - a[0]) / 1000.0))
+
+		if fast:
+			print("  shoved %s: its own body over %.0f m/s (faster than a player runs) in %d of %d samples, top %.1f m/s" % (name, SHOVE_MPS, sum(1 for v in fast if v > SHOVE_MPS), len(fast), max(fast)))
 
 	names = sorted(robots)
 
