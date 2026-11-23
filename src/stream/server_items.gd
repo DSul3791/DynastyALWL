@@ -424,7 +424,6 @@ var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
-const COLD_FLOOR_HP := 25.0          # cold stops here, as an animal's blow does (hurt_player floor_hp)
 var _last_rain_s: float = -INF      # game seconds when it last rained (thirst.sources: intermittent brooks run for a day after rain)
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
@@ -16707,10 +16706,9 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
 
 	if w < hurt_at:
-		# Cold costs health, slowly, more the colder; it stops at COLD_FLOOR_HP (the floor of an animal's blow), so cold alone never leaves a
-		# player too weak to hold off wolves (coordinator 22 Nov 2026); one already lower is not pushed further.
+		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, minf(float(v["health"]), COLD_FLOOR_HP))
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
 
 	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
