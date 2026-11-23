@@ -65,16 +65,18 @@ func _init() -> void:
 	var room_floor: float = air_floor(ROOM.x, ROOM.y, 9)
 	var under: Vector3 = Vector3(ROOM.x, room_floor - 1.5, ROOM.y)
 	var p: Vector3 = Rescue.pocket_near(call, under, room_hill)
-	check(not is_nan(p.y) and absf(p.y - (room_floor + 0.7)) < 0.8 and p.y < room_hill - 2.0, "stuck 1.5 m under the room floor (voxel %.0f): stood at %s, the hill at %.2f" % [room_floor, str(p), room_hill])
+	check(not is_nan(p.y) and absf(p.y - (room_floor + 1.65)) < 0.8 and p.y < room_hill - 2.0, "stuck 1.5 m under the room floor (voxel %.0f): stood at %s, the hill at %.2f" % [room_floor, str(p), room_hill])
 
-	for lift in [0.2, 0.9, 1.6]:
-		check(sdf(Vector3i((p + Vector3(0.0, lift, 0.0)).floor())) > 0.0, "  %.1f m over those feet is air" % lift)
+	for lift in [-0.85, 0.0, 0.85]:   # the body's position is its capsule's middle: feet, middle, top
+		check(sdf(Vector3i((p + Vector3(0.0, lift, 0.0)).round())) > 0.0, "  %+.2f m from the body's middle is air (nearest voxel)" % lift)
+
+	check(absf((p.y - 0.95) - room_floor) < 1.0, "  its feet (0.95 m under its middle) are on the room floor")
 
 	# In the passage wall, beside the passage: onto its floor, within a few metres.
 	var side: Vector3 = Vector3(PASSAGE.x, 7.6, PASSAGE.y) + Vector3(0.966, 0.0, -0.259) * 2.4
 	check(sdf(Vector3i(side.floor())) < 0.0, "a spot 2.4 m from the passage's line is in its wall")
 	var q: Vector3 = Rescue.pocket_near(call, side, gen.surface_height(side.x, side.z))
-	check(not is_nan(q.y) and q.distance_to(side) < 3.5 and absf(q.y - 7.3) < 1.0, "stuck in the passage wall: stood on the passage floor at %s" % str(q))
+	check(not is_nan(q.y) and q.distance_to(side) < 3.5 and absf(q.y - 8.0) < 0.6, "stuck in the passage wall: stood on the passage floor at %s" % str(q))
 
 	# Deep in the hill, no cave near: none (the rescue stands the player on the surface, as before).
 	var deep: Vector3 = Vector3(58250.0, 2.0, 72120.0)
