@@ -277,6 +277,8 @@ func yard_step(peer: int, rng: RandomNumberGenerator) -> String:
 	var cart: int = cart_id()
 	var what: int = rng.randi() % 6
 
+	crate_id = 0
+
 	for id in items._items:   # the crate taken down and laid again has a new world id
 		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "wooden_crate":
 			crate_id = id
@@ -488,7 +490,7 @@ func step(rng: RandomNumberGenerator) -> String:
 	elif roll < 97 and not boxes.is_empty():
 		var id: int = int(boxes[rng.randi() % boxes.size()])
 
-		if yard_mode and (id == crate_id or id == cart_id()) and (step_at < LATE_STEP or rng.randf() < 0.9):
+		if yard_mode and (id == crate_id or id == cart_id() or id == loom_id()) and (step_at < LATE_STEP or rng.randf() < 0.9):
 			return "p%d keeps %d standing" % [peer, id]   # the cart and the crate come down now and then, late enough to have been pulled about
 
 		items.action(peer, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
