@@ -6,12 +6,36 @@
 <title>Download Dynasty</title>
 <meta name="description" content="Download the Dynasty: A Life Well Lived play-test, build {{BUILD}}.">
 <!-- The download page (/download/) of the testers' site on Dave's web server: the zip, how to install, join and report.
-     tools/make_testplayers_site.ps1 fills in the fields in double braces; the look is /css/site.css (deploy/testplayers/site.css). No scripts. -->
-<link rel="stylesheet" href="/css/site.css">
+     tools/make_testplayers_site.ps1 fills in the fields in double braces. The look is the testers' site's /css/dynasty.css
+     (deploy/testersite/site/css/), with this page's own rules below. No scripts. -->
+<link rel="stylesheet" href="/css/dynasty.css">
+<style>
+  main.narrow { max-width: 880px; }
+  .get { text-align: center; padding: 28px 20px 26px; background: linear-gradient(180deg, rgba(29, 20, 13, 0.96), var(--panel));
+         border: 1px solid var(--line); border-top: 2px solid var(--gold); border-radius: 6px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.55); }
+  .get h1 { margin: 8px 0 4px; }
+  .meta { color: var(--muted); margin: 0 0 22px; }
+  .nowrap { white-space: nowrap; }
+  .get .button { font-size: 1.15rem; padding: 18px 34px; }
+  .button small { display: block; font: 400 0.85rem/1.4 "EB Garamond", Georgia, serif; letter-spacing: 0; margin-top: 6px; color: #f3dcb0; }
+  .check { margin: 18px auto 0; max-width: 620px; font-size: 0.85rem; color: var(--muted); word-break: break-all; }
+  .check code { font: 0.8rem/1.5 ui-monospace, Consolas, monospace; color: var(--muted); }
+  .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-top: 22px; }
+  .steps section { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px 22px; }
+  .steps ol, .steps ul { margin: 0; padding-left: 1.2em; }
+  .steps li { margin: 6px 0; }
+  .steps li::marker { color: var(--gold); }
+  .steps .path { display: block; margin-top: 4px; color: var(--muted); }
+  a.back { margin: 22px 0 0; text-decoration: none; font: 700 0.9rem/1 "Cinzel", Georgia, serif; letter-spacing: 0.08em; }
+  @media (max-width: 560px) {
+    .get { padding: 22px 16px; }
+    .get .button { display: block; padding: 18px 16px; }
+  }
+</style>
 </head>
 
 <body>
-  <div class="who" data-user="{{USER}}"></div>
+  <div class="who">{{USER}}</div>
   <div class="hero short"><img src="/images/hero.jpg" alt="Dynasty: A Life Well Lived" width="1330" height="760"></div>
 
   <main class="narrow">
