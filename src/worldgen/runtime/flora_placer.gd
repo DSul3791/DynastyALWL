@@ -667,7 +667,7 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var clearings_here: bool = false
 	var kept: Array = []            # [id, position, height, yaw] of the items placed, in order
 	var bank_clumps: Dictionary = {}   # bank thicket (species << 16 | clump spot) -> members placed (_riparian_shrubs)
-	var trunks: Dictionary = {}        # occupancy cell -> Array of [x, z, trunk radius] of the trees kept (all come before shrubs and plants)
+	var trunks: Dictionary = {}        # occupancy cell -> Array of [x, z, trunk radius] of the trees kept (all come before the plant tier)
 
 	var trodden_here: bool = not _trodden.is_empty() and Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(_trodden[0]) < chunk_m * 0.75 + float(_trodden[1]) + float(_trodden[2])
 
@@ -720,8 +720,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 
 				canopies[key].append([x, z, spacing_radius(item, height), 2 if item["dense"] else 1])
 
-		# Nothing grows out of a tree's trunk (world audit 23 Nov 2026: 3% of plants stood inside one, a strawberry through an oak). Only that plant
-		# is left out: every other item keeps its number, so a save's removals and picks still name the same plants.
+		# Nothing grows out of a tree's trunk (world audit 23 Nov 2026: 3% of plants stood inside one, a strawberry through an oak). Only small
+		# plants (the last tier, after every tree) are left out; shrubs keep the spacing rules. The bank clump is counted first, so a clump keeps
+		# its count and every other item keeps its number: a save's removals and picks still name the same plants.
 		if item["kind"] == KIND_TREE:
 			var tkey: Vector2i = Vector2i(int(floor(x / OCCUPANCY_CELL)), int(floor(z / OCCUPANCY_CELL)))
 
@@ -729,15 +730,16 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				trunks[tkey] = []
 
 			trunks[tkey].append([x, z, float(item["trunk"]) * height / float(item["height_ref"])])
-		elif trunk_filter and _in_trunk(trunks, x, z):
-			continue
-
-		kept.append([(f[1] << 16) | f[2], Vector3(x, f[4], z), height, f[7]])
 
 		if f[2] >= RIPARIAN_BASE and f[2] < SPRING_BASE:
 			@warning_ignore("integer_division")
 			var clump: int = (int(f[1]) << 16) | ((int(f[2]) - RIPARIAN_BASE) / RIPARIAN_CLUMP_MAX)
 			bank_clumps[clump] = int(bank_clumps.get(clump, 0)) + 1
+
+		if trunk_filter and f[0] == TIER_PLANT and not trunks.is_empty() and _in_trunk(trunks, x, z):
+			continue
+
+		kept.append([(f[1] << 16) | f[2], Vector3(x, f[4], z), height, f[7]])
 
 	# A bank thicket that lost members to the room rules keeps them only while 4 or more stand (every shrub grows in a clump of 4 or more).
 	for row in kept:
@@ -1185,7 +1187,12 @@ static func _in_trunk(trunks: Dictionary, x: float, z: float) -> bool:
 
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
-			for t in trunks.get(home + Vector2i(dx, dz), []):
+			var key: Vector2i = home + Vector2i(dx, dz)
+
+			if not trunks.has(key):
+				continue
+
+			for t in trunks[key]:
 				if Vector2(x - float(t[0]), z - float(t[1])).length() < float(t[2]):
 					return true
 

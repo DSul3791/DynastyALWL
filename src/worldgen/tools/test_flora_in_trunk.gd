@@ -32,7 +32,9 @@ func _init() -> void:
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	# Woods round the starter town and an oak wood south of it, where the audit found strawberries and blueberries in oak trunks.
-	var chunks: Array = [placer.chunk_of(58075.0, 71128.0), placer.chunk_of(58018.0, 71431.0), placer.chunk_of(56200.0, 67040.0)]
+	# Plus the everember grove west of the town (trunks 2.5 to 3.9 m wide, bank shrubs by its brooks): no shrub or bank clump member may go.
+	var chunks: Array = [placer.chunk_of(58075.0, 71128.0), placer.chunk_of(58018.0, 71431.0), placer.chunk_of(56200.0, 67040.0),
+		placer.chunk_of(50330.0, 69091.0), placer.chunk_of(50590.0, 69091.0), placer.chunk_of(50330.0, 68835.0)]
 	var dropped: int = 0
 	var kept_all: bool = true
 	var same_all: bool = true
@@ -83,7 +85,7 @@ func _init() -> void:
 			for t in trunks_before:
 				was_inside = was_inside or Vector2(p.x - t[0].x, p.z - t[0].z).length() < float(t[1])
 
-			if not was_inside:
+			if not was_inside or int(placer.species_of(before["ids"][n])["kind"]) != PlacerScript.KIND_PLANT:
 				only_inside = false
 
 		# Every item left out was a plant or shrub inside a trunk of the same result; none is inside one now.
@@ -98,8 +100,8 @@ func _init() -> void:
 		for n in range((after["ids"] as PackedInt32Array).size()):
 			var sp: Dictionary = placer.species_of(after["ids"][n])
 
-			if int(sp["kind"]) == PlacerScript.KIND_TREE:
-				continue
+			if int(sp["kind"]) != PlacerScript.KIND_PLANT:
+				continue   # shrubs keep the spacing rules (_make_room), as before
 
 			var p: Vector3 = after["positions"][n]
 
@@ -109,8 +111,8 @@ func _init() -> void:
 
 	check(kept_all, "every item kept after the change has an id the placer gave before (no id is new or renumbered)")
 	check(same_all, "every kept item has the same position, height and yaw as before")
-	check(only_inside, "every item left out stood inside a tree trunk (no other plant went with it)")
+	check(only_inside, "every item left out was a small plant inside a tree trunk (no tree, shrub or bank clump member went with it)")
 	check(dropped > 0, "plants inside trunks were left out (%d in %d chunks)" % [dropped, chunks.size()])
-	check(inside == 0, "no plant or shrub stands inside a tree trunk (%d)" % inside)
+	check(inside == 0, "no small plant stands inside a tree trunk (%d)" % inside)
 	print("test_flora_in_trunk: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
