@@ -17,9 +17,9 @@ param(
 	# shader baker can run (it needs a real renderer: Godot editor/export/shader_baker_export_plugin.cpp); without it the export runs headless
 	# in a container and ships no baked shaders (they compile while playing, as in the editor).
 	[string]$WindowsEditor = "",
-	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into the game's pack (Dave 22 Nov 2026: "incorporated
-	# right in with the game"). They are copied, read only, from Dave's game folder into this clone; that folder is never changed. They are
-	# never committed and never uploaded as loose files, only inside the built game.
+	# The bought animal models (assets/animals) go into the game's pack (Dave 22 Nov 2026: "incorporated right in with the game"). Since
+	# 23 Nov 2026 they are in the repository through Git LFS; a clone without them (older commits) copies them, read only, from Dave's game
+	# folder, which is never changed.
 	# Once the models are in the repository (Git LFS, Dave 23 Nov 2026) they come from this clone and this is left empty; before that the
 	# default is his game folder.
 	[string]$AnimalsFrom = "",
