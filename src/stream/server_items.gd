@@ -6673,25 +6673,34 @@ func _ground_under(p: Vector3) -> float:
 
 # Where a flight stepping from `from` to `to` comes down (round 7: arrows and thrown things kept to the generated ground, so over a pit they
 # stopped in the air, in a fill they went in, and in a tunnel or a cave they came out on the hill above): Vector3.INF while it is still in
-# the air (or there is no ground to know). Over the ground as dug and filled it strikes that ground; under it (a tunnel, a cave) the floor of
-# the open column it came down, or, struck into a wall, the floor where it last was in the open. A flight is only looked at after the step
-# that took it into the rock, so the open air is read from `from`, never `to`.
+# the air (or there is no ground to know). From the open air over its own column it strikes the ground as dug and filled where it is (a pit's
+# floor, a fill's top, a hillside). From under its column's top (a tunnel, a cave) it comes down to the floor of the open column under it,
+# or, struck into the rock (a wall or the roof), to the floor where it last was in the open. A flight is only looked at after the step that
+# took it into the rock, so the open air is read from `from`, never `to`.
 func _landing(from: Vector3, to: Vector3) -> Vector3:
 	var top: float = _ground_top(to.x, to.z)
 
 	if is_nan(top) or to.y > top:
 		return Vector3.INF
 
-	if from.y >= top - 0.05 or not floor_below.is_valid():
-		return Vector3(to.x, top, to.z)   # in from over the ground
+	var own: float = _ground_top(from.x, from.z)
+
+	if not floor_below.is_valid() or is_nan(own) or from.y >= own - 0.05:
+		return Vector3(to.x, top, to.z)   # from the open air: it struck the ground
 
 	var under: float = float(floor_below.call(Vector3(to.x, from.y, to.z)))   # down to's column from the height it was last in the air
 
 	if not is_nan(under) and under <= from.y + 0.05:
-		return Vector3(to.x, under, to.z) if to.y <= under else Vector3.INF
+		if to.y <= under:
+			return Vector3(to.x, under, to.z)
 
-	var floor_y: float = float(floor_below.call(from))   # that column is rock there: it struck a wall
-	return Vector3(from.x, floor_y if not is_nan(floor_y) and floor_y <= from.y + 0.05 else from.y, from.z)
+		var here: float = float(floor_below.call(to))
+
+		if not is_nan(here) and here <= to.y + 0.05:
+			return Vector3.INF   # still in the open air
+
+	var floor_y: float = float(floor_below.call(from))   # struck into the rock: down where it last was in the open
+	return Vector3(from.x, floor_y, from.z) if not is_nan(floor_y) and floor_y <= from.y + 0.05 else Vector3(to.x, top, to.z)
 
 
 # The ground as dug and filled at (x, z), the top of its highest solid span; the generated ground where the server has not given it.
