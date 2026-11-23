@@ -2043,7 +2043,7 @@ func save_soon(ids: Array = []) -> void:
 # removals only then (terrain_server), so a crash never leaves a felled tree gone with no stump and no logs (the coordinator, 23 Nov 2026);
 # the other way round, a stump on disk whose tree's removal is not, is put right at the next start (felled_flora).
 func fells_on_disk() -> bool:
-	return not _fell_unsaved and _writer == null and _pending_writes.is_empty()
+	return not _fell_unsaved and _writer == null and _pending_writes.is_empty() and _save_failed.is_empty()   # a save that lost a file put its others back (_skip_item_job)
 
 
 # Every saved stump that was a standing flora tree, as [chunk Vector2i, flora id]: the server cuts each again at start (a no-op for one
@@ -2113,6 +2113,7 @@ func save() -> void:
 	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
+	_set_gen = _save_gen + 1   # every file of this save carries the gen _item_job gives the header, written last (_read_json_version)
 	_fell_unsaved = false   # this save carries every stump and log felled so far (on disk once the writer is idle: fells_on_disk)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
@@ -2136,6 +2137,7 @@ func save() -> void:
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
 	_write_atomic("tracking_marks.json", _traps.saved_marks())   # the trail signs and snare spots that already trained each character's Tracking
 	_save_item_files(_item_job())
+	_set_gen = 0
 
 
 # The files made from the world items (world_items.json, tree_states.json, lights.json, kilns.json) are built from a deep copy taken on the
@@ -2161,6 +2163,16 @@ const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countd
 const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices, "by_rows": row index -> who dropped it}
 var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
+# A save is one set of files (coordinator 23 Nov 2026, the live save): save() writes inventories, chests, vitals, characters, craft queues,
+# crops, smelters, smithies, trees, lights and kilns, then the areas and last the world_items.json header, one file at a time, so a hard stop
+# between two left some files from the new save and the rest from the one before (Stone put into a chest was then in neither; taken out, in
+# both: test_save_set). Each of those files now carries "gen", the gen of the header its save writes last; at load a file whose gen is past
+# the header's is from a save that never finished and is read from its .prev, the save before. A file with no gen (written outside save(),
+# or by a build before this) is read as it is.
+var _set_gen: int = 0              # while save() runs: the gen its files carry; 0 outside a save
+var _set_lost_file: bool = false   # a file of the save running now (written on the tick, not the writer) could not be written
+var _set_written: Array = []       # the files of the save running now written so far on the tick (rolled back when it loses one)
+var _head_gen: int = -2            # the gen of the header on disk, read once at load (-1: no header, or one with no gen; -2: not read yet)
 const SWEEP_BUDGET_US := 1000      # PROVISIONAL: the most a tick spends on the rolling check (2% of a 50 ms tick)
 var _save_sig: Dictionary = {}     # world id -> [hash of its saved fields, its area key ("" = not saved in an area)] as the check last saw it
 var _area_ids: Dictionary = {}     # area key -> {world id: true}: the items each area file holds
@@ -2260,24 +2272,44 @@ func _save_item_files(job: Dictionary) -> void:
 
 	var t0: int = Time.get_ticks_usec()
 	_finish_writer()
-	_write_item_job(job)
+
+	if _set_lost_file:
+		_skip_item_job(job, _set_written)
+	else:
+		_write_item_job(job, _set_written)
+
+	_set_lost_file = false
+	_set_written = []
 	_note_save_part("world items", t0)
 
 
 # Writes a job's files: tree_states, lights, kilns, the areas that changed, then the header, then takes away the files of areas left empty.
 # Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
-static func _write_item_job(job: Dictionary) -> void:
+static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	var dir: String = str(job["dir"])
 	var items: Dictionary = job["items"]
 	var kinds: Dictionary = job["kinds"]
 	var gen: int = int(job["gen"])
 	var sums: Dictionary = job["sums"]
-	_write_file(dir + "/tree_states.json", JSON.stringify({"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}))
-	_write_file(dir + "/lights.json", JSON.stringify({"version": 1, "lit": _light_rows_of(items, kinds)}))
-	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))}))
+	var texts: Dictionary = {
+		dir + "/tree_states.json": JSON.stringify({"version": TREE_SAVE_VERSION, "gen": gen, "trees": _tree_rows_of(items), "saplings": job["saplings"]}),
+		dir + "/lights.json": JSON.stringify({"version": 1, "gen": gen, "lit": _light_rows_of(items, kinds)}),
+		dir + "/kilns.json": JSON.stringify({"version": 1, "gen": gen, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))})}
+	var done: Array = written.duplicate()
+	var whole: bool = true
+
+	for path in texts:
+		if _write_file(path, texts[path]):
+			done.append(path)
+		else:
+			whole = false
+
+	if not whole:
+		_skip_item_job(job, done)
+		return
+
 	var areas: Dictionary = {}
 	var listed: Dictionary = {}
-	var failed: Array = []
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
@@ -2299,20 +2331,20 @@ static func _write_item_job(job: Dictionary) -> void:
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
-			failed.append(key)   # not written: the header names the gen still on disk, and the next save builds it again (no sum)
+			_skip_item_job(job, done)   # an area that could not be written: no header, like any other file of the save (the areas built again next save)
+			return
 
-			if sums.has(key):
-				listed[key] = int(sums[key])
-
-			continue
-
+		done.append(path)
 		sums[key] = gen
 		listed[key] = gen
 
 	var world: Dictionary = (job["world"] as Dictionary).duplicate()
 	world["areas"] = listed
 	world["gen"] = gen
-	_write_file(dir + "/world_items.json", JSON.stringify(world))
+
+	if not _write_file(dir + "/world_items.json", JSON.stringify(world)):
+		_skip_item_job(job, done)   # the header itself: the store stays the save before, and what this save wrote goes back
+		return
 
 	for key in sums.keys():
 		if not listed.has(key):
@@ -2322,11 +2354,6 @@ static func _write_item_job(job: Dictionary) -> void:
 		if file.ends_with(".json") and not listed.has(file.trim_suffix(".json")):
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file)   # an area left empty (its .prev goes too: the header no longer names it)
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file + ".prev")
-
-	for key in failed:
-		sums.erase(key)
-
-	(job["failed_out"] as Array).append_array(failed)   # read on the tick once this writer is done: the save runs again for them
 
 
 # Every saved world item row of a store, for the tests and tools: the header's area files in order, or an older file's own rows.
@@ -3584,7 +3611,10 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 # left every fire, chest, station, torch and young plant over it in the air.
 const EDIT_SETTLES := ["remains", "carcass", "snare_trap"]   # placed things that lie on the ground and follow it (the walkover ones too)
 const EDIT_UNDER_M := 0.2   # a dig may not take the ground this close under a placed thing's foot
-const EDIT_LIFT_M := 0.3    # how far over a fill's top the ground under a buried stack is looked for
+const EDIT_LIFT_M := 0.3   # how far over a fill's top the ground under a buried stack is looked for
+const HOE_EDGE_SLOPE := 0.6   # the hoe leaves ground falling or rising from a placed thing's footprint no steeper than this (m per m; Steering.MAX_SLOPE 0.9)
+const HOE_EDGE_FACE_M := 1.5   # ...and within this of the footprint a cut's or fill's face is no steeper than 1.5 times that
+const EDIT_ON_BASE_M := 0.15   # a thing whose foot is this far over the ground at its middle stands on a foundation or floor (the hoe's strokes)
 
 
 # A placed kind that lies on the ground and follows it into a dig and onto a fill.
@@ -3636,7 +3666,9 @@ func _settle_saplings(centre: Vector3, radius: float, fill: bool) -> void:
 # The name of a placed thing a dig at `centre` would take the ground from under (`fill` false: the sphere reaches within EDIT_UNDER_M under its
 # foot, inside its footprint) or a fill would bury (`fill` true: the sphere rises over its foot there), "" when none. Fires, stations, chests,
 # torches, buildings and every other placed piece count; stacks, remains, patches and hung things (attach_to) do not: they follow the ground or a wall.
-func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
+# `buildings` false (the hoe's strokes): foundations, and things standing on one or on a floor, do not count; a wall, fence or trough on the
+# ground still does.
+func _edit_blocker(centre: Vector3, radius: float, fill: bool, buildings: bool = true) -> String:
 	for id in _ids_near(centre, radius + FLOOR_ROWS_REACH_M + 1.0):
 		if not _items.has(id):
 			continue
@@ -3655,6 +3687,9 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
 			if def.is_empty() or _follows_ground(kind) or def.has("attach_to") or it["struct"].has("site"):
 				continue   # a blueprint site holds nothing up and is not buried (as everywhere else)
 
+			if not buildings and bool(def.get("foundation", false)):
+				continue   # the hoe levels round foundations on purpose (LEVEL_BELOW_PIECE_M)
+
 			yaw = float(it["struct"].get("yaw", 0.0))
 			name = "The " + (table.sentence_name(int(it["number"])) if int(it["number"]) > 0 else kind.replace("_", " "))
 		else:
@@ -3668,10 +3703,63 @@ func _edit_blocker(centre: Vector3, radius: float, fill: bool) -> String:
 
 		var apart: Vector2 = Vector2(centre.x, centre.z) - (box[0] as Vector2)
 		var half: Vector2 = box[1]
-		var off: Vector2 = Vector2(maxf(absf(apart.dot(PlacementRules._side(box, 0))) - half.x, 0.0), maxf(absf(apart.dot(PlacementRules._side(box, 1))) - half.y, 0.0))
+		var ax: Vector2 = PlacementRules._side(box, 0)
+		var az: Vector2 = PlacementRules._side(box, 1)
+		var off: Vector2 = Vector2(maxf(absf(apart.dot(ax)) - half.x, 0.0), maxf(absf(apart.dot(az)) - half.y, 0.0))
 
-		if off.length() < sqrt(radius * radius - dy * dy):
-			return name
+		if buildings:
+			if off.length() < sqrt(radius * radius - dy * dy):
+				return name
+
+			continue
+
+		# The hoe: the ground may fall or rise from the footprint's edge no steeper than HOE_EDGE_SLOPE, so no step is left at the edge for a foot
+		# or a cart wheel. Over the sphere's plan on a 9 by 9 grid: where the sphere cuts through that slope (or the foot inside it), it is refused.
+		var plane: float = float(box[3])   # from the foot itself, so no drop is left at the edge
+
+		if off.length() - radius >= maxf(HOE_EDGE_FACE_M, (absf(plane - centre.y) + radius) / HOE_EDGE_SLOPE):
+			continue   # too far off for the slope or the face rule to reach (most things near a garden): no samples
+
+		if edits_near.is_valid() and ground_height.is_valid():
+			var p: Vector3 = it["pos"]
+			var ground: float = _edited_height(p.x, p.z, edits_near.call(p, 3.0))
+
+			if not is_nan(ground) and plane > ground + EDIT_ON_BASE_M:
+				continue   # it stands on a foundation or a floor, not on the ground: the hoe levels round the house as before
+
+		# The footprint's point nearest the sphere's middle, where a cut goes deepest under it (a fill highest over it): exact for a thin fence.
+		var inner: Vector2 = (box[0] as Vector2) + ax * clampf(apart.dot(ax), -half.x, half.x) + az * clampf(apart.dot(az), -half.y, half.y)
+		var inner_flat: float = inner.distance_squared_to(Vector2(centre.x, centre.z))
+
+		if inner_flat < radius * radius:
+			var inner_v: float = sqrt(radius * radius - inner_flat)
+
+			if centre.y - inner_v < plane and plane < centre.y + inner_v:
+				return name
+
+		for i in 9:
+			for j in 9:
+				var dx: float = radius * (float(i) / 4.0 - 1.0)
+				var dz: float = radius * (float(j) / 4.0 - 1.0)
+				var flat: float = dx * dx + dz * dz
+
+				if flat >= radius * radius:
+					continue
+
+				var v: float = sqrt(radius * radius - flat)
+				var rel: Vector2 = Vector2(centre.x + dx, centre.z + dz) - (box[0] as Vector2)
+				var out: float = Vector2(maxf(absf(rel.dot(ax)) - half.x, 0.0), maxf(absf(rel.dot(az)) - half.y, 0.0)).length()
+				var cone: float = plane + (1.0 if fill else -1.0) * HOE_EDGE_SLOPE * out
+
+				if centre.y - v < cone and cone < centre.y + v:
+					return name
+
+				# Near the footprint the sphere's own face must be no steeper than that either where it cuts below (or fills above) the foot:
+				# a deep sphere's rim is a wall even when the slope is kept on average.
+				var face: bool = (centre.y + v > plane) if fill else (centre.y - v < plane)
+
+				if face and out < HOE_EDGE_FACE_M and sqrt(flat) > HOE_EDGE_SLOPE * 1.5 * v:
+					return name
 
 	return ""
 
@@ -5102,6 +5190,8 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			_say(peer, "Not enough soil to raise the low ground: dig some, or carry it or leave it nearby.")
 		elif _level_refused and dig_refusal.is_valid():
 			_say(peer, str(dig_refusal.call()))
+		elif _level_skipped:
+			_say(peer, "Only ground under placed things is left: take them up to level it.")
 		else:
 			_say(peer, "The ground here is already level with where you stand.")
 
@@ -5201,6 +5291,7 @@ func _edited_height(x: float, z: float, edits: Array, base: float = NAN) -> floa
 # Returns the edits made, -1 when a spot is not loaded.
 var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
 var _level_unpaid: bool = false    # the last _level_ground left low ground unfilled for want of soil
+var _level_skipped: bool = false   # the last _level_ground left a spot under a chest, fire or station as it was
 
 
 # `targets` and `radii` (a garden: till_garden), when given, are each spot's own height and sphere size.
@@ -5210,6 +5301,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 	var grid: Dictionary = _edit_buckets(edits) if spots.size() > 64 else {}   # a garden's hundreds of spots read only the edits near each
 	_level_refused = false
 	_level_unpaid = false
+	_level_skipped = false
 
 	while worked < max_ops:
 		var best: Vector3 = Vector3.ZERO
@@ -5244,12 +5336,18 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		var depth: float = minf(absf(best_off), LEVEL_MAX_M)
 
+		var centre: Vector3 = Vector3(best.x, best.y - depth + sphere, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - sphere, best.z)
+
+		if _edit_blocker(centre, sphere, best_off < 0.0, false) != "":
+			skip[best_n] = true   # a chest, fire or station stands there: the stroke leaves its ground and levels the rest (coordinator 23 Nov 2026)
+			_level_skipped = true
+			continue
+
 		if best_off < 0.0 and can_pay.is_valid() and not bool(can_pay.call(depth, sphere)):
 			skip[best_n] = true
 			_level_unpaid = true
 			continue
 
-		var centre: Vector3 = Vector3(best.x, best.y - depth + sphere, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - sphere, best.z)
 		var done: Variant = dig_ground.call(centre, sphere) if best_off > 0.0 else fill_ground.call(centre, sphere, int(FILL_SOIL["soil"]))
 
 		if typeof(done) == TYPE_BOOL and not bool(done):
@@ -5679,6 +5777,10 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 				continue
 
 			var depth: float = minf(absf(h - target), ROAD_DEPTH_M)
+			var road_at: Vector3 = Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y) if h > target else Vector3(spot.x, h + depth - SMOOTH_SPHERE_M, spot.y)
+
+			if _edit_blocker(road_at, SMOOTH_SPHERE_M, h <= target, false) != "":
+				continue   # the road leaves the ground under a chest, fire or station as it is
 
 			if h > target:
 				dig_ground.call(Vector3(spot.x, h - depth + SMOOTH_SPHERE_M, spot.y), SMOOTH_SPHERE_M)
@@ -5763,6 +5865,7 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var dir: Vector2 = along / length
 	var worked: int = 0
 	var dug: bool = false
+	var skipped: bool = false   # a point was left for a placed thing standing on it
 
 	for offset in [Vector2.ZERO, dir, -dir, Vector2(-dir.y, dir.x), Vector2(dir.y, -dir.x)]:
 		var x: float = at.x + offset.x
@@ -5785,8 +5888,14 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 		var depth: float = minf(absf(d), SMOOTH_MAX_M)
 		var sphere_at: Vector3 = Vector3(x, h - depth + SMOOTH_SPHERE_M, z) if d > 0.0 else Vector3(x, h + depth - SMOOTH_SPHERE_M, z)
-		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
+
 		dug = true
+
+		if _edit_blocker(sphere_at, SMOOTH_SPHERE_M, d <= 0.0, false) != "":
+			skipped = true
+			continue   # a chest, fire or station stands there: the stroke grades round it
+
+		var done: Variant = dig_ground.call(sphere_at, SMOOTH_SPHERE_M) if d > 0.0 else fill_ground.call(sphere_at, SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
 
 		if typeof(done) != TYPE_BOOL or bool(done):
 			worked += 1
@@ -5797,7 +5906,7 @@ func _hoe_grade(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	if worked == 0:
-		_say(peer, "This ground is worked enough.")
+		_say(peer, "Only ground under placed things is left: take them up to grade it." if skipped else "This ground is worked enough.")
 		return
 
 	_wear_slot(peer, inv, hoe, "dig")
@@ -8849,6 +8958,10 @@ func _read_area(key: String, gen: int) -> Dictionary:
 	if typeof(prev) == TYPE_DICTIONARY and int(prev.get("gen", -1)) == gen and int(prev.get("version", 0)) <= VERSION and typeof(prev.get("items")) == TYPE_ARRAY:
 		push_error("server items: %s read from the save before it (.prev, the gen the header names)" % path)
 		_area_recovered[key] = true
+
+		if typeof(main) == TYPE_DICTIONARY:
+			_set_aside_unfinished(path)
+
 		return prev
 
 	if typeof(main) == TYPE_DICTIONARY and typeof(main.get("items")) == TYPE_ARRAY:
@@ -8879,6 +8992,23 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) <= version and int(parsed.get("version", 0)) >= (version if oldest < 0 else oldest):
+		if name != "world_items.json" and parsed.has("gen") and int(parsed["gen"]) > _header_gen():
+			var before: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev")) if FileAccess.file_exists(path + ".prev") else null
+
+			if typeof(before) == TYPE_DICTIONARY and int(before.get("version", 0)) <= version and int(before.get("version", 0)) >= (version if oldest < 0 else oldest) and int(before.get("gen", 0)) <= _header_gen():
+				push_error("server save: %s is from save %d, which stopped before it finished (the last whole save is %d): read from %s.prev, so the store is that whole save" % [path, int(parsed["gen"]), _header_gen(), path])
+				_set_aside_unfinished(path)
+				return before
+
+			if before == null and _header_gen() >= 0:
+				# New to the store in the save that stopped: the whole save before did not have it, so it is read as absent (an item in it
+				# would otherwise also be where the save before had it).
+				push_error("server save: %s is from save %d, which stopped before it finished (the last whole save is %d), and the save before had no such file: read as absent, so the store is that whole save" % [path, int(parsed["gen"]), _header_gen()])
+				_set_aside_unfinished(path)
+				return null
+
+			push_error("server save: %s is from save %d, past the last whole save %d, and has no earlier copy of that save: read as it is" % [path, int(parsed["gen"]), _header_gen()])
+
 		return parsed
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) > version:
@@ -8905,11 +9035,42 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	return null
 
 
+# A file from a save that never finished, read from its .prev at load: put aside as .unfinished and the .prev copied back in its place, so the
+# next save keeps the whole save as its .prev (a second stop before that save's header lands then still reads whole).
+static func _set_aside_unfinished(path: String) -> void:
+	_file_lock.lock()
+	DirAccess.rename_absolute(path, path + ".unfinished")
+
+	if FileAccess.file_exists(path + ".prev"):
+		DirAccess.copy_absolute(path + ".prev", path)
+	_file_lock.unlock()
+
+
+# The gen of the last whole save: the world_items.json header's, or its .prev's when the header is damaged (as _load_world_items reads it).
+func _header_gen() -> int:
+	if _head_gen == -2:
+		_head_gen = -1
+		var path: String = _dir + "/world_items.json"
+		restore_missing(path)
+
+		for one in [path, path + ".prev"]:
+			var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(one)) if FileAccess.file_exists(one) else null
+
+			if typeof(head) == TYPE_DICTIONARY:
+				_head_gen = int(head.get("gen", -1)) if head.has("areas") else -1
+				break
+
+	return _head_gen
+
+
 # Writes a save file without ever leaving a half-written one: the new text goes to .tmp and is renamed over the old file,
 # and the file it replaces is first copied to .prev (the fallback when a file later turns out torn or damaged).
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
 	var t0: int = Time.get_ticks_usec()
+
+	if _set_gen > 0:
+		data["gen"] = _set_gen
 
 	if _async_writes:
 		_pending_writes.append([path, data.duplicate(true)])   # a copy of its own: the background writer makes the JSON (see _start_writer)
@@ -8919,7 +9080,12 @@ func _write_atomic(name: String, data: Dictionary) -> void:
 	var text: String = JSON.stringify(data)
 	_note_save_part(name, t0)
 	_finish_writer()
-	_write_file(path, text)
+
+	if _write_file(path, text):
+		if _set_gen > 0:
+			_set_written.append(path)
+	elif _set_gen > 0:
+		_set_lost_file = true   # this save's header is not written (_save_item_files)
 
 
 # A save part that took more than 10 ms on the tick, for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick).
@@ -8966,23 +9132,73 @@ static func restore_missing(path: String) -> String:
 	return done
 
 
-static func _write_file(path: String, text: String) -> bool:
-	_file_lock.lock()
+# The size of a file on disk, read with a handle that is closed before this returns (an open handle stops a rename on Windows); -1 if unreadable.
+static func _length_of(path: String) -> int:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	if file == null:
+		return -1
+
+	var size: int = file.get_length()
+	file.close()
+	return size
+
+
+# locked false: a small file only the main thread writes (traders, NPC flags, tile revisions, picked plants), which need not wait while the
+# background writer holds the lock through a big save.
+static func _write_file(path: String, text: String, locked: bool = true) -> bool:
+	if locked:
+		_file_lock.lock()
+
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
 	if file == null:
-		_file_lock.unlock()
-		push_error("server items: cannot write %s" % path)
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: cannot write %s (%s; a read-only or missing store?): the file on disk is the save before, kept as it is" % [path, error_string(FileAccess.get_open_error())])
 		return false
 
-	file.store_string(text)
+	var stored: bool = file.store_string(text)
+	var error: int = file.get_error()
 	file.close()
+	var whole: bool = stored and (error == OK or error == ERR_FILE_EOF)
 
-	if FileAccess.file_exists(path):
-		DirAccess.copy_absolute(path, path + ".prev")
+	if whole:   # the last buffered bytes go out at the close: what landed is read back by its length
+		whole = _length_of(path + ".tmp") == text.to_utf8_buffer().size()
+
+	if not whole:
+		DirAccess.remove_absolute(path + ".tmp")   # a disk that filled part way: the torn .tmp is never moved over the whole file
+
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: %s could not be written whole (%s; is the disk full?): the file on disk is the save before, kept as it is" % [path, error_string(error)])
+		return false
+
+	# The file it replaces becomes .prev by a rename, not a copy: a copy onto a full disk tore the .prev, the one fallback. A stop between the two
+	# renames leaves .tmp and .prev and no file, which restore_missing puts back from the whole .tmp.
+	if FileAccess.file_exists(path) and DirAccess.rename_absolute(path, path + ".prev") != OK:
+		DirAccess.remove_absolute(path + ".tmp")   # the file could not become .prev (held open elsewhere?): nothing is moved, the save before stands
+
+		if locked:
+			_file_lock.unlock()
+
+		push_error("SERVER SAVE FAILED: %s could not be moved to %s.prev: the file on disk is the save before, kept as it is" % [path, path])
+		return false
 
 	var moved: bool = DirAccess.rename_absolute(path + ".tmp", path) == OK
-	_file_lock.unlock()
+
+	if not moved:   # the save before goes back in place, as if this write never began
+		DirAccess.remove_absolute(path + ".tmp")
+		DirAccess.rename_absolute(path + ".prev", path)
+
+	if locked:
+		_file_lock.unlock()
+
+	if not moved:
+		push_error("SERVER SAVE FAILED: %s.tmp could not be moved into place: the save before is kept" % path)
+
 	return moved
 
 
@@ -9012,11 +9228,47 @@ func _start_writer() -> void:
 
 
 static func _write_batch(batch: Array) -> void:
+	var whole: bool = true   # every file of this save so far written
+	var written: Array = []  # the paths this save has written so far
+
 	for row in batch:
-		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files
-			_write_item_job(row)
+		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files, the header last; a save that lost a file does not write its header
+			if whole:
+				_write_item_job(row, written)
+			else:
+				_skip_item_job(row, written)
+
+			whole = true   # a batch can hold the next save too
+			written = []
+		elif _write_file(str(row[0]), JSON.stringify(row[1])):
+			written.append(str(row[0]))
 		else:
-			_write_file(str(row[0]), JSON.stringify(row[1]))
+			whole = false
+
+
+# A save one of whose files could not be written: its header is not written, so the store stays the save before as a whole (its other new
+# files are read from their .prev at load, _read_json_version). Its areas lose their sums and are built and written again by the next save.
+static func _skip_item_job(job: Dictionary, written: Array) -> void:
+	var sums: Dictionary = job["sums"]
+
+	# The files it did write go back to the save before (their .prev), so the next save keeps the whole save as their .prev: a stop in that
+	# save then still reads as one whole save.
+	_file_lock.lock()
+
+	for path in written:
+		if FileAccess.file_exists(str(path) + ".prev"):
+			DirAccess.rename_absolute(str(path) + ".prev", str(path))
+		else:
+			DirAccess.remove_absolute(str(path))   # new in this save: the save before had no such file
+
+	_file_lock.unlock()
+
+	for key in job["areas"]:
+		sums.erase(key)
+
+	(job["failed_out"] as Array).append_array((job["areas"] as Dictionary).keys())
+	(job["failed_out"] as Array).append("")   # nothing to rebuild, still a failure: the tick marks the world dirty and the save runs again
+	push_error("SERVER SAVE FAILED: save %d lost a file, so its world items and header were not written: the store stays the save before, whole; the next save tries again" % int(job["gen"]))
 
 
 func _reap_writer() -> void:
