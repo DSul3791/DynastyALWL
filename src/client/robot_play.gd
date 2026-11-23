@@ -18,7 +18,7 @@ extends Node
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
-# out; docs/ROBOT_PLAYTESTERS.md), cold, fights, kind_<species>. --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), cold, fights, kind_<species>. --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -39,6 +39,7 @@ const PLAYER_TOP_MPS := 9.5      # terrain_client RUN_SPEED 9.0
 const FRESH_S := 1.5             # a body just drawn may still settle onto its first samples
 const INSIDE_M := 0.3
 const RESPAWN_M := 40.0          # a drawn player farther than this in one frame was moved on purpose (respawn, rescue), not a jump
+var _lay_ms: Dictionary = {}      # peer -> when this client last drew that player lying (the jump check's rescue excuse)
 const RESCUE_FILE := "rescued.txt"   # ROBOT_SHARE: "<peer> <unix ms>" per line, written by a robot the cold moved to a rescue spot
 const HAND_M := 0.25             # the hand mount this far from the hand bone (it sits about 0.11 m off it) has come loose
 const SAVED_FILE := "user://robot_last_pack.txt"
@@ -282,11 +283,14 @@ func _process(delta: float) -> void:
 			var pos: Vector3 = row["pos"]
 			here[peer] = true
 
+			if pv._bodies.has(peer) and (int(pv._bodies[peer].get("state", 0)) & 3) == 3:
+				_lay_ms[peer] = now   # drawn lying (a faint, a pass-out): a rescue move may follow before its note is written
+
 			if _seen_player.has(peer):
 				var was: Array = _seen_player[peer]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 
-				if step > RESPAWN_M or (step > JUMP_FLOOR_M and _rescued(peer)):
+				if step > RESPAWN_M or (step > JUMP_FLOOR_M and (_rescued(peer) or now - int(_lay_ms.get(peer, -100000)) < 20000)):
 					was[1] = now   # a respawn or a rescue moves a player far on purpose: treat it as a fresh body
 				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * delta * JUMP_SLACK, JUMP_FLOOR_M):
 					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, delta * 1000.0, str(was[0].round()), str(pos.round())])
@@ -579,6 +583,8 @@ func run() -> void:
 		return
 	elif plan == "together":
 		await _together()
+	elif plan == "trail":
+		await _trail_crouch(40.0)
 	elif plan.begins_with("kind_"):
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
@@ -590,7 +596,6 @@ func run() -> void:
 
 		await _stances()
 		await _forest_walk(45.0)
-		await _trail_crouch(40.0)
 
 		if admin:
 			await _hunt_all(50.0)
@@ -896,8 +901,8 @@ func _forest_walk(s: float) -> void:
 
 
 # Crouched along a game trail where it runs under trees (the ferns grow under them): Dave's report (23 Nov 2026) was a crouch walk stopped on
-# flat ground under a tree by a fern while standing walked on (#1775). The trail point nearest the thickest trees within 300 m, then the
-# trail's own line, a waypoint 4 m on at a time, for `s` seconds; a 2 s leg that moves under a quarter of the crouch pace is compared with
+# flat ground under a tree by a fern while standing walked on (#1775). The trail point nearest the thickest trees within 170 m (the loaded trees), then the
+# trail's own line (plan trail), a waypoint 4 m on at a time, for `s` seconds; a 2 s leg that moves under a quarter of the crouch pace is compared with
 # standing at the same spot (_compare_crouch: blocked FAIL or obstacle note). Prints a TRAIL line.
 func _trail_crouch(s: float) -> void:
 	_step = "trail crouch"
@@ -913,7 +918,7 @@ func _trail_crouch(s: float) -> void:
 			for i in pts.size():
 				var d: float = Vector2(pts[i].x - me.x, pts[i].y - me.z).length()
 
-				if d > 300.0 or _wet(pts[i]):
+				if d > 170.0 or _wet(pts[i]):   # trees load about 150 m round: no point farther can have one within 8 m
 					continue
 
 				var trees: int = 0
@@ -927,13 +932,18 @@ func _trail_crouch(s: float) -> void:
 					best = [pts, i]
 
 	if best.is_empty():
-		_note("trail", "no dry game trail under trees within 300 m of %s (%d route points known)" % [str(me.round()), _route_points().size()])
+		_note("trail", "no dry game trail under trees within 170 m of %s (%d route points known)" % [str(me.round()), _route_points().size()])
 		return
 
 	var pts: PackedVector2Array = best[0]
 	var i: int = best[1]
 	var start: Vector3 = Vector3(pts[i].x, me.y, pts[i].y)
 	var there: bool = await _go_to(start, 60.0, 2.5)
+
+	if not there and Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length() > 20.0:
+		_note("trail", "never reached the trail point %s in 60 s (still %.0f m off): no crouch along it" % [str(start.round()), Vector2(start.x - client.body.global_position.x, start.z - client.body.global_position.z).length()])
+		return
+
 	var line: PackedVector2Array = _every_m(pts, 4.0)
 	var k: int = 0
 	var near_d: float = INF

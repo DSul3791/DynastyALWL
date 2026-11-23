@@ -107,6 +107,12 @@ robot_check does not count it drawn lying in the 20 s before the rescue as a wro
 ROBOT_SHARE so the watcher's jump check takes the rescue's move as deliberate. robot_check also fails a held step when link.log has no
 `LINK hold` line with a client held. robots.sh runs this plan with exactly 2 robots.
 
+Plan `trail` (one robot, tracking thread 23 Nov 2026; `tools/robots.sh 1 trail --delay-ms 120 --jitter-ms 30 --loss 0.03`): Dave's report
+was a crouch walk stopped on flat ground under a tree by a fern while standing walked on (#1775). The robot goes to the dry game-trail point
+with the most trees within 8 m (within 170 m, where trees are loaded), crouches and follows the trail's line in 4 m waypoints for 40 s. A
+2 s leg under a quarter of the crouch pace is compared with standing at the same spot (a `blocked` FAIL when standing walks on). It prints
+a TRAIL line.
+
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
 
