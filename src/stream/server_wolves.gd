@@ -11,6 +11,7 @@ extends RefCounted
 # Pure server code; the animals module calls tick() once per server tick and owns the records.
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a wolf comes to a player (_make_way)
 
 const STALK := 6      # wire states (animal rows): 0 graze, 1 hop, 6 stalk or circle, 7 attack
 const ATTACK := 7
@@ -324,8 +325,24 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 	for m in members:
 		var moved: bool = bool(m.get("moving", false))
 
+		if m["pos"] == m.get("paced_pos") and pack["phase"] != "rush":
+			_make_way(m, infos, dt)   # a resting or prowling wolf a player walked into steps out of them (robot play-testers 23 Nov 2026)
+
 		pace(m, now_ms)
 		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
+
+
+# A pack wolf standing this think with a player inside its contact distance steps out (ServerAnimals.make_way; the pack brain moves wolves,
+# so the per-animal tick that does it for the other animals never sees them).
+func _make_way(m: Dictionary, infos: Array, dt: float) -> void:
+	var cm: float = AnimalContact.contact_m(str(m["sp"]))
+
+	for info in infos:
+		var at: Vector3 = info["pos"]
+
+		if Vector2(at.x - m["pos"].x, at.z - m["pos"].z).length() < cm and absf(at.y - m["pos"].y) < 2.0:
+			host.make_way(m, at, dt)
+			return
 
 
 # The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and

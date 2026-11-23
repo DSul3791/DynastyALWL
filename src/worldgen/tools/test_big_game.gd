@@ -322,5 +322,21 @@ func _init() -> void:
 		run(a, 1.0)
 		check(int(a.animals[kid]["state"]) == 2, "the calf runs when its mother runs (state %d)" % int(a.animals[kid]["state"]))
 
+	# A held foe (Dave 23 Nov 2026, the real server): warned at one player, it keeps on that player while another stands a little nearer,
+	# and takes the other only once the first is past calm_m.
+	var hf = make()
+	players = [{"peer": 1, "pos": Vector3(15.0, 10.0, 0.0), "stance": 0, "hp": 1.0}, {"peer": 2, "pos": Vector3(0.0, 10.0, 12.0), "stance": 0, "hp": 1.0}]
+	var hid: int = moose_at(hf, 0.0, 0.0, true)
+	hf.animals[hid]["temper"] = "defensive"
+	hf.big_game.warn(hf.animals[hid], players[0]["pos"], 2.0, true)
+	run(hf, 0.5)
+	var hm: Dictionary = hf.animals[hid]
+	check(int(hm["state"]) == 10 and absf(angle_difference(float(hm["heading"]), 0.0)) < 0.2, "warned at player 1 (15 m), it keeps facing them with player 2 nearer (12 m) (state %d, heading %.2f)" % [int(hm["state"]), float(hm["heading"])])
+	players[0]["pos"] = Vector3(40.0, 10.0, 0.0)   # player 1 backs off past calm_m
+	hm["timer"] = 2.0
+	run(hf, 0.3)
+	check(not hf.animals.has(hid) or int(hf.animals[hid]["state"]) != 10 or absf(angle_difference(float(hf.animals[hid]["heading"]), PI * 0.5)) < 0.2, "once player 1 is past calm_m it turns to player 2 (or calms)")
+	players = []
+
 	print("big game: %d failures" % failures)
 	quit(failures)
