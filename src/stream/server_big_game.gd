@@ -125,6 +125,13 @@ func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
 		return false
 
 	a.erase("foe_dog")
+	var runner: Dictionary = _nearest(at)   # the player it chases is its foe (_foe), not one it warned at before
+
+	if not runner.is_empty() and Vector2(runner["pos"].x - at.x, runner["pos"].z - at.z).length() < 3.0:
+		a["foe_peer"] = int(runner.get("peer", 0))
+	else:
+		a.erase("foe_peer")
+
 	a["state"] = CHARGE
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["dir"] = a["heading"]
@@ -297,6 +304,7 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 
 func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("foe_dog")
+	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))

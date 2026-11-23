@@ -335,7 +335,13 @@ func _init() -> void:
 	players[0]["pos"] = Vector3(40.0, 10.0, 0.0)   # player 1 backs off past calm_m
 	hm["timer"] = 2.0
 	run(hf, 0.3)
-	check(not hf.animals.has(hid) or int(hf.animals[hid]["state"]) != 10 or absf(angle_difference(float(hf.animals[hid]["heading"]), PI * 0.5)) < 0.2, "once player 1 is past calm_m it turns to player 2 (or calms)")
+	check(hf.animals.has(hid) and int(hf.animals[hid]["state"]) == 10 and absf(angle_difference(float(hf.animals[hid]["heading"]), PI * 0.5)) < 0.2, "once player 1 is past calm_m it turns to player 2 (state %d, heading %.2f)" % [int(hf.animals[hid]["state"]) if hf.animals.has(hid) else -1, float(hf.animals[hid]["heading"]) if hf.animals.has(hid) else 0.0])
+	hf.big_game._calm(hf.animals[hid], hf.species_def("moose")["defend"])
+	check(not hf.animals[hid].has("foe_peer"), "and calming forgets its foe")
+	players[1]["pos"] = Vector3(0.0, 10.0, 20.0)
+	hf.animals[hid]["cool"] = 0.0
+	hf.big_game.chase(hf.animals[hid], players[1]["pos"], 30.0)
+	check(int(hf.animals[hid].get("foe_peer", 0)) == 2, "a chase takes the runner as its foe")
 	players = []
 
 	print("big game: %d failures" % failures)
