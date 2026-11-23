@@ -221,6 +221,23 @@ func _init() -> void:
 	OS.delay_msec(20)
 	check(int(_row_of(s.rows_near(players[0]), rid)[5]) == second_ms + 1, "and still that time while it is between steps")
 
+	# The walker stops at a body (robots 23 Nov 2026, AUDIT where: a robot walking through a standing elephant shoved its drawn body 5 m from
+	# where the server had it). Straight in: they stand at its contact distance; across it: they slide round; one the animal came onto goes
+	# no nearer and may step away; one 3 m above (a bridge) passes.
+	var em: float = AnimalContact.contact_m("elephant")
+	var el: Array = [[Vector3.ZERO, em]]
+	var walk_from: Vector3 = Vector3(em + 0.5, 0.0, 0.0)
+	var walk_to: Vector3 = Vector3(em - 0.6, 0.0, 0.0)
+	var walk_end: Vector3 = walk_to + AnimalContact.walker_stop(walk_from, walk_to, el)
+	check(absf(Vector2(walk_end.x, walk_end.z).length() - em) < 0.001, "walking straight into an elephant they stand against it, %.2f m from its middle (%.2f)" % [em, Vector2(walk_end.x, walk_end.z).length()])
+	var cross_from: Vector3 = Vector3(em, 0.0, -0.3)
+	var cross_to: Vector3 = Vector3(em - 0.2, 0.0, 0.3)
+	var cross_end: Vector3 = cross_to + AnimalContact.walker_stop(cross_from, cross_to, el)
+	check(absf(Vector2(cross_end.x, cross_end.z).length() - em) < 0.001 and cross_end.z > 0.2, "walking across its side they slide round it (%.2f, %.2f)" % [cross_end.x, cross_end.z])
+	var under_from: Vector3 = Vector3(1.0, 0.0, 0.0)
+	check(AnimalContact.walker_stop(under_from, Vector3(0.6, 0.0, 0.0), el).is_equal_approx(Vector3(0.4, 0.0, 0.0)) and AnimalContact.walker_stop(under_from, Vector3(1.4, 0.0, 0.0), el) == Vector3.ZERO, "one the animal came onto goes no nearer, and steps away freely")
+	check(AnimalContact.walker_stop(walk_from, walk_to, [[Vector3(0.0, 3.0, 0.0), em]]) == Vector3.ZERO, "a body 3 m above or below is passed")
+
 	print("test_animal_contact: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)
 

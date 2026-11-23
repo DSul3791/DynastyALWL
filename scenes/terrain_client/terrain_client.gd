@@ -5814,6 +5814,12 @@ func _move_player(delta: float) -> void:
 			var capsule: CapsuleShape3D = _shape.shape as CapsuleShape3D
 			body.global_position += items.walker_logs(body.global_position - Vector3(0.0, 0.9, 0.0), capsule.radius if capsule != null else 0.35, capsule.height if capsule != null else 1.8, wanted_move, running)
 
+		if _animal_view_node != null and not swimming and not waiting_for_ground:
+			# An animal's body stops the walker as a log does (they stand against it or slide round it): walked into, its drawn body was
+			# shoved along ahead of them, metres from where the server had it (AnimalContact.walker_stop).
+			var stopped: Vector3 = _animal_view_node.call("walker_stop", slide_from - Vector3(0.0, 0.9, 0.0), body.global_position - Vector3(0.0, 0.9, 0.0))
+			body.global_position += stopped
+
 		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
 			var landed: float = feel.land(fall_speed)
 

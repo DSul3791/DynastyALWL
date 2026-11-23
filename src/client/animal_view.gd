@@ -44,6 +44,7 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
+const WALKER_BLOCK_M := 0.6                   # a body this big (body_m) stops the local walker (walker_stop)
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
@@ -452,6 +453,25 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 
 
 # [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
+# The walker's frame move from `before` to `after` (feet) stopped at the animals drawn near: the correction to add (AnimalContact.walker_stop).
+# Bodies of WALKER_BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
+func walker_stop(before: Vector3, after: Vector3) -> Vector3:
+	var bodies: Array = []
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+		if str(b.get("kind", "")) == "" or AnimalContact.body_m(str(b["kind"])) < WALKER_BLOCK_M:
+			continue
+
+		var m: float = float(b["contact_m"])
+		var at: Vector3 = (b["node"] as Node3D).global_position
+
+		if Vector2(at.x - after.x, at.z - after.z).length() < m + 1.0:
+			bodies.append([at, m])
+
+	return AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
+
+
 func drawn_positions() -> Array:
 	var out: Array = []
 
