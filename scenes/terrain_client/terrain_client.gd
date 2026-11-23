@@ -1530,10 +1530,11 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	grass.brook_spots = _brook_spots
-	trail_signs = TrailSignsScript.new()   # signs along the trails (stage 2d): latrines, scrapes, deer prints and droppings, by Tracking
+	trail_signs = TrailSignsScript.new()   # signs along the trails (stage 2d): latrines, scrapes, deer prints, droppings, beds and rubbed trees, for everyone
 	trail_signs.name = "TrailSigns"
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
+	trail_signs.trunks_near = func(point: Vector3, radius: float) -> Array: return _trunks_round(point, radius) if flora != null else []   # rubbed trees by deer trails
 	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
 		if sound != null:
 			sound.slots.play("sign_spot", at)

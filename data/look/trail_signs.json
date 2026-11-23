@@ -25,5 +25,15 @@
 	"wet_m": 3.0,
 	"droppings_off_m": 4.0,
 	"droppings_pellets": [15, 25],
-	"rebuild_move_m": 8.0
+	"rebuild_move_m": 8.0,
+	"bed_note": "Deer beds (23 Nov 2026, hunting thread; Dave: 'extrapolate from them and see what would make for a fun hunting game'): deer lie up by day in small groups, each leaving an oval of pressed grass or leaves about its body's size, the plainest sign that a trail's end is a bedding place (Penn State Extension and onX on deer beds). bed_count beds within bed_off_m of each deer trail's home; grass_view presses the grass in bed_size_m ovals (the worn-earth ground bares the litter there), so no mesh. Provisional.",
+	"bed_count": [2, 3],
+	"bed_off_m": [1.5, 3.5],
+	"bed_size_m": [1.5, 0.8],
+	"rub_note": "Rubbed trees (23 Nov 2026, hunting thread): stags (and elk, moose) rub the bark off saplings and small trunks along their trails and near beds, a pale strip at knee to chest height that shows from far off (onX 'How to read deer sign'; Texas Parks and Wildlife hunter education). Along each deer trail at most one every rub_every_m, the thinnest loaded trunk up to rub_max_r_m within rub_m of the trail; the strip rub_height_m up its trail side. Provisional.",
+	"rub_every_m": 35.0,
+	"rub_m": 2.5,
+	"rub_max_r_m": 0.3,
+	"rub_out_m": 0.3,
+	"rub_height_m": [0.45, 0.75]
 }

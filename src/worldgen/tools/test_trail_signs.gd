@@ -63,6 +63,34 @@ func _init() -> void:
 
 	check(on_wet and print_lines.size() == 1, "deer prints only on the wet crossing, one line per 30 m (%d)" % print_lines.size())
 	check(count(signs, "droppings") == 1, "deer droppings by the bed")
+	# Deer beds (pressed ovals by a deer trail's home, the grass view presses the same spots) and rubbed trees along the trail.
+	var bed_span: Array = c["bed_count"]
+	var beds: Array = signs.filter(func(s): return str(s[0]) == "bed")
+	var near_home: bool = beds.size() >= int(bed_span[0]) and beds.size() <= int(bed_span[1])
+
+	for b in beds:
+		var d2: float = (b[1] as Vector2).distance_to(Vector2(50.0, 200.0))
+		near_home = near_home and d2 >= float(c["bed_off_m"][0]) - 0.01 and d2 <= float(c["bed_off_m"][1]) + 0.01
+
+	check(near_home, "%d deer beds within bed_off_m of the bed end (%s)" % [beds.size(), str(beds)])
+	check(str(SignsScript.beds_for(Vector2(50.0, 200.0), Vector2(54.0, 200.0), c)) == str(SignsScript.beds_for(Vector2(50.0, 200.0), Vector2(54.0, 200.0), c)), "the same home gives the same beds (the grass is pressed where the signs are)")
+	var trees: Array = []   # a thick trunk and a sapling beside the deer trail every 10 m, one far off
+
+	for n in 21:
+		trees.append([Vector3(50.0 + float(n) * 10.0, 5.0, 201.5), 0.5, 12.0])
+		trees.append([Vector3(52.0 + float(n) * 10.0, 5.0, 198.6), 0.06, 3.0])
+	trees.append([Vector3(150.0, 5.0, 230.0), 0.05, 3.0])
+	var trunks_at: Callable = func(p: Vector3, r: float) -> Array: return trees.filter(func(t): return Vector2(t[0].x - p.x, t[0].z - p.z).length() <= r + float(t[1]))
+	var rubs: Array = SignsScript.rubs_for({Vector2i(0, 0): routes}, trunks_at, c)
+	var thin: bool = rubs.size() >= 4 and rubs.size() <= int(200.0 / float(c["rub_every_m"])) + 1
+
+	for r2 in rubs:
+		var foot: Vector2 = (r2[1] as Vector2) - Vector2(cos(float(r2[2])), sin(float(r2[2]))) * (float(r2[3]) + float(c["rub_out_m"]))
+		thin = thin and is_equal_approx(float(r2[3]), 0.06) and absf(foot.y - 198.6) < 0.01 and (r2[1] as Vector2).y > foot.y
+
+	check(thin, "rubs on the deer trail's saplings (not the thick trunks, not the far one), at most one each rub_every_m, on the trail side (%d)" % rubs.size())
+	check(str(rubs) == str(SignsScript.rubs_for({Vector2i(0, 0): routes.duplicate(true)}, trunks_at, c)), "the same trees give the same rubs")
+	check(SignsScript.rubs_for({Vector2i(0, 0): [routes[0], routes[1]]}, trunks_at, c).is_empty(), "rabbit runs leave no rubs")
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
 	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.
 	var square: Array = [
@@ -149,8 +177,8 @@ func _init() -> void:
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	view._next_msec = 0
-	view.update(Vector3(120.0, 5.0, 110.0), see - 1, false)
-	check(view.shown == 0, "a player without the skill sees none (%d)" % view.shown)
+	view.update(Vector3(120.0, 5.0, 110.0), 0, false)
+	check(view.shown > 0 and view.shown <= drawn, "an untrained player sees the near signs too, no farther than a tracker (%d of %d)" % [view.shown, drawn])
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown == drawn, "and the same again with it")

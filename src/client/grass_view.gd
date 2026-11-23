@@ -16,6 +16,7 @@ const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const Puddles := preload("res://src/client/puddles.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
+const TrailSigns := preload("res://src/client/trail_signs.gd")   # beds_for: the deer beds pressed into the run map
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -306,6 +307,7 @@ const RUN_TEXELS := 256                  # the run map: 256 texels of 0.5 m roun
 const RUN_TEXEL_M := 0.5
 const RUN_WIDTH_M := [0.8, 1.2]           # a rabbit run, a deer trail (trail_codec.gd route kinds; TR-5): as wide as a walked path (trample 1.6 m), so a line reads through the tufts
 const RUN_FADE_M := 0.5                    # the matting fades out over this past the half width
+var _bed_cfg: Dictionary = {}              # data/look/trail_signs.json, read once: the deer beds' count, spread and size
 const RUN_MOVE_M := 16.0                 # the map is laid again round the player after this walk
 var _run_logged: String = ""         # the last "grass runs:" line, so it is printed only when it changes
 var _run_log_msec: int = 0          # and at most once in 10 s
@@ -562,6 +564,9 @@ func _rebuild_runs(player: Vector3) -> void:
 							texels += 1 if data[at] == 0 else 0
 							data[at] = footprint[e + 2]
 
+			if int(route[0]) == 1 and pts.size() >= 2 and window.has_point(pts[0]):
+				texels += _press_beds(pts, data)
+
 	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
 
 	if line != _run_logged and Time.get_ticks_msec() >= _run_log_msec:
@@ -580,6 +585,45 @@ func _rebuild_runs(player: Vector3) -> void:
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("run_origin", _run_origin)
+
+
+# The beds by a deer trail's home (trail_signs.gd beds_for, the same spots the signs use) pressed into the run map as ovals of bed_size_m,
+# full inside and fading over the last quarter: the grass lies flat there and the worn-earth ground bares the litter. Returns new texels.
+func _press_beds(pts: PackedVector2Array, data: PackedByteArray) -> int:
+	if _bed_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TrailSigns.CONFIG))
+		_bed_cfg = parsed if parsed is Dictionary else {"bed_count": [0, 0]}
+
+	var size: Array = _bed_cfg.get("bed_size_m", [1.5, 0.8])
+	var ax: float = float(size[0]) * 0.5
+	var az: float = float(size[1]) * 0.5
+	var added: int = 0
+
+	for bed in TrailSigns.beds_for(pts[0], pts[1], _bed_cfg):
+		var centre: Vector2 = bed[0]
+		var along: Vector2 = Vector2(cos(float(bed[1])), sin(float(bed[1])))
+		var span: int = int(ceil(ax / RUN_TEXEL_M)) + 1
+		var tx0: int = int(floor((centre.x - _run_origin.x) / RUN_TEXEL_M))
+		var tz0: int = int(floor((centre.y - _run_origin.y) / RUN_TEXEL_M))
+
+		for dz in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var x: int = tx0 + dx
+				var z: int = tz0 + dz
+
+				if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
+					continue
+
+				var d: Vector2 = _run_origin + Vector2(float(x) + 0.5, float(z) + 0.5) * RUN_TEXEL_M - centre
+				var e: float = sqrt(pow(d.dot(along) / ax, 2.0) + pow(d.dot(along.orthogonal()) / az, 2.0))
+				var v: int = int(round(255.0 * (1.0 - smoothstep(0.75, 1.0, e))))
+				var at: int = x + z * RUN_TEXELS
+
+				if v > data[at]:
+					added += 1 if data[at] == 0 else 0
+					data[at] = v
+
+	return added
 
 
 # The texels round a step for a route kind, as [dx, dz, value 1..255] triples: full within the half width, fading over RUN_FADE_M, measured

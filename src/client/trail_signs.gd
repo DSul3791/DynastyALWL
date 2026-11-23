@@ -18,6 +18,7 @@ const PELLET_COLOR := Color(0.24, 0.18, 0.11)
 const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
+const RUB_COLOR := Color(0.78, 0.68, 0.50)   # fresh wood under rubbed-off bark
 const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out too (a route's print spacing starts at its home)
 const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
 const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
@@ -27,6 +28,7 @@ const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)
 var cfg: Dictionary = {}
 var ground_height: Callable        # (x, z) -> the ground's height there, NAN when not known
 var wet: Callable                  # (x, z) -> water or wet ground within wet_m
+var trunks_near: Callable          # (point: Vector3, radius) -> [[root Vector3, trunk radius m, height m], ...] of the loaded standing trees (rubs)
 var routes: Dictionary = {}        # Vector2i block -> [[kind, PackedVector2Array], ...]
 var shown: int = 0                 # sign instances drawn now (a lane reads it from the log)
 var _dirty: bool = false
@@ -85,7 +87,11 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 		_built_at = player
 		_level = tracking
 		var reach: float = reach_m(tracking, cfg)
-		_signs = [] if reach <= 0.0 else signs_for(routes_near(routes, Vector2(player.x, player.z), reach + NEAR_PAD_M), wet, cfg)
+		var near: Dictionary = routes_near(routes, Vector2(player.x, player.z), reach + NEAR_PAD_M)
+		_signs = [] if reach <= 0.0 else signs_for(near, wet, cfg)
+
+		if reach > 0.0 and trunks_near.is_valid():
+			_signs.append_array(rubs_for(near, trunks_near, cfg))
 		_draw(player, tracking)
 
 	_spot(player, tracking)
@@ -110,7 +116,7 @@ static func routes_near(by_block: Dictionary, at: Vector2, m: float) -> Dictiona
 	return out
 
 
-# The signs of a set of routes: [kind, spot, yaw] with kind "latrine", "scrape", "prints" or "droppings". The same routes give the same signs.
+# The signs of a set of routes: [kind, spot, yaw] with kind "latrine", "scrape", "prints", "droppings" or "bed". The same routes give the same signs.
 static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> Array:
 	var out: Array = []
 	var runs: Array = []   # [home, points] of every rabbit run, for the junctions
@@ -130,9 +136,79 @@ static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> 
 			elif kind == KIND_DEER:
 				var off: float = float(c.get("droppings_off_m", 4.0))
 				out.append(["droppings", _off(pts[0], pts[1], [off * 0.25, off], 3), 0.0])
+
+				for bed in beds_for(pts[0], pts[1], c):
+					out.append(["bed", bed[0], float(bed[1])])
 				_prints_on(pts, wet_at, c, out)
 
 	_junctions(runs, c, out)
+	return out
+
+
+# The beds by a deer trail's home (deer lie up in small groups, each leaving an oval of pressed grass or leaves about their body's size):
+# [centre, yaw] of bed_count beds within bed_off_m of the home, away from the trail's first leg. grass_view presses the grass (and the
+# worn-earth ground bares the litter) in the same ovals, so a bed reads with no mesh of its own. The same home gives the same beds.
+static func beds_for(home: Vector2, toward: Vector2, c: Dictionary) -> Array:
+	var out: Array = []
+	var span: Array = c.get("bed_count", [2, 3])
+	var count: int = int(span[0]) + int(_h01(home, 40) * float(int(span[1]) - int(span[0]) + 1))
+	var off: Array = c.get("bed_off_m", [1.5, 3.5])
+	var away: float = (home - toward).angle()
+
+	for n in count:
+		var a: float = away + (_h01(home, 41 + n) - 0.5) * PI * 1.2
+		var r: float = lerpf(float(off[0]), float(off[1]), _h01(home, 51 + n))
+		out.append([home + Vector2(cos(a), sin(a)) * r, TAU * _h01(home, 61 + n)])
+
+	return out
+
+
+# Rubbed trees by deer trails (a stag rubs the bark off saplings and small trunks along his trail and by the bed: one of the plainest signs a
+# hunter reads, at knee to chest height): along each deer trail, at most one every rub_every_m, the thinnest loaded trunk (radius up to
+# rub_max_r_m) within rub_m of the trail. [kind "rub", spot (rub_out_m out from the bark on the trail's side), yaw (bark to trail), trunk
+# radius]. Trees are the same for every player, so are the rubs; a tree not loaded yet gives its rub when it loads (the next rebuild).
+static func rubs_for(by_block: Dictionary, trunks_at: Callable, c: Dictionary) -> Array:
+	var out: Array = []
+	var every: float = float(c.get("rub_every_m", 35.0))
+	var reach: float = float(c.get("rub_m", 2.5))
+	var widest: float = float(c.get("rub_max_r_m", 0.3))
+	var out_m: float = float(c.get("rub_out_m", 0.3))
+	var used: Dictionary = {}
+
+	for key in by_block:
+		for row in by_block[key]:
+			if int(row[0]) != KIND_DEER:
+				continue
+
+			var pts: PackedVector2Array = row[1]
+			var since: float = every * (1.0 - _h01(pts[0], 70))   # the first one a hashed way along, not always at the bed
+
+			for i in range(1, pts.size()):
+				since += pts[i - 1].distance_to(pts[i])
+
+				if since < every:
+					continue
+
+				var best: Array = []
+
+				for trunk in trunks_at.call(Vector3(pts[i].x, 0.0, pts[i].y), reach):
+					var root: Vector3 = trunk[0]
+					var tag: Vector2i = Vector2i(roundi(root.x * 4.0), roundi(root.z * 4.0))
+
+					if float(trunk[1]) <= widest and not used.has(tag) and (best.is_empty() or float(trunk[1]) < float(best[1]) or (is_equal_approx(float(trunk[1]), float(best[1])) and root.x < (best[0] as Vector3).x)):
+						best = trunk
+
+				if best.is_empty():
+					continue
+
+				var at: Vector3 = best[0]
+				var foot: Vector2 = Vector2(at.x, at.z)
+				var dir: Vector2 = pts[i] - foot
+				dir = Vector2.RIGHT if dir.length() < 0.01 else dir.normalized()
+				used[Vector2i(roundi(at.x * 4.0), roundi(at.z * 4.0))] = true
+				out.append(["rub", foot + dir * (float(best[1]) + out_m), dir.angle(), float(best[1])])
+				since = 0.0
+
 	return out
 
 
@@ -257,7 +333,7 @@ static func shows(kind: String, level: int, c: Dictionary) -> bool:
 
 func _draw(player: Vector3, level: int) -> void:
 	var reach: float = reach_m(level, cfg)
-	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "halo": []}
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "rub": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 	var halo: float = halo_alpha(level, cfg)
 
@@ -309,6 +385,9 @@ func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> voi
 	if kind == "prints":
 		var most: Array = cfg.get("prints", [4, 6])
 		long = maxf(size, float(most[1]) * float(cfg.get("print_step_m", 0.6)))
+	elif kind == "bed":
+		size = 1.2
+		long = 1.9
 
 	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.02, spot.y), yaw, Vector3(size, 1.0, long)])
 
@@ -334,6 +413,15 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 				var r: float = spread * sqrt(_h01(spot, 30 + n))
 				var a: float = TAU * _h01(spot, 60 + n)
 				(rows["pellet" if kind == "latrine" else "deer_pellet"] as Array).append([Vector3(spot.x + cos(a) * r, y + PELLET_LIFT_M, spot.y + sin(a) * r), a, big * (0.8 + 0.4 * _h01(spot, 90 + n))])
+		"rub":
+			var y4: float = _heap_ground(spot)
+
+			if not is_nan(y4):
+				var dir: Vector2 = Vector2(cos(yaw), sin(yaw))
+				var bark: Vector2 = spot - dir * (float(cfg.get("rub_out_m", 0.3)) - 0.005)   # on the bark, its face toward the trail
+				var low: Array = cfg.get("rub_height_m", [0.45, 0.75])
+				var mid: float = lerpf(float(low[0]), float(low[1]), _h01(spot, 8))
+				(rows["rub"] as Array).append([Vector3(bark.x, y4 + mid, bark.y), yaw, 1.0])   # the strip's thin side (z) along the yaw: its face to the trail
 		"scrape":
 			var y2: float = _heap_ground(spot)
 
@@ -436,6 +524,12 @@ func _mesh(layer: String) -> Mesh:
 			material.albedo_color = LATRINE_BED_COLOR
 			bed.material = material
 			return bed
+		"rub":
+			var strip: BoxMesh = BoxMesh.new()   # bark rubbed off: the pale wood beneath, a hand wide and about half a metre tall, its face toward the trail
+			strip.size = Vector3(0.11, 0.5, 0.012)
+			material.albedo_color = RUB_COLOR
+			strip.material = material
+			return strip
 		"scrape":
 			var patch: BoxMesh = BoxMesh.new()
 			patch.size = Vector3(0.3, 0.006, 0.2)
