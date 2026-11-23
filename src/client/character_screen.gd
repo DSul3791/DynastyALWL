@@ -361,7 +361,13 @@ func refresh() -> void:
 
 		line.add_child(_label("%d / %d" % [effective, cap] if unmet == "" else "locked", BODY_PX))
 
-		if unmet == "" and row.size() > 7 and effective < cap:
+		var planned: bool = bool(def.get("placeholder", false))   # skills.json "placeholder": nothing in the game practises it yet
+
+		if planned and unmet == "":
+			var soon: Label = _label("planned: nothing practises it yet", BODY_PX - 4)
+			soon.modulate = Color(0.75, 0.75, 0.75)
+			line.add_child(soon)
+		elif unmet == "" and row.size() > 7 and effective < cap:
 			var next_level: Label = _label("%d%% to %d" % [int(row[7]), effective + 1], BODY_PX - 4)
 			next_level.modulate = Color(0.8, 0.8, 0.8)
 			line.add_child(next_level)

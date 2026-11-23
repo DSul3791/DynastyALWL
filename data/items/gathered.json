@@ -96,7 +96,7 @@
 				"Date palm"
 			],
 			"familiarity": 90,
-			"description": "Broad glossy leaves of the wild banana. Good for wrapping food and shelter roofs."
+			"description": "Broad glossy leaves of the wild banana. Good for wrapping food and shelter roofs. Nothing uses it yet."
 		},
 		"bananas": {
 			"number": 1007,
@@ -256,7 +256,7 @@
 				"Mountain avens"
 			],
 			"familiarity": 50,
-			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener."
+			"description": "Hooked seed heads of burdock that cling to cloth and fur. Pests, and a kind of fastener. Nothing uses it yet."
 		},
 		"cactus_pads": {
 			"number": 1019,
@@ -268,7 +268,7 @@
 				"Aloe"
 			],
 			"familiarity": 85,
-			"description": "Flat fleshy cactus pads, spines still on. Peeled and cooked they make food and water."
+			"description": "Flat fleshy cactus pads, spines still on. Peeled and cooked they make food and water. Nothing uses it yet."
 		},
 		"chamomile_flowers": {
 			"number": 1020,
@@ -418,7 +418,7 @@
 				"Mugwort"
 			],
 			"familiarity": 25,
-			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating."
+			"description": "A thick black root of comfrey, mucky and slimy inside. Used for poultices; not for eating. Nothing uses it yet."
 		},
 		"crab_apples": {
 			"number": 1031,
@@ -613,7 +613,7 @@
 				"Honeyspindle"
 			],
 			"familiarity": 85,
-			"description": "Creamy lacy flower sprays with a sweet musky smell. Steeped as a cordial."
+			"description": "Creamy lacy flower sprays with a sweet musky smell. Steeped as a cordial. Nothing uses it yet."
 		},
 		"emberroots": {
 			"number": 1045,
@@ -944,7 +944,7 @@
 				"Honeyspindle"
 			],
 			"familiarity": 70,
-			"description": "White spring blossom of the hawthorn, sweet and faintly rank. A mild heart tonic."
+			"description": "White spring blossom of the hawthorn, sweet and faintly rank. A mild heart tonic. Nothing uses it yet."
 		},
 		"hazelnuts": {
 			"number": 1069,
@@ -1345,7 +1345,7 @@
 				"Gorse"
 			],
 			"familiarity": 35,
-			"description": "A small jar of pressed plant oil. Cooks, lights lamps and keeps leather supple."
+			"description": "A small jar of pressed plant oil. Cooks, lights lamps and keeps leather supple. Nothing uses it yet."
 		},
 		"owlpetals": {
 			"number": 1099,
@@ -1549,7 +1549,7 @@
 				"Tanglewort"
 			],
 			"familiarity": 96,
-			"description": "Toothed leaves of the raspberry cane. Steeped as a soothing tea."
+			"description": "Toothed leaves of the raspberry cane. Steeped as a soothing tea. Nothing uses it yet."
 		},
 		"reed_stems": {
 			"number": 1114,
@@ -1734,7 +1734,7 @@
 				"Marrowroot"
 			],
 			"familiarity": 65,
-			"description": "A handful of plant seeds. Eaten, or sown in a patch."
+			"description": "A handful of plant seeds. Eaten, or sown in a patch. Nothing uses it yet."
 		},
 		"sevenyear_blossoms": {
 			"number": 1127,
@@ -2030,7 +2030,7 @@
 				"Tanglewort"
 			],
 			"familiarity": 97,
-			"description": "Long thorny bramble canes. Used for fencing and snares."
+			"description": "Long thorny bramble canes. Used for fencing and snares. Nothing uses it yet."
 		},
 		"thorny_wood": {
 			"number": 1148,
@@ -2046,7 +2046,7 @@
 				"Drakethorn"
 			],
 			"familiarity": 60,
-			"description": "Hard dark wood of the blackthorn, covered in thorns. Makes tough tool handles."
+			"description": "Hard dark wood of the blackthorn, covered in thorns. Makes tough tool handles. Nothing uses it yet."
 		},
 		"thyme": {
 			"number": 1149,
@@ -2347,7 +2347,7 @@
 				"Hag willow"
 			],
 			"familiarity": 92,
-			"description": "Long thin willow shoots. Woven into baskets and hurdles."
+			"description": "Long thin willow shoots. Woven into baskets and hurdles. Nothing uses it yet."
 		},
 		"witness_bark": {
 			"number": 1171,
