@@ -114,17 +114,17 @@ static func beat_ms(b: Dictionary, raw: int) -> int:
 		return raw
 
 	if raw <= last_raw:
-		return raw + last - last_raw   # the same report again (or an older one, out of order): where it was drawn
+		return raw + last - last_raw   # the same report again (or an older one, out of order): where it was at_ms
 
-	var drawn: int = raw
+	var at_ms: int = raw
 
 	if raw - last_raw >= int(REPORT_S * 600.0) and raw - last_raw <= int(REPORT_S * 1400.0):
-		drawn = int(round(lerpf(float(raw), float(last) + REPORT_S * 1000.0, BEAT_KEEP)))
+		at_ms = int(round(lerpf(float(raw), float(last) + REPORT_S * 1000.0, BEAT_KEEP)))
 
-	drawn = maxi(drawn, last + 1)
+	at_ms = maxi(at_ms, last + 1)
 	b["beat_raw"] = raw
-	b["beat_ms"] = drawn
-	return drawn
+	b["beat_ms"] = at_ms
+	return at_ms
 
 
 func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array = PackedInt32Array(), more: PackedByteArray = PackedByteArray(), cast: PackedInt32Array = PackedInt32Array()) -> void:

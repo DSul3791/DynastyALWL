@@ -584,7 +584,7 @@ func _check_beat() -> void:
 		worst_raw = maxi(worst_raw, absi(200 + int(wobble[i]) - int(wobble[i - 1]) - 200))
 		worst = maxi(worst, absi(int(drawn[i]) - int(drawn[i - 1]) - 200))
 
-	check(worst <= worst_raw / 2, "a steady beat with up to 60 ms of trip wobble is drawn steadier (legs off the beat by %d ms at most, %d raw)" % [worst, worst_raw])
+	check(worst * 2 <= worst_raw, "a steady beat with up to 60 ms of trip wobble is drawn steadier (legs off the beat by %d ms at most, %d raw)" % [worst, worst_raw])
 	check(absi(int(drawn[drawn.size() - 1]) - (20000 + (drawn.size() - 1) * 200 + 30)) <= 40, "and it keeps to the server's clock (%d)" % (int(drawn[drawn.size() - 1]) - 20000))
 	var last: int = int(drawn[drawn.size() - 1])
 	check(PlayerViewScript.beat_ms(b, 20000 + 9 * 200 + 60) == last, "the same report again is drawn where it was")
