@@ -36,7 +36,7 @@ const QUARTER_M := 70.0
 const SWIM := 4
 const CARRY := 8
 const ASLEEP := 16                     # server_players.gd: asleep (the lying clip, as the player's own body)
-const MORE_LIT := 1                   # server_players.gd more byte (158): a burning torch or lantern...
+const MORE_LIT := 1                   # server_players.gd more byte (159): a burning torch or lantern...
 const MORE_BOW_RAISED := 2             # ...the hand flags (held_item.gd HAND_* << 1)...
 const MORE_BOW_DRAWN := 4
 const MORE_SHIELD_UP := 8
@@ -357,7 +357,7 @@ func _show_held(b: Dictionary) -> void:
 		b["held_kind"] = made[1]
 
 
-# The left hand (158): a torch, lantern or shield made by the player's own held_item.gd makers, so it looks the same; a torch burns (its
+# The left hand (159): a torch, lantern or shield made by the player's own held_item.gd makers, so it looks the same; a torch burns (its
 # flame and light) only while the server says it does, a lantern by its kind (wooden_lantern lit, _dark not). Lights: only the LIT_MOST
 # nearest (_light_pass). The torch stands up out of the fist and the lantern hangs, as the player's own third-person body holds them.
 func _show_left(b: Dictionary, distance: float) -> void:

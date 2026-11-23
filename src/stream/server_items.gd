@@ -914,9 +914,9 @@ func peer_left(peer: int) -> void:
 
 # The item number the player says is in its hand (protocol 146 held_item), kept per peer for the goblin camps (server_tribes.gd armed).
 var _held: Dictionary = {}   # peer -> item number
-var _held_left: Dictionary = {}   # peer -> the left hand's item number (158)
-var _hand_flags: Dictionary = {}  # peer -> held_item.gd HAND_* flags (158)
-var send_flight: Callable          # (thrower peer, item number, from, velocity, burning): others see an arrow or thrown weapon fly (158)
+var _held_left: Dictionary = {}   # peer -> the left hand's item number (159)
+var _hand_flags: Dictionary = {}  # peer -> held_item.gd HAND_* flags (159)
+var send_flight: Callable          # (thrower peer, item number, from, velocity, burning): others see an arrow or thrown weapon fly (159)
 
 
 func report_held(peer: int, number: int, left: int = 0, flags: int = 0) -> void:
@@ -3507,6 +3507,9 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var thrown: Dictionary = inv.take_from_slot(slot, 1)
 	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0, "lag": shot_lag(peer, now)})
 
+	if send_flight.is_valid():
+		send_flight.call(peer, number, _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), direction.normalized() * THROW_SPEED, false)
+
 
 # How far behind the server the shooter's screen showed the animals when it shot or threw (ACT_SEEN just before): [ms behind for a seen
 # animal, ms behind for a committed charge, or -1 when it sent none], or [] for judged now. The flight keeps it, so every step of an arrow
@@ -3519,9 +3522,6 @@ func shot_lag(peer: int, now: int) -> Array:
 		return []
 
 	return [now - int(seen[0]), now - int(seen[1]) if int(seen[1]) > 0 else -1]
-
-	if send_flight.is_valid():
-		send_flight.call(peer, number, _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), direction.normalized() * THROW_SPEED, false)
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.

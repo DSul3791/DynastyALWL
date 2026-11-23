@@ -429,7 +429,7 @@ func held_number() -> int:
 # Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
 # every HELD_REPORT_S; the server checks it against the pack.
 const HELD_REPORT_S := 0.5
-# From 158 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
+# From 159 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
 # once (at most every HAND_REPORT_S), an item change at most every HELD_REPORT_S.
 const HAND_REPORT_S := 0.1
 const HAND_BOW_RAISED := 1
@@ -1451,7 +1451,7 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
 
 
-# Another player's arrow or thrown weapon (flight_seen, protocol 158): flown here like this player's own (gravity, the ground, an arrow
+# Another player's arrow or thrown weapon (flight_seen, protocol 159): flown here like this player's own (gravity, the ground, an arrow
 # stops in a trunk), look only. A thrown weapon (items.json kind "weapon") is drawn by its hand look, an arrow by its arrow model.
 func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
 	if _root == null or not _root.is_inside_tree() or _inv == null or number <= 0 or velocity.length() < 0.1:
