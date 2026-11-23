@@ -11,6 +11,7 @@ extends RefCounted
 # Pure server code; the animals module calls tick() once per server tick and owns the records.
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const WeatherScript := preload("res://src/shared/weather.gd")
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a wolf comes to a player (_make_way)
 
 const STALK := 6      # wire states (animal rows): 0 graze, 1 hop, 6 stalk or circle, 7 attack
@@ -663,7 +664,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		if not _ring_step(pack, m, p, speed, dt, infos):
 			continue   # circling, winding up or backing off: no bite this step
 
-		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("lunge_reach_m", 2.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid() and not host.wall_between(m["pos"], p):   # a ring lunge comes right in (robots 23 Nov 2026: biting from 3 m it was drawn just outside a spear's 3 m), never through a wall
+		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("lunge_reach_m", 2.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid() and not host.blow_blocked(m["pos"], p):   # a ring lunge comes right in (robots 23 Nov 2026: biting from 3 m it was drawn just outside a spear's 3 m), never through a wall
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
 			pack["turn"][id] = {"step": "recover", "t": 0.0}   # one bite a lunge, a moment standing in reach (the opening), then back to its place
 			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves", m["pos"]))   # a higher-level wolf bites harder
@@ -1011,15 +1012,20 @@ func pup_cfg() -> Dictionary:
 
 
 # Late spring to about 3 months on (pups.days, day of the year): pups are at the den.
-func pup_season() -> bool:
+# `den`: where the pups would be; its own row's day of the year (half a year on across the equator: Weather.day_of_year_at), else the calendar's.
+func pup_season(den: Vector3 = Vector3.INF) -> bool:
 	var days: Array = pup_cfg().get("days", [60, 150])
-	var doy: int = int(floorf(_now_s() / DAY_S)) % 365
+	var doy: int = int(floorf(_now_s() / DAY_S)) % 365   # starter-calendar: the fallback with no row
+
+	if den.is_finite() and host.row_of.is_valid():
+		doy = WeatherScript.day_of_year_at(_now_s(), int(host.row_of.call(den)), host.equator_row)
+
 	return doy >= int(days[0]) and doy <= int(days[1])
 
 
 # The pack's pups at its den: natural packs in pup season (forced: tests and admin). Returns how many the pack has.
 func make_pups(pid: int, forced: bool = false) -> int:
-	if not packs.has(pid) or (not forced and not pup_season()):
+	if not packs.has(pid) or (not forced and not pup_season(packs[pid]["den"])):
 		return 0
 
 	var pack: Dictionary = packs[pid]
@@ -1249,7 +1255,7 @@ func _den_guard(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: 
 		var id: int = int(m["id"])
 		pack["bite"][id] = float(pack["bite"].get(id, 0.0)) - dt
 
-		if _flat(m["pos"], p) <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid() and not host.wall_between(m["pos"], p):   # never through a wall
+		if _flat(m["pos"], p) <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid() and not host.blow_blocked(m["pos"], p):   # never through a wall
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
 			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves", m["pos"]))
 

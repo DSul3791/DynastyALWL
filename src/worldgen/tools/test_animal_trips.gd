@@ -382,7 +382,7 @@ func sun_checks(p1: Array) -> void:
 	s.hour_now = func(): return hour
 	s.setup()
 	var rise: Array = [6.0]
-	s.sunrise_now = func(): return rise[0]
+	s.sunrise_now = func(_z): return rise[0]
 	var same: bool = true
 
 	for h in 48:
@@ -391,7 +391,7 @@ func sun_checks(p1: Array) -> void:
 
 	check(same, "at the equinox (sunrise 6) the sun periods are the fixed hours")
 	rise[0] = 7.15   # midwinter at the starter row: sunrise 07:09, sunset 16:51
-	s._sun = [-1, 0.0]
+	s._sun = {}
 	check(s.period_now(17.5) == "dusk" and s.period_now(16.0) == "day" and s.period_now(20.5) == "night" and s.period_now(8.5) == "dusk" and s.period_now(9.5) == "day", "in midwinter dusk comes at sunset (17:30 dusk, 16:00 day, 20:30 night, 08:30 still dawn)")
 	var deer: Dictionary = {"id": 7, "sp": "deer", "herd": 0}
 	var bun: Dictionary = {"id": 7, "sp": "rabbit", "herd": 0}
@@ -402,7 +402,7 @@ func sun_checks(p1: Array) -> void:
 	hour = 9.0
 	check(not s.wants_out(bun), "and a rabbit is home by 09:00")
 	rise[0] = 4.85   # midsummer: sunrise 04:51, sunset 19:09
-	s._sun = [-1, 0.0]
+	s._sun = {}
 	hour = 17.0
 	check(not s.wants_out(bun) and s.period_now(17.0) == "day", "in midsummer a rabbit is still home at 17:00, full day")
 	hour = 21.0

@@ -102,6 +102,7 @@ const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ClimateScript := preload("res://src/shared/climate.gd")
 const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
 const CellReadsScript := preload("res://src/stream/cell_reads.gd")   # a scatter cell's ground, water and ore reads bound to its tile (one generator lock a cell)
 const ThunderScript := preload("res://src/shared/thunder.gd")
@@ -360,15 +361,15 @@ func _ready() -> void:
 	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
-			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY
-			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0
-			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY   # starter-calendar: the admin --game-day sets the one clock
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0   # starter-calendar: the admin --game-day sets the one clock
+			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])   # starter-calendar: a log line
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
 			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
 			game_clock.seconds = day_start + clampf(float(argument.trim_prefix("--game-hour=")), 0.0, 23.99) * 3600.0
-			print("server: --game-hour: the clock starts at hour %.2f of day %d" % [game_clock.hour(), game_clock.day_of_year()])
+			print("server: --game-hour: the clock starts at hour %.2f of day %d" % [game_clock.hour(), game_clock.day_of_year()])   # starter-calendar: a log line
 
 	var problem: String = store.setup(generator, store_dir)
 
@@ -467,7 +468,7 @@ func _ready() -> void:
 	items.send_body = func(peer, bpm, eta, phase): net.body.rpc_id(peer, bpm, eta, phase)
 	@warning_ignore("confusable_local_declaration")
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
-	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed))
+	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed), _row_of(pos), settings.equator_tile_row)   # the row's own winter
 	@warning_ignore("confusable_local_declaration")
 	items.send_worn = func(peer, numbers, insts):
 		net.worn.rpc_id(peer, numbers, insts)
@@ -560,7 +561,7 @@ func _ready() -> void:
 		return Vector3(0.0, NAN, 0.0) if best.y == INF and skipped else best   # NAN: not known yet (a tile the reach touches is not loaded)
 	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
 	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
-	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed)), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
+	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed), _row_of(pos), settings.equator_tile_row), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
@@ -640,9 +641,10 @@ func _ready() -> void:
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
 	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
 	items.game_seconds = func(): return game_clock.seconds
-	items.season_now = func(): return game_clock.season()
+	items.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
 	items.season_at = func(pos): return WeatherScript.season_at(game_clock.seconds, pos.z, float(settings.tile_size_m), settings.equator_tile_row)   # a place's own season (drinking water by source)
-	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
+	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()   # starter-calendar: the fallback only (season_stamp_at)
+	items.season_stamp_at = func(pos): return WeatherScript.season_stamp_at(game_clock.seconds, _row_of(pos), settings.equator_tile_row)   # a place's own season count
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 
@@ -739,6 +741,7 @@ func _ready() -> void:
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
+	animals.in_cave_at = _in_cave   # no blow through a cave roof (server_animals.blow_blocked)
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
@@ -792,8 +795,12 @@ func _ready() -> void:
 	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.player_loud = func(): return cues.loud_kinds()   # a blow, a cry or craft work carries farther to animals (hearing-range pass)
 	animals.hour_now = func(): return game_clock.hour()
-	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
-	animals.season_now = func(): return game_clock.season()
+	animals.sun_row_m = float(settings.tile_size_m)
+	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it. starter-calendar: the declination is the one sky's, the latitude the row's
+	animals.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
+	animals.equator_row = settings.equator_tile_row
+	animals.season_at = items.season_at   # an animal's seasons (young, the rut's threat) where it is
+	flora.season_at = items.season_at   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md), by each spot's own season
 	var biome_names: Dictionary = {}
 
 	for biome_entry in tables.get_entries("biomes"):
@@ -937,7 +944,7 @@ func _ready() -> void:
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
 	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
 	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
-	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
+	items.species_active_at = func(sp, hour, z): return animals.activity_at(animals.species_def(sp), hour, z)   # by the sun of the snare's row
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
@@ -1573,6 +1580,11 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 
 
 # Whether a point is in a spring cave pool (icy water, BUG-008).
+# The tile row of a position (Climate.row_of_z): its own seasons, sun and weather.
+func _row_of(pos: Vector3) -> int:
+	return floori(pos.z / float(settings.tile_size_m))
+
+
 func _in_cave_pool(position: Vector3) -> bool:
 	return not is_nan(_cave_pool_surface(position))
 
@@ -1900,12 +1912,10 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
+	var row: int = WeatherScript.STARTER_ROW               # starter-calendar: the fallback weather (weather_now, rain_now) for code with no place; the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
-	if flora != null:
-		flora.set_season(str(weather["season"]))   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md): the row's own season (Weather.season_at)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:

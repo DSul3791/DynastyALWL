@@ -159,7 +159,7 @@ Small; give them to a related thread rather than a thread of their own.
 
 ### Piece 0e. Caves (physical world audit round 6, 23 Nov 2026; details in docs/design/WORLD_AUDIT.md)
 - **Animals never enter caves.** They walk the hill heights over a cave; a den's animal waits at its doorstep. Making animals walk inside is a design question for Dave.
-- **Small gaps, not fixed yet:** remains of a death in a cave and bushes planted there sit at the hill height (`server_items._remains_surface`, `_plant_bush`); an animal on the hill over a shallow passage may reach a player under it (bite height check 2.5 m); the cost of the carts' cave probes is not measured.
+- Fixed in dev (not yet played): remains of a death in a cave and a bush planted there rest on its floor, a tree seed is refused under a cave roof, and no blow passes between a cave and the hill over it. Still unmeasured: the cost of the carts' cave probes.
 
 ### Piece 13. Housekeeping (lists only; nothing is deleted without permission)
 - The stray branches in section 1, all in dev. The repository has 1,260 branches in all; a thread with delete permission can remove the fully merged ones.
