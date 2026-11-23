@@ -247,11 +247,13 @@ func _server() -> void:
 	players.note_report(1, 0.0)
 	players.note_move(2, fake.pos[2], Vector3.ZERO)
 	players.note_report(2, 0.0)
-	clock[0] = later + PlayersScript.SILENT_MS + 1000
-	players.note_move(1, fake.pos[1], Vector3.ZERO)   # player 1 still reports; player 2 has gone quiet
-	players.note_report(1, 0.0)
-	sent.clear()
-	players.tick(0.2)
+	for step in range(int(PlayersScript.SILENT_MS / 1000.0) + 1):   # the server ticks on, player 1 still reports; player 2 has gone quiet
+		clock[0] = later + 1000 * (step + 1)
+		players.note_move(1, fake.pos[1], Vector3.ZERO)
+		players.note_report(1, 0.0)
+		sent.clear()
+		players.tick(0.2)
+
 	var quiet_rows: Array = sent.filter(func(r): return int(r[0]) == 1)
 	check(quiet_rows.size() == 1 and not (quiet_rows[0][1] as PackedInt32Array).has(2), "a player silent for %.0f s leaves the others' rows (no ghost)" % (PlayersScript.SILENT_MS / 1000.0))
 	var quiet_two: Array = sent.filter(func(r): return int(r[0]) == 2)
@@ -263,6 +265,11 @@ func _server() -> void:
 	players.tick(0.2)
 	quiet_rows = sent.filter(func(r): return int(r[0]) == 1)
 	check(quiet_rows.size() == 1 and (quiet_rows[0][1] as PackedInt32Array).has(2), "its next report brings it back")
+	clock[0] += PlayersScript.SILENT_MS + 5000   # the server itself stalls (a long save): nobody's reports could arrive, nobody vanishes
+	sent.clear()
+	players.tick(0.2)
+	quiet_rows = sent.filter(func(r): return int(r[0]) == 1)
+	check(quiet_rows.is_empty() or (quiet_rows[0][1] as PackedInt32Array).has(2), "a server stall of its own hides nobody")
 
 	fake.pos.erase(2)
 	players.forget(2)

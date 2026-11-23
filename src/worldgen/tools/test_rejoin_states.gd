@@ -8,6 +8,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const LinkBarsScript := preload("res://src/client/link_bars.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const KEY := "rejoinstate01"
@@ -146,5 +147,22 @@ func _init() -> void:
 
 	# A craft queue across a rejoin: the robots' first_hours plan quits with 6 twine queued and checks fibre + 3 x twine after the rejoin.
 	items.peer_left(5)
+
+	# A server that goes quiet (restarting, or a long spike): the player is told under the signal bars within SAY_SILENT_MSEC, not left
+	# with a frozen world until the line times out (60 to 120 s); the words go when the server talks again.
+	var bars = LinkBarsScript.new()
+	root.add_child(bars)
+	bars.setup(func(): return null)
+	bars.pulse()
+	bars._last_pulse_msec = Time.get_ticks_msec() - LinkBarsScript.SAY_SILENT_MSEC - 1000
+	bars._next_check_msec = 0
+	bars._process(0.0)
+	check(bars._note != null and bars._note.visible and bars._note.text.contains("No word from the server") and bars._note.text.contains("restarting"), "a quiet server: a plain line under the bars (%s)" % (bars._note.text if bars._note != null else "none"))
+	bars.pulse()
+	bars._next_check_msec = 0
+	bars._process(0.0)
+	check(not bars._note.visible, "it goes when the server talks again")
+	check(LinkBarsScript.silence_words(2000) == "", "a short gap says nothing")
+	bars.queue_free()
 	print("test_rejoin_states: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -52,6 +52,7 @@ var _swings: Dictionary = {}       # peer -> [swing count mod 8, server ms of th
 var _meals: Dictionary = {}        # peer -> eats and drinks mod 8
 var _shown: Dictionary = {}        # peer -> [left, more] as last worked out, and the server ms it changed: a change is news
 var _t: float = 0.0
+var _last_tick_ms: int = 0         # server ms of the last rows pass
 
 
 # A player's look (my_look). Clipped, never trusted further: the receiving client decodes the code and falls back to a plain body.
@@ -202,6 +203,8 @@ func tick(delta: float) -> void:
 		return
 
 	var now: int = int(now_ms.call())
+	var server_stalled: bool = _last_tick_ms > 0 and now - _last_tick_ms > 2000   # the server itself stalled (a long save): its own lateness is no one's silence
+	_last_tick_ms = now
 	var at: Dictionary = {}
 	var heard: Dictionary = {}   # the players shown to the others: heard from within SILENT_MS (no ghost standing for a game that is gone)
 	var info: Dictionary = {}
@@ -214,7 +217,7 @@ func tick(delta: float) -> void:
 
 		at[peer] = pos
 
-		if now - _arrived_ms(peer) <= SILENT_MS:
+		if server_stalled or now - _arrived_ms(peer) <= SILENT_MS:
 			heard[peer] = pos
 
 		var swing: Array = _swings.get(peer, [0, 0])
