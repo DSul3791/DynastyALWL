@@ -550,7 +550,7 @@ func _client() -> void:
 		var line: MeshInstance3D = view._bodies[7].get("line", null)
 		var tip_world: Vector3 = (view._bodies[7]["held_node"] as Node3D).global_transform * (view._bodies[7]["tip_local"] as Vector3) if view._bodies[7].get("held_node") != null else Vector3.INF
 		check(line != null and line.visible and (line.get_node("Float") as Node3D).global_position.distance_to(bob_at) < 0.1, "another player's line in the water: the float where the cast landed")
-		check(line != null and tip_world.is_finite() and tip_world.distance_to((view._bodies[7]["held_node"] as Node3D).global_position) > 0.8, "the line leaves the rod's far end (%.2f m from the grip)" % (tip_world.distance_to((view._bodies[7]["held_node"] as Node3D).global_position) if tip_world.is_finite() else -1.0))
+		check(line != null and tip_world.is_finite() and tip_world.distance_to((view._bodies[7]["held_node"] as Node3D).global_position) > 0.8 and tip_world.y > (view._bodies[7]["held_node"] as Node3D).global_position.y + 0.1, "the line leaves the rod's tip, up and out from the grip, not its butt (%s from the grip)" % (str(tip_world - (view._bodies[7]["held_node"] as Node3D).global_position) if tip_world.is_finite() else "none"))
 		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([rod]), PackedInt32Array([t0 + 3520]), PackedInt32Array([0]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]), PackedInt32Array([0]))
 		await process_frame
 		check(line != null and not line.visible, "the line out of the water: nothing drawn")
@@ -576,7 +576,7 @@ func _client() -> void:
 
 			var bow_node: Node3D = view._bodies[7].get("held_node", null)
 			var clip_now: String = str(view._bodies[7]["rig"].current())
-			var upright: bool = bow_node != null and bow_node.global_basis.x.normalized().dot(Vector3.UP) > 0.9
+			var upright: bool = bow_node != null and _upright_m(bow_node) > 1.2   # the bow's own limbs, measured in the world (Lane A S8, 23 Nov 2026: the holder was upright and the bow lay flat)
 			check(clip_now == str(flag_set[1]) and (upright == (int(flag_set[0]) != 0)), "bow flags %d: the body plays %s (%s) and the bow is %s" % [int(flag_set[0]), str(flag_set[1]), clip_now, "upright before it" if int(flag_set[0]) != 0 else "at the side"])
 
 
@@ -587,6 +587,27 @@ func _client() -> void:
 # The robots' wiggle (23 Nov 2026): a player running back and forth over 3 m every 0.5 s on a late, lossy link was drawn up to 2.2 m past where
 # it turned, walked on along its last leg through a lost batch (player_view carry_for). Measured as how far the drawn body goes beyond the
 # ends of its run, at a player's 60 fps, on rows timed as the server times them.
+# How tall a held model's meshes stand in the world (m): a bow upright is about its length, one lying flat a few centimetres.
+func _upright_m(model: Node3D) -> float:
+	var lo: float = INF
+	var hi: float = -INF
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = child as MeshInstance3D
+
+		if mi.mesh == null or mi.name == "ThirdFist" or mi.name == "NockedArrow":
+			continue
+
+		var box: AABB = mi.mesh.get_aabb()
+
+		for k in range(8):
+			var y: float = (mi.global_transform * box.get_endpoint(k)).y
+			lo = minf(lo, y)
+			hi = maxf(hi, y)
+
+	return hi - lo if hi > lo else 0.0
+
+
 func _check_wiggle() -> void:
 	var fps_was: int = Engine.max_fps
 	Engine.max_fps = LOSSY_FPS
