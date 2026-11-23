@@ -86,3 +86,33 @@ Read from the code and checked headless (`test_world_sound_gaps`, `test_action_c
 Heard by the others too (23 Nov 2026, second pass, `action_cue` cues 5 to 7 under 156 and client-only looks): another player hurt by an attack (the gasp at their head, within 30 m; `server_items.gd hurt_player` -> `server_action_cues.gd hurt`, never held back by the cue gap), a mouthful of water (at the edge or from a waterskin, within 10 m, only when it went down), a thing picked up off the ground (its material's pickup sound where it lay, within 12 m, only when it went), a bow drawn (`player_view.gd drew`: the creak at their shoulder when the players row's bow-drawn flag comes on), a burning torch or lantern carried (`flame_sounds.gd hear_others`: the flutter at their hand, the 2 nearest within 10 m). A fish's bite splashes at the float, where the line went in (`held_item.gd float_point`). Falls, cold and hunger take health without hurt_player and are not sent: only the one hurt hears them.
 Faked or missing, needing a recording (Dave only): a snare springing and the caught animal struggling (silent); the hoe (a soft spade scrape stands in); a fishing rod's cast (the shore net's throw stands in); an iron piece set in place (the dropped-item clank stands in); boar, grouse, seal and seabird calls (none).
 Fine as they are: tool blows on every material, gathering, crafting, digging, filling, tree falls, doors and hatches (world rows, at the door, its own material), building pieces placed and taken down, campfires lit, fed and put out, wading (water steps for everyone), own swimming, landing, stance, sleep, hurt, weather and day and night beds (assets/audio/LEVELS.md). A swing at nothing stays silent (Dave 10 Nov 2026: no whoosh). Eating and drinking food from the pack stay silent (Dave 17 Nov 2026: "doesnt need sound for eating remove the sound"); a mouthful of water gulps.
+
+## Who hears what, how far (hearing-range pass, 23 Nov 2026)
+For stalking and being stalked: how far a second player hears each sound group, and how far an animal senses the player making it. Read from the code and checked headless (`test_hearing_ranges`, which also keeps the player numbers below equal to the code); not yet heard. A sound's "unit" is where it is as loud as at arm's length; past it Godot halves it every doubling of distance and fades it to nothing at the reach, so a sound is faint well before its reach.
+
+Animals sense a player by one rule (`server_animals.gd _sense_factor`): the player seems nearer or farther by the factors below, and the animal watches inside its notice distance and runs inside its flee distance (`animals.json reactions`, e.g. deer 60 / 35 m, wolf 60 m, rabbit 24 / 14 m, boar 40 / 22 m). Standing or walking in the open on a calm day counts 1.0; running 1.5; crouching 0.6; sitting 0.8; lying 0.5; out of sight behind trees or ground down to 0.35 (sound and smell only); downwind of the player up to 1.5, upwind down to 0.75; brushing through undergrowth a little more, less for a good hunter. Nothing is sensed past 1.5 times the notice distance (`far_factor`). New in this pass: a loud action carries at least as far as its `action_heard_x` whatever the stance or cover, for 5 s after it (`server_action_cues.gd loud_kinds`), so a woodcutter crouched in the trees is still heard.
+
+| Sound group | Another player hears it within | Unit | An animal senses the player making it |
+|---|---|---|---|
+| Footsteps, walking or running | 45 m | 2 m | as the player (1.0, running 1.5) |
+| Footsteps, crouched (6 dB softer) | 45 m | 2 m | 0.6 |
+| Swimming strokes | 45 m | 2 m | as the player |
+| Axe or pick blow (tree, log, stump, bush, boulder, ground) | 60 m | 8 m | 1.4 (deer notices at 84 m, runs from 49 m; rabbit 34 / 20 m) |
+| Cry of pain (an attack landed) | 30 m | 6 m | 1.25 |
+| Shovel dig, fill or trench | 160 m (everyone hears the ground change) | 8 m | 1.25 |
+| Craft work (knapping, carving, twine) | 25 m | 1.5 m | 1.1 |
+| Knife on a carcass | 60 m | 8 m | as the player (a quiet cut) |
+| Plant picked, cut by sickle or scythe | 30 m | 4 m | as the player |
+| Chest lid, things put in or taken out | 25 m | 7 m | as the player |
+| Mouthful of water | 10 m | 1.5 m | as the player |
+| Thing picked up off the ground | 12 m | 1.5 m | as the player |
+| Carried torch or lantern | 10 m | 1 m | animals keep out of its light (the fire rule, not hearing) |
+| Bow drawn | 30 m | 6 m | as the player |
+| Arrow or spear loosed and landing | 150 m (the flight is sent that far) | 8 m (12 m in flight) | as the player; a miss landing by an animal does not startle it yet |
+| Tree falling | 260 m | 10 to 18 m | not on its own (the blows before it are heard) |
+| Building piece set or taken down | 120 m | 7 m | as the player |
+| Campfire | 35 m (fades out by 52 m) | world fire | animals keep out of its light |
+
+Being stalked, what the player hears of animals: an animal's steps within 60 m (unit 8 m, the 6 nearest at once), a slow stalk about half as loud as a run (`slot_sounds.gd footfall_strength`); calls by species out to their reach (`creature_sounds.gd`: rabbit 45 m, deer 260 m, fox 320 m, wolf howl 950 m, bear 320 m). A wolf or big cat that stalks walks in at about 1 m/s once it has noticed the player (`hunter.stalk_mps`), so its steps are quiet and close; its threat call comes before a charge.
+
+Still not heard by animals (open): an arrow landing beside one, a tree crashing down on its own, picks, chests, gulps and pickups (all quiet by design). Values are provisional with the RX table, for Dave's review.
