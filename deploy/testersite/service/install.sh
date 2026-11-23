@@ -9,7 +9,8 @@
 #   3. finds Caddy's Docker network and the tester login names (from the Caddyfile's basic_auth lines) and writes ./.env
 #   4. starts the service (container dynasty-reports, no port of its own on the server)
 #   5. copies the pages into the site folder (bug.html, idea.html, index.html, css/, js/), keeping a copy of the old index.html
-#   6. adds one reverse_proxy block for /api/ to the Caddyfile (once, with a backup), checks it and reloads Caddy;
+#   6. adds to the Caddyfile (once, with a backup) the /api/ reverse_proxy block and, if missing, `templates` for the pages
+#      that show the login name (deploy/testplayers/SERVER.md step 3), checks it and reloads Caddy;
 #      if Caddy does not accept it, the old Caddyfile is put back and nothing else changes
 #   7. checks that Caddy can reach the service
 set -euo pipefail
@@ -90,20 +91,30 @@ cp -r pages/. "$SITE/"
 chown -R "$OWNER" "$SITE/index.html" "$SITE/bug.html" "$SITE/idea.html" "$SITE/css" "$SITE/js"
 echo "ok"
 
-say "6. Caddy: sending /api/ to the report service"
-if grep -q 'dynasty-reports:8080' "$CADDYFILE"; then
+say "6. Caddy: /api/ to the report service, and the login name on the pages"
+NEED_API=1; NEED_TPL=1
+grep -q 'dynasty-reports:8080' "$CADDYFILE" && NEED_API=0
+grep -qE '^[[:space:]]*templates' "$CADDYFILE" && NEED_TPL=0
+if [ "$NEED_API$NEED_TPL" = "00" ]; then
   echo "Already there; nothing to change."
 else
   grep -qE '^[[:space:]]*file_server' "$CADDYFILE" || die "no file_server line in the Caddyfile; see INSTALL.md, 'By hand'"
   cp -p "$CADDYFILE" "$CADDYFILE.before-reports"
-  awk '
+  awk -v api="$NEED_API" -v tpl="$NEED_TPL" '
     !done && /^[[:space:]]*file_server/ {
       match($0, /^[[:space:]]*/); pad = substr($0, 1, RLENGTH)
-      print pad "# Tester site report service (deploy/testersite/INSTALL.md): the login name goes with every /api/ request."
-      print pad "reverse_proxy /api/* dynasty-reports:8080 {"
-      print pad "\theader_up X-Dynasty-User {http.auth.user.id}"
-      print pad "\theader_up -Authorization"
-      print pad "}"
+      if (tpl == 1) {
+        print pad "# Tester site (deploy/testersite/INSTALL.md): Caddy writes the login name into these pages."
+        print pad "@home path / /index.html /download/ /download/index.html"
+        print pad "templates @home"
+      }
+      if (api == 1) {
+        print pad "# Tester site report service: the login name goes with every /api/ request."
+        print pad "reverse_proxy /api/* dynasty-reports:8080 {"
+        print pad "\theader_up X-Dynasty-User {http.auth.user.id}"
+        print pad "\theader_up -Authorization"
+        print pad "}"
+      }
       done = 1
     }
     { print }' "$CADDYFILE.before-reports" > "$HERE/Caddyfile.new"
