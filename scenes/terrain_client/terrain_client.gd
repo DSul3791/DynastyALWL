@@ -3009,11 +3009,10 @@ func _update_weather() -> void:
 	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
-	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain of the
-	# server's one weather, over the starter row at sea level (terrain_server._update_weather), not this player's own sky.
-	var starter: int = WeatherScript.STARTER_ROW
+	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain
+	# over this spot (the server's weather_at, terrain_server._weather_here: this row and height, the same state as this sky).
 	_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z, tile_m, int(world.get("equator_row", 0)))
-	_drink_raining = float(WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), starter), 0.0, 0.0, starter, int(world.get("equator_row", 0)))["rain"]) > 0.05
+	_drink_raining = float(weather["rain"]) > 0.05
 	world_wind_dir = float(weather["wind_dir"])
 	weather = wind_onto(weather)
 

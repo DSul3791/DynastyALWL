@@ -354,6 +354,7 @@ var zone_messages: int = 0
 var vent_messages: int = 0
 var zone_usec: int = 0
 var weather_now: Callable           # () -> the weather state (Weather.state: temp_c, wind, rain, snow, ...); set by the server scene
+var weather_at: Callable            # (pos) -> the weather over that spot, its own tile row and height, as the player's client works it out (terrain_server _weather_here); unset: weather_now
 var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes keep; unset, insulation_worn is used (tests set it)
 var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
@@ -3755,7 +3756,7 @@ func _flame_near(at: Vector3, reach: float) -> bool:
 # fire_arrow.ignite_m of where it fell catches. Open rain still beats it, as with a lit hand. No spread: nothing else burns.
 func _arrow_ignite(at: Vector3) -> String:
 	var reach: float = float(_bow.cfg.get("fire_arrow", {}).get("ignite_m", 0.6))
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+	var raining: bool = _rain_here(at) >= RAIN_PUTS_OUT
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -6708,8 +6709,6 @@ func _tick_list(kind: String) -> Array:
 
 
 func _fires(delta: float) -> void:
-	var rain_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
-	var raining: bool = rain_v >= RAIN_PUTS_OUT
 	_refresh_pots()
 
 	for id in _tick_list("fires"):
@@ -6725,6 +6724,9 @@ func _fires(delta: float) -> void:
 
 		if fire.has("camp"):
 			continue   # Edda and Hob's fire burns as it is: no wood runs down, no rain puts it out
+
+		var rain_v: float = _rain_here(it["pos"])   # the rain where it burns: snow on a mountain puts no fire out
+		var raining: bool = rain_v >= RAIN_PUTS_OUT
 
 		if fire.has("uid"):
 			_tend_fire(id, it, fire, delta)
@@ -12093,10 +12095,10 @@ func _light(peer: int, inv, id: int) -> void:
 		_say(peer, "The tinder catches on the warm ash.")
 		return
 
-	var raining: bool = rain_now.is_valid() and float(rain_now.call()) >= RAIN_PUTS_OUT
+	var rain_now_v: float = _rain_here(_items[id]["pos"] if _items.has(id) else _peer_pos.get(peer, Vector3.ZERO))
+	var raining: bool = rain_now_v >= RAIN_PUTS_OUT
 
 	var rain_cfg: Dictionary = _cooking.get("rain_light_chance", {})
-	var rain_now_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
 	# Dave 5 Nov 2026: an open fire does light in the rain, but the rain puts it out again after a few seconds (RAIN_LIGHT_GRACE_S).
 	if raining and not bool(fire["covered"]):
@@ -12375,7 +12377,7 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 		return
 
 	if by_rain:
-		var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+		var rain: float = _rain_here(_peer_pos.get(peer, Vector3.ZERO))
 
 		if not FlameRules.in_rain(rain, _peer_covered(peer)):
 			return
@@ -12400,6 +12402,30 @@ func _douse(peer: int, inv, slot: int, by_rain: bool) -> void:
 # Whether a player is under cover from the rain (a crown, a roof, a cave): at the feet or at the eye, where the flame and the client's own test are
 # (Dave 10 Nov 2026: a torch went out in a lean-to). The shelter status reads the same cover (comfort_at).
 const EYE_M := 1.6
+
+
+# The weather over a spot (weather_at: its row and its height, so up a mountain where the client shows snow the server sees snow too, not the
+# sea level's rain; weather and seasons walk, 23 Nov 2026). Without weather_at (tests) the one weather_now.
+func _weather_here(pos: Vector3) -> Dictionary:
+	if weather_at.is_valid():
+		return weather_at.call(pos)
+
+	return weather_now.call() if weather_now.is_valid() else {}
+
+
+# The rain at a spot, 0 to 1 (snow is not rain: it puts no fire or torch out). Without weather_at the one rain_now.
+func _rain_here(pos: Vector3) -> float:
+	if weather_at.is_valid():
+		return float((weather_at.call(pos) as Dictionary).get("rain", 0.0))
+
+	return float(rain_now.call()) if rain_now.is_valid() else 0.0
+
+
+# The air (C) at a spot from its weather (_weather_here): weather_at's temp_c is at the spot's own height already; weather_now's is at sea
+# level, so the height comes off (warmth.json lapse_c_per_m, the climate's 6.5 C a km).
+func _air_here(pos: Vector3, weather: Dictionary, fallback_c: float) -> float:
+	var air: float = float(weather.get("temp_c", fallback_c))
+	return air if weather_at.is_valid() else air - maxf(pos.y, 0.0) * float(_warmth_cfg.get("lapse_c_per_m", 0.0065))
 
 
 func _peer_covered(peer: int) -> bool:
@@ -15730,7 +15756,7 @@ func _sleep_quality(peer: int) -> float:
 	if covered:
 		return float(_bed_cfg.get("quality", 1.0)) if on_good_bed(peer) else float(q.get("covered", 1.0))
 
-	if rain_now.is_valid() and float(rain_now.call()) >= float(_sleep_cfg.get("rain_wakes", 0.2)):
+	if _rain_here(_peer_pos.get(peer, Vector3.ZERO)) >= float(_sleep_cfg.get("rain_wakes", 0.2)):
 		return -1.0   # a bedroll is not a roof
 
 	if _has_bedroll(peer):
@@ -17635,13 +17661,12 @@ func _coal_rows() -> Array:
 # The warmth the body is heading for here and now: 100 on a mild day, less as the cold stress grows.
 func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
-	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
+	var weather: Dictionary = _weather_here(pos)
 	var covered: bool = _vitals_cover(pos) > 0.5
 	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
-	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
-	# at sea level, so the height is taken off here.
-	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
+	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md), at the spot's height (_air_here).
+	var air: float = _air_here(pos, weather, float(cfg.get("comfort_c", 15.0)))
 	var roofed: bool = _vitals_cover(pos) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 
@@ -17890,8 +17915,8 @@ func cold_pace(peer: int) -> float:
 # (cover from the rain, but air near saturated) only a fire dries them.
 func _update_soak(peer: int, game_s: float) -> void:
 	var cfg: Dictionary = _warmth_cfg
-	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
+	var weather: Dictionary = _weather_here(pos)
 	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 	var v: Dictionary = vitals_of(peer)
@@ -26905,9 +26930,9 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 
 			rows[i] = (rows[i] as Dictionary).merged({"iced": icy == 1})
 
-	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
+	var weather: Dictionary = _weather_here(pos)
 	var ctx: Dictionary = {"season": str(season_at.call(pos)) if season_at.is_valid() else _season(), "rain_h_ago": (_now_game_s() - _last_rain_s) / 3600.0, "raining": float(weather.get("rain", 0.0)) > 0.05,
-		"air_c": float(weather.get("temp_c", 10.0)) - maxf(pos.y, 0.0) * float(_warmth_cfg.get("lapse_c_per_m", 0.0065)), "wind": float(weather.get("wind", 0.0))}
+		"air_c": _air_here(pos, weather, 10.0), "wind": float(weather.get("wind", 0.0))}
 	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
 
 	if str(found.get("refused", "")) == "salt":
