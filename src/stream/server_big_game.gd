@@ -296,11 +296,11 @@ func step(a: Dictionary, dt: float) -> void:
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and not host.wall_between(a["pos"], p) and hurt_player.is_valid():
 					a["hit"] = true
 					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
-					var late_s: float = late_s(def, int(info["peer"]))
+					var wait_s: float = late_s(def, int(info["peer"]))
 
-					if late_s > 0.0:
+					if wait_s > 0.0:
 						# A fair dodge over the link: judged once the player has seen the blow land and their step has come back (see late_s).
-						a["late"] = {"peer": int(info["peer"]), "left_s": late_s, "from": start, "to": a["pos"] + Vector3(cos(float(a["dir"])), 0.0, sin(float(a["dir"]))) * float(def.get("hit_m", 2.2))}
+						a["late"] = {"peer": int(info["peer"]), "left_s": wait_s, "from": start, "to": a["pos"] + Vector3(cos(float(a["dir"])), 0.0, sin(float(a["dir"]))) * float(def.get("hit_m", 2.2))}
 						return
 
 					_land(a, def, int(info["peer"]))
@@ -325,7 +325,7 @@ func step(a: Dictionary, dt: float) -> void:
 # takes the trip back up, so the blow is judged a round trip plus that delay later, against where the player then is: where they had stepped
 # by the moment their screen showed the blow land. At most dodge_late_max_ms (a slow or lying link cannot stretch it), 0 without the row key.
 func late_s(def: Dictionary, peer: int) -> float:
-	if not bool(def.get("fair_dodge", false)) or not ping_ms.is_valid():
+	if peer < 0 or not bool(def.get("fair_dodge", false)) or not ping_ms.is_valid():
 		return 0.0
 
 	var ms: float = float(host.cfg.get("dodge_view_ms", 350)) + maxf(float(ping_ms.call(peer)), 0.0)

@@ -495,3 +495,35 @@ func _fair_dodge() -> void:
 			check(closest >= 0.3, "and it never stands inside the player meanwhile (nearest %.2f m)" % closest)
 
 	animals.big_game.ping_ms = Callable()
+
+	# A player walking into a goblin or a camp bandit at 5 m/s to strike (robots 23 Nov 2026: a goblin 0.21 to 0.25 m inside them): it gives
+	# way at their pace, out of where they will be by its next step, so it is never caught inside between its tenth-of-a-second steps. A
+	# bandit who gave up stays where he sits.
+	for who in ["goblin", "bandit", "bandit gave up"]:
+		var id: int = enemy(who.split(" ")[0], 0.0)
+		var a: Dictionary = animals.animals[id]
+		a["pos"] = Vector3(200.7, 10.0, 0.0)
+
+		if who != "goblin":
+			a["camp"] = Vector2i(0, 0)
+
+		if who == "bandit gave up":
+			a["gave_up"] = 0.0
+
+		var p := Vector3(199.0, 10.0, 0.0)
+		var nearest: float = INF
+
+		for k in 10:
+			p.x += 0.5   # 5 m/s, a tenth of a second
+			animals._noise_from = [p]
+			animals._player_vel = [Vector2(5.0, 0.0)]
+			animals.make_way(a, p, 0.1, [p])
+			nearest = minf(nearest, absf(a["pos"].x - (p.x + 0.5)))   # where the player is just before its next step
+
+		if who == "bandit gave up":
+			check(absf(a["pos"].x - 200.7) < 0.001, "a %s is not pushed about by a player walking into him" % who)
+		else:
+			check(nearest >= 0.35, "a %s a player walks into at 5 m/s gives way ahead of them: never inside between its steps (nearest %.2f m)" % [who, nearest])
+
+	animals._noise_from = []
+	animals._player_vel = []
