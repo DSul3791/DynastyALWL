@@ -38,4 +38,4 @@ Client only. No messages, no protocol change, no server work beyond the existing
 fresh prints redraw at most twice a second while any exist.
 
 ## Not yet
-Fresh prints are not read with E and give no XP (the server has no way to check them cheaply). Pictures on a real GPU are owed (Lane A).
+Fresh prints give no XP (the server has no way to check them cheaply). Pictures on a real GPU are owed (Lane A).

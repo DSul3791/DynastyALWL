@@ -248,11 +248,20 @@ static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary,
 
 	var every: float = float(c.get("prints_every_m", 30.0))
 	var since: float = every
+	var probe_m: float = float(c.get("wet_probe_m", 8.0))
+	var dry: float = probe_m   # metres since the last wet look: water is looked for about every wet_probe_m, not at every point (each look reads the water five times)
 
 	for i in range(1, pts.size()):
-		since += pts[i - 1].distance_to(pts[i])
+		var leg: float = pts[i - 1].distance_to(pts[i])
+		since += leg
+		dry += leg
 
-		if since >= every and bool(wet_at.call(pts[i].x, pts[i].y)):
+		if since < every or dry < probe_m:
+			continue
+
+		dry = 0.0
+
+		if bool(wet_at.call(pts[i].x, pts[i].y)):
 			out.append([kind, pts[i], (pts[i] - pts[i - 1]).angle(), 0.0, pts[pts.size() - 1], toward])
 			since = 0.0
 

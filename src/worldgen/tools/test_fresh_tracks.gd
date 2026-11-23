@@ -26,6 +26,18 @@ func _init() -> void:
 
 	check(t.shown() == 6, "a walking deer near the player leaves a print a step (%d)" % t.shown())
 	check(absf(float(t.marks[5][1])) < 0.01, "heading east along its steps (yaw %.2f)" % float(t.marks[5][1]))
+	check(absf(float(t.marks[0][1])) < 0.01, "the first print of the walk learns its heading from the second")
+	var lone = TracksScript.new()
+	lone.player_at = func() -> Vector3: return Vector3.ZERO
+	lone.on_step("deer", Vector3(2.0, 0.0, 2.0), 1000)
+	check(not TracksScript.read_text(lone.marks[0], 100, 1000, c).contains("heading"), "a single footfall gives no heading, even to a master tracker")
+	lone.on_step("deer", Vector3(5.0, 0.0, 2.0), 1300)   # a herd neighbour 3 m off, not this deer's next step
+	check(is_nan(float(lone.marks[1][1])) and is_nan(float(lone.marks[0][1])), "a step of another deer 3 m away gives no heading rather than a wrong one")
+	lone.on_step("dog", Vector3(1.0, 0.0, 1.0), 1400)
+	lone.on_step("dog", Vector3(1.8, 0.0, 1.0), 1700)
+	check(lone.shown() == 2, "a dog at heel leaves no prints (it would crowd out the wild trail and the E key)")
+	check(TracksScript.read_text(lone.marks[0], 1, 1000 + 20000, c).contains("just now") and TracksScript.read_text(lone.marks[0], 1, 1000 + 200000, c).contains("minutes"), "just now, then minutes ago")
+	lone.free()
 	t.on_step("deer", Vector3(6.2, 1.0, 3.1), 2900)
 	check(t.shown() == 6, "a step 0.2 m from the last one (a shuffle) leaves no print")
 	t.on_step("duck", Vector3(1.0, 1.0, 1.0), 3000)
@@ -34,7 +46,7 @@ func _init() -> void:
 	var near: Array = t.readable(Vector3(5.0, 1.0, 3.0), 3000)
 	check(not near.is_empty(), "a fresh print near the player can be read")
 	var plain: String = TracksScript.read_text(t.mark_at(int(near[0][0])), 1, 3000, c)
-	check(plain.begins_with("Deer prints") and plain.contains("minutes") and not plain.contains("heading"), "untrained: whose and how fresh (%s)" % plain)
+	check(plain.begins_with("Deer prints") and plain.contains("just now") and not plain.contains("heading"), "untrained: whose and how fresh (%s)" % plain)
 	check(TracksScript.read_text(t.mark_at(int(near[0][0])), int(c["read_way_level"]), 3000, c).contains("heading east"), "at read_way_level: which way it went")
 	check(TracksScript.read_text([Vector3.ZERO, 0.0, 0, "paw", "wolf"], 1, 1000, c).contains(str(c["read"]["warning"])), "a wolf's prints warn")
 	check(not TracksScript.read_text([Vector3.ZERO, 0.0, 0, "paw", "dog"], 1, 1000, c).contains(str(c["read"]["warning"])), "a dog's prints do not")

@@ -23,6 +23,7 @@
 	"prints": [4, 6],
 	"print_step_m": 0.6,
 	"wet_m": 3.0,
+	"wet_probe_m": 8.0,
 	"droppings_off_m": 4.0,
 	"droppings_pellets": [15, 25],
 	"rebuild_move_m": 8.0,
