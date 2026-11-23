@@ -10481,8 +10481,7 @@
 			"used_for": [
 				"Used in Pickled vegetables"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"parsnip_seeds": {
 			"name": "Parsnip seeds",
@@ -10494,8 +10493,7 @@
 			"used_for": [
 				"Sown with the hoe (Garden) to grow parsnip, 30 seeds a spot"
 			],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"mug": {
 			"name": "Mug",

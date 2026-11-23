@@ -1895,7 +1895,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.trunks_version = func() -> int: return flora.canopy_version
 	held.report_now = send_position_now   # a fresh position report just before each blow (server_items strike_origin)
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
-	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
+	held.season_now = func(): return _drink_season if _drink_season != "" else game_clock.season()   # the hoe's plant list greys out what is out of season: the season where the player stands, as the server sows by the bed's (season_at; the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block

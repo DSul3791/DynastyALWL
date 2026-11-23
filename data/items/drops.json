@@ -131,7 +131,7 @@
 	"seed_drops": {
 		"note": "Wild seeds (FARMING_SPEC.md step 1; Tyler 31 Oct 2026): gathering one of these plants in the listed seasons also gives seeds, [item, min, max] each, so a player starts farming from forage. 23 Nov 2026 (Dave: \"you should get plenty of seeds\"): each row gives 2 to 5 sowings of that seed (crops.json sow_seeds per planting spot). Rolled like the other yields. Potato and turnip seeds come from a dug root, not here. 2 Nov 2026: tall grass also gives oats and rye seeds (they had no source at all; the other crops' wild plants are not in the game yet, see crops.json seed_source).",
 		"tall_grass": {"seasons": ["summer", "autumn"], "rows": [["wheat_seeds", 100, 250], ["barley_seeds", 100, 250], ["oats_seeds", 100, 250], ["rye_seeds", 100, 250]]},
-		"wild_carrot": {"seasons": ["summer", "autumn"], "rows": [["carrot_seeds", 60, 150]]},
+		"wild_carrot": {"seasons": ["summer", "autumn"], "rows": [["carrot_seeds", 60, 150], ["parsnip_seeds", 60, 150]]},
 		"wild_potato": {"seasons": ["spring", "summer", "autumn"], "rows": [["potato_seeds", 20, 50]]},
 		"wild_turnip": {"seasons": ["spring", "autumn"], "rows": [["turnip_seeds", 60, 150]]},
 		"sea_cabbage": {"seasons": ["summer"], "rows": [["cabbage_seeds", 60, 150]]},
