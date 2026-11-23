@@ -97,7 +97,8 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const TunnelWatchScript := preload("res://src/stream/tunnel_watch.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
-const MAX_PLAYERS := 32                 # ENet's peer limit; the server pick page shows "2 / 32"
+const MAX_PLAYERS := 32                 # the most players at once; the server pick page shows "2 / 32"
+var max_players: int = MAX_PLAYERS       # --max-players=N (tests: a full server with 1 player)
 const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
@@ -294,6 +295,8 @@ func _ready() -> void:
 			_clear_generated_at_start = true
 		elif argument.begins_with("--store="):
 			store_dir = argument.trim_prefix("--store=")
+		elif argument.begins_with("--max-players="):
+			max_players = clampi(int(argument.trim_prefix("--max-players=")), 1, MAX_PLAYERS)
 		elif argument.begins_with("--threads="):
 			_max_running = maxi(int(argument.trim_prefix("--threads=")), 1)
 		elif argument.begins_with("--idle-threads="):
@@ -475,7 +478,7 @@ func _ready() -> void:
 		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
 	players = PlayersScript.new()
 	players.items = items
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more)
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more, cast): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more, cast)
 	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
 	items.send_flight = players.flight
 	items.send_taken = func(peer, kind, points, days): net.ground_taken.rpc_id(peer, kind, points, days)   # protocol 160
@@ -681,6 +684,8 @@ func _ready() -> void:
 		_refused_start = true
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
 		return
+
+	items.cut_felled_flora(flora)   # a stump saved before its tree's removal was (a crash between them): the tree stays cut
 
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
@@ -1080,7 +1085,9 @@ func _ready() -> void:
 	_start_water()
 
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = server_peer.create_server(port, MAX_PLAYERS)
+	# One seat more than the players: ENet turns a peer past its limit away before any message, so the game could not tell "full" from
+	# "down". The extra peer is let in only to be told the server is full (hello, below) and dropped.
+	var error: int = server_peer.create_server(port, max_players + 1)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -1159,6 +1166,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key, build):
 		var t0: int = Time.get_ticks_usec()
+
+		if _peers.has(peer) and _peers[peer].has("refused"):
+			return   # refused once: a later hello from the same connection is never let in while it is being closed
+
 		var refused: String = BuildStamp.refusal(_stamped_build, build)
 
 		if refused != "":
@@ -1169,6 +1180,13 @@ func _ready() -> void:
 
 		if account == "":
 			return
+
+		if _full_for(peer, identity.store_key(account)):
+			_refuse_join(peer, build, SERVER_FULL % max_players)
+			return
+
+		if _peers.has(peer):
+			_peers[peer]["player"] = true   # counted by _full_for from here on
 
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
@@ -1437,7 +1455,7 @@ func _publish_status() -> void:
 		"stamped": _stamped_build > 0,
 		"protocol": NetScript.PROTOCOL_VERSION,
 		"players": _peers.size(),
-		"max_players": MAX_PLAYERS,
+		"max_players": max_players,
 		"locked": _server_settings.locked(),
 	})
 
@@ -1450,6 +1468,8 @@ func _drop_replaced(old_peer: int) -> void:
 	if not _peers.has(old_peer):
 		return
 
+	_peers[old_peer].erase("player")   # its character is the new connection's now: it no longer counts towards a full server
+
 	net.join_refused.rpc_id(old_peer, "This character joined the server again from another game window or computer, so this one was closed. Nothing was lost.")
 	await get_tree().create_timer(1.0).timeout
 
@@ -1458,13 +1478,34 @@ func _drop_replaced(old_peer: int) -> void:
 		_on_peer_disconnected(old_peer)   # forgotten now: a dead line never answers the close, so it stayed in the lists (and was sent to, 2,540 send errors in 6 min) until its 60 to 120 s timeout (robots 23 Nov 2026); the engine's own leave later finds nothing (a force close would skip that leave and keep the peer in the engine's list)
 
 
+# The words a player past max_players is given (the client titles its window "Server full" when it sees "server is full").
+const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
+
+
+# Whether a hello from `peer` (character `store`) finds the server full: only connections whose hello was let in count (not the ones still
+# at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
+func _full_for(peer: int, store: String) -> bool:
+	var players: int = 0
+
+	for other in _peers:
+		if other == peer or not _peers[other].has("player") or _peers[other].has("refused"):
+			continue
+
+		if items.key_of(other) == store:
+			return false
+
+		players += 1
+
+	return players >= max_players
+
+
 func _refuse_join(peer: int, build: int, text: String) -> void:
 	if not _peers.has(peer) or _peers[peer].has("refused"):
 		return   # one refusal per connection, however many hellos it sends
 
 	_peers[peer]["refused"] = true
-	print("Join refused for peer %d: client build %d, this server build %d" % [peer, build, _stamped_build])
-	_events.event("peer %d refused: client build %d, server build %d" % [peer, build, _stamped_build])
+	print("Join refused for peer %d (client build %d, this server build %d): %s" % [peer, build, _stamped_build, text])
+	_events.event("peer %d refused (client build %d, server build %d): %s" % [peer, build, _stamped_build, text])
 	net.join_refused.rpc_id(peer, text)
 	await get_tree().create_timer(1.0).timeout
 
@@ -3587,7 +3628,9 @@ func _process(delta: float) -> void:
 		_events.mark("checks: revisions file")
 		store.save_revisions()
 		_events.mark("checks: flora removed file")
-		flora.save_removed()
+
+		if items.fells_on_disk():   # a felled tree's removal is written after its stump and logs (server_items fells_on_disk)
+			flora.save_removed()
 
 	_events.mark("checks: flags, report")
 	var flag_path: String = _store_path + "/clear_generated.now"

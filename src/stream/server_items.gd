@@ -256,6 +256,7 @@ var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
 const EVENT_SAVE_GAP_S := 5.0      # PROVISIONAL (D-TODO-2): the least real time between a save and the next one a big event brings forward
 var _event_save: bool = false      # a big event asked for a save (save_soon)
+var _fell_unsaved: bool = false    # a tree was felled since the last save copied the world (fells_on_disk)
 var _since_save: float = 0.0       # real seconds since the last tick save
 var _event_saves: int = 0          # saves that carried a big event's request (tests)
 var _dirty: bool = false
@@ -362,6 +363,8 @@ var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes 
 var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
+var _wet_wind: Dictionary = {}      # peer -> true while soaked in the wind (warmth_target; body_703 wet_wind_say_*), for the line that says why
+var _wet_wind_told: Dictionary = {}   # peer -> true once that line was said this cold spell (cleared when warm again)
 var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _wood_in: float = 0.0           # real seconds since the last wet-wood step (_wood_tick)
 var _wood_acc: float = 0.0          # unspent fraction of a drying unit (a tenth of a game hour)
@@ -873,6 +876,8 @@ func peer_left(peer: int) -> void:
 	_cold_out.erase(peer)
 	_out_water.erase(peer)
 	_water_hint_at.erase(peer)
+	_wet_wind.erase(peer)
+	_wet_wind_told.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -1958,9 +1963,7 @@ func tick(delta: float) -> void:
 
 	_reap_writer()
 
-	if _writer == null and not _save_failed.is_empty():
-		_save_failed.clear()
-		_dirty = true   # an area file could not be written: the next save builds it again
+	_retry_failed_saves()
 
 	_save_parts = []
 	_since_save += delta
@@ -2031,6 +2034,46 @@ func save_soon(ids: Array = []) -> void:
 	_event_save = true
 
 
+# True once every tree felled so far is in files on disk (its stump and logs saved and the writer idle). The server writes the flora's
+# removals only then (terrain_server), so a crash never leaves a felled tree gone with no stump and no logs (the coordinator, 23 Nov 2026);
+# the other way round, a stump on disk whose tree's removal is not, is put right at the next start (felled_flora).
+func fells_on_disk() -> bool:
+	return not _fell_unsaved and _writer == null and _pending_writes.is_empty()
+
+
+# Every saved stump that was a standing flora tree, as [chunk Vector2i, flora id]: the server cuts each again at start (a no-op for one
+# already cut), so a stump saved before the flora's removals were written never stands beside its tree again.
+func felled_flora() -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var tree: Variant = _items[id].get("tree")
+
+		if tree != null and (tree as Dictionary).has("flora_id") and typeof(tree.get("chunk")) == TYPE_ARRAY and (tree["chunk"] as Array).size() == 2:
+			out.append([Vector2i(int(tree["chunk"][0]), int(tree["chunk"][1])), int(tree["flora_id"])])
+
+	return out
+
+
+# An area file the writer could not write (_save_failed) is built again by the next save, and until then a stump in it may not be on disk.
+func _retry_failed_saves() -> void:
+	if _writer == null and not _save_failed.is_empty():
+		_save_failed.clear()
+		_dirty = true   # an area file could not be written: the next save builds it again
+		_fell_unsaved = true   # the flora's removals wait for that save too (fells_on_disk)
+
+
+# At start (terrain_server): each saved stump's flora tree is cut again where the flora's removals lack it. Returns how many were cut.
+func cut_felled_flora(flora) -> int:
+	var cut: int = 0
+
+	for felled in felled_flora():
+		if not flora.removed_in(felled[0]).has(int(felled[1])) and flora.cut(felled[0], int(felled[1])):
+			cut += 1
+
+	return cut
+
+
 # A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
 func _event_save_due() -> bool:
 	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
@@ -2065,6 +2108,7 @@ func save() -> void:
 	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
+	_fell_unsaved = false   # this save carries every stump and log felled so far (on disk once the writer is idle: fells_on_disk)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
 	for key in _picked.keys():
@@ -10706,6 +10750,9 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	var tree: Dictionary = {"species": str(info["name"]), "yaw": yaw, "pitch": pitch, "length": float(info["height"]), "radius": radius, "felled_at": now_s}
 	tree["crown"] = _crown_circle(spot, info, yaw, pitch)   # where its crown lands: the client flattens the grass there, the litter falls in it
 	var stump: Dictionary = {"species": tree["species"], "yaw": yaw, "pitch": pitch, "length": tree["length"], "radius": radius, "felled_at": now_s, "state": 4, "chunk": [chunk.x, chunk.y], "crown": tree["crown"], "fresh": true}
+
+	if info.has("id") and not bool(info.get("dynamic", false)):   # a planted tree is the items' own (_saplings), saved with the stump
+		stump["flora_id"] = int(info["id"])   # the standing tree it was: kept cut on load if a crash wrote this stump but not the flora's removals (felled_flora)
 	var stump_id: int = _next_id
 	_items[stump_id] = {"number": 0, "count": 1, "pos": spot, "left": 1.0e9, "tree": stump}   # "fresh" until it lands: the client plays the fall from the stump row
 	_next_id += 1
@@ -10741,6 +10788,8 @@ func _fell_record(chunk: Vector2i, info: Dictionary, away: Vector2, feller: Stri
 	_falls[stump_id] = {"shared": fall, "pieces": pieces, "hinge": hinge, "along": along, "length": float(tree["length"]), "radius": radius, "small": _is_small_tree(tree, _drops.get("trunk", {})), "peer": feller_peer}
 	_dirty = true
 	_sync_in = 0.0   # bug 6: the pieces go out on the next tick with the flora cut, not up to SYNC_EVERY_S later, so the tree never vanishes before it falls
+	save_soon([stump_id] + pieces)   # a big event: the stump and its logs are on disk within seconds (the flora's removal waits for it: fells_on_disk)
+	_fell_unsaved = true
 	return stump_id
 
 
@@ -11106,7 +11155,14 @@ func _repair(peer: int, inv, slot: int) -> void:
 		return
 
 	if bench != "" and not station_near(peer, bench):
-		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+		# Beside a worn-out or unfuelled smithy the player is told what is wrong with it, as a craft there is (ore loop, 23 Nov 2026).
+		if _broken_station_near(peer, bench):
+			_say(peer, "Needs repair")
+		elif _unfuelled_smithy_near(peer, bench):
+			_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % _station_name(bench))
+		else:
+			_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
+
 		return
 
 	# The tool's own slot must not be spent as material. A cost is filled like a recipe's (ingredient groups: an Iron chunk mends what asks
@@ -18400,6 +18456,8 @@ func warmth_target(peer: int) -> float:
 		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
 		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
+	_wet_wind[peer] = not body.is_empty() and soak >= float(body.get("wet_wind_say_soak", 0.5)) and wind >= float(body.get("wet_wind_say_wind", 0.3)) and not roofed and not bool(_swimming.get(peer, false))   # under a roof the line would send them where they are
+
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 
 	if not body.is_empty():
@@ -18466,6 +18524,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
 	_strain_sent.erase(peer)
 	_peer_pos[peer] = to
@@ -18491,6 +18550,37 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 		_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
 
 	print("%s: peer %d woke at the %s at %s" % ["Water" if water else "Cold", peer, kind, str(to)])
+
+
+# Where a rod's float sits while its line is in the water (waiting or biting), INF otherwise: the others draw the line and the float
+# (server_players.gd cast_code, protocol 162). Look only.
+func fishing_float(peer: int) -> Vector3:
+	var state: Dictionary = _fishing.get(peer, {})
+
+	if not (str(state.get("phase", "")) in ["wait", "bite"]) or not state.has("float"):
+		return Vector3.INF
+
+	return state["float"]
+
+
+# The float's spot for a cast from `from` toward `at` (the client's cast point, 4 m ahead of the eye): at most `reach` m off level, on the
+# water's face there (the nearest lake or river surface; the sea's 0 m; else a metre under the body's middle, about the feet).
+func _float_spot(from: Vector3, at: Vector3, reach: float) -> Vector3:
+	var flat: Vector2 = Vector2(at.x - from.x, at.z - from.z)
+
+	if not at.is_finite() or flat.length() < 0.5:
+		flat = Vector2(0.0, -3.0)
+
+	flat = flat.limit_length(minf(reach, 12.0))
+	var spot: Vector3 = Vector3(from.x + flat.x, from.y - 1.0, from.z + flat.y)
+	var y: float = float(fresh_water_y.call(spot, 6.0)) if fresh_water_y.is_valid() else NAN
+
+	if is_finite(y) and absf(y - spot.y) < 12.0:
+		spot.y = y
+	elif water_kind_at.is_valid() and str((water_kind_at.call(spot.x, spot.z) as Dictionary).get("kind", "")).begins_with("sea") and absf(spot.y) < 12.0:
+		spot.y = 0.0
+
+	return spot
 
 
 func passed_out(peer: int) -> bool:
@@ -18580,6 +18670,12 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	elif level == 1 and w >= float(cfg.get("cold_clear", 52.0)):
 		_cold_level[peer] = 0
 		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
+		_wet_wind_told.erase(peer)
+
+	# Why the clothes do not help (coordinator 23 Nov 2026): soaked in the wind, said once a cold spell beside the cold lines.
+	if int(_cold_level.get(peer, 0)) > 0 and bool(_wet_wind.get(peer, false)) and not _wet_wind_told.has(peer) and not body.is_empty():
+		_wet_wind_told[peer] = true
+		_say(peer, str(body.get("say_wet_wind", "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.")))
 
 	_sync_warmth(peer, false)
 
@@ -19056,6 +19152,7 @@ func kill(peer: int, cause: String) -> bool:
 	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
 	if not novice_grace(peer):
@@ -19981,7 +20078,7 @@ func _fish(peer: int, inv, slot: int, at: Vector3 = Vector3.ZERO) -> void:
 	var bites: bool = fish_stock(cell) > 0 and fate(peer, "fish", chance)
 	var wait_s: Array = cfg.get("wait_s", [6.0, 22.0])
 	var wait_ms: int = int(lerpf(float(wait_s[0]), float(wait_s[1]), _fate_rng.randf()) * 1000.0)   # luck-exempt: the length of a wait
-	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", ""))}
+	_fishing[peer] = {"phase": "wait", "at": now + wait_ms, "spot": _peer_pos[peer], "cell": cell, "bites": bites, "species": str(hit.get("species", "")), "float": _float_spot(_peer_pos[peer], at, float(cfg.get("reach_m", 8.0)))}
 	_say(peer, str(cfg.get("say_cast", "")))
 
 
