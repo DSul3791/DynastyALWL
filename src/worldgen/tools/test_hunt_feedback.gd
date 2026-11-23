@@ -126,6 +126,15 @@ func _init() -> void:
 	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5, now - 300, now - 300) == eid, "judged at the moment the player saw it, it hits")
 	check(absf(e.jab_point(eid, eye, Vector3(0.0, 0.0, 1.0), 2.5, 0.5, now - 300, now - 300).z) < 0.01, "and lands where the player saw it")
 	check(e.judged_ms(ed, now - 5000, now - 5000) >= now - int(e.cfg.get("rewind_max_ms", 500)) - 1 and e.judged_ms(ed, 0, 0) == -1, "never judged more than rewind_max_ms back; a client that sends none is judged now")
+	check(e.moved_since(eid, now - 300, now - 300).is_equal_approx(Vector3(2.0, 0.0, 0.0)), "it has gone 2 m since, so the struck spot is moved onto the body as it is now")
+	# One that stood 10 s and then stepped: until the step it was where it stood.
+	var st: Dictionary = e.animals[deer_at(e, 20.0)]
+	st["moved_ms"] = now - 10000
+	e.note_past(st, Vector3(0.0, GROUND, 19.0))
+	st["pos"] = Vector3(1.0, GROUND, 20.0)
+	st["moved_ms"] = now
+	e.note_past(st, Vector3(0.0, GROUND, 20.0), 100)   # a 0.1 s step
+	check(e.pos_at(st, now - 200).is_equal_approx(Vector3(0.0, GROUND, 20.0)), "an animal that stood, then stepped, was where it stood 200 ms ago (%s)" % str(e.pos_at(st, now - 200)))
 	ed["state"] = 10
 	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "a warning or charging animal is judged at the present the player's screen draws it at")
 

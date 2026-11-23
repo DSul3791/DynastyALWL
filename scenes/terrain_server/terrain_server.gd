@@ -874,7 +874,7 @@ func _ready() -> void:
 		if target == 0:
 			return {}
 
-		var point: Vector3 = animals.jab_point(target, origin, dir, reach, 0.5, int(seen[0]), int(seen[1]))
+		var point: Vector3 = animals.jab_point(target, origin, dir, reach, 0.5, int(seen[0]), int(seen[1])) + animals.moved_since(target, int(seen[0]), int(seen[1]))   # struck where the player saw it; that spot on the body now
 		var zone: int = animals.hit_zone(target, point)
 		animals.report_hit(target, zone, point)   # before the damage: a killing blow still reaches the players near (the flesh sound and the flinch)
 		animals.damage(target, amount, peer, "spear")
