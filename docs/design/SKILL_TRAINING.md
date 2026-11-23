@@ -19,7 +19,7 @@ Dave, 23 Nov 2026: "All skills have a range from 1-100 so Basic 1-24, Advanced 2
 
 - Data: `data/items/skills.json` system `classes` (name and `from`); `SkillWeb.validate` fails if they stop lining up with `step` and `max_value`. Code: `src/shared/skill_classes.gd` (`class_of`, `class_rank`; no other dependency, so the client carries it). The class reads the whole level as shown (24.9 is Basic).
 - Shown in the Journal's Skills page (Name, Skill level, Class; sortable; `src/client/ui/goals/skill_table.gd`, `journal_view.gd`).
-- The old draft names (Novice, Apprentice, Journeyman, Expert in items/SKILLS_WEB_DESIGN.md) are replaced.
+- The old draft names (Novice, Apprentice, Journeyman, Expert in the retired docs/mirror/items/SKILLS_WEB_DESIGN.md) are replaced by these.
 
 ## The rule
 
