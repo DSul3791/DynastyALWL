@@ -14,6 +14,8 @@ const STUCK_MS := 700
 const STALL_MS := 600
 const GAP_MS := 500                     # a main-thread frame gap this long prints a FREEZE gap line (the one to trust)
 const LATE_MS := 250                    # the watch woke this late: its stuck reading is not trusted (the thread was starved)
+const DRAW_START := "draw start (every _process and deferred call done)"     # a stall after it is in the draw
+const DRAWN := "drawn (the draw done; next the physics step, then frame start)"   # a stall after it: the window's present, or physics
 
 const PrintQueueScript := preload("res://src/shared/print_queue.gd")
 static var printer = PrintQueueScript.new()   # the client's diagnostic lines, printed on a worker (D-LAG-1): a print on the main thread flushed the log 0.4-1.6 s
@@ -81,6 +83,10 @@ func start() -> void:
 	if _thread != null:
 		return
 
+	# The draw's own ends, so a stall after the last probed piece is placed (Lane A, 23 Nov 2026: the join's 9 s frame was "stuck after held
+	# item", the last _process piece, with no word whether the deferred calls, the draw or the next physics step held it).
+	RenderingServer.frame_pre_draw.connect(_on_pre_draw)
+	RenderingServer.frame_post_draw.connect(_on_post_draw)
 	beat()
 	_running = true
 	_thread = Thread.new()
@@ -91,9 +97,21 @@ func stop() -> void:
 	if _thread == null:
 		return
 
+	if RenderingServer.frame_pre_draw.is_connected(_on_pre_draw):
+		RenderingServer.frame_pre_draw.disconnect(_on_pre_draw)
+		RenderingServer.frame_post_draw.disconnect(_on_post_draw)
+
 	_running = false
 	_thread.wait_to_finish()
 	_thread = null
+
+
+func _on_pre_draw() -> void:
+	note(DRAW_START)
+
+
+func _on_post_draw() -> void:
+	note(DRAWN)
 
 
 func _watch() -> void:

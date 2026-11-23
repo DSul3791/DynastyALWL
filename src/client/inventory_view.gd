@@ -78,7 +78,7 @@ const PinnedRecipeScript := preload("res://src/client/ui/inventory/pinned_recipe
 const GoalBookScript := preload("res://src/client/ui/goals/goal_book.gd")          # the goal list from the server (protocol 119)
 const GoalsHudScript := preload("res://src/client/ui/goals/goals_hud.gd")           # the upper-right Goals box
 const GoalPlacardScript := preload("res://src/client/ui/goals/goal_placard.gd")     # the Goal Achieved placard
-const JournalScript := preload("res://src/client/ui/goals/journal_view.gd")         # the Journal: Index, Goals, Map (J, G, M)
+const JournalScript := preload("res://src/client/ui/goals/journal_view.gd")         # the Journal: Index, Goals, Skills, Map (J, G, M)
 const InventoryFrameScript := preload("res://src/client/ui/inventory/inventory_frame.gd")   # the redesign's three panels (step 3a)
 const YouColumnScript := preload("res://src/client/ui/inventory/you_column.gd")             # the gear wells and the live character (step 3d)
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
@@ -5903,7 +5903,7 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 	if cause != "cave-in":   # the cave-in has its own long sequence (cavein_death.gd)
 		_death_msec = Time.get_ticks_msec()
 
-	if cause != "passed out":   # passed out from cold (server_items.gd _cold_out_tick): the same fade, and the server says where they woke
+	if cause != "passed out" and cause != "rescued":   # rescued from a cave's rock (server_items _stuck_rescue), or passed out from cold (server_items.gd _cold_out_tick): the same fade, and the server says where they woke
 		show_notice("You died: %s" % cause)
 
 
@@ -5919,6 +5919,9 @@ func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
 
 	if _character != null:
 		_character.refresh()
+
+	if journal != null:
+		journal.refresh_skills()   # the Journal's Skills page, when it is on show
 
 
 # True when some skill's whole working level (row[1]) is higher in `new_rows` than in `old_rows`. Rust (a drop) and new rows do not count.

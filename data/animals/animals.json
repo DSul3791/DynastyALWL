@@ -29,6 +29,8 @@
 	"rewind_max_ms": 500,
 	"dodge_view_ms_note": "A fair dodge (defend rows with fair_dodge; robots over 60 and 120 ms links with loss, 23 Nov 2026: 0 of 9 side-steps from a goblin or bandit got clear): a blow on a player is judged dodge_view_ms plus the link's round trip after the server's blow, against where the player then is, so a step the player made while their screen showed the strike counts. Every animal that defends itself has it too since 23 Nov 2026 (coordinator for Dave: fights must be fair and playable; test_animal_fights.gd: with the rows as they were, a player who stepped aside as soon as the warning showed dodged no moose, buffalo, rhino, elephant, lion, tiger or alligator charge at all, even on a 0 ms link; with it, nearly every one). dodge_view_ms is how far behind the player's screen draws the server (the row clock's delay plus the trip down, about 0.35 s); dodge_late_max_ms caps it, so a slow or lying link cannot stretch it.",
 	"dodge_view_ms": 350,
+	"strike_min_s": 0.35,
+	"strike_min_s_note": "A charge's blow lands only once the charge has run this long (a defend row's own strike_min_s wins), so every screen draws the lunge before the blow (robots over 120 ms, 23 Nov 2026: a warthog charging from 1 m hit 0.18 s in, drawn 1.7 to 2.8 m short of the player). server_big_game.gd.",
 	"dodge_late_max_ms": 600,
 	"server_cap": 150,
 	"groups": {"enabled": true, "spacing_m": 3.0, "drift_m": 2.0, "scatter_deg": 25.0, "rain_bunch": 0.35, "wind_bunch": 0.25, "min_bunch": 0.5,
