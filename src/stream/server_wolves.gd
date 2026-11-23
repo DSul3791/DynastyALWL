@@ -294,7 +294,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 
 	# Prey draws a pack that is stalking or waiting (never one in the middle of a rush).
 	# A player's dog draws a prowling pack too (dog_companion_design.md 11).
-	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed":
+	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed" and float(pack.get("let_go_until", 0.0)) <= _clock:
 		var prey: int = _prey_near(c, float(w.get("distract_m", 80.0))) if pack["phase"] != "prowl" else _dog_near(c, float(w.get("distract_m", 80.0)))
 
 		if prey != 0:
@@ -862,13 +862,20 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		pack["timer"] = 0.0
 		return
 
+	if prey_id != 0 and host.animals.has(prey_id) and float(pack["timer"]) <= 0.0 and host.wall_between(c, host.animals[prey_id]["pos"]):
+		pack["prey"] = 0   # walled off (a player's dog in its pen) for the whole feed time: the pack gives it up rather than wait at the pen for ever,
+		pack["phase"] = "prowl"   # and takes no new prey for another feed time (else it picked the same dog again at once)
+		pack["home"] = c
+		pack["let_go_until"] = _clock + float(cfgw().get("feed_s", 60.0))
+		return
+
 	if prey_id != 0 and host.animals.has(prey_id):
 		var prey: Dictionary = host.animals[prey_id]
 
 		for m in members:
 			_walk(m, prey["pos"], float(def.get("sprint_mps", 10.5)), dt, infos)
 
-		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)):
+		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)) and not host.wall_between(members[0]["pos"], prey["pos"]):   # never through a wall or a shut gate (a dog in its pen)
 			if prey.has("companion_id"):
 				# A dog fights back and is bitten, a bite every dog_bite_s, through the one damage hook (its death is the companion's death).
 				pack["dog_bite_in"] = float(pack.get("dog_bite_in", 0.0)) - dt
