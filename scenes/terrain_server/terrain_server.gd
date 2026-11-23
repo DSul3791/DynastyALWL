@@ -1917,7 +1917,9 @@ func _update_weather() -> void:
 # sea level, lagged WEATHER_LAG_S, so a river rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn
 # is). The rows of the next few live tiles are followed too, so a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
 # shortcut: a tile's rivers rise by their own tile row; an upstream stretch in another row is not weighted in (physical world thread
-# 23 Nov 2026: nearly every catchment sits inside its own tile or the next).
+# 23 Nov 2026: nearly every catchment sits inside its own tile or the next). set_runoff is one number: any other live tile in another row
+# runs on the running tile's runoff. A row is forgotten once no live tile is in it (WATER_KEEP_MS after the last player left), so walking
+# back into a flooded row after that starts its rivers again from the baked flow and they swell over WEATHER_LAG_S.
 func _river_runoff(game_s: float, running: int) -> float:
 	var rows: Array = [running]
 
