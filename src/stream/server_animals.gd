@@ -56,7 +56,7 @@ var undergrowth: Callable          # (Vector3) -> bool, the spot is in bushes, f
 var player_loud: Callable          # () -> Array of the loud thing each player did lately (server_action_cues.loud_kinds: "blow", "craft", "hurt", "dig" or ""), player_positions order
 var player_stalk: Callable         # () -> Array of hunting skill factors (skills.json actions.stalk, 1.0 for a beginner) in player_positions order
 var fires: Callable                # () -> Array of Vector3, burning fires and torch bearers (server_items._lit_fires; wolves read the same list)
-var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 8 m for a torch)
+var fire_radius: Callable          # (Vector3) -> how far animals keep from that fire (server_items.fire_protect_m: a campfire's tier, 9 m for a torch or lantern burning in hand, a placed light's protect_m)
 var wind: Callable                 # () -> the weather dictionary ("wind" 0..1 and "wind_dir" radians, the way it blows toward)
 var weather_at: Callable          # (pos) -> the weather over that spot (terrain_server _weather_here: its tile row and 10 m height band, cached a second); unset: the one weather
 var weather_ahead: Callable        # (hours) -> the weather dictionary that many game hours from now (WeatherScript.state; animals_in_weather_design.md 3); tests

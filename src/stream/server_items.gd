@@ -7153,10 +7153,9 @@ func _wood_tick(spent: float) -> void:
 			_dirty = true
 
 	var heat: Array = []
-	var tiers: Dictionary = _cooking.get("fire_tiers", {})
 
-	for row in _lit_rows():
-		heat.append([row[0], float((tiers.get(_fire_class_of_state(int(row[1])), {}) as Dictionary).get("heat_radius_m", 4.0))])
+	for row in _heat_rows():   # lit campfires and lit Fireplaces and braziers dry the wood round them alike
+		heat.append([row[0], float((row[1] as Dictionary).get("heat_radius_m", 4.0))])
 
 	for id in _items:
 		var it: Dictionary = _items[id]
@@ -16039,7 +16038,7 @@ func peer_stalk_factors() -> Array:
 # The wolves ask every frame; the carried gear is worked out again only when the pack or what they wear changed (a native hash of the pack's
 # slots, counts, wear and instance data and the worn rows): walking every player's pack and bags each frame took a fifth of the server's main
 # thread at 16 players (load test 23 Nov 2026).
-var _wolf_gear: Dictionary = {}   # peer -> [signature, meat, meat_cooked, spear, torch]
+var _wolf_gear: Dictionary = {}   # peer -> [signature, meat, meat_cooked, spear] (the torch is torch_burning, read live)
 
 
 func wolf_info() -> Array:
