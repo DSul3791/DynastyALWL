@@ -38,7 +38,7 @@ func body(v, id: int, roles: Dictionary) -> Dictionary:
 	node.set_meta("player", player)
 	node.set_meta("model_row", {"clips": {"0": by_role.get("0", "")}})
 	v.add_child(node)
-	var b: Dictionary = {"node": node, "state": 0, "spd": 0.0, "id": id, "target": Vector3.ZERO, "kind": "deer", "samples": [], "heading": 0.0}
+	var b: Dictionary = {"node": node, "state": 0, "spd": 0.0, "id": id, "target": Vector3.ZERO, "kind": "deer", "samples": [], "heading": 0.0, "phase": 0.0, "step_count": -1, "contact_m": 0.5, "turn_rad_s": 6.0}
 	v._bodies[id] = b
 	return b
 
@@ -47,6 +47,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	var v = AnimalViewScript.new()
 	root.add_child(v)
 	await process_frame
+	v.set_process(false)      # the test calls the view's functions itself; its frame loop would draw the hand-made bodies
 	check(v.is_inside_tree(), "the view is in the tree")
 
 	# A hit on a standing body: the clip plays, cut at HIT_MAX_S (the clip is 2.9 s), and the state's clip waits until then.
