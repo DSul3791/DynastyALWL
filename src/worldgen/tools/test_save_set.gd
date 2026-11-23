@@ -127,10 +127,10 @@ func lost_file_case(block: String, periodic: bool, stone: int) -> bool:
 	it.action(1, Net.ACT_CHEST_PUT, it.inventory_of(1).numbers.find(stone), box_id, 20, Vector3.ZERO)
 	it.drop_in_world(it.table.number_of("stick"), 2, HERE + Vector3(0.0, 0.0, 2.0))   # a change in the area too, so the area file is written
 	var wanted: Array = state_of(it)
-	var area: String = ItemsScript.AREA_DIR + "/" + it.area_key_of(HERE.x, HERE.z) + ".json.tmp"
+	var area: String = ItemsScript.AREA_DIR + "/" + ItemsScript.area_key_of(HERE.x, HERE.z) + ".json.tmp"
 	var path: String = COPY + "/" + (area if block == "area" else block)
 	DirAccess.make_dir_recursive_absolute(path)
-	it._area_dirty[it.area_key_of(HERE.x, HERE.z)] = true   # what the rolling check would mark within a save interval (_save_sweep)
+	it._area_dirty[ItemsScript.area_key_of(HERE.x, HERE.z)] = true   # what the rolling check would mark within a save interval (_save_sweep)
 	it._dirty = true
 	it._async_writes = periodic
 	it.save()
