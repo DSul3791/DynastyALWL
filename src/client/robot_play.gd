@@ -37,6 +37,8 @@ const JUMP_SLACK := 2.0          # a drawn step may be this much over the top sp
 const JUMP_FLOOR_M := 1.5
 const PLAYER_TOP_MPS := 9.5      # terrain_client RUN_SPEED 9.0
 const FRESH_S := 1.5             # a body just drawn may still settle onto its first samples
+const FREEZE_FRAME_S := 0.25      # a frame longer than this is a freeze: the steps in the THAW_MS after it are its catch-up (counted, not judged)
+const THAW_MS := 1000
 const INSIDE_M := 0.3
 const RESPAWN_M := 40.0          # a drawn player farther than this in one frame was moved on purpose (respawn, rescue), not a jump
 var _lay_ms: Dictionary = {}      # peer -> when this client last drew that player lying (the jump check's rescue excuse)
@@ -53,6 +55,8 @@ var robot_name: String = "Robot"
 var plan: String = "first_hours"
 var admin: bool = false
 var _timeout_s: float = INF
+var _thaw_ms: int = 0             # until this tick, steps are the catch-up after a long frame (a freeze): counted in _after_freeze, not judged
+var _after_freeze: int = 0         # drawn steps over the allowance in the second after a frame over FREEZE_FRAME_S
 var _frame_usec: int = 0           # the last frame's engine microseconds (_process: the real frame length for the jump checks)
 
 var _pack_msec: int = 0          # last pack message (full or slots) from the server
@@ -237,6 +241,13 @@ func _process(delta: float) -> void:
 	_frame_usec = usec
 
 	var now: int = Time.get_ticks_msec()
+
+	if frame_s > FREEZE_FRAME_S:
+		# A freeze (Lane A, 23 Nov 2026: 32 of 52 came as a bought animal model loaded on first sight): the drawn bodies catch up over the
+		# next frames, so a step in the next second is the freeze's echo, not a jump; the freeze itself is the FREEZE gap / HITCH line.
+		_thaw_ms = now + THAW_MS
+
+	var thawing: bool = now < _thaw_ms
 	var me: Vector3 = client.body.global_position
 	var view: Node = client._animal_view_node
 	var present: Dictionary = {}
@@ -259,11 +270,13 @@ func _process(delta: float) -> void:
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
 				var allowed: float = maxf(float(_top_mps.get(num, 15.0)) * frame_s * JUMP_SLACK, JUMP_FLOOR_M)
 
-				if now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed:
+				if now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed and thawing:
+					_after_freeze += 1
+				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed:
 					_fail("jump", "animal%d" % id, "drawn animal %d (species %d) moved %.1f m in one %.0f ms frame (top speed %.1f m/s), %s -> %s" % [
 						id, num, step, frame_s * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
 
-				if num == _kind_sp and now - int(was[1]) > int(FRESH_S * 1000.0):
+				if num == _kind_sp and now - int(was[1]) > int(FRESH_S * 1000.0) and not thawing:
 					var st: Array = _kstat.get(num, [0, 0.0, 0.0, 0])
 					st[0] = int(st[0]) + 1
 					st[1] = maxf(float(st[1]), step)
@@ -338,15 +351,16 @@ func _check_held(pv: Node) -> void:
 
 		var rig: Node3D = b["rig"]
 		var skel: Skeleton3D = rig.get("skeleton") as Skeleton3D
-		var mount: Node3D = rig.get("hand_mount_r") as Node3D
+		var left: bool = str(b.get("held_kind", "")) == "bow"   # a bow is held in the left hand (player_view.gd hold_in)
+		var mount: Node3D = rig.get("hand_mount_l" if left else "hand_mount_r") as Node3D
 
 		if skel == null or mount == null:
 			continue
 
-		var bone: int = skel.find_bone("RightHand")
+		var bone: int = skel.find_bone("LeftHand" if left else "RightHand")
 
 		if bone < 0:
-			bone = skel.find_bone("mixamorig_RightHand")
+			bone = skel.find_bone("mixamorig_LeftHand" if left else "mixamorig_RightHand")
 
 		if bone < 0:
 			continue
@@ -359,14 +373,12 @@ func _check_held(pv: Node) -> void:
 		var d: float = mount.global_position.distance_to(hand)
 		_held_looks += 1
 
-		var posed: bool = str(b.get("held_kind", "")) == "bow"   # a bow is posed off the mount by design: before the body when raised or drawn, at the side lowered (player_view.gd _pose_bow, 162)
-
-		if d > HAND_M or (item.get_parent() != mount and not posed):
+		if d > HAND_M or item.get_parent() != mount:
 			_held_bad[peer] = int(_held_bad.get(peer, 0)) + 1
 
 			if int(_held_bad[peer]) >= 4:   # two seconds running: not one frame of a swing
-				_fail("held", "player%d" % peer, "remote player %d's held item (number %d): its hand mount is %.2f m from the right hand bone%s (hand %s, mount %s)" % [
-					peer, int(b.get("held", 0)), d, "" if item.get_parent() == mount else ", and the item is not on the mount", str(hand.snapped(Vector3.ONE * 0.01)), str(mount.global_position.snapped(Vector3.ONE * 0.01))])
+				_fail("held", "player%d" % peer, "remote player %d's held item (number %d): its hand mount is %.2f m from the %s hand bone%s (hand %s, mount %s)" % [
+					peer, int(b.get("held", 0)), d, "left" if left else "right", "" if item.get_parent() == mount else ", and the item is not on the mount", str(hand.snapped(Vector3.ONE * 0.01)), str(mount.global_position.snapped(Vector3.ONE * 0.01))])
 		else:
 			_held_bad.erase(peer)
 
@@ -3605,7 +3617,7 @@ const SEEN_POSE_S := 3.0       # each bow flag held this long
 const SEEN_CAST_M := 8.0       # Robot 1 must draw Robot 2's float within this of Robot 2
 const SEEN_AWAY_M := 8.0       # Robot 2 walks this far from its cast spot: the line comes in (the server's say_away)
 const WIGGLE_S := 15.0
-const WIGGLE_LEG_S := 0.5
+const WIGGLE_LEG_S := [0.5, 0.7, 0.4, 0.6]   # leg lengths in turn: uneven, so no draw delay fits a whole period later
 
 
 # Robot 2 raises its bow (held_item flags 1), draws it (2), lowers it; Robot 1 must see the more bits 2 then 4 and draw the bow pose and clip.
@@ -3654,7 +3666,8 @@ func _seen() -> void:
 
 		if not raised or not drawn:
 			_fail("seen", "bow", "Robot 2 raised then drew its bow; Robot 1 drew %s (wanted more bit 2 with bow_raised, then bit 4 with bow_drawn)" % keys)
-		elif not seen_more.keys().any(func(k): return str(k).split("/")[2].contains("bow_raised")) or not seen_more.keys().any(func(k): return str(k).split("/")[2].contains("bow_drawn")):
+		elif not seen_more.keys().any(func(k): return str(k).begins_with("2/bow_raised/") and str(k).split("/")[2].contains("bow_raised")) \
+				or not seen_more.keys().any(func(k): return (str(k).begins_with("4/bow_drawn/") or str(k).begins_with("6/bow_drawn/")) and str(k).split("/")[2].contains("bow_drawn")):
 			_fail("seen", "bow_clip", "Robot 1 had the bow flags right but never played the bow clips (idle_bow_raised, idle_bow_drawn): %s" % keys)
 
 	await _tg_go("to_water")
@@ -3708,12 +3721,19 @@ func _seen() -> void:
 		robot_name, cast, str(water.round()), "reached" if there else "short of it", str(fl.round()) if fl != Vector3.INF else "none", off, away_m, str(fl_after.round()) if fl_after != Vector3.INF else "none"])
 	_write(_share("seen_done.txt"), "done")
 
+	var line_node: Node3D = b_now.get("line", null) as Node3D if not b_now.is_empty() else null
+	FreezeWatchScript.printer.line("ROBOT %s SEEN line: drawn %s" % [robot_name, "none" if line_node == null or not is_instance_valid(line_node) else ("shown" if line_node.visible else "hidden")])
+
 	if fl == Vector3.INF:
 		_fail("seen", "cast", "Robot 2 cast a rod at the water (it was told %s); Robot 1 drew no float" % cast)
 	elif off > SEEN_CAST_M:
 		_fail("seen", "cast_far", "Robot 1 drew Robot 2's float %.1f m from it (at most %.0f)" % [off, SEEN_CAST_M])
 
-	if fl != Vector3.INF and fl_after != Vector3.INF:
+	if b_after.is_empty():
+		_note("seen", "Robot 2 was not drawn 3 s after it walked off: the float's end is not tested")
+	elif float(away_m) < SEEN_AWAY_M:
+		_note("seen", "Robot 2 walked only %s m from its cast (blocked): the float's end is not tested" % away_m)
+	elif fl != Vector3.INF and fl_after != Vector3.INF:
 		_fail("seen", "cast_kept", "Robot 2 walked %s m from its cast; Robot 1 still draws its float 3 s later" % away_m)
 
 
@@ -3732,6 +3752,7 @@ func _wiggle() -> void:
 	var end: int = Time.get_ticks_msec() + int(WIGGLE_S * 1000.0)
 	var dir: Vector3 = Vector3(1.0, 0.0, 0.0)
 	var next_leg: int = 0
+	var legs: int = 0
 
 	if one:
 		_key("run", true)
@@ -3742,7 +3763,8 @@ func _wiggle() -> void:
 			if Time.get_ticks_msec() >= next_leg:
 				dir = -dir
 				_face(dir)
-				next_leg = Time.get_ticks_msec() + int(WIGGLE_LEG_S * 1000.0)
+				next_leg = Time.get_ticks_msec() + int(float(WIGGLE_LEG_S[legs % WIGGLE_LEG_S.size()]) * 1000.0)
+				legs += 1
 
 			path.append("%d %.3f %.3f" % [_now_ms(), client.body.global_position.x, client.body.global_position.z])
 		else:
@@ -3777,6 +3799,9 @@ func _wiggle() -> void:
 	var offs: Array = []
 
 	for shift in range(0, 1525, 25):
+		if shift % 250 == 0:
+			await get_tree().process_frame   # the search over a few thousand samples, spread over frames
+
 		var trial: Array = []
 
 		for d in drawn:
@@ -3799,8 +3824,8 @@ func _wiggle() -> void:
 		_fail("wiggle", "none", "Robot 2 never drew Robot 1 during its wiggle (%d drawn samples, %d path points): nothing measured" % [drawn.size(), pts.size()])
 		return
 
-	FreezeWatchScript.printer.line("ROBOT %s WIGGLE Robot 1 ran back and forth every %.1f s for %.0f s: drawn against its own place %d ms before (the best-fitting draw delay) median %.2f m, 95th %.2f m, worst %.2f m (%d frames)" % [
-		robot_name, WIGGLE_LEG_S, WIGGLE_S, best_shift, float(offs[offs.size() >> 1]), float(offs[int(offs.size() * 0.95)]), float(offs[-1]), offs.size()])
+	FreezeWatchScript.printer.line("ROBOT %s WIGGLE Robot 1 ran back and forth (legs of %s s) for %.0f s: drawn against its own place %d ms before (the best-fitting draw delay) median %.2f m, 95th %.2f m, worst %.2f m (%d frames)" % [
+		robot_name, str(WIGGLE_LEG_S), WIGGLE_S, best_shift, float(offs[offs.size() >> 1]), float(offs[int(offs.size() * 0.95)]), float(offs[-1]), offs.size()])
 
 
 # Robot 1's own place at unix ms `ms` from its path lines [ms, x, z] (in time order), straight between them; INF outside the path's span.
@@ -3832,7 +3857,7 @@ static func _wiggle_at(pts: Array, ms: int) -> Vector2:
 # BITTEN line with the nearest drawn body. tools/robot_kinds.py compares the two robots' A lines (do both clients draw the same?) and
 # the server's AUDIT enemy_hit lines (the drawn gap from where the server had the animal when it struck). Feet against ground (slides)
 # needs the bought models, which cloud clones leave out (tools/skip_models.sh): the code-built bodies step by the ground speed itself.
-const KIND_S := 70.0
+const KIND_S := 70.0   # a round: hunt one after another of the kind until it is used (a wolf pack falls fast)
 const KIND_ROUNDS := 2
 const KIND_A_MS := 100
 
@@ -3857,17 +3882,34 @@ func _kind(kind_name: String) -> void:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
 		await _check_pack("spear to hand")
 
+	if kind_name == "wolf":
+		# A pack within town_keep_m (300 m) of the starter town does not stalk, rush or hunt (animals.json wolves.town_keep_m): placed at the
+		# spawn it stood still and fell to jabs (Lane A, 23 Nov 2026). Both robots run out first, as plan wolves does.
+		var start: Vector3 = client.body.global_position
+		var _out: bool = await _run_to(start + Vector3(0.0, 0.0, -WOLF_FAR_M), 120.0, 6.0)
+		var out_m: float = Vector2(client.body.global_position.x - start.x, client.body.global_position.z - start.z).length()
+
+		if out_m < 320.0:
+			_note("kind", "only %.0f m from the spawn after 120 s of running: the pack may keep off (town_keep_m)" % out_m)
+
+		await _tg_go("kind_out")
+
 	for round_n in KIND_ROUNDS:
 		if robot_name.ends_with("1"):
 			client.net.admin_place.rpc_id(1, "animal", client.body.global_position - client.body.global_transform.basis.z * 15.0, kind_name)
 
 		await _wait(3.0)
-		var _found: bool = await _hunt(sp, KIND_S)
+		var round_end: int = Time.get_ticks_msec() + int(KIND_S * 1000.0)
+
+		while Time.get_ticks_msec() < round_end - 5000:
+			if not await _hunt(sp, float(round_end - Time.get_ticks_msec()) / 1000.0):
+				break   # none of the kind left in sight
+
 		await _wait(2.0)
 
 	var st: Array = _kstat.get(sp, [0, 0.0, 0.0, 0])
-	FreezeWatchScript.printer.line("ROBOT %s KIND %s %d frames %d largest_step %.2f m largest_x %.2f over_1m %d inside_other %d lowest_health %d" % [
-		robot_name, kind_name, sp, int(st[0]), float(st[1]), float(st[2]), int(st[3]), _inside_other, _lowest_health])
+	FreezeWatchScript.printer.line("ROBOT %s KIND %s %d frames %d largest_step %.2f m largest_x %.2f over_1m %d inside_other %d lowest_health %d after_freeze %d" % [
+		robot_name, kind_name, sp, int(st[0]), float(st[1]), float(st[2]), int(st[3]), _inside_other, _lowest_health, _after_freeze])
 	FreezeWatchScript.printer.line("ROBOT %s SLIDE %s model_samples %d moving %d standing_clip %d rate_top %d rate_bottom %d feet_off %d feet_ground %.2f..%.2f%s" % [
 		robot_name, kind_name, int(_slide[0]), int(_slide[1]), int(_slide[2]), int(_slide[3]), int(_slide[4]), int(_slide[5]),
 		float(_slide[6]) if int(_slide[1]) > 0 else 0.0, float(_slide[7]), "" if int(_slide[0]) > 0 else " (no bought models here: code-built bodies step by the ground speed)"])
