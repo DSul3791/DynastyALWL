@@ -257,8 +257,9 @@ static func shows(kind: String, level: int, c: Dictionary) -> bool:
 
 func _draw(player: Vector3, level: int) -> void:
 	var reach: float = reach_m(level, cfg)
-	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": []}
+	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
+	var halo: float = halo_alpha(level, cfg)
 
 	for s in _signs:
 		var spot: Vector2 = s[1]
@@ -268,11 +269,48 @@ func _draw(player: Vector3, level: int) -> void:
 
 		_lay(str(s[0]), spot, float(s[2]), rows)
 
+		if halo > 0.0:
+			_lay_halo(str(s[0]), spot, float(s[2]), rows)
+
+	if _nodes.has("halo") or not (rows["halo"] as Array).is_empty():
+		_fill("halo", rows["halo"])
+		(((_nodes["halo"] as MultiMeshInstance3D).multimesh.mesh as PrimitiveMesh).material as StandardMaterial3D).albedo_color.a = halo
+		rows.erase("halo")   # not counted in `shown`: a halo is the look of a sign, not a sign
+
 	shown = 0
 
 	for layer in rows:
 		_fill(layer, rows[layer])
 		shown += (rows[layer] as Array).size()
+
+
+# How strongly a skilled eye picks sign out (Dave 23 Nov 2026: "if you have a higher tracking skill maybe they get highlighted or glow a
+# little"): nothing under halo_from, halo_alpha[0] there rising to halo_alpha[1] at 100.
+static func halo_alpha(level: int, c: Dictionary) -> float:
+	var from: int = int(c.get("halo_from", 10))
+
+	if level < from:
+		return 0.0
+
+	var span: Array = c.get("halo_alpha", [0.06, 0.28])
+	return lerpf(float(span[0]), float(span[1]), clampf(float(level - from) / maxf(100.0 - float(from), 1.0), 0.0, 1.0))
+
+
+# The steady pale patch under a shown sign: round under a heap or scrape, long under a line of prints (along it).
+func _lay_halo(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
+	var y: float = _heap_ground(spot)
+
+	if is_nan(y):
+		return
+
+	var size: float = float(cfg.get("halo_m", 1.0))
+	var long: float = size
+
+	if kind == "prints":
+		var most: Array = cfg.get("prints", [4, 6])
+		long = maxf(size, float(most[1]) * float(cfg.get("print_step_m", 0.6)))
+
+	(rows["halo"] as Array).append([Vector3(spot.x, y + 0.02, spot.y), yaw, Vector3(size, 1.0, long)])
 
 
 # The small pieces of one sign: [position, yaw, scale] rows into the mesh it uses.
@@ -360,7 +398,8 @@ func _fill(layer: String, rows: Array) -> void:
 
 	for n in rows.size():
 		var row: Array = rows[n]
-		var rot: Basis = Basis(Vector3.UP, PI * 0.5 - float(row[1])).scaled(Vector3.ONE * float(row[2]))   # the mesh's long side (z) along the yaw
+		var scale: Vector3 = row[2] if row[2] is Vector3 else Vector3.ONE * float(row[2])
+		var rot: Basis = Basis(Vector3.UP, PI * 0.5 - float(row[1])) * Basis.from_scale(scale)   # the mesh's long side (z) along the yaw
 		mm.set_instance_transform(n, Transform3D(rot, row[0] + Vector3(0.0, 0.01, 0.0)))
 
 
@@ -369,6 +408,15 @@ func _mesh(layer: String) -> Mesh:
 	material.roughness = 1.0
 
 	match layer:
+		"halo":
+			var plane: PlaneMesh = PlaneMesh.new()
+			plane.size = Vector2(1.0, 1.0)
+			material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			material.albedo_texture = _glow_tex()
+			var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
+			material.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]), 0.0)
+			plane.material = material
+			return plane
 		"pellet", "deer_pellet":
 			var sphere: SphereMesh = SphereMesh.new()
 			sphere.radius = 0.011   # a little over a real pellet (about 1 cm across), so a heap reads from standing height
@@ -438,25 +486,12 @@ func _spot(player: Vector3, level: int) -> void:
 
 # A soft pale patch on the ground round a spotted sign, swelling and fading over glow_s: the eye catching it, not a marker.
 func _glow(at: Vector3, size: float) -> void:
-	if _glow_texture == null:
-		var gradient: Gradient = Gradient.new()
-		gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
-		gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
-		var tex: GradientTexture2D = GradientTexture2D.new()
-		tex.gradient = gradient
-		tex.fill = GradientTexture2D.FILL_RADIAL
-		tex.fill_from = Vector2(0.5, 0.5)
-		tex.fill_to = Vector2(0.5, 0.0)
-		tex.width = 64
-		tex.height = 64
-		_glow_texture = tex
-
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(size, size)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.roughness = 1.0   # lit like the ground round it: lighter by day, as dark as the rest at night (no glowing marker)
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	material.albedo_texture = _glow_texture
+	material.albedo_texture = _glow_tex()
 	var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
 	material.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]), 0.0)
 	plane.material = material
@@ -477,3 +512,21 @@ func _glow(at: Vector3, size: float) -> void:
 	tween.tween_interval(glow_s * 0.55)
 	tween.tween_property(material, "albedo_color:a", 0.0, glow_s * 0.3)
 	tween.tween_callback(node.queue_free)
+
+
+# The soft round fall-off the glow and the halo share (made once).
+func _glow_tex() -> Texture2D:
+	if _glow_texture == null:
+		var gradient: Gradient = Gradient.new()
+		gradient.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+		gradient.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+		var tex: GradientTexture2D = GradientTexture2D.new()
+		tex.gradient = gradient
+		tex.fill = GradientTexture2D.FILL_RADIAL
+		tex.fill_from = Vector2(0.5, 0.5)
+		tex.fill_to = Vector2(0.5, 0.0)
+		tex.width = 64
+		tex.height = 64
+		_glow_texture = tex
+
+	return _glow_texture

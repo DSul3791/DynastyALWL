@@ -75,13 +75,15 @@ func _init() -> void:
 	var near: Dictionary = SignsScript.routes_near({Vector2i(0, 0): routes}, Vector2(100.0, 60.0), 15.0)
 	check(near.size() == 1 and (near[Vector2i(0, 0)] as Array).size() == 1 and (near[Vector2i(0, 0)][0][1] as PackedVector2Array).size() == routes[2][1].size(), "only the run that comes within reach is worked out, whole")
 
-	# Tracking: nothing untrained, latrines and droppings from see_level, scrapes and prints from fine_level; reach grows to 100.
-	var see: int = int(c["see_level"])
-	var fine: int = int(c["fine_level"])
-	check(see > 1 and fine > see, "signs need some Tracking (see_level %d, fine_level %d)" % [see, fine])
-	check(is_zero_approx(SignsScript.reach_m(see - 1, c)) and not SignsScript.shows("latrine", see - 1, c), "just under see_level no sign shows")
-	check(SignsScript.shows("latrine", see, c) and SignsScript.shows("droppings", see, c) and not SignsScript.shows("prints", fine - 1, c), "from see_level latrines and droppings, not prints")
-	check(SignsScript.shows("scrape", fine, c) and SignsScript.shows("prints", fine, c), "from fine_level scrapes and prints too")
+	# Tracking (Dave 23 Nov 2026: "signs should just be there and if you have a higher tracking skill maybe they get highlighted or glow
+	# a little"): every kind shows to everyone; skill reaches farther and, from halo_from, lays a faint steady highlight that grows.
+	for kind in ["latrine", "droppings", "scrape", "prints"]:
+		check(SignsScript.shows(kind, 0, c) and SignsScript.shows(kind, 1, c), "%s shows untrained" % kind)
+	check(SignsScript.reach_m(0, c) >= 15.0 - 0.01 and SignsScript.reach_m(1, c) >= 15.0 - 0.01, "untrained, signs show within 15 m")
+	var from: int = int(c["halo_from"])
+	check(is_zero_approx(SignsScript.halo_alpha(from - 1, c)) and SignsScript.halo_alpha(from, c) > 0.0, "no highlight under halo_from, a faint one from it")
+	check(SignsScript.halo_alpha(50, c) > SignsScript.halo_alpha(25, c) and is_equal_approx(SignsScript.halo_alpha(100, c), float(c["halo_alpha"][1])), "the highlight grows with skill to halo_alpha at 100")
+	check(SignsScript.halo_alpha(100, c) < float(c["glow_alpha"]), "even at 100 the steady highlight is fainter than the spot glow")
 	check(is_equal_approx(SignsScript.reach_m(int(c["see_level"]), c), float(c["draw_m"][0])) and is_equal_approx(SignsScript.reach_m(100, c), float(c["draw_m"][1])), "seen from 15 m at first, 30 m at 100")
 
 	# The node: nothing while loading; drawn round the player once loaded; gone when the routes go (settled ground).
