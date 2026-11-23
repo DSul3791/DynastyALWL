@@ -125,7 +125,7 @@ func run() -> void:
 
 	# The end: whatever is on the ground near comes back, the queue empties, and one last look.
 	r._step = "fuzz end"
-	await _pick_up_all()
+	_pick_up_all()
 	var limit: int = Time.get_ticks_msec() + 30000
 
 	while r._queue_left > 0 and Time.get_ticks_msec() < limit:
@@ -209,7 +209,7 @@ func _one() -> void:
 	var a: int = _slot(true)
 
 	if a < 0:
-		await _pick_up_all()
+		_pick_up_all()
 		return
 
 	if roll < 18:   # drag a pack stack onto another well: a move, a swap or a merge
@@ -245,7 +245,7 @@ func _one() -> void:
 		view._drop_selected(rng.randf() < 0.5)
 		_did("drop")
 	elif roll < 72:
-		await _pick_up_all()
+		_pick_up_all()
 		_did("pickup")
 	elif roll < 78:
 		view.bulk(rng.randi() % 4)
