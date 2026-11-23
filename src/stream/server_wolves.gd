@@ -653,7 +653,7 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		if not _ring_step(pack, m, p, speed, dt, infos):
 			continue   # circling, winding up or backing off: no bite this step
 
-		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
+		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("lunge_reach_m", 2.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():   # a ring lunge comes right in (robots 23 Nov 2026: biting from 3 m it was drawn just outside a spear's 3 m)
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
 			pack["turn"][id] = {"step": "recover", "t": 0.0}   # one bite a lunge, a moment standing in reach (the opening), then back to its place
 			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))   # a higher-level wolf bites harder
