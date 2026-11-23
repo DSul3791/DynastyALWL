@@ -190,6 +190,87 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	journal.show_page(Journal.GOALS)
 	journal.show_page(Journal.MAP)
 	check(layer.find_children("MapPage", "", true, false) == pages, "the same map page comes back (its drawn blocks are kept)")
+
+	# The Skills page (Dave 23 Nov 2026): a table, Name, Skill level, Class, alphabetical at first; every heading sorts, again the other way.
+	# Rows: [index, working, rusty, cap, trained, practised today, effective, % to next, % of the day left] (server_items.gd _send_skills).
+	view.skill_rows = [[0, 10, 0, 25, 0, 0, 10, 50, 100], [4, 30, 0, 50, 1, 0, 30, 0, 100], [5, 24, 0, 25, 0, 1, 24, 99, 40], [7, 60, 1, 75, 2, 0, 60, 10, 100], [8, 80, 0, 100, 3, 0, 80, 5, 100]]
+	journal.show_page(Journal.INDEX)
+	text.clear()
+	_collect(layer, text)
+	check(text.has("Skills") and text.has("Best: Mining 80, Master."), "the Index lists Skills and names the best skill with its class")
+	check(text.any(func(t): return str(t).begins_with("J  Index      G  Goals      M  Map")), "the Index's key line names the bound keys")
+	journal.show_page(Journal.SKILLS)
+	await process_frame
+	check(journal.page == Journal.SKILLS and layer.get_children().filter(func(c): return c.name == "Journal").size() == 1, "the Index opens the Skills page in the same window")
+	var tables: Array = layer.find_children("SkillTable", "ScrollContainer", true, false)
+	check(tables.size() == 1, "the table's rows sit in a scroll list")
+	var read_table: Callable = func() -> Array:
+		var lines: Array = []
+
+		for line in layer.find_children("Skill_*", "Button", true, false):
+			var cells: Array = line.find_children("*", "Label", true, false)
+			lines.append([str(line.name).substr(6), str(cells[0].text), str(cells[1].text), str(cells[2].text), str(line.tooltip_text)])
+
+		return lines
+
+	var shown: Array = read_table.call()
+	var names: Array = shown.map(func(l): return str(l[1]).to_lower())
+	var abc: Array = names.duplicate()
+	abc.sort()
+	check(shown.size() >= 20 and names == abc, "every skill is listed, alphabetically at first (%d: %s)" % [shown.size(), str(names.slice(0, 4))])
+	var by: Dictionary = {}
+
+	for l in shown:
+		by[l[0]] = l
+
+	check(by["gathering"].slice(1, 4) == ["Gathering", "10", "Basic"] and by["athletics"].slice(1, 4) == ["Athleticism", "30", "Advanced"] and by["woodcutting"].slice(1, 4) == ["Woodcutting", "60", "Expert"] and by["mining"].slice(1, 4) == ["Mining", "80", "Master"], "each row shows Name, Skill level and Class")
+	check(by["trades"].slice(1, 4) == ["Trades", "24", "Basic"] and str(by["trades"][4]).contains("Needs training to go further (ask Hob"), "a skill at the top of Basic says it needs training, and who teaches it")
+	check(by["broadswords"][2] == "locked" and by["broadswords"][3] == "" and str(by["broadswords"][4]).contains("needs Swordplay 15"), "a locked skill says so and what opens it")
+	check(not by.has("parry"), "a planned skill waiting on a locked need is left out")
+	var heads: Array = layer.find_children("SkillHeadings", "HBoxContainer", true, false)[0].get_children().map(func(b): return str(b.text))
+	check(heads == ["Name ▲", "Skill level", "Class"], "the headings, the sorted one marked (%s)" % str(heads))
+	var levels: Callable = func(lines: Array) -> Array: return lines.map(func(l): return 0 if l[2] == "locked" else int(l[2]))
+	journal.sort_skills("level")
+	shown = read_table.call()
+	var asc: Array = levels.call(shown)
+	var sorted_asc: Array = asc.duplicate()
+	sorted_asc.sort()
+	check(asc == sorted_asc and journal.skill_descending == false, "Skill level sorts lowest first")
+	journal.sort_skills("level")
+	shown = read_table.call()
+	check(shown[0][0] == "mining" and shown[1][0] == "woodcutting" and journal.skill_descending, "clicking it again sorts highest first (%s)" % str(shown.slice(0, 2).map(func(l): return l[0])))
+	journal.sort_skills("class")
+	shown = read_table.call()
+	var ranks: Array = shown.map(func(l): return ["", "Basic", "Advanced", "Expert", "Master"].find(str(l[3])))
+	var sorted_ranks: Array = ranks.duplicate()
+	sorted_ranks.sort()
+	check(ranks == sorted_ranks and shown[-1][0] == "mining" and not journal.skill_descending, "Class sorts Basic, Advanced, Expert, Master (locked first)")
+	var basics: Array = shown.filter(func(l): return l[3] == "Basic").map(func(l): return str(l[1]))
+	var basics_abc: Array = basics.duplicate()
+	basics_abc.sort()
+	check(basics == basics_abc, "rows in the same class stay alphabetical")
+	journal.sort_skills("class")
+	check(read_table.call()[0][0] == "mining", "and the other way, Master first")
+	journal.sort_skills("name")
+	check(read_table.call()[0][1] == "Athleticism" and not journal.skill_descending, "Name sorts A to Z again")
+	journal.select_skill("trades")
+	text.clear()
+	_collect(layer, text)
+	check(text.has("Skill level 24 of 100, Basic.") and text.has("LESSONS") and text.any(func(t): return str(t).begins_with("Hob: up to level")), "selecting a row shows its level, class and lessons")
+	check(text.has("Basic  1 to 24: rises by use") and text.has("Advanced  25 to 49: a trainer opens it") and text.has("Expert  50 to 74: a trainer opens it") and text.has("Master  75 to 100: a trainer opens it"), "the four classes are listed with their ranges")
+	view.skill_rows[2] = [5, 25, 0, 50, 1, 0, 25, 0, 100]
+	journal.refresh_skills()
+	text.clear()
+	_collect(layer, text)
+	check(journal.page == Journal.SKILLS and journal.skill_selected == "trades" and text.has("Skill level 25 of 100, Advanced."), "a new skills message refreshes the page in place, after training Advanced")
+	journal.select_skill("mining")
+	text.clear()
+	_collect(layer, text)
+	check(text.has("Rises by use, up to 100.") and text.has("5% of the way to 81."), "in Master use goes on to 100")
+	await process_frame
+	var head_cells: Array = layer.find_children("SkillHeadings", "HBoxContainer", true, false)[0].get_children()
+	var row_cells: Array = layer.find_children("Skill_mining", "Button", true, false)[0].find_children("*", "Label", true, false)
+	check(absf(head_cells[1].global_position.x - row_cells[1].global_position.x) < 2.0 and absf(head_cells[2].global_position.x - row_cells[2].global_position.x) < 2.0, "each heading sits over its column (%s / %s)" % [str(head_cells[1].global_position.x), str(row_cells[1].global_position.x)])
 	journal.close()
 	view.free()
 
