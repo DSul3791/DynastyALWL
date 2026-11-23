@@ -61,6 +61,12 @@ over; then the state's clip blends back.
 - A killed animal with a death clip falls where it is drawn and goes 0.3 s after the clip ends (2 s at most, as the carcass is
   already on the ground there); one without goes at once, as before. A lying animal (19) shows no standing hit.
 
+**Idle life.** A model row may list `idle_variants`, keyed by role (for now only `"0"`, graze or stand): the model's own other idle
+clips (look about, sniff, scratch, shake, sit). A grazing animal plays its own clip for 2 to 12 s first (so a herd does not move as one),
+then one variant once through its own length (at least 1 s), then its own clip for 6 to 16 s, and so on. Moving, or any other state,
+starts the next stop on its own clip again. Names are checked against `data/animals/model_clips.json` by `tools/model_clips.py`.
+Test: `src/worldgen/tools/test_animal_idle.gd`.
+
 ## How to confirm (Lane A)
 
 - The creature check or the game log lists `feet move X m/s` or `feet measured X m/s, too far from the row's Y` for each walk and run.
