@@ -132,7 +132,7 @@ func _keys() -> void:
 	_write(KEYS_TEMP, JSON.stringify({"auto_pickup": {"key": KEY_B, "ctrl": false, "shift": false}}))
 	Bindings.use_path(KEYS_TEMP)
 	var note: String = Bindings.shared_note()
-	check(note.contains("Auto pickup") and note.contains("Shield") and note.contains("Esc > Controls"), "a key shared by two actions is named, with where to change it (got %s)" % note)
+	check(note.contains("Auto pickup") and note.contains("Shield") and note.contains("Esc > Controls") and note.count("does both") == 1, "a key shared by two actions is named, with where to change it (got %s)" % note)
 	# Damaged entries are skipped, not a stopped start.
 	_write(KEYS_TEMP, JSON.stringify({"interact": {"key": [1], "ctrl": "yes", "shift": {}}, "open": "F", "jump": {"key": "space"}, "map": {"key": KEY_N, "ctrl": [true]}}))
 	Bindings.use_path(KEYS_TEMP)
