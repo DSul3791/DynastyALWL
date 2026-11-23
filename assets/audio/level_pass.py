@@ -35,7 +35,7 @@ MASK_DB = 3.0             # a short transient a few dB under a steady bed is sti
 SOURCES = {
     "steps": "data/sound/step_levels.json (surface_db, gait_db)",
     "animal steps": "src/client/slot_sounds.gd play: volume 0 dB at strength 1, CREATURE_STEP_UNIT_M and CREATURE_STEP_REACH_M, max_db 3 (Godot default)",
-    "calls": "src/client/creature_sounds.gd KINDS db, unit and reach (max_distance = reach x 1.2); max_db = db + NEAR_RISE_DB (max NEAR_MAX_DB)",
+    "calls": "src/client/creature_sounds.gd KINDS db, unit and reach (max_distance = reach x 1.2); max_db = db + NEAR_RISE_DB (max the kind's near_max, else NEAR_MAX_DB)",
     "blows": "src/client/hit_sounds.gd BASE_DB, unit 8 m, reach 120 m",
     "wind": "src/client/sound_stage.gd wind_low: WIND_LIFT_DB + 0.8 x (0.0035 + 0.006 x strength)",
     "rain": "src/client/weather_sounds.gd LOOP_DB",
@@ -122,7 +122,10 @@ def rows():
 
     for animal, clip in (("wolf", "wolf_growl"), ("bear", "bear_growl"), ("deer", "deer_snort"), ("moose", "moose_snort")):
         db, reach, unit = kinds[animal]
-        out.append(("animal call", "%s warning (%s) at %.0f m" % (animal, clip, CALL_AT_M), heard(rms[clip], db, unit, CALL_AT_M, min(db + rise, near_max), reach * 1.2)))
+        line = re.search(r'"%s": \{"calls"[^\n]*' % animal, creature).group(0)
+        own = re.search(r'"near_max": (-?[\d.]+)', line)
+        ceiling = min(db + rise, float(own.group(1)) if own else near_max)
+        out.append(("animal call", "%s warning (%s) at %.0f m" % (animal, clip, CALL_AT_M), heard(rms[clip], db, unit, CALL_AT_M, ceiling, reach * 1.2)))
 
     out.append(("work", "another player's axe on wood at 10 m", heard(rms["hit_axe_wood"], hits_db, 8.0, 10.0, 3.0, 120.0)))
     out.append(("work", "another player's axe on wood at 30 m", heard(rms["hit_axe_wood"], hits_db, 8.0, 30.0, 3.0, 120.0)))

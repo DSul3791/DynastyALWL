@@ -95,7 +95,11 @@ func _init() -> void:
 	for kind in ["deer", "duck", "fox", "horse", "donkey", "lynx", "elk", "bighorn"]:
 		herd += 1 if slots.play(kind + "_step", Vector3(5, 0, 0), origin) else 0
 
-	check(herd == SlotSounds.CREATURE_STEP_VOICES - 1, "a herd's steps sound at most %d at once (the wolf's still sounding, then %d of 8 more)" % [SlotSounds.CREATURE_STEP_VOICES, herd])
+	check(herd == SlotSounds.CREATURE_STEP_VOICES and slots._step_voices.size() == SlotSounds.CREATURE_STEP_VOICES
+			and not slots._step_voices.any(func(v) -> bool: return is_equal_approx((v.get_meta("at") as Vector3).x, 45.0)),
+			"a herd's steps sound at most %d at once, and a near one took the place of the wolf 45 m off (%d of 8 played)" % [SlotSounds.CREATURE_STEP_VOICES, herd])
+	check(slots.play("chamois_step", Vector3(2, 0, 0), origin) and slots._step_voices.size() == SlotSounds.CREATURE_STEP_VOICES, "at the cap a nearer step still gets in")
+	check(not slots.play("goat_step", Vector3(30, 0, 0), origin), "a step farther than every one sounding still waits")
 
 	for voice in slots._step_voices:
 		voice.queue_free()   # they end: the footfall checks below start with room

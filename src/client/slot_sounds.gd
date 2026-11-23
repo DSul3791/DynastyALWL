@@ -16,7 +16,7 @@ const SKIP_M := 30.0                      # one-shots farther than this are not 
 # drowned by the beds (assets/audio/level_pass.py). The coordinator, 23 Nov 2026: no everyday sound drowns an approaching animal.
 const CREATURE_STEP_UNIT_M := 8.0
 const CREATURE_STEP_REACH_M := 60.0
-const CREATURE_STEP_VOICES := 6          # animal steps sounding at once (a herd would otherwise fill the voice budget, and calls and beds wait for room)
+const CREATURE_STEP_VOICES := 6          # animal steps sounding at once (a herd would otherwise fill the voice budget, and calls and beds wait for room); a nearer one replaces the farthest
 const START_M := 40.0                     # loops start inside this and stop past STOP_M (hysteresis)
 const STOP_M := 45.0
 const FADE_S := 0.3
@@ -207,7 +207,20 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 		_step_voices = _step_voices.filter(func(p) -> bool: return is_instance_valid(p) and not p.is_queued_for_deletion())
 
 		if _step_voices.size() >= CREATURE_STEP_VOICES:
-			return false
+			# Full: a nearer step takes the place of the farthest one sounding (a herd far off must not hide an animal walking up).
+			var far: AudioStreamPlayer3D = null
+
+			if listener != Vector3.INF:
+				for voice in _step_voices:
+					if far == null or (voice.get_meta("at") as Vector3).distance_to(listener) > (far.get_meta("at") as Vector3).distance_to(listener):
+						far = voice
+
+			if far == null or (far.get_meta("at") as Vector3).distance_to(listener) <= at.distance_to(listener):
+				return false
+
+			far.stop()
+			far.queue_free()
+			_step_voices.erase(far)
 
 	if now < int(_cooldown_until.get(slot, 0)) or not _room(slot):
 		return false
@@ -229,6 +242,7 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 	player.play(_rng.randf_range(0.0, START_OFFSET_S))
 
 	if creature:
+		player.set_meta("at", at)   # where it sounds (the cap compares distances)
 		_step_voices.append(player)
 
 	played[slot] = int(played.get(slot, 0)) + 1
