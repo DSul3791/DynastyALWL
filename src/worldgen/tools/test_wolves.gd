@@ -219,6 +219,28 @@ func _init() -> void:
 	run(a, 2.0)
 	check(a.animals.has(deer) and phase_of(a, pid) != "feed" and int(a.wolves.packs[pid]["prey"]) == 0, "a deer in town is not hunted (%s)" % phase_of(a, pid))
 
+	# 5c. Nor a kill through a wall (a deer, or a player's dog in its pen): a wall on every line from a wolf to it (wall_between, no margin)
+	# but none in their way (crosses_wall has a body margin); without it the same hunt takes the deer.
+	for walled in [true, false]:
+		a = make()
+
+		if walled:
+			a.walls = func(_x0, _z0, _x1, _z1, margin): return margin == 0.0
+
+		players = [player(1, 0.0, 0.0)]
+		pid = a.wolves.spawn_pack(30.0, 0.0)
+		a.wolves.packs[pid]["den"] = Vector3(9000.0, 0.0, 0.0)
+		deer = a.spawn("deer", 60.0, 20.0)
+		a.wolves.packs[pid]["phase"] = "feed"
+		a.wolves.packs[pid]["prey"] = deer
+		a.wolves.packs[pid]["timer"] = 60.0
+		run(a, 30.0)
+		check(a.animals.has(deer) == walled, "%s, the hunted deer is %s" % ["with a wall between them" if walled else "with no wall", "alive" if a.animals.has(deer) else "taken"])
+
+		if walled:
+			run(a, 40.0)      # past the 60 s feed time
+			check(a.animals.has(deer) and phase_of(a, pid) != "feed", "walled off for the whole feed time, the pack gives the deer up (%s)" % phase_of(a, pid))
+
 	# 6. Boldness: at the den a healthy lone player is attacked; far away not.
 	a = make()
 	log_bites = 0
