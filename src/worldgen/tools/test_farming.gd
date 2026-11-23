@@ -592,6 +592,28 @@ func _garden_till_checks() -> void:
 	var beds: Array = items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed" and Vector2(items._items[k]["pos"].x - 40.5, items._items[k]["pos"].z - 40.5).length() < 1.6)
 	check(not items._garden_jobs.has(1) and beds.size() == 9 and notes.has("The garden is ready: 9 beds tilled."), "the garden is levelled and its 9 beds tilled in %d steps, the player gone (%s)" % [steps, str(notes)])
 	check(made_edits.any(func(op): return int(op[0]) == 0) and made_edits.any(func(op): return int(op[0]) == 1) and inv.count_of(items.table.number_of("soil")) == 0, "the high side is cut and the low side filled, with no soil")
+	# A better hoe tills a garden in fewer steps (tier consistency, 23 Nov 2026: items.json till_speed times each step's edits and beds): the same
+	# 3 by 3 garden on the same slope, 30 m south, with an Iron - Hoe in the same hand slot.
+	var wooden_steps: int = steps
+	var hoe_number: int = inv.numbers[hoe]
+	var hoe_count: int = inv.counts[hoe]
+	inv.numbers[hoe] = items.table.number_of("iron_hoe")
+	inv.counts[hoe] = 1
+	items.report_position(1, Vector3(40.0, 10.0, 70.0))
+	items._garden_ready_ms.clear()
+	items._hoe_check_ms.clear()
+	items._last_dig.clear()
+	check(items.till_garden(1, inv, Vector3(40.3, 10.0, 70.7), hoe, 0, 303) and items._garden_jobs.has(1), "a second garden is taken on with an Iron - Hoe")
+	var iron_steps: int = 0
+
+	while items._garden_jobs.has(1) and iron_steps < 500:
+		items._garden_jobs[1]["next_ms"] = 0
+		items._garden_jobs_tick()
+		iron_steps += 1
+
+	check(not items._garden_jobs.has(1) and iron_steps < wooden_steps, "the Iron - Hoe tills it in fewer steps than the first hoe (%d against %d)" % [iron_steps, wooden_steps])
+	inv.numbers[hoe] = hoe_number
+	inv.counts[hoe] = hoe_count
 	var flat: bool = true
 
 	for x in [39.5, 40.5, 41.5]:
