@@ -131,6 +131,12 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 	return walls.is_valid() and bool(walls.call(x0, z0, x1, z1, float(cfg.get("wall_margin_m", 0.3))))
 
 
+# True when a wall or heavy station stands on the straight line between two points (no body margin): a blow never lands through one,
+# either way (an enemy's charge at a player behind a wall, a player's jab at an animal behind one; coordinator's fight walk, 23 Nov 2026).
+func wall_between(from: Vector3, to: Vector3) -> bool:
+	return walls.is_valid() and bool(walls.call(from.x, from.z, to.x, to.z, 0.0))
+
+
 func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
@@ -645,7 +651,7 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 		var to: Vector2 = Vector2(at.x - origin.x, at.z - origin.z)
 		var d: float = to.length()
 
-		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5:
+		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
 			best_d = d
 			best = id
 

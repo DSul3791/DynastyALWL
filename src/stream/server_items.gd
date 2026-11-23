@@ -1382,7 +1382,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 					_wide_piles[id] = true
 
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, maxf(lifetime_s, float(near["left"]) if float(near["left"]) > 1.0e8 else 0.0))   # a never-expiring heap (crafted overflow, a cleared piece's leavings) stays so
-				_tick_ageing(id)   # a kept pile can start ageing here
+				_tick_ageing(id)   # a kept pile passes here too and stays kept (left over 1e8, so _expire_items skips it); the call only lists it
 
 				if by != "":
 					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
@@ -6598,7 +6598,7 @@ func _showroom_retry(delta: float) -> void:
 #   fires:  every item with a fire (laid, lit, coals, warm ash, cold, kept for its charcoal), whatever its state;
 #   lit:    every structure of a kind that can be lit (a light, a kiln, a smelter, anything with a fuel) and any with a "lit" field, lit or not;
 #   pots:   every structure that hangs over a fire;
-#   ageing: every fire, every item with a lifetime, and an item given one in place (a kept pile: _tick_ageing).
+#   ageing: every fire and every item with a lifetime (a kept pile never gains one in place since 23 Nov 2026; _tick_ageing stays as a guard).
 # The lists are sorted from every item once every TICK_INDEX_TICKS slow ticks, and items made since (world ids only grow) are sorted in on each
 # tick from their ids alone. Each part checks the item again, as the full walk did. Outside the tick (tests, a placement) _tick_list is every id,
 # as before. test_tick_lists runs the old walk and the lists side by side and compares every item after each tick.
@@ -6662,7 +6662,7 @@ func _sort_into(index: Dictionary, id) -> void:
 		index["ageing"][id] = true
 
 
-# An item given a lifetime in place (a kept pile added to or taken from) ages from this tick on.
+# An item given a lifetime in place ages from this tick on. A kept pile added to or taken from stays kept (23 Nov 2026), so today only a guard.
 func _tick_ageing(id) -> void:
 	if not _tick_index_kept.is_empty() and _items.has(id) and not _items[id].has("scatter"):
 		_tick_index_kept["ageing"][id] = true
