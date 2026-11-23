@@ -14,6 +14,11 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+func check_has(ok: bool, what: String) -> bool:
+	check(ok, what)
+	return ok
+
+
 func _init() -> void:
 	var total: int = 740   # a mid-sized rock; the rule only sees the share left
 
@@ -68,6 +73,44 @@ func _init() -> void:
 		check(not text.contains("int(info[\"total\"]), 1)), 1.0 / 3.0)") and not text.contains("float(entry[\"total\"]), 1.0 / 3.0)"), "%s has no cube-root rock size left" % path)
 
 	check(FileAccess.get_file_as_string("res://src/client/inventory_view.gd").contains("BoulderWear.crack("), "the client's cracks come from BoulderWear")
+
+	# The client's collider is the drawn rock's hull at its size (world audit 23 Nov 2026: a sphere stood 0.65 of a radius above the drawn top).
+	var view = load("res://src/client/inventory_view.gd").new()
+	var holder: Node3D = Node3D.new()
+	view._root = holder
+
+	for ang in [0.1, 0.5, 0.9]:
+		view._show_boulder(4242, [4242, 0, total, Vector3(10.0, 5.0, 20.0), view.BOULDER_STATE, {"radius": 1.0, "yaw": 30.0, "total": total, "ang": ang}])
+		var entry: Dictionary = view._boulders[4242]
+		var hull: PackedVector3Array = (entry["shape"].shape as ConvexPolygonShape3D).points
+		var lump: MeshInstance3D = entry["lump"]
+		var drawn: AABB = lump.transform * lump.mesh.get_aabb()
+		var top: float = -INF
+		var wide: float = 0.0
+
+		for p in hull:
+			top = maxf(top, p.y)
+			wide = maxf(wide, Vector2(p.x, p.z).length())
+
+		check(hull.size() >= 8 and top <= drawn.end.y + 0.01 and top >= drawn.end.y - 0.1 and top < 0.8, "a boulder of radius 1 collides at its drawn top (%.2f, drawn %.2f), not a dome above it (ang %.1f)" % [top, drawn.end.y, ang])
+		check(wide > 0.85 and wide < 1.25, "and at its drawn width (%.2f)" % wide)
+		view._boulders.erase(4242)
+		holder.get_child(0).free()
+
+	view._show_boulder(4243, [4243, 0, total, Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])
+	view._show_boulder(4243, [4243, 0, total / 8, Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])   # worked down to an eighth
+
+	if check_has(view._boulders.has(4243), "a boulder row is drawn"):
+		var small: PackedVector3Array = (view._boulders[4243]["shape"].shape as ConvexPolygonShape3D).points
+		var small_top: float = -INF
+
+		for p in small:
+			small_top = maxf(small_top, p.y)
+
+		check(small_top < 0.8 * BoulderWear.radius_now(1.0, total / 8, total) + 0.01, "a worked rock's collider shrinks with it (%.2f)" % small_top)
+
+	holder.free()
+	view.free()
 
 	print("test_boulder_wear: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
