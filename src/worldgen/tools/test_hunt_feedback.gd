@@ -125,7 +125,8 @@ func _init() -> void:
 	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5) == 0, "a jab at where it was 300 ms ago, judged now, misses (it has run on)")
 	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5, now - 300, now - 300) == eid, "judged at the moment the player saw it, it hits")
 	check(absf(e.jab_point(eid, eye, Vector3(0.0, 0.0, 1.0), 2.5, 0.5, now - 300, now - 300).z) < 0.01, "and lands where the player saw it")
-	check(e.judged_ms(ed, now - 5000, now - 5000) >= now - int(e.cfg.get("rewind_max_ms", 500)) - 1 and e.judged_ms(ed, 0, 0) == -1, "never judged more than rewind_max_ms back; a client that sends none is judged now")
+	var long_ago: int = maxi(now - 5000, 1)   # a headless test starts a second or two after the clock does: a positive time, still too old
+	check(e.judged_ms(ed, long_ago, long_ago) >= now - int(e.cfg.get("rewind_max_ms", 500)) - 1 and e.judged_ms(ed, 0, 0) == -1, "never judged more than rewind_max_ms back; a client that sends none is judged now")
 	check(e.moved_since(eid, now - 300, now - 300).is_equal_approx(Vector3(2.0, 0.0, 0.0)), "it has gone 2 m since, so the struck spot is moved onto the body as it is now")
 	# One that stood 10 s and then stepped: until the step it was where it stood.
 	var st: Dictionary = e.animals[deer_at(e, 20.0)]
