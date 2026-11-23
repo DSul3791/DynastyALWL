@@ -3234,7 +3234,11 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 # food or a stone weakly; PROVISIONAL MELEE-1). The item is the slot the client names as in hand, checked first (Dave 13 Nov 2026); a broken one
 # does nothing, and logs on the shoulder leave no hand free.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+	if slot >= inv.slot_count or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+		return
+
+	if slot < 0 or inv.numbers[slot] == 0:
+		_punch(peer, direction)
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
@@ -3271,6 +3275,30 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		_wear_slot(peer, inv, slot, "strike")
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+# A bare-handed blow (Dave 23 Nov 2026: punching "should be a basic thing ... a skill like hand to hand"): melee.json bare_hand's damage times the
+# Hand to hand skill factor (skills.json action punch), at the animal in front within its reach; one that lands trains the skill. PROVISIONAL.
+func _punch(peer: int, direction: Vector3) -> void:
+	var row: Dictionary = _melee_cfg.get("bare_hand", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_strike.get(peer, -100000)) < float(row.get("recover_ms", STRIKE_COOLDOWN_MS)):
+		return
+
+	_last_strike[peer] = now
+	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var damage: float = maxf(float(row.get("damage", 2.0)) * skill_factor(peer, "punch"), 0.5)
+	var reach: float = float(row.get("reach_m", 1.8))
+	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)
+	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
+
+	if hit:
+		var at: Vector3 = (answer as Dictionary).get("at", eye + direction.normalized() * minf(reach, 1.5)) if answer is Dictionary else eye + direction.normalized() * minf(reach, 1.5)
+		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
+		practice(peer, "punch")
+
+	_note_work(peer, "")   # a punch tires like any blow (BUG-001)
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Not saved, rots in 2 game days.

@@ -68,6 +68,11 @@
 			"skill": "jumping",
 			"effect": "toughness"
 		},
+		"punch": {
+			"skill": "hand_to_hand",
+			"effect": "damage",
+			"_provisional": "PROVISIONAL (Dave 23 Nov 2026: \"he can probably fight with his hands and should have a skill like hand to hand\"): a bare-handed blow that lands trains it, and the skill factor multiplies the punch (melee.json bare_hand)"
+		},
 		"craft": {
 			"skill": "crafting",
 			"effect": "speed"
@@ -227,6 +232,19 @@
 			},
 			"max_factor": 4.0,
 			"order": 10
+		},
+		"hand_to_hand": {
+			"name": "Hand to hand",
+			"parents": {
+				"athletics": 1.0
+			},
+			"traits": {
+				"strength": 0.5,
+				"dexterity": 0.3,
+				"fitness": 0.2
+			},
+			"max_factor": 2.0,
+			"order": 11
 		},
 		"crafting": {
 			"name": "Crafting",

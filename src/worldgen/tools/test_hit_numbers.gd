@@ -82,6 +82,29 @@ func _init() -> void:
 	items._last_strike.clear()
 	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
 	check(sent.size() == 1, "an empty answer is a miss: no number")
+
+	# Bare hands punch (Dave 23 Nov 2026): slot -1 (nothing in hand) or an empty slot strikes for melee.json bare_hand times the Hand to hand
+	# skill factor, at its short reach, and a punch that lands trains Hand to hand.
+	var punched: Array = []
+	items.hit_animal = func(_peer, _origin, _aim, reach, amount) -> Dictionary:
+		punched.append([reach, amount])
+		return {"at": Vector3(10.0, 1.0, 11.0)}
+	var skill_before: float = items.working_level(1, "hand_to_hand")
+	items._last_strike.clear()
+	items._last_practice.clear()
+	items.action(1, Net.ACT_STRIKE, -1, 0, 0, Vector3(0.0, 0.0, 1.0))
+	var bare: Dictionary = melee["bare_hand"]
+	var want: float = float(bare["damage"]) * items.skill_factor(1, "punch")
+	check(punched.size() == 1 and is_equal_approx(float(punched[0][0]), float(bare["reach_m"])) and absf(float(punched[0][1]) - want) < 0.5 and float(punched[0][1]) > 0.0,
+			"an empty hand punches for bare_hand times the skill (%s, want about %.2f)" % [str(punched), want])
+	check(items.working_level(1, "hand_to_hand") > skill_before, "a punch that lands trains Hand to hand (%.3f -> %.3f)" % [skill_before, items.working_level(1, "hand_to_hand")])
+	items.action(1, Net.ACT_STRIKE, -1, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(punched.size() == 1, "punches keep bare_hand's pace (recover_ms)")
+	var empty_slot: int = items.inventory_of(1).numbers.find(0)
+	items._last_strike.clear()
+	items.action(1, Net.ACT_STRIKE, empty_slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(empty_slot >= 0 and punched.size() == 2, "an empty slot in hand punches too")
+	sent.clear()
 	sent.clear()
 	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> bool: return lands[0]
 
