@@ -4,13 +4,15 @@ extends SceneTree
 # by a per-shield share set in the data, rising with the shield's tier ... nothing from behind, and raising it slows you to walking pace.
 # Server judges it."):
 #   1. raised (hand flag 4, protocol 159) with the shield in the left hand, a blow from in front loses the shield's block share;
-#   2. from the side past 60 degrees, or from behind, it loses nothing; nor with the shield lowered, nor when the blow's origin is unknown;
+#   2. from the side past 60 degrees, or from behind, it loses nothing; nor with the shield lowered or not in the pack, nor when the blow's
+#      origin is unknown; worn armour stops its share of what gets past;
 #   3. the shield wears by what it stopped, the player is told when it breaks, and a broken shield stops nothing;
 #   4. every shield's share rises with its tier, from about a third to three quarters.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shield_block.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 const DIR := "user://test_shield_block"
 const HIT := 20.0
@@ -92,6 +94,25 @@ func _init() -> void:
 	check(absf(taken(front) - HIT) < 0.01, "lowered, it stops nothing")
 	items.report_held(1, 0, n("stick"), ItemsScript.HAND_SHIELD_UP)
 	check(absf(taken(front) - HIT) < 0.01, "B with no shield in the left hand stops nothing")
+
+	# A claim of a shield the pack does not hold (dropped, sold, or never had) stops nothing, whatever the hand flags say.
+	inv.clear_slot(slot_of("iron_shield"))
+	items.report_held(1, 0, n("iron_shield"), ItemsScript.HAND_SHIELD_UP)
+	check(absf(taken(front) - HIT) < 0.01, "a raised shield the pack does not hold stops nothing")
+	items.give(1, n("iron_shield"), 1)
+
+	# The shield first, then worn armour on what gets past it, each worn once.
+	items.give(1, n("mail_shirt"), 1)
+	items.action(1, Net.ACT_WEAR, slot_of("mail_shirt"), 0, 0, Vector3.ZERO)
+	var at: int = items._place_of(n("mail_shirt"))
+	var armour: float = items.protection_of(1, items.attack_mode("wolves"))
+	items.report_held(1, 0, n("iron_shield"), ItemsScript.HAND_SHIELD_UP)
+	var shield_wear: int = inv.wear[slot_of("iron_shield")]
+	var mail_wear: int = int(items.worn_slots_of(1)[at][2])
+	var want: float = HIT * (1.0 - block) * (1.0 - armour)
+	check(at >= 0 and armour > 0.0 and absf(taken(front) - want) < 0.01, "with a mail shirt on, the shield stops its share and the mail its share of the rest (%.2f taken, %.0f%% armour)" % [want, armour * 100.0])
+	check(inv.wear[slot_of("iron_shield")] > shield_wear and int(items.worn_slots_of(1)[at][2]) > mail_wear, "and both wear by that one blow")
+	items.action(1, Net.ACT_UNWEAR, at, 0, 0, Vector3.ZERO)
 
 	# 3. Broken.
 	items.report_held(1, 0, n("iron_shield"), ItemsScript.HAND_SHIELD_UP)
