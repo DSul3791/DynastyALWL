@@ -1164,6 +1164,107 @@ func branch_near(here: Vector3, radius: float) -> Dictionary:
 	return best
 
 
+# A dead branch taken by anyone (protocol 160 ground_taken; this player's own pick too). Each client draws its own branches (where they
+# lie follows the graphics tier and how the ground was built), so for each taken point this client hides its nearest branch within
+# TAKEN_NEAR_M (its own pick: that very branch), and a point heard again within TAKEN_SAME_M is kept once. Kept by grass cell for that game day, and done again whenever
+# a cell is built again; a branch's middle can lie in the next cell from its record's, so the cells round it are looked at.
+const TAKEN_NEAR_M := 1.5
+const TAKEN_SAME_M := 0.25
+var today: int = 0                     # the game day (terrain_client sets it): taken branches of an earlier day have grown back
+var _taken_branches: Dictionary = {}   # Vector2i grass cell -> [[point, game day], ...]
+
+
+func take_branch(at: Vector3, day: int = -1, drawn: Array = []) -> void:
+	var cell: Vector2i = _cell_at(at)
+	var list: Array = (_taken_branches.get(cell, []) as Array).filter(func(r): return int(r[1]) >= today)
+
+	if drawn.is_empty():
+		for row in list:
+			if (row[0] as Vector3).distance_to(at) <= TAKEN_SAME_M:
+				_taken_branches[cell] = list
+				return   # told again (a resend as this player walks): that point is in hand already
+
+	var row: Array = [at, today if day < 0 else day, []]
+	list.append(row)
+	_taken_branches[cell] = list
+
+	if drawn.is_empty():
+		_take_one(row)
+	else:   # this player's own pick: that very branch ([grass cell, record]), even when another taken point lies within TAKEN_SAME_M
+		hide_branch(drawn[0], int(drawn[1]))
+		row[2] = drawn
+
+
+# An admin world reset: every branch is back (the cells redraw as they are next built).
+func clear_taken() -> void:
+	_taken_branches.clear()
+
+
+func _cell_at(at: Vector3) -> Vector2i:
+	return Vector2i(int(floor(at.x / CELL_M)), int(floor(at.z / CELL_M)))
+
+
+# Every taken point round a cell just built, again (the build drew all its branches).
+func _hide_taken(cell: Vector2i) -> void:
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for row in _taken_branches.get(cell + Vector2i(dx, dz), []):
+				if int(row[1]) >= today:
+					_take_one(row)
+
+
+# Hides the drawn branch nearest a taken row's point within TAKEN_NEAR_M that is not hidden already. The branch it hid
+# is kept on the row ([cell, record]): while that record is still hidden the row is done, so building the cells round it again or
+# hearing the point again hides no second branch (gate review 23 Nov 2026); a rebuild of that cell draws it again and the row matches anew.
+func _take_one(row: Array) -> void:
+	var layer: int = GRASS_LAYERS + 1
+	var at: Vector3 = row[0]
+	var held: Array = row[2]
+
+	if not held.is_empty():
+		var had: Dictionary = _cells.get(held[0], {})
+
+		if not had.is_empty() and had.get("bufs", {}).has(layer):
+			var had_buffer: PackedFloat32Array = had["bufs"][layer]
+			var o0: int = int(held[1]) * 16
+
+			if o0 + 2 < had_buffer.size() and Vector2(had_buffer[o0], had_buffer[o0 + 2]).length() < 0.01:
+				return   # its branch is still hidden
+		else:
+			return   # its cell is not drawn now (out of range): the row waits for that cell to be built again, not a branch of the next cell
+
+	var home: Vector2i = _cell_at(at)
+	var best: Array = []
+	var best_d: float = TAKEN_NEAR_M
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			var cell: Vector2i = home + Vector2i(dx, dz)
+			var entry: Dictionary = _cells.get(cell, {})
+
+			if entry.is_empty() or not entry.get("bufs", {}).has(layer):
+				continue
+
+			var buffer: PackedFloat32Array = entry["bufs"][layer]
+
+			@warning_ignore("integer_division")
+			for n in range(buffer.size() / 16):
+				var o: int = n * 16
+				var mid: Vector2 = Vector2(buffer[o + 3] + buffer[o] * 0.5, buffer[o + 11] + buffer[o + 2] * 0.5)   # as branch_near
+				var d: float = mid.distance_to(Vector2(at.x, at.z))
+
+				if Vector2(buffer[o], buffer[o + 2]).length() < 0.01:
+					continue   # hidden already (a hidden record keeps only its start, so where its middle was is not known)
+
+				if d < best_d:
+					best_d = d
+					best = [cell, n]
+
+	if not best.is_empty():
+		hide_branch(best[0], int(best[1]))
+		row[2] = best
+
+
 # Hides one dead branch (a stick was picked up): its record is scaled to nothing and the group redrawn.
 func hide_branch(cell: Vector2i, at: int) -> void:
 	var entry: Dictionary = _cells.get(cell, {})
@@ -2267,6 +2368,7 @@ func _build(cell: Vector2i) -> int:
 			entry["count"] += count
 			tufts += count
 
+	_hide_taken(cell)   # a branch someone took stays gone when its cell is built again (protocol 160)
 	return rays
 
 
