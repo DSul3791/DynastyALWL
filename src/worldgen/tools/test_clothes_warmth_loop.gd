@@ -198,6 +198,30 @@ func _init() -> void:
 	check(absf(float(b.vitals_of(3)["warmth"]) - w1_before) < 1.0 and absf(float(b.vitals_of(4)["warmth"]) - w2_before) < 1.0, "and their own warmth (%.1f, %.1f)" % [float(b.vitals_of(3)["warmth"]), float(b.vitals_of(4)["warmth"])])
 	check(float(b.vitals_of(4).get("soak", 0.0)) > 0.3 and float(b.vitals_of(3).get("soak", 0.0)) == 0.0, "Anna's clothes are still wet, Dave's dry (%.2f, %.2f)" % [float(b.vitals_of(4).get("soak", 0.0)), float(b.vitals_of(3).get("soak", 0.0))])
 
+	# 4b. Soaked in the wind and getting cold, the player is told why, once; dry and still the same cold says nothing of it.
+	var body: Dictionary = b._warmth_cfg["body_703"]
+	var why: String = str(body["say_wet_wind"])
+	weather["temp_c"] = 2.0
+	weather["wind"] = 0.6
+	b._soak[4] = 1.0
+	b.vitals_of(4)["warmth"] = float(b._warmth_cfg["cold_at"]) + 0.5
+	b._cold_level.erase(4)
+	said.clear()
+
+	for n in 60:
+		b.tick(1.0)
+
+	check(said.count(why) == 1, "Anna, soaked in the wind and getting cold, is told once why: %s (%s)" % [why, str(said)])
+	weather["wind"] = 0.0
+	b._soak[3] = 0.0
+	b.vitals_of(3)["warmth"] = 30.0
+	said.clear()
+
+	for n in 30:
+		b.tick(1.0)
+
+	check(int(b._cold_level.get(3, 0)) > 0 and not said.has(why), "dry Dave getting cold is not told about wet and wind (%s)" % str(said))
+
 	# 5. The cold rule in the worst weather: soaked in a gale at -40 C, even in fur, health stops at 1, then the pass-out and the rescue.
 	weather["temp_c"] = -40.0
 	weather["wind"] = 1.0

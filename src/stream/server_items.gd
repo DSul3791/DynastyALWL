@@ -362,6 +362,8 @@ var insulation_of: Callable         # (peer) -> 0..1 share of body heat clothes 
 var send_warmth: Callable           # (peer, warmth percent 0..100)
 var _warmth_sent: Dictionary = {}
 var _cold_level: Dictionary = {}    # peer -> 0 fine, 1 cold, 2 freezing (the message that was last shown)
+var _wet_wind: Dictionary = {}      # peer -> true while soaked in the wind (warmth_target; body_703 wet_wind_say_*), for the line that says why
+var _wet_wind_told: Dictionary = {}   # peer -> true once that line was said this cold spell (cleared when warm again)
 var _spoil_in: float = 0.0          # real seconds since the last spoilage step
 var _wood_in: float = 0.0           # real seconds since the last wet-wood step (_wood_tick)
 var _wood_acc: float = 0.0          # unspent fraction of a drying unit (a tenth of a game hour)
@@ -872,6 +874,8 @@ func peer_left(peer: int) -> void:
 	_cold_out.erase(peer)
 	_out_water.erase(peer)
 	_water_hint_at.erase(peer)
+	_wet_wind.erase(peer)
+	_wet_wind_told.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -18209,6 +18213,8 @@ func warmth_target(peer: int) -> float:
 		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
 		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
+	_wet_wind[peer] = not body.is_empty() and soak >= float(body.get("wet_wind_say_soak", 0.5)) and wind >= float(body.get("wet_wind_say_wind", 0.3)) and not bool(_swimming.get(peer, false))
+
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 
 	if not body.is_empty():
@@ -18275,6 +18281,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
 	_strain_sent.erase(peer)
 	_peer_pos[peer] = to
@@ -18389,6 +18396,12 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	elif level == 1 and w >= float(cfg.get("cold_clear", 52.0)):
 		_cold_level[peer] = 0
 		_say(peer, str(cfg.get("say_warm", "You feel warm again")))
+		_wet_wind_told.erase(peer)
+
+	# Why the clothes do not help (coordinator 23 Nov 2026): soaked in the wind, said once a cold spell beside the cold lines.
+	if int(_cold_level.get(peer, 0)) > 0 and bool(_wet_wind.get(peer, false)) and not _wet_wind_told.has(peer) and not body.is_empty():
+		_wet_wind_told[peer] = true
+		_say(peer, str(body.get("say_wet_wind", "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.")))
 
 	_sync_warmth(peer, false)
 
@@ -18834,6 +18847,7 @@ func kill(peer: int, cause: String) -> bool:
 	_limp_sent.erase(peer)
 	_symptom_in.erase(peer)
 	_cold_level.erase(peer)
+	_wet_wind_told.erase(peer)
 	_fishing.erase(peer)
 	_hole_blows.erase(peer)
 	if not novice_grace(peer):
