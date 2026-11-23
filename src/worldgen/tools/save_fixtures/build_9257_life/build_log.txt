@@ -1,0 +1,33 @@
+  said: Goal done: Make a Stone - Axe. You earn 5 copper. Next: Drink at the water. Walk to the water's edge and press E to drink.
+A worn bag at 25 holds barley seeds
+placed lean_to@58306.0,71306.0 -> 1
+placed rough_bed@58306.0,71306.0 -> 2
+  said: Spawn point set
+spawn bed set: true
+placed chest@58296.0,71302.0 -> 3
+placed log_workbench@58300.0,71312.0 -> 6
+  said: You are getting cold
+  said: Walk with W A S D. Hold Shift to run.
+  said: Walk with W A S D. Hold Shift to run.
+  said: Walk with W A S D. Hold Shift to run.
+  said: Hold the axe and click a tree again and again.
+  said: Press F at a burning fire to put meat or fish in; it cooks there.
+  said: Pick berries or fruit with E and eat them. Put raw meat in the fire with F.
+  said: You are cold: stand near a fire or put on hide clothes.
+craft queue: {"elapsed":25.0,"entries":[[700,2,[[27,2,[[27,{},0,2],[27,{},0,2]]],[233,8,[[233,{},0,8],[233,{},0,8]]],[859,1,[[859,{},0,1],[859,{},0,1]]]]]],"need_s":30.0}
+placed kiln@58314.0,71292.0,0,lit -> 60
+placed campfire@58302.0,71290.0,0,firewood -> 61
+placed smelter@58320.0,71292.0 -> 62
+  said: Goal done: Save some charcoal. You earn 5 copper. Next: Drink at the water. Walk to the water's edge and press E to drink.
+  said: Goal done: Find copper ore. You earn 1 bronze. Next: Drink at the water. Walk to the water's edge and press E to drink.
+  said: It is lit: it smelts the ore in it; the ingots drop in front.
+smelter state: {}
+A shoulder logs 2
+placed snare_trap@58288.0,71288.0 -> 63
+snare 63 catch 64
+placed tilled_bed@58292.0,71314.0 -> 65
+placed handcart@58320.0,71304.0 -> 66
+placed wooden_crate@58322.0,71304.0 -> 67
+cart at (58320.0, 6.0, 71309.98), crate on 5, pulled 66
+  said: Your things are on your remains where you fell. Press Tab to see which way.
+C killed: true

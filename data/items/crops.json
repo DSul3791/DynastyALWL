@@ -8,6 +8,7 @@
 		"root_cellar": "Root cellar (dug room, needs 24 stone + 6 lumber, hammer blueprint): root crops keep 4 to 6 months, spoilage x0.25",
 		"ferment": "Cabbage + salt in a jug: sauerkraut keeps 6 months (needs salt)"
 	},
+	"old_seed_units": {"_note": "A store saved before seeds were counted one by one (build 9257 and older, #1628, 23 Nov 2026) is counted again once when it loads (server_items.gd _count_old_seeds): each crop seed becomes its crop's sow_seeds (a spot's pinch), and these items by the factor their recipes grew by.", "linseed": 100},
 	"crops": {
 		"wheat": {
 			"name": "Wheat",

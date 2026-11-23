@@ -103,6 +103,7 @@ const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ClimateScript := preload("res://src/shared/climate.gd")
 const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
 const CellReadsScript := preload("res://src/stream/cell_reads.gd")   # a scatter cell's ground, water and ore reads bound to its tile (one generator lock a cell)
 const ThunderScript := preload("res://src/shared/thunder.gd")
@@ -742,6 +743,7 @@ func _ready() -> void:
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
+	animals.in_cave_at = _in_cave   # no blow through a cave roof (server_animals.blow_blocked)
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
@@ -795,7 +797,8 @@ func _ready() -> void:
 	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.player_loud = func(): return cues.loud_kinds()   # a blow, a cry or craft work carries farther to animals (hearing-range pass)
 	animals.hour_now = func(): return game_clock.hour()
-	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
+	animals.sun_row_m = float(settings.tile_size_m)
+	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
 	animals.season_now = func(): return game_clock.season()
 	var biome_names: Dictionary = {}
 
@@ -940,7 +943,7 @@ func _ready() -> void:
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
 	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
 	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
-	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
+	items.species_active_at = func(sp, hour, z): return animals.activity_at(animals.species_def(sp), hour, z)   # by the sun of the snare's row
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
