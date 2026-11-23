@@ -53,6 +53,7 @@ var robot_name: String = "Robot"
 var plan: String = "first_hours"
 var admin: bool = false
 var _timeout_s: float = INF
+var _frame_usec: int = 0           # the last frame's engine microseconds (_process: the real frame length for the jump checks)
 
 var _pack_msec: int = 0          # last pack message (full or slots) from the server
 var _notice_msec: int = 0
@@ -229,6 +230,11 @@ func _process(delta: float) -> void:
 		return
 
 	_route_frame(delta)
+	# The frame's real length: the engine clips `delta` after a long frame, so a body that rightly moved on through a 1.6 s join freeze read
+	# as a 12 m jump in a "58 ms frame" (robots' bear group run, 23 Nov 2026: arms prebuild 1524 ms). The jump checks below use this.
+	var usec: int = Time.get_ticks_usec()
+	var frame_s: float = maxf(delta, float(usec - _frame_usec) / 1000000.0) if _frame_usec > 0 else delta
+	_frame_usec = usec
 
 	var now: int = Time.get_ticks_msec()
 	var me: Vector3 = client.body.global_position
@@ -251,17 +257,17 @@ func _process(delta: float) -> void:
 			if _seen_animal.has(id):
 				var was: Array = _seen_animal[id]
 				var step: float = Vector2(pos.x - was[0].x, pos.z - was[0].z).length()
-				var allowed: float = maxf(float(_top_mps.get(num, 15.0)) * delta * JUMP_SLACK, JUMP_FLOOR_M)
+				var allowed: float = maxf(float(_top_mps.get(num, 15.0)) * frame_s * JUMP_SLACK, JUMP_FLOOR_M)
 
 				if now - int(was[1]) > int(FRESH_S * 1000.0) and step > allowed:
 					_fail("jump", "animal%d" % id, "drawn animal %d (species %d) moved %.1f m in one %.0f ms frame (top speed %.1f m/s), %s -> %s" % [
-						id, num, step, delta * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
+						id, num, step, frame_s * 1000.0, float(_top_mps.get(num, 0.0)), str(was[0].round()), str(pos.round())])
 
 				if num == _kind_sp and now - int(was[1]) > int(FRESH_S * 1000.0):
 					var st: Array = _kstat.get(num, [0, 0.0, 0.0, 0])
 					st[0] = int(st[0]) + 1
 					st[1] = maxf(float(st[1]), step)
-					st[2] = maxf(float(st[2]), step / maxf(float(_top_mps.get(num, 15.0)) * delta, 0.001))
+					st[2] = maxf(float(st[2]), step / maxf(float(_top_mps.get(num, 15.0)) * frame_s, 0.001))
 					st[3] = int(st[3]) + (1 if step > 1.0 else 0)
 					_kstat[num] = st
 
@@ -298,8 +304,8 @@ func _process(delta: float) -> void:
 
 				if step > RESPAWN_M or (step > JUMP_FLOOR_M and (_rescued(peer) or now - int(_lay_ms.get(peer, -100000)) < 20000)):
 					was[1] = now   # a respawn or a rescue moves a player far on purpose: treat it as a fresh body
-				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * delta * JUMP_SLACK, JUMP_FLOOR_M):
-					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, delta * 1000.0, str(was[0].round()), str(pos.round())])
+				elif now - int(was[1]) > int(FRESH_S * 1000.0) and step > maxf(PLAYER_TOP_MPS * frame_s * JUMP_SLACK, JUMP_FLOOR_M):
+					_fail("jump", "player%d" % peer, "drawn player %s moved %.1f m in one %.0f ms frame, %s -> %s" % [row["name"], step, frame_s * 1000.0, str(was[0].round()), str(pos.round())])
 
 				was[0] = pos
 			else:

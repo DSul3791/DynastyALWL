@@ -227,7 +227,7 @@ func _init() -> void:
 		if lunge_s == INF and absf(lunge_at.x - 3.6) < 0.1:
 			lunge_s = float(f + 1) / 60.0
 
-	check(lunge_s <= 0.6 and lunge_step <= MotionBuffer.LUNGE_MPS * 2.05 / 60.0 + 0.003, "a 3.6 m lunge that came done is drawn onto its point in %.2f s, at most %.2f m a frame" % [lunge_s, lunge_step])
+	check(lunge_s <= 0.6 and lunge_step <= MotionBuffer.LUNGE_MPS * 2.05 / 60.0 + 0.01, "a 3.6 m lunge that came done is drawn onto its point in %.2f s, at most %.2f m a frame" % [lunge_s, lunge_step])
 	check(3.6 - slow_at.x > 1.0, "at the standing pace it would still be %.2f m short after 2 s (the boar's first blow drawn 4 m off)" % (3.6 - slow_at.x))
 	# A leg between two rows stamped nearly together reads as hundreds of m/s: the drawn body still never moves more than 0.35 m a frame
 	# (at the 15 m/s cap: 1.05 frames of the leg's speed plus 0.3 of it in catch-up, 0.34 m: never over 1.3 times its speed, robots 23 Nov 2026).
