@@ -2384,6 +2384,51 @@ func _water_near(x: float, z: float, radius: float, ocean: bool) -> bool:
 	return false
 
 
+# A send pass (terrain_server _send_npcs, 20 times a second): the animals are filed into a PASS_CELL_M grid once, and each animal's row is
+# built once, for the first player near it, then reused for every other player near it in the same pass. Load test 23 Nov 2026
+# (docs/design/SERVER_SCALE.md): every player looked at every animal and built its row again, 69 ms a second at 64 players. Nothing moves
+# an animal inside a pass. Outside a pass (tests, the spyglass readout) rows_near looks at every animal as before.
+const PASS_CELL_M := 64.0
+var _in_pass: bool = false
+var _pass_rows: Dictionary = {}   # animal id -> its row, this pass
+var _pass_grid: Dictionary = {}   # Vector2i cell -> [animal ids], this pass
+
+
+func begin_send_pass() -> void:
+	_in_pass = true
+	_pass_rows = {}
+	_pass_grid = {}
+
+	for id in animals:
+		var pos: Vector3 = animals[id]["pos"]
+		var cell: Vector2i = Vector2i(floori(pos.x / PASS_CELL_M), floori(pos.z / PASS_CELL_M))
+
+		if not _pass_grid.has(cell):
+			_pass_grid[cell] = []
+
+		_pass_grid[cell].append(id)
+
+
+func end_send_pass() -> void:
+	_in_pass = false
+	_pass_rows = {}
+	_pass_grid = {}
+
+
+# The ids in the grid cells that touch the square round `point` of half-side `radius` (rows_near still checks each distance).
+func _pass_ids_near(point: Vector3, radius: float) -> Array:
+	var out: Array = []
+
+	for cx in range(floori((point.x - radius) / PASS_CELL_M), floori((point.x + radius) / PASS_CELL_M) + 1):
+		for cz in range(floori((point.z - radius) / PASS_CELL_M), floori((point.z + radius) / PASS_CELL_M) + 1):
+			var ids: Variant = _pass_grid.get(Vector2i(cx, cz))
+
+			if ids != null:
+				out.append_array(ids)
+
+	return out
+
+
 # Rows [id, species number, position, heading radians, state] within send_radius_m of a point, nearest first, at most per_player_cap.
 # An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
 # the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
@@ -2392,11 +2437,18 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 	var radius: float = radius_m if radius_m > 0.0 else float(cfg.get("send_radius_m", 120.0))
 	var found: Array = []
 
-	for id in animals:
+	for id in (_pass_ids_near(point, radius) if _in_pass else animals.keys()):
+		if not animals.has(id):
+			continue   # gone since the pass filed it
+
 		var a: Dictionary = animals[id]
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
+			if _in_pass and _pass_rows.has(id):
+				found.append([d, _pass_rows[id]])   # built once this send pass, for the first player near it (the same row for all)
+				continue
+
 			# Field 5 (protocol 147): the server milliseconds it was at this position: its step's time (tick), or now for a move made
 			# elsewhere (the pack brain, a companion). The client draws each animal on these times, not on when the rows came (Dave 21 Nov
 			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 154 (Dave 23 Nov 2026, the real server):
@@ -2415,6 +2467,9 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 
 			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
 				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float
+
+			if _in_pass:
+				_pass_rows[id] = row
 
 			found.append([d, row])
 
