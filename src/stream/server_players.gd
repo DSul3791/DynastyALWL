@@ -24,9 +24,12 @@ const SWIM := 4
 const CARRY := 8
 const ASLEEP := 16
 const SWING_SHIFT := 5             # bits 5..7: the player's swing count, mod 8
-const SWING_ACTS := [7, 8, 9, 25, 27, 50, 57]   # terrain_net.gd ACT_HIT, ACT_MINE, ACT_PROCESS, ACT_DIG, ACT_FILL, ACT_TILL, ACT_HIT_SHRUB: a blow with the tool in hand
+const Net := preload("res://src/stream/terrain_net.gd")
+# A blow with the tool in hand (one per swing, at its impact: held_item.gd), shown to the others as a swing.
+const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Net.ACT_FILL, Net.ACT_TILL, Net.ACT_HIT_SHRUB, Net.ACT_TILL_GARDEN,
+		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_HOE_GRADE, Net.ACT_ICEHOLE]
 
-var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, is_asleep
+var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log, sleeping_of
 var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
@@ -130,7 +133,7 @@ func tick(delta: float) -> void:
 		at[peer] = pos
 		var swing: Array = _swings.get(peer, [0, 0])
 		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0) \
-				| (ASLEEP if items.is_asleep(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
+				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
 		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(int(_report_ms[peer]), int(swing[1]))]
 
 	for receiver in at:

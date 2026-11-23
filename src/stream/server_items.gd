@@ -15842,10 +15842,6 @@ func carries_log(peer: int) -> bool:
 	return str(_shoulder_sent.get(peer, "")) != ""
 
 
-func is_asleep(peer: int) -> bool:
-	return _asleep.has(peer)
-
-
 func set_cave_pool(peer: int, in_pool: bool) -> void:
 	_cave_pool[peer] = in_pool
 
