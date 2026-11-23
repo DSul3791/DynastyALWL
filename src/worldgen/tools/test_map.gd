@@ -492,7 +492,7 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# Landmarks (Dave 23 Nov 2026 play test, protocol 165): what is seen near goes on the map in surveyed cells only, one mark a kind within merge_m,
+# Landmarks (Dave 23 Nov 2026 play test, protocol 166): what is seen near goes on the map in surveyed cells only, one mark a kind within merge_m,
 # gone when it is gone (but a good fishing spot stays), names grow with what is seen, paths and rivers, the save keeps them and an old save
 # loads, and the world items a person would mark come from server_items.
 func landmark_checks() -> void:
@@ -583,14 +583,14 @@ func landmark_checks() -> void:
 	var old: Dictionary = again._record("map-key-old")
 	check(old["blocks"].size() == 1 and old["blocks"][Vector2i(0, 0)]["cells"].size() == 2 and all_marks(again, "map-key-old").is_empty(), "a map saved before landmarks loads with its cells and no marks")
 	var marks_rec: Dictionary = again._record("map-key-marks")
-	check(marks_rec["blocks"].values().all(func(b): return bool(b.get("water_ok", false))) and not bool(old["blocks"][Vector2i(0, 0)].get("water_ok", false)), "blocks mapped now load with their water checked; a map saved before 165 loads with it not checked")
+	check(marks_rec["blocks"].values().all(func(b): return bool(b.get("water_ok", false))) and not bool(old["blocks"][Vector2i(0, 0)].get("water_ok", false)), "blocks mapped now load with their water checked; a map saved before 166 loads with it not checked")
 	old["blocks"][Vector2i(0, 0)]["water_seen"] = {0: true}
 	old["dirty"] = true
 	again.save()
 	var third = make(dir)
 	var old_again: Dictionary = third._record("map-key-old")["blocks"][Vector2i(0, 0)]
 	check(not bool(old_again.get("water_ok", false)) and old_again.get("water_seen", {}).has(0) and not old_again.get("water_seen", {}).has(1), "the old cells already looked at for their water are saved (%s)" % str(old_again.get("water_seen", {})))
-	# A known cell of a map saved before protocol 165 has its water put right once on a revisit at the same skill (a river the old map called
+	# A known cell of a map saved before protocol 166 has its water put right once on a revisit at the same skill (a river the old map called
 	# a lake), with no redraw counted; ground mapped now is never looked at again for its water.
 	var river_m = make("")
 	keys[71] = "map-key-river"
@@ -611,7 +611,7 @@ func landmark_checks() -> void:
 	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
 	check(water_looks[0] <= fresh_looks + 2, "known ground mapped now costs no water look on a revisit (%d looks, %d for the first new step)" % [water_looks[0], fresh_looks])
 	var river_block: Dictionary = river_m._record("map-key-river")["blocks"][Vector2i(0, 0)]
-	river_block.erase("water_ok")   # as a block loaded from a map saved before 165
+	river_block.erase("water_ok")   # as a block loaded from a map saved before 166
 	wet[0] = Codec.WATER_RIVER
 	goaled.clear()
 	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))

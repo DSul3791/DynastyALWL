@@ -161,7 +161,7 @@ func survey(peer: int, pos: Vector3) -> int:
 			var seen: Array = []
 
 			if not had.is_empty() and q < int(had[0]) + improve:
-				# Known ground at no better skill: its drawing stays, but a block from a map saved before protocol 165 has its water put right
+				# Known ground at no better skill: its drawing stays, but a block from a map saved before protocol 166 has its water put right
 				# once per cell (a river it called a lake, a marsh it called dry ground): water is not accuracy, so this is no redraw and earns
 				# nothing. Each old cell is looked at once ever (the cells looked at are saved, "water_seen"); when all of a block's cells have
 				# been, the block is "water_ok" and known ground there costs no look again (gate review 23 Nov 2026: looking at every known cell
@@ -491,7 +491,7 @@ func cell_rows(cells: Dictionary) -> Dictionary:
 
 
 # The blocks to send this peer now, [[bx, bz, bytes, marks, paths], ...] (marks: the block's [kind, x, z, label] rows; paths: index * 4 +
-# 1 path or 2 road, protocol 165): every block of its character's record that it has not been sent at its
+# 1 path or 2 road, protocol 166): every block of its character's record that it has not been sent at its
 # current version, at most send_per_pass a call (a joining character gets its whole map over a few passes); a block it already has
 # goes again at most every resend_s, so walking about in one block does not deflate it on every survey.
 func updates_for(peer: int, at_msec: int = -1) -> Array:
@@ -666,7 +666,7 @@ func _save_one(key: String) -> void:
 
 	var mark_rows: Dictionary = {}   # the landmarks and path cells of a block (Dave 23 Nov 2026); a save without them loads with none
 	var path_rows: Dictionary = {}
-	var water_ok: Array = []   # blocks whose every cell's water is this protocol's (a map saved before 165 has none: each cell is looked at once)
+	var water_ok: Array = []   # blocks whose every cell's water is this protocol's (a map saved before 166 has none: each cell is looked at once)
 	var water_seen: Dictionary = {}   # the other old blocks: their cells already looked at
 
 	for block in rec["blocks"]:

@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 165  # 165 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
+const PROTOCOL_VERSION := 166  # 166 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
+# 165 (23 Nov 2026, the status strip beside the hotbar: a player slowed or chilled saw nothing saying why): soak(percent, windy), how rain-soaked the clothes are in steps of 10 and whether the wind cuts through them, at hello and when either changes. Client and server must be updated together.
 # 164 (23 Nov 2026, Dave: the comfort meter): comfort(tenths, target, trend, tip) replaces comfort(level, rested level, rested minutes, tip): the always-on meter 0..10 in tenths, the level it heads for, rising or falling, and the tooltip ("" = unchanged). Client and server must be updated together.
 # 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
 # 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
@@ -143,6 +144,7 @@ signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
 signal limp_received(percent: int)
+signal soak_received(percent: int, windy: bool)
 signal body_received(bpm: int, eta_s: int, phase: int)
 signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array, insts: PackedByteArray)
@@ -862,6 +864,13 @@ func limp(percent: int) -> void:
 	limp_received.emit(percent)
 
 
+# Rain-soaked clothes (protocol 166, warmth.json soak_*, for the status strip): the soak in steps of 10 percent and whether the wind
+# cuts through it (body_703 wet_wind_say_*). At hello and on change, from the server's slow vitals tick.
+@rpc("authority", "call_remote", "reliable")
+func soak(percent: int, windy: bool) -> void:
+	soak_received.emit(percent, windy)
+
+
 # The heart in the ears and the wake timer (protocol 59, sleep.json and exertion.json): beats per minute (0 when awake), real
 # seconds until the sleeper or fainted player is awake again (steps of 5), and the phase: 0 awake, 1 falling asleep, 2 out
 # (asleep or fainted), 3 waking. Sent whenever one of them changes.
@@ -1096,7 +1105,7 @@ func notice(text: String) -> void:
 # compressed (src/shared/map_codec.gd decode() gives {cell index: [q, height m, water, trees]}; index = local_x + local_z * 32, cells
 # 16 m, data/map.json). Heights come rounded to the step of each cell's own Mapping skill q. Sent to the character's own connection
 # only: every block on joining (a few a pass), then each block a survey changes. Nothing is ever sent for ground it has not surveyed.
-# marks: the landmarks this character has seen in the block, [kind, x, z, label] (protocol 165); paths: its path cells, index * 4 + 1 path / 2 road.
+# marks: the landmarks this character has seen in the block, [kind, x, z, label] (protocol 166); paths: its path cells, index * 4 + 1 path / 2 road.
 @rpc("authority", "call_remote", "reliable")
 func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array) -> void:
 	map_block_received.emit(block_x, block_z, bytes, marks, paths)

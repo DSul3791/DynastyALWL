@@ -19,7 +19,7 @@ var blocks: Dictionary = {}   # Vector2i block -> {cell index: [q, height, water
 var traps: Array = []         # [[Vector2 world x/z, kind], ...]: the traps this character has set (protocol 150, net.trap_marks_received)
 var trails: Dictionary = {}   # Vector2i trail block -> [[kind, PackedVector2Array world x/z], ...]: game trails this character was near (protocol 152)
 var trails_tracking: int = 10 # the Tracking level from which the Map draws them (data/map.json trails_tracking)
-var marks: Dictionary = {}    # Vector2i block -> [[kind, Vector2 world x/z, label], ...]: landmarks this character has seen there (protocol 165)
+var marks: Dictionary = {}    # Vector2i block -> [[kind, Vector2 world x/z, label], ...]: landmarks this character has seen there (protocol 166)
 var paths: Dictionary = {}    # Vector2i block -> {cell index: 1 path, 2 road}
 var _steps: Dictionary = {}   # Vector2i trail block -> its surveyed steps (surveyed_trail_steps), dropped when its routes or a map block over it change
 
