@@ -424,7 +424,7 @@ func _finish() -> void:
 		print(line)
 
 	finished.emit(lines)
-	_quit(0)
+	_quit(1 if _welcome_msec == 0 else 0)   # 1: it never joined (no connection, refused, no welcome)
 
 
 func _quit(code: int) -> void:

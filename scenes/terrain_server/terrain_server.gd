@@ -158,6 +158,12 @@ var tunnels = TunnelWatchScript.new()     # tunnel grace timers, shaking and col
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
 var _bake_running: bool = false        # a tile bake is writing the tile files (store.baking)
+# The idle builders wait while the main thread is pressed: with players spread out they took the CPUs the main thread needed (server load test
+# 23 Nov 2026, 4 CPUs, 32 players over 2 km: 4 frames a second with them, 19 without). Set on the main thread, read by the idle threads.
+const IDLE_YIELD_GAP_MS := 50          # a frame gap this long ...
+const IDLE_YIELD_MS := 3000            # ... keeps the idle builders waiting this long
+var _idle_hold_until_msec: int = 0
+var _last_frame_msec: int = 0
 var settings
 var spawn: Vector3 = Vector3.ZERO
 var net
@@ -791,10 +797,12 @@ func _ready() -> void:
 	map_knowledge.setup(store_dir)
 	items.forgot_key = func(key): map_knowledge.forget_key(key)
 	animals.wolves.player_info = func(): return items.wolf_info()
-	animals.wolves.fires = func(): return items._lit_fires()
-	animals.wolves.fire_radius = func(at): return items.fire_protect_m(at)
-	animals.fires = func(): return items._lit_fires()             # every wild animal keeps out of a fire's or a torch's keep-off radius (Dave 6 Nov 2026)
-	animals.fire_radius = func(at): return items.fire_protect_m(at)
+	# Every wild animal keeps out of a fire's or a torch's keep-off radius (Dave 6 Nov 2026). The fires come from _fire_spots, worked out from the world
+	# items FIRE_SPOTS_MS apart (_refresh_fire_spots): the animals asked for every fire's radius every frame, and each ask walked every record.
+	animals.wolves.fires = func(): return _fire_at
+	animals.wolves.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
+	animals.fires = func(): return _fire_at
+	animals.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
 	@warning_ignore("confusable_local_declaration")
@@ -1222,6 +1230,27 @@ func _event_state() -> String:
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	queued += ", " + _pool_summary()
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
+
+
+const FIRE_SPOTS_MS := 250   # how often the animals' list of fires and torches is worked out again (a lit fire is avoided within this)
+var _fire_at: Array = []             # positions of the burning fires, torch bearers and guard lights (items.fire_spots)
+var _fire_keep_off: Dictionary = {}  # position -> keep-off metres, for those positions
+var _fire_spots_msec: int = -FIRE_SPOTS_MS
+
+
+func _refresh_fire_spots() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _fire_spots_msec < FIRE_SPOTS_MS:
+		return
+
+	_fire_spots_msec = now
+	_fire_at = []
+	_fire_keep_off = {}
+
+	for spot in items.fire_spots():
+		_fire_at.append(spot[0])
+		_fire_keep_off[spot[0]] = float(spot[1])
 
 
 # Join diagnosis (Sonny, 1 Nov 2026): an RPC handler that ran over 100 ms on the main thread says so in the telemetry file (crash_reports/telemetry_server_<port>.log), with the
@@ -3200,6 +3229,12 @@ func _process(delta: float) -> void:
 		return
 
 	game_clock.advance(delta)
+	var frame_now: int = Time.get_ticks_msec()
+
+	if _last_frame_msec > 0 and frame_now - _last_frame_msec >= IDLE_YIELD_GAP_MS:
+		_idle_hold_until_msec = frame_now + IDLE_YIELD_MS
+
+	_last_frame_msec = frame_now
 	_events.tick(_event_state, 1000, 500)
 	_events.mark("clock")
 
@@ -3220,6 +3255,7 @@ func _process(delta: float) -> void:
 	tribes.tick(delta)
 	npcs.tick(delta)
 	_events.mark("animals")
+	_refresh_fire_spots()
 	animals.tick(delta)
 	coarse_ground.tick()
 	_events.mark("trails")
@@ -3642,7 +3678,7 @@ func _idle_loop() -> void:
 		if stopping:
 			return
 
-		if busy or anchors.is_empty() or _bake_running:
+		if busy or anchors.is_empty() or _bake_running or Time.get_ticks_msec() < _idle_hold_until_msec:
 			OS.delay_msec(20)
 			continue
 
