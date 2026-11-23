@@ -12,6 +12,7 @@ const KnowledgeScript := preload("res://src/client/map_knowledge.gd")
 const Sketch := preload("res://src/client/map_sketch.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")
 
 var failures: int = 0
 var observed: Array = []      # every (x, z) the server looked at
@@ -481,6 +482,7 @@ func _init() -> void:
 	print("Map cost: %.0f us a survey (%d surveys), whole map send %d us %d bytes, one block sketch %d us" % [survey_us, big.surveys, send_us, bytes, sketch_us])
 	check(survey_us < 20000.0, "a survey stays cheap (%.0f us)" % survey_us)
 	check(sketch_us < 1500000, "a block sketch stays under 1.5 s even here (%d us; the page draws one block a frame at most)" % sketch_us)
+	trails_checks()
 	print("map: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -499,3 +501,43 @@ func sent_cells_raw(m, peer: int) -> Array:
 			out.append(u[2])
 
 	return out
+
+
+# Game trails on the Map (protocol 152, Dave 23 Nov 2026: "auto added to the map once you get to a certain skill level"): the server keeps
+# the routes of each trail block the character was near in its map record, sends them once, and keeps them over a restart; the client
+# draws only the steps inside surveyed cells, from the Tracking level in data/map.json.
+func trails_checks() -> void:
+	var dir: String = "user://test_map_trails"
+	DirAccess.make_dir_recursive_absolute(dir.path_join("maps"))
+
+	for file in DirAccess.get_files_at(dir.path_join("maps")):
+		DirAccess.remove_absolute(dir.path_join("maps").path_join(file))
+
+	keys[71] = "trail-key-71"
+	var m = make(dir)
+	var routes: PackedByteArray = TrailCodec.encode_routes([[0, PackedVector2Array([Vector2(10.0, 10.0), Vector2(22.0, 10.0), Vector2(34.0, 12.0), Vector2(300.0, 300.0)])]], Vector2i(0, 0), TrailCodec.ROUTE_BLOCK_M)
+	m.note_trails(71, Vector2i(0, 0), PackedByteArray())
+	var none: Array = m.trail_updates_for(71)
+	check(none.is_empty(), "no routes worked out, nothing kept (%s)" % str(none).left(200))
+	m.note_trails(71, Vector2i(0, 0), routes)
+	var first: Array = m.trail_updates_for(71)
+	check(first.size() == 1 and first[0][2] == routes and m.trail_updates_for(71).is_empty(), "a trail block the character was near is sent once")
+	m.note_trails(71, Vector2i(0, 0), routes)
+	check(m.trail_updates_for(71).is_empty(), "the same routes again send nothing")
+	m.save()
+	m.forget_peer(71)
+	var again = make(dir)
+	var back: Array = again.trail_updates_for(71)
+	check(back.size() == 1 and back[0][2] == routes, "after a restart the character's trails come back with its map")
+
+	var k = KnowledgeScript.new()
+	var told: Array = [0]
+	k.trails_changed.connect(func() -> void: told[0] += 1)
+	k.set_trails(0, 0, routes)
+	check(k.trails.has(Vector2i(0, 0)) and told[0] == 1 and k.surveyed_trail_steps().is_empty(), "the client keeps them; with nothing surveyed none is drawn")
+	k.set_block(Vector2i(0, 0), {0: [1, 10.0, 0, 0], 1: [1, 10.0, 0, 0], 2: [1, 10.0, 0, 0]})
+	var steps: Array = k.surveyed_trail_steps()
+	check(steps.size() == 2, "only the steps whose middle lies in a surveyed cell are drawn (%d)" % steps.size())
+	check(k.trails_tracking == int((JSON.parse_string(FileAccess.get_file_as_string("res://data/map.json")) as Dictionary)["trails_tracking"]), "the Tracking level comes from data/map.json")
+	var page: String = FileAccess.get_file_as_string("res://src/client/map_page.gd")
+	check(page.contains("float(tracking.call()) >= float(knowledge.trails_tracking)") and FileAccess.get_file_as_string("res://src/client/ui/goals/journal_view.gd").contains("skill_level_of(\"tracking\")"), "the page draws them only at that Tracking level, read from the character")

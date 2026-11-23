@@ -27,6 +27,7 @@ var _peer_key: Dictionary = {}   # peer -> the key its record is under (kept so 
 var _last_at: Dictionary = {}    # peer -> Vector3 of its last survey (or of where it was first seen or landed)
 var _last_ms: Dictionary = {}    # peer -> msec when _last_at was set
 var _sent: Dictionary = {}       # peer -> {Vector2i: [version sent, msec sent]}
+var _trails_sent: Dictionary = {}  # peer -> {Vector2i trail block: hash of the routes sent}
 var _dir: String = ""
 var _save_acc: float = 0.0
 var surveys: int = 0             # surveys run (the benchmark and the tests read it)
@@ -262,6 +263,57 @@ func updates_for(peer: int, at_msec: int = -1) -> Array:
 	return out
 
 
+# The game trails of a 256 m trail block the character was near (server_trails.updates_for sent them, ranges.wire bytes, protocol 149), kept
+# in its map record so the Map can draw them (Dave 23 Nov 2026: trails "auto added to the map once you get to a certain skill level";
+# the client draws them only at data/map.json trails_tracking and up, and only inside the cells this character has surveyed).
+func note_trails(peer: int, block: Vector2i, routes: PackedByteArray) -> void:
+	var key: String = str(_peer_key.get(peer, key_of.call(peer) if key_of.is_valid() else ""))
+
+	if key == "" or routes.is_empty():
+		return
+
+	var rec: Dictionary = _record(key)
+
+	if not rec.has("trails"):
+		rec["trails"] = {}
+
+	if rec["trails"].get(block, PackedByteArray()) == routes:
+		return
+
+	rec["trails"][block] = routes
+	rec["dirty"] = true
+
+
+# The trail blocks this peer has not been sent yet (or that changed since), at most send_per_pass a call: [[bx, bz, routes], ...].
+func trail_updates_for(peer: int) -> Array:
+	var key: String = str(_peer_key.get(peer, key_of.call(peer) if key_of.is_valid() else ""))
+
+	if key == "":
+		return []
+
+	_peer_key[peer] = key
+
+	var rec: Dictionary = _record(key)
+	var known: Dictionary = _trails_sent.get(peer, {})
+	var out: Array = []
+	var limit: int = maxi(int(cfg.get("send_per_pass", 4)), 1)
+
+	for block in rec.get("trails", {}):
+		var sig: int = hash(rec["trails"][block])
+
+		if int(known.get(block, 0)) == sig:
+			continue
+
+		known[block] = sig
+		out.append([block.x, block.y, rec["trails"][block]])
+
+		if out.size() >= limit:
+			break
+
+	_trails_sent[peer] = known
+	return out
+
+
 # Read side for later Map Scroll work and the tests: {Vector2i block: {idx: [q, h, water, trees]}} of a character, unrounded.
 func blocks_of(key: String) -> Dictionary:
 	var out: Dictionary = {}
@@ -288,6 +340,7 @@ func forget_peer(peer: int) -> void:
 	_last_at.erase(peer)
 	_last_ms.erase(peer)
 	_sent.erase(peer)
+	_trails_sent.erase(peer)
 
 	if key == "" or not _records.has(key):
 		return
@@ -333,7 +386,12 @@ func _save_one(key: String) -> void:
 	if file == null:
 		return
 
-	file.store_string(JSON.stringify({"version": int(cfg.get("version", 1)), "tally": int(rec.get("tally", 0)), "blocks": rows}))
+	var trail_rows: Dictionary = {}
+
+	for block in rec.get("trails", {}):
+		trail_rows["%d,%d" % [block.x, block.y]] = Marshalls.raw_to_base64(rec["trails"][block])
+
+	file.store_string(JSON.stringify({"version": int(cfg.get("version", 1)), "tally": int(rec.get("tally", 0)), "blocks": rows, "trails": trail_rows}))
 	file.close()
 
 	if DirAccess.rename_absolute(path + ".tmp", path) == OK:
@@ -355,6 +413,14 @@ func _load(key: String) -> Dictionary:
 		return rec
 
 	rec["tally"] = int(parsed.get("tally", 0))
+	rec["trails"] = {}
+
+	for name in parsed.get("trails", {}):
+		var at: PackedStringArray = str(name).split(",")
+		var routes: PackedByteArray = Marshalls.base64_to_raw(str(parsed["trails"][name]))
+
+		if at.size() == 2 and not routes.is_empty():
+			rec["trails"][Vector2i(int(at[0]), int(at[1]))] = routes
 
 	for name in parsed.get("blocks", {}):
 		var parts: PackedStringArray = str(name).split(",")
