@@ -2,10 +2,10 @@ extends RefCounted
 
 # The Journal's Skills page (Dave 23 Nov 2026): every skill in a table, Name, Skill level and Class (Basic, Advanced, Expert or Master), in
 # alphabetical order at first, sorted by any column by clicking its heading (again: the other way). The rows come from the server's skills
-# message (inventory_view.gd skill_rows, server_items.gd _send_skills) and skills.json; the class from SkillWeb.class_of. Who teaches a skill is
+# message (inventory_view.gd skill_rows, server_items.gd _send_skills) and skills.json; the class from SkillClasses.class_of. Who teaches a skill is
 # read from the shipped dialogue (a can_train condition), for the "needs training to go further (ask Hob)" note here and on the character screen.
 
-const SkillWeb := preload("res://src/shared/skill_web.gd")
+const SkillClasses := preload("res://src/shared/skill_classes.gd")
 const NAME := "name"
 const LEVEL := "level"
 const CLASS := "class"
@@ -47,7 +47,7 @@ static func rows(cfg: Dictionary, skill_rows: Array) -> Array:
 			"name": str(def.get("name", id)),
 			"level": level if locked == "" else 0,
 			"cap": cap,
-			"class": SkillWeb.class_of(cfg, float(level)) if locked == "" else "",
+			"class": SkillClasses.class_of(cfg, float(level)) if locked == "" else "",
 			"locked": locked,
 			"planned": planned,
 			"wall": locked == "" and level >= cap - 1 and cap < int(cfg.get("system", {}).get("max_value", 100)),
@@ -69,7 +69,7 @@ static func sorted(cfg: Dictionary, list: Array, column: String, descending: boo
 			return int(entry["level"])
 
 		if column == CLASS:
-			return SkillWeb.class_rank(cfg, str(entry["class"]))
+			return SkillClasses.class_rank(cfg, str(entry["class"]))
 
 		return str(entry["name"]).to_lower()
 

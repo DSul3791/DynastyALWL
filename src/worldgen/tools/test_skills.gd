@@ -8,6 +8,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Rules := preload("res://src/shared/skill_rules.gd")
+const Classes := preload("res://src/shared/skill_classes.gd")
 const Web := preload("res://src/shared/skill_web.gd")
 
 var failures: int = 0
@@ -129,11 +130,11 @@ func _init() -> void:
 	var named: Array = []
 
 	for value in [1, 24, 25, 49, 50, 74, 75, 100]:
-		named.append(Web.class_of(cfg, float(value)))
+		named.append(Classes.class_of(cfg, float(value)))
 
 	check(named == ["Basic", "Basic", "Advanced", "Advanced", "Expert", "Expert", "Master", "Master"], "classes by value: 1 %s, 24 %s, 25 %s, 49 %s, 50 %s, 74 %s, 75 %s, 100 %s" % named)
-	check(Web.class_of(cfg, 24.99) == "Basic" and Web.class_of(cfg, top) == "Basic", "a year of use stays Basic (%.6f)" % top)
-	check(Web.class_of(cfg, Web.effective(cfg, "woodcutting", bands)) == "Master" and int(cfg["system"]["max_value"]) == 100, "three trainings reach Master, and the top is 100")
+	check(Classes.class_of(cfg, 24.99) == "Basic" and Classes.class_of(cfg, top) == "Basic", "a year of use stays Basic (%.6f)" % top)
+	check(Classes.class_of(cfg, Web.effective(cfg, "woodcutting", bands)) == "Master" and int(cfg["system"]["max_value"]) == 100, "three trainings reach Master, and the top is 100")
 	var master_day: float = at
 
 	var last_day: int = 0
@@ -148,9 +149,9 @@ func _init() -> void:
 			Web.practice(cfg, "woodcutting", {}, bands, 1.0, master_day + float(d) * 86400.0 + float(n))
 
 	var master_top: float = Web.effective(cfg, "woodcutting", bands)
-	check(int(master_top) == 100 and Web.class_of(cfg, master_top) == "Master", "in Master, use goes all the way to 100 (%.2f)" % master_top)
+	check(int(master_top) == 100 and Classes.class_of(cfg, master_top) == "Master", "in Master, use goes all the way to 100 (%.2f)" % master_top)
 	check(Web.gain(cfg, "woodcutting", {}, bands, 1.0, master_day + float(last_day) * 86400.0 + 200.0) == 0.0, "and adds nothing past it")
-	check(Web.class_rank(cfg, "Basic") == 0 and Web.class_rank(cfg, "Master") == 3 and Web.class_rank(cfg, "") == -1, "classes sort Basic, Advanced, Expert, Master")
+	check(Classes.class_rank(cfg, "Basic") == 0 and Classes.class_rank(cfg, "Master") == 3 and Classes.class_rank(cfg, "") == -1, "classes sort Basic, Advanced, Expert, Master")
 	bad = cfg.duplicate(true)
 	bad["system"]["classes"][2]["from"] = 51
 	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("does not start at 50")), "a class that does not start where its training starts is reported")
