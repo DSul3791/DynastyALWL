@@ -97,7 +97,7 @@ for dish_id, d in dishes.items():
 
     vitals["food"]["by_id"][dish_id] = d["kcal"]
     spoilage["by_id"][dish_id] = d["shelf_h"]
-    weights["by_id"][dish_id] = 0.3
+    weights["by_id"].setdefault(dish_id, 0.3)   # a new dish starts at 300 g; a real weight set by hand is kept (Dave 23 Nov 2026: real weights)
     cooking["warms"][dish_id] = d["warms"]
 
 save("data/items/items.json", items_doc)
