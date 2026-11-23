@@ -975,6 +975,7 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	TreeTrunks.warm()   # the trunk collider table (_cached_trees), read once at start
 	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
 		for corner in [Vector2(-camp_reach, -camp_reach), Vector2(camp_reach, -camp_reach), Vector2(-camp_reach, camp_reach), Vector2(camp_reach, camp_reach)]:
 			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():

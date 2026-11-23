@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Measures every tree model's drawn trunk where a player meets it and writes data/tables/tree_trunks.json, which the trunk colliders read
-# (fell_pose.gd standing_collider; world audit 23 Nov 2026: the colliders were the species trunk_m scaled by height, a third too wide on the
+# Measures every tree model's drawn trunk where a player meets it and writes data/look/tree_trunks.json, which the trunk colliders read
+# (tree_trunks.gd standing_collider; world audit 23 Nov 2026: the colliders were the species trunk_m scaled by height, a third too wide on the
 # slim young models and up to half too thin on oaks, spruces and pines). Run it again after a tree model changes; test_tree_trunks fails until then.
 #   godot --headless --path . --script res://src/worldgen/tools/make_tree_trunks.gd
 

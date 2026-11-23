@@ -1,17 +1,19 @@
 extends RefCounted
 
-# The trunk collider of a standing tree: as wide as its model is drawn where a player meets it (data/tables/tree_trunks.json, made from the
-# models by src/worldgen/tools/make_tree_trunks.gd), for the model variant flora_view draws that tree with (fell_pose.gd drawn_variant). The client's
+# The trunk collider of a standing tree: as wide as its model is drawn where a player meets it (data/look/tree_trunks.json, made from the
+# models by src/worldgen/tools/make_tree_trunks.gd), for the model variant flora_view draws that tree with (drawn_variant below). The client's
 # trunk cylinder (flora_view) and the server's trunks (terrain_server: arrows, carts, digging, bandit camps) both use it.
 
 const TreeBuilder := preload("res://src/flora/tree_builder.gd")
-const FellPose := preload("res://src/flora/fell_pose.gd")
 
 const MEASURE_Y_M := 1.0        # the height on the model the trunk is measured at: a walking player's hips
-const TABLE_PATH := "res://data/tables/tree_trunks.json"
+const TABLE_PATH := "res://data/look/tree_trunks.json"
 const FLORA_PATH := "res://data/tables/flora.json"
 
+const SEARCH_TRUNK_M := 2.0     # the widest trunk the server's trunk searches reach (server_items ARROW_TRUNK_SEARCH_M, carts, digging): a drawn trunk wider than this keeps its old collider
+
 static var _rows: Dictionary = {}   # species name -> [radii per variant at the reference height, reference height m, flora.json row]
+static var _loaded: bool = false
 
 
 # The collider radius for the tree `id` of species `species` and `height` m. `fallback`: the radius without the table (flora_placer.collider_radius,
@@ -26,11 +28,33 @@ static func standing_collider(species: String, id: int, height: float, fallback:
 		return fallback
 
 	var radii: Array = row[0]
-	return float(radii[FellPose.drawn_variant(row[2], id, height) % radii.size()]) * height / float(row[1])
+	var drawn: float = float(radii[drawn_variant(row[2], id, height) % radii.size()]) * height / float(row[1])
+	# Never past what the server's trunk searches reach, or the old size: the everember (drawn 6.7 m at 1 m up) keeps its 3.2 m until those searches widen.
+	return minf(drawn, maxf(fallback, SEARCH_TRUNK_M))
+
+
+# Reads the table now (the main thread at start: flora_view and terrain_server), so no worker or tree listing parses the files.
+static func warm() -> void:
+	_table()
+
+
+# The model variant flora_view.gd draws for the tree `id` (its own hash; with young_below_m in the species row, trees shorter than it take the young
+# half). Mirrors flora_view exactly, including its negative remainders, which index the variant list from the end. fell_pose.gd (the server's
+# felled trunk) uses it too; it lives here because the client pack has this script and not fell_pose.
+static func drawn_variant(entry: Dictionary, id: int, height: float) -> int:
+	var count: int = TreeBuilder.VARIANTS
+	var variant: int = (id * 2654435761 >> 5) % count
+
+	if entry.has("young_below_m"):
+		@warning_ignore("integer_division")
+		var half: int = count / 2
+		variant = variant % half + (half if height < float(entry["young_below_m"]) else 0)
+
+	return posmod(variant, count)
 
 
 static func _table() -> Dictionary:
-	if not _rows.is_empty():
+	if _loaded:
 		return _rows
 
 	var rows: Dictionary = {}
@@ -44,7 +68,8 @@ static func _table() -> Dictionary:
 			if radii is Array and not (radii as Array).is_empty():
 				rows[str(entry["name"])] = [radii, _reference(entry), entry]
 
-	_rows = rows   # one assignment: a worker thread reading it meanwhile sees the empty table and reads the files itself
+	_rows = rows   # warm() reads it on the main thread first; a late reader on a worker would only parse the files again
+	_loaded = true   # also when empty (no table): read once, then every collider keeps its fallback
 	return _rows
 
 
@@ -101,6 +126,7 @@ static func measure(entry: Dictionary) -> Array:
 							found.append(r)
 
 		found.sort()
+		@warning_ignore("integer_division")
 		radii.append(snappedf(float(found[found.size() / 4]), 0.01) if not found.is_empty() else snappedf(TreeBuilder.trunk_radius(entry, _reference(entry), v), 0.01))
 
 	return radii

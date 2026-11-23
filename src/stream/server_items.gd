@@ -3709,7 +3709,7 @@ func _arrow_fly(delta: float) -> void:
 
 
 # The share 0..1 along from -> to where the flight first meets a standing trunk, or -1 (BowAim.segment_trunk on each trunk near the segment).
-const ARROW_TRUNK_SEARCH_M := 2.0   # the thickest trunk's radius and a little over
+const ARROW_TRUNK_SEARCH_M := 2.0   # the thickest trunk collider and a little over (tree_trunks.gd SEARCH_TRUNK_M caps the colliders that grew to their drawn size)
 
 
 func _arrow_trunk(from: Vector3, to: Vector3) -> float:

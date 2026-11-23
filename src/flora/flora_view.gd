@@ -961,6 +961,7 @@ func set_water_look(on: bool, turbid: Vector2, foam_supply: float) -> void:
 
 
 func setup(tables, tile_rules: Dictionary) -> void:
+	TreeTrunks.warm()   # the trunk collider table, read here on the main thread before any chunk plan runs on a worker
 	_load_far()
 	for argument in OS.get_cmdline_args() + OS.get_cmdline_user_args():
 		if argument.begins_with("--flora-season="):
