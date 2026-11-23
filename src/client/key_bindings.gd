@@ -38,6 +38,7 @@ const ACTIONS := [
 	["auto_pickup", "Auto pickup on / off", "Actions", CONTEXT_WORLD, KEY_P, false, false, false],
 	["inspect", "Inspection mode on / off", "Actions", CONTEXT_WORLD, KEY_SLASH, false, false, false],
 	["ruler", "Inclination ruler on / off", "Actions", CONTEXT_WORLD, KEY_H, false, false, false],
+	["block", "Shield in the left hand: hold to raise it", "Actions", CONTEXT_WORLD, KEY_B, false, false, true],
 	# The hoe's garden grid (Dave 14 Nov 2026: "you can size it using the arrow keys plus the alt button"): the group always needs Alt (GARDEN_GROUP, _garden_alt).
 	["garden_wider", "Hoe grid: wider", GARDEN_GROUP, CONTEXT_WORLD, KEY_RIGHT, false, false, false],
 	["garden_narrower", "Hoe grid: narrower", GARDEN_GROUP, CONTEXT_WORLD, KEY_LEFT, false, false, false],

@@ -2803,7 +2803,7 @@ func hotbar_tip(key: int) -> String:
 	var key_name: String = "0" if key == 9 else str(key + 1)
 
 	if slot >= 0:
-		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (E) moves it to the inventory" if open else "")
+		return _tooltip(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], inventory.inst_of(slot)) + ("\nKeys: Use (%s) moves it to the inventory" % KeyBindings.label("use_item") if open else "")
 
 	return "Drag an item here from the inventory. Key %s holds it." % key_name
 
@@ -6563,7 +6563,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 	text += "\n%s" % str(entry.get("description", "A plant material you gathered."))
 
 	if int(entry.get("capacity_ml", 0)) > 0:
-		text += "\nHolds %s of %s. Use (E) drinks from it; at the water, E fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"]))]
+		text += "\nHolds %s of %s. Use (%s) drinks from it; at the water, %s fills it." % [_litres(fill_ml), _litres(int(entry["capacity_ml"])), KeyBindings.label("use_item"), KeyBindings.label("interact")]
 
 	if table.wood_class(number) != "" and fill_ml > 0:   # wet wood: the slot's wear is its drying left in tenths of a game hour (cooking.json wet_wood)
 		text += "\nWet: dry in about %d game hours, faster by a fire. Wet wood smokes, burns slower and gives less heat." % maxi(int(ceil(float(fill_ml) / 10.0)), 1)
@@ -6577,7 +6577,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 
 	if str(entry.get("slot", "")) != "":
 		var layer: String = str(entry.get("wear_layer", "base"))
-		text += "\nWorn on the %s%s. Use (E) puts it on." % [str(entry["slot"]), "" if layer in ["base", "footwear"] else ", %s layer" % layer]
+		text += "\nWorn on the %s%s. Use (%s) puts it on." % [str(entry["slot"]), "" if layer in ["base", "footwear"] else ", %s layer" % layer, KeyBindings.label("use_item")]
 
 		if float(entry.get("warmth", 0.0)) > 0.0:
 			text += " Keeps %d%% of your body heat in." % int(round(float(entry["warmth"]) * 100.0))
@@ -6617,7 +6617,7 @@ func _tooltip(number: int, count: int, fill_ml: int = 0, item_inst: Dictionary =
 	if int(entry.get("value", 0)) > 0 and str(entry.get("kind", "")) != "coin":
 		text += "\nWorth about %s" % coin_text(int(entry["value"]) * count) + (" (%s each)" % coin_text(int(entry["value"])) if count > 1 else "")
 
-	text += "\nKeys: Split (S), Drop (D), Use (E)"
+	text += "\nKeys: Split (%s), Drop (%s), Use (%s)" % [KeyBindings.label("split_item"), KeyBindings.label("drop_item"), KeyBindings.label("use_item")]
 
 	if int(entry.get("durability", 0)) > 0:
 		text += "\nlasts %d uses; " % SmithingRules.max_of(entry, item_inst)
@@ -7049,7 +7049,9 @@ func run_text_test(client) -> void:
 
 # Job 82: every control in the inventory window, read at the current text scale: the smallest font in use, the labels a
 # player sees (buttons, sort options, hints) and the key letters on the action buttons. Printed as "Audit:" lines.
-const ACTION_BUTTON_LABELS := ["Split (S)", "Drop (D)", "Use (E)", "Repair (R)"]
+# The action buttons name the bound keys (Split (S), Drop (D), Use (E), Repair (R) by default).
+func _action_button_labels() -> Array:
+	return ["Split (%s)" % KeyBindings.label("split_item"), "Drop (%s)" % KeyBindings.label("drop_item"), "Use (%s)" % KeyBindings.label("use_item"), "Repair (%s)" % KeyBindings.label("repair_item")]
 
 
 func _audit_text() -> void:
@@ -7085,7 +7087,7 @@ func _audit_text() -> void:
 	var tooltip_px: int = _panel.theme.get_font_size("font_size", "TooltipLabel") if _panel.theme != null else 16
 	var missing: Array = []
 
-	for key_label in ACTION_BUTTON_LABELS:
+	for key_label in _action_button_labels():
 		if not labels.has(key_label):
 			missing.append(key_label)
 
