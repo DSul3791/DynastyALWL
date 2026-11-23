@@ -7,8 +7,8 @@
 <meta name="description" content="The Dynasty: A Life Well Lived play-test: download build {{BUILD}}, report a bug, suggest an idea.">
 <!-- The testers' front page on Dave's web server (Dave 23 Nov 2026: three boxes side by side under the cover art). tools/make_testplayers_site.ps1
      fills in the fields in double braces and writes it as the site's index.html, with download.html as /download/ and site.css as /css/site.css;
-     deploy/testplayers/SERVER.md puts it on the server. The bug and idea boxes open the QA repository's GitHub forms until the site's own
-     bug and idea pages are ready. No scripts. -->
+     deploy/testplayers/SERVER.md puts it on the server. The bug and idea boxes say "Opening soon" until the site's own bug and idea pages
+     (deploy/testersite/site/, which then replaces this page) are installed. Dave 23 Nov: no links away from the site. No scripts. -->
 <link rel="stylesheet" href="/css/site.css">
 </head>
 <body>
@@ -18,8 +18,8 @@
   <main>
     <nav class="choices">
       <a class="choice main" href="/download/"><span class="glyph" aria-hidden="true">&#x2193;</span><span class="name">Download latest</span><span class="sub">Build {{BUILD}} &middot; {{SIZE_MB}} MB</span></a>
-      <a class="choice" href="https://github.com/DSul3791/DynastyALWL-QA/issues/new?template=bug.yml"><span class="glyph" aria-hidden="true">&#x2691;</span><span class="name">Submit a bug</span><span class="sub">Something broke or felt wrong</span></a>
-      <a class="choice" href="https://github.com/DSul3791/DynastyALWL-QA/issues/new?template=idea.yml"><span class="glyph" aria-hidden="true">&#x2726;</span><span class="name">Suggest an idea</span><span class="sub">Something you would like to see</span></a>
+      <div class="choice soon"><span class="glyph" aria-hidden="true">&#x2691;</span><span class="name">Submit a bug</span><span class="sub">Opening soon</span></div>
+      <div class="choice soon"><span class="glyph" aria-hidden="true">&#x2726;</span><span class="name">Suggest an idea</span><span class="sub">Opening soon</span></div>
     </nav>
 
     <div class="below"></div>
