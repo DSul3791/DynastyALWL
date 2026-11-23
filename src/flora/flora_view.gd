@@ -24,6 +24,7 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const GatherRules := preload("res://src/shared/gather_rules.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const IceScript := preload("res://src/shared/ice.gd")
@@ -1246,6 +1247,7 @@ func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 	var c: Array = entry["color"]
 	_species[int(entry["id"])] = {
 		"kind": kind,
+		"name": str(entry["name"]),
 		"height": reference,
 		"trunk": float(entry["trunk_m"]),
 		"crown": float(entry["crown_m"]),
@@ -3200,6 +3202,9 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		if (level & 8) != 0 and (int(info["kind"]) == KIND_TREE or (level & 32) != 0):
 			var size_scale: float = float(items["heights"][n]) / float(info["height"])
 			var radius: float = PlacerScript.collider_radius(int(info["kind"]), float(info["trunk"]), size_scale, float(items["heights"][n]))
+
+			if radius > 0.0 and int(info["kind"]) == KIND_TREE:
+				radius = TreeTrunks.standing_collider(str(info["name"]), ids[n], float(items["heights"][n]), radius)   # as wide as the model is drawn (tree_trunks.json)
 
 			if radius > 0.0:
 				shapes.append([species_id, radius, p + Vector3(0.0, 1.2, 0.0)])

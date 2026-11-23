@@ -78,6 +78,7 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
@@ -2298,8 +2299,9 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 						if not cells.has(cell):
 							cells[cell] = []
 
-						# The trunk collider the client makes (flora_placer.collider_radius): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
-						cells[cell].append([ids[n], at, tree_name, PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall), tall])
+						# The trunk collider the client makes (tree_trunks.gd standing_collider: as wide as it is drawn): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
+						var trunk_r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall)
+						cells[cell].append([ids[n], at, tree_name, TreeTrunks.standing_collider(str(tree_name), ids[n], tall, trunk_r), tall])
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
