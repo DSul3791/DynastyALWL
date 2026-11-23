@@ -126,7 +126,7 @@ func _demo(knowledge, q: int) -> void:
 
 			for idx in per * per:
 				var gx: int = bx * per + idx % per
-				var gz: int = bz * per + idx / per
+				var gz: int = bz * per + floori(float(idx) / float(per))
 				var dxe: float = float(gx - 48) / 44.0
 				var dze: float = float(gz - 32) / 30.0
 

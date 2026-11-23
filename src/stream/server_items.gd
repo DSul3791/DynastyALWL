@@ -10547,11 +10547,11 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 # stays (a record in _items with a "tree" entry, saved in tree_states.json) and the tree comes down in its logs (_fell_record).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if chunk.x == Net.HIT_BOULDER:
-		var rock_at: Variant = _items.get(tree_id, {}).get("pos", null)
+		var rock_spot: Variant = _items.get(tree_id, {}).get("pos", null)
 		_hit_boulder(peer, inv, tree_id, chunk.y - 1)   # a boulder blow's count is the held pack slot plus one
 
-		if rock_at != null and map_look.is_valid():
-			map_look.call(peer, rock_at)   # a rock started is marked on the Map, and the mark goes with its last stone
+		if rock_spot != null and map_look.is_valid():
+			map_look.call(peer, rock_spot)   # a rock started is marked on the Map, and the mark goes with its last stone
 
 		return
 

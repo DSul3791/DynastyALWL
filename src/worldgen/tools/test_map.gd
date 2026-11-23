@@ -387,7 +387,7 @@ func _init() -> void:
 
 		for idx in per * per:
 			var gx: int = bx * per + idx % per
-			var gz: int = idx / per
+			var gz: int = floori(float(idx) / float(per))
 			seam_cells[idx] = [60, 5.0, Codec.WATER_INLAND if absi(gx - gz - 8) < 5 else Codec.WATER_NONE, 0]
 
 		k_seam.set_block(Vector2i(bx, 0), seam_cells)

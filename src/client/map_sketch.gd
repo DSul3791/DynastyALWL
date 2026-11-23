@@ -412,8 +412,8 @@ static func _add(strokes: Array, line: Array, lat0: Vector2i, step: float, f_q: 
 	for p in line:
 		pts.append((Vector2(lat0) + p) * step)
 
-	var mid: Vector2 = line[line.size() / 2]
-	var q: float = float(f_q[clampi(int(mid.y), 0, f_q.size() / lw - 1) * lw + clampi(int(mid.x), 0, lw - 1)]) / 100.0
+	var mid: Vector2 = line[line.size() >> 1]
+	var q: float = float(f_q[clampi(int(mid.y), 0, floori(float(f_q.size()) / float(lw)) - 1) * lw + clampi(int(mid.x), 0, lw - 1)]) / 100.0
 	_ink(strokes, pts, q, noise, width, alpha, dashed)
 
 
@@ -517,7 +517,7 @@ static func _cell_lines(grid: Dictionary, first: Vector2i, cells_x: int, cells_y
 			for cell in chain:
 				pts.append((Vector2(c0) + Vector2(cell) + Vector2(0.5, 0.5)) * px)
 
-			var at: Vector2i = chain[chain.size() / 2]
+			var at: Vector2i = chain[chain.size() >> 1]
 			var q: float = float(quality[clampi(at.y, 0, ch - 1) * cw + clampi(at.x, 0, cw - 1)]) / 100.0
 			_ink(strokes, pts, q, noise, float(style[kind][0]), float(style[kind][1]), bool(style[kind][2]))
 
