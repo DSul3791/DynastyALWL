@@ -901,3 +901,9 @@ Median -28.5 dB. Surfaces more than 3 dB off (a deliberate hierarchy: soft grass
 | woodpecker | -23.5 | -5.0 | -28.5 |
 
 Median -25.4 dB. More than 4 dB off: bird_feebee (+6.8), bird_whistle (+7.0), cricket_chirp (-4.6), fish_splash (-12.9), frog_croak (-14.3), hawk_screech (+6.4), owl_hoot (+5.0), tree_frog_peep (-9.8)
+
+## sign (median -31.2 dB)
+
+| slot | source | files | RMS dB | peak dB | vs median |
+|---|---|---|---|---|---|
+| sign_spot | generated | 3 | -31.2 | -15.0 | +0.0 |

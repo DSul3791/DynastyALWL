@@ -159,7 +159,11 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   snare trained it in the last game day (no farming by re-setting); walking 10 m along a trail between two 30 s looks trains it; catches
   train it as before. Signs show from Tracking 5 (latrines, droppings) and 25 (scrapes, prints), was 25 and 50. Tracking 10 (the map's
   trails) is about 970 units: about 1.5 hours of steady trail following at 5.4 units a practice, held to about 3.2 to 3.7 hours by the
-  skill's soft day cap (gain falls toward nothing at 300 units a game day, an hour); by kills alone it would be about 360 kills. The trainer to pass 25 is not part of this.
+  skill's soft day cap (gain falls toward nothing at 300 units a game day, an hour); by kills alone it would be about 360 kills. Spotting a sign (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp
+  for finding them"; protocol 153): the first time a shown sign comes within 6 m it glows softly for 1.6 s, a slight sound plays there
+  (sign_spot, a soft intake of breath, assets/audio/make_sign.py) and the server trains Tracking once per sign per character in 3 game
+  days (within 12 m of the player, a trail within 6 m, from Tracking 5). Dave's skill rule: 1 to 24 by use, a trainer for 25 to 49, so the
+  richer signs at 25 come with the trainer; the trainer is not part of this. The look rig sets a level with --skill tracking:N.
 - TR-9 fox (salt 900): an earth in half the blocks (times the fox biome weight), 8 tries, the spot nearest slope 0.25 (at most
   0.6, dry), with at least 2 warrens within 200 m; 3 rounds of 2-4 warrens each. Clock: out sunset + 0.5 h, home sunrise - 0.25 h,
   jitter 0.5 h.

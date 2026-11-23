@@ -1018,6 +1018,9 @@ func _ready() -> void:
 		_on_blocks_requested(peer_id, keys, urgent)
 		_slow_rpc("blocks_requested", t0))
 	net.dig_requested.connect(_on_dig_requested)
+	net.sign_spotted_requested.connect(func(peer_id, x, z) -> void:   # a trail sign spotted (153): Tracking, once per sign (server_traps sign_found)
+		if is_finite(float(x)) and is_finite(float(z)):
+			items.sign_spotted(int(peer_id), Vector2(float(x), float(z))))
 	net.edits_since_requested.connect(func(peer_id, tile, since) -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_edits_since_requested(peer_id, tile, since)
