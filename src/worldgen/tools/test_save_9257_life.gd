@@ -344,7 +344,7 @@ func write_json(name: String, data: Dictionary) -> void:
 
 # Big old stacks (2,000 old wheat seeds are 100,000 today, past a slot's 65,535) in a pack, a worn bag, a store and on the ground, and a bandit
 # stash: every seed comes back, the rest of a slot in a free slot or beside it. Then a crash in the first save: the pack, chest and
-# character files are written (and marked), the world items are not: the next load counts the ground once and the rest not again.
+# character files are written (and marked), the world items are not: the next load reads the whole save before and counts it once.
 func _overflow_and_crash() -> void:
 	copy_fixture()
 	var wheat: int = 338
@@ -443,8 +443,8 @@ func _overflow_and_crash() -> void:
 	write_json("world_items/455_557.json", area)
 	var after = boot()
 	now = held_now(after)
-	var want: Dictionary = only(then, per)
-	want[wheat] = int(want[wheat]) - (100000 - 65535)   # the rest by the chest was on the ground, which the crash put back as it was
-	out = diff_counts(want, only(now, per), after.table)
-	check(out.is_empty(), "after a crash between the files the ground is counted once and the packs, bags and stores not again (%s)" % str(out.slice(0, 5)))
+	# The pack, chest and character files are from save 3, past the header's save 2: they are read from their .prev, so the whole store is
+	# the 9257 save again and is counted once, the rest by the chest laid beside it again.
+	out = diff_counts(only(then, per), only(now, per), after.table)
+	check(out.is_empty(), "after a crash between the files the store reads as the whole save before it: the ground, packs, bags and stores counted once (%s)" % str(out.slice(0, 5)))
 	after._finish_writer()
