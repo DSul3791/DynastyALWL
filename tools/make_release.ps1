@@ -20,7 +20,9 @@ param(
 	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into the game's pack (Dave 22 Nov 2026: "incorporated
 	# right in with the game"). They are copied, read only, from Dave's game folder into this clone; that folder is never changed. They are
 	# never committed and never uploaded as loose files, only inside the built game.
-	[string]$AnimalsFrom = "C:\GodotProjects\DynastyALWL\assets\animals",
+	# Once the models are in the repository (Git LFS, Dave 23 Nov 2026) they come from this clone and this is left empty; before that the
+	# default is his game folder.
+	[string]$AnimalsFrom = "",
 	# A build without them (the game draws its code-built animals instead).
 	[switch]$NoAnimals,
 	[switch]$Publish
@@ -40,10 +42,22 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 	throw "make_release: the game files have changes not committed; a release is made from a commit"
 }
 
+$tracked = @(git -c core.quotepath=off ls-files -- assets/animals)
 if ($NoAnimals) {
 	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; delete that copy first" }
 }
+elseif ($tracked.Count -gt 0) {
+	# The models are in the repository (Git LFS): this clone must hold the real files, not LFS pointer stubs (git lfs pull) and not a
+	# sparse checkout without them (tools/skip_models.sh).
+	if ($AnimalsFrom) { throw "make_release: the animal models are in the repository now; leave out -AnimalsFrom" }
+	$missing = @($tracked | Where-Object { -not (Test-Path -LiteralPath $_) })
+	if ($missing.Count -gt 0) { throw "make_release: $($missing.Count) model files are not in this checkout (sparse checkout?); run: git sparse-checkout disable; git lfs pull" }
+	$stubs = @($tracked | Where-Object { (Get-Item -LiteralPath $_).Length -lt 1024 -and (Get-Content -LiteralPath $_ -TotalCount 1 -ErrorAction SilentlyContinue) -like "version https://git-lfs*" })
+	if ($stubs.Count -gt 0) { throw "make_release: $($stubs.Count) model files are LFS pointers, not the models; run: git lfs pull" }
+	Write-Host "== animal models: $($tracked.Count) files from the repository"
+}
 else {
+	if (-not $AnimalsFrom) { $AnimalsFrom = "C:\GodotProjects\DynastyALWL\assets\animals" }
 	# Fail loudly rather than ship the plain animals by mistake.
 	if (-not (Get-ChildItem -LiteralPath $AnimalsFrom -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
 		throw "make_release: no animal models in $AnimalsFrom; pass -AnimalsFrom <folder> or -NoAnimals"
