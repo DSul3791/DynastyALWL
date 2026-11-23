@@ -800,7 +800,7 @@ func _thicket_walk(s: float) -> void:
 		_note("thicket", "no hazel or elder loaded within 250 m")
 		return
 
-	var there: bool = await _go_to(spot, 90.0, 3.0)
+	var there: bool = await _run_to(spot, 60.0, 3.0)
 	FreezeWatchScript.printer.line("ROBOT %s step thicket: %s, %d hazel or elder in its 8 m square" % [robot_name, "there" if there else "short of it", int(found[1])])
 	var end: int = Time.get_ticks_msec() + int(s * 1000.0)
 	var turn: int = 0
