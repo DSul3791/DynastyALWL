@@ -214,7 +214,10 @@ static func gain(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dic
 
 	var cap: float = float(cap_of(cfg, skill, records))
 	var v: float = raw_value(cfg, skill, record)
-	var slow: float = clampf((cap - v) / float(system.get("slow_last", 6)), 0.0, 1.0)
+	# Use slows to nothing just under the cap (24, 49, 74: a trainer opens the next class). In the last class it slows to the top itself, so
+	# Master reaches 100 by use (Dave 23 Nov 2026: every skill runs 1 to 100).
+	var top: float = float(system.get("max_value", 100))
+	var slow: float = clampf((cap + (1.0 if cap >= top else 0.0) - v) / float(system.get("slow_last", 6)), 0.0, 1.0) if v < top else 0.0
 	var speed: float = (1.0 + float(system.get("trait_speed", 0.01)) * trait_points(cfg, skill, attrs)) * pow(float(system.get("train_speed", 1.2)), float(record.get("t", 0)))
 	var g: float = share * float(system.get("gain_units", 7.0)) * difficulty * speed * slow
 
@@ -456,6 +459,17 @@ static func validate(cfg: Dictionary) -> Array:
 				elif skills.has(n) and not seen.has(n):
 					seen[n] = true
 					todo.append(n)
+
+	# The classes follow the training bands: one class per step, the first from 1, each next from step x its place, the last up to the top.
+	var system: Dictionary = cfg.get("system", {})
+	var classes: Array = system.get("classes", [])
+
+	if classes.size() * int(system.get("step", 25)) != int(system.get("max_value", 100)):
+		problems.append("%d classes do not cover 1 to %d in steps of %d" % [classes.size(), int(system.get("max_value", 100)), int(system.get("step", 25))])
+
+	for i in classes.size():
+		if int(classes[i].get("from", -1)) != (1 if i == 0 else i * int(system.get("step", 25))) or str(classes[i].get("name", "")) == "":
+			problems.append("class %d (%s) does not start at %d" % [i, str(classes[i].get("name", "")), 1 if i == 0 else i * int(system.get("step", 25))])
 
 	for action in cfg.get("actions", {}):
 		if not skills.has(str(cfg["actions"][action].get("skill", ""))):

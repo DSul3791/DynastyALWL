@@ -12,6 +12,8 @@
 #   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
 #   ROBOT_S=260 tools/robots.sh 2 kind_moose [link]   two robots hunt one animal kind; tools/robot_kinds.py <run folder> prints the measures
 #   tools/robots.sh 1 trail [link]          crouched along a game trail under trees (stops compared with standing)
+#   tools/robots.sh 2 seen [link]           Robot 2 raises and draws a bow, then fishes: Robot 1 checks the bow flags, clips and the float
+#   tools/robots.sh 2 wiggle [link]         Robot 1 runs back and forth across a spot: Robot 2 measures how far off its path it is drawn
 #   ROBOT_S=800 tools/robots.sh 2 together [link]   two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other
 #   ROBOT_S=3600 tools/robots.sh 2 roam [link]   an hour (a game day) standing at water, woods and open ground; tools/robot_stuck.py <run folder>
 #                                         counts the stuck animals near them per kind (the server's AUDIT stuck lines)
@@ -26,7 +28,7 @@
 set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 [ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
-[ "$PLAN" = "together" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
+[ "$PLAN" = "together" ] || [ "$PLAN" = "seen" ] || [ "$PLAN" = "wiggle" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
 ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)
@@ -58,7 +60,10 @@ sleep 1
 launch() {
 	local i=$1 plan=$2 tag=$3 data=$4 cache=$5
 	mkdir -p "$data" "$cache"
-	( XDG_DATA_HOME="$data" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
+	# Each robot's own user data (its character id, settings): XDG_DATA_HOME on Linux, APPDATA on Windows (Godot reads %APPDATA% there;
+	# Lane A 23 Nov 2026: without it every robot shared one character, and the second to join closed the first as a twin).
+	local appdata="$data"; command -v cygpath > /dev/null 2>&1 && appdata=$(cygpath -w "$data")
+	( XDG_DATA_HOME="$data" APPDATA="$appdata" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
 		res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$LINK --block-port=$((LINK + 1)) \
 		--cache="$cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin ${ROBOT_CLIENT_ARGS:-} > "$D/robot${i}_$tag.log" 2>&1
 	  echo $? > "$D/robot${i}_$tag.exit" ) &   # the client's exit code: 0 after a clean quit (134 was the quit abort, fixed by #1647)
