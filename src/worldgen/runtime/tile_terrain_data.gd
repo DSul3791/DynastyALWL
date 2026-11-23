@@ -1422,15 +1422,15 @@ func cave_floor_under(p: Vector3) -> float:
 
 	# The SDF on the 1 m voxel grid, blended across the four voxel columns round p (trilinear, as the mesh follows it): its highest
 	# air-over-rock crossing at or under low + 1.5.
-	var x0: float = floor(p.x)
-	var z0: float = floor(p.z)
-	var fx: float = p.x - x0
-	var fz: float = p.z - z0
+	var gx: float = floor(p.x)
+	var gz: float = floor(p.z)
+	var fx: float = p.x - gx
+	var fz: float = p.z - gz
 	var j: float = ceil(low + 1.5)
-	var above: float = _grid_sdf(shapes, x0, z0, fx, fz, j)
+	var above: float = _grid_sdf(shapes, gx, gz, fx, fz, j)
 
 	for _k in range(8):
-		var under: float = _grid_sdf(shapes, x0, z0, fx, fz, j - 1.0)
+		var under: float = _grid_sdf(shapes, gx, gz, fx, fz, j - 1.0)
 
 		if above > 0.0 and under <= 0.0:
 			return j - above / (above - under)
@@ -1441,8 +1441,8 @@ func cave_floor_under(p: Vector3) -> float:
 	return low
 
 
-func _grid_sdf(shapes: Array, x0: float, z0: float, fx: float, fz: float, y: float) -> float:
-	return lerpf(lerpf(_cave_sdf(shapes, x0, y, z0), _cave_sdf(shapes, x0 + 1.0, y, z0), fx), lerpf(_cave_sdf(shapes, x0, y, z0 + 1.0), _cave_sdf(shapes, x0 + 1.0, y, z0 + 1.0), fx), fz)
+func _grid_sdf(shapes: Array, gx: float, gz: float, fx: float, fz: float, y: float) -> float:
+	return lerpf(lerpf(_cave_sdf(shapes, gx, y, gz), _cave_sdf(shapes, gx + 1.0, y, gz), fx), lerpf(_cave_sdf(shapes, gx, y, gz + 1.0), _cave_sdf(shapes, gx + 1.0, y, gz + 1.0), fx), fz)
 
 
 # A cave shape as the carve measures it: [a, b with y squashed, width, squash].
