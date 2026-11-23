@@ -142,6 +142,39 @@ func _init() -> void:
 	var free_wall: int = int((b[1] as Dictionary)[Vector2i(2, 1)])
 	check(take_down(free_wall), "a wall with nothing on it comes down")
 
+	# A 4 m double doorway closes two cells: a ceiling over either sits on its top, and the doorway then holds that ceiling up.
+	var d_base: int = place("thatch_floor_kit", Vector3(1060.0, 10.0, 500.0))
+	var double: int = place("thatch_double_doorway", Vector3(1060.0, 10.3, 497.8), 0)
+	check(d_base > 0 and double > 0 and str(items._items[double]["struct"]["kind"]) == "thatch_double_doorway", "a double doorway stands along one side (%s)" % str(said))
+	var over: int = place("floor_section_kit", Vector3(1059.0, top, 498.1))
+	check(over > 0 and absf(float(items._items[over]["pos"].y) - top) < 0.01, "a ceiling by the double doorway's top sits on it (%s)" % str(items._items[over]["pos"] if over > 0 else said))
+	check(not take_down(double) and said.has("Take down what stands on it first."), "and the double doorway holding it up stays (%s)" % str(said))
+
+	# A roof panel rising from a wall top: the wall stays while the panel is on it.
+	place("wall_section_kit", Vector3(1080.0, 10.0, 500.0), 0)
+	var lone: int = items._next_id - 1
+	var panel: int = place("thatch_roof_kit", Vector3(1080.0, 12.0, 500.1), 0)
+	check(panel > 0 and not take_down(lone) and said.has("Take down what stands on it first."), "a wall under a roof panel stays (%s)" % str(said))
+	check(take_down(panel) and take_down(lone), "the panel comes off, then the wall")
+
+	# The cost of the check: a street of ten roofed rooms side by side, a wall in the middle of it asked.
+	var sx: float = 3000.0
+	var street_wall: int = -1
+
+	for n in 10:
+		var r: Array = room(sx + 4.0 * n, "wall_section_kit", "foundation_section_kit")
+
+		for k in [[-1, -1], [1, -1], [-1, 1], [1, 1]]:
+			place("wooden_roof_corner_kit", Vector3(sx + 4.0 * n + k[0] * 1.2, top + 0.5, 500.0 + k[1] * 1.2), 0)
+
+		if n == 5:
+			street_wall = int((r[1] as Dictionary)[Vector2i(1, 2)])
+
+	var t0: int = Time.get_ticks_usec()
+	var kept: bool = not take_down(street_wall)
+	var took: float = float(Time.get_ticks_usec() - t0) / 1000.0
+	check(kept and took < 50.0, "a wall in a street of %d pieces under a roof stays, the check taking %.1f ms (under 50)" % [items._items.size(), took])
+
 	# No daylight through a closed room of any tier.
 	var view = load("res://src/client/inventory_view.gd").new()
 	var x: float = 1100.0

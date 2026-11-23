@@ -13631,21 +13631,19 @@ func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 # still rests on something else (a panel on two walls, a ceiling on its other walls) does not hold `base` up. Rows within HOLDS_UP_ROWS_M only, so a
 # take-down reads the pieces round it, never the whole world.
 const HOLDS_UP_NEAR_M := 4.5    # a piece resting on `base` stands this close to it across the ground (a 65 panel's middle is a run off its wall top)
-const HOLDS_UP_ROWS_M := 12.0   # the rows its snap reads (a foundation's anchors, a panel's edges, ROOF_ROW_REACH_M)
+const HOLDS_UP_SNAP_M := 7.0    # the rows one piece's snap reads round it (a foundation's anchors, a panel's edges, ROOF_ROW_REACH_M)
+const HOLDS_UP_ROWS_M := HOLDS_UP_NEAR_M + HOLDS_UP_SNAP_M   # the rows read at all
 
 
-func _holds_up(base: Dictionary) -> bool:
+func _holds_up(base: Dictionary, base_id: int) -> bool:
 	var rows: Array = []
 	var near: Array = []
 	var flat: Vector2 = Vector2(base["pos"].x, base["pos"].z)
 
-	for other in _items.values():
+	for id in _items:
+		var other: Dictionary = _items[id]
+
 		if not other.has("struct"):
-			continue
-
-		var odef: Dictionary = _structures.get(str(other["struct"]["kind"]), {})
-
-		if not (bool(odef.get("foundation", false)) or bool(odef.get("piece", false))):
 			continue
 
 		var apart: float = Vector2(other["pos"].x, other["pos"].z).distance_to(flat)
@@ -13653,16 +13651,23 @@ func _holds_up(base: Dictionary) -> bool:
 		if apart > HOLDS_UP_ROWS_M:
 			continue
 
-		var row: Dictionary = {"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "item": other}
+		var odef: Dictionary = _structures.get(str(other["struct"]["kind"]), {})
+
+		if not (bool(odef.get("foundation", false)) or bool(odef.get("piece", false))):
+			continue
+
+		var row: Dictionary = {"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "id": int(id)}
 		rows.append(row)
 
-		if other != base and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)):
+		# Walls and fences stand on a foundation's anchors or the ground, never on a wall: they rest on nothing a take-down of `base` can pull out.
+		if int(id) != base_id and apart <= HOLDS_UP_NEAR_M and float(other["pos"].y) > float(base["pos"].y) + 0.05 and str(odef.get("kit", "")) != "" and not bool(odef.get("foundation", false)) and not (str(odef.get("piece_kind", "")) in ["wall", PlacementRules.FENCE_KIND]):
 			near.append(row)
 
 	for row in near:
-		var kit: String = str(_structures[str(row["item"]["struct"]["kind"])]["kit"])
-		var others: Array = rows.filter(func(r): return r["item"] != row["item"])
-		var without: Array = others.filter(func(r): return r["item"] != base)
+		var kit: String = str(_structures[str(_items[int(row["id"])]["struct"]["kind"])]["kit"])
+		var at: Vector2 = Vector2(row["pos"].x, row["pos"].z)
+		var others: Array = rows.filter(func(r): return int(r["id"]) != int(row["id"]) and Vector2(r["pos"].x, r["pos"].z).distance_to(at) <= HOLDS_UP_SNAP_M)
+		var without: Array = others.filter(func(r): return int(r["id"]) != base_id)
 
 		for mode in [0, 1]:
 			var with_it: Array = PlacementRules.snap(_structures_cfg, kit, row["pos"], int(round(float(row["yaw"]))), others, mode)
@@ -13795,7 +13800,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Empty it first.")
 		return
 
-	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def) or (bool(def.get("piece", false)) and _holds_up(it)):
+	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def) or (bool(def.get("piece", false)) and _holds_up(it, id)):
 		_say(peer, "Take down what stands on it first.")
 		return
 
