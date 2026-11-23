@@ -78,6 +78,7 @@ func _init() -> void:
 	var view = load("res://src/client/inventory_view.gd").new()
 	var holder: Node3D = Node3D.new()
 	view._root = holder
+	view._queue_rock_hulls()   # as at the join: the boulder mesh is made before the first boulder, its material must still be made then
 
 	for ang in [0.1, 0.5, 0.9]:
 		view._show_boulder(4242, [4242, 0, total, Vector3(10.0, 5.0, 20.0), view.BOULDER_STATE, {"radius": 1.0, "yaw": 30.0, "total": total, "ang": ang}])

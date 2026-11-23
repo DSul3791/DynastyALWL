@@ -1468,6 +1468,20 @@ func _tell(peer: int, text: String) -> void:
 		tell.call(peer, text)
 
 
+# The weapon a camp bandit strikes with (server_big_game weapon_of): his level's, while he still holds it; "" for anything else.
+func weapon_of(a: Dictionary) -> String:
+	if str(a.get("sp", "")) != "bandit" or a.has("gave_up"):
+		return ""
+
+	var member: Dictionary = _members.get(a.get("camp", Vector2i(2147483647, 0)), {}).get(int(a.get("id", 0)), {})
+
+	if not bool(member.get("armed", true)):
+		return ""   # he threw his weapon down once (a bandit made again after a despawn has none)
+
+	var gear: Array = gear_of(int(a.get("level", 1)))
+	return str(gear[0]) if not gear.is_empty() else ""
+
+
 # What a bandit of a level carries (camp gear): the highest row its level reaches.
 func gear_of(level: int) -> Array:
 	var out: Array = []

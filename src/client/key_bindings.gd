@@ -38,6 +38,7 @@ const ACTIONS := [
 	["auto_pickup", "Auto pickup on / off", "Actions", CONTEXT_WORLD, KEY_P, false, false, false],
 	["inspect", "Inspection mode on / off", "Actions", CONTEXT_WORLD, KEY_SLASH, false, false, false],
 	["ruler", "Inclination ruler on / off", "Actions", CONTEXT_WORLD, KEY_H, false, false, false],
+	["block", "Shield in the left hand: hold to raise it", "Actions", CONTEXT_WORLD, KEY_B, false, false, true],
 	# The hoe's garden grid (Dave 14 Nov 2026: "you can size it using the arrow keys plus the alt button"): the group always needs Alt (GARDEN_GROUP, _garden_alt).
 	["garden_wider", "Hoe grid: wider", GARDEN_GROUP, CONTEXT_WORLD, KEY_RIGHT, false, false, false],
 	["garden_narrower", "Hoe grid: narrower", GARDEN_GROUP, CONTEXT_WORLD, KEY_LEFT, false, false, false],
@@ -479,7 +480,10 @@ static func conflicts() -> Array:
 # Which action each key letter in the game's built-in prompt texts stands for ("Press E to gather", "hold E", "F for wood"). The server's
 # notices and hints (hints.json: "press E on nettles", "Press F at the fire") come through localize on the client too.
 # I and R for the goal hints ("Open the inventory (I)", "press R and pick Lean-to"; first-hour fixes 22 Nov 2026).
-const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints"}
+# Tab and Shift for the first hints ("Press Tab to see Health ...", "Hold Shift to run"; client bug hunt 23 Nov 2026). A Shift that is part of
+# a fixed mouse combination ("Shift + right click") has no "Hold"/"Press" before it and is left alone.
+const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints", "Tab": "character", "Shift": "run"}
+const MOVE_KEYS_TEXT := "W A S D"   # the first hint's movement keys, rewritten whole to the four bound keys
 static var _prompt_regex: RegEx = null
 
 
@@ -492,7 +496,10 @@ static func localize(text: String) -> String:
 		return text
 
 	if _prompt_regex == null:
-		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())([EFZHIR])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
+		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())(Tab|Shift|[EFZHIR])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
+
+	if text.contains(MOVE_KEYS_TEXT):
+		text = text.replace(MOVE_KEYS_TEXT, " ".join([label("move_forward"), label("move_left"), label("move_back"), label("move_right")]))
 
 	var found: Array[RegExMatch] = _prompt_regex.search_all(text)
 	found.reverse()

@@ -16,6 +16,7 @@ extends SceneTree
 #                      the total and writes user://world_audit_total.json
 #     --examples=N     worst examples kept per fault (default 12)
 #     --camps          instead of chunks: the starter town, the goblin camps and every bandit candidate site (trunks, boulders, tilt, water, overlaps)
+#     --lakes          instead of chunks: every lake of every baked tile (8 m samples) against the dry ground round it (lake_over_lip)
 #     --caves          instead of chunks: every cave of every baked tile (walking lines, dens, den mouths, goblin paths, floor items)
 #
 # Nothing is written to the world; the tool reads the tiles, the placer, the water grid and the server's scatter layout.
@@ -69,6 +70,7 @@ const FAULTS := {
 	"boulder_overlap": ["two boulders inside each other, or a boulder through a tree trunk", 0.0],
 	"item_in_trunk": ["a loose item lying inside a tree trunk", 0.0],
 	"water_gap": ["a dry water-grid point, no lower than its wet neighbour's bed, 0.30 m or more under that neighbour's level (a hole or cut edge in the water sheet)", 0.30],
+	"lake_over_lip": ["a lake standing 0.30 m or more over the dry ground at its rim (--lakes): it spills over a lip lower than its level, and the drawn sheet folds down past the rim instead of meeting a waterline; severity = level - lip, one per lake", 0.30],
 	"water_wall": ["water 0.30 m or more deep beside dry ground lower than its bed and 0.50 m under its level (water held up by nothing), no fall drawn there", 0.30],
 	"water_step": ["two neighbouring wet points whose levels differ 1.0 m more than their beds do (water steeper than the ground), no fall drawn there", 1.0],
 	"lake_tilted": ["neighbouring lake points more than 0.10 m apart (standing water on a slope)", 0.10],
@@ -140,6 +142,7 @@ func _init() -> void:
 	var camps: bool = false
 	var walk: bool = false
 	var shores: bool = false
+	var lakes: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		var value: String = argument.get_slice("=", 1)
@@ -174,6 +177,8 @@ func _init() -> void:
 			walk = true
 		elif argument == "--shores":
 			shores = true
+		elif argument == "--lakes":
+			lakes = true
 		elif argument.begins_with("--probe="):
 			probe = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 
@@ -216,7 +221,9 @@ func _init() -> void:
 	var mine: Array = []
 	var started: int = Time.get_ticks_msec()
 
-	if camps:
+	if lakes:
+		mine = _audit_lakes()
+	elif camps:
 		mine = _audit_camps(settings)
 	elif caves:
 		mine = _audit_caves(part)
@@ -230,7 +237,7 @@ func _init() -> void:
 
 		print("world_audit: %d chunks picked, %d in part %d/%d" % [chunks.size(), mine.size(), part.x, part.y])
 
-	for n in range(0 if caves or camps else mine.size()):
+	for n in range(0 if caves or camps or lakes else mine.size()):
 		var c: Vector2i = mine[n][0]
 		_biome_now = str(mine[n][1])
 
@@ -862,6 +869,80 @@ func _check_water(o: Vector2) -> void:
 					if ground[jj * count + ii] < ground[k] - 0.1 and levels[k] - below >= 0.5 and not _fall_near(falls, Vector2(x, z), 2.0 * sp):
 						_fault("water_wall", levels[k] - below, Vector3(x, levels[k], z), "%.2f deep, beside dry ground %.2f" % [levels[k] - ground[k], ground[jj * count + ii]])
 						break
+
+
+# ---------------------------------------------------------------- lakes (--lakes)
+
+# Every lake of every baked tile: its 8 m samples (water class lake, a settled level) joined into lakes, and each lake's rim, the dry samples beside
+# it. A lake whose level stands LAKE_LIP_M over its lowest rim ground spills over a lip it should have settled to.
+func _audit_lakes() -> Array:
+	var done: Array = []
+
+	for file_name in DirAccess.get_files_at(WORLD + "/tiles"):
+		if not file_name.ends_with(".tile"):
+			continue
+
+		var parts: PackedStringArray = file_name.get_basename().split("_")
+		var tile: Vector2i = Vector2i(int(parts[1]), int(parts[2]))
+		var data = generator.get_tile(tile)
+
+		if data == null or data.placeholder:
+			continue
+
+		var n: int = data.samples
+		var sim: PackedFloat32Array = data.sim_snapshot()
+		var level_of: Callable = func(k: int) -> float: return sim[k] if not sim.is_empty() else data.water_surface[k]
+		var seen: PackedByteArray = PackedByteArray()
+		seen.resize(n * n)
+
+		for start in range(n * n):
+			if seen[start] or data.water_class[start] != lake_class or is_nan(level_of.call(start)):
+				continue
+
+			var stack: Array = [start]
+			seen[start] = 1
+			var size: int = 0
+			var worst: float = 0.0
+			var worst_at: Vector3 = Vector3.ZERO
+			var top: float = -INF
+
+			while not stack.is_empty():
+				var k: int = stack.pop_back()
+				size += 1
+				var level: float = level_of.call(k)
+				top = maxf(top, level)
+
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var i: int = k % n + d.x
+					@warning_ignore("integer_division")
+					var j: int = k / n + d.y   # the sample's row
+
+					if i < 0 or j < 0 or i >= n or j >= n:
+						continue
+
+					var m: int = j * n + i
+
+					if is_nan(level_of.call(m)):
+						var over: float = level - data.heights[m]
+
+						if over > worst:
+							worst = over
+							worst_at = Vector3(data.x0 + float(i) * data.spacing_m, level, data.z0 + float(j) * data.spacing_m)
+					elif not seen[m] and data.water_class[m] == lake_class:
+						seen[m] = 1
+						stack.append(m)
+
+			_checked("lakes")
+			_checked("lake samples", size)
+
+			if worst >= float(FAULTS["lake_over_lip"][1]):
+				_biome_now = "tile %d,%d" % [tile.x, tile.y]
+				_fault("lake_over_lip", worst, worst_at, "a lake of %d samples (%.0f m2) at %.2f, rim ground %.2f" % [size, float(size) * data.spacing_m * data.spacing_m, top, worst_at.y - worst])
+
+		done.append([Vector2i.ZERO, "tile %d,%d" % [tile.x, tile.y]])
+
+	print("world_audit: lakes of %d tiles checked" % done.size())
+	return done
 
 
 func _fall_near(falls: Array, p: Vector2, reach: float) -> bool:
