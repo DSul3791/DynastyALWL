@@ -5039,6 +5039,35 @@ func _make_remains(age: float) -> Node3D:
 	return BuildingLook.remains(age)
 
 
+# A piece whose model is drawn wider than its old solid (structures.json "solid_drawn": the rock pile's stones spread past its 1 m box) blocks where it
+# is drawn (coordinator 23 Nov 2026, physical world audit round 5): one more box of the drawn size, inside its footprint (widened in data to the drawn
+# size), up to the drawn top or its "solid_top_m" (the rock pile's rim, low enough to step onto), at most 2.2 m. Kept before _model_for_state: the look
+# name check reads the dispatcher in the 6,000 characters after that line.
+func _add_drawn_solid(model: Node3D, def: Dictionary) -> void:
+	if not bool(def.get("solid_drawn", false)):
+		return
+
+	var box: AABB = _bounds_in(model, model)
+	var scale: float = maxf(model.scale.x, 0.01)
+	var half: Vector2 = Vector2(float(def.get("footprint_x", box.size.x * scale)), float(def.get("footprint_z", box.size.z * scale))) * 0.5 / scale
+	var top: float = minf(box.end.y, float(def.get("solid_top_m", 2.2)) / scale)
+	var lo: Vector3 = Vector3(maxf(box.position.x, -half.x), maxf(box.position.y, 0.0), maxf(box.position.z, -half.y))
+	var hi: Vector3 = Vector3(minf(box.end.x, half.x), minf(top, 2.2 / scale), minf(box.end.z, half.y))
+
+	if hi.x <= lo.x or hi.y <= lo.y or hi.z <= lo.z:
+		return
+
+	var body: StaticBody3D = StaticBody3D.new()
+	body.set_meta("placed_structure", true)   # not rock: the cave module's enclosure rays skip it (BUG-027)
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var solid: BoxShape3D = BoxShape3D.new()
+	solid.size = hi - lo
+	shape.shape = solid
+	shape.position = (lo + hi) * 0.5
+	body.add_child(shape)
+	model.add_child(body)
+
+
 # Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (the same cap at every quality).
 # The model of a world state (structures.json "look", read through StructureLook): the same builders draw a placed thing and the placement ghost.
 # `extra` is the row's extras (remains age, carcass species).
@@ -5088,34 +5117,6 @@ func _add_missing_solid(model: Node3D, def: Dictionary) -> void:
 	var half: Vector2 = Vector2(float(def.get("footprint_x", box.size.x * scale)), float(def.get("footprint_z", box.size.z * scale))) * 0.5 / scale
 	var lo: Vector3 = Vector3(maxf(box.position.x, -half.x), maxf(box.position.y, 0.0), maxf(box.position.z, -half.y))
 	var hi: Vector3 = Vector3(minf(box.end.x, half.x), minf(box.end.y, 2.2 / scale), minf(box.end.z, half.y))
-
-	if hi.x <= lo.x or hi.y <= lo.y or hi.z <= lo.z:
-		return
-
-	var body: StaticBody3D = StaticBody3D.new()
-	body.set_meta("placed_structure", true)   # not rock: the cave module's enclosure rays skip it (BUG-027)
-	var shape: CollisionShape3D = CollisionShape3D.new()
-	var solid: BoxShape3D = BoxShape3D.new()
-	solid.size = hi - lo
-	shape.shape = solid
-	shape.position = (lo + hi) * 0.5
-	body.add_child(shape)
-	model.add_child(body)
-
-
-# A piece whose model is drawn wider than its old solid (structures.json "solid_drawn": the Saw mill's log bed, the Rough bed's straw, the rock pile, the
-# kiln's firebox) blocks where it is drawn (coordinator 23 Nov 2026, physical world audit round 5): one more box of the drawn size, inside its
-# footprint (widened in data to the drawn size), up to the drawn top or its "solid_top_m" (a bed keeps the height it is lain on), at most 2.2 m.
-func _add_drawn_solid(model: Node3D, def: Dictionary) -> void:
-	if not bool(def.get("solid_drawn", false)):
-		return
-
-	var box: AABB = _bounds_in(model, model)
-	var scale: float = maxf(model.scale.x, 0.01)
-	var half: Vector2 = Vector2(float(def.get("footprint_x", box.size.x * scale)), float(def.get("footprint_z", box.size.z * scale))) * 0.5 / scale
-	var top: float = minf(box.end.y, float(def.get("solid_top_m", 2.2)) / scale)
-	var lo: Vector3 = Vector3(maxf(box.position.x, -half.x), maxf(box.position.y, 0.0), maxf(box.position.z, -half.y))
-	var hi: Vector3 = Vector3(minf(box.end.x, half.x), minf(top, 2.2 / scale), minf(box.end.z, half.y))
 
 	if hi.x <= lo.x or hi.y <= lo.y or hi.z <= lo.z:
 		return
