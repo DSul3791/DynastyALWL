@@ -8729,7 +8729,6 @@
 				"description": "A pale sweet root grown in a tilled bed. Frost makes it sweeter.",
 				"kind": "material",
 				"stack": 20,
-				"future": true,
 				"look_alikes": [
 					"Carrot"
 				],
@@ -8741,7 +8740,6 @@
 				"description": "Seeds for sowing parsnip. Plant in a tilled bed.",
 				"kind": "material",
 				"stack": 40,
-				"future": true,
 				"look_alikes": [],
 				"value": 1,
 				"sell_lot": 100
