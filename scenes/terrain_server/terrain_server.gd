@@ -97,7 +97,8 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const TunnelWatchScript := preload("res://src/stream/tunnel_watch.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
-const MAX_PLAYERS := 32                 # ENet's peer limit; the server pick page shows "2 / 32"
+const MAX_PLAYERS := 32                 # the most players at once; the server pick page shows "2 / 32"
+var max_players: int = MAX_PLAYERS       # --max-players=N (tests: a full server with 1 player)
 const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
@@ -294,6 +295,8 @@ func _ready() -> void:
 			_clear_generated_at_start = true
 		elif argument.begins_with("--store="):
 			store_dir = argument.trim_prefix("--store=")
+		elif argument.begins_with("--max-players="):
+			max_players = clampi(int(argument.trim_prefix("--max-players=")), 1, MAX_PLAYERS)
 		elif argument.begins_with("--threads="):
 			_max_running = maxi(int(argument.trim_prefix("--threads=")), 1)
 		elif argument.begins_with("--idle-threads="):
@@ -361,15 +364,15 @@ func _ready() -> void:
 	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
-			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY
-			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0
-			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY   # starter-calendar: the admin --game-day sets the one clock
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0   # starter-calendar: the admin --game-day sets the one clock
+			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])   # starter-calendar: a log line
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
 			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
 			game_clock.seconds = day_start + clampf(float(argument.trim_prefix("--game-hour=")), 0.0, 23.99) * 3600.0
-			print("server: --game-hour: the clock starts at hour %.2f of day %d" % [game_clock.hour(), game_clock.day_of_year()])
+			print("server: --game-hour: the clock starts at hour %.2f of day %d" % [game_clock.hour(), game_clock.day_of_year()])   # starter-calendar: a log line
 
 	var problem: String = store.setup(generator, store_dir)
 
@@ -468,7 +471,7 @@ func _ready() -> void:
 	items.send_body = func(peer, bpm, eta, phase): net.body.rpc_id(peer, bpm, eta, phase)
 	@warning_ignore("confusable_local_declaration")
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
-	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed))
+	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed), _row_of(pos), settings.equator_tile_row)   # the row's own winter
 	@warning_ignore("confusable_local_declaration")
 	items.send_worn = func(peer, numbers, insts):
 		net.worn.rpc_id(peer, numbers, insts)
@@ -561,7 +564,7 @@ func _ready() -> void:
 		return Vector3(0.0, NAN, 0.0) if best.y == INF and skipped else best   # NAN: not known yet (a tile the reach touches is not loaded)
 	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
 	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
-	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed)), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
+	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed), _row_of(pos), settings.equator_tile_row), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
@@ -641,9 +644,10 @@ func _ready() -> void:
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
 	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
 	items.game_seconds = func(): return game_clock.seconds
-	items.season_now = func(): return game_clock.season()
+	items.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
 	items.season_at = func(pos): return WeatherScript.season_at(game_clock.seconds, pos.z, float(settings.tile_size_m), settings.equator_tile_row)   # a place's own season (drinking water by source)
-	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
+	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()   # starter-calendar: the fallback only (season_stamp_at)
+	items.season_stamp_at = func(pos): return WeatherScript.season_stamp_at(game_clock.seconds, _row_of(pos), settings.equator_tile_row)   # a place's own season count
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 
@@ -795,8 +799,11 @@ func _ready() -> void:
 	animals.player_loud = func(): return cues.loud_kinds()   # a blow, a cry or craft work carries farther to animals (hearing-range pass)
 	animals.hour_now = func(): return game_clock.hour()
 	animals.sun_row_m = float(settings.tile_size_m)
-	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
-	animals.season_now = func(): return game_clock.season()
+	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it. starter-calendar: the declination is the one sky's, the latitude the row's
+	animals.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
+	animals.equator_row = settings.equator_tile_row
+	animals.season_at = items.season_at   # an animal's seasons (young, the rut's threat) where it is
+	flora.season_at = items.season_at   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md), by each spot's own season
 	var biome_names: Dictionary = {}
 
 	for biome_entry in tables.get_entries("biomes"):
@@ -1076,7 +1083,9 @@ func _ready() -> void:
 	_start_water()
 
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = server_peer.create_server(port, MAX_PLAYERS)
+	# One seat more than the players: ENet turns a peer past its limit away before any message, so the game could not tell "full" from
+	# "down". The extra peer is let in only to be told the server is full (hello, below) and dropped.
+	var error: int = server_peer.create_server(port, max_players + 1)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -1165,6 +1174,13 @@ func _ready() -> void:
 
 		if account == "":
 			return
+
+		if _full_for(peer, identity.store_key(account)):
+			_refuse_join(peer, build, SERVER_FULL % max_players)
+			return
+
+		if _peers.has(peer):
+			_peers[peer]["player"] = true   # counted by _full_for from here on
 
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
@@ -1433,7 +1449,7 @@ func _publish_status() -> void:
 		"stamped": _stamped_build > 0,
 		"protocol": NetScript.PROTOCOL_VERSION,
 		"players": _peers.size(),
-		"max_players": MAX_PLAYERS,
+		"max_players": max_players,
 		"locked": _server_settings.locked(),
 	})
 
@@ -1454,13 +1470,34 @@ func _drop_replaced(old_peer: int) -> void:
 		_on_peer_disconnected(old_peer)   # forgotten now: a dead line never answers the close, so it stayed in the lists (and was sent to, 2,540 send errors in 6 min) until its 60 to 120 s timeout (robots 23 Nov 2026); the engine's own leave later finds nothing (a force close would skip that leave and keep the peer in the engine's list)
 
 
+# The words a player past max_players is given (the client titles its window "Server full" when it sees "server is full").
+const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
+
+
+# Whether a hello from `peer` (character `store`) finds the server full: only connections whose hello was let in count (not the ones still
+# at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
+func _full_for(peer: int, store: String) -> bool:
+	var players: int = 0
+
+	for other in _peers:
+		if other == peer or not _peers[other].has("player") or _peers[other].has("refused"):
+			continue
+
+		if items.key_of(other) == store:
+			return false
+
+		players += 1
+
+	return players >= max_players
+
+
 func _refuse_join(peer: int, build: int, text: String) -> void:
 	if not _peers.has(peer) or _peers[peer].has("refused"):
 		return   # one refusal per connection, however many hellos it sends
 
 	_peers[peer]["refused"] = true
-	print("Join refused for peer %d: client build %d, this server build %d" % [peer, build, _stamped_build])
-	_events.event("peer %d refused: client build %d, server build %d" % [peer, build, _stamped_build])
+	print("Join refused for peer %d (client build %d, this server build %d): %s" % [peer, build, _stamped_build, text])
+	_events.event("peer %d refused (client build %d, server build %d): %s" % [peer, build, _stamped_build, text])
 	net.join_refused.rpc_id(peer, text)
 	await get_tree().create_timer(1.0).timeout
 
@@ -1576,6 +1613,11 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 
 
 # Whether a point is in a spring cave pool (icy water, BUG-008).
+# The tile row of a position (Climate.row_of_z): its own seasons, sun and weather.
+func _row_of(pos: Vector3) -> int:
+	return floori(pos.z / float(settings.tile_size_m))
+
+
 func _in_cave_pool(position: Vector3) -> bool:
 	return not is_nan(_cave_pool_surface(position))
 
@@ -1903,12 +1945,10 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
+	var row: int = WeatherScript.STARTER_ROW               # starter-calendar: the fallback weather (weather_now, rain_now) for code with no place; the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
-	if flora != null:
-		flora.set_season(str(weather["season"]))   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md): the row's own season (Weather.season_at)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:

@@ -863,7 +863,7 @@ func _ready() -> void:
 
 	net.welcome_received.connect(_on_welcome)
 	net.join_refused_received.connect(func(text: String) -> void:
-		_on_join_refused(text, "Joined from elsewhere" if text.contains("joined the server again") else "Update required"))   # terrain_server.gd _drop_replaced: not a version problem
+		_on_join_refused(text, join_refused_title(text)))
 	net.notice_received.connect(func(text: String) -> void:
 		if text == NetScript.SERVER_CLOSING:
 			_server_closing = text)   # the server is stopping (a restart or an update): its "connection lost" window says so
@@ -986,7 +986,11 @@ func _update_connect_window() -> void:
 		# Ground on the very first walk step (a warm ground cache after an update) never logs "ground ready": then 10 s, past the pause's start.
 		var landed: bool = (_ground_logged or (not waiting_for_ground and since >= 10)) if _connect_window.first_load_note_shown() else not waiting_for_ground
 
-		if (landed and since >= 3) or since > 120:
+		if since > JOIN_GIVE_UP_S and not landed:
+			_connect_window.fail("The ground did not arrive", "The server welcomed this game, but after %d minutes the ground under you has still not loaded.\n\nGo back and join again, or quit and send these files from the game's user folder: telemetry_client.log and ground_mismatch.log." % int(since / 60), func(): _finish(1))
+			return
+
+		if landed and since >= 3:   # never before the ground is there: a window closed at 120 s left a player looking at an empty world, and the ground watchdog's give-up (up to 180 s and more) then had no window to say it on
 			_telemetry.event("connect window closed after %d s in the world" % since)
 
 			if landed:
@@ -1190,16 +1194,28 @@ func _on_connection_failed() -> void:
 		return
 
 	if _remote:
-		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection. A full server also turns new players away without a word: if the server pick page showed it full, try again when someone leaves." % [_host, _port])   # ENet turns a player past MAX_PLAYERS away before any message, so the game cannot tell "full" from "down"
+		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection." % [_host, _port])   # a full server says so (terrain_server.gd SERVER_FULL), so this is a server that is down or unreachable
 		return
 
 	_finish(1)
+
+
+# The window's title for a refusal the server explains (terrain_server.gd: _drop_replaced, SERVER_FULL, BuildStamp.refusal).
+static func join_refused_title(text: String) -> String:
+	if text.contains("joined the server again"):
+		return "Joined from elsewhere"
+
+	if text.contains("server is full"):
+		return "Server full"
+
+	return "Update required"
 
 
 # The server cannot be reached before joining: a window says why, with Back to servers and Quit;
 # a headless run quits with code 1 as before.
 func _cannot_reach(text: String) -> void:
 	_telemetry.event("JOIN: cannot reach the server: %s" % text)
+	FreezeWatchScript.printer.line("Terrain client: cannot reach the server: " + text)   # the console too: headless checks (tools/way_in_check.sh) read it
 
 	if _connect_window == null:
 		_finish(1)
@@ -1913,7 +1929,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.trunks_version = func() -> int: return flora.canopy_version
 	held.report_now = send_position_now   # a fresh position report just before each blow (server_items strike_origin)
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
-	held.season_now = func(): return _drink_season if _drink_season != "" else game_clock.season()   # the hoe's plant list greys out what is out of season: the season where the player stands, as the server sows by the bed's (season_at; the server's own clock, synced at the welcome)
+	held.season_now = func(): return season_here()   # the hoe's plant list greys out what is out of season: the season where the player stands, as the server sows by the bed's (season_at; the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
@@ -2505,10 +2521,10 @@ func _shore_prompt() -> String:
 			break
 
 	if nest_view != null:
-		nest_view.set_season(game_clock.season(), int(floor(game_clock.seconds / 86400.0)))   # eggs show in the laying season only, and not in a nest robbed lately
+		nest_view.set_season(season_here(), int(floor(game_clock.seconds / 86400.0)))   # eggs show in the laying season only, and not in a nest robbed lately
 
 	if shore_props != null:
-		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), game_clock.season(), _shore_used, _ground_below)
+		shore_props.update(here, _shore_cfg, int(floor(game_clock.seconds / 86400.0)), game_clock.hour(), season_here(), _shore_used, _ground_below)
 
 	var ground: float = _ground_below(here)
 
@@ -2525,7 +2541,7 @@ func _shore_prompt() -> String:
 			break
 
 	var day: int = int(floor(game_clock.seconds / 86400.0))
-	_shore_text = ShoreRules.prompt(_shore_cfg, here, sea, container, ground, day, game_clock.hour(), game_clock.season(), _shore_used)
+	_shore_text = ShoreRules.prompt(_shore_cfg, here, sea, container, ground, day, game_clock.hour(), season_here(), _shore_used)
 	return _shore_text
 
 
@@ -2549,6 +2565,11 @@ const DRINK_REACH_M := 3.0   # vitals.json thirst.reach_m, the server's reach fo
 var _drink_chunks: Dictionary = {}   # chunk -> [cell keys (Array of Vector2i), springs PackedFloat32Array x, z], oldest first
 var _drink_cells: Dictionary = {}    # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
 var _drink_cell_m: float = 8.0
+var _row_here: int = WeatherScript.STARTER_ROW   # starter-calendar: until the first weather step; the tile row the player stands in (set each second in _update_weather): its own seasons, sun and ice
+var _eq_row: int = 0                 # the world's equator tile row
+var _ice_across: bool = false        # the row is across the equator from the starter island (its year half a year on): ice answers kept for the other side are dropped
+var _view_season: String = ""       # the season the flora view draws: the player's, held near the equator's row edge (_update_weather)
+const VIEW_SEASON_EDGE_M := 64.0     # how far past that edge the player walks before the view takes the new side's season
 var _drink_season: String = ""      # the season and rain the server's drink rule reads (DrinkRules.brook_shows), set each second in _update_weather
 var _drink_raining: bool = false
 var _drink_heads: Dictionary = {}    # Vector2i cell (cell_m grid) -> PackedFloat32Array x, z of the spring heads in it, for the lush grass (_brook_spots)
@@ -3043,6 +3064,12 @@ func _apply_incoming() -> void:
 # Weather from the game clock, the world seed, the zone of the tile the player is in and their
 # altitude (town spirit is a neutral placeholder until it exists). Once a second; it is only a
 # few noise lookups.
+# The season where the player stands (Weather.season_at at their row, set each second in _update_weather: half a year on across the
+# equator), as the server reads it there; the calendar's until the first weather step.
+func season_here() -> String:
+	return _drink_season if _drink_season != "" else game_clock.season()   # starter-calendar: only before the first weather step
+
+
 func _update_weather() -> void:
 	var now: int = Time.get_ticks_msec()
 
@@ -3055,12 +3082,27 @@ func _update_weather() -> void:
 	var tile_m: float = float(world.get("tile_size_m", 15360))
 	var row: int = ClimateScript.row_of_z(_anchor.z, tile_m)
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
+	_row_here = row
+	_eq_row = int(world.get("equator_row", 0))
+	var across: bool = ClimateScript.local_year_phase(0.0, row, _eq_row) > 0.25
+
+	if across != _ice_across:   # over the equator the ice is the other half of the year's: no answer kept for the old side is used
+		_ice_across = across
+		_finish_ice_task()
+		_ice_last = {}
+		_ice_memo.clear()
+
 	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
 	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain
 	# over this spot (the server's weather_at, terrain_server._weather_here: this row and height, the same state as this sky).
 	_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z, tile_m, int(world.get("equator_row", 0)))
+	# The view's season (flora_view.set_season redraws every chunk on a change): it follows the player's, but over the equator's row edge
+	# only once they are VIEW_SEASON_EDGE_M past it, so a walk along the edge does not redraw the view every second.
+	if _view_season == "" or _drink_season == _view_season or (WeatherScript.season_at(game_clock.seconds, _anchor.z - VIEW_SEASON_EDGE_M, tile_m, _eq_row) == _drink_season
+			and WeatherScript.season_at(game_clock.seconds, _anchor.z + VIEW_SEASON_EDGE_M, tile_m, _eq_row) == _drink_season):
+		_view_season = _drink_season
 	_drink_raining = float(weather["rain"]) > 0.05
 	world_wind_dir = float(weather["wind_dir"])
 	weather = wind_onto(weather)
@@ -3089,7 +3131,7 @@ func _update_weather() -> void:
 
 	if ocean_ice != null:
 		# The sea never freezes outside the arctic zone (Ice.sea_cover); there, salt water freezes at -1.8 C.
-		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group, int(world.get("master_seed", 0))))
+		ocean_ice.update(_anchor, IceScript.sea_cover(game_clock.seconds, group, int(world.get("master_seed", 0)), _row_here, _eq_row))
 
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
@@ -3101,7 +3143,7 @@ func _update_weather() -> void:
 	tw = Probe.start()
 
 	if weather_look != null and weather_look.puddles != null:
-		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
+		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y, _row_here, _eq_row)      # puddles freeze by the same rule, shallow (every 10 s)
 
 	if sound_tests.weather_at < 0 and sound != null and sound.weather != null:
 		sound.weather.apply_state(weather)
@@ -3181,11 +3223,13 @@ func _ice_season_now(group: String, seed_value: int) -> Dictionary:
 	# The first answer, and the first after a new zone or a move of two height bands or more (a teleport, a respawn): worked out here once,
 	# so the step and the look never use another place's ice. A climb into the next band (under 0.1 C of air) waits for the worker.
 	if _ice_last.is_empty() or str(_ice_last_key[0]) != group or absi(int(_ice_last_key[1]) - band) >= 2:
-		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value)
+		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value, _row_here, _eq_row)
 		_ice_last_key = [group, band]
 	elif _ice_task < 0:
 		_ice_task_key = [group, band]
-		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), true, "pond ice")
+		var row: int = _row_here
+		var eq: int = _eq_row
+		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value, row, eq), true, "pond ice")
 
 	return _ice_last
 
@@ -3211,7 +3255,7 @@ func _ice_season(group: String, depth_m: float) -> Dictionary:
 	var key: Array = _ice_memo_key(group, depth_m)
 
 	if not _ice_memo.has(key):
-		_ice_memo_put(group, depth_m, IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), depth_m, int(world.get("master_seed", 0))))
+		_ice_memo_put(group, depth_m, IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), depth_m, int(world.get("master_seed", 0)), _row_here, _eq_row))
 
 	return _ice_memo[key]
 
@@ -3230,7 +3274,7 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int, thaw_seas
 			_ice_thaw = _frozen_force.z
 		else:
 			var season: Dictionary = thaw_season if not thaw_season.is_empty() else IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M,
-				int(world.get("master_seed", 0)))
+				int(world.get("master_seed", 0)), _row_here, _eq_row)
 			_ice_thaw = FrozenWater.thaw_of(float(season["cover"]), float(season["peak"]))
 
 		var moat: int = IceFeelScript.moat_cells(_ice_thaw)
@@ -3435,7 +3479,7 @@ func _update_frozen_water(group: String, now: int) -> void:
 		for tile in _cave_streams._pools:
 			pools.append_array(_cave_streams._pools[tile])
 
-	var air: float = WeatherScript.air_c(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value)
+	var air: float = WeatherScript.air_c(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value, _row_here, _eq_row)
 	var springs: PackedVector4Array = FrozenWater.springs_near(pools, _anchor, air, group, float(weather.get("wind", 0.0)))
 	var holes: PackedVector4Array = FrozenWater.holes_near(ice_holes + _frozen_hole + _ice_patches, _anchor, game_clock.seconds)
 	LiquidSurface.set_ice_all(get_tree(), true, look, springs, holes)
@@ -3790,7 +3834,7 @@ func _update_flora() -> void:
 	if fall_growth != null:
 		fall_growth.update(falls, p)
 
-	flora.set_season(game_clock.season())
+	flora.set_season(_view_season if _view_season != "" else season_here())   # the season where the player stands (shortcut: the whole view, a few km, draws that one season; it differs only over the equator's row edge)
 	grass.set_season(flora.season)   # the season the flora view shows (the game season, or the --flora-season preview)
 
 	for chunk in flora.update(p):
@@ -4424,6 +4468,7 @@ var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
 var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
+const JOIN_GIVE_UP_S := 600               # the join window turns into a failure (Back to servers, Quit) if the ground is still missing this long after the welcome
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0
 var _in_pit: bool = false
@@ -6448,13 +6493,13 @@ func _process(delta: float) -> void:
 	Probe.stop("clock, weather", tp)
 
 	# The world's sounds keep the season where the player is (the row's, across the equator half a year on), not the starter island's calendar.
-	var season_here: String = _drink_season if _drink_season != "" else game_clock.season()
+	var here_season: String = season_here()
 
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
-		sound.ambient.set_conditions(game_clock.hour(), season_here)
+		sound.ambient.set_conditions(game_clock.hour(), here_season)
 
 	if critters != null and body != null and sound != null and sound.ambient != null:
-		critters.update(delta, body.global_position, sound.ambient.weights, season_here, game_clock.hour(), float(weather.get("rain", 0.0)))
+		critters.update(delta, body.global_position, sound.ambient.weights, here_season, game_clock.hour(), float(weather.get("rain", 0.0)))
 
 	_flame_wet(delta)
 
@@ -7715,7 +7760,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	]
 
 	var vp: RID = get_viewport().get_viewport_rid()
-	text += "\ngame time: year %d, day %d (%s), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, game_clock.season(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]
+	text += "\ngame time: year %d, day %d (%s here), %02d:%02d" % [game_clock.year() + 1, game_clock.day_of_year() + 1, season_here(), int(game_clock.hour()), int(fposmod(game_clock.hour(), 1.0) * 60.0)]   # starter-calendar: the calendar's day, the season where the player is
 	if not weather.is_empty():
 		text += "\nweather: rain %.2f snow %.2f storm %.2f sun %.2f wind %.2f, %.0f C, %s" % [weather["rain"], weather["snow"], weather["storm"], weather["sun"], weather["wind"], weather["temp_c"], "under cover" if under_cover > 0.0 else "open"]
 
@@ -8130,7 +8175,7 @@ func wind_onto(state: Dictionary) -> Dictionary:
 		return state
 
 	_measure_wind_here(float(state.get("wind_dir", 0.0)))
-	return WeatherScript.local_wind(state, wind_here, game_clock.seconds)
+	return WeatherScript.local_wind(state, wind_here, game_clock.seconds, _row_here, _eq_row)   # the row's own sun and summer
 
 
 const WIND_SLOPE_STEP_M := 20.0                    # the slope: ground heights this far either side of the viewer, east-west and north-south
