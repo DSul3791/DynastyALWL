@@ -286,7 +286,7 @@ func _ahead_of(id: int, a: Dictionary, pos: Vector3, ahead: Vector3, players: Ar
 	if animals.blocked.is_valid() and bool(animals.blocked.call(ahead.x, ahead.z)):
 		return "water"
 
-	if animals.ground_height.is_valid() and float(animals.ground_height.call(ahead.x, ahead.z)) - pos.y > Steering.MAX_SLOPE * 1.5:
+	if animals.ground_height.is_valid() and absf(float(animals.ground_height.call(ahead.x, ahead.z)) - pos.y) > Steering.MAX_SLOPE * 1.5:   # up or down: Steering refuses both
 		return "steep"
 
 	var body: float = AnimalContact.body_m(str(a.get("sp", "")))
