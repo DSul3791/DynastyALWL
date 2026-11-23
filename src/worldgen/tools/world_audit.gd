@@ -1237,11 +1237,12 @@ func _audit_caves(part: Vector2i) -> Array:
 const SKY_KNOWN_M := 12.0          # cave air open to the sky this close to a mouth or a den mouth (or in a mouth's opened ground) is its way in
 const SKY_RUN_M := 20.0            # a way in open to the sky farther in than this from its mouth (outside the mouth's opened ground) is noted
 const SKY_CELL_M := 4.0            # openings are counted once per 4 m square
-const CAVE_AIR_MAX_VOXELS := 8000000
+const CAVE_AIR_MAX_VOXELS := 32000000
+const SKY_LIFT_M := 0.0            # air over the generated surface is open sky (with +1 m the air skin over the hillside round a mouth flooded sideways: false 20-41 m trenches)
 
 
 # The air of one cave as the voxels carve it at `lod`, flooded from its passages' and chambers' middles through every air voxel under the
-# ground (a voxel over the generated surface + 1 m is open sky: noted, not flooded on). Air reaching the sky away from the cave's ways in is a
+# ground (a voxel over the generated surface is open sky: noted, not flooded on; each 4 m square is judged by the first voxel met in it). Air reaching the sky away from the cave's ways in is a
 # hole in the hill (players see daylight, rain falls in); a middle that is rock is a wall across the passage.
 func _check_cave_air(data, cave: Dictionary, lod: int) -> void:
 	var s: int = 1 << lod
@@ -1257,6 +1258,7 @@ func _check_cave_air(data, cave: Dictionary, lod: int) -> void:
 
 	if n.x * n.y * n.z > CAVE_AIR_MAX_VOXELS:
 		print("world_audit: cave %s too large to flood at LOD %d (%s voxels)" % [str(cave["id"]), lod, str(n)])
+		_checked("caves too large to flood" if lod == 0 else "caves too large to flood, LOD 1")
 		return
 
 	var buffer: VoxelBuffer = Layout.make_buffer(1)
@@ -1267,7 +1269,7 @@ func _check_cave_air(data, cave: Dictionary, lod: int) -> void:
 
 	for k in range(n.z):
 		for i in range(n.x):
-			sky[k * n.x + i] = generator.surface_height(float(origin.x + i * s), float(origin.z + k * s)) + 1.0
+			sky[k * n.x + i] = generator.surface_height(float(origin.x + i * s), float(origin.z + k * s)) + SKY_LIFT_M
 
 	var seen: PackedByteArray = PackedByteArray()
 	seen.resize(n.x * n.y * n.z)
@@ -1365,29 +1367,27 @@ func _check_cave_air(data, cave: Dictionary, lod: int) -> void:
 		var voxels: int = 0
 		var worst: Vector3 = openings[start][1]
 		var near: float = INF
+		var far: float = 0.0
+		var far_at: Vector3 = worst
 
 		for cell in patch:
 			var w: Vector3 = openings[cell][1]
 			voxels += int(openings[cell][0])
 			var d: float = _way_in_distance(data, w)
+			var opened: bool = data.in_cave_opening(w.x, w.z)
 
 			if d < near:
 				near = d
 				worst = w
 
-			if d <= SKY_KNOWN_M or data.in_cave_opening(w.x, w.z):
+			if d <= SKY_KNOWN_M or opened:
 				way_in = true
 
+			if d > far and not opened:
+				far = d
+				far_at = w
+
 		_checked("cave sky patches" if lod == 0 else "cave sky patches, LOD 1")
-		var far: float = 0.0
-		var far_at: Vector3 = worst
-
-		for cell in patch:
-			var d2: float = _way_in_distance(data, openings[cell][1])
-
-			if d2 > far and not data.in_cave_opening(openings[cell][1].x, openings[cell][1].z):
-				far = d2
-				far_at = openings[cell][1]
 
 		if way_in and far > SKY_RUN_M:
 			_fault("cave_open_run" if lod == 0 else "cave_open_run_far", far, far_at, "cave %s: its way in lies open to the sky %.0f m in from the mouth (%d air voxels over %d m2)" % [str(cave["id"]), far, voxels, int(patch.size() * SKY_CELL_M * SKY_CELL_M)])

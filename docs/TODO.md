@@ -154,7 +154,6 @@ Small; give them to a related thread rather than a thread of their own.
 - Sound (Jason 2, 3): done. Stone, brick and thatch pieces have their own place sounds (placed_sounds.gd `place`); the shovel fill scoop sounds stone or soil by what it fills with (#1638).
 
 ### Piece 0e. Caves (physical world audit round 6, 23 Nov 2026; details in docs/design/WORLD_AUDIT.md)
-- **Roofless trenches.** 11 cave mouths open as trenches 20 to 41 m long before the roof starts (worst at tile 3,5 and 2,3). Shortening them changes the world carve: **Dave's call** (live save).
 - **Animals never enter caves.** They walk the hill heights over a cave; a den's animal waits at its doorstep. Making animals walk inside is a design question for Dave.
 - **Small gaps, not fixed yet:** remains of a death in a cave and bushes planted there sit at the hill height (`server_items._remains_surface`, `_plant_bush`); an animal on the hill over a shallow passage may reach a player under it (bite height check 2.5 m); the cost of the carts' cave probes is not measured.
 
