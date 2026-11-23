@@ -1484,7 +1484,8 @@ const UNIT_FIT_MAX := 1500.0   # a clip further off its skeleton than this is no
 
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
 # played as they are, every bone falls into the body. The middle ratio of rest length to the clip's first key over the
-# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it. Once per clip.
+# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it; beyond UNIT_FIT_MAX the clip is
+# broken, not in other units, and keeps only its turns. Once per clip.
 
 
 func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> void:

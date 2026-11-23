@@ -55,11 +55,12 @@ func _init() -> void:
 	v._fit_clip_units(player, same, "test", "same")
 	check((same.track_get_key_value(1, 0) as Vector3).is_equal_approx(RESTS[1]) and same.get_track_count() == 5, "a clip in the skeleton's units is left alone")
 
-	var tiny: Animation = _clip(0.000001)
+	var tiny: Animation = _clip(0.00001)      # a hundred-thousandth (the elephant's are about a millionth; a key under 1e-6 m is not counted at all)
 	v._fit_clip_units(player, tiny, "test", "tiny")
-	check(tiny.get_track_count() == 1 and tiny.track_get_type(0) == Animation.TYPE_ROTATION_3D, "a clip a millionth of its skeleton keeps only its turns (%d tracks left)" % tiny.get_track_count())
+	check(tiny.get_track_count() == 1 and tiny.track_get_type(0) == Animation.TYPE_ROTATION_3D, "a clip a hundred-thousandth of its skeleton keeps only its turns (%d tracks left)" % tiny.get_track_count())
 
 	base.free()
 	v.free()
+	preload("res://src/debug/freeze_watch.gd").printer.drain()      # the model notes are printed on a worker
 	print("test_clip_units: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
