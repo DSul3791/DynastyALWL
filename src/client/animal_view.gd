@@ -353,6 +353,53 @@ func flinch(id: int) -> void:
 	tween.tween_property(node, "scale", rest * FLINCH, FLINCH_S * 0.3).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "scale", rest, FLINCH_S * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
+	# A model with a hit clip plays it once: standing still, or any time when the clip is a hit taken on the run (HitInRunHead_F).
+	# A standing hit clip on a running body would slide it along with its legs still.
+	var roles: Dictionary = (node.get_meta("player") as AnimationPlayer).get_meta("roles", {}) if node.has_meta("player") else {}
+
+	if int(_bodies[id].get("state", 0)) != LIE and (float(_bodies[id].get("spd", 0.0)) <= HIT_STILL_MPS or str(roles.get("hit", "")).to_lower().contains("run")):      # a lying body has no standing hit to show
+		_play_once(_bodies[id], "hit", HIT_MAX_S)
+
+
+# One-shot clips (Dave 23 Nov 2026: animals "like really bad animatronics"): a bite as an attack ends, a hit, a death. The model's
+# "bite", "hit" and "die" roles (models.json) are copies that do not loop. While one plays (up to cap_s), _animate_model leaves the clip
+# alone, then blends back to the state's own clip. False when the model has no clip for the role.
+const ONCE_ROLES := ["bite", "hit", "die"]
+const HIT_STILL_MPS := 1.0     # a standing hit clip plays only on a body slower than this
+const HIT_MAX_S := 0.9         # a hit clip is cut here: the animal is back in its state's clip within a second
+const BITE_MAX_S := 1.2
+const DIE_MAX_S := 2.0         # short: the carcass is already on the ground there (carcass_look.gd), so the falling body goes soon
+const DIE_HOLD_S := 0.3        # the last pose of a death clip is held this long before the body goes
+
+
+func _play_once(b: Dictionary, role: String, cap_s: float) -> bool:
+	var node: Node3D = b.get("node", null)
+
+	if node == null or not is_instance_valid(node) or not node.has_meta("player"):
+		return false
+
+	var player: AnimationPlayer = node.get_meta("player")
+	var clip: String = str((player.get_meta("roles", {}) as Dictionary).get(role, ""))
+
+	if clip == "" or not player.has_animation(clip):
+		return false
+
+	player.play(clip, 0.1)
+	player.speed_scale = 1.0
+	b["once_until"] = _t + minf(player.get_animation(clip).length, cap_s)
+	return true
+
+
+# A killed animal with a death clip falls where it is drawn and goes after the clip: true when it does (the caller then drops it
+# from the rows without freeing it), false when it has none (it goes at once, as before).
+func _die(b: Dictionary) -> bool:
+	if not is_inside_tree() or not _play_once(b, "die", DIE_MAX_S):
+		return false
+
+	var node: Node3D = b["node"]
+	get_tree().create_timer(float(b["once_until"]) - _t + DIE_HOLD_S).timeout.connect(node.queue_free)
+	return true
+
 
 # The kind and place of the nearest animal attacking or charging within `max_m` of `at` ({} when none): who bit you, for its snarl.
 func attacker_near(at: Vector3, max_m: float) -> Dictionary:
@@ -464,6 +511,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
 
+		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.
+		if int(_bodies[id]["state"]) in ATTACK_STATES and not int(row[4]) in ATTACK_STATES:
+			_play_once(_bodies[id], "bite", BITE_MAX_S)
+
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
@@ -476,10 +527,14 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 	for id in _bodies.keys():
 		if not seen.has(id):
-			if killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points)):
+			var killed: bool = killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points))
+
+			if killed:
 				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
 
-			_bodies[id]["node"].queue_free()
+			if not (killed and _die(_bodies[id])):
+				_bodies[id]["node"].queue_free()
+
 			_bodies.erase(id)
 
 
@@ -883,10 +938,25 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				var clip_h: float = _clip_height(player, anim, rig)
 
 				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
-				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
+				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
 					refused[anim_name] = true
 					continue
+
+				# A bite, a hit or a death plays once (_play_once) from its own copy, so a looping role naming the same clip keeps looping.
+				if str(key) in ONCE_ROLES:
+					var once_name: String = anim_name.get_slice("|", anim_name.count("|")) + "_once"
+
+					if player.has_animation_library("") and not player.has_animation(once_name):
+						var once: Animation = anim.duplicate() as Animation
+						once.loop_mode = Animation.LOOP_NONE
+						_strip_root_drift(player, once, rig, kind, once_name)
+						player.get_animation_library("").add_animation(once_name, once)
+
+					if player.has_animation(once_name):
+						roles[str(key)] = once_name
+
+					break
 
 				anim.loop_mode = Animation.LOOP_LINEAR
 				_strip_root_drift(player, anim, rig, kind, anim_name)
@@ -1718,6 +1788,10 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		return
 
 	var player: AnimationPlayer = node.get_meta("player")
+
+	if _t < float(b.get("once_until", -1.0)):
+		return      # a bite, hit or death clip is playing once (_play_once)
+
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
 
