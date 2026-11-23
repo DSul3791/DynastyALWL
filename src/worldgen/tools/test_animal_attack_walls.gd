@@ -7,13 +7,17 @@ extends SceneTree
 #      player standing hard behind the wall; the animal never goes through it (running round its end is allowed);
 #   2. a hunter's chase (a puma at a runner) the same;
 #   3. a player who pins an animal against the wall does not push it out through the other side (make_way), nor does keeping a step
-#      off them (keep_off_players).
+#      off them (keep_off_players);
+#   4. a charge at a wall pulls up its nose and WALL_LOOK_S of running short of it, so the client, which draws a charge carried on past its
+#      newest point, never draws it inside the wall; one at a player standing with their back to the wall still comes home and hits.
 # The wolves' bites and kills: test_wolves 6b and 5c, test_wolf_pups 5b. Shut doors and gates: test_animal_gates (the same hook).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_attack_walls.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const BigGame := preload("res://src/stream/server_big_game.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")
 
 const DIR := "user://test_animal_attack_walls"
 const DT := 0.05
@@ -84,6 +88,7 @@ func _init() -> void:
 	_charges()
 	_chase()
 	_pinned()
+	_pull_up()
 
 	items._finish_writer()
 	print("test_animal_attack_walls: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
@@ -200,3 +205,22 @@ func _pinned() -> void:
 	animals.keep_off_players(stepper, Vector3(102.03, 10.0, 1.2), [player])
 	check(float(stepper["pos"].x) > face, "a step kept off a player is never put out through the wall behind it (x %.2f)" % float(stepper["pos"].x))
 
+
+# 4. Pulling up short of a wall, unless the foe stands in front of it.
+func _pull_up() -> void:
+	var face: float = WALL_X + 0.125
+
+	for sp in ["bear", "lion", "elephant"]:
+		var speed: float = float(animals.species_def(sp)["defend"].get("charge_mps", 11.0))
+		var short_m: float = AnimalContact.body_m(sp) + speed * BigGame.WALL_LOOK_S - speed * DT      # its nose and 0.2 s of running, less one step
+		stand(BEHIND)
+		var behind: Dictionary = put(sp, 112.0)
+		animals.big_game.warn(behind, BEHIND, -1.0, true)
+		var closest: float = run(behind, 10.0)
+		check(closest >= face + short_m - 0.01, "%s: a charge at a player behind the wall pulls up %.2f m short of it, nose and all (stood %.2f m off)" % [sp, short_m, closest - face])
+
+		stand(Vector3(face + 1.0, 10.0, 0.0))
+		var backed: Dictionary = put(sp, 112.0)
+		animals.big_game.warn(backed, Vector3(face + 1.0, 10.0, 0.0), -1.0, true)
+		run(backed, 10.0)
+		check(not landed.is_empty(), "%s: one standing with their back to the wall is still charged home and hit (%d blows)" % [sp, landed.size()])

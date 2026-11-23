@@ -19,6 +19,9 @@ const WARN := 10
 const CHARGE := 11
 const RECOVER := 12
 const WARN_POP := 16            # the second rung of the warning: the jaw-pop and ground swat (13 to 15 are the thief's and the flock's)
+const WALL_LOOK_S := 0.2        # a charge pulls up this far (at its speed) plus its own nose short of a wall: the client draws a charge carried
+                                # on past its newest point by up to two row gaps (MotionBuffer.AHEAD_CARRY_S), so stopped at the wall it was
+                                # drawn into it for a moment (coordinator's walls audit, 23 Nov 2026)
 
 var host                        # ServerAnimals
 var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list the wolves read)
@@ -266,7 +269,7 @@ func step(a: Dictionary, dt: float) -> void:
 		if bool(a.get("bluff", false)):
 			var short: bool = not near.is_empty() and Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length() <= float(def.get("bluff_stop_m", 4.0))
 
-			if short or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"]:
+			if short or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"] or _wall_ahead(a, near, speed):
 				a["state"] = RECOVER
 				a["timer"] = float(def.get("recover_s", 5.0))
 				a.erase("run_m")
@@ -303,7 +306,7 @@ func step(a: Dictionary, dt: float) -> void:
 						struck.call(a, int(info["peer"]), landed)
 					break
 
-		if bool(a["hit"]) or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"]:
+		if bool(a["hit"]) or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"] or _wall_ahead(a, near, speed):
 			a["state"] = RECOVER
 			a["timer"] = float(def.get("recover_s", 5.0))
 			a.erase("run_m")
@@ -315,6 +318,25 @@ func step(a: Dictionary, dt: float) -> void:
 
 	if a["timer"] <= 0.0:
 		_calm(a, def)
+
+
+# Whether a charge should pull up now: a wall or shut gate within its nose plus WALL_LOOK_S of running, straight ahead, and its foe not
+# standing nearer in front of it (one with their back to a wall is still charged home and hit).
+func _wall_ahead(a: Dictionary, near: Dictionary, speed: float) -> bool:
+	var look: float = AnimalContact.body_m(str(a["sp"])) + speed * WALL_LOOK_S
+	var pos: Vector3 = a["pos"]
+	var dir: float = float(a.get("dir", a["heading"]))
+
+	if not host.wall_between(pos, pos + Vector3(cos(dir), 0.0, sin(dir)) * look):
+		return false
+
+	if not near.is_empty():
+		var foe: Vector3 = near["pos"]
+
+		if Vector2(foe.x - pos.x, foe.z - pos.z).length() <= look and not host.wall_between(pos, foe):
+			return false
+
+	return true
 
 
 # How far a point is, on the ground, from the stretch a charge covered this step (a0 to a1). A step can be longer than hit_m when the
