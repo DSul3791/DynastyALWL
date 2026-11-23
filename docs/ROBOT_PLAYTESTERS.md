@@ -16,6 +16,7 @@ ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, alon
 ROBOT_S=300 tools/robots.sh 3 bear # an admin bear 20 m from the spawn, every robot hunts it with a spear (inside and jump checks); about 4 min
 ROBOT_S=200 tools/robots.sh 3 bear_group   # the hunters stand in a tight group (pairs about 1 m apart) and jab a bear set 2 m off
 ROBOT_S=200 tools/robots.sh 1 fight_goblin   # (or fight_bandit) every warning, charge and landed blow as the robot drew it; AUDIT enemy_hit on the server
+ROBOT_S=400 tools/robots.sh 1 cold # a hard frost (the audit's server_control.txt): down to 1 health, pass out, wake at a rescue spot; then the 1-health floor under a goblin's blows
 tools/robots.sh 1 drops            # the link dies mid-action and the robot comes straight back; a 10 s freeze; two clients as one character; about 15 min
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
@@ -27,7 +28,7 @@ Needs `godot` (the voxel-tools build) and python3. Where Godot may run follows `
 |---|---|
 | `tools/lossy_link.py` | UDP and TCP relay in front of the server: delay, jitter and loss each way (the block line too, through the client's test flag `--block-port=`). Standard library only. |
 | `src/client/robot_play.gd` | The real client, headless, driven by key presses (`--robot=NAME`, `--robot-plan=`, `--robot-admin`). Prints `ROBOT` lines. |
-| `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump (measured over the animal's own step time, with the looks around it) or stand inside a player, wolf pack phases, and every melee blow at an animal with what it struck at the judged moment. Prints `AUDIT` lines. No protocol change. |
+| `src/server/robot_audit.gd` (with `src/shared/robot_rules.gd`, the pack signature both sides print) | Server flag `--robot-audit`: prints the server's pack signature per player, refusals sent, animals that jump (measured over the animal's own step time, with the looks around it) or stand inside a player, wolf pack phases, every melee blow at an animal with what it struck at the judged moment, every goblin, bandit or big game blow at a player (`AUDIT enemy_hit`), snares with their trail share, and the robot control commands (`AUDIT control`, plan cold: the only place it changes the game). Prints `AUDIT` lines. No protocol change. |
 | `tools/robots.sh` | Server, link, the robots at one spawn (so they meet the same animals and see each other), then a rejoin pass. |
 | `tools/robot_watch.py` | Plan `watch` only: per leg of the walker, the fastest drawn speed over 50 ms against its real speed (above 1.5x fails), stalls, overshoot and settle at the stop; held item at a hand mount; swing clip within 1 s; asleep bit. |
 | `tools/robot_check.py` | Reads the logs and fails the run on a broken invariant. `tools/robot_known_errors.txt` lists engine ERROR lines allowed (only the leak notice at exit). |
@@ -64,6 +65,19 @@ more try after 35 s), and find the fibre-plus-twine worth, the pack, the basket 
 `drop_freeze` stalls the client's main thread 10 s while walking: being dropped for it is a FAIL (the main gate allows a 24.85 s freeze), and
 the pack must not change. `drop_twin1`/`drop_twin2`: a second client joins with the same user data (the same character) 30 s after the
 first; the server must drop the older one (terrain_server.gd "the older connection is dropped") within 20 s. No rejoin pass follows.
+
+Plan `cold` (one robot; robots.sh forces it): the server's robot audit (only with `--robot-audit`) reads `server_control.txt` in
+ROBOT_SHARE: `cold <peer>` turns the weather (weather_now and weather_at, which the warmth reads, for the whole test server) to -25 C with
+wind and starts that peer at health 6, warmth 15; `warm <peer>` gives the world's own weather back; `health <peer> <value>` sets health
+(at least 1). Each is printed as `AUDIT control`. The robot stands in the frost and must never read health 0 or die, pass out with words,
+be moved to a rescue spot (the client gets died "passed out", no death), wake with the traveler's words and health 10 or more, keep every
+item and walk after. Then, warm again and 60 m out of town at health 1, it fights a goblin for 40 s: at least one blow must land (the
+server's `AUDIT enemy_hit`, result "maimed" at low health), health must read 1 and stay there, no death. No goblin, no blow or no server
+log is a FAIL: the floor was not tested.
+
+Plans `fight_goblin` / `fight_bandit`: the shield goes up at the drawn warning on odd charges (sent as the held_item RPC: headless cannot
+capture the mouse) and is lowered if the warning never becomes a charge; even charges are a side-step (every other one at run speed). Each
+blow prints `ENEMY hit|miss` (warning lead, gap, dodge, shield, facing); the server prints `AUDIT enemy_hit` with its own gap and shield.
 
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).
