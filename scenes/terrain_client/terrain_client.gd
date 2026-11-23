@@ -5157,6 +5157,7 @@ func _step_player(delta: float) -> void:
 			sound.fire.sync_world(items._world, _cover_here)
 
 		sound.placed.quiet = _world_loading()
+		sound.workshop.quiet = sound.placed.quiet
 		sound.placed.watch_world(items._world, body.global_position)
 		sound.placed.watch_open(items._world, body.global_position)
 

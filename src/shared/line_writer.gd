@@ -51,7 +51,7 @@ func add(line: String) -> void:
 	if not _busy:
 		_busy = true
 		finished = _task   # the last task, done already (it cleared _busy as its last step): waited for once, below, outside the lock
-		_task = WorkerThreadPool.add_task(_run, false, "log lines")
+		_task = WorkerThreadPool.add_task(_run, true, "log lines")   # high priority, as print_queue: a low-priority task waited behind flora chunks up to a minute, and a hard crash lost those lines
 
 	_mutex.unlock()
 
