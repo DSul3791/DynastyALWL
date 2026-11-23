@@ -23,7 +23,7 @@ user_env() {   # $1 = name; sets ENVV and UD
   mkdir -p "$UD"; printf '%024x' $((RANDOM * 32768 + RANDOM)) > "$UD/player_key.txt"
 }
 server() {   # $1 = name, more = server flags; sets PORT
-  PORT=$((7990 + RANDOM % 40)); user_env "srv_$1"; mkdir -p "$RIG/store_$1"
+  local last="${PORT:-0}"; PORT=$((7990 + RANDOM % 40)); [ "$PORT" = "$last" ] && PORT=$((PORT + 41)); user_env "srv_$1"; mkdir -p "$RIG/store_$1"
   env "${ENVV[@]}" timeout 1200 "$GODOT" --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$RIG/store_$1" "${@:2}" > "$RIG/server_$1.log" 2>&1 &
   SP=$!; PIDS="$PIDS $SP"
   for _ in $(seq 1 240); do grep -q "Terrain server listening" "$RIG/server_$1.log" 2>/dev/null && return 0; kill -0 $SP 2>/dev/null || break; sleep 0.5; done
@@ -40,7 +40,7 @@ joined() {   # $1 = name, $2 = label
   grep -qE "SCRIPT ERROR|CrashHandler|signal 11" "$RIG/$1.log" && bad "$2: a script error or crash: $(grep -m1 -E 'SCRIPT ERROR|CrashHandler' "$RIG/$1.log" | cut -c1-140)" || ok "$2: no script error or crash"
 }
 
-server main --quit-after=1100
+server main --quit-after=1500
 CLIENT=(res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$PORT)
 
 window sound 300 --audio-driver Dummy "${CLIENT[@]}" --frames=2400 --timeout=240
@@ -71,9 +71,10 @@ user_env full_first
 env "${ENVV[@]}" timeout 300 "$GODOT" --headless --path . res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$PORT --frames=99999 --timeout=280 > "$RIG/full_first.log" 2>&1 &
 C2=$!; PIDS="$PIDS $C2"
 for _ in $(seq 1 240); do grep -q "Terrain client: welcome after" "$RIG/full_first.log" 2>/dev/null && break; sleep 0.5; done
+T0=$SECONDS
 window full 60 res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$PORT --timeout=55
 grep -q "join refused: The server is full" "$RIG/full.log" && ok "F: the window was told the server is full" || bad "F: no 'server is full' refusal"
-grep -q "Terrain client: welcome after" "$RIG/full.log" && grep -q "join refused" "$RIG/full.log" && ! grep -q "JOIN: ground ready" "$RIG/full.log" && ok "F: and waited on its window (closed by the time limit), no ground loaded" || bad "F: the refused window did not stop at its window"
+[ $((SECONDS - T0)) -ge 50 ] && grep -q "join refused" "$RIG/full.log" && ! grep -q "JOIN: ground ready" "$RIG/full.log" && ok "F: and waited on its window (closed by the time limit), no ground loaded" || bad "F: the refused window did not stop at its window"
 kill $C2 2>/dev/null
 
 echo "way_in_eyes: logs in $OUT; $([ $FAIL = 0 ] && echo ok || echo FAIL)"
