@@ -83,6 +83,13 @@ func attach_server(mp: SceneMultiplayer) -> void:
 
 func _server_start(peer: int) -> void:
 	if protocol > 0:
+		var tree: SceneTree = Engine.get_main_loop() as SceneTree
+
+		if tree != null:   # a connection that never says hi (a client from before 161 closes itself at FIRST_WORD_S; a scanner would not) keeps no slot
+			tree.create_timer(FIRST_WORD_S + 5.0).timeout.connect(func() -> void:
+				if not _hi.has(peer) and _mp.multiplayer_peer != null and _mp.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED and _mp.get_authenticating_peers().has(peer):
+					_mp.disconnect_peer(peer))
+
 		return   # waits for the client's hi (_server_got)
 
 	_begin(peer)
@@ -111,7 +118,7 @@ func _server_got(peer: int, data: PackedByteArray) -> void:
 			return   # one hi a connection
 
 		_hi[peer] = true
-		var theirs: int = int(message.get("protocol", 0))
+		var theirs: int = str(message.get("protocol", 0)).to_int()   # untrusted: a wrong type is not a number, not a script error
 
 		if theirs != protocol:
 			_drop(peer, {"t": "old", "protocol": protocol, "text": outdated_text(theirs, protocol)}, "refused: client protocol %d, this server %d" % [theirs, protocol])
@@ -162,7 +169,8 @@ func _guarded(ip: String) -> bool:
 # Tells the client why, then drops it a moment later so the reason arrives first.
 func _drop(peer: int, message: Dictionary, why: String) -> void:
 	_send(peer, message)
-	_forget(peer)
+	_nonces.erase(peer)   # its hi stays until the connection ends (_forget): no second hi, and no fresh tries, in the second before the drop
+	_wrong.erase(peer)
 
 	if log_event.is_valid():
 		log_event.call("peer %d %s" % [peer, why])
@@ -235,11 +243,13 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 	var kind: String = str(message.get("t", ""))
 
 	if kind == "old":
-		outdated.emit(str(message.get("text", outdated_text(protocol, int(message.get("protocol", 0))))))
+		outdated.emit(str(message.get("text", outdated_text(protocol, str(message.get("protocol", 0)).to_int()))))
 		return
 
-	if protocol > 0 and (kind == "ok" or kind == "challenge") and int(message.get("protocol", 0)) != protocol:
-		outdated.emit(outdated_text(protocol, int(message.get("protocol", 0))) if int(message.get("protocol", 0)) > 0 else "This game is newer than the server (game version %d; the server is from before version 161).\nThe server has not been updated yet: try again once it has, or ask whoever runs it." % protocol)
+	var server_protocol: int = str(message.get("protocol", 0)).to_int()
+
+	if protocol > 0 and (kind == "ok" or kind == "challenge") and server_protocol != protocol:
+		outdated.emit(outdated_text(protocol, server_protocol) if server_protocol > 0 else "This game is newer than the server (game version %d; the server is from before version 161).\nThe server has not been updated yet: try again once it has, or ask whoever runs it." % protocol)
 		return   # an older server: no further step, the handshake times out and the connection closes
 
 	match kind:

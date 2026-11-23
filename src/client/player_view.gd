@@ -228,7 +228,20 @@ func _process(delta: float) -> void:
 		if every == 0:
 			b["owed"] = 0.0
 			b["swing_due"] = false   # a blow far off is not played when the body comes near later
+			var pose: int = int(b["state"]) & (3 | ASLEEP | SWIM)
+
+			if int(b.get("far_pose", -1)) != pose:   # far off the body is not animated, but it still lies, sits or swims when the player does (robots 23 Nov 2026: a far player lying down was drawn standing)
+				b["far_pose"] = pose
+				var far_stance: int = pose & 3
+				var far_clip: String = "swim_idle" if (pose & SWIM) != 0 else AvatarDriver.choose_clip(far_stance, 0.0, "", (int(b["state"]) & CARRY) != 0 and far_stance == StanceScript.STAND)
+
+				if rig.has_method("play") and player.has_animation(far_clip):
+					rig.play(far_clip, 1.0, 0.0)   # no one-shot (a wake-up would hold its first frame): the resting pose
+					player.advance(0.0)
+
 			continue
+
+		b.erase("far_pose")
 
 		if (frame + (peer & 3)) % every != 0:
 			continue

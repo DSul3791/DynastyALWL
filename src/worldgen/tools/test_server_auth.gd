@@ -114,6 +114,10 @@ func _initialize() -> void:
 	var locked_old: Dictionary = await join("Hannibal", [], null, 0, p)
 	check(not locked_old["connected"] and locked_old["outdated"] != "" and locked_old["asked"].is_empty(), "and never asked for that older server's password")
 	check(ServerAuth.outdated_text(150, 161).contains("Your character and world are kept"), "the update words say nothing is lost")
+	for path in ["res://scenes/terrain_client/terrain_client.gd", "res://scenes/bot/bot_main.gd"]:   # every client that joins says its protocol (gate review: the bots were left out)
+		var code: String = FileAccess.get_file_as_string(path)
+		check(code.contains("attach_client") and code.contains("_auth.protocol = NetScript.PROTOCOL_VERSION"), "%s says its protocol in the handshake" % path.get_file())
+
 	var hello_old: Dictionary = await join("", [], null, 0, 0)
 	check(hello_old["connected"], "the handshake from before 161 still works between two old sides (the tests above use it)")
 
