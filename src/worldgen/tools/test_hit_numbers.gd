@@ -138,6 +138,41 @@ func _init() -> void:
 	sent.clear()
 	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> bool: return lands[0]
 
+	# A blow is judged from where the striker is now (robots 23 Nov 2026, 120 ms and 3% loss: a player who walked up to a bandit and jabbed at
+	# once was judged from their last report, a metre back, and missed 5 of 5): the last report carried on its velocity for the time since it
+	# came (at most STRIKE_LEAD_S and STRIKE_LEAD_M), never through a wall.
+	var origins: Array = []
+	items.hit_animal = func(_peer, origin, _aim, _reach, _amount) -> bool:
+		origins.append(origin)
+		return true
+	var walking: Array = [[Vector3(0.0, 0.0, 4.0), 200, 10.8, "walking up at 4 m/s, the report 0.2 s old: from 0.8 m on"],
+		[Vector3(0.0, 0.0, 4.0), 5000, 10.0 + 4.0 * ItemsScript.STRIKE_LEAD_S, "a stale report is carried on STRIKE_LEAD_S at most"],
+		[Vector3(0.0, 0.0, 20.0), 1000, 10.0 + ItemsScript.STRIKE_LEAD_M, "and STRIKE_LEAD_M at most"],
+		[Vector3.ZERO, 200, 10.0, "standing: from where they stand"],
+		[Vector3(0.0, 9.0, 0.0), 200, 10.0, "only on the ground (a fall is not a reach)"]]
+
+	for row in walking:
+		items.report_position(1, Vector3(10.0, 0.0, 10.0), row[0])
+		items._peer_move[1][1] = Time.get_ticks_msec() - int(row[1])
+		items._last_strike.clear()
+		origins.clear()
+		items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+		check(origins.size() == 1 and absf(float(origins[0].z) - float(row[2])) < 0.05 and is_equal_approx(float(origins[0].y), 1.4) and is_equal_approx(float(origins[0].x), 10.0), "%s (origin %s)" % [row[3], str(origins)])
+
+	items.report_position(1, Vector3(10.0, 0.0, 10.0))
+	check(items._peer_move[1][0] == Vector3.ZERO, "a report without a velocity (the tests', a bot's) carries nothing on")
+	items.ground_height = func(_x, _z): return 0.0
+	var wall: int = items.dev_place("log_wall@10.0,10.5,0")   # across the way, 0.5 m ahead
+	items.report_position(1, Vector3(10.0, 0.0, 10.0), Vector3(0.0, 0.0, 4.0))
+	items._peer_move[1][1] = Time.get_ticks_msec() - 200
+	items._last_strike.clear()
+	origins.clear()
+	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(wall != 0 and origins.size() == 1 and is_equal_approx(float(origins[0].z), 10.0), "never carried on through a wall: from the report itself (%s)" % str(origins))
+	var client_src: String = FileAccess.get_file_as_string("res://src/client/held_item.gd")
+	check(client_src.count("report_now.call()") == 2 and FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("held.report_now = report_now"), "the client sends a fresh report just before each blow")
+	check(FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").contains("items.report_position(peer_id, position, velocity)"), "the server keeps the reported velocity")
+
 	# A tree or a boulder shows its share of 100 a blow; tiny shares still show 1.
 	sent.clear()
 	items.hit_number(1, Vector3.ZERO, ItemsScript.HIT_POINTS / 40.0)

@@ -240,6 +240,7 @@ var _swimming: Dictionary = {}      # peer -> true while the server reads them a
 var _soak: Dictionary = {}          # peer -> 0..1, how rain-soaked they are (warmth.json soak_*: rain wets, only shelter dries; Dave 5 Nov on the rain card)
 var _overheat: Dictionary = {}      # peer -> 0..1, the worn heat load times how hot it feels, at the last warmth reading (warmth.json layers; adds to exertion)
 var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
+var _peer_move: Dictionary = {}     # peer -> [velocity reported with it, server ms it came]: a blow is judged from where the striker is now (strike_origin)
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
@@ -898,6 +899,7 @@ func peer_left(peer: int) -> void:
 	_speed3.erase(peer)
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
+	_peer_move.erase(peer)
 	_known.erase(peer)
 	_last_throw.erase(peer)
 	strike_seen.erase(peer)
@@ -983,9 +985,10 @@ func _in_pack(peer: int, number: int) -> int:
 	return 0
 
 
-func report_position(peer: int, position: Vector3) -> void:
+func report_position(peer: int, position: Vector3, velocity: Vector3 = Vector3.ZERO) -> void:
 	if _peer_key.has(peer):
 		_peer_pos[peer] = position
+		_peer_move[peer] = [velocity if velocity.is_finite() else Vector3.ZERO, Time.get_ticks_msec()]
 
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
 			_sync_goals(peer)   # the drink goal's hint names the way to water from here
@@ -3476,7 +3479,7 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		return
 
 	_last_strike[peer] = now
-	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var eye: Vector3 = strike_origin(peer, now) + Vector3(0.0, 1.4, 0.0)
 
 	if BIND_ITEMS.has(table.id_of(inv.numbers[slot])) and bind_animal.is_valid() and bool(bind_animal.call(peer, eye, direction, 2.5)):
 		var before: Array = _snapshot(inv)
@@ -3502,6 +3505,29 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		practice(peer, skill_action)
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+const STRIKE_LEAD_S := 0.3     # a blow's origin: the last reported position carried on its velocity this long at most (a report every 0.2 s, one lost)
+const STRIKE_LEAD_M := 1.5     # and this far at most
+
+# Where a striker is when their blow comes (robots 23 Nov 2026, 120 ms and 3% loss: a player who walked up to a bandit and jabbed at once was
+# judged from their last position report, a metre behind, and missed 5 of 5): the last report carried on its own velocity for the time since it
+# came, at most STRIKE_LEAD_S and STRIKE_LEAD_M, on the ground; not through a wall or shut door (then the report itself). The client also sends
+# a report just before a blow (terrain_client report_now), which makes the time since it nearly nothing.
+func strike_origin(peer: int, now: int) -> Vector3:
+	var at: Vector3 = _peer_pos[peer]
+	var move: Array = _peer_move.get(peer, [Vector3.ZERO, now])
+	var to: Vector3 = carried_on(at, move[0], float(now - int(move[1])) / 1000.0)
+
+	if to != at and structure_blocks_step(at.x, at.z, to.x, to.z, 0.0):
+		return at
+
+	return to
+
+
+static func carried_on(at: Vector3, velocity: Vector3, age_s: float) -> Vector3:
+	var on: Vector3 = Vector3(velocity.x, 0.0, velocity.z) * clampf(age_s, 0.0, STRIKE_LEAD_S)
+	return at + on.limit_length(STRIKE_LEAD_M)
 
 
 # What a fighting skill does to a blow: its factor over the factor this character would have at skill 1, so a blow at skill 1 is exactly
@@ -3551,7 +3577,7 @@ func _punch(peer: int, direction: Vector3) -> void:
 		return
 
 	_last_strike[peer] = now
-	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+	var eye: Vector3 = strike_origin(peer, now) + Vector3(0.0, 1.4, 0.0)
 	var damage: float = maxf(float(row.get("damage", 2.0)) * blow_skill_mult(peer, "punch"), 0.5)
 	var reach: float = float(row.get("reach_m", 1.8))
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)

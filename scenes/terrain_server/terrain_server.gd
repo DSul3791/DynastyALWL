@@ -1529,7 +1529,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	else:
 		generator.prefetch_tile(position.x, position.z)
 
-	items.report_position(peer_id, position)
+	items.report_position(peer_id, position, velocity)   # with its velocity: a blow is judged from where the striker is now (strike_origin)
 
 	if map_knowledge != null:
 		map_knowledge.note_position(peer_id, position)   # the charcoal Map: a survey every few metres walked (server_map.gd)
