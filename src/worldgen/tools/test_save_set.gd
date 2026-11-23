@@ -1,7 +1,7 @@
 extends SceneTree
 
 # A save is one set of files (coordinator 23 Nov 2026, the live save before Wednesday: a hard stop at any moment of a save, nothing both in a
-# pack and in a chest, nothing in neither). save() writes inventories, chests, vitals, characters, craft queues, crops, smelters, smithies,
+# pack and in a chest, nothing in neither). save() writes inventories, chests, vitals, characters, craft queues, crops, smelters, smithies, tracking marks,
 # trees, lights, kilns, the world item areas and last the world_items.json header, one file at a time. A hard stop between two of them left
 # some files from the new save and the rest from the one before: Stone put from the pack into a chest was in neither, or taken out, in both.
 # Every set file now carries the save's gen and the header is written last; at load a file from a save whose header never landed is read
@@ -18,7 +18,7 @@ const COPY := "user://test_save_set_stop"
 const KEY := "savesetkey0001"
 const HERE := Vector3(5.0, 10.0, 0.0)
 # The files of one save in the order save() writes them (the world item areas between kilns and the header).
-const ORDER := ["inventories.json", "chests.json", "vitals.json", "characters.json", "craft_queues.json", "crops.json", "smelters.json", "smithies.json", "tree_states.json", "lights.json", "kilns.json"]
+const ORDER := ["inventories.json", "chests.json", "vitals.json", "characters.json", "craft_queues.json", "crops.json", "smelters.json", "smithies.json", "tracking_marks.json", "tree_states.json", "lights.json", "kilns.json"]
 
 var failures: int = 0
 

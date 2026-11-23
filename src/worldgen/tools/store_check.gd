@@ -8,7 +8,7 @@ extends SceneTree
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
-const SET := ["inventories.json", "chests.json", "vitals.json", "characters.json", "craft_queues.json", "crops.json", "smelters.json", "smithies.json", "tree_states.json", "lights.json", "kilns.json"]
+const SET := ["inventories.json", "chests.json", "vitals.json", "characters.json", "craft_queues.json", "crops.json", "smelters.json", "smithies.json", "tracking_marks.json", "tree_states.json", "lights.json", "kilns.json"]
 
 
 func gen_of(path: String) -> int:
