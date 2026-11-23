@@ -1334,6 +1334,7 @@ func _run_to(target: Vector3, limit_s: float, near_m: float = 3.0) -> bool:
 # the server's AUDIT strike line of the same seen time.
 func _strike_at(dir: Vector3) -> void:
 	var seen: Array = client._animal_view_node.seen_server_ms() if client._animal_view_node != null else [0, 0]
+	client.send_position_now()   # as a player's blow: a fresh position report just before it (held_item report_now)
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_STRIKE, 0, int(seen[0]), int(seen[1]), dir)
 	var me: Vector3 = client.body.global_position
 	var near: PackedStringArray = PackedStringArray()
