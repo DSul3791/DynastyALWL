@@ -582,6 +582,14 @@ func landmark_checks() -> void:
 	f.close()
 	var old: Dictionary = again._record("map-key-old")
 	check(old["blocks"].size() == 1 and old["blocks"][Vector2i(0, 0)]["cells"].size() == 2 and all_marks(again, "map-key-old").is_empty(), "a map saved before landmarks loads with its cells and no marks")
+	var marks_rec: Dictionary = again._record("map-key-marks")
+	check(marks_rec["blocks"].values().all(func(b): return bool(b.get("water_ok", false))) and not bool(old["blocks"][Vector2i(0, 0)].get("water_ok", false)), "blocks mapped now load with their water checked; a map saved before 165 loads with it not checked")
+	old["blocks"][Vector2i(0, 0)]["water_seen"] = {0: true}
+	old["dirty"] = true
+	again.save()
+	var third = make(dir)
+	var old_again: Dictionary = third._record("map-key-old")["blocks"][Vector2i(0, 0)]
+	check(not bool(old_again.get("water_ok", false)) and old_again.get("water_seen", {}).has(0) and not old_again.get("water_seen", {}).has(1), "the old cells already looked at for their water are saved (%s)" % str(old_again.get("water_seen", {})))
 	# A known cell of a map saved before protocol 165 has its water put right once on a revisit at the same skill (a river the old map called
 	# a lake), with no redraw counted; ground mapped now is never looked at again for its water.
 	var river_m = make("")
@@ -613,7 +621,7 @@ func landmark_checks() -> void:
 	water_looks[0] = 0
 	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
 	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
-	check(water_looks[0] <= fresh_looks + 2, "an old cell is looked at for its water only once (%d looks)" % water_looks[0])
+	check(water_looks[0] == 0, "an old cell is looked at for its water only once (%d looks)" % water_looks[0])
 	check(MapScript.water_kind(3) == Codec.WATER_RIVER and MapScript.water_kind(8) == Codec.WATER_MARSH and MapScript.water_kind(2) == Codec.WATER_INLAND and MapScript.water_kind(9) == Codec.WATER_NONE, "rivers and wetlands get their own water kinds")
 	check(Codec.decode(Codec.encode({5: [10, 1.0, Codec.WATER_MARSH, 0]}))[5][2] == Codec.WATER_MARSH, "the codec carries river and marsh")
 	# The world items a person marks (server_items.map_marks_near): a campfire, a rock started and not finished, a path and a road.

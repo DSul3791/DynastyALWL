@@ -163,8 +163,9 @@ func survey(peer: int, pos: Vector3) -> int:
 			if not had.is_empty() and q < int(had[0]) + improve:
 				# Known ground at no better skill: its drawing stays, but a block from a map saved before protocol 165 has its water put right
 				# once per cell (a river it called a lake, a marsh it called dry ground): water is not accuracy, so this is no redraw and earns
-				# nothing. Each old cell is looked at once; when all of a block's cells have been, the block is "water_ok" and saved so, and
-				# known ground costs no look again (gate review 23 Nov 2026: looking at every known cell on every step was 8 times the work).
+				# nothing. Each old cell is looked at once ever (the cells looked at are saved, "water_seen"); when all of a block's cells have
+				# been, the block is "water_ok" and known ground there costs no look again (gate review 23 Nov 2026: looking at every known cell
+				# on every step was 8 times the work).
 				if row.get("water_ok", false) or row.get("water_seen", {}).has(idx):
 					continue
 
@@ -666,12 +667,15 @@ func _save_one(key: String) -> void:
 	var mark_rows: Dictionary = {}   # the landmarks and path cells of a block (Dave 23 Nov 2026); a save without them loads with none
 	var path_rows: Dictionary = {}
 	var water_ok: Array = []   # blocks whose every cell's water is this protocol's (a map saved before 165 has none: each cell is looked at once)
+	var water_seen: Dictionary = {}   # the other old blocks: their cells already looked at
 
 	for block in rec["blocks"]:
 		var brow: Dictionary = rec["blocks"][block]
 
 		if brow.get("water_ok", false):
 			water_ok.append("%d,%d" % [block.x, block.y])
+		elif not brow.get("water_seen", {}).is_empty():
+			water_seen["%d,%d" % [block.x, block.y]] = (brow["water_seen"] as Dictionary).keys()
 
 		if not brow.get("marks", {}).is_empty():
 			mark_rows["%d,%d" % [block.x, block.y]] = brow["marks"].values()
@@ -685,7 +689,7 @@ func _save_one(key: String) -> void:
 			path_rows["%d,%d" % [block.x, block.y]] = flat
 
 	file.store_string(JSON.stringify({"version": int(cfg.get("version", 1)), "tally": int(rec.get("tally", 0)), "blocks": rows, "trails": trail_rows,
-		"marks": mark_rows, "paths": path_rows, "fish": rec.get("fish", {}), "water_ok": water_ok}))
+		"marks": mark_rows, "paths": path_rows, "fish": rec.get("fish", {}), "water_ok": water_ok, "water_seen": water_seen}))
 	file.close()
 
 	if DirAccess.rename_absolute(path + ".tmp", path) == OK:
@@ -716,10 +720,17 @@ func _load(key: String) -> Dictionary:
 		if at.size() == 2 and not routes.is_empty():
 			rec["trails"][Vector2i(int(at[0]), int(at[1]))] = routes
 
-	var water_ok: Variant = parsed.get("water_ok", [])
+	var water_ok: Dictionary = {}   # block name -> true
+	var water_seen: Variant = parsed.get("water_seen", {})
 
-	if typeof(water_ok) != TYPE_ARRAY:
-		water_ok = []
+	var ok_names: Variant = parsed.get("water_ok", [])
+
+	if typeof(ok_names) == TYPE_ARRAY:
+		for name in ok_names:
+			water_ok[str(name)] = true
+
+	if typeof(water_seen) != TYPE_DICTIONARY:
+		water_seen = {}
 
 	for name in parsed.get("blocks", {}):
 		var parts: PackedStringArray = str(name).split(",")
@@ -730,7 +741,15 @@ func _load(key: String) -> Dictionary:
 		var cells: Dictionary = Codec.decode(Marshalls.base64_to_raw(str(parsed["blocks"][name])))
 
 		if not cells.is_empty():
-			rec["blocks"][Vector2i(int(parts[0]), int(parts[1]))] = {"cells": cells, "ver": 1, "water_ok": (water_ok as Array).has(name)}
+			var brow: Dictionary = {"cells": cells, "ver": 1, "water_ok": water_ok.has(str(name))}
+
+			if not brow["water_ok"] and typeof(water_seen.get(name, null)) == TYPE_ARRAY:
+				brow["water_seen"] = {}
+
+				for idx in water_seen[name]:
+					brow["water_seen"][int(idx)] = true
+
+			rec["blocks"][Vector2i(int(parts[0]), int(parts[1]))] = brow
 
 	for name in parsed.get("marks", {}):
 		var brow: Dictionary = rec["blocks"].get(_block_name(str(name)), {})
