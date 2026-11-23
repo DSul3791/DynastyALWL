@@ -67,7 +67,11 @@ const DRAW_UP_M := 0.5                   # the bow's string at the shoulder, abo
 const STROKE_FROM_MPS := 0.5             # swim_sounds.gd STROKE_MIN_MPS: slower than this makes no strokes
 const FEET_M := 0.9                      # the sent position is the standing body's middle
 
+const STALL_S := 0.25                    # animal_view.gd STALL_S: a frame this long is this computer's own stall (MotionBuffer.stall_until)
+
 var table                            # the client's item table (id_of, entry), for worn and held items
+var _frame_s: float = -1.0           # when _process last drew the bodies (s, the ticks clock)
+var _settle_until: float = -1.0      # after this computer's own stall: until then bodies are drawn where their points are (as animal_view, #1765)
 var _looks: Dictionary = {}          # peer -> {"name", "body", "code", "worn"}
 var _bodies: Dictionary = {}         # peer -> {"node", "rig", "samples", "row_ms", "state", "held", "path_p", "sm_err", ...}
 var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock (protocol 154, the animals' jitter buffer): offset, interval, holes, lateness
@@ -97,8 +101,10 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		newest = maxi(newest, times[i])
 
 	if newest >= 0:
+		_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
+
 		if newest > int(_clock["server_ms"]) or newest < int(_clock["server_ms"]) - 2000:
-			MotionBuffer.clock_note(_clock, now_s, newest)   # the batch's newest position report (players report every 0.2 s, standing too);
+			MotionBuffer.clock_note(_clock, now_s, newest, now_s <= _settle_until)   # rows read late after this computer's own stall leave the lateness as it was   # the batch's newest position report (players report every 0.2 s, standing too);
 			# a batch with no newer report (a swing, a player coming in range, the 1 s resend) would read as late and deepen the delay
 
 	var seen: Dictionary = {}
@@ -207,6 +213,9 @@ func _process(delta: float) -> void:
 	var eye: Vector3 = camera.global_position if camera != null else Vector3.ZERO
 	var frame: int = Engine.get_process_frames()
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall (#1765, as animal_view)
+	var settle: bool = now_s <= _settle_until
+	_frame_s = now_s
 	var drawn_at: float = now_s - draw_delay(_clock)
 	_light_pass()
 
@@ -215,6 +224,9 @@ func _process(delta: float) -> void:
 		var node: Node3D = b["node"]
 		var rig: Node3D = b["rig"]
 		var before: Vector3 = b.get("path_p", node.position)
+
+		if settle:
+			MotionBuffer.settle(b)   # after this computer's own stall the others are drawn where they are, not eased in from metres behind
 
 		if not (b["samples"] as Array).is_empty():
 			var at: Array = MotionBuffer.at(b["samples"], drawn_at, CARRY_S)   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest

@@ -7601,7 +7601,7 @@ func _pick_up_fire(peer: int, inv, id: int) -> void:
 	var whole: bool = box != null and box.count_of(stick) == start and _box_holds_only(box, stick)   # its first sticks are still in it: they go back into the kit
 
 	if box != null and not box.is_empty() and not whole:
-		_say(peer, "Empty it first, or leave just its %d Sticks to pack it as a Campfire kit." % start)
+		_say(peer, "Empty it first, or leave just its %d sticks to pack it up as a Campfire." % start)
 		return
 
 	if whole:
@@ -23634,6 +23634,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return true
 		"moved":
 			return _hint_origin.has(peer) and (_hint_origin[peer] as Vector3).distance_to(_peer_pos[peer]) >= 5.0
+		"walked_far":   # far enough from where the hints began to have something on the map (the map hint, coordinator 23 Nov 2026)
+			return _hint_origin.has(peer) and (_hint_origin[peer] as Vector3).distance_to(_peer_pos[peer]) >= 150.0
 		"water_in_view":
 			return water_near.is_valid() and _tile_ready_at(_peer_pos[peer]) and bool(water_near.call(_peer_pos[peer], 20.0)) and not v.is_empty() and float(v.get("wet", 0.0)) < float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)) - 1.0
 		"after_drink":
