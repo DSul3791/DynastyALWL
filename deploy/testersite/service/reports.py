@@ -63,8 +63,6 @@ FORMS = {
         ("build", "Build", True),
         ("what", "What happened?", True),
         ("expected", "What did you expect?", False),
-        ("steps", "How can we make it happen again?", False),
-        ("where", "Where and when", False),
     ], ["log", "crash"]),
     "idea": ("[Idea] ", "idea", [
         ("build", "Build", False),
@@ -243,7 +241,7 @@ def take_report(kind, user, fields, uploads):
     _, _, spec, file_keys = FORMS[kind]
     values = {"title": clean(fields.get("title"), MAX_TITLE)}
     for name, heading, required in spec:
-        values[name] = clean(fields.get(name), 200 if name in ("build", "where") else MAX_TEXT)
+        values[name] = clean(fields.get(name), 200 if name == "build" else MAX_TEXT)
         if required and not values[name]:
             return 400, {"error": f"Please fill in \"{heading}\"."}
     files = {}
