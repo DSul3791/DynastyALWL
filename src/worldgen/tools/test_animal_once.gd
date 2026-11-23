@@ -1,7 +1,7 @@
 extends SceneTree
 
 # One-shot clips (Dave 23 Nov 2026: animals "like really bad animatronics"; docs/design/ANIMAL_GAIT.md): a hit, a bite or a death plays
-# once and is cut at its cap; while it plays the state's clip does not take over, then it does; a standing hit clip is not played on a
+# once and is cut at its cap; a lunge ending in the rows bites; while it plays the state's clip does not take over, then it does; a standing hit clip is not played on a
 # running body, a hit taken on the run is; a killed animal with a death clip stays drawn until the clip ends; a model with no clip for
 # the role plays nothing.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_once.gd
@@ -19,7 +19,7 @@ func check(ok: bool, what: String) -> void:
 
 
 # A drawn body with an AnimationPlayer whose roles name the clips given ({role: [clip, seconds]}).
-func body(v: Node3D, id: int, roles: Dictionary) -> Dictionary:
+func body(v, id: int, roles: Dictionary) -> Dictionary:
 	var node: Node3D = Node3D.new()
 	var player: AnimationPlayer = AnimationPlayer.new()
 	var lib: AnimationLibrary = AnimationLibrary.new()
@@ -38,13 +38,13 @@ func body(v: Node3D, id: int, roles: Dictionary) -> Dictionary:
 	node.set_meta("player", player)
 	node.set_meta("model_row", {"clips": {"0": by_role.get("0", "")}})
 	v.add_child(node)
-	var b: Dictionary = {"node": node, "state": 0, "spd": 0.0, "id": id, "target": Vector3.ZERO, "kind": "deer"}
+	var b: Dictionary = {"node": node, "state": 0, "spd": 0.0, "id": id, "target": Vector3.ZERO, "kind": "deer", "samples": [], "heading": 0.0}
 	v._bodies[id] = b
 	return b
 
 
 func _init() -> void:
-	var v: Node3D = AnimalViewScript.new()
+	var v = AnimalViewScript.new()
 	root.add_child(v)
 
 	# A hit on a standing body: the clip plays, cut at HIT_MAX_S (the clip is 2.9 s), and the state's clip waits until then.
@@ -81,6 +81,19 @@ func _init() -> void:
 	var dying: Dictionary = body(v, 6, {"0": ["Idle", 4.0], "die": ["Death_Idle_R01_once", 1.5]})
 	check(v._die(dying) and is_instance_valid(dying["node"]) and not (dying["node"] as Node3D).is_queued_for_deletion(), "a killed body with a death clip is still drawn as it falls")
 	check(not v._die(plain), "with no death clip the body goes at once")
+
+	# Through the rows: a lunge (7) ending plays the bite; a body killed by a hit leaves the rows but stays drawn while it falls.
+	var lunger: Dictionary = body(v, 7, {"0": ["Idle", 4.0], "bite": ["Attack_BiteForward_once", 2.4]})
+	lunger["state"] = 7
+	v.on_rows([[7, 3, Vector3.ZERO, 0.0, 6, 1000]], 1000)
+	check(lunger.has("once_until"), "a lunge ending (7 to 6) plays the bite")
+	var shot: Dictionary = body(v, 8, {"0": ["Idle", 4.0], "die": ["Death_Stand_R01_once", 1.7]})
+	shot["target"] = Vector3(40.0, 0.0, 40.0)
+	var shot_node: Node3D = shot["node"]
+	v.note_hit(Vector3(40.0, 0.0, 40.0))
+	v.on_rows([[7, 3, Vector3.ZERO, 0.0, 6, 1100]], 1100)
+	check(not v._bodies.has(8) and is_instance_valid(shot_node) and not shot_node.is_queued_for_deletion(), "a body killed by a hit leaves the rows and is still drawn as it falls")
+	check(not v._bodies.has(4) and not v._bodies.has(1), "a body that walks out of the rows goes")
 
 	v.queue_free()
 	print("test_animal_once: ", "PASS" if failures == 0 else "%d FAILURES" % failures)

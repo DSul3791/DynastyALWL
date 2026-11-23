@@ -357,7 +357,7 @@ func flinch(id: int) -> void:
 	# A standing hit clip on a running body would slide it along with its legs still.
 	var roles: Dictionary = (node.get_meta("player") as AnimationPlayer).get_meta("roles", {}) if node.has_meta("player") else {}
 
-	if float(_bodies[id].get("spd", 0.0)) <= HIT_STILL_MPS or str(roles.get("hit", "")).to_lower().contains("run"):
+	if int(_bodies[id].get("state", 0)) != LIE and (float(_bodies[id].get("spd", 0.0)) <= HIT_STILL_MPS or str(roles.get("hit", "")).to_lower().contains("run")):      # a lying body has no standing hit to show
 		_play_once(_bodies[id], "hit", HIT_MAX_S)
 
 
@@ -368,8 +368,8 @@ const ONCE_ROLES := ["bite", "hit", "die"]
 const HIT_STILL_MPS := 1.0     # a standing hit clip plays only on a body slower than this
 const HIT_MAX_S := 0.9         # a hit clip is cut here: the animal is back in its state's clip within a second
 const BITE_MAX_S := 1.2
-const DIE_MAX_S := 3.0
-const DIE_HOLD_S := 0.6        # the last pose of a death clip is held this long before the body goes
+const DIE_MAX_S := 2.0         # short: the carcass is already on the ground there (carcass_look.gd), so the falling body goes soon
+const DIE_HOLD_S := 0.3        # the last pose of a death clip is held this long before the body goes
 
 
 func _play_once(b: Dictionary, role: String, cap_s: float) -> bool:
