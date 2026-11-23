@@ -597,7 +597,9 @@ func setup(item_table, store_dir: String) -> void:
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
 	_load_kilns()
 	_smelters.load_rows(_read_json_version("smelters.json", 1))
-	_smithies.load_rows(_read_json_version("smithies.json", 1))
+	var smithies_parsed: Variant = _read_json_version("smithies.json", 1)
+	_smithies.load_rows(smithies_parsed)
+	_smithies.load_fuel_rows(smithies_parsed)
 	var crops_parsed: Variant = _read_json_version("crops.json", 1)
 	_crops = (crops_parsed.get("crops", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("crops", null)) == TYPE_DICTIONARY else {}
 	_plot_water = (crops_parsed.get("plots", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("plots", null)) == TYPE_DICTIONARY else {}
@@ -1924,7 +1926,7 @@ func save() -> void:
 	_tanks_written = _water_tanks_save()
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _tanks_written, "wells": _wells_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
-	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
+	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
 	_save_item_files(_item_job())
 
 
@@ -2039,7 +2041,7 @@ func _item_job() -> Dictionary:
 	_area_dirty = {}
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
-	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
+	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed, "kiln_lit_by": _kiln_lit_by.duplicate(),
 		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
@@ -2064,7 +2066,7 @@ static func _write_item_job(job: Dictionary) -> void:
 	var sums: Dictionary = job["sums"]
 	_write_file(dir + "/tree_states.json", JSON.stringify({"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}))
 	_write_file(dir + "/lights.json", JSON.stringify({"version": 1, "lit": _light_rows_of(items, kinds)}))
-	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds)}))
+	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds, job.get("kiln_lit_by", {}))}))
 	var areas: Dictionary = {}
 	var listed: Dictionary = {}
 	var failed: Array = []
@@ -2206,7 +2208,7 @@ func _save_sig_of(it: Dictionary) -> int:
 
 
 const FIRE_STEPPED := ["burn_left", "lit_s", "wood", "burnt", "char", "recheck", "covered"]   # a fire's running fields (_save_sig_of)
-const STRUCT_SIDE_FIELDS := ["fuel_left", "kiln"]   # in lights.json and kilns.json, which every save writes
+const STRUCT_SIDE_FIELDS := ["fuel_left", "kiln", "char"]   # in lights.json and kilns.json, which every save writes (char: a lit light's part lump, lights.json row [4])
 var _side_kind: Dictionary = {}   # structure kind -> true when it is a light or a kiln (tree_states, lights, kilns.json come from these)
 
 
@@ -2437,6 +2439,7 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 		row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
 		row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
 		row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left); below 0, owed for wood taken back out
+		row.append(1 if bool(it["fire"].get("kept", false)) else 0)   # [18]: cold ash already gave its charcoal one wait (older saves: absent)
 
 	if it.has("world"):
 		world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
@@ -2472,12 +2475,12 @@ static func _light_rows_of(items: Dictionary, kinds: Dictionary) -> Array:
 		var it: Dictionary = items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)) and not str((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[1]) in ["kiln", "smelt"]:   # a Kiln is saved in kilns.json, a Smelter in smelters.json
-			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
+			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0)), float(it["struct"].get("char", 0.0))])   # [4]: the part-made Charcoal (older saves: 4 values)
 
 	return rows
 
 
-static func _kiln_rows_of(items: Dictionary, kinds: Dictionary) -> Dictionary:
+static func _kiln_rows_of(items: Dictionary, kinds: Dictionary, lit_by: Dictionary = {}) -> Dictionary:
 	var rows: Dictionary = {}
 
 	for id in items:
@@ -2485,7 +2488,7 @@ static func _kiln_rows_of(items: Dictionary, kinds: Dictionary) -> Dictionary:
 
 		if it.has("struct") and it["struct"].has("uid") and str((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[1]) == "kiln" and (it["struct"].has("kiln") or bool(it["struct"].get("lit", false))):
 			var k: Dictionary = it["struct"].get("kiln", {})
-			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0))]
+			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0)), (str(lit_by.get(id, "")) if bool(it["struct"].get("lit", false)) else "")]   # [3]: the character who lit it (ADD-18; older saves: 3 values)
 
 	return rows
 
@@ -6782,7 +6785,7 @@ func _fire_expire(it: Dictionary) -> bool:
 			it["left"] = float((_cooking.get("charcoal_left", {}) as Dictionary).get("keep_s", 86400.0))
 			return true
 
-		# shortcut: "kept" is not saved, so a restart gives an abandoned fire one more wait; it still ends, and the cap on fires a chunk stays honest.
+		# "kept" is saved (world item fire row [18]), so a restart does not give an abandoned fire a second wait.
 		var box = _chests[int(it["fire"]["uid"])]
 		var c: int = table.number_of("charcoal")
 		drop_in_world(c, box.count_of(c), it["pos"] + Vector3(0.6, 0.0, 0.0))   # nobody came for it: it is left on the ground and the fire goes
@@ -7807,6 +7810,9 @@ func _load_world_items() -> void:
 
 			if row.size() > 17 and (typeof(row[17]) == TYPE_FLOAT or typeof(row[17]) == TYPE_INT) and float(row[17]) != 0.0:
 				entry["fire"]["char"] = float(row[17])
+
+			if row.size() > 18 and (typeof(row[18]) == TYPE_FLOAT or typeof(row[18]) == TYPE_INT) and int(row[18]) == 1:
+				entry["fire"]["kept"] = true
 
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
@@ -11451,7 +11457,7 @@ func _light_leave_charcoal(it: Dictionary, def: Dictionary, spent: float) -> voi
 	if wood_s <= 0.0 or not _charcoal_classes().has(_fire_wood_class(wood_id)):
 		return
 
-	# shortcut: the part-made lump is not saved with the light (lights.json keeps fuel_left only), so a restart loses under one Charcoal.
+	# The part-made lump is saved with the light (lights.json row [4]), so a restart keeps it.
 	var made: float = float(it["struct"].get("char", 0.0)) + spent / maxf(light_burn_s(def), 1.0) * wood_s / _charcoal_game_s()
 	var lumps: int = int(floor(made + 0.0001))
 	it["struct"]["char"] = maxf(made - float(lumps), 0.0)
@@ -13519,8 +13525,7 @@ func _kiln_next_slot(box, def: Dictionary) -> int:
 	return best
 
 
-# kiln world id -> the character key that lit it (server only, not saved, never sent: ADD-18 credits that character when the batch is done).
-# shortcut: a restart forgets who lit a burning kiln, so that batch credits no one (as an offline feller misses a tree's gathering); revisit with GA-41 origin events.
+# kiln world id -> the character key that lit it (server only, never sent: ADD-18 credits that character when the batch is done); saved in kilns.json row [3].
 var _kiln_lit_by: Dictionary = {}
 
 
@@ -13631,6 +13636,9 @@ func _load_kilns() -> void:
 			it["struct"]["lit"] = int(row[0]) == 1
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(_kilns_cfg().get("yield", {}).get("log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(_kilns_cfg().get("piece_s", 3.0)), float(def.get("self_burn_s", 150.0))))}
+
+			if (row as Array).size() > 3 and typeof(row[3]) == TYPE_STRING and str(row[3]) != "" and bool(it["struct"]["lit"]):
+				_kiln_lit_by[id] = str(row[3])   # who lit the burning batch: still credited after a restart (ADD-18)
 
 
 # --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
@@ -17806,7 +17814,7 @@ func _broken_station_near(peer: int, station: String, level: int = 1) -> bool:
 # store, which holds nothing else. It burns only while a craft is being worked there: fuel_craft_s seconds of making a unit (PROVISIONAL SF-2),
 # the next unit taken from the slot when the last is spent (struct fuel_left). The world row says "coals" while it has fuel (red coals) and
 # "busy" while a craft is worked (the flare, _busy_ms).
-# shortcut: fuel_left (under one unit's making time) is not saved; a restart starts the next craft on a new unit.
+# fuel_left (under one unit's making time) is saved in smithies.json "fuel" (server_smithy.gd fuel_rows), so a restart keeps the part-burnt unit.
 
 const FUEL_SLOT := 0          # the store slot that is the fuel slot
 const BUSY_HOLD_MS := 1500    # a smithy stays "busy" this long after the last craft tick worked there
@@ -17881,6 +17889,7 @@ func _smithy_burn(id: int, spent: float) -> bool:
 
 		if box == null or not _is_smithy_fuel(def, box.numbers[FUEL_SLOT]) or box.counts[FUEL_SLOT] <= 0:
 			it["struct"].erase("fuel_left")
+			_smithies.burning.erase(id)
 
 			if _busy_ms.erase(id):
 				_dirty = true   # back to cold: its row goes out again
@@ -17892,6 +17901,7 @@ func _smithy_burn(id: int, spent: float) -> bool:
 		left += float(def.get("fuel_craft_s", 1800.0))
 
 	it["struct"]["fuel_left"] = left
+	_smithies.burning[id] = true
 
 	if not _busy_ms.has(id):
 		_dirty = true   # the flare: its row goes out again
@@ -21452,7 +21462,7 @@ func light_burn_s(def: Dictionary, fallback_s: float = 1800.0) -> float:
 	return float(def.get("fuel_s", fallback_s))
 
 
-# The lit lights (and the fuel each has left) are saved beside the world items in lights.json as [x, y, z, fuel_left] and put back on the structures at those spots after a load.
+# The lit lights (and the fuel each has left) are saved beside the world items in lights.json as [x, y, z, fuel_left, char] and put back on the structures at those spots after a load.
 func _light_rows_save() -> Array:
 	return _light_rows_of(_items, _kind_info_now())
 
@@ -21471,6 +21481,10 @@ func _apply_lit_rows(rows: Array) -> void:
 			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and str(lit_def.get("use", "")) == "light":
 				it["struct"]["lit"] = true
 				it["struct"]["fuel_left"] = float(row[3])
+
+				if (row as Array).size() > 4 and (typeof(row[4]) == TYPE_FLOAT or typeof(row[4]) == TYPE_INT) and float(row[4]) > 0.0:
+					it["struct"]["char"] = clampf(float(row[4]), 0.0, 1.0)   # under one lump: whole lumps were dropped as made
+
 				break
 
 

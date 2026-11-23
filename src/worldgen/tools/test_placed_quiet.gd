@@ -6,6 +6,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_placed_quiet.gd
 
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const WorkshopSounds := preload("res://src/client/workshop_sounds.gd")
 
 
 class Counting extends "res://src/client/placed_sounds.gd":
@@ -58,5 +59,13 @@ func _init() -> void:
 	check(sounds.heard == 1, "one chest set down after the load is heard (%d)" % sounds.heard)
 
 	sounds.free()
+
+	# A smelter already worked at login: its bellows strokes wait while the world loads (BugsList 115 known limit).
+	var workshop = WorkshopSounds.new()
+	workshop.quiet = true
+	check(not workshop.bellows(Vector3.ZERO), "no bellows stroke while the world loads")
+	check(int(workshop.played.get("bellows_blow", 0)) == 0, "nothing played while quiet")
+	workshop.free()
+
 	print("placed quiet: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
