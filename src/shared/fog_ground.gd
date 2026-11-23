@@ -364,6 +364,7 @@ static func sea_reach(heights: PackedFloat32Array, n: int) -> PackedFloat32Array
 		var k: int = queue[head]
 		head += 1
 		var i: int = k % n
+		@warning_ignore("integer_division")
 		var j: int = k / n
 
 		for step in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
