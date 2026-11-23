@@ -1238,6 +1238,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "this doorway takes %s" % str(OPENING_DOORS.get(opening, opening))
 		"close":
 			return "too close to another fire or building"
+		"tree":
+			return "a tree is in the way: fell it first"
 		"overlap":
 			return "something is in the way: a wall, a post or another piece stands there"
 		"spaced":
