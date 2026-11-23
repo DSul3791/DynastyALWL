@@ -271,7 +271,7 @@ func _pick_chunks(per_biome: int, near: int, border: int) -> Array:
 # {"tris": PackedVector3Array (3 world points a triangle), "grid": cell index -> PackedInt32Array of triangle numbers, "cell": m, "x0", "z0", "n"}.
 func _window_mesh(x0: int, z0: int, w: int, lod: int) -> Dictionary:
 	var s: int = 1 << lod
-	var n: int = w / s
+	var n: int = int(float(w) / float(s))
 	var lo: float = INF
 	var hi: float = -INF
 
@@ -425,7 +425,7 @@ func _audit_chunk(chunk: Vector2i, windows: int, lods: PackedInt32Array) -> void
 	_check_water(o)
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(chunk)
-	var cells: int = int(placer.chunk_m) / WINDOW_M
+	var cells: int = int(placer.chunk_m / float(WINDOW_M))
 
 	for n in range(windows):
 		var cell: Vector2i = Vector2i(int(floor(o.x / float(WINDOW_M))) + rng.randi_range(0, cells - 1), int(floor(o.y / float(WINDOW_M))) + rng.randi_range(0, cells - 1))
@@ -433,7 +433,7 @@ func _audit_chunk(chunk: Vector2i, windows: int, lods: PackedInt32Array) -> void
 		var z0: int = cell.y * WINDOW_M
 		var m0: Dictionary = _window_mesh(x0, z0, WINDOW_M, 0)
 		_check_ground(m0)
-		_check_flora(m0, flora, trees)
+		_check_flora(m0, flora)
 		_check_scatter(m0, cell, trees)
 
 		for lod in lods:
@@ -544,7 +544,7 @@ func _check_ground(m: Dictionary) -> void:
 					_fault("ground_mismatch", absf(d), Vector3(x, hits[0], z), "surface_height %+.2f m off the mesh" % d)
 
 
-func _check_flora(m: Dictionary, flora: Dictionary, trees: Array) -> void:
+func _check_flora(m: Dictionary, flora: Dictionary) -> void:
 	var ids: PackedInt32Array = flora["ids"]
 
 	for n in range(ids.size()):
@@ -861,13 +861,13 @@ func _check_scatter(m: Dictionary, cell: Vector2i, trees: Array) -> void:
 
 # One spot (a place a player reported): the ground heights, the mesh at each level and the flora and water there.
 func _probe(at: Vector2) -> int:
-	var x0: int = int(floor(at.x)) - WINDOW_M / 2
-	var z0: int = int(floor(at.y)) - WINDOW_M / 2
+	var x0: int = int(floor(at.x - 0.5 * float(WINDOW_M)))
+	var z0: int = int(floor(at.y - 0.5 * float(WINDOW_M)))
 	print("probe x %.1f z %.1f: surface_height %.3f, water level %.3f" % [at.x, at.y, generator.surface_height(at.x, at.y), _water_level(at.x, at.y)])
 
 	for lod in range(4):
 		var m: Dictionary = _window_mesh(x0, z0, WINDOW_M, lod)
-		print("  lod %d: %d triangles, mesh heights %s" % [lod, (m["tris"] as PackedVector3Array).size() / 3, str(_mesh_hits(m, at.x, at.y))])
+		print("  lod %d: %d triangles, mesh heights %s" % [lod, int(float((m["tris"] as PackedVector3Array).size()) / 3.0), str(_mesh_hits(m, at.x, at.y))])
 
 	var chunk: Vector2i = placer.chunk_of(at.x, at.y)
 	var flora: Dictionary = placer.chunk_items(chunk)
