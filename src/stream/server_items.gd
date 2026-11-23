@@ -825,6 +825,8 @@ func note_spots_on_close() -> void:
 
 func peer_left(peer: int) -> void:
 	_held.erase(peer)
+	_held_left.erase(peer)
+	_hand_flags.erase(peer)
 	_cold_out.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
@@ -929,16 +931,40 @@ func peer_left(peer: int) -> void:
 
 # The item number the player says is in its hand (protocol 146 held_item), kept per peer for the goblin camps (server_tribes.gd armed).
 var _held: Dictionary = {}   # peer -> item number
+var _held_left: Dictionary = {}   # peer -> the left hand's item number (159)
+var _hand_flags: Dictionary = {}  # peer -> held_item.gd HAND_* flags (159)
+var send_flight: Callable          # (thrower peer, item number, from, velocity, burning): others see an arrow or thrown weapon fly (159)
 
 
-func report_held(peer: int, number: int) -> void:
+func report_held(peer: int, number: int, left: int = 0, flags: int = 0) -> void:
 	_held[peer] = maxi(number, 0)
+	_held_left[peer] = maxi(left, 0)
+	_hand_flags[peer] = flags & 15
+
+
+# The item in this player's left hand (a torch, lantern or shield; 159), 0 for none: as held_number, only while the pack holds it.
+func left_hand_number(peer: int) -> int:
+	return _in_pack(peer, int(_held_left.get(peer, 0)))
+
+
+# What the client says its hands are doing (held_item.gd HAND_*: bow raised 1, drawn 2, shield up 4, on a ladder 8), shown to the others only.
+func hand_flags(peer: int) -> int:
+	return int(_hand_flags.get(peer, 0))
+
+
+# Whether the player bears a burning torch or lantern: its client's torch-burn report came within TORCH_REPORT_MS (as _flame_near).
+func torch_burning(peer: int) -> bool:
+	return _torch_seen.has(peer) and Time.get_ticks_msec() - int(_torch_seen[peer]) <= TORCH_REPORT_MS
 
 
 # The item in this player's hand, 0 for none: what the client last said, and only while the pack still holds one (a claim of an item the
 # player does not have counts as empty hands).
 func held_number(peer: int) -> int:
-	var number: int = int(_held.get(peer, 0))
+	return _in_pack(peer, int(_held.get(peer, 0)))
+
+
+# `number` when the player's pack holds one, else 0 (a claim of an item the player does not have counts as empty hands).
+func _in_pack(peer: int, number: int) -> int:
 	var inv = inventory_of(peer)
 
 	if number == 0 or inv == null:
@@ -3498,6 +3524,9 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var thrown: Dictionary = inv.take_from_slot(slot, 1)
 	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0, "lag": shot_lag(peer, now)})
 
+	if send_flight.is_valid():
+		send_flight.call(peer, number, _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), direction.normalized() * THROW_SPEED, false)
+
 
 # How far behind the server the shooter's screen showed the animals when it shot or threw (ACT_SEEN just before): [ms behind for a seen
 # animal, ms behind for a committed charge, or -1 when it sent none], or [] for judged now. The flight keeps it, so every step of an arrow
@@ -3567,6 +3596,9 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
 	_arrows.append({"peer": peer, "number": number, "inst": shot_inst, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
 		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id), "lag": shot_lag(peer, now)})
+
+	if send_flight.is_valid():
+		send_flight.call(peer, number, _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), aim * _bow.speed(power, bow_id), aflame)
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)) * (float(fire_cfg.get("alarm_mult", 2.0)) if aflame else 1.0))
@@ -14631,8 +14663,16 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 
 # The whole load: the pack (with the bags in it) and what the worn bags hold (worn pieces themselves weigh nothing, as before).
 func carried_kg_of(peer: int) -> float:
+	if _in_vitals and _kg_cache.has(peer):
+		return float(_kg_cache[peer])
+
 	var inv = inventory_of(peer)
-	return (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+	var kg: float = (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+
+	if _in_vitals:
+		_kg_cache[peer] = kg   # the carry notice and the load ratio both weigh the pack each tick (load test 23 Nov: 15 ms a second at 32 players)
+
+	return kg
 
 
 func _worn_bags_kg(peer: int) -> float:
@@ -14740,6 +14780,22 @@ func effort_of(peer: int) -> float:
 # How far into the hindering band the load is: 0 up to 80 percent of the limit, 1 at the limit.
 var _load_cache: Dictionary = {}     # peer -> load ratio, valid only during one _vitals_tick (it asks four times per player)
 var _in_vitals: bool = false
+var _kg_cache: Dictionary = {}       # peer -> carried kg, valid only during one _vitals_tick
+var _cover_cache: Dictionary = {}    # position -> cover_at, valid only during one _vitals_tick (warmth and soak asked three times per player)
+
+
+# cover_at at `pos`, worked out once per position during a _vitals_tick. Nothing that changes cover (building, felling) runs inside it.
+func _vitals_cover(pos: Vector3) -> float:
+	if not cover_at.is_valid():
+		return 0.0
+
+	if not _in_vitals:
+		return float(cover_at.call(pos))
+
+	if not _cover_cache.has(pos):
+		_cover_cache[pos] = float(cover_at.call(pos))
+
+	return float(_cover_cache[pos])
 
 
 func _load_ratio(peer: int) -> float:
@@ -16416,6 +16472,8 @@ func _vitals_tick(spent: float) -> void:
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var game_s: float = spent * GAME_RATE
 	_load_cache.clear()
+	_kg_cache.clear()
+	_cover_cache.clear()
 	_lit_valid = false
 	_in_vitals = true
 
@@ -17153,12 +17211,12 @@ func warmth_target(peer: int) -> float:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
-	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var covered: bool = _vitals_cover(pos) > 0.5
 	var cave_c: float = float(cave_mean_c.call(pos)) if cave_mean_c.is_valid() else NAN
 	# The weather's temp_c already carries the day and night swing (one temperature, docs/design/one_temperature.md); the server's weather is
 	# at sea level, so the height is taken off here.
 	var air: float = float(weather.get("temp_c", float(cfg.get("comfort_c", 15.0)))) - maxf(pos.y, 0.0) * float(cfg.get("lapse_c_per_m", 0.0065))
-	var roofed: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 1.5
+	var roofed: bool = _vitals_cover(pos) > 1.5
 	var wind: float = float(weather.get("wind", 0.0)) * (float(cfg.get("covered_wind_share", 0.3)) if roofed else 1.0)
 
 	# In a cave (Jamie's caves page, #664): the air sits at the island's year mean for its height (cave_mean_c, Climate.year_mean_c), with no
@@ -17408,7 +17466,7 @@ func _update_soak(peer: int, game_s: float) -> void:
 	var cfg: Dictionary = _warmth_cfg
 	var weather: Dictionary = weather_now.call() if weather_now.is_valid() else {}
 	var pos: Vector3 = _peer_pos.get(peer, Vector3.ZERO)
-	var covered: bool = cover_at.is_valid() and float(cover_at.call(pos)) > 0.5
+	var covered: bool = _vitals_cover(pos) > 0.5
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 	var soak: float = float(_soak.get(peer, 0.0))
 	var in_cave: bool = cave_mean_c.is_valid() and not is_nan(float(cave_mean_c.call(pos)))
@@ -24642,7 +24700,16 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
-	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
+	if queue.is_empty() or recipe.is_empty():
+		return
+
+	if not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe):
+		# Never a silent no (23 Nov 2026, the screens robot: Fish trap and Bird trap lit, pressed, nothing happened).
+		if bool(recipe.get("locked", false)):
+			_say(peer, "Nobody knows how to make %s yet" % table.in_sentence(str(recipe.get("name", "that"))))
+		else:
+			var at_station: String = (", standing at the %s" % _station_name(str(recipe["station"]))) if str(recipe.get("station", "")) != "" else ""
+			_say(peer, "You have not worked out how to make %s yet: carry what it needs in your pack%s, then try again" % [table.in_sentence(str(recipe.get("name", "that"))), at_station])
 		return
 
 	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
