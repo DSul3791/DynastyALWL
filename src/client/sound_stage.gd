@@ -1264,8 +1264,8 @@ func step_ground(feet: Vector3, depth: float, own_floor: String = "") -> Diction
 		kind = built
 		tune = [0.0, 1.0]
 
-	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches.
-	if weather != null and weather.ground_snow >= SNOW_COVER and kind in SNOW_SURFACES:
+	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches; not inside a cave, where none lies.
+	if weather != null and weather.snow_underfoot(SNOW_COVER) and kind in SNOW_SURFACES:
 		kind = "snow"
 		tune = [0.0, 1.0]
 

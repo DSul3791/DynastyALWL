@@ -267,6 +267,22 @@ func _main_zone() -> String:
 	return best
 
 
+# A bird bursting up into flight (animal_view.took_off, the server's FLY state), heard where it rose: the game birds' whirr of wings
+# (ambient_life.flush, medium wings; the big slow flaps only after a crow's alarm, Dave 3 Nov 2026), a crow caws its alarm and flaps off.
+# Birds with no flight of their own (ducks, geese, gulls, hens run) and every other animal: nothing. False when nothing played.
+const TAKE_OFF := {"grouse": "medium", "pheasant": "medium", "guineafowl": "medium", "crow": "crow"}
+
+
+func took_off(kind: String, at: Vector3) -> bool:
+	if not TAKE_OFF.has(kind) or _stage == null or _stage.ambient == null or not at.is_finite():
+		return false
+
+	if str(TAKE_OFF[kind]) == "crow":
+		return _stage.ambient.alarm(at)
+
+	return _stage.ambient.flush(at, 0.0, str(TAKE_OFF[kind]))
+
+
 func _bird(at: Vector3, mood: String) -> bool:
 	if mood == "idle":
 		return _stage.ambient.call_named(BIRD_IDLE[_rng.randi_range(0, BIRD_IDLE.size() - 1)], at)

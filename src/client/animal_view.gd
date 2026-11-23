@@ -27,6 +27,7 @@ const DRINK := 21                     # server_animals.DRINK: standing at the ba
 const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
+signal took_off(kind: String, at: Vector3)                       # a bird bursts up into flight (server_flight.FLY): its wings, where it rose (creature_sounds.took_off)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
@@ -37,6 +38,7 @@ const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit nea
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
+const FLY := 15                       # server_flight.FLY: a bird in flight
 const VOICED_STATES := [2, 3, 7, 10, 11, 16]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning
 const ATTACK_STATES := [7, 11]                # a wolf attacking, big game charging: the one biting you (attacker_near)
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
@@ -523,6 +525,8 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
+		elif int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) == FLY and KIND_OF_SPECIES.has(int(row[1])):
+			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
 
 		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.
 		if int(_bodies[id]["state"]) in ATTACK_STATES and not int(row[4]) in ATTACK_STATES:
