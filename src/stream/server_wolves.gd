@@ -293,7 +293,7 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 
 	# Prey draws a pack that is stalking or waiting (never one in the middle of a rush).
 	# A player's dog draws a prowling pack too (dog_companion_design.md 11).
-	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed":
+	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed" and float(pack.get("let_go_until", 0.0)) <= _clock:
 		var prey: int = _prey_near(c, float(w.get("distract_m", 80.0))) if pack["phase"] != "prowl" else _dog_near(c, float(w.get("distract_m", 80.0)))
 
 		if prey != 0:
@@ -860,9 +860,10 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		return
 
 	if prey_id != 0 and host.animals.has(prey_id) and float(pack["timer"]) <= 0.0 and host.wall_between(c, host.animals[prey_id]["pos"]):
-		pack["prey"] = 0   # walled off (a player's dog in its pen) for the whole feed time: the pack gives it up rather than wait at the pen for ever
-		pack["phase"] = "prowl"
+		pack["prey"] = 0   # walled off (a player's dog in its pen) for the whole feed time: the pack gives it up rather than wait at the pen for ever,
+		pack["phase"] = "prowl"   # and takes no new prey for another feed time (else it picked the same dog again at once)
 		pack["home"] = c
+		pack["let_go_until"] = _clock + float(cfgw().get("feed_s", 60.0))
 		return
 
 	if prey_id != 0 and host.animals.has(prey_id):

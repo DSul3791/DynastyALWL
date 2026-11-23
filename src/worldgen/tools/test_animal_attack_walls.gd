@@ -2,7 +2,7 @@ extends SceneTree
 
 # No animal attack goes through a wall (coordinator, 23 Nov 2026: wolves bit through walls; every other attack checked too). The real
 # server_items and server_animals wired as the server scene wires them (terrain_server.gd: the big game's hurt_player with its 10-health
-# floor, the walls hook on structure_blocks_step), a 10 m log wall across the way:
+# floor, the walls hook on structure_blocks_step), a 72 m log wall across the way:
 #   1. every big game charge (bear, boar, moose, buffalo, the big cats, hyena, rhino, elephant, dog) lands in the open, and never on a
 #      player standing hard behind the wall; the animal stays on its own side;
 #   2. a hunter's chase (a puma at a runner) the same;
