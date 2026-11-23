@@ -3293,7 +3293,7 @@ func _ice_feel_velocity(velocity: Vector3, water: Dictionary, delta: float) -> V
 		var now_v: Vector2 = IceFeelScript.grip_step(Vector2(body.velocity.x, body.velocity.z), want, IceFeelScript.grip_rate(_ice_feel_band, snow), delta)
 		velocity.x = now_v.x
 		velocity.z = now_v.y
-	elif not water.is_empty() and body.is_on_floor() and sound != null and sound.water.still_near():
+	elif not water.is_empty() and not float(water["surface"]) <= float(water.get("ground", NAN)) and body.is_on_floor() and sound != null and sound.water.still_near():   # in the water, not on the bank its sheet runs under
 		var slow: float = IceFeelScript.wade_mult(_ice_feel_band)
 		velocity.x *= slow
 		velocity.z *= slow
@@ -3433,6 +3433,7 @@ func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: in
 		_flow_tex.update(im)
 
 	_liquid.show_window(im, origin, cell_m, _flow_tex)
+	flora.set_liquid_live_image(im, origin, cell_m)   # wading and swimming read the water this window draws (flora_view water_surface_at)
 	# The chunk sheets step aside inside the window from one cell in, where this sheet has faded in (told only when the window moves).
 	var hole: Rect2 = Rect2(origin - Vector2(0.5, 0.5) * cell_m, Vector2(w, h) * cell_m)
 
@@ -7887,7 +7888,7 @@ func _wet_near(x: float, z: float, m: float) -> bool:
 		return false
 
 	for d in [Vector2.ZERO, Vector2(m, 0.0), Vector2(-m, 0.0), Vector2(0.0, m), Vector2(0.0, -m)]:
-		if not is_nan(float(flora.water_surface_at(x + d.x, z + d.y))):
+		if not is_nan(float(flora.water_wet_at(x + d.x, z + d.y))):
 			return true
 
 	return false
