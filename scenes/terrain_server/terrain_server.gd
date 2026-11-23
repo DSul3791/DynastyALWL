@@ -1326,9 +1326,11 @@ func _starter_stamp() -> String:
 # Swimmer (deep water, feet well under the surface) and head-under (the breath runs down) come from a reported
 # position by src/shared/swim.gd; the client swims by the same rules, the server decides the cost.
 # [water surface (NAN if none), ground height] at a reported position: the sea at 0, or the simulated tile's water.
-func _water_at(position: Vector3) -> Array:
+# `main_thread` false (the tunnel watch's own thread): the old rule, all ground at or under 0 m is sea, since the animals' fog windows that
+# answer _sea_cut_off are swapped on the main thread with no lock.
+func _water_at(position: Vector3, main_thread: bool = true) -> Array:
 	var tile: Vector2i = generator.tile_of(position.x, position.z)
-	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position, _sea_cut_off)
+	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position, _sea_cut_off if main_thread else Callable())
 
 
 # Ground below sea level cut off from the open sea (a fen hollow behind sand above 0 m) is not the sea: no sea water to fill, no sea fish,
@@ -2516,7 +2518,7 @@ func _start_tunnels() -> void:
 		store.load_block(buffer, block, 0)
 		return buffer
 	tunnels.water_above = func(x: float, z: float) -> float:      # the sea is 0 m; a river or lake is its live level (read on the watch's own thread)
-		return float(_water_at(Vector3(x, 0.0, z))[0])
+		return float(_water_at(Vector3(x, 0.0, z), false)[0])
 	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
 	tunnels.start()
 
