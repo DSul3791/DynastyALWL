@@ -610,7 +610,7 @@ func _check_wiggle() -> void:
 
 	for report in range(0, end_ms + 400, 200):
 		stamp_clock[0] = 20000 + report + rng.randi_range(0, 60)
-		var v: float = (float(x_of.call(report + 10)) - float(x_of.call(report - 10))) / 0.02
+		var v: float = (float(x_of.call(report)) - float(x_of.call(report - 200))) / 0.2   # as the client sends it: its move over its own gap since the last report
 		stamper.note_move(9, at + Vector3(float(x_of.call(report)), 0.0, 0.0), Vector3(v, 0.0, 0.0))
 		stamper.note_report(9, 0.0)
 		stamp_of[report] = int(stamper._report_ms[9])

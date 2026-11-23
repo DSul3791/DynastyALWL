@@ -792,8 +792,8 @@ func flames_near(from: Vector3, max_m: float) -> Array:
 	for peer in _bodies:
 		var b: Dictionary = _bodies[peer]
 
-		if (int(b.get("more", 0)) & MORE_LIT) == 0 or not (b.get("node") is Node3D):
-			continue
+		if (int(b.get("more", 0)) & MORE_LIT) == 0 or not (b.get("node") is Node3D) or str(b.get("held_kind", "")) == "bow":
+			continue   # unlit, or put away for the bow (_show_left)
 
 		var kind: String = "lantern" if "lantern" in [str(b.get("left_kind", "")), str(b.get("held_kind", ""))] else "torch"
 		var at: Vector3 = (b["node"] as Node3D).global_position + Vector3(0.0, DRAW_UP_M, 0.0)
@@ -812,7 +812,7 @@ func _light_pass() -> void:
 	for peer in _bodies:
 		var model: Node3D = _bodies[peer].get("left_node", null) as Node3D
 
-		if model != null and is_instance_valid(model) and model.get_node_or_null("Light") != null:
+		if model != null and is_instance_valid(model) and model.visible and model.get_node_or_null("Light") != null:   # one put away for a bow takes no slot
 			lit.append([float(_bodies[peer].get("distance", 0.0)), model])
 
 	lit.sort_custom(func(x, y): return float(x[0]) < float(y[0]))
