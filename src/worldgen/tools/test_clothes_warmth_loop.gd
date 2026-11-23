@@ -112,11 +112,13 @@ func _init() -> void:
 
 	# 1. Every piece that gives warmth can be made (a recipe that is not retired or locked), and each set's pieces are worn together.
 	var no_recipe: Array = []
+	var pieces: int = 0
 
 	for id in items.table.ids():
 		var entry: Dictionary = items.table.entry(id)
 
 		if float(entry.get("warmth", 0.0)) > 0.0 and not bool(entry.get("retired", false)) and not bool(entry.get("future", false)):
+			pieces += 1
 			var made: bool = false
 
 			for number in items.recipes.makers_of(items.table.number_of(id)):
@@ -126,6 +128,7 @@ func _init() -> void:
 			if not made:
 				no_recipe.append(id)
 
+	check(pieces >= 40, "the warmth pieces are found (%d)" % pieces)
 	check(no_recipe.is_empty(), "every piece that gives warmth has a live recipe (%s)" % str(no_recipe))
 
 	# 2. The table: each full set, dry and still, and soaked in a 0.6 wind; against the coldest hour of each climate.
@@ -153,10 +156,17 @@ func _init() -> void:
 	check(float(dry_ins["plant"]) > float(dry_ins["none"]) and float(dry_ins["leather"]) > float(dry_ins["linen"]) and float(dry_ins["hide"]) >= float(dry_ins["leather"]) and float(dry_ins["wool"]) >= float(dry_ins["hide"]) and float(dry_ins["fur"]) >= float(dry_ins["leather"]),
 		"dry, the sets rank none < plant, linen < leather <= hide <= wool, leather <= fur (%s)" % str(dry_ins))
 
+	var arctic_low: float = 0.0
+
 	for zone in ["starter", "transition", "arctic"]:
 		var c: Dictionary = Climate.of_zone(zone)
 		var low: float = float(c["sea_level_mean_c"]) - float(c["seasonal_swing_c"]) - 0.5 * float(c["daily_range_c"]) - float(c.get("spell_amplitude_c", 0.0))
 		print("%-10s coldest hour at sea level about %.1f C, at 1000 m about %.1f C" % [zone, low, low - float(c["lapse_c_per_km"])])
+		arctic_low = low - float(c["lapse_c_per_km"]) if zone == "arctic" else arctic_low
+
+	dress(items, 1, "fur")
+	weather["temp_c"] = arctic_low
+	check(items.warmth_target(1) >= cold, "dry and still, the fur set keeps you out of the cold at the arctic's coldest hour at 1000 m (%.1f C)" % arctic_low)
 
 	# 3. Two players in one cold night (-10 C, dry, still): Dave in fur keeps warm, Anna in nothing gets cold; each keeps their own.
 	dress(items, 1, "fur")
@@ -212,15 +222,42 @@ func _init() -> void:
 		b.tick(1.0)
 
 	check(said.count(why) == 1, "Anna, soaked in the wind and getting cold, is told once why: %s (%s)" % [why, str(said)])
-	weather["wind"] = 0.0
-	b._soak[3] = 0.0
-	b.vitals_of(3)["warmth"] = 30.0
+	# Under a roof (cover 2: roofed, the wind cut to covered_wind_share) the same soaking is not told to find a roof.
+	b.cover_at = func(at): return 2.0 if (at as Vector3).distance_to(Vector3(6.0, 0.0, 0.0)) < 1.0 else 0.0
+	weather["wind"] = 1.0
+	b._soak[4] = 1.0
+	b._cold_level.erase(4)
+	b._wet_wind_told.erase(4)
+	b.vitals_of(4)["warmth"] = float(b._warmth_cfg["cold_at"]) + 0.5
+	weather["temp_c"] = -15.0
 	said.clear()
 
-	for n in 30:
+	for n in 10:
 		b.tick(1.0)
 
-	check(int(b._cold_level.get(3, 0)) > 0 and not said.has(why), "dry Dave getting cold is not told about wet and wind (%s)" % str(said))
+	check(said.has(str(b._warmth_cfg["say_cold"])) and not said.has(why), "under a roof in a gale, soaked Anna gets cold and is not told to find a roof (%s)" % str(said))
+	b.cover_at = Callable()
+	weather["temp_c"] = 2.0
+	b._soak[4] = 0.0   # Anna dries off: the checks below are Dave's lines
+
+	# Dry in the same wind, and soaked in still air: getting cold, but neither is told about wet and wind.
+	for case in [[0.6, 0.0, "dry in the wind"], [0.0, 1.0, "soaked in still air"]]:
+		weather["wind"] = case[0]
+		b._soak[3] = case[1]
+		b._cold_level.erase(3)
+		b._wet_wind_told.erase(3)
+		b.vitals_of(3)["warmth"] = float(b._warmth_cfg["cold_at"]) + 0.5
+		dress(b, 3, "none")
+		weather["temp_c"] = -5.0
+		said.clear()
+
+		for n in 10:
+			b.tick(1.0)
+
+		check(said.has(str(b._warmth_cfg["say_cold"])) and not said.has(why), "%s, Dave gets cold and is not told about wet and wind (%s)" % [case[2], str(said)])
+
+	b._soak[3] = 0.0
+	dress(b, 3, "fur")
 
 	# 5. The cold rule in the worst weather: soaked in a gale at -40 C, even in fur, health stops at 1, then the pass-out and the rescue.
 	weather["temp_c"] = -40.0
@@ -262,7 +299,7 @@ func _init() -> void:
 	check(not b.passed_out(5) and int(b._strain.get(5, {}).get("state", 0)) == 0, "and wakes, not stuck fainted")
 	check(float(v5["health"]) >= float(cfg["pass_out"]["wake_health"]) - 0.5 and low_hp >= 1.0, "with the wake health (%.1f), never under 1" % float(v5["health"]))
 	check(b.inventory_of(5).count_of(stone) == 5 and worn_ids(b, 5) == dave_worn, "his pack and his clothes are all still his")
-	check(absf(float(b.vitals_of(4)["health"]) - float(items.vitals_of(2)["health"])) < 50.0, "Anna was not moved with him")
+	check((b._peer_pos[4] as Vector3).is_equal_approx(Vector3(6.0, 0.0, 0.0)) and not b.passed_out(4), "Anna stays where she was, awake")
 	check(moved.filter(func(m): return int(m[0]) == 4).is_empty(), "only Dave was carried")
 	b._finish_writer()
 	print("clothes and warmth loop: %s" % ("all pass" if failures == 0 else "%d FAIL" % failures))

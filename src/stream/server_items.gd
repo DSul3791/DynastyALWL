@@ -18214,7 +18214,7 @@ func warmth_target(peer: int) -> float:
 		# Wet plus wind is what kills (docs/design/body_in_weather_design.md 3): the wind pumps through wet cloth.
 		stress *= 1.0 + (float(cfg.get("rain_mult", 1.5)) - 1.0) * soak + float(body.get("wet_wind_gain", 0.0)) * soak * wind
 
-	_wet_wind[peer] = not body.is_empty() and soak >= float(body.get("wet_wind_say_soak", 0.5)) and wind >= float(body.get("wet_wind_say_wind", 0.3)) and not bool(_swimming.get(peer, false))
+	_wet_wind[peer] = not body.is_empty() and soak >= float(body.get("wet_wind_say_soak", 0.5)) and wind >= float(body.get("wet_wind_say_wind", 0.3)) and not roofed and not bool(_swimming.get(peer, false))   # under a roof the line would send them where they are
 
 	var insulation: float = clampf(float(insulation_of.call(peer)) if insulation_of.is_valid() else insulation_worn(peer), 0.0, float(cfg.get("max_insulation", 0.85)))
 

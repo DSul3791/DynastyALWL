@@ -86,7 +86,7 @@
 		"severe_pace": 2.5,
 		"say_severe": "You have stopped shivering. Get to a fire, now.",
 		"say_wet_wind": "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.",
-		"say_wet_wind_note": "Said once a cold spell, with the getting-cold, freezing or stopped-shivering line, while soaked at least wet_wind_say_soak and in a sheltered wind of at least wet_wind_say_wind: the player is told why their clothes do not help (coordinator 23 Nov 2026). Told again only after they are warm again.",
+		"say_wet_wind_note": "Said once a cold spell, with the getting-cold, freezing or stopped-shivering line, while soaked at least wet_wind_say_soak and in a wind of at least wet_wind_say_wind and not under a roof: the player is told why their clothes do not help (coordinator 23 Nov 2026). Told again only after they are warm again.",
 		"wet_wind_say_soak": 0.5,
 		"wet_wind_say_wind": 0.3
 	},
