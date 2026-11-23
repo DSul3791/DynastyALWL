@@ -748,6 +748,7 @@ func _ready() -> void:
 	edited_ground.ops = store.ops
 	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
 	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	items.ground_now = edited_ground.height   # where carcasses, arrows, thrown things, litter and regrown plants come down (round 7)
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
