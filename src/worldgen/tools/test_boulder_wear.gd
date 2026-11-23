@@ -98,7 +98,7 @@ func _init() -> void:
 		holder.get_child(0).free()
 
 	view._show_boulder(4243, [4243, 0, total, Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])
-	view._show_boulder(4243, [4243, 0, total / 8, Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])   # worked down to an eighth
+	view._show_boulder(4243, [4243, 0, int(total / 8.0), Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])   # worked down to an eighth
 
 	if check_has(view._boulders.has(4243), "a boulder row is drawn"):
 		var small: PackedVector3Array = (view._boulders[4243]["shape"].shape as ConvexPolygonShape3D).points
@@ -107,7 +107,7 @@ func _init() -> void:
 		for p in small:
 			small_top = maxf(small_top, p.y)
 
-		check(small_top < 0.8 * BoulderWear.radius_now(1.0, total / 8, total) + 0.01, "a worked rock's collider shrinks with it (%.2f)" % small_top)
+		check(small_top < 0.8 * BoulderWear.radius_now(1.0, int(total / 8.0), total) + 0.01, "a worked rock's collider shrinks with it (%.2f)" % small_top)
 
 	holder.free()
 	view.free()
