@@ -84,6 +84,7 @@ const FarSmokeScript := preload("res://src/client/far_smoke.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
+const InstanceLockScript := preload("res://src/client/instance_lock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
 const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
@@ -8729,6 +8730,7 @@ func _end_now() -> void:
 		link.close()
 	if multiplayer.multiplayer_peer != null:
 		multiplayer.multiplayer_peer.close()   # the server sees a disconnect now, not a timeout
+	InstanceLockScript.release()   # the "already open" note: its own node under the root leaves after this scene, too late once the process is killed
 	printerr("EXIT: process ends after exit_tree (exported Windows game)")   # an error-level line: the log file is flushed before the kill (release_first_run.ps1 reads it)
 	OS.kill(OS.get_process_id())   # Windows: TerminateProcess with exit code 0
 

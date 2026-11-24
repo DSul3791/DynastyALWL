@@ -94,7 +94,15 @@ func _init() -> void:
 	items.cave_rescue = func(p: Vector3) -> Array:
 		asked.append(p)
 		return [[fire_spot, "campfire"]]
+	var cave: Dictionary = {"top": 10.0}   # in this test a spot lower than cave.top is in the cave (a dictionary: the lambda sees later changes)
+	items.player_under_rock = func(p: Vector3) -> bool: return p.y < float(cave["top"])
 	items.report_position(1, stuck + Vector3(0.0, 6.0, 0.0))   # the client already stood them on the cave floor over the rock
+	solid = true
+	cave["top"] = 0.0
+	items.action(1, Net.ACT_STUCK, 0, 0, 0, stuck)
+	check(died.is_empty() and asked.is_empty(), "a player on open ground claiming a stuck point in the rock below is not moved (main gate review 8)")
+	items._stuck_msec.clear()
+	cave["top"] = 10.0
 	solid = false
 	items.action(1, Net.ACT_STUCK, 0, 0, 0, stuck)
 	check(died.is_empty(), "the server's ground is open there: not stuck, nothing happens")
@@ -141,7 +149,7 @@ func _init() -> void:
 
 	# The wiring in terrain_server (not run here): every rescue under rock asks _cave_rescue, and the cold and water pass-out wake lines have a campfire line.
 	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
-	check(server.contains("if _under_rock(near):") and server.contains("var fire: Array = _cave_rescue(was)") and server.contains("items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos) if _under_rock(pos) else []"), "terrain_server: a pass-out under rock, a cave-in and a stuck player all go to _cave_rescue (a stuck player only under rock)")
+	check(server.contains("if _under_rock(near):") and server.contains("var fire: Array = _cave_rescue(was)") and server.contains("items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos) if _under_rock(pos) else []") and server.contains("items.player_under_rock = func(pos: Vector3) -> bool: return _under_rock(pos)"), "terrain_server: a pass-out under rock, a cave-in and a stuck player all go to _cave_rescue (a stuck player only under rock)")
 	var pass_out: Dictionary = items._warmth_cfg.get("pass_out", {})
 	check((pass_out.get("say_wake", {}) as Dictionary).has("campfire") and (pass_out.get("say_wake_water", {}) as Dictionary).has("campfire"), "cold and water pass-outs carried to a campfire have their own wake line")
 	var client: String = FileAccess.get_file_as_string("res://src/client/rescue.gd")
