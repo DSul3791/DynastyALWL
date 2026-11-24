@@ -860,7 +860,7 @@ func missing_text(r: Dictionary) -> String:
 			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
 
 	if hand_tool != "":
-		short.push_front("%s in your hand" % hand_tool)   # first, so the card says it even when a log is short too
+		short.push_front("%s in your pack" % hand_tool)   # first, so the card says it even when a log is short too (a broken one does not count)
 
 	if short.is_empty():
 		return ""

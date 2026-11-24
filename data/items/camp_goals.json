@@ -16,12 +16,27 @@
 			"needs_code": false
 		},
 		{
+			"id": "dig_clay",
+			"title": "Dig clay",
+			"hint": "Craft a Wooden - Shovel (2 sticks; keep a stone in your pack), then dig where the ground is clay or under wet lowland soil. Clay makes pots, the smoker and the smelters.",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"got_item": "clay",
+				"count": 12
+			},
+			"stage": "start",
+			"needs_code": false
+		},
+		{
 			"id": "campfire_pot",
 			"title": "Hang a campfire pot",
 			"hint": "Fire 6 clay into a Clay - Pot at a lit campfire, then hold your hammer, press R, pick Campfire pot and click on the fire once its logs have burned down (3 sticks, 3 twine, the pot). Tallow and salt are made at it.",
 			"after": [
 				"fire",
-				"hammer"
+				"hammer",
+				"dig_clay"
 			],
 			"check": {
 				"event": "placed",
@@ -34,10 +49,11 @@
 		{
 			"id": "candle",
 			"title": "Work by candlelight",
-			"hint": "Render animal fat into tallow at the campfire pot, then make candles (tallow and a plant fibre) to light your shelter.",
+			"hint": "Render 2 animal fat into tallow at the campfire pot, then make candles (tallow and a plant fibre) to light your shelter. Rabbits give no fat: hunt a deer, boar or badger for it.",
 			"after": [
 				"shelter",
-				"campfire_pot"
+				"campfire_pot",
+				"hunt"
 			],
 			"check": {
 				"made_item": "candle",
@@ -51,11 +67,26 @@
 			"title": "Build a smoker",
 			"hint": "Hold your hammer, press R and pick Smoker: 32 stones and 6 clay. Fish are smoked in it.",
 			"after": [
-				"hammer"
+				"hammer",
+				"dig_clay"
 			],
 			"check": {
 				"event": "placed",
 				"what": "smoker",
+				"count": 1
+			},
+			"stage": "start",
+			"needs_code": false
+		},
+		{
+			"id": "sea_salt",
+			"title": "Boil sea salt",
+			"hint": "Fire another Clay - Pot (6 clay) at the campfire, carry it to the sea and press E at the water's edge for sea water, then boil 2 sea water into salt at the campfire pot. Smoked fish, jerky and salted fish need it.",
+			"after": [
+				"campfire_pot"
+			],
+			"check": {
+				"made_item": "sea_salt",
 				"count": 1
 			},
 			"stage": "start",
@@ -68,7 +99,7 @@
 			"after": [
 				"fish",
 				"smoker",
-				"campfire_pot"
+				"sea_salt"
 			],
 			"check": {
 				"made_item": "smoked_fish",
@@ -200,9 +231,9 @@
 			"title": "Make jerky",
 			"hint": "Dry 2 raw meat with a salt on the drying rack. Salt is boiled from sea water at the campfire pot.",
 			"after": [
-				"knife",
+				"hunt",
 				"drying_rack",
-				"campfire_pot"
+				"sea_salt"
 			],
 			"check": {
 				"made_item": "jerky",
@@ -217,7 +248,7 @@
 			"hint": "Cure a trout in salt at the campfire pot for the winter store.",
 			"after": [
 				"fish",
-				"campfire_pot"
+				"sea_salt"
 			],
 			"check": {
 				"made_item": "salted_fish",
@@ -248,11 +279,26 @@
 			"needs_code": false
 		},
 		{
+			"id": "sewing_needle",
+			"title": "Make a Sewing needle",
+			"hint": "Craft a Sewing needle from a bone. With it and thread (2 plant fibre) you sew hides into clothes.",
+			"after": [
+				"hunt"
+			],
+			"check": {
+				"made_item": "sewing_needle",
+				"count": 1,
+				"or_have": true
+			},
+			"stage": "start",
+			"needs_code": false
+		},
+		{
 			"id": "fur_for_winter",
 			"title": "Dress for the cold",
-			"hint": "Wear a full hide set or better before winter.",
+			"hint": "Wear a full hide set or better before winter: with the needle in your pack, sew hides and thread into a hood, cloak, trousers, boots and gloves (a cloak takes 3 hides and 2 thread). That means hunting more than one rabbit.",
 			"after": [
-				"knife"
+				"sewing_needle"
 			],
 			"check": {
 				"event": "worn_warmth",
@@ -309,13 +355,13 @@
 		{
 			"id": "copper_ore",
 			"title": "Find copper ore",
-			"hint": "Copper ore is rock coated green or blue-green. There is little by the coast: follow a river or stream inland and upstream, where copper rocks lie along the water, more and bigger toward the hills, up to green outcrops where it comes from. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer.",
+			"hint": "Copper ore is rock coated green or blue-green. There is little by the coast: follow a river or stream inland and upstream, where copper rocks lie along the water, more and bigger toward the hills, up to green outcrops where it comes from. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer. Nine pieces: three for the copper ingots now and six more for bronze later.",
 			"after": [
 				"hammer"
 			],
 			"check": {
 				"got_item": "copper_ore",
-				"count": 4
+				"count": 9
 			},
 			"stage": "copper_bronze"
 		},
@@ -336,7 +382,7 @@
 		{
 			"id": "copper_ingot",
 			"title": "Smelt copper",
-			"hint": "Put copper ore in the Primitive smelter and charcoal or coal in its fuel slot (F), then press E to light it. Each copper ore gives a Copper ingot.",
+			"hint": "Put copper ore in the Primitive smelter and charcoal or coal in its fuel slot (F), then press E to light it. Each copper ore gives a Copper ingot and burns one charcoal or coal.",
 			"after": [
 				"smelter",
 				"charcoal"
@@ -388,26 +434,26 @@
 		{
 			"id": "tin_ore",
 			"title": "Find tin ore",
-			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer.",
+			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer. Six pieces, each smelted with a copper ore, make the twelve bronze ingots the next steps need.",
 			"after": [
 				"copper_ingot"
 			],
 			"check": {
 				"got_item": "tin_ore",
-				"count": 2
+				"count": 6
 			},
 			"stage": "copper_bronze"
 		},
 		{
 			"id": "bronze_ingot",
 			"title": "Smelt bronze",
-			"hint": "Put copper ore and tin ore in the Primitive smelter together: each copper ore with a tin ore makes two Bronze ingots.",
+			"hint": "Put copper ore and tin ore in the Primitive smelter together: each copper ore with a tin ore makes two Bronze ingots. Twelve covers a Bronze - Pickaxe (3), one ingot each for Bronze nails and Bronze hinges at the Primitive smithy, and 6 for the Improved smithy. Each ore burns one charcoal or coal, so the 12 ore take 12.",
 			"after": [
 				"tin_ore"
 			],
 			"check": {
 				"made_item": "bronze_ingot",
-				"count": 4
+				"count": 12
 			},
 			"stage": "copper_bronze"
 		},
