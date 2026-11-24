@@ -49,6 +49,9 @@ def read_run(d):
 				r["p"].append((int(p[4]), float(p[5]), float(p[6])))
 			elif len(p) > 8 and p[3] == "A":
 				r["a"].setdefault(int(p[5]), []).append((int(p[4]), float(p[6]), float(p[7]), int(p[8])))
+
+				if len(p) > 16 and p[9] == "err":   # how it was drawn (robot_play _kind_frame): the correction, past newest, plan, lateness
+					r.setdefault("draw", {})[(int(p[5]), int(p[4]))] = "err %s past %s plan %s late %s" % (p[10], p[12], p[14], p[16])
 			elif len(p) > 4 and p[3] == "SLIDE":
 				r["slide"] = line.split("SLIDE ", 1)[1].strip()
 			elif len(p) > 4 and p[3] == "KIND":
@@ -218,6 +221,16 @@ def report(d):
 				statistics.median(near_server), statistics.median(near_drawn), len(near_server))))
 			print_split("server " + name, s_state, s_speed)
 
+	for name, r in robots.items():
+		vals = [v.split() for v in r.get("draw", {}).values()]
+
+		if vals:
+			err = [float(v[1]) for v in vals]
+			past = [float(v[3]) for v in vals]
+			print("  draw %s: %d samples; correction left median %.2f m, 95th %.2f m, over 1 m %d; past newest median %.2f s, over 0.6 s (held) %d; with a plan %d; late median %.2f s" % (
+				name, len(vals), statistics.median(err), pct(err, 0.95), sum(1 for x in err if x > 1.0), statistics.median(past), sum(1 for x in past if x > 0.6),
+				sum(1 for v in vals if v[5] == "1"), statistics.median([float(v[7]) for v in vals])))
+
 	by_peer = {r["peer"]: r for r in robots.values() if r["peer"] is not None}
 
 	for h in hits:
@@ -294,9 +307,10 @@ def episodes(d, count):
 		srv = at(where.get(aid, []), ms, 300)
 		near = lambda rs: " ".join("%+d:%s" % ((dt), "-" if at(rs, ms + dt) is None else "%.1f,%.1f" % at(rs, ms + dt)) for dt in (-500, -250, 0, 250, 500))
 		st2 = min(other, key=lambda r: abs(r[0] - ms))
+		how = lambda rob, row: (" (%s)" % rob["draw"][(aid, row[0])]) if (aid, row[0]) in rob.get("draw", {}) else ""
 		out.append("  episode %s animal %d at %d: gap %.2f m; %s state %d %s [%s]; %s state %d %s [%s]; server %s" % (
-			os.path.basename(d), aid, ms, gap, names[0], rows[k][3], speed_band(rows, k), near(rows), names[1], st2[3], speed_band(other, other.index(st2)),
-			near(other), "-" if srv is None else "%.1f,%.1f" % srv))
+			os.path.basename(d), aid, ms, gap, names[0], rows[k][3], speed_band(rows, k) + how(one, rows[k]), near(rows), names[1], st2[3],
+			speed_band(other, other.index(st2)) + how(two, st2), near(other), "-" if srv is None else "%.1f,%.1f" % srv))
 
 		if len(out) >= count:
 			break
