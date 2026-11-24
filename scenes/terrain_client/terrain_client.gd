@@ -1910,7 +1910,13 @@ func _welcome_body(info: Dictionary) -> void:
 
 		# The record's water where the settled water shows none (docs/design/drink_prompt_design.md (a); Kathleen: name what is there).
 		var source: String = _record_drink_here()
-		return {"prompt": "%s — Press E to drink" % source, "tap": items.drink} if source != "" else {})
+
+		if source != "":
+			return {"prompt": "%s — Press E to drink" % source, "tap": items.drink}
+
+		# The sea (Dave 24 Nov 2026: "when you try to drink water from the ocean it should tell you that is too salty"): E asks, and the server
+		# answers that it is too salty (server_items _drink_water); there was no prompt and E did nothing.
+		return {"prompt": "Sea water — Press E to drink", "tap": items.drink} if not items.held_container_has_water() and _sea_in_reach() else {})
 	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a container shore_nodes.json lists (bucket, clay jug, clay pot, waterskin) in the pack E fills it with sea water; otherwise on a tide-line node
 	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
 	items.register_interactable("gather_edge", 34, func():
@@ -2576,6 +2582,34 @@ func _shore_prompt() -> String:
 	var day: int = int(floor(game_clock.seconds / 86400.0))
 	_shore_text = ShoreRules.prompt(_shore_cfg, here, sea, container, ground, day, game_clock.hour(), season_here(), _shore_used)
 	return _shore_text
+
+
+# The sea within drinking reach: the ground below sea level at the player or DRINK_REACH_M around (as _shore_prompt), never in a tunnel under the island.
+# Asked each frame the prompts are read, so the answer is kept for 250 ms (as _shore_prompt).
+var _sea_reach_msec: int = -1000
+var _sea_reach: bool = false
+
+
+func _sea_in_reach() -> bool:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _sea_reach_msec < 250:
+		return _sea_reach
+
+	_sea_reach_msec = now
+	_sea_reach = false
+
+	if body == null or _under_land(body.global_position):
+		return false
+
+	for offset in [Vector2.ZERO, Vector2(DRINK_REACH_M, 0.0), Vector2(-DRINK_REACH_M, 0.0), Vector2(0.0, DRINK_REACH_M), Vector2(0.0, -DRINK_REACH_M)]:
+		var g: float = _ground_below(body.global_position + Vector3(offset.x, 0.0, offset.y))
+
+		if not is_nan(g) and g < 0.0:
+			_sea_reach = true
+			break
+
+	return _sea_reach
 
 
 func _shore_tap() -> void:

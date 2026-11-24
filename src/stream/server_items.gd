@@ -21287,6 +21287,14 @@ func _shore_data() -> Dictionary:
 	return _shore_cfg
 
 
+const SALT_SAY := "This water is too salty to drink. Try to find some fresh water."
+
+
+# Whether the water at the player's own spot is the sea (water_kind_at "sea..."); false with no sea anywhere (the scene left it unset).
+func _sea_at_feet(pos: Vector3) -> bool:
+	return water_kind_at.is_valid() and str((water_kind_at.call(pos.x, pos.z) as Dictionary).get("kind", "")).begins_with("sea")
+
+
 func _sea_near(pos: Vector3, reach: float) -> bool:
 	if not water_kind_at.is_valid():
 		return false
@@ -28849,11 +28857,18 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 
 	var shown: bool = _drink_water_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
 
+	# The sea is never drinkable (Dave 24 Nov 2026: "it should tell you that is too salty. try to find some fresh water."): standing in it, or with only
+	# the sea in reach, the player is told so, whatever the record holds there.
+	if _sea_at_feet(_peer_pos[peer]) or (not shown and _sea_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))):
+		if not _fresh_record_near(peer, thirst):
+			_say(peer, str(thirst.get("sources", {}).get("say_salt", SALT_SAY)))
+			return
+
 	# The record's water counts too where the settled water does not show it (docs/design/drink_prompt_design.md (a)): a ground spring head, a narrow
 	# brook. The rule below then says whether it runs (_drink_source_ok: "The bed is dry", frozen, salt).
 	if not shown and not _record_water_near(peer, thirst):
 		if _salt_only(peer, thirst):
-			_say(peer, str(thirst["sources"].get("say_salt", "Salt water. It would only make you thirstier.")))   # the sea (design section 2)
+			_say(peer, str(thirst["sources"].get("say_salt", SALT_SAY)))   # the sea (design section 2)
 		else:
 			_reject_said(peer, 0, "No water within reach.")
 
@@ -28915,7 +28930,7 @@ func _drink_source_ok(peer: int, thirst: Dictionary) -> bool:
 	var found: Dictionary = DrinkRules.pick(cfg, rows, ctx)
 
 	if str(found.get("refused", "")) == "salt":
-		_say(peer, str(cfg.get("say_salt", "Salt water. It would only make you thirstier.")))
+		_say(peer, str(cfg.get("say_salt", SALT_SAY)))
 		return false
 
 	if str(found.get("refused", "")) == "dry":
@@ -28939,6 +28954,16 @@ func _record_water_near(peer: int, thirst: Dictionary) -> bool:
 
 	var rows: Array = water_source.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
 	return rows.any(func(row): return str((row as Dictionary).get("kind", "")) in ["spring", "brook"])
+
+
+# Any fresh water row of the record within reach (a lake, river, brook, spring...: every kind but salt). The fish map calls water with its bed at or
+# under 0 m the sea (server_fish_water _classify), so a lower river or a lagoon there is still a drink when the record holds it as fresh.
+func _fresh_record_near(peer: int, thirst: Dictionary) -> bool:
+	if not water_source.is_valid():
+		return false
+
+	var rows: Array = water_source.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
+	return rows.any(func(row): return str((row as Dictionary).get("kind", "salt")) != "salt")
 
 
 # With thirst.sources on, no drinking water within reach (water_near) but salt water is: the sea, which the live sim does not hold.
