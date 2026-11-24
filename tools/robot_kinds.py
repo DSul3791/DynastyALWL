@@ -47,6 +47,10 @@ def read_run(d):
 
 			if len(p) > 6 and p[3] == "P":
 				r["p"].append((int(p[4]), float(p[5]), float(p[6])))
+			elif len(p) > 9 and p[3] == "POSE":   # its own place every 0.5 s (robot_play _pose_lines)
+				r.setdefault("pose", []).append((int(p[5]), float(p[7]), float(p[9]), 0))
+			elif len(p) > 9 and p[3] == "SEES":   # how it draws another robot (peer) every 0.5 s
+				r.setdefault("sees", {}).setdefault(int(p[4]), []).append((int(p[5]), float(p[7]), float(p[9]), 0))
 			elif len(p) > 8 and p[3] == "A":
 				r["a"].setdefault(int(p[5]), []).append((int(p[4]), float(p[6]), float(p[7]), int(p[8])))
 
@@ -66,7 +70,7 @@ def read_run(d):
 			elif "step joined: peer" in line:
 				r["peer"] = int(line.split("peer ")[1].split()[0])
 
-		for rows in r["a"].values():
+		for rows in list(r["a"].values()) + list(r.get("sees", {}).values()) + [r.get("pose", [])]:
 			rows.sort()
 
 		robots[r["name"]] = r
@@ -126,6 +130,53 @@ def print_split(what, by_state, by_speed):
 		parts = ["%s %d: median %.2f, 95th %.2f, over 1 m %d" % (key, len(xs), statistics.median(xs), pct(xs, 0.95), sum(1 for x in xs if x > 1.0))
 			for key, xs in sorted(groups.items(), key=lambda kv: -len(kv[1]))]
 		print("    %s by %s: %s" % (what, title, "; ".join(parts)))
+
+
+OTHER_NEAR_M = 10.0   # an animal this near another player (by the server) is in a fight with them, or close to it
+
+
+def others_gap(robots, where):
+	"""Two players and one animal: how far apart one robot draws an animal and the OTHER robot (its A rows and SEES of that robot), against
+	how far apart they really were (the server's AUDIT where, the other robot's own POSE), at each SEES moment with the animal within
+	OTHER_NEAR_M of that robot. drawn - real < 0: the animal is drawn closer to the other player than it is (it can look to bite them early)."""
+	out = []
+	by_peer = {r["peer"]: r for r in robots.values() if r.get("peer") is not None}
+
+	for name, r in sorted(robots.items()):
+		diffs, inside = [], 0
+
+		for peer, sees in r.get("sees", {}).items():
+			other = by_peer.get(peer)
+
+			if other is None or not other.get("pose"):
+				continue
+
+			for ms, sx, sz, _ in sees:
+				real_p = at(other["pose"], ms, 300)
+
+				if real_p is None:
+					continue
+
+				for aid, rows in where.items():
+					real_a = at(rows, ms, 300)
+					drawn_a = at(r["a"].get(aid, []), ms)
+
+					if real_a is None or drawn_a is None:
+						continue
+
+					real = math.hypot(real_a[0] - real_p[0], real_a[1] - real_p[1])
+
+					if real < OTHER_NEAR_M:
+						drawn = math.hypot(drawn_a[0] - sx, drawn_a[1] - sz)
+						diffs.append(drawn - real)
+						inside += 1 if drawn < 0.5 and real >= 0.5 else 0
+
+		if diffs:
+			mags = [abs(x) for x in diffs]
+			out.append("  others %s: an animal near the other robot, drawn gap less the real gap: %d moments, median %+.2f m, |gap error| 95th %.2f m, worst %.2f m, drawn closer by over 1 m %d, over 1 m farther %d, drawn under 0.5 m while really not %d" % (
+				name, len(diffs), statistics.median(diffs), pct(mags, 0.95), max(mags), sum(1 for x in diffs if x < -1.0), sum(1 for x in diffs if x > 1.0), inside))
+
+	return out
 
 
 def pct(xs, q):
@@ -230,6 +281,9 @@ def report(d):
 			print("  draw %s: %d samples; correction left median %.2f m, 95th %.2f m, over 1 m %d; past newest median %.2f s, over 0.6 s (held) %d; with a plan %d; late median %.2f s" % (
 				name, len(vals), statistics.median(err), pct(err, 0.95), sum(1 for x in err if x > 1.0), statistics.median(past), sum(1 for x in past if x > 0.6),
 				sum(1 for v in vals if v[5] == "1"), statistics.median([float(v[7]) for v in vals])))
+
+	for line in others_gap(robots, where):
+		print(line)
 
 	by_peer = {r["peer"]: r for r in robots.values() if r["peer"] is not None}
 
