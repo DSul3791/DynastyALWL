@@ -526,7 +526,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
 	items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos) if _under_rock(pos) else []   # a player stuck in a cave's rock goes to the nearest campfire (Dave 23 Nov 2026)
-	items.under_rock = func(pos: Vector3) -> bool: return _under_rock(pos)   # a stuck rescue is taken only for a player who is in a cave or tunnel
+	items.player_under_rock = func(pos: Vector3) -> bool: return _under_rock(pos)   # a stuck rescue is taken only for a player who is in a cave or tunnel
 	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)

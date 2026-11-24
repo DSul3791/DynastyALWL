@@ -207,7 +207,7 @@ var bog_field: Callable          # (fx, fz, digging.json bog_iron) -> BogIron.fi
 var bog_silt_at: Callable        # (x, z, digging.json bog_iron) -> BogIron.silt_material: what a hole dug on fen, marsh, swamp or bog silts back in with, 0 elsewhere (unset: none does)
 var ground_open: Callable         # (points: Array of Vector3) -> bool: any of them open ground now (terrain_server store.any_open); unset: never checked
 var cave_rescue: Callable         # (point) -> [[spot Vector3, kind]] or []: the nearest campfire out of the rock for a player rescued under it (terrain_server _cave_rescue)
-var under_rock: Callable          # (point) -> bool: in a cave or a dug tunnel (terrain_server _under_rock); unset: no stuck rescue is taken
+var player_under_rock: Callable   # (point) -> bool: in a cave or a dug tunnel (terrain_server _under_rock); unset: no stuck rescue is taken
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
@@ -19856,7 +19856,7 @@ func _stuck_rescue(peer: int, at: Vector3) -> void:
 	if _stuck_msec.has(peer) and now - int(_stuck_msec[peer]) < STUCK_COOLDOWN_MS:
 		return
 
-	if not under_rock.is_valid() or not bool(under_rock.call(_peer_pos[peer])):
+	if not player_under_rock.is_valid() or not bool(player_under_rock.call(_peer_pos[peer])):
 		return   # the player's own spot is not in a cave or tunnel: a stuck point claimed under open ground is no free trip to a fire (main gate review 8)
 
 	if not ground_open.is_valid() or bool(ground_open.call([at + Vector3(0.0, -0.7, 0.0), at, at + Vector3(0.0, 0.7, 0.0)])):
