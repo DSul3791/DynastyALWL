@@ -411,6 +411,9 @@ func forget_tiles() -> void:
 	_tiles.clear()
 	_tiles_epoch += 1   # the kept column heights (_heights) were read from the old tiles
 	_mutex.unlock()
+	_open_sea_mutex.lock()
+	_open_sea.clear()   # a bake may have added a tile where there was open ocean
+	_open_sea_mutex.unlock()
 	_heights_mutex.lock()
 	_heights_kept.clear()   # and hold the old tiles: let them go now
 	_heights_mutex.unlock()
@@ -539,7 +542,81 @@ func _wrapped_noise(noise: FastNoiseLite, x: float, z: float, band: float) -> fl
 
 # ---------------------------------------------------------------- blocks
 
+# Open ocean (24 Nov 2026): past the baked tiles there is no tile file and the sea floor is flat (placeholder_depth_m), so a block whose
+# columns and their ring all lie on such tiles is the same at every x and z: it depends only on its row and level. The first one made
+# is kept and copied for the rest (exact: test_open_ocean.gd). A stand-in for a tile that would not load is never kept.
+const OPEN_SEA_KEPT_MAX := 512          # kept sea blocks (rows of seabed and rock under it, every level)
+const OPEN_SEA_CHANNELS := [Layout.CHANNEL_SDF, Layout.CHANNEL_ROCK, Layout.CHANNEL_SOIL, Layout.CHANNEL_RESOURCE, Layout.CHANNEL_MATERIAL]   # the channels generate() writes
+
+var _open_sea: Dictionary = {}           # Vector3i(row, level, size) -> VoxelBuffer, under _open_sea_mutex
+var _open_sea_mutex: Mutex = Mutex.new()
+var open_sea_hits: int = 0
+
+
 func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
+	var size: Vector3i = buffer.get_size()
+
+	if size.x != size.y or size.x != size.z or size.x < 2 or not _open_sea_block(origin, lod, size.x):
+		_generate_made(buffer, origin, lod)
+		return
+
+	var key: Vector3i = Vector3i(origin.y, lod, size.x)
+	_open_sea_mutex.lock()
+	var kept: VoxelBuffer = _open_sea.get(key, null)
+
+	if kept != null:
+		open_sea_hits += 1
+
+	_open_sea_mutex.unlock()
+
+	if kept != null:
+		for channel in OPEN_SEA_CHANNELS:
+			buffer.copy_channel_from(kept, channel)
+
+		return
+
+	var failed_before: int = failed_tiles
+	_generate_made(buffer, origin, lod)
+
+	if failed_tiles != failed_before or (buffer.is_uniform(Layout.CHANNEL_SDF) and buffer.get_voxel_f(0, 0, 0, Layout.CHANNEL_SDF) > 0.0):
+		return   # a tile that would not load, or air (already cheap): not kept
+
+	var copy: VoxelBuffer = VoxelBuffer.new()
+	copy.create(size.x, size.y, size.z)
+
+	for channel in OPEN_SEA_CHANNELS:
+		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
+		copy.copy_channel_from(buffer, channel)
+
+	_open_sea_mutex.lock()
+
+	if _open_sea.size() < OPEN_SEA_KEPT_MAX:
+		_open_sea[key] = copy
+
+	_open_sea_mutex.unlock()
+
+
+# The block's columns and their one-column ring all lie on tiles with no file (open ocean, not a stand-in for a file that would not load).
+func _open_sea_block(origin: Vector3i, lod: int, n: int) -> bool:
+	var sf: float = float(1 << lod)
+	var xs: Array = [wrap_x(float(origin.x) - sf), wrap_x(float(origin.x) + float(n) * sf)]
+	var zs: Array = [wrap_x(float(origin.z) - sf), wrap_x(float(origin.z) + float(n) * sf)]
+	_mutex.lock()
+
+	for x in xs:
+		for z in zs:
+			var data = _tiles.get(Vector2i(int(floor(x / tile_size_m)), int(floor(z / tile_size_m))), null)
+
+			# Only tiles already read and kept count: a stand-in for a failed read is never kept in _tiles.
+			if data == null or not data.placeholder:
+				_mutex.unlock()
+				return false
+
+	_mutex.unlock()
+	return true
+
+
+func _generate_made(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var size: Vector3i = buffer.get_size()
 	var s: int = 1 << lod
 	var sf: float = float(s)
