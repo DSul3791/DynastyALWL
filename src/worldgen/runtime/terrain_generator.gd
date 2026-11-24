@@ -71,7 +71,7 @@ var _loading: Dictionary = {}           # Vector2i -> true while one thread read
 var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
 var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
 var _tiles_epoch: int = 0                # forget_tiles count: kept column heights from before are not used
-var _heights_kept: Dictionary = {}        # thread id -> [key, plain heights, detailed heights or null] (_heights)
+var _heights_kept: Dictionary = {}        # thread id -> [key, plain heights, detailed heights or null] (_heights); each version may carry that thread's lookups at [8]
 var _heights_mutex: Mutex = Mutex.new()
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
@@ -700,7 +700,7 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 # The heights of a block column (origin x and z, size, level), plain or with the detail noise, as _column_heights returns them
 # ([6] and [7] the lowest and highest of that version). Every block of a column has the same, and the prebuild and the server make a
 # column's blocks one after another, so each thread keeps its last column's (24 Nov 2026: three to four blocks a column, the heights
-# and detail noise were a quarter of a block's time). Never changed by the caller. Kept only while no tile read failed and the tiles
+# and detail noise were a quarter of a block's time). The caller adds only its own thread's lookups at [8] (_column_lookups). Kept only while no tile read failed and the tiles
 # were not dropped (forget_tiles), so a stand-in tile or an old tile is never reused.
 func _heights(origin: Vector3i, nx: int, nz: int, sf: float, detailed: bool) -> Array:
 	var key: Array = [origin.x, origin.z, nx, nz, sf, _tiles_epoch, failed_tiles, heights_gridded]

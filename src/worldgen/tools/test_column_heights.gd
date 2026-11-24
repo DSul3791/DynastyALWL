@@ -2,7 +2,7 @@ extends SceneTree
 
 # The column heights each thread keeps (terrain_generator.gd _heights, 24 Nov 2026): a column's blocks made one after another reuse the
 # heights and detail noise worked out for the first. Checks that every block is byte for byte the one a fresh generator makes alone
-# (rows in order, back down, and mixed with other columns, so a kept detailed copy never leaks into a plain use), and that after
+# (rows in order, back down, and mixed with other columns, so a kept detailed copy, or its lookups, never leaks into a plain use), and that after
 # forget_tiles or a heights_gridded change nothing kept is used.
 #   godot --headless --path . --script res://src/worldgen/tools/test_column_heights.gd      Prints "Test done: N pass, N fail".
 
@@ -64,6 +64,8 @@ func _init() -> void:
 
 	check(same == plan.size() and plan.size() >= 300, "a column's blocks made one after another are the blocks made alone (%d of %d the same)" % [same, plan.size()])
 	check(not kept._heights_kept.is_empty(), "the generator kept the last column's heights")
+	var last: Array = kept._heights_kept.values()[0]
+	check(last[2] != null and (last[1] as Array).size() == 9 and (last[2] as Array).size() == 9 and not is_same(last[1][8][3], last[2][8][3]), "the plain and detailed heights each keep their own lookups (the soil depends on the height)")
 
 	# After forget_tiles nothing kept is used, and nothing old is held.
 	var block: Vector3i = plan[0][0]
