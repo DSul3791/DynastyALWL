@@ -4095,7 +4095,7 @@ func _can_craft(number: int) -> bool:
 
 # A recipe that keeps a tool crafts only with that tool, unbroken, in the right hand (CraftStock.in_hand, Dave 17 Nov 2026); the server checks it again.
 func hand_tool_ok(number: int) -> bool:
-	return CraftStock.in_hand(recipes.recipe(number), table, inventory, _hand_slot())
+	return CraftStock.has_tool(recipes.recipe(number), table, inventory)   # anywhere in the pack or on the hotbar (Dave 24 Nov 2026)
 
 
 # The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a carved Wooden bowl), needs in hand and

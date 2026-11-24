@@ -27,7 +27,7 @@ static func at(items, peer: int, recipe_number: int) -> Vector3:
 			continue
 
 		for slot in range(inv.slot_count):
-			if CraftStock.in_hand(r, items.table, inv, slot):
+			if inv.on_hotbar(slot) and CraftStock.slot_holds_tool(r, items.table, inv, slot):
 				return Vector3(float(slot + 1), 0.0, 0.0)
 
 	if not CraftStock.hand_tools(recipe, items.table).is_empty():

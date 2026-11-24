@@ -2744,16 +2744,18 @@ func _init() -> void:
 	hs.give(1, hs.table.number_of("hand_saw"), 1)   # a tool new in the pack goes on the first empty hotbar key (inventory step 4)
 	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
 	hs._last_queue_act.clear()
-	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
-	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "a saw in the pack but not in hand saws nothing (Dave 17 Nov 2026: equip the saw)")
-	hs._last_queue_act.clear()
-	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3(float(saw_slot + 1), 0.0, 0.0))   # at.x: the saw in hand + 1 (126)
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)   # nothing in hand: the saw in the pack counts (Dave 24 Nov 2026)
+	check(hs.craft_queue_of(1).size() == 1, "a saw in the pack, not in hand, still saws (Dave 24 Nov 2026: \"if you have a knife in you inventory or on your hotbar it should count\")")
 
 	for n in 100:
 		hs._craft_tick(0.25)
 
 	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 6 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 6 lumber")
 	check(saw_slot >= 0 and hs.inventory_of(1).on_hotbar(saw_slot) and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
+	var far_slot: int = hs.inventory_of(1).slot_count - 1
+	hs.inventory_of(1).move(saw_slot, far_slot)   # off the hotbar, deep in the pack
+	check(not hs.inventory_of(1).on_hotbar(far_slot) and hs._hand_tool_ok(1, hs.inventory_of(1), by_hand, -1) and hs._craft_tool_slot(hs.inventory_of(1), "saw") == far_slot, "a saw deep in the pack, off the hotbar, still counts for a craft and is the one it wears")
+	hs.inventory_of(1).move(far_slot, saw_slot)
 
 	# Saw speed (TREE_WOOD_TOOLS_DESIGN.md s5): the first saw on the hotbar sets the pace of a craft that keeps a saw (Copper 0.5, Iron 1.0), a Sawbuck in reach halves the time.
 	hs.ground_height = func(_x, _z): return 10.0
@@ -2782,10 +2784,7 @@ func _init() -> void:
 	hs.vitals_of(1)["weight"] = 5000.0   # the six blocks the plan makes must fit; carrying is not under test here
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3.ZERO)
-	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "a Chopping block that would saw its block from a log is refused without the saw in hand, and the log stays")
-	hs._last_queue_act.clear()
-	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3(float(copper_slot + 1), 0.0, 0.0))
-	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in hand it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
+	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in the pack (nothing in hand) it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
 	hs._cancel_craft(1, 1)
 	hs._cancel_craft(1, 0)
 	hs.send_notice = Callable()
