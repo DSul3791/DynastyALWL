@@ -1751,7 +1751,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_last_queue_act[peer] = now
 
 			if kind == Net.ACT_CRAFT_QUEUE:
-				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126), for a recipe that needs its tool in hand
+				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126; a kept tool counts from the pack now)
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -27136,7 +27136,7 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 
 # `variant` (SmithingRules code, 0 plain): Tempered and/or craftsmanship +1/+2, refused unless the stations beside the player allow it for this
 # recipe (craft_variants); its needs are scaled up and it takes longer (smithing.json).
-func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty)
+func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty; no longer decides anything)
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
@@ -27360,7 +27360,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
-# was told why, 2 when a part it would make needs a tool in hand that is not there (told why; the craft stops there), -1 when there is nothing to add (the plain craft
+# was told why, 2 when a part it would make needs a tool the pack lacks (told why; the craft stops there), -1 when there is nothing to add (the plain craft
 # goes on, or fails the old way).
 func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
@@ -27745,7 +27745,7 @@ func _craft_tick(spent: float) -> void:
 			missing = int(keep[0])
 			break
 
-		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
+		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class in the pack (_craft_tool_slot).
 		var wears_tool: String = str(recipe.get("wears_tool", ""))
 
 		if wears_tool != "" and not free_entry:

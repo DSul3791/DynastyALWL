@@ -47,14 +47,16 @@ static func hand_tools(recipe: Dictionary, table) -> PackedInt32Array:
 # Whether the pack holds, unbroken, what the recipe works with (one of its hand tools), anywhere in it or on the hotbar. Any recipe with no hand
 # tool: true.
 static func has_tool(recipe: Dictionary, table, inv) -> bool:
-	if hand_tools(recipe, table).is_empty():
+	var tools: PackedInt32Array = hand_tools(recipe, table)
+
+	if tools.is_empty():
 		return true
 
 	if inv == null:
 		return false
 
-	for slot in range(inv.slot_count):
-		if slot_holds_tool(recipe, table, inv, slot):
+	for slot in range(inv.slot_count):   # the recipe's tools found once, not per slot: the pack can hold 250 slots and the card asks per recipe row
+		if _holds(tools, inv, slot):
 			return true
 
 	return false
@@ -62,6 +64,10 @@ static func has_tool(recipe: Dictionary, table, inv) -> bool:
 
 # Whether pack slot `slot` holds one of the recipe's hand tools, not broken (a recipe that keeps two would need only one of them; none does today).
 static func slot_holds_tool(recipe: Dictionary, table, inv, slot: int) -> bool:
+	return _holds(hand_tools(recipe, table), inv, slot)
+
+
+static func _holds(tools: PackedInt32Array, inv, slot: int) -> bool:
 	if inv == null or slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
 		return false
 
@@ -70,7 +76,7 @@ static func slot_holds_tool(recipe: Dictionary, table, inv, slot: int) -> bool:
 	if most > 0 and inv.wear[slot] >= most:
 		return false
 
-	for tool in hand_tools(recipe, table):
+	for tool in tools:
 		if inv.fills_of(tool).has(inv.numbers[slot]):
 			return true
 

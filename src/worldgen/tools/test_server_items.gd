@@ -2755,6 +2755,10 @@ func _init() -> void:
 	var far_slot: int = hs.inventory_of(1).slot_count - 1
 	hs.inventory_of(1).move(saw_slot, far_slot)   # off the hotbar, deep in the pack
 	check(not hs.inventory_of(1).on_hotbar(far_slot) and hs._hand_tool_ok(1, hs.inventory_of(1), by_hand, -1) and hs._craft_tool_slot(hs.inventory_of(1), "saw") == far_slot, "a saw deep in the pack, off the hotbar, still counts for a craft and is the one it wears")
+	var saw_wear: int = hs.inventory_of(1).wear[far_slot]
+	hs.inventory_of(1).wear[far_slot] = hs.inventory_of(1).max_durability(far_slot)   # worn out
+	check(not hs._hand_tool_ok(1, hs.inventory_of(1), by_hand, -1), "a broken saw in the pack does not count")
+	hs.inventory_of(1).wear[far_slot] = saw_wear
 	hs.inventory_of(1).move(far_slot, saw_slot)
 
 	# Saw speed (TREE_WOOD_TOOLS_DESIGN.md s5): the first saw on the hotbar sets the pace of a craft that keeps a saw (Copper 0.5, Iron 1.0), a Sawbuck in reach halves the time.
