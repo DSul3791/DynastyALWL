@@ -24,6 +24,7 @@ const FLEE := 2
 const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const PLAN_FRESH_MS := 1000     # a walk goal (plan) this recent goes in a moving animal's row (rows_near, protocol 168); an older one is not its way now
+const STOP_PLAN_MS := 1000      # this long after its step stopped it, an animal's rows say it stops where it stands (row_plan): every player's next row, a lost one too
 const PLAN_MIN_M := 0.5         # a goal nearer than this is where it stops: no bend (bend_plan)
 const BEND_RAD := 0.6           # a step more than this off the line to its goal (about 35 degrees) is a detour: its plan is the way it goes (bend_plan)
 const PLAN_AHEAD_S := 0.5       # a detour's plan is this far on at the step's pace
@@ -889,16 +890,18 @@ func plan(a: Dictionary, to: Vector3) -> void:
 
 # The plan a row carries (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans"), or null. A moving animal's: where it is going on the ground
 # (its detour's way while it goes round an obstacle, bend_plan, else its goal), while that goal is fresh, so the client draws it at the present,
-# carried on along its way but never past where it stops. One its own step brought to where it now stands (`stopped`, the row that first
-# sends that place): there, so the client holds it at its stop. Without it that row had no plan and the client carried the body on past the
-# stop at its last speed for up to MotionBuffer.CARRY_S, then pulled it back (test_animal_draw_replay, 24 Nov 2026: 1.5 m past and 2.4 m back
-# at 12 m/s, most of a fleeing deer's drawn error). A move made elsewhere (row stamped with the send time) sends none, as before.
-static func row_plan(a: Dictionary, now_ms: int, stopped: bool) -> Variant:
-	if bool(a.get("moving", false)) and a.has("plan_to") and now_ms - int(a.get("plan_ms", 0)) <= PLAN_FRESH_MS:
+# carried on along its way but never past where it stops. One its own step stopped (`stood_ms`, set by the tick) within STOP_PLAN_MS: where
+# it stands, so every player's client holds it at its stop whichever of its rows they get first. Without it the row that first sent the stop
+# had no plan and the client carried the body on past the stop at its last speed, then pulled it back (test_animal_draw_replay, 24 Nov
+# 2026: measured 1.5 m past and 2.4 m back at 12 m/s). A move made elsewhere sets no stood_ms and sends none, as before.
+static func row_plan(a: Dictionary, now_ms: int) -> Variant:
+	var moving: bool = bool(a.get("moving", false))
+
+	if moving and a.has("plan_to") and now_ms - int(a.get("plan_ms", 0)) <= PLAN_FRESH_MS:
 		var goal: Vector3 = a.get("plan_near", a["plan_to"])
 		return Vector2(snappedf(goal.x, 0.1), snappedf(goal.z, 0.1))
 
-	if stopped:
+	if not moving and now_ms - int(a.get("stood_ms", -STOP_PLAN_MS - 1)) <= STOP_PLAN_MS:
 		return Vector2(snappedf(float(a["pos"].x), 0.1), snappedf(float(a["pos"].z), 0.1))
 
 	return null
@@ -1357,6 +1360,9 @@ func tick(delta: float) -> void:
 			note_past(a, was, int(dt * 1000.0))
 			bend_plan(a, was, dt)
 		else:
+			if bool(a.get("moving", false)):
+				a["stood_ms"] = Time.get_ticks_msec()   # this step stopped it: its rows say it stops here (row_plan)
+
 			a["moving"] = false   # standing: rows_near stamps its row with the send time
 
 		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
@@ -2567,11 +2573,8 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 154 (Dave 23 Nov 2026, the real server):
 			# a standing animal's row carries the send time, every send, so the client knows it stood until just before it moved. It used to
 			# guess a stand from a gap in arrivals, and over the internet a lost batch looks the same: the animal stood, then jumped.
-			var stopped: bool = false   # its own step brought it here and it stands now: the row says it stops here (row_plan)
-
 			if a.get("row_pos") != a["pos"]:
 				a["row_pos"] = a["pos"]
-				stopped = int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) and not bool(a.get("moving", false))
 				a["row_ms"] = int(a["moved_ms"]) if int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) else Time.get_ticks_msec()
 			elif not bool(a.get("moving", false)):
 				a["row_ms"] = Time.get_ticks_msec()
@@ -2581,7 +2584,7 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
 
-			var planned: Variant = row_plan(a, Time.get_ticks_msec(), stopped)   # before the health share, after a dog foe
+			var planned: Variant = row_plan(a, Time.get_ticks_msec())   # before the health share, after a dog foe
 
 			if planned != null:
 				row.append(planned)
