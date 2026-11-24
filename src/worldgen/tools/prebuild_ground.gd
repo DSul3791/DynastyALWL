@@ -139,6 +139,7 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 	generator = GeneratorScript.new()
 	generator.setup(settings, rules, tables, world_dir + "/tiles")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(out_dir + "/" + PackScript.NOTE))   # the note marks a finished build: none while this one runs
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(out_dir + "/" + ROWS_FILE))   # written again at the end of this run's ground
 	store = StoreScript.new()
 	var problem: String = store.setup(generator, out_dir)
 
@@ -251,8 +252,9 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 		push_error("prebuild_ground: %d tile reads failed and %d blocks failed the check, so some blocks were not saved; run it again to fill them (no finished note written)" % [generator.failed_tiles, store.bad_blocks])
 		return 1
 
-	if _part_count > 1:
-		_write_rows(out_dir + "/" + ROWS_FILE)
+	if _part_count > 1 and not _write_rows(out_dir + "/" + ROWS_FILE):
+		push_error("prebuild_ground: cannot write %s; run it again" % ProjectSettings.globalize_path(out_dir + "/" + ROWS_FILE))
+		return 1
 
 	if plants:
 		placer = PlacerScript.new()
@@ -492,20 +494,24 @@ static func surface_blocks(terrain, bx: int, bz: int, lod: int) -> Vector2i:
 
 # rows.bin: the column count of the whole build (so a file from another build is not taken), then index, lowest row, highest row of
 # every column of this copy, as 32-bit numbers.
-func _write_rows(path: String) -> void:
+func _write_rows(path: String) -> bool:
 	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 
-	if file != null:
-		file.store_32(_total)
-		file.store_buffer(_rows.to_byte_array())
-		file.close()
+	if file == null:
+		return false
+
+	file.store_32(_total)
+	file.store_buffer(_rows.to_byte_array())
+	var whole: bool = file.get_error() == OK and file.get_position() == 4 + _rows.size() * 4
+	file.close()
+	return whole and _rows.size() == _own_total * 3
 
 
-# The rows a copy wrote, or an empty array when its file is missing or from another build.
-static func read_rows(path: String, total: int) -> PackedInt32Array:
+# The rows a copy wrote, or an empty array when its file is missing, short or from another build (columns: the copy's column count).
+static func read_rows(path: String, total: int, columns: int) -> PackedInt32Array:
 	var file: FileAccess = FileAccess.open(path, FileAccess.READ) if FileAccess.file_exists(path) else null
 
-	if file == null or file.get_length() < 4 or file.get_32() != total or (file.get_length() - 4) % 12 != 0:
+	if file == null or file.get_length() != 4 + columns * 12 or file.get_32() != total:
 		return PackedInt32Array()
 
 	return file.get_buffer(file.get_length() - 4).to_int32_array()
@@ -659,9 +665,16 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 		part_stream.database_path = ProjectSettings.globalize_path(PackScript.ground_file(part_dir, PackScript.generation_of(part_dir)))
 
 		# The rows the copy wrote as it built (24 Nov 2026: working them out again was half the join); a copy from before has none.
-		var rows: PackedInt32Array = read_rows(part_dir + "/" + ROWS_FILE, _total)
+		var owned: int = 0
 
-		if rows.is_empty():
+		for first in range(0, _total, COLUMNS_PER_TAKE):
+			owned += mini(COLUMNS_PER_TAKE, _total - first) if _owns_take(first, k, processes) else 0
+
+		var rows: PackedInt32Array = read_rows(part_dir + "/" + ROWS_FILE, _total, owned)
+
+		if rows.is_empty() and owned > 0:
+			print("prebuild_ground: copy %d left no rows file; working its rows out again" % k)
+
 			for first in range(0, _total, COLUMNS_PER_TAKE):
 				if _owns_take(first, k, processes):
 					for index in range(first, mini(first + COLUMNS_PER_TAKE, _total)):
