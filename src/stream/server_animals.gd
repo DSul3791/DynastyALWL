@@ -890,10 +890,10 @@ func plan(a: Dictionary, to: Vector3) -> void:
 
 # The plan a row carries (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans"), or null. A moving animal's: where it is going on the ground
 # (its detour's way while it goes round an obstacle, bend_plan, else its goal), while that goal is fresh, so the client draws it at the present,
-# carried on along its way but never past where it stops. One its own step stopped (`stood_ms`, set by the tick) within STOP_PLAN_MS: where
+# carried on along its way but never past where it stops. One its own step stopped (`stopped_ms`, set by the tick) within STOP_PLAN_MS: where
 # it stands, so every player's client holds it at its stop whichever of its rows they get first. Without it the row that first sent the stop
 # had no plan and the client carried the body on past the stop at its last speed, then pulled it back (test_animal_draw_replay, 24 Nov
-# 2026: measured 1.5 m past and 2.4 m back at 12 m/s). A move made elsewhere sets no stood_ms and sends none, as before.
+# 2026: measured 1.5 m past and 2.4 m back at 12 m/s). A move made elsewhere sets no stopped_ms and sends none, as before.
 static func row_plan(a: Dictionary, now_ms: int) -> Variant:
 	var moving: bool = bool(a.get("moving", false))
 
@@ -901,7 +901,7 @@ static func row_plan(a: Dictionary, now_ms: int) -> Variant:
 		var goal: Vector3 = a.get("plan_near", a["plan_to"])
 		return Vector2(snappedf(goal.x, 0.1), snappedf(goal.z, 0.1))
 
-	if not moving and now_ms - int(a.get("stood_ms", -STOP_PLAN_MS - 1)) <= STOP_PLAN_MS:
+	if not moving and now_ms - int(a.get("stopped_ms", -STOP_PLAN_MS - 1)) <= STOP_PLAN_MS:
 		return Vector2(snappedf(float(a["pos"].x), 0.1), snappedf(float(a["pos"].z), 0.1))
 
 	return null
@@ -1361,7 +1361,7 @@ func tick(delta: float) -> void:
 			bend_plan(a, was, dt)
 		else:
 			if bool(a.get("moving", false)):
-				a["stood_ms"] = Time.get_ticks_msec()   # this step stopped it: its rows say it stops here (row_plan)
+				a["stopped_ms"] = Time.get_ticks_msec()   # this step stopped it: its rows say it stops here (row_plan)
 
 			a["moving"] = false   # standing: rows_near stamps its row with the send time
 

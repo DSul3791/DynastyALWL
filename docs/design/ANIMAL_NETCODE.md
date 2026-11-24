@@ -76,7 +76,7 @@ changed. The play-test write-ups for Dave are in the project files (animal-motio
 
 - data/network.json `packet_throttle_*`, applied by net_settings.gd on both ends: deceleration 0, so nothing is dropped on purpose.
 - Server rows_near: a standing animal's row carries the send time every send. `moving` comes from the step; wolves set it in
-  `pace()`. stood_ms is gone.
+  `pace()`. stood_ms is gone (the later `stopped_ms`, step 4 of "Plans", is another thing: when its step stopped it).
 - Client motion_buffer.gd:
   - the row clock (`clock_new`, `clock_note`, `clock_delay`) sets the delay from the server-time interval, the share of holes and the
     lateness;
@@ -157,7 +157,7 @@ the rest are not, because carrying a walker on past its newest point overshot ev
 **The plan.** Each moving animal's row carries where it is going: its target on the ground (Vector2 x, z), from the step's own `target`.
 The client then draws every animal on the ground (not birds in the air, states 15 and 17) at the present, like a charge: between the two
 newest points, and past the newest one on along its last leg, never past the plan's target (no overshoot at a stop), for up to
-`PLAN_CARRY_S`. A standing animal has no plan and holds. The feet (`follow`), the facing, the contact stop and `smooth` are as before.
+`PLAN_CARRY_S`. A standing animal holds: for `STOP_PLAN_MS` after its step stopped it, its plan is where it stands (step 4). The feet (`follow`), the facing, the contact stop and `smooth` are as before.
 The server still decides everything: where it goes, its state, every blow. A client can only draw; nothing it sends moves an animal.
 
 **Fair hits stay fair.** The player's blows are judged at `present_ms` for every animal on the ground, as for a charge: the moment the screen
@@ -189,8 +189,8 @@ shows it, never more than `rewind_max_ms` back.
    one seeded lossy link, the client's own drawing. It showed the faster drain changed nothing (correction 95th 1.41 against 1.39 m), and
    it was deleted. The replay found two causes. One was the stop: when the row that first sends where a fleeing deer stopped went out after
    it stopped, it was sent as standing, with no plan, and the client carried the body on past the stop at its last speed (measured 1.5 m at
-   12 m/s), then pulled it back 2.4 m, drained at 0.9 m/s as a standing body. Now for `STOP_PLAN_MS` after its own step stopped it, an
-   animal's rows carry a plan of where it stands (`server_animals.row_plan`, no protocol change: a plan's end already holds the body), so
+   12 m/s), then pulled it back 2.4 m, drained at 0.9 m/s as a standing body. Now for `STOP_PLAN_MS` after its own step stopped it (the tick's or,
+   for a pack wolf, the pack brain's `pace`), an animal's rows carry a plan of where it stands (`server_animals.row_plan`, no protocol change: a plan's end already holds the body), so
    every player's client holds it at its stop. Replayed at ten send phases (how a stop falls against a send decides whether it happens):
    frames with over 1 m of correction while standing after a bolt 756 to 0, the correction left 95th 1.82 to 1.68 m, drawn against the
    server median 0.45 to 0.33 m, 95th 2.38 to 2.31 m; no phase worse. The other, now most of what is left: starts and turns. The row with

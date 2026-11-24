@@ -424,7 +424,7 @@ func flinch(id: int) -> void:
 
 
 # The plan in an animal row (protocol 168, server_animals rows_near): where a moving animal is walking to on the ground, a Vector2 (x, z)
-# after the fixed six fields; null when it stands or its row has none.
+# after the fixed six fields (for STOP_PLAN_MS after its step stopped it, where it stands: server_animals row_plan); null when it has none.
 static func plan_of(row: Array) -> Variant:
 	for i in range(6, row.size()):
 		if row[i] is Vector2:

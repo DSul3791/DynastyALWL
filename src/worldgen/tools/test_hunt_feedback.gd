@@ -170,16 +170,24 @@ func _init() -> void:
 	check(not row_of(f, fid).any(func(v): return v is Vector2), "a standing animal's row has no plan")
 	# Its own step stopped it (24 Nov 2026, test_animal_draw_replay): for STOP_PLAN_MS its rows say it stops where it stands, so every
 	# player's client holds it there instead of carrying it on past the stop; after that, and for a move made elsewhere, nothing.
-	fd["stood_ms"] = Time.get_ticks_msec()
+	fd["stopped_ms"] = Time.get_ticks_msec()
 	fd["pos"] = Vector3(1.23, GROUND, 4.56)
 	var stop_row: Array = row_of(f, fid)
 	check(stop_row.size() == 8 and stop_row[6] is Vector2 and (stop_row[6] as Vector2).is_equal_approx(Vector2(1.2, 4.6)) and stop_row[7] is float, "a deer its step stopped says it stops there, its health share still last (%s)" % str(stop_row.slice(5)))
 	check(row_of(f, fid).any(func(v): return v is Vector2), "and so does its next row (another player's, or after a lost one)")
-	fd["stood_ms"] = Time.get_ticks_msec() - AnimalsScript.STOP_PLAN_MS - 100
+	fd["stopped_ms"] = Time.get_ticks_msec() - AnimalsScript.STOP_PLAN_MS - 100
 	check(not row_of(f, fid).any(func(v): return v is Vector2), "but not once it has stood a while")
-	fd.erase("stood_ms")
-	fd["pos"] = Vector3(2.0, GROUND, 4.56)   # moved by something other than its step: no stood_ms, no plan
+	fd.erase("stopped_ms")
+	fd["pos"] = Vector3(2.0, GROUND, 4.56)   # moved by something other than its step: no stopped_ms, no plan
 	check(not row_of(f, fid).any(func(v): return v is Vector2), "a move made elsewhere says nothing")
+	# A pack wolf is moved by the pack brain, not the tick: its pace stamps the stop the same way.
+	var wolf: Dictionary = {"pos": Vector3.ZERO, "moving": false}
+	f.wolves.pace(wolf, 1000)
+	wolf["pos"] = Vector3(1.0, GROUND, 0.0)
+	f.wolves.pace(wolf, 1100)
+	check(bool(wolf["moving"]) and not wolf.has("stopped_ms"), "a pack wolf on the move has no stop")
+	f.wolves.pace(wolf, 1200)
+	check(int(wolf.get("stopped_ms", -1)) == 1200 and AnimalsScript.row_plan(wolf, 1300) is Vector2, "the think that stops it stamps the stop, and its row says it stops there")
 	# A detour (step 2): a step well off the line to its goal (Steering turning it round an obstacle) makes the plan the way it goes, half a
 	# second on at that pace; a step back on the line makes it the goal again.
 	var g = make()

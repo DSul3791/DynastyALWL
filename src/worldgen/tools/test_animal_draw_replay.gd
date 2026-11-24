@@ -99,9 +99,9 @@ func replay(steps: Array, stop_plan: bool, phase_ms: int) -> Dictionary:
 		if goal is Vector2:
 			a["plan_to"] = Vector3((goal as Vector2).x, 0.0, (goal as Vector2).y)
 
-		for k in range(mini(int(float(send_ms) / STEP_MS), steps.size() - 1), 0, -1):   # the tick's stood_ms: the step that stopped it
+		for k in range(mini(int(float(send_ms) / STEP_MS), steps.size() - 1), 0, -1):   # the tick's stopped_ms: the step that stopped it
 			if stop_plan and bool(steps[k - 1][2]) and not bool(steps[k][2]):
-				a["stood_ms"] = int(steps[k][0])
+				a["stopped_ms"] = int(steps[k][0])
 				break
 
 		var plan: Variant = AnimalsScript.row_plan(a, send_ms)
@@ -173,20 +173,20 @@ func pct(xs: Array, q: float) -> float:
 
 # The replays at every send phase, counted together.
 func replay_all(steps: Array, stop_plan: bool) -> Dictionary:
-	var all: Dictionary = {"err": [], "off": [], "fastest": 0.0, "over_rule": 0, "stand_bad": 0, "worse": 0}
+	var total: Dictionary = {"err": [], "off": [], "fastest": 0.0, "over_rule": 0, "stand_bad": 0, "worse": 0}
 
 	for phase in range(0, SEND_MS, 25):
 		var r: Dictionary = replay(steps, stop_plan, phase)
-		(all["err"] as Array).append_array(r["err"])
-		(all["off"] as Array).append_array(r["off"])
-		all["fastest"] = maxf(float(all["fastest"]), float(r["fastest"]))
-		all["over_rule"] = int(all["over_rule"]) + int(r["over_rule"])
-		all["stand_bad"] = int(all["stand_bad"]) + int(r["stand_bad"])
+		(total["err"] as Array).append_array(r["err"])
+		(total["off"] as Array).append_array(r["off"])
+		total["fastest"] = maxf(float(total["fastest"]), float(r["fastest"]))
+		total["over_rule"] = int(total["over_rule"]) + int(r["over_rule"])
+		total["stand_bad"] = int(total["stand_bad"]) + int(r["stand_bad"])
 
 		if stop_plan and pct(r["err"], 0.95) > pct(replay(steps, false, phase)["err"], 0.95) + 0.01:
-			all["worse"] = int(all["worse"]) + 1
+			total["worse"] = int(total["worse"]) + 1
 
-	return all
+	return total
 
 
 func line(name: String, r: Dictionary) -> String:
