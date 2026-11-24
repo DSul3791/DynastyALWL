@@ -106,7 +106,29 @@ code matches the server's), built by the same tool (`--plants=0` skips them), co
 wooded 256 m chunk takes about 3 CPU-seconds and 150 KB. Prebuilt plants are placed over the baked water, so a chunk first seen after
 a player dug a pond beside it no longer grows the pond's bank plants (a kept list never followed live water either); a tile re-bake
 on a running server drops the pack until one for the new tiles is installed. Not built yet: step 3's switch-off of the idle builders inside the area with a log count, so
-the server still makes ground and plants outside the pack. The plan as first written follows.
+the server still makes ground and plants outside the pack.
+
+First full tile (24 Nov 2026, Dave's PC, Ryzen 5 3600X 6 cores / 12 threads, tile 3_4): 4,229,518 blocks, 9.2 GB. The E: hard disk
+held 24 copies to a third of the CPU (disk queue 16 at 4 MB/s: each copy's SQLite commits every ~62 blocks with 4 forced flushes);
+on the C: NVMe drive the CPU was full. Steady rate 1,090-1,114 blocks/s at 24 copies (45 a copy; 6 copies 456, 12 copies 659).
+Timing table: land bake 14.4 min (setup 7.3 min, once per bake run however many tiles, then 6.6 min for the tile), ground about
+69 min, plants about 10 min, joining 19 min (1,116 s): about 2 h in all. `--parts=DIR` puts the copies' files on another disk.
+A join-free pack (the server reading each copy's file) was built and shelved (Dave 24 Nov 2026: "I would rather the generator do
+the hard work or the long work and it make the server faster, more responsive and have to do less work. so lets focus on making
+the generator actually faster without cutting corners"): the server keeps one joined file; the join is to be made faster instead.
+`src/worldgen/tools/check_ground_pack.gd` says
+whether a store serves the pack without making anything. Block maker (cloud profile, lod 0 surface block 3.55 ms): column material
+19%, detail noise grid 18%, rock fill 11%, ore fill 11%, heights 7%.
+
+Underground (Dave 23 Nov 2026, 11:22 PM): "we want the underground to be as exciting as the above ground someday with caves to
+explore, abandoned mines and ancient ruins or dungeons. you mentioned that most areas most people will never explore and you are
+probably right but it gives us a wealth of area to build stuff in for people to explore." Reading (the coordinator's, told to
+Dave): every underground place made on purpose (caves now; abandoned mines, ruins and dungeons later) is prebuilt by the generator
+like the surface, each as a list of volumes the prebuild walks block by block, so a new kind of place adds its volumes to the same
+list; plain solid rock between them is still made by the server when a player digs into it, and whole deep layers are not
+prebuilt. Surface ore rocks, bog iron and caves move into the generator.
+
+The plan as first written follows.
 
 Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client
 asks for, surface blocks only; caves and deep blocks are left to be made as now), two 1 km squares: one round the starter town,
