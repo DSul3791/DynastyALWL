@@ -411,6 +411,9 @@ func forget_tiles() -> void:
 	_tiles.clear()
 	_tiles_epoch += 1   # the kept column heights (_heights) were read from the old tiles
 	_mutex.unlock()
+	_heights_mutex.lock()
+	_heights_kept.clear()   # and hold the old tiles: let them go now
+	_heights_mutex.unlock()
 
 
 func _file_length(path: String) -> int:
@@ -660,7 +663,7 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 # and detail noise were a quarter of a block's time). Never changed by the caller. Kept only while no tile read failed and the tiles
 # were not dropped (forget_tiles), so a stand-in tile or an old tile is never reused.
 func _heights(origin: Vector3i, nx: int, nz: int, sf: float, detailed: bool) -> Array:
-	var key: Array = [origin.x, origin.z, nx, nz, sf, _tiles_epoch, failed_tiles]
+	var key: Array = [origin.x, origin.z, nx, nz, sf, _tiles_epoch, failed_tiles, heights_gridded]
 	var thread: int = OS.get_thread_caller_id()
 	_heights_mutex.lock()
 	var kept: Array = _heights_kept.get(thread, [])
