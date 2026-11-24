@@ -224,7 +224,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Hold the Fishing spear, stand still in or beside shallow water and jab it into the water. Later a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) catches more.",
+			"hint": "Hold the Fishing spear, stand still (not swimming) within reach of water between ankle and waist deep, and jab it in. Later a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) catches more.",
 			"after": [
 				"fishing_spear"
 			],
