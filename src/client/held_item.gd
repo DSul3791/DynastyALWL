@@ -4256,11 +4256,11 @@ func _make_lantern_model(id: String) -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(row.get("light_m", 8.0))
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
+	light.light_volumetric_fog_energy = 0.0   # held at the eye: never in the volumetric fog (FireWeather.register held)
 	light.light_cull_mask = 0xFFFFFFFD
 	light.position = body.position
 	lantern.add_child(light)
-	FireWeather.register(light)   # reach and halo follow fog and snow, as a torch's
+	FireWeather.register(light, 1.0, true)   # reach and halo follow fog and snow, as a torch's; in the hand it never lights the volumetric fog
 	return lantern
 
 
@@ -4402,11 +4402,11 @@ func _make_torch_model(id: String = "", out: bool = false) -> Node3D:
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0)) * FlameRules.TORCH_REACH_MULT
 	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
+	light.light_volumetric_fog_energy = 0.0   # held at the eye: never in the volumetric fog (FireWeather.register held)
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
-	FireWeather.register(light)   # reach and halo follow fog and snow
+	FireWeather.register(light, 1.0, true)   # reach and halo follow fog and snow; in the hand it never lights the volumetric fog
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)

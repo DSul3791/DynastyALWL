@@ -43,13 +43,23 @@ static func heavy_snow(snow: float) -> float:
 	return smoothstep(0.5, 1.0, snow)
 
 
-# Called where a fire light is made. halo_scale: 1 for a torch, larger for a big fire.
-static func register(light: OmniLight3D, halo_scale: float = 1.0) -> void:
+# The fire light's share in the volumetric fog for the fog at the eye (Dave 24 Nov 2026, a lit torch on a clear night: "i don't like the weird
+# halo effect around the torch makes it actually hard to see", "that would fit on a foggy night"): the volumetric fog runs as soon as the eye
+# is over a faint valley fog layer, and each fire lit it at full share, so a clear-looking night filled with orange haze. Now none until the
+# fog at the eye is real fog, as the halo sprite (halo_alpha): full in thick fog.
+static func fog_share(veil: float) -> float:
+	return FIRE_FOG_SHARE * smoothstep(0.1, 0.4, clampf(veil, 0.0, 1.0))
+
+
+# Called where a fire light is made. halo_scale: 1 for a torch, larger for a big fire. held: a torch or lantern in the hand, a metre from the
+# eye, inside the nearest fog cells: it never lights the volumetric fog (it washed the whole view orange); its halo sprite still shows in fog.
+static func register(light: OmniLight3D, halo_scale: float = 1.0, held: bool = false) -> void:
 	if light == null:
 		return
 
 	light.set_meta("base_range", light.omni_range)
-	light.light_volumetric_fog_energy = FIRE_FOG_SHARE   # a soft halo in the volumetric fog (High and Ultra, fog_volume.gd)
+	light.set_meta("held", held)
+	light.light_volumetric_fog_energy = 0.0   # until update finds fog at the eye (fog_share); a held light never
 	light.add_to_group(GROUP)
 	_lights.append(light)
 	var halo: MeshInstance3D = MeshInstance3D.new()
@@ -112,6 +122,7 @@ static func update(tree: SceneTree, veil: float, snow: float, ground_snow: float
 
 		if light != null and light.has_meta("base_range"):
 			light.omni_range = float(light.get_meta("base_range")) * r
+			light.light_volumetric_fog_energy = 0.0 if bool(light.get_meta("held", false)) else fog_share(veil)
 
 	var strength: float = halo_strength(veil, heavy)
 	_shared_mesh().size = Vector2.ONE * halo_diameter(strength)

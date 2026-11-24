@@ -42,5 +42,26 @@ func _init() -> void:
 	_check(absf(torch.omni_range - 9.0) < 0.01, "clear again: back to 9 m, never drifting")
 	torch.queue_free()
 
+	# The volumetric fog halo (Dave 24 Nov 2026: an orange haze round a lit torch on a clear night "makes it actually hard to see"): a fire lights
+	# the volumetric fog only in real fog at the eye; a torch or lantern in the hand never does.
+	var fire: OmniLight3D = OmniLight3D.new()
+	var held: OmniLight3D = OmniLight3D.new()
+	root.add_child(fire)
+	root.add_child(held)
+	FireWeather.register(fire, 1.5)
+	FireWeather.register(held, 1.0, true)
+	_check(is_zero_approx(fire.light_volumetric_fog_energy) and is_zero_approx(held.light_volumetric_fog_energy), "made: no light in the volumetric fog yet")
+	for veil in [0.0, 0.05, 0.1]:
+		FireWeather.update(self, veil, 0.0, 0.0, 0.0)
+		_check(is_zero_approx(fire.light_volumetric_fog_energy) and is_zero_approx(held.light_volumetric_fog_energy), "a clear night or a trace of valley fog (%.2f at the eye): no haze round a fire or the torch in hand" % veil)
+	FireWeather.update(self, 0.6, 0.0, 0.0, 0.0)
+	_check(is_equal_approx(fire.light_volumetric_fog_energy, FireWeather.FIRE_FOG_SHARE) and is_zero_approx(held.light_volumetric_fog_energy), "thick fog: a fire has its soft halo in the fog (%.2f), the torch in hand still none" % fire.light_volumetric_fog_energy)
+	FireWeather.update(self, 0.0, 0.0, 0.0, 0.0)
+	_check(is_zero_approx(fire.light_volumetric_fog_energy), "the fog gone: the halo goes with it")
+	var src: String = FileAccess.get_file_as_string("res://src/client/held_item.gd")
+	_check(src.count("FireWeather.register(light, 1.0, true)") == 2, "held_item: the torch and the lantern register as held")
+	fire.queue_free()
+	held.queue_free()
+
 	print("firelight weather: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)
