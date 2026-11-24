@@ -887,6 +887,23 @@ func plan(a: Dictionary, to: Vector3) -> void:
 	a.erase("plan_near")
 
 
+# The plan a row carries (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans"), or null. A moving animal's: where it is going on the ground
+# (its detour's way while it goes round an obstacle, bend_plan, else its goal), while that goal is fresh, so the client draws it at the present,
+# carried on along its way but never past where it stops. One its own step brought to where it now stands (`stopped`, the row that first
+# sends that place): there, so the client holds it at its stop. Without it that row had no plan and the client carried the body on past the
+# stop at its last speed for up to MotionBuffer.CARRY_S, then pulled it back (test_animal_draw_replay, 24 Nov 2026: 1.5 m past and 2.4 m back
+# at 12 m/s, most of a fleeing deer's drawn error). A move made elsewhere (row stamped with the send time) sends none, as before.
+static func row_plan(a: Dictionary, now_ms: int, stopped: bool) -> Variant:
+	if bool(a.get("moving", false)) and a.has("plan_to") and now_ms - int(a.get("plan_ms", 0)) <= PLAN_FRESH_MS:
+		var goal: Vector3 = a.get("plan_near", a["plan_to"])
+		return Vector2(snappedf(goal.x, 0.1), snappedf(goal.z, 0.1))
+
+	if stopped:
+		return Vector2(snappedf(float(a["pos"].x), 0.1), snappedf(float(a["pos"].z), 0.1))
+
+	return null
+
+
 # A step that went well off the line to its goal (Steering turning it aside from a tree, a rock, water or a wall): the row's plan is the way it
 # is going now, PLAN_AHEAD_S on at this step's pace, not the goal behind the obstacle (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans",
 # step 2). The client carries a body on past its newest point only toward its plan, and held one detouring away from its goal still; now it
@@ -2550,8 +2567,11 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 			# 2026 play test: "animals are still teleporting and not actually running"). Protocol 154 (Dave 23 Nov 2026, the real server):
 			# a standing animal's row carries the send time, every send, so the client knows it stood until just before it moved. It used to
 			# guess a stand from a gap in arrivals, and over the internet a lost batch looks the same: the animal stood, then jumped.
+			var stopped: bool = false   # its own step brought it here and it stands now: the row says it stops here (row_plan)
+
 			if a.get("row_pos") != a["pos"]:
 				a["row_pos"] = a["pos"]
+				stopped = int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) and not bool(a.get("moving", false))
 				a["row_ms"] = int(a["moved_ms"]) if int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) else Time.get_ticks_msec()
 			elif not bool(a.get("moving", false)):
 				a["row_ms"] = Time.get_ticks_msec()
@@ -2561,11 +2581,10 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
 
-			# The plan (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans"): a moving animal's row carries where it is going on the ground, so the
-			# client draws it at the present, carried on along its way but never past where it stops. Before the health share, after a dog foe.
-			if bool(a.get("moving", false)) and a.has("plan_to") and Time.get_ticks_msec() - int(a.get("plan_ms", 0)) <= PLAN_FRESH_MS:
-				var goal: Vector3 = a.get("plan_near", a["plan_to"])   # the way round an obstacle while it detours (bend_plan), else its goal
-				row.append(Vector2(snappedf(goal.x, 0.1), snappedf(goal.z, 0.1)))
+			var planned: Variant = row_plan(a, Time.get_ticks_msec(), stopped)   # before the health share, after a dog foe
+
+			if planned != null:
+				row.append(planned)
 
 			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
 				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float

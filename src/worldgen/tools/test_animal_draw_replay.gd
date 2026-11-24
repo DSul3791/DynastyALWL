@@ -3,15 +3,18 @@ extends SceneTree
 # A steady measure of how an animal drawn at the present follows the server (docs/design/ANIMAL_NETCODE.md "Plans", step 4). The robot runs
 # over the lossy link vary a lot run to run (the same head gave a 95th two-robot gap of 1.0 m and 2.4 m: the deer go where they go), so this
 # replays one fixed track through one fixed link, with the client's own drawing (MotionBuffer at_plan, follow, smooth: the present path of
-# animal_view _process_body), twice: with the drain the merged code had and with the current one. Same seed, same track: any difference is
-# the code. The track: a deer that grazes, bolts at 12 m/s, zig-zags (a turn every 1.5 s), stops dead, grazes again; four times.
-# The server steps it at 10 Hz and sends a batch every 0.25 s; the link holds each 120 ms plus 0 to 60 ms and loses 3%.
-# Measured per frame at 60 fps: the correction left to drain (sm_err), the drawn place against the server's at the drawn moment, the
-# drawn speed (never over the deer's top speed with some slack), and how fast a body that overshot a stop is pulled back.
+# animal_view _process_body), twice: with the rows' plans as they were before 24 Nov 2026 (only a moving animal's) and with the server's
+# own row_plan (server_animals: also "it stops here" on the row that first sends where its step stopped it). Same seed, same track: any
+# difference is the code. The track: a deer that grazes, bolts at 12 m/s, zig-zags (a turn every 1.5 s), stops dead, grazes again; four
+# times. The server steps it at 10 Hz and sends a batch every 0.25 s; the link holds each 120 ms plus 0 to 60 ms and loses 3%.
+# Measured per frame at 60 fps: the correction left to drain (sm_err), the drawn place against the server's at the drawn moment, and the
+# drawn speed. What is left after the stop plan is mostly starts and turns: the row with the new way arrives 0.1 to 0.35 s after the
+# moment drawn, and nothing is drawn ahead of the server (docs/design/ANIMAL_NETCODE.md "Plans", step 4).
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_draw_replay.gd
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
 const AnimalView := preload("res://src/client/animal_view.gd")
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
 
 const STEP_MS := 100
 const SEND_MS := 250
@@ -65,8 +68,8 @@ func track() -> Array:
 	return steps
 
 
-# The client's drawing of the track through the link: returns {err: [], off: [], fastest, back}.
-func replay(steps: Array, new_drain: bool) -> Dictionary:
+# The client's drawing of the track through the link: returns {err: [], off: [], fastest, over_rule}.
+func replay(steps: Array, stop_plan: bool) -> Dictionary:
 	var rng: Array = [7]
 	var arrivals: Array = []   # [local s, send ms, row ms, position, plan]
 	var row_pos: Vector3 = Vector3.INF
@@ -81,17 +84,28 @@ func replay(steps: Array, new_drain: bool) -> Dictionary:
 			if bool(steps[k][2]):
 				moved_ms = int(steps[k][0])
 
-		if row_pos != st[1]:
+		var stopped: bool = false
+
+		if row_pos != st[1]:   # as rows_near
 			row_pos = st[1]
+			stopped = moved_ms > row_ms and not bool(st[2])
 			row_ms = moved_ms if moved_ms > row_ms else send_ms
 		elif not bool(st[2]):
 			row_ms = send_ms   # a standing row carries the send time (protocol 154)
+
+		var goal: Variant = st[3]
+		var a: Dictionary = {"pos": st[1], "moving": st[2], "plan_ms": send_ms}
+
+		if goal is Vector2:
+			a["plan_to"] = Vector3((goal as Vector2).x, 0.0, (goal as Vector2).y)
+
+		var plan: Variant = AnimalsScript.row_plan(a, send_ms, stopped and stop_plan)
 
 		var lost: float = _lcg(rng)
 		var jitter: float = _lcg(rng)
 
 		if lost >= LOSS:
-			arrivals.append([100.0 + float(send_ms + LAG_MS) / 1000.0 + float(JITTER_MS) / 1000.0 * jitter, send_ms, row_ms, st[1], st[3]])
+			arrivals.append([100.0 + float(send_ms + LAG_MS) / 1000.0 + float(JITTER_MS) / 1000.0 * jitter, send_ms, row_ms, st[1], plan])
 
 	arrivals.sort_custom(func(l, r): return float(l[0]) < float(r[0]))
 	var body: Dictionary = {"samples": []}
@@ -100,8 +114,8 @@ func replay(steps: Array, new_drain: bool) -> Dictionary:
 	var errs: Array = []
 	var offs: Array = []
 	var fastest: float = 0.0
+	var over_rule: int = 0
 	var prev: Variant = null
-	var top: float = AnimalView.top_mps("deer")
 
 	for f in int(float(end_ms) / 1000.0 * 60.0):
 		var now: float = 100.0 + float(f) * FRAME
@@ -121,8 +135,8 @@ func replay(steps: Array, new_drain: bool) -> Dictionary:
 		var present: float = now - float(c["late"])
 		var drawn: Array = MotionBuffer.at_plan(body["samples"], present, AnimalView.PLAN_CARRY_S, body.get("plan", null))
 		var spot: Vector3 = MotionBuffer.follow(body, drawn[0], FRAME)
-		var p: Vector3 = MotionBuffer.smooth(body, spot, MotionBuffer.speed_at(body["samples"], present), FRAME, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS,
-				top if new_drain else 0.0, MotionBuffer.way_of(body["samples"]) if new_drain else Vector3.ZERO)
+		var leg: float = MotionBuffer.speed_at(body["samples"], present)
+		var p: Vector3 = MotionBuffer.smooth(body, spot, leg, FRAME)
 
 		if now > 101.0:
 			errs.append((body.get("sm_err", Vector3.ZERO) as Vector3).length())
@@ -131,11 +145,16 @@ func replay(steps: Array, new_drain: bool) -> Dictionary:
 			offs.append(Vector2(p.x - truth.x, p.z - truth.z).length())
 
 			if prev != null:
-				fastest = maxf(fastest, Vector2(p.x - (prev as Vector3).x, p.z - (prev as Vector3).z).length() / FRAME)
+				var speed: float = Vector2(p.x - (prev as Vector3).x, p.z - (prev as Vector3).z).length() / FRAME
+				fastest = maxf(fastest, speed)
+				# smooth's own rule: a frame moves at most its room (1.05 times the leg's speed, clamped to 2..CARRY_MPS, plus 2 mm) and the
+				# correction's drain (CATCH_X of that speed, CATCH_MIN_MPS at least). So a body catching up runs up to 1.35 times its leg.
+				var v: float = clampf(leg, 2.0, MotionBuffer.CARRY_MPS)
+				over_rule += 1 if speed > v * 1.05 + 0.002 / FRAME + maxf(v * MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS) + 0.01 else 0
 
 		prev = p
 
-	return {"err": errs, "off": offs, "fastest": fastest}
+	return {"err": errs, "off": offs, "fastest": fastest, "over_rule": over_rule}
 
 
 func pct(xs: Array, q: float) -> float:
@@ -152,12 +171,12 @@ func line(name: String, r: Dictionary) -> String:
 
 func _init() -> void:
 	var steps: Array = track()
-	var old: Dictionary = replay(steps, false)
+	var before: Dictionary = replay(steps, false)
 	var now: Dictionary = replay(steps, true)
-	print("REPLAY " + line("old drain (1.3 times the leg)", old))
-	print("REPLAY " + line("new drain (to the kind's top speed, trailing only)", now))
-	check(pct(now["err"], 0.95) < pct(old["err"], 0.95), "the new drain leaves less correction at the 95th (%.2f against %.2f m)" % [pct(now["err"], 0.95), pct(old["err"], 0.95)])
-	check(pct(now["off"], 0.95) <= pct(old["off"], 0.95) + 0.05, "and draws it no farther from the server (95th %.2f against %.2f m)" % [pct(now["off"], 0.95), pct(old["off"], 0.95)])
-	check(float(now["fastest"]) <= AnimalView.top_mps("deer") * 1.3, "never drawn faster than 1.3 times the deer's top speed (%.1f m/s)" % float(now["fastest"]))
+	print("REPLAY " + line("plans as before (moving only)", before))
+	print("REPLAY " + line("with the stop plan (row_plan)", now))
+	check(pct(now["err"], 0.95) < 0.8 and pct(now["err"], 0.95) < pct(before["err"], 0.95), "the correction left is under 0.8 m at the 95th (%.2f, before %.2f m)" % [pct(now["err"], 0.95), pct(before["err"], 0.95)])
+	check(pct(now["off"], 0.95) < 1.5 and pct(now["off"], 0.95) < pct(before["off"], 0.95), "drawn within 1.5 m of the server at the 95th (%.2f, before %.2f m)" % [pct(now["off"], 0.95), pct(before["off"], 0.95)])
+	check(int(now["over_rule"]) == 0, "no frame faster than smooth's own rule allows its leg (1.35 times it: fastest %.1f m/s, %.2f times the deer's 12)" % [float(now["fastest"]), float(now["fastest"]) / RUN_MPS])
 	print("test_animal_draw_replay: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)

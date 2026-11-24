@@ -168,6 +168,17 @@ func _init() -> void:
 	fd["plan_ms"] = Time.get_ticks_msec()
 	fd["moving"] = false
 	check(not row_of(f, fid).any(func(v): return v is Vector2), "a standing animal's row has no plan")
+	# Its own step brings it to a stop (24 Nov 2026, test_animal_draw_replay): the row that first sends where it stopped says it stops there,
+	# so the client holds it there instead of carrying it on past the stop; the rows after, and a move made elsewhere, say nothing.
+	row_of(f, fid)
+	fd["pos"] = Vector3(1.23, GROUND, 4.56)
+	fd["moved_ms"] = int(fd["row_ms"]) + 1   # its step moved it after the last row (server_animals tick)
+	var stop_row: Array = row_of(f, fid)
+	check(stop_row.size() == 7 and stop_row[6] is Vector2 and (stop_row[6] as Vector2).is_equal_approx(Vector2(1.2, 4.6)), "a deer whose step stopped it says it stops there (%s)" % str(stop_row.slice(5)))
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "and only on that row")
+	fd["moved_ms"] = int(fd["row_ms"])   # moved by something other than its step (no newer moved_ms): the row carries the send time, no plan
+	fd["pos"] = Vector3(2.0, GROUND, 4.56)
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "a move made elsewhere says nothing")
 	# A detour (step 2): a step well off the line to its goal (Steering turning it round an obstacle) makes the plan the way it goes, half a
 	# second on at that pace; a step back on the line makes it the goal again.
 	var g = make()

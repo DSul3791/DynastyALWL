@@ -183,7 +183,16 @@ shows it, never more than `rewind_max_ms` back.
    drawn animal's median distance from the server's own place went from about 2 m to about 0.5 m (deer, boar) and 0 for a bear at the
    player, and blows land with the animal drawn 0.03 to 0.2 m from where the server had it. But a fleeing deer could trail its place by 5 to 9 m
    for seconds on one screen: not holds (past its newest point over `PLAN_CARRY_S` in under 1% of samples) but the correction `smooth` keeps,
-   drained at 1.3 times the leg's speed at most. A body drawn at the present now drains a backlog at about `CATCH_DRAIN_S`'s time constant,
-   never faster than its kind's top speed (`AnimalView.top_mps`, the row's fastest `*_mps`), when that correction trails the way its points
-   went (`MotionBuffer.way_of`, the newest leg that moved); one ahead of it (an overshoot past a stop) keeps the old cap, so nothing is pulled backwards fast. Rerun with that drain (same link):
-   the two robots' 95th percentile gap 3.37 m to 1.02 m, the correction left 95th 3.5 m to 0.85 m, drawn-vs-server 95th 5.7 m to 2.4 m.
+   drained at 1.3 times the leg's speed at most. A faster drain for a trailing correction (merged 24 Nov 2026) showed big gains in robot
+   runs that did not hold on a rerun: robot numbers vary too much run to run to judge a change by (the same head gave a 95th two-robot gap of
+   1.0 m and 2.4 m). So a fixed replay was made (`test_animal_draw_replay.gd`): one deer track (grazing, a 12 m/s zig-zag bolt, a dead stop),
+   one seeded lossy link, the client's own drawing. It showed the faster drain changed nothing (correction 95th 1.41 against 1.39 m), and
+   it was deleted. What built the correction was the stop: the row that first sends where a fleeing deer stopped arrives after it stopped, so
+   it was sent as standing, with no plan, and the client carried the body on past the stop at its last speed for up to `CARRY_S` (1.5 m at
+   12 m/s), then pulled it back 2.4 m, drained at 0.9 m/s as a standing body. Now that row carries a plan of where it stopped
+   (`server_animals.row_plan`, no protocol change: a plan's end already holds the body), so the client holds it at its stop. Replay: the
+   correction left 95th 1.39 to 0.72 m (frames over 1 m 303 to 79), drawn against the server median 0.58 to 0.33 m, 95th 2.12 to 1.37 m.
+   What is left is mostly starts and turns: the row with the new way arrives 0.1 to 0.35 s after the moment drawn, so the point jumps
+   1 to 2 m forward and `smooth` eases it in, at up to 1.35 times the leg's speed (its room, 1.05 times, and its catch-up, `CATCH_X`).
+   Not drawing ahead of the server is the price. An option kept for after Dave's play test: send a row at once when an animal starts,
+   turns or stops (replay: correction 95th to about 0.4 to 0.66 m, but about 25% more sends on that zig-zag track).
