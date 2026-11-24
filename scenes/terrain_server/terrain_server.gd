@@ -3846,6 +3846,11 @@ func _process(delta: float) -> void:
 		if _link != null and _link.blocks_out > 0:
 			report += "\nserver: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0]
 
+		var rows: String = store.made_rows_report()
+
+		if rows != "":
+			report += "\nserver: " + rows
+
 		if report != _last_report or now - _last_report_msec >= 300000:   # an idle server printed the same two lines every 10 s; once in 5 min shows it is alive
 			_last_report = report
 			_last_report_msec = now
