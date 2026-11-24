@@ -3214,7 +3214,11 @@ func _grid_request(aim: Vector3) -> Dictionary:
 	# The grid's bottom left point at the crosshair (or the bed or metre cell under it), the grid running forward and to the right (Dave 24 Nov 2026):
 	# centred on the aim, a big grid reached back behind the player where it could not be seen.
 	_grid_yaw = yaw
-	var corner: Vector2 = anchor if typeof(anchor) == TYPE_VECTOR2 else flat_aim
+	var corner: Vector2 = flat_aim
+
+	if typeof(anchor) == TYPE_VECTOR2:
+		corner = anchor
+
 	var eye: Vector3 = _camera.global_position if _camera != null else aim
 	_garden_centre = FarmRules.grid_from_corner(w, d, step, corner, yaw, Vector2(aim.x - eye.x, aim.z - eye.z))
 	var at: Vector3 = Vector3(_garden_centre.x, aim.y, _garden_centre.y)
@@ -3424,7 +3428,11 @@ func _garden_preview() -> void:
 		var on_bed: bool = _inv.bed_id_at(Vector3(flat.x, y, flat.y)) != 0
 		mark.global_position = Vector3(flat.x, y + ((0.3 if on_bed else 0.08) if dots else (0.35 if on_bed else 0.05)), flat.y)   # over a bed or plot: above its frame
 		mark.rotation.y = deg_to_rad(float(request.get("yaw", garden_yaw)))   # square with the grid (a seed grid turns with the bed it is on)
-		mark.mesh = _garden_dot if dots else _garden_box
+		if dots:
+			mark.mesh = _garden_dot
+		else:
+			mark.mesh = _garden_box
+
 		mark.scale = Vector3.ONE if dots else Vector3(side, 1.0, side)
 		var state: int = 1
 
