@@ -3,7 +3,7 @@ extends Control
 # The status strip (Dave 23 Nov 2026: "the space left of the hotbar level with the hotbar with icons the same height as the hotbar would work
 # well for a status window ... thirst and hunger icons down there with a percentage in them, a hurt leg symbol, effects symbols"; "I don't want
 # any borders around it I just want the symbols in a row"; "keep all the hud down low and mostly minimalist"). One row of symbols ending just
-# left of the hotbar's tray, the same height as its slots, with no plate or frame: hunger and thirst always, with their percentage, and a symbol
+# left of the hotbar's tray, the same height as its slots, with no plate or frame: food and water once under 10% (Dave 24 Nov 2026), the comfort meter, and a symbol
 # for every state that slows, weakens or otherwise changes the player while it lasts. Hovering one (with the cursor free, the inventory open)
 # gives a plain line saying what it is and what it does; a symbol that appears says its name above itself for a few seconds.
 #

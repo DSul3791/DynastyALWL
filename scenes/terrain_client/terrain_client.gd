@@ -4395,7 +4395,8 @@ func _setup_status_strip(layer: CanvasLayer) -> void:
 
 		var cap: float = CarryRulesScript.cap_kg(body_kg, items._carry_cfg)
 		var pace: int = int(round(CarryRulesScript.speed_factor(kg, body_kg, items._carry_cfg) * 100.0))
-		return {"value": "%d%%" % pace, "tone": 2 if kg >= cap else 1, "vars": {"kg": snappedf(kg, 0.1), "free": int(round(free)), "cap": int(round(cap)), "n": pace}})
+		var share: int = int(round(kg / maxf(cap, 0.001) * 100.0))   # the load as a share of what you can carry, as the pack's bar shows it (Dave 24 Nov 2026: the speed read as the load)
+		return {"value": "%d%%" % share, "tone": 2 if kg >= cap else 1, "vars": {"kg": snappedf(kg, 0.1), "free": int(round(free)), "cap": int(round(cap)), "n": pace, "p": share}})
 	status_icons.add("limp", func() -> Dictionary:
 		return {} if items.limp_share >= 1.0 else {"tone": 1, "vars": {"n": int(round(items.limp_share * 100.0)), "min": int(ceil(float(limp_cfg.get("seconds", 600.0)) / 60.0)),
 			"heal": int(round(health_max * float(limp_cfg.get("heal_at", 0.6))))}})
@@ -4407,12 +4408,12 @@ func _setup_status_strip(layer: CanvasLayer) -> void:
 		return {"value": str(seconds), "tone": level_tone.call("oxygen", float(seconds)), "vars": {"n": seconds}})
 	status_icons.add("health", func() -> Dictionary:
 		return {} if float(items.health) >= health_max else {"value": str(items.health), "tone": level_tone.call("health", float(items.health)), "vars": {"n": items.health, "max": int(health_max)}})
+	# Food and water show only once they run low (Dave 24 Nov 2026: "food and water shouldn't show up until they are below 10%"): the row's show_below.
+	var below: Callable = func(id: String) -> int: return int(spec.get(id, {}).get("show_below", 10))
 	status_icons.add("hunger", func() -> Dictionary:
-		var tone: int = 2 if items.hunger <= 0 else (1 if items.hunger <= int(vitals.get("warn_hunger", 15)) else 0)
-		return {"value": "%d%%" % items.hunger, "tone": tone, "vars": {"n": items.hunger}})
+		return {} if items.hunger >= below.call("hunger") else {"value": "%d%%" % items.hunger, "tone": 2 if items.hunger <= 0 else 1, "vars": {"n": items.hunger}})
 	status_icons.add("thirst", func() -> Dictionary:
-		var tone: int = 2 if items.thirst <= 0 else (1 if items.thirst <= int(vitals.get("warn_thirst", 15)) else 0)
-		return {"value": "%d%%" % items.thirst, "tone": tone, "vars": {"n": items.thirst}})
+		return {} if items.thirst >= below.call("thirst") else {"value": "%d%%" % items.thirst, "tone": 2 if items.thirst <= 0 else 1, "vars": {"n": items.thirst}})
 	status_icons.tick(0.0, true)
 
 
