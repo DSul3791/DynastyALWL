@@ -1592,6 +1592,30 @@ Not yet played.
 
 Not yet played.
 
+## 133. The plant grid does not line up with tilled soil
+
+**Status: Not fixed.** Tester DungeonMaster, build 9257, 24 Nov 2026, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("planting interface doesn't match tilled soil"). The hoe's Plant preview should sit on the tilled beds it will sow.
+
+## 134. A shrieking noise while the game loads
+
+**Status: Not fixed.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game loading, shrieking noise sound, ocean surf?"). Nothing should play harshly while the world streams in.
+
+## 135. Mud footsteps sound strange and far too loud
+
+**Status: Not fixed.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("mud sounds strange, way too loud").
+
+## 136. Odd gear sounds while running
+
+**Status: Not fixed.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("really weird gear sounds when running").
+
+## 137. The fibre backpack does not show as something to take off
+
+**Status: Not fixed.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("fibre backpack not appearing as unequippable"). A worn backpack should show where it can be taken off.
+
+## 138. Prompts to pick fruit and drink water do not say which key
+
+**Status: Not fixed.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
