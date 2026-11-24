@@ -554,7 +554,6 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var row: int = nx + 2
 	var hs: PackedFloat32Array = columns[2]
 	var column_tile: Array = columns[3]
-	var one_tile = columns[5]
 	var h_min: float = columns[6]
 	var h_max: float = columns[7]
 

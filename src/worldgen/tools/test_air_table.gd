@@ -209,6 +209,13 @@ func _check_file_and_store(tile_m: float) -> void:
 	check(not back.is_empty() and back[0][3] == levels[0][3] and back[0][4] == levels[0][4] and back[0][5] == levels[0][5] and int(back[0][0]) == tile.x * side0, "the file reads back the same")
 	check(AirTableScript.read_file(path, "79 other", tile).is_empty(), "a file made from other tiles or another terrain version is not used")
 	check(AirTableScript.read_file(path, wanted, Vector2i(3, 5)).is_empty(), "a file for another tile is not used")
+	var west: Vector2i = Vector2i(-1, -3)   # tiles west and north of the world's middle have negative numbers
+	var west_levels: Dictionary = {0: AirTableScript.empty_level(west.x * side0, west.y * side0, side0)}
+	west_levels[0][3][5] = -12
+	west_levels[0][4][5] = -200.25
+	check(AirTableScript.write_file(base + "/west.air", wanted, west, west_levels), "a table file for a negative tile is written")
+	var west_back: Dictionary = AirTableScript.read_file(base + "/west.air", wanted, west)
+	check(not west_back.is_empty() and int(west_back[0][0]) == west.x * side0 and int(west_back[0][1]) == west.y * side0 and west_back[0][3][5] == -12 and west_back[0][4][5] == -200.25, "a negative tile's file reads back the same (its corner, a negative first row and height)")
 	var cut: FileAccess = FileAccess.open(base + "/cut.air", FileAccess.WRITE)
 	var whole: PackedByteArray = FileAccess.get_file_as_bytes(path)
 	cut.store_buffer(whole.slice(0, whole.size() - 8))

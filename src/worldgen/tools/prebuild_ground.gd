@@ -556,7 +556,8 @@ static func read_air(path: String, total: int, columns: int) -> PackedFloat64Arr
 
 
 # The pack's air table (air_table.gd), one file a tile, from the entries of every built column (index, first air row, two heights).
-# Columns not built (outside --area) have no entry, so the server makes their blocks as before.
+# Columns not built (outside --area) have no entry, so the server makes their blocks as before; a table already there from these
+# tiles keeps its other columns.
 func _write_air_tables(out_dir: String, entries: PackedFloat64Array, stamp: String) -> bool:
 	var tile_m: float = generator.tile_size_m
 	var tiles: Dictionary = {}   # Vector2i -> {lod: level}
@@ -568,7 +569,8 @@ func _write_air_tables(out_dir: String, entries: PackedFloat64Array, stamp: Stri
 		var side: int = int(round(tile_m / block_m))
 
 		if not tiles.has(tile):
-			tiles[tile] = {}
+			# A later run on the same pack (another --area or --lods) adds its columns to the tile's table; it never drops the earlier ones.
+			tiles[tile] = AirTableScript.read_file(out_dir + "/" + AirTableScript.FOLDER + "/" + AirTableScript.file_name(tile), stamp, tile)
 
 		if not tiles[tile].has(column.z):
 			tiles[tile][column.z] = AirTableScript.empty_level(tile.x * side, tile.y * side, side)

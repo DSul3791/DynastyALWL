@@ -15,6 +15,7 @@ const FOLDER := "air_table"
 const MAGIC := "DAIR"
 const FORMAT := 1
 const NONE := 2147483647                # terrain_generator.gd AIR_NONE: no entry for this column
+const MAX_SIDE := 4096                  # blocks a side of one level (a 15,360 m tile has 960 at the finest): more is a damaged file
 
 var tile_size_m: float = 15360.0
 var block_size: int = 16
@@ -23,6 +24,7 @@ var refused: int = 0                    # tile files read but not used (other ti
 var _dir: String = ""
 var _stamp: String = ""
 var _tiles: Dictionary = {}             # Vector2i -> {lod: [bx0, bz0, side, first, plain, detail]}, or {} when the tile has no usable file
+var _reading: Dictionary = {}           # Vector2i -> true while one worker reads that tile's file
 var _mutex: Mutex = Mutex.new()
 
 
@@ -54,13 +56,42 @@ func entry(bx: int, bz: int, lod: int) -> PackedFloat64Array:
 	var block_m: float = float(block_size << lod)
 	var tile: Vector2i = Vector2i(int(floor(float(bx) * block_m / tile_size_m)), int(floor(float(bz) * block_m / tile_size_m)))
 	_mutex.lock()
+	var known: bool = _tiles.has(tile)
+	var levels: Dictionary = _tiles.get(tile, {})
+	var stamp: String = _stamp
+	var reading: bool = _reading.has(tile)
 
-	if not _tiles.has(tile):
-		_tiles[tile] = _read(tile)
+	if not known and not reading:
+		_reading[tile] = true
 
-	var levels: Dictionary = _tiles[tile]
-	var level = levels.get(lod, null)
 	_mutex.unlock()
+
+	if not known and reading:
+		return PackedFloat64Array()   # another worker is reading this tile's file: this block is made as before, this once
+
+	if not known:
+		# Read outside the lock (a tile's file is about 25 MB), by one worker; the others go on meanwhile.
+		var path: String = _dir + "/" + file_name(tile)
+		var present: bool = _dir != "" and FileAccess.file_exists(path)
+		levels = read_file(path, stamp, tile) if present else {}
+		_mutex.lock()
+		_reading.erase(tile)
+
+		if _stamp != stamp:
+			_mutex.unlock()
+			return PackedFloat64Array()   # the tile files changed while it was read: read again under the new stamp next time
+
+		if not _tiles.has(tile):
+			_tiles[tile] = levels
+			loaded += 1 if not levels.is_empty() else 0
+			refused += 1 if present and levels.is_empty() else 0
+
+			if present and levels.is_empty():
+				print("server: air table %s not used (made from other tiles or another terrain version, or cut short); those air blocks are made as before" % path)
+
+		_mutex.unlock()
+
+	var level = levels.get(lod, null)
 
 	if level == null:
 		return PackedFloat64Array()
@@ -81,23 +112,6 @@ func entry(bx: int, bz: int, lod: int) -> PackedFloat64Array:
 	return PackedFloat64Array([first, (level[4] as PackedFloat64Array)[index], (level[5] as PackedFloat64Array)[index]])
 
 
-func _read(tile: Vector2i) -> Dictionary:
-	var path: String = _dir + "/" + file_name(tile)
-
-	if _dir == "" or not FileAccess.file_exists(path):
-		return {}
-
-	var levels: Dictionary = read_file(path, _stamp, tile)
-
-	if levels.is_empty():
-		refused += 1
-		print("server: air table %s not used (made from other tiles or another terrain version, or cut short); those air blocks are made as before" % path)
-	else:
-		loaded += 1
-
-	return levels
-
-
 # {lod: [bx0, bz0, side, first, plain, detail]} of a file, or {} when it is missing, short or carries another stamp or tile.
 static func read_file(path: String, stamp: String, tile: Vector2i) -> Dictionary:
 	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
@@ -105,7 +119,7 @@ static func read_file(path: String, stamp: String, tile: Vector2i) -> Dictionary
 	if file == null or file.get_length() < 16 or file.get_buffer(4).get_string_from_ascii() != MAGIC or file.get_32() != FORMAT:
 		return {}
 
-	if file.get_pascal_string() != stamp or int(file.get_32()) != tile.x or int(file.get_32()) != tile.y:
+	if file.get_pascal_string() != stamp or _signed(file.get_32()) != tile.x or _signed(file.get_32()) != tile.y:
 		return {}
 
 	var levels: Dictionary = {}
@@ -116,6 +130,10 @@ static func read_file(path: String, stamp: String, tile: Vector2i) -> Dictionary
 		var bx0: int = _signed(file.get_32())
 		var bz0: int = _signed(file.get_32())
 		var side: int = file.get_32()
+
+		if side <= 0 or side > MAX_SIDE:
+			return {}
+
 		var cells: int = side * side
 		var first: PackedInt32Array = file.get_buffer(cells * 4).to_int32_array()
 		var plain: PackedFloat64Array = file.get_buffer(cells * 8).to_float64_array()
