@@ -180,6 +180,7 @@ func _init() -> void:
 	fd.erase("stopped_ms")
 	fd["pos"] = Vector3(2.0, GROUND, 4.56)   # moved by something other than its step: no stopped_ms, no plan
 	check(not row_of(f, fid).any(func(v): return v is Vector2), "a move made elsewhere says nothing")
+	fd["pos"] = Vector3(0.0, GROUND, 0.0)   # back where deer_at put it: the make_way check below walks a player into it there
 	# A pack wolf is moved by the pack brain, not the tick: its pace stamps the stop the same way.
 	var wolf: Dictionary = {"pos": Vector3.ZERO, "moving": false}
 	f.wolves.pace(wolf, 1000)
