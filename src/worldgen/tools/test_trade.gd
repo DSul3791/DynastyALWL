@@ -7,6 +7,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const TradeScript := preload("res://src/stream/server_trade.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const TradePrices := preload("res://src/shared/trade_prices.gd")
 
 var failures: int = 0
 
@@ -181,6 +182,28 @@ func _init() -> void:
 	items.give_to(1, "stone", 30)
 	var extras_broke: String = trade.deal(1, "hob", 3, 0, 1)
 	check(extras_broke == trade.PURSE_EMPTY_SAY, "the extra-stuff button also says the purse is spent (%s)" % extras_broke)
+	# Dave 24 Nov 2026: "why does it say I sold stuff for about x amount but I dont have that amount in my coins". The window's figure and the
+	# server's sale are one sum (TradePrices.sale: the price falls with each unit, and he stops at his purse); what he cannot pay for stays.
+	var fur: int = items.table.number_of("fur")
+	items.give_to(1, "fur", 20)
+	var fur_slot: int = inv_r.numbers.find(fur)
+	trade._refresh("hob")["purse"] = 30.0
+	var fur_terms: Array = TradePrices.sell_terms(items.table.entry("fur"), {}, 1.0)
+	var fur_cfg: Dictionary = items._coins_cfg["trade"]["demand"]
+	var guess: Array = TradePrices.sale(int(fur_terms[1]), int(fur_terms[0]), 20, float(trade.multipliers(1, "hob")["get"]), trade.demand("hob", "fur"), float(fur_cfg["drop_per_sale"]), float(fur_cfg["floor"]), 1.0, 30)
+	var coins_fur: int = items.coins_of(1)
+	var fur_said: String = trade.deal(1, "hob", 1, fur_slot, 20)
+	check(items.coins_of(1) - coins_fur == int(guess[1]) and inv_r.count_of(fur) == 20 - int(guess[0]) and int(guess[0]) > 0 and int(guess[0]) < 20, "the window's sum is what he pays: %d fur for %d copper of a 30 copper purse, the rest kept (%s)" % [int(guess[0]), int(guess[1]), fur_said])
+	check(fur_said.contains(items._coin_words(int(guess[1]))), "and the line says the copper really paid (%s)" % fur_said)
+	trade._refresh("hob")["purse"] = 30.0
+	coins_fur = items.coins_of(1)
+	var fur_left: int = inv_r.count_of(fur)
+	var extras_short: String = trade.deal(1, "hob", 3, 0, 1)
+	var got: int = items.coins_of(1) - coins_fur
+	check(got > 0 and got <= 30 and extras_short.contains("for %s." % items._coin_words(got)) and extras_short.contains("the rest stays in your pack") and inv_r.count_of(fur) > 0 and inv_r.count_of(fur) < fur_left, "the extra-stuff sale says what it really paid, and that what he could not pay for stays (%s)" % extras_short)
+	if inv_r.numbers.find(fur) >= 0:
+		inv_r.clear_slot(inv_r.numbers.find(fur))
+	trade._refresh("hob")["purse"] = 0.0
 	gclock[0] += 86400.0
 	check(trade.purse_of("hob") == 100, "one game day later (an hour of play) his purse has 100 copper again (%d)" % trade.purse_of("hob"))
 	check(trade.deal(1, "hob", 1, sell_axe, 1).begins_with("Sold"), "and he buys again")

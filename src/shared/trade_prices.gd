@@ -47,3 +47,26 @@ static func lot_to_get(value: int, mult: float, life: float = 1.0) -> int:
 		return 0
 
 	return maxi(int(floor(float(value) * mult * life + 0.0001)), 1)
+
+
+# One sale of `count` units of a thing the trader pays `value` a lot for (lots of `lot`), as the server makes it and the window estimates it
+# (Dave 24 Nov 2026: the sell-all line said "about 9 silver" and the purse held far less). Each unit sold lowers the next one's price by
+# `drop` of the base, from `base_demand` down to `floor_d` (coins.json trade.demand); a lot's copper is paid with its last unit; and the trader
+# stops once the next price would take more than `till`, his purse. -> [units bought, copper paid]: units he cannot pay for stay with the seller.
+static func sale(value: int, lot: int, count: int, get_mult: float, base_demand: float, drop: float, floor_d: float, life: float, till: int) -> Array:
+	var total: int = 0
+	var paid_for: int = 0
+	lot = maxi(lot, 1)
+
+	for k in count:
+		var each_k: int = lot_to_get(value, get_mult * maxf(base_demand - drop * float(k), floor_d), life)
+
+		if each_k <= 0 or total + each_k > till:
+			break
+
+		if (k + 1) % lot == 0:   # the lot's copper is paid with its last unit
+			total += each_k
+
+		paid_for += 1
+
+	return [paid_for - paid_for % lot, total]
