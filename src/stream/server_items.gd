@@ -724,7 +724,7 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 	sync_purse(peer)
 	sync_reputation(peer)
 	sync_shoulder(peer)
-	_sync_goals(peer)
+	_sync_goals(peer, true)   # settles goals a newer goal list already counts as met, unpaid (_goals_settle)
 	_sync_craft_queue(peer)
 
 	return replaced
@@ -25708,8 +25708,40 @@ func _drink_hint_due(peer: int, position: Vector3) -> bool:
 	return true
 
 
+# At the join, before the list goes out: every goal the character already meets is marked done, with no coins, notice or placard.
+# Nothing can complete a goal while the character is away, so a goal met here was met by a newer goal list (a new goal, or a check
+# changed so what the pack already holds counts) and loading a save must never change a character's coins (coordinator 24 Nov 2026,
+# test_save_9257: the Stone - Knife goal, now made_item or_have, paid an old character who held a knife 10 copper at the join).
+func _goals_settle(peer: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or _goals_paused(peer):
+		return
+
+	var changed: bool = true
+
+	while changed:   # one goal marked done can meet another's check, as in _goals_check
+		changed = false
+
+		for goal in _goals_data():
+			var id: String = str(goal["id"])
+
+			if st["goals_done"].has(id):
+				continue
+
+			var progress: Vector2i = _goal_progress(peer, st, goal.get("check", {}), id)
+
+			if progress.x >= progress.y:
+				st["goals_done"][id] = true
+				changed = true
+				_dirty = true
+
+
 # The whole list to the client, silently (the join and a reconnect: no placards for goals already done).
-func _sync_goals(peer: int) -> void:
+func _sync_goals(peer: int, settle: bool = false) -> void:
+	if settle:
+		_goals_settle(peer)
+
 	if send_goals.is_valid() and not _goal_state_of(peer).is_empty():
 		send_goals.call(peer, goals_rows(peer))
 
