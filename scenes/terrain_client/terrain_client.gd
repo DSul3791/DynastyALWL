@@ -1916,7 +1916,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 		# The sea (Dave 24 Nov 2026: "when you try to drink water from the ocean it should tell you that is too salty"): E asks, and the server
 		# answers that it is too salty (server_items _drink_water); there was no prompt and E did nothing.
-		return {"prompt": "Sea water — Press E to drink", "tap": items.drink} if _sea_in_reach() else {})
+		return {"prompt": "Sea water — Press E to drink", "tap": items.drink} if not items.held_container_has_water() and _sea_in_reach() else {})
 	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a container shore_nodes.json lists (bucket, clay jug, clay pot, waterskin) in the pack E fills it with sea water; otherwise on a tide-line node
 	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
 	items.register_interactable("gather_edge", 34, func():

@@ -28806,7 +28806,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 	# The sea is never drinkable (Dave 24 Nov 2026: "it should tell you that is too salty. try to find some fresh water."): standing in it, or with only
 	# the sea in reach, the player is told so, whatever the record holds there.
 	if _sea_at_feet(_peer_pos[peer]) or (not shown and _sea_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))):
-		if not _record_water_near(peer, thirst):
+		if not _fresh_record_near(peer, thirst):
 			_say(peer, str(thirst.get("sources", {}).get("say_salt", SALT_SAY)))
 			return
 
@@ -28900,6 +28900,16 @@ func _record_water_near(peer: int, thirst: Dictionary) -> bool:
 
 	var rows: Array = water_source.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
 	return rows.any(func(row): return str((row as Dictionary).get("kind", "")) in ["spring", "brook"])
+
+
+# Any fresh water row of the record within reach (a lake, river, brook, spring...: every kind but salt). The fish map calls water with its bed at or
+# under 0 m the sea (server_fish_water _classify), so a lower river or a lagoon there is still a drink when the record holds it as fresh.
+func _fresh_record_near(peer: int, thirst: Dictionary) -> bool:
+	if not water_source.is_valid():
+		return false
+
+	var rows: Array = water_source.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
+	return rows.any(func(row): return str((row as Dictionary).get("kind", "salt")) != "salt")
 
 
 # With thirst.sources on, no drinking water within reach (water_near) but salt water is: the sea, which the live sim does not hold.
