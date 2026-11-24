@@ -2940,7 +2940,15 @@ func _seed_rows(species_name: String, flora_key: String = "") -> Array:
 		return []
 
 	var season: String = (_plant_season(flora_key) if flora_key != "" else _season()) if season_now.is_valid() or season_at.is_valid() else "all"   # starter-calendar: the fallback with no plant key
-	return def.get("rows", []) if (def.get("seasons", []) as Array).has(season) else []
+	if not (def.get("seasons", []) as Array).has(season):
+		return []
+
+	var rows: Array = def.get("rows", [])
+
+	if bool(def.get("one_of", false)) and rows.size() > 1:   # one of the rows, fixed per plant by its key (tall grass: one grain a tuft, a patch a mix; coordinator for Dave 24 Nov 2026)
+		return [rows[posmod(hash(flora_key if flora_key != "" else species_name), rows.size())]]
+
+	return rows
 
 
 # A berry bush (data/items/drops.json "berry_yield"): E gives that berry only, count scaled by the plant's size, in its season, once a season;

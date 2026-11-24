@@ -505,6 +505,53 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 # Gardening plots (Dave 14 Nov 2026: "Gardening plots can come in three sizes small medium and large ... A small takes two planks and eight nails a medium
 # takes three planks, and eight nails and a large takes four planks, and eight nails"; no tiers): the three blueprints and footprints, and a saved Thatch,
 # Stone or Brick plot loads as the Medium one.
+# Dave's play-test 24 Nov 2026: one patch of tall grass gave about 6,000 of each grain. A patch is 25 to 40 tufts (flora.json patch count); each
+# tuft carries one grain (drops.json seed_drops one_of, fixed by its key), 20 to 60 seeds. A 35-tuft patch picked tuft by tuft stays in range.
+func _tall_grass_patch_checks() -> void:
+	var grains: Array = ["wheat_seeds", "barley_seeds", "oats_seeds", "rye_seeds"]
+	var row: Array = items._drops["seed_drops"]["tall_grass"]["rows"][0]
+	items.report_position(1, Vector3(600.0, 10.0, 600.0))
+	season[0] = "summer"
+	var before: Dictionary = {}
+
+	for g in grains:
+		before[g] = count(g)
+
+	var mixed: int = 0
+	var kinds: Dictionary = {}
+
+	for tuft in 35:
+		var got: Dictionary = {}
+
+		for g in grains:
+			got[g] = count(g)
+
+		items._last_gather.clear()
+		items.gather(1, "tall_grass", "plant", "0,0,%d" % (950 + tuft), 950 + tuft, Vector3(600.5 + 0.1 * float(tuft % 6), 10.0, 600.0 + 0.1 * floorf(float(tuft) / 6.0)))
+		var these: int = 0
+
+		for g in grains:
+			if count(g) > int(got[g]):
+				these += 1
+				kinds[g] = true
+
+		mixed += 1 if these != 1 else 0
+
+		for bulky in ["thatch", "straw", "plant_fibre"]:   # the grass itself is put aside each time, so the carry limit never stops a seed
+			while slot_of(bulky) >= 0:
+				items.inventory_of(1).clear_slot(slot_of(bulky))
+
+	var total: int = 0
+
+	for g in grains:
+		total += count(g) - int(before[g])
+
+	check(mixed == 0, "each tuft of tall grass gives one grain, not all four (%d tufts gave another number of grains)" % mixed)
+	check(total >= 35 * int(row[1]) and total <= 35 * int(row[2]), "a 35-tuft patch gives %d grain seeds in all, %d to %d, not thousands of each" % [total, 35 * int(row[1]), 35 * int(row[2])])
+	check(kinds.size() >= 3, "and a patch is a mix of grains (%s)" % str(kinds.keys()))
+	items.report_position(1, Vector3(0.0, 10.0, 0.0))
+
+
 func _plot_size_checks(dir: String) -> void:
 	for row in [["small_garden_plot", 1.0, 2], ["wooden_garden_plot", 2.0, 3], ["large_garden_plot", 3.0, 4]]:
 		var bp: Dictionary = items._blueprints.get(int(items._blueprint_of_kit.get(str(items._structures.get(str(row[0]), {}).get("kit", "")), 0)), {})
@@ -931,6 +978,7 @@ func _init() -> void:
 	_plot_takedown_checks()
 	_hoe_plot_checks()
 	_herb_seed_checks(crops)
+	_tall_grass_patch_checks()
 	_plot_size_checks(dir)
 	_garden_till_checks()
 

@@ -4,6 +4,7 @@ Data is ready: crops and seeds (items 332 to 343), `data/items/crops.json` (new,
 
 ## 1. Seeds come from somewhere (smallest)
 - Foraging grains: harvesting wild **tall grass** in late summer or autumn gives 1 to 3 `wheat_seeds` or `barley_seeds` (new rows in drops.json `by_species`, same shape as the other rows). **Wild carrot** and **flax** give `carrot_seeds` and `flax_seeds`. Potato and turnip seeds come from a wild root dug with a spade.
+- Tall grass, 24 Nov 2026 (coordinator for Dave, after his play-test: one patch gave about 6,000 of each grain): each tuft carries ONE grain (wheat, barley, oats or rye, fixed per tuft, so a patch is a mix) and gives 20 to 60 seeds. A small patch of about 35 tufts gives about 1,400 seeds, some 7 sowings of each grain. drops.json seed_drops tall_grass (one_of).
 - Seed bundle (item 9) stays the mixed wild seeds fallback: using it on a bed sows a random crop from the biome list in crops.json.
 - Test: gather tall grass in autumn gives a seed; none in winter.
 
