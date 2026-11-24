@@ -3159,6 +3159,8 @@ func _hoe_here(action: int, b: int = 0) -> void:
 var garden_w: int = 1
 var garden_d: int = 1
 var garden_yaw: int = 0                  # degrees, the way a structure's yaw turns
+var _garden_box: BoxMesh = null           # the till grid's square marks
+var _garden_dot: SphereMesh = null        # the Plant grid's dots
 var _garden_centre: Vector2 = Vector2.ZERO   # the last plan's grid centre (the click sends it)
 var _verdict: Dictionary = {}            # the server's last hoe_verdict: {"kind", "code", "at", "state", "why", "cells"}
 var _asked: Array = []                   # the last check sent: [kind, code, at]
@@ -3194,6 +3196,7 @@ func _grid_request(aim: Vector3) -> Dictionary:
 
 	var flat_aim: Vector2 = Vector2(aim.x, aim.z)
 	var anchor: Variant = null
+	var yaw: int = garden_yaw
 
 	if kind == "seed":
 		var beds: Array = _inv.bed_rows(aim, Vector2(float(w), float(d)).length() * step + 3.0)
@@ -3201,18 +3204,23 @@ func _grid_request(aim: Vector3) -> Dictionary:
 
 		for row in beds:
 			if int(row[0]) == under and under != 0:
-				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at
+				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at...
+				yaw = posmod(roundi(float(row[3])), 360)   # ...and turn with it, so a turned garden's beds and the seed grid match (tester report, QA #8)
 
-	if anchor == null and (kind == "seed" or kind == "till") and garden_yaw == 0 and is_equal_approx(step, roundf(step)):
+	if anchor == null and (kind == "seed" or kind == "till") and yaw == 0 and is_equal_approx(step, roundf(step)):
 		anchor = Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)   # unturned: on the world's metre cells, like the beds the server snaps
 
-	_garden_centre = FarmRules.grid_centre(w, d, step, flat_aim, garden_yaw, anchor)
+	# The grid's bottom left point at the crosshair (or the bed or metre cell under it), the grid running forward and to the right (Dave 24 Nov 2026):
+	# centred on the aim, a big grid reached back behind the player where it could not be seen.
+	var corner: Vector2 = anchor if typeof(anchor) == TYPE_VECTOR2 else flat_aim
+	var eye: Vector3 = _camera.global_position if _camera != null else aim
+	_garden_centre = FarmRules.grid_from_corner(w, d, step, corner, yaw, Vector2(aim.x - eye.x, aim.z - eye.z))
 	var at: Vector3 = Vector3(_garden_centre.x, aim.y, _garden_centre.y)
 
 	if hoe_mode == "garden":
-		return {"kind": Net.ACT_PLANT_GRID, "code": garden_yaw * 10000 + w * 100 + d, "at": at, "number": number, "points": FarmRules.grid_points(w, d, step, _garden_centre, garden_yaw), "step": step}
+		return {"kind": Net.ACT_PLANT_GRID, "code": yaw * 10000 + w * 100 + d, "at": at, "number": number, "points": FarmRules.grid_points(w, d, step, _garden_centre, yaw), "step": step, "yaw": yaw}
 
-	return {"kind": Net.ACT_TILL_GARDEN, "code": (10000 if hoe_mode == "soil" else 0) + w * 100 + d, "at": at, "number": 0, "points": FarmRules.grid_points(w, d, 1.0, _garden_centre, garden_yaw), "step": 1.0}
+	return {"kind": Net.ACT_TILL_GARDEN, "code": (10000 if hoe_mode == "soil" else 0) + w * 100 + d, "at": at, "number": 0, "points": FarmRules.grid_points(w, d, 1.0, _garden_centre, yaw), "step": 1.0, "yaw": yaw}
 
 
 func _send_grid(request: Dictionary, check: bool) -> void:
@@ -3221,7 +3229,7 @@ func _send_grid(request: Dictionary, check: bool) -> void:
 	if int(request["kind"]) == Net.ACT_PLANT_GRID:
 		_net.inventory_action.rpc_id(1, Net.ACT_PLANT_GRID, held_slot, int(request["number"]), code, request["at"])
 	else:
-		_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, garden_yaw, code, request["at"])
+		_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, int(request.get("yaw", garden_yaw)), code, request["at"])
 
 
 # The server's answer for the grid as `request` asks it, {} when it has not answered that one yet.
@@ -3373,11 +3381,20 @@ func _garden_preview() -> void:
 
 	var side: float = minf(float(request.get("step", 1.0)), 1.0) * 0.8
 
+	if _garden_box == null:
+		_garden_box = BoxMesh.new()
+		_garden_box.size = Vector3(1.0, 0.04, 1.0)
+		_garden_dot = SphereMesh.new()   # Plant: a dot exactly where each seed or plant goes (Dave 24 Nov 2026), not a square
+		_garden_dot.radius = 0.07
+		_garden_dot.height = 0.14
+		_garden_dot.radial_segments = 8   # a hundred dots stay cheap
+		_garden_dot.rings = 4
+
+	var dots: bool = hoe_mode == "garden"
+
 	while _garden_marks.size() < points.size():
 		var mark: MeshInstance3D = MeshInstance3D.new()
-		var box: BoxMesh = BoxMesh.new()
-		box.size = Vector3(1.0, 0.04, 1.0)
-		mark.mesh = box
+		mark.mesh = _garden_box
 		mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_root.add_child(mark)
 		_garden_marks.append(mark)
@@ -3394,15 +3411,19 @@ func _garden_preview() -> void:
 			continue
 
 		var on_bed: bool = _inv.bed_id_at(Vector3(flat.x, y, flat.y)) != 0
-		mark.global_position = Vector3(flat.x, y + (0.35 if on_bed else 0.05), flat.y)   # over a bed or plot: above its frame
-		mark.rotation.y = deg_to_rad(float(garden_yaw))   # square with the grid
-		mark.scale = Vector3(side, 1.0, side)
+		mark.global_position = Vector3(flat.x, y + ((0.3 if on_bed else 0.08) if dots else (0.35 if on_bed else 0.05)), flat.y)   # over a bed or plot: above its frame
+		mark.rotation.y = deg_to_rad(float(request.get("yaw", garden_yaw)))   # square with the grid (a seed grid turns with the bed it is on)
+		mark.mesh = _garden_dot if dots else _garden_box
+		mark.scale = Vector3.ONE if dots else Vector3(side, 1.0, side)
 		var state: int = 1
 
 		if not known.is_empty():
 			state = int(cells[n]) if n < cells.size() else (1 if int(known["state"]) != 0 else 0)
 
-		mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
+		if dots:
+			mark.material_override = _garden_mark_ok if state == 1 else _garden_mark_bad   # green where the seeds reach, red past them (and where nothing can go)
+		else:
+			mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
 
 	garden_preview_cells = points.size()
 

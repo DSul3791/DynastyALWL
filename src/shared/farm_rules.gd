@@ -134,21 +134,26 @@ static func grid_points(w: int, d: int, step: float, centre: Vector2, yaw_deg: i
 	return points
 
 
-# Where the grid's centre goes for an aim: round the aim, moved so the point nearest the aim lands on `anchor` (a bed's centre, or a metre cell's centre
-# for an unturned 1 m grid) when one is given (a Vector2), so a grid lines up with the beds already there.
-static func grid_centre(w: int, d: int, step: float, aim: Vector2, yaw_deg: int, anchor: Variant = null) -> Vector2:
-	if typeof(anchor) != TYPE_VECTOR2:
-		return aim
+# Where the grid's centre goes when its bottom left point sits on `corner` (Dave 24 Nov 2026: "should put the bottom left corner of the grid at your
+# crosshairs"): seen by the player looking along `toward`, the grid runs forward and to the right of that point, whatever its turn.
+static func grid_from_corner(w: int, d: int, step: float, corner: Vector2, yaw_deg: int, toward: Vector2) -> Vector2:
+	var turn: float = -deg_to_rad(float(yaw_deg))
+	var across: Vector2 = Vector2(step, 0.0).rotated(turn)   # one column on (width)
+	var along: Vector2 = Vector2(0.0, step).rotated(turn)    # one row on (length)
+	var fwd: Vector2 = toward.normalized() if toward.length() > 0.001 else Vector2(0.0, -1.0)
+	var right: Vector2 = Vector2(-fwd.y, fwd.x)
+	var sign_of := func(v: float) -> float: return -1.0 if v < 0.0 else 1.0
+	var s_across: float
+	var s_along: float
 
-	var nearest: Vector2 = aim
-	var best: float = INF
+	if absf(across.dot(right)) >= absf(along.dot(right)):
+		s_across = sign_of.call(across.dot(right))
+		s_along = sign_of.call(along.dot(fwd))
+	else:
+		s_across = sign_of.call(across.dot(fwd))
+		s_along = sign_of.call(along.dot(right))
 
-	for p in grid_points(w, d, step, aim, yaw_deg):
-		if p.distance_squared_to(aim) < best:
-			best = p.distance_squared_to(aim)
-			nearest = p
-
-	return aim + (anchor as Vector2 - nearest)
+	return corner + across * s_across * float(w - 1) * 0.5 + along * s_along * float(d - 1) * 0.5
 
 
 # Whether a flat point lies on a bed or plot: its square footprint (half side `half`) turned `yaw_deg` round `centre`.

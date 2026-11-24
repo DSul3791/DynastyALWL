@@ -1592,6 +1592,36 @@ Not yet played.
 
 Not yet played.
 
+## 133. The plant grid does not line up with tilled soil
+
+**Status: Implemented - awaiting player verification.** Aimed at a tilled bed, the Plant grid now takes that bed's turn as well as its centre, so a turned garden's beds and the seed grid line up (before, the grid kept the hoe's own turn). Not yet played. Tester DungeonMaster, build 9257, 24 Nov 2026, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("planting interface doesn't match tilled soil"). The hoe's Plant preview should sit on the tilled beds it will sow.
+
+## 134. A shrieking noise while the game loads
+
+**Status: Not fixed - needs a recording or a log.** No loading sound stands out in the code; the next step is to hear it or read a game log from that load. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game loading, shrieking noise sound, ocean surf?"). Nothing should play harshly while the world streams in.
+
+## 135. Mud footsteps sound strange and far too loud
+
+**Status: Implemented - awaiting player verification.** Mud steps 6 dB quieter (data/sound/step_levels.json mud -10 to -16 dB, provisional QA-1); the sound itself is unchanged. Not yet played. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("mud sounds strange, way too loud").
+
+## 136. Odd gear sounds while running
+
+**Status: Implemented - awaiting player verification.** The cloth rustle that fibre, grass and woollen clothes add to every step is 10 dB quieter (gear_sounds.gd cloth -30 to -40 dB, provisional QA-2); it is a generated placeholder sound. Not yet played. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("really weird gear sounds when running").
+
+## 137. The fibre backpack does not show as something to take off
+
+**Status: Not fixed - needs detail.** There is no backpack made of fibre; the nearest item is the Fibre - Shoulder bag, and the character screen does list it with Take off. Which screen did not offer it still needs finding. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("fibre backpack not appearing as unequippable"). A worn backpack should show where it can be taken off.
+
+## 138. Prompts to pick fruit and drink water do not say which key
+
+**Status: Not fixed - needs detail.** The exact wording the tester saw has not been found in the game's text yet. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk.
+
+## 139. The till and plant grid goes behind the player; Plant shows squares, not dots
+
+**Status: Implemented - awaiting player verification.** Dave's play test, 24 Nov 2026: "the actual grid that goes down when you try to till soil or plant plants should put the bottom left corner of the grid at your crosshairs. right now it does a weird thing where it goes behind the player and you cant see where you are placing it. also it shouldnt give big squares for a grid when planting plants it should show dots exactly where each plant or seed will go and it should make the dots green for the spots you have enough seeds for but red for the later dots if you dont have enough seeds to fill them."
+
+Now the grid's bottom left point sits at the crosshair (on the bed or metre cell under it) and the grid runs forward and to the right as the player sees it, whatever its turn (FarmRules.grid_from_corner; test_farm_prompt). The server measures a grid's reach to its nearest point, not its middle. Plant shows a small dot at each spot: green where the seeds in reach will go, red past them and where nothing can go. Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

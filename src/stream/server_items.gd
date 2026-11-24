@@ -23429,17 +23429,18 @@ func _till_plan(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, code:
 	if mode == TILL_GARDEN and Time.get_ticks_msec() < int(_garden_ready_ms.get(peer, 0)):
 		return {"why": "The next garden grid is ready in %d s." % ceili(float(int(_garden_ready_ms[peer]) - Time.get_ticks_msec()) / 1000.0)}
 
-	if check:
-		if _held_tool(inv, held_slot, "hoe") < 0 or _peer_pos[peer].distance_to(at) > DIG_REACH_M:
-			return {"why": "-"}
-	elif _hoe_ready(peer, inv, at, held_slot) < 0:   # in reach, a hoe in hand, and the hoe's pace
-		return {"why": "-"}
-
 	var w: int = SOIL_PATCH_BEDS if mode == TILL_SOIL else clampi(floori(float(code % 10000) / 100.0), 1, FarmRules.GRID_MAX_SIDE)
 	var d: int = SOIL_PATCH_BEDS if mode == TILL_SOIL else clampi(code % 100, 1, FarmRules.GRID_MAX_SIDE)
 	yaw_deg = posmod(yaw_deg, 360)
 	var centre: Vector2 = Vector2(at.x, at.z)
 	var cells: Array = FarmRules.grid_points(w, d, 1.0, centre, yaw_deg)
+	var near_cell: Vector3 = _grid_reach_point(peer, at, cells)   # the grid runs on from the crosshair (Dave 24 Nov 2026): in reach when its nearest bed is
+
+	if check:
+		if _held_tool(inv, held_slot, "hoe") < 0 or _peer_pos[peer].distance_to(near_cell) > DIG_REACH_M:
+			return {"why": "-"}
+	elif _hoe_ready(peer, inv, near_cell, held_slot) < 0:   # in reach, a hoe in hand, and the hoe's pace
+		return {"why": "-"}
 
 	if yaw_deg == 0:   # unturned beds sit on the metre cells (_till_cell snaps them): survey and level where they will be
 		centre += Vector2(floor(cells[0].x) + 0.5 - cells[0].x, floor(cells[0].y) + 0.5 - cells[0].y)
@@ -23702,6 +23703,22 @@ func _garden_jobs_tick() -> void:
 const PLANT_GRID_REACH_M := 12.0   # PG-1: the grid's points this far (flat) from the player take a plant in the one click
 
 
+# The point of a hoe grid nearest the player, at the grid's height: a grid runs on from the crosshair, so its reach is measured to its nearest point, not its middle.
+func _grid_reach_point(peer: int, at: Vector3, points: Array) -> Vector3:
+	var best: Vector3 = at
+	var best_d: float = INF
+	var me: Vector3 = _peer_pos.get(peer, at)
+
+	for p in points:
+		var spot: Vector3 = Vector3(p.x, at.y, p.y)
+
+		if spot.distance_to(me) < best_d:
+			best_d = spot.distance_to(me)
+			best = spot
+
+	return best
+
+
 func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vector3) -> int:
 	if inv == null or not _peer_pos.has(peer) or not at.is_finite() or not ground_height.is_valid():
 		return 0
@@ -23722,7 +23739,7 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 		if not check and why != "":
 			_say(peer, why)
 
-	if (check and _held_tool(inv, held_slot, "hoe") < 0) or (not check and _hoe_ready(peer, inv, at, held_slot) < 0):   # a hoe in hand; a planting click also its reach and pace
+	if check and _held_tool(inv, held_slot, "hoe") < 0:   # a hoe in hand; a planting click also its reach and pace (below, at the grid's nearest point)
 		return 0
 
 	var item_id: String = table.id_of(number) if number > 0 else ""
@@ -23739,6 +23756,10 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 	var d: int = clampi(code % 100, 1, FarmRules.GRID_MAX_SIDE)
 	var yaw_deg: int = posmod(floori(float(code) / 10000.0), 360)
 	var points: Array = FarmRules.grid_points(w, d, step, Vector2(at.x, at.z), yaw_deg)
+
+	if not check and _hoe_ready(peer, inv, _grid_reach_point(peer, at, points), held_slot) < 0:
+		return 0
+
 	var reach: float = Vector2(float(w), float(d)).length() * step * 0.5 + 2.0
 	var edits: Array = (edits_near.call(at, reach + 1.0) if edits_near.is_valid() else []) as Array
 	var grid: Dictionary = _edit_buckets(edits)
