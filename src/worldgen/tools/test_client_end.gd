@@ -45,5 +45,6 @@ func _initialize() -> void:
 	check(kill > tail.find("cache.flush()") and kill > tail.find("link.close()") and kill > tail.find("multiplayer.multiplayer_peer.close()")
 		and tail.find("cache.flush()") > 0, "the cache is flushed and the links closed before the process ends")
 	check(src.count("OS.kill(") == 1, "the client kills nothing else")
+	check(tail.find("InstanceLockScript.release()") >= 0 and tail.find("InstanceLockScript.release()") < kill, "the \"already open\" note is taken away before the kill (a quick restart is not asked about)")
 	print("client end: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
