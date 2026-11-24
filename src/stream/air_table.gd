@@ -135,6 +135,9 @@ static func read_file(path: String, stamp: String, tile: Vector2i) -> Dictionary
 			return {}
 
 		var cells: int = side * side
+
+		if cells * 20 > file.get_length() - file.get_position():
+			return {}   # shorter than its own sizes say: damaged (refused before reading, so nothing big is allocated)
 		var first: PackedInt32Array = file.get_buffer(cells * 4).to_int32_array()
 		var plain: PackedFloat64Array = file.get_buffer(cells * 8).to_float64_array()
 		var detail: PackedFloat64Array = file.get_buffer(cells * 8).to_float64_array()

@@ -572,6 +572,11 @@ func _write_air_tables(out_dir: String, entries: PackedFloat64Array, stamp: Stri
 			# A later run on the same pack (another --area or --lods) adds its columns to the tile's table; it never drops the earlier ones.
 			tiles[tile] = AirTableScript.read_file(out_dir + "/" + AirTableScript.FOLDER + "/" + AirTableScript.file_name(tile), stamp, tile)
 
+		var known = tiles[tile].get(column.z, null)
+
+		if known != null and (int(known[0]) != tile.x * side or int(known[1]) != tile.y * side or int(known[2]) != side):
+			tiles[tile].erase(column.z)   # a level of another shape (never written so under the same stamp): started again
+
 		if not tiles[tile].has(column.z):
 			tiles[tile][column.z] = AirTableScript.empty_level(tile.x * side, tile.y * side, side)
 

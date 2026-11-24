@@ -257,6 +257,11 @@ func _check_file_and_store(tile_m: float) -> void:
 	check(probe.load_voxel_block(pack_ground, air_block, 0) != VoxelStream.RESULT_BLOCK_FOUND, "air blocks are not saved")
 	probe = null
 	check(fresh.air.loaded == 1 and fresh.air.refused == 0, "the table was read once (%d read, %d refused)" % [fresh.air.loaded, fresh.air.refused])
+	fresh.air.set_stamp(wanted)
+	fresh.air._reading[tile] = true   # as while another worker reads the tile's file
+	check(fresh.air.entry(corner.x, corner.y, 0).is_empty() and not fresh.air._tiles.has(tile), "while another worker reads a tile's file, a block is made as before (no entry, nothing kept)")
+	fresh.air._reading.erase(tile)
+	check(not fresh.air.entry(corner.x, corner.y, 0).is_empty() and fresh.air.loaded == 2, "after it, the table is read and used")
 	fresh.air.set_stamp("79 other")
 	check(fresh.air.entry(corner.x, corner.y, 0).is_empty() and fresh.air.refused == 1, "after the tile files change, the old table is not used")
 	fresh = null

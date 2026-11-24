@@ -154,6 +154,14 @@ million of the tile's 4.2 million pack blocks are air. An air block holds the di
 exact the generator keeps a per-column table (first all-air row and the heights the air fill uses) and the server fills air from it
 without working anything out or saving it.
 
+Sea (24 Nov 2026). Measured (cloud samples, 150 columns a level): a baked tile's sea floor is real terrain (down to about -2,200 m) and
+costs about as much as land: pure-sea tile 2_4 about 5 GB and 1 h on Dave's PC, against about 9 GB for tile 3_4 (10% land); about
+0.022 GB a km2 of sea, land adds about 0.18 GB a km2. The whole 21x21 map as designed (104,045 km2, 5.8% land) would be about 3.3 TB
+and 450-650 h on his PC. Open ocean past the baked tiles (no tile file, flat at -200 m) is identical everywhere (2-3 different blocks a
+level), so it can be served from a tiny pattern exactly, like the air table (follow-up, after the block-maker hot spots). Dave (12:19 AM):
+"I do plan on them diving on shipwrecks and exploring under sea caves and such." So the sea floor inside the planned tiles stays real
+terrain; shipwrecks and undersea caves are later purpose-made places for the generator, like caves and ruins.
+
 The plan as first written follows.
 
 Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client
