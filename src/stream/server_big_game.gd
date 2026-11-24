@@ -25,6 +25,8 @@ const WALL_LOOK_S := 0.2        # each charging step keeps this far (at its spee
                                 # when slower (ServerAnimals STAGGER: 0.13 s at 30 fps): two of them are covered with the nose and the 0.3 m wall
                                 # margin. shortcut: a 20 fps server (0.2 s legs) or a far-band charge (3 Hz) can still be drawn a little way in.
 const WALL_TRIES := 3           # charges again after one a wall kept from its foe, before it calms
+const STRIKE := 25             # wire state: a blow up close (a swipe, a bite, a horn or tusk, a stomp), wound up where it stands
+const KICK := 26               # wire state: a kick behind (a donkey or a goat turns its back and kicks)
 const CLOSE_PACE_X := 0.3       # a charge set off close runs no slower than this share of its charge_mps (paced to land at strike_min_s)
 
 var host                        # ServerAnimals
@@ -38,7 +40,7 @@ var ping_ms: Callable           # (peer) -> the link's round trip in ms (ENet), 
 
 
 func handles(a: Dictionary) -> bool:
-	return (int(a["state"]) >= WARN and int(a["state"]) <= RECOVER) or int(a["state"]) == WARN_POP
+	return (int(a["state"]) >= WARN and int(a["state"]) <= RECOVER) or int(a["state"]) == WARN_POP or int(a["state"]) == STRIKE or int(a["state"]) == KICK
 
 
 func defends(a: Dictionary) -> bool:
@@ -120,7 +122,7 @@ func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
 		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 		return true
 
-	if state == CHARGE:
+	if state == CHARGE or state == STRIKE or state == KICK:
 		return true
 
 	_start_warn(a, at, warn_s, false)
@@ -244,13 +246,18 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		if a["timer"] <= 0.0:
+			var bluff: bool = _bluffs(a, def)   # decided once: a bluff is always a charge that stops short
+
+			if not bluff and _close_attack(a, def, near, d):
+				return
+
 			a["state"] = CHARGE
 			a["dir"] = a["heading"]   # locked now: the player can still step aside
 			a["ran"] = 0.0
 			a["charged_s"] = 0.0
 			a["hit"] = false
 			a.erase("late")
-			a["bluff"] = _bluffs(a, def)
+			a["bluff"] = bluff
 			# Its foe behind a wall: on a second try it charges for a way round the wall's end (a point near the foe it can see them from,
 			# in its own sight now) instead of into the wall again, then squares up and charges home from there (_way_round).
 			a["walled_start"] = not near.is_empty() and not near.has("dog") and host.wall_between(a["pos"], near["pos"])
@@ -264,6 +271,10 @@ func step(a: Dictionary, dt: float) -> void:
 					a["dir"] = atan2(round_to.z - a["pos"].z, round_to.x - a["pos"].x)
 					a["heading"] = float(a["dir"])
 
+		return
+
+	if state == STRIKE or state == KICK:
+		_step_close(a, def, near, dt)
 		return
 
 	if state == CHARGE:
@@ -398,6 +409,78 @@ func step(a: Dictionary, dt: float) -> void:
 		_calm(a, def)
 
 
+# A blow up close instead of a charge (Dave 23 Nov 2026: "not all animals charge they actually have actions built in to them"; "make sure to
+# use models that have the actions we need"): a warning that ends with its foe, a player, already at it ends in the kind's own close attack,
+# from its defend row (animals.json): "kick" (a donkey or a goat turns its back, KICK) when the player is within its kick's start_m, else
+# (a donkey has both and takes turns, kick first) "strike" (a swipe, a bite, a horn, a stomp, STRIKE) within the strike's start_m. Either is wound up where it stands for windup_s (the
+# client plays the model's own attack clip, timed to land then), and lands only on a player still within reach_m of its body in front of
+# it (behind it for a kick), inside arc_deg: stepping back or aside is the dodge. A bluff, a dog, or a foe farther off: the charge, as before.
+# True when it began one.
+func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -> bool:
+	if near.is_empty() or near.has("dog") or host.wall_between(a["pos"], near["pos"]):
+		return false
+
+	var body: float = AnimalContact.contact_m(str(a["sp"]))
+	var how: String = ""
+
+	var order: Array = ["kick", "strike"] if int(a.get("blows", 0)) % 2 == 0 else ["strike", "kick"]   # a kind with both takes turns, kick first
+
+	for kind in order:
+		if def.get(kind, null) is Dictionary and d <= body + float(def[kind].get("start_m", 1.5)):
+			how = kind
+			break
+
+	if how == "":
+		return false
+
+	var row: Dictionary = def[how]
+	var to: Vector3 = near["pos"]
+	a["state"] = KICK if how == "kick" else STRIKE
+	a["timer"] = float(row.get("windup_s", 0.7))
+	a["attack"] = how
+	a["blows"] = int(a.get("blows", 0)) + 1
+	a["hit"] = false
+	a["heading"] = atan2(to.z - a["pos"].z, to.x - a["pos"].x) + (PI if how == "kick" else 0.0)   # a kick turns its back on them
+	a["dir"] = a["heading"]   # locked: the dodge is stepping out of it
+	a["target"] = a["pos"]
+	a.erase("walled")   # no wall between: its recovery ends calm
+	return true
+
+
+# One step of STRIKE or KICK: it stands wound up; at windup_s the blow lands on its foe if they are still in reach and in its arc, judged once
+# their dodge has come back over the link (late_s, as a charge's); then it recovers (the row's recover_s).
+func _step_close(a: Dictionary, def: Dictionary, foe: Dictionary, dt: float) -> void:
+	var row: Dictionary = def.get(str(a.get("attack", "strike")), {})
+	a["timer"] = float(a["timer"]) - dt
+
+	if float(a["timer"]) > 0.0:
+		return
+
+	if not foe.is_empty() and not foe.has("dog") and float(a["timer"]) > -late_s(def, int(foe.get("peer", -1))):
+		return   # the blow is judged once the player has seen it come and their step has come back (late_s; 0 without fair_dodge)
+
+	for info in ([foe] if not foe.is_empty() and not foe.has("dog") else []):
+		if in_reach(a, row, info["pos"]) and hurt_player.is_valid():
+			a["hit"] = true
+			_land(a, def, int(info["peer"]), float(row.get("damage_x", 1.0)))
+
+	a["state"] = RECOVER
+	a["timer"] = float(row.get("recover_s", def.get("recover_s", 3.0)))
+	a.erase("attack")
+
+
+# Whether a close blow (`row`: strike or kick) from animal `a` reaches a player standing at `p`: within reach_m of its body (contact_m), level
+# with it, inside arc_deg either side of where it faces (a["dir"]: the way a kick's hind legs point), and not through a wall.
+func in_reach(a: Dictionary, row: Dictionary, p: Vector3) -> bool:
+	var to: Vector2 = Vector2(p.x - a["pos"].x, p.z - a["pos"].z)
+
+	if to.length() > AnimalContact.contact_m(str(a["sp"])) + float(row.get("reach_m", 1.0)) or absf(p.y - a["pos"].y) >= 2.5 or host.blow_blocked(a["pos"], p):
+		return false
+
+	var facing: float = float(a.get("dir", a["heading"])) + (PI if str(a.get("attack", "")) == "kick" else 0.0)   # a kick's legs point away from where it looks
+	return to.length() < 0.3 or absf(angle_difference(facing, to.angle())) <= deg_to_rad(float(row.get("arc_deg", 60.0)))
+
+
 # A way round a wall to `foe`: the nearest point on a ring round them (contact plus 1 m, then 2 m further) from which the foe is in sight
 # (no wall between) and which is in its own sight now, not inside a wall's margin. Vector3.INF when there is none (a long wall: it slides).
 # Cost: at most 32 wall checks, once a charge that sets off at a walled foe.
@@ -488,8 +571,8 @@ func _judge_late(a: Dictionary, def: Dictionary, dt: float) -> void:
 
 
 # The blow lands on `peer`: its damage (by level), the weapon's type of blow for an armed bandit, and the struck hook.
-func _land(a: Dictionary, def: Dictionary, peer: int) -> void:
-	var amount: float = float(def.get("damage", 25.0)) * host.level_x(a, "damage")   # a higher-level animal hits harder
+func _land(a: Dictionary, def: Dictionary, peer: int, damage_x: float = 1.0) -> void:
+	var amount: float = float(def.get("damage", 25.0)) * damage_x * host.level_x(a, "damage")   # a higher-level animal hits harder; a close blow its own share
 	var weapon: String = str(weapon_of.call(a)) if weapon_of.is_valid() else ""
 	# A bandit's blow cuts, pierces or batters as the weapon in his hand does (coordinator, 23 Nov 2026: every bandit blow counted blunt).
 	var landed: String
@@ -518,6 +601,7 @@ func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("round_to")
 	a.erase("wall_tries")
 	a.erase("late")
+	a.erase("attack")
 	a.erase("foe_dog")
 	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only

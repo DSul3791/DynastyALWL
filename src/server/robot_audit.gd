@@ -40,7 +40,7 @@ const STUCK_TARGET_M := 2.0
 # Standing there is the behaviour, with an old target kept (gate review of #1793): alert (server_animals ALERT, a grazer watching a player
 # in its alert ring), hidden, a wolf rolling or playing (server_wolves ROLL, PLAY), warning, recovering, sneaking, jaw-pop, a companion
 # sitting, lying (companions and grazers), a camp bandit sitting or asleep (server_bandits SIT, LIE).
-const STILL_STATES := [3, 5, 8, 9, 10, 12, 13, 16, 18, 19, 23, 24]
+const STILL_STATES := [3, 5, 8, 9, 10, 12, 13, 16, 18, 19, 23, 24, 25, 26]   # 25, 26: a blow up close or a kick, wound up where it stands
 const PACK_MOVING := ["prowl", "stalk", "rush"]   # a pack wolf's target is kept only in these phases (server_wolves.gd); waiting, feeding or guarding its den it stands
 const NEAR_EVERY_S := 60.0
 

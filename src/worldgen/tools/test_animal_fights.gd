@@ -274,7 +274,7 @@ func fight(sp: String, weapon: String, ping: int, read: int = 0) -> Dictionary:
 		# The server's own count of charges (a charge that landed no blow is a dodge).
 		var st: int = int(a["state"])
 
-		if st == BigGame.CHARGE and last_state != BigGame.CHARGE:
+		if st in [BigGame.CHARGE, BigGame.STRIKE, BigGame.KICK] and last_state != st:   # a close strike or kick is an attack too (its blows are in landed)
 			charges += 1
 
 		last_state = st
