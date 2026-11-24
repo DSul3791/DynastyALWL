@@ -1740,7 +1740,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		strike_seen[peer] = [b, count]   # protocol 155: when its screen showed the animals (0 from a client that sends none: judged now)
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
-		if (not admin_ok.is_valid() or admin_ok.call(peer)) and _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys; admin only, split A5: no station, no time) keeps the in-hand rule too (126)
+		if (not admin_ok.is_valid() or admin_ok.call(peer)) and _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys; admin only, split A5: no station, no time) keeps the tool rule too
 			recipes.craft(a, inv)
 	elif kind == Net.ACT_FALL:
 		_fall(peer, a)
@@ -1751,7 +1751,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_last_queue_act[peer] = now
 
 			if kind == Net.ACT_CRAFT_QUEUE:
-				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126), for a recipe that needs its tool in hand
+				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126; a kept tool counts from the pack now)
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -7225,7 +7225,7 @@ func _saw_slow(peer: int, recipe: Dictionary) -> float:
 		return 1.0
 
 	var inv = inventory_of(peer)
-	var slot: int = _tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the first one on the hotbar)
+	var slot: int = _craft_tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the hotbar's first, else the pack's)
 	var speed: float = float(table.entry(table.id_of(int(inv.numbers[slot]))).get("saw_speed", 1.0)) if slot >= 0 else 1.0
 	var slow: float = 1.0 / maxf(speed, 0.1)
 	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # a Sawbuck in reach speeds every hand-saw recipe (W-33)
@@ -11541,15 +11541,29 @@ func _tool_slot(inv, tool_class: String) -> int:
 	return -1
 
 
-# A recipe that keeps a tool needs it in hand (CraftStock.in_hand, Dave 17 Nov 2026): it crafts only while that tool, unbroken, is the item in the
-# right hand (`hand`, the pack slot the client names); otherwise says what to do and answers false. A log on the shoulder does not stop it (the
-# client stows the tool while a log rides there, but it stays the chosen hand slot). Any other recipe: true.
-func _hand_tool_ok(peer: int, inv, recipe: Dictionary, hand: int) -> bool:
-	if CraftStock.in_hand(recipe, table, inv, hand):
+# A recipe that keeps a tool needs it, unbroken, anywhere in the pack or on the hotbar (CraftStock.has_tool; Dave 24 Nov 2026: "if you have a knife
+# in you inventory or on your hotbar it should count", replacing the 17 Nov in-hand rule); otherwise says so and answers false. `_hand` (the slot
+# the client names in at.x, protocol 126) no longer matters. Any other recipe: true.
+func _hand_tool_ok(peer: int, inv, recipe: Dictionary, _hand: int) -> bool:
+	if CraftStock.has_tool(recipe, table, inv):
 		return true
 
-	_say(peer, "That needs %s in your hand: pick it on the hotbar, then craft" % CraftStock.hand_words(recipe, table))
+	_say(peer, "That needs %s in your pack" % CraftStock.hand_words(recipe, table))
 	return false
+
+
+# The slot of the tool a craft wears (wears_tool, the saw): the first on the hotbar, else the first anywhere in the pack (Dave 24 Nov 2026); -1 none.
+func _craft_tool_slot(inv, tool_class: String) -> int:
+	var slot: int = _tool_slot(inv, tool_class)
+
+	if slot >= 0:
+		return slot
+
+	for k in range(inv.slot_count):
+		if str(table.entry(table.id_of(inv.numbers[k])).get("tool_class", "")) == tool_class and not _is_broken(inv, k):
+			return k
+
+	return -1
 
 
 # _held_tool for a swing that needs this class, saying why nothing happened when the hand holds something else: the tool in hand is broken,
@@ -27134,7 +27148,7 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 
 # `variant` (SmithingRules code, 0 plain): Tempered and/or craftsmanship +1/+2, refused unless the stations beside the player allow it for this
 # recipe (craft_variants); its needs are scaled up and it takes longer (smithing.json).
-func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty)
+func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty; no longer decides anything)
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
@@ -27151,7 +27165,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 			_say(peer, "You have not worked out how to make %s yet: carry what it needs in your pack%s, then try again" % [table.in_sentence(str(recipe.get("name", "that"))), at_station])
 		return
 
-	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
+	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in the pack (Dave 24 Nov 2026), checked before any log is pulled onto the shoulder
 		return
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
@@ -27358,7 +27372,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
-# was told why, 2 when a part it would make needs a tool in hand that is not there (told why; the craft stops there), -1 when there is nothing to add (the plain craft
+# was told why, 2 when a part it would make needs a tool the pack lacks (told why; the craft stops there), -1 when there is nothing to add (the plain craft
 # goes on, or fails the old way).
 func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
@@ -27384,7 +27398,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 	if steps.size() == 1:
 		return -1   # nothing to make first: the plain path
 
-	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a carved Wooden bowl) needs that tool in hand too
+	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a carved Wooden bowl) needs that tool in the pack too
 		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
 			return 2   # refused, and said why: nothing else is tried (the plain path would only add "You do not have what that needs")
 
@@ -27743,11 +27757,11 @@ func _craft_tick(spent: float) -> void:
 			missing = int(keep[0])
 			break
 
-		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
+		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class in the pack (_craft_tool_slot).
 		var wears_tool: String = str(recipe.get("wears_tool", ""))
 
 		if wears_tool != "" and not free_entry:
-			tools_ok = tools_ok and inv != null and _tool_slot(inv, wears_tool) >= 0
+			tools_ok = tools_ok and inv != null and _craft_tool_slot(inv, wears_tool) >= 0
 
 		# A sealed batch (recipes.json ready_age, master s3.14 [D14]) takes only fresh produce: below half freshness it is refused, so maturing is not skipped.
 		var sealed: bool = float(recipe.get("ready_age", 0.0)) > 0.0
@@ -27810,7 +27824,7 @@ func _craft_tick(spent: float) -> void:
 					_goal_event(peer, "masterwork_made")
 
 			if wears_tool != "" and not free_entry:
-				_wear_tool(peer, inv, wears_tool, "craft")
+				_wear_slot(peer, inv, _craft_tool_slot(inv, wears_tool), "craft")
 
 			practice(peer, "craft", clampf(float(recipe.get("craft_s", 3.0)) / 3.0, 0.3, 2.0))   # a long craft teaches more than a quick one
 			head[1] = int(head[1]) - times

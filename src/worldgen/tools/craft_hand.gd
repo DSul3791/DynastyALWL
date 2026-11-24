@@ -27,10 +27,10 @@ static func at(items, peer: int, recipe_number: int) -> Vector3:
 			continue
 
 		for slot in range(inv.slot_count):
-			if CraftStock.in_hand(r, items.table, inv, slot):
+			if inv.on_hotbar(slot) and CraftStock.slot_holds_tool(r, items.table, inv, slot):
 				return Vector3(float(slot + 1), 0.0, 0.0)
 
-	if not CraftStock.hand_tools(recipe, items.table).is_empty():
-		print("CraftHand: no %s on the hotbar for %s: the craft will be refused" % [CraftStock.hand_words(recipe, items.table), str(recipe.get("id", ""))])   # a test that meant to craft shows why it did not
+	if not CraftStock.has_tool(recipe, items.table, inv):
+		print("CraftHand: no %s in the pack for %s: the craft will be refused" % [CraftStock.hand_words(recipe, items.table), str(recipe.get("id", ""))])   # a test that meant to craft shows why it did not
 
 	return Vector3.ZERO

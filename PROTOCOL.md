@@ -87,7 +87,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | 1 | ACT_DROP | a = slot, count = how many, at = where it lands | 10 |
 | 2 | ACT_PICKUP | a = world item id | 10 |
 | 3 | ACT_ADMIN_GIVE | a = item number, count (admin tool; tests only) | 10 |
-| 4 | ACT_CRAFT | a = recipe number (data/items/recipes.json); at.x = the held pack slot + 1 (126): a kept tool must be in hand | 10 |
+| 4 | ACT_CRAFT | a = recipe number (data/items/recipes.json); at.x = the held pack slot + 1 (126; since 24 Nov 2026 a kept tool counts anywhere in the pack, so the slot no longer matters) | 10 |
 | 5 | ACT_THROW | a = slot, at = aim direction (the server starts the throw from the player) | 10 |
 | 6 | ACT_PLACE | a = slot of a placeable item, at = where (a campfire kit becomes a fire) | 10 |
 | 7 | ACT_HIT | a = tree id, b = flora chunk x, count = flora chunk z, at.x = held pack slot + 1 (from 115): one blow on a standing tree with the axe in hand | 12 |
