@@ -97,7 +97,7 @@ func _init() -> void:
 	check(not items._asleep.has(1) and not items._asleep.has(2), "everyone is awake")
 	check(float(v1["energy"]) == 100.0 and float(items._strain[1]["s"]) == 0.0 and int(items._strain[1]["state"]) == 0, "and refreshed: energy full, no strain")
 	check(said.count("The night passes. You wake at dawn, refreshed.") == 2, "both are told")
-	var burnt: bool = not items._items.has(fire) or not items.fire_is_lit(int(items._items[fire]["fire"]["state"]))
+	var burnt: bool = not items._items.has(fire) or not ItemsScript.fire_is_lit(int(items._items[fire]["fire"]["state"]))
 	check(burnt, "the campfire with 10 minutes of fuel burnt out during the night")
 	var ate: float = fed0 - float(v1["fed"])
 	var drank: float = wet0 - float(v1["wet"])
