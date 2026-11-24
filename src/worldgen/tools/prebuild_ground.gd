@@ -19,7 +19,8 @@ extends SceneTree
 #                    (blocks already in a part are skipped). The parts are deleted once joined, so a run after a finished one builds
 #                    everything again. While joining, the parts and the pack both stand: about twice the pack's size on disk.
 #   --stop-after=S   with --processes: stop every copy after S seconds and print "prebuild_ground: STOPPED after S s: N blocks made,
-#                    R blocks/s" (a timing try: Dave 24 Nov 2026, "run the 10 test for 2 minutes ... then stop"); nothing is joined
+#                    R blocks/s" and a START-UP line (seconds until every copy made a block, then the steady rate to compare between
+#                    copy counts) (a timing try: Dave 24 Nov 2026, "run the 10 test for 2 minutes ... then stop"); nothing is joined
 #   --area=X,Z,M     only the M-metre square with corner X,Z (world metres) inside the tiles: for tests and quick looks
 #   --plants=0       ground only (default 1: the trees and plants of every 256 m chunk too, in the pack's flora_pack/ folder,
 #                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped; with
@@ -527,9 +528,24 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 		pids.append(pid)
 
 	var last_print: int = 0
+	var ready_at: int = 0        # --stop-after: when every copy had made its first block (start-up over), and the blocks by then
+	var ready_made: int = 0
 
 	while pids.any(func(pid): return OS.is_process_running(pid)):
 		var now: int = Time.get_ticks_msec()
+
+		if _stop_after > 0.0 and ready_at == 0:
+			var sum: int = 0
+			var working: int = 0
+
+			for k in range(processes):
+				var bits: PackedStringArray = _progress_of(parts_dir, k)
+				sum += int(bits[3]) if bits.size() == 4 else 0
+				working += 1 if bits.size() == 4 and int(bits[3]) > 0 else 0
+
+			if working == processes:
+				ready_at = now
+				ready_made = sum
 
 		if pids.any(func(pid): return not OS.is_process_running(pid) and OS.get_process_exit_code(pid) != 0):
 			push_error("prebuild_ground: a copy stopped with an error (logs in %s/part_K/log.txt); the others are stopped too; run the same command again to go on" % ProjectSettings.globalize_path(parts_dir))
@@ -563,6 +579,13 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 
 			var spent: float = float(Time.get_ticks_msec() - started) / 1000.0
 			print("prebuild_ground: STOPPED after %.0f s: %d blocks made by %d copies, %.0f blocks/s (as last reported by the copies, at most 2 s old; the first seconds are each copy reading the tiles)" % [spent, made, processes, float(made) / maxf(spent, 0.001)])
+
+			if ready_at > 0 and Time.get_ticks_msec() - ready_at > 5000:
+				var working_s: float = float(Time.get_ticks_msec() - ready_at) / 1000.0
+				print("prebuild_ground: START-UP %.0f s until every copy was making blocks; after that %.0f blocks/s, %.0f a copy (the rate to compare between copy counts)" % [float(ready_at - started) / 1000.0, float(made - ready_made) / working_s, float(made - ready_made) / working_s / float(processes)])
+			else:
+				print("prebuild_ground: START-UP not over: not every copy made a block in time, so no steady rate")
+
 			return 0
 
 		OS.delay_msec(1000)
