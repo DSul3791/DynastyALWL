@@ -587,6 +587,14 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var ore_set: Dictionary = _ores_touching(column_tile, block_box) if lod <= _ore_max_lod else {}
 	var has_ore: bool = not ore_set.is_empty() and (not ore_set["shapes"].is_empty() or _any_layers(ore_set))
 	var block_bodies: Dictionary = _bodies_touching(column_tile, block_box)
+	# Per-column lookups kept with the heights (_column_lookups): the same for every block of the column.
+	var kept: Array = _column_lookups(columns)
+	var kept_sample: PackedInt32Array = kept[0]
+	var kept_cover: PackedFloat64Array = kept[1]
+	var kept_offset: PackedFloat64Array = kept[2]
+	var kept_soil: PackedInt32Array = kept[3]
+	var kept_look: PackedInt32Array = kept[4]
+	var kept_has: PackedByteArray = kept[5]   # bit 1 cover, 2 offset, 4 soil, 8 look, 16 sample
 
 	for k in range(nz):
 		for i in range(nx):
@@ -618,15 +626,30 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 			var offset_m: float = NAN
 
 			if lookups_shared and not data.placeholder:
-				sample = data.nearest(wx[i + 1], wz[k + 1])
+				var has: int = kept_has[index]
+
+				if has & 16 == 0:
+					kept_sample[index] = data.nearest(wx[i + 1], wz[k + 1])
+					has |= 16
+
+				sample = kept_sample[index]
 
 				# Bedrock up through the block's top: the rock fill below writes every voxel's material,
 				# so the surface look is not worked out (the soil is not used either).
 				if buried_columns_skipped:
-					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
+					if has & 1 == 0:
+						kept_cover[index] = data.cover_at(wx[i + 1], wz[k + 1])
+						has |= 1
+
+					cover_m = kept_cover[index]
 
 					if int(floor((h - cover_m - oy) / sf)) >= ny - 1:
-						offset_m = data.offset_at(wx[i + 1], wz[k + 1])
+						if has & 2 == 0:
+							kept_offset[index] = data.offset_at(wx[i + 1], wz[k + 1])
+							has |= 2
+
+						kept_has[index] = has
+						offset_m = kept_offset[index]
 						_fill_rock_column(buffer, data, block_bodies.get(data.tile, []), i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, sample, -1, cover_m, offset_m)
 
 						if has_ore:
@@ -634,13 +657,30 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 						continue
 
-				soil_id = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
+				if has & 4 == 0:
+					kept_soil[index] = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
+					has |= 4
+
+				soil_id = kept_soil[index]
 
 				if soil_id <= 0 or h >= oy:
-					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
-					offset_m = data.offset_at(wx[i + 1], wz[k + 1])
+					if has & 1 == 0:
+						kept_cover[index] = data.cover_at(wx[i + 1], wz[k + 1])
+						has |= 1
 
-				buffer.fill_area(_surface_material_known(data, sample, _wetland_look(data, soil_id, wx[i + 1], wz[k + 1]), cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
+					if has & 2 == 0:
+						kept_offset[index] = data.offset_at(wx[i + 1], wz[k + 1])
+						has |= 2
+
+					cover_m = kept_cover[index]
+					offset_m = kept_offset[index]
+
+				if has & 8 == 0:
+					kept_look[index] = _wetland_look(data, soil_id, wx[i + 1], wz[k + 1])
+					has |= 8
+
+				kept_has[index] = has
+				buffer.fill_area(_surface_material_known(data, sample, kept_look[index], cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 			else:
 				buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 
@@ -685,6 +725,7 @@ func _heights(origin: Vector3i, nx: int, nz: int, sf: float, detailed: bool) -> 
 	if kept[2] == null:
 		var plain: Array = kept[1]
 		var copy: Array = plain.duplicate()   # its own heights: the detail is added in place
+		copy.resize(8)   # and its own lookups (_column_lookups): the soil depends on the height
 		copy[2] = (plain[2] as PackedFloat32Array).duplicate()
 		var extremes: Array = _add_detail(copy, nx, nz, sf)
 		copy[6] = extremes[0]
@@ -692,6 +733,32 @@ func _heights(origin: Vector3i, nx: int, nz: int, sf: float, detailed: bool) -> 
 		kept[2] = copy
 
 	return kept[2]
+
+
+# The per-column lookups of the heights `columns` (_heights): each column's nearest sample, cover, layer offset, ground soil and wetland
+# look depend only on the column and its height, so they are worked out once for all the blocks of a column and kept with its heights
+# (24 Nov 2026: the column's ground material was a fifth of a block's time). [sample, cover, offset, soil, look, which are known].
+# Each thread keeps its own heights, so only the thread that made them writes these.
+func _column_lookups(columns: Array) -> Array:
+	if columns.size() > 8:
+		return columns[8]
+
+	var count: int = (columns[2] as PackedFloat32Array).size()
+	var sample: PackedInt32Array = PackedInt32Array()
+	sample.resize(count)
+	var cover: PackedFloat64Array = PackedFloat64Array()
+	cover.resize(count)
+	var offset: PackedFloat64Array = PackedFloat64Array()
+	offset.resize(count)
+	var soil: PackedInt32Array = PackedInt32Array()
+	soil.resize(count)
+	var look: PackedInt32Array = PackedInt32Array()
+	look.resize(count)
+	var has: PackedByteArray = PackedByteArray()
+	has.resize(count)
+	var lookups: Array = [sample, cover, offset, soil, look, has]
+	columns.append(lookups)
+	return lookups
 
 
 # The heights of a block's columns plus a one-column ring for slopes, before the detail noise: [wx, wz, heights, the tile of each
