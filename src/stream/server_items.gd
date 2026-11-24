@@ -20959,10 +20959,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 	# points at the signs (fish_signs: jumps, ripples, dark fish) instead of "stand still" or "you miss". The odds are not changed.
 	var hit: Dictionary = school_hit(at, float(cfg.get("school_reach_m", 1.0)))
 	var no_school: bool = bool(hit.get("active", false)) and float(hit.get("factor", 1.0)) < float(cfg.get("school_factor_min", 0.5))
-	var reported: Array = _peer_move.get(peer, [Vector3.ZERO, 0])
-	var still: bool = float(_moving.get(peer, 0.0)) <= float(cfg.get("still_below", 0.25)) or Vector2(reported[0].x, reported[0].z).length() < float(cfg.get("still_mps", 0.3))
-
-	if not still:
+	if float(_moving.get(peer, 0.0)) > float(cfg.get("still_below", 0.25)):
 		_say(peer, str(cfg.get("say_no_fish", "")) if no_school and cfg.has("say_no_fish") else str(cfg.get("say_move", "")))
 		return
 

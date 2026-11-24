@@ -279,8 +279,7 @@ func _init() -> void:
 
 # Spear and net on a school (24 Nov 2026, Dave: "I dont actually see any fish or signs of fish" and "will we also be able to thow the net at the
 # school of fish"): a spear jab with no school near says so plainly and points at the signs, on a miss and when moving; at a school a moving
-# player is still told to stand still; a player whose last report says it stands is still even before the smoothed walk has died down; a jab
-# into a school takes that school's fish. The net lands where the look meets the water, 2 to 7 m out.
+# player is still told to stand still; a jab into a school takes that school's fish. The net lands where the look meets the water, 2 to 7 m out.
 func _spear_and_net() -> void:
 	var dir: String = "user://test_fish_signs"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -369,7 +368,7 @@ func _spear_and_net() -> void:
 	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3(c.x, 10.0, c.y))
 	check(said == [str(cfg["spear"]["say_move"])], "walking at a school, it says stand still (%s)" % str(said))
 	items.report_position(1, Vector3(c.x - 1.5, 10.0, c.y), Vector3.ZERO)
-	items._moving[1] = 0.6   # stopped a moment ago: the smoothed walk has not died down, but the last report says it stands
+	items._moving[1] = 0.0
 	var wear0: int = inv.wear[slot]
 	said.clear()
 	var got: Dictionary = {}
@@ -384,14 +383,14 @@ func _spear_and_net() -> void:
 
 	for n in 40:
 		items._last_fish.clear()
-		items._moving[1] = 0.6
+		items._moving[1] = 0.0
 		items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3(c.x, 10.0, c.y))
 
 	for f in fish_ids:
 		if items.table.number_of(f) > 0 and inv.count_of(items.table.number_of(f)) > 0:
 			got[f] = inv.count_of(items.table.number_of(f))
 
-	check(inv.wear[slot] > wear0 and not said.has(str(cfg["spear"]["say_move"])), "a player whose last report says it stands can jab at once")
+	check(inv.wear[slot] > wear0 and not said.has(str(cfg["spear"]["say_move"])), "a player standing still jabs")
 	check(not said.has(no_fish), "jabs into a school never say there are no fish")
 	check(got.size() == 1 and got.has(centres[0][2]), "a jab into a school takes that school's fish (%s, school of %s)" % [str(got), centres[0][2]])
 

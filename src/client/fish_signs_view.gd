@@ -181,7 +181,6 @@ func _play_sound(at: Vector3, size: int, big: bool) -> void:
 	player.stream = _streams[randi() % _streams.size()]
 	player.volume_db = float(SOUND_DB[size]) + (2.0 if big else 0.0) - 4.0 * clampf(rain, 0.0, 1.0)
 	player.pitch_scale = (0.85 if big else 1.05) * randf_range(0.94, 1.06)
-	player.panning_strength = Sound3D.PAN_FULL
 	player.global_position = at
 	player.finished.connect(player.queue_free)
 	player.play()
