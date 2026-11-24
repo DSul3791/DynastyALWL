@@ -156,23 +156,6 @@ static func grid_from_corner(w: int, d: int, step: float, corner: Vector2, yaw_d
 	return corner + across * s_across * float(w - 1) * 0.5 + along * s_along * float(d - 1) * 0.5
 
 
-# Where the grid's centre goes for an aim: round the aim, moved so the point nearest the aim lands on `anchor` (a bed's centre, or a metre cell's centre
-# for an unturned 1 m grid) when one is given (a Vector2), so a grid lines up with the beds already there.
-static func grid_centre(w: int, d: int, step: float, aim: Vector2, yaw_deg: int, anchor: Variant = null) -> Vector2:
-	if typeof(anchor) != TYPE_VECTOR2:
-		return aim
-
-	var nearest: Vector2 = aim
-	var best: float = INF
-
-	for p in grid_points(w, d, step, aim, yaw_deg):
-		if p.distance_squared_to(aim) < best:
-			best = p.distance_squared_to(aim)
-			nearest = p
-
-	return aim + (anchor as Vector2 - nearest)
-
-
 # Whether a flat point lies on a bed or plot: its square footprint (half side `half`) turned `yaw_deg` round `centre`.
 static func on_square(point: Vector2, centre: Vector2, half: float, yaw_deg: float) -> bool:
 	var local: Vector2 = (point - centre).rotated(deg_to_rad(yaw_deg))

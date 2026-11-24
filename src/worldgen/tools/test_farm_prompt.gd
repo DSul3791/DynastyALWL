@@ -70,9 +70,9 @@ func _init() -> void:
 
 	check(not winter_any and not FarmRules.plantable_now(crops, "hazel_bush", "bush", "winter") and not FarmRules.plantable_now(crops, "oak_seed", "tree", "winter"), "plantable_now: nothing at all in winter (the ground is frozen hard)")
 	# The hoe grid (Dave 14 Nov 2026): width by length, turned by the wheel, spaced for the plant; unturned 1 m grids sit on the metre cells.
-	var one: Array = FarmRules.grid_points(1, 1, 1.0, FarmRules.grid_centre(1, 1, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
-	check(one.size() == 1 and one[0].is_equal_approx(Vector2(3.5, -2.5)), "hoe grid: one point, moved onto the aimed metre cell's centre (%s)" % str(one))
-	var even: Array = FarmRules.grid_points(2, 3, 1.0, FarmRules.grid_centre(2, 3, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
+	var one: Array = FarmRules.grid_points(1, 1, 1.0, FarmRules.grid_from_corner(1, 1, 1.0, Vector2(3.5, -2.5), 0, Vector2(0.0, -1.0)), 0)
+	check(one.size() == 1 and one[0].is_equal_approx(Vector2(3.5, -2.5)), "hoe grid: one point, on the aimed metre cell's centre (%s)" % str(one))
+	var even: Array = FarmRules.grid_points(2, 3, 1.0, FarmRules.grid_from_corner(2, 3, 1.0, Vector2(3.5, -2.5), 0, Vector2(0.0, -1.0)), 0)
 	check(even.size() == 6 and even.all(func(c): return is_equal_approx(fposmod(c.x, 1.0), 0.5) and is_equal_approx(fposmod(c.y, 1.0), 0.5)) and even.any(func(c): return c.is_equal_approx(Vector2(3.5, -2.5))), "hoe grid: 2 by 3 is 6 points, every one on a cell centre, one on the aimed cell (%s)" % str(even))
 	var xs: Dictionary = {}
 	var zs: Dictionary = {}

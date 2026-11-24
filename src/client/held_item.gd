@@ -3387,6 +3387,8 @@ func _garden_preview() -> void:
 		_garden_dot = SphereMesh.new()   # Plant: a dot exactly where each seed or plant goes (Dave 24 Nov 2026), not a square
 		_garden_dot.radius = 0.07
 		_garden_dot.height = 0.14
+		_garden_dot.radial_segments = 8   # a hundred dots stay cheap
+		_garden_dot.rings = 4
 
 	var dots: bool = hoe_mode == "garden"
 
@@ -3409,7 +3411,7 @@ func _garden_preview() -> void:
 			continue
 
 		var on_bed: bool = _inv.bed_id_at(Vector3(flat.x, y, flat.y)) != 0
-		mark.global_position = Vector3(flat.x, y + (0.35 if on_bed else 0.05), flat.y)   # over a bed or plot: above its frame
+		mark.global_position = Vector3(flat.x, y + ((0.3 if on_bed else 0.08) if dots else (0.35 if on_bed else 0.05)), flat.y)   # over a bed or plot: above its frame
 		mark.rotation.y = deg_to_rad(float(request.get("yaw", garden_yaw)))   # square with the grid (a seed grid turns with the bed it is on)
 		mark.mesh = _garden_dot if dots else _garden_box
 		mark.scale = Vector3.ONE if dots else Vector3(side, 1.0, side)
@@ -3419,7 +3421,6 @@ func _garden_preview() -> void:
 			state = int(cells[n]) if n < cells.size() else (1 if int(known["state"]) != 0 else 0)
 
 		if dots:
-			mark.global_position.y = y + (0.3 if on_bed else 0.08)
 			mark.material_override = _garden_mark_ok if state == 1 else _garden_mark_bad   # green where the seeds reach, red past them (and where nothing can go)
 		else:
 			mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
