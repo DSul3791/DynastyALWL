@@ -98,7 +98,7 @@ const SOIL_SURFACE := {
 }
 const SURFACE_DB := {
 	"grass": -15.0, "dirt": -10.0, "sand": -11.0, "gravel": -9.0, "stone": -8.0,
-	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "ice": -9.0, "water": -10.0,
+	"leaves": -6.0, "mud": -16.0, "snow": -11.0, "ice": -9.0, "water": -10.0,
 	"grass_tall": -14.0, "bushes": -13.0,
 }
 # Exposed rock under the soles (rock id = material - MATERIAL_ROCK; data/tables/rocks.json):

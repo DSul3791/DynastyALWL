@@ -21,7 +21,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/gear/"
 
 const BODY := ["plate", "chain", "leather", "cloth"]      # heaviest first
 const FOOTWEAR := ["iron", "hobnail"]
-const LAYER_DB := {"cloth": -30.0, "leather": -28.0, "chain": -24.0, "plate": -20.0, "hobnail": -26.0, "iron": -22.0}
+const LAYER_DB := {"cloth": -40.0, "leather": -28.0, "chain": -24.0, "plate": -20.0, "hobnail": -26.0, "iron": -22.0}
 const GAIT_DB := [0.0, 3.0, 6.0]                          # walk, jog, run
 const SURFACE_DB := {"stone": 3.0, "gravel": 2.0, "sand": -2.0, "dirt": -3.0, "leaves": -4.0, "grass": -5.0, "grass_tall": -6.0,
 	"bushes": -6.0, "mud": -7.0, "snow": -9.0, "water": -9.0}
