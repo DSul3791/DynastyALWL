@@ -341,10 +341,10 @@ void fragment() {
 	// water the gap is taken from the water's own depth plus the lift instead, smooth across the quads.
 	float lifted = point_grid > 0.5 ? smoothstep(0.3, 1.0, length(t.gb)) * smoothstep(0.0, 0.05, depth) : 0.0;
 	through = mix(through, depth + chunk_lift, lifted);
-	// The contact fade is for a bank, where the sheet meets the ground; where the sheet itself holds water (from 3 to 12 cm) there is no bank to hide,
+	// The contact fade is for a bank, where the sheet meets the ground; where the live window's sheet itself holds water (from 3 to 12 cm) there is no bank to hide,
 	// and looking down on a shallow reach `through` is short, so the fade took the water away (Dave's play-test 24 Nov 2026, a reedy river at
 	// x 57864 z 71571 on Medium: "looks like I can see right under the water": the near water was about 15 percent water colour, the far water blue).
-	float contact = max(smoothstep(0.0, contact_m, through), smoothstep(0.03, 0.12, depth));
+	float contact = max(smoothstep(0.0, contact_m, through), smoothstep(0.03, 0.12, depth) * (1.0 - point_grid));   // the live window's depth is the water's own; a chunk sheet's is a stand-in (1 m in, 0.3 m at the shore), so its bank keeps the fade
 
 	// Colour by depth, a sky reflection by angle.
 	// The cloud after rain clears on its own curve, running water faster than still (water_look_after_rain.md 1).

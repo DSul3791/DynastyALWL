@@ -10,7 +10,7 @@ extends SceneTree
 
 const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
 
-const CONTACT_LINE := "float contact = max(smoothstep(0.0, contact_m, through), smoothstep(0.03, 0.12, depth));"
+const CONTACT_LINE := "float contact = max(smoothstep(0.0, contact_m, through), smoothstep(0.03, 0.12, depth) * (1.0 - point_grid));"
 const ALPHA_LINE := "ALPHA = clamp(max(max(0.45 + 0.5 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;"
 const THICK_LINE := "float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / (clear_m * (1.0 - 0.6 * look_v2 * mud_here)));"
 
@@ -31,7 +31,7 @@ func uniform_default(name: String) -> float:
 
 
 # Still, clear water `depth` deep seen at `down` degrees below the level (through = depth / sin): the sheet's alpha as the shader works it out,
-# away from a shore and a window edge (shore, edge 1).
+# away from a shore and a window edge (shore, edge 1). contact_rule: the live window (its depth is the water's own); false: a chunk sheet.
 func still_alpha(depth: float, down: float, contact_rule: bool) -> float:
 	var through: float = depth / sin(deg_to_rad(down))
 	var thick: float = 1.0 - exp(-minf(through, depth * 3.0 + 0.2) / uniform_default("clear_m"))
@@ -54,6 +54,7 @@ func _init() -> void:
 		check(now >= float(row[2]), "%.2f m of still water seen %d degrees down: %.0f %% water colour over the bed (at least %.0f)" % [float(row[0]), int(row[1]), now * 100.0, float(row[2]) * 100.0])
 
 	check(still_alpha(0.03, 60.0, true) < 0.3, "a 3 cm film at the bank still fades into the ground (%.0f %%): no hard line" % (still_alpha(0.03, 60.0, true) * 100.0))
+	check(still_alpha(0.3, 60.0, false) < still_alpha(0.3, 60.0, true) and still_alpha(1.0, 80.0, false) > 0.7, "a chunk sheet (its depth a stand-in) keeps the bank fade as before: a 0.3 m stand-in at the shore seen from above %.0f %%, a 1 m inside %.0f %%" % [still_alpha(0.3, 60.0, false) * 100.0, still_alpha(1.0, 80.0, false) * 100.0])
 	check(still_alpha(2.0, 30.0, true) > 0.9, "deep water hides its bed (%.0f %%)" % (still_alpha(2.0, 30.0, true) * 100.0))
 
 	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
