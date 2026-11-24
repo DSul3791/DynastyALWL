@@ -98,6 +98,23 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	check(not v._bodies.has(8) and is_instance_valid(shot_node) and not shot_node.is_queued_for_deletion(), "a body killed by a hit leaves the rows and is still drawn as it falls")
 	check(not v._bodies.has(4) and not v._bodies.has(1), "a body that walks out of the rows goes")
 
+	# A close blow (Dave 23 Nov 2026: "not all animals charge"): a bear warning (10) that turns to a strike (25) plays its strike clip once,
+	# sped so the blow (HIT_AT of the clip) lands at the bear's windup_s; the next strike is its second clip. No bite plays as it ends.
+	var striker: Dictionary = body(v, 9, {"0": ["Idle", 4.0], "strike": ["Attack_MeleeLeft_once", 2.0], "strike2": ["Attack_SwingForward_once", 1.6], "bite": ["Attack_BiteForward_once", 2.4]})
+	striker["state"] = 10
+	striker["kind"] = "bear"
+	var s_player: AnimationPlayer = (striker["node"] as Node3D).get_meta("player")
+	var windup: float = AnimalViewScript.windup_s("bear", "strike")
+	v.on_rows([[9, 14, Vector3.ZERO, 0.0, 25, 1200]], 1200)
+	check(s_player.assigned_animation == "Attack_MeleeLeft_once" and absf(s_player.speed_scale - AnimalViewScript.HIT_AT * 2.0 / windup) < 0.001, "a strike plays the strike clip sped to land at %.2f s (%s at %.2f)" % [windup, s_player.assigned_animation, s_player.speed_scale])
+	check(striker.has("once_until") and float(striker["once_until"]) - v._t <= 2.0 / s_player.speed_scale + 0.001, "and holds the state's clip off until it ends")
+	striker.erase("once_until")
+	v.on_rows([[9, 14, Vector3.ZERO, 0.0, 12, 1300]], 1300)
+	check(not striker.has("once_until"), "a strike ending plays no bite")
+	v.on_rows([[9, 14, Vector3.ZERO, 0.0, 25, 1400]], 1400)
+	check(s_player.assigned_animation == "Attack_SwingForward_once", "the next strike is the second clip (%s)" % s_player.assigned_animation)
+	check(absf(windup - 0.7) < 0.001 and absf(AnimalViewScript.windup_s("donkey", "kick") - 0.8) < 0.001, "the wind-ups come from animals.json (bear strike %.2f s, donkey kick %.2f s)" % [windup, AnimalViewScript.windup_s("donkey", "kick")])
+
 	v.queue_free()
 	print("test_animal_once: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
