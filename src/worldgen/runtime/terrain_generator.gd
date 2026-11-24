@@ -599,6 +599,10 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 # The block's columns and their one-column ring all lie on tiles with no file (open ocean, not a stand-in for a file that would not load).
 func _open_sea_block(origin: Vector3i, lod: int, n: int) -> bool:
 	var sf: float = float(1 << lod)
+
+	if float(n + 2) * sf >= tile_size_m:
+		return false   # a block this coarse could reach past the next tile, where the four corners would not see a baked tile between them
+
 	var xs: Array = [wrap_x(float(origin.x) - sf), wrap_x(float(origin.x) + float(n) * sf)]
 	var zs: Array = [wrap_x(float(origin.z) - sf), wrap_x(float(origin.z) + float(n) * sf)]
 	_mutex.lock()

@@ -93,6 +93,12 @@ func _init() -> void:
 	check(not generator._open_sea.is_empty() and generator._open_sea.size() <= GeneratorScript.OPEN_SEA_KEPT_MAX, "kept blocks stay few (%d)" % generator._open_sea.size())
 	generator.forget_tiles()
 	check(generator._open_sea.is_empty(), "forget_tiles drops the kept sea blocks (a bake may add a tile there)")
+	# Tiles not read yet (and stand-ins for failed reads, never kept in _tiles) are not open sea: the block is made as before.
+	var inside: Vector3i = Vector3i(int(7.5 * tile_m), 0, int(7.5 * tile_m))   # the middle of open-ocean tile 7_7
+	check(not generator._open_sea_block(inside, 0, 16), "a tile not read yet is not taken for open sea")
+	generator.surface_height(float(inside.x), float(inside.z))
+	check(generator._open_sea_block(inside, 0, 16), "once read, the same block is open sea")
+	check(not generator._open_sea_block(inside, 10, 16), "a block about as wide as a tile is never taken for open sea")
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
