@@ -161,6 +161,8 @@ and 450-650 h on his PC. Open ocean past the baked tiles (no tile file, flat at 
 level), so it can be served from a tiny pattern exactly, like the air table (follow-up, after the block-maker hot spots). Dave (12:19 AM):
 "I do plan on them diving on shipwrecks and exploring under sea caves and such." So the sea floor inside the planned tiles stays real
 terrain; shipwrecks and undersea caves are later purpose-made places for the generator, like caves and ruins.
+Scope (Dave 24 Nov 2026, 12:21 AM): "we don't have to worry about the whole build right now just the parts we are working on and
+testing. but we should always struggle to optimize the process knowing its going to get bigger".
 
 The plan as first written follows.
 
