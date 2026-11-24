@@ -168,6 +168,10 @@ func _init() -> void:
 	fd["plan_ms"] = Time.get_ticks_msec()
 	fd["moving"] = false
 	check(not row_of(f, fid).any(func(v): return v is Vector2), "a standing animal's row has no plan")
+	# A standing animal a player walks into steps out (make_way): its plan is that step, not an older walk goal.
+	fd["plan_to"] = Vector3(-30.0, GROUND, 0.0)
+	var stepped: bool = f.make_way(fd, Vector3(0.2, GROUND, 0.0), 0.1)
+	check(stepped and (fd["plan_to"] as Vector3).is_equal_approx(fd["pos"]), "a deer stepping out of a player plans that step (%s, at %s)" % [str(fd["plan_to"]), str(fd["pos"])])
 
 	print("test_hunt_feedback: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

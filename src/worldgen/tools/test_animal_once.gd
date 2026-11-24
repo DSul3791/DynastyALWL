@@ -117,6 +117,12 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 
 	check(AnimalViewScript.plan_of([1, 2, Vector3.ZERO, 0.0, 1, 100, Vector3.ONE, Vector2(3.0, 4.0), 0.5]) == Vector2(3.0, 4.0) and AnimalViewScript.plan_of([1, 2, Vector3.ZERO, 0.0, 1, 100, 0.5]) == null, "a row's plan is the Vector2 after its six fields (protocol 168), none without one")
 
+	# An older row out of order (dropped by push_row) leaves the newer plan on the body (protocol 168).
+	var walker: Dictionary = body(v, 10, {"0": ["Idle", 4.0]})
+	v.on_rows([[10, 2, Vector3.ZERO, 0.0, 0, 2000, Vector2(5.0, 5.0)]], 2000)
+	v.on_rows([[10, 2, Vector3.ZERO, 0.0, 0, 1900, Vector2(1.0, 1.0)]], 1900)
+	check(walker.get("plan", null) == Vector2(5.0, 5.0), "an older row out of order leaves the newer plan (%s)" % str(walker.get("plan", null)))
+
 	v.queue_free()
 	print("test_animal_once: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
