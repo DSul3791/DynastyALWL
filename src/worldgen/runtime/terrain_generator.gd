@@ -46,6 +46,7 @@ const ORE_VEIN := 3
 const ORE_PLACER := 4
 const ORE_LAYER := 5
 const ORE_SCATTER := 6
+const AIR_BLOCK := 16                  # the server's block size in voxels (server_block_store.gd BLOCK_SIZE), for the air table
 
 var tiles_dir: String = ""
 var tile_size_m: float = 15360.0
@@ -546,93 +547,25 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	buffer.fill(0, Layout.CHANNEL_RESOURCE)
 	buffer.fill(Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT, Layout.CHANNEL_MATERIAL)
 
-	# Heights on the block's columns plus a one-column ring for slopes.
-	var wx: PackedFloat32Array = PackedFloat32Array()
-	var wz: PackedFloat32Array = PackedFloat32Array()
-	wx.resize(nx + 2)
-	wz.resize(nz + 2)
-
-	for i in range(nx + 2):
-		wx[i] = wrap_x(float(origin.x) + float(i - 1) * sf)
-
-	for k in range(nz + 2):
-		wz[k] = wrap_x(float(origin.z) + float(k - 1) * sf)
-
+	# Heights on the block's columns plus a one-column ring for slopes (_column_heights), with the detail noise only near the surface.
+	var columns: Array = _column_heights(origin, nx, nz, sf)
+	var wx: PackedFloat32Array = columns[0]
+	var wz: PackedFloat32Array = columns[1]
 	var row: int = nx + 2
-	var hs: PackedFloat32Array = PackedFloat32Array()
-	hs.resize(row * (nz + 2))
-	var column_tile: Array = []
-	column_tile.resize(row * (nz + 2))
-	var last_coord: Vector2i = Vector2i(1 << 30, 0)
-	var last_data = null
-	var h_min: float = INF
-	var h_max: float = -INF
-	var wet: PackedFloat64Array = PackedFloat64Array()   # wet_at of each column, when one tile holds them all
-	var one_tile = null
-
-	if heights_gridded:
-		var first: Vector2i = Vector2i(int(floor(wx[0] / tile_size_m)), int(floor(wz[0] / tile_size_m)))
-
-		# Columns that do not cross the world's wrap (rising) and start and end on the same tile all lie on it.
-		if wx[row - 1] > wx[0] and wz[nz + 1] > wz[0] and first == Vector2i(int(floor(wx[row - 1] / tile_size_m)), int(floor(wz[nz + 1] / tile_size_m))):
-			one_tile = get_tile(first)
-
-			if one_tile.placeholder:
-				one_tile = null
-
-	if one_tile != null:
-		var inner: PackedFloat64Array = PackedFloat64Array()
-		hs = one_tile.heights_grid(wx, wz, wet, inner)
-		column_tile.fill(one_tile)
-		h_min = inner[0]
-		h_max = inner[1]
-
-	for k in range(nz + 2 if one_tile == null else 0):
-		var tz: int = int(floor(wz[k] / tile_size_m))
-
-		for i in range(nx + 2):
-			var coord: Vector2i = Vector2i(int(floor(wx[i] / tile_size_m)), tz)
-
-			if coord != last_coord:
-				last_coord = coord
-				last_data = get_tile(coord)
-
-			var index: int = k * row + i
-			column_tile[index] = last_data
-			var h: float = last_data.height_at(wx[i], wz[k])
-			hs[index] = h
-
-			if i > 0 and k > 0 and i <= nx and k <= nz:
-				h_min = minf(h_min, h)
-				h_max = maxf(h_max, h)
+	var hs: PackedFloat32Array = columns[2]
+	var column_tile: Array = columns[3]
+	var h_min: float = columns[6]
+	var h_max: float = columns[7]
 
 	# Detail noise only matters near the surface: skip it for blocks well
 	# above or below the ground.
 	var near_ground: bool = oy - _detail_max <= h_max + 4.0 * _band * sf and y_top + _detail_max >= h_min - 4.0 * _band * sf
 
 	if near_ground and _detail_max > 0.0:
-		h_min = INF
-		h_max = -INF
-
-		var grid: PackedFloat32Array = _detail_grid(wx[0], wz[0], row, nz + 2, sf)
-
-		for k in range(nz + 2):
-			for i in range(nx + 2):
-				var index: int = k * row + i
-				var data = column_tile[index]
-				var extra: float = 0.0
-
-				if grid.is_empty():
-					extra = _detail_at(data, wx[i], wz[k], sf)
-				elif not data.placeholder:
-					extra = grid[index] * (1.0 - (wet[index] if one_tile != null else data.wet_at(wx[i], wz[k])))
-
-				var h: float = hs[index] + extra
-				hs[index] = h
-
-				if i > 0 and k > 0 and i <= nx and k <= nz:
-					h_min = minf(h_min, h)
-					h_max = maxf(h_max, h)
+		var detailed: Array = _add_detail(columns, nx, nz, sf)
+		hs = columns[2]
+		h_min = detailed[0]
+		h_max = detailed[1]
 
 	# Caves and ore bodies that touch this block.
 	var block_box: AABB = AABB(Vector3(float(origin.x), oy, float(origin.z)), Vector3(float(nx - 1), float(ny - 1), float(nz - 1)) * sf)
@@ -714,6 +647,189 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 	if not shapes.is_empty():
 		_carve_caves(buffer, shapes, origin, sf, size)
+
+
+# The heights of a block's columns plus a one-column ring for slopes, before the detail noise: [wx, wz, heights, the tile of each
+# column, wet_at of each column (when one tile holds them all), that one tile or null, lowest and highest height of the block's own
+# columns]. generate() and air_column() share it, so the air table holds exactly the numbers a block is made from.
+func _column_heights(origin: Vector3i, nx: int, nz: int, sf: float) -> Array:
+	var wx: PackedFloat32Array = PackedFloat32Array()
+	var wz: PackedFloat32Array = PackedFloat32Array()
+	wx.resize(nx + 2)
+	wz.resize(nz + 2)
+
+	for i in range(nx + 2):
+		wx[i] = wrap_x(float(origin.x) + float(i - 1) * sf)
+
+	for k in range(nz + 2):
+		wz[k] = wrap_x(float(origin.z) + float(k - 1) * sf)
+
+	var row: int = nx + 2
+	var hs: PackedFloat32Array = PackedFloat32Array()
+	hs.resize(row * (nz + 2))
+	var column_tile: Array = []
+	column_tile.resize(row * (nz + 2))
+	var last_coord: Vector2i = Vector2i(1 << 30, 0)
+	var last_data = null
+	var h_min: float = INF
+	var h_max: float = -INF
+	var wet: PackedFloat64Array = PackedFloat64Array()   # wet_at of each column, when one tile holds them all
+	var one_tile = null
+
+	if heights_gridded:
+		var first: Vector2i = Vector2i(int(floor(wx[0] / tile_size_m)), int(floor(wz[0] / tile_size_m)))
+
+		# Columns that do not cross the world's wrap (rising) and start and end on the same tile all lie on it.
+		if wx[row - 1] > wx[0] and wz[nz + 1] > wz[0] and first == Vector2i(int(floor(wx[row - 1] / tile_size_m)), int(floor(wz[nz + 1] / tile_size_m))):
+			one_tile = get_tile(first)
+
+			if one_tile.placeholder:
+				one_tile = null
+
+	if one_tile != null:
+		var inner: PackedFloat64Array = PackedFloat64Array()
+		hs = one_tile.heights_grid(wx, wz, wet, inner)
+		column_tile.fill(one_tile)
+		h_min = inner[0]
+		h_max = inner[1]
+
+	for k in range(nz + 2 if one_tile == null else 0):
+		var tz: int = int(floor(wz[k] / tile_size_m))
+
+		for i in range(nx + 2):
+			var coord: Vector2i = Vector2i(int(floor(wx[i] / tile_size_m)), tz)
+
+			if coord != last_coord:
+				last_coord = coord
+				last_data = get_tile(coord)
+
+			var index: int = k * row + i
+			column_tile[index] = last_data
+			var h: float = last_data.height_at(wx[i], wz[k])
+			hs[index] = h
+
+			if i > 0 and k > 0 and i <= nx and k <= nz:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	return [wx, wz, hs, column_tile, wet, one_tile, h_min, h_max]
+
+
+# Adds the detail noise to the heights _column_heights gave (in place); returns [the new lowest, highest height] of the block's columns.
+func _add_detail(columns: Array, nx: int, nz: int, sf: float) -> Array:
+	var wx: PackedFloat32Array = columns[0]
+	var wz: PackedFloat32Array = columns[1]
+	var row: int = nx + 2
+	var hs: PackedFloat32Array = columns[2]
+	var column_tile: Array = columns[3]
+	var wet: PackedFloat64Array = columns[4]
+	var one_tile = columns[5]
+	var h_min: float = INF
+	var h_max: float = -INF
+
+	var grid: PackedFloat32Array = _detail_grid(wx[0], wz[0], row, nz + 2, sf)
+
+	for k in range(nz + 2):
+		for i in range(nx + 2):
+			var index: int = k * row + i
+			var data = column_tile[index]
+			var extra: float = 0.0
+
+			if grid.is_empty():
+				extra = _detail_at(data, wx[i], wz[k], sf)
+			elif not data.placeholder:
+				extra = grid[index] * (1.0 - (wet[index] if one_tile != null else data.wet_at(wx[i], wz[k])))
+
+			var h: float = hs[index] + extra
+			hs[index] = h
+
+			if i > 0 and k > 0 and i <= nx and k <= nz:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	columns[2] = hs
+	return [h_min, h_max]   # an Array, not a Vector2: these are 64-bit and the air fill uses them exactly
+
+
+# ---------------------------------------------------------------- air table
+
+const AIR_NONE := 2147483647            # air_column's first row when the column has no air table entry (a tile file that would not load)
+const AIR_TALL_M := 1000000.0           # how high the cave check above an air row reaches (everything above counts)
+
+
+# The air table entry of block column (bx, bz) at this level (Dave 24 Nov 2026: "so we just have to generate the actual land blocks"):
+# [first row, highest height, highest height with the detail noise]. Every block of the column from the first row up is one that
+# generate() fills as all air (no ground, no cave), and air_fill makes it exactly as generate() would from the two heights alone.
+# The rows above are all air too: a higher block is further above the same heights (the near-ground test can only turn the detail
+# off further up, where the plain height already lies below), and the cave check covers everything above the first row at once.
+func air_column(bx: int, bz: int, lod: int) -> PackedFloat64Array:
+	var n: int = AIR_BLOCK
+	var sf: float = float(1 << lod)
+	var block_m: float = float(n << lod)
+	var origin: Vector3i = Vector3i(bx * (n << lod), 0, bz * (n << lod))
+	var failed_before: int = failed_tiles
+	var columns: Array = _column_heights(origin, n, n, sf)
+	var h_plain: float = columns[7]
+	var h_detail: float = _add_detail(columns, n, n, sf)[1] if _detail_max > 0.0 else h_plain
+
+	if failed_tiles != failed_before or not is_finite(h_plain) or not is_finite(h_detail):   # a tile that would not load: no entry (seabed past the nine tiles is fine)
+		return PackedFloat64Array([AIR_NONE, 0.0, 0.0])
+
+	var first: int = int(floor(minf(h_plain, h_detail) / block_m)) - 1
+
+	while not _air_row(first, lod, h_plain, h_detail):
+		first += 1
+
+	if lod <= _cave_max_lod:
+		for attempt in range(64):
+			var oy: float = float(first * (n << lod))
+			var tall: AABB = AABB(Vector3(float(origin.x), oy, float(origin.z)), Vector3(float(n - 1) * sf, AIR_TALL_M, float(n - 1) * sf))
+			var shapes: Array = _cave_shapes(columns[3], tall, origin, lod)
+
+			if shapes.is_empty():
+				return PackedFloat64Array([first, h_plain, h_detail])
+
+			var top: int = first + 1
+
+			for shape in shapes:
+				top = maxi(top, int(ceil((shape[5] as AABB).end.y / block_m)))
+
+			first = top
+
+		return PackedFloat64Array([AIR_NONE, 0.0, 0.0])
+
+	return PackedFloat64Array([first, h_plain, h_detail])
+
+
+# generate()'s all-air test for a block of row `by` over these heights (without the cave check).
+func _air_row(by: int, lod: int, h_plain: float, h_detail: float) -> bool:
+	var sf: float = float(1 << lod)
+	var oy: float = float(by * (AIR_BLOCK << lod))
+	return oy > _air_height(oy, sf, h_plain, h_detail) + _band * sf
+
+
+# The highest height generate() measures an air block's distance from: with the detail noise when the block is near the ground.
+func _air_height(oy: float, sf: float, h_plain: float, h_detail: float) -> float:
+	var near_ground: bool = oy - _detail_max <= h_plain + 4.0 * _band * sf
+	return h_detail if near_ground and _detail_max > 0.0 else h_plain
+
+
+# Fills a block of row `by` from its column's air table entry, the same as generate() makes it; false when the entry does not cover it.
+func air_fill(buffer: VoxelBuffer, by: int, lod: int, entry: PackedFloat64Array) -> bool:
+	if entry.size() != 3 or float(by) < entry[0] or int(entry[0]) == AIR_NONE:
+		return false
+
+	var oy: float = float(by * (AIR_BLOCK << lod))
+	_fill_air(buffer, minf(oy - _air_height(oy, float(1 << lod), entry[1], entry[2]), 500.0))
+	return true
+
+
+func _fill_air(buffer: VoxelBuffer, distance: float) -> void:
+	buffer.fill(0, Layout.CHANNEL_ROCK)
+	buffer.fill(0, Layout.CHANNEL_SOIL)
+	buffer.fill(0, Layout.CHANNEL_RESOURCE)
+	buffer.fill(Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT, Layout.CHANNEL_MATERIAL)
+	buffer.fill_f(distance, Layout.CHANNEL_SDF)
 
 
 # True where the soil at the surface sits on a clay subsoil.

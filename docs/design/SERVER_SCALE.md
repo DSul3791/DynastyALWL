@@ -140,6 +140,30 @@ floor. Measured for sizing (cloud): a buried block costs about 3 ms and 500 byte
 rock layers vary, so a one-value marker would not be exact); a 16 m layer under a whole tile is 921,600 finest blocks, about 14 min
 and 0.55 GB on Dave's PC; an all-air block 0.8 ms and a few bytes, and every air block 500 m or more above the ground is the same.
 
+Band depth and digging (Dave 24 Nov 2026, 12:47 AM): "so we make all the surface about 20m deep would that be enough?" Today's pack
+already reaches 16-32 m below the lowest ground of each finest column (one 16 m block under the block the lowest point is in). Then
+(12:48 AM): "yes if a player is digging we need to generate the blocks all around and below them". Planned for after Wednesday: when
+a player digs near the bottom of the ready ground, the idle builders make the blocks around and below them ahead of the dig, in the
+background, so the player never reaches a block that is not ready. The made-row count still decides whether the generator's band
+needs one more layer.
+
+Air (Dave 24 Nov 2026, 12:46 AM: "so we just have to generate the actual land blocks"). Measured (cloud, tile 3_4, 700 columns over
+levels 0-6, every block made and checked): every block above the pack's top row is all air (5,600 of 5,600; the server makes each
+when asked, 0.26-0.35 ms, and saves it); the pack's top row is 70-86% all air (0.6-0.8 ms each, ground rows 3.3-4.5 ms), so about a
+million of the tile's 4.2 million pack blocks are air. An air block holds the distance to the ground below (up to 500 m), so to stay
+exact the generator keeps a per-column table (first all-air row and the heights the air fill uses) and the server fills air from it
+without working anything out or saving it.
+
+Sea (24 Nov 2026). Measured (cloud samples, 150 columns a level): a baked tile's sea floor is real terrain (down to about -2,200 m) and
+costs about as much as land: pure-sea tile 2_4 about 5 GB and 1 h on Dave's PC, against about 9 GB for tile 3_4 (10% land); about
+0.022 GB a km2 of sea, land adds about 0.18 GB a km2. The whole 21x21 map as designed (104,045 km2, 5.8% land) would be about 3.3 TB
+and 450-650 h on his PC. Open ocean past the baked tiles (no tile file, flat at -200 m) is identical everywhere (2-3 different blocks a
+level), so it can be served from a tiny pattern exactly, like the air table (follow-up, after the block-maker hot spots). Dave (12:19 AM):
+"I do plan on them diving on shipwrecks and exploring under sea caves and such." So the sea floor inside the planned tiles stays real
+terrain; shipwrecks and undersea caves are later purpose-made places for the generator, like caves and ruins.
+Scope (Dave 24 Nov 2026, 12:21 AM): "we don't have to worry about the whole build right now just the parts we are working on and
+testing. but we should always struggle to optimize the process knowing its going to get bigger".
+
 The plan as first written follows.
 
 Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client

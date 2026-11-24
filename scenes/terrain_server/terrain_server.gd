@@ -3839,8 +3839,8 @@ func _process(delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		var report: String = "server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
-			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
+		var report: String = "server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d, air from the table %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
+			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, store.air_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
 		]
 
 		if _link != null and _link.blocks_out > 0:

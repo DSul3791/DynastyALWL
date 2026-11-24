@@ -25,7 +25,8 @@ extends RefCounted
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const GroundSettle := preload("res://src/stream/ground_settle.gd")
-const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const AirTableScript := preload("res://src/stream/air_table.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const BLOCK_SIZE := 16
 
@@ -39,6 +40,8 @@ var _dates_changed_msec: int = -1       # when they last changed (a bake is writ
 var blocks_generated: int = 0
 var _made_rows: Dictionary = {}   # "level row" -> blocks made here (not served from a pack or cache), row counted from the block holding the ground
 var cache_hits: int = 0
+var air_hits: int = 0                   # all-air blocks filled from the pack's air table (air_table.gd): not made, not saved
+var air = AirTableScript.new()
 var edit_hits: int = 0
 var bad_blocks: int = 0                 # built blocks that failed the sanity check (not saved)
 
@@ -84,6 +87,8 @@ func setup(terrain_generator, store_dir: String) -> String:
 		print("server: terrain or tile files changed, old generated ground thrown away")
 
 	_purge_old_generated()
+	var tile_m = generator.get("tile_size_m")   # test generators may have none: then no table is read (every block is made)
+	air.open(store_dir if tile_m != null else "", wanted, float(tile_m) if tile_m != null else 15360.0, BLOCK_SIZE)
 	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
@@ -216,6 +221,7 @@ func check_tiles(now_msec: int) -> bool:
 		return false
 
 	tiles_stamp = stamp
+	air.set_stamp("%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp])
 	clear_generated()
 	_write(_store_dir + "/terrain_version.txt", "%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp])
 	return true
@@ -548,6 +554,13 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_count("zeroed_edit")
 		print("server: ZEROED BLOCK %s LOD %d from the saved edits (generating it again)" % [str(block), lod])
 
+	var air_entry: PackedFloat64Array = air.entry(block.x, block.z, lod)
+
+	if not air_entry.is_empty() and generator.air_fill(buffer, block.y, lod, air_entry):
+		_count("air")
+		_path(trace, "the air table")
+		return
+
 	var cache: VoxelStreamSQLite = _cache_now()
 
 	if _cache_load(cache, buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
@@ -604,6 +617,11 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	var buffer: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
 	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+		return false
+
+	var entry: PackedFloat64Array = air.entry(block.x, block.z, lod)
+
+	if entry.size() == 3 and float(block.y) >= entry[0]:   # all air: filled from the table when asked, nothing to make or save
 		return false
 
 	var cache: VoxelStreamSQLite = _cache_now()
@@ -933,6 +951,8 @@ func _count(kind: String) -> void:
 			edit_hits += 1
 		"cache":
 			cache_hits += 1
+		"air":
+			air_hits += 1
 		_:
 			blocks_generated += 1
 

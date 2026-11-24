@@ -79,7 +79,9 @@ before. The pack also holds the tiles' trees and plants (flora_pack/); the serve
    /home/dave/dynasty/ground_pack can be deleted afterwards.
    To check a store serves the pack without making ground or placing plants (on a copy or a fresh store, never the live one: a store
    from other tiles is cleared on open, as the server does), `src/worldgen/tools/check_ground_pack.gd -- --store=DIR` ends with
-   `check_ground_pack: PASS`.
+   `check_ground_pack: PASS`. All-air blocks are not in the pack: its `air_table/` folder (one file a tile, copied in by the install)
+   says from which row each column is air, and the server fills those blocks from it without making or saving them (the 10 s report's
+   "air from the table" count). A pack built before the air table still works: the server makes its air blocks as before.
 
 ## Join it
 
