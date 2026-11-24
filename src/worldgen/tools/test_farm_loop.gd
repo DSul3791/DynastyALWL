@@ -147,13 +147,19 @@ func _init() -> void:
 	# 1. Wild seed: tall grass in autumn gives every grain's seed by the pinch.
 	items.report_position(1, Vector3(500.0, 70.0, 500.0))
 
-	for k in range(3):
+	var tufts: int = 0
+
+	while tufts < 40 and count("wheat_seeds") < 4 * pinch("wheat"):   # a tuft carries one grain (drops.json one_of, 24 Nov 2026): a patch is 25 to 40 tufts
 		items._last_gather.clear()
-		items.gather(1, "tall_grass", "plant", "0,0,%d" % (700 + k), 700 + k, Vector3(501.0, 70.0, 500.0))
+		items.gather(1, "tall_grass", "plant", "0,0,%d" % (700 + tufts), 700 + tufts, Vector3(501.0, 70.0, 500.0))
+		tufts += 1
+
+	for bulky in ["thatch", "straw", "plant_fibre"]:   # the grass itself is put aside, so later steps have room under the carry limit
+		items.inventory_of(1).remove(items.table.number_of(bulky), items.inventory_of(1).count_of(items.table.number_of(bulky)))
 
 	var wheat: int = count("wheat_seeds")
 	var kg: float = CarryRules.weight_of("wheat_seeds", items._carry_cfg) * float(wheat)
-	check(wheat >= 4 * pinch("wheat"), "three tall grass picks give enough wheat seed for four spots and more (%d seeds, %d a spot)" % [wheat, pinch("wheat")])
+	check(wheat >= 4 * pinch("wheat"), "one patch of tall grass (%d tufts) gives enough wheat seed for four spots and more (%d seeds, %d a spot)" % [tufts, wheat, pinch("wheat")])
 	check(slots_of("wheat_seeds") == 1, "all of it in one pack slot (%d slots)" % slots_of("wheat_seeds"))
 	check(kg < 0.1, "and it weighs %s, a few grams" % CarryRules.weight_text(kg))
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))

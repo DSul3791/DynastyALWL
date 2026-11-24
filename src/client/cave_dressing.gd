@@ -13,6 +13,7 @@ extends Node3D
 
 const BasicLook := preload("res://src/client/basic_look.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const FireWeather := preload("res://src/client/fire_weather.gd")   # fire lights in the volumetric fog
 
 const BONE := Color(0.82, 0.76, 0.62)
 const STONE := Color(0.72, 0.68, 0.6)
@@ -103,6 +104,7 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 		glow.distance_fade_begin = 50.0
 		glow.distance_fade_length = 20.0
 		glow.position = (fire as Transform3D).origin + Vector3(0.0, 0.35, 0.0)
+		FireWeather.fog_light(glow)   # its share in the volumetric fog follows the fog
 		holder.add_child(glow)
 		_flicker.append([glow, 1.6, fposmod((fire as Transform3D).origin.x * 0.73 + (fire as Transform3D).origin.z * 1.31, TAU)])
 

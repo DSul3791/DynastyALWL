@@ -225,8 +225,12 @@ func seeds_part() -> void:
 		if str(species) == "note":
 			continue
 
-		for row in seed_drops[species]["rows"]:
-			wild[str(row[0])] = mini(int(wild.get(str(row[0]), 1 << 30)), int(row[1]))
+		var rows: Array = seed_drops[species]["rows"]
+		var one_of: bool = bool(seed_drops[species].get("one_of", false))   # tall grass: one grain a tuft, so a patch (25 tufts at least, flora.json) is the pick (24 Nov 2026)
+
+		for row in rows:
+			var least: int = floori(float(int(row[1]) * 25) / float(rows.size())) if one_of else int(row[1])
+			wild[str(row[0])] = mini(int(wild.get(str(row[0]), 1 << 30)), least)
 
 	var no_source: Array = []
 	var thin_wild: Array = []
@@ -250,7 +254,7 @@ func seeds_part() -> void:
 			thin_back.append(str(crop))
 
 	check(no_source.is_empty(), "every crop can be started from a wild plant's seed (none without: %s)" % str(no_source))
-	check(thin_wild.is_empty(), "one wild pick gives at least two sowings of every crop (short: %s)" % str(thin_wild))
+	check(thin_wild.is_empty(), "one wild pick (a patch, for tall grass) gives at least two sowings of every crop (short: %s)" % str(thin_wild))
 	check(thin_back.is_empty(), "every harvest gives back at least three sowings of its own seed (short: %s)" % str(thin_back))
 
 	# A real pick of wild carrot in summer: carrot and parsnip seed, each enough for two spots or more.
