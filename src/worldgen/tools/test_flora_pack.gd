@@ -15,6 +15,7 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraScript := preload("res://src/stream/server_flora.gd")
 const FloraPackScript := preload("res://src/stream/flora_pack.gd")
+const PrebuildScript := preload("res://src/worldgen/tools/prebuild_ground.gd")
 
 const WORLD := "res://worlds/base_world"
 const CHUNKS := [Vector2i(226, 277), Vector2i(227, 277), Vector2i(196, 244)]   # two wooded chunks in tile 3,4 and one in open sea
@@ -124,7 +125,27 @@ func _init() -> void:
 	var west = FloraPackScript.new()
 	west.open(folder, print_text)
 	check(west.chunks() == 1 and west.stale == 1 and west.items(Vector2i(-5, -7), false) == odd and west.items(Vector2i(-5, -7), true) == {}, "negative chunk numbers read back, a broken file is not used")
+	var again = FloraPackScript.read_lists(odd_path, print_text)
+	var odd_bytes: PackedByteArray = FileAccess.get_file_as_bytes(odd_path)
+	check(again != null and FloraPackScript.write_tile(odd_path, print_text, again) and FileAccess.get_file_as_bytes(odd_path) == odd_bytes, "read_lists then write_tile gives the same file (how copies are joined)")
+	check(FloraPackScript.read_lists(odd_path, "another fingerprint") == null, "read_lists refuses another fingerprint")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(odd_path))
+
+	# --processes shares: every take of columns belongs to exactly one copy.
+	var shares_ok: bool = true
+
+	for count in [1, 2, 3, 7, 10]:
+		for total in [0, 31, 32, 33, 1000, 4097]:
+			for first in range(0, total, PrebuildScript.COLUMNS_PER_TAKE):
+				var owners: int = 0
+
+				for part in range(count):
+					owners += 1 if PrebuildScript._owns_take(first, part, count) else 0
+
+				shares_ok = shares_ok and owners == 1
+
+	check(shares_ok, "the copies' shares of columns are disjoint and cover every column")
+	check(PrebuildScript.share_mark(0, 1, []) == "" and PrebuildScript.share_mark(1, 6, []) != PrebuildScript.share_mark(1, 8, []), "a copy's plants file names its share")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(folder + "/tile_9_9.fpk"))
 	served.finish_tasks()
 	plain.finish_tasks()

@@ -15,8 +15,9 @@ extends SceneTree
 #   --processes=N    run N copies of this tool side by side, each on its share of the columns and chunks with one thread, then join
 #                    their results into --out (default 1; auto = the machine's threads minus two, at most 8). The generator gains little from threads inside one copy but scales
 #                    across copies (cloud, 23 Nov 2026: 1 thread 380 blocks/s, 3 threads 540, 3 copies of 1 thread 1,000). Each copy
-#                    works in --out/parts/part_K (its log in log.txt there); a stop goes on where it was, the parts are deleted
-#                    once joined.
+#                    works in --out/parts/part_K (its log in log.txt there); a stop goes on where it was if run again with the same N
+#                    (blocks already in a part are skipped). The parts are deleted once joined, so a run after a finished one builds
+#                    everything again. While joining, the parts and the pack both stand: about twice the pack's size on disk.
 #   --area=X,Z,M     only the M-metre square with corner X,Z (world metres) inside the tiles: for tests and quick looks
 #   --plants=0       ground only (default 1: the trees and plants of every 256 m chunk too, in the pack's flora_pack/ folder,
 #                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped; with
@@ -198,7 +199,7 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 		var percent: int = int(100.0 * float(done) / float(maxi(_own_total, 1)))
 		var now: int = Time.get_ticks_msec()
 
-		if percent != last_percent and (now - last_print >= 10000 or done >= _total):   # at most one line each 10 s
+		if percent != last_percent and (now - last_print >= 10000 or done >= _own_total):   # at most one line each 10 s
 			last_percent = percent
 			last_print = now
 			var spent_s: float = float(now - started) / 1000.0
@@ -252,6 +253,8 @@ func _build_plants(tiles: Array, out_dir: String, threads: int, area: Array) -> 
 
 	if area.size() == 3:
 		print_text += " area"   # part of a tile only: never taken for the whole tile (here or by a server)
+
+	print_text += share_mark(_part, _part_count, area)
 	var folder: String = out_dir + "/" + FloraPackScript.FOLDER
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
 	var tile_m: float = generator.tile_size_m
@@ -367,6 +370,11 @@ func _done_now() -> int:
 	var done: int = _columns_done
 	_mutex.unlock()
 	return done
+
+
+# Marks a copy's plants file with its share and slice, so a run again with another count or slice never takes it (only that copy's chunks).
+static func share_mark(part: int, count: int, area: Array) -> String:
+	return "" if count <= 1 else " share %d/%d %s" % [part, count, str(area)]
 
 
 # A take of COLUMNS_PER_TAKE columns starting at column `first` belongs to share `part` of `count`.
@@ -494,6 +502,10 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 
 		if pid <= 0:
 			push_error("prebuild_ground: could not start copy %d (%s)" % [k, godot])
+
+			for started_pid in pids:
+				OS.kill(started_pid)
+
 			return 1
 
 		pids.append(pid)
@@ -502,6 +514,15 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 
 	while pids.any(func(pid): return OS.is_process_running(pid)):
 		var now: int = Time.get_ticks_msec()
+
+		if pids.any(func(pid): return not OS.is_process_running(pid) and OS.get_process_exit_code(pid) != 0):
+			push_error("prebuild_ground: a copy stopped with an error (logs in %s/part_K/log.txt); the others are stopped too; run the same command again to go on" % ProjectSettings.globalize_path(parts_dir))
+
+			for pid in pids:
+				if OS.is_process_running(pid):
+					OS.kill(pid)
+
+			return 1
 
 		if now - last_print >= 10000:
 			last_print = now
@@ -581,7 +602,7 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 			var lists: Dictionary = {}
 
 			for k in range(processes):
-				var part_lists = FloraPackScript.read_lists(parts_dir + "/part_%d/%s/%s" % [k, FloraPackScript.FOLDER, file_name], print_text)
+				var part_lists = FloraPackScript.read_lists(parts_dir + "/part_%d/%s/%s" % [k, FloraPackScript.FOLDER, file_name], print_text + share_mark(k, processes, area))
 
 				if part_lists == null:
 					push_error("prebuild_ground: copy %d has no plants file for tile %s; run the same command again" % [k, name])

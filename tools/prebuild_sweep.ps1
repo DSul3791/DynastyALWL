@@ -28,14 +28,17 @@ foreach ($n in $Counts) {
 	$stepLog = Join-Path $Out ("copies_{0}.log" -f $n)
 	Say ("START {0} copies" -f $n)
 	$t0 = Get-Date
-	& $Godot --headless --path $Project --script res://src/worldgen/tools/prebuild_ground.gd -- --tiles=3_4 --area=55296,69632,$Size --processes=$n --out=$dir *> $stepLog
+	# One quoted argument line: PowerShell would split an unquoted "a,b,c" into three arguments; stderr goes to its own file so Godot's
+	# error lines never stop the sweep (Windows PowerShell 5.1 turns redirected native stderr into errors).
+	$arguments = "--headless --path `"$Project`" --script res://src/worldgen/tools/prebuild_ground.gd -- --tiles=3_4 --area=55296,69632,$Size --processes=$n `"--out=$dir`""
+	$process = Start-Process -FilePath $Godot -ArgumentList $arguments -Wait -NoNewWindow -PassThru -RedirectStandardOutput $stepLog -RedirectStandardError ($stepLog + ".err")
 	$seconds = ((Get-Date) - $t0).TotalSeconds
-	$done = Select-String -Path $stepLog -Pattern "prebuild_ground: DONE (\d+) blocks" | Select-Object -Last 1
+	$done = Select-String -Path $stepLog -Pattern "prebuild_ground: DONE (\d+) blocks;" | Select-Object -Last 1
 	if ($done) {
 		$blocks = [int]$done.Matches[0].Groups[1].Value
 		Say ("END   {0} copies: {1:N0} s, {2} blocks, {3:N0} blocks/s" -f $n, $seconds, $blocks, ($blocks / $seconds))
 	} else {
-		Say ("END   {0} copies: FAILED after {1:N0} s (see {2})" -f $n, $seconds, $stepLog)
+		Say ("END   {0} copies: FAILED (exit {1}) after {2:N0} s (see {3})" -f $n, $process.ExitCode, $seconds, $stepLog)
 	}
 	if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }
 }
