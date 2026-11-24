@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 168  # 168 (24 Nov 2026, Dave: "give as much control to the client as it takes to make them feel natural"): a moving animal's row carries its plan, a Vector2 (x, z) of where it is walking to, after the six fixed fields and a dog foe, before the health share (server_animals plan, rows_near); the client draws every animal on the ground at the present, carried on along its way but never past its plan, and the server judges blows on all of them at present_ms (docs/design/ANIMAL_NETCODE.md "Plans"). Client and server must be updated together.
+const PROTOCOL_VERSION := 169  # 169 (24 Nov 2026, Dave: "are fish pools actually a thing in the rivers yet because I have never seen any"): fish_jump(at, kind, seed), server to client, unreliable: a fish of a school jumped there (kind = size class * 4 + group); fish_shadows(rows), server to client, reliable: the schools within 40 m in shallow water, [x, y, z, radius, size class] per school (src/server/server_fish_signs.gd). Client and server must be updated together.
+# 168 (24 Nov 2026, Dave: "give as much control to the client as it takes to make them feel natural"): a moving animal's row carries its plan, a Vector2 (x, z) of where it is walking to, after the six fixed fields and a dog foe, before the health share (server_animals plan, rows_near); the client draws every animal on the ground at the present, carried on along its way but never past its plan, and the server judges blows on all of them at present_ms (docs/design/ANIMAL_NETCODE.md "Plans"). Client and server must be updated together.
 # 167 (23 Nov 2026, Dave: "not all animals charge they actually have actions built in to them"): animal rows may carry states 25 (STRIKE, a blow up close) and 26 (KICK, a kick behind) from server_big_game, each wound up where it stands; the client plays the model's own attack clip timed to land with the server's blow. Client and server must be updated together.
 # 166 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
 # 165 (23 Nov 2026, the status strip beside the hotbar: a player slowed or chilled saw nothing saying why): soak(percent, windy), how rain-soaked the clothes are in steps of 10 and whether the wind cuts through them, at hello and when either changes. Client and server must be updated together.
@@ -154,6 +155,8 @@ signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal player_look_received(peer_id: int, char_name: String, body: String, code: String, worn: PackedInt32Array)
 signal action_cue_received(peer_id: int, cue: int, detail: int, at: Vector3)
+signal fish_jump_received(at: Vector3, kind: int, seed_value: int)
+signal fish_shadows_received(rows: PackedFloat32Array)
 signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray, cast: PackedInt32Array)
 signal flight_seen_received(number: int, from: Vector3, velocity: Vector3, fire: bool)
 signal ground_taken_received(kind: int, points: PackedVector3Array, days: PackedInt32Array)
@@ -447,6 +450,20 @@ func ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array)
 @rpc("authority", "call_remote", "unreliable")
 func action_cue(peer_id: int, cue: int, detail: int, at: Vector3) -> void:
 	action_cue_received.emit(peer_id, cue, detail, at)
+
+
+# Protocol 169 (server_fish_signs.gd): a fish of a school jumped at `at` (on the water surface); kind = size class (0 small, 1 mid, 2 big) * 4 + group
+# (0 small fish, 1 big: salmon, pike, carp, cod); seed_value varies the look. Sent only to players within 100 m, at most one per 3 s each.
+@rpc("authority", "call_remote", "unreliable")
+func fish_jump(at: Vector3, kind: int, seed_value: int) -> void:
+	fish_jump_received.emit(at, kind, seed_value)
+
+
+# Protocol 169 (server_fish_signs.gd): the schools within 40 m of this player in shallow water, [x, y, z, radius, size class] per school, nearest
+# first (y the water surface); empty when none. Sent when the list changed.
+@rpc("authority", "call_remote", "reliable")
+func fish_shadows(rows: PackedFloat32Array) -> void:
+	fish_shadows_received.emit(rows)
 
 
 # A player pressed + (1) or - (-1): step the flow rate of all water.

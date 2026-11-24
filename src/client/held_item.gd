@@ -196,7 +196,9 @@ const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
 const PICK_SWING_S := MotionExtra.PICK_LENGTH
 const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
-const NET_THROW_M := 6.0                        # how far ahead the shore net lands (server reach: fishing.json net.reach_m, 8 m)
+const NET_THROW_M := 6.0                        # how far ahead the shore net lands looking level (server reach: fishing.json net.reach_m, 8 m)
+const NET_NEAR_M := 2.0                         # the nearest a net is thrown, looking down at the water
+const NET_FAR_M := 7.0                          # the furthest, inside the server's 8 m (it measures from the last reported position)
 const HIT_STOP_S := 0.045
 const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
 const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
@@ -1369,9 +1371,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
 			if pressed:
 				_arm_play("use", 0.6)
-				var ahead: Vector3 = -_camera.global_transform.basis.z
-				ahead = Vector3(ahead.x, 0.0, ahead.z).normalized()
-				_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0, 0, _camera.global_position + ahead * NET_THROW_M - Vector3(0.0, 1.6, 0.0))
+				_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0, 0, net_landing(_camera.global_position, -_camera.global_transform.basis.z))
 
 			return true
 
@@ -5010,3 +5010,20 @@ func _pipe_off() -> void:
 
 	if _pipe_line != null:
 		_pipe_line.visible = false
+
+
+# Where a thrown shore net lands: where the look meets the water about the feet's height (camera 1.6 m up), NET_NEAR_M to NET_FAR_M away, so a
+# player can throw it onto a splash or a school's dark fish (24 Nov 2026, Dave: "will we also be able to thow the net at the school of fish").
+# Looking level or up, it lands NET_THROW_M ahead as before.
+static func net_landing(eye: Vector3, look: Vector3) -> Vector3:
+	var flat: Vector3 = Vector3(look.x, 0.0, look.z)
+
+	if flat.length() < 0.001:
+		flat = Vector3(0.0, 0.0, -1.0)
+
+	var dist: float = NET_THROW_M
+
+	if look.y < -0.05:
+		dist = clampf(1.6 / -look.y * flat.length(), NET_NEAR_M, NET_FAR_M)
+
+	return eye + flat.normalized() * dist - Vector3(0.0, 1.6, 0.0)
