@@ -1,13 +1,18 @@
 extends SceneTree
 
 # Shallow water reads as water (Dave's play-test, 24 Nov 2026, a reedy river at x 57864 z 71571 on Medium: "the graphical glitch in the river
-# where it looks like I can see right under the water", "it shouldnt look like that"). The surface's body over its bed is
-# mix(edge_alpha, 0.97, 1 - exp(-through / clarity_m)) (water_material.gd): with edge_alpha 0.34 and clarity_m 1.1 a 10 cm film was 37 %
-# water colour and 30 cm was 49 %, so seen from above the bed showed almost untinted. Now at least half is water colour, and the bed shows
-# softly. And one drink prompt: the look label named the water and repeated "Press E to drink" under the drink prompt itself.
+# where it looks like I can see right under the water", "it shouldnt look like that"). Rivers, lakes and ponds are drawn by the liquid sheet
+# (src/water2/liquid_surface.gd; flora_view LIQUID_CHUNKS). Its alpha was multiplied by a contact fade over the first 0.35 m of water along the
+# view ray, meant for a bank; looking down on a shallow reach that ray is short, so the near water came out about 15 percent water colour and
+# the bed showed almost bare, while far water, seen at a low angle, drew blue. Here the shader's own lines are checked and its numbers worked
+# out as the shader does. And one drink prompt: the look label also said "Press E to drink" under the drink prompt.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shallow_water_look.gd
 
-const WaterMaterial := preload("res://src/client/water_material.gd")
+const LiquidSurface := preload("res://src/water2/liquid_surface.gd")
+
+const CONTACT_LINE := "float contact = max(smoothstep(0.0, contact_m, through), smoothstep(0.03, 0.12, depth));"
+const ALPHA_LINE := "ALPHA = clamp(max(max(0.45 + 0.5 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;"
+const THICK_LINE := "float thick = 1.0 - exp(-min(through, depth * 3.0 + 0.2) / (clear_m * (1.0 - 0.6 * look_v2 * mud_here)));"
 
 var failures: int = 0
 
@@ -20,29 +25,36 @@ func check(ok: bool, what: String) -> void:
 
 
 func uniform_default(name: String) -> float:
-	var at: int = WaterMaterial.SHADER.find("uniform float %s = " % name)
-
-	if at < 0:
-		return NAN
-
-	var start: int = at + ("uniform float %s = " % name).length()
-	return WaterMaterial.SHADER.substr(start, WaterMaterial.SHADER.find(";", start) - start).to_float()
+	var key: String = "uniform float %s = " % name
+	var at: int = LiquidSurface.SHADER.find(key)
+	return NAN if at < 0 else LiquidSurface.SHADER.substr(at + key.length(), LiquidSurface.SHADER.find(";", at) - at - key.length()).to_float()
 
 
-# The body's share of water colour over the bed, for `through` metres of water along the look (water_material.gd body_alpha, clear water).
-func body(through: float) -> float:
-	var murk: float = 1.0 - exp(-through / uniform_default("clarity_m"))
-	return lerpf(uniform_default("edge_alpha"), 0.97, murk)
+# Still, clear water `depth` deep seen at `down` degrees below the level (through = depth / sin): the sheet's alpha as the shader works it out,
+# away from a shore and a window edge (shore, edge 1).
+func still_alpha(depth: float, down: float, contact_rule: bool) -> float:
+	var through: float = depth / sin(deg_to_rad(down))
+	var thick: float = 1.0 - exp(-minf(through, depth * 3.0 + 0.2) / uniform_default("clear_m"))
+	var contact: float = smoothstep(0.0, uniform_default("contact_m"), through)
+
+	if contact_rule:
+		contact = maxf(contact, smoothstep(0.03, 0.12, depth))
+
+	return clampf(0.45 + 0.5 * thick, 0.0, 1.0) * contact
 
 
 func _init() -> void:
-	check(WaterMaterial.SHADER.contains("float body_alpha = max(mix(edge_alpha, 0.97, murk), face * 0.85);") and WaterMaterial.SHADER.contains("float murk = 1.0 - exp(-through / (clarity_m"), "the shader still mixes water colour over the bed as this test reckons it")
+	var shader: String = LiquidSurface.SHADER
+	check(shader.contains(CONTACT_LINE) and shader.contains(ALPHA_LINE) and shader.contains(THICK_LINE), "the liquid sheet's contact, alpha and thickness lines are the ones worked out here")
+	check(shader.contains("EMISSION = (foam_tint * foam * 0.15 + water * (1.0 - foam) * 0.2) * daylight;"), "the body gives a little of its own colour, so thin water over a brown bed does not read grey")
 
-	for row in [[0.05, 0.5, 0.6], [0.1, 0.5, 0.65], [0.3, 0.6, 0.8], [0.8, 0.75, 0.9]]:
-		var b: float = body(float(row[0]))
-		check(b >= float(row[1]) and b <= float(row[2]), "%.2f m of water along the look: %.0f %% water colour over the bed (between %.0f and %.0f)" % [float(row[0]), b * 100.0, float(row[1]) * 100.0, float(row[2]) * 100.0])
+	# Dave's view: standing in it, eye 1.7 m up, the near water 2 to 6 m off: 20 to 60 degrees down.
+	for row in [[0.1, 60.0, 0.4], [0.15, 40.0, 0.5], [0.3, 60.0, 0.55], [0.3, 25.0, 0.6]]:
+		var now: float = still_alpha(float(row[0]), float(row[1]), true)
+		check(now >= float(row[2]), "%.2f m of still water seen %d degrees down: %.0f %% water colour over the bed (at least %.0f)" % [float(row[0]), int(row[1]), now * 100.0, float(row[2]) * 100.0])
 
-	check(body(3.0) > 0.95, "deep water hides its bed (%.0f %%)" % (body(3.0) * 100.0))
+	check(still_alpha(0.03, 60.0, true) < 0.3, "a 3 cm film at the bank still fades into the ground (%.0f %%): no hard line" % (still_alpha(0.03, 60.0, true) * 100.0))
+	check(still_alpha(2.0, 30.0, true) > 0.9, "deep water hides its bed (%.0f %%)" % (still_alpha(2.0, 30.0, true) * 100.0))
 
 	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
 	check(not client.contains("\"Water — Press E to drink\"") and client.contains("return {\"prompt\": \"Press E to drink\", \"tap\": items.drink}"), "looking at water names it once; the drink prompt alone says what E does")
