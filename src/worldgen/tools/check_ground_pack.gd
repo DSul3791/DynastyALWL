@@ -90,8 +90,8 @@ func _init() -> void:
 	for n in range(columns):
 		var lod: int = n % 7
 		var block_m: float = float(StoreScript.BLOCK_SIZE << lod)
-		var bx: int = int(floor((x0 + random.randf() * (span - block_m)) / block_m))
-		var bz: int = int(floor((z0 + random.randf() * (span - block_m)) / block_m))
+		var bx: int = int(floor((x0 + random.randf() * maxf(span - block_m, 0.0)) / block_m))
+		var bz: int = int(floor((z0 + random.randf() * maxf(span - block_m, 0.0)) / block_m))
 		var rows: Vector2i = PrebuildScript.surface_blocks(generator, bx, bz, lod)
 
 		for by in range(rows.x, rows.y + 1):
@@ -108,7 +108,9 @@ func _init() -> void:
 	if blocks == 0 or made > 0:
 		failed.append("%d of %d sampled blocks were made, not served from the pack" % [made, blocks])
 
-	if check_plants:
+	if check_plants and area.size() == 3:
+		print("check_ground_pack: plants not checked: a pack built with --area marks its plants file as part of a tile, which no server uses")
+	elif check_plants:
 		var pack = FloraPackScript.new()
 		pack.open(store_dir + "/" + FloraPackScript.FOLDER, FloraPackScript.fingerprint(store.tiles_stamp))
 		var asked: int = 0
