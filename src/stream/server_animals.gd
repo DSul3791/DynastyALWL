@@ -155,6 +155,12 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 const DRY_LINE_STEP_M := 2.0   # dry_line looks for deep water this often along the way
 const PICK_TRIES := 4          # fresh picks of a wander, a herd drift or a forage spot before the animal stays where it is
 const BLOCKED_PAUSE_S := 1.5    # a walk blocked short of its target: this long a pause before the next pick (not a whole graze)
+const FLEE_CHECK_M := 6.0       # a flight checked every this many metres run: one that got less than FLEE_GAIN of it from where it was is going round in circles
+const FLEE_GAIN := 0.5          # (Dave 24 Nov 2026 play test: a deer at a marsh "just spins in circles not able to run away", its flight line across water)
+const OPEN_MIN_M := 6.0         # a way out is this long a clear run at least (_open_way)
+const OPEN_MAX_M := 15.0        # and looked along this far
+const OPEN_PASS_M := 2.5        # never a way that passes nearer than this to what it flees
+const BAY_S := 1.5              # cornered with no way out: it stands at bay this long, facing the threat, then tries again
 
 
 # Whether a walker that keeps out of deep water (`blocked`) can go straight from `from` to `to`: no deep water every DRY_LINE_STEP_M along the
@@ -412,17 +418,9 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		return
 
 	var speed: float = float(def.get("flee_mps", 7.5)) if running else float(def.get("walk_mps", 1.5)) * (2.0 if far > 6.0 else 1.0)
-	var ground_for: Callable = ground_height
-	var blocked_for: Callable = blocked
-
-	if ice_on():
-		var moves: Array = ice_moves(def, str(a["sp"]))
-		ground_for = moves[0]
-		blocked_for = moves[1]
-
-	if swims(def):      # a young swimmer (a moose calf) follows its mother into the water
-		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
-		blocked_for = Callable()
+	var moves: Array = _walk_moves(a, def)   # a young swimmer (a moose calf) follows its mother into the water
+	var ground_for: Callable = moves[0]
+	var blocked_for: Callable = moves[1]
 
 	plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
@@ -705,6 +703,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 	a["state"] = FLEE
 	a["target"] = a["pos"] + Vector3(cos(a["heading"] + PI), 0.0, sin(a["heading"] + PI)) * float(species_def(a["sp"]).get("flee_run_m", 25.0))
+	a["flee_mark"] = a["pos"]   # its progress is checked from here (a line behind it across water is given a way out after FLEE_CHECK_M)
+	a["flee_path"] = 0.0
+	a.erase("bay")
 	return false
 
 
@@ -1598,13 +1599,16 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if big_game.warn(a, seen_p):
 			return
 	elif seen_d <= _spook_m(a, def) and a["state"] != FLEE and not stands:
-		if _stares(a, def, seen_p, seen_d, dt):
+		if _at_bay(a, seen_p, dt) or _stares(a, def, seen_p, seen_d, dt):
 			return
 
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
 		_alarm_herd(a, def)
+
+		if bool(a.get("bay", false)):
+			return   # cornered: at bay from now (_at_bay), not bolted again below
 
 	if a.has("fly"):
 		return   # it took off: the flight moves it from the next step (server_flight.gd)
@@ -1621,6 +1625,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["timer"] = _graze_time(def)
 			a["target"] = a["pos"]   # the walk the watch broke off is over: it grazes here
 			a.erase("startle")   # a stare the player walked out of: its next watch is an ordinary one
+			a.erase("bay")
 
 		return
 
@@ -1716,21 +1721,13 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
 		a["burst"] += dt
 		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
-	var ground_for: Callable = ground_height
-	var blocked_for: Callable = blocked
 
-	if ice_on():   # animals on ice (animals_on_ice_server.md): deer and boar keep off it, wolves cross a sheet that bears
-		var moves: Array = ice_moves(def, str(a["sp"]))
-		ground_for = moves[0]
-		blocked_for = moves[1]
+	var moves: Array = _walk_moves(a, def)
+	var ground_for: Callable = moves[0]
+	var blocked_for: Callable = moves[1]
 
-	if swims(def):
-		# A swimmer goes into deep water (nothing blocks it) and rides the surface there; in water it moves at swim_mps.
-		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
-		blocked_for = Callable()
-
-		if in_water(def, a["pos"]):
-			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
+	if swims(def) and in_water(def, a["pos"]):
+		speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # in water a swimmer moves at swim_mps: cruising slowly, bolting at full speed
 
 	if a["state"] == HOP and a.has("trip"):
 		_trip_ahead(a)   # on a trail: the next point before this one is reached, so it never stops between points
@@ -1739,11 +1736,25 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
+		var ran: float = a["pos"].distance_to(r["pos"])
 		a["pos"] = r["pos"]
 		a["heading"] = r["heading"]
 
 		if a.get("wound", false) and a["pos"].distance_to(a["last_drop"]) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
 			_drop_blood(a)
+
+		if a["state"] == FLEE and not a["to_burrow"] and near_p != Vector3.INF:
+			a["flee_path"] = float(a.get("flee_path", 0.0)) + ran
+
+			if float(a["flee_path"]) >= FLEE_CHECK_M:
+				if a["pos"].distance_to(a.get("flee_mark", a["pos"])) < FLEE_GAIN * float(a["flee_path"]):
+					_flee_target(a, near_p, Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized(), def, true)   # going round in circles: a real way out
+
+					if a["state"] != FLEE:
+						return   # cornered: at bay
+
+				a["flee_mark"] = a["pos"]
+				a["flee_path"] = 0.0
 
 	if (a["state"] == FLEE or a["state"] == HOP) and a["to_burrow"] and (r["arrived"] or not r["moved"]):
 		a["to_burrow"] = false
@@ -1766,14 +1777,13 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if def.has("defend") and not r["moved"] and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2))):
 				return
 
-			# Still too close: keep running away from the player.
+			# Still too close: keep running away from the player, by a way it can go (_flee_target), or at bay when there is none.
 			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized()
 
 			if not r["moved"]:
-				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a cornered animal breaks
+				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a pinned animal breaks (a wall or a fence the ground check cannot see)
 
-			a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
-			_to_burrow(a, away, def)
+			_flee_target(a, near_p, away, def)
 			return
 
 		if a["state"] == FLEE:
@@ -2655,6 +2665,7 @@ func info_of(id: int) -> Dictionary:
 
 func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a.erase("startle")   # whatever sent it off (the stare's end, an alarm, a wound), the stare is over
+	a.erase("bay")
 
 	if def.has("flight") and flight != null:
 		flight.take_off(a, from)   # a bird with a flight row flies instead of running (bird_flight_server_design.md)
@@ -2680,8 +2691,138 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a.erase("lured")
 	a.erase("hunch")
 	a.erase("sheltered")
-	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
+	_flee_target(a, from, away, def)
+
+
+# Where a fleeing animal runs next: on its zig-zag away from `from`, or, when that leg is blocked on the way (water, a cliff), the clear
+# way nearest to away from it that does not pass the threat (_open_way): Steering only turns up to a right angle off a target, so a flight
+# line across water had it step to and fro along the bank on the spot (Dave 24 Nov 2026: "this deer seems stuck he just spins in circles
+# not able to run away ... until I hit him then he ran"). With no way at all it stands at bay (BAY_S), facing it; a goblin or bandit
+# (give_way player, a person with its own step) keeps its line. `open`: straight to the clear way (a flight going round in circles).
+func _flee_target(a: Dictionary, from: Vector3, away: Vector2, def: Dictionary, open: bool = false) -> void:
+	var leg: Vector3 = _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
+	var moves: Array = _walk_moves(a, def)
+	a["flee_mark"] = a["pos"]
+	a["flee_path"] = 0.0
+	var person: bool = str(def.get("defend", {}).get("give_way", "")) == "player"
+	# A dug hole or a fill: the walker climbs and drops more there (walk_step's ground_step), so it is not seen as walled in.
+	var edited: bool = ground_edited.is_valid() and bool(ground_edited.call(a["pos"].x, a["pos"].z))
+	var gs: Dictionary = cfg.get("ground_step", {})
+	var climb_m: float = float(gs.get("climb_m", 1.0)) if edited else 0.0
+	var drop_m: float = float(gs.get("drop_m", 2.0)) if edited else 0.0
+
+	if person or (not open and _clear_m(a["pos"], Vector2(leg.x, leg.z).normalized(), leg.length(), moves[0], moves[1], crossing, climb_m, drop_m) >= leg.length() - 0.01):
+		a["target"] = a["pos"] + leg
+	else:
+		var way: Vector3 = _open_way(a["pos"], from, away, moves[0], moves[1], crossing, climb_m, drop_m)
+
+		if way == Vector3.INF:
+			_to_burrow(a, away, def)
+
+			if bool(a.get("to_burrow", false)):
+				return   # a rabbit with its burrow at hand dives in
+
+			a["state"] = ALERT   # cornered: it stands at bay facing the threat, not spinning (_at_bay), then tries again
+			a["alert"] = BAY_S
+			a["bay"] = true
+			a["target"] = a["pos"]
+			a["heading"] = atan2(from.z - a["pos"].z, from.x - a["pos"].x)
+			return
+
+		a["target"] = way
+
 	_to_burrow(a, away, def)
+
+
+# How far a walker gets in a straight line from `pos` along `dir` (flat, unit), up to `max_m`, in metre steps: to just before ground it may
+# not enter (`blocked`), a wall (`cross`, as Steering's), no ground, or a rise or a drop steeper than Steering's (or than climb_m and
+# drop_m, on dug ground).
+static func _clear_m(pos: Vector3, dir: Vector2, max_m: float, ground: Callable, blocked_at: Callable, cross: Callable = Callable(), climb_m: float = 0.0, drop_m: float = 0.0) -> float:
+	var y: float = pos.y
+	var got: float = 0.0
+
+	while got < max_m - 0.001:
+		var step: float = minf(1.0, max_m - got)
+		var x: float = pos.x + dir.x * (got + step)
+		var z: float = pos.z + dir.y * (got + step)
+
+		if blocked_at.is_valid() and bool(blocked_at.call(x, z)):
+			break
+
+		if cross.is_valid() and bool(cross.call(pos.x + dir.x * got, pos.z + dir.y * got, x, z)):
+			break
+
+		var ny: float = float(ground.call(x, z)) if ground.is_valid() else y
+
+		if is_nan(ny) or ny - y > maxf(Steering.MAX_SLOPE * step + 0.05, climb_m) or y - ny > maxf(Steering.MAX_SLOPE * step + 0.05, drop_m):
+			break
+
+		y = ny
+		got += step
+
+	return got
+
+
+# The way out for an animal at `pos` fleeing `from` (`away`, flat, unit): of sixteen headings, the one nearest to away with a clear run of
+# OPEN_MIN_M at least (looked along to OPEN_MAX_M) that does not take it toward `from` and within OPEN_PASS_M of it; its end (as far as
+# it is clear). Vector3.INF when there is none.
+static func _open_way(pos: Vector3, from: Vector3, away: Vector2, ground: Callable, blocked_at: Callable, cross: Callable = Callable(), climb_m: float = 0.0, drop_m: float = 0.0) -> Vector3:
+	var rel: Vector2 = Vector2(from.x - pos.x, from.z - pos.z)
+
+	for k in 16:   # straight away first, then a sixteenth of a turn more each side: the first clear one is the nearest to away
+		var dir: Vector2 = away.rotated(TAU / 16.0 * floorf(float(k + 1) * 0.5) * (1.0 if k % 2 == 1 else -1.0))
+		var run: float = _clear_m(pos, dir, OPEN_MAX_M, ground, blocked_at, cross, climb_m, drop_m)
+
+		if run < OPEN_MIN_M:
+			continue
+
+		var along: float = clampf(rel.dot(dir), 0.0, run)
+
+		if along > 0.0 and (rel - dir * along).length() < OPEN_PASS_M:
+			continue   # toward the threat and past its reach: not a way out
+
+		return Vector3(pos.x + dir.x * run, pos.y, pos.z + dir.y * run)
+
+	return Vector3.INF
+
+
+# A walker's ground and what blocks it, as its own step reads them: on ice (deer and boar keep off it), a swimmer on the water.
+func _walk_moves(a: Dictionary, def: Dictionary) -> Array:
+	var ground_for: Callable = ground_height
+	var blocked_for: Callable = blocked
+
+	if ice_on():   # animals on ice (animals_on_ice_server.md): deer and boar keep off it, wolves cross a sheet that bears
+		var moves: Array = ice_moves(def, str(a["sp"]))
+		ground_for = moves[0]
+		blocked_for = moves[1]
+
+	if swims(def):
+		# A swimmer goes into deep water (nothing blocks it) and rides the surface there.
+		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
+		blocked_for = Callable()
+
+	return [ground_for, blocked_for]
+
+
+# A cornered animal at bay (_flee_target): it stands facing `seen_p` for BAY_S, then may run again. True while it stands.
+func _at_bay(a: Dictionary, seen_p: Vector3, dt: float) -> bool:
+	if not bool(a.get("bay", false)):
+		return false
+
+	if int(a["state"]) != ALERT:
+		a.erase("bay")
+		return false
+
+	a["alert"] -= dt
+
+	if a["alert"] > 0.0:
+		if seen_p != Vector3.INF:
+			a["heading"] = atan2(seen_p.z - a["pos"].z, seen_p.x - a["pos"].x)
+
+		return true
+
+	a.erase("bay")
+	return false
 
 
 # A rabbit with its burrow in reach and away from the threat runs for it and goes to ground there.
