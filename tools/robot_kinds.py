@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reads one or more kind runs (ROBOT_S=200 tools/robots.sh 2 kind_<species> [link]) and prints, per run, how the two robots drew the kind.
 
-    python3 tools/robot_kinds.py /tmp/robots_XXXX [/tmp/robots_YYYY ...]
+    python3 tools/robot_kinds.py /tmp/robots_XXXX [/tmp/robots_YYYY ...] [--episodes=N]   N: also the N worst two-robot gaps, one per spell
 
 The robots (src/client/robot_play.gd _kind) print each frame's stats in a KIND line, and every 100 ms an A line per drawn body of the kind
 (unix ms, id, x, z, state) and a P line for themselves; a health drop prints BITTEN with the nearest drawn body. The server prints
@@ -257,14 +257,67 @@ def report(d):
 	return True
 
 
+def episodes(d, count):
+	"""The `count` worst moments the two robots drew one animal apart, each with both drawn places, the server's (AUDIT where), the state and
+	speed band each robot drew, and the drawn places 0.5 s either side: whether one is held, late, overshooting or still catching up."""
+	robots, _hits = read_run(d)
+	where = robots.pop("_where", {})
+	names = sorted(robots)
+
+	if len(names) < 2:
+		return []
+
+	one, two = robots[names[0]], robots[names[1]]
+	worst = []
+
+	for aid, rows in one["a"].items():
+		other = two["a"].get(aid)
+
+		if not other:
+			continue
+
+		for k, (ms, x, z, st) in enumerate(rows):
+			o = at(other, ms)
+
+			if o is not None:
+				worst.append((math.hypot(x - o[0], z - o[1]), aid, ms, k))
+
+	worst.sort(reverse=True)
+	out, used = [], []
+
+	for gap, aid, ms, k in worst:
+		if any(a == aid and abs(m - ms) < 2000 for a, m in used):
+			continue   # one line per spell
+
+		used.append((aid, ms))
+		rows, other = one["a"][aid], two["a"][aid]
+		srv = at(where.get(aid, []), ms, 300)
+		near = lambda rs: " ".join("%+d:%s" % ((dt), "-" if at(rs, ms + dt) is None else "%.1f,%.1f" % at(rs, ms + dt)) for dt in (-500, -250, 0, 250, 500))
+		st2 = min(other, key=lambda r: abs(r[0] - ms))
+		out.append("  episode %s animal %d at %d: gap %.2f m; %s state %d %s [%s]; %s state %d %s [%s]; server %s" % (
+			os.path.basename(d), aid, ms, gap, names[0], rows[k][3], speed_band(rows, k), near(rows), names[1], st2[3], speed_band(other, other.index(st2)),
+			near(other), "-" if srv is None else "%.1f,%.1f" % srv))
+
+		if len(out) >= count:
+			break
+
+	return out
+
+
 def main():
+	count = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--episodes=")), 0)
 	dirs = [d for d in sys.argv[1:] if os.path.isdir(d)]
 
 	if not dirs:
 		print(__doc__)
 		return 2
 
-	return 0 if all([report(d) for d in dirs]) else 2
+	ok = all([report(d) for d in dirs])
+
+	for d in dirs if count > 0 else []:
+		print("\n".join(episodes(d, count)))
+
+	return 0 if ok else 2
 
 
 if __name__ == "__main__":

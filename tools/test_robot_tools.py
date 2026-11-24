@@ -397,6 +397,8 @@ def test_kinds():
 		check(rk.speed_band(one["a"][7], 5) == "walk" and rk.speed_band([(0, 0.0, 0.0, 0), (100, 0.0, 0.0, 0)], 0) == "still", "robot_kinds bands an animal at 3 m/s a walk, a standing one still")
 		r = subprocess.run([sys.executable, os.path.join(HERE, "robot_kinds.py"), d], capture_output=True, text=True)
 		check(r.returncode == 0 and "agree by state: 11 40: median 2.00" in r.stdout and "agree by speed: walk" in r.stdout, "robot_kinds splits the gap by state and speed (%s)" % r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr)
+		ep = rk.episodes(d, 3)
+		check(1 <= len(ep) <= 2 and "gap 2.00 m" in ep[0] and "robot1 state 11 walk" in ep[0], "robot_kinds --episodes: one line per spell, with each robot's state and speed (%s)" % (ep[0] if ep else "none"))
 
 
 def test_stuck():
