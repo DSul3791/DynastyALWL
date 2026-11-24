@@ -119,3 +119,7 @@ Moved to Fixed on 24 Nov 2026: a test or tooling fix with nothing for a player t
 Not yet played.
 
 Moved to Fixed on 24 Nov 2026: superseded by entry 131 (still in BugsList_Current.md), nothing left to play.
+
+## 137. The fibre backpack did not show as something to take off
+
+Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("fibre backpack not appearing as unequippable"). The tester's "fibre backpack" was the Fibre - Shoulder bag, renamed Fibre - Backpack by Dave's ruling of 24 Nov 2026 (entry 143). Worn, it is listed on the Tab character screen's worn list with Take off, and its gear well opens it like any worn bag (CONTROLS.md). Closed 24 Nov 2026 with the rename; nothing else was found wrong.

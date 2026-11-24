@@ -2189,7 +2189,7 @@ func _station_round(view) -> void:
 		await _wait(0.5)
 
 
-# Puts on a skirt, sandals and the Fibre shoulder bag (the first clothes and bag), opens the bag, stores and takes the pack's fibre through it,
+# Puts on a skirt, sandals and the Fibre - Backpack (the first clothes and bag), opens the bag, stores and takes the pack's fibre through it,
 # and takes all three off. Each must land in a worn position and come back to the pack; the fibre must all still be there.
 const FIRST_WORN := ["grass_skirt", "fibre_sandals", "fibre_shoulder_bag"]
 
@@ -2282,7 +2282,7 @@ func _worn_round(view) -> void:
 			await get_tree().process_frame
 
 		if not view.chest_mode:
-			_fail("worn", "bag_open", "the worn Fibre shoulder bag did not open")
+			_fail("worn", "bag_open", "the worn Fibre - Backpack did not open")
 		else:
 			view.bulk(1)   # Store all
 			await _check_pack("bag store all")

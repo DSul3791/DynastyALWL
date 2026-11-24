@@ -276,7 +276,7 @@ func _moves() -> void:
 	act(Net.ACT_WEAR, inv.numbers.find(n(pack_id)))
 	var bonus: float = float(items.table.entry(pack_id).get("carry_bonus_kg", 0.0))
 	check(near(CarryRules.cap_kg(items._carry_body(1), cfg) - CarryRules.cap_kg(body0, cfg), bonus), "a worn %s lets you carry %.0f kg more" % [items.table.sentence_name(n(pack_id)), bonus])
-	# A worn bag (a Fibre shoulder bag): what it holds counts in full.
+	# A worn bag (a Fibre - Backpack, worn on the shoulder): what it holds counts in full.
 	var bag_id: String = "fibre_shoulder_bag"
 	items.give(1, n(bag_id), 1)
 	act(Net.ACT_WEAR, inv.numbers.find(n(bag_id)))
@@ -287,7 +287,7 @@ func _moves() -> void:
 		if typeof(worn[i]) == TYPE_ARRAY and (worn[i] as Array).size() > 0 and int(worn[i][0]) == n(bag_id):
 			worn_at = i
 
-	check(worn_at >= 0, "the shoulder bag is worn")
+	check(worn_at >= 0, "the Fibre - Backpack is worn")
 	items.give(1, n("stone"), 6)
 	before = load_of(1)
 	said.clear()

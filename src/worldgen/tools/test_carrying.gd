@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Carrying equipment (catalog Phase 5, M001-T15; master s3.9 rules 1-5, CATALOG_SAVE_MIGRATION.md rules 10-11): a bag is an item instance holding
-# its own contents (instance data `bag`, src/shared/bag_rules.gd). Real server state throughout: a worn Fibre - Shoulder bag (a bag with slots; no back pack has any, Dave 13 Nov 2026) fills through its container
+# its own contents (instance data `bag`, src/shared/bag_rules.gd). Real server state throughout: a worn Fibre - Backpack (a bag with slots; no back pack has any, Dave 13 Nov 2026) fills through its container
 # window, is dropped, picked up, put in a chest and taken out by another player with nothing lost or doubled; a bag refuses a bag; a quiver holds
 # its 40 arrows beside a backpack and the bow draws from it; a pouch refuses a log and needs a belt with a free point; contents spoil where the bag
 # is, count toward the carry weight, and survive a save and reload worn and on the ground.
@@ -155,7 +155,7 @@ func _init() -> void:
 			no_slots.append(id)
 
 	check(no_slots.is_empty(), "no back pack has slots, bag_takes or loaded_effort (Dave 13 Nov 2026: they only give carry weight) (%s)" % str(no_slots))
-	check(BagRules.slots_of(table, n.call("fibre_shoulder_bag")) == 4 and BagRules.slots_of(table, n.call("quiver")) == 2 and int(table.entry("quiver").get("ammo_capacity", 0)) == 40, "volume: Fibre - Shoulder bag 4 slots, Hide - Quiver 40 arrows")
+	check(BagRules.slots_of(table, n.call("fibre_shoulder_bag")) == 4 and BagRules.slots_of(table, n.call("quiver")) == 2 and int(table.entry("quiver").get("ammo_capacity", 0)) == 40, "volume: Fibre - Backpack 4 slots, Hide - Quiver 40 arrows")
 
 	# 2. A backpack and a quiver are worn together; the pack spreads the load (its carry_bonus_kg raises the limit, test_backpack_carry measures it).
 	var body_before: float = items._carry_body(1)
@@ -176,12 +176,12 @@ func _init() -> void:
 	check(chest_sent.is_empty() and held(items, 1, "back:base").is_empty() and inv.count_of(n.call("stone")) == 1, "the worn Simple - Backpack is not opened and takes nothing")
 	inv.clear_slot(inv.numbers.find(n.call("stone")))
 
-	# A Fibre - Shoulder bag is the bag the rest of this test uses: the backpack is taken off and put away so its bonus stays out of the numbers below.
+	# A Fibre - Backpack is the bag the rest of this test uses: the backpack is taken off and put away so its bonus stays out of the numbers below.
 	items.action(1, Net.ACT_UNWEAR, place(items, "back:base"), 0, 0, Vector3.ZERO)
 	inv.clear_slot(inv.numbers.find(n.call("simple_backpack")))
 	give(items, 1, "fibre_shoulder_bag")
 	wear(items, 1, "fibre_shoulder_bag")
-	check(items.worn_of(1)[place(items, "shoulder:base")] == n.call("fibre_shoulder_bag"), "a Fibre - Shoulder bag worn (a bag with 4 slots)")
+	check(items.worn_of(1)[place(items, "shoulder:base")] == n.call("fibre_shoulder_bag"), "a Fibre - Backpack worn (a bag with 4 slots)")
 
 	# 3. Fill the shoulder bag through its window (a worn bag is container -1 - its worn position).
 	var pack_id: int = -1 - place(items, "shoulder:base")
