@@ -3161,6 +3161,7 @@ var garden_d: int = 1
 var garden_yaw: int = 0                  # degrees, the way a structure's yaw turns
 var _garden_box: BoxMesh = null           # the till grid's square marks
 var _garden_dot: SphereMesh = null        # the Plant grid's dots
+var _grid_yaw: int = 0                    # the turn the grid was last drawn at (garden_yaw, or a bed's)
 var _garden_centre: Vector2 = Vector2.ZERO   # the last plan's grid centre (the click sends it)
 var _verdict: Dictionary = {}            # the server's last hoe_verdict: {"kind", "code", "at", "state", "why", "cells"}
 var _asked: Array = []                   # the last check sent: [kind, code, at]
@@ -3212,6 +3213,7 @@ func _grid_request(aim: Vector3) -> Dictionary:
 
 	# The grid's bottom left point at the crosshair (or the bed or metre cell under it), the grid running forward and to the right (Dave 24 Nov 2026):
 	# centred on the aim, a big grid reached back behind the player where it could not be seen.
+	_grid_yaw = yaw
 	var corner: Vector2 = anchor if typeof(anchor) == TYPE_VECTOR2 else flat_aim
 	var eye: Vector3 = _camera.global_position if _camera != null else aim
 	_garden_centre = FarmRules.grid_from_corner(w, d, step, corner, yaw, Vector2(aim.x - eye.x, aim.z - eye.z))
@@ -3305,8 +3307,17 @@ func garden_resize(across: int, along: int) -> bool:
 		_inv._on_notice("Till Soil 2m is always a 2 m patch")
 		return true
 
-	garden_w = clampi(garden_w + across, 1, FarmRules.GRID_MAX_SIDE)
-	garden_d = clampi(garden_d + along, 1, FarmRules.GRID_MAX_SIDE)
+	# across: Alt + Right / Left, the grid's reach to the player's right; along: Alt + Up / Down, its reach forward. The corner at the crosshair stays put and the
+	# grid grows or shrinks away from it (Dave 24 Nov 2026), so the keys go to whichever of the grid's sides points right and forward as the player looks.
+	var look: Vector3 = -_camera.global_transform.basis.z if _camera != null else Vector3(0.0, 0.0, -1.0)
+
+	if FarmRules.across_is_right(_grid_yaw, Vector2(look.x, look.z)):   # the turn the grid is drawn at (a seed grid on a bed takes the bed's)
+		garden_w = clampi(garden_w + across, 1, FarmRules.GRID_MAX_SIDE)
+		garden_d = clampi(garden_d + along, 1, FarmRules.GRID_MAX_SIDE)
+	else:
+		garden_w = clampi(garden_w + along, 1, FarmRules.GRID_MAX_SIDE)
+		garden_d = clampi(garden_d + across, 1, FarmRules.GRID_MAX_SIDE)
+
 	_inv._on_notice("Hoe grid: %d by %d" % [garden_w, garden_d])
 	return true
 

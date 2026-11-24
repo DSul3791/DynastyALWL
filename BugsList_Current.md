@@ -1622,6 +1622,10 @@ Not yet played.
 
 Now the grid's bottom left point sits at the crosshair (on the bed or metre cell under it) and the grid runs forward and to the right as the player sees it, whatever its turn (FarmRules.grid_from_corner; test_farm_prompt). The server measures a grid's reach to its nearest point, not its middle. Plant shows a small dot at each spot: green where the seeds in reach will go, red past them and where nothing can go. Not yet played.
 
+## 140. Alt + arrows grow the hoe grid from its corner, to the right and forward
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "with planting grids you can use alt+arrows to adjust the grid sizes but it should be 0,0 at the bottom left and pressing altright or altforward increases the grid size". The corner at the crosshair stays put; Alt + Right / Left grows or shrinks the grid to the right, Alt + Up / Down forward, whichever of the grid's sides points that way as the player looks (FarmRules.across_is_right; test_farm_prompt). Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

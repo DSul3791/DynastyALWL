@@ -134,6 +134,15 @@ static func grid_points(w: int, d: int, step: float, centre: Vector2, yaw_deg: i
 	return points
 
 
+# Whether a grid turned yaw_deg runs its width (columns) to the player's right, looking along `toward`; false when its length does. The grid grows from its
+# corner to the right and forward, and Alt + Right / Alt + Up make it bigger that way (Dave 24 Nov 2026), so the keys follow the axis that points there.
+static func across_is_right(yaw_deg: int, toward: Vector2) -> bool:
+	var turn: float = -deg_to_rad(float(yaw_deg))
+	var fwd: Vector2 = toward.normalized() if toward.length() > 0.001 else Vector2(0.0, -1.0)
+	var right: Vector2 = Vector2(-fwd.y, fwd.x)
+	return absf(Vector2(1.0, 0.0).rotated(turn).dot(right)) >= absf(Vector2(0.0, 1.0).rotated(turn).dot(right))
+
+
 # Where the grid's centre goes when its bottom left point sits on `corner` (Dave 24 Nov 2026: "should put the bottom left corner of the grid at your
 # crosshairs"): seen by the player looking along `toward`, the grid runs forward and to the right of that point, whatever its turn.
 static func grid_from_corner(w: int, d: int, step: float, corner: Vector2, yaw_deg: int, toward: Vector2) -> Vector2:
@@ -146,7 +155,7 @@ static func grid_from_corner(w: int, d: int, step: float, corner: Vector2, yaw_d
 	var s_across: float
 	var s_along: float
 
-	if absf(across.dot(right)) >= absf(along.dot(right)):
+	if across_is_right(yaw_deg, toward):
 		s_across = sign_of.call(across.dot(right))
 		s_along = sign_of.call(along.dot(fwd))
 	else:
