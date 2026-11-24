@@ -77,6 +77,9 @@ before. The pack also holds the tiles' trees and plants (flora_pack/); the serve
    run note still says running: add `--server-stopped` at the end once `docker ps` shows the server is down), then
    `docker compose -f compose.yaml up -d`. The copy needs the pack's size free again on the server's disk; the folder
    /home/dave/dynasty/ground_pack can be deleted afterwards.
+   To check a store serves the pack without making ground or placing plants (on a copy or a fresh store, never the live one: a store
+   from other tiles is cleared on open, as the server does), `src/worldgen/tools/check_ground_pack.gd -- --store=DIR` ends with
+   `check_ground_pack: PASS`.
 
 ## Join it
 
