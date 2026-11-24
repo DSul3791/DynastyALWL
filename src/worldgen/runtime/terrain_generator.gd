@@ -113,6 +113,10 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 	_placeholder_depth = float(_terrain.get("placeholder_depth_m", -200.0))
 	_cave_max_lod = cave_carve_lods(int(_terrain.get("cave_max_lod", 2)))
 	_ore_max_lod = int(_terrain.get("ore_max_lod", 0))
+	var cap_rules: Dictionary = tile_rules.get("ore_cap", {})
+	_ore_node_cell = maxf(float(cap_rules.get("node_cell_m", 24.0)), 1.0)
+	_ore_node_share = float(cap_rules.get("node_share", 0.04))
+	_ore_cap_min = float(cap_rules.get("min_m", 1.5))
 
 	for entry in tables.get_entries("rocks"):
 		_rock_ids[str(entry["name"])] = int(entry["id"])
@@ -1309,6 +1313,10 @@ func _fill_rock_run(buffer: VoxelBuffer, rock: int, y_lo: float, y_hi: float, i:
 var buried_bodies_skipped: bool = true
 var ore_columns_skipped: bool = true
 var bodies_prepared: bool = true
+var ores_prepared: bool = true        # a layer ore's numbers are read out of its entry once per block, not once per column
+var _ore_node_cell: float = 24.0        # tile_rules ore_cap, read once in setup (_fill_ore_column)
+var _ore_node_share: float = 0.04
+var _ore_cap_min: float = 1.5
 var lookups_shared: bool = true       # a column's cover, layer offset, nearest sample and ground soil are read once, not once per fill step
 var buried_columns_skipped: bool = true   # a column whose bedrock reaches the block's top gets no surface look (the rock fill writes all its material)
 var heights_gridded: bool = true      # a block on one tile reads its heights through heights_grid (indices and weights once per row and column)
@@ -1419,7 +1427,7 @@ func _ores_touching(column_tile: Array, box: AABB) -> Dictionary:
 				if not by_province.has(p):
 					by_province[p] = []
 
-				by_province[p].append(ore)
+				by_province[p].append(_prepared_layer(ore) if ores_prepared else ore)
 			else:
 				shapes.append([data, ore])
 
@@ -1454,14 +1462,13 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 	# cover); bare rock keeps its ore showing, and in a small hashed share of small cells
 	# (ore_cap.node_share) the ore is left exposed as a node, its top voxels turned to rock so
 	# what is seen matches the label.
-	var cap_rules: Dictionary = _rules.get("ore_cap", {})
 	var cover: float = known_cover if not is_nan(known_cover) else data.cover_at(x, z)
-	var node_cell: float = maxf(float(cap_rules.get("node_cell_m", 24.0)), 1.0)
-	var exposed: bool = cover <= 0.0 or _hash01(int(floor(x / node_cell)), 0, int(floor(z / node_cell)), 7121) < float(cap_rules.get("node_share", 0.04))
+	var node_cell: float = _ore_node_cell
+	var exposed: bool = cover <= 0.0 or _hash01(int(floor(x / node_cell)), 0, int(floor(z / node_cell)), 7121) < _ore_node_share
 	var h: float = h_ground
 
 	if not exposed:
-		h = h_ground - maxf(maxf(cover, float(cap_rules.get("min_m", 1.5))), sf)
+		h = h_ground - maxf(maxf(cover, _ore_cap_min), sf)
 
 	for pair in ore_set["shapes"]:
 		if pair[0] != data:
@@ -1534,7 +1541,7 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 	var yb: float = h_ground - cover
 
 	for ore in by_province[p]:
-		_layer_column(buffer, ore, top, yb, i, k, oy, sf, ny, origin)
+		_layer_column(buffer, ore if ores_prepared else _prepared_layer(ore), top, yb, i, k, oy, sf, ny, origin)
 
 
 # A steep sheet along a fault trace: at height y the sheet sits
@@ -1569,15 +1576,26 @@ func _vein_column(buffer: VoxelBuffer, ore: Dictionary, id: int, point: Vector2,
 # salt layers), or a thin random scatter in such a band (gems in their
 # host rock). `top` is the province datum plus the layer offset here, `yb`
 # the bedrock surface.
-func _layer_column(buffer: VoxelBuffer, ore: Dictionary, top: float, yb: float, i: int, k: int, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
+# A layer or scatter ore's numbers, read out of its entry once (_ores_touching, per block): [resource id, cycle, depth below the datum, thickness,
+# repeat to, scatter, host rock or -1, density, local id].
+static func _prepared_layer(ore: Dictionary) -> Array:
 	var id: int = ore["resource_id"]
-	var cycle: float = float(ore["cycle_m"])
-	var start: float = float(ore["depth_below_datum_m"])
-	var thickness: float = float(ore["thickness_m"])
-	var repeat_to: float = float(ore["repeat_to_m"])
-	var scatter: bool = int(ore["code"]) == ORE_SCATTER
-	var host: int = int(ore.get("host_id", -1))
-	var density: float = float(ore.get("density", 1.0))
+	return [
+		id, float(ore["cycle_m"]), float(ore["depth_below_datum_m"]), float(ore["thickness_m"]), float(ore["repeat_to_m"]),
+		int(ore["code"]) == ORE_SCATTER, int(ore.get("host_id", -1)), float(ore.get("density", 1.0)), int(ore.get("local_id", 0)),
+	]
+
+
+func _layer_column(buffer: VoxelBuffer, ore: Array, top: float, yb: float, i: int, k: int, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
+	var id: int = ore[0]
+	var cycle: float = ore[1]
+	var start: float = ore[2]
+	var thickness: float = ore[3]
+	var repeat_to: float = ore[4]
+	var scatter: bool = ore[5]
+	var host: int = ore[6]
+	var density: float = ore[7]
+	var salt: int = ore[8]
 	var block_top: float = oy + float(ny - 1) * sf
 	# Cycles whose band can reach this block.
 	var first: int = maxi(int(floor((top - block_top - start - thickness) / cycle)), 0)
@@ -1603,7 +1621,7 @@ func _layer_column(buffer: VoxelBuffer, ore: Dictionary, top: float, yb: float, 
 			if host >= 0 and buffer.get_voxel(i, j, k, Layout.CHANNEL_ROCK) != host:
 				continue
 
-			if _hash01(origin.x + i, origin.y + j, origin.z + k, int(ore["local_id"])) < density:
+			if _hash01(origin.x + i, origin.y + j, origin.z + k, salt) < density:
 				buffer.set_voxel(id, i, j, k, Layout.CHANNEL_RESOURCE)
 
 

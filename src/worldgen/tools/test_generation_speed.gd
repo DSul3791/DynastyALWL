@@ -130,6 +130,7 @@ func _run(blocks: Array, shortcuts: bool) -> Array:
 	generator.ore_columns_skipped = shortcuts
 	generator.bodies_prepared = shortcuts
 	generator.lookups_shared = shortcuts
+	generator.ores_prepared = shortcuts
 	generator.buried_columns_skipped = shortcuts
 	generator.heights_gridded = shortcuts
 	generator.dry_soil_shortcut = shortcuts
