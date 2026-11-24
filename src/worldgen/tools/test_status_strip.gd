@@ -47,20 +47,23 @@ func _client_side() -> void:
 			no_words.append(id)
 
 	check(no_glyph.is_empty(), "every symbol's glyph is drawn by the art kit (missing: %s)" % str(no_glyph))
+	check(int(spec["hunger"].get("show_below", 0)) == 10 and int(spec["thirst"].get("show_below", 0)) == 10 and not bool(spec["hunger"].get("always", false)), "food and water show only below 10%")
+	check(str(spec["load"]["lines"]["1"]).contains("{p}% of what you can carry"), "the heavy load's number is the load's share of what you can carry, not the speed")
+	check(ArtKit.has_glyph("comfort_fire") and str(spec["comfort"].get("glyph", "")) == "comfort_fire", "the comfort meter is a campfire, not a drop")
 	check(no_words.is_empty(), "every symbol has a name and hover words (missing: %s)" % str(no_words))
 	check(strip.position.x + strip.size.x <= ArtKit.HOTBAR_TRAY.position.x and is_equal_approx(strip.size.y, float(ArtKit.HOT)) and is_equal_approx(strip.position.y, ArtKit.HOTBAR_STRIP.position.y),
 		"the strip ends left of the hotbar's tray, level with its slots and as tall")
 
-	var state: Dictionary = {"hunger": 73, "thirst": 12, "limp": 1.0, "picture": false}
-	strip.add("hunger", func() -> Dictionary: return {"value": "%d%%" % state["hunger"], "tone": 0, "vars": {"n": state["hunger"]}})
-	strip.add("thirst", func() -> Dictionary: return {"value": "%d%%" % state["thirst"], "tone": 1, "vars": {"n": state["thirst"]}})
+	var state: Dictionary = {"hunger": 8, "thirst": 5, "limp": 1.0, "picture": false}
+	strip.add("hunger", func() -> Dictionary: return {} if int(state["hunger"]) >= 10 else {"value": "%d%%" % state["hunger"], "tone": 1, "vars": {"n": state["hunger"]}})
+	strip.add("thirst", func() -> Dictionary: return {} if int(state["thirst"]) >= 10 else {"value": "%d%%" % state["thirst"], "tone": 1, "vars": {"n": state["thirst"]}})
 	strip.add("limp", func() -> Dictionary: return {} if float(state["limp"]) >= 1.0 else {"tone": 1, "vars": {"n": int(round(float(state["limp"]) * 100.0)), "min": 10, "heal": 60}})
 	strip.add_icon("inspection", ImageTexture.create_from_image(Image.create(4, 4, false, Image.FORMAT_RGBA8)), func() -> bool: return bool(state["picture"]))
 	strip.tick(0.0, true)
 	check(strip.shown() == ["hunger", "thirst"], "at first only hunger and thirst show (%s)" % str(strip.shown()))
-	check(strip.get_children().filter(func(n: Node) -> bool: return n is Label).is_empty(), "the first look names nothing (hunger and thirst are always there)")
-	check(strip.tip_of("thirst") == "Water 12%: you are low on water. Drink soon.", "the hover words take the tone and the number ('%s')" % strip.tip_of("thirst"))
-	check(strip.cell_of("hunger").tooltip_text == "Food 73%. Your stomach empties as you work and walk; eat before it runs out.", "and are the symbol's tooltip")
+	check(strip.get_children().filter(func(n: Node) -> bool: return n is Label).is_empty(), "the first look after joining names nothing")
+	check(strip.tip_of("thirst") == "Water 5%: you are low on water. Drink soon.", "the hover words take the tone and the number ('%s')" % strip.tip_of("thirst"))
+	check(strip.cell_of("hunger").tooltip_text == "Food 8%: you are low on food. Eat soon.", "and are the symbol's tooltip")
 	var thirst_cell: Control = strip.cell_of("thirst")
 	check(is_equal_approx(thirst_cell.position.x + thirst_cell.size.x, strip.size.x) and is_equal_approx(thirst_cell.size.y, float(ArtKit.HOT)), "thirst sits next to the hotbar at full height")
 
@@ -75,9 +78,14 @@ func _client_side() -> void:
 	var notes: Array = strip.get_children().filter(func(n: Node) -> bool: return n is Label)
 	check(notes.size() == 1 and (notes[0] as Label).text == "Injured leg", "and it names itself as it appears")
 	state["limp"] = 1.0
+	state["hunger"] = 6
+	strip.tick(0.0, true)
+	check(strip.shown() == ["hunger", "thirst"] and strip.tip_of("hunger").begins_with("Food 6%"), "healed, it goes; hunger follows its number")
 	state["hunger"] = 40
 	strip.tick(0.0, true)
-	check(strip.shown() == ["hunger", "thirst"] and strip.tip_of("hunger").begins_with("Food 40%"), "healed, it goes; hunger follows its number")
+	check(strip.shown() == ["thirst"], "food at 10% or more is not shown (Dave 24 Nov 2026)")
+	state["hunger"] = 8
+	strip.tick(0.0, true)
 	state["picture"] = true
 	strip.tick(0.0, true)
 	check(strip.shown().has("inspection"), "add_icon still shows a picture while its test says so")

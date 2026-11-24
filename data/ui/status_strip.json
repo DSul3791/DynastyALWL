@@ -1,5 +1,5 @@
 {
-	"note": "The status strip left of the hotbar (Dave 23 Nov 2026: symbols in a row, no borders, the same height as the hotbar; hunger and thirst with their percentage; a symbol for every state that changes the player). src/client/status_icons.gd draws it; scenes/terrain_client/terrain_client.gd _setup_status_strip holds each symbol's read. One row per symbol, left to right (the last sits next to the hotbar): id; name (said above it for a few seconds when it appears); glyph (art_kit.gd glyph_shapes); line, or lines by tone (0 plain, 1 warning, 2 danger), the hover words with {words} from the read; always (shown from the start, no name note); opacity; warn_at and danger_at, where the strip itself picks when a number turns amber or red (display only: the game's own limits, such as vitals.json warn_hunger, stay in their files). A new effect (a spell, a potion) is a row here and a read there. The numbers in the words come from the game's own data files through the read, never typed here.",
+	"note": "The status strip left of the hotbar (Dave 23 Nov 2026: symbols in a row, no borders, the same height as the hotbar; food and water with their percentage once they run low; a symbol for every state that changes the player). src/client/status_icons.gd draws it; scenes/terrain_client/terrain_client.gd _setup_status_strip holds each symbol's read. One row per symbol, left to right (the last sits next to the hotbar): id; name (said above it for a few seconds when it appears); glyph (art_kit.gd glyph_shapes); line, or lines by tone (0 plain, 1 warning, 2 danger), the hover words with {words} from the read; always (shown from the start, no name note); show_below (food and water: shown only under this percent, Dave 24 Nov 2026); opacity; warn_at and danger_at, where the strip itself picks when a number turns amber or red (display only: the game's own limits, such as vitals.json warn_hunger, stay in their files). A new effect (a spell, a potion) is a row here and a read there. The numbers in the words come from the game's own data files through the read, never typed here.",
 	"symbols": [
 		{"id": "inspection", "name": "Inspecting", "glyph": "search", "opacity": 0.85,
 			"line": "Inspection mode: looking at something names it. Press the inspect key again to stop."},
@@ -26,8 +26,8 @@
 		{"id": "strain", "name": "Over-exerted", "glyph": "bolt",
 			"line": "Over-exerted: you move {n}% slower. Walk or rest to get your breath back; keep pushing and you pass out."},
 		{"id": "load", "name": "Heavy load", "glyph": "weight",
-			"lines": {"1": "Heavy load: you carry {kg} kg; past {free} kg it slows you, and you move at {n}% of your normal speed. Put something down or store it.",
-				"2": "Too heavy: you carry {kg} kg of the {cap} kg you can carry and move at {n}% of your normal speed. Put something down."}},
+			"lines": {"1": "Heavy load: {p}% of what you can carry ({kg} of {cap} kg). Past {free} kg it slows you; you move at {n}% of your normal speed. Put something down or store it.",
+				"2": "Too heavy: {p}% of what you can carry ({kg} of {cap} kg). You move at {n}% of your normal speed. Put something down."}},
 		{"id": "limp", "name": "Injured leg", "glyph": "leg",
 			"line": "Injured leg: you walk at {n}% of your normal speed. A splint fixes it; otherwise it heals by itself within {min} minutes, sooner once your health is back to {heal}."},
 		{"id": "oxygen", "name": "Air", "glyph": "bubble", "danger_at": 10,
@@ -37,15 +37,13 @@
 			"lines": {"0": "Health {n} of {max}. It comes back slowly while you have food, water and warmth.",
 				"1": "Badly hurt: health {n} of {max}. It comes back slowly while you have food, water and warmth.",
 				"2": "Close to collapse: health {n} of {max}. Rest by a fire with food and water."}},
-		{"id": "comfort", "name": "Comfort", "glyph": "flame", "always": true,
-			"line": "Comfort: the meter (src/client/ui/comfort_badge.gd) draws itself and shows the server's own hover list of what counts."},
-		{"id": "hunger", "name": "Food", "glyph": "bread", "always": true,
-			"lines": {"0": "Food {n}%. Your stomach empties as you work and walk; eat before it runs out.",
-				"1": "Food {n}%: you are low on food. Eat soon.",
+		{"id": "comfort", "name": "Comfort", "glyph": "comfort_fire", "always": true,
+			"line": "Comfort, 0 to 10: the campfire warms with the level, and a small arrow shows it rising or falling. Shelter, a fire and furniture nearby raise it."},
+		{"id": "hunger", "name": "Low on food", "glyph": "bread", "show_below": 10,
+			"lines": {"1": "Food {n}%: you are low on food. Eat soon.",
 				"2": "Starving: your health stops coming back and your body weight falls. Eat something."}},
-		{"id": "thirst", "name": "Water", "glyph": "drop", "always": true,
-			"lines": {"0": "Water {n}%. Drink at a river or lake, or from a water container.",
-				"1": "Water {n}%: you are low on water. Drink soon.",
+		{"id": "thirst", "name": "Low on water", "glyph": "drop", "show_below": 10,
+			"lines": {"1": "Water {n}%: you are low on water. Drink soon.",
 				"2": "Parched: your health stops coming back. Drink something."}}
 	]
 }

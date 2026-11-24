@@ -917,6 +917,9 @@ static func glyph_shapes(glyph_name: String) -> Array:
 		"snow_walk":  # snow underfoot: a boot over drifts
 			return [["poly", 0.3, 0.04, 0.56, 0.04, 0.56, 0.42, 0.82, 0.5, 0.86, 0.66, 0.22, 0.66, 0.26, 0.42],
 				["chord", 0.04, 0.72, 0.4, 1.0, 180, 360], ["chord", 0.32, 0.7, 0.68, 1.0, 180, 360], ["chord", 0.6, 0.72, 0.96, 1.0, 180, 360]]
+		"comfort_fire":   # the comfort meter (comfort_badge.gd): a tall flame over crossed logs, never to be taken for a water drop
+			return [["poly", 0.5, 0.03, 0.692, 0.266, 0.756, 0.459, 0.66, 0.636, 0.5, 0.696, 0.34, 0.636, 0.244, 0.459, 0.34, 0.311, 0.404, 0.414, 0.436, 0.222], ["poly-", 0.5, 0.385, 0.596, 0.518, 0.564, 0.622, 0.5, 0.651, 0.436, 0.622, 0.42, 0.518],
+				["line", 0.1, 0.94, 0.9, 0.74, 0.09], ["line", 0.1, 0.74, 0.9, 0.94, 0.09]]
 		"search":
 			return [["ring", 0.1, 0.1, 0.66, 0.66, 0.1], ["line", 0.58, 0.58, 0.9, 0.9, 0.12]]
 		"sort":
