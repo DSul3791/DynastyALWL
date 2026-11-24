@@ -6,8 +6,8 @@ passive etc. list each animal and look up how they should naturally behave in si
 human, being attacked etc. then find a way to work those findings into the animals ai."
 
 Data: `data/animals/animals.json` (species `temperament`, `hunter`, `defend`, `active`; `temperament.kinds`). Code:
-`src/stream/server_animals.gd` (`_step`, `_chases_runner`), `src/stream/server_big_game.gd` (warn, charge, recover). Test:
-`src/worldgen/tools/test_animal_hunters.gd`. Distances: `docs/design/ANIMAL_REACTIONS.md`.
+`src/stream/server_animals.gd` (`_step`, `_chases_runner`, `_flee_target`, `_open_way`), `src/stream/server_big_game.gd` (warn, charge,
+recover). Tests: `src/worldgen/tools/test_animal_hunters.gd`, `test_animal_flee_way.gd`. Distances: `docs/design/ANIMAL_REACTIONS.md`.
 
 ## What the game already did (unchanged)
 
@@ -28,7 +28,9 @@ active hours and resting, mothers with young, seasons (rut, spring hunger), dens
   stepped to and fro along the bank and never got away. Now a flight leg blocked on the way (water, a cliff) takes the clear way nearest
   to away from the threat that does not pass it (`server_animals._flee_target`, `_open_way`: sixteen headings, a clear run of
   `OPEN_MIN_M` at least); a flight that gains under half of every `FLEE_CHECK_M` run is given one; one with no way at all stands at
-  bay facing the threat for `BAY_S` (big game cornered still warns and charges first). Goblins and bandits keep their own line.
+  bay facing the threat for `BAY_S`, then tries again (big game with a player inside its `threat_m`, or pinned mid-flight within
+  `corner_m`, still warns and charges as before; a rabbit with its burrow at hand dives in). The way is looked for as the walker goes:
+  water, walls, slopes (more give on dug ground). Goblins and bandits keep their own line.
   Test: `test_animal_flee_way.gd`.
 - **HB-1, temperament shares by species** (table below). Some species had the generic small-carnivore mix, so 15% of tigers, lions,
   leopards, pumas and hyenas were "friendly" and walked up to the player. They now follow the research.

@@ -38,8 +38,9 @@ func _animals(players: Array, water: Callable) -> Object:
 
 
 # A passive deer at `at` bolts from a player standing at `player`, then runs `seconds` of 0.1 s ticks. Returns {start, end, path, flips,
-# bay (a tick at bay seen), far (its farthest from the player)}. A flip: a step turned more than 120 degrees from the one before.
-func run(at: Vector3, player: Vector3, water: Callable, seconds: float) -> Dictionary:
+# bay (at bay after its first second of ticks), far (its farthest from the player)}. A flip: a step turned more than 120 degrees from the
+# one before. `stale_to`: instead of the bolt, a flight already under way toward that point (an older target, as a wound's run behind it).
+func run(at: Vector3, player: Vector3, water: Callable, seconds: float, stale_to: Vector3 = Vector3.INF) -> Dictionary:
 	var players: Array = [player]
 	var a = _animals(players, water)
 	var id: int = a.spawn("deer", at.x, at.z)
@@ -47,7 +48,15 @@ func run(at: Vector3, player: Vector3, water: Callable, seconds: float) -> Dicti
 	b["pos"] = at
 	b["temper"] = "passive"
 	b["protective"] = false
-	a._bolt(b, player, a.species_def("deer"))
+	if stale_to == Vector3.INF:
+		a._bolt(b, player, a.species_def("deer"))
+	else:
+		b["state"] = AnimalsScript.FLEE
+		b["target"] = stale_to
+		b["burst"] = 0.0
+		b["flee_mark"] = at
+		b["flee_path"] = 0.0
+
 	var was: Vector3 = b["pos"]
 	var last: Vector2 = Vector2.ZERO
 	var out: Dictionary = {"start": at, "path": 0.0, "flips": 0, "bay": false, "far": 0.0}
@@ -65,7 +74,7 @@ func run(at: Vector3, player: Vector3, water: Callable, seconds: float) -> Dicti
 			last = step.normalized()
 			out["path"] = float(out["path"]) + step.length()
 
-		out["bay"] = bool(out["bay"]) or bool(b.get("bay", false))
+		out["bay"] = bool(out["bay"]) or (t > 1.0 and bool(b.get("bay", false)))
 		out["far"] = maxf(float(out["far"]), Vector2(b["pos"].x - player.x, b["pos"].z - player.z).length())
 		was = b["pos"]
 
@@ -92,6 +101,12 @@ func _init() -> void:
 	var c: Dictionary = run(Vector3(-0.8, GROUND, 0.0), Vector3(0.9, GROUND, 0.0), islet, 4.0)
 	check(bool(c["bay"]) and int(c["flips"]) <= 1, "a deer with no way out stands at bay (%s), not to and fro (%d about-turns)" % [str(c["bay"]), int(c["flips"])])
 	check(Vector2((c["end"] as Vector3).x, (c["end"] as Vector3).z).length() <= 1.5, "and stays on dry ground")
+
+	# A flight already set across the water (a line nothing re-checked: a wound's run behind it, an old target): going to and fro on the
+	# bank, it is given a way out after FLEE_CHECK_M of it.
+	var s: Dictionary = run(Vector3(0.0, GROUND, -1.5), Vector3(0.3, GROUND, -4.5), bank, 4.0, Vector3(0.0, GROUND, 15.0))
+	var s_got: float = Vector2((s["end"] as Vector3).x, (s["end"] as Vector3).z + 1.5).length()
+	check(s_got > 15.0 and int(s["flips"]) <= 6, "a flight line across water nobody re-checked still gets away along the bank (%.1f m; %d about-turns, the 6 m before its check at most)" % [s_got, int(s["flips"])])
 
 	# Open ground: as before, straight away on its zig-zag.
 	var open_ground: Callable = func(_x: float, _z: float) -> bool: return false
