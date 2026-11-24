@@ -529,6 +529,16 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_load_settings()
 	_build_warm_list()
 
+	# The wind loops start silent: until the first update sets their level they played at 0 dB, about 40 dB over their real level, through the
+	# long first frames of a join (the "old tv static" at load, Dave 24 Nov 2026).
+	_wind_low.volume_db = -80.0
+	_wind_gust.volume_db = -80.0
+
+	if loading:
+		_load_hush = 1.0
+		_load_applied = 1.0
+		_apply_buses()
+
 	if _wind_low.stream != null:
 		_wind_low.play()
 
@@ -731,9 +741,12 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
 
-	if absf(weather.snow_hush - _hush_applied) > 0.02 or absf(breath.world_mute - _faint_applied) > 0.02 or (breath.world_mute == 0.0 and _faint_applied != 0.0):
+	_load_hush = 1.0 if loading else move_toward(_load_hush, 0.0, delta / LOAD_FADE_S)
+
+	if absf(weather.snow_hush - _hush_applied) > 0.02 or absf(breath.world_mute - _faint_applied) > 0.02 or (breath.world_mute == 0.0 and _faint_applied != 0.0) or absf(_load_hush - _load_applied) > 0.02 or (_load_hush == 0.0 and _load_applied != 0.0):
 		_hush_applied = weather.snow_hush
 		_faint_applied = breath.world_mute
+		_load_applied = _load_hush
 		_apply_buses()
 
 	if _grass != null:
@@ -1456,6 +1469,16 @@ const FAINT_BUSES := ["Wind", "Surf", "Foley", "Nature", "Weather", "Interface"]
 const FAINT_BUS_DB := -60.0
 var _faint_applied: float = 0.0
 
+# While the world loads (Dave 24 Nov 2026: "when you first load it has a 1 second blast of what sounds like old tv static"): the world's buses
+# are silent, then fade in over LOAD_FADE_S once the client says the world is ready (terrain_client _world_loading). Off by default, so a
+# headless check that never sets it hears everything as before. The menus (Interface) and the heartbeat (Body) are never hushed.
+const LOAD_BUSES := ["Wind", "Surf", "Foley", "Nature", "Weather"]
+const LOAD_BUS_DB := -60.0
+const LOAD_FADE_S := 2.0
+var loading: bool = false
+var _load_hush: float = 0.0       # 1 silent .. 0 full, eased toward 0 over LOAD_FADE_S once loading ends
+var _load_applied: float = 0.0
+
 
 func _apply_buses() -> void:
 	var shares: Dictionary = {
@@ -1475,7 +1498,7 @@ func _apply_buses() -> void:
 		if index >= 0:
 			var share: float = shares[bus_name]
 			AudioServer.set_bus_mute(index, share <= 0.001)
-			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied + (FAINT_BUS_DB if bus_name in FAINT_BUSES else 0.0) * _faint_applied)
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied + (FAINT_BUS_DB if bus_name in FAINT_BUSES else 0.0) * _faint_applied + (LOAD_BUS_DB if bus_name in LOAD_BUSES else 0.0) * _load_applied)
 
 
 # Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first
