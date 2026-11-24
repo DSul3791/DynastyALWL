@@ -9,7 +9,8 @@ AUDIT enemy_hit for each goblin, bandit or big game blow, with where it had the 
 on one machine, so their unix ms share a clock. Measures:
   jumps   per robot: the largest drawn step in one frame, that step against the kind's top speed x the frame, and steps over 1 m
           (steps in the second after a frame over 250 ms, a freeze's catch-up, are left out and counted as after_freeze)
-  agree   the two robots' drawn places of the same animal at the same moment (the other robot's A rows interpolated): median, 95th, worst
+  agree   the two robots' drawn places of the same animal at the same moment (the other robot's A rows interpolated): median, 95th, worst;
+          then split by the animal's state and its speed (still, walk, trot, run), as is "server"
   hits    per server blow: the drawn place of that animal on the struck robot at that moment against where the server had it, and the
           drawn gap to the robot; per BITTEN line (every blow, also wolves): the drawn gap and drawn state
   slides  per robot, the SLIDE line: samples of a bought-model body moving over 0.5 m/s with a standing clip, its rate held at the top or
@@ -106,6 +107,24 @@ def at(rows, ms, slack=150):
 	return None
 
 
+SPEED_BANDS = [(1.0, "still"), (4.0, "walk"), (8.0, "trot"), (float("inf"), "run")]   # m/s of the animal over its neighbouring rows
+
+
+def speed_band(rows, k):
+	"""The band of the animal's speed at rows[k] (ms, x, z, state), from its rows either side."""
+	a, b = rows[max(k - 1, 0)], rows[min(k + 1, len(rows) - 1)]
+	v = math.hypot(b[1] - a[1], b[2] - a[2]) / max((b[0] - a[0]) / 1000.0, 0.001) if b[0] > a[0] else 0.0
+	return next(name for top, name in SPEED_BANDS if v < top)
+
+
+def print_split(what, by_state, by_speed):
+	"""The same distances split by the animal's state and by its speed: where a gap comes from (a flee, a charge, a turn on the run)."""
+	for title, groups in (("state", by_state), ("speed", by_speed)):
+		parts = ["%s %d: median %.2f, 95th %.2f, over 1 m %d" % (key, len(xs), statistics.median(xs), pct(xs, 0.95), sum(1 for x in xs if x > 1.0))
+			for key, xs in sorted(groups.items(), key=lambda kv: -len(kv[1]))]
+		print("    %s by %s: %s" % (what, title, "; ".join(parts)))
+
+
 def pct(xs, q):
 	xs = sorted(xs)
 	return xs[min(len(xs) - 1, int(q * len(xs)))]
@@ -145,6 +164,7 @@ def report(d):
 	if len(names) >= 2:
 		one, two = robots[names[0]], robots[names[1]]
 		diffs = []
+		by_state, by_speed = {}, {}
 
 		for aid, rows in one["a"].items():
 			other = two["a"].get(aid)
@@ -152,20 +172,24 @@ def report(d):
 			if not other:
 				continue
 
-			for ms, x, z, _st in rows:
+			for k, (ms, x, z, st) in enumerate(rows):
 				o = at(other, ms)
 
 				if o is not None:
 					diffs.append(math.hypot(x - o[0], z - o[1]))
+					by_state.setdefault(st, []).append(diffs[-1])
+					by_speed.setdefault(speed_band(rows, k), []).append(diffs[-1])
 
 		if diffs:
 			print("  agree: %d moments, median %.2f m, 95th %.2f m, worst %.2f m, %d over 1 m" % (len(diffs), statistics.median(diffs), pct(diffs, 0.95), max(diffs),
 				sum(1 for x in diffs if x > 1.0)))
+			print_split("agree", by_state, by_speed)
 		else:
 			print("  agree: the two robots never drew the same animal at the same moment")
 
 	for name, r in robots.items():
 		off, near_drawn, near_server = [], [], []
+		s_state, s_speed = {}, {}
 
 		for aid, rows in where.items():
 			drawn = r["a"].get(aid)
@@ -173,7 +197,7 @@ def report(d):
 			if not drawn:
 				continue
 
-			for ms, x, z, _st in rows:
+			for k, (ms, x, z, st) in enumerate(rows):
 				p = at(drawn, ms)
 				me = at([(q[0], q[1], q[2], 0) for q in r["p"]], ms)
 
@@ -181,6 +205,8 @@ def report(d):
 					continue
 
 				off.append(math.hypot(p[0] - x, p[1] - z))
+				s_state.setdefault(st, []).append(off[-1])
+				s_speed.setdefault(speed_band(rows, k), []).append(off[-1])
 
 				if me is not None and math.hypot(x - me[0], z - me[1]) < 10.0:
 					near_server.append(math.hypot(x - me[0], z - me[1]))
@@ -190,6 +216,7 @@ def report(d):
 			print("  server %s: drawn against the server's own place (AUDIT where): %d moments, median %.2f m, 95th %.2f m, worst %.2f m%s" % (name, len(off),
 				statistics.median(off), pct(off, 0.95), max(off), "" if not near_server else "; within 10 m of this robot: server gap median %.2f m, drawn gap median %.2f m (%d moments)" % (
 				statistics.median(near_server), statistics.median(near_drawn), len(near_server))))
+			print_split("server " + name, s_state, s_speed)
 
 	by_peer = {r["peer"]: r for r in robots.values() if r["peer"] is not None}
 

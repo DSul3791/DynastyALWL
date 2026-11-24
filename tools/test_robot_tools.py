@@ -394,6 +394,9 @@ def test_kinds():
 		drawn = rk.at(one["a"][7], hits[0]["ms"])
 		check(abs(math.hypot(drawn[0] - 9.0, drawn[1] - 5.0) - 3.0) < 0.01, "the drawn-vs-server gap at a blow (drawn 6.0, server 9.0)")
 		check(rk.at(one["a"][7], 99999) is None, "no drawn place long after the last row")
+		check(rk.speed_band(one["a"][7], 5) == "walk" and rk.speed_band([(0, 0.0, 0.0, 0), (100, 0.0, 0.0, 0)], 0) == "still", "robot_kinds bands an animal at 3 m/s a walk, a standing one still")
+		r = subprocess.run([sys.executable, os.path.join(HERE, "robot_kinds.py"), d], capture_output=True, text=True)
+		check(r.returncode == 0 and "agree by state: 11 40: median 2.00" in r.stdout and "agree by speed: walk" in r.stdout, "robot_kinds splits the gap by state and speed (%s)" % r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr)
 
 
 def test_stuck():
