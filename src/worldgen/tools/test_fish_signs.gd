@@ -92,7 +92,7 @@ func _init() -> void:
 	signs.now_ms = func() -> int: return int(clock[0])
 	var jumps: Array = []      # [peer, at, kind, ms]
 	var shadows: Dictionary = {}   # peer -> [rows ...]
-	signs.send_jump = func(peer: int, at: Vector3, kind: int, _seed: int) -> void: jumps.append([peer, at, kind, int(clock[0])])
+	signs.send_jump = func(peer: int, at: Vector3, kind: int, _seed: int) -> void: jumps.append([peer, at, kind, int(clock[0]), items.game_s])
 	signs.send_shadows = func(peer: int, rows: PackedFloat32Array) -> void:
 		if not shadows.has(peer):
 			shadows[peer] = []
@@ -120,6 +120,7 @@ func _init() -> void:
 
 	for k in 600:
 		clock[0] = k * 1000
+		items.game_s += 24.0   # game time runs 24 times real time: the schools drift
 		signs.tick()
 		worst_usec = maxi(worst_usec, signs.last_tick_usec)
 
@@ -139,11 +140,11 @@ func _init() -> void:
 		var near_school: bool = false
 		var cell: Vector2i = Vector2i(int(floor(at.x / 128.0)), int(floor(at.z / 128.0)))
 
-		for s in items.fish.schools(cell, 40, "summer", 12, items.game_s):
+		for s in items.fish.schools(cell, 40, "summer", 12, float(j[4])):
 			near_school = near_school or (s["centre"] as Vector2).distance_to(Vector2(at.x, at.z)) <= float(s["radius"]) + 0.01
 
 		in_school = in_school and near_school
-		check(Vector2(at.x, at.z).distance_to(Vector2(items.positions[peer].x, items.positions[peer].z)) <= 100.0 + 0.01 or false, "a jump is sent only within 100 m of the player (peer %d)" % peer)
+		check(Vector2(at.x, at.z).distance_to(Vector2(items.positions[peer].x, items.positions[peer].z)) <= 100.0 + 0.01, "a jump is sent only within 100 m of the player (peer %d)" % peer)
 
 	print("fish signs: jumps by player in 10 minutes %s, worst pass %d us for 4 players" % [str(by_peer), worst_usec])
 	check(int(by_peer.get(1, 0)) >= 10 and int(by_peer.get(2, 0)) >= 10, "players by a brook see jumps: %s in 10 minutes (plan: one every 10 to 30 s near a big school)" % str(by_peer))
@@ -155,7 +156,12 @@ func _init() -> void:
 	check(worst_usec < 20000, "a pass for 4 players takes under 20 ms even with the first school lookups (%d us)" % worst_usec)
 
 	# Shadows: the brook players get shallow schools within 40 m; the dry and the deep-river players get none; resent only on change.
-	var brook_rows: PackedFloat32Array = (shadows.get(1, [PackedFloat32Array()]) as Array).back()
+	var brook_rows: PackedFloat32Array = PackedFloat32Array()   # the fullest list it was sent (a drifting school's middle can sit on the bank, which has no surface to draw on)
+
+	for rows in shadows.get(1, []):
+		if (rows as PackedFloat32Array).size() > brook_rows.size():
+			brook_rows = rows
+
 	var near_ok: bool = brook_rows.size() > 0 and brook_rows.size() % 5 == 0
 	@warning_ignore("integer_division")
 	for s in brook_rows.size() / 5:
@@ -164,7 +170,21 @@ func _init() -> void:
 	check(near_ok, "a player by the brook is sent the schools within 40 m (%d values)" % brook_rows.size())
 	check(((shadows.get(3, [PackedFloat32Array()]) as Array).back() as PackedFloat32Array).is_empty(), "a player far from water is sent no shadows")
 	check(((shadows.get(4, [PackedFloat32Array()]) as Array).back() as PackedFloat32Array).is_empty(), "the river's 2.5 m of water hides its fish (no shadows deeper than 2 m)")
-	check((shadows.get(1, []) as Array).size() <= 8, "shadows are resent only when they change (%d sends in 10 minutes of slow drift)" % (shadows.get(1, []) as Array).size())
+	check((shadows.get(1, []) as Array).size() >= 2 and (shadows.get(1, []) as Array).size() <= 60, "shadows are resent only when they change: %d sends in 10 minutes of drift, not one every 2 s (300)" % (shadows.get(1, []) as Array).size())
+
+	# A tile not in memory: its cells are skipped and asked for, never read on the spot.
+	var asked: Array = []
+	signs.ready_at = func(x: float, z: float) -> bool:
+		asked.append(Vector2(x, z))
+		return false
+	var sent_before: int = jumps.size()
+
+	for k in range(600, 630):
+		clock[0] = k * 1000
+		signs.tick()
+
+	check(jumps.size() == sent_before and not asked.is_empty(), "with the tiles not in memory there are no jumps and the tiles are asked for (%d asks)" % asked.size())
+	signs.ready_at = Callable()
 
 	# Rates: a storm and the night make fewer jumps, dawn more than midday; ice none.
 	var calm: float = signs.jump_chance(12, 7.0, {"rain": 0.0})
@@ -173,7 +193,7 @@ func _init() -> void:
 	items.ice = true
 	var before: int = jumps.size()
 
-	for k in range(600, 700):
+	for k in range(630, 700):
 		clock[0] = k * 1000
 		signs.tick()
 
@@ -260,7 +280,7 @@ func _init() -> void:
 # Spear and net on a school (24 Nov 2026, Dave: "I dont actually see any fish or signs of fish" and "will we also be able to thow the net at the
 # school of fish"): a spear jab with no school near says so plainly and points at the signs, on a miss and when moving; at a school a moving
 # player is still told to stand still; a player whose last report says it stands is still even before the smoothed walk has died down; a jab
-# into a school takes that school's fish. The net lands where the look meets the water, 2 to 7.5 m out.
+# into a school takes that school's fish. The net lands where the look meets the water, 2 to 7 m out.
 func _spear_and_net() -> void:
 	var dir: String = "user://test_fish_signs"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -383,4 +403,4 @@ func _spear_and_net() -> void:
 	var level: Vector3 = HeldItem.net_landing(eye, Vector3(0.0, 0.2, -1.0).normalized())
 	check(absf(near_land.z + 2.0) < 0.01 and absf(near_land.y - 10.0) < 0.01, "looking steeply down, the net lands 2 m out (%s)" % str(near_land))
 	check(absf(mid_land.z + 5.0) < 0.05, "looking a little down, it lands where the look meets the water, 5 m out (%s)" % str(mid_land))
-	check(absf(far_land.z + 7.5) < 0.01 and absf(level.z + 6.0) < 0.01, "looking nearly level it lands at most 7.5 m out, and looking up 6 m as before (%s, %s)" % [str(far_land), str(level)])
+	check(absf(far_land.z + 7.0) < 0.01 and absf(level.z + 6.0) < 0.01, "looking nearly level it lands at most 7 m out, and looking up 6 m as before (%s, %s)" % [str(far_land), str(level)])

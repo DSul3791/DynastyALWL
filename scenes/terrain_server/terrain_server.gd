@@ -608,6 +608,13 @@ func _ready() -> void:
 	fish_signs = FishSignsScript.new()   # the schools seen: jumps and shadows near players (protocol 169)
 	fish_signs.items = items
 	fish_signs.surface_at = func(x: float, z: float) -> float: return float(_water_at(Vector3(x, 0.0, z))[0])
+	fish_signs.ready_at = func(x: float, z: float) -> bool:
+		# Never read a tile on the main thread (a read takes seconds): a cell on a tile not in memory is asked for and skipped this pass.
+		if generator.tile_cached(x, z):
+			return true
+
+		generator.prefetch_tile(x, z)
+		return false
 	fish_signs.send_jump = func(peer: int, at: Vector3, kind: int, seed_value: int) -> void: net.fish_jump.rpc_id(peer, at, kind, seed_value)
 	fish_signs.send_shadows = func(peer: int, rows: PackedFloat32Array) -> void: net.fish_shadows.rpc_id(peer, rows)
 	@warning_ignore("confusable_local_declaration")
@@ -1821,6 +1828,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_trap_marks_sent.erase(peer_id)
 	players.forget(peer_id)
 	cues.forget(peer_id)
+
+	if fish_signs != null:
+		fish_signs.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)

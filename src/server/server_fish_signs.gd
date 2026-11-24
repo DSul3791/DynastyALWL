@@ -13,8 +13,9 @@ extends RefCounted
 # Cost (plan 6): one pass a second over the 128 m cells round the players (3 x 3 each, shared), each cell's schools from server_fish.gd
 # (placements cached per cell and day; a drift check reads the water kind, cached 20 s per 8 m), one distance test per school per player.
 # Sent: a jump is about 30 bytes, at most one per player_gap_ms per player (about 1 a second at the very most, typically one per 10 to 30 s);
-# shadows about 20 bytes a school, only on change (a school drifts 12 m over 6 game hours, so a standing player gets a new list every few
-# minutes, a walking one as schools come in and out of 40 m).
+# shadows about 20 bytes a school, only on change (a school drifts up to 12 m each way over 6 game hours, about 15 real minutes, so with
+# centres snapped to 2 m a standing player near a school gets a new list every half minute or so, a walking one as schools come in and out of
+# 40 m). Cells on a tile not yet in memory are skipped (ready_at) so the pass never reads a tile on the main thread.
 
 const SIZE_SMALL := 0
 const SIZE_MID := 1
@@ -22,6 +23,7 @@ const SIZE_BIG := 2
 
 var items                          # ServerItems: peer_ids, position_of, fish_stock, _fish_schools, _now_game_s, _season_of, _weather_here, _on_ice, water_kind_at, game_seconds
 var surface_at: Callable           # (x, z) -> the water surface height there, NAN where dry (terrain_server _water_at)
+var ready_at: Callable             # (x, z) -> whether the tile there is in memory (asks for it when not); unset: always ready
 var send_jump: Callable            # (peer, at: Vector3, kind: int, seed: int): kind = size class * 4 + group (group 0 small fish, 1 big)
 var send_shadows: Callable         # (peer, rows: PackedFloat32Array): [x, y, z, radius, size class] per school, nearest first; empty: none
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
@@ -133,8 +135,8 @@ func tick() -> void:
 		if near.is_empty():
 			continue
 
-		var at3: Vector3 = Vector3(centre.x, 0.0, centre.y)
-		var chance: float = 1.0 - pow(1.0 - jump_chance(int(s["size"]), hour, items._weather_here(at3)), dt)
+		var sky: Variant = items.position_of(near[0])   # the sky over the water where a player stands (a mountain lake in snow is not the coast's rain)
+		var chance: float = 1.0 - pow(1.0 - jump_chance(int(s["size"]), hour, items._weather_here(sky if sky is Vector3 else Vector3(centre.x, 0.0, centre.y))), dt)
 
 		if _rng.randf() >= chance:
 			continue
@@ -186,10 +188,27 @@ func _schools_near(peers: Dictionary) -> Array:
 	var out: Array = []
 
 	for cell in cells:
+		if not _cell_ready(cell, cell_m):
+			continue   # its tile is being read: no schools there this pass (never an empty placement cached for the day)
+
 		var middle: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
 		out.append_array(fish.schools(cell, day, items._season_of(middle), int(items.fish_stock(cell)), items._now_game_s()))
 
 	return out
+
+
+# Whether every tile a cell's schools can touch (the cell and the drift round it) is in memory.
+func _cell_ready(cell: Vector2i, cell_m: float) -> bool:
+	if not ready_at.is_valid():
+		return true
+
+	var pad: float = 16.0
+	var ok: bool = true
+
+	for corner in [Vector2(-pad, -pad), Vector2(cell_m + pad, -pad), Vector2(-pad, cell_m + pad), Vector2(cell_m + pad, cell_m + pad)]:
+		ok = bool(ready_at.call(float(cell.x) * cell_m + corner.x, float(cell.y) * cell_m + corner.y)) and ok   # asks for each missing tile
+
+	return ok
 
 
 # Each player's schools within shadow_m in water no deeper than shadow_depth_max_m, nearest first, at most shadow_max; sent when they changed.
@@ -223,7 +242,7 @@ func _send_shadows(peers: Dictionary, all: Array) -> void:
 			if is_nan(y) or float(water.get("depth", 0.0)) > deep:
 				continue   # deep water hides its fish (plan 6.4)
 
-			rows.append_array(PackedFloat32Array([snappedf(centre.x, 0.5), snappedf(y, 0.1), snappedf(centre.y, 0.5), snappedf(float(s["radius"]), 0.1), float(size_class(int(s["size"])))]))
+			rows.append_array(PackedFloat32Array([snappedf(centre.x, 2.0), snappedf(y, 0.1), snappedf(centre.y, 2.0), snappedf(float(s["radius"]), 0.1), float(size_class(int(s["size"])))]))
 
 		if _last_shadows.has(peer) and _last_shadows[peer] == rows:
 			continue
