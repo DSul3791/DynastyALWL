@@ -595,22 +595,6 @@ Not done: no stash chest (the stash is not seen until it drops); unattended cart
 
 Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 at the floor after a refused toll, the 2 most valuable stacks, not the item in hand, a full bag or coins; BANDIT-35 the stash saved with the camp, dropped by the fire when it is cleared, dissolves or sleeps.
 
-## 84. Sixty NPCs cost over 1 ms a server tick (test_npcs timing check red on Lane A)
-
-**Status: Fixed in dev - nothing to play (no behaviour change).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC). test_npcs "60 NPCs cost under 1 ms a tick", run alone, read 1.019 and 1.022 ms on dev 8b83b176, 1.036 and 1.031 on 95bb7530, and 1.036 and 1.039 on 00d407d5 (limit 1.00, load scale 1.00); it passed on David4 and would block the full pass before main. Cause: the goblin camp (entry 71) added three tribe NPCs and their three own markers; most of the test's NPCs (60, 63 with the tribe members) find no free chair on every 10 Hz step and each such claim scanned every marker, and each dormant tribe NPC worked out its anchor twice per player every tick. Fix: PR #1364, merged to dev at 763b8531 (head 0471044d) after independent review (PASS, no Must-fix or Should-fix findings): a claim reads only the markers of its kind (same order, so the same choice), and a dormant NPC's anchor and the tick's settings are read once a tick. The test and its limit are unchanged. Lane A on the exact head: test_npcs alone passed twice at 0.678 and 0.677 ms (the same step count on both runs), test_goblin_camp 0.113 ms at chores (dev 0.127); import 0 errors; 37 of 37 selected tests passed (35 fast, 2 timing), 0 script errors; warnings 381, identical to dev per file.
-
-**Required outcome:** the server's NPC tick stays within its 1 ms budget for 60 NPCs on Dave's PC, with every NPC doing exactly what it did before.
-
-**Acceptance:** test_npcs passes on Lane A run alone; nothing to see in play.
-
-## 85. The warning check passed when a script did not parse (merge gate hole)
-
-**Status: Fixed in dev - nothing to play (test tools only).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC). A PR head had a parse error in tools/creature_check.gd. tools/check_warnings.gd runs under --debug, so Godot 4.7.2 stopped it at the local debugger's "debug>" prompt; it never printed its "scripts checked" line and hung to the 600 s timeout, and tools/check_warnings.sh still exited 0 with empty output, so tools/local_check.sh passed ("0 total"). Fix: PR #1365, merged to dev at d0aae1d3 (head 4f27e26d) after independent review (PASS on fb946102; delta PASS on 8a57768a and 4f27e26d). check_warnings.sh passes --ignore-error-breaks (no wait at the prompt), exits 2 when the check did not finish (no godot, timed out, no "scripts checked" line) and 3 when a script does not parse, named on stderr; check_warnings.gd names each script that loads invalid; local_check.sh fails on any of these, and its three-script parse check fails when godot cannot start or times out; --update-baseline refuses to write from a failed run. New self-test tools/test_check_warnings.sh (stub cases and a real-engine case on a broken script in a temp folder). tools/warning_baseline.txt is unchanged. Lane B (David4) on the exact head: the self-test all ok including both real-engine cases; check_warnings exit 0, 381 warnings; local_check PASS; 11 of 11 selected tests passed. Lane A on the exact head: the self-test exit 0 in 23 s; check_warnings exit 0 in 76 s; with the creature_check.gd parse error put back in the lane clone, exit 3 after 77 s, "script does not parse: tools/creature_check.gd", no hang (then discarded); local_check PASS; 11 of 11 selected tests passed.
-
-**Required outcome:** a script that does not parse fails the warning check quickly and by name, on Windows and Linux; a check that did not finish is never reported as a pass.
-
-**Acceptance:** `REQUIRE_GODOT=1 bash tools/test_check_warnings.sh` passes on both lanes; nothing to see in play.
-
 ## 86. Goblin camp, the light version: the chest and racks fill to a small stock
 
 **Status: Implemented - awaiting player verification.** Dave's choice, 20 Nov 2026 (thread "Build a goblin trading camp"; the camp is entry 71, camp life entry 80). PR #1369, merged to dev at 0d6415cc (head 00193ed4) after independent review (3 rounds; the first asked for the stock to start filling when the server first runs rather than at the first look, and for wording; the third re-read it after the Vrixa and Grikka merge; final PASS on the exact head). Lane A (Dave's PC, clean clone) on the exact head: 265 of 265 selected tests passed (255 fast, 8 timing, 2 slow), 0 script errors, test_goblin_camp among them; warnings 381, zero new. Camp cost measured there with five goblins (whole NPC tick): 0.181 ms per 10 Hz tick at chores, 0.275 ms with a weapon carrier by the fire; test_npcs 65 NPCs 0.714 ms against 1 ms. No protocol or item change; tribes_state.json gains a stock_from key (same version, old files load). Not yet played.
@@ -624,14 +608,6 @@ Dave, 20 Nov 2026: "Build the light version of the goblin camp." (Offered to him
 Not done: the stock is told only in words, nothing is drawn on the racks or by the fire; it cannot be traded for or taken (no theft rule yet); the chores still carry nothing real.
 
 Assumed on Dave's behalf (provisional, docs/design/GOBLIN_CAMP.md): GOBLIN-16 the amounts and caps, filling from the server's first run; GOBLIN-17 nobody can take the stock, no theft rule yet; GOBLIN-18 the stock is shown in words only.
-
-## 87. The first look build cost check failed now and then on Lane A (test_look_build_cost flake)
-
-**Status: Fixed in dev - nothing to play (no behaviour change you can see).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC), where test_look_build_cost failed now and then and passed on a rerun, which tonight's gate does not accept. Cause, most likely (not measured apart): the saws are model looks, and the first build of each read its .glb file cold inside the timed build, 56 ms and 248 ms on Dave's PC against the 40 ms limit, 9 to 11 ms on later runs. Fix: PR #1371, merged to dev at c081b92a (head 3389f369) after independent review: BasicLook.warm_models() reads every model look's file ahead when the inventory looks are prewarmed at join (on the loader thread in a window, on the main thread headless), so the first build should no longer wait on the disk. The test reads them ahead the same way, checks that every model look's file was read ahead, and keeps the 40 ms limit; it now runs alone in the serial lane (tools/test_lanes.json). Lane B (David4) on the exact head: local_check PASS, 381 warnings zero new, 120 of 120 selected tests passed, 0 script errors, join smoke clean; test_look_build_cost alone 3 of 3 PASS, files read ahead in 19.6, 19.3 and 20.5 ms (3 files), slowest look plant_fibre 5.5 ms. Lane A (Dave's PC) on the exact head: test_look_build_cost alone 3 of 3 PASS, files read ahead in 31.2, 31.4 and 29.7 ms (3 files, every model look's file read ahead), slowest look plant_fibre 6.9, 7.2 and 6.9 ms, no saw among the slowest.
-
-**Required outcome:** the first build of every item look stays under 40 ms on Dave's PC, with the cost of reading model files paid once at join, not in the middle of play.
-
-**Acceptance:** test_look_build_cost passes alone on Lane A every time; nothing to see in play. In a window the read ahead runs on the loader thread, not yet seen on screen.
 
 ## 88. New goblins Vrixa Thornfang and Grikka Ragtooth at the Ragtooth camp; goblin textures committed
 
@@ -786,32 +762,6 @@ Not done: facial hair (no models yet); deleting the old drawn hair styles in bod
 - Load a world that had a Wooden hand pump: the pump is gone, and its materials lie where it stood.
 
 Not yet played.
-
-## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
-
-**Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
-
-**Required outcome:** "they should start 1m above ground then face whatever it is they need to photograph and take the images."
-
-**Cause:** the shot runner (src/debug/shot_runner.gd) held the body at 400 m above each spot until the ground there loaded, and only then put it at the shot height. --frametime started counting 10 s after joining, wherever the body was at that moment.
-
-**As built (PR #1384, reviewed head 07a92b06, dev 51352924):**
-- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height (aerial shots over 40 m and absolute-height shots start at their own height), held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
-- Subject shots (--pieces, --look, --showroom and held items) also hide the plants, so a reed bed cannot block the subject.
-- A plain spawn view faces the camp fire, the way a new character does.
-- --frametime measures standing at the spot after landing, and look_rig.sh prints the frametime line itself.
-
-This changes debug tooling only. There is no game, protocol, save or terrain change.
-
-**Evidence:**
-- Independent review PASS on 07a92b06.
-- Lane B: 26 PASS / 0 FAIL, and warnings stay at 381.
-- Lane A, windowed, 5 runs, all exit 0. Every start was about 1 m over the server ground (y 5.7 over 4.7), and every landing was 1.7 m over it. The camp fire, pieces, saw and showroom were visible.
-- Remaining issues found by these runs, outside the rig: the spawn frame time had 4 frames over 100 ms (max 138.5 ms); two showroom pictures miss their items on the sandy slope at the new spawn (the framing was already like that before this change); and reeds stand in front of a new player's first view.
-
-**Acceptance:** run tools/look_rig.sh at the spawn. The log shows "starts at y" about 1 m over the ground, then "landed", and the picture shows its subject. A --frametime run prints its frametime line from the script.
-
-Not a game change; nothing to play.
 
 ## 97. The Raised cistern is a big tank: copper lined, on a wooden frame, fed by rain and gravity
 
@@ -1494,32 +1444,6 @@ Not yet played.
 - Not yet run: a run north on Dave's PC to see the slow-cell line under load.
 
 **Acceptance:** run north from the spawn on Dave's PC. The slow-cell line stays under 50 ms for copper and tin rocks, and the same rocks lie where they did before.
-
-Not yet played.
-
-## 119. The goblin camp is at the cave nearest the spawn
-
-**Status: Replaced by entry 131 (the camp brings its own cave, PR #1456).** The camp no longer stands at 3,4#8006; the text below is history. Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
-
-**What was found:** the Ragtooth camp sat at spring cave 3,4#8013, about 3.6 km north-north-west of the spawn. The nearest cave is 3,4#8006, about 1.6 km west-south-west. The nearer hills, about 1.2 km south and north of the spawn, have no cave.
-
-**Required outcome:** the whole camp (cave, five goblins, props, stock, keep zone) at the nearest hill or cave to the spawn, nothing left at the old place, existing worlds loading with the camp at the new place. No path yet.
-
-**As built (PR #1378, reviewed head e5846163, merged to dev at 1acec47b):**
-- data/creatures/goblin_tribes.json: the camp moves to cave 3,4#8006, with its mouth at x 56560 z 71776 and its fire at x 56608 z 71800. The fire, Small chest, two Log benches, Drying rack, Tanning rack and the five goblins stand on a dry bench of 3 to 11 degrees on the brook's south bank. The bench is about 50 m south-east of the mouth. The wood and fibre points are on the slope 25 to 40 m further east. Every spot was read from the baked tile and is checked on it by test_goblin_camp.
-- TileTerrainData.CAMP_CAVES keeps wild goblins and animal dens out of the camp cave. Without it, 8006 would hold a goblin band and a wolf den. 8013 is no longer reserved; by its id it holds neither, and the tile's always-goblins cave stays 3,4#8002.
-- The new mouth is farther from the camp than angry_keep_m. A struck goblin running for the mouth now goes all the way in, and gives up after twice the run time plus 10 s. While in the cave it also counts a striker who waits at its camp spot, so it stays in until that striker goes.
-- Existing worlds: the fire and props are laid by the server and never saved, so after a restart the camp is at the new cave and nothing is left at the old one. Standing, anger and the stock clock carry over per tribe.
-- The test that the camp's stock carries over a server restart (entry 86) went in with it.
-- Provisional: GOBLIN-19 in docs/design/GOBLIN_CAMP.md. A possible follow-up for Dave is a cave carved into the nearer hill about 1.2 km from the spawn; it needs cave carving, a TERRAIN_VERSION and a new starter cache.
-
-**Evidence:**
-- Independent review PASS on d9d5b30b, 948659f8, 6673aad0, d97be1f2 and e5846163.
-- Lane B on 6673aad0: 268 pass / 1 fail. test_goblin_camp failed because Skritch stopped short of the mouth; this was fixed.
-- Lane B on e5846163: 270 pass / 0 fail (260 fast, 8 timing, test_worldgen and test_bake_from_record), test_goblin_camp 0 failures. Warnings stay at 381, validate_items had 0 errors, all 340 looks are drawable, and the join smoke was clean.
-- Tile 3,4's mines are identical before and after the move (a one-off Lane B check, print_tile_mines_3_4.gd in the project files: MINES 2 on both), so the version 79 starter cache stays valid.
-
-**Acceptance:** walk about 1.6 km west and a little south from the spawn to the brook coming out of the hill. The Ragtooth camp is by the cave mouth, with the goblins at their chores. Strike one and they all run into the cave, staying in while you wait at the camp. Nothing is left at the old cave.
 
 Not yet played.
 
