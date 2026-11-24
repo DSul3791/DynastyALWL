@@ -101,6 +101,7 @@ func _init() -> void:
 	check(slots.play("chamois_step", Vector3(2, 0, 0), origin) and slots._step_voices.size() == SlotSounds.CREATURE_STEP_VOICES, "at the cap a nearer step still gets in")
 	check(not slots.play("goat_step", Vector3(30, 0, 0), origin), "a step farther than every one sounding still waits")
 	var sounding: Array = slots._step_voices.duplicate()
+	slots._cooldown_until["chamois_step"] = Time.get_ticks_msec() + 60000   # still in its cooldown at the next line on any machine (0.12 s ran out on a slow Windows run)
 	check(not slots.play("chamois_step", Vector3(1, 0, 0), origin) and slots._step_voices == sounding, "a nearer step refused by its cooldown cuts nothing short")
 
 	for voice in slots._step_voices:
