@@ -45,11 +45,13 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const NINE := ["2_3", "2_4", "2_5", "3_3", "3_4", "3_5", "4_3", "4_4", "4_5"]
 const COLUMNS_PER_TAKE := 32           # columns a worker takes at once
+const ROWS_FILE := "rows.bin"          # in a copy's folder: the rows of every column it holds, so the join need not work them out again
 const FLUSH_EVERY_S := 60.0            # the pack is written to disk this often, so a stop loses little
 
 var store
 var generator
 var _parts: Array = []                 # [lod, bx0, bz0, width, depth, first index] per tile and level
+var _rows: PackedInt32Array = PackedInt32Array()   # a copy's columns as it built them: index, lowest row, highest row (ROWS_FILE)
 var _total: int = 0                    # columns in all
 var _next: int = 0
 var _mutex: Mutex = Mutex.new()
@@ -249,6 +251,9 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 		push_error("prebuild_ground: %d tile reads failed and %d blocks failed the check, so some blocks were not saved; run it again to fill them (no finished note written)" % [generator.failed_tiles, store.bad_blocks])
 		return 1
 
+	if _part_count > 1:
+		_write_rows(out_dir + "/" + ROWS_FILE)
+
 	if plants:
 		placer = PlacerScript.new()
 		placer.setup(generator, tables, rules)
@@ -417,13 +422,16 @@ func _work() -> void:
 		var made: int = 0
 		var skipped: int = 0
 		var last: int = mini(first + COLUMNS_PER_TAKE, _total)
+		var rows: PackedInt32Array = PackedInt32Array()
 
 		for index in range(first, last):
-			var counts: Vector2i = _build_column(index)
+			var counts: Vector4i = _build_column(index)
 			made += counts.x
 			skipped += counts.y
+			rows.append_array(PackedInt32Array([index, counts.z, counts.w]))
 
 		_mutex.lock()
+		_rows.append_array(rows)
 		_columns_done += last - first
 		_made += made
 		_skipped += skipped
@@ -443,11 +451,11 @@ func _column(index: int) -> Vector3i:
 	return Vector3i(int(part[1]) + local % int(part[3]), int(part[2]) + local / int(part[3]), int(part[0]))
 
 
-# Builds the surface blocks of one column; returns (made, already there).
-func _build_column(index: int) -> Vector2i:
+# Builds the surface blocks of one column; returns (made, already there, lowest row, highest row).
+func _build_column(index: int) -> Vector4i:
 	var column: Vector3i = _column(index)
 	var range_y: Vector2i = surface_blocks(generator, column.x, column.y, column.z)
-	var result: Vector2i = Vector2i.ZERO
+	var result: Vector4i = Vector4i(0, 0, range_y.x, range_y.y)
 
 	for by in range(range_y.x, range_y.y + 1):
 		if store.ensure_block(Vector3i(column.x, by, column.y), column.z):
@@ -480,6 +488,27 @@ static func surface_blocks(terrain, bx: int, bz: int, lod: int) -> Vector2i:
 		return Vector2i(0, -1)   # nothing to build
 
 	return Vector2i(int(floor(low / block_m)) - 1, int(floor(high / block_m)) + 1)
+
+
+# rows.bin: the column count of the whole build (so a file from another build is not taken), then index, lowest row, highest row of
+# every column of this copy, as 32-bit numbers.
+func _write_rows(path: String) -> void:
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file != null:
+		file.store_32(_total)
+		file.store_buffer(_rows.to_byte_array())
+		file.close()
+
+
+# The rows a copy wrote, or an empty array when its file is missing or from another build.
+static func read_rows(path: String, total: int) -> PackedInt32Array:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ) if FileAccess.file_exists(path) else null
+
+	if file == null or file.get_length() < 4 or file.get_32() != total or (file.get_length() - 4) % 12 != 0:
+		return PackedInt32Array()
+
+	return file.get_buffer(file.get_length() - 4).to_int32_array()
 
 
 # A copy's progress for its parent: "phase done total blocks_made".
@@ -629,20 +658,25 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 		var part_stream: VoxelStreamSQLite = VoxelStreamSQLite.new()
 		part_stream.database_path = ProjectSettings.globalize_path(PackScript.ground_file(part_dir, PackScript.generation_of(part_dir)))
 
-		for first in range(0, _total, COLUMNS_PER_TAKE):
-			if not _owns_take(first, k, processes):
-				continue
+		# The rows the copy wrote as it built (24 Nov 2026: working them out again was half the join); a copy from before has none.
+		var rows: PackedInt32Array = read_rows(part_dir + "/" + ROWS_FILE, _total)
 
-			for index in range(first, mini(first + COLUMNS_PER_TAKE, _total)):
-				var column: Vector3i = _column(index)
-				var range_y: Vector2i = surface_blocks(generator, column.x, column.y, column.z)
+		if rows.is_empty():
+			for first in range(0, _total, COLUMNS_PER_TAKE):
+				if _owns_take(first, k, processes):
+					for index in range(first, mini(first + COLUMNS_PER_TAKE, _total)):
+						var range_y: Vector2i = surface_blocks(generator, _column(index).x, _column(index).y, _column(index).z)
+						rows.append_array(PackedInt32Array([index, range_y.x, range_y.y]))
 
-				for by in range(range_y.x, range_y.y + 1):
-					var block: Vector3i = Vector3i(column.x, by, column.y)
+		for n in range(0, rows.size(), 3):
+			var column: Vector3i = _column(rows[n])
 
-					if part_stream.load_voxel_block(buffer, block, column.z) == VoxelStream.RESULT_BLOCK_FOUND:
-						main_stream.save_voxel_block(buffer, block, column.z)
-						copied += 1
+			for by in range(rows[n + 1], rows[n + 2] + 1):
+				var block: Vector3i = Vector3i(column.x, by, column.y)
+
+				if part_stream.load_voxel_block(buffer, block, column.z) == VoxelStream.RESULT_BLOCK_FOUND:
+					main_stream.save_voxel_block(buffer, block, column.z)
+					copied += 1
 
 		main_stream.flush()
 		print("prebuild_ground: joined copy %d (%d blocks so far, %.0f s)" % [k, copied, float(Time.get_ticks_msec() - join_started) / 1000.0])
