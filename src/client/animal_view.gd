@@ -43,7 +43,7 @@ const FLY := 15                       # server_flight.FLY: a bird in flight (cli
 const GLIDE := 17                     # server_flight.GLIDE: gliding; a glide that climbs again goes back to FLY, which is no new take-off
 const VOICED_STATES := [2, 3, 7, 10, 11, 16, 25, 26]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning, a close blow, a kick
 const ATTACK_STATES := [7, 11, 25, 26]        # a wolf attacking, big game charging or striking up close: the one biting you (attacker_near)
-const LUNGE_STATES := [7, 11]                 # an attack that ends in the model's bite clip as it ends (a strike or kick plays its own clip as it starts)
+const BITE_END_STATES := [7, 11]               # an attack that ends in the model's bite clip as it ends (a strike or kick plays its own clip as it starts)
 const CLOSE_STATES := [25, 26]                # server_big_game STRIKE and KICK: a blow wound up where it stands, its clip timed to land when the server's does
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 # Drawn at the present, not a delay behind (Dave 23 Nov 2026: "battle was almost impossible"): warn, charge, recover and the jaw-pop. A charge's
@@ -631,7 +631,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
 
 		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.
-		if int(_bodies[id]["state"]) in LUNGE_STATES and not int(row[4]) in ATTACK_STATES:
+		if int(_bodies[id]["state"]) in BITE_END_STATES and not int(row[4]) in ATTACK_STATES:
 			_play_once(_bodies[id], "bite", BITE_MAX_S)
 		elif int(row[4]) in CLOSE_STATES and int(row[4]) != int(_bodies[id]["state"]):
 			_close_blow(_bodies[id], int(row[4]))
