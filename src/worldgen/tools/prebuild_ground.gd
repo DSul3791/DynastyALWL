@@ -18,6 +18,8 @@ extends SceneTree
 #                    works in --out/parts/part_K (its log in log.txt there); a stop goes on where it was if run again with the same N
 #                    (blocks already in a part are skipped). The parts are deleted once joined, so a run after a finished one builds
 #                    everything again. While joining, the parts and the pack both stand: about twice the pack's size on disk.
+#   --stop-after=S   with --processes: stop every copy after S seconds and print "prebuild_ground: STOPPED after S s: N blocks made,
+#                    R blocks/s" (a timing try: Dave 24 Nov 2026, "run the 10 test for 2 minutes ... then stop"); nothing is joined
 #   --area=X,Z,M     only the M-metre square with corner X,Z (world metres) inside the tiles: for tests and quick looks
 #   --plants=0       ground only (default 1: the trees and plants of every 256 m chunk too, in the pack's flora_pack/ folder,
 #                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped; with
@@ -61,6 +63,7 @@ var _part_count: int = 1
 var _own_total: int = 0                # columns in this copy's share
 var _tiles_stamp: String = ""
 var _out_dir: String = ""
+var _stop_after: float = 0.0           # --stop-after (parent only)
 
 
 func _init() -> void:
@@ -71,6 +74,7 @@ func _init() -> void:
 	var area: Array = []
 	var plants: bool = true
 	var processes: int = 1
+	var stop_after: float = 0.0
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--tiles="):
@@ -85,6 +89,8 @@ func _init() -> void:
 
 			for part in argument.trim_prefix("--lods=").split(",", false):
 				lods.append(int(part))
+		elif argument.begins_with("--stop-after="):
+			stop_after = float(argument.trim_prefix("--stop-after="))
 		elif argument == "--processes=auto":
 			processes = clampi(OS.get_processor_count() - 2, 1, 8)   # leaves two of the machine's threads free; about 0.8 GB each
 		elif argument.begins_with("--processes="):
@@ -104,6 +110,7 @@ func _init() -> void:
 		quit(1)
 		return
 
+	_stop_after = stop_after
 	quit(_run(tiles, out_dir, threads, lods, area, plants, processes))
 
 
@@ -189,6 +196,7 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 	var last_flush: int = started
 	var last_percent: int = -1
 	var last_print: int = started - 10000
+	var last_progress: int = 0
 
 	while true:
 		_mutex.lock()
@@ -205,7 +213,10 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 			var spent_s: float = float(now - started) / 1000.0
 			var left_s: float = spent_s / float(done) * float(_own_total - done) if done > 0 else 0.0
 			print("prebuild_ground: %d%% (%d of %d columns), %d blocks made, %d already there, %.0f s, about %.0f min left" % [percent, done, _own_total, made, skipped, spent_s, left_s / 60.0])
-			_write_progress("ground", done, _own_total)
+
+		if now - last_progress >= 2000 or done >= _own_total:
+			last_progress = now
+			_write_progress("ground", done, _own_total, made)
 
 		if done >= _own_total:
 			break
@@ -324,7 +335,7 @@ func _build_plants(tiles: Array, out_dir: String, threads: int, area: Array) -> 
 				last_print = now
 				var spent_s: float = float(now - started) / 1000.0
 				print("prebuild_ground: plants of tile %s: %d of %d chunks, %.0f s, about %.0f min left" % [name, done, _chunks.size(), spent_s, spent_s / float(maxi(done, 1)) * float(_chunks.size() - done) / 60.0])
-				_write_progress("plants " + String(name), done, _chunks.size())
+				_write_progress("plants " + String(name), done, _chunks.size(), _made)
 
 			OS.delay_msec(500)
 
@@ -464,16 +475,21 @@ static func surface_blocks(terrain, bx: int, bz: int, lod: int) -> Vector2i:
 	return Vector2i(int(floor(low / block_m)) - 1, int(floor(high / block_m)) + 1)
 
 
-# A copy's progress for its parent: "phase done total".
-func _write_progress(phase: String, done: int, total: int) -> void:
+# A copy's progress for its parent: "phase done total blocks_made".
+func _write_progress(phase: String, done: int, total: int, made: int) -> void:
 	if _part_count <= 1:
 		return
 
 	var file: FileAccess = FileAccess.open(_out_dir + "/progress.txt", FileAccess.WRITE)
 
 	if file != null:
-		file.store_string("%s %d %d" % [phase.replace(" ", "_"), done, total])
+		file.store_string("%s %d %d %d" % [phase.replace(" ", "_"), done, total, made])
 		file.close()
+
+
+static func _progress_of(parts_dir: String, k: int) -> PackedStringArray:
+	var path: String = parts_dir + "/part_%d/progress.txt" % k
+	return (FileAccess.get_file_as_string(path) if FileAccess.file_exists(path) else "starting 0 1 0").split(" ")
 
 
 # --processes: start the copies, show their progress, then join their ground and plants into out_dir.
@@ -529,11 +545,25 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 			var lines: PackedStringArray = PackedStringArray()
 
 			for k in range(processes):
-				var text: String = FileAccess.get_file_as_string(parts_dir + "/part_%d/progress.txt" % k) if FileAccess.file_exists(parts_dir + "/part_%d/progress.txt" % k) else "starting 0 1"
-				var bits: PackedStringArray = text.split(" ")
-				lines.append("%s %d%%" % [bits[0].replace("_", " "), int(100.0 * float(bits[1]) / float(maxi(int(bits[2]), 1)))] if bits.size() == 3 else "?")
+				var bits: PackedStringArray = _progress_of(parts_dir, k)
+				lines.append("%s %d%%" % [bits[0].replace("_", " "), int(100.0 * float(bits[1]) / float(maxi(int(bits[2]), 1)))] if bits.size() == 4 else "?")
 
 			print("prebuild_ground: %.0f s; copies: %s" % [float(now - started) / 1000.0, ", ".join(lines)])
+
+		if _stop_after > 0.0 and float(now - started) / 1000.0 >= _stop_after:
+			var made: int = 0
+
+			for k in range(processes):
+				var bits: PackedStringArray = _progress_of(parts_dir, k)
+				made += int(bits[3]) if bits.size() == 4 else 0
+
+			for pid in pids:
+				if OS.is_process_running(pid):
+					OS.kill(pid)
+
+			var spent: float = float(Time.get_ticks_msec() - started) / 1000.0
+			print("prebuild_ground: STOPPED after %.0f s: %d blocks made by %d copies, %.0f blocks/s (as last reported by the copies, at most 2 s old; the first seconds are each copy reading the tiles)" % [spent, made, processes, float(made) / maxf(spent, 0.001)])
+			return 0
 
 		OS.delay_msec(1000)
 
