@@ -1005,16 +1005,17 @@ func _make_look_model() -> Node3D:
 
 
 # Anything in hand is a weapon (Dave 19 Nov 2026 play test: "I just tried to hit a pig with an axe and it is doing no damage"; "any thing in your
-# hand should be able to be used as a weapon"): true when an animal is drawn in front within the held item's reach (MeleeRules; the server's
-# target_along rule: inside 0.6 m, or within about 35 degrees of the look). A left click then strikes it instead of the item's own use.
+# hand should be able to be used as a weapon"): the animal drawn in front within the held item's reach (MeleeRules; the server's
+# target_along rule: inside 0.6 m, or within about 35 degrees of the look), as [id, where it is drawn], else []. A left click then strikes it
+# instead of the item's own use. `margin_m` asks for that much inside the reach (a predicted hit, _melee_strike).
 var _melee_cfg: Dictionary = {}
 
 
-func _animal_in_reach() -> bool:
+func _animal_aimed(margin_m: float = 0.0) -> Array:
 	var bare: bool = held_number() == 0   # empty hands punch (melee.json bare_hand, Dave 23 Nov 2026)
 
 	if not animal_aim_rows.is_valid() or _camera == null or carrying_log or (not bare and _inv.is_broken(held_slot)):
-		return false
+		return []
 
 	if _melee_cfg.is_empty():
 		_melee_cfg = MeleeRules.load_config()
@@ -1030,10 +1031,21 @@ func _animal_in_reach() -> bool:
 
 		var body: float = float(row[2]) if (row as Array).size() > 2 else 0.0   # a blow reaches the body, not its middle (server_animals.target_along)
 
-		if to.length() - body <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
-			return true
+		if to.length() - body <= reach - margin_m and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5 and (row as Array).size() > 3:
+			return [int(row[3]), at]
 
-	return false
+	return []
+
+
+# Feel (Dave 24 Nov 2026: "give as much control to the client as it takes to make them feel natural and fight like they should in a real great
+# video game"; docs/design/ANIMAL_NETCODE.md "Plans" step 3): a blow this screen sees land shows at once. The client runs the server's own test
+# (target_along, on the animals as drawn, which is where the server judges the blow: seen_ms) PREDICT_MARGIN_M inside the reach, at most once
+# per the item's recover_ms (the server drops a faster blow unheard), and emits blow_landing; the server's animal_hit for it then plays no
+# second thud or flinch (animal_view.confirm_hit). The damage, the blood and the number still come only from the server.
+const PREDICT_MARGIN_M := 0.2
+const STRIKE_RECOVER_MS := 600   # server_items STRIKE_COOLDOWN_MS: an item with no recover_ms of its own
+signal blow_landing(id: int, at: Vector3)   # a blow this screen sees land on animal `id`, drawn at `at`
+var _paced_ms: int = -100000   # when the last blow went that the server takes (it keeps the same clock: a blow inside recover_ms is dropped and does not restart it)
 
 
 # One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
@@ -1043,7 +1055,28 @@ func _melee_strike() -> void:
 	if report_now.is_valid():
 		report_now.call()   # and from where we stand now, not the last report up to 0.2 s back (server_items strike_origin)
 
+	_predict_blow()
 	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot if held_number() != 0 else -1, int(seen[0]), int(seen[1]), -_camera.global_transform.basis.z)   # -1: a bare-handed punch
+
+
+# The predicted landing of the blow being sent (see PREDICT_MARGIN_M): none for a rope or twine (it binds a bandit, server_items BIND_ITEMS) or
+# inside the item's recover_ms of the last blow the server took, hit or miss.
+func _predict_blow() -> void:
+	if _melee_cfg.is_empty():
+		_melee_cfg = MeleeRules.load_config()
+
+	var bare: bool = held_number() == 0
+	var recover: int = int((_melee_cfg.get("bare_hand", {}) as Dictionary).get("recover_ms", STRIKE_RECOVER_MS)) if bare else int(_inv.table.entry(held_id()).get("recover_ms", STRIKE_RECOVER_MS))
+	var now: int = Time.get_ticks_msec()
+
+	if now - _paced_ms < recover:
+		return
+
+	_paced_ms = now
+	var aimed: Array = _animal_aimed(PREDICT_MARGIN_M)
+
+	if not aimed.is_empty() and (bare or not held_id() in ["rope", "twine"]):
+		blow_landing.emit(int(aimed[0]), aimed[1])
 
 
 func _is_axe() -> bool:
@@ -1237,7 +1270,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	# A left click at an animal in reach strikes it with whatever is in hand (Dave 19 Nov 2026). The axe and pick strike at the impact of their
 	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint, the hoe's list and the build screen keep their click.
-	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _pipe_hand() and not _hoe_menu_open and not blueprints.is_open and _animal_in_reach():
+	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _pipe_hand() and not _hoe_menu_open and not blueprints.is_open and not _animal_aimed().is_empty():
 		_arm_play("use", 0.6)
 		_melee_strike()
 		return true
@@ -1435,6 +1468,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 				if report_now.is_valid():
 					report_now.call()   # judged from where we stand now (server_items strike_origin)
 
+				_predict_blow()
 				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, int(seen_b[0]), int(seen_b[1]), -_camera.global_transform.basis.z)
 
 			if _sound != null:
@@ -2359,7 +2393,7 @@ func _water_piece_state(kit: String) -> String:
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
 # tree-fall and the harvest of ground; for now the axe only swings and sounds.)
 func _strike() -> void:
-	if _animal_in_reach():   # an animal in front takes the blow (Dave 19 Nov 2026: the axe did nothing to a pig)
+	if not _animal_aimed().is_empty():   # an animal in front takes the blow (Dave 19 Nov 2026: the axe did nothing to a pig)
 		_melee_strike()
 		return
 

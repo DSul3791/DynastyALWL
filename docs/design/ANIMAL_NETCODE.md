@@ -170,6 +170,10 @@ shows it, never more than `rewind_max_ms` back.
    over `BEND_RAD`), the plan is the way it is going, `PLAN_AHEAD_S` on at its pace (`server_animals.bend_plan`, also called by the pack brain), so the client carries it
    on along that next stretch with the server instead of holding it until the next row. Steering is one step at a time (no path is planned ahead), so this is
    the next stretch, not a whole route. No protocol change.
-3. The client's own feedback at once: the flinch, the blood and the sound of the player's own blow when the client's hit test agrees, the
-   server's answer only confirming or taking it back.
+3. The player's own blow shows as it lands, not a round trip later: when a melee blow or spear jab goes, the client runs the server's own
+   test (`target_along`, on the animals as drawn, where the server judges it) `PREDICT_MARGIN_M` inside the item's reach and at most once per
+   its `recover_ms` (the server's pace; a rope never), and the body flinches with the flesh thud at once (`held_item.blow_landing`,
+   `animal_view.predict_hit`). The server's `animal_hit` for that animal within `PREDICT_KEEP_S` plays no second flinch or thud
+   (`confirm_hit`); any other hit plays as before. The damage, the number and the blood still come only from the server, so a blow it judges a
+   miss after all has only flinched for a fifth of a second. No protocol change.
 4. Measured by the robots over a lossy link: frame jumps, drawn-to-server distance, blows landed against where drawn.

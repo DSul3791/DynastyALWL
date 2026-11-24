@@ -369,6 +369,30 @@ const FLINCH := Vector3(1.08, 0.88, 1.08)
 const FLINCH_S := 0.2
 
 
+# The player's own blow seen to land (held_item blow_landing; docs/design/ANIMAL_NETCODE.md "Plans" step 3): the flinch now, not a round trip
+# later. True when it flinched, so the caller plays the thud too. The server's animal_hit for it, within PREDICT_KEEP_S, then plays neither
+# again (confirm_hit). A blow the server judges a miss after all has only flinched; it does no damage and leaves no blood.
+const PREDICT_KEEP_S := 0.8
+var _predicted: Dictionary = {}   # id -> _t of the blow this screen saw land and has not yet heard the server's hit for
+
+
+func predict_hit(id: int) -> bool:
+	if not _bodies.has(id):
+		return false
+
+	_predicted[id] = _t
+	flinch(id)
+	return true
+
+
+# The server's hit on animal `id` (animal_hit): true when it is the blow already shown (predict_hit, inside PREDICT_KEEP_S), which plays no
+# second flinch or thud; false for any other hit, which plays them as before.
+func confirm_hit(id: int) -> bool:
+	var at: float = float(_predicted.get(id, -INF))
+	_predicted.erase(id)
+	return _t - at <= PREDICT_KEEP_S
+
+
 func flinch(id: int) -> void:
 	if not _bodies.has(id) or not is_instance_valid(_bodies[id]["node"]):
 		return
@@ -584,7 +608,7 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position
 
 		if at.distance_to(from) <= range_m:
-			out.append([at, float(_bodies[id]["heading"]), AnimalContact.body_m(str(_bodies[id]["kind"]))])   # its reach from middle to nose: a blow reaches its body, not its middle
+			out.append([at, float(_bodies[id]["heading"]), AnimalContact.body_m(str(_bodies[id]["kind"])), id])   # its reach from middle to nose: a blow reaches its body, not its middle
 
 	return out
 
