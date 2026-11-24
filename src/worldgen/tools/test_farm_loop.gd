@@ -154,6 +154,9 @@ func _init() -> void:
 		items.gather(1, "tall_grass", "plant", "0,0,%d" % (700 + tufts), 700 + tufts, Vector3(501.0, 70.0, 500.0))
 		tufts += 1
 
+	for bulky in ["thatch", "straw", "plant_fibre"]:   # the grass itself is put aside, so later steps have room under the carry limit
+		items.inventory_of(1).remove(items.table.number_of(bulky), items.inventory_of(1).count_of(items.table.number_of(bulky)))
+
 	var wheat: int = count("wheat_seeds")
 	var kg: float = CarryRules.weight_of("wheat_seeds", items._carry_cfg) * float(wheat)
 	check(wheat >= 4 * pinch("wheat"), "one patch of tall grass (%d tufts) gives enough wheat seed for four spots and more (%d seeds, %d a spot)" % [tufts, wheat, pinch("wheat")])

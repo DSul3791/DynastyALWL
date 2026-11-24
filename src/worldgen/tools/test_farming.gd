@@ -502,9 +502,6 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	items._items.erase(920006)
 
 
-# Gardening plots (Dave 14 Nov 2026: "Gardening plots can come in three sizes small medium and large ... A small takes two planks and eight nails a medium
-# takes three planks, and eight nails and a large takes four planks, and eight nails"; no tiers): the three blueprints and footprints, and a saved Thatch,
-# Stone or Brick plot loads as the Medium one.
 # Dave's play-test 24 Nov 2026: one patch of tall grass gave about 6,000 of each grain. A patch is 25 to 40 tufts (flora.json patch count); each
 # tuft carries one grain (drops.json seed_drops one_of, fixed by its key), 20 to 60 seeds. A 35-tuft patch picked tuft by tuft stays in range.
 func _tall_grass_patch_checks() -> void:
@@ -552,6 +549,9 @@ func _tall_grass_patch_checks() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
 
+# Gardening plots (Dave 14 Nov 2026: "Gardening plots can come in three sizes small medium and large ... A small takes two planks and eight nails a medium
+# takes three planks, and eight nails and a large takes four planks, and eight nails"; no tiers): the three blueprints and footprints, and a saved Thatch,
+# Stone or Brick plot loads as the Medium one.
 func _plot_size_checks(dir: String) -> void:
 	for row in [["small_garden_plot", 1.0, 2], ["wooden_garden_plot", 2.0, 3], ["large_garden_plot", 3.0, 4]]:
 		var bp: Dictionary = items._blueprints.get(int(items._blueprint_of_kit.get(str(items._structures.get(str(row[0]), {}).get("kit", "")), 0)), {})
