@@ -23,6 +23,13 @@ active hours and resting, mothers with young, seasons (rut, spring hunger), dens
 
 ## What changed
 
+- **A flight takes a real way out** (Dave's play test, 24 Nov 2026: a deer at a marsh "just spins in circles not able to run away ...
+  until I hit him then he ran"). Its flight line ran across deep water; the walker turns at most a right angle off its target, so it
+  stepped to and fro along the bank and never got away. Now a flight leg blocked on the way (water, a cliff) takes the clear way nearest
+  to away from the threat that does not pass it (`server_animals._flee_target`, `_open_way`: sixteen headings, a clear run of
+  `OPEN_MIN_M` at least); a flight that gains under half of every `FLEE_CHECK_M` run is given one; one with no way at all stands at
+  bay facing the threat for `BAY_S` (big game cornered still warns and charges first). Goblins and bandits keep their own line.
+  Test: `test_animal_flee_way.gd`.
 - **HB-1, temperament shares by species** (table below). Some species had the generic small-carnivore mix, so 15% of tigers, lions,
   leopards, pumas and hyenas were "friendly" and walked up to the player. They now follow the research.
 - **HB-2, predators chase a runner.** A predator with a `hunter` row that may attack (defensive, neutral or aggressive) charges at
