@@ -5134,6 +5134,48 @@ const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this
 const PATH_BOULDER_MARGIN_M := 1.0   # a path patch is laid no nearer a boulder's edge than this: its brown fades out to 1.25 m, so the path goes round a rock instead of painting on it (Dave 3 Nov)
 
 
+# Trees and paths (Dave's play test 24 Nov 2026: a standing Beech in the middle of a path another player had trodden; "expected it to be a clear path"):
+# a path is never laid on a standing tree, and a tree never grows on a path. A patch is not laid with its strong middle on a standing trunk (placer
+# trees, and planted trees grown full; the player fells it first, as a rock is walked round), and the saplings and young trees it is laid over are
+# trodden out (they cannot be felled yet). A seed is not planted on a path (_sapling_refusal), and no wild sapling comes within no_spawn_m of one.
+const PATH_TREE_MARGIN_M := 0.5      # the patch's strong middle (1 m across) stays off the trunk's edge
+const PATH_TRAMPLE_M := 1.25         # a sapling or young tree this close (flat) to a new patch is trodden out: the patch's whole brown reaches this far
+const PLANT_PATH_GAP_M := 1.25       # nothing is planted this close (flat) to a path patch
+
+
+# The name of the standing tree a path patch at `spot` would be laid on, or "" when there is none. Trees from made chunks only (trees_near): the
+# player stands at the patch, so its chunk is made.
+func _path_tree(spot: Vector3) -> String:
+	if trees_near.is_valid() and tree_info.is_valid():
+		for found in trees_near.call(spot, 3.0):
+			var info: Dictionary = tree_info.call(found[0], int(found[1]))
+
+			if not info.is_empty() and Vector2(info["position"].x - spot.x, info["position"].z - spot.z).length() < _felled_radius(info) + PATH_TREE_MARGIN_M:
+				return str(info["name"])
+
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+
+	for sapling in _saplings:
+		if now_s - float(sapling["planted_at"]) >= SAPLING_GROWN_S and Vector2(sapling["pos"].x - spot.x, sapling["pos"].z - spot.z).length() < 0.4 + PATH_TREE_MARGIN_M:
+			return str(_flora_by_id.get(int(sapling["species"]), {}).get("name", "tree"))
+
+	return ""
+
+
+# Treads out the saplings and young trees (not yet grown full) within PATH_TRAMPLE_M of a new path patch, so none grows into a tree on the path.
+func _trample_saplings(spot: Vector3) -> void:
+	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
+	var gone: Array = []
+
+	for sapling in _saplings:
+		if now_s - float(sapling["planted_at"]) < SAPLING_GROWN_S and Vector2(sapling["pos"].x - spot.x, sapling["pos"].z - spot.z).length() < PATH_TRAMPLE_M:
+			gone.append([Vector2i(int(sapling["chunk"][0]), int(sapling["chunk"][1])), (int(sapling["species"]) << 16) | (0xFFFF - int(sapling["slot"]))])
+
+	for row in gone:
+		if not (cut_tree.is_valid() and bool(cut_tree.call(row[0], int(row[1])))):
+			remove_dynamic(row[0], int(row[1]))   # no server scene (tests): the list alone
+
+
 func _path_blocked_by_boulder(other: Dictionary, spot: Vector3) -> bool:
 	if not other.has("boulder"):
 		return false
@@ -5184,6 +5226,14 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		elif other["pos"].distance_to(spot) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 			_say(peer, "Something stands there.")
 			return
+
+	var tree: String = _path_tree(spot)
+
+	if tree != "":
+		_say(peer, "A %s stands there: clear it first, or tread the path round it." % tree.to_lower())
+		return
+
+	_trample_saplings(spot)
 
 	# Pathen (BugsList entry 5, Dave 18 Nov 2026): "one click makes one level path spot": the ground under the patch is levelled to its own average in the one
 	# click (PATH_LEVEL_OPS small cuts and fills, read through the saved edits), then the patch is laid on it.
@@ -5907,6 +5957,7 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 		if not blocked:   # no cap on path patches (Dave 17 Nov 2026)
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0, "road": true}}   # road: the grass is kept off 2 m either side
 			_zone_add(_next_id)
+			_trample_saplings(pos)   # no young tree grows up on the road
 			_next_id += 1
 			_dirty = true
 			_goal_event(peer, "path_laid")
@@ -12548,6 +12599,9 @@ func _sapling_refusal(item_id: String, spot: Vector3) -> String:
 
 	if is_nan(spot.y) or spot.y < 1.0:
 		return "The ground is too wet here."
+
+	if _spawn_zones.kind_near(spot.x, spot.z, PLANT_PATH_GAP_M, _items, "path_patch"):
+		return "Nothing grows on a trodden path."   # Dave's play test 24 Nov 2026: a tree stood on a path (_path_tree)
 
 	if water_depth_at.is_valid() and float(water_depth_at.call(spot)) >= PlacementRules.FIRE_WATER_BLOCK_M:
 		return "You cannot plant it in water."

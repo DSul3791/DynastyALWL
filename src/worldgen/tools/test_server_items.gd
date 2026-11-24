@@ -1067,6 +1067,51 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(patches_of.call() == 3, "a path out of reach does nothing")
+	# Dave's play test 24 Nov 2026 (a Beech stood in the middle of a trodden path): no path on a standing tree; young trees under a path are trodden out;
+	# nothing is planted on a path.
+	var path_says: Array = []
+	var was_notice: Callable = m.send_notice
+	var was_near: Callable = m.trees_near
+	var was_info: Callable = m.tree_info
+	var was_cut: Callable = m.cut_tree
+	var was_clock: Callable = m.game_seconds
+	var beech_at: Array = [Vector3(5.5, 10.0, -1.5)]
+	var cut_ids: Array = []
+	m.send_notice = func(_p, text): path_says.append(text)
+	m.trees_near = func(p, r): return [[Vector2i(0, 0), 4242]] if Vector2(p.x - beech_at[0].x, p.z - beech_at[0].z).length() <= r else []
+	m.tree_info = func(_c, _id): return {"name": "Beech", "position": beech_at[0], "height": 20.0, "trunk": 0.5}
+	m.cut_tree = func(c, tid): cut_ids.append(tid); return m.remove_dynamic(c, tid)
+	m.game_seconds = func(): return 100.0 * 86400.0
+	var before_tree: int = patches_of.call()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(5.5, 10.0, -1.5))
+	check(patches_of.call() == before_tree and path_says.size() == 1 and str(path_says[0]).begins_with("A beech stands there"), "no path patch is laid on a standing tree's trunk, and the player is told (%s)" % str(path_says))
+	beech_at[0] = Vector3(5.5, 10.0, 1.6)   # 3.1 m off: the path goes past it
+	var young_tree: Dictionary = {"slot": 0, "chunk": [0, 0], "species": 1, "pos": Vector3(5.3, 10.0, -0.8), "planted_at": 99.0 * 86400.0}   # 1 game day old, 0.73 m off the patch
+	var grown_tree: Dictionary = {"slot": 1, "chunk": [0, 0], "species": 1, "pos": Vector3(4.0, 10.0, -3.5), "planted_at": 50.0 * 86400.0}   # grown full, 2.5 m off: stays
+	var saplings_were: Array = m._saplings.duplicate()
+	m._saplings.append(young_tree)
+	m._saplings.append(grown_tree)
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(5.5, 10.0, -1.5))
+	check(patches_of.call() == before_tree + 1, "a patch is laid beside a tree, clear of its trunk")
+	check(not m._saplings.has(young_tree) and m._saplings.has(grown_tree) and cut_ids == [(1 << 16) | 0xFFFF], "the young tree under the new patch is trodden out (clients told), the grown one off the path stays (%s)" % str(cut_ids))
+	grown_tree["pos"] = Vector3(4.6, 10.0, -3.0)
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(4.7, 10.0, -2.9))
+	check(patches_of.call() == before_tree + 1 and m._saplings.has(grown_tree), "a planted tree grown full stops a patch on its trunk too")
+	var on_path: String = m._sapling_refusal("oak_seed", Vector3(5.9, 10.0, -1.0))
+	check(on_path == "Nothing grows on a trodden path." or on_path.begins_with("The ground is frozen"), "a seed is not planted on a path patch (%s)" % on_path)
+	check(m._spawn_zones.kind_near(5.9, -1.0, ItemsScript.PLANT_PATH_GAP_M, m._items, "path_patch") and not m._spawn_zones.kind_near(5.5, 3.0, ItemsScript.PLANT_PATH_GAP_M, m._items, "path_patch"), "the path lookup finds a patch 0.64 m off and none 3 m off")
+	m._saplings = saplings_were
+	m.send_notice = was_notice
+	m.trees_near = was_near
+	m.tree_info = was_info
+	m.cut_tree = was_cut
+	m.game_seconds = was_clock
+	for patch_id in m._items.keys():
+		if m._items[patch_id].has("struct") and str(m._items[patch_id]["struct"]["kind"]) == "path_patch" and Vector2(m._items[patch_id]["pos"].x - 5.5, m._items[patch_id]["pos"].z + 1.5).length() < 0.1:
+			m._items.erase(patch_id)   # the checks below count the patches laid before
 	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
 	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
 	digs.clear()
