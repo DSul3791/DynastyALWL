@@ -355,13 +355,13 @@
 		{
 			"id": "copper_ore",
 			"title": "Find copper ore",
-			"hint": "Copper ore is rock coated green or blue-green. There is little by the coast: follow a river or stream inland and upstream, where copper rocks lie along the water, more and bigger toward the hills, up to green outcrops where it comes from. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer.",
+			"hint": "Copper ore is rock coated green or blue-green. There is little by the coast: follow a river or stream inland and upstream, where copper rocks lie along the water, more and bigger toward the hills, up to green outcrops where it comes from. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer. Nine pieces covers 3 Copper ingots and 6 more ore for bronze later.",
 			"after": [
 				"hammer"
 			],
 			"check": {
 				"got_item": "copper_ore",
-				"count": 4
+				"count": 9
 			},
 			"stage": "copper_bronze"
 		},
@@ -434,26 +434,26 @@
 		{
 			"id": "tin_ore",
 			"title": "Find tin ore",
-			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer.",
+			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer. Six pieces, each smelted with a copper ore, make the 12 Bronze ingots the next steps need.",
 			"after": [
 				"copper_ingot"
 			],
 			"check": {
 				"got_item": "tin_ore",
-				"count": 2
+				"count": 6
 			},
 			"stage": "copper_bronze"
 		},
 		{
 			"id": "bronze_ingot",
 			"title": "Smelt bronze",
-			"hint": "Put copper ore and tin ore in the Primitive smelter together: each copper ore with a tin ore makes two Bronze ingots.",
+			"hint": "Put copper ore and tin ore in the Primitive smelter together: each copper ore with a tin ore makes two Bronze ingots. Twelve covers a Bronze - Pickaxe (3), one ingot each for Bronze nails and Bronze hinges at the Primitive smithy, and 6 for the Improved smithy.",
 			"after": [
 				"tin_ore"
 			],
 			"check": {
 				"made_item": "bronze_ingot",
-				"count": 4
+				"count": 12
 			},
 			"stage": "copper_bronze"
 		},
