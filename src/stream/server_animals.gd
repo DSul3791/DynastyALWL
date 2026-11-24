@@ -24,6 +24,9 @@ const FLEE := 2
 const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
 const PLAN_FRESH_MS := 1000     # a walk goal (plan) this recent goes in a moving animal's row (rows_near, protocol 168); an older one is not its way now
+const PLAN_MIN_M := 0.5         # a goal nearer than this is where it stops: no bend (bend_plan)
+const BEND_RAD := 0.6           # a step more than this off the line to its goal (about 35 degrees) is a detour: its plan is the way it goes (bend_plan)
+const PLAN_AHEAD_S := 0.5       # a detour's plan is this far on at the step's pace
 const AIR_DRAWN := [15, 17]     # server_flight FLY and GLIDE: drawn a delay behind (judged_ms); every other state at the present
 const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
@@ -881,6 +884,26 @@ func alarm_near(point: Vector3, radius: float) -> void:
 func plan(a: Dictionary, to: Vector3) -> void:
 	a["plan_to"] = to
 	a["plan_ms"] = Time.get_ticks_msec()
+	a.erase("plan_near")
+
+
+# A step that went well off the line to its goal (Steering turning it aside from a tree, a rock, water or a wall): the row's plan is the way it
+# is going now, PLAN_AHEAD_S on at this step's pace, not the goal behind the obstacle (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans",
+# step 2). The client carries a body on past its newest point only toward its plan, and held one detouring away from its goal still; now it
+# carries it on along the next stretch of the way it is going. A step back on the line drops it. The pack brain calls it too (server_wolves). Cost: one angle a moving animal's step.
+func bend_plan(a: Dictionary, was: Vector3, dt: float) -> void:
+	if not a.has("plan_to"):
+		return
+
+	var went: Vector2 = Vector2(a["pos"].x - was.x, a["pos"].z - was.z)
+	var to: Vector2 = Vector2(a["plan_to"].x - a["pos"].x, a["plan_to"].z - a["pos"].z)
+
+	if went.length() < 0.01 or to.length() < PLAN_MIN_M or absf(went.angle_to(to)) <= BEND_RAD:
+		a.erase("plan_near")
+		return
+
+	var on: Vector2 = went.normalized() * minf(went.length() / maxf(dt, 0.001) * PLAN_AHEAD_S, to.length())
+	a["plan_near"] = Vector3(a["pos"].x + on.x, a["pos"].y, a["pos"].z + on.y)
 
 
 # One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
@@ -1315,6 +1338,7 @@ func tick(delta: float) -> void:
 			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline
 			a["moving"] = true
 			note_past(a, was, int(dt * 1000.0))
+			bend_plan(a, was, dt)
 		else:
 			a["moving"] = false   # standing: rows_near stamps its row with the send time
 
@@ -2540,7 +2564,8 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 			# The plan (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans"): a moving animal's row carries where it is going on the ground, so the
 			# client draws it at the present, carried on along its way but never past where it stops. Before the health share, after a dog foe.
 			if bool(a.get("moving", false)) and a.has("plan_to") and Time.get_ticks_msec() - int(a.get("plan_ms", 0)) <= PLAN_FRESH_MS:
-				row.append(Vector2(snappedf(a["plan_to"].x, 0.1), snappedf(a["plan_to"].z, 0.1)))
+				var goal: Vector3 = a.get("plan_near", a["plan_to"])   # the way round an obstacle while it detours (bend_plan), else its goal
+				row.append(Vector2(snappedf(goal.x, 0.1), snappedf(goal.z, 0.1)))
 
 			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
 				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float

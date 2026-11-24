@@ -441,6 +441,7 @@ func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) 
 		var was: Vector3 = m["pos"]
 		m["pos"] = r["pos"]
 		m["heading"] = r["heading"]
+		host.bend_plan(m, was, dt)   # going round something: its row's plan is the way it goes (protocol 168, step 2)
 
 		if host.keep_off_players(m, was, infos) and m["pos"] == was:
 			m["moving"] = false   # up against the player: it stands there and bites, not running on the spot (Dave 23 Nov 2026)
@@ -1178,6 +1179,7 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 		var was: Vector3 = m["pos"]
 		m["pos"] = r["pos"]
 		m["heading"] = r["heading"]
+		host.bend_plan(m, was, dt)   # going round something: its row's plan is the way it goes (protocol 168, step 2)
 
 		if host.keep_off_players(m, was, infos) and m["pos"] == was:
 			m["moving"] = false   # up against the player: it stands there and bites, not running on the spot (Dave 23 Nov 2026)
