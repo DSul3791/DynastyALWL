@@ -380,7 +380,7 @@ def test_kinds():
 			for i in range(40):
 				ms = 10000 + i * 100
 				lines.append("ROBOT Robot %d P %d %.2f 0.00" % (n, ms, i * 0.1))
-				lines.append("ROBOT Robot %d A %d 7 %.2f 5.00 11" % (n, ms, i * 0.3 + off))
+				lines.append("ROBOT Robot %d A %d 7 %.2f 5.00 11%s" % (n, ms, i * 0.3 + off, " err 1.50 past 0.20 plan 1 late 0.06" if n == 1 else ""))   # robot 1 logs how it drew it
 
 			lines.append("ROBOT Robot %d KIND boar 8 frames 40 largest_step 0.30 m largest_x 1.00 over_1m 0 inside_other 0 lowest_health 100" % n)
 			write(d, "robot%d_play.log" % n, lines)
@@ -394,6 +394,12 @@ def test_kinds():
 		drawn = rk.at(one["a"][7], hits[0]["ms"])
 		check(abs(math.hypot(drawn[0] - 9.0, drawn[1] - 5.0) - 3.0) < 0.01, "the drawn-vs-server gap at a blow (drawn 6.0, server 9.0)")
 		check(rk.at(one["a"][7], 99999) is None, "no drawn place long after the last row")
+		check(rk.speed_band(one["a"][7], 5) == "walk" and rk.speed_band([(0, 0.0, 0.0, 0), (100, 0.0, 0.0, 0)], 0) == "still", "robot_kinds bands an animal at 3 m/s a walk, a standing one still")
+		r = subprocess.run([sys.executable, os.path.join(HERE, "robot_kinds.py"), d], capture_output=True, text=True)
+		check(r.returncode == 0 and "agree by state: 11 40: median 2.00" in r.stdout and "agree by speed: walk" in r.stdout, "robot_kinds splits the gap by state and speed (%s)" % r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr)
+		check("draw robot1: 40 samples; correction left median 1.50 m" in r.stdout and "with a plan 40" in r.stdout and "draw robot2" not in r.stdout, "robot_kinds sums how robot 1 drew it, and nothing for robot 2, which logged none")
+		ep = rk.episodes(d, 3)
+		check(1 <= len(ep) <= 2 and "gap 2.00 m" in ep[0] and "robot1 state 11 walk (err 1.50 past 0.20 plan 1 late 0.06)" in ep[0], "robot_kinds --episodes: one line per spell, with each robot's state and speed (%s)" % (ep[0] if ep else "none"))
 
 
 def test_stuck():

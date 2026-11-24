@@ -177,4 +177,13 @@ shows it, never more than `rewind_max_ms` back.
    `animal_view.predict_hit`). The server's `animal_hit` for that animal within `PREDICT_KEEP_S` plays no second flinch or thud
    (`confirm_hit`); any other hit plays as before. The damage, the number and the blood still come only from the server, so a blow it judges a
    miss after all has only flinched (a fifth of a second, and the model's hit clip where it has one). No protocol change.
-4. Measured by the robots over a lossy link: frame jumps, drawn-to-server distance, blows landed against where drawn.
+4. Measured by the robots over a lossy link: frame jumps, drawn-to-server distance, blows landed against where drawn (`robot_kinds.py`,
+   which also splits the gaps by state and speed, prints the worst two-robot gaps with `--episodes=N`, and how each body was drawn: the
+   correction left, time past its newest point, plan, lateness). First runs (24 Nov 2026, 120 ms, 30 ms jitter, 3% loss, two robots): the
+   drawn animal's median distance from the server's own place went from about 2 m to about 0.5 m (deer, boar) and 0 for a bear at the
+   player, and blows land with the animal drawn 0.03 to 0.2 m from where the server had it. But a fleeing deer could trail its place by 5 to 9 m
+   for seconds on one screen: not holds (past its newest point over `PLAN_CARRY_S` in under 1% of samples) but the correction `smooth` keeps,
+   drained at 1.3 times the leg's speed at most. A body drawn at the present now drains a backlog at about `CATCH_DRAIN_S`'s time constant,
+   never faster than its kind's top speed (`AnimalView.top_mps`, the row's fastest `*_mps`), when that correction trails the way its point
+   went; one ahead of it (an overshoot past a stop) keeps the old cap, so nothing is pulled backwards fast. Rerun with that drain (same link):
+   the two robots' 95th percentile gap 3.37 m to 1.02 m, the correction left 95th 3.5 m to 0.85 m, drawn-vs-server 95th 5.7 m to 2.4 m.

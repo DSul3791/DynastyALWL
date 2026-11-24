@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reads one or more kind runs (ROBOT_S=200 tools/robots.sh 2 kind_<species> [link]) and prints, per run, how the two robots drew the kind.
 
-    python3 tools/robot_kinds.py /tmp/robots_XXXX [/tmp/robots_YYYY ...]
+    python3 tools/robot_kinds.py /tmp/robots_XXXX [/tmp/robots_YYYY ...] [--episodes=N]   N: also the N worst two-robot gaps, one per spell
 
 The robots (src/client/robot_play.gd _kind) print each frame's stats in a KIND line, and every 100 ms an A line per drawn body of the kind
 (unix ms, id, x, z, state) and a P line for themselves; a health drop prints BITTEN with the nearest drawn body. The server prints
@@ -9,7 +9,8 @@ AUDIT enemy_hit for each goblin, bandit or big game blow, with where it had the 
 on one machine, so their unix ms share a clock. Measures:
   jumps   per robot: the largest drawn step in one frame, that step against the kind's top speed x the frame, and steps over 1 m
           (steps in the second after a frame over 250 ms, a freeze's catch-up, are left out and counted as after_freeze)
-  agree   the two robots' drawn places of the same animal at the same moment (the other robot's A rows interpolated): median, 95th, worst
+  agree   the two robots' drawn places of the same animal at the same moment (the other robot's A rows interpolated): median, 95th, worst;
+          then split by the animal's state and its speed (still, walk, trot, run), as is "server"
   hits    per server blow: the drawn place of that animal on the struck robot at that moment against where the server had it, and the
           drawn gap to the robot; per BITTEN line (every blow, also wolves): the drawn gap and drawn state
   slides  per robot, the SLIDE line: samples of a bought-model body moving over 0.5 m/s with a standing clip, its rate held at the top or
@@ -48,6 +49,9 @@ def read_run(d):
 				r["p"].append((int(p[4]), float(p[5]), float(p[6])))
 			elif len(p) > 8 and p[3] == "A":
 				r["a"].setdefault(int(p[5]), []).append((int(p[4]), float(p[6]), float(p[7]), int(p[8])))
+
+				if len(p) > 16 and p[9] == "err":   # how it was drawn (robot_play _kind_frame): the correction, past newest, plan, lateness
+					r.setdefault("draw", {})[(int(p[5]), int(p[4]))] = "err %s past %s plan %s late %s" % (p[10], p[12], p[14], p[16])
 			elif len(p) > 4 and p[3] == "SLIDE":
 				r["slide"] = line.split("SLIDE ", 1)[1].strip()
 			elif len(p) > 4 and p[3] == "KIND":
@@ -106,6 +110,24 @@ def at(rows, ms, slack=150):
 	return None
 
 
+SPEED_BANDS = [(1.0, "still"), (4.0, "walk"), (8.0, "trot"), (float("inf"), "run")]   # m/s of the animal over its neighbouring rows
+
+
+def speed_band(rows, k):
+	"""The band of the animal's speed at rows[k] (ms, x, z, state), from its rows either side."""
+	a, b = rows[max(k - 1, 0)], rows[min(k + 1, len(rows) - 1)]
+	v = math.hypot(b[1] - a[1], b[2] - a[2]) / max((b[0] - a[0]) / 1000.0, 0.001) if b[0] > a[0] else 0.0
+	return next(name for top, name in SPEED_BANDS if v < top)
+
+
+def print_split(what, by_state, by_speed):
+	"""The same distances split by the animal's state and by its speed: where a gap comes from (a flee, a charge, a turn on the run)."""
+	for title, groups in (("state", by_state), ("speed", by_speed)):
+		parts = ["%s %d: median %.2f, 95th %.2f, over 1 m %d" % (key, len(xs), statistics.median(xs), pct(xs, 0.95), sum(1 for x in xs if x > 1.0))
+			for key, xs in sorted(groups.items(), key=lambda kv: -len(kv[1]))]
+		print("    %s by %s: %s" % (what, title, "; ".join(parts)))
+
+
 def pct(xs, q):
 	xs = sorted(xs)
 	return xs[min(len(xs) - 1, int(q * len(xs)))]
@@ -145,6 +167,7 @@ def report(d):
 	if len(names) >= 2:
 		one, two = robots[names[0]], robots[names[1]]
 		diffs = []
+		by_state, by_speed = {}, {}
 
 		for aid, rows in one["a"].items():
 			other = two["a"].get(aid)
@@ -152,20 +175,24 @@ def report(d):
 			if not other:
 				continue
 
-			for ms, x, z, _st in rows:
+			for k, (ms, x, z, st) in enumerate(rows):
 				o = at(other, ms)
 
 				if o is not None:
 					diffs.append(math.hypot(x - o[0], z - o[1]))
+					by_state.setdefault(st, []).append(diffs[-1])
+					by_speed.setdefault(speed_band(rows, k), []).append(diffs[-1])
 
 		if diffs:
 			print("  agree: %d moments, median %.2f m, 95th %.2f m, worst %.2f m, %d over 1 m" % (len(diffs), statistics.median(diffs), pct(diffs, 0.95), max(diffs),
 				sum(1 for x in diffs if x > 1.0)))
+			print_split("agree", by_state, by_speed)
 		else:
 			print("  agree: the two robots never drew the same animal at the same moment")
 
 	for name, r in robots.items():
 		off, near_drawn, near_server = [], [], []
+		s_state, s_speed = {}, {}
 
 		for aid, rows in where.items():
 			drawn = r["a"].get(aid)
@@ -173,7 +200,7 @@ def report(d):
 			if not drawn:
 				continue
 
-			for ms, x, z, _st in rows:
+			for k, (ms, x, z, st) in enumerate(rows):
 				p = at(drawn, ms)
 				me = at([(q[0], q[1], q[2], 0) for q in r["p"]], ms)
 
@@ -181,6 +208,8 @@ def report(d):
 					continue
 
 				off.append(math.hypot(p[0] - x, p[1] - z))
+				s_state.setdefault(st, []).append(off[-1])
+				s_speed.setdefault(speed_band(rows, k), []).append(off[-1])
 
 				if me is not None and math.hypot(x - me[0], z - me[1]) < 10.0:
 					near_server.append(math.hypot(x - me[0], z - me[1]))
@@ -190,6 +219,17 @@ def report(d):
 			print("  server %s: drawn against the server's own place (AUDIT where): %d moments, median %.2f m, 95th %.2f m, worst %.2f m%s" % (name, len(off),
 				statistics.median(off), pct(off, 0.95), max(off), "" if not near_server else "; within 10 m of this robot: server gap median %.2f m, drawn gap median %.2f m (%d moments)" % (
 				statistics.median(near_server), statistics.median(near_drawn), len(near_server))))
+			print_split("server " + name, s_state, s_speed)
+
+	for name, r in robots.items():
+		vals = [v.split() for v in r.get("draw", {}).values()]
+
+		if vals:
+			err = [float(v[1]) for v in vals]
+			past = [float(v[3]) for v in vals]
+			print("  draw %s: %d samples; correction left median %.2f m, 95th %.2f m, over 1 m %d; past newest median %.2f s, over 0.6 s (held) %d; with a plan %d; late median %.2f s" % (
+				name, len(vals), statistics.median(err), pct(err, 0.95), sum(1 for x in err if x > 1.0), statistics.median(past), sum(1 for x in past if x > 0.6),
+				sum(1 for v in vals if v[5] == "1"), statistics.median([float(v[7]) for v in vals])))
 
 	by_peer = {r["peer"]: r for r in robots.values() if r["peer"] is not None}
 
@@ -230,14 +270,68 @@ def report(d):
 	return True
 
 
+def episodes(d, count):
+	"""The `count` worst moments the two robots drew one animal apart, each with both drawn places, the server's (AUDIT where), the state and
+	speed band each robot drew, and the drawn places 0.5 s either side: whether one is held, late, overshooting or still catching up."""
+	robots, _hits = read_run(d)
+	where = robots.pop("_where", {})
+	names = sorted(robots)
+
+	if len(names) < 2:
+		return []
+
+	one, two = robots[names[0]], robots[names[1]]
+	worst = []
+
+	for aid, rows in one["a"].items():
+		other = two["a"].get(aid)
+
+		if not other:
+			continue
+
+		for k, (ms, x, z, st) in enumerate(rows):
+			o = at(other, ms)
+
+			if o is not None:
+				worst.append((math.hypot(x - o[0], z - o[1]), aid, ms, k))
+
+	worst.sort(reverse=True)
+	out, used = [], []
+
+	for gap, aid, ms, k in worst:
+		if any(a == aid and abs(m - ms) < 2000 for a, m in used):
+			continue   # one line per spell
+
+		used.append((aid, ms))
+		rows, other = one["a"][aid], two["a"][aid]
+		srv = at(where.get(aid, []), ms, 300)
+		near = lambda rs: " ".join("%+d:%s" % ((dt), "-" if at(rs, ms + dt) is None else "%.1f,%.1f" % at(rs, ms + dt)) for dt in (-500, -250, 0, 250, 500))
+		st2 = min(other, key=lambda r: abs(r[0] - ms))
+		how = lambda rob, row: (" (%s)" % rob["draw"][(aid, row[0])]) if (aid, row[0]) in rob.get("draw", {}) else ""
+		out.append("  episode %s animal %d at %d: gap %.2f m; %s state %d %s [%s]; %s state %d %s [%s]; server %s" % (
+			os.path.basename(d), aid, ms, gap, names[0], rows[k][3], speed_band(rows, k) + how(one, rows[k]), near(rows), names[1], st2[3],
+			speed_band(other, other.index(st2)) + how(two, st2), near(other), "-" if srv is None else "%.1f,%.1f" % srv))
+
+		if len(out) >= count:
+			break
+
+	return out
+
+
 def main():
+	count = next((int(a.split("=", 1)[1]) for a in sys.argv[1:] if a.startswith("--episodes=")), 0)
 	dirs = [d for d in sys.argv[1:] if os.path.isdir(d)]
 
 	if not dirs:
 		print(__doc__)
 		return 2
 
-	return 0 if all([report(d) for d in dirs]) else 2
+	ok = all([report(d) for d in dirs])
+
+	for d in dirs if count > 0 else []:
+		print("\n".join(episodes(d, count)))
+
+	return 0 if ok else 2
 
 
 if __name__ == "__main__":

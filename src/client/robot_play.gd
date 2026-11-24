@@ -4273,7 +4273,14 @@ func _kind_frame(id: int, pos: Vector3, a_now: bool) -> void:
 	if a_now:
 		var b: Dictionary = client._animal_view_node._bodies.get(id, {})
 		_slide_sample(id, pos, b)
-		FreezeWatchScript.printer.line("ROBOT %s A %d %d %.2f %.2f %d" % [robot_name, _now_ms(), id, pos.x, pos.z, int(b.get("state", -1))])
+		# Then how it is drawn (step 4 of docs/design/ANIMAL_NETCODE.md "Plans"): the correction still to drain (MotionBuffer.smooth sm_err),
+		# how far the present is past its newest sent point (s; over PLAN_CARRY_S it holds), whether it has a plan, the row clock's lateness.
+		var view = client._animal_view_node
+		var samples: Array = b.get("samples", [])
+		var present: float = float(Time.get_ticks_usec()) / 1.0e6 - float(view._clock["late"])
+		var past_newest: float = present - float(samples[samples.size() - 1][2]) if not samples.is_empty() else 0.0
+		FreezeWatchScript.printer.line("ROBOT %s A %d %d %.2f %.2f %d err %.2f past %.2f plan %d late %.2f" % [robot_name, _now_ms(), id, pos.x, pos.z, int(b.get("state", -1)),
+			(b.get("sm_err", Vector3.ZERO) as Vector3).length(), past_newest, 1 if b.get("plan", null) is Vector2 else 0, float(view._clock["late"])])
 
 
 func _kind_hurt(before: int, after: int) -> void:
