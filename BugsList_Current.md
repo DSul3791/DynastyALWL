@@ -1632,7 +1632,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 143. The Fibre shoulder bag should be a Fibre backpack
 
-**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "a fiber handbag does not make any sense in a game like this. especially since its a backpack of somesort. remove it or call it a FiberBackpack". The item is now Fibre - Backpack (same item id, so saves and recipes keep it), with its description and the docs changed to match. It is still worn in the Shoulder position, so it goes with one of the four backpacks on the Back (coordinator ruling, 24 Nov 2026); its placeholder model is the pack shape on the back. Not yet played.
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "a fiber handbag does not make any sense in a game like this. especially since its a backpack of somesort. remove it or call it a FiberBackpack". The item is now Fibre - Backpack (same item id, so saves and recipes keep it), with its description and the docs changed to match. It is still worn in the Shoulder position, so it goes with one of the four backpacks on the Back (coordinator ruling, 24 Nov 2026); its placeholder model is the pack shape on the back. On the I screen the Back well shows it while no backpack is worn there (click opens it, drag it out to take it off; test_you_column); with a backpack worn, it is on the Tab screen's worn list. Not yet played.
 
 ## Rewrite interpretation
 

@@ -10,10 +10,10 @@ const ArtKit := preload("res://src/client/ui/art_kit.gd")
 
 class FakeTable:
 	func id_of(number: int) -> String:
-		return {3: "linen_shirt", 7: "stone_axe", 8: "hide_cloak", 9: "hide_hood", 10: "iron_helm", 11: "simple_backpack"}.get(number, "")
+		return {3: "linen_shirt", 7: "stone_axe", 8: "hide_cloak", 9: "hide_hood", 10: "iron_helm", 11: "simple_backpack", 12: "fibre_shoulder_bag"}.get(number, "")
 
 	func name_of(number: int) -> String:
-		return {3: "Linen shirt", 7: "Stone axe", 8: "Hide cloak", 9: "Hide hood", 10: "Iron helm", 11: "Simple - Backpack"}.get(number, "")
+		return {3: "Linen shirt", 7: "Stone axe", 8: "Hide cloak", 9: "Hide hood", 10: "Iron helm", 11: "Simple - Backpack", 12: "Fibre - Backpack"}.get(number, "")
 
 	func shelf_units(_number: int) -> int:
 		return 0
@@ -37,6 +37,7 @@ class FakeInventory:
 		numbers.resize(SLOTS)
 		numbers[4] = 7
 		numbers[6] = 11   # a Simple - Backpack in the inventory
+		numbers[8] = 12   # a Fibre - Backpack (worn on the shoulder) in the inventory
 
 	func inst_of(_slot: int) -> Dictionary:   # protocol 106: no instance data here
 		return {}
@@ -84,7 +85,10 @@ class FakeView:
 
 	# As inventory_view.gd wear_slot_of: the body slot of the piece in a pack slot (only the backpack is wearable here).
 	func wear_slot_of(slot: int) -> String:
-		return "back" if slot >= 0 and slot < inventory.slot_count and inventory.numbers[slot] == 11 else ""
+		if slot < 0 or slot >= inventory.slot_count:
+			return ""
+
+		return {11: "back", 12: "shoulder"}.get(inventory.numbers[slot], "")
 
 	func wear_slot(slot: int) -> void:
 		sent.append(["wear", slot])
@@ -136,6 +140,22 @@ func _initialize() -> void:
 	view.inventory.numbers[6] = 0
 	part.refresh()
 	check(back_well.tooltip_text.contains("Simple - Backpack") and back_well.drag_data.call() == {"worn": back_at}, "the worn backpack shows in the Back well and drags out as its worn position (%s)" % str(back_well.drag_data.call()))
+	# The Fibre - Backpack is worn on the shoulder (Dave 24 Nov 2026: "call it a FiberBackpack"): with no pack on the back the Back well shows it,
+	# drags it out and takes it as a drop; with a pack on the back the pack wins.
+	var shoulder_at: int = view.worn_places().find("shoulder:base")
+	view.worn[shoulder_at] = 12
+	view.inventory.numbers[8] = 0
+	part.refresh()
+	check(back_well.tooltip_text.contains("Simple - Backpack") and back_well.drag_data.call() == {"worn": back_at}, "with a pack on the back too, the Back well still shows the pack (%s)" % back_well.tooltip_text)
+	view.worn[back_at] = 0
+	part.refresh()
+	check(back_well.tooltip_text.contains("Fibre - Backpack") and back_well.drag_data.call() == {"worn": shoulder_at}, "no pack on the back: the Back well shows the Fibre - Backpack and drags it out as its shoulder position (%s, %s)" % [back_well.tooltip_text, str(back_well.drag_data.call())])
+	view.worn[shoulder_at] = 0
+	view.inventory.numbers[8] = 12
+	view.sent.clear()
+	check(back_well.can_drop.call({"slot": 8}), "the Back well takes the Fibre - Backpack from the inventory")
+	back_well.on_drop.call({"slot": 8})
+	check(view.sent == [["wear", 8]], "dropping it there puts it on (%s)" % str(view.sent))
 	check(part.preview.render_target_update_mode == SubViewport.UPDATE_DISABLED, "the preview does not render while the window is shut")
 	part.set_active(true)
 	await process_frame
