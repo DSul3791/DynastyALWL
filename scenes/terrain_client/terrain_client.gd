@@ -1574,6 +1574,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.ground_below = _ground_below
 	sound.under_land = _under_land   # no sea under the island: a deep tunnel has dry steps (Dave 20 Nov 2026)
 	sound.floor_under = _floor_under
+	sound.loading = true   # the world's sounds stay silent until it is ready, then fade in (Dave 24 Nov 2026, the static at load)
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
@@ -5728,6 +5729,7 @@ func _step_player(delta: float) -> void:
 	if swimming:
 		sound.forget_fall(body)   # landing in deep water breaks the fall: no height is carried on to the shore
 
+	sound.loading = connected_msec == 0 or waiting_for_ground or _connect_window != null   # _world_loading without its 3 s tail: the world's sounds fade in from landing
 	sound.update(delta, body, flying, underwater)
 	Probe.stop("sound", tsd)
 
