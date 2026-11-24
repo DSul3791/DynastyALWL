@@ -21,6 +21,9 @@ extends SceneTree
 #   --stop-after=S   with --processes: stop every copy after S seconds and print "prebuild_ground: STOPPED after S s: N blocks made,
 #                    R blocks/s" and a START-UP line (seconds until every copy made a block, then the steady rate to compare between
 #                    copy counts) (a timing try: Dave 24 Nov 2026, "run the 10 test for 2 minutes ... then stop"); nothing is joined
+#   --parts=DIR      with --processes: the copies work in DIR/prebuild_parts instead of --out/parts (24 Nov 2026: 24 copies saving to
+#                    one hard disk left the CPU two thirds idle; put DIR on an SSD and only the join writes to --out). Give the same
+#                    DIR to go on after a stop. DIR/prebuild_parts is deleted once joined; nothing else in DIR is touched
 #   --area=X,Z,M     only the M-metre square with corner X,Z (world metres) inside the tiles: for tests and quick looks
 #   --plants=0       ground only (default 1: the trees and plants of every 256 m chunk too, in the pack's flora_pack/ folder,
 #                    src/stream/flora_pack.gd; a tile whose plants file is already there for these game files is skipped; with
@@ -65,6 +68,7 @@ var _own_total: int = 0                # columns in this copy's share
 var _tiles_stamp: String = ""
 var _out_dir: String = ""
 var _stop_after: float = 0.0           # --stop-after (parent only)
+var _parts_root: String = ""           # --parts (parent only): where the copies work, "" = inside --out
 
 
 func _init() -> void:
@@ -90,6 +94,8 @@ func _init() -> void:
 
 			for part in argument.trim_prefix("--lods=").split(",", false):
 				lods.append(int(part))
+		elif argument.begins_with("--parts="):
+			_parts_root = argument.trim_prefix("--parts=")
 		elif argument.begins_with("--stop-after="):
 			stop_after = float(argument.trim_prefix("--stop-after="))
 		elif argument == "--processes=auto":
@@ -496,7 +502,7 @@ static func _progress_of(parts_dir: String, k: int) -> PackedStringArray:
 # --processes: start the copies, show their progress, then join their ground and plants into out_dir.
 func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants: bool, processes: int) -> int:
 	var started: int = Time.get_ticks_msec()
-	var parts_dir: String = out_dir + "/parts"
+	var parts_dir: String = out_dir + "/parts" if _parts_root == "" else _parts_root + "/prebuild_parts"   # only this subfolder is ever deleted
 	var godot: String = OS.get_executable_path()
 	var project: String = ProjectSettings.globalize_path("res://")
 	var pids: Array = []
