@@ -274,7 +274,7 @@ func step(a: Dictionary, dt: float) -> void:
 		return
 
 	if state == STRIKE or state == KICK:
-		_step_close(a, def, dt)
+		_step_close(a, def, near, dt)
 		return
 
 	if state == CHARGE:
@@ -412,7 +412,7 @@ func step(a: Dictionary, dt: float) -> void:
 # A blow up close instead of a charge (Dave 23 Nov 2026: "not all animals charge they actually have actions built in to them"; "make sure to
 # use models that have the actions we need"): a warning that ends with its foe, a player, already at it ends in the kind's own close attack,
 # from its defend row (animals.json): "kick" (a donkey or a goat turns its back, KICK) when the player is within its kick's start_m, else
-# "strike" (a swipe, a bite, a horn, a stomp, STRIKE) within the strike's start_m. Either is wound up where it stands for windup_s (the
+# (a donkey has both and takes turns, kick first) "strike" (a swipe, a bite, a horn, a stomp, STRIKE) within the strike's start_m. Either is wound up where it stands for windup_s (the
 # client plays the model's own attack clip, timed to land then), and lands only on a player still within reach_m of its body in front of
 # it (behind it for a kick), inside arc_deg: stepping back or aside is the dodge. A bluff, a dog, or a foe farther off: the charge, as before.
 # True when it began one.
@@ -423,7 +423,9 @@ func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -
 	var body: float = AnimalContact.contact_m(str(a["sp"]))
 	var how: String = ""
 
-	for kind in ["kick", "strike"]:
+	var order: Array = ["kick", "strike"] if int(a.get("blows", 0)) % 2 == 0 else ["strike", "kick"]   # a kind with both takes turns, kick first
+
+	for kind in order:
 		if def.get(kind, null) is Dictionary and d <= body + float(def[kind].get("start_m", 1.5)):
 			how = kind
 			break
@@ -436,6 +438,7 @@ func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -
 	a["state"] = KICK if how == "kick" else STRIKE
 	a["timer"] = float(row.get("windup_s", 0.7))
 	a["attack"] = how
+	a["blows"] = int(a.get("blows", 0)) + 1
 	a["hit"] = false
 	a["heading"] = atan2(to.z - a["pos"].z, to.x - a["pos"].x) + (PI if how == "kick" else 0.0)   # a kick turns its back on them
 	a["dir"] = a["heading"]   # locked: the dodge is stepping out of it
@@ -446,14 +449,12 @@ func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -
 
 # One step of STRIKE or KICK: it stands wound up; at windup_s the blow lands on its foe if they are still in reach and in its arc, judged once
 # their dodge has come back over the link (late_s, as a charge's); then it recovers (the row's recover_s).
-func _step_close(a: Dictionary, def: Dictionary, dt: float) -> void:
+func _step_close(a: Dictionary, def: Dictionary, foe: Dictionary, dt: float) -> void:
 	var row: Dictionary = def.get(str(a.get("attack", "strike")), {})
 	a["timer"] = float(a["timer"]) - dt
 
 	if float(a["timer"]) > 0.0:
 		return
-
-	var foe: Dictionary = _foe(a)
 
 	if not foe.is_empty() and not foe.has("dog") and float(a["timer"]) > -late_s(def, int(foe.get("peer", -1))):
 		return   # the blow is judged once the player has seen it come and their step has come back (late_s; 0 without fair_dodge)

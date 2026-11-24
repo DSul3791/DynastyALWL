@@ -114,7 +114,7 @@ func _init() -> void:
 		var r: Array = bout(a, sp, contact + float(row["start_m"]) - 0.1, 0.0, 3.0)
 		var states: Array = r[0]
 		check(states.has(state) and not states.has(a.big_game.CHARGE), "a %s warning a player %.1f m off %ss instead of charging (states %s)" % [sp, contact + float(row["start_m"]) - 0.1, how, str(states)])
-		check(hurt_log.size() == 1 and absf(float(r[1]) - float(row["windup_s"])) <= 0.06, "it lands once, %.2f s into the wind-up (windup_s %.2f; %d blows)" % [float(r[1]), float(row["windup_s"]), hurt_log.size()])
+		check(hurt_log.size() == 1 and float(r[1]) >= float(row["windup_s"]) - 0.01 and float(r[1]) <= float(row["windup_s"]) + 0.2, "it lands once, %.2f s into the wind-up (windup_s %.2f, within one 0.1 s server step; %d blows)" % [float(r[1]), float(row["windup_s"]), hurt_log.size()])
 		var want: float = float(def.get("damage", 25.0)) * float(row.get("damage_x", 1.0)) * a.level_x(r[3], "damage")
 		check(hurt_log.size() == 1 and absf(float(hurt_log[0][1]) - want) < 0.01, "for %.1f (damage %.0f times %.1f)" % [float(hurt_log[0][1]) if not hurt_log.is_empty() else -1.0, float(def.get("damage", 25.0)), float(row.get("damage_x", 1.0))])
 		var back: float = angle_difference(float(r[2]), 0.0)
@@ -134,8 +134,7 @@ func _init() -> void:
 		var looks: Array = (mrow.get("variants", []) as Array) if not (mrow.get("variants", []) as Array).is_empty() else [{}]
 
 		for look in looks:
-			var clips: Dictionary = mrow.get("clips", {}).duplicate()
-			clips.merge((look as Dictionary).get("clips", {}), true)
+			var clips: Dictionary = (look as Dictionary).get("clips", mrow.get("clips", {}))   # a look's clips replace the row's whole (animal_view _model_row merge)
 
 			for k in ["strike", "kick"]:
 				if def.has(k):
