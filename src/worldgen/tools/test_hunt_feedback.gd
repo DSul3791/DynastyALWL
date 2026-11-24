@@ -145,6 +145,33 @@ func _init() -> void:
 	check(int(shot.get("id", 0)) == eid and absf((shot.get("point", Vector3.ZERO) as Vector3).x - 4.0) < 0.01 and (shot.get("at", Vector3.ZERO) as Vector3).is_equal_approx(ed["pos"]), "judged where the archer saw it, it hits, on the body as it is now (%s)" % str(shot))
 	ed["state"] = 10
 	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "a warning or charging animal is judged at the present the player's screen draws it at")
+	ed["state"] = 0
+	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "since protocol 168 a grazing or walking animal is judged at the present too (every animal on the ground is drawn there)")
+	ed["state"] = 15
+	check(e.judged_ms(ed, now - 400, now - 50) <= now - 399, "a bird in the air (drawn a delay behind) is judged at the moment drawn")
+
+	# 7. The plan (protocol 168): a moving animal's row carries where it is walking to (a Vector2 after the six fixed fields, before the
+	# health share); a standing one's has none, and an old walk goal (over PLAN_FRESH_MS) is not sent.
+	var f = make()
+	var fid: int = deer_at(f)
+	var fd: Dictionary = f.animals[fid]
+	fd["moving"] = true
+	f.plan(fd, Vector3(10.0, GROUND, 3.0))
+	var prow: Array = row_of(f, fid)
+	check(prow.size() == 7 and prow[6] is Vector2 and (prow[6] as Vector2).is_equal_approx(Vector2(10.0, 3.0)), "a walking deer's row ends in its plan (%s)" % str(prow.slice(5)))
+	fd["hp_max"] = float(fd["hp"])
+	fd["hp"] = float(fd["hp"]) * 0.5
+	prow = row_of(f, fid)
+	check(prow.size() == 8 and prow[6] is Vector2 and prow[7] is float, "hurt, its health share is still the last field, after the plan (%s)" % str(prow.slice(5)))
+	fd["plan_ms"] = Time.get_ticks_msec() - AnimalsScript.PLAN_FRESH_MS - 100
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "an old walk goal is not sent")
+	fd["plan_ms"] = Time.get_ticks_msec()
+	fd["moving"] = false
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "a standing animal's row has no plan")
+	# A standing animal a player walks into steps out (make_way): its plan is that step, not an older walk goal.
+	fd["plan_to"] = Vector3(-30.0, GROUND, 0.0)
+	var stepped: bool = f.make_way(fd, Vector3(0.2, GROUND, 0.0), 0.1)
+	check(stepped and (fd["plan_to"] as Vector3).is_equal_approx(fd["pos"]), "a deer stepping out of a player plans that step (%s, at %s)" % [str(fd["plan_to"]), str(fd["pos"])])
 
 	print("test_hunt_feedback: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

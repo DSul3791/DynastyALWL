@@ -433,6 +433,7 @@ func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) 
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.lit(x, z, infos)
+	host.plan(m, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
@@ -1108,6 +1109,7 @@ func step_pup(a: Dictionary, dt: float) -> void:
 		a["state"] = PLAY
 		return
 
+	host.plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(a["pos"], a["target"], 1.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 	if r["moved"]:
@@ -1168,6 +1170,7 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z, infos)
+	host.plan(m, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 

@@ -140,3 +140,34 @@ in the sources above), with the server still the judge:
 - A held foe (server_big_game `_foe`, `foe_peer`): big game that warns at a player, or is hurt by one, keeps that player as its foe for as
   long as it fights and they stay within calm_m, instead of turning to whichever player is nearest that step. With two players near, it
   turned between them every step and never pressed a charge home.
+
+## Plans: the client plays the animal at the present (24 Nov 2026, protocol 168)
+
+Dave, 24 Nov 2026: "give as much control to the client as it takes to make them feel natural and fight like they should in a real great
+video game. imagine blizzard was bulding this it has to be that good." The coordinator's reading: the server sends plans and the client
+plays them smoothly, the server correcting only when badly off; further toward the client wherever the feel needs it, as long as hits stay
+fair and a cheater cannot run the animals. Stare-before-flee, growl-before-attack, the fair dodge and the per-kind close attacks stay.
+
+**Why animals still feel late.** Every animal except a committed charge is drawn the row clock's delay behind (an interval, more with holes,
+plus the lateness: 0.35 to 0.8 s over the internet). A deer the player walks up to bolts on screen half a second after the server bolted it;
+a boar's warning ends and it strikes while its body is still drawn walking in; the player's spear judged where the screen showed the animal
+(lag compensation, above) and its own body stopped by where it is drawn. Charges were moved to the present (AHEAD_STATES) and read much better;
+the rest are not, because carrying a walker on past its newest point overshot every stop and turn.
+
+**The plan.** Each moving animal's row carries where it is going: its target on the ground (Vector2 x, z), from the step's own `target`.
+The client then draws every animal on the ground (not birds in the air, states 15 and 17) at the present, like a charge: between the two
+newest points, and past the newest one on along its last leg, never past the plan's target (no overshoot at a stop), for up to
+`PLAN_CARRY_S`. A standing animal has no plan and holds. The feet (`follow`), the facing, the contact stop and `smooth` are as before.
+The server still decides everything: where it goes, its state, every blow. A client can only draw; nothing it sends moves an animal.
+
+**Fair hits stay fair.** The player's blows are judged at `present_ms` for every animal on the ground, as for a charge: the moment the screen
+shows it, never more than `rewind_max_ms` back.
+
+**Steps, largest gain in feel first.**
+1. Plans and present drawing for every ground animal (this, protocol 168). Every reaction is seen up to 0.8 s sooner; what the player
+   sees, dodges and stabs is where the server has it.
+2. The path, not only the end: the server sends the next turn of a detour (Steering's way round), so the client curves where the server
+   curves instead of correcting.
+3. The client's own feedback at once: the flinch, the blood and the sound of the player's own blow when the client's hit test agrees, the
+   server's answer only confirming or taking it back.
+4. Measured by the robots over a lossy link: frame jumps, drawn-to-server distance, blows landed against where drawn.

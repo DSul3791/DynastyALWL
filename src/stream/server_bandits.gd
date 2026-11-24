@@ -1331,6 +1331,7 @@ func _walk(a: Dictionary, to: Vector3, speed: float, dt: float, arrive_m: float,
 
 		return true
 
+	animals.plan(a, to)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = animals.walk_step(a["pos"], to, speed, dt, animals.ground_height, animals.blocked, arrive_m, a["heading"], animals.crossing)
 
 	if not r["moved"]:

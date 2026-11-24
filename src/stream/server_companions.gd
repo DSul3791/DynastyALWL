@@ -354,6 +354,7 @@ func _eat_from(a: Dictionary, key: String, giver: Vector3, r: float, dt: float) 
 		if giver != Vector3.INF and Vector2(giver.x - food.x, giver.z - food.z).length() < gap:
 			continue   # it waits until the giver has backed off
 
+		host.plan(a, food)   # where it is going: sent with its row (protocol 168, rows_near)
 		var s: Dictionary = host.walk_step(a["pos"], food, float(host.species_def(a["sp"]).get("walk_mps", 1.3)) * 1.5, dt, host.ground_height, host.blocked, 0.6, a["heading"], host.crossing)
 
 		if s["moved"]:
@@ -399,6 +400,7 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 
 	if d < keep_m:
 		var away: Vector2 = Vector2(a["pos"].x - p_pos.x, a["pos"].z - p_pos.z).normalized()
+		host.plan(a, a["pos"] + Vector3(away.x, 0.0, away.y) * (keep_m + 3.0 - d))   # where it is going: sent with its row (protocol 168, rows_near)
 		var s: Dictionary = host.walk_step(a["pos"], a["pos"] + Vector3(away.x, 0.0, away.y) * (keep_m + 3.0 - d), walk * 2.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 		if s["moved"]:
@@ -409,6 +411,7 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 		return
 
 	if still and d <= WATCH_M and d > keep_m + 1.0:
+		host.plan(a, p_pos)   # where it is going: sent with its row (protocol 168, rows_near)
 		var s: Dictionary = host.walk_step(a["pos"], p_pos, walk * 0.6, dt, host.ground_height, host.blocked, keep_m, a["heading"], host.crossing)
 
 		if s["moved"]:
@@ -524,6 +527,7 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 
 	var running: bool = d >= 10.0
 	var speed: float = float(def.get("flee_mps", 10.0)) * 0.8 if running else float(def.get("walk_mps", 1.3)) * 1.5
+	host.plan(a, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 	var s: Dictionary = host.walk_step(a["pos"], goal, speed, dt, host.ground_height, host.blocked, 0.5, a["heading"], host.crossing)
 
 	if s["moved"]:

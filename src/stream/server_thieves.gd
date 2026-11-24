@@ -90,6 +90,7 @@ func step(a: Dictionary, dt: float) -> void:
 			_give_up(a)
 			return
 
+		host.plan(a, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 		var r: Dictionary = host.walk_step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
 
 		if r["moved"]:
@@ -114,6 +115,7 @@ func step(a: Dictionary, dt: float) -> void:
 		return
 
 	# CARRY: sprint away with the food and eat it far off.
+	host.plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r2: Dictionary = host.walk_step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
 
 	if r2["moved"]:

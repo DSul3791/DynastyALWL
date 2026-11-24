@@ -344,6 +344,7 @@ func _step_steal(a: Dictionary, def: Dictionary, dt: float) -> bool:
 		host._bolt(a, lit, def)
 		return true
 
+	host.plan(a, prize_at)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(a["pos"], prize_at, float(row.get("sneak_mps", 1.0)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
 
 	if r["moved"]:
@@ -376,6 +377,7 @@ func _step_carry(a: Dictionary, def: Dictionary, dt: float) -> bool:
 		return true
 
 	a["state"] = CARRY
+	host.plan(a, mouth)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(a["pos"], mouth, float(_cfg(def).get("carry_mps", 4.5)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
 
 	if r["moved"]:
@@ -534,6 +536,7 @@ func _step_watch(a: Dictionary, def: Dictionary, dt: float, seen_d: float, seen_
 
 		return true
 
+	host.plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(a["pos"], a["target"], float(def.get("walk_mps", 1.2)), dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 	if r["moved"]:
