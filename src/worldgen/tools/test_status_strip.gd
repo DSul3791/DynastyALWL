@@ -3,7 +3,7 @@ extends SceneTree
 # The status strip left of the hotbar (Dave 23 Nov 2026; src/client/status_icons.gd, data/ui/status_strip.json): every data row has a glyph
 # the art kit draws and words for each tone; symbols show and hide from their reads, line up right-aligned against the hotbar, never reach
 # its tray or leave the canvas even with every symbol at once; the hover words fill in their numbers; a symbol that appears names itself,
-# the always-shown hunger and thirst do not; the older add_icon still works. On the server, soak (protocol 165) is sent at hello, again
+# but not in the first seconds after joining; food and water only below 10%; the older add_icon still works. On the server, soak (protocol 165) is sent at hello, again
 # when the clothes get wetter in steps of 10, and not while nothing changes.
 #   godot --headless --path . --script res://src/worldgen/tools/test_status_strip.gd
 
