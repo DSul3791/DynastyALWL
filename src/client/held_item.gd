@@ -1025,24 +1025,41 @@ func _animal_aimed(margin_m: float = 0.0) -> Array:
 	var look: Vector3 = -_camera.global_transform.basis.z
 	var flat: Vector2 = Vector2(look.x, look.z).normalized()
 
-	for row in animal_aim_rows.call():
+	var best: Array = []
+	var best_d: float = reach
+
+	for row in animal_aim_rows.call():   # the nearest body, as server_animals.target_along takes
 		var at: Vector3 = row[0]
 		var to: Vector2 = Vector2(at.x - eye.x, at.z - eye.z)
 
 		var body: float = float(row[2]) if (row as Array).size() > 2 else 0.0   # a blow reaches the body, not its middle (server_animals.target_along)
+		var d: float = to.length() - body
 
-		if to.length() - body <= reach - margin_m and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5 and (row as Array).size() > 3:
-			return [int(row[3]), at]
+		if d <= best_d and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5 and (row as Array).size() > 3:
+			best_d = d
+			best = [int(row[3]), at]
 
-	return []
+	if best.is_empty() or best_d > reach - margin_m:
+		return []
+
+	# A predicted blow is not shown through a wall, a fence or a roof (the server's blow_blocked drops it): anything solid between the eye and the body's middle.
+	if margin_m > 0.0 and _camera.is_inside_tree():
+		var mid: Vector3 = (best[1] as Vector3) + Vector3(0.0, PREDICT_MID_M, 0.0)
+
+		if not _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye, mid)).is_empty():
+			return []
+
+	return best
 
 
 # Feel (Dave 24 Nov 2026: "give as much control to the client as it takes to make them feel natural and fight like they should in a real great
 # video game"; docs/design/ANIMAL_NETCODE.md "Plans" step 3): a blow this screen sees land shows at once. The client runs the server's own test
 # (target_along, on the animals as drawn, which is where the server judges the blow: seen_ms) PREDICT_MARGIN_M inside the reach, at most once
-# per the item's recover_ms (the server drops a faster blow unheard), and emits blow_landing; the server's animal_hit for it then plays no
+# per the item's recover_ms and PREDICT_SLACK_MS (the server drops a faster blow unheard), with nothing solid in between, and emits blow_landing; the server's animal_hit for it then plays no
 # second thud or flinch (animal_view.confirm_hit). The damage, the blood and the number still come only from the server.
 const PREDICT_MARGIN_M := 0.2
+const PREDICT_MID_M := 0.6        # the body's middle over its drawn point, for the wall check
+const PREDICT_SLACK_MS := 100     # the server paces on arrival, not on the click: a blow just past recover_ms may reach it just inside after jitter
 const STRIKE_RECOVER_MS := 600   # server_items STRIKE_COOLDOWN_MS: an item with no recover_ms of its own
 signal blow_landing(id: int, at: Vector3)   # a blow this screen sees land on animal `id`, drawn at `at`
 var _paced_ms: int = -100000   # when the last blow went that the server takes (it keeps the same clock: a blow inside recover_ms is dropped and does not restart it)
@@ -1072,10 +1089,11 @@ func _predict_blow() -> void:
 	if now - _paced_ms < recover:
 		return
 
+	var slack: bool = now - _paced_ms < recover + PREDICT_SLACK_MS   # taken, but close enough to the pace that it may not be: not shown
 	_paced_ms = now
 	var aimed: Array = _animal_aimed(PREDICT_MARGIN_M)
 
-	if not aimed.is_empty() and (bare or not held_id() in ["rope", "twine"]):
+	if not aimed.is_empty() and not slack and (bare or not held_id() in ["rope", "twine"]):
 		blow_landing.emit(int(aimed[0]), aimed[1])
 
 

@@ -2,8 +2,8 @@ extends SceneTree
 
 # The player's own blow shows as it lands (Dave 24 Nov 2026: "give as much control to the client as it takes to make them feel natural and fight
 # like they should in a real great video game"; docs/design/ANIMAL_NETCODE.md "Plans" step 3). A blow at an animal drawn in reach emits
-# blow_landing with its id and where it is drawn, at most once per the item's recover_ms (the server's pace), only well inside the reach, never
-# for a rope; the animal flinches at once, and the server's hit for that blow then plays no second flinch or thud. Any other hit plays as before.
+# blow_landing with its id and where it is drawn (the nearest), at most once per the item's recover_ms (the server's pace) with some slack, only
+# well inside the reach, never through a wall, never for a rope; the animal flinches at once, and the server's hit for that blow then plays no second flinch or thud. Any other hit plays as before.
 #   godot --headless --path . --script res://src/worldgen/tools/test_blow_predict.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -69,7 +69,7 @@ func _initialize() -> void:   # the camera and the animal view need the tree (gl
 	check(landed.size() == 1 and held._net.inventory_action.calls.size() == 2, "a second punch inside %d ms is sent but not shown" % recover)
 
 	# A blow the server would drop still keeps the pace: one swung at the air restarts it only when the server takes it.
-	held._paced_ms -= recover
+	held._paced_ms -= recover + HeldScript.PREDICT_SLACK_MS
 	rows = []
 	held._melee_strike()
 	check(landed.size() == 1, "a punch at nothing shows nothing")
@@ -78,14 +78,48 @@ func _initialize() -> void:   # the camera and the animal view need the tree (gl
 	check(landed.size() == 1, "and the server's pace runs from it: a punch at the deer just after is not shown")
 
 	# Only well inside the reach: at the reach's edge the server may judge it short, so nothing is shown before it answers.
-	held._paced_ms -= recover
+	held._paced_ms -= recover + HeldScript.PREDICT_SLACK_MS
 	rows = [[Vector3(0.0, 1.0, -(reach + 0.3 - HeldScript.PREDICT_MARGIN_M * 0.5)), 0.0, 0.3, 8]]
 	held._melee_strike()
 	check(landed.size() == 1, "a deer at the edge of the reach is not shown hit before the server says")
-	held._paced_ms -= recover
-	rows = [[Vector3(2.0, 1.0, -1.0), 0.0, 0.3, 8]]
+	held._paced_ms -= recover + HeldScript.PREDICT_SLACK_MS
+	rows = [[Vector3(1.0, 1.0, -1.0), 0.0, 0.3, 8]]
 	held._melee_strike()
-	check(landed.size() == 1, "nor one off to the side of the look")
+	check(landed.size() == 1, "nor one in reach but off to the side of the look")
+
+	# Just past the pace, a blow may reach the server just inside it after jitter: sent, not shown.
+	held._paced_ms = Time.get_ticks_msec() - recover - int(HeldScript.PREDICT_SLACK_MS * 0.5)
+	rows = [[Vector3(0.0, 1.0, -1.0), 0.0, 0.3, 7]]
+	held._melee_strike()
+	check(landed.size() == 1, "a punch %d ms past the last is not shown (the server may judge it too soon)" % (recover + int(HeldScript.PREDICT_SLACK_MS * 0.5)))
+
+	# Two in front: the nearer takes it, as on the server, whatever order the rows come in.
+	held._paced_ms -= recover + HeldScript.PREDICT_SLACK_MS
+	rows = [[Vector3(0.0, 1.0, -1.4), 0.0, 0.3, 11], [Vector3(0.1, 1.0, -0.9), 0.0, 0.3, 12]]
+	held._melee_strike()
+	check(landed.size() == 2 and int(landed[1][0]) == 12, "of two deer ahead the nearer is shown hit (%s)" % str(landed.back()))
+
+	# A wall between: the server drops the blow, so nothing is shown.
+	var wall: StaticBody3D = StaticBody3D.new()
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var box: BoxShape3D = BoxShape3D.new()
+	box.size = Vector3(4.0, 4.0, 0.2)
+	shape.shape = box
+	wall.add_child(shape)
+	root.add_child(wall)
+	wall.global_position = Vector3(0.0, 1.0, -0.6)
+	await physics_frame
+	await physics_frame
+	held._paced_ms -= recover + HeldScript.PREDICT_SLACK_MS
+	rows = [[Vector3(0.0, 1.0, -1.2), 0.0, 0.3, 7]]
+	held._melee_strike()
+	check(landed.size() == 2, "a deer behind a wall is not shown hit")
+	root.remove_child(wall)
+	wall.free()
+	await physics_frame
+	held._paced_ms -= recover + HeldScript.PREDICT_SLACK_MS
+	held._melee_strike()
+	check(landed.size() == 3, "and with the wall gone it is")
 
 	# A rope binds a bandit, it does not strike: nothing shown.
 	view.inventory.numbers[0] = table.number_of("rope")
@@ -95,7 +129,7 @@ func _initialize() -> void:   # the camera and the animal view need the tree (gl
 	held._paced_ms -= 100000
 	rows = [[Vector3(0.0, 1.0, -1.0), 0.0, 0.3, 7]]
 	held._melee_strike()
-	check(table.number_of("rope") > 0 and landed.size() == 1, "a rope at a bandit shows no hit")
+	check(table.number_of("rope") > 0 and landed.size() == 3, "a rope at a bandit shows no hit")
 
 	# The view: the shown blow flinches the body now; the server's hit for it plays nothing twice; any later hit plays as before.
 	var node: Node3D = Node3D.new()
@@ -108,6 +142,11 @@ func _initialize() -> void:   # the camera and the animal view need the tree (gl
 	animals.predict_hit(7)
 	animals._t += AnimalViewScript.PREDICT_KEEP_S + 0.1
 	check(not animals.confirm_hit(7), "a hit long after the shown blow is a new hit")
+	animals.predict_hit(7)
+	animals._t += AnimalViewScript.PREDICT_KEEP_S + 0.1
+	animals._bodies[5] = animals._bodies[7]
+	animals.predict_hit(5)
+	check(not animals._predicted.has(7) and animals._predicted.has(5), "a shown blow the server never confirmed is let go at the next")
 
 	# Wire: aim rows carry the id, the client scene plays the thud for a shown blow and skips the server's echo of it.
 	check((animals.aim_rows(Vector3.ZERO, 80.0)[0] as Array).size() == 4 and int(animals.aim_rows(Vector3.ZERO, 80.0)[0][3]) == 7, "an aim row ends with the animal's id")

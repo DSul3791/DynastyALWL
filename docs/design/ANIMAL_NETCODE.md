@@ -171,9 +171,10 @@ shows it, never more than `rewind_max_ms` back.
    on along that next stretch with the server instead of holding it until the next row. Steering is one step at a time (no path is planned ahead), so this is
    the next stretch, not a whole route. No protocol change.
 3. The player's own blow shows as it lands, not a round trip later: when a melee blow or spear jab goes, the client runs the server's own
-   test (`target_along`, on the animals as drawn, where the server judges it) `PREDICT_MARGIN_M` inside the item's reach and at most once per
-   its `recover_ms` (the server's pace; a rope never), and the body flinches with the flesh thud at once (`held_item.blow_landing`,
+   test (`target_along`, on the animals as drawn, where the server judges it) `PREDICT_MARGIN_M` inside the item's reach, on the nearest body,
+   with nothing solid between (the server's `blow_blocked`), and at most once per its `recover_ms` plus `PREDICT_SLACK_MS` (the server's pace,
+   which counts arrivals; a rope never), and the body flinches with the flesh thud at once (`held_item.blow_landing`,
    `animal_view.predict_hit`). The server's `animal_hit` for that animal within `PREDICT_KEEP_S` plays no second flinch or thud
    (`confirm_hit`); any other hit plays as before. The damage, the number and the blood still come only from the server, so a blow it judges a
-   miss after all has only flinched for a fifth of a second. No protocol change.
+   miss after all has only flinched (a fifth of a second, and the model's hit clip where it has one). No protocol change.
 4. Measured by the robots over a lossy link: frame jumps, drawn-to-server distance, blows landed against where drawn.

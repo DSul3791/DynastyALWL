@@ -371,7 +371,7 @@ const FLINCH_S := 0.2
 
 # The player's own blow seen to land (held_item blow_landing; docs/design/ANIMAL_NETCODE.md "Plans" step 3): the flinch now, not a round trip
 # later. True when it flinched, so the caller plays the thud too. The server's animal_hit for it, within PREDICT_KEEP_S, then plays neither
-# again (confirm_hit). A blow the server judges a miss after all has only flinched; it does no damage and leaves no blood.
+# again (confirm_hit). A blow the server judges a miss after all has only flinched (and played its hit clip); it does no damage and leaves no blood.
 const PREDICT_KEEP_S := 0.8
 var _predicted: Dictionary = {}   # id -> _t of the blow this screen saw land and has not yet heard the server's hit for
 
@@ -379,6 +379,10 @@ var _predicted: Dictionary = {}   # id -> _t of the blow this screen saw land an
 func predict_hit(id: int) -> bool:
 	if not _bodies.has(id):
 		return false
+
+	for was in _predicted.keys():   # blows the server never confirmed (judged a miss, or the animal went) are let go
+		if _t - float(_predicted[was]) > PREDICT_KEEP_S:
+			_predicted.erase(was)
 
 	_predicted[id] = _t
 	flinch(id)
@@ -600,7 +604,7 @@ func drawn_positions() -> Array:
 
 
 # [[drawn position, heading, body_m], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these
-# (BowAim.zone_points); a blow's reach is to the body, body_m short of its middle (held_item._animal_in_reach).
+# (BowAim.zone_points); a blow's reach is to the body, body_m short of its middle (held_item._animal_aimed).
 func aim_rows(from: Vector3, range_m: float) -> Array:
 	var out: Array = []
 
