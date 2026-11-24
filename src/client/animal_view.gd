@@ -653,11 +653,13 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
-		_bodies[id]["plan"] = plan_of(row)
 
 		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 154 a standing animal's
 		# row carries the send time, so every leg between two points is one the animal really made.
 		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), float(_clock["off"]), INF)
+
+		if int(_bodies[id].get("row_ms", -1)) == int(row[5]):
+			_bodies[id]["plan"] = plan_of(row)   # an older row out of order (dropped by push_row) leaves the newer plan
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()
@@ -806,7 +808,7 @@ func _process_body(delta: float) -> void:
 	var settle: bool = now_s <= _settle_until
 	_frame_s = now_s
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
-	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: a committed charge is drawn there (AHEAD_STATES)
+	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: every animal on the ground is drawn there (protocol 168), a committed charge too (AHEAD_STATES)
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
 	_frame += 1
 
@@ -824,7 +826,9 @@ func _process_body(delta: float) -> void:
 			MotionBuffer.settle(b)
 
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
-		var at_present: bool = ahead or not int(b["state"]) in AIR_DRAWN
+		if int(b["state"]) in AIR_DRAWN:
+			b["air_until"] = _t + MotionBuffer.MAX_DELAY_S   # a bird just landed is drawn a delay behind until it has stood that long: no jump forward on landing
+		var at_present: bool = ahead or (not int(b["state"]) in AIR_DRAWN and _t >= float(b.get("air_until", -1.0)))
 		var t_drawn: float = present if at_present else drawn_at
 		var drawn: Array
 

@@ -769,7 +769,7 @@ func pos_at(a: Dictionary, ms: int) -> Vector3:
 # The server moment a blow from a player is judged at (protocol 155, Dave 23 Nov 2026: "battle was almost impossible"): the time the
 # player's screen showed the animal (`seen_ms`, the client's row clock: a committed charge is drawn at `present_ms`), never more than
 # rewind_max_ms ago, so a laggy or lying client cannot hit an animal that left long since. -1 when the client sent none (judged now).
-# Since protocol 168 every animal on the ground is drawn at the present (animal_view PRESENT: a bird in the air, FLY or GLIDE, is drawn a
+# Since protocol 168 every animal on the ground is drawn at the present (animal_view AIR_DRAWN: a bird in the air, FLY or GLIDE, is drawn a
 # delay behind), so its blows are judged at present_ms.
 func judged_ms(a: Dictionary, seen_ms: int, present_ms: int) -> int:
 	if seen_ms <= 0:
@@ -1065,6 +1065,7 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if wall_between(a["pos"], to):
 		return false   # not through a wall or a shut door: a player who pins it against one does not push it out the other side
 
+	plan(a, to)   # where it steps out to (rows_near, protocol 168): no older walk goal clamps or carries it
 	a["pos"] = to   # its sent heading stays; the client draws it facing the way it steps while it steps. Tick stamps it moving (moved_ms) as for any step
 	return true
 
