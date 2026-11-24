@@ -57,7 +57,7 @@ func _init() -> void:
 				same += 1 if _bytes(bx, by, bz, lod, true) == _bytes(bx, by, bz, lod, false) else 0
 
 	check(compared == 4 * 28 * 6 and same == compared, "every open-ocean block copied from the kept one is the block made from scratch (%d of %d the same)" % [same, compared])
-	check(generator.open_sea_hits > compared / 2, "most of them were copies (%d copied)" % generator.open_sea_hits)
+	check(generator.open_sea_hits * 2 > compared, "most of them were copies (%d copied)" % generator.open_sea_hits)
 
 	# Beside a baked tile: a block whose ring reaches tile 4_4 (baked) is made, not copied.
 	var hits: int = generator.open_sea_hits
