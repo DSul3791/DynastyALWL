@@ -914,7 +914,7 @@ func _process_body(delta: float) -> void:
 		if int(b["state"]) in LUNGE_STATES:
 			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.LUNGE_MPS, delta, 1.05, 1.0)
 		else:
-			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, top_mps(str(b.get("kind", ""))) if at_present else 0.0)
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, top_mps(str(b.get("kind", ""))) if at_present else 0.0, MotionBuffer.way_of(b["samples"]))
 		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
