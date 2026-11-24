@@ -625,7 +625,7 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 # runs can be sized to what players' games really ask for. Rows past 16 either way are counted together.
 func _count_made_row(block: Vector3i, lod: int) -> void:
 	var block_m: float = float(BLOCK_SIZE << lod)
-	var h = generator.surface_height((float(block.x) + 0.5) * block_m, (float(block.z) + 0.5) * block_m)
+	var h = generator.surface_height((float(block.x) + 0.5) * block_m, (float(block.z) + 0.5) * block_m, lod)
 
 	if h == null or is_nan(float(h)):
 		return
