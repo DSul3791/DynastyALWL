@@ -428,28 +428,16 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 		if count <= 0:
 			return "He buys %s %d at a time." % [items.table.sentence_name(number2) + "s", lot]
-	var total: int = 0
-	var paid_for: int = 0
 	var base_demand: float = demand(npc_id, item_id)
 	var drop: float = float(_cfg().get("demand", {}).get("drop_per_sale", 0.03))
 	var floor_d: float = float(_cfg().get("demand", {}).get("floor", 0.3))
 
 	var st2: Dictionary = _refresh(npc_id)
 	var till: int = int(floor(float(st2["purse"])))
-
-	# Each unit sold lowers the price of the next; the trader can only pay what is in his purse.
-	for k in count:
-		var each_k: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(k), floor_d), life)
-
-		if each_k <= 0 or total + each_k > till:
-			break
-
-		if (k + 1) % lot == 0:   # the lot's copper is paid with its last unit
-			total += each_k
-
-		paid_for += 1
-
-	paid_for -= paid_for % lot
+	# Each unit sold lowers the price of the next; the trader can only pay what is in his purse (TradePrices.sale, the window's estimate too).
+	var made: Array = TradePrices.sale(value, lot, count, float(m["get"]), base_demand, drop, floor_d, life, till)
+	var paid_for: int = int(made[0])
+	var total: int = int(made[1])
 
 	if paid_for <= 0:   # his purse is spent (it refills purse_regen_per_day a game day, one real hour)
 		return PURSE_EMPTY_SAY if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
@@ -497,6 +485,7 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	var before_coins: int = items.coins_of(peer)
 	var sold: int = 0
 	var refused: String = ""
+	var kept: int = 0   # kinds he took only part of, or none, because his purse ran dry or he had his fill: the rest stays in the pack
 
 	for slot in range(inv.slot_count):
 		if inv.numbers[slot] == 0:
@@ -516,13 +505,18 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 
 		if said != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
 			sold += 1
+
+			if inv.numbers[slot] != 0 and inv.counts[slot] >= int(TradePrices.sell_terms(entry, _buy_rule(npc_id, items.table.id_of(inv.numbers[slot])), SmithingRules.value_mult(inv.inst_of(slot)))[0]):
+				kept += 1   # a whole lot or more is still there: he stopped short
 		elif said == PURSE_EMPTY_SAY or said.contains("Come back in a little while"):
 			refused = said
+			kept += 1
 
 	if sold == 0:   # a spent purse or a day's limit is said as itself, not as "nothing to sell" (TEST-003)
 		return refused if refused != "" else "You have no extra stuff he will buy."
 
-	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
+	var rest: String = "" if kept == 0 else " He could not take it all (his purse, or he has his fill), so the rest stays in your pack."
+	return "Sold %d kinds of extra stuff for %s.%s" % [sold, items._coin_words(items.coins_of(peer) - before_coins), rest]
 
 
 # What a smith asks to mend the tool in a pack slot (0 = nothing to mend, or a disposable tool: master s2.2 rules 1-3). `most` is its current

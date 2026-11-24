@@ -31,6 +31,8 @@ var _shop_repairs: bool = false            # this trader mends tools (data/npcs/
 var _extras_kinds: Array = ["material", "food", "medicine"]   # coins.json trade.sell_extras: what the one-click sale may sell
 var _extras_below: int = 50                 # and only stacks worth less than this many copper each
 var _repair_rate: float = 0.4              # data/items/coins.json trade.repair.rate
+var _demand_drop: float = 0.03             # coins.json trade.demand: each unit sold lowers the next one's price by this much of the base
+var _demand_floor: float = 0.3             # and never under this
 var _shop_till: int = -1                   # the coin in the trader's purse, -1 = unlimited
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
 var _shop_rules: Dictionary = {}           # item id -> this trader's buy rule (data/npcs/shops.json buy_rules: lot, lot_value)
@@ -39,7 +41,6 @@ var _shop_sell_box: VBoxContainer
 var _trader_ids: Array = []                 # npc ids in data/npcs/shops.json (they get the extras button)
 var _extras_button: Button                   # the same one-click sale on the dialogue screen itself (trade kind 3)
 var _shop_sell_all: Button                  # "Sell all but tools": the first press shows the total, the second sells
-var _sell_all_result: Array = []             # "Sold ..." segments (text and coin amounts) shown beside the purse after the button
 var _shop_sell_all_price: RichTextLabel
 var _sell_all_slots: Array = []             # pack slots the button would sell
 var _sell_all_total: int = 0
@@ -211,7 +212,6 @@ func close() -> void:
 		_shop_panel.visible = false
 
 	_shop_npc = ""
-	_sell_all_result = []
 
 	if _shop_reply != null:
 		_shop_reply.text = ""
@@ -326,6 +326,8 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		var extras: Dictionary = coins.get("trade", {}).get("sell_extras", {})
 		_extras_kinds = extras.get("kinds", _extras_kinds)
 		_extras_below = int(extras.get("valuable_from", _extras_below))
+		_demand_drop = float(coins.get("trade", {}).get("demand", {}).get("drop_per_sale", _demand_drop))
+		_demand_floor = float(coins.get("trade", {}).get("demand", {}).get("floor", _demand_floor))
 
 	for i in ids.size():
 		_shop_stock[ids[i]] = stock[i]
@@ -364,7 +366,7 @@ func _price_to_get(slot: int) -> Array:
 		life = minf(life, items.table.freshness(number, items.inventory.wear[slot]))
 
 	var tired: float = float(_shop_tired.get(items.table.id_of(number), 1.0))
-	return [int(terms[0]), TradePrices.lot_to_get(value, _shop_get * tired, life)]
+	return [int(terms[0]), TradePrices.lot_to_get(value, _shop_get * tired, life), value, life, tired]
 
 
 # " each", or " for 60" for goods sold by the lot.
@@ -400,7 +402,6 @@ func _refresh_shop() -> void:
 	if _shop_till >= 0:
 		purse_line.append_array(["His purse: ", _shop_till, "    "])
 
-	purse_line.append_array(_sell_all_result)
 	items.fill_coin_line(_shop_purse, purse_line)
 
 	for child in _shop_buy_box.get_children():
@@ -421,6 +422,8 @@ func _refresh_shop() -> void:
 	var any: bool = false
 	_sell_all_slots.clear()
 	_sell_all_total = 0
+	var till: int = _shop_till if _shop_till >= 0 else 1 << 30   # the one-click sale stops where his purse does, as the server's does
+	var sold_by_id: Dictionary = {}   # units of an item the estimate has sold already: a second stack starts at the lower price, as on the server
 
 	for slot in items.inventory.numbers.size():
 		if items.inventory.numbers[slot] == 0:
@@ -436,9 +439,14 @@ func _refresh_shop() -> void:
 		any = true
 		var entry2: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
 
-		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below:
+		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below and not items.inventory.inst_of(slot).has("bag") and not items.inventory.maturing_at(slot):   # the server refuses a full bag and a maturing batch
 			_sell_all_slots.append(slot)
-			_sell_all_total += each * floori(float(items.inventory.counts[slot]) / float(lot2))   # whole lots only, as the server pays
+			var id2: String = items.table.id_of(items.inventory.numbers[slot])
+			var start: float = maxf(float(quote[4]) - _demand_drop * float(sold_by_id.get(id2, 0)), _demand_floor)
+			var made: Array = TradePrices.sale(int(quote[2]), lot2, items.inventory.counts[slot], _shop_get, start, _demand_drop, _demand_floor, float(quote[3]), till)   # the falling price and his purse, as the server pays (a trader's daily limit is not known here: "about")
+			_sell_all_total += int(made[1])
+			till -= int(made[1])
+			sold_by_id[id2] = int(sold_by_id.get(id2, 0)) + int(made[0])
 
 		var number2: int = items.inventory.numbers[slot]
 		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s%s." % [items.coin_text(each), _lot_note(lot2)], slot, 1, items.inventory.counts[slot] >= lot2, each, _lot_note(lot2), lot2)
@@ -484,12 +492,7 @@ func _on_sell_all_pressed() -> void:
 	if _sell_all_slots.is_empty():
 		return
 
-	_sell_all_result = ["Sold %d kinds of extra stuff for about " % _sell_all_slots.size(), _sell_all_total, "."]
-
-	for slot in _sell_all_slots.duplicate():
-		net.trade.rpc_id(1, _shop_npc, 1, slot, 999)
-
-	_refresh_shop()
+	net.trade.rpc_id(1, _shop_npc, 3, 0, 0)   # one sale on the server; its answer ("Sold 7 kinds of extra stuff for <what he really paid>") shows in the reply line (Dave 24 Nov 2026)
 
 
 # `step`: the units one click buys or sells (a lot of goods sold by the lot); x10 buys ten of those, All sells the stack.
