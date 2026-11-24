@@ -592,7 +592,9 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_path(trace, "generated from a stand-in tile")
 
 	_count("generated")
-	_count_made_row(block, lod)
+
+	if generator.failed_tiles == failed_before:   # not after a stand-in tile: its height read would try the tile again
+		_count_made_row(block, lod)
 
 
 # Makes and saves a block nobody has asked for yet (idle pre-building).
@@ -616,7 +618,9 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 		_cache_save(cache, buffer, block, lod)
 
 	_count("generated")
-	_count_made_row(block, lod)
+
+	if generator.failed_tiles == failed_before:   # not after a stand-in tile: its height read would try the tile again
+		_count_made_row(block, lod)
 	return true
 
 
