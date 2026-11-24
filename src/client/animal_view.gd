@@ -13,6 +13,7 @@ const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
+const RobotRules := preload("res://src/shared/robot_rules.gd")   # top_speed: a kind's fastest *_mps (top_mps)
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a body comes to the player (data/animals/contact.json)
 const AnimalGait := preload("res://src/client/animal_gait.gd")   # which leg clip and how fast, smoothed (Dave 21 Nov 2026: no running without moving the feet)
 const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
@@ -443,6 +444,24 @@ const BITE_MAX_S := 1.2
 const BLOW_MAX_S := 2.0         # a strike or kick clip is cut here
 const HIT_AT := 0.45           # where in a strike or kick clip the blow lands, as a share of its length, when the model row gives no "hit_at"
 const ANIMALS_PATH := "res://data/animals/animals.json"
+# The fastest a kind moves (its animals.json row's largest *_mps, as RobotRules.top_speed): a body drawn at the present catches up a backlog
+# no faster than this (MotionBuffer.smooth top_mps). 0 for a kind with no row.
+static var _tops: Dictionary = {}
+
+
+static func top_mps(kind: String) -> float:
+	if _tops.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH)) if FileAccess.file_exists(ANIMALS_PATH) else null
+		var species: Dictionary = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+		_tops["_read"] = 0.0
+
+		for sp in species:
+			if species[sp] is Dictionary:
+				_tops[sp] = RobotRules.top_speed(species[sp])
+
+	return float(_tops.get(kind, 0.0))
+
+
 static var _windups: Dictionary = {}   # kind -> {"strike": s, "kick": s}: each close blow's wind-up (animals.json defend rows), read once
 const DIE_MAX_S := 2.0         # short: the carcass is already on the ground there (carcass_look.gd), so the falling body goes soon
 const DIE_HOLD_S := 0.3        # the last pose of a death clip is held this long before the body goes
@@ -883,7 +902,7 @@ func _process_body(delta: float) -> void:
 		if int(b["state"]) in LUNGE_STATES:
 			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.LUNGE_MPS, delta, 1.05, 1.0)
 		else:
-			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, top_mps(str(b.get("kind", ""))) if at_present else 0.0)
 		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
