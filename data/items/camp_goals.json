@@ -37,7 +37,8 @@
 			"hint": "Render animal fat into tallow at the campfire pot, then make candles (tallow and a plant fibre) to light your shelter.",
 			"after": [
 				"shelter",
-				"campfire_pot"
+				"campfire_pot",
+				"hunt"
 			],
 			"check": {
 				"made_item": "candle",
@@ -200,7 +201,7 @@
 			"title": "Make jerky",
 			"hint": "Dry 2 raw meat with a salt on the drying rack. Salt is boiled from sea water at the campfire pot.",
 			"after": [
-				"knife",
+				"hunt",
 				"drying_rack",
 				"campfire_pot"
 			],
@@ -252,7 +253,7 @@
 			"title": "Dress for the cold",
 			"hint": "Wear a full hide set or better before winter.",
 			"after": [
-				"knife"
+				"hunt"
 			],
 			"check": {
 				"event": "worn_warmth",
