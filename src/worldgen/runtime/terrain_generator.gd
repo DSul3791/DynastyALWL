@@ -70,6 +70,9 @@ var _prefetch_tasks = preload("res://src/shared/pool_tasks.gd").new()   # the pr
 var _loading: Dictionary = {}           # Vector2i -> true while one thread reads that tile in get_tile; the others wait for it
 var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
 var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
+var _tiles_epoch: int = 0                # forget_tiles count: kept column heights from before are not used
+var _heights_kept: Dictionary = {}        # thread id -> [key, plain heights, detailed heights or null] (_heights)
+var _heights_mutex: Mutex = Mutex.new()
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
 var _detail_max: float = 0.0          # largest possible detail offset (m)
@@ -406,7 +409,11 @@ func prefetch_around(x: float, z: float, margin: float = 2000.0) -> void:
 func forget_tiles() -> void:
 	_mutex.lock()
 	_tiles.clear()
+	_tiles_epoch += 1   # the kept column heights (_heights) were read from the old tiles
 	_mutex.unlock()
+	_heights_mutex.lock()
+	_heights_kept.clear()   # and hold the old tiles: let them go now
+	_heights_mutex.unlock()
 
 
 func _file_length(path: String) -> int:
@@ -548,12 +555,8 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	buffer.fill(Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT, Layout.CHANNEL_MATERIAL)
 
 	# Heights on the block's columns plus a one-column ring for slopes (_column_heights), with the detail noise only near the surface.
-	var columns: Array = _column_heights(origin, nx, nz, sf)
-	var wx: PackedFloat32Array = columns[0]
-	var wz: PackedFloat32Array = columns[1]
-	var row: int = nx + 2
-	var hs: PackedFloat32Array = columns[2]
-	var column_tile: Array = columns[3]
+	# (_heights: the same for every block of the column, so the last column's are kept per thread.)
+	var columns: Array = _heights(origin, nx, nz, sf, false)
 	var h_min: float = columns[6]
 	var h_max: float = columns[7]
 
@@ -562,10 +565,15 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var near_ground: bool = oy - _detail_max <= h_max + 4.0 * _band * sf and y_top + _detail_max >= h_min - 4.0 * _band * sf
 
 	if near_ground and _detail_max > 0.0:
-		var detailed: Array = _add_detail(columns, nx, nz, sf)
-		hs = columns[2]
-		h_min = detailed[0]
-		h_max = detailed[1]
+		columns = _heights(origin, nx, nz, sf, true)
+		h_min = columns[6]
+		h_max = columns[7]
+
+	var wx: PackedFloat32Array = columns[0]
+	var wz: PackedFloat32Array = columns[1]
+	var row: int = nx + 2
+	var hs: PackedFloat32Array = columns[2]
+	var column_tile: Array = columns[3]
 
 	# Caves and ore bodies that touch this block.
 	var block_box: AABB = AABB(Vector3(float(origin.x), oy, float(origin.z)), Vector3(float(nx - 1), float(ny - 1), float(nz - 1)) * sf)
@@ -647,6 +655,43 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 	if not shapes.is_empty():
 		_carve_caves(buffer, shapes, origin, sf, size)
+
+
+# The heights of a block column (origin x and z, size, level), plain or with the detail noise, as _column_heights returns them
+# ([6] and [7] the lowest and highest of that version). Every block of a column has the same, and the prebuild and the server make a
+# column's blocks one after another, so each thread keeps its last column's (24 Nov 2026: three to four blocks a column, the heights
+# and detail noise were a quarter of a block's time). Never changed by the caller. Kept only while no tile read failed and the tiles
+# were not dropped (forget_tiles), so a stand-in tile or an old tile is never reused.
+func _heights(origin: Vector3i, nx: int, nz: int, sf: float, detailed: bool) -> Array:
+	var key: Array = [origin.x, origin.z, nx, nz, sf, _tiles_epoch, failed_tiles, heights_gridded]
+	var thread: int = OS.get_thread_caller_id()
+	_heights_mutex.lock()
+	var kept: Array = _heights_kept.get(thread, [])
+	_heights_mutex.unlock()
+
+	if kept.is_empty() or kept[0] != key:
+		var failed_before: int = failed_tiles
+		var plain: Array = _column_heights(origin, nx, nz, sf)
+		kept = [key, plain, null]
+
+		if failed_tiles == failed_before:
+			_heights_mutex.lock()
+			_heights_kept[thread] = kept
+			_heights_mutex.unlock()
+
+	if not detailed:
+		return kept[1]
+
+	if kept[2] == null:
+		var plain: Array = kept[1]
+		var copy: Array = plain.duplicate()   # its own heights: the detail is added in place
+		copy[2] = (plain[2] as PackedFloat32Array).duplicate()
+		var extremes: Array = _add_detail(copy, nx, nz, sf)
+		copy[6] = extremes[0]
+		copy[7] = extremes[1]
+		kept[2] = copy
+
+	return kept[2]
 
 
 # The heights of a block's columns plus a one-column ring for slopes, before the detail noise: [wx, wz, heights, the tile of each
@@ -768,9 +813,9 @@ func air_column(bx: int, bz: int, lod: int) -> PackedFloat64Array:
 	var block_m: float = float(n << lod)
 	var origin: Vector3i = Vector3i(bx * (n << lod), 0, bz * (n << lod))
 	var failed_before: int = failed_tiles
-	var columns: Array = _column_heights(origin, n, n, sf)
+	var columns: Array = _heights(origin, n, n, sf, false)
 	var h_plain: float = columns[7]
-	var h_detail: float = _add_detail(columns, n, n, sf)[1] if _detail_max > 0.0 else h_plain
+	var h_detail: float = _heights(origin, n, n, sf, true)[7] if _detail_max > 0.0 else h_plain
 
 	if failed_tiles != failed_before or not is_finite(h_plain) or not is_finite(h_detail):   # a tile that would not load: no entry (seabed past the nine tiles is fine)
 		return PackedFloat64Array([AIR_NONE, 0.0, 0.0])
