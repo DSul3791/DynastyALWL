@@ -128,6 +128,18 @@ like the surface, each as a list of volumes the prebuild walks block by block, s
 list; plain solid rock between them is still made by the server when a player digs into it, and whole deep layers are not
 prebuilt. Surface ore rocks, bog iron and caves move into the generator.
 
+Deep ground (Dave 23 Nov 2026, 11:36 PM): "I really don't want the server working out blocks at all if we can figure out how. really
+I don't want to exclude any areas. the generator should build them all. Im wondering if there is a way to have it build allt he
+important stuff like we have it now all the way to the skys limit and then have it build all the ground underneath later in a
+different run." Then (11:56 PM): "ultimately I designed the documents to plan for a 3km deep world so maybe we do need the server to
+handle generating the earth below." RULING (11:57 PM, "I agree with that plan"): the generator builds the surface, the sky, a band
+under the surface and every purpose-made underground place (caves now; mines, ruins, dungeons later); the server makes only plain
+deep rock when a player digs into it; the band's thickness is set from the server's made-outside-the-pack count (the
+"blocks made, by level and row from the ground" log line) after a play session, and later add-to-pack runs can thicken it; no hard
+floor. Measured for sizing (cloud): a buried block costs about 3 ms and 500 bytes like a surface one (4 of 5 channels uniform, the
+rock layers vary, so a one-value marker would not be exact); a 16 m layer under a whole tile is 921,600 finest blocks, about 14 min
+and 0.55 GB on Dave's PC; an all-air block 0.8 ms and a few bytes, and every air block 500 m or more above the ground is the same.
+
 The plan as first written follows.
 
 Measured 23 Nov 2026 with `src/worldgen/tools/prebuild_blocks.gd` (cloud, 3 worker threads, every detail level 0-6 the client
