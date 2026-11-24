@@ -40,7 +40,8 @@ Research was kept small to save tokens. **Checked today:** Dragonwilds storage a
 5. **Hotbar is its own thing.** Ten slots that point at items. A tool you craft or pick up goes onto a free slot automatically. Sorting never changes them.
 6. **Missing ingredients are a helper, not a wall.** A greyed recipe shows what is missing, which chest holds it, and the existing "Makes 5 twine first" button. A pinned recipe stays visible as a small checklist while you gather.
 7. **Station context.** Opening a bench, kitchen or smithy shows that station's recipes first. Hand recipes are always there.
-8. **Never more than two clicks** is checked as a table (below) before anything ships.
+8. **A tool a recipe keeps counts from the pack** (Dave 24 Nov 2026: "though we should remove that requirement if you have a knife in you inventory or on your hotbar it should count"): anywhere in the pack or on the hotbar, unbroken; it need not be in hand. This replaces the 17 and 18 Nov in-hand rule (TREE_WOOD_TOOLS_DESIGN.md W-32). A tool lying in a chest or on the ground still does not count.
+9. **Never more than two clicks** is checked as a table (below) before anything ships.
 
 | Action | Today | Target |
 |---|---|---|

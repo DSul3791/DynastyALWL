@@ -4093,13 +4093,13 @@ func _can_craft(number: int) -> bool:
 	return _free_craft() or (hand_tool_ok(number) and (_stock_can_make(number) or _logs_cover(number) or (bool(_parts_plan(number)["ok"]) and hand_tool_short(number) == "")))
 
 
-# A recipe that keeps a tool crafts only with that tool, unbroken, in the right hand (CraftStock.in_hand, Dave 17 Nov 2026); the server checks it again.
+# A recipe that keeps a tool crafts only with that tool, unbroken, in the pack or on the hotbar (CraftStock.has_tool, Dave 24 Nov 2026); the server checks it again.
 func hand_tool_ok(number: int) -> bool:
-	return CraftStock.in_hand(recipes.recipe(number), table, inventory, _hand_slot())
+	return CraftStock.has_tool(recipes.recipe(number), table, inventory)   # anywhere in the pack or on the hotbar (Dave 24 Nov 2026)
 
 
-# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a carved Wooden bowl), needs in hand and
-# lacks there ("any saw"); "" when none.
+# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a carved Wooden bowl), needs and the
+# pack lacks ("any saw"); "" when none.
 func hand_tool_short(number: int) -> String:
 	if not hand_tool_ok(number):
 		return CraftStock.hand_words(recipes.recipe(number), table)
@@ -6501,13 +6501,13 @@ func quick_key(event: InputEventKey) -> bool:
 				bulk(int(spec[1]))
 				return true
 
-	# The number keys take a hotbar key in hand with the screen open, as in the world, so the tool a craft needs in hand can be picked here
-	# (Dave 17 Nov 2026: "if you are making something that requires a tool that tool must be in your hand"). The search box keeps its own digits.
+	# The number keys take a hotbar key in hand with the screen open, as in the world (added for the 17 Nov in-hand rule; since 24 Nov a craft's
+	# tool counts from the pack). The search box keeps its own digits.
 	var key: int = event.keycode - KEY_1 if event.keycode >= KEY_1 and event.keycode <= KEY_9 else (9 if event.keycode == KEY_0 else -1)
 
 	if key >= 0 and pick_hand.is_valid():
 		pick_hand.call(key)
-		_refresh()   # the Craft button and the "in your hand" line follow the new hand
+		_refresh()
 		return true
 
 	return false
@@ -6523,7 +6523,7 @@ func _start_craft(number: int, count: int = 1, variant: int = 0) -> void:
 			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(item))
 			return
 
-	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3(float(_hand_slot() + 1), 0.0, 0.0))   # at.x: the hand slot + 1 (126): a kept tool must be in hand
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3(float(_hand_slot() + 1), 0.0, 0.0))   # at.x: the hand slot + 1 (126; no longer needed: a kept tool counts from the pack)
 
 
 func _on_reject(reason: int) -> void:
