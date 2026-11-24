@@ -82,5 +82,19 @@ func blocked(x: float, z: float, items: Dictionary) -> bool:
 	return hit
 
 
+# True when a standing structure of `kind` lies within `reach` (flat, no more than radius_m) of (x, z): one square read, as blocked() (a seed is not planted
+# on a path patch, server_items._sapling_refusal). Paths are listed here because they block spawning (counts).
+func kind_near(x: float, z: float, reach: float, items: Dictionary, kind: String) -> bool:
+	var at: Vector2 = Vector2(x, z)
+
+	for id in _buckets.get(_bucket(x, z), {}):
+		var item: Variant = items.get(id, null)
+
+		if item != null and (item as Dictionary).has("struct") and str(item["struct"].get("kind", "")) == kind and Vector2(item["pos"].x, item["pos"].z).distance_squared_to(at) <= reach * reach:
+			return true
+
+	return false
+
+
 func _bucket(x: float, z: float) -> Vector2i:
 	return Vector2i(int(floor(x / BUCKET_M)), int(floor(z / BUCKET_M)))
