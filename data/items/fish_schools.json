@@ -14,5 +14,26 @@
 		"pond": [["carp", 0.6], ["perch", 0.4]],
 		"sea_shallow": [["herring", 0.3], ["mackerel", 0.25], ["smelt", 0.2], ["cod", 0.25]]
 	},
+	"signs": {
+		"note": "Fish you can see (plan D, server_fish_signs.gd; Dave 24 Nov 2026: never saw a fish pool). Once tick_ms the server rolls each school within reach_m of a player for a jump: jump_per_s for a school of big_size fish, scaled by its size, hour_mult [from, to, x] (else night_mult from 21:00 to 05:00, 1.0 by day) and the weather (rain_mult, storm_mult, cold_mult under cold_c): one jump every 10 to 30 s near a big school (plan 3.1). A player gets at most one jump per player_gap_ms. Size class: size_mid and size_big fish; big_species jump bigger. Every shadow_every_ms a player is sent the schools within shadow_m in water no deeper than shadow_depth_max_m, nearest first, at most shadow_max (plan 6.4), only when the list changed. The catch odds are unchanged.",
+		"tick_ms": 1000,
+		"reach_m": 100.0,
+		"player_gap_ms": 3000,
+		"jump_per_s": 0.067,
+		"big_size": 12,
+		"hour_mult": [[5.0, 8.0, 1.5], [10.0, 15.0, 0.5], [18.0, 21.0, 1.5]],
+		"night_mult": 0.5,
+		"rain_mult": 1.2,
+		"storm_mult": 0.3,
+		"cold_mult": 0.6,
+		"cold_c": 5.0,
+		"size_mid": 5,
+		"size_big": 9,
+		"big_species": ["salmon", "pike", "carp", "cod"],
+		"shadow_m": 40.0,
+		"shadow_every_ms": 2000,
+		"shadow_max": 6,
+		"shadow_depth_max_m": 2.0
+	},
 	"only_in": {"salmon": ["autumn"], "mackerel": ["summer"], "herring": ["spring", "autumn", "winter"], "smelt": ["spring", "winter"], "eel": ["summer", "autumn"]}
 }

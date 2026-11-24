@@ -20920,8 +20920,12 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 
 			return
 
+	# The school under the jab (24 Nov 2026, Dave: "I dont actually see any fish or signs of fish"): with none near, the miss says so plainly and
+	# points at the signs (fish_signs: jumps, ripples, dark fish) instead of "stand still" or "you miss". The odds are not changed.
+	var hit: Dictionary = school_hit(at, float(cfg.get("school_reach_m", 1.0)))
+	var no_school: bool = bool(hit.get("active", false)) and float(hit.get("factor", 1.0)) < float(cfg.get("school_factor_min", 0.5))
 	if float(_moving.get(peer, 0.0)) > float(cfg.get("still_below", 0.25)):
-		_say(peer, str(cfg.get("say_move", "")))
+		_say(peer, str(cfg.get("say_no_fish", "")) if no_school and cfg.has("say_no_fish") else str(cfg.get("say_move", "")))
 		return
 
 	_wear_slot(peer, inv, slot, "fish")
@@ -20943,7 +20947,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 	if fish_stock(cell) > 0 and fate(peer, "fish", chance):
 		var key: String = "%d,%d" % [cell.x, cell.y]
 		_fish_stock[key][0] = int(_fish_stock[key][0]) - 1
-		var species: String = _fish_species(cell, {}, at)
+		var species: String = _fish_species(cell, hit, at)   # a jab into a school takes that school's fish
 		_take_in(peer, inv, table.number_of(species), 1, 0, pos)
 
 		practice(peer, "fish")
@@ -20953,7 +20957,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 		_say(peer, str(cfg.get("say_hit", "")) % table.sentence_name(table.number_of(species)))
 		_dirty = true
 	else:
-		_say(peer, str(cfg.get("say_miss", "")))
+		_say(peer, str(cfg.get("say_no_fish", "")) if no_school and cfg.has("say_no_fish") else str(cfg.get("say_miss", "")))
 
 
 func _on_ice(pos: Vector3) -> bool:

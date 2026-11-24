@@ -99,5 +99,5 @@ Dave: "if its night time and everyone on the server lays down and goes to sleep 
 - The night really passes. The server's quarter-second work and the sleepers' vitals run in one-minute catch-up frames, one per server frame: about 25 frames for a 10-hour night. Fires burn down, food cooks and smelts, crafting queues and crops move on, and things rot and spoil. Traps roll the night once, at dawn. A player who joins during the skip is not charged the night. If every sleeper leaves or wakes, the skip stops where it is. Hunger and thirst drain at the sleep rate, which a bed halves: about 340 kcal and 200 ml for 8 hours.
 - Weather, the day, the season and trader restocking follow the clock, so a trader restocks one night's worth. Animals and townsfolk are not stepped; they read the new hour.
 - Refreshed is what waking rested already means: energy full and no strain. Everyone is told "The night passes. You wake at dawn, refreshed."
-- Clients get `game_time` (protocol 169) and their sky jumps to dawn.
+- Clients get `game_time` (protocol 170) and their sky jumps to dawn.
 - Code: `server_items.gd` night_skip and `terrain_server.gd` `_night_skip_frame`. Test: `test_night_skip.gd`.

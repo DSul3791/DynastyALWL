@@ -56,6 +56,7 @@ const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const PlayersScript := preload("res://src/stream/server_players.gd")
 const CuesScript := preload("res://src/stream/server_action_cues.gd")
+const FishSignsScript := preload("res://src/server/server_fish_signs.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
@@ -142,6 +143,7 @@ var items                              # ServerItems: inventories and world item
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var players                            # ServerPlayers: what each player sees of the others (protocol 151)
 var cues                               # ServerActionCues: other players' blows, picks and crafts heard nearby (protocol 156)
+var fish_signs                         # ServerFishSigns: fish jumps and shadows near players (protocol 169)
 var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
@@ -606,6 +608,18 @@ func _ready() -> void:
 
 		return [water[0], water[1], baked, float(water[1]) <= 0.0 and not _sea_cut_off(x, z)])
 	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
+	fish_signs = FishSignsScript.new()   # the schools seen: jumps and shadows near players (protocol 169)
+	fish_signs.items = items
+	fish_signs.surface_at = func(x: float, z: float) -> float: return float(_water_at(Vector3(x, 0.0, z))[0])
+	fish_signs.ready_at = func(x: float, z: float) -> bool:
+		# Never read a tile on the main thread (a read takes seconds): a cell on a tile not in memory is asked for and skipped this pass.
+		if generator.tile_cached(x, z):
+			return true
+
+		generator.prefetch_tile(x, z)
+		return false
+	fish_signs.send_jump = func(peer: int, at: Vector3, kind: int, seed_value: int) -> void: net.fish_jump.rpc_id(peer, at, kind, seed_value)
+	fish_signs.send_shadows = func(peer: int, rows: PackedFloat32Array) -> void: net.fish_shadows.rpc_id(peer, rows)
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
@@ -1818,6 +1832,9 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_trap_marks_sent.erase(peer_id)
 	players.forget(peer_id)
 	cues.forget(peer_id)
+
+	if fish_signs != null:
+		fish_signs.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -3676,6 +3693,9 @@ func _process(delta: float) -> void:
 	_events.mark("items")
 	items.tick(delta)
 	_night_skip_frame()
+	_events.mark("fish signs")
+	if fish_signs != null:
+		fish_signs.tick()
 	_events.mark("tunnels+buried")
 	_tunnel_tick()
 	_send_buried()

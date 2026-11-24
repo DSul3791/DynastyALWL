@@ -91,7 +91,8 @@ const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
-const WetlandMist := preload("res://src/client/wetland_mist.gd")   # low mist over fen, bog and swamp at dawn and dusk (Dave 21 Nov 2026)
+const WetlandMist := preload("res://src/client/wetland_mist.gd")
+const FishSignsView := preload("res://src/client/fish_signs_view.gd")   # fish jumps, ripples and shadows where the schools are (protocol 169, Dave 24 Nov 2026)   # low mist over fen, bog and swamp at dawn and dusk (Dave 21 Nov 2026)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
@@ -869,7 +870,7 @@ func _ready() -> void:
 			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
-	net.game_time_received.connect(func(game_seconds: float) -> void: game_clock.sync(game_seconds))   # a night skip moved the server's clock to dawn (protocol 169)
+	net.game_time_received.connect(func(game_seconds: float) -> void: game_clock.sync(game_seconds))   # a night skip moved the server's clock to dawn (protocol 170)
 	net.join_refused_received.connect(func(text: String) -> void:
 		_on_join_refused(text, join_refused_title(text)))
 	net.notice_received.connect(func(text: String) -> void:
@@ -1739,6 +1740,10 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.spear.hit("flesh", at, 1.0)
 
 		animal_view.flinch(id))
+	# Fish schools seen (protocol 169; server_fish_signs.gd sends them only within 100 m): a jump with its splash, rings and sound, and the dark
+	# shapes of the schools within 40 m in shallow water.
+	net.fish_jump_received.connect(func(at: Vector3, kind: int, seed_value: int) -> void: _fish_signs_view().jump(at, kind, seed_value))
+	net.fish_shadows_received.connect(func(rows: PackedFloat32Array) -> void: _fish_signs_view().set_shadows(rows))
 	# Another player's blow, pick or craft (protocol 156; server_action_cues.gd sends it only within earshot): heard where it happened.
 	net.action_cue_received.connect(func(_peer: int, cue: int, detail: int, at: Vector3) -> void:
 		if sound != null:
@@ -3251,6 +3256,7 @@ var _ice_moat_logged: int = -1
 var _spring_mouths: Dictionary = {}       # tile -> PackedVector3Array, where spring cave brooks leave their caves
 var _spring_steam = null                  # SpringSteam, made on the first frosty update with a mouth known
 var _wetland_mist = null                  # WetlandMist, made at the first dawn or dusk it could show
+var fish_signs = null                     # FishSignsView, made at the first fish sign the server sends (protocol 169)
 var _steam_logged: bool = false
 
 
@@ -3389,6 +3395,18 @@ func _update_wetland_mist() -> void:
 		add_child(_wetland_mist)
 
 	_wetland_mist.update(body.global_position, hour, float(sun[0]), float(sun[1]), wind, rain, float(weather.get("wind_dir", 0.0)), sound.ground_at)
+
+
+func _fish_signs_view():
+	if fish_signs == null:
+		fish_signs = FishSignsView.new()
+		fish_signs.name = "FishSigns"
+		fish_signs.conditions = func() -> Array: return [WeatherScript.hour_of(game_clock.seconds), float(weather.get("rain", 0.0))]
+		fish_signs.sound_room = func() -> bool: return sound == null or sound.has_room()
+		add_child(fish_signs)
+		fish_signs.setup(quality)
+
+	return fish_signs
 
 
 func _update_spring_steam() -> void:
@@ -4235,6 +4253,9 @@ func _apply_quality() -> void:
 		_quality_cued = quality
 
 		sound.set_quality(quality)
+
+	if fish_signs != null:
+		fish_signs.set_quality(quality)
 
 	var view: int = QUALITY_VIEW[quality]
 	_stage_view = 0.0
