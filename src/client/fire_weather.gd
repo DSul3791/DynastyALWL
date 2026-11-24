@@ -17,6 +17,8 @@ const HALO_SNOW := 0.6        # heavy snow's share of the halo, for the sphere o
 static var _halo_mesh: QuadMesh
 static var _halo_material: StandardMaterial3D
 static var _lights: Array = []          # every registered fire light: kept here as well as in the group, so a light not yet in a tree is still moved
+static var _fog_lights: Array = []      # fixture fire lights (wall torches, braziers, fireplaces, coals, forges, goblin fires): only their share in the volumetric fog follows the fog
+static var _held_halo_material: StandardMaterial3D   # the halo of a torch or lantern in the hand: its own fade (held_halo_alpha)
 
 
 # How far a fire light reaches, as a share of its base range.
@@ -36,6 +38,12 @@ static func halo_diameter(strength: float) -> float:
 
 static func halo_alpha(strength: float, daylight: float) -> float:
 	return HALO_ALPHA * smoothstep(0.1, 0.4, strength) * (1.0 - 0.8 * clampf(daylight, 0.0, 1.0))
+
+
+# The halo of a torch or lantern in the hand, a metre from the eye, where a 1.5 to 5 m disc fills the view: only once the fog at the eye is
+# thick (a foggy night, Dave 24 Nov 2026), not in a trace of valley fog.
+static func held_halo_alpha(strength: float, veil: float, daylight: float) -> float:
+	return halo_alpha(strength, daylight) * smoothstep(0.3, 0.6, clampf(veil, 0.0, 1.0))
 
 
 # Falling snow from 0.5 up counts as heavy.
@@ -65,11 +73,27 @@ static func register(light: OmniLight3D, halo_scale: float = 1.0, held: bool = f
 	var halo: MeshInstance3D = MeshInstance3D.new()
 	halo.name = "Halo"
 	halo.mesh = _shared_mesh()
-	halo.material_override = _shared_material()
+	halo.material_override = _held_material() if held else _shared_material()
 	halo.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	halo.scale = Vector3.ONE * halo_scale
 	halo.layers = 2                    # like the torch's own meshes: its lights (cull mask without layer 2) do not light it
 	light.add_child(halo)
+
+
+# A fixture fire light that has no reach rule or halo of its own: its share in the volumetric fog follows the fog at the eye (fog_share).
+static func fog_light(light: Light3D) -> void:
+	if light == null:
+		return
+
+	light.light_volumetric_fog_energy = 0.0   # until update finds fog at the eye
+	_fog_lights.append(light)
+
+
+static func _held_material() -> StandardMaterial3D:
+	if _held_halo_material == null:
+		_held_halo_material = _shared_material().duplicate() as StandardMaterial3D
+
+	return _held_halo_material
 
 
 static func _shared_mesh() -> QuadMesh:
@@ -128,3 +152,9 @@ static func update(tree: SceneTree, veil: float, snow: float, ground_snow: float
 	_shared_mesh().size = Vector2.ONE * halo_diameter(strength)
 	var material: StandardMaterial3D = _shared_material()
 	material.albedo_color = Color(1.0, 1.0, 1.0, halo_alpha(strength, daylight))
+	_held_material().albedo_color = Color(1.0, 1.0, 1.0, held_halo_alpha(strength, veil, daylight))
+	_fog_lights = _fog_lights.filter(func(item): return is_instance_valid(item))
+	var share: float = fog_share(veil)
+
+	for node in _fog_lights:
+		(node as Light3D).light_volumetric_fog_energy = share

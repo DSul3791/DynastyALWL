@@ -1568,6 +1568,7 @@ func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) 
 	if fire:
 		var glow: OmniLight3D = OmniLight3D.new()   # as this player's own fire arrow
 		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_volumetric_fog_energy = 0.0   # a short glow on the wing: no orange flare in the volumetric fog
 		glow.light_energy = 1.6
 		glow.omni_range = 2.0
 		glow.shadow_enabled = false
@@ -1600,6 +1601,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	if bool(_inv.table.entry(_inv.table.id_of(arrow)).get("fire", false)) and _inv._lit_fire_near(_camera.global_position, float(_bow_cfg.get("fire_arrow", {}).get("light_m", 3.0))):
 		var glow: OmniLight3D = OmniLight3D.new()   # a burning fire arrow (Part C plan 6): a stand-in orange glow until Kathleen's flame look
 		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_volumetric_fog_energy = 0.0   # a short glow on the wing: no orange flare in the volumetric fog
 		glow.light_energy = 1.6
 		glow.omni_range = 2.0
 		glow.shadow_enabled = false
@@ -4256,7 +4258,6 @@ func _make_lantern_model(id: String) -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(row.get("light_m", 8.0))
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0   # held at the eye: never in the volumetric fog (FireWeather.register held)
 	light.light_cull_mask = 0xFFFFFFFD
 	light.position = body.position
 	lantern.add_child(light)
@@ -4402,7 +4403,6 @@ func _make_torch_model(id: String = "", out: bool = false) -> Node3D:
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0)) * FlameRules.TORCH_REACH_MULT
 	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0   # held at the eye: never in the volumetric fog (FireWeather.register held)
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)

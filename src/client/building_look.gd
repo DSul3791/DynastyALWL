@@ -875,6 +875,7 @@ static func coals_fire(glow: float) -> Node3D:
 	light.visible = false
 	light.set_meta("ember", true)
 	coals_glow(light, glow)
+	FireWeather.fog_light(light)   # its share in the volumetric fog follows the fog (no orange haze on a clear night)
 	root.add_child(light)
 	return root
 
@@ -1214,6 +1215,7 @@ static func lit_fixture(kind: String) -> Node3D:
 		cone.position = Vector3(0.0, 0.5, 0.3)
 		cone.rotation = Vector3(0.0, PI, 0.0)   # a spot shines along -z; turn it to face +z
 		cone.visible = false
+		FireWeather.fog_light(cone)
 		root.add_child(cone)
 		var glow: OmniLight3D = OmniLight3D.new()
 		glow.name = "Glow"
@@ -1223,6 +1225,7 @@ static func lit_fixture(kind: String) -> Node3D:
 		glow.omni_attenuation = LIGHT_FALLOFF
 		glow.shadow_enabled = true      # the bricks keep it from reaching the back
 		glow.position = Vector3(0.0, -0.1, 0.0)
+		FireWeather.fog_light(glow)
 		cone.add_child(glow)   # follows the cone's visibility, so it goes with the nearest-lights limit
 		return root
 
@@ -1236,6 +1239,7 @@ static func lit_fixture(kind: String) -> Node3D:
 	light.shadow_enabled = false
 	light.position = light_at
 	light.visible = false
+	FireWeather.fog_light(light)   # its share in the volumetric fog follows the fog (no orange haze on a clear night)
 	root.add_child(light)
 	return root
 
@@ -1252,6 +1256,7 @@ static func masonry_forge() -> Node3D:
 	light.shadow_enabled = false
 	light.position = Vector3(-1.0, 1.6, -0.5)
 	light.visible = false
+	FireWeather.fog_light(light)
 	root.add_child(light)
 	return root
 
