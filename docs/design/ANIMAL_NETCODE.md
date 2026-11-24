@@ -192,7 +192,7 @@ shows it, never more than `rewind_max_ms` back.
    12 m/s), then pulled it back 2.4 m, drained at 0.9 m/s as a standing body. Now for `STOP_PLAN_MS` after its own step stopped it (the tick's or,
    for a pack wolf, the pack brain's `pace`), an animal's rows carry a plan of where it stands (`server_animals.row_plan`, no protocol change: a plan's end already holds the body), so
    every player's client holds it at its stop. Replayed at ten send phases (how a stop falls against a send decides whether it happens):
-   frames with over 1 m of correction while standing after a bolt 756 to 0, the correction left 95th 1.82 to 1.68 m, drawn against the
+   (the deer track; the wolf's stamp is checked in test_hunt_feedback) frames with over 1 m of correction while standing after a bolt 756 to 0, the correction left 95th 1.82 to 1.68 m, drawn against the
    server median 0.45 to 0.33 m, 95th 2.38 to 2.31 m; no phase worse. The other, now most of what is left: starts and turns. The row with
    the new way arrives 0.1 to 0.35 s after the moment drawn, so the point jumps 1 to 2 m forward and `smooth` eases it in at up to 1.35
    times the leg's speed (its room, 1.05 times, and its catch-up, `CATCH_X`); by send phase the correction 95th is 0.7 to 2.3 m. Not

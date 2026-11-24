@@ -186,6 +186,7 @@ func _init() -> void:
 	wolf["pos"] = Vector3(1.0, GROUND, 0.0)
 	f.wolves.pace(wolf, 1100)
 	check(bool(wolf["moving"]) and not wolf.has("stopped_ms"), "a pack wolf on the move has no stop")
+	wolf["moving"] = false   # as the brain's own phase does before pace (_walk, a stalk's hold, a ring windup)
 	f.wolves.pace(wolf, 1200)
 	check(int(wolf.get("stopped_ms", -1)) == 1200 and AnimalsScript.row_plan(wolf, 1300) is Vector2, "the think that stops it stamps the stop, and its row says it stops there")
 	# A detour (step 2): a step well off the line to its goal (Steering turning it round an obstacle) makes the plan the way it goes, half a

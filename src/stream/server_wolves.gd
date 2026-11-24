@@ -367,8 +367,9 @@ func _make_way(m: Dictionary, infos: Array, dt: float) -> void:
 # whether it moved this think (moving), so rows_near sends the server's move times, and a standing wolf's row the send time (protocol 154),
 # and the client draws a steady trot that stops dead, held where it stopped (stopped_ms).
 func pace(m: Dictionary, now_ms: int) -> void:
-	var was_moving: bool = bool(m.get("moving", false))
+	var was_moving: bool = bool(m.get("paced_moving", false))   # pace's own last word: the brain sets "moving" itself earlier in the think
 	m["moving"] = m["pos"] != m.get("paced_pos")
+	m["paced_moving"] = m["moving"]
 
 	if was_moving and not bool(m["moving"]):
 		m["stopped_ms"] = now_ms   # this think stopped it: its rows say it stops here (server_animals row_plan), as the tick does for the others
