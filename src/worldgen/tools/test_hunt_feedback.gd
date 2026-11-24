@@ -176,13 +176,18 @@ func _init() -> void:
 	gd["moving"] = true
 	g.plan(gd, Vector3(10.0, GROUND, 0.0))
 	gd["pos"] = Vector3(0.0, GROUND, 0.5)
-	g._bend_plan(gd, Vector3(0.0, GROUND, 0.0), 0.25)   # 0.5 m at right angles to its goal in 0.25 s: 2 m/s
+	g.bend_plan(gd, Vector3(0.0, GROUND, 0.0), 0.25)   # 0.5 m at right angles to its goal in 0.25 s: 2 m/s
 	var grow: Array = row_of(g, gid)
 	check(grow.size() == 7 and grow[6] is Vector2 and (grow[6] as Vector2).is_equal_approx(Vector2(0.0, 1.5)), "a deer going round an obstacle plans the way it goes, 1 m on (%s)" % str(grow.slice(5)))
 	gd["pos"] = Vector3(0.5, GROUND, 0.5)
-	g._bend_plan(gd, Vector3(0.0, GROUND, 0.5), 0.25)
+	g.bend_plan(gd, Vector3(0.0, GROUND, 0.5), 0.25)
 	grow = row_of(g, gid)
 	check(grow.size() == 7 and (grow[6] as Vector2).is_equal_approx(Vector2(10.0, 0.0)), "back on its line, its plan is its goal again (%s)" % str(grow.slice(5)))
+	gd["pos"] = Vector3(0.5, GROUND, 1.0)
+	g.bend_plan(gd, Vector3(0.5, GROUND, 0.5), 0.25)   # off its line again
+	g.plan(gd, Vector3(-20.0, GROUND, 0.0))            # then a new walk (it flees)
+	grow = row_of(g, gid)
+	check(grow.size() == 7 and (grow[6] as Vector2).is_equal_approx(Vector2(-20.0, 0.0)), "a new walk goal drops the old detour (%s)" % str(grow.slice(5)))
 
 	# A standing animal a player walks into steps out (make_way): its plan is that step, not an older walk goal.
 	fd["plan_to"] = Vector3(-30.0, GROUND, 0.0)

@@ -167,8 +167,8 @@ shows it, never more than `rewind_max_ms` back.
 1. Plans and present drawing for every ground animal (this, protocol 168). Every reaction is seen up to 0.8 s sooner; what the player
    sees, dodges and stabs is where the server has it.
 2. The path, not only the end: while a step goes well off the line to its goal (Steering turning it round a tree, rock, water or wall,
-   over `BEND_RAD`), the plan is the way it is going, `PLAN_AHEAD_S` on at its pace (`server_animals._bend_plan`), so the client carries it
-   on round with the server instead of holding it until the next row. Steering is one step at a time (no path is planned ahead), so this is
+   over `BEND_RAD`), the plan is the way it is going, `PLAN_AHEAD_S` on at its pace (`server_animals.bend_plan`, also called by the pack brain), so the client carries it
+   on along that next stretch with the server instead of holding it until the next row. Steering is one step at a time (no path is planned ahead), so this is
    the next stretch, not a whole route. No protocol change.
 3. The client's own feedback at once: the flinch, the blood and the sound of the player's own blow when the client's hit test agrees, the
    server's answer only confirming or taking it back.
