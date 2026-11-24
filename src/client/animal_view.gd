@@ -445,14 +445,27 @@ const BLOW_MAX_S := 2.0         # a strike or kick clip is cut here
 const HIT_AT := 0.45           # where in a strike or kick clip the blow lands, as a share of its length, when the model row gives no "hit_at"
 const ANIMALS_PATH := "res://data/animals/animals.json"
 # The fastest a kind moves (its animals.json row's largest *_mps, as RobotRules.top_speed): a body drawn at the present catches up a backlog
-# no faster than this (MotionBuffer.smooth top_mps). 0 for a kind with no row.
+# no faster than this (MotionBuffer.smooth top_mps). 0 for a kind with no row. The largest at any depth, as the robots' jump check reads it:
+# a charge_mps (a lion's 14 against its flee 12) or a ground bird's fly_mps counts, so a backlog can drain that fast outside a charge too.
 static var _tops: Dictionary = {}
+static var _species: Dictionary = {}   # animals.json "species", parsed once for top_mps and windup_s
+
+
+static func _species_rows() -> Dictionary:
+	if _species.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH)) if FileAccess.file_exists(ANIMALS_PATH) else null
+		_species = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+
+	return _species
+
+
+func _ready() -> void:
+	top_mps("")   # animals.json is read here, once, not inside the first frame that draws a body at the present
 
 
 static func top_mps(kind: String) -> float:
 	if _tops.is_empty():
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH)) if FileAccess.file_exists(ANIMALS_PATH) else null
-		var species: Dictionary = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+		var species: Dictionary = _species_rows()
 		_tops["_read"] = 0.0
 
 		for sp in species:
@@ -485,8 +498,7 @@ func _close_blow(b: Dictionary, state: int) -> void:
 # The wind-up of kind's close blow `how` ("strike" or "kick") from animals.json, 0.7 s when it has none.
 static func windup_s(kind: String, how: String) -> float:
 	if _windups.is_empty():
-		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH)) if FileAccess.file_exists(ANIMALS_PATH) else null
-		var species: Dictionary = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+		var species: Dictionary = _species_rows()
 		_windups["_read"] = true
 
 		for sp in species:

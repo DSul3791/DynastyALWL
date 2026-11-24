@@ -272,6 +272,19 @@ func _init() -> void:
 
 	check(t_was.distance_to(point) < 1.0 and t_fastest <= 12.0 * 1.06, "a 5 m backlog at the present is mostly drained within a second (%.2f m left), at most the kind's 12 m/s (fastest %.1f m/s)" % [t_was.distance_to(point), t_fastest])
 	check(p_at.distance_to(point) > 2.0, "without the top speed it is still %.2f m behind after a second (1.3 times its 5 m/s)" % p_at.distance_to(point))
+	# A body ahead of a point that stopped (an overshoot, a lost stop row) is not pulled back faster than before: 1.3 times its speed at most.
+	var over: Dictionary = {}
+	MotionBuffer.smooth(over, Vector3.ZERO, 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
+	MotionBuffer.smooth(over, Vector3(0.08, 0.0, 0.0), 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)   # it was going +x
+	var o_was: Vector3 = MotionBuffer.smooth(over, Vector3(-3.0, 0.0, 0.0), 2.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)   # the stop is 3 m back
+	var o_fastest: float = 0.0
+
+	for i in 30:
+		var op: Vector3 = MotionBuffer.smooth(over, Vector3(-3.0, 0.0, 0.0), 2.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
+		o_fastest = maxf(o_fastest, op.distance_to(o_was) * 60.0)
+		o_was = op
+
+	check(o_fastest <= 2.0 * 0.3 + MotionBuffer.CATCH_MIN_MPS + 0.05, "a body 3 m past a stop comes back at %.2f m/s at most, as before (not the kind's 12)" % o_fastest)
 	check(absf(AnimalView.top_mps("deer") - 12.0) < 0.01 and AnimalView.top_mps("no_such_kind") == 0.0, "a deer's top speed is its flee_mps, 12 m/s (%.1f)" % AnimalView.top_mps("deer"))
 
 	# A run that stops (gate review of PR #1631): the stop row is the newest point while the body, drawn 0.35 s behind, is still on the run's

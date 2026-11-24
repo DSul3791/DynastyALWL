@@ -206,6 +206,8 @@ static func clock_delay(c: Dictionary) -> float:
 # up to about 1.5 m/s for a slow walker while a correction drains). Remote players (player_view) share it. A late batch, a hole bridged too far, a step past a player held
 # back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
 # room_x, catch_x and catch_min: the animals' (1.3 times their speed at most) unless given; other players pass their own (player_view.gd).
+# top_mps (an animal drawn at the present, animal_view): a correction that trails the way its point went drains at about CATCH_DRAIN_S's
+# time constant instead, at most top_mps less its speed faster; a correction ahead of it keeps the 1.3 times cap.
 static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, room_x: float = 1.05, catch_x: float = CATCH_X, catch_min: float = CATCH_MIN_MPS, top_mps: float = 0.0) -> Vector3:
 	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
 	var err: Vector3 = body.get("sm_err", Vector3.ZERO)
@@ -219,13 +221,16 @@ static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, roo
 		elif jump.length() > room:
 			err -= jump - jump.normalized() * room
 
+		if jump.length() > 0.005 and jump.length() <= room:
+			body["sm_dir"] = jump.normalized()   # the way its point last went at its own pace (not a correcting jump: a body ahead of a point that stopped or jumped back is still "ahead")
+
 		var size: float = err.length()
 
 		if size > 0.0:
 			var drain: float = maxf(v * catch_x, catch_min)
 
-			if top_mps > v:
-				drain = maxf(drain, minf(top_mps - v, size / CATCH_DRAIN_S))   # a big backlog drains at up to the kind's own top speed, not 1.3 times this leg's
+			if top_mps > v and err.dot(body.get("sm_dir", Vector3.ZERO)) < 0.0:
+				drain = maxf(drain, minf(top_mps - v, size / CATCH_DRAIN_S))   # a big backlog behind it drains at up to the kind's own top speed, not 1.3 times this leg's; one ahead (an overshoot) is never pulled back faster than before
 
 			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), drain * delta), size)
 
