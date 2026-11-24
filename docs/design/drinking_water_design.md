@@ -26,7 +26,7 @@
   - In a dry August, a spring's brook runs down from the spring and stops where the record says its dry baseflow is used up. Below that point, the bed is dry.
 - **Lakes and wide rivers** are a drink all year.
 - **Winter ice:** lakes, still water and slow brooks far below a spring freeze on frosty nights. To drink there you break a hole first, the same hole fishing uses. A spring and the open brook just below it stay open.
-- **Salt water is never a drink:** the sea and an estuary both say "Salt water. It would only make you thirstier."
+- **Salt water is never a drink:** the sea and an estuary both say "This water is too salty to drink. Try to find some fresh water." (Dave 24 Nov 2026). The sea needs no record row: the fish map's sea kind (water_kind_at) at the feet or, with no other water in reach, within reach is refused too, and the client shows "Sea water — Press E to drink" there
 - **Wet ground** (a seep, a bog, marsh) has no open water. Phase 2 lets a dug scrape fill there.
 - **Sickness:** none, by Dave's rule. The source kind is carried through, so the coordinator's pond odds (1 in 5, spring never) can plug in if Dave says yes.
 
@@ -65,7 +65,7 @@ A new server callable, `water_source(pos, reach_m) -> Dictionary`, is filled by 
 ```
 "sources": {"enabled": false, "rain_memory_h": 24, "flash_memory_h": 6,
             "open_m": 440.0, "cold_x": [[-2, 1.8], [-5, 1.0], [-10, 0.6], [-15, 0.4]], "breeze_wind": 0.3, "breeze_x": 0.5,
-            "say_salt": "Salt water. It would only make you thirstier.",
+            "say_salt": "This water is too salty to drink. Try to find some fresh water.",
             "say_frozen": "The water is frozen. Break a hole in the ice first.",
             "say_dry": "The bed is dry."}
 ```

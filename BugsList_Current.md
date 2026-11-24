@@ -1614,7 +1614,7 @@ Not yet played.
 
 ## 138. Prompts to pick fruit and drink water do not say which key
 
-**Status: Not fixed - needs detail.** The exact wording the tester saw has not been found in the game's text yet. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk.
+**Status: Not fixed - needs detail.** The exact wording the tester saw has not been found in the game's text yet. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk. The sea half is now entry 141 (too salty, find fresh water); the fruit key half still needs the wording.
 
 ## 139. The till and plant grid goes behind the player; Plant shows squares, not dots
 
@@ -1625,6 +1625,10 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 ## 140. Alt + arrows grow the hoe grid from its corner, to the right and forward
 
 **Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "with planting grids you can use alt+arrows to adjust the grid sizes but it should be 0,0 at the bottom left and pressing altright or altforward increases the grid size". The corner at the crosshair stays put; Alt + Right / Left grows or shrinks the grid to the right, Alt + Up / Down forward, whichever of the grid's sides points that way as the player looks (FarmRules.across_is_right; test_farm_prompt). Not yet played.
+
+## 141. Drinking from the ocean should say it is too salty
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "when you try to drink water from the ocean it should tell you that is too salty. try to find some fresh water." Before, the sea showed no drink prompt and E did nothing; the server said its salt line only where the world record had salt water rows, and otherwise "No water within reach." Now the sea shows "Sea water — Press E to drink", and E says "This water is too salty to drink. Try to find some fresh water." Sea water is never drunk: the server refuses it standing in the sea, or with only the sea in reach, record row or not (server_items _drink_water; test_drinking_water). Not yet played.
 
 ## Rewrite interpretation
 
