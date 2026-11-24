@@ -5230,7 +5230,7 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var tree: String = _path_tree(spot)
 
 	if tree != "":
-		_say(peer, "A %s stands there: fell it first, or tread the path round it." % tree.to_lower())
+		_say(peer, "A %s stands there: clear it first, or tread the path round it." % tree.to_lower())
 		return
 
 	_trample_saplings(spot)
