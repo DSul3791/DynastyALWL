@@ -1729,7 +1729,11 @@ func _welcome_body(info: Dictionary) -> void:
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
 	# A blow that lands on an animal (any player's, within 60 m; Dave 19 Nov 2026: "there need to be damage numbers or better hit sounds. or both"):
 	# the flesh thud where it struck, and the body flinches. A miss is only the swing or the jab, so a hit is heard and seen.
+	# The player's own blow shows as it lands, the server's hit for it then plays nothing twice (docs/design/ANIMAL_NETCODE.md "Plans" step 3).
 	net.animal_hit_point_received.connect(func(id: int, _zone: int, at: Vector3) -> void:
+		if animal_view.confirm_hit(id):
+			return
+
 		if sound != null:
 			sound.spear.hit("flesh", at, 1.0)
 
@@ -1957,6 +1961,9 @@ func _welcome_body(info: Dictionary) -> void:
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
 	held.season_now = func(): return season_here()   # the hoe's plant list greys out what is out of season: the season where the player stands, as the server sows by the bed's (season_at; the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
+	held.blow_landing.connect(func(id: int, at: Vector3) -> void:   # the player's own blow shows as it lands (animal_view.predict_hit)
+		if _animal_view_node != null and _animal_view_node.predict_hit(id) and sound != null:
+			sound.spear.hit("flesh", at, 1.0))
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
 	Probe.stop("welcome: held item", tq_held_item)
