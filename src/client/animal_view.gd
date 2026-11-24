@@ -41,13 +41,15 @@ const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "d
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
 const FLY := 15                       # server_flight.FLY: a bird in flight (climbing)
 const GLIDE := 17                     # server_flight.GLIDE: gliding; a glide that climbs again goes back to FLY, which is no new take-off
-const VOICED_STATES := [2, 3, 7, 10, 11, 16]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning
-const ATTACK_STATES := [7, 11]                # a wolf attacking, big game charging: the one biting you (attacker_near)
+const VOICED_STATES := [2, 3, 7, 10, 11, 16, 25, 26]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning, a close blow, a kick
+const ATTACK_STATES := [7, 11, 25, 26]        # a wolf attacking, big game charging or striking up close: the one biting you (attacker_near)
+const LUNGE_STATES := [7, 11]                 # an attack that ends in the model's bite clip as it ends (a strike or kick plays its own clip as it starts)
+const CLOSE_STATES := [25, 26]                # server_big_game STRIKE and KICK: a blow wound up where it stands, its clip timed to land when the server's does
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 # Drawn at the present, not a delay behind (Dave 23 Nov 2026: "battle was almost impossible"): warn, charge, recover and the jaw-pop. A charge's
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
-const AHEAD_STATES := [10, 11, 12, 16]
+const AHEAD_STATES := [10, 11, 12, 16, 25, 26]
 const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
 const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
@@ -391,15 +393,56 @@ func flinch(id: int) -> void:
 # One-shot clips (Dave 23 Nov 2026: animals "like really bad animatronics"): a bite as an attack ends, a hit, a death. The model's
 # "bite", "hit" and "die" roles (models.json) are copies that do not loop. While one plays (up to cap_s), _animate_model leaves the clip
 # alone, then blends back to the state's own clip. False when the model has no clip for the role.
-const ONCE_ROLES := ["bite", "hit", "die"]
+const ONCE_ROLES := ["bite", "hit", "die", "strike", "strike2", "kick"]
 const HIT_STILL_MPS := 1.0     # a standing hit clip plays only on a body slower than this
 const HIT_MAX_S := 0.9         # a hit clip is cut here: the animal is back in its state's clip within a second
 const BITE_MAX_S := 1.2
+const BLOW_MAX_S := 2.0         # a strike or kick clip is cut here
+const HIT_AT := 0.45           # where in a strike or kick clip the blow lands, as a share of its length, when the model row gives no "hit_at"
+const ANIMALS_PATH := "res://data/animals/animals.json"
+static var _windups: Dictionary = {}   # kind -> {"strike": s, "kick": s}: each close blow's wind-up (animals.json defend rows), read once
 const DIE_MAX_S := 2.0         # short: the carcass is already on the ground there (carcass_look.gd), so the falling body goes soon
 const DIE_HOLD_S := 0.3        # the last pose of a death clip is held this long before the body goes
 
 
-func _play_once(b: Dictionary, role: String, cap_s: float) -> bool:
+# A strike or kick begins (server_big_game _close_attack): the model's own attack clip plays once, sped so its blow (hit_at of the clip) lands
+# when the server's does, windup_s after the state began. The row came the clock's lateness after that, so the clip starts that far in.
+# A kind with two strikes ("strike2") takes turns between them.
+func _close_blow(b: Dictionary, state: int) -> void:
+	var how: String = "kick" if state == CLOSE_STATES[1] else "strike"
+	var role: String = how
+
+	if how == "strike":
+		b["strikes"] = int(b.get("strikes", -1)) + 1
+		role = "strike2" if int(b["strikes"]) % 2 == 1 else "strike"
+
+	if not _play_once(b, role, BLOW_MAX_S, windup_s(str(b.get("kind", "")), how), float(_clock["late"])) and role == "strike2":
+		_play_once(b, "strike", BLOW_MAX_S, windup_s(str(b.get("kind", "")), how), float(_clock["late"]))
+
+
+# The wind-up of kind's close blow `how` ("strike" or "kick") from animals.json, 0.7 s when it has none.
+static func windup_s(kind: String, how: String) -> float:
+	if _windups.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH)) if FileAccess.file_exists(ANIMALS_PATH) else null
+		var species: Dictionary = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+		_windups["_read"] = true
+
+		for sp in species:
+			var defend: Dictionary = (species[sp] as Dictionary).get("defend", {}) if species[sp] is Dictionary else {}
+
+			for k in ["strike", "kick"]:
+				if defend.get(k, null) is Dictionary:
+					if not _windups.has(sp):
+						_windups[sp] = {}
+
+					_windups[sp][k] = float(defend[k].get("windup_s", 0.7))
+
+	return float((_windups.get(kind, {}) as Dictionary).get(how, 0.7))
+
+
+# land_in_s > 0: the clip is sped so its blow (the model row's "hit_at" share of the clip, else HIT_AT) comes land_in_s after it began, and
+# it starts from_s into that (the row's lateness).
+func _play_once(b: Dictionary, role: String, cap_s: float, land_in_s: float = 0.0, from_s: float = 0.0) -> bool:
 	var node: Node3D = b.get("node", null)
 
 	if node == null or not is_instance_valid(node) or not node.has_meta("player"):
@@ -411,9 +454,20 @@ func _play_once(b: Dictionary, role: String, cap_s: float) -> bool:
 	if clip == "" or not player.has_animation(clip):
 		return false
 
+	var length: float = player.get_animation(clip).length
+	var rate: float = 1.0
+
+	if land_in_s > 0.0:
+		rate = clampf(float((node.get_meta("model_row", {}) as Dictionary).get("hit_at", HIT_AT)) * length / land_in_s, 0.5, 3.0)
+
+	var into: float = clampf(from_s * rate, 0.0, length * 0.9)
 	player.play(clip, 0.1)
-	player.speed_scale = 1.0
-	b["once_until"] = _t + minf(player.get_animation(clip).length, cap_s)
+	player.speed_scale = rate
+
+	if into > 0.0:
+		player.seek(into, true)
+
+	b["once_until"] = _t + minf((length - into) / rate, cap_s)
 	return true
 
 
@@ -577,8 +631,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
 
 		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.
-		if int(_bodies[id]["state"]) in ATTACK_STATES and not int(row[4]) in ATTACK_STATES:
+		if int(_bodies[id]["state"]) in LUNGE_STATES and not int(row[4]) in ATTACK_STATES:
 			_play_once(_bodies[id], "bite", BITE_MAX_S)
+		elif int(row[4]) in CLOSE_STATES and int(row[4]) != int(_bodies[id]["state"]):
+			_close_blow(_bodies[id], int(row[4]))
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
@@ -2080,7 +2136,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var typed: Dictionary = {"walk": walk_mps, "trot": trot_mps, "run": run_mps}
 	var ref: float = 0.0
 	# Standing, walking, trotting or running, with a margin either side so the clip does not flick at the edge (AnimalGait.role).
-	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps, trot_mps) if state != 10 and state != 12 and state != WARN_POP else ""
+	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps, trot_mps) if state != 10 and state != 12 and state != WARN_POP and not state in CLOSE_STATES else ""
 	b["gait_role"] = moving
 
 	if moving != "":

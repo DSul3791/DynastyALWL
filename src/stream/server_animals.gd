@@ -771,7 +771,7 @@ func judged_ms(a: Dictionary, seen_ms: int, present_ms: int) -> int:
 		return -1
 
 	var now: int = Time.get_ticks_msec()
-	var ms: int = present_ms if int(a.get("state", 0)) in [WARN, 11, 12, 16] and present_ms > 0 else seen_ms
+	var ms: int = present_ms if int(a.get("state", 0)) in [WARN, 11, 12, 16, 25, 26] and present_ms > 0 else seen_ms
 	return clampi(ms, now - int(cfg.get("rewind_max_ms", 500)), now)
 
 
