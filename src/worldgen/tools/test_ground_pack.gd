@@ -103,6 +103,8 @@ func _init() -> void:
 	check(same == blocks.size(), "every pack block is what the server would make (%d of %d the same)" % [same, blocks.size()])
 	fresh.block_bytes(Vector3i(blocks[0][0].x + 40, blocks[0][0].y, blocks[0][0].z), 0)
 	check(fresh.blocks_generated == 1, "a block outside the pack is still made (nobody is stranded at its edge)")
+	check(fresh.made_rows_report().begins_with("blocks made") and fresh.made_rows_report().contains("L0 "), "the made block is counted by its level and row for the log: %s" % fresh.made_rows_report())
+	check(plain.made_rows_report().contains("L0 ") and plain.made_rows_report().contains("L3 ") and plain.made_rows_report().contains("-1:") and plain.made_rows_report().contains("+1:"), "a store that made ground counts it by level, below and above the ground: %s" % plain.made_rows_report())
 	fresh = null
 	plain = null
 

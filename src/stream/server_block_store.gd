@@ -37,6 +37,7 @@ var tiles_stamp: String = ""            # fingerprint of the tile files the grou
 var _tile_dates: String = ""            # tile file names, sizes and dates last seen
 var _dates_changed_msec: int = -1       # when they last changed (a bake is writing)
 var blocks_generated: int = 0
+var _made_rows: Dictionary = {}   # "level row" -> blocks made here (not served from a pack or cache), row counted from the block holding the ground
 var cache_hits: int = 0
 var edit_hits: int = 0
 var bad_blocks: int = 0                 # built blocks that failed the sanity check (not saved)
@@ -592,6 +593,9 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 
 	_count("generated")
 
+	if generator.failed_tiles == failed_before:   # not after a stand-in tile: its height read would try the tile again
+		_count_made_row(block, lod)
+
 
 # Makes and saves a block nobody has asked for yet (idle pre-building).
 # Returns true when it had to be generated, false when it already existed
@@ -614,7 +618,57 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 		_cache_save(cache, buffer, block, lod)
 
 	_count("generated")
+
+	if generator.failed_tiles == failed_before:   # not after a stand-in tile: its height read would try the tile again
+		_count_made_row(block, lod)
 	return true
+
+
+# Where the blocks the server still makes lie (Dave 23 Nov 2026: "I really don't want the server working out blocks at all"): each made
+# block is counted by its level and its row above (+) or below (-) the block holding the ground at its middle, so the generator's later
+# runs can be sized to what players' games really ask for. Rows past 16 either way are counted together.
+func _count_made_row(block: Vector3i, lod: int) -> void:
+	var block_m: float = float(BLOCK_SIZE << lod)
+	var h = generator.surface_height((float(block.x) + 0.5) * block_m, (float(block.z) + 0.5) * block_m, lod)
+
+	if h == null or is_nan(float(h)):
+		return
+
+	var row: int = clampi(block.y - int(floor(float(h) / block_m)), -17, 17)
+	var key: String = "%d %d" % [lod, row]
+	_mutex.lock()
+	_made_rows[key] = int(_made_rows.get(key, 0)) + 1
+	_mutex.unlock()
+
+
+# The counts above as one line, "" before any: "made by level and row: L0 -3:12 +2:40 ..., L1 ..." (17 = 17 or more).
+func made_rows_report() -> String:
+	_mutex.lock()
+	var counts: Dictionary = _made_rows.duplicate()
+	_mutex.unlock()
+
+	if counts.is_empty():
+		return ""
+
+	var keys: Array = counts.keys()
+	keys.sort_custom(func(a, b): return Vector2i(int(a.get_slice(" ", 0)), int(a.get_slice(" ", 1))) < Vector2i(int(b.get_slice(" ", 0)), int(b.get_slice(" ", 1))))
+	var levels: Dictionary = {}
+
+	for key in keys:
+		var lod: int = int(key.get_slice(" ", 0))
+		var row: int = int(key.get_slice(" ", 1))
+
+		if not levels.has(lod):
+			levels[lod] = PackedStringArray()
+
+		levels[lod].append("%s%d:%d" % ["+" if row > 0 else "", row, counts[key]])
+
+	var parts: PackedStringArray = PackedStringArray()
+
+	for lod in levels:
+		parts.append("L%d %s" % [lod, " ".join(levels[lod])])
+
+	return "blocks made, by level and row from the ground (+ above, - below, 17 = 17 or more): " + "; ".join(parts)
 
 
 # The ground is solid exactly where a voxel lies below its column's surface (caves
