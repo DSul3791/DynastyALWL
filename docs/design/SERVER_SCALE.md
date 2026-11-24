@@ -99,7 +99,9 @@ Built 23 Nov 2026 (Dave: "all needs to be part of the generator. make it a prior
 starts fresh, so the first use is a fresh world on the pack). Ground: `src/worldgen/tools/prebuild_ground.gd` (any tile list, `nine`
 for all nine; goes on after a stop), `src/stream/ground_pack.gd` and `src/worldgen/tools/install_ground.gd` (refuses a pack from other
 tiles, an unfinished one, or a store whose server runs), test `test_ground_pack`. Steps: deploy/server/SERVER.md, "Prebuilt ground".
-Trees and plants: `src/stream/flora_pack.gd` (one file a tile, used only when its fingerprint of tiles, flora data and placer
+Speed (24 Nov 2026): one copy of the generator gains little from threads (cloud: 1 thread 380 blocks/s, 3 threads 540; Dave's PC
+at 8 threads 217), but copies side by side scale: `--processes=N` runs N one-thread copies and joins them (3 copies 2.4 times one,
+the joined pack byte for byte the same as one copy's). Trees and plants: `src/stream/flora_pack.gd` (one file a tile, used only when its fingerprint of tiles, flora data and placer
 code matches the server's), built by the same tool (`--plants=0` skips them), copied by the install, test `test_flora_pack`; a
 wooded 256 m chunk takes about 3 CPU-seconds and 150 KB. Prebuilt plants are placed over the baked water, so a chunk first seen after
 a player dug a pond beside it no longer grows the pond's bank plants (a kept list never followed live water either); a tile re-bake

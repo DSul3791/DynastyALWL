@@ -175,3 +175,32 @@ func items(home: Vector2i, trees_only: bool):
 	var raw: PackedByteArray = stored.decompress(int(entry[at + 2]), FileAccess.COMPRESSION_ZSTD)
 	var list = bytes_to_var(raw) if raw.size() == int(entry[at + 2]) else null
 	return list if list is Dictionary else null
+
+# A tile file's packed lists as write_tile takes them ({chunk: [[bytes, raw size], [bytes, raw size]]}), or null when the file is missing or
+# was made with another fingerprint (prebuild_ground.gd joins the files of its copies with this).
+static func read_lists(path: String, print_text: String):
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ)
+
+	if file == null or file.get_pascal_string() != MAGIC or file.get_pascal_string() != print_text:
+		return null
+
+	var count: int = file.get_32()
+	var entries: Array = []
+
+	for n in range(count):
+		var x: int = file.get_32()
+		var z: int = file.get_32()
+		x = x - (1 << 32) if x >= (1 << 31) else x
+		z = z - (1 << 32) if z >= (1 << 31) else z
+		entries.append([Vector2i(x, z), file.get_64(), file.get_32(), file.get_32(), file.get_64(), file.get_32(), file.get_32()])
+
+	var lists: Dictionary = {}
+
+	for entry in entries:
+		file.seek(int(entry[1]))
+		var full: PackedByteArray = file.get_buffer(int(entry[2]))
+		file.seek(int(entry[4]))
+		var trees: PackedByteArray = file.get_buffer(int(entry[5]))
+		lists[entry[0]] = [[full, int(entry[3])], [trees, int(entry[6])]]
+
+	return lists
