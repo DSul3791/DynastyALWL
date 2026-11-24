@@ -24,9 +24,7 @@ const MIN_DELAY_S := 0.1        # the row clock's delay (clock_delay) stays with
 const MAX_DELAY_S := 0.8
 const SMOOTH_HALF_S := 0.1      # a correction (smooth) is blended away with this half-life...
 const CATCH_X := 0.3            # ...catching up at most this share of the body's own speed faster than it moves (CATCH_MIN_MPS at least),
-const CATCH_MIN_MPS := 0.9      # so a drawn body never goes over 1.3 times its leg's speed (robots under lag, 23 Nov 2026: deer and a fox at 2x)
-const CATCH_DRAIN_S := 0.5      # ...unless it is given its kind's top speed (smooth top_mps): a body drawn at the present that trails its point by metres drains
-                                # them at about this time constant, never faster than the kind can run (robots 24 Nov 2026: a deer trailing 5 to 9 m for seconds)
+const CATCH_MIN_MPS := 0.9      # so a drawn body never goes over 1.35 times its leg's speed with smooth's 1.05 room (robots under lag, 23 Nov 2026: deer and a fox at 2x)
 const AHEAD_CARRY_S := 0.8      # a body drawn at the present (a committed charge, animal_view AHEAD_STATES) carries on this long past its newest point
 const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 12 m/s); smooth() eases a body at most this fast (a 16-18 m/s
                                 # flush or pronghorn flight is drawn at 15 and settles a few tenths of a metre behind its point; any excess is eased in, not jumped)
@@ -206,9 +204,7 @@ static func clock_delay(c: Dictionary) -> float:
 # up to about 1.5 m/s for a slow walker while a correction drains). Remote players (player_view) share it. A late batch, a hole bridged too far, a step past a player held
 # back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
 # room_x, catch_x and catch_min: the animals' (1.3 times their speed at most) unless given; other players pass their own (player_view.gd).
-# top_mps (an animal drawn at the present, animal_view): a correction that trails the way its point went drains at about CATCH_DRAIN_S's
-# time constant instead, at most top_mps less its speed faster; a correction ahead of it keeps the 1.3 times cap.
-static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, room_x: float = 1.05, catch_x: float = CATCH_X, catch_min: float = CATCH_MIN_MPS, top_mps: float = 0.0) -> Vector3:
+static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, room_x: float = 1.05, catch_x: float = CATCH_X, catch_min: float = CATCH_MIN_MPS) -> Vector3:
 	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
 	var err: Vector3 = body.get("sm_err", Vector3.ZERO)
 
@@ -221,18 +217,10 @@ static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, roo
 		elif jump.length() > room:
 			err -= jump - jump.normalized() * room
 
-		if jump.length() > 0.005 and jump.length() <= room:
-			body["sm_dir"] = jump.normalized()   # the way its point last went at its own pace (not a correcting jump: a body ahead of a point that stopped or jumped back is still "ahead")
-
 		var size: float = err.length()
 
 		if size > 0.0:
-			var drain: float = maxf(v * catch_x, catch_min)
-
-			if top_mps > v and err.dot(body.get("sm_dir", Vector3.ZERO)) < 0.0:
-				drain = maxf(drain, minf(top_mps - v, size / CATCH_DRAIN_S))   # a big backlog behind it drains at up to the kind's own top speed, not 1.3 times this leg's; one ahead (an overshoot) is never pulled back faster than before
-
-			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), drain * delta), size)
+			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), maxf(v * catch_x, catch_min) * delta), size)
 
 	body["sm_p"] = p
 	body["sm_err"] = err

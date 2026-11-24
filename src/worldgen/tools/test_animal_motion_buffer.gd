@@ -5,7 +5,6 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_motion_buffer.gd
 
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")
-const AnimalView := preload("res://src/client/animal_view.gd")   # top_mps
 
 var failures: int = 0
 
@@ -251,41 +250,6 @@ func _init() -> void:
 		fast_was = fp
 
 	check(fast_worst < 0.35 and fast_was.distance_to(Vector3(4, 0, 0)) < 0.05, "a 4 m correction with an absurd leg speed is eased in, never over 0.35 m a frame (worst %.2f m)" % fast_worst)
-
-	# A body drawn at the present that trails its point by 5 m (robots 24 Nov 2026: a fleeing deer drawn 5 to 9 m behind for seconds) drains it
-	# at about CATCH_DRAIN_S's time constant when given its kind's top speed, never moving faster than that top speed; without it, at 1.3 times its leg's speed.
-	var trail: Dictionary = {}
-	var plain: Dictionary = {}
-	MotionBuffer.smooth(trail, Vector3.ZERO, 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
-	MotionBuffer.smooth(plain, Vector3.ZERO, 5.0, 1.0 / 60.0)
-	var point: Vector3 = Vector3(5.0, 0.0, 0.0)   # the point jumps 5 m ahead, then runs on at 5 m/s
-	var t_was: Vector3 = MotionBuffer.smooth(trail, point, 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
-	var p_at: Vector3 = MotionBuffer.smooth(plain, point, 5.0, 1.0 / 60.0)
-	var t_fastest: float = 0.0
-
-	for i in 60:
-		point += Vector3(5.0 / 60.0, 0.0, 0.0)
-		var tp: Vector3 = MotionBuffer.smooth(trail, point, 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
-		t_fastest = maxf(t_fastest, tp.distance_to(t_was) * 60.0)
-		t_was = tp
-		p_at = MotionBuffer.smooth(plain, point, 5.0, 1.0 / 60.0)
-
-	check(t_was.distance_to(point) < 1.0 and t_fastest <= 12.0 * 1.06, "a 5 m backlog at the present is mostly drained within a second (%.2f m left), at most the kind's 12 m/s (fastest %.1f m/s)" % [t_was.distance_to(point), t_fastest])
-	check(p_at.distance_to(point) > 2.0, "without the top speed it is still %.2f m behind after a second (1.3 times its 5 m/s)" % p_at.distance_to(point))
-	# A body ahead of a point that stopped (an overshoot, a lost stop row) is not pulled back faster than before: 1.3 times its speed at most.
-	var over: Dictionary = {}
-	MotionBuffer.smooth(over, Vector3.ZERO, 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
-	MotionBuffer.smooth(over, Vector3(0.08, 0.0, 0.0), 5.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)   # it was going +x
-	var o_was: Vector3 = MotionBuffer.smooth(over, Vector3(-3.0, 0.0, 0.0), 2.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)   # the stop is 3 m back
-	var o_fastest: float = 0.0
-
-	for i in 30:
-		var op: Vector3 = MotionBuffer.smooth(over, Vector3(-3.0, 0.0, 0.0), 2.0, 1.0 / 60.0, 1.05, MotionBuffer.CATCH_X, MotionBuffer.CATCH_MIN_MPS, 12.0)
-		o_fastest = maxf(o_fastest, op.distance_to(o_was) * 60.0)
-		o_was = op
-
-	check(o_fastest <= 2.0 * 0.3 + MotionBuffer.CATCH_MIN_MPS + 0.05, "a body 3 m past a stop comes back at %.2f m/s at most, as before (not the kind's 12)" % o_fastest)
-	check(absf(AnimalView.top_mps("deer") - 12.0) < 0.01 and AnimalView.top_mps("no_such_kind") == 0.0, "a deer's top speed is its flee_mps, 12 m/s (%.1f)" % AnimalView.top_mps("deer"))
 
 	# A run that stops (gate review of PR #1631): the stop row is the newest point while the body, drawn 0.35 s behind, is still on the run's
 	# legs. smooth takes the speed of the leg being drawn, so the body keeps its 10 m/s to the stop instead of slowing to a crawl short of it.

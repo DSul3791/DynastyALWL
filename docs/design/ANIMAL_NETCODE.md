@@ -76,7 +76,7 @@ changed. The play-test write-ups for Dave are in the project files (animal-motio
 
 - data/network.json `packet_throttle_*`, applied by net_settings.gd on both ends: deceleration 0, so nothing is dropped on purpose.
 - Server rows_near: a standing animal's row carries the send time every send. `moving` comes from the step; wolves set it in
-  `pace()`. stood_ms is gone.
+  `pace()`. stood_ms is gone (the later `stopped_ms`, step 4 of "Plans", is another thing: when its step stopped it).
 - Client motion_buffer.gd:
   - the row clock (`clock_new`, `clock_note`, `clock_delay`) sets the delay from the server-time interval, the share of holes and the
     lateness;
@@ -157,7 +157,7 @@ the rest are not, because carrying a walker on past its newest point overshot ev
 **The plan.** Each moving animal's row carries where it is going: its target on the ground (Vector2 x, z), from the step's own `target`.
 The client then draws every animal on the ground (not birds in the air, states 15 and 17) at the present, like a charge: between the two
 newest points, and past the newest one on along its last leg, never past the plan's target (no overshoot at a stop), for up to
-`PLAN_CARRY_S`. A standing animal has no plan and holds. The feet (`follow`), the facing, the contact stop and `smooth` are as before.
+`PLAN_CARRY_S`. A standing animal holds: for `STOP_PLAN_MS` after its step stopped it, its plan is where it stands (step 4). The feet (`follow`), the facing, the contact stop and `smooth` are as before.
 The server still decides everything: where it goes, its state, every blow. A client can only draw; nothing it sends moves an animal.
 
 **Fair hits stay fair.** The player's blows are judged at `present_ms` for every animal on the ground, as for a charge: the moment the screen
@@ -183,7 +183,18 @@ shows it, never more than `rewind_max_ms` back.
    drawn animal's median distance from the server's own place went from about 2 m to about 0.5 m (deer, boar) and 0 for a bear at the
    player, and blows land with the animal drawn 0.03 to 0.2 m from where the server had it. But a fleeing deer could trail its place by 5 to 9 m
    for seconds on one screen: not holds (past its newest point over `PLAN_CARRY_S` in under 1% of samples) but the correction `smooth` keeps,
-   drained at 1.3 times the leg's speed at most. A body drawn at the present now drains a backlog at about `CATCH_DRAIN_S`'s time constant,
-   never faster than its kind's top speed (`AnimalView.top_mps`, the row's fastest `*_mps`), when that correction trails the way its point
-   went; one ahead of it (an overshoot past a stop) keeps the old cap, so nothing is pulled backwards fast. Rerun with that drain (same link):
-   the two robots' 95th percentile gap 3.37 m to 1.02 m, the correction left 95th 3.5 m to 0.85 m, drawn-vs-server 95th 5.7 m to 2.4 m.
+   drained at 1.3 times the leg's speed at most. A faster drain for a trailing correction (merged 24 Nov 2026) showed big gains in robot
+   runs that did not hold on a rerun: robot numbers vary too much run to run to judge a change by (the same head gave a 95th two-robot gap of
+   1.0 m and 2.4 m). So a fixed replay was made (`test_animal_draw_replay.gd`): one deer track (grazing, a 12 m/s zig-zag bolt, a dead stop),
+   one seeded lossy link, the client's own drawing. It showed the faster drain changed nothing (correction 95th 1.41 against 1.39 m), and
+   it was deleted. The replay found two causes. One was the stop: when the row that first sends where a fleeing deer stopped went out after
+   it stopped, it was sent as standing, with no plan, and the client carried the body on past the stop at its last speed (measured 1.5 m at
+   12 m/s), then pulled it back 2.4 m, drained at 0.9 m/s as a standing body. Now for `STOP_PLAN_MS` after its own step stopped it (the tick's or,
+   for a pack wolf, the pack brain's `pace`), an animal's rows carry a plan of where it stands (`server_animals.row_plan`, no protocol change: a plan's end already holds the body), so
+   every player's client holds it at its stop. Replayed at ten send phases (how a stop falls against a send decides whether it happens):
+   (the deer track; the wolf's stamp is checked in test_hunt_feedback) frames with over 1 m of correction while standing after a bolt 756 to 0, the correction left 95th 1.82 to 1.68 m, drawn against the
+   server median 0.45 to 0.33 m, 95th 2.38 to 2.31 m; no phase worse. The other, now most of what is left: starts and turns. The row with
+   the new way arrives 0.1 to 0.35 s after the moment drawn, so the point jumps 1 to 2 m forward and `smooth` eases it in at up to 1.35
+   times the leg's speed (its room, 1.05 times, and its catch-up, `CATCH_X`); by send phase the correction 95th is 0.7 to 2.3 m. Not
+   drawing ahead of the server is the price. An option kept for after Dave's play test: send a row at once when an animal starts, turns
+   or stops (one phase: correction 95th 0.7 to about 0.4 to 0.66 m, but about 25% more sends on that zig-zag track).

@@ -382,6 +382,11 @@ def test_kinds():
 				lines.append("ROBOT Robot %d P %d %.2f 0.00" % (n, ms, i * 0.1))
 				lines.append("ROBOT Robot %d A %d 7 %.2f 5.00 11%s" % (n, ms, i * 0.3 + off, " err 1.50 past 0.20 plan 1 late 0.06" if n == 1 else ""))   # robot 1 logs how it drew it
 
+			for i in range(8):   # each robot's own place, and how it draws the other one (2.0 m short in x: drawn in the past)
+				ms = 10000 + i * 500
+				lines.append("ROBOT Robot %d POSE %d %d 0 %.2f 0.00 0.00 0.00" % (n, peer, ms, 3.0 + i))
+				lines.append("ROBOT Robot %d SEES %d %d 0 %.2f 0.00 0.00 -" % (n, 12 if n == 1 else 11, ms, 1.0 + i))
+
 			lines.append("ROBOT Robot %d KIND boar 8 frames 40 largest_step 0.30 m largest_x 1.00 over_1m 0 inside_other 0 lowest_health 100" % n)
 			write(d, "robot%d_play.log" % n, lines)
 
@@ -398,6 +403,9 @@ def test_kinds():
 		r = subprocess.run([sys.executable, os.path.join(HERE, "robot_kinds.py"), d], capture_output=True, text=True)
 		check(r.returncode == 0 and "agree by state: 11 40: median 2.00" in r.stdout and "agree by speed: walk" in r.stdout, "robot_kinds splits the gap by state and speed (%s)" % r.stdout.strip().splitlines()[-1] if r.stdout.strip() else r.stderr)
 		check("draw robot1: 40 samples; correction left median 1.50 m" in r.stdout and "with a plan 40" in r.stdout and "draw robot2" not in r.stdout, "robot_kinds sums how robot 1 drew it, and nothing for robot 2, which logged none")
+		write(d, "server.log", ["AUDIT where 7 8 %d %.2f 5.00 2" % (10000 + i * 100, i * 0.3) for i in range(40)] + ["AUDIT enemy_hit 11 12000 boar from 9.00,5.00 player 2.00,0.00 gap 1.00 result hurt shield 0.00"])
+		gaps = rk.others_gap(*[(lambda rb: (rb, rb.pop("_where", {})))(rk.read_run(d)[0])][0])
+		check(len(gaps) == 2 and "others robot1:" in gaps[0] and "drawn under 0.5 m" in gaps[0], "robot_kinds others: each robot's drawn gap from an animal to the other robot against the real one (%s)" % (gaps[0] if gaps else "none"))
 		ep = rk.episodes(d, 3)
 		check(1 <= len(ep) <= 2 and "gap 2.00 m" in ep[0] and "robot1 state 11 walk (err 1.50 past 0.20 plan 1 late 0.06)" in ep[0], "robot_kinds --episodes: one line per spell, with each robot's state and speed (%s)" % (ep[0] if ep else "none"))
 
