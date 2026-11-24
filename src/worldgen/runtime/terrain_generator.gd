@@ -1572,20 +1572,21 @@ func _vein_column(buffer: VoxelBuffer, ore: Dictionary, id: int, point: Vector2,
 	_fill_run(buffer, id, maxf(y_lo, float(ore["bottom_y"])), minf(minf(y_hi, top), h), i, k, oy, sf, ny, Layout.CHANNEL_RESOURCE)
 
 
+# A layer or scatter ore's numbers, read out of its entry once (_ores_touching, per block): [resource id, cycle, depth below the datum, thickness,
+# repeat to, scatter, host rock or -1, density, local id (scatter only)].
+static func _prepared_layer(ore: Dictionary) -> Array:
+	var id: int = ore["resource_id"]
+	var scatter: bool = int(ore["code"]) == ORE_SCATTER
+	return [
+		id, float(ore["cycle_m"]), float(ore["depth_below_datum_m"]), float(ore["thickness_m"]), float(ore["repeat_to_m"]),
+		scatter, int(ore.get("host_id", -1)), float(ore.get("density", 1.0)), int(ore["local_id"]) if scatter else 0,
+	]
+
+
 # A band at a fixed depth in every layer cycle of one province (coal seams,
 # salt layers), or a thin random scatter in such a band (gems in their
 # host rock). `top` is the province datum plus the layer offset here, `yb`
 # the bedrock surface.
-# A layer or scatter ore's numbers, read out of its entry once (_ores_touching, per block): [resource id, cycle, depth below the datum, thickness,
-# repeat to, scatter, host rock or -1, density, local id].
-static func _prepared_layer(ore: Dictionary) -> Array:
-	var id: int = ore["resource_id"]
-	return [
-		id, float(ore["cycle_m"]), float(ore["depth_below_datum_m"]), float(ore["thickness_m"]), float(ore["repeat_to_m"]),
-		int(ore["code"]) == ORE_SCATTER, int(ore.get("host_id", -1)), float(ore.get("density", 1.0)), int(ore.get("local_id", 0)),
-	]
-
-
 func _layer_column(buffer: VoxelBuffer, ore: Array, top: float, yb: float, i: int, k: int, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
 	var id: int = ore[0]
 	var cycle: float = ore[1]
