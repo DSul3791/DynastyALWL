@@ -84,7 +84,8 @@ func _init() -> void:
 	var blocks: int = 0
 	var buffer: VoxelBuffer = null
 	var made_before: int = store.blocks_generated
-	var served_before: int = store.cache_hits + store.edit_hits
+	var served_before: int = store.cache_hits + store.edit_hits + store.air_hits
+	var air_before: int = store.air_hits
 	started = Time.get_ticks_msec()
 
 	for n in range(columns):
@@ -100,9 +101,9 @@ func _init() -> void:
 			blocks += 1
 
 	var made: int = store.blocks_generated - made_before
-	var served: int = store.cache_hits + store.edit_hits - served_before
+	var served: int = store.cache_hits + store.edit_hits + store.air_hits - served_before
 	var spent_s: float = float(Time.get_ticks_msec() - started) / 1000.0
-	print("check_ground_pack: ground: %d surface blocks of %d columns (every level): %d from the pack, %d made; %.2f ms a block" % [blocks, columns, served, made, 1000.0 * spent_s / float(maxi(blocks, 1))])
+	print("check_ground_pack: ground: %d surface blocks of %d columns (every level): %d from the pack (%d of them all air, from its air table), %d made; %.2f ms a block" % [blocks, columns, served, store.air_hits - air_before, made, 1000.0 * spent_s / float(maxi(blocks, 1))])
 	var failed: PackedStringArray = PackedStringArray()
 
 	if blocks == 0 or made > 0:

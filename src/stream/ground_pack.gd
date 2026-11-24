@@ -9,12 +9,14 @@ extends RefCounted
 # install() copies the pack's ground file into a server store as the store's next generation and writes the two files the store reads at
 # start (server_block_store.gd setup): without both, the store would delete the copy; with another fingerprint it would throw it away.
 # Player changes (edits.sqlite, digs.dat) are left alone. A block not in the pack (a cave, a tile outside it) is still made by the server
-# on first visit, as before. The pack's flora_pack/ folder (prebuilt plants, flora_pack.gd) is copied in too.
+# on first visit, as before. The pack's flora_pack/ folder (prebuilt plants, flora_pack.gd) and air_table/ folder (which blocks are all air,
+# air_table.gd) are copied in too.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const NOTE := "ground_pack.json"
 const PLANTS := "flora_pack"           # flora_pack.gd FOLDER
+const AIR := "air_table"               # air_table.gd FOLDER
 
 
 static func generation_of(dir: String) -> int:
@@ -95,22 +97,23 @@ static func install(pack_dir: String, store_dir: String, wanted: String, server_
 	if not _write_text(store_dir + "/generated_generation.txt", str(next)) or not _write_text(store_dir + "/terrain_version.txt", wanted):
 		return "writing the store's ground stamp failed: start the server only after running the install again"
 
-	return _copy_plants(pack_dir, store_dir)
+	var plants_error: String = _copy_folder(pack_dir, store_dir, PLANTS, ".fpk", "plants")
+	return plants_error if plants_error != "" else _copy_folder(pack_dir, store_dir, AIR, ".air", "air table")
 
 
-# The pack's prebuilt plants (flora_pack.gd), one tile file at a time, each copied beside and renamed. The server only uses files whose
-# fingerprint matches its own game files, so a file left from an older pack does no harm.
-static func _copy_plants(pack_dir: String, store_dir: String) -> String:
-	var from: String = ProjectSettings.globalize_path(pack_dir + "/" + PLANTS)
+# The pack's prebuilt plants (flora_pack.gd) or its air table (air_table.gd), one tile file at a time, each copied beside and renamed. The
+# server only uses files whose fingerprint matches its own tiles or game files, so a file left from an older pack does no harm.
+static func _copy_folder(pack_dir: String, store_dir: String, folder: String, extension: String, what: String) -> String:
+	var from: String = ProjectSettings.globalize_path(pack_dir + "/" + folder)
 
 	if not DirAccess.dir_exists_absolute(from):
 		return ""
 
-	var to: String = ProjectSettings.globalize_path(store_dir + "/" + PLANTS)
+	var to: String = ProjectSettings.globalize_path(store_dir + "/" + folder)
 	DirAccess.make_dir_recursive_absolute(to)
 
 	for name in DirAccess.get_files_at(from):
-		if not name.ends_with(".fpk"):
+		if not name.ends_with(extension):
 			continue
 
 		var copied: bool = DirAccess.copy_absolute(from + "/" + name, to + "/" + name + ".part") == OK
@@ -120,7 +123,7 @@ static func _copy_plants(pack_dir: String, store_dir: String) -> String:
 
 		if not copied or DirAccess.rename_absolute(to + "/" + name + ".part", to + "/" + name) != OK:
 			DirAccess.remove_absolute(to + "/" + name + ".part")
-			return "the ground is installed, but copying the plants file %s failed: run the install again" % name
+			return "the ground is installed, but copying the %s file %s failed: run the install again" % [what, name]
 
 	return ""
 

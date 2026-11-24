@@ -30,7 +30,9 @@ extends SceneTree
 #                    --area the plants file is marked as part of a tile, which no server uses)
 #
 # Only blocks that hold the surface are built, one block above and below it (caves deeper down are still made by the server on first
-# visit). The pack's terrain_version.txt names the terrain version and tile files it was made from; ground_pack.gd's install refuses a
+# visit), and of those only the ones that are not all air: the air table (air_table.gd, the pack's air_table/ folder) records from which
+# row each column is air, and the server fills those blocks from it, the same as made (Dave 24 Nov 2026: "so we just have to generate
+# the actual land blocks"). The pack's terrain_version.txt names the terrain version and tile files it was made from; ground_pack.gd's install refuses a
 # pack made from other tiles. Prints "prebuild_ground: N%" lines as it goes and a "prebuild_ground: DONE" line at the end.
 
 const StoreScript := preload("res://src/stream/server_block_store.gd")
@@ -41,17 +43,21 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PackScript := preload("res://src/stream/ground_pack.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const FloraPackScript := preload("res://src/stream/flora_pack.gd")
+const AirTableScript := preload("res://src/stream/air_table.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 
 const NINE := ["2_3", "2_4", "2_5", "3_3", "3_4", "3_5", "4_3", "4_4", "4_5"]
 const COLUMNS_PER_TAKE := 32           # columns a worker takes at once
 const ROWS_FILE := "rows.bin"          # in a copy's folder: the rows of every column it holds, so the join need not work them out again
+const AIR_FILE := "air.bin"            # in a copy's folder: the air table entries of its columns (index, first air row, two heights)
 const FLUSH_EVERY_S := 60.0            # the pack is written to disk this often, so a stop loses little
 
 var store
 var generator
 var _parts: Array = []                 # [lod, bx0, bz0, width, depth, first index] per tile and level
 var _rows: PackedInt32Array = PackedInt32Array()   # a copy's columns as it built them: index, lowest row, highest row (ROWS_FILE)
+var _air: PackedFloat64Array = PackedFloat64Array()   # the same columns' air table entries: index, first air row, two heights (AIR_FILE)
+var _air_skipped: int = 0               # all-air blocks left out (the server fills them from the air table)
 var _total: int = 0                    # columns in all
 var _next: int = 0
 var _mutex: Mutex = Mutex.new()
@@ -140,6 +146,7 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 	generator.setup(settings, rules, tables, world_dir + "/tiles")
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(out_dir + "/" + PackScript.NOTE))   # the note marks a finished build: none while this one runs
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(out_dir + "/" + ROWS_FILE))   # written again at the end of this run's ground
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(out_dir + "/" + AIR_FILE))
 	store = StoreScript.new()
 	var problem: String = store.setup(generator, out_dir)
 
@@ -256,6 +263,14 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 		push_error("prebuild_ground: cannot write %s; run it again" % ProjectSettings.globalize_path(out_dir + "/" + ROWS_FILE))
 		return 1
 
+	if _part_count > 1 and not _write_air(out_dir + "/" + AIR_FILE):
+		push_error("prebuild_ground: cannot write %s; run it again" % ProjectSettings.globalize_path(out_dir + "/" + AIR_FILE))
+		return 1
+
+	if _part_count == 1 and not _write_air_tables(out_dir, _air, PackScript.version_of(out_dir)):
+		push_error("prebuild_ground: cannot write the air table in %s; run it again" % ProjectSettings.globalize_path(out_dir + "/" + AirTableScript.FOLDER))
+		return 1
+
 	if plants:
 		placer = PlacerScript.new()
 		placer.setup(generator, tables, rules)
@@ -267,8 +282,8 @@ func _run(tiles: Array, out_dir: String, threads: int, lods: Array, area: Array,
 			return plants_error
 
 	var info: Dictionary = PackScript.describe(out_dir)
-	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "seconds": snappedf(seconds, 0.1), "plants_seconds": snappedf(_plants_s, 0.1)})
-	print("prebuild_ground: DONE %d blocks made, %d already there; ground %.0f s, plants %.0f s; pack %.1f MB at %s" % [_made, _skipped, seconds, _plants_s, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])
+	PackScript.write_note(out_dir, {"tiles": tiles, "lods": lods, "area": area, "blocks_made": _made, "blocks_already_there": _skipped, "air_blocks_left_out": _air_skipped, "seconds": snappedf(seconds, 0.1), "plants_seconds": snappedf(_plants_s, 0.1)})
+	print("prebuild_ground: DONE %d blocks made, %d already there, %d all-air blocks left out (air table); ground %.0f s, plants %.0f s; pack %.1f MB at %s" % [_made, _skipped, _air_skipped, seconds, _plants_s, float(info.get("bytes", 0)) / 1048576.0, ProjectSettings.globalize_path(out_dir)])
 	return 0
 
 
@@ -425,15 +440,24 @@ func _work() -> void:
 		var skipped: int = 0
 		var last: int = mini(first + COLUMNS_PER_TAKE, _total)
 		var rows: PackedInt32Array = PackedInt32Array()
+		var air: PackedFloat64Array = PackedFloat64Array()
+		var air_skipped: int = 0
 
 		for index in range(first, last):
-			var counts: Vector4i = _build_column(index)
+			var column: Vector3i = _column(index)
+			var entry: PackedFloat64Array = generator.air_column(column.x, column.y, column.z)
+			var range_y: Vector2i = surface_blocks(generator, column.x, column.y, column.z)
+			var counts: Vector4i = _build_column(column, range_y, int(entry[0]))
 			made += counts.x
 			skipped += counts.y
+			air_skipped += range_y.y - maxi(counts.w, range_y.x - 1)
 			rows.append_array(PackedInt32Array([index, counts.z, counts.w]))
+			air.append_array(PackedFloat64Array([index, entry[0], entry[1], entry[2]]))
 
 		_mutex.lock()
 		_rows.append_array(rows)
+		_air.append_array(air)
+		_air_skipped += air_skipped
 		_columns_done += last - first
 		_made += made
 		_skipped += skipped
@@ -453,10 +477,10 @@ func _column(index: int) -> Vector3i:
 	return Vector3i(int(part[1]) + local % int(part[3]), int(part[2]) + local / int(part[3]), int(part[0]))
 
 
-# Builds the surface blocks of one column; returns (made, already there, lowest row, highest row).
-func _build_column(index: int) -> Vector4i:
-	var column: Vector3i = _column(index)
-	var range_y: Vector2i = surface_blocks(generator, column.x, column.y, column.z)
+# Builds the surface blocks (surface_rows, surface_blocks) of one column (bx, bz, lod) below its first all-air row (air_first, terrain_generator.gd air_column; the server fills the
+# air ones from the air table); returns (made, already there, lowest row, highest row built).
+func _build_column(column: Vector3i, surface_rows: Vector2i, air_first: int) -> Vector4i:
+	var range_y: Vector2i = Vector2i(surface_rows.x, mini(surface_rows.y, air_first - 1))   # AIR_NONE (no entry) keeps every row
 	var result: Vector4i = Vector4i(0, 0, range_y.x, range_y.y)
 
 	for by in range(range_y.x, range_y.y + 1):
@@ -505,6 +529,64 @@ func _write_rows(path: String) -> bool:
 	var whole: bool = file.get_error() == OK and file.get_position() == 4 + _rows.size() * 4
 	file.close()
 	return whole and _rows.size() == _own_total * 3
+
+
+# AIR_FILE: the column count of the whole build, then the copy's air entries (index, first air row, two heights) as 64-bit numbers.
+func _write_air(path: String) -> bool:
+	var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+	if file == null:
+		return false
+
+	file.store_32(_total)
+	file.store_buffer(_air.to_byte_array())
+	var whole: bool = file.get_error() == OK and file.get_position() == 4 + _air.size() * 8
+	file.close()
+	return whole and _air.size() == _own_total * 4
+
+
+# The air entries a copy wrote, or an empty array when its file is missing, short or from another build (columns: the copy's column count).
+static func read_air(path: String, total: int, columns: int) -> PackedFloat64Array:
+	var file: FileAccess = FileAccess.open(path, FileAccess.READ) if FileAccess.file_exists(path) else null
+
+	if file == null or file.get_length() != 4 + columns * 32 or int(file.get_32()) != total:
+		return PackedFloat64Array()
+
+	return file.get_buffer(columns * 32).to_float64_array()
+
+
+# The pack's air table (air_table.gd), one file a tile, from the entries of every built column (index, first air row, two heights).
+# Columns not built (outside --area) have no entry, so the server makes their blocks as before.
+func _write_air_tables(out_dir: String, entries: PackedFloat64Array, stamp: String) -> bool:
+	var tile_m: float = generator.tile_size_m
+	var tiles: Dictionary = {}   # Vector2i -> {lod: level}
+
+	for n in range(0, entries.size(), 4):
+		var column: Vector3i = _column(int(entries[n]))
+		var block_m: float = float(StoreScript.BLOCK_SIZE << column.z)
+		var tile: Vector2i = Vector2i(int(floor(float(column.x) * block_m / tile_m)), int(floor(float(column.y) * block_m / tile_m)))
+		var side: int = int(round(tile_m / block_m))
+
+		if not tiles.has(tile):
+			tiles[tile] = {}
+
+		if not tiles[tile].has(column.z):
+			tiles[tile][column.z] = AirTableScript.empty_level(tile.x * side, tile.y * side, side)
+
+		var level: Array = tiles[tile][column.z]
+		var cell: int = (column.y - int(level[1])) * side + (column.x - int(level[0]))
+		level[3][cell] = int(entries[n + 1])
+		level[4][cell] = entries[n + 2]
+		level[5][cell] = entries[n + 3]
+
+	var folder: String = out_dir + "/" + AirTableScript.FOLDER
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+
+	for tile in tiles:
+		if not AirTableScript.write_file(folder + "/" + AirTableScript.file_name(tile), stamp, tile, tiles[tile]):
+			return false
+
+	return true
 
 
 # The rows a copy wrote, or an empty array when its file is missing, short or from another build (columns: the copy's column count).
@@ -658,6 +740,7 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 	main_stream.database_path = ProjectSettings.globalize_path(main_file)
 	var buffer: VoxelBuffer = Layout.make_buffer(StoreScript.BLOCK_SIZE)
 	var copied: int = 0
+	var all_air: PackedFloat64Array = PackedFloat64Array()
 
 	for k in range(processes):
 		var part_dir: String = parts_dir + "/part_%d" % k
@@ -671,6 +754,18 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 			owned += mini(COLUMNS_PER_TAKE, _total - first) if _owns_take(first, k, processes) else 0
 
 		var rows: PackedInt32Array = read_rows(part_dir + "/" + ROWS_FILE, _total, owned)
+		var air: PackedFloat64Array = read_air(part_dir + "/" + AIR_FILE, _total, owned)
+
+		if air.is_empty() and owned > 0:
+			print("prebuild_ground: copy %d left no air file; working its air table out again" % k)
+
+			for first in range(0, _total, COLUMNS_PER_TAKE):
+				if _owns_take(first, k, processes):
+					for index in range(first, mini(first + COLUMNS_PER_TAKE, _total)):
+						var entry: PackedFloat64Array = generator.air_column(_column(index).x, _column(index).y, _column(index).z)
+						air.append_array(PackedFloat64Array([index, entry[0], entry[1], entry[2]]))
+
+		all_air.append_array(air)
 
 		if rows.is_empty() and owned > 0:
 			print("prebuild_ground: copy %d left no rows file; working its rows out again" % k)
@@ -696,6 +791,10 @@ func _run_parent(tiles: Array, out_dir: String, lods: Array, area: Array, plants
 
 	main_stream.flush()
 	main_stream = null
+
+	if not _write_air_tables(out_dir, all_air, PackScript.version_of(out_dir)):
+		push_error("prebuild_ground: cannot write the air table in %s; run the same command again" % ProjectSettings.globalize_path(out_dir + "/" + AirTableScript.FOLDER))
+		return 1
 
 	if plants:
 		var print_text: String = FloraPackScript.fingerprint(_tiles_stamp) + (" area" if area.size() == 3 else "")
