@@ -381,18 +381,40 @@ func _spear_and_net() -> void:
 	for sp in ["trout", "perch", "salmon", "pike", "carp", "minnow", "herring", "cod"]:
 		fish_ids.append(sp)
 
+	# Lane B 24 Nov 2026 ("trout 8, perch 1"): the perch was a stray caught by the jabs above with no school near (the odds there are
+	# unchanged), counted with these. Only what these jabs land is counted. And each catch takes one fish off the cell's stock, a school's size
+	# being its share of it, so the cell is put back to full before every jab: every jab here is into the same school.
+	var had: Dictionary = {}   # what the pack held before: the jabs with no school near above can land a stray fish of the water
+
+	for f in fish_ids:
+		if items.table.number_of(f) > 0:
+			had[f] = inv.count_of(items.table.number_of(f))
+
+	var cell: Vector2i = items._fish_cell(Vector3(c.x, 10.0, c.y))
+	var full: Array = [items.fish_stock(cell), items._unix()]
+
 	for n in 40:
+		items._fish_stock["%d,%d" % [cell.x, cell.y]] = full.duplicate()
 		items._last_fish.clear()
 		items._moving[1] = 0.0
 		items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3(c.x, 10.0, c.y))
 
 	for f in fish_ids:
-		if items.table.number_of(f) > 0 and inv.count_of(items.table.number_of(f)) > 0:
-			got[f] = inv.count_of(items.table.number_of(f))
+		if items.table.number_of(f) > 0 and inv.count_of(items.table.number_of(f)) > int(had.get(f, 0)):
+			got[f] = inv.count_of(items.table.number_of(f)) - int(had.get(f, 0))
 
 	check(inv.wear[slot] > wear0 and not said.has(str(cfg["spear"]["say_move"])), "a player standing still jabs")
 	check(not said.has(no_fish), "jabs into a school never say there are no fish")
 	check(got.size() == 1 and got.has(centres[0][2]), "a jab into a school takes that school's fish (%s, school of %s)" % [str(got), centres[0][2]])
+
+	# Fished out: with no fish left the school is gone and a jab there says so.
+	items._fish_stock["%d,%d" % [cell.x, cell.y]] = [0, items._unix()]
+	items._last_fish.clear()
+	said.clear()
+	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3(c.x, 10.0, c.y))
+	var out_said: Array = said.duplicate()
+	said.clear()
+	check(out_said == [no_fish], "a school fished out is gone, and a jab there says there are no fish (%s)" % str(out_said))
 
 	# The net lands where the look meets the water: looking down steeply near, gently far, level at 6 m.
 	var eye: Vector3 = Vector3(0.0, 11.6, 0.0)
