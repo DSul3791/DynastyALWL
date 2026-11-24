@@ -275,6 +275,9 @@ var _clear_generated_at_start: bool = false
 var _flag_check_msec: int = 0
 var _store_path: String = ""
 var ice_moat = IceMoatScript.new()   # the thaw's open shore moat, as the client draws it (ice_moat.gd)
+var _night_frames: int = 0           # a night skip's catch-up frames so far (the log line)
+var _night_cost_usec: int = 0
+var _night_worst_usec: int = 0
 var game_clock = GameClockScript.new()   # the one game clock; advances only while the server runs
 var _clock_saved_msec: int = 0
 
@@ -837,6 +840,7 @@ func _ready() -> void:
 	animals.sun_row_m = float(settings.tile_size_m)
 	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it. starter-calendar: the declination is the one sky's, the latitude the row's
 	animals.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
+	items.night_skip = func(peers: Array) -> float: return _night_skip_real_s(peers)
 	animals.equator_row = settings.equator_tile_row
 	animals.season_at = items.season_at   # an animal's seasons (young, the rut's threat) where it is
 	flora.season_at = items.season_at   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md), by each spot's own season
@@ -3688,6 +3692,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	_events.mark("items")
 	items.tick(delta)
+	_night_skip_frame()
 	_events.mark("fish signs")
 	if fish_signs != null:
 		fish_signs.tick()
@@ -4512,3 +4517,41 @@ func _resource_dangers() -> Array:
 			out.append([float(site.get("x", 0.0)), float(site.get("z", 0.0)), reach])
 
 	return out
+
+
+# Skipping the night (server_items.gd night_skip): the real seconds to pass so the latest sleeper's sunrise comes, when it is night at every
+# sleeper's spot (after their sunset or before their sunrise: sunset is as far after noon as sunrise is before it), else 0. No skip in a polar
+# day (no night) or a polar night (no dawn).
+func _night_skip_real_s(peers: Array) -> float:
+	var day: float = WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR)   # starter-calendar: the declination is the one sky's, the latitude each sleeper's row (as animals.sunrise_now)
+	var sunrises: Array = []
+
+	for peer in peers:
+		var pos: Vector3 = items._peer_pos.get(peer, Vector3.INF)
+		sunrises.append(WeatherScript.sunrise_hour(day, NAN if not pos.is_finite() else ClimateScript.latitude_of_row(ClimateScript.row_of_z(pos.z, float(settings.tile_size_m)), settings.equator_tile_row)))
+
+	return ItemsScript.night_to_dawn_h(game_clock.hour(), sunrises) * 3600.0 / GameClockScript.RATIO
+
+
+# One frame of a night skip: the clock moves on by a step and the world's slow work and the players' vitals catch up by the same (a minute of
+# real time a frame, so the catch-up is spread out instead of one long freeze); at the end everyone wakes and the clients' clocks jump with it.
+func _night_skip_frame() -> void:
+	if not items.night_skipping():
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var step: float = minf(items._night_left, items.NIGHT_SKIP_STEP_S)
+	game_clock.advance(step)
+	items.night_skip_step()
+	_night_cost_usec += Time.get_ticks_usec() - t0
+	_night_worst_usec = maxi(_night_worst_usec, Time.get_ticks_usec() - t0)
+	_night_frames += 1
+
+	if not items.night_skipping():
+		items.night_skip_finish()
+		net.game_time.rpc(game_clock.seconds)
+		_save_game_clock()
+		print("night skip: dawn at hour %.2f, day %d; %d frames, %.1f ms in all, %.1f ms the longest frame" % [game_clock.hour(), game_clock.day_of_year(), _night_frames, float(_night_cost_usec) / 1000.0, float(_night_worst_usec) / 1000.0])   # starter-calendar: a log line
+		_night_frames = 0
+		_night_cost_usec = 0
+		_night_worst_usec = 0
