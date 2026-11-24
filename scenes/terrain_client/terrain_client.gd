@@ -4858,7 +4858,7 @@ func _inspect_target() -> String:
 	var water_m: float = _water_on_look(origin, direction, 30.0 if hit.is_empty() else origin.distance_to(hit["position"]))
 
 	if water_m >= 0.0:
-		return "Water — Press E to drink" if items != null and items.thirst < 100 and _water_ahead() else "Water"
+		return "Water"   # the drink prompt says what E does (the look label said it too, so two drink lines showed at once: Dave 24 Nov 2026)
 
 	if hit.is_empty():
 		return ""
