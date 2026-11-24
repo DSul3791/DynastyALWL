@@ -116,9 +116,40 @@ func _init() -> void:
 	items._night_left = 0.0
 	items._parked.erase(2)
 
-	# Daylight: no skip however long everyone sleeps.
-	clock[0] = 103.0 * 86400.0 + 14.0 * 3600.0
+	# A player who joins during the skip is not charged the night; if every sleeper wakes, the skip stops where it is.
+	clock[0] = 104.0 * 86400.0 + 22.0 * 3600.0
+	items._asleep[1] = {"rested": 0.0, "t": 0.0}
 	items._asleep[2] = {"rested": 0.0, "t": 0.0}
+	items._all_asleep = true
+	items._all_asleep_since = Time.get_ticks_msec() - 4000
+	items._night_skip_tried = -100000
+	items._night_skip_check()
+	check(items.night_skipping(), "a second night: the skip starts")
+	items.peer_connected_hello(3, "nightskip0003")
+	items.report_position(3, Vector3(6.0, 10.0, 0.0))
+	var v3: Dictionary = items.vitals_of(3)
+	var fed3: float = float(v3["fed"])
+	var grace3: float = float(items._characters[items._peer_key[3]].get("grace_s", 0.0))
+
+	for n in 3:
+		clock[0] += 60.0 * 24.0
+		items.night_skip_step()
+
+	check(float(v3["fed"]) == fed3 and float(items._characters[items._peer_key[3]].get("grace_s", 0.0)) == grace3, "the player who joined mid-skip is not charged the night (food and first-hour grace unchanged)")
+	items._asleep.erase(1)
+	items._asleep.erase(2)
+	clock[0] += 60.0 * 24.0
+	items.night_skip_step()
+	check(not items.night_skipping(), "both sleepers woke: the skip stops short")
+	said.clear()
+	items.night_skip_finish()
+	check(not said.has("The night passes. You wake at dawn, refreshed."), "and nobody is told it is dawn")
+
+	# Daylight: no skip however long everyone sleeps.
+	clock[0] = 105.0 * 86400.0 + 14.0 * 3600.0
+	items._asleep[1] = {"rested": 0.0, "t": 0.0}
+	items._asleep[2] = {"rested": 0.0, "t": 0.0}
+	items._asleep[3] = {"rested": 0.0, "t": 0.0}
 	items._all_asleep = true
 	items._all_asleep_since = Time.get_ticks_msec() - 60000
 	items._night_skip_tried = -100000

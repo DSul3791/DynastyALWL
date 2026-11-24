@@ -4503,7 +4503,7 @@ func _resource_dangers() -> Array:
 # sleeper's spot (after their sunset or before their sunrise: sunset is as far after noon as sunrise is before it), else 0. No skip in a polar
 # day (no night) or a polar night (no dawn).
 func _night_skip_real_s(peers: Array) -> float:
-	var day: float = WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR)
+	var day: float = WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR)   # starter-calendar: the declination is the one sky's, the latitude each sleeper's row (as animals.sunrise_now)
 	var sunrises: Array = []
 
 	for peer in peers:
@@ -4531,7 +4531,7 @@ func _night_skip_frame() -> void:
 		items.night_skip_finish()
 		net.game_time.rpc(game_clock.seconds)
 		_save_game_clock()
-		print("night skip: dawn at hour %.2f, day %d; %d frames, %.1f ms in all, %.1f ms the longest frame" % [game_clock.hour(), game_clock.day_of_year(), _night_frames, float(_night_cost_usec) / 1000.0, float(_night_worst_usec) / 1000.0])   # a server log line
+		print("night skip: dawn at hour %.2f, day %d; %d frames, %.1f ms in all, %.1f ms the longest frame" % [game_clock.hour(), game_clock.day_of_year(), _night_frames, float(_night_cost_usec) / 1000.0, float(_night_worst_usec) / 1000.0])   # starter-calendar: a log line
 		_night_frames = 0
 		_night_cost_usec = 0
 		_night_worst_usec = 0

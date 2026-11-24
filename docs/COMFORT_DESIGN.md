@@ -96,7 +96,7 @@ Dave: "if its night time and everyone on the server lays down and goes to sleep 
 - Any sleep counts: a bed or the ground, an exhaustion collapse, a cold pass-out. Absent players don't count. One player alone counts as everyone.
 - Everyone must have been asleep for 3 s.
 - Night means after sunset or before sunrise at every sleeper's spot. Dawn is the latest of their sunrises. There is no skip in a polar day or a polar night.
-- The night really passes. The server's quarter-second work and every player's vitals run in one-minute catch-up frames, one per server frame: about 25 frames for a 10-hour night. Fires burn down, food cooks and smelts, crafting queues and crops move on, things rot and spoil, and traps work. Hunger and thirst drain at the sleep rate, which a bed halves: about 340 kcal and 200 ml for 8 hours.
+- The night really passes. The server's quarter-second work and the sleepers' vitals run in one-minute catch-up frames, one per server frame: about 25 frames for a 10-hour night. Fires burn down, food cooks and smelts, crafting queues and crops move on, and things rot and spoil. Traps roll the night once, at dawn. A player who joins during the skip is not charged the night. If every sleeper leaves or wakes, the skip stops where it is. Hunger and thirst drain at the sleep rate, which a bed halves: about 340 kcal and 200 ml for 8 hours.
 - Weather, the day, the season and trader restocking follow the clock, so a trader restocks one night's worth. Animals and townsfolk are not stepped; they read the new hour.
 - Refreshed is what waking rested already means: energy full and no strain. Everyone is told "The night passes. You wake at dawn, refreshed."
 - Clients get `game_time` (protocol 169) and their sky jumps to dawn.

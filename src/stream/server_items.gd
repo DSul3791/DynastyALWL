@@ -16459,7 +16459,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 		_note_shelter(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You collapse with exhaustion")
-	elif _forced_sleep(peer) and e >= float(_energy_cfg.get("forced", {}).get("wake_at", 100.0)) and float(_strain.get(peer, {}).get("s", 0.0)) <= 0.02:
+	elif _forced_sleep(peer) and _night_left <= 0.0 and e >= float(_energy_cfg.get("forced", {}).get("wake_at", 100.0)) and float(_strain.get(peer, {}).get("s", 0.0)) <= 0.02:
 		_end_sleep(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You wake rested")
@@ -24476,7 +24476,7 @@ func comfort_at(peer: int, force: bool = false) -> Dictionary:
 
 # The quarter-second work of the world: fires, rot, crafting, crops, water, lights, smelters, comfort, goals, traps and item lifetimes. The night
 # skip runs it again in one-minute steps so the skipped hours really pass for them (night_skip_step).
-func _slow_tick(spent: float, t0: int) -> void:
+func _slow_tick(spent: float, t0: int, traps: bool = true) -> void:
 	_tick_ids = _tick_index()
 	_rot(spent)
 	_slow_mark("rot", t0)
@@ -24516,7 +24516,9 @@ func _slow_tick(spent: float, t0: int) -> void:
 	_spoil_tick(spent)
 	_wood_tick(spent)
 	_slow_mark("spoil", t0)
-	_traps.tick(spent)
+	if traps:
+		_traps.tick(spent)   # a night skip ticks them once at dawn instead (night_skip_finish): a near trap needs an hour away to roll
+
 	_autoload_tick(spent)
 	_slow_mark("learn-fish-remains-spoil-traps", t0)
 
@@ -24538,6 +24540,7 @@ var _all_asleep_since: int = 0          # msec when the last of them fell asleep
 var _night_skip_tried: int = -100000    # msec of the last ask (once a second while everyone sleeps)
 var _night_left: float = 0.0            # real seconds of the night still to pass; > 0 while skipping
 var _night_sleepers: Array = []
+var _night_aborted: bool = false       # the skip stopped short (no sleeper left asleep): nobody is told it is dawn
 
 
 # Game hours from `hour` to the latest of the sleepers' sunrises, when it is night for every one of them (before their sunrise or after their
@@ -24612,10 +24615,17 @@ func night_skip_step() -> float:
 	if _night_left <= 0.0:
 		return 0.0
 
+	var present: Array = _night_sleepers.filter(func(p): return _peer_key.has(p) and (_asleep.has(p) or _cold_out.has(p)))
+
+	if present.is_empty():
+		_night_left = 0.0   # every sleeper left or woke: the skip stops where it is (the caller still tells the clients the clock)
+		_night_aborted = true
+		return 0.0
+
 	var step: float = minf(_night_left, NIGHT_SKIP_STEP_S)
 	_night_left -= step
-	_slow_tick(step, Time.get_ticks_usec())
-	_vitals_tick(step)
+	_slow_tick(step, Time.get_ticks_usec(), false)
+	_vitals_tick(step, present)   # only the sleepers: a player who joined during the skip is not charged the night
 	return step
 
 
@@ -24623,25 +24633,33 @@ func night_skip_step() -> float:
 func night_skip_finish() -> void:
 	_night_left = 0.0
 	_all_asleep = false
+	_traps.tick(float(_traps.cfg.get("check_s", 30.0)))   # the night's catches, rolled once now that the hours have passed
 
 	for peer in _night_sleepers:
-		if not _peer_key.has(peer):
+		if _night_aborted or not _peer_key.has(peer):
 			continue
 
 		var v: Dictionary = vitals_of(peer)
 
-		if not v.is_empty() and not _cold_out.has(peer):
+		if not v.is_empty():
 			v["energy"] = 100.0
 			_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}
 
 		if _asleep.has(peer):
+			var rest: Dictionary = _asleep[peer]
+
+			if not rest.has("night") and not bool(rest.get("nap", false)) and _peer_pos.has(peer) and (_bed_of(peer) != 0 or _shelter_near(_peer_pos[peer]) >= 0):
+				_goal_event(peer, "slept_night")   # a night slept, as a full sleep on a bed or by a shelter counts (ADD-12)
+
 			_end_sleep(peer)
 
 		_strain_sent.erase(peer)
 		_say(peer, "The night passes. You wake at dawn, refreshed.")
 		_sync_vitals(peer, true)
+		_sync_energy(peer, true)
 
 	_night_sleepers = []
+	_night_aborted = false
 	save_soon()
 
 
@@ -28171,7 +28189,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			rest["rested"] = float(rest["rested"]) + spent if strain <= 0.0 else 0.0
 
 			if bool(rest.get("nap", false)):
-				if strain <= float(rest["nap_end"]) + 0.001:
+				if strain <= float(rest["nap_end"]) + 0.001 and _night_left <= 0.0:   # a night skip wakes everyone together at dawn
 					_wake(peer, "You wake refreshed")
 			elif float(rest["rested"]) >= float(_sleep_cfg.get("rested_s", 1.5)) and energy_of(peer) >= 99.9:
 				# ADD-12: a night slept = a sleep (not a nap or a collapse) that filled the energy while lying on a bed or beside a lean-to; once per sleep.
@@ -28179,7 +28197,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 					rest["night"] = true
 					_goal_event(peer, "slept_night")
 
-				if not on_good_bed(peer):
+				if not on_good_bed(peer) and _night_left <= 0.0:   # during a night skip the sleeper sleeps on to the dawn
 					_wake(peer, "You wake rested")   # on a good bed the sleeper stays (bed.json): only moving, a stance key, a hit or the bed going wakes them
 
 	if state == 2:
