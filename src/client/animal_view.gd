@@ -54,6 +54,11 @@ const PINNED_MS := 2500                       # held at bodies this long on end 
 const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
+# Drawn a delay behind, on the row clock: a bird in the air (FLY, GLIDE). Every other animal is drawn at the present (protocol 168, Dave 24 Nov
+# 2026: "give as much control to the client as it takes to make them feel natural"; docs/design/ANIMAL_NETCODE.md "Plans"): a moving one carried
+# on along its way past its newest point, never past where its row's plan says it stops (MotionBuffer.at_plan). server_animals AIR_DRAWN.
+const AIR_DRAWN := [15, 17]
+const PLAN_CARRY_S := 0.6                     # the longest a body at the present carries on past its newest point (a late or lost batch)
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
 var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
@@ -390,6 +395,16 @@ func flinch(id: int) -> void:
 		_play_once(_bodies[id], "hit", HIT_MAX_S)
 
 
+# The plan in an animal row (protocol 168, server_animals rows_near): where a moving animal is walking to on the ground, a Vector2 (x, z)
+# after the fixed six fields; null when it stands or its row has none.
+static func plan_of(row: Array) -> Variant:
+	for i in range(6, row.size()):
+		if row[i] is Vector2:
+			return row[i]
+
+	return null
+
+
 # One-shot clips (Dave 23 Nov 2026: animals "like really bad animatronics"): a bite as an attack ends, a hit, a death. The model's
 # "bite", "hit" and "die" roles (models.json) are copies that do not loop. While one plays (up to cap_s), _animate_model leaves the clip
 # alone, then blends back to the state's own clip. False when the model has no clip for the role.
@@ -638,6 +653,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
+		_bodies[id]["plan"] = plan_of(row)
 
 		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 154 a standing animal's
 		# row carries the send time, so every leg between two points is one the animal really made.
@@ -808,8 +824,16 @@ func _process_body(delta: float) -> void:
 			MotionBuffer.settle(b)
 
 		var ahead: bool = int(b["state"]) in AHEAD_STATES
-		var t_drawn: float = present if ahead else drawn_at
-		var drawn: Array = MotionBuffer.at(b["samples"], t_drawn, (MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0) if ahead else -1.0)   # only a charge carries on; the others stand
+		var at_present: bool = ahead or not int(b["state"]) in AIR_DRAWN
+		var t_drawn: float = present if at_present else drawn_at
+		var drawn: Array
+
+		if ahead:
+			drawn = MotionBuffer.at(b["samples"], t_drawn, MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0)   # only a charge carries on; the others stand
+		elif at_present:
+			drawn = MotionBuffer.at_plan(b["samples"], t_drawn, PLAN_CARRY_S, b.get("plan", null))   # on along its way, never past where it stops
+		else:
+			drawn = MotionBuffer.at(b["samples"], t_drawn)
 		var spot: Vector3 = drawn[0]
 
 		if not ahead:

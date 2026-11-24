@@ -23,6 +23,8 @@ const HOP := 1
 const FLEE := 2
 const ALERT := 3
 const WARN := 10                # big game standing its ground (head down), then 11 charge, 12 recover (server_big_game.gd)
+const PLAN_FRESH_MS := 1000     # a walk goal (plan) this recent goes in a moving animal's row (rows_near, protocol 168); an older one is not its way now
+const AIR_DRAWN := [15, 17]     # server_flight FLY and GLIDE: drawn a delay behind (judged_ms); every other state at the present
 const SNEAK := 13               # a thief creeping up on food, 14 running off with it (server_thieves.gd)
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
@@ -418,6 +420,7 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
 		blocked_for = Callable()
 
+	plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
@@ -766,12 +769,14 @@ func pos_at(a: Dictionary, ms: int) -> Vector3:
 # The server moment a blow from a player is judged at (protocol 155, Dave 23 Nov 2026: "battle was almost impossible"): the time the
 # player's screen showed the animal (`seen_ms`, the client's row clock: a committed charge is drawn at `present_ms`), never more than
 # rewind_max_ms ago, so a laggy or lying client cannot hit an animal that left long since. -1 when the client sent none (judged now).
+# Since protocol 168 every animal on the ground is drawn at the present (animal_view PRESENT: a bird in the air, FLY or GLIDE, is drawn a
+# delay behind), so its blows are judged at present_ms.
 func judged_ms(a: Dictionary, seen_ms: int, present_ms: int) -> int:
 	if seen_ms <= 0:
 		return -1
 
 	var now: int = Time.get_ticks_msec()
-	var ms: int = present_ms if int(a.get("state", 0)) in [WARN, 11, 12, 16, 25, 26] and present_ms > 0 else seen_ms
+	var ms: int = present_ms if not int(a.get("state", 0)) in AIR_DRAWN and present_ms > 0 else seen_ms
 	return clampi(ms, now - int(cfg.get("rewind_max_ms", 500)), now)
 
 
@@ -869,6 +874,13 @@ func alarm_near(point: Vector3, radius: float) -> void:
 	_wind_s = kept[1]
 	_wind_dir = kept[2]
 	_storm_ahead = kept[3]
+
+
+# Where animal `a` is walking to this step (every walk_step caller says, the pack brain, the companions, goblins, bandits and thieves too):
+# a moving animal's row carries it (rows_near, protocol 168), so the client draws it at the present and never carries it past where it stops.
+func plan(a: Dictionary, to: Vector3) -> void:
+	a["plan_to"] = to
+	a["plan_ms"] = Time.get_ticks_msec()
 
 
 # One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
@@ -1674,6 +1686,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	if a["state"] == HOP and a.has("trip"):
 		_trip_ahead(a)   # on a trail: the next point before this one is reached, so it never stops between points
 
+	plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
@@ -2522,6 +2535,11 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])
+
+			# The plan (protocol 168, docs/design/ANIMAL_NETCODE.md "Plans"): a moving animal's row carries where it is going on the ground, so the
+			# client draws it at the present, carried on along its way but never past where it stops. Before the health share, after a dog foe.
+			if bool(a.get("moving", false)) and a.has("plan_to") and Time.get_ticks_msec() - int(a.get("plan_ms", 0)) <= PLAN_FRESH_MS:
+				row.append(Vector2(snappedf(a["plan_to"].x, 0.1), snappedf(a["plan_to"].z, 0.1)))
 
 			if a.has("hp_max") and float(a["hp"]) < float(a["hp_max"]):
 				row.append(maxf(snappedf(float(a["hp"]) / maxf(float(a["hp_max"]), 0.01), 0.1), 0.1))   # hurt: its health share, always the last field and a float

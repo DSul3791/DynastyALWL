@@ -39,6 +39,14 @@ func _init() -> void:
 	check(absf((MotionBuffer.at(s, 10.6)[0] as Vector3).x - 2.4) < 0.001, "a late send: past the newest point it carries on at 4 m/s")
 	check((MotionBuffer.at(s, 11.0)[0] as Vector3).is_equal_approx(Vector3(3, 0, 0)), "for one more leg's time, then stands")
 	check(absf(float(MotionBuffer.at([[Vector3.ZERO, 3.0, 0.0], [Vector3.ONE, -3.0, 1.0]], 0.5)[1]) - PI) < 0.05, "the heading turns the short way round")
+	# Drawn at the present with a plan (protocol 168): on along its way past the newest point, never past where it is walking to.
+	var walker: Array = [[Vector3.ZERO, 0.0, 10.0], [Vector3(1, 0, 0), 0.0, 10.25]]   # 4 m/s along x
+	check(absf((MotionBuffer.at_plan(walker, 10.45, 0.6, Vector2(5.0, 0.0))[0] as Vector3).x - 1.8) < 0.001, "a plan ahead: it carries on at 4 m/s")
+	check(absf((MotionBuffer.at_plan(walker, 10.45, 0.6, Vector2(1.5, 0.0))[0] as Vector3).x - 1.5) < 0.001, "and stops at its plan's goal, not past it")
+	check(absf((MotionBuffer.at_plan(walker, 10.9, 0.6, Vector2(9.0, 0.0))[0] as Vector3).x - 3.0) < 0.001, "for two legs' time at most, then holds")
+	check((MotionBuffer.at_plan(walker, 10.45, 0.6, Vector2(-3.0, 0.0))[0] as Vector3).is_equal_approx(Vector3(1, 0, 0)), "a goal behind it (it is turning): held at its newest point")
+	check(absf((MotionBuffer.at_plan(walker, 10.7, 0.6, null)[0] as Vector3).x - 2.0) < 0.001, "no plan: one leg's carry, as before")
+	check(absf((MotionBuffer.at_plan(walker, 10.1, 0.6, Vector2(1.5, 0.0))[0] as Vector3).x - 0.4) < 0.001, "between its points the plan changes nothing")
 
 	# Two seconds still (the unchanged rows went out every 2 s), then a step: it walks off from the send before, not over the whole 2 s.
 	var still: Array = []

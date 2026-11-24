@@ -119,6 +119,37 @@ static func at(samples: Array, t: float, carry_s: float = -1.0) -> Array:
 	return [(newest[0] as Vector3) + step * (on / leg), newest[1]]
 
 
+# at() for a body drawn at the present (animal_view, protocol 168): past its newest point it carries on along its last leg for up to
+# `carry_s` (two legs' time and CARRY_MPS at most), but never past `plan` (Vector2 x, z: where its row says it is walking to), so a body
+# whose stop row is late stops where the server stops it instead of running on and being pulled back. A plan behind it (it is turning)
+# holds it at its newest point. No plan: as at() with no carry_s (its last leg's time, CARRY_S at most).
+static func at_plan(samples: Array, t: float, carry_s: float, plan: Variant) -> Array:
+	if not plan is Vector2:
+		return at(samples, t)
+
+	var r: Array = at(samples, t, carry_s)
+
+	if samples.size() < 2 or t <= float(samples[samples.size() - 1][2]):
+		return r
+
+	var newest: Vector3 = samples[samples.size() - 1][0]
+	var on: Vector2 = Vector2((r[0] as Vector3).x - newest.x, (r[0] as Vector3).z - newest.z)
+
+	if on.length() < 0.001:
+		return r
+
+	var goal: Vector2 = plan
+	var ahead: float = Vector2(goal.x - newest.x, goal.y - newest.z).dot(on / on.length())   # how far along this leg its goal lies
+
+	if ahead <= 0.0:
+		return [newest, r[1]]
+
+	if on.length() > ahead:
+		return [newest + ((r[0] as Vector3) - newest) * (ahead / on.length()), r[1]]
+
+	return r
+
+
 # How far in the past bodies are drawn, from the recent gap between rows: a point reaches this computer up to one gap after the server
 # made it, plus the animal's own step and some lateness (LEAD_S); a later one is carried over (see at). About as far behind the server as
 # the arrival-time drawing was (the bow aims at what is drawn).
