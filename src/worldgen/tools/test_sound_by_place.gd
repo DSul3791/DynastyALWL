@@ -106,7 +106,7 @@ func walk() -> void:
 	run(sounds, body, 1.0)
 	check(not sounds.snow_underfoot(SNOW_COVER), "inside the cave no snow underfoot")
 	check(sounds.snow_underfoot(SNOW_COVER, false), "while another player's step outside still crunches in the snow there")
-	var stage_src: String = FileAccess.get_file_as_string("res://src/client/sound_stage.gd")
+	var stage_src: String = FileAccess.get_file_as_string("res://src/client/sound_stage.gd").replace("\r\n", "\n")   # CRLF on a Windows checkout
 	check(stage_src.contains("step_ground(feet, depth, \"\", false)") and stage_src.contains("weather.snow_underfoot(SNOW_COVER, own_feet)"), "the other players' steps ask for the snow outside (sound_stage step_at)")
 	stage.cave["rock_enclosure"] = 0.0
 	run(sounds, body, 1.0)
@@ -125,7 +125,7 @@ func seasons() -> void:
 	var starter: String = Weather.season_at(midsummer_s, 4.5 * tile_m, tile_m)
 	var far_side: String = Weather.season_at(midsummer_s, -3.5 * tile_m, tile_m)
 	check(starter == "summer" and far_side == "winter", "midsummer on the starter's side is midwinter across the equator (%s, %s)" % [starter, far_side])
-	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
+	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").replace("\r\n", "\n")   # CRLF on a Windows checkout
 	var here_at: int = client.find("_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z")
 	var amb_at: int = client.find("sound.ambient.set_conditions(game_clock.hour(), here_season)")
 	var crit_at: int = client.find("critters.update(delta, body.global_position, sound.ambient.weights, here_season,")

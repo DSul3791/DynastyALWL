@@ -45,6 +45,7 @@ func slot_of(id: String) -> int:
 
 func run(seconds: float) -> void:
 	for k in range(int(ceil(seconds))):
+		items._heard_ms[1] = Time.get_ticks_msec()   # a playing game reports its spot all the time: a slow run (Windows, --jobs 2: 31 s) must not pass ABSENT_MS and leave the world
 		items.tick(1.0)
 
 
@@ -62,6 +63,7 @@ func clear_stations() -> void:
 
 
 func empty_pack() -> void:
+	items._heard_ms[1] = Time.get_ticks_msec()   # heard, as in run(): each section starts with a playing game
 	for s in inv.slot_count:
 		inv.clear_slot(s)
 

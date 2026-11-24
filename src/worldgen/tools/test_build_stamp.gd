@@ -67,10 +67,11 @@ func _init() -> void:
 
 	# Wiring (source checks): the server reads its stamp once and checks hello before anything of the player's; the client sends its build and
 	# shows the refusal; the welcome's build is the stamped one; the commit falls back to the stamp in an export.
-	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
-	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
-	var net: String = FileAccess.get_file_as_string("res://src/stream/terrain_net.gd")
-	var git: String = FileAccess.get_file_as_string("res://src/debug/git_stamp.gd")
+	# Line ends as on Linux: a Windows checkout has CRLF (.gitattributes text=auto), and the checks below look for "\n\t".
+	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").replace("\r\n", "\n")
+	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").replace("\r\n", "\n")
+	var net: String = FileAccess.get_file_as_string("res://src/stream/terrain_net.gd").replace("\r\n", "\n")
+	var git: String = FileAccess.get_file_as_string("res://src/debug/git_stamp.gd").replace("\r\n", "\n")
 	check(server.contains("var _stamped_build: int = BuildStamp.stamped_build()"), "the server reads its stamp once, at start")
 	var hello_at: int = server.find("net.hello_requested.connect(func(peer, key, build):")
 	var refuse_at: int = server.find("BuildStamp.refusal(_stamped_build, build)", hello_at)

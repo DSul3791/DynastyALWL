@@ -120,7 +120,9 @@ func _init() -> void:
 	var head_file: FileAccess = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
 	head_file.store_string(JSON.stringify({"version": 4, "gen": 3, "areas": {}, "digs": 2}))
 	head_file.close()
-	FileAccess.open(dir + "/settled_g0.idx", FileAccess.WRITE).store_buffer(PackedByteArray([1, 2, 3]))
+	var settled_file: FileAccess = FileAccess.open(dir + "/settled_g0.idx", FileAccess.WRITE)
+	settled_file.store_buffer(PackedByteArray([1, 2, 3]))
+	settled_file.close()   # closed now: Windows cannot delete an open file, and a GDScript temporary stays open until the function ends
 	DirAccess.make_dir_recursive_absolute(dir + "/tiles")
 	var world = FlatWorld.new()
 	world.tiles_dir = dir + "/tiles"
