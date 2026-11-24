@@ -1596,9 +1596,9 @@ Not yet played.
 
 **Status: Implemented - awaiting player verification.** Aimed at a tilled bed, the Plant grid now takes that bed's turn as well as its centre, so a turned garden's beds and the seed grid line up (before, the grid kept the hoe's own turn). Not yet played. Tester DungeonMaster, build 9257, 24 Nov 2026, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("planting interface doesn't match tilled soil"). The hoe's Plant preview should sit on the tilled beds it will sow.
 
-## 134. A shrieking noise while the game loads
+## 134. A blast of static while the game loads
 
-**Status: Not fixed - needs a recording or a log.** No loading sound stands out in the code; the next step is to hear it or read a game log from that load. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game loading, shrieking noise sound, ocean surf?"). Nothing should play harshly while the world streams in.
+**Status: Implemented - awaiting player verification.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game loading, shrieking noise sound, ocean surf?"); Dave, 24 Nov 2026: "the sound glitch is real. when you first load it has a 1 second blast of what sounds like old tv static". Cause: the two wind loops began playing during sound setup at 0 dB, about 40 dB over their real level, until the first sound update set it; the long first frames of a join filled that gap. Now they start silent, and the world's sound buses (wind, surf, nature, weather, footsteps and tools) stay silent until the player has landed, then fade in over 2 s (sound_stage loading, LOAD_BUSES). Menus and the heartbeat are never hushed. Not yet played.
 
 ## 135. Mud footsteps sound strange and far too loud
 
@@ -1607,10 +1607,6 @@ Not yet played.
 ## 136. Odd gear sounds while running
 
 **Status: Implemented - awaiting player verification.** The cloth rustle that fibre, grass and woollen clothes add to every step is 10 dB quieter (gear_sounds.gd cloth -30 to -40 dB, provisional QA-2); it is a generated placeholder sound. Not yet played. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("really weird gear sounds when running").
-
-## 137. The fibre backpack does not show as something to take off
-
-**Status: Not fixed - needs detail.** There is no backpack made of fibre; the nearest item is the Fibre - Shoulder bag, and the character screen does list it with Take off. Which screen did not offer it still needs finding. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("fibre backpack not appearing as unequippable"). A worn backpack should show where it can be taken off.
 
 ## 138. Prompts to pick fruit and drink water do not say which key
 
@@ -1633,6 +1629,10 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 ## 142. A crafting tool should count from the pack, not only in the hand
 
 **Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026, at the Fishing spear (the card showed Any knife 1 / 1 and then "Short: any knife in your hand."): "won't let me make a fishing spear", then "no its not a bug. it wanted the knife in my hand", then "though we should remove that requirement if you have a knife in you inventory or on your hotbar it should count". Now every recipe that keeps a tool (knife, saw, chisel, needle, scraper, mortar and pestle) crafts while one, unbroken, is anywhere in the pack or on the hotbar; the craft's wear goes to the hotbar's one first, else the pack's (CraftStock.has_tool, server_items _hand_tool_ok and _craft_tool_slot; test_server_items). The "in your hand" line is gone; a missing tool says "needs any knife in your pack". Not yet played.
+
+## 143. The Fibre shoulder bag should be a Fibre backpack
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "a fiber handbag does not make any sense in a game like this. especially since its a backpack of somesort. remove it or call it a FiberBackpack". The item is now Fibre - Backpack (same item id, so saves and recipes keep it), with its description and the docs changed to match. It is still worn in the Shoulder position, so it goes with one of the four backpacks on the Back (coordinator ruling, 24 Nov 2026); its placeholder model is the pack shape on the back. On the I screen the Back well shows it while no backpack is worn there (click opens it, drag it out to take it off; test_you_column); with a backpack worn, it is on the Tab screen's worn list. Not yet played.
 
 ## Rewrite interpretation
 

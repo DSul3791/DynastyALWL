@@ -77,7 +77,7 @@ func _gear_column(names: Array) -> Control:
 		# The pack slot (Dave 15 Nov 2026): drop a back piece from the inventory here to put it on, drag the worn pack back into the
 		# inventory to take it off. Only a worn pack raises the carry limit (CarryRules.carry_bonus_kg); one in the inventory does nothing.
 		if gear == "back":
-			slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot") and view.wear_slot_of(int(data["slot"])) == "back"
+			slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot") and view.wear_slot_of(int(data["slot"])) in ["back", "shoulder"]
 			slot.on_drop = func(data: Variant) -> void: view.wear_slot(int(data["slot"]))
 			slot.drag_data = func() -> Variant:
 				if int(well_at.get("back", -1)) < 0:
@@ -89,6 +89,12 @@ func _gear_column(names: Array) -> Control:
 		wells[gear] = slot
 
 	return column
+
+
+# The worn position `place` ("shoulder:base") when something is worn there, else -1.
+func _worn_at(place: String) -> int:
+	var at: int = view.worn_places().find(place)
+	return at if at >= 0 and at < view.worn.size() and view.worn[at] != 0 else -1
 
 
 # The live character (6.6): its own small world with a warm key light from the top left and a gold rim light from behind right.
@@ -146,6 +152,8 @@ func refresh() -> void:
 
 		if (gear == "back" or gear == "waist") and view.worn_places().find(gear + ":base") >= 0 and view.worn_places().find(gear + ":base") < view.worn.size() and view.worn[view.worn_places().find(gear + ":base")] != 0:
 			at = view.worn_places().find(gear + ":base")   # the pack and the belt themselves, not the bedroll or a pouch on them (Tab lists those)
+		elif gear == "back" and _worn_at("shoulder:base") >= 0:
+			at = _worn_at("shoulder:base")   # no pack on the back: the bag on the shoulder, the Fibre - Backpack (Dave 24 Nov 2026), shows, opens and comes off here
 
 		well_at[gear] = at
 

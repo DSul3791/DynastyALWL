@@ -576,7 +576,7 @@ Existing quivers have `slot: waist` although descriptions say worn on back. Choo
 
 | New item | Production | Function / distinction |
 |---|---|---|
-| Fibre - Shoulder bag | Hand: plant fibre + twine | Very early small pack before animal hides |
+| Fibre - Backpack (was Fibre - Shoulder bag; Dave 24 Nov 2026: "call it a FiberBackpack") | Hand: plant fibre + twine | Very early small pack before animal hides |
 | Wicker - Pack basket | Hand: sticks + twine | Cheap bulky/light cargo, awkward and poor wet-weather protection **Note (13 Nov 2026 16:19Z, Dave): "correct no backpacks have slots they only improve the weight you can carry due to ergonomics". The basket has no slots and gives carry weight only: `carry_bonus_kg` 8 (a lead-chosen starting value for Dave to tune); `bag_slots` and `bag_takes` removed. See docs/ai-team/missions/BUGLIST-001/backpack.md (Follow-up 2, 13 Nov 2026).** |
 | Leather - Satchel | Leatherworking Table | Small shoulder carry for documents, valuables, food and other light personal items |
 | Belt pouch | Hand from hide; appropriate leather craft option | Small quickly accessible waist inventory; coins/herbs/potions, not large tools/logs |

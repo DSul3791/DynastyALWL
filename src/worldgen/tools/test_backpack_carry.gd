@@ -5,7 +5,7 @@ extends SceneTree
 # The four old packs (Hide and Leather backpacks, Wicker pack basket, Traveller's rucksack) are retired; a saved one loads as its new tier (renames.json).
 # No back pack has slots of its own or can be opened (Dave 13 Nov 2026: "Backpacks do not have slots. The only thing they do is give you more
 # carry weight." and "no backpacks have slots they only improve the weight you can carry due to ergonomics"); an older save's back pack that
-# still carries bag contents loads plain, and a real bag (the Fibre - Shoulder bag) keeps its contents. Real server state: slots and thresholds measured
+# still carries bag contents loads plain, and a real bag (the Fibre - Backpack) keeps its contents. Real server state: slots and thresholds measured
 # before equipping, equipped and after unequipping; near capacity nothing is lost or doubled (the pack's slots follow what it holds, protocol 116);
 # and the worn backpack and its thresholds survive a save and reload.
 #   godot --headless --path . --script res://src/worldgen/tools/test_backpack_carry.gd
@@ -332,7 +332,7 @@ func _init() -> void:
 	check(on_ground >= 0 and not older_ground.has("bag"), "an older save's Simple - Backpack on the ground loads with no bag contents")
 	check(older_wicker >= 0 and not older_inv.inst_of(older_wicker).has("bag"), "an older save's Quality - Backpack (no slots now) loads with no bag contents")
 	check(absf(kg_with_bags - older.carried_kg_of(1) - 11.0 * kg_stone) < 0.001, "the dropped contents leave no invisible weight (%.2f kg before, %.2f after: the 11 kg of the Simple pack, the worn backpack and the Quality pack are gone)" % [kg_with_bags, older.carried_kg_of(1)])
-	check(older_real >= 0 and older_inv.inst_of(older_real).get("bag", []) == [[stone, 2, 0]], "a real bag (the Fibre - Shoulder bag) keeps its contents through the same load")
+	check(older_real >= 0 and older_inv.inst_of(older_real).get("bag", []) == [[stone, 2, 0]], "a real bag (the Fibre - Backpack) keeps its contents through the same load")
 
 	# 10. A save from before the four tiers (Dave 15 Nov 2026): the retired packs it holds, in the pack and worn, load as their new tiers
 	# (renames.json), and the worn one raises the limit by its new tier's bonus.

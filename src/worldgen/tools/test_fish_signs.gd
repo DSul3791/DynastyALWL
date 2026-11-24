@@ -301,13 +301,14 @@ func _spear_and_net() -> void:
 	items.water_kind_at = func(x: float, z: float) -> Dictionary: return water.water_kind_at(x, z, 0)
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "fishsigns-key-0001")
+	items._fate_rng.seed = 24112026   # the catch rolls repeat run to run (the checks below need at least one catch and one miss)
 	var cfg: Dictionary = items._fishing_data()
 	var schools = items._fish_schools()
 	var day: int = 40
 	var centres: Array = []   # [centre, radius, species] of the brook's schools
 
 	for cz in 7:
-		for s in schools.schools(Vector2i(0, cz), day, items._season_of(Vector3(104.0, 10.0, 64.0 + 128.0 * cz)), 12, items._now_game_s()):
+		for s in schools.schools(Vector2i(0, cz), day, items._season_of(Vector3(104.0, 10.0, 64.0 + 128.0 * cz)), items.fish_stock(Vector2i(0, cz)), items._now_game_s()):
 			if (s["centre"] as Vector2).x >= 100.0 and (s["centre"] as Vector2).x < 108.0:
 				centres.append([s["centre"], float(s["radius"]), str(s["species"])])
 
@@ -327,7 +328,7 @@ func _spear_and_net() -> void:
 
 		for cz in range(-1, 8):
 			for cx in range(-1, 2):
-				for s in schools.schools(Vector2i(cx, cz), day, "summer", 12, items._now_game_s()):
+				for s in schools.schools(Vector2i(cx, cz), day, "summer", 12, items._now_game_s()):   # 12: at least the real stock, so no school is missed
 					clear = clear and (s["centre"] as Vector2).distance_to(Vector2(104.0, z)) > float(s["radius"]) * 2.0 + 3.0
 
 		if clear:
@@ -381,18 +382,39 @@ func _spear_and_net() -> void:
 	for sp in ["trout", "perch", "salmon", "pike", "carp", "minnow", "herring", "cod"]:
 		fish_ids.append(sp)
 
+	# Lane B 24 Nov 2026 ("trout 8, perch 1"): the perch was a stray caught by the jabs above with no school near (the odds there are
+	# unchanged), counted with these. Only what these jabs land is counted. And each catch takes one fish off the cell's stock, a school's size
+	# being its share of it, so the cell is put back to full before every jab: every jab here is into the same school.
+	var had: Dictionary = {}   # what the pack held before: the jabs with no school near above can land a stray fish of the water
+
+	for f in fish_ids:
+		if items.table.number_of(f) > 0:
+			had[f] = inv.count_of(items.table.number_of(f))
+
+	var cell: Vector2i = items._fish_cell(Vector3(c.x, 10.0, c.y))
+
 	for n in 40:
+		items._fish_stock.erase("%d,%d" % [cell.x, cell.y])   # the cell's own full stock again (fish_stock rebuilds it)
 		items._last_fish.clear()
 		items._moving[1] = 0.0
 		items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3(c.x, 10.0, c.y))
 
 	for f in fish_ids:
-		if items.table.number_of(f) > 0 and inv.count_of(items.table.number_of(f)) > 0:
-			got[f] = inv.count_of(items.table.number_of(f))
+		if items.table.number_of(f) > 0 and inv.count_of(items.table.number_of(f)) > int(had.get(f, 0)):
+			got[f] = inv.count_of(items.table.number_of(f)) - int(had.get(f, 0))
 
 	check(inv.wear[slot] > wear0 and not said.has(str(cfg["spear"]["say_move"])), "a player standing still jabs")
 	check(not said.has(no_fish), "jabs into a school never say there are no fish")
 	check(got.size() == 1 and got.has(centres[0][2]), "a jab into a school takes that school's fish (%s, school of %s)" % [str(got), centres[0][2]])
+
+	# Fished out: with no fish left the school is gone and a jab there says so.
+	items._fish_stock["%d,%d" % [cell.x, cell.y]] = [0, items._unix()]
+	items._last_fish.clear()
+	said.clear()
+	items.action(1, Net.ACT_FISH, slot, 0, 0, Vector3(c.x, 10.0, c.y))
+	var out_said: Array = said.duplicate()
+	said.clear()
+	check(out_said.has(no_fish), "a school fished out is gone, and a jab there says there are no fish (%s)" % str(out_said))
 
 	# The net lands where the look meets the water: looking down steeply near, gently far, level at 6 m.
 	var eye: Vector3 = Vector3(0.0, 11.6, 0.0)
