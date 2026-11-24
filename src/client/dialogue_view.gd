@@ -423,6 +423,7 @@ func _refresh_shop() -> void:
 	_sell_all_slots.clear()
 	_sell_all_total = 0
 	var till: int = _shop_till if _shop_till >= 0 else 1 << 30   # the one-click sale stops where his purse does, as the server's does
+	var sold_by_id: Dictionary = {}   # units of an item the estimate has sold already: a second stack starts at the lower price, as on the server
 
 	for slot in items.inventory.numbers.size():
 		if items.inventory.numbers[slot] == 0:
@@ -438,11 +439,14 @@ func _refresh_shop() -> void:
 		any = true
 		var entry2: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
 
-		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below:
+		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below and not items.inventory.inst_of(slot).has("bag") and not items.inventory.maturing_at(slot):   # the server refuses a full bag and a maturing batch
 			_sell_all_slots.append(slot)
-			var made: Array = TradePrices.sale(int(quote[2]), lot2, items.inventory.counts[slot], _shop_get, float(quote[4]), _demand_drop, _demand_floor, float(quote[3]), till)   # the falling price and his purse, as the server pays
+			var id2: String = items.table.id_of(items.inventory.numbers[slot])
+			var start: float = maxf(float(quote[4]) - _demand_drop * float(sold_by_id.get(id2, 0)), _demand_floor)
+			var made: Array = TradePrices.sale(int(quote[2]), lot2, items.inventory.counts[slot], _shop_get, start, _demand_drop, _demand_floor, float(quote[3]), till)   # the falling price and his purse, as the server pays (a trader's daily limit is not known here: "about")
 			_sell_all_total += int(made[1])
 			till -= int(made[1])
+			sold_by_id[id2] = int(sold_by_id.get(id2, 0)) + int(made[0])
 
 		var number2: int = items.inventory.numbers[slot]
 		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s%s." % [items.coin_text(each), _lot_note(lot2)], slot, 1, items.inventory.counts[slot] >= lot2, each, _lot_note(lot2), lot2)

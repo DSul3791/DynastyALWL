@@ -199,8 +199,8 @@ func _init() -> void:
 	coins_fur = items.coins_of(1)
 	var fur_left: int = inv_r.count_of(fur)
 	var extras_short: String = trade.deal(1, "hob", 3, 0, 1)
-	var got: int = items.coins_of(1) - coins_fur
-	check(got > 0 and got <= 30 and extras_short.contains("for %s." % items._coin_words(got)) and extras_short.contains("the rest stays in your pack") and inv_r.count_of(fur) > 0 and inv_r.count_of(fur) < fur_left, "the extra-stuff sale says what it really paid, and that what he could not pay for stays (%s)" % extras_short)
+	var paid_extras: int = items.coins_of(1) - coins_fur
+	check(paid_extras > 0 and paid_extras <= 30 and extras_short.contains("for %s." % items._coin_words(paid_extras)) and extras_short.contains("the rest stays in your pack") and inv_r.count_of(fur) > 0 and inv_r.count_of(fur) < fur_left, "the extra-stuff sale says what it really paid, and that what he could not pay for stays (%s)" % extras_short)
 	if inv_r.numbers.find(fur) >= 0:
 		inv_r.clear_slot(inv_r.numbers.find(fur))
 	trade._refresh("hob")["purse"] = 0.0
