@@ -40,7 +40,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 168  # 168 (24 Nov 2026, Dave: "give as much control to the client as it takes to make them feel natural"): a moving animal's row carries its plan, a Vector2 (x, z) of where it is walking to, after the six fixed fields and a dog foe, before the health share (server_animals plan, rows_near); the client draws every animal on the ground at the present, carried on along its way but never past its plan, and the server judges blows on all of them at present_ms (docs/design/ANIMAL_NETCODE.md "Plans"). Client and server must be updated together.
+const PROTOCOL_VERSION := 169  # 169 (24 Nov 2026, Dave: skip the night when everyone sleeps): game_time(game_seconds) tells every client the clock after a night skip, and their copy jumps to it (sky, sun, weather). Client and server must be updated together. 168 (24 Nov 2026, Dave: "give as much control to the client as it takes to make them feel natural"): a moving animal's row carries its plan, a Vector2 (x, z) of where it is walking to, after the six fixed fields and a dog foe, before the health share (server_animals plan, rows_near); the client draws every animal on the ground at the present, carried on along its way but never past its plan, and the server judges blows on all of them at present_ms (docs/design/ANIMAL_NETCODE.md "Plans"). Client and server must be updated together.
 # 167 (23 Nov 2026, Dave: "not all animals charge they actually have actions built in to them"): animal rows may carry states 25 (STRIKE, a blow up close) and 26 (KICK, a kick behind) from server_big_game, each wound up where it stands; the client plays the model's own attack clip timed to land with the server's blow. Client and server must be updated together.
 # 166 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
 # 165 (23 Nov 2026, the status strip beside the hotbar: a player slowed or chilled saw nothing saying why): soak(percent, windy), how rain-soaked the clothes are in steps of 10 and whether the wind cuts through them, at hello and when either changes. Client and server must be updated together.
@@ -194,6 +194,7 @@ signal tunnel_settings_received(on: bool, cave_in_s: int)
 signal start_at_received(position: Vector3)
 signal admin_status_received(on: bool)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
+signal game_time_received(game_seconds: float)
 signal inventory_full_received(bytes: PackedByteArray)
 signal inventory_slots_received(bytes: PackedByteArray)
 signal world_items_received(added: Array, removed: PackedInt32Array)
@@ -898,6 +899,12 @@ func warmth(percent: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func energy(percent: int) -> void:
 	energy_received.emit(percent)
+
+
+# The game clock jumped (protocol 169, the night skip: everyone slept, the night passed to dawn): the client's copy takes the server's value again.
+@rpc("authority", "call_remote", "reliable")
+func game_time(game_seconds: float) -> void:
+	game_time_received.emit(game_seconds)
 
 
 # Air left under water in tenths of a second, or -1 when the head is above the surface (the oxygen symbol hides).

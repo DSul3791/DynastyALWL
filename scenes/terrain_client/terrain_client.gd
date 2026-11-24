@@ -869,6 +869,7 @@ func _ready() -> void:
 			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
+	net.game_time_received.connect(func(game_seconds: float) -> void: game_clock.sync(game_seconds))   # a night skip moved the server's clock to dawn (protocol 169)
 	net.join_refused_received.connect(func(text: String) -> void:
 		_on_join_refused(text, join_refused_title(text)))
 	net.notice_received.connect(func(text: String) -> void:
