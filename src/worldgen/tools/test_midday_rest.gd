@@ -28,8 +28,9 @@ func _initialize() -> void:
 	for kind in ["bear", "black_bear", "lion", "puma", "lynx", "elk"]:
 		hour = 13.0
 		check(a.resting(a.species_def(kind)), "a %s rests at 13:00" % kind)
+		check(a.activity_chance(a.species_def(kind)) > float(a.cfg.get("off_hours_chance", 0.05)), "a resting %s naps, it is not despawned as off its hours" % kind)
 		hour = 9.5
-		check(not a.resting(a.species_def(kind)) or kind in ["lion", "puma", "lynx"], "a %s is up at 09:30" % kind)
+		check(absf(a.activity_at(a.species_def(kind), 9.5) - float(a.species_def(kind)["active"]["day"])) < 0.001, "a %s keeps its day value at 09:30" % kind)
 
 	for kind in ["bighorn", "chamois", "mountain_goat"]:
 		check(absf(a.activity_at(a.species_def(kind), 13.0) - 0.3) < 0.001 and absf(a.activity_at(a.species_def(kind), 9.5) - 1.0) < 0.001, "a %s is mostly bedded at midday, up in the morning" % kind)
