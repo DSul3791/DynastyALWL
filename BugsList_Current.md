@@ -1640,7 +1640,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 144. A bear could be run down on foot, and roared all the time
 
-**Found by:** Dave, play test of build 10587, 25 Nov 2026: "the bear really should be able to out run me. also a threatened bear should turn and fight back. first it should stand its ground and standup on its hind legs. then it should attack with its claws or mouth." "the bear roaring constantly in the woods is unrealistic." **Status: Implemented - awaiting player verification** (PRs #1906, #1908, #1913, #1920; R-ANIMAL-BEAR, R-ANIMAL-BEAR-FOOD). Guarded by `tools/check_dave_rules.py` and `test_bear_threat`.
+**Found by:** Dave, play test of build 10587, 25 Nov 2026: "the bear really should be able to out run me. also a threatened bear should turn and fight back. first it should stand its ground and standup on its hind legs. then it should attack with its claws or mouth." "the bear roaring constantly in the woods is unrealistic." (quotes as in PR #1906, which names the build.) **Status: Implemented - awaiting player verification** (PRs #1906, #1908, #1913, #1920; R-ANIMAL-BEAR, R-ANIMAL-BEAR-FOOD). Guarded by `tools/check_dave_rules.py` and `test_bear_threat`.
 
 ## 145. A snared animal should lie in the snare
 
@@ -1648,7 +1648,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 146. The hunt goal said a rabbit when a bear was killed
 
-**Found by:** Dave, QA #9, build 10587, 25 Nov 2026 ("Killed a bear bad text"). **Status: Implemented - awaiting player verification** (PR #1905; QA #9 closed).
+**Found by:** Dave, QA #9, build 10587, 25 Nov 2026 (issue title "[Bug] Killed a bear bad text"). **Status: Implemented - awaiting player verification** (PR #1905; QA #9 closed).
 
 ## 147. New players are not told the E, F and inspect keys
 
