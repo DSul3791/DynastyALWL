@@ -71,3 +71,4 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-RELEASE-CLEAN** · 25 Nov 2026 · "the server is always a clean install no keeping backups." *(unverified: coordinator's note)* A fresh world and characters each week is fine.
 - **R-REPO-PUBLIC** · 22 Nov 2026 · "so we will keep it public." Bought models never go in the repo.
 - **R-TEAM-TOOLS** · 25 Nov 2026 · No local Qwen model for bulk reading and no weekly usage log: "they go. we dont even use qwen now".
+- **R-TEAM-CHECKS** · 25 Nov 2026 · Warn-only checks before a commit or push, and a weekly lessons loop (`ai-team/WORKFLOW.md`), approved as proposed: "yes". A lessons fix that would change a ruling comes to Dave first.
