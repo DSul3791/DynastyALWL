@@ -27,6 +27,8 @@ function Stop-Started {
 
 try {
 	# Fresh folders every run: an old cache or store would change what is measured.
+	if ((Split-Path $Out -Leaf) -notlike "lane_*") { throw "-Out must be a lane folder named lane_... (it is emptied first): $Out" }
+
 	if (Test-Path $Out) { Remove-Item -Recurse -Force $Out }
 	New-Item -ItemType Directory -Force "$Out\store", "$Out\cache" | Out-Null
 	$cache = ($Out + "\cache") -replace "\\", "/"
