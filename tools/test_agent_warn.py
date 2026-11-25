@@ -32,6 +32,12 @@ CASES = [
     ("password word alone is fine", {"docs/a.md": "set the server password by hand\n"}, 0),
     ("private file", {"data/admin.json": "{}\n"}, 1),
     ("github token", {"docs/b.md": "ghp_" + "a" * 36 + "\n"}, 1),
+    ("prefixed key name", {"deploy/y.env": "DB_PASSWORD = \"hunter22secret\"\n"}, 1),
+    ("gdscript const key", {"src/x.gd": "const ADMIN_KEY := \"admincheck001\"\n"}, 1),
+    ("client scene print", {"scenes/terrain_client/c.gd": "func f():\n\tprint(1)\n"}, 1),
+    ("server scene print is fine", {"scenes/terrain_server/s.gd": "func f():\n\tprint(1)\n"}, 0),
+    ("lag run prints on purpose", {"src/client/lag_run.gd": "func f():\n\tprint(1)\n"}, 0),
+    ("added line that starts with ++", {"src/client/b.gd": "++ x\n\tprint(1)\n"}, 1),
 ]
 
 bad = 0
@@ -40,5 +46,27 @@ for name, files, want in CASES:
     if got != want:
         bad += 1
         print(f"FAIL {name}: {got} findings, wanted {want}")
+
+# The promise: never blocks. main() returns 0 and prints nothing or one JSON warning with no permission decision, even when git or
+# the checks cannot run (a folder that is not a repo).
+import contextlib, io, json
+with tempfile.TemporaryDirectory() as d:
+    for mode in ("commit", "push", "other"):
+        aw.ROOT = pathlib.Path(d)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rc = aw.main(["agent_warn.py", mode])
+        text = out.getvalue().strip()
+        ok = rc == 0 and (not text or ("permissionDecision" not in text and "systemMessage" in json.loads(text)))
+        if mode == "push" and not text:
+            ok = False   # the rule checks are missing there: that must warn
+        if not ok:
+            bad += 1
+            print(f"FAIL never blocks ({mode}): rc {rc}, output {text[:200]}")
+aw.ROOT = HERE.parent
+if aw.push_findings():
+    bad += 1
+    print(f"FAIL push on this checkout: {aw.push_findings()}")
+
 print("test_agent_warn: " + ("PASS" if not bad else f"{bad} FAIL"))
 sys.exit(1 if bad else 0)

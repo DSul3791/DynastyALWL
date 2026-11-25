@@ -13,7 +13,7 @@ patterns = (
     '.claude/agents/*.md', '.claude/skills/*/SKILL.md',
     'docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt',
     'docs/ai-team/package/cowork/COORDINATOR_BOOTSTRAP.md',
-    'docs/ai-team/package/cowork/skill_uploads/*.zip', 'tools/check_ai_team_package.py',
+    'docs/ai-team/package/cowork/skill_uploads/*.zip', 'tools/check_ai_team_package.py', 'tools/hooks/*.py', 'tools/hooks/*.sh',
 )
 
 with tempfile.TemporaryDirectory(prefix='ai-package-test-') as folder:
@@ -52,6 +52,12 @@ with tempfile.TemporaryDirectory(prefix='ai-package-test-') as folder:
         legacy.write_text('**Status: RETIRED AS AUTHORITY.**\n')
     changed('RULES.md', lambda s:s.replace('RETIRED AS AUTHORITY', 'IN FORCE'),
             'legacy rulebook cannot revive', 'RETIRED RULEBOOK REVIVED')
+    changed('.claude/settings.json', lambda s:s.replace('tools/hooks/warn.sh\\" push', 'tools/hooks/other.sh\\" push'),
+            'only the reviewed warn hooks run', 'UNREVIEWED HOOK')
+    changed('.claude/settings.json', lambda s:s.replace('"PreToolUse": [', '"SessionStart": [], "PreToolUse": ['),
+            'no other hook event', 'UNREVIEWED HOOK EVENT')
+    changed('tools/hooks/agent_warn.py', lambda s:s+'\n# permissionDecision\n',
+            'the warn hooks never decide', 'UNREVIEWED HOOK')
     changed('.claude/agents/gate-reviewer.md', lambda s:s.replace('Read, Grep, Glob', 'Read, Grep, Glob, Edit'),
             'reviewer remains read-only', 'REVIEWER MUST BE READ ONLY')
     changed('.claude/skills/ponytail-review/SKILL.md', lambda s:s+'\nChanged without upload mirror.\n',
