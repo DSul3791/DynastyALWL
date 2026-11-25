@@ -30,7 +30,7 @@ func join(password: String, answers: Array, server_auth = null, server_protocol:
 	var client_mp: SceneMultiplayer = SceneMultiplayer.new()
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var client_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var result: Dictionary = {"connected": false, "asked": [], "refused": "", "accepted": "", "outdated": "", "heard": false}
+	var result: Dictionary = {"connected": false, "asked": [], "refused": "", "accepted": "", "outdated": "", "heard": false, "kept_wrong": false}
 
 	if server_auth == null:
 		server_auth = ServerAuth.new()
@@ -47,6 +47,7 @@ func join(password: String, answers: Array, server_auth = null, server_protocol:
 	client_auth.outdated.connect(func(text: String) -> void: result["outdated"] = text)
 	client_auth.password_needed.connect(func(left: int, wrong: bool) -> void:
 		result["asked"].append([left, wrong])
+		result["kept_wrong"] = client_auth.kept_was_wrong
 		var index: int = result["asked"].size() - 1
 
 		if index < answers.size():
@@ -121,6 +122,15 @@ func _initialize() -> void:
 	changed.password_hash = ServerAuth.hash_password(host.salt, "Carthage")   # the server's password changed while the game was running
 	var stale: Dictionary = await join("", ["Carthage"], changed, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, address)
 	check(stale["connected"] and stale["asked"] == [[2, true]], "a kept password the server calls wrong: the box asks then, the only other time")
+	check(stale["kept_wrong"], "and the box says the saved password no longer works, not that the player typed it wrong")
+	ServerAuth.session_remember(address, host.salt.hex_encode(), ServerAuth.hash_password(host.salt, "Hannibal").hex_encode(), false)
+	var guarded = ServerAuth.new()
+	guarded.salt = host.salt
+	guarded.password_hash = changed.password_hash
+	var now: int = Time.get_ticks_msec()
+	guarded._fails["127.0.0.1"] = [now, now, now, now]   # four wrong from this address this minute: the kept key's wrong proof is the fifth
+	var busy: Dictionary = await join("", [], guarded, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, address)
+	check(busy["refused"] == "busy" and busy["asked"].is_empty() and ServerAuth.session_key(address, host.salt.hex_encode()) == "", "a kept key the guard refuses (busy) is not kept: it would burn a try after the wait too")
 	var bot: Dictionary = await join("", [], host, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, "")
 	check(not bot["connected"] and bot["asked"] == [[3, false]], "a client with no address keeps nothing")
 	ServerAuth.session_forget(address)

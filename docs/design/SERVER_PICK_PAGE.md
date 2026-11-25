@@ -86,7 +86,7 @@ Dave: "servers need the ability to also have a password. so once you pick your s
 - Wrong: the popup stays, the box empties, and it says "Wrong password. 2 tries left." then "1 try left."
 - Third wrong: the popup closes and a message says **"You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."** with OK, which goes back to the server page with that server still chosen. The player may try again from there.
 - Cancel goes back to the server page at any time.
-- Continue on a locked server asks for the password the same way (unless it is remembered, choice 3).
+- Continue on a locked server asks for the password the same way (unless it is remembered, choice 3, or was typed earlier in this run of the game).
 - The box asks once (Dave, 25 Nov 2026, `RULINGS.md` R-JOIN-PASSWORD-ONCE): a typed password is held in memory for that run of the game and answers by itself when a dropped join is retried or the server is joined again; it asks again only when the server says the password is wrong.
 
 **Server side**
