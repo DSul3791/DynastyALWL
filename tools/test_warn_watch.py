@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Cases for tools/warn_watch.py in a throwaway git repo: flags 1 and 2 warn, the 3rd blocks; with 3 flags in history every
-change is blocked until the flagged lines are fixed; merge commits count once.
+"""Cases for tools/warn_watch.py in a throwaway git repo: a problem line is flagged each time a change touches its file; the 3rd
+flag blocks until it is fixed or removed, and then its count is gone; keys and passwords block on first sight; merge commits count once.
     python3 -I tools/test_warn_watch.py
 """
 import contextlib, importlib.util, io, pathlib, subprocess, sys, tempfile
@@ -27,6 +27,8 @@ with tempfile.TemporaryDirectory() as d:
     (root / "README.md").write_text("x\n"); g("add", "."); g("commit", "-q", "-m", "base")
     ww.ROOT = root
     ww.START = "2000-01-01T00:00:00Z"   # the throwaway commits are made now
+    C = "src/client/a.gd"
+    PRINT = "func f():\n\tprint(1)\n"
 
     def change(rel, text, msg):
         p = root / rel
@@ -34,51 +36,87 @@ with tempfile.TemporaryDirectory() as d:
         p.write_text(text)
         g("add", "."); g("commit", "-q", "-m", msg)
 
+    def run():
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            n = ww.watch("dev")
+        return n, out.getvalue()
+
     def pr(rel, text):
         """A change on a branch off dev; returns (blocking, output) and leaves dev checked out."""
         g("checkout", "-q", "-b", "pr", "dev")
         change(rel, text, "pr")
-        out = io.StringIO()
-        with contextlib.redirect_stdout(out):
-            n = ww.watch("dev", "HEAD")
+        n, out = run()
         g("checkout", "-q", "dev"); g("branch", "-q", "-D", "pr")
-        return n, out.getvalue()
+        return n, out
 
     n, out = pr("docs/a.md", "plain words\n")
-    expect("clean change", n == 0 and "0 found" in out, out)
-    for i in range(1, 3):
-        n, out = pr(f"src/client/p{i}.gd", f"func f():\n\tprint({i})\n")
-        expect(f"flag {i} only warns", n == 0 and f"flag {i}; it blocks at 3" in out, out)
-        change(f"src/client/p{i}.gd", f"func f():\n\tprint({i})\n", f"merged flag {i}")
-    n, out = pr("docs/b.md", "plain words\n")
-    expect("after 2 flags a clean change passes, warned of the lines to fix", n == 0 and "one more blocks" in out, out)
-    n, out = pr("src/client/p3.gd", "func f():\n\tprint(3)\n")
-    expect("the 3rd flag blocks, with the 2 earlier lines to fix", n == 3 and "blocks from 3" in out, out)
-    change("src/client/p3.gd", "func f():\n\tprint(3)\n", "a 3rd flag landed anyway (an admin merge)")
-    n, out = pr("docs/c.md", "plain words\n")
-    expect("with 3 flags in history a clean change is blocked while the lines remain", n == 3, out)
-    for i in range(1, 4):
-        change(f"src/client/p{i}.gd", "func f():\n\tFreezeWatch.printer.line(\"x\")\n", f"fix {i}")
-    n, out = pr("docs/d.md", "plain words\n")
-    expect("once the flagged lines are fixed a clean change passes", n == 0, out)
-    n, out = pr("src/client/p5.gd", "func f():\n\tprint(5)\n")
-    expect("a blocking check stays blocking", n == 1, out)
+    expect("clean change", n == 0 and "0 problems" in out, out)
+    n, out = pr(C, PRINT)
+    expect("a new problem is flag 1 and only warns", n == 0 and "(flag 1;" in out, out)
+    change(C, PRINT, "merged with the print")
+    n, out = pr("src/client/b.gd", "func g():\n\tpass\n")
+    expect("a change to another file does not flag it", n == 0 and "0 problems" in out, out)
+    change("src/client/b.gd", "func g():\n\tpass\n", "merged other file")
+    n, out = pr(C, PRINT + "func h():\n\tpass\n")
+    expect("touching its file again is flag 2, still a warning", n == 0 and "(flag 2;" in out, out)
+    change(C, PRINT + "func h():\n\tpass\n", "merged a second touch")
+    n, out = pr(C, PRINT + "func h():\n\tpass\nfunc k():\n\tpass\n")
+    expect("the 3rd touch is blocked until it is fixed", n == 1 and "flag 3: blocked" in out, out)
+    n, out = pr(C, "func f():\n\tFreezeWatch.printer.line(\"x\")\nfunc h():\n\tpass\n")
+    expect("fixing it in that change passes: handled", n == 0 and "0 problems" in out, out)
+    change(C, "func f():\n\tFreezeWatch.printer.line(\"x\")\n", "fixed")
+    n, out = pr(C, "func f():\n\tFreezeWatch.printer.line(\"x\")\n\tprint(2)\n")
+    expect("a new print in the same file starts its own count", n == 0 and "(flag 1;" in out, out)
 
-    # Merge commits: a PR merged with --no-ff is one flag however many commits it has; a PR that merged dev in counts only its own lines.
+    n, out = pr(C, "func f():\n\tprint(1)\n")
+    expect("the same line put back after its fix starts again at flag 1", n == 0 and "(flag 1;" in out, out)
+    change(C, PRINT, "the print is back")
+    change(C, "func f():\n\tif true:\n\t\tprint(1)\n", "re-indented")
+    n, out = pr(C, "func f():\n\tif true:\n\t\tprint(1)\nfunc h():\n\tpass\n")
+    expect("re-indenting keeps its count", n == 1 and "flag 3: blocked" in out, out)
+    change("src/client/gone.gd", PRINT, "a print in a file")
+    change("src/client/gone.gd", PRINT + "#\n", "touched once")
+    g("rm", "-q", "src/client/gone.gd"); g("commit", "-q", "-m", "file deleted")
+    n, out = pr("src/client/gone.gd", PRINT)
+    expect("a deleted file's count is gone when it comes back", n == 0 and "(flag 1;" in out, out)
+    n, out = pr("src/client/gone.gd", PRINT + PRINT.replace("f()", "g()"))
+    expect("two identical lines in one file are one count, both shown", n == 0 and out.count("(flag 1;") == 2, out)
+
+    n, out = pr("deploy/key.pem", "-----BEGIN RSA " + "PRIVATE KEY-----\nabc\n")
+    expect("a private key in any kind of file blocks", n == 1 and "first sight" in out, out)
+    n, out = pr("deploy/.env.local", "API_TOKEN=\"" + "ghp_" + "c" * 36 + "\"\n")
+    expect("a token in a file with no usual suffix blocks", n >= 1 and "first sight" in out, out)
+    n, out = pr("data/admin.json", "{}\n")
+    expect("a private file blocks", n == 1 and "private file" in out, out)
+    n, out = pr("deploy/a.json", "{\"password\": \"hunter22secret\"}\n")
+    expect("a password blocks on first sight", n == 1 and "first sight" in out, out)
+    expect("a secret's text stays out of the log", "hunter22secret" not in out, out)
+    n, out = pr("src/worldgen/tools/test_x.gd", "const ADMIN_KEY := \"admincheck001\"\n")
+    expect("a test's made-up key is not flagged", n == 0, out)
+
+    # Merge commits: a PR merged with --no-ff is one touch however many commits it has; a PR that merged dev in counts its own touch once.
     g("checkout", "-q", "-b", "feature", "dev")
-    change("deploy/a.json", "{\"password\": \"hunter22secret\"}\n", "one")
-    change("deploy/b.json", "{\"password\": \"hunter33secret\"}\n", "two")
+    change("src/client/m.gd", "func f():\n\tprint(1)\n", "one")
+    change("src/client/m.gd", "func f():\n\tprint(1)\nfunc g():\n\tpass\n", "two")
     g("checkout", "-q", "dev"); g("merge", "-q", "--no-ff", "-m", "merge feature", "feature")
     g("checkout", "-q", "-b", "pr2", "dev~1")
-    change("deploy/c.json", "{\"password\": \"hunter44secret\"}\n", "pr2 own")
+    change("src/client/m2.gd", "x\n", "pr2 base")
     g("merge", "-q", "--no-edit", "dev")
+    change("src/client/m.gd", "func f():\n\tprint(1)\nfunc g():\n\tpass\nfunc k():\n\tpass\n", "pr2 touches m")
+    n, out = run()
+    expect("a --no-ff merge is one touch and a PR that merged dev counts once", n == 0 and "(flag 2;" in out, out)
+    g("checkout", "-q", "dev")
+
     out = io.StringIO()
     with contextlib.redirect_stdout(out):
-        n = ww.watch("dev", "HEAD")
-    out = out.getvalue()
-    expect("a --no-ff merge is one flag and a PR that merged dev counts once", n == 0 and "'secret': flag 2;" in out and "1 found" in out, out)
-    expect("a secret's text stays out of the log", "hunter22secret" not in out, out)
-    g("checkout", "-q", "dev")
+        rc = ww.main(["warn_watch.py", "no-such-base"])
+    expect("a git failure is one error line and exit 1", rc == 1 and out.getvalue().startswith("::error::"), out.getvalue())
+    import os
+    os.environ["GITHUB_ACTIONS"] = "true"
+    n, out = pr(C, PRINT)
+    expect("annotations in GitHub's form", " file=src/client/a.gd,line=2::" in out, out)
+    del os.environ["GITHUB_ACTIONS"]
 
 print("test_warn_watch: " + ("PASS" if not bad else f"{bad} FAIL"))
 sys.exit(1 if bad else 0)
