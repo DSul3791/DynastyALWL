@@ -418,6 +418,8 @@ func _gather(item: String, n: int) -> String:
 	var said: int = r._notices.size()
 	var walks: int = 0
 	var presses: int = 0
+	var unreached: int = 0
+	var in_row: int = 0
 
 	while _count(item) < n and Time.get_ticks_msec() < until:
 		var spot: Dictionary = _nearest_source(item)
@@ -430,7 +432,8 @@ func _gather(item: String, n: int) -> String:
 				await _break_rock(rock, item)
 				continue
 
-		if spot.is_empty():
+		if spot.is_empty() or in_row >= 3:
+			in_row = 0
 			walks += 1
 			_line("GATHER %s: nothing giving it within %.0f m of %s; walking on (%d)" % [item, SEARCH_M, str(c.body.global_position.round()), walks])
 			await r._go_to(c.body.global_position + Vector3.FORWARD.rotated(Vector3.UP, float(walks) * 0.8) * (30.0 + 10.0 * float(walks)), 30.0, 3.0)   # a widening spiral
@@ -440,7 +443,11 @@ func _gather(item: String, n: int) -> String:
 		_taken[_key(at)] = true
 
 		if not await r._go_to(at, 25.0, 1.4):
+			unreached += 1
+			in_row += 1
 			continue
+
+		in_row = 0
 
 		var had: int = _count(item)
 		await _press_e_at(at + (LOOK_UP if str(spot["kind"]) == "plant" else Vector3(0.0, 0.1, 0.0)))
@@ -451,10 +458,10 @@ func _gather(item: String, n: int) -> String:
 			await r._wait(0.2)
 
 	var got: int = _count(item) - start
-	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks%s" % [item, got, _count(item), n, presses, walks, _said(said)])
+	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks, %d out of reach%s" % [item, got, _count(item), n, presses, walks, unreached, _said(said)])
 
 	if _count(item) < n:
-		return "gathered %d %s in %.0f s (wanted %d more), %d E presses%s" % [got, item, GATHER_S, n - start, presses, _said(said)]
+		return "gathered %d %s in %.0f s (wanted %d more), %d E presses, %d sources out of reach%s" % [got, item, GATHER_S, n - start, presses, unreached, _said(said)]
 
 	return ""
 
@@ -893,25 +900,31 @@ func _build(structure: String) -> String:
 	var hammer: int = _hold("stone_hammer")
 	var known: Dictionary = c.items._world.duplicate()
 	var said: int = r._notices.size()
-	var at: Vector3 = c.body.global_position - c.body.global_transform.basis.z * 4.0
-	var y: float = float(c.items._ground_below.call(at))
-	at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+	var at: Vector3 = Vector3.ZERO
 	var site: int = int(_sites.get(structure, -1)) if c.items._world.has(int(_sites.get(structure, -1))) else -1   # a site placed on an earlier try
 
 	if site >= 0:
 		at = c.items._world[site]["pos"]
 	else:
-		c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
-		await r._wait(3.0)
+		for side in range(8):   # a player turns to open ground when the game says a tree is in the way
+			var heard: int = r._notices.size()
+			at = c.body.global_position - (c.body.global_transform.basis.z * (4.0 + 2.0 * (2.0 if side >= 4 else 0.0) / 2.0)).rotated(Vector3.UP, float(side) * PI * 0.5)
+			var y: float = float(c.items._ground_below.call(at))
+			at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
+			await r._wait(3.0)
 
-		for w in c.items._world:
-			if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
-				site = int(w)
+			for w in c.items._world:
+				if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
+					site = int(w)
+
+			if site >= 0 or not str(r._notices.slice(heard)).contains("in the way"):
+				break
 
 		_sites[structure] = site
 
 	if site < 0:
-		return "placed the %s blueprint 4 m ahead; no site came%s" % [structure, _said(said)]
+		return "placed the %s blueprint on open ground round the robot; no site came%s" % [structure, _said(said)]
 
 	await r._go_to(at, 10.0, 1.5)
 
@@ -927,6 +940,7 @@ func _build(structure: String) -> String:
 func _sell() -> String:
 	var hob: Vector3 = Vector3.INF
 	var leg_s: float = 0.0
+	await _gather("plant_fibre", 50)   # Hob buys fibre in lots of 50 (server_trade.gd: "He buys plant fibres 50 at a time.")
 
 	while leg_s < 480.0 and c.body.global_position.distance_to(_home) > 8.0:   # back to the starter camp, where Hob trades (NPCs are sent within 120 m)
 		await r._go_to(_home, 60.0, 6.0)
@@ -947,11 +961,10 @@ func _sell() -> String:
 	await r._go_to(hob, 180.0, 2.5)
 	var said: int = r._notices.size()
 
-	for item in ["twine", "plant_fibre", "stick", "stone"]:
-		if _count(item) > 0:
-			c.net.trade.rpc_id(1, "hob", 1, r._slot_of(item), 1)
+	for item in ["plant_fibre", "stone", "twine", "stick"]:
+		if _count(item) > 0 and not bool(c.items.goal_book.row("sell").get("done", false)):
+			c.net.trade.rpc_id(1, "hob", 1, r._slot_of(item), _count(item))
 			await r._wait(2.0)
-			break
 
 	_line("SOLD to Hob%s" % _said(said))
 	return ""
