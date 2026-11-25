@@ -369,6 +369,14 @@ func _gather(item: String, n: int) -> String:
 	while _count(item) < n and Time.get_ticks_msec() < until:
 		var spot: Dictionary = _nearest_source(item)
 
+		if spot.is_empty() and item in ["stone", "flint", "copper_ore", "tin_ore", "iron_ore"]:
+			var rock: int = _nearest_boulder()
+
+			if rock != 0:
+				_taken["rock%d" % rock] = true
+				await _break_rock(rock, item)
+				continue
+
 		if spot.is_empty():
 			walks += 1
 			_line("GATHER %s: nothing giving it within %.0f m of %s; walking on (%d)" % [item, SEARCH_M, str(c.body.global_position.round()), walks])
@@ -396,6 +404,47 @@ func _gather(item: String, n: int) -> String:
 		return "gathered %d %s in %.0f s (wanted %d more), %d E presses%s" % [got, item, GATHER_S, n - start, presses, _said(said)]
 
 	return ""
+
+
+# The nearest boulder within SEARCH_M not yet worked (inventory_view.gd _boulders: stone, and the ore rocks).
+func _nearest_boulder() -> int:
+	var best: int = 0
+	var best_d: float = SEARCH_M
+
+	for id in c.items._boulders:
+		var d: float = (c.items._boulders[id]["pos"] as Vector3).distance_to(c.body.global_position)
+
+		if d < best_d and not _taken.has("rock%d" % int(id)):
+			best_d = d
+			best = int(id)
+
+	return best
+
+
+# Blows with the axe (or a pickaxe) on a boulder, as a player clicks at it, until it gives no more or 40 blows; then what fell is swept up.
+func _break_rock(rock: int, item: String) -> void:
+	var tool: String = "pick" if _tool_slot("pick") >= 0 else "axe"
+
+	if _tool_slot(tool) < 0 or _hold(tool) < 0:
+		return
+
+	var entry: Dictionary = c.items._boulders[rock]
+	var at: Vector3 = entry["pos"]
+	await r._go_to(at, 30.0, float(entry["radius"]) + 1.2)
+	var had: int = _count(item)
+	var said: int = r._notices.size()
+	var blows: int = 0
+
+	while blows < 40 and c.items._boulders.has(rock):
+		_look_at(at + Vector3(0.0, float(entry["radius"]) * 0.5, 0.0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		blows += 1
+		await r._wait(1.0)
+
+	await _sweep_up(6.0)
+	_line("ROCK %d at %s: %d blows with the %s, +%d %s%s" % [rock, str(at.round()), blows, tool, _count(item) - had, item, _said(said)])
 
 
 func _key(p: Vector3) -> String:
@@ -486,6 +535,12 @@ func _wood(item: String, n: int) -> String:
 	var trees: int = 0
 
 	while _count(item) < n and trees < 3:
+		if item in ["leaves", "stick"]:   # an axe chops a bush into leaves and sticks (held_item.gd _strike, ACT_HIT_SHRUB)
+			await _chop_shrubs(8)
+
+			if _count(item) >= n:
+				break
+
 		why = await _chop_one()
 		trees += 1
 
@@ -512,9 +567,21 @@ func _chop_one() -> String:
 
 	var here: Vector3 = c.body.global_position
 	trees.sort_custom(func(a, b): return (a[0] as Vector3).distance_to(here) < (b[0] as Vector3).distance_to(here))
-	var tree: Array = trees[0]
-	var trunk: Vector3 = tree[0]
-	await r._go_to(trunk, 30.0, 1.6)
+	var trunk: Vector3 = Vector3.INF
+
+	for tree in trees:   # the nearest the robot can walk up to (a trunk on a slope or behind a rock is passed by)
+		if _taken.has("tree" + _key(tree[0])):
+			continue
+
+		_taken["tree" + _key(tree[0])] = true
+
+		if await r._go_to(tree[0], 30.0, 1.6):
+			trunk = tree[0]
+			break
+
+	if trunk == Vector3.INF:
+		return "walked to %d trees and reached none within 1.6 m" % trees.size()
+
 	var known: Dictionary = c.items._world.duplicate()
 	var said: int = r._notices.size()
 	var swings: int = 0
@@ -572,6 +639,43 @@ func _chop_one() -> String:
 	_line("WOOD worked the tree in %d blows: %s" % [work, _pack()])
 	await _sweep_up(12.0)
 	return ""
+
+
+func _chop_shrubs(most: int) -> void:
+	var here: Vector3 = c.body.global_position
+	var bushes: Array = []
+
+	for chunk in c.flora._chunks:
+		var held: Dictionary = c.flora._chunks[chunk].get("items", {})
+
+		for k in range(held.get("ids", []).size()):
+			var p: Vector3 = held["positions"][k]
+
+			if int(c.flora._species.get(int(held["ids"][k]) >> 16, {}).get("kind", 0)) == 1 and p.distance_to(here) < 40.0 and not _taken.has("bush" + _key(p)):
+				bushes.append(p)
+
+	bushes.sort_custom(func(a, b): return (a as Vector3).distance_to(here) < (b as Vector3).distance_to(here))
+	var had: int = _count("leaves")
+	var said: int = r._notices.size()
+	var done: int = 0
+
+	for p in bushes.slice(0, most):
+		_taken["bush" + _key(p)] = true
+
+		if _hold("axe") < 0 or not await r._go_to(p, 15.0, 1.3):
+			continue
+
+		for n in range(4):
+			_look_at(p + Vector3(0.0, 0.5, 0.0))
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+			await r._wait(0.1)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+			await r._wait(1.0)
+
+		done += 1
+		await _sweep_up(3.0)
+
+	_line("BUSHES chopped %d of %d near: +%d leaves, pack %s%s" % [done, bushes.size(), _count("leaves") - had, _pack(), _said(said)])
 
 
 # Held E for `s` seconds: the sweep picks up what lies within 2 m, as a player clears up after a felling.
@@ -753,12 +857,14 @@ func _sell() -> String:
 	await r._go_to(_home, 180.0, 6.0)   # back to the starter camp, where Hob trades
 	await r._wait(3.0)
 
-	for npc in (c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []):
-		if str(npc["id"]) == "hob":
+	var seen: Array = c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []
+
+	for npc in seen:
+		if str(npc["id"]).to_lower().contains("hob") or str(npc["name"]).to_lower().contains("hob"):
 			hob = npc["pos"]
 
 	if hob == Vector3.INF:
-		return "Hob is not drawn anywhere on the client"
+		return "Hob is not drawn anywhere on the client at the starter camp (people drawn: %s)" % str(seen.map(func(n): return "%s %s" % [str(n["id"]), str(n["name"])]))
 
 	await r._go_to(hob, 180.0, 2.5)
 	var said: int = r._notices.size()
