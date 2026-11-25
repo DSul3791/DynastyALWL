@@ -20,7 +20,7 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
-func _key(code: int) -> InputEventKey:
+func _key(code: Key) -> InputEventKey:
 	var event: InputEventKey = InputEventKey.new()
 	event.keycode = code
 	event.pressed = true
