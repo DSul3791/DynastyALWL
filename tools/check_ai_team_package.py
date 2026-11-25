@@ -133,8 +133,24 @@ if not gate_fm or not re.search(r'^skills:\n(?:\s+- .*\n)*?\s+- ponytail-review$
     errors.append('GATE REVIEWER DOES NOT PRELOAD ponytail-review')
 import json
 settings=json.loads((root/'.claude/settings.json').read_text(encoding='utf-8'))
-for key in ('hooks','enabledPlugins','extraKnownMarketplaces','mcpServers','enableAllProjectMcpServers','enabledMcpjsonServers'):
+for key in ('enabledPlugins','extraKnownMarketplaces','mcpServers','enableAllProjectMcpServers','enabledMcpjsonServers'):
     if key in settings: errors.append(f'UNREVIEWED SETTINGS KEY {key}: review it, then update this check')
+# Hooks: only the team's own warn-only checks (Dave 25 Nov 2026, team audit step 4): PreToolUse on Bash, each running
+# tools/hooks/warn.sh, which always exits 0. Any other hook, event or a blocking onFailure needs a reviewed change here.
+WARN_HOOK=re.compile(r'^bash "\$\{CLAUDE_PROJECT_DIR\}/tools/hooks/warn\.sh" (commit|push)$')
+hooks=settings.get('hooks',{})
+groups=hooks.get('PreToolUse',[]) if isinstance(hooks,dict) else None
+if not isinstance(groups,list) or set(hooks)-{'PreToolUse'}:
+    errors.append('UNREVIEWED HOOK EVENT: only PreToolUse warn hooks are reviewed')
+    groups=[]
+for group in groups:
+    handlers=group.get('hooks',[]) if isinstance(group,dict) and group.get('matcher')=='Bash' else [{'command':f'a group not on Bash: {group}'}]
+    for h in handlers:
+        if h.get('type','command')!='command' or not WARN_HOOK.fullmatch(str(h.get('command',''))) or 'onFailure' in h or 'args' in h:
+            errors.append(f'UNREVIEWED HOOK: {h.get("command")}')
+for path in sorted((root/'tools/hooks').glob('*.[ps][yh]')):   # warn only: the scripts never hand Claude Code a permission decision
+    if 'permissionDecision' in path.read_text(encoding='utf-8',errors='replace'):
+        errors.append(f'UNREVIEWED HOOK: {path.relative_to(root)} makes a permission decision')
 for path in agent_files+skill_files:
     fm=re.match(r'\A---\n(.*?)\n---\n',path.read_text(encoding='utf-8'),re.S)
     if fm and re.search(r'^(hooks|mcpServers):', fm.group(1), re.M):
@@ -148,5 +164,5 @@ if errors:
     sys.exit(1)
 print(f'PASS: {len(core_rulebooks)} rulebooks, {len(required)} required files, {len(agent_files)} Claude Code agents, {len(skill_files)} skills')
 print('PASS: frontmatter, known instruction collisions, authority markers, guardrail references')
-print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, no hooks/plugins/MCP in shared settings, agent or skill frontmatter')
+print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, only the reviewed warn hooks and no plugins/MCP in shared settings, agent or skill frontmatter')
 print('LIMIT: static checks only; no Cowork, GitHub write, PC, Godot or live Claude evaluation.')
