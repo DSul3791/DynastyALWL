@@ -168,5 +168,21 @@ func _initialize() -> void:
 		c.tick(0.05)
 	check(charged and not int(charger["state"]) in [c.WARN, c.WARN + 1, c.big_game.STRIKE], "a charge on stops when the player lights a torch (charged %s, state %d)" % [charged, int(charger["state"])])
 
+	# 6. A camp bandit by his own lit fire still fights (bandits are people; the fire rule is the animals').
+	var b = make()
+	var man: Dictionary = b.animals[b.spawn("bandit", 0.0, 0.0)]
+	man["camp"] = 1
+	players = [{"peer": 1, "pos": Vector3(6.0, 10.0, 0.0), "stance": 0, "hp": 1.0}]
+	b.fires = func(): return [Vector3(1.0, 10.0, 0.0)]
+	b.fire_radius = func(_at): return 10.0
+	b._fire_cache = [[Vector3(1.0, 10.0, 0.0), 10.0]]
+	b.big_game.warn(man, players[0]["pos"], 0.5, true)
+	var fought: bool = int(man["state"]) == b.WARN
+
+	for _n in 4:
+		b.big_game.step(man, 0.05)
+
+	check(fought and int(man["state"]) in [b.WARN, b.WARN + 1, b.big_game.STRIKE], "a camp bandit by his lit fire still warns and charges (state %d)" % int(man["state"]))
+
 	print("test_starving: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

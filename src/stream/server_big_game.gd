@@ -216,7 +216,8 @@ func step(a: Dictionary, dt: float) -> void:
 
 	# Fire keeps everything away (Dave 25 Nov 2026): a warning, a charge or a blow wound up ends when its foe is in a fire's or a torch's
 	# light, or it has come into one itself; it backs off as after any charge (_calm). A break-away blow judges the light as it lands.
-	if state != RECOVER and not bool(a.get("break_away", false)) and ((not near.is_empty() and host._fire_guard(near["pos"]) != Vector3.INF) or host._fire_guard(a["pos"]) != Vector3.INF):
+	# Bandits are people, not animals: they fight by their own camp fire (BANDIT_CAMPS stage 2, the toll's refusal).
+	if state != RECOVER and not bool(a.get("break_away", false)) and str(a["sp"]) != "bandit" and ((not near.is_empty() and host._fire_guard(near["pos"]) != Vector3.INF) or host._fire_guard(a["pos"]) != Vector3.INF):
 		_calm(a, def)
 		return
 
