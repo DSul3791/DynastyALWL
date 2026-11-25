@@ -8,6 +8,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Rules := preload("res://src/shared/skill_rules.gd")
+const Classes := preload("res://src/shared/skill_classes.gd")
 const Web := preload("res://src/shared/skill_web.gd")
 
 var failures: int = 0
@@ -53,6 +54,15 @@ func _init() -> void:
 	bad = cfg.duplicate(true)
 	bad["skills"]["parry"]["needs"] = [{"skill": "rapier_master", "value": 65}]
 	check(not Web.validate(bad).is_empty(), "an unlock chain that loops is reported")
+	bad = cfg.duplicate(true)
+	bad["skills"]["athletics"]["needs"] = [{"skill": "jumping", "value": 15}]
+	bad["skills"]["jumping"]["needs"] = [{"skill": "athletics", "value": 15}]
+	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("locked skill")), "an action whose skill and every parent are locked is reported (%s)" % str(Web.validate(bad)))
+	check(Web.trainable(cfg, "hand_to_hand", {}) == "athletics" and Web.trainable(cfg, "woodcutting", {}) == "woodcutting", "a locked skill trains its nearest unlocked parent; an open one itself")
+	bad = cfg.duplicate(true)
+	bad["skills"]["athletics"]["parents"] = {"hand_to_hand": 1.0}
+	bad["skills"]["athletics"]["needs"] = [{"skill": "jumping", "value": 15}]
+	check(Web.trainable(bad, "hand_to_hand", {}) == "", "a locked loop ends instead of recursing for ever")
 
 	# Everyone starts at 1; a fresh average character has factor exactly 1.0 everywhere.
 	var all_one: bool = true
@@ -90,28 +100,76 @@ func _init() -> void:
 			Web.practice(cfg, "jumping", {}, records, 1.0, day0 + float(d + 1) * 86400.0 + float(n))
 
 	var top: float = Web.raw_value(cfg, "jumping", records["jumping"])
-	check(top > 20.0 and top <= 25.0, "a year of work without a teacher stops at the untrained cap of 25 (%.1f)" % top)
+	check(top > 20.0 and top < 25.0 and int(top) <= 24, "a year of work without a teacher stops under 25: 1 to 24 untrained (Dave 23 Nov 2026) (%.1f)" % top)
 
-	# Training: needs the cap nearly reached, jumps, raises the cap, then waits out a cooldown.
+	# Training (Dave 23 Nov 2026): at any value it jumps to the band floor (25 before 25), raises the cap, then waits out a cooldown.
 	var fresh: Dictionary = {}
-	check(Web.train_problem(cfg, "jumping", fresh, day0) == "not near the cap yet", "a beginner cannot be trained")
+	check(Web.train(cfg, "jumping", fresh, day0) == "" and absf(Web.raw_value(cfg, "jumping", fresh["jumping"]) - 25.0) < 0.01 and Web.cap_of(cfg, "jumping", fresh) == 50, "a beginner at 1 trained jumps straight to 25, cap 50")
 	var now: float = day0 + 500.0 * 86400.0
-	check(Web.train_problem(cfg, "jumping", records, now, 20.0, 1) != "", "a teacher at 20 is not skilled enough (needs 40)")
+	check(Web.train_problem(cfg, "jumping", records, now, 20.0, 1) != "", "a teacher at 20 is not skilled enough (needs 35)")
 	check(Web.train_problem(cfg, "jumping", records, now, 45.0, 0) == "the teacher is not trained that far", "and must be trained to the level taught")
 	check(Web.train(cfg, "jumping", records, now, 45.0, 1) == "", "a teacher at 45, trained to level 1, can train")
-	check(int(records["jumping"]["t"]) == 1 and Web.raw_value(cfg, "jumping", records["jumping"]) >= 29.99 and Web.cap_of(cfg, "jumping", records) == 50, "training jumps to 30 and raises the cap to 50")
+	check(int(records["jumping"]["t"]) == 1 and Web.raw_value(cfg, "jumping", records["jumping"]) >= 24.99 and Web.cap_of(cfg, "jumping", records) == 50, "training jumps to 25 and raises the cap to 50")
 	check(Web.train_problem(cfg, "jumping", records, now + 86400.0) != "", "the cooldown stops a second training at once")
 	var speed_before: float = float(records["jumping"]["p"])
 	Web.practice(cfg, "jumping", {}, records, 1.0, now + 5.0 * 86400.0)
 	check(float(records["jumping"]["p"]) - speed_before > 6.0, "after training gains are faster (x1.2)")
 
+	# Every band (Dave 23 Nov 2026): three trainings, cooldowns waited out, give 25, 50 and 75 with caps 50, 75 and 100; no fourth.
+	var bands: Dictionary = {}
+	var at: float = day0
+
+	for want in [25.0, 50.0, 75.0]:
+		check(Web.train(cfg, "woodcutting", bands, at) == "" and absf(Web.raw_value(cfg, "woodcutting", bands["woodcutting"]) - want) < 0.01 and Web.cap_of(cfg, "woodcutting", bands) == int(want) + 25, "training %d jumps to %d, cap %d" % [int(want / 25.0), int(want), int(want) + 25])
+		at += 4.0 * 86400.0
+
+	check(Web.train_problem(cfg, "woodcutting", bands, at) == "already at the top", "no fourth training")
+
+	# The four classes (Dave 23 Nov 2026): every skill 1 to 100, Basic 1-24, Advanced 25-49, Expert 50-74, Master 75-100. Use stays in Basic;
+	# each training starts the next class; the classes line up with the caps.
+	var named: Array = []
+
+	for value in [1, 24, 25, 49, 50, 74, 75, 100]:
+		named.append(Classes.class_of(cfg, float(value)))
+
+	check(named == ["Basic", "Basic", "Advanced", "Advanced", "Expert", "Expert", "Master", "Master"], "classes by value: 1 %s, 24 %s, 25 %s, 49 %s, 50 %s, 74 %s, 75 %s, 100 %s" % named)
+	check(Classes.class_of(cfg, 24.99) == "Basic" and Classes.class_of(cfg, top) == "Basic", "a year of use stays Basic (%.6f)" % top)
+	check(Classes.class_of(cfg, Web.effective(cfg, "woodcutting", bands)) == "Master" and int(cfg["system"]["max_value"]) == 100, "three trainings reach Master, and the top is 100")
+	var master_day: float = at
+
+	var last_day: int = 0
+
+	for d in 900:
+		if int(Web.effective(cfg, "woodcutting", bands)) >= 100:
+			break
+
+		last_day = d
+
+		for n in 100:
+			Web.practice(cfg, "woodcutting", {}, bands, 1.0, master_day + float(d) * 86400.0 + float(n))
+
+	var master_top: float = Web.effective(cfg, "woodcutting", bands)
+	check(int(master_top) == 100 and Classes.class_of(cfg, master_top) == "Master", "in Master, use goes all the way to 100 (%.2f)" % master_top)
+	check(Web.gain(cfg, "woodcutting", {}, bands, 1.0, master_day + float(last_day) * 86400.0 + 200.0) == 0.0, "and adds nothing past it")
+	check(Classes.class_rank(cfg, "Basic") == 0 and Classes.class_rank(cfg, "Master") == 3 and Classes.class_rank(cfg, "") == -1, "classes sort Basic, Advanced, Expert, Master")
+	bad = cfg.duplicate(true)
+	bad["system"]["classes"][2]["from"] = 51
+	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("does not start at 50")), "a class that does not start where its training starts is reported")
+	bad["system"]["classes"].pop_back()
+	check(Web.validate(bad).any(func(p: String) -> bool: return p.contains("do not cover")), "classes that do not reach 100 are reported")
+	var idle: Dictionary = {}
+	Web.train(cfg, "woodcutting", idle, day0)
+	idle["woodcutting"]["p"] = 1.0   # months idle: practice decayed far under the floor
+	check(Web.train_problem(cfg, "woodcutting", idle, day0 + 400.0 * 86400.0) == "", "a decayed trained skill can still be trained (it reads its floor)")
+	check(Web.train_problem(cfg, "woodcutting", {}, day0, 30.0, 1) == "the teacher is not skilled enough", "a teacher at 30 cannot train level 1 (needs 35)")
+
 	# The family floor: training a foundation lifts every descendant when read, with nothing written into them.
 	var fam: Dictionary = {"athletics": {"p": Web.units_for(cfg, "athletics", 22.0)}}
 	check(Web.train(cfg, "athletics", fam, now) == "", "athletics can be trained at 22")
-	check(Web.effective(cfg, "jumping", fam) >= 30.0 and not fam.has("jumping"), "jumping reads at least 30 through the family floor without a record")
-	check(Web.effective(cfg, "athletics", fam) >= 30.0, "and athletics itself jumped")
+	check(Web.effective(cfg, "jumping", fam) >= 25.0 and not fam.has("jumping"), "jumping reads at least 25 through the family floor without a record")
+	check(Web.effective(cfg, "athletics", fam) >= 25.0, "and athletics itself jumped")
 	Web.practice(cfg, "jumping", {}, fam, 1.0, now + 86400.0)
-	check(Web.raw_value(cfg, "jumping", fam["jumping"]) >= 30.0, "practising jumping lifts its own record to the floor first")
+	check(Web.raw_value(cfg, "jumping", fam["jumping"]) >= 25.0, "practising jumping lifts its own record to the floor first")
 
 	# Unlocks: rapier waits for swordplay 15 (which waits for fighting 15, which waits for athletics 15).
 	var chain: Dictionary = {}
@@ -188,9 +246,8 @@ func _init() -> void:
 
 	check(wood.size() == 9 and int(wood[5]) == 1 and int(wood[7]) >= 0 and int(wood[7]) <= 99, "a skill row carries the percent to the next level (%s)" % str(wood))
 	check(wood.size() == 9 and int(wood[8]) < 100 and int(wood[8]) > 0, "and what is left of today's gain after practising (%s)" % str(wood))
-	check(items.train_skill(1, "woodcutting") == "not near the cap yet", "the server refuses early training")
-	items._characters["skill-key-0001"]["skills"]["woodcutting"]["p"] = Web.units_for(cfg, "woodcutting", 23.0)
-	check(items.train_skill(1, "woodcutting") == "", "and trains a skill near its cap")
+	check(items.train_skill(1, "woodcutting") == "", "the server trains a skill well under its cap (Dave 23 Nov 2026)")
+	check(absf(Web.effective(cfg, "woodcutting", items._characters["skill-key-0001"]["skills"]) - 25.0) < 0.01, "and it reads 25 after")
 	items._dirty = true
 	items.save()
 	var again = make(dir, clock)

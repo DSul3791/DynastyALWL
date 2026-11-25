@@ -9,6 +9,7 @@ extends "res://src/client/ragdoll_body.gd"
 
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const PARTS_GLB := DynastyBody.ARMS_GLB
 const UPPER_LEN := 0.29            # the rig's bone lengths (ragdoll_body.gd BONES): shoulder to elbow, elbow to wrist
 const FORE_LEN := 0.26
@@ -248,7 +249,7 @@ func _load_sources(into: Dictionary) -> void:
 	var packed: PackedScene = DynastyBody.load_warm(PARTS_GLB) as PackedScene if (ResourceLoader.exists(PARTS_GLB) and not DynastyBody.force_unavailable) else null
 
 	if packed == null:
-		print("dynasty arms: %s is not imported: keeping the old arms this run (run godot --import once)" % PARTS_GLB)
+		FreezeWatchScript.printer.line("dynasty arms: %s is not imported: keeping the old arms this run (run godot --import once)" % PARTS_GLB)
 		return
 
 	var inst: Node = packed.instantiate()

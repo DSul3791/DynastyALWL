@@ -25,6 +25,8 @@ extends RefCounted
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GroundOps := preload("res://src/stream/ground_ops.gd")
 const GroundSettle := preload("res://src/stream/ground_settle.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const AirTableScript := preload("res://src/stream/air_table.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const BLOCK_SIZE := 16
 
@@ -36,7 +38,10 @@ var tiles_stamp: String = ""            # fingerprint of the tile files the grou
 var _tile_dates: String = ""            # tile file names, sizes and dates last seen
 var _dates_changed_msec: int = -1       # when they last changed (a bake is writing)
 var blocks_generated: int = 0
+var _made_rows: Dictionary = {}   # "level row" -> blocks made here (not served from a pack or cache), row counted from the block holding the ground
 var cache_hits: int = 0
+var air_hits: int = 0                   # all-air blocks filled from the pack's air table (air_table.gd): not made, not saved
+var air = AirTableScript.new()
 var edit_hits: int = 0
 var bad_blocks: int = 0                 # built blocks that failed the sanity check (not saved)
 
@@ -48,6 +53,7 @@ var _mutex: Mutex = Mutex.new()
 var _timing_on: bool = OS.has_environment("BLOCKTIME")
 var _timing: Dictionary = {}            # piece -> [calls, microseconds]; printed at exit when BLOCKTIME is set
 var _edit_mutex: Mutex = Mutex.new()
+var _cache_db_mutex: Mutex = Mutex.new()   # every read, write and flush of the generated-ground cache file, one at a time (_cache_load)
 var settle_enabled: bool = true         # data/network.json "settled_ground": 0 turns settled copies off (every load replays the whole log)
 var _settle = GroundSettle.new()       # settled copies of busy blocks (ground_settle.gd); the edit log stays the truth. Swapped by clear_generated under _mutex: read it as `settle` (a fresh reference each time)
 var settle:
@@ -81,33 +87,97 @@ func setup(terrain_generator, store_dir: String) -> String:
 		print("server: terrain or tile files changed, old generated ground thrown away")
 
 	_purge_old_generated()
+	var tile_m = generator.get("tile_size_m")   # test generators may have none: then no table is read (every block is made)
+	air.open(store_dir if tile_m != null else "", wanted, float(tile_m) if tile_m != null else 15360.0, BLOCK_SIZE)
 	_cache = _open_generated()
 	_edits = VoxelStreamSQLite.new()
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
 	_warm(_cache)
 	_warm(_edits)
-	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat")
+	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat", ItemsScript.header_digs(store_dir))   # digs after the last whole save are dropped with their pack changes
 
 	if ops_error != "":
 		return ops_error
 
 	print("server: %d ground edits loaded from digs.dat" % ops.count)
+
+	if not ops.dropped.is_empty():
+		_drop_settled()   # copies made with the cut edits in them: a later log that grows past their number again must not take them
+
 	_purge_old_settled()
 	var settle_error: String = _open_settle()
 
 	if settle_error != "":
 		return settle_error
 
-	var path: String = store_dir + "/revisions.json"
+	_load_revisions(store_dir + "/revisions.json")
+	_bump_dropped()
+	return ""
+
+
+# Edits dropped at the start (ops.open cut the log back to the last whole save: a hard stop after it): a client's saved copy of their tiles
+# may hold them, so those tiles' revisions jump past CATCH_UP_MAX and the copy is dropped whole at the next join (as after a ground reset).
+func _bump_dropped() -> void:
+	var bumped: Dictionary = {}
+
+	for edit in ops.dropped:
+		for block in GroundOps.blocks_of(edit[0], edit[1]):
+			var tile: Vector2i = generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))
+			bumped["%d,%d" % [tile.x, tile.y]] = true
+
+	for key in bumped:
+		tile_revisions[key] = int(tile_revisions.get(key, 1)) + CATCH_UP_MAX + 1
+
+	if not bumped.is_empty():
+		_revisions_dirty = true
+
+	if _revisions_dirty:
+		save_revisions()   # the counts as this start left them (with "_ops" = the log's count now)
+
+
+# revisions.json: every tile's revision, and how many edits of the log they count (OPS_KEY).
+func _load_revisions(path: String) -> void:
+	ItemsScript.restore_missing(path)
 
 	if FileAccess.file_exists(path):
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
 		if typeof(parsed) == TYPE_DICTIONARY:
 			for key in parsed:
-				tile_revisions[str(key)] = int(parsed[key])
+				if str(key) != OPS_KEY:
+					tile_revisions[str(key)] = int(parsed[key])
 
-	return ""
+			# A hard stop up to a second after the last write: the log has edits the revisions do not count yet. Their tiles rise again as
+			# edit_sphere raised them, so a client that joined in that second never sees the same revision over different ground. A file
+			# from before this (no count) is taken as it is.
+			if parsed.has(OPS_KEY):
+				_count_unsaved_edits(int(parsed[OPS_KEY]))
+
+
+# Round 7 (physical world audit, 23 Nov 2026: a hard stop in the middle of digging loses nothing, and two players see the same ground). Since the
+# #1822 follow-up a hard stop drops the edits after the last whole world save (saved within seconds of an edit) with the pack changes they made.
+const OPS_KEY := "_ops"   # in revisions.json: how many edits of the log the revisions counted when written
+
+
+func _count_unsaved_edits(counted: int) -> void:
+	if counted >= ops.count:
+		return   # a clean stop: the revisions count every edit (or the log was cut back below them)
+
+	var list: Array = ops.edits()
+
+	for n in range(clampi(counted, 0, list.size()), list.size()):
+		var tiles: Dictionary = {}
+
+		for block in GroundOps.blocks_of(list[n][1], float(list[n][2])):
+			tiles[generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))] = true
+
+		for tile in tiles:
+			var key: String = "%d,%d" % [tile.x, tile.y]
+			tile_revisions[key] = int(tile_revisions.get(key, 1)) + 1
+
+	if counted < list.size():
+		_revisions_dirty = true
+		print("server: %d ground edits after the last revisions write counted again" % (list.size() - counted))
 
 
 # Called every few seconds: true once the tile files have changed (a bake
@@ -151,6 +221,7 @@ func check_tiles(now_msec: int) -> bool:
 		return false
 
 	tiles_stamp = stamp
+	air.set_stamp("%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp])
 	clear_generated()
 	_write(_store_dir + "/terrain_version.txt", "%d %s" % [Layout.TERRAIN_VERSION, tiles_stamp])
 	return true
@@ -173,6 +244,16 @@ func _write(path: String, text: String) -> void:
 	if file != null:
 		file.store_string(text)
 		file.close()
+
+
+# The settled copies are a cache made from the edit log (ground_settle.gd): after the log was cut back they may hold edits it no longer has,
+# so they are all thrown away and remade from the log as blocks get busy again.
+func _drop_settled() -> void:
+	var folder: String = ProjectSettings.globalize_path(_store_dir)
+
+	for file in DirAccess.get_files_at(folder):
+		if file.begins_with("settled_g"):
+			DirAccess.remove_absolute(folder + "/" + file)
 
 
 func _settled_stem() -> String:
@@ -235,7 +316,7 @@ func _open_generated() -> VoxelStreamSQLite:
 # file's version row. One read here, on the main thread before any worker runs, opens the file and its first connection alone.
 func _warm(stream: VoxelStreamSQLite) -> void:
 	var scratch: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
-	stream.load_voxel_block(scratch, Vector3i(0, 0, 0), 0)
+	_cache_load(stream, scratch, Vector3i(0, 0, 0), 0)
 
 
 # Deletes generated ground files of other generations (best effort).
@@ -446,6 +527,23 @@ func _load_edit(buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
 	return result
 
 
+# The generated-ground cache, one call at a time (robot play test 23 Nov 2026: "ERROR: database is locked" twice at load_block). The SQLite
+# stream gives each worker thread its own connection; a read on one while another thread's save was writing the stream's cached blocks out
+# waited about a second in SQLite, then failed, and the worker made the block again. With every call taken in turn under one lock, a read
+# waits at most for one write-out (tens of ms) and never fails (test_block_store_lock).
+func _cache_load(cache: VoxelStreamSQLite, buffer: VoxelBuffer, block: Vector3i, lod: int) -> int:
+	_cache_db_mutex.lock()
+	var result: int = cache.load_voxel_block(buffer, block, lod)
+	_cache_db_mutex.unlock()
+	return result
+
+
+func _cache_save(cache: VoxelStreamSQLite, buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+	_cache_db_mutex.lock()
+	cache.save_voxel_block(buffer, block, lod)
+	_cache_db_mutex.unlock()
+
+
 func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) -> void:
 	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		if not looks_zeroed(buffer):
@@ -456,9 +554,16 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_count("zeroed_edit")
 		print("server: ZEROED BLOCK %s LOD %d from the saved edits (generating it again)" % [str(block), lod])
 
+	var air_entry: PackedFloat64Array = air.entry(block.x, block.z, lod)
+
+	if not air_entry.is_empty() and generator.air_fill(buffer, block.y, lod, air_entry):
+		_count("air")
+		_path(trace, "the air table")
+		return
+
 	var cache: VoxelStreamSQLite = _cache_now()
 
-	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_load(cache, buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		# A saved copy is checked again on the way out (2026-10-21, a solid block floating over the lake): one that
 		# fails is dropped and made again below.
 		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):
@@ -486,7 +591,7 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_time("sanity check", t2 - t1)
 
 	if sane:
-		cache.save_voxel_block(copy_of(buffer), block, lod)   # a copy: the buffer is served next (copy_of)
+		_cache_save(cache, copy_of(buffer), block, lod)   # a copy: the buffer is served next (copy_of)
 		_path(trace, "generated")
 		if _timing_on:
 			_time("save to sqlite", Time.get_ticks_usec() - t2)
@@ -495,11 +600,14 @@ func _load_base(buffer: VoxelBuffer, block: Vector3i, lod: int, trace = null) ->
 		_path(trace, "generated twice (the first build failed the check)")
 
 		if _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # a zeroed build is never stored (zeroed_block_note.md)
-			cache.save_voxel_block(copy_of(buffer), block, lod)
+			_cache_save(cache, copy_of(buffer), block, lod)
 	else:
 		_path(trace, "generated from a stand-in tile")
 
 	_count("generated")
+
+	if generator.failed_tiles == failed_before:   # not after a stand-in tile: its height read would try the tile again
+		_count_made_row(block, lod)
 
 
 # Makes and saves a block nobody has asked for yet (idle pre-building).
@@ -511,19 +619,74 @@ func ensure_block(block: Vector3i, lod: int) -> bool:
 	if _load_edit(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
+	var entry: PackedFloat64Array = air.entry(block.x, block.z, lod)
+
+	if entry.size() == 3 and float(block.y) >= entry[0]:   # all air: filled from the table when asked, nothing to make or save
+		return false
+
 	var cache: VoxelStreamSQLite = _cache_now()
 
-	if cache.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_load(cache, buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND:
 		return false
 
 	var failed_before: int = generator.failed_tiles
 	generator.generate(buffer, block * (BLOCK_SIZE << lod), lod)
 
 	if generator.failed_tiles == failed_before and _is_sane(buffer, block, lod) and not looks_zeroed(buffer):   # never store a zeroed block
-		cache.save_voxel_block(buffer, block, lod)
+		_cache_save(cache, buffer, block, lod)
 
 	_count("generated")
+
+	if generator.failed_tiles == failed_before:   # not after a stand-in tile: its height read would try the tile again
+		_count_made_row(block, lod)
 	return true
+
+
+# Where the blocks the server still makes lie (Dave 23 Nov 2026: "I really don't want the server working out blocks at all"): each made
+# block is counted by its level and its row above (+) or below (-) the block holding the ground at its middle, so the generator's later
+# runs can be sized to what players' games really ask for. Rows past 16 either way are counted together.
+func _count_made_row(block: Vector3i, lod: int) -> void:
+	var block_m: float = float(BLOCK_SIZE << lod)
+	var h = generator.surface_height((float(block.x) + 0.5) * block_m, (float(block.z) + 0.5) * block_m, lod)
+
+	if h == null or is_nan(float(h)):
+		return
+
+	var row: int = clampi(block.y - int(floor(float(h) / block_m)), -17, 17)
+	var key: String = "%d %d" % [lod, row]
+	_mutex.lock()
+	_made_rows[key] = int(_made_rows.get(key, 0)) + 1
+	_mutex.unlock()
+
+
+# The counts above as one line, "" before any: "made by level and row: L0 -3:12 +2:40 ..., L1 ..." (17 = 17 or more).
+func made_rows_report() -> String:
+	_mutex.lock()
+	var counts: Dictionary = _made_rows.duplicate()
+	_mutex.unlock()
+
+	if counts.is_empty():
+		return ""
+
+	var keys: Array = counts.keys()
+	keys.sort_custom(func(a, b): return Vector2i(int(a.get_slice(" ", 0)), int(a.get_slice(" ", 1))) < Vector2i(int(b.get_slice(" ", 0)), int(b.get_slice(" ", 1))))
+	var levels: Dictionary = {}
+
+	for key in keys:
+		var lod: int = int(key.get_slice(" ", 0))
+		var row: int = int(key.get_slice(" ", 1))
+
+		if not levels.has(lod):
+			levels[lod] = PackedStringArray()
+
+		levels[lod].append("%s%d:%d" % ["+" if row > 0 else "", row, counts[key]])
+
+	var parts: PackedStringArray = PackedStringArray()
+
+	for lod in levels:
+		parts.append("L%d %s" % [lod, " ".join(levels[lod])])
+
+	return "blocks made, by level and row from the ground (+ above, - below, 17 = 17 or more): " + "; ".join(parts)
 
 
 # The ground is solid exactly where a voxel lies below its column's surface (caves
@@ -591,7 +754,7 @@ func dump_cell(x: float, y: float, z: float) -> String:
 	lines.append("server: freshly generated: " + _cell_text(fresh, local))
 	var cached: VoxelBuffer = Layout.make_buffer(BLOCK_SIZE)
 
-	if _cache_now().load_voxel_block(cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
+	if _cache_load(_cache_now(), cached, block, 0) == VoxelStream.RESULT_BLOCK_FOUND:
 		lines.append("server: generated-ground cache: " + _cell_text(cached, local) + ("" if _is_sane(cached, block, 0) else "   <-- FAILS THE SANITY CHECK"))
 	else:
 		lines.append("server: generated-ground cache: no copy of this block")
@@ -742,11 +905,11 @@ func save_revisions() -> void:
 
 	if _revisions_dirty:
 		_revisions_dirty = false
-		var revisions_file: FileAccess = FileAccess.open(_store_dir + "/revisions.json", FileAccess.WRITE)
+		var saved: Dictionary = tile_revisions.duplicate()
+		saved[OPS_KEY] = ops.count   # the edits these revisions count (a hard stop before the next write: _count_unsaved_edits)
 
-		if revisions_file != null:
-			revisions_file.store_string(JSON.stringify(tile_revisions, "\t", true))
-			revisions_file.close()
+		if not ItemsScript._write_file(_store_dir + "/revisions.json", JSON.stringify(saved, "\t", true), false):   # whole to a .tmp, then moved over
+			_revisions_dirty = true   # tried again at the next call
 
 	_edit_mutex.unlock()
 
@@ -754,7 +917,9 @@ func save_revisions() -> void:
 func flush() -> void:
 	settle.close()
 	save_revisions()
+	_cache_db_mutex.lock()
 	_cache_now().flush()
+	_cache_db_mutex.unlock()
 	_edit_mutex.lock()
 	_edits.flush()
 	_edit_mutex.unlock()
@@ -786,6 +951,8 @@ func _count(kind: String) -> void:
 			edit_hits += 1
 		"cache":
 			cache_hits += 1
+		"air":
+			air_hits += 1
 		_:
 			blocks_generated += 1
 

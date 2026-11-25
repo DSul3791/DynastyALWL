@@ -36,7 +36,7 @@ def bad(msg):
 
 # 1. conflict markers in code and data (not in .md, which may quote them)
 for f in sh("git", "ls-files").splitlines():
-    if f.endswith((".md", ".png", ".ogg", ".wav", ".glb", ".dat", ".sqlite", ".idx", ".json.gz")) or not os.path.isfile(f):
+    if f.endswith((".md", ".png", ".ogg", ".wav", ".glb", ".dat", ".sqlite", ".idx", ".json.gz")) or f.startswith("assets/animals/") or not os.path.isfile(f):   # the models: 2.6 GB of LFS binaries
         continue
     try:
         txt = open(f, encoding="utf-8", errors="ignore").read()
@@ -44,6 +44,14 @@ for f in sh("git", "ls-files").splitlines():
         continue
     if re.search(r"^(<<<<<<< |>>>>>>> )", txt, re.M) or re.search(r"^=======$", txt, re.M) and "<<<<<<<" in txt:
         bad("conflict marker in %s" % f)
+
+# 1b. the animal models (Git LFS) are real files or absent, never LFS pointer stubs: Godot would see a model that cannot load
+for f in sh("git", "ls-files", "assets/animals").splitlines():
+    if not f.endswith(".import") and os.path.isfile(f) and os.path.getsize(f) < 1024:
+        with open(f, "rb") as stub:
+            if stub.read(40).startswith(b"version https://git-lfs"):
+                bad("%s is a Git LFS pointer, not the model: run git lfs pull, or leave the models out with tools/skip_models.sh" % f)
+                break
 
 # 2. JSON parses, with no key twice in one object (the later one silently wins in Godot and Python: a doubled wild_rose seed, PR #1569)
 def _no_twice(pairs, where):
@@ -203,10 +211,26 @@ if looks.returncode != 0:
     for line in looks.stdout.splitlines()[1:]:
         bad("look name: " + line)
 
+clips = subprocess.run([sys.executable, "tools/model_clips.py"], capture_output=True, text=True)      # every clip models.json names is in its model file
+if clips.returncode != 0:
+    for line in clips.stdout.splitlines():
+        if line.startswith("FAIL "):
+            bad("animal clip: " + line[5:])
+    if "FAIL " not in clips.stdout:
+        bad("animal clip check crashed: " + clips.stderr[-200:])
+
 text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_output=True, text=True)
 if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
     for line in text.stdout.splitlines()[:-1]:
         bad("text vs recipe: " + line)
+
+shown = subprocess.run([sys.executable, "tools/check_player_text.py"], capture_output=True, text=True)
+if shown.returncode != 0:   # text the game shows (descriptions, hints, goals) names only real things, with the amounts they really ask for (coordinator 23 Nov 2026)
+    rows = [line for line in shown.stdout.splitlines() if ": " in line and not line.startswith("player text:")]
+    for line in rows:
+        bad("player text: " + line)
+    if not rows:   # the check itself failed: never pass silently
+        bad("player text check failed: " + " | ".join(shown.stderr.strip().splitlines()[-3:]))
 
 goal_gaps = subprocess.run([sys.executable, "tools/goal_station_audit.py"], capture_output=True, text=True)
 if goal_gaps.returncode != 0:   # every goal comes after the goals that build the stations it needs (Dave 17 Nov 2026, the Hoe report)
@@ -228,14 +252,18 @@ if reach.returncode != 0:   # encyclopedia obtainable_now must follow the data (
     else:   # the script itself failed (a data change it cannot read): show why
         bad("encyclopedia_reach failed: " + " | ".join(reach.stderr.strip().splitlines()[-3:]))
 
+no_use = subprocess.run([sys.executable, "tools/progression_check.py", "--unmarked"], capture_output=True, text=True)
+if no_use.returncode != 0:   # an item with no use yet must say so in the player's text (coordinator 23 Nov 2026: testers file it as a bug)
+    rows = no_use.stdout.split("## 11")[1].splitlines()[1:] if "## 11" in no_use.stdout else []
+    bad("no use yet and not marked: " + (", ".join(l[2:] for l in rows if l.startswith("- ")) or " | ".join(no_use.stderr.strip().splitlines()[-3:])) +
+        " (give it a use, or end its description with \"Nothing uses it yet.\")")
+
 placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
 if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
     for line in placeable.stdout.splitlines()[1:]:
         bad("placeable: " + line.strip())
 
-carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=True, text=True)
-if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)
-    print("WARNING: carry_audit: %d recipe(s) over the carry cap (python3 tools/carry_audit.py)" % sum(1 for l in carry.stdout.split("OVER CAP")[1].split("SLOWING")[0].splitlines() if " kg  recipe " in l))
+# Recipes heavier than a pack (tools/carry_audit.py) are no warning: a craft takes from stock within 12 m (craft_stock.gd, Dave 10 Nov 2026).
 
 export = subprocess.run([sys.executable, "tools/export_check.py"], capture_output=True, text=True)
 if export.returncode != 0:   # a release build would lack a file it loads or carry what it must not (server/client split C2); fix server-only creep with --write

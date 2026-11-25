@@ -142,6 +142,25 @@ const SEA_FOG_TOP_MAX_M := 200.0
 # and the starter calendar's declination, calendar_sign() x 23.44 sin(2 pi phase), as day_cycle.gd draws them.
 const SUN_TILT_DEG := 23.44
 
+# The server's height for a spot's weather (terrain_server._weather_here): the nearest HEIGHT_BAND_M, never under sea level. Within a band
+# the lapse moves the air 0.07 C at most, so the snow line moves no further; the client reads its own exact height.
+const HEIGHT_BAND_M := 10.0
+
+
+static func band_height(y: float) -> float:
+	return float(int(round(maxf(y, 0.0) / HEIGHT_BAND_M))) * HEIGHT_BAND_M
+
+
+# Whole game hours since it last rained (rain over 0.05) over a spot of `row` at `altitude_m`, looking back hour by hour up to max_h
+# game hours (0 while it rains); INF when it did not. The drink rule's "hours since rain" where the player drinks (DrinkRules.runs).
+static func rain_hours_ago(seed_value: int, game_s: float, group: String, altitude_m: float, row: int, equator_row: int, max_h: float) -> float:
+	for h in range(0, ceili(maxf(max_h, 0.0)) + 1):
+		if float(state(seed_value, game_s - float(h) * 3600.0, group, altitude_m, 0.0, row, equator_row)["rain"]) > 0.05:
+			return float(h)
+
+	return INF
+
+
 # The year's phase, 0..1: spring starts at 0, high summer is about 0.375, winter's middle 0.875.
 static func year_phase(game_s: float) -> float:
 	var days: float = float(GameClockScript.DAYS_PER_YEAR)
@@ -165,6 +184,29 @@ static func year_phase_at(game_s: float, row: int = STARTER_ROW, equator_row: in
 # The season name at a world position (z metres; the world's tile_size_m and equator_tile_row), for season reads by place.
 static func season_at(game_s: float, z_m: float, tile_size_m: float, equator_row: int = 0) -> String:
 	return GameClockScript.SEASON_NAMES[int(year_phase_at(game_s, Climate.row_of_z(z_m, tile_size_m), equator_row) * 4.0) % 4]
+
+
+# The season name of a tile row (Weather.season_at by row).
+static func season_of_row(game_s: float, row: int, equator_row: int = 0) -> String:
+	return GameClockScript.SEASON_NAMES[int(year_phase_at(game_s, row, equator_row) * 4.0) % 4]
+
+
+# A row's own season count, game year x 4 + its season index (the season stamp: "taken this season", "the season changed"): the calendar's
+# (GameClock year() * 4 + season_index(), unchanged on the starter's side of the equator) and two on across it, where the year is half a year on.
+static func season_stamp_at(game_s: float, row: int, equator_row: int = 0) -> int:
+	var calendar: int = int(floor(game_s / GameClockScript.SECONDS_PER_DAY / float(GameClockScript.DAYS_PER_YEAR) * 4.0))
+	var shift: float = fposmod(year_phase_at(game_s, row, equator_row) - year_phase(game_s), 1.0)
+	return calendar + (2 if shift > 0.25 else 0)
+
+
+# A row's own day of the year (0 its spring equinox): half a year on across the equator.
+static func day_of_year_at(game_s: float, row: int, equator_row: int = 0) -> int:
+	return int(floor(year_phase_at(game_s, row, equator_row) * float(GameClockScript.DAYS_PER_YEAR))) % GameClockScript.DAYS_PER_YEAR
+
+
+# Today's sunrise hour over a tile row (sunrise_hour at the row's latitude, the sun its sky draws).
+static func sunrise_at_row(game_s: float, row: int, equator_row: int = 0) -> float:
+	return sunrise_hour(year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR), Climate.latitude_of_row(row, equator_row))
 
 
 # Hour of the game day, 0..24.
@@ -207,9 +249,9 @@ static func river_dry(weather_state: Dictionary) -> float:
 
 # The day's mean air temperature (C): the island's climate (climate.gd) for the season and this spell (from the world seed), cooler with
 # altitude; no day and night swing.
-static func temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0) -> float:
+static func temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0, row: int = STARTER_ROW, equator_row: int = 0) -> float:
 	var climate: Dictionary = Climate.of_zone(group)
-	return Climate.mean_c(climate, year_phase(game_s), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
+	return Climate.mean_c(climate, year_phase_at(game_s, row, equator_row), altitude_m) + Climate.spell_c(climate, seed_value, game_s)
 
 
 # The air temperature (C) at this hour: temp_at plus the day and night swing (Climate.air_c: coldest 05:00, warmest 15:00). The one
@@ -227,8 +269,8 @@ static func snow_air_c(game_s: float, group: String, altitude_m: float = 0.0, se
 
 
 # temp_at for the snow and ice layer: the day's mean plus snow_bias_c.
-static func snow_temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0) -> float:
-	return temp_at(game_s, group, altitude_m, seed_value) + Climate.snow_bias_c(Climate.of_zone(group))
+static func snow_temp_at(game_s: float, group: String, altitude_m: float = 0.0, seed_value: int = 0, row: int = STARTER_ROW, equator_row: int = 0) -> float:
+	return temp_at(game_s, group, altitude_m, seed_value, row, equator_row) + Climate.snow_bias_c(Climate.of_zone(group))
 
 
 static func day_shape(hour: float) -> float:
@@ -547,8 +589,9 @@ static func wind_of_mps(mps: float) -> float:
 #   "sea_upwind": 0..1, how much of the ground upwind is open sea; "lee": 0..1, sheltered by a steep crest upwind
 #   "sea_way": Vector2 on (x, z) toward the nearest sea, length 0..1 for how much of the ground near by is sea; "canopy": 0..1
 # Returns a copy of `w` with "wind" and "wind_dir" changed, plus "wind_mps", "wind_gust" (gust over mean), "wind_gust_mps", "wind_slope_mps"
-# (+ down-slope, - up-slope), "wind_sea_mps" (+ onshore, - offshore) and "wind_base_dir" (the world's heading).
-static func local_wind(w: Dictionary, here: Dictionary, game_s: float) -> Dictionary:
+# (+ down-slope, - up-slope), "wind_sea_mps" (+ onshore, - offshore) and "wind_base_dir" (the world's heading). `row`, `equator_row`: the tile row
+# for its own sun and summer (the starter's by default).
+static func local_wind(w: Dictionary, here: Dictionary, game_s: float, row: int = STARTER_ROW, equator_row: int = 0) -> Dictionary:
 	var out: Dictionary = w.duplicate()
 	var sea: float = clampf(float(here.get("sea_upwind", 0.0)), 0.0, 1.0)
 	var base_dir: float = float(w.get("wind_dir", 0.0))
@@ -560,8 +603,8 @@ static func local_wind(w: Dictionary, here: Dictionary, game_s: float) -> Dictio
 	var flow: Vector2 = Vector2.from_angle(base_dir) * base_mps * lerpf(WIND_INLAND_SPEED, 1.0, sea)
 	var downhill: Vector2 = here.get("downhill", Vector2.ZERO)
 	var sea_way: Vector2 = here.get("sea_way", Vector2.ZERO)
-	var slope: float = slope_breeze_mps(float(here.get("grade", 0.0)), game_s, base_mps, cloud, sun) if downhill.length() > 0.01 else 0.0
-	var onshore: float = sea_breeze_mps(minf(sea_way.length(), 1.0), game_s, base_mps, cloud, sun) if sea_way.length() > 0.01 else 0.0
+	var slope: float = slope_breeze_mps(float(here.get("grade", 0.0)), game_s, base_mps, cloud, sun, row, equator_row) if downhill.length() > 0.01 else 0.0
+	var onshore: float = sea_breeze_mps(minf(sea_way.length(), 1.0), game_s, base_mps, cloud, sun, row, equator_row) if sea_way.length() > 0.01 else 0.0
 
 	if slope != 0.0:
 		flow += downhill.normalized() * slope
@@ -600,7 +643,7 @@ static func _night_flow(hour: float, rise: float) -> float:
 
 # The slope breeze (m/s): + down the slope (katabatic: clear nights), - up it (anabatic: sunny days from mid-morning). Only on
 # light-wind days: full under 2 m/s of the world's wind, gone at 6. 0 on gentle ground (grade under 0.05).
-static func slope_breeze_mps(grade: float, game_s: float, base_mps: float, cloud: float, sun: float) -> float:
+static func slope_breeze_mps(grade: float, game_s: float, base_mps: float, cloud: float, sun: float, row: int = STARTER_ROW, equator_row: int = 0) -> float:
 	var steep: float = smoothstep(SLOPE_GRADE[0], SLOPE_GRADE[1], grade)
 
 	if steep <= 0.0:
@@ -608,7 +651,7 @@ static func slope_breeze_mps(grade: float, game_s: float, base_mps: float, cloud
 
 	var calm: float = 1.0 - smoothstep(SLOPE_CALM_MPS[0], SLOPE_CALM_MPS[1], base_mps)
 	var hour: float = hour_of(game_s)
-	var rise: float = sunrise_hour(year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR))
+	var rise: float = sunrise_at_row(game_s, row, equator_row)   # the row's own sun
 	var day: float = smoothstep(ANABATIC_FROM_SUNRISE_H[0], ANABATIC_FROM_SUNRISE_H[1], hour - rise) * smoothstep(ANABATIC_TO_SUNSET_H[1], ANABATIC_TO_SUNSET_H[0], 24.0 - rise - hour)
 	var clear: float = 1.0 - smoothstep(0.4, 0.8, cloud)
 	var down: float = lerpf(KATABATIC_MPS[0], KATABATIC_MPS[1], steep) * _night_flow(hour, rise) * clear
@@ -618,15 +661,15 @@ static func slope_breeze_mps(grade: float, game_s: float, base_mps: float, cloud
 
 # The sea or land breeze (m/s): + onshore on calm sunny days (stronger in summer), - offshore on clear calm nights. `near` is
 # 0..1, how much of the ground near by is sea. None when the world's wind is over 4 m/s.
-static func sea_breeze_mps(near: float, game_s: float, base_mps: float, cloud: float, sun: float) -> float:
+static func sea_breeze_mps(near: float, game_s: float, base_mps: float, cloud: float, sun: float, row: int = STARTER_ROW, equator_row: int = 0) -> float:
 	if near <= 0.0:
 		return 0.0
 
 	var calm: float = 1.0 - smoothstep(SEA_BREEZE_CALM_MPS[0], SEA_BREEZE_CALM_MPS[1], base_mps)
 	var hour: float = hour_of(game_s)
-	var rise: float = sunrise_hour(year_phase(game_s) * float(GameClockScript.DAYS_PER_YEAR))
+	var rise: float = sunrise_at_row(game_s, row, equator_row)   # the row's own sun
 	var set_h: float = 24.0 - rise
-	var summer: float = 0.5 + 0.5 * cos(TAU * (year_phase(game_s) - 0.375))
+	var summer: float = 0.5 + 0.5 * cos(TAU * (year_phase_at(game_s, row, equator_row) - 0.375))   # the row's own summer
 	var day: float = smoothstep(SEA_BREEZE_HOURS[0], SEA_BREEZE_HOURS[1], hour) * (1.0 - smoothstep(set_h - 2.0, set_h, hour))
 	var onshore: float = lerpf(SEA_BREEZE_MPS[0], SEA_BREEZE_MPS[1], summer) * day * clampf(sun, 0.0, 1.0)
 	var offshore: float = LAND_BREEZE_MPS * _night_flow(hour, rise) * (1.0 - smoothstep(0.4, 0.8, cloud))

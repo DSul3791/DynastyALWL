@@ -17,5 +17,6 @@
 	},
 	"tool_default": {"damage": 2.0, "mode": "blunt"},
 	"weapon_no_damage": {"damage": 3.0, "mode": "blunt"},
-	"other": {"damage": 1.0, "mode": "blunt", "reach_m": 1.8}
+	"other": {"damage": 1.0, "mode": "blunt", "reach_m": 1.8},
+	"bare_hand": {"damage": 2.0, "mode": "blunt", "reach_m": 1.8, "recover_ms": 600, "note": "A punch with nothing in hand (Dave 23 Nov 2026), times the Hand to hand skill factor (skills.json action punch: 1.0 at skill 1 up to max_factor 2.0): 2 to 4 a blow, a rabbit in two or three. PROVISIONAL."}
 }

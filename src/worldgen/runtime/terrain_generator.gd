@@ -46,6 +46,7 @@ const ORE_VEIN := 3
 const ORE_PLACER := 4
 const ORE_LAYER := 5
 const ORE_SCATTER := 6
+const AIR_BLOCK := 16                  # the server's block size in voxels (server_block_store.gd BLOCK_SIZE), for the air table
 
 var tiles_dir: String = ""
 var tile_size_m: float = 15360.0
@@ -69,6 +70,9 @@ var _prefetch_tasks = preload("res://src/shared/pool_tasks.gd").new()   # the pr
 var _loading: Dictionary = {}           # Vector2i -> true while one thread reads that tile in get_tile; the others wait for it
 var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
 var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
+var _tiles_epoch: int = 0                # forget_tiles count: kept column heights from before are not used
+var _heights_kept: Dictionary = {}        # thread id -> [key, plain heights, detailed heights or null] (_heights); each version may carry that thread's lookups at [8]
+var _heights_mutex: Mutex = Mutex.new()
 var _detail: Array = []               # [FastNoiseLite, amplitude_m, wavelength_m]
 var _band: float = 3.0
 var _detail_max: float = 0.0          # largest possible detail offset (m)
@@ -88,6 +92,12 @@ var _granite: int = 5
 var _basalt: int = 7
 
 
+# Lag lane 23 Nov 2026: tile prefetches run on the pool's high-priority threads. As low-priority tasks they shared one thread (of 4 in the cloud)
+# with the island resource build (about 6 s at start-up), so the tiles a first join needs were read one after another after it.
+func _init() -> void:
+	_prefetch_tasks.high_priority = true
+
+
 # `tables` is a TableSet, `tile_rules` the parsed tile_rules.json.
 func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) -> void:
 	tiles_dir = tiles_directory
@@ -103,6 +113,10 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 	_placeholder_depth = float(_terrain.get("placeholder_depth_m", -200.0))
 	_cave_max_lod = cave_carve_lods(int(_terrain.get("cave_max_lod", 2)))
 	_ore_max_lod = int(_terrain.get("ore_max_lod", 0))
+	var cap_rules: Dictionary = tile_rules.get("ore_cap", {})
+	_ore_node_cell = maxf(float(cap_rules.get("node_cell_m", 24.0)), 1.0)
+	_ore_node_share = float(cap_rules.get("node_share", 0.04))
+	_ore_cap_min = float(cap_rules.get("min_m", 1.5))
 
 	for entry in tables.get_entries("rocks"):
 		_rock_ids[str(entry["name"])] = int(entry["id"])
@@ -257,7 +271,7 @@ func _read_tile(coord: Vector2i):
 
 	if not data.placeholder:
 		data.near_water()
-		data.build_cave_scatter()   # also here: the server's first scatter cell on the tile built it on the main thread (345 ms)
+		data.build_cave_scatter(func(x: float, z: float) -> float: return _height(data, wrap_x(x), wrap_x(z), 1.0) if Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m))) == data.tile else NAN)   # also here: the server's first scatter cell on the tile built it on the main thread (345 ms)
 
 	print("terrain: tile %s loaded in %d ms (file %d ms, near_water %d ms)" % [str(coord), (Time.get_ticks_usec() - load_start) / 1000, (near_start - load_start) / 1000, (Time.get_ticks_usec() - near_start) / 1000])
 
@@ -271,6 +285,74 @@ func _read_tile(coord: Vector2i):
 
 	_mutex.unlock()
 	return data
+
+
+# The floor of the cave air at a point (a carved passage or chamber, or a mouth's open cut: tile_terrain_data.cave_floor_under), looked for
+# from the point and from 0.9 m under it (a low roof); NAN where the point is not in a cave's air or its tile is not loaded (never loads one).
+# surface_height does not know the caves (physical world audit round 6, 23 Nov 2026: a stack dropped in a cave hung 1.1 m over its floor,
+# and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it. A floor within
+# CAVE_UNDER_M of the tile's ground (height_at, no detail noise) is the ground itself, not a cave's, and reads NAN.
+const CAVE_UNDER_M := 0.3   # cave_floor_under blends the 1 m voxel grid: its ground crossing lies up to 0.3 m off height_at
+const CAVE_PROBE_UP_M := 0.5   # callers look for a spot's cave floor from this far over its foot (server_items, server_carts)
+
+
+func cave_floor_at(point: Vector3) -> float:
+	if not tile_cached(point.x, point.z):
+		return NAN
+
+	var data = get_tile(tile_of(point.x, point.z))
+
+	if data == null or data.placeholder or data.caves.is_empty():
+		return NAN
+
+	var at: Vector3 = Vector3(wrap_x(point.x), point.y, wrap_x(point.z))
+	var floor_y: float = data.cave_floor_under(at)
+
+	if is_nan(floor_y):
+		floor_y = data.cave_floor_under(at - Vector3(0.0, 0.9, 0.0))
+
+	if is_nan(floor_y):
+		return NAN
+
+	# A floor at the ground's own height is not a cave's: from the open air (or just inside open ground, which the cave SDF counts as air) the
+	# search finds the ground without its detail noise, which lies inside a hill where the detail raises it. A cave's floor (a passage, a
+	# chamber, a mouth's cut) is carved under that ground.
+	if floor_y > float(data.height_at(at.x, at.z)) - CAVE_UNDER_M or floor_y > surface_height(point.x, point.z) - 0.02:
+		return NAN
+
+	return floor_y
+
+
+# Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface (in a cave, the
+# cave's floor: cave_floor_at) with the saved digs and fills `edits` ([kind 0 dig / 1 fill, centre, radius], oldest first) laid over it, in order
+# (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them). Returns the resting height, or NAN when there
+# is no ground within 24 m below. terrain_server._floor_below passes the store's edits.
+func floor_below(from: Vector3, edits: Array) -> float:
+	var ground: float = surface_height(from.x, from.z)
+
+	# In a cave its floor is the ground (round 6: a drop there hung 1.1 m over the floor), from over the surface too: a mouth's open cut lies under
+	# the surface, which does not know it (a cart pulled out through the cut rode up onto the surface over it).
+	var cave: float = cave_floor_at(from)
+
+	if not is_nan(cave) and cave < ground:
+		ground = cave
+
+	var y: float = from.y + 0.05
+
+	for step in range(480):   # 0.05 m steps, 24 m
+		var p: Vector3 = Vector3(from.x, y, from.z)
+		var solid: bool = p.y < ground
+
+		for op in edits:
+			if p.distance_to(op[1]) <= float(op[2]):
+				solid = int(op[0]) == 1
+
+		if solid:
+			return y + 0.05
+
+		y -= 0.05
+
+	return NAN
 
 
 # Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
@@ -331,7 +413,14 @@ func prefetch_around(x: float, z: float, margin: float = 2000.0) -> void:
 func forget_tiles() -> void:
 	_mutex.lock()
 	_tiles.clear()
+	_tiles_epoch += 1   # the kept column heights (_heights) were read from the old tiles
 	_mutex.unlock()
+	_open_sea_mutex.lock()
+	_open_sea.clear()   # a bake may have added a tile where there was open ocean
+	_open_sea_mutex.unlock()
+	_heights_mutex.lock()
+	_heights_kept.clear()   # and hold the old tiles: let them go now
+	_heights_mutex.unlock()
 
 
 func _file_length(path: String) -> int:
@@ -457,7 +546,85 @@ func _wrapped_noise(noise: FastNoiseLite, x: float, z: float, band: float) -> fl
 
 # ---------------------------------------------------------------- blocks
 
+# Open ocean (24 Nov 2026): past the baked tiles there is no tile file and the sea floor is flat (placeholder_depth_m), so a block whose
+# columns and their ring all lie on such tiles is the same at every x and z: it depends only on its row and level. The first one made
+# is kept and copied for the rest (exact: test_open_ocean.gd). A stand-in for a tile that would not load is never kept.
+const OPEN_SEA_KEPT_MAX := 512          # kept sea blocks (rows of seabed and rock under it, every level)
+const OPEN_SEA_CHANNELS := [Layout.CHANNEL_SDF, Layout.CHANNEL_ROCK, Layout.CHANNEL_SOIL, Layout.CHANNEL_RESOURCE, Layout.CHANNEL_MATERIAL]   # the channels generate() writes
+
+var _open_sea: Dictionary = {}           # Vector3i(row, level, size) -> VoxelBuffer, under _open_sea_mutex
+var _open_sea_mutex: Mutex = Mutex.new()
+var open_sea_hits: int = 0
+
+
 func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
+	var size: Vector3i = buffer.get_size()
+
+	if size.x != size.y or size.x != size.z or size.x < 2 or not _open_sea_block(origin, lod, size.x):
+		_generate_made(buffer, origin, lod)
+		return
+
+	var key: Vector3i = Vector3i(origin.y, lod, size.x)
+	_open_sea_mutex.lock()
+	var kept: VoxelBuffer = _open_sea.get(key, null)
+
+	if kept != null:
+		open_sea_hits += 1
+
+	_open_sea_mutex.unlock()
+
+	if kept != null:
+		for channel in OPEN_SEA_CHANNELS:
+			buffer.copy_channel_from(kept, channel)
+
+		return
+
+	var failed_before: int = failed_tiles
+	_generate_made(buffer, origin, lod)
+
+	if failed_tiles != failed_before or (buffer.is_uniform(Layout.CHANNEL_SDF) and buffer.get_voxel_f(0, 0, 0, Layout.CHANNEL_SDF) > 0.0):
+		return   # a tile that would not load, or air (already cheap): not kept
+
+	var copy: VoxelBuffer = VoxelBuffer.new()
+	copy.create(size.x, size.y, size.z)
+
+	for channel in OPEN_SEA_CHANNELS:
+		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
+		copy.copy_channel_from(buffer, channel)
+
+	_open_sea_mutex.lock()
+
+	if _open_sea.size() < OPEN_SEA_KEPT_MAX:
+		_open_sea[key] = copy
+
+	_open_sea_mutex.unlock()
+
+
+# The block's columns and their one-column ring all lie on tiles with no file (open ocean, not a stand-in for a file that would not load).
+func _open_sea_block(origin: Vector3i, lod: int, n: int) -> bool:
+	var sf: float = float(1 << lod)
+
+	if float(n + 2) * sf >= tile_size_m:
+		return false   # a block this coarse could reach past the next tile, where the four corners would not see a baked tile between them
+
+	var xs: Array = [wrap_x(float(origin.x) - sf), wrap_x(float(origin.x) + float(n) * sf)]
+	var zs: Array = [wrap_x(float(origin.z) - sf), wrap_x(float(origin.z) + float(n) * sf)]
+	_mutex.lock()
+
+	for x in xs:
+		for z in zs:
+			var data = _tiles.get(Vector2i(int(floor(x / tile_size_m)), int(floor(z / tile_size_m))), null)
+
+			# Only tiles already read and kept count: a stand-in for a failed read is never kept in _tiles.
+			if data == null or not data.placeholder:
+				_mutex.unlock()
+				return false
+
+	_mutex.unlock()
+	return true
+
+
+func _generate_made(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var size: Vector3i = buffer.get_size()
 	var s: int = 1 << lod
 	var sf: float = float(s)
@@ -472,74 +639,26 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	buffer.fill(0, Layout.CHANNEL_RESOURCE)
 	buffer.fill(Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT, Layout.CHANNEL_MATERIAL)
 
-	# Heights on the block's columns plus a one-column ring for slopes.
-	var wx: PackedFloat32Array = PackedFloat32Array()
-	var wz: PackedFloat32Array = PackedFloat32Array()
-	wx.resize(nx + 2)
-	wz.resize(nz + 2)
-
-	for i in range(nx + 2):
-		wx[i] = wrap_x(float(origin.x) + float(i - 1) * sf)
-
-	for k in range(nz + 2):
-		wz[k] = wrap_x(float(origin.z) + float(k - 1) * sf)
-
-	var row: int = nx + 2
-	var hs: PackedFloat32Array = PackedFloat32Array()
-	hs.resize(row * (nz + 2))
-	var column_tile: Array = []
-	column_tile.resize(row * (nz + 2))
-	var last_coord: Vector2i = Vector2i(1 << 30, 0)
-	var last_data = null
-	var h_min: float = INF
-	var h_max: float = -INF
-
-	for k in range(nz + 2):
-		var tz: int = int(floor(wz[k] / tile_size_m))
-
-		for i in range(nx + 2):
-			var coord: Vector2i = Vector2i(int(floor(wx[i] / tile_size_m)), tz)
-
-			if coord != last_coord:
-				last_coord = coord
-				last_data = get_tile(coord)
-
-			var index: int = k * row + i
-			column_tile[index] = last_data
-			var h: float = last_data.height_at(wx[i], wz[k])
-			hs[index] = h
-
-			if i > 0 and k > 0 and i <= nx and k <= nz:
-				h_min = minf(h_min, h)
-				h_max = maxf(h_max, h)
+	# Heights on the block's columns plus a one-column ring for slopes (_column_heights), with the detail noise only near the surface.
+	# (_heights: the same for every block of the column, so the last column's are kept per thread.)
+	var columns: Array = _heights(origin, nx, nz, sf, false)
+	var h_min: float = columns[6]
+	var h_max: float = columns[7]
 
 	# Detail noise only matters near the surface: skip it for blocks well
 	# above or below the ground.
 	var near_ground: bool = oy - _detail_max <= h_max + 4.0 * _band * sf and y_top + _detail_max >= h_min - 4.0 * _band * sf
 
 	if near_ground and _detail_max > 0.0:
-		h_min = INF
-		h_max = -INF
+		columns = _heights(origin, nx, nz, sf, true)
+		h_min = columns[6]
+		h_max = columns[7]
 
-		var grid: PackedFloat32Array = _detail_grid(wx[0], wz[0], row, nz + 2, sf)
-
-		for k in range(nz + 2):
-			for i in range(nx + 2):
-				var index: int = k * row + i
-				var data = column_tile[index]
-				var extra: float = 0.0
-
-				if grid.is_empty():
-					extra = _detail_at(data, wx[i], wz[k], sf)
-				elif not data.placeholder:
-					extra = grid[index] * (1.0 - data.wet_at(wx[i], wz[k]))
-
-				var h: float = hs[index] + extra
-				hs[index] = h
-
-				if i > 0 and k > 0 and i <= nx and k <= nz:
-					h_min = minf(h_min, h)
-					h_max = maxf(h_max, h)
+	var wx: PackedFloat32Array = columns[0]
+	var wz: PackedFloat32Array = columns[1]
+	var row: int = nx + 2
+	var hs: PackedFloat32Array = columns[2]
+	var column_tile: Array = columns[3]
 
 	# Caves and ore bodies that touch this block.
 	var block_box: AABB = AABB(Vector3(float(origin.x), oy, float(origin.z)), Vector3(float(nx - 1), float(ny - 1), float(nz - 1)) * sf)
@@ -553,6 +672,14 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 	var ore_set: Dictionary = _ores_touching(column_tile, block_box) if lod <= _ore_max_lod else {}
 	var has_ore: bool = not ore_set.is_empty() and (not ore_set["shapes"].is_empty() or _any_layers(ore_set))
 	var block_bodies: Dictionary = _bodies_touching(column_tile, block_box)
+	# Per-column lookups kept with the heights (_column_lookups): the same for every block of the column.
+	var kept: Array = _column_lookups(columns)
+	var kept_sample: PackedInt32Array = kept[0]
+	var kept_cover: PackedFloat64Array = kept[1]
+	var kept_offset: PackedFloat64Array = kept[2]
+	var kept_soil: PackedInt32Array = kept[3]
+	var kept_look: PackedInt32Array = kept[4]
+	var kept_has: PackedByteArray = kept[5]   # bit 1 cover, 2 offset, 4 soil, 8 look, 16 sample
 
 	for k in range(nz):
 		for i in range(nx):
@@ -584,14 +711,61 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 			var offset_m: float = NAN
 
 			if lookups_shared and not data.placeholder:
-				sample = data.nearest(wx[i + 1], wz[k + 1])
-				soil_id = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
+				var has: int = kept_has[index]
+
+				if has & 16 == 0:
+					kept_sample[index] = data.nearest(wx[i + 1], wz[k + 1])
+					has |= 16
+
+				sample = kept_sample[index]
+
+				# Bedrock up through the block's top: the rock fill below writes every voxel's material,
+				# so the surface look is not worked out (the soil is not used either).
+				if buried_columns_skipped:
+					if has & 1 == 0:
+						kept_cover[index] = data.cover_at(wx[i + 1], wz[k + 1])
+						has |= 1
+
+					cover_m = kept_cover[index]
+
+					if int(floor((h - cover_m - oy) / sf)) >= ny - 1:
+						if has & 2 == 0:
+							kept_offset[index] = data.offset_at(wx[i + 1], wz[k + 1])
+							has |= 2
+
+						kept_has[index] = has
+						offset_m = kept_offset[index]
+						_fill_rock_column(buffer, data, block_bodies.get(data.tile, []), i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, sample, -1, cover_m, offset_m)
+
+						if has_ore:
+							_fill_ore_column(buffer, data, ore_set, i, k, wx[i + 1], wz[k + 1], h, oy, sf, ny, origin, sample, cover_m, offset_m)
+
+						continue
+
+				if has & 4 == 0:
+					kept_soil[index] = _ground_soil(data, sample, h, wx[i + 1], wz[k + 1])
+					has |= 4
+
+				soil_id = kept_soil[index]
 
 				if soil_id <= 0 or h >= oy:
-					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
-					offset_m = data.offset_at(wx[i + 1], wz[k + 1])
+					if has & 1 == 0:
+						kept_cover[index] = data.cover_at(wx[i + 1], wz[k + 1])
+						has |= 1
 
-				buffer.fill_area(_surface_material_known(data, sample, _wetland_look(data, soil_id, wx[i + 1], wz[k + 1]), cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
+					if has & 2 == 0:
+						kept_offset[index] = data.offset_at(wx[i + 1], wz[k + 1])
+						has |= 2
+
+					cover_m = kept_cover[index]
+					offset_m = kept_offset[index]
+
+				if has & 8 == 0:
+					kept_look[index] = _wetland_look(data, soil_id, wx[i + 1], wz[k + 1])
+					has |= 8
+
+				kept_has[index] = has
+				buffer.fill_area(_surface_material_known(data, sample, kept_look[index], cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 			else:
 				buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 
@@ -606,6 +780,253 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 
 	if not shapes.is_empty():
 		_carve_caves(buffer, shapes, origin, sf, size)
+
+
+# The heights of a block column (origin x and z, size, level), plain or with the detail noise, as _column_heights returns them
+# ([6] and [7] the lowest and highest of that version). Every block of a column has the same, and the prebuild and the server make a
+# column's blocks one after another, so each thread keeps its last column's (24 Nov 2026: three to four blocks a column, the heights
+# and detail noise were a quarter of a block's time). The caller adds only its own thread's lookups at [8] (_column_lookups). Kept only while no tile read failed and the tiles
+# were not dropped (forget_tiles), so a stand-in tile or an old tile is never reused.
+func _heights(origin: Vector3i, nx: int, nz: int, sf: float, detailed: bool) -> Array:
+	var key: Array = [origin.x, origin.z, nx, nz, sf, _tiles_epoch, failed_tiles, heights_gridded]
+	var thread: int = OS.get_thread_caller_id()
+	_heights_mutex.lock()
+	var kept: Array = _heights_kept.get(thread, [])
+	_heights_mutex.unlock()
+
+	if kept.is_empty() or kept[0] != key:
+		var failed_before: int = failed_tiles
+		var plain: Array = _column_heights(origin, nx, nz, sf)
+		kept = [key, plain, null]
+
+		if failed_tiles == failed_before:
+			_heights_mutex.lock()
+			_heights_kept[thread] = kept
+			_heights_mutex.unlock()
+
+	if not detailed:
+		return kept[1]
+
+	if kept[2] == null:
+		var plain: Array = kept[1]
+		var copy: Array = plain.duplicate()   # its own heights: the detail is added in place
+		copy.resize(8)   # and its own lookups (_column_lookups): the soil depends on the height
+		copy[2] = (plain[2] as PackedFloat32Array).duplicate()
+		var extremes: Array = _add_detail(copy, nx, nz, sf)
+		copy[6] = extremes[0]
+		copy[7] = extremes[1]
+		kept[2] = copy
+
+	return kept[2]
+
+
+# The per-column lookups of the heights `columns` (_heights): each column's nearest sample, cover, layer offset, ground soil and wetland
+# look depend only on the column and its height, so they are worked out once for all the blocks of a column and kept with its heights
+# (24 Nov 2026: the column's ground material was a fifth of a block's time). [sample, cover, offset, soil, look, which are known].
+# Each thread keeps its own heights, so only the thread that made them writes these.
+func _column_lookups(columns: Array) -> Array:
+	if columns.size() > 8:
+		return columns[8]
+
+	var count: int = (columns[2] as PackedFloat32Array).size()
+	var sample: PackedInt32Array = PackedInt32Array()
+	sample.resize(count)
+	var cover: PackedFloat64Array = PackedFloat64Array()
+	cover.resize(count)
+	var offset: PackedFloat64Array = PackedFloat64Array()
+	offset.resize(count)
+	var soil: PackedInt32Array = PackedInt32Array()
+	soil.resize(count)
+	var look: PackedInt32Array = PackedInt32Array()
+	look.resize(count)
+	var has: PackedByteArray = PackedByteArray()
+	has.resize(count)
+	var lookups: Array = [sample, cover, offset, soil, look, has]
+	columns.append(lookups)
+	return lookups
+
+
+# The heights of a block's columns plus a one-column ring for slopes, before the detail noise: [wx, wz, heights, the tile of each
+# column, wet_at of each column (when one tile holds them all), that one tile or null, lowest and highest height of the block's own
+# columns]. generate() and air_column() share it, so the air table holds exactly the numbers a block is made from.
+func _column_heights(origin: Vector3i, nx: int, nz: int, sf: float) -> Array:
+	var wx: PackedFloat32Array = PackedFloat32Array()
+	var wz: PackedFloat32Array = PackedFloat32Array()
+	wx.resize(nx + 2)
+	wz.resize(nz + 2)
+
+	for i in range(nx + 2):
+		wx[i] = wrap_x(float(origin.x) + float(i - 1) * sf)
+
+	for k in range(nz + 2):
+		wz[k] = wrap_x(float(origin.z) + float(k - 1) * sf)
+
+	var row: int = nx + 2
+	var hs: PackedFloat32Array = PackedFloat32Array()
+	hs.resize(row * (nz + 2))
+	var column_tile: Array = []
+	column_tile.resize(row * (nz + 2))
+	var last_coord: Vector2i = Vector2i(1 << 30, 0)
+	var last_data = null
+	var h_min: float = INF
+	var h_max: float = -INF
+	var wet: PackedFloat64Array = PackedFloat64Array()   # wet_at of each column, when one tile holds them all
+	var one_tile = null
+
+	if heights_gridded:
+		var first: Vector2i = Vector2i(int(floor(wx[0] / tile_size_m)), int(floor(wz[0] / tile_size_m)))
+
+		# Columns that do not cross the world's wrap (rising) and start and end on the same tile all lie on it.
+		if wx[row - 1] > wx[0] and wz[nz + 1] > wz[0] and first == Vector2i(int(floor(wx[row - 1] / tile_size_m)), int(floor(wz[nz + 1] / tile_size_m))):
+			one_tile = get_tile(first)
+
+			if one_tile.placeholder:
+				one_tile = null
+
+	if one_tile != null:
+		var inner: PackedFloat64Array = PackedFloat64Array()
+		hs = one_tile.heights_grid(wx, wz, wet, inner)
+		column_tile.fill(one_tile)
+		h_min = inner[0]
+		h_max = inner[1]
+
+	for k in range(nz + 2 if one_tile == null else 0):
+		var tz: int = int(floor(wz[k] / tile_size_m))
+
+		for i in range(nx + 2):
+			var coord: Vector2i = Vector2i(int(floor(wx[i] / tile_size_m)), tz)
+
+			if coord != last_coord:
+				last_coord = coord
+				last_data = get_tile(coord)
+
+			var index: int = k * row + i
+			column_tile[index] = last_data
+			var h: float = last_data.height_at(wx[i], wz[k])
+			hs[index] = h
+
+			if i > 0 and k > 0 and i <= nx and k <= nz:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	return [wx, wz, hs, column_tile, wet, one_tile, h_min, h_max]
+
+
+# Adds the detail noise to the heights _column_heights gave (in place); returns [the new lowest, highest height] of the block's columns.
+func _add_detail(columns: Array, nx: int, nz: int, sf: float) -> Array:
+	var wx: PackedFloat32Array = columns[0]
+	var wz: PackedFloat32Array = columns[1]
+	var row: int = nx + 2
+	var hs: PackedFloat32Array = columns[2]
+	var column_tile: Array = columns[3]
+	var wet: PackedFloat64Array = columns[4]
+	var one_tile = columns[5]
+	var h_min: float = INF
+	var h_max: float = -INF
+
+	var grid: PackedFloat32Array = _detail_grid(wx[0], wz[0], row, nz + 2, sf)
+
+	for k in range(nz + 2):
+		for i in range(nx + 2):
+			var index: int = k * row + i
+			var data = column_tile[index]
+			var extra: float = 0.0
+
+			if grid.is_empty():
+				extra = _detail_at(data, wx[i], wz[k], sf)
+			elif not data.placeholder:
+				extra = grid[index] * (1.0 - (wet[index] if one_tile != null else data.wet_at(wx[i], wz[k])))
+
+			var h: float = hs[index] + extra
+			hs[index] = h
+
+			if i > 0 and k > 0 and i <= nx and k <= nz:
+				h_min = minf(h_min, h)
+				h_max = maxf(h_max, h)
+
+	columns[2] = hs
+	return [h_min, h_max]   # an Array, not a Vector2: these are 64-bit and the air fill uses them exactly
+
+
+# ---------------------------------------------------------------- air table
+
+const AIR_NONE := 2147483647            # air_column's first row when the column has no air table entry (a tile file that would not load)
+const AIR_TALL_M := 1000000.0           # how high the cave check above an air row reaches (everything above counts)
+
+
+# The air table entry of block column (bx, bz) at this level (Dave 24 Nov 2026: "so we just have to generate the actual land blocks"):
+# [first row, highest height, highest height with the detail noise]. Every block of the column from the first row up is one that
+# generate() fills as all air (no ground, no cave), and air_fill makes it exactly as generate() would from the two heights alone.
+# The rows above are all air too: a higher block is further above the same heights (the near-ground test can only turn the detail
+# off further up, where the plain height already lies below), and the cave check covers everything above the first row at once.
+func air_column(bx: int, bz: int, lod: int) -> PackedFloat64Array:
+	var n: int = AIR_BLOCK
+	var sf: float = float(1 << lod)
+	var block_m: float = float(n << lod)
+	var origin: Vector3i = Vector3i(bx * (n << lod), 0, bz * (n << lod))
+	var failed_before: int = failed_tiles
+	var columns: Array = _heights(origin, n, n, sf, false)
+	var h_plain: float = columns[7]
+	var h_detail: float = _heights(origin, n, n, sf, true)[7] if _detail_max > 0.0 else h_plain
+
+	if failed_tiles != failed_before or not is_finite(h_plain) or not is_finite(h_detail):   # a tile that would not load: no entry (seabed past the nine tiles is fine)
+		return PackedFloat64Array([AIR_NONE, 0.0, 0.0])
+
+	var first: int = int(floor(minf(h_plain, h_detail) / block_m)) - 1
+
+	while not _air_row(first, lod, h_plain, h_detail):
+		first += 1
+
+	if lod <= _cave_max_lod:
+		for attempt in range(64):
+			var oy: float = float(first * (n << lod))
+			var tall: AABB = AABB(Vector3(float(origin.x), oy, float(origin.z)), Vector3(float(n - 1) * sf, AIR_TALL_M, float(n - 1) * sf))
+			var shapes: Array = _cave_shapes(columns[3], tall, origin, lod)
+
+			if shapes.is_empty():
+				return PackedFloat64Array([first, h_plain, h_detail])
+
+			var top: int = first + 1
+
+			for shape in shapes:
+				top = maxi(top, int(ceil((shape[5] as AABB).end.y / block_m)))
+
+			first = top
+
+		return PackedFloat64Array([AIR_NONE, 0.0, 0.0])
+
+	return PackedFloat64Array([first, h_plain, h_detail])
+
+
+# generate()'s all-air test for a block of row `by` over these heights (without the cave check).
+func _air_row(by: int, lod: int, h_plain: float, h_detail: float) -> bool:
+	var sf: float = float(1 << lod)
+	var oy: float = float(by * (AIR_BLOCK << lod))
+	return oy > _air_height(oy, sf, h_plain, h_detail) + _band * sf
+
+
+# The highest height generate() measures an air block's distance from: with the detail noise when the block is near the ground.
+func _air_height(oy: float, sf: float, h_plain: float, h_detail: float) -> float:
+	var near_ground: bool = oy - _detail_max <= h_plain + 4.0 * _band * sf
+	return h_detail if near_ground and _detail_max > 0.0 else h_plain
+
+
+# Fills a block of row `by` from its column's air table entry, the same as generate() makes it; false when the entry does not cover it.
+func air_fill(buffer: VoxelBuffer, by: int, lod: int, entry: PackedFloat64Array) -> bool:
+	if entry.size() != 3 or float(by) < entry[0] or int(entry[0]) == AIR_NONE:
+		return false
+
+	var oy: float = float(by * (AIR_BLOCK << lod))
+	_fill_air(buffer, minf(oy - _air_height(oy, float(1 << lod), entry[1], entry[2]), 500.0))
+	return true
+
+
+func _fill_air(buffer: VoxelBuffer, distance: float) -> void:
+	buffer.fill(0, Layout.CHANNEL_ROCK)
+	buffer.fill(0, Layout.CHANNEL_SOIL)
+	buffer.fill(0, Layout.CHANNEL_RESOURCE)
+	buffer.fill(Layout.MATERIAL_ROCK + Layout.ROCK_SEDIMENT, Layout.CHANNEL_MATERIAL)
+	buffer.fill_f(distance, Layout.CHANNEL_SDF)
 
 
 # True where the soil at the surface sits on a clay subsoil.
@@ -635,6 +1056,12 @@ func _ground_soil(data, sample: int, h: float, x: float, z: float) -> int:
 	var tx: float = fx - float(i0)
 	var tz: float = fz - float(j0)
 	var near: PackedByteArray = data.near_water()
+	var k0: int = j0 * side + i0
+
+	# No water within a sample of any of the four: the loop below would find no nearness either.
+	if dry_soil_shortcut and near[k0] == 0 and near[k0 + 1] == 0 and near[k0 + side] == 0 and near[k0 + side + 1] == 0:
+		return soil
+
 	var water_w: float = 0.0
 	var level_sum: float = 0.0
 	var near_w: float = 0.0
@@ -886,7 +1313,14 @@ func _fill_rock_run(buffer: VoxelBuffer, rock: int, y_lo: float, y_hi: float, i:
 var buried_bodies_skipped: bool = true
 var ore_columns_skipped: bool = true
 var bodies_prepared: bool = true
+var ores_prepared: bool = true        # a layer ore's numbers are read out of its entry once per block, not once per column
+var _ore_node_cell: float = 24.0        # tile_rules ore_cap, read once in setup (_fill_ore_column)
+var _ore_node_share: float = 0.04
+var _ore_cap_min: float = 1.5
 var lookups_shared: bool = true       # a column's cover, layer offset, nearest sample and ground soil are read once, not once per fill step
+var buried_columns_skipped: bool = true   # a column whose bedrock reaches the block's top gets no surface look (the rock fill writes all its material)
+var heights_gridded: bool = true      # a block on one tile reads its heights through heights_grid (indices and weights once per row and column)
+var dry_soil_shortcut: bool = true    # a column with no water near its four samples keeps its baked soil without the bank loop
 
 # A body's numbers read once for the block as an array (indices B_*): the per-column loop in
 # _fill_rock_column was reading a dozen dictionary keys per column and body.
@@ -993,7 +1427,7 @@ func _ores_touching(column_tile: Array, box: AABB) -> Dictionary:
 				if not by_province.has(p):
 					by_province[p] = []
 
-				by_province[p].append(ore)
+				by_province[p].append(_prepared_layer(ore) if ores_prepared else ore)
 			else:
 				shapes.append([data, ore])
 
@@ -1028,14 +1462,13 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 	# cover); bare rock keeps its ore showing, and in a small hashed share of small cells
 	# (ore_cap.node_share) the ore is left exposed as a node, its top voxels turned to rock so
 	# what is seen matches the label.
-	var cap_rules: Dictionary = _rules.get("ore_cap", {})
 	var cover: float = known_cover if not is_nan(known_cover) else data.cover_at(x, z)
-	var node_cell: float = maxf(float(cap_rules.get("node_cell_m", 24.0)), 1.0)
-	var exposed: bool = cover <= 0.0 or _hash01(int(floor(x / node_cell)), 0, int(floor(z / node_cell)), 7121) < float(cap_rules.get("node_share", 0.04))
+	var node_cell: float = _ore_node_cell
+	var exposed: bool = cover <= 0.0 or _hash01(int(floor(x / node_cell)), 0, int(floor(z / node_cell)), 7121) < _ore_node_share
 	var h: float = h_ground
 
 	if not exposed:
-		h = h_ground - maxf(maxf(cover, float(cap_rules.get("min_m", 1.5))), sf)
+		h = h_ground - maxf(maxf(cover, _ore_cap_min), sf)
 
 	for pair in ore_set["shapes"]:
 		if pair[0] != data:
@@ -1108,7 +1541,7 @@ func _fill_ore_column(buffer: VoxelBuffer, data, ore_set: Dictionary, i: int, k:
 	var yb: float = h_ground - cover
 
 	for ore in by_province[p]:
-		_layer_column(buffer, ore, top, yb, i, k, oy, sf, ny, origin)
+		_layer_column(buffer, ore if ores_prepared else _prepared_layer(ore), top, yb, i, k, oy, sf, ny, origin)
 
 
 # A steep sheet along a fault trace: at height y the sheet sits
@@ -1139,19 +1572,31 @@ func _vein_column(buffer: VoxelBuffer, ore: Dictionary, id: int, point: Vector2,
 	_fill_run(buffer, id, maxf(y_lo, float(ore["bottom_y"])), minf(minf(y_hi, top), h), i, k, oy, sf, ny, Layout.CHANNEL_RESOURCE)
 
 
+# A layer or scatter ore's numbers, read out of its entry once (_ores_touching, per block): [resource id, cycle, depth below the datum, thickness,
+# repeat to, scatter, host rock or -1, density, local id (scatter only)].
+static func _prepared_layer(ore: Dictionary) -> Array:
+	var id: int = ore["resource_id"]
+	var scatter: bool = int(ore["code"]) == ORE_SCATTER
+	return [
+		id, float(ore["cycle_m"]), float(ore["depth_below_datum_m"]), float(ore["thickness_m"]), float(ore["repeat_to_m"]),
+		scatter, int(ore.get("host_id", -1)), float(ore.get("density", 1.0)), int(ore["local_id"]) if scatter else 0,
+	]
+
+
 # A band at a fixed depth in every layer cycle of one province (coal seams,
 # salt layers), or a thin random scatter in such a band (gems in their
 # host rock). `top` is the province datum plus the layer offset here, `yb`
 # the bedrock surface.
-func _layer_column(buffer: VoxelBuffer, ore: Dictionary, top: float, yb: float, i: int, k: int, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
-	var id: int = ore["resource_id"]
-	var cycle: float = float(ore["cycle_m"])
-	var start: float = float(ore["depth_below_datum_m"])
-	var thickness: float = float(ore["thickness_m"])
-	var repeat_to: float = float(ore["repeat_to_m"])
-	var scatter: bool = int(ore["code"]) == ORE_SCATTER
-	var host: int = int(ore.get("host_id", -1))
-	var density: float = float(ore.get("density", 1.0))
+func _layer_column(buffer: VoxelBuffer, ore: Array, top: float, yb: float, i: int, k: int, oy: float, sf: float, ny: int, origin: Vector3i) -> void:
+	var id: int = ore[0]
+	var cycle: float = ore[1]
+	var start: float = ore[2]
+	var thickness: float = ore[3]
+	var repeat_to: float = ore[4]
+	var scatter: bool = ore[5]
+	var host: int = ore[6]
+	var density: float = ore[7]
+	var salt: int = ore[8]
 	var block_top: float = oy + float(ny - 1) * sf
 	# Cycles whose band can reach this block.
 	var first: int = maxi(int(floor((top - block_top - start - thickness) / cycle)), 0)
@@ -1177,7 +1622,7 @@ func _layer_column(buffer: VoxelBuffer, ore: Dictionary, top: float, yb: float, 
 			if host >= 0 and buffer.get_voxel(i, j, k, Layout.CHANNEL_ROCK) != host:
 				continue
 
-			if _hash01(origin.x + i, origin.y + j, origin.z + k, int(ore["local_id"])) < density:
+			if _hash01(origin.x + i, origin.y + j, origin.z + k, salt) < density:
 				buffer.set_voxel(id, i, j, k, Layout.CHANNEL_RESOURCE)
 
 

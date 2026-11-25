@@ -4,7 +4,7 @@ extends Node
 # how the Items thread builds them; the hooks below are called with a place, and `watch_world` hears
 # the world rows by itself.
 #
-#   sound.placed.place("leanto", at)        "leanto", "chest", "timber" (wall, floor, roof piece) or "thump" (any other thing set down)
+#   sound.placed.place("leanto", at)        "leanto", "chest", "timber" (wall, floor, roof piece), "foundation", "stone", "brick", "thatch", "metal" or "thump" (any other thing set down)
 #   sound.placed.pick_up(at)                a placed thing taken up again
 #   sound.placed.chest(true, at)            a chest opened (false: closed); the interior's chest sounds
 #   sound.placed.container(true, at)        something put into a container (false: taken out)
@@ -31,10 +31,14 @@ const RECORDED_DIR := "res://assets/audio/recorded/placed/"
 
 const NAMES := {
 	"place_leanto": -7.0, "place_chest": -6.0, "place_thump": -10.0, "pickup_placed": -10.0,
-	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0, "soil_load": -12.0, "stone_load": -9.0, "place_stone": -6.0, "place_brick": -8.0, "place_thatch": -10.0,
+	"place_timber": -7.0, "place_foundation": -5.0, "bracing_creak": -24.0, "bracing_rumble": -22.0, "dust_patter": -26.0, "bracing_crack": -9.0, "quake_tick": -10.0, "container_put": -11.0, "container_take": -12.0, "tool_break": -4.0, "tool_repair": -12.0, "tool_warn": -10.0, "soil_load": -12.0, "stone_load": -9.0, "place_stone": -6.0, "place_brick": -8.0, "place_thatch": -10.0, "place_metal": -6.0,
 }
+# A placed sound with no clip of its own here, played from another set (23 Nov 2026: the 27 iron and steel pieces, structures.json sound
+# "metal", fell to the soft thump; an iron thing set down is the item drop's metal clank until a recording of a gate or railing set in place).
+const BORROWED := {"place_metal": ["res://assets/audio/recorded/items/", "res://assets/audio/items/", "item_drop_metal"]}
 # World row states of placed structures (Items thread: 5 lean-to, 6 chest, 7 chopping block) and the place sound each makes.
 const StructureLook := preload("res://src/shared/structure_look.gd")   # which states make a placed sound, and which kind, is data (structures.json "sound")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
 var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
@@ -61,7 +65,7 @@ func setup(stage) -> void:
 
 
 func place(kind: String, at: Vector3) -> bool:
-	return _once("place_" + (kind if kind in ["leanto", "chest", "timber", "foundation", "stone", "brick", "thatch"] else "thump"), at)
+	return _once("place_" + (kind if kind in ["leanto", "chest", "timber", "foundation", "stone", "brick", "thatch", "metal"] else "thump"), at)
 
 
 func pick_up(at: Vector3) -> bool:
@@ -84,7 +88,7 @@ func quake(stage: int, strength: float, at: Vector3) -> void:
 		_quake_next["rumble"] = now + 2.3
 
 		if now >= float(_quake_next.get("log", 0.0)):   # where each rumble comes from (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave), at most every 10 s
-			print("sound rumble: tunnel quake stage %d strength %.2f from %s" % [stage, strength, str(at)])
+			FreezeWatchScript.printer.line("sound rumble: tunnel quake stage %d strength %.2f from %s" % [stage, strength, str(at)])
 			_quake_next["log"] = now + 10.0
 
 	if stage >= 3 and now >= _quake_next.get("dust", 0.0):
@@ -257,6 +261,13 @@ func _variants(sound_name: String) -> Array:
 
 	if list.is_empty():
 		list = SoundStage._find(GENERATED_DIR, sound_name)
+
+	if list.is_empty() and BORROWED.has(sound_name):
+		var from: Array = BORROWED[sound_name]
+		list = SoundStage._find(from[0], from[2])
+
+		if list.is_empty():
+			list = SoundStage._find(from[1], from[2])
 
 	_streams[sound_name] = list
 	return list

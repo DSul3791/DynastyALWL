@@ -207,13 +207,13 @@ func _init() -> void:
 	talk.talk(1, "hob", -1)
 	check(not str(said.back()["choices"]).contains("help") and not str(said.back()["choices"]).contains("firewood"), "after it is done the quest does not come back")
 
-	# Trainer: Hob teaches trades once the pupil is near the cap, for three stones.
+	# Trainer: Hob teaches trades for three stones, at any value (Dave 23 Nov 2026: a visit before 25 jumps to 25).
 	talk._last_msec.clear()
 	talk.talk(1, "hob", -1)
-	check(not str(said.back()["choices"]).contains("Teach me"), "a beginner is not offered the lesson")
+	check(not str(said.back()["choices"]).contains("Teach me"), "a beginner with no stones is not offered the lesson")
 	var rec: Dictionary = items._skill_records(1)
 	rec["trades"] = {"p": SkillWebScript.units_for(items._skills_cfg, "trades", 22.0), "peak": 0.0, "t": 0}
-	check(items.npc_train(1, "trades", 1, "stone", 3, true) == "not enough to pay", "near the cap but no stones: cannot pay")
+	check(items.npc_train(1, "trades", 1, "stone", 3, true) == "not enough to pay", "no stones: cannot pay")
 	items.action(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 3, Vector3.ZERO)
 	check(items.npc_train(1, "trades", 0, "stone", 3, true) != "", "a trainer who only teaches level 0 refuses")
 	talk._last_msec.clear()

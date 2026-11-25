@@ -11,15 +11,20 @@ const PlayersScript := preload("res://src/stream/server_players.gd")
 const PlayerViewScript := preload("res://src/client/player_view.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const BodyModelsScript := preload("res://src/client/character/body_models.gd")
+const HeldItemScript := preload("res://src/client/held_item.gd")
 const MotionBufferScript := preload("res://src/client/motion_buffer.gd")
+const NetScript := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 
 
-func check(ok: bool, what: String) -> void:
+func check(ok: bool, what: String) -> bool:
 	if not ok:
 		failures += 1
 		print("FAIL ", what)
+
+	return ok
 
 
 class FakeItems:
@@ -45,6 +50,33 @@ class FakeItems:
 	func carries_log(_peer: int) -> bool:
 		return false
 
+	var asleep: Dictionary = {}
+
+	func sleeping_of(peer: int) -> bool:
+		return asleep.has(peer)
+
+	var down: Dictionary = {}
+	var floats: Dictionary = {}
+
+	func fishing_float(peer: int) -> Vector3:
+		return floats.get(peer, Vector3.INF)
+
+	func fainted_of(peer: int) -> bool:
+		return down.has(peer)
+
+	var left: Dictionary = {}
+	var flags: Dictionary = {}
+	var burning: Dictionary = {}
+
+	func left_hand_number(peer: int) -> int:
+		return int(left.get(peer, 0))
+
+	func hand_flags(peer: int) -> int:
+		return int(flags.get(peer, 0))
+
+	func torch_burning(peer: int) -> bool:
+		return burning.has(peer)
+
 	func held_number(peer: int) -> int:
 		return int(held.get(peer, 0))
 
@@ -60,7 +92,9 @@ func _server() -> void:
 	var looks: Array = []
 	players.items = fake
 	players.now_ms = func() -> int: return int(clock[0])
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): sent.append([peer, ids, positions, yaws, states, held, times])
+	var flights: Array = []
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more, cast): sent.append([peer, ids, positions, yaws, states, held, times, left, more, cast])
+	players.send_flight = func(peer, number, from, velocity, fire): flights.append([peer, number, from, velocity, fire])
 	players.send_look = func(to, about, char_name, body, code, worn_numbers): looks.append([to, about, char_name, body, code, worn_numbers])
 	fake.pos = {1: Vector3(100.0, 10.0, 100.0), 2: Vector3(110.0, 10.0, 100.0), 3: Vector3(100.0, 10.0, 400.0), 4: Vector3(101.0, 10.0, 100.0)}
 	fake.stance = {2: 1}
@@ -110,6 +144,142 @@ func _server() -> void:
 	players.tick(0.2)
 	check(sent.size() >= 2, "unchanged rows go again after a second (%d)" % sent.size())
 
+	# Swings and sleep ride in the state byte's high bits (no new field): a blow is news at once, a walk or a craft is not a swing.
+	sent.clear()
+	check(PlayersScript.SWING_ACTS.has(NetScript.ACT_HIT) and PlayersScript.SWING_ACTS.has(NetScript.ACT_MINE) and not PlayersScript.SWING_ACTS.has(NetScript.ACT_MOVE), "a hit and a mine blow are swings, a pack move is not")
+	players.note_action(2, NetScript.ACT_HIT)
+	players.note_action(2, NetScript.ACT_MOVE)
+	fake.asleep = {2: true}
+	clock[0] = 2700
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][0]) == 1, "a swing goes out to player 1 at the next send, with no new position")
+	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 1, "the swing count is 1 (a pack move is not a swing)")
+	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
+	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
+	fake.asleep = {}
+	# A fight blow, a hammer blow on a building, a rod's cast and a split on the chopping block are swings too; any other use of a building is not.
+	sent.clear()
+	players.note_action(2, NetScript.ACT_STRIKE)
+	players.note_action(2, NetScript.ACT_REPAIR_STRUCT)
+	players.note_action(2, NetScript.ACT_FISH)
+	players.note_action(2, NetScript.ACT_USE_STRUCT, 3)
+	players.note_action(2, NetScript.ACT_USE_STRUCT, 0)
+	fake.down = {2: true}
+	fake.swim[2] = true
+	clock[0] = 2720
+	players.tick(0.2)
+	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 5, "a strike, a hammer blow, a cast and a split are four more swings (count %d of 5)" % ((int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) if sent.size() == 1 else -1))
+	check(sent.size() == 1 and (int(sent[0][4][0]) & 3) == 3 and (int(sent[0][4][0]) & PlayersScript.SWIM) == 0, "a fainted or passed-out player is drawn lying, not swimming, even in water (state %d)" % (int(sent[0][4][0]) if sent.size() == 1 else -1))
+	fake.down = {}
+	fake.swim.erase(2)
+	# 159: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
+	sent.clear()
+	var torch_n: int = ItemTableScript.load_default().number_of("torch")
+	fake.left = {2: torch_n}
+	fake.burning = {2: true}
+	fake.flags = {2: 1 | 8}   # bow raised, on a ladder
+	players.note_action(2, NetScript.ACT_DRINK)
+	clock[0] = 2750
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][7][0]) == torch_n, "the left hand's torch goes with the row")
+	var more_byte: int = int(sent[0][8][0]) if sent.size() == 1 else 0
+	check((more_byte & PlayersScript.MORE_LIT) != 0 and ((more_byte >> PlayersScript.MORE_HANDS_SHIFT) & 15) == 9 and (more_byte >> PlayersScript.MORE_MEAL_SHIFT) == 1, "burning, the hand flags and one drink in the more byte (%d)" % more_byte)
+	sent.clear()
+	clock[0] = 2760
+	players.tick(0.2)
+	check(sent.is_empty(), "no news, nothing sent within the second")
+	players.flight(2, 77, Vector3(110.0, 11.6, 100.0), Vector3(30.0, 2.0, 0.0), true)
+	check(flights.size() == 1 and int(flights[0][0]) == 1 and int(flights[0][1]) == 77 and bool(flights[0][4]), "an arrow loosed by player 2 is sent to player 1 (near, with a look), not to the thrower, not to 3 (300 m off)")
+	fake.left = {}
+	fake.burning = {}
+	fake.flags = {}
+	# 162: the bow aim gaits keep their gait's stride and walk backwards as the plain walk (review: the feet slid).
+	var Driver = load("res://src/client/character/avatar_driver.gd")
+	var back_rig: Node3D = Node3D.new()
+	back_rig.set_meta("backward", true)
+	check(is_equal_approx(Driver.speed_scale("walk_bow_raised", 1.0), Driver.speed_scale("walk", 1.0)) and is_equal_approx(Driver.speed_scale("walk_bow_drawn", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_bow_raised") == -1.0 and Driver.slope_tilt(true, Vector3(0.0, 0.9, 0.4), 2.0, "idle_bow_drawn") == 0.0, "an archer's walk is paced and reversed as the plain walk")
+	check(is_equal_approx(Driver.speed_scale("walk_shield_up", 1.0), Driver.speed_scale("walk", 1.0)) and Driver.backward_sign(back_rig, "walk_shield_up") == -1.0, "a walk with the shield up is paced and reversed as the plain walk")
+	check(PlayerViewScript.arm_pose({"left_kind": "shield", "more": PlayerViewScript.MORE_SHIELD_UP}) == "shield_up" and PlayerViewScript.arm_pose({"left_kind": "shield", "more": 0}) == ""
+		and PlayerViewScript.arm_pose({"left_kind": "torch", "more": PlayerViewScript.MORE_SHIELD_UP}) == "" and PlayerViewScript.arm_pose({"left_kind": "shield", "held_kind": "bow", "more": PlayerViewScript.MORE_SHIELD_UP}) == "", "the shield-up gait only with a shield raised in the left hand, and not with a bow (both hands)")
+	back_rig.free()
+	# 162: a rod's float rides beside the row as one int (cast_code), read back to the same spot within 5 cm; a new cast is news; none is 0.
+	var float_at: Vector3 = Vector3(115.5, 8.2, 96.3)
+	var float_code: int = PlayersScript.cast_code(Vector3(110.0, 10.0, 100.0), float_at)
+	check(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), float_code).distance_to(float_at) < 0.11 and PlayersScript.cast_code(Vector3.ZERO, Vector3.INF) == 0 and not PlayerViewScript.cast_point(Vector3.ZERO, 0).is_finite(), "the float's spot goes as one int and comes back (%s)" % str(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), float_code)))
+	sent.clear()
+	fake.floats = {2: float_at}
+	clock[0] = 2770
+	players.tick(0.2)
+	check(sent.size() == 1 and sent[0].size() == 10 and int(sent[0][9][0]) == float_code, "a cast is news and its float goes with player 2's row")
+	fake.floats = {}
+	sent.clear()
+	clock[0] = 2790
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][9][0]) == 0, "the line out of the water: 0")
+	# The row times are when the client sent each report, not when it arrived (note_move): a walker reporting every 0.2 s over a link
+	# that delays each report 120 +- 30 ms keeps legs of its own length, so the others draw it at its own speed (robots: 1.3 to 1.7x bursts).
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 1574
+	var walker_at: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var send_ms: float = 100000.0
+	var stamps: Array = []
+	var worst: float = 0.0
+	var after_arrival: int = 0
+	var arrivals: Array = []
+
+	for n in range(150):
+		var gap_s: float = 0.2 + rng.randf() * 0.016   # a 60 fps client sends on the first frame 0.2 s after the last
+		send_ms += gap_s * 1000.0
+		var speed: float = 3.3 if n < 50 else (9.0 if n < 100 else 3.3)
+		var moved: Vector3 = Vector3(0.0, 0.0, -speed * gap_s)
+		walker_at += moved
+		arrivals.append([send_ms + 120.0 + rng.randf_range(-30.0, 30.0), walker_at, moved / gap_s])
+
+	arrivals.sort_custom(func(a, b): return float(a[0]) < float(b[0]))   # unreliable: a later report can come first
+
+	for row in arrivals:
+		clock[0] = int(row[0])
+		players.note_move(9, row[1], row[2])
+		players.note_report(9, 0.0)
+		stamps.append([int(players._report_ms[9]), row[1]])
+
+		if int(players._report_ms[9]) > int(clock[0]):
+			after_arrival += 1
+
+	for k in range(10, stamps.size()):
+		var leg_s: float = float(int(stamps[k][0]) - int(stamps[k - 1][0])) / 1000.0
+		var leg_m: float = (stamps[k][1] as Vector3).distance_to(stamps[k - 1][1])
+		var real: float = 9.0 if leg_m > 1.0 else 3.3
+
+		if leg_s > 0.0 and leg_m > 0.0:
+			worst = maxf(worst, leg_m / leg_s / real)
+
+	check(worst < 1.15 and after_arrival == 0, "a walker's legs keep their own length through 120 +- 30 ms jitter: drawn at most %.2fx its speed (want < 1.15), no stamp after its arrival (%d)" % [worst, after_arrival])
+	# A made-up report (NaN, huge numbers, a flood in one millisecond) only moves its own row's times, never ahead of the arrival nor
+	# more than STAMP_BEHIND_MS behind it, and always forward.
+	var bad: Array = [[Vector3(NAN, 0.0, 0.0), Vector3.ZERO], [Vector3(3e38, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)], [Vector3(-3e38, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)],
+			[Vector3.ZERO, Vector3(INF, 0.0, 0.0)], [Vector3(1.0, 0.0, 0.0), Vector3(2000.0, 0.0, 0.0)], [Vector3(2.0, 0.0, 0.0), Vector3(-2000.0, 0.0, 0.0)]]
+	var bad_ok: bool = true
+	var last_stamp: int = int(players._report_ms[9])
+
+	for k in range(60):
+		clock[0] += 0 if k % 3 != 0 else 7
+		var row: Array = bad[k % bad.size()]
+		players.note_move(9, row[0], row[1])
+		players.note_report(9, 0.0)
+		var st: int = int(players._report_ms[9])
+		bad_ok = bad_ok and st <= int(clock[0]) and st >= int(clock[0]) - int(PlayersScript.STAMP_BEHIND_MS) - 1 and st >= last_stamp
+		last_stamp = st
+
+	check(bad_ok and (players._move[9][0] as Vector3).is_finite(), "made-up reports keep the stamps within %d ms before their arrival, never after it, never back" % int(PlayersScript.STAMP_BEHIND_MS))
+	clock[0] = 2760
+	check(not PlayersScript.SWING_ACTS.has(NetScript.ACT_TILL_GARDEN), "the hoe grid's check-only polls (ACT_TILL_GARDEN) are not swings")
+	var swings_before: int = int(players._swings[2][0])
+	for i in range(8):
+		players.note_action(2, NetScript.ACT_MINE)
+	check((int(players._swings[2][0])) == swings_before, "the swing count wraps at 8")
+	clock[0] = 2800
+
 	looks.clear()
 	players.worn_changed(2, PackedInt32Array([5, 0, 9]))
 	check(looks.is_empty(), "the same worn pieces send nothing")
@@ -117,10 +287,42 @@ func _server() -> void:
 	players.worn_changed(2, PackedInt32Array([6, 0, 9]))
 	check(looks.size() == 2, "new worn pieces go to the others (%d)" % looks.size())
 
+	# A game that froze or crashed (its line can take up to 2 minutes to time out, net_settings.gd): after SILENT_MS without a report the
+	# player leaves the others' rows, so no ghost stands there, and is back with its next report.
+	var later: int = int(clock[0]) + 100
+	clock[0] = later
+	players.note_move(1, fake.pos[1], Vector3.ZERO)
+	players.note_report(1, 0.0)
+	players.note_move(2, fake.pos[2], Vector3.ZERO)
+	players.note_report(2, 0.0)
+	for step in range(int(PlayersScript.SILENT_MS / 1000.0) + 1):   # the server ticks on, player 1 still reports; player 2 has gone quiet
+		clock[0] = later + 1000 * (step + 1)
+		players.note_move(1, fake.pos[1], Vector3.ZERO)
+		players.note_report(1, 0.0)
+		sent.clear()
+		players.tick(0.2)
+
+	var quiet_rows: Array = sent.filter(func(r): return int(r[0]) == 1)
+	check(quiet_rows.size() == 1 and not (quiet_rows[0][1] as PackedInt32Array).has(2), "a player silent for %.0f s leaves the others' rows (no ghost)" % (PlayersScript.SILENT_MS / 1000.0))
+	var quiet_two: Array = sent.filter(func(r): return int(r[0]) == 2)
+	check(quiet_two.is_empty() or (quiet_two[0][1] as PackedInt32Array).has(1), "the silent player is still sent the others, for when its game wakes")
+	clock[0] += 200
+	players.note_move(2, fake.pos[2], Vector3.ZERO)
+	players.note_report(2, 0.0)
+	sent.clear()
+	players.tick(0.2)
+	quiet_rows = sent.filter(func(r): return int(r[0]) == 1)
+	check(quiet_rows.size() == 1 and (quiet_rows[0][1] as PackedInt32Array).has(2), "its next report brings it back")
+	clock[0] += PlayersScript.SILENT_MS + 5000   # the server itself stalls (a long save): nobody's reports could arrive, nobody vanishes
+	sent.clear()
+	players.tick(0.2)
+	quiet_rows = sent.filter(func(r): return int(r[0]) == 1)
+	check(quiet_rows.is_empty() or (quiet_rows[0][1] as PackedInt32Array).has(2), "a server stall of its own hides nobody")
+
 	fake.pos.erase(2)
 	players.forget(2)
 	sent.clear()
-	clock[0] = 2700
+	clock[0] = 2900
 	players.tick(0.2)
 	check(sent.size() >= 1 and (sent[0][1] as PackedInt32Array).is_empty(), "a player who left is dropped from the rows")
 
@@ -131,6 +333,27 @@ func _server() -> void:
 
 	var rows: Array = PlayersScript.rows_for(0, many)
 	check(rows.size() == PlayersScript.MAX_ROWS and int(rows[0][0]) == 1 and int(rows[rows.size() - 1][0]) == PlayersScript.MAX_ROWS, "at most %d rows, nearest first" % PlayersScript.MAX_ROWS)
+	check(PlayersScript.rows_for(0, many, PlayersScript.grid_of(many)) == rows, "found by grid: the same rows")
+
+	# Scattered over cell edges (load test 23 Nov 2026: the grid replaced every-player-with-every-player): the grid answer is the plain one.
+	var scatter: RandomNumberGenerator = RandomNumberGenerator.new()
+	scatter.seed = 7
+	var spread: Dictionary = {}
+
+	for i in range(300):
+		spread[i] = Vector3(scatter.randf_range(-600.0, 600.0), 0.0, scatter.randf_range(-600.0, 600.0))
+
+	var spread_grid: Dictionary = PlayersScript.grid_of(spread)
+	var same: bool = true
+
+	for i in spread:
+		var plain: Array = PlayersScript.rows_for(i, spread).map(func(r): return int(r[0]))
+		var by_grid: Array = PlayersScript.rows_for(i, spread, spread_grid).map(func(r): return int(r[0]))
+		plain.sort()
+		by_grid.sort()
+		same = same and plain == by_grid
+
+	check(same, "300 players over 1.2 km: each one's rows by grid are the same players as by looking at all")
 
 
 func _client() -> void:
@@ -186,6 +409,34 @@ func _client() -> void:
 		var clip: String = str(body["rig"].current())
 		check(clip in ["walk", "jog", "walk_torch", "jog_torch"], "walking plays a gait clip (%s)" % clip)
 
+	# Tester report #7 (23 Nov 2026): other players mat the grass. The first pass marks the start; after a walk the points run along the way,
+	# at the feet, no more than TRAIL_STEP_M apart (up to TRAIL_MOST), and none beyond the reach.
+	check(view.trail_points(node.position, 60.0).is_empty(), "the first trail pass only marks where the player is")
+	var trail_from: Vector3 = node.position
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(6.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2000]))
+	var walk_until: int = Time.get_ticks_msec() + 900
+
+	while Time.get_ticks_msec() < walk_until:
+		await process_frame
+
+	check(node.position.x - trail_from.x > 0.5, "the body walked on")
+	check(view.trail_points(node.position + Vector3(1000.0, 0.0, 0.0), 60.0).is_empty(), "nothing is stamped beyond the reach")
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at + Vector3(8.0, 0.0, 0.0)]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 2600]))
+	var walk_more: int = Time.get_ticks_msec() + 3000
+	var stamped_x: float = float((view._bodies[7]["trail_at"] as Vector3).x)
+
+	# Until the body has walked a metre past the last stamp (3 s at most), not a fixed 0.9 s: on a loaded machine (a full test run) the
+	# body can still be within half a metre of it at 0.9 s, and a pass under 0.5 m stamps nothing (dev, 23 Nov 2026, trapping thread).
+	while Time.get_ticks_msec() < walk_more and node.position.x - stamped_x < 1.0:
+		await process_frame
+
+	var before_x: float = float((view._bodies[7]["trail_at"] as Vector3).x)
+	var spots: Array = view.trail_points(node.position, 60.0)
+	var feet_y: float = node.position.y - 0.9
+	check(not spots.is_empty() and spots.size() <= PlayerViewScript.TRAIL_MOST, "a walk leaves trail points (%d)" % spots.size())
+	check(spots.all(func(p): return absf(float(p.y) - feet_y) < 0.01 and float(p.x) > before_x - 0.01), "the points are at the feet, along the way walked")
+	check(spots.size() < 2 or absf(float(spots[1].x) - float(spots[0].x)) <= PlayerViewScript.TRAIL_STEP_M + 0.01, "no more than TRAIL_STEP_M between points")
+
 	view.on_rows(PackedInt32Array(), PackedVector3Array(), PackedFloat32Array(), PackedByteArray(), PackedInt32Array(), PackedInt32Array())
 	check(view.drawn_count() == 0, "a player out of range is removed")
 	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([2 | PlayerViewScript.SWIM]), PackedInt32Array([0]), PackedInt32Array([t0 + 3000]))
@@ -198,9 +449,663 @@ func _client() -> void:
 		var swim_clip: String = str(view._bodies[7]["rig"].current())
 		check(swim_clip.begins_with("swim"), "a swimming player plays the swim clip (%s)" % swim_clip)
 
+	# A blow (the swing count in the state's high bits moves on): the body plays the tool's work clip once, then goes back to its stance clip.
+	check(PlayerViewScript.work_clip(axe, table) == "chop" and PlayerViewScript.work_clip(table.number_of("stone_pickaxe"), table) == "pick_overhead" and PlayerViewScript.work_clip(table.number_of("wooden_spear"), table) == "jab", "the work clip follows the tool: chop, pick, jab")
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3200]))
+
+	for i in range(5):
+		await process_frame
+
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3300]))
+
+	for i in range(3):
+		await process_frame
+
+	if DynastyBodyScript.available() and view._bodies.has(7):
+		var swing_clip: String = str(view._bodies[7]["rig"].current())
+		check(swing_clip == "chop", "a swing with the axe plays the chop (%s)" % swing_clip)
+		var swing_player: AnimationPlayer = view._bodies[7]["rig"].get("animation_player")
+		check(swing_player.current_animation_position >= swing_player.get_animation("chop").length * HeldItemScript.HIT_AT - PlayerViewScript.SWING_LEAD_S - 0.01, "it starts just before the impact (the blow came at the impact), at %.2f s" % swing_player.current_animation_position)
+		var swing_end: int = Time.get_ticks_msec() + 1600
+
+		while Time.get_ticks_msec() < swing_end:
+			await process_frame
+
+		var after_clip: String = str(view._bodies[7]["rig"].current())
+		check(after_clip != "chop" and not view._bodies[7]["rig"].is_one_shot_playing(), "the chop plays out and the body goes back to its stance clip (%s)" % after_clip)
+
+		# 159: a burning torch in the left hand, with its light; put out, no light; a drink plays the drink clip.
+		var torch_n: int = table.number_of("torch")
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3400]), PackedInt32Array([torch_n]), PackedByteArray([PlayerViewScript.MORE_LIT]))
+
+		for i in range(3):
+			await process_frame
+
+		var lit_torch: Node3D = view._bodies[7].get("left_node", null)
+		check(lit_torch != null and lit_torch.get_parent() == view._bodies[7]["rig"].hand_mount_l and lit_torch.get_node_or_null("Light") != null and (lit_torch.get_node("Light") as OmniLight3D).visible, "a burning torch in the other player's left hand, casting its light")
+		check(str(view._bodies[7].get("left_kind", "")) == "torch" and bool(view._bodies[7]["rig"].get_meta("torch_left", false)), "the arm carries it up (torch_left)")
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3500]), PackedInt32Array([torch_n]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]))
+
+		for i in range(3):
+			await process_frame
+
+		var out_torch: Node3D = view._bodies[7].get("left_node", null)
+		check(out_torch != null and out_torch.get_node_or_null("Light") == null, "the torch gone out: no light")
+		# Five other players with burning torches: only the LIT_MOST nearest cast light, one light each (no hand light).
+		var crowd: Array = [21, 22, 23, 24, 25]
+
+		for cp in crowd:
+			view.on_look(cp, "Torch %d" % cp, "body_1", "", PackedInt32Array())
+
+		for round_n in range(4):   # MAKE_PER_ROWS bodies a message
+			var ids: PackedInt32Array = PackedInt32Array([7] + crowd)
+			var crowd_at: PackedVector3Array = PackedVector3Array([at])
+			for k in range(crowd.size()):
+				crowd_at.append(at + Vector3(2.0 + k, 0.0, 0.0))
+			view.on_rows(ids, crowd_at, PackedFloat32Array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT, 0, 0, 0, 0, 0]), PackedInt32Array([axe, 0, 0, 0, 0, 0]), PackedInt32Array([t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100, t0 + 3600 + round_n * 100]), PackedInt32Array([torch_n, torch_n, torch_n, torch_n, torch_n, torch_n]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT, 1, 1, 1, 1, 1]))
+			await process_frame
+
+		for i in range(3):
+			await process_frame
+
+		var lights_on: int = 0
+		var hand_on: int = 0
+
+		for cp in crowd:
+			var torch_node: Node3D = view._bodies.get(cp, {}).get("left_node", null)
+
+			if torch_node != null and (torch_node.get_node("Light") as OmniLight3D).visible:
+				lights_on += 1
+				check(is_equal_approx((torch_node.get_node("Light") as OmniLight3D).light_energy, HeldItemScript.FlameRules.TORCH_LIGHT_ENERGY), "another player's torch is as bright as one's own")
+
+			if torch_node != null and torch_node.get_node_or_null("HandLight") != null and (torch_node.get_node("HandLight") as OmniLight3D).visible:
+				hand_on += 1
+
+		check(view.drawn_count() == 6 and lights_on == PlayerViewScript.LIT_MOST and hand_on == 0, "five burning torches: the %d nearest light, one light each (%d drawn, %d lit, %d hand lights)" % [PlayerViewScript.LIT_MOST, view.drawn_count(), lights_on, hand_on])
+		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST_LOW   # the Low graphics tier
+
+		for i in range(3):
+			await process_frame
+
+		var low_on: int = 0
+
+		for lp in [7] + crowd:
+			var low_node: Node3D = view._bodies.get(lp, {}).get("left_node", null)
+
+			if low_node != null and low_node.get_node_or_null("Light") != null and (low_node.get_node("Light") as OmniLight3D).visible:
+				low_on += 1
+
+		check(low_on == PlayerViewScript.LIT_MOST_LOW, "on the Low tier only %d torch lights (%d lit)" % [PlayerViewScript.LIT_MOST_LOW, low_on])
+		view.lit_most = func() -> int: return PlayerViewScript.LIT_MOST
+		var drink_clip: String = str(view._bodies[7]["rig"].current())
+		check(drink_clip == "drink" or not view._bodies[7]["rig"].animation_player.has_animation("drink"), "a drink plays the drink clip (%s)" % drink_clip)
+		# 162: a rod with its line in the water: a line from the rod's tip to a float on the water; out of the water, none.
+		var rod: int = table.number_of("fishing_rod")
+		var bob_at: Vector3 = at + Vector3(0.0, -1.2, -5.0)
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([rod]), PackedInt32Array([t0 + 3510]), PackedInt32Array([0]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]), PackedInt32Array([PlayersScript.cast_code(at, bob_at)]))
+
+		for i in range(3):
+			await process_frame
+
+		var line: MeshInstance3D = view._bodies[7].get("line", null)
+		var tip_world: Vector3 = (view._bodies[7]["held_node"] as Node3D).global_transform * (view._bodies[7]["tip_local"] as Vector3) if view._bodies[7].get("held_node") != null else Vector3.INF
+		check(line != null and line.visible and (line.get_node("Float") as Node3D).global_position.distance_to(bob_at) < 0.1, "another player's line in the water: the float where the cast landed")
+		check(line != null and tip_world.is_finite() and tip_world.distance_to((view._bodies[7]["held_node"] as Node3D).global_position) > 0.8 and tip_world.y > (view._bodies[7]["held_node"] as Node3D).global_position.y + 0.1, "the line leaves the rod's tip, up and out from the grip, not its butt (%s from the grip)" % (str(tip_world - (view._bodies[7]["held_node"] as Node3D).global_position) if tip_world.is_finite() else "none"))
+		view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([rod]), PackedInt32Array([t0 + 3520]), PackedInt32Array([0]), PackedByteArray([1 << PlayerViewScript.MORE_MEAL_SHIFT]), PackedInt32Array([0]))
+		await process_frame
+		check(line != null and not line.visible, "the line out of the water: nothing drawn")
+		# 162: a bow raised, then drawn: the body plays the aim clips and the bow stands upright before it with the string back; lowered, the plain clip.
+		var bow: int = table.number_of("wooden_bow")
+
+		for i in range(100):
+			if not view._bodies[7]["rig"].is_one_shot_playing():
+				break
+
+			await create_timer(0.1).timeout   # the drink before it plays out (a one-shot runs at its own time)
+
+		for flag_set in [[PlayerViewScript.MORE_BOW_RAISED, "idle_bow_raised"], [PlayerViewScript.MORE_BOW_DRAWN, "idle_bow_drawn"], [0, "idle"]]:
+			view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([bow]), PackedInt32Array([t0 + 3530]), PackedInt32Array([0]), PackedByteArray([int(flag_set[0]) | (1 << PlayerViewScript.MORE_MEAL_SHIFT)]), PackedInt32Array([0]))
+
+			view._bodies[7]["rig"].set_meta("hook_t", 0.0)   # a drink still held from the checks above is not this check's business
+
+			for i in range(100):   # a one-shot still playing plays out first, at its own time (slow on a loaded computer)
+				await create_timer(0.05).timeout
+
+				if str(view._bodies[7]["rig"].current()) == str(flag_set[1]):
+					break
+
+			var bow_node: Node3D = view._bodies[7].get("held_node", null)
+			var clip_now: String = str(view._bodies[7]["rig"].current())
+			var upright: bool = bow_node != null and _upright_m(bow_node) > 1.2   # the bow's own limbs, measured in the world (Lane A S8, 23 Nov 2026: the holder was upright and the bow lay flat)
+			check(clip_now == str(flag_set[1]) and (upright == (int(flag_set[0]) != 0)), "bow flags %d: the body plays %s (%s) and the bow is %s" % [int(flag_set[0]), str(flag_set[1]), clip_now, "upright before it" if int(flag_set[0]) != 0 else "at the side"])
+			var bow_mesh: Node3D = bow_node.get_child(0) as Node3D if bow_node != null and bow_node.get_child_count() > 0 else null
+			var nock_z: float = float((bow_mesh.get_meta("nock", Vector3.ZERO) as Vector3).z) if bow_mesh != null else 0.0
+			var nocked: Node3D = bow_mesh.get_node_or_null("NockedArrow") as Node3D if bow_mesh != null else null
+
+			if int(flag_set[0]) == PlayerViewScript.MORE_BOW_DRAWN:
+				check(bow_mesh != null and bow_mesh.get_node_or_null("StringTop") != null and nock_z < -0.3 and nocked != null and nocked.visible, "a drawn bow shows its string back (%.2f m) and an arrow on it" % nock_z)
+
+
+# Over a real connection (the coordinator's ask, 23 Nov 2026: smooth under 100 to 150 ms and a few percent loss): rows sent every 125 ms
+# carrying 0.2 s position reports, each delivered 100 to 260 ms late (a random wobble), one in twenty lost and once four in a row, for a walk at 3 m/s, then a
+# stop. The drawn body must never jump (no frame step over a normal one plus the easing's catch-up), keep moving through the walk (no stand
+# then jump at a lost batch), and come to rest near the last point without running past and back.
+# The robots' wiggle (23 Nov 2026): a player running back and forth over 3 m every 0.5 s on a late, lossy link was drawn up to 2.2 m past where
+# it turned, walked on along its last leg through a lost batch (player_view carry_for). Measured as how far the drawn body goes beyond the
+# ends of its run, at a player's 60 fps, on rows timed as the server times them.
+# How tall a held model's meshes stand in the world (m): a bow upright is about its length, one lying flat a few centimetres.
+func _upright_m(model: Node3D) -> float:
+	var lo: float = INF
+	var hi: float = -INF
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = child as MeshInstance3D
+
+		if mi.mesh == null or mi.name == "ThirdFist" or mi.name == "NockedArrow":
+			continue
+
+		var box: AABB = mi.mesh.get_aabb()
+
+		for k in range(8):
+			var y: float = (mi.global_transform * box.get_endpoint(k)).y
+			lo = minf(lo, y)
+			hi = maxf(hi, y)
+
+	return hi - lo if hi > lo else 0.0
+
+
+func _check_wiggle() -> void:
+	var fps_was: int = Engine.max_fps
+	Engine.max_fps = LOSSY_FPS
+	var view: Node3D = PlayerViewScript.new()
+	view.table = ItemTableScript.load_default()
+	get_root().add_child(view)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	var at: Vector3 = Vector3(1000.0, 30.0, 1000.0)
+	camera.position = at + Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	view.on_look(9, "Wiggle", "body_1", "", PackedInt32Array())
+	var x_of: Callable = func(ms: int) -> float: return 3.0 - absf(fmod(float(ms) / 500.0, 2.0) - 1.0) * 3.0   # 6 m/s, turning every 0.5 s
+	var stamper = PlayersScript.new()
+	var stamp_clock: Array = [0]
+	stamper.now_ms = func() -> int: return int(stamp_clock[0])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 2204
+	var end_ms: int = 8000
+	var stamp_of: Dictionary = {}
+
+	for report in range(0, end_ms + 400, 200):
+		stamp_clock[0] = 20000 + report + rng.randi_range(0, 60)
+		var v: float = (float(x_of.call(report)) - float(x_of.call(report - 200))) / 0.2   # as the client sends it: its move over its own gap since the last report
+		stamper.note_move(9, at + Vector3(float(x_of.call(report)), 0.0, 0.0), Vector3(v, 0.0, 0.0))
+		stamper.note_report(9, 0.0)
+		stamp_of[report] = int(stamper._report_ms[9])
+
+	var queue: Array = []
+
+	for send in range(0, end_ms, 125):
+		var report: int = send - posmod(send, 200)
+
+		if rng.randf() < 0.03 or (send >= 3000 and send < 3400):
+			continue   # lost, and once a burst
+
+		queue.append([send + rng.randi_range(90, 150), int(stamp_of[report]), at + Vector3(float(x_of.call(report)), 0.0, 0.0)])
+
+	queue.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var start_ms: int = Time.get_ticks_msec()
+	var worst: float = 0.0
+
+	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + 500:
+		var now: int = Time.get_ticks_msec() - start_ms
+
+		while not queue.is_empty() and int(queue[0][0]) <= now:
+			var row: Array = queue.pop_front()
+			view.on_rows(PackedInt32Array([9]), PackedVector3Array([row[2]]), PackedFloat32Array([-PI * 0.5]), PackedByteArray([0]), PackedInt32Array([0]), PackedInt32Array([int(row[1])]))
+
+		await process_frame
+		var b: Dictionary = view._bodies.get(9, {})
+
+		if not b.is_empty() and now > 1500:
+			var dx: float = float((b["node"] as Node3D).position.x) - at.x
+			worst = maxf(worst, maxf(dx - 3.0, -dx))
+
+	check(worst < 0.2, "a player running back and forth on a late, lossy link is not drawn past where it turned (%.2f m beyond at most)" % worst)
+	view.queue_free()
+	camera.queue_free()
+	Engine.max_fps = fps_was
+	await process_frame
+
+
+# Run at a player's 60 frames a second, on rows timed as the server times them (23 Nov 2026: the 1.5 times limit failed 3 to 4 runs in 10
+# under load, on dev before protocol 162 and after alike: headless runs near 1000 fps and a loaded computer near 100, and the test stamped
+# rows by their arrival, a wobble the server takes out: server_players note_move). No frame may move more than 1.5 frames of the walk plus
+# the 3 m/s catch-up (player_view SMOOTH_*: 0.125 m at 60 fps, so any jump fails), and no 50 ms window over 1.5 times the walk.
+const LOSSY_FPS := 60
+const LOSSY_FRAME_MPS := 3.0 * PlayerViewScript.SMOOTH_ROOM_X + PlayerViewScript.SMOOTH_CATCH_MIN_MPS
+
+
+func _check_lossy(burst_ms: int, tail_ms: int) -> void:
+	var fps_was: int = Engine.max_fps
+	Engine.max_fps = LOSSY_FPS
+	var table = ItemTableScript.load_default()
+	var view: Node3D = PlayerViewScript.new()
+	view.table = table
+	get_root().add_child(view)
+	var at: Vector3 = Vector3(1000.0, 30.0, 1000.0)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = at + Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	var peers: Array = [9, 10, 11]
+	var phase: Array = [0, 70, 140]   # each client reports on its own 0.2 s beat
+
+	for peer in peers:
+		view.on_look(peer, "Lossy", "body_1", "", PackedInt32Array())
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 1523
+	var start_ms: int = Time.get_ticks_msec()
+	var walk_ms: int = 3000
+	var end_ms: int = 4600
+	var queue: Array = []   # [deliver at ms, [server ms per peer], [position per peer]]
+	var sent_ms: Array = [-1, -1, -1]
+	var last_send: int = -1000
+
+	# The row times as the server stamps them (server_players note_move: the client's send time, from its moved gap), each report arriving
+	# with its own trip's wobble (0 to 60 ms, a later one can come first).
+	var stamper = PlayersScript.new()
+	var stamp_clock: Array = [0]
+	stamper.now_ms = func() -> int: return int(stamp_clock[0])
+	var arrivals: Array = []   # [arrives ms, peer index, report ms]
+
+	for i in range(peers.size()):
+		for report in range(int(phase[i]), end_ms + 400, 200):
+			arrivals.append([20000 + report + posmod(hash([i, report]), 61), i, report])
+
+	arrivals.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var stamp_of: Dictionary = {}   # [peer index, report ms] -> the row time
+
+	for a in arrivals:
+		var r: int = int(a[2])
+		var moving: bool = r > 0 and r <= walk_ms
+		stamp_clock[0] = int(a[0])
+		stamper.note_move(int(peers[int(a[1])]), at + Vector3(3.0 * float(mini(r, walk_ms)) / 1000.0, 0.0, 3.0 * int(a[1])), Vector3(3.0 if moving else 0.0, 0.0, 0.0))
+		stamper.note_report(int(peers[int(a[1])]), 0.0)
+		stamp_of[[int(a[1]), r]] = int(stamper._report_ms[int(peers[int(a[1])])])
+
+	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report with its row time from stamp_of above.
+	for send in range(0, end_ms, 125):
+		var times: Array = []
+		var spots: Array = []
+		var news: bool = send - last_send >= 1000
+
+		for i in range(peers.size()):
+			var beat: int = send - int(phase[i])
+			var report: int = maxi(beat - posmod(beat, 200), 0) + int(phase[i])
+			var stamp: int = int(stamp_of.get([i, report], 20000 + report))
+			var walked: float = 3.0 * float(mini(report, walk_ms)) / 1000.0
+			times.append(stamp)
+			spots.append(at + Vector3(walked, 0.0, 3.0 * i))
+			news = news or report > int(sent_ms[i])
+			sent_ms[i] = maxi(int(sent_ms[i]), report)
+
+		if not news:
+			continue
+
+		last_send = send
+
+		if rng.randf() < 0.05 or (send >= burst_ms and send < burst_ms + 500):
+			continue   # lost (ENet drops unreliable packets when the ping wobbles), and once four in a row (a throttle burst)
+
+		queue.append([send + rng.randi_range(100, 260), times, spots])
+
+	queue.sort_custom(func(x, y): return int(x[0]) < int(y[0]))
+	var worst_step: float = 0.0
+	var still_frames: int = 0
+	var last_p: Dictionary = {}
+	var past: float = 0.0   # the farthest any body went beyond its last point (9 m)
+	var last_t: int = Time.get_ticks_usec()
+	var frame_t: int = Time.get_ticks_usec()
+	var frame_p: Dictionary = {}
+	var worst_frame: float = 0.0   # the most any body moved in one frame (m)
+	var worst_frame_allowed: float = 1.0   # that frame's own bound (m)
+
+	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + tail_ms:
+		var now: int = Time.get_ticks_msec() - start_ms
+
+		while not queue.is_empty() and int(queue[0][0]) <= now:
+			var row: Array = queue.pop_front()
+			view.on_rows(PackedInt32Array(peers), PackedVector3Array(row[2]), PackedFloat32Array([-PI * 0.5, -PI * 0.5, -PI * 0.5]), PackedByteArray([0, 0, 0]), PackedInt32Array([0, 0, 0]), PackedInt32Array(row[1]))
+
+		await process_frame
+		var frame_s: float = float(Time.get_ticks_usec() - frame_t) / 1.0e6
+		frame_t = Time.get_ticks_usec()
+
+		for peer in peers:
+			var fb: Dictionary = view._bodies.get(peer, {})
+
+			if fb.is_empty():
+				continue
+
+			var fp: Vector3 = (fb["node"] as Node3D).position
+			var now_f: int = Time.get_ticks_msec() - start_ms
+
+			if frame_p.has(peer) and now_f > 1200 and now_f < walk_ms + 100:
+				var moved_f: float = fp.distance_to(frame_p[peer])
+				var allowed: float = LOSSY_FRAME_MPS * maxf(frame_s, 1.0 / float(LOSSY_FPS)) + 0.01
+
+				if moved_f / allowed > worst_frame / worst_frame_allowed:
+					worst_frame = moved_f
+					worst_frame_allowed = allowed
+
+			frame_p[peer] = fp
+
+		var dt: float = float(Time.get_ticks_usec() - last_t) / 1.0e6
+
+		if dt < 0.05:
+			continue   # measured over 50 ms windows (headless frames are far shorter than a millisecond clock can time)
+
+		last_t = Time.get_ticks_usec()
+
+		for peer in peers:
+			var b: Dictionary = view._bodies.get(peer, {})
+
+			if b.is_empty():
+				continue
+
+			var p: Vector3 = (b["node"] as Node3D).position
+
+			if last_p.has(peer) and now > 1200 and now < walk_ms + 100:   # while it walks (past the first second, before the stop is drawn)
+				var step: float = p.distance_to(last_p[peer]) / dt
+				worst_step = maxf(worst_step, step)
+
+				if step < 0.3:
+					still_frames += 1
+
+			last_p[peer] = p
+			past = maxf(past, p.x - at.x - 9.0)
+
+	var rest_ok: bool = true
+
+	for peer in peers:
+		rest_ok = rest_ok and view._bodies.has(peer) and absf(float((view._bodies[peer]["node"] as Node3D).position.x) - at.x - 9.0) < 0.15
+
+	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
+	check(worst_frame <= worst_frame_allowed, "no jump on a lossy, late link: the most drawn in one frame %.3f m (%.3f m allowed at 60 fps)" % [worst_frame, worst_frame_allowed])
+	check(worst_step < 3.0 * 1.5, "no rush on a lossy, late link: the fastest drawn speed %.1f m/s over 50 ms for a 3 m/s walk" % worst_step)
+	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
+	check(rest_ok, "each comes to rest at its last point (burst at %d ms)" % burst_ms)
+	check(past <= 3.0 * PlayerViewScript.CARRY_S + 0.3, "no body walks on more than %.1f m past its stop (%.2f m)" % [3.0 * PlayerViewScript.CARRY_S, past])
+	var hitch: Dictionary = MotionBufferScript.clock_new()
+	hitch["late"] = 1.5   # a 1.5 s hitch on this computer: the batch after it reads 1.5 s late
+	check(PlayerViewScript.draw_delay(hitch) <= MotionBufferScript.MAX_DELAY_S, "after a hitch the draw delay stays within %.1f s (%.2f)" % [MotionBufferScript.MAX_DELAY_S, PlayerViewScript.draw_delay(hitch)])
+	check(PlayerViewScript.draw_delay(MotionBufferScript.clock_new()) >= PlayerViewScript.REPORT_S, "and never under one report gap")
+	view.queue_free()
+	camera.queue_free()
+	Engine.max_fps = fps_was
+	await process_frame
+
+
+# Dave 23 Nov 2026 on 9257: another player's spear "floating in the air almost sticking out of his chest". Every item with a hand look, on
+# every body model, is put in a remote player's hand as the player's own third-person body holds it: under that body's hand mount (the left
+# for a bow), its middle within reach of the hand, and a spear pointing ahead along the facing (not along the fingers, as before the fix).
+func _check_holds() -> void:
+	if not DynastyBodyScript.available():
+		print("test_remote_players: the Dynasty glb is not imported here, the hold checks are skipped")
+		return
+
+	var table = ItemTableScript.load_default()
+	var numbers: Array = []
+
+	for id in table.ids():
+		var n: int = table.number_of(str(id))
+
+		if PlayerViewScript.held_model(n, table) != null:
+			numbers.append(n)
+
+	check(numbers.size() >= 10, "items with a hand look found (%d)" % numbers.size())
+	var spears: int = 0
+
+	for body in BodyModelsScript.ids():
+		if not DynastyBodyScript.available(str(body)):
+			continue
+
+		var holder: Node3D = Node3D.new()
+		holder.rotation.y = 0.7
+		get_root().add_child(holder)
+		var rig: Node3D = PlayerViewScript.make_rig(str(body), {})
+		holder.add_child(rig)
+		rig.play("idle")
+		await process_frame
+		var front: Vector3 = rig.global_basis * Vector3.FORWARD
+		front = Vector3(front.x, 0.0, front.z).normalized()
+
+		for n in numbers:
+			var made: Array = PlayerViewScript.hold_in(rig, int(n), table)
+			var id: String = table.id_of(int(n))
+
+			if not check(made.size() == 2, "%s %s: held" % [body, id]):
+				continue
+
+			var model: Node3D = made[0]
+			var mount: Node3D = model.get_parent() as Node3D
+			check(mount == rig.get("hand_mount_l" if made[1] == "bow" else "hand_mount_r"), "%s %s: in the %s hand" % [body, id, "left" if made[1] == "bow" else "right"])
+			var mesh: MeshInstance3D = model.get_child(0) as MeshInstance3D
+			var box: AABB = mesh.global_transform * mesh.get_aabb()
+			var hand: Vector3 = mount.global_position
+			var off: float = hand.distance_to(hand.clamp(box.position, box.end))
+			check(off < 0.12, "%s %s (%s): the item is in the hand, %.2f m from it" % [body, id, made[1], off])
+
+			if made[1] == "spear":
+				spears += 1
+				var point: Vector3 = -model.global_basis.z.normalized()
+				check(point.dot(front) > 0.95, "%s %s: the spear points ahead along the facing (%.2f)" % [body, id, point.dot(front)])
+				var rest: Transform3D = mount.transform
+				mount.rotate_object_local(Vector3.RIGHT, 0.6)   # the hand swings, as a walk clip moves it; the spear keeps the facing, its fist the hand
+				mount.position += Vector3(0.0, 0.0, 15.0)   # 0.15 m in the centimetre skeleton
+				PlayerViewScript.aim_spear(model, rig)
+				var fist: Node3D = model.get_node_or_null(HeldItemScript.THIRD_FIST_NAME) as Node3D
+				check(fist != null and fist.global_position.distance_to(mount.global_position) < 0.02 and fist.global_basis.z.normalized().dot(mount.global_basis.z.normalized()) > 0.99, "%s %s: the fist stays on the hand, along the fingers, as it swings" % [body, id])
+				mount.transform = rest
+
+			model.free()
+
+		holder.queue_free()
+
+	check(spears > 0, "a spear was among the held items")
+
+
+# Robots 23 Nov 2026: a player 70 m off lay down and was drawn standing (bodies past QUARTER_M are not animated, and the clip stayed idle).
+# Far off the body still takes the lying, sitting or swimming pose when the state says so, once, with no animation after.
+# Robots, 23 Nov 2026 (dev 0b0c3247, 60 +- 25 ms, 2% loss): with the animals' easing (1.3 times the measured speed) another player was drawn
+# 2 m behind while it ran and 6 m behind for 10 s after a 1.4 s freeze on the watching client. A player's own easing catches up.
+func _check_catch_up() -> void:
+	var dt: float = 1.0 / 60.0
+	var sm: Dictionary = {}
+	MotionBufferScript.smooth(sm, Vector3.ZERO, 6.0, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)
+	var p: Vector3 = MotionBufferScript.smooth(sm, Vector3(6.0, 0.0, 0.0), 0.0, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)   # 6 m on in one frame (the freeze), then it stands
+	var first: float = p.x
+	var t: float = dt
+
+	while t < 2.5:
+		p = MotionBufferScript.smooth(sm, Vector3(6.0, 0.0, 0.0), 0.0, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)
+		t += dt
+
+	check(first < 1.0, "a 6 m step after a freeze is not jumped (%.2f m in the first frame)" % first)
+	check(absf(p.x - 6.0) < 0.05, "a stopped player 6 m ahead after a freeze is caught up within 2.5 s (%.2f m left)" % absf(p.x - 6.0))
+	# A player breaking into a run (0 to 6 m/s in 0.5 s) while its measured speed trails by 0.4 s: drawn within 1 m of its path.
+	var run: Dictionary = {}
+	var x: float = 0.0
+	var worst: float = 0.0
+	t = 0.0
+
+	while t < 4.0:
+		var speed: float = clampf(t / 0.5, 0.0, 1.0) * 6.0
+		x += speed * dt
+		var measured: float = clampf((t - 0.4) / 0.5, 0.0, 1.0) * 6.0
+		var drawn: Vector3 = MotionBufferScript.smooth(run, Vector3(x, 0.0, 0.0), measured, dt, PlayerViewScript.SMOOTH_ROOM_X, PlayerViewScript.SMOOTH_CATCH_X, PlayerViewScript.SMOOTH_CATCH_MIN_MPS)
+		worst = maxf(worst, x - drawn.x)
+		t += dt
+
+	check(worst < 1.0, "a player breaking into a run is drawn within 1 m of its path (worst %.2f m)" % worst)
+	# After this computer's own stall (#1765, as the animals): the others are drawn where they are, and the stall's lateness is not kept.
+	var view_code: String = FileAccess.get_file_as_string("res://src/client/player_view.gd").replace("\r\n", "\n")   # a Windows checkout ends lines with CRLF: the multi-line checks below read LF
+	check(view_code.contains("MotionBuffer.clock_note(_clock, now_s, newest, now_s <= _settle_until)") and view_code.contains("if settle:\n\t\t\tMotionBuffer.settle(b)") and view_code.contains("_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)"), "after this computer's own stall other players are settled at their points (player_view.gd, as animal_view)")
+
+
+# Lane A pictures, 23 Nov 2026: a hammer blow and a rod cast were drawn bent double (the chop's impact was the source's sledge into the ground),
+# the rod with the chop, and a raised shield hung at the hip.
+func _check_tool_poses() -> void:
+	var table = ItemTableScript.load_default()
+	var rod: int = -1
+	var hammer: int = -1
+	var shield: int = -1
+
+	for id in table.ids():
+		var tool_class: String = str(table.entry(str(id)).get("tool_class", ""))
+
+		if tool_class == "rod" and rod < 0:
+			rod = table.number_of(str(id))
+		elif tool_class == "hammer" and hammer < 0:
+			hammer = table.number_of(str(id))
+		elif tool_class == "shield" and shield < 0:
+			shield = table.number_of(str(id))
+
+	check(rod > 0 and PlayerViewScript.work_clip(rod, table) == "throw" and hammer > 0 and PlayerViewScript.work_clip(hammer, table) == "chop", "a rod casts (throw), a hammer chops")
+
+	if not DynastyBodyScript.available():
+		return
+
+	var view: Node3D = PlayerViewScript.new()
+	view.table = table
+	get_root().add_child(view)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	view.on_look(9, "Tools", "body_1", "", PackedInt32Array())
+	var spear: int = table.number_of("wooden_spear")
+
+	for i in 4:
+		view.on_rows(PackedInt32Array([9]), PackedVector3Array([Vector3.ZERO]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([spear]), PackedInt32Array([1000 + i * 200]), PackedInt32Array([shield]), PackedByteArray([PlayerViewScript.MORE_SHIELD_UP]))
+		await process_frame
+
+	for i in 30:
+		await process_frame
+
+	var b: Dictionary = view._bodies.get(9, {})
+	check(not b.is_empty(), "the shield bearer is drawn")
+
+	if b.is_empty():
+		view.queue_free()
+		camera.queue_free()
+		return
+
+	var rig = b["rig"]
+	var skel: Skeleton3D = rig.skeleton
+	var at_bone: Callable = func(bone: String) -> Vector3: return (skel.global_transform * skel.get_bone_global_pose(skel.find_bone("mixamorig_" + bone))).origin
+	var fist: Vector3 = at_bone.call("LeftHand")
+	var chest: Vector3 = at_bone.call("Spine2")
+	check(str(rig.current()) == "idle_shield_up" and fist.z < chest.z - 0.25 and absf(fist.y - chest.y) < 0.15, "a raised shield is held before the chest (%s, the fist %.2f m ahead, %.2f m off the chest's height)" % [rig.current(), chest.z - fist.z, fist.y - chest.y])
+	view.set_process(false)
+	var player: AnimationPlayer = rig.get("animation_player")
+	player.play("idle")
+	player.seek(0.0, true)
+	var standing: float = (at_bone.call("Head") as Vector3).y
+	var lowest: float = INF
+
+	for k in 20:
+		player.play("chop")
+		player.seek(player.get_animation("chop").length * float(k) / 19.0, true)
+		lowest = minf(lowest, (at_bone.call("Head") as Vector3).y)
+
+	check(standing - lowest < 0.45, "a chop or hammer blow leans into it, never bent double (the head %.2f m below standing at its lowest)" % (standing - lowest))
+	view.queue_free()
+	camera.queue_free()
+	await process_frame
+
+
+func _check_far_pose() -> void:
+	if not DynastyBodyScript.available():
+		return
+
+	var view: Node3D = PlayerViewScript.new()
+	view.table = ItemTableScript.load_default()
+	get_root().add_child(view)
+	var at: Vector3 = Vector3(1000.0, 30.0, 1000.0)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = at + Vector3(0.0, 1.6, PlayerViewScript.QUARTER_M + 30.0)
+	camera.make_current()
+	view.on_look(9, "Far", "body_1", "", PackedInt32Array())
+	var ms: int = 90000
+	var clips: Array = []
+
+	for stance in [0, 3, 2, 0]:
+		for i in range(12):
+			ms += 125
+			view.on_rows(PackedInt32Array([9]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([stance | (PlayerViewScript.ASLEEP if stance == 3 else 0)]), PackedInt32Array([0]), PackedInt32Array([ms]))
+			await process_frame
+
+		var b: Dictionary = view._bodies.get(9, {})
+		clips.append(str(b["rig"].call("current")) if not b.is_empty() else "")
+
+	check(clips == ["idle", "lie", "sit", "idle"], "a far player lying down, then sitting, then up, is drawn so (%s)" % ", ".join(clips))
+	view.queue_free()
+	camera.queue_free()
+
+
+# Robots 23 Nov 2026: another player's spear read 0.33 m off the running hand. The hand mount is on a BoneAttachment3D, which follows the
+# bones only at the skeleton's deferred update, so straight after a step of the clip it still held the last step's hand (and aim_spear
+# turned the spear by that). player_view.gd follow_hand moves it to this step's hand first.
+func _check_hand_follows() -> void:
+	if not DynastyBodyScript.available():
+		return
+
+	var table = ItemTableScript.load_default()
+	var rig: Node3D = PlayerViewScript.make_rig("body_1", {})
+	get_root().add_child(rig)
+	var player: AnimationPlayer = rig.get("animation_player") as AnimationPlayer
+	player.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
+	rig.play("run")
+	await process_frame
+	var worst: Array = [0.0, 0.0]
+
+	for kind in range(2):
+		var made: Array = PlayerViewScript.hold_in(rig, int(table.number_of("wooden_spear" if kind == 0 else "stone_axe")), table)
+		var model: Node3D = made[0]
+		var mount: Node3D = model.get_parent() as Node3D
+		var skel: Skeleton3D = rig.get("skeleton") as Skeleton3D
+		var bone: int = skel.find_bone("RightHand") if skel.find_bone("RightHand") >= 0 else skel.find_bone("mixamorig_RightHand")
+
+		for i in range(12):   # steps of the run clip, read straight after each as another node's _process would
+			player.advance(0.07)
+
+			if made[1] == "spear":
+				PlayerViewScript.aim_spear(model, rig)
+			else:
+				PlayerViewScript.follow_hand(model)
+
+			worst[kind] = maxf(float(worst[kind]), mount.global_position.distance_to((skel.global_transform * skel.get_bone_global_pose(bone)).origin))
+			await process_frame
+
+		model.free()
+
+	check(float(worst[0]) < 0.15 and float(worst[1]) < 0.15, "the hand mount is on this step's hand straight after a run step (spear %.2f m, axe %.2f m; 0.11 m is its grip)" % [worst[0], worst[1]])
+	rig.queue_free()
+
 
 func _init() -> void:
 	_server()
 	await _client()
+	await _check_wiggle()
+	await _check_lossy(1750, 800)    # a burst of lost batches mid-walk
+	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
+	await _check_holds()
+	await _check_hand_follows()
+	await _check_far_pose()
+	await _check_tool_poses()
+	_check_catch_up()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)

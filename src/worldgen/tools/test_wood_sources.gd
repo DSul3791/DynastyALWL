@@ -3,7 +3,7 @@ extends SceneTree
 # GOALS-REPAIR WP-R1A commit A (recovery GA-01 and GA-02): what a felled tree gives as it comes down in its logs (Dave 16 Nov 2026), through the real server.
 #   Scots pine: every by_species row can drop (resin AND pine_tar); the resin roll is unchanged.
 #   Willow: its second row (withies) drops too.
-#   Oak: tannin_bark 3 (drops.json harvest_yield) once per felled tree, in the heap beside its logs; the landing adds none.
+#   Oak: its tannin_bark (drops.json harvest_yield, 12) once per felled tree, in the heap beside its logs; the landing adds none.
 #   Maple: its 1 to 5 maple keys lie on the ground, not in the pack.
 #   Tar (campfire) -> Water wheel: the data chain is as written (pine_tar 5 -> tar 1; the Water wheel asks for tar).
 # The fall itself (the blows, the stump, the swing down) is tested in test_fell_autosplit; here the server's _fell_record is called directly.
@@ -159,19 +159,20 @@ func _init() -> void:
 	check(not tar_recipe.is_empty() and str(tar_recipe["station"]) == "campfire" and int(tar_recipe["needs"][0][0]) == pine_tar and int(tar_recipe["needs"][0][1]) == 5, "Tar is 5 pine tar at a campfire")
 	check(wheel_tar > 0, "the Water wheel asks for Tar (%d)" % wheel_tar)
 
-	# GA-01: an oak comes down with its 3 tannin bark in the heap beside its logs, once; the landing adds none; a pine leaves none.
+	# GA-01: an oak comes down with its tannin bark (the drops.json harvest_yield row, 12 since 23 Nov 2026) in the heap beside its logs, once; the landing
+	# adds none; a pine leaves none.
+	var bark_n: int = int(items._drops["harvest_yield"]["oak"]["count"])
 	var before_ground: int = on_ground("tannin_bark")
 	var oak: int = fell("oak", 10.0, Vector3(3.0, 10.0, 200.0))
 	check(items._items.has(oak) and on_ground("log_oak") > 0, "an oak comes down in logs")
-	check(on_ground("tannin_bark") - before_ground == 3, "its heap holds the 3 tannin bark (%d)" % (on_ground("tannin_bark") - before_ground))
-	check(int(items._drops["harvest_yield"]["oak"]["count"]) == 3, "the count is the drops.json harvest_yield row")
+	check(bark_n >= 12 and on_ground("tannin_bark") - before_ground == bark_n, "its heap holds the %d tannin bark of the drops.json harvest_yield row (%d)" % [bark_n, on_ground("tannin_bark") - before_ground])
 
 	for n in range(8):
 		items.tick(0.25)   # the fall lands
 
-	check(on_ground("tannin_bark") - before_ground == 3, "landing adds no more (%d)" % (on_ground("tannin_bark") - before_ground))
+	check(on_ground("tannin_bark") - before_ground == bark_n, "landing adds no more (%d)" % (on_ground("tannin_bark") - before_ground))
 	fell("scots_pine", 10.0, Vector3(3.0, 10.0, 260.0))
-	check(on_ground("tannin_bark") - before_ground == 3, "a pine adds no tannin bark")
+	check(on_ground("tannin_bark") - before_ground == bark_n, "a pine adds no tannin bark")
 
 	# Felled seeds (gardening, Dave 14 Nov 2026: "a random number of seeds between 1 and 5 seeds per tree"): a maple lays exactly its roll of maple keys on the
 	# ground as it comes down, not in the pack. A maple has no other seed row, so the ground count is the roll.

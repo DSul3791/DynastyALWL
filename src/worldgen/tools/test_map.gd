@@ -12,6 +12,8 @@ const KnowledgeScript := preload("res://src/client/map_knowledge.gd")
 const Sketch := preload("res://src/client/map_sketch.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 var observed: Array = []      # every (x, z) the server looked at
@@ -105,7 +107,7 @@ func _init() -> void:
 	var back: Dictionary = Codec.decode(Codec.encode(sample))
 	check(back.size() == 3 and int(back[1023][1]) == 2047 and int(back[0][1]) == -12 and int(back[37][0]) == 55 and int(back[1023][3]) == 3, "the codec keeps every field (%s)" % str(back))
 	check(Codec.decode(PackedByteArray([1, 2, 3])).is_empty(), "a damaged block decodes to nothing")
-	check(MapScript.water_kind(1) == Codec.WATER_SEA and MapScript.water_kind(3) == Codec.WATER_INLAND and MapScript.water_kind(8) == Codec.WATER_NONE and MapScript.water_kind(0) == Codec.WATER_NONE, "water classes map to sea, inland water and dry ground")
+	check(MapScript.water_kind(1) == Codec.WATER_SEA and MapScript.water_kind(2) == Codec.WATER_INLAND and MapScript.water_kind(9) == Codec.WATER_NONE and MapScript.water_kind(0) == Codec.WATER_NONE, "water classes map to sea, inland water and dry ground")
 
 	# 1. A new character: nothing is known, nothing is sent, the sketch is blank paper.
 	keys[1] = "map-key-0001"
@@ -113,8 +115,8 @@ func _init() -> void:
 	check(sent_cells(m, 1).is_empty(), "a new character is sent no map at all")
 	var fresh = KnowledgeScript.new()
 	check(fresh.is_empty(), "the client starts with a blank map")
-	var blank: Image = Sketch.render_block(fresh, Vector2i(0, 0))
-	check(blank.get_used_rect().size == Vector2i.ZERO, "a blank map draws no marks")
+	var blank: Dictionary = Sketch.render_block(fresh, Vector2i(0, 0))
+	check(blank["strokes"].is_empty() and blank["wash"].get_used_rect().size == Vector2i.ZERO, "a blank map draws no marks")
 
 	# Trap marks (protocol 150): the client keeps the set the server sent, drops rows it has no mark for, and says when it changed.
 	var told: Array = [0]
@@ -374,51 +376,54 @@ func _init() -> void:
 	k1.receive(0, 0, Codec.encode(slope))
 	k1.receive(1, 0, Codec.encode(slope2))
 	check(changed.size() == 2 and k1.cell_at(Vector2i(per, 0)).size() == 4 and k1.cell_at(Vector2i(-1, 0)).is_empty(), "the client finds cells across blocks and nothing elsewhere")
-	var a: Image = Sketch.render_block(k1, Vector2i(0, 0))
-	var c: Image = Sketch.render_block(k1, Vector2i(1, 0))
-	var none: Image = Sketch.render_block(k1, Vector2i(0, 1))
-	check(a.get_used_rect().size != Vector2i.ZERO and none.get_used_rect().size == Vector2i.ZERO, "known ground gets marks, unknown ground none")
+	var a: Dictionary = Sketch.render_block(k1, Vector2i(0, 0))
+	var none: Dictionary = Sketch.render_block(k1, Vector2i(0, 1))
+	check(not a["strokes"].is_empty() and none["strokes"].is_empty() and none["wash"].get_used_rect().size == Vector2i.ZERO and a["wash"].get_used_rect().size != Vector2i.ZERO, "known ground gets ink and a wash, unknown ground none")
 	var size: int = per * Sketch.PX
-	var half: int = int(size / 2.0)
-	var seam: Image = Sketch.render_rect(k1, Vector2i(half, 0), Vector2i(size, size))
-	var mismatch: int = 0
+	# A lake shore running across the edge between two blocks: the line each block draws ends where its neighbour's starts.
+	var k_seam = KnowledgeScript.new()
 
-	for y in size:
-		for x in size:
-			var whole: Color = seam.get_pixel(x, y)
-			var part: Color = a.get_pixel(x + half, y) if x < half else c.get_pixel(x - half, y)
+	for bx in 2:
+		var seam_cells: Dictionary = {}
 
-			if absf(whole.a - part.a) > 0.01:
-				mismatch += 1
+		for idx in per * per:
+			var gx: int = bx * per + idx % per
+			var gz: int = floori(float(idx) / float(per))
+			seam_cells[idx] = [60, 5.0, Codec.WATER_INLAND if absi(gx - gz - 8) < 5 else Codec.WATER_NONE, 0]
 
-	check(mismatch == 0, "two blocks drawn apart match one drawing across their edge (%d pixels differ)" % mismatch)
+		k_seam.set_block(Vector2i(bx, 0), seam_cells)
+
+	var left: Array = edge_points(Sketch.render_block(k_seam, Vector2i(0, 0)), float(size))
+	var right: Array = edge_points(Sketch.render_block(k_seam, Vector2i(1, 0)), float(size))
+	var unmatched: int = 0
+
+	for p in left:
+		var hit: bool = false
+
+		for o in right:
+			hit = hit or (p as Vector2).distance_to(o) < 0.01
+
+		unmatched += 0 if hit else 1
+
+	check(left.size() >= 2 and left.size() == right.size() and unmatched == 0, "a shore crossing a block edge meets its neighbour's line there (%d ends left, %d right, %d unmatched)" % [left.size(), right.size(), unmatched])
+	var batches: Array = Sketch.render_block(k_seam, Vector2i(0, 0))["batches"]
+	check(batches.size() > 0 and batches.size() < 30, "a block's ink goes to the page in a few batches (%d)" % batches.size())
 	var k_rough = KnowledgeScript.new()
 	var k_fine = KnowledgeScript.new()
 	var hills_r: Dictionary = {}
 	var hills_f: Dictionary = {}
 
 	for idx in per * per:
-		var hx: float = 20.0 * sin(float(idx % per) * 0.4) + 15.0 * cos(floor(float(idx) / float(per)) * 0.3)
-		hills_r[idx] = [1, round(hx / 10.0) * 10.0, 0, 0]
-		hills_f[idx] = [100, round(hx), 0, 0]
+		var hx: float = 40.0 * sin(float(idx % per) * 0.3) + 30.0 * cos(floor(float(idx) / float(per)) * 0.25)
+		hills_r[idx] = [1, round(hx / 10.0) * 10.0, Codec.WATER_INLAND if hx < -40.0 else 0, 0]
+		hills_f[idx] = [100, round(hx), Codec.WATER_INLAND if hx < -40.0 else 0, 0]
 
 	k_rough.set_block(Vector2i(0, 0), hills_r)
 	k_fine.set_block(Vector2i(0, 0), hills_f)
-	var r_img: Image = Sketch.render_block(k_rough, Vector2i(0, 0))
-	var f_img: Image = Sketch.render_block(k_fine, Vector2i(0, 0))
-	var r_ink: float = 0.0
-	var f_ink: float = 0.0
-	var differ: int = 0
-
-	for y in size:
-		for x in size:
-			r_ink += r_img.get_pixel(x, y).a
-			f_ink += f_img.get_pixel(x, y).a
-
-			if absf(r_img.get_pixel(x, y).a - f_img.get_pixel(x, y).a) > 0.05:
-				differ += 1
-
-	check(differ > int(size * size / 20.0) and f_ink > r_ink, "the same hills sketch rougher and lighter at Mapping 1 than at 100 (%d pixels differ, ink %.0f vs %.0f)" % [differ, r_ink, f_ink])
+	var r_ink: Array = ink_of(Sketch.render_block(k_rough, Vector2i(0, 0)))
+	var f_ink: Array = ink_of(Sketch.render_block(k_fine, Vector2i(0, 0)))
+	check(r_ink[0] > 0.0 and f_ink[1] > r_ink[1] * 1.15, "the same ground is inked lighter at Mapping 1 than at 100 (mean ink %.2f vs %.2f)" % [r_ink[1], f_ink[1]])
+	sketch_feature_checks(per)
 
 	# 11. The real skills system: "survey" practises Mapping.
 	var items = ItemsScript.new()
@@ -481,8 +486,277 @@ func _init() -> void:
 	print("Map cost: %.0f us a survey (%d surveys), whole map send %d us %d bytes, one block sketch %d us" % [survey_us, big.surveys, send_us, bytes, sketch_us])
 	check(survey_us < 20000.0, "a survey stays cheap (%.0f us)" % survey_us)
 	check(sketch_us < 1500000, "a block sketch stays under 1.5 s even here (%d us; the page draws one block a frame at most)" % sketch_us)
+	trails_checks()
+	landmark_checks()
 	print("map: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Landmarks (Dave 23 Nov 2026 play test, protocol 166): what is seen near goes on the map in surveyed cells only, one mark a kind within merge_m,
+# gone when it is gone (but a good fishing spot stays), names grow with what is seen, paths and rivers, the save keeps them and an old save
+# loads, and the world items a person would mark come from server_items.
+func landmark_checks() -> void:
+	var dir: String = "user://test_map_marks"
+	DirAccess.make_dir_recursive_absolute(dir + "/maps")
+
+	for file in DirAccess.get_files_at(dir + "/maps"):
+		DirAccess.remove_absolute(dir + "/maps/" + file)
+
+	var world: Array = [[["campfire", 1010.0, 1000.0, ""], ["bog_iron", 1030.0, 1005.0, "Bog iron"], ["bog_iron", 1040.0, 1010.0, "Bog iron"],
+		["fruit:apple", 1000.0, 1020.0, "Apple trees"], ["path", 1000.0, 1000.0, ""], ["path", 1016.0, 1000.0, ""], ["road", 1032.0, 1000.0, ""],
+		["cave", 3000.0, 3000.0, "Cave"]]]
+	var m = make(dir)
+	keys[70] = "map-key-marks"
+	m.landmarks_near = func(_p, _r): return world[0]
+
+	for k in 4:
+		m.note_position(70, Vector3(990.0 + float(k) * 8.0, 10.0, 1000.0))
+
+	var rows: Array = all_marks(m, "map-key-marks")
+	var kinds: Array = rows.map(func(r): return str(r[0]))
+	check(kinds.count("campfire") == 1 and kinds.count("bog_iron") == 1 and kinds.count("fruit:apple") == 1 and not kinds.has("cave"), "what is seen near goes on the map once a kind within merge_m, nothing far off (%s)" % str(kinds))
+	var rec: Dictionary = m._record("map-key-marks")
+	var path_cells: int = 0
+
+	for block in rec["blocks"]:
+		path_cells += rec["blocks"][block].get("paths", {}).size()
+
+	check(path_cells == 3, "the path and road cells are kept (%d)" % path_cells)
+	# One thing in one place is its own mark: two campfires 10 m apart are two, two bog iron patches 10 m apart are one field.
+	var pair_world: Array = [["campfire", 1010.0, 1000.0, ""], ["campfire", 1020.0, 1000.0, ""], ["bog_iron", 1030.0, 1005.0, "Bog iron"], ["bog_iron", 1040.0, 1005.0, "Bog iron"]]
+	var pair_m = make("")
+	keys[72] = "map-key-pair"
+	pair_m.landmarks_near = func(_p, _r): return pair_world
+
+	for k in 4:
+		pair_m.note_position(72, Vector3(990.0 + float(k) * 8.0, 10.0, 1000.0))
+
+	var pair_kinds: Array = all_marks(pair_m, "map-key-pair").map(func(r): return str(r[0]))
+	check(pair_kinds.count("campfire") == 2 and pair_kinds.count("bog_iron") == 1, "two fires side by side are two marks, a bog iron field is one (%s)" % str(pair_kinds))
+	check(MapScript._label_rank("Olive grove") > MapScript._label_rank("Olive trees") and MapScript._label_rank("Apple orchard") > MapScript._label_rank("Apple trees") and MapScript._label_rank("Olive trees") > MapScript._label_rank("Olive tree"), "a grove ranks with an orchard over trees, and trees over one tree")
+	world[0] = [["bog_iron", 1030.0, 1005.0, "Bog iron"], ["fruit:apple", 1001.0, 1021.0, "Apple orchard"], ["path", 1000.0, 1000.0, ""]]
+	m.note_catch(70, Vector3(1020.0, 10.0, 1000.0))
+	m.note_catch(70, Vector3(1022.0, 10.0, 1002.0))
+	check(not all_marks(m, "map-key-marks").map(func(r): return str(r[0])).has("fishing"), "two catches are not yet a good fishing spot")
+	m.note_catch(70, Vector3(1023.0, 10.0, 1001.0))
+	m.note_position(70, Vector3(1030.0, 10.0, 1000.0))
+	rows = all_marks(m, "map-key-marks")
+	kinds = rows.map(func(r): return str(r[0]))
+	var labels: Array = rows.map(func(r): return str(r[3]))
+	check(not kinds.has("campfire") and kinds.has("bog_iron") and labels.has("Apple orchard") and not labels.has("Apple trees") and kinds.has("fishing"), "a campfire gone leaves the map, the trees grow into an orchard, three catches mark good fishing (%s)" % str(labels))
+	world[0] = []
+	m.note_position(70, Vector3(1040.0, 10.0, 1000.0))
+	kinds = all_marks(m, "map-key-marks").map(func(r): return str(r[0]))
+	check(kinds == ["fishing"], "nothing seen any more: only the good fishing spot stays (%s)" % str(kinds))
+	world[0] = null
+	m.look_now(70, Vector3(1040.0, 10.0, 1000.0))
+	check(all_marks(m, "map-key-marks").size() == 1, "ground not loaded changes nothing")
+	world[0] = [["ore_rock:copper", 1041.0, 1001.0, "Copper"], ["path", 1040.0, 1000.0, ""]]
+	m.look_now(70, Vector3(1040.0, 10.0, 1000.0))
+	check(all_marks(m, "map-key-marks").map(func(r): return str(r[0])).has("ore_rock:copper"), "a blow on a rock marks it at once")
+	var sent: Array = []
+
+	for _pass in 50:
+		clock_ms += 10000
+		var batch: Array = m.updates_for(70, clock_ms)
+
+		if batch.is_empty():
+			break
+
+		sent.append_array(batch)
+
+	var sent_marks: int = 0
+
+	for u in sent:
+		sent_marks += (u[3] as Array).size()
+
+	check(not sent.is_empty() and (sent[0] as Array).size() == 5 and sent_marks == 2, "each block goes with its marks and path cells (%d marks)" % sent_marks)
+	m.save()
+	var again = make(dir)
+	check(all_marks(again, "map-key-marks").size() == 2 and again._record("map-key-marks").has("fish"), "marks and catches survive a save and reload")
+	# A save from before (no marks, paths or fish) still loads.
+	var old_path: String = again._path_of("map-key-old")
+	var old_cells: Dictionary = {0: [20, 5.0, 1, 0], 1: [20, 6.0, 0, 2]}
+	var f: FileAccess = FileAccess.open(old_path, FileAccess.WRITE)
+	f.store_string(JSON.stringify({"version": 1, "tally": 3, "blocks": {"0,0": Marshalls.raw_to_base64(Codec.encode(old_cells))}, "trails": {}}))
+	f.close()
+	var old: Dictionary = again._record("map-key-old")
+	check(old["blocks"].size() == 1 and old["blocks"][Vector2i(0, 0)]["cells"].size() == 2 and all_marks(again, "map-key-old").is_empty(), "a map saved before landmarks loads with its cells and no marks")
+	var marks_rec: Dictionary = again._record("map-key-marks")
+	check(marks_rec["blocks"].values().all(func(b): return bool(b.get("water_ok", false))) and not bool(old["blocks"][Vector2i(0, 0)].get("water_ok", false)), "blocks mapped now load with their water checked; a map saved before 166 loads with it not checked")
+	old["blocks"][Vector2i(0, 0)]["water_seen"] = {0: true}
+	old["dirty"] = true
+	again.save()
+	var third = make(dir)
+	var old_again: Dictionary = third._record("map-key-old")["blocks"][Vector2i(0, 0)]
+	check(not bool(old_again.get("water_ok", false)) and old_again.get("water_seen", {}).has(0) and not old_again.get("water_seen", {}).has(1), "the old cells already looked at for their water are saved (%s)" % str(old_again.get("water_seen", {})))
+	# A known cell of a map saved before protocol 166 has its water put right once on a revisit at the same skill (a river the old map called
+	# a lake), with no redraw counted; ground mapped now is never looked at again for its water.
+	var river_m = make("")
+	keys[71] = "map-key-river"
+	var wet: Array = [Codec.WATER_INLAND]
+	var water_looks: Array = [0]
+	river_m.observe = func(_x, _z):
+		water_looks[0] += 1
+		return [5.0, wet[0]]
+
+	for k in 3:
+		river_m.note_position(71, Vector3(float(k) * 8.0, 10.0, 0.0))
+
+	water_looks[0] = 0
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	var fresh_looks: int = water_looks[0]
+	water_looks[0] = 0
+	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	check(water_looks[0] <= fresh_looks + 2, "known ground mapped now costs no water look on a revisit (%d looks, %d for the first new step)" % [water_looks[0], fresh_looks])
+	var river_block: Dictionary = river_m._record("map-key-river")["blocks"][Vector2i(0, 0)]
+	river_block.erase("water_ok")   # as a block loaded from a map saved before 166
+	wet[0] = Codec.WATER_RIVER
+	goaled.clear()
+	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	var first_cell: Array = river_block.get("cells", {}).get(0, [])
+	check(not first_cell.is_empty() and int(first_cell[2]) == Codec.WATER_RIVER and not goaled.any(func(g): return str(g[1]) == "map_redrawn"), "an old map's known cell has its water put right on a revisit, without a redraw (%s)" % str(first_cell))
+	water_looks[0] = 0
+	river_m.note_position(71, Vector3(32.0, 10.0, 0.0))
+	river_m.note_position(71, Vector3(24.0, 10.0, 0.0))
+	check(water_looks[0] == 0, "an old cell is looked at for its water only once (%d looks)" % water_looks[0])
+	check(MapScript.water_kind(3) == Codec.WATER_RIVER and MapScript.water_kind(8) == Codec.WATER_MARSH and MapScript.water_kind(2) == Codec.WATER_INLAND and MapScript.water_kind(9) == Codec.WATER_NONE, "rivers and wetlands get their own water kinds")
+	check(Codec.decode(Codec.encode({5: [10, 1.0, Codec.WATER_MARSH, 0]}))[5][2] == Codec.WATER_MARSH, "the codec carries river and marsh")
+	# The world items a person marks (server_items.map_marks_near): a campfire, a rock started and not finished, a path and a road.
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	var idir: String = "user://test_map_items_marks"
+	DirAccess.make_dir_recursive_absolute(idir)
+	items.setup(ItemTableScript.load_default(), idir)
+	items._items.clear()
+	items._items[1] = {"number": 1, "count": 1, "pos": Vector3(5.0, 0.0, 0.0), "left": 1.0e9, "fire": {"state": 9, "burn_left": 0.0}}
+	items._items[2] = {"number": 1, "count": 1, "pos": Vector3(8.0, 0.0, 0.0), "left": 1.0e9, "fire": {"state": 8, "burn_left": 0.0, "camp": "x", "marks": true}}
+	items._items[3] = {"number": 1, "count": 40, "pos": Vector3(10.0, 0.0, 3.0), "left": 1.0e9, "boulder": {"radius": 1.0, "total": 60, "ore": "copper"}}
+	items._items[4] = {"number": 1, "count": 60, "pos": Vector3(12.0, 0.0, 3.0), "left": 1.0e9, "boulder": {"radius": 1.0, "total": 60, "ore": "tin"}}
+	items._items[5] = {"number": 1, "count": 30, "pos": Vector3(14.0, 0.0, 3.0), "left": 1.0e9, "boulder": {"radius": 1.0, "total": 60}}
+	items._items[6] = {"number": 1, "count": 1, "pos": Vector3(3.0, 0.0, 9.0), "left": 1.0e9, "struct": {"kind": "path_patch"}}
+	items._items[7] = {"number": 1, "count": 1, "pos": Vector3(3.0, 0.0, 12.0), "left": 1.0e9, "struct": {"kind": "path_patch", "road": true}}
+	items._items[8] = {"number": 1, "count": 1, "pos": Vector3(500.0, 0.0, 0.0), "left": 1.0e9, "fire": {"state": 9, "burn_left": 0.0}}
+	var near: Array = items.map_marks_near(Vector3.ZERO, 60.0).map(func(r): return "%s %s" % [r[0], r[3]])
+	near.sort()
+	check(near == [" ".join(["campfire", ""]), "ore_rock:copper Copper", "path ", "road "], "a campfire, a copper rock started, a path and a road; not a bandit sign, a whole rock, a plain rock or far off (%s)" % str(near))
+	# A blow the rock never took (out of reach, or inside the blow cooldown) makes no look: the rock's id comes from the client.
+	var looks: Array = []
+	items.map_look = func(peer, at): looks.append([peer, at])
+	items._hit(9, null, 3, Vector2i(Net.HIT_BOULDER, 1), 0)
+	items._peer_pos[9] = Vector3(10.0, 0.0, 2.0)
+	items._last_hit[9] = Time.get_ticks_msec()
+	items._hit(9, null, 3, Vector2i(Net.HIT_BOULDER, 1), 0)
+	items._hit(9, null, 5, Vector2i(Net.HIT_BOULDER, 1), 0)
+	check(looks.is_empty(), "a refused blow on a rock (no position, inside the cooldown) looks at nothing (%d)" % looks.size())
+
+
+# Every mark a character's map holds.
+func all_marks(m, key: String) -> Array:
+	var out: Array = []
+	var rec: Dictionary = m._record(key)
+
+	for block in rec.get("blocks", {}):
+		out.append_array(rec["blocks"][block].get("marks", {}).values())
+
+	return out
+
+
+# The ends of a sketch's strokes lying on the line x = `edge` (world sketch pixels).
+func edge_points(drawn: Dictionary, edge: float) -> Array:
+	var out: Array = []
+
+	for st in drawn["strokes"]:
+		var pts: PackedVector2Array = st[0]
+
+		for p in [pts[0], pts[pts.size() - 1]]:
+			if absf(p.x - edge) < 0.001:
+				out.append(p)
+
+	return out
+
+
+func longest(strokes: Array) -> float:
+	var best: float = 0.0
+
+	for st in strokes:
+		var pts: PackedVector2Array = st[0]
+		var length: float = 0.0
+
+		for i in range(1, pts.size()):
+			length += pts[i].distance_to(pts[i - 1])
+
+		best = maxf(best, length)
+
+	return best
+
+
+# [total length times ink, mean ink] of a sketch's strokes.
+func ink_of(drawn: Dictionary) -> Array:
+	var total: float = 0.0
+	var length: float = 0.0
+
+	for st in drawn["strokes"]:
+		var pts: PackedVector2Array = st[0]
+
+		for i in range(1, pts.size()):
+			var d: float = pts[i].distance_to(pts[i - 1])
+			total += d * float(st[2])
+			length += d
+
+	return [total, total / maxf(length, 0.001)]
+
+
+# Rivers, paths, marsh and woods each put their own ink on the page, only on known ground.
+func sketch_feature_checks(per: int) -> void:
+	var base: Dictionary = {}
+
+	for idx in per * per:
+		base[idx] = [60, 5.0, Codec.WATER_NONE, 0]
+
+	var plain = KnowledgeScript.new()
+	plain.set_block(Vector2i(0, 0), base.duplicate(true))
+	var bare: int = Sketch.render_block(plain, Vector2i(0, 0))["strokes"].size()
+	var river: Dictionary = base.duplicate(true)
+
+	for z in per:
+		river[10 + z * per] = [60, 5.0, Codec.WATER_RIVER, 0]
+
+	var k_river = KnowledgeScript.new()
+	k_river.set_block(Vector2i(0, 0), river)
+	var r_strokes: Array = Sketch.render_block(k_river, Vector2i(0, 0))["strokes"]
+	check(longest(r_strokes) > float((per - 3) * Sketch.PX), "a narrow river is one long pen line through its cells (%.0f px)" % longest(r_strokes))
+	var k_path = KnowledgeScript.new()
+	var paths: PackedInt32Array = PackedInt32Array()
+
+	for x in 12:
+		paths.append((5 * per + x) * 4 + 1)
+		paths.append((20 * per + x) * 4 + 2)
+
+	k_path.receive(0, 0, Codec.encode(base), [], paths)
+	check(k_path.path_at(Vector2i(3, 5)) == 1 and k_path.path_at(Vector2i(3, 20)) == 2 and k_path.path_at(Vector2i(3, 6)) == 0, "the client keeps path and road cells")
+	var p_drawn: Array = Sketch.render_block(k_path, Vector2i(0, 0))["strokes"]
+	check(p_drawn.size() >= bare + 4 and longest(p_drawn) > 9.0 * Sketch.PX, "a road is one line and a path is broken into dashes (%d strokes over %d, longest %.0f px)" % [p_drawn.size(), bare, longest(p_drawn)])
+	var marsh: Dictionary = base.duplicate(true)
+	var woods: Dictionary = base.duplicate(true)
+
+	for idx in per * per:
+		marsh[idx] = [60, 5.0, Codec.WATER_MARSH, 0]
+		woods[idx] = [60, 5.0, Codec.WATER_NONE, 3]
+
+	var k_marsh = KnowledgeScript.new()
+	k_marsh.set_block(Vector2i(0, 0), marsh)
+	var k_woods = KnowledgeScript.new()
+	k_woods.set_block(Vector2i(0, 0), woods)
+	var tufts: int = Sketch.render_block(k_marsh, Vector2i(0, 0))["strokes"].size()
+	var tree_marks: int = Sketch.render_block(k_woods, Vector2i(0, 0))["strokes"].size()
+	check(tufts > per * per and tree_marks > per * per * 0.7 and tree_marks < per * per * 1.4, "marsh gets reed tufts and thick woods a tree mark in about half the cells (%d, %d strokes)" % [tufts, tree_marks])
+	k_path.receive(0, 0, PackedByteArray(), [["campfire", 1.0, 1.0, ""]], paths)
+	check(k_path.is_empty() and k_path.marks.is_empty() and k_path.path_at(Vector2i(3, 5)) == 0, "a block taken away takes its marks and paths with it")
 
 
 func sent_cells_raw(m, peer: int) -> Array:
@@ -499,3 +773,50 @@ func sent_cells_raw(m, peer: int) -> Array:
 			out.append(u[2])
 
 	return out
+
+
+# Game trails on the Map (protocol 152, Dave 23 Nov 2026: "auto added to the map once you get to a certain skill level"): the server keeps
+# the routes of each trail block the character was near in its map record, sends them once, and keeps them over a restart; the client
+# draws only the steps inside surveyed cells, from the Tracking level in data/map.json.
+func trails_checks() -> void:
+	var dir: String = "user://test_map_trails"
+	DirAccess.make_dir_recursive_absolute(dir.path_join("maps"))
+
+	for file in DirAccess.get_files_at(dir.path_join("maps")):
+		DirAccess.remove_absolute(dir.path_join("maps").path_join(file))
+
+	keys[71] = "trail-key-71"
+	var m = make(dir)
+	var routes: PackedByteArray = TrailCodec.encode_routes([[0, PackedVector2Array([Vector2(10.0, 10.0), Vector2(22.0, 10.0), Vector2(34.0, 12.0), Vector2(300.0, 300.0)])]], Vector2i(0, 0), TrailCodec.ROUTE_BLOCK_M)
+	m.note_trails(71, Vector2i(0, 0), PackedByteArray())
+	var none: Array = m.trail_updates_for(71)
+	check(none.is_empty(), "no routes worked out, nothing kept (%s)" % str(none).left(200))
+	m.note_trails(71, Vector2i(0, 0), routes)
+	var first: Array = m.trail_updates_for(71)
+	check(first.size() == 1 and first[0][2] == routes and m.trail_updates_for(71).is_empty(), "a trail block the character was near is sent once")
+	m.note_trails(71, Vector2i(0, 0), routes)
+	check(m.trail_updates_for(71).is_empty(), "the same routes again send nothing")
+	m.note_trails(71, Vector2i(0, 0), TrailCodec.ROUTES_SAME)
+	check(m.trail_updates_for(71).is_empty(), "routes marked unchanged (protocol 158) send nothing")
+	m.save()
+	m.forget_peer(71)
+	var again = make(dir)
+	var back: Array = again.trail_updates_for(71)
+	check(back.size() == 1 and back[0][2] == routes, "after a restart the character's trails come back with its map")
+	again.forget_peer(71)
+	check(again.trail_updates_for(71).size() == 1, "a connection that comes back is sent them again")
+
+	var k = KnowledgeScript.new()
+	var told: Array = [0]
+	k.trails_changed.connect(func() -> void: told[0] += 1)
+	k.set_trails(0, 0, routes)
+	check(k.trails.has(Vector2i(0, 0)) and told[0] == 1 and k.surveyed_trail_steps().is_empty(), "the client keeps them; with nothing surveyed none is drawn")
+	k.set_block(Vector2i(0, 0), {0: [1, 10.0, 0, 0], 1: [1, 10.0, 0, 0], 2: [1, 10.0, 0, 0]})
+	var steps: Array = k.surveyed_trail_steps()
+	check(steps.size() == 2, "only the steps whose middle lies in a surveyed cell are drawn (%d)" % steps.size())
+	check(k.surveyed_trail_steps(Rect2(5000.0, 5000.0, 100.0, 100.0)).is_empty() and k.surveyed_trail_steps(Rect2(0.0, 0.0, 50.0, 50.0)).size() == 2, "a page over other ground reads no trail block")
+	k.set_block(Vector2i(0, 0), {0: [1, 10.0, 0, 0]})
+	check(k.surveyed_trail_steps().is_empty(), "a changed map block is read again: its cell under the trail gone, so is the line (%d)" % k.surveyed_trail_steps().size())
+	check(k.trails_tracking == int((JSON.parse_string(FileAccess.get_file_as_string("res://data/map.json")) as Dictionary)["trails_tracking"]), "the Tracking level comes from data/map.json")
+	var page: String = FileAccess.get_file_as_string("res://src/client/map_page.gd")
+	check(page.contains("float(tracking.call()) >= float(knowledge.trails_tracking)") and FileAccess.get_file_as_string("res://src/client/ui/goals/journal_view.gd").contains("skill_level_of(\"tracking\")"), "the page draws them only at that Tracking level, read from the character")

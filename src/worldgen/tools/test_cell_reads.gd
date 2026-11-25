@@ -276,5 +276,15 @@ func _init() -> void:
 		off_ok = off_ok and str(edge_reads["ore_near"].call(probe, 300.0, {"copper": "copper_ore", "tin": "tin_ore", "iron": "iron_ore"}, 10.0)) == str(off_tile.ore_at(probe, 300.0, {"copper": "copper_ore", "tin": "tin_ore", "iron": "iron_ore"}, 10.0))
 
 	check(off_ok, "reads past the bound tile's edge answer as the general reads do (ground, water near, depth, ore)")
+	# Ground below sea level cut off from the open sea (the fen flats, Lane A 22 Nov 2026): no sea over it when the cut_off check says so.
+	var fen: Vector3 = Vector3(58428.0, 0.0, 71580.0)
+	var fen_data = generator.get_tile(generator.tile_of(fen.x, fen.z))
+	var fen_ground: float = float(generator.surface_height(fen.x, fen.z))
+	var cut: Callable = func(_x: float, _z: float) -> bool: return true
+	var sea_here: Array = CellReadsScript.water_at(generator, fen_data, null, false, fen)
+	var cut_here: Array = CellReadsScript.water_at(generator, fen_data, null, false, fen, cut)
+	check(fen_ground <= 0.0 and float(sea_here[0]) == 0.0 and is_nan(float(cut_here[0])), "fen ground at %.2f m: the sea by the old rule, none when cut off from it" % fen_ground)
+	var fen_reads: Dictionary = CellReadsScript.bound(generator, null, fen.x, fen.z, cut)
+	check(float(fen_reads["water_depth_at"].call(fen)) == 0.0 and float(CellReadsScript.bound(generator, null, fen.x, fen.z)["water_depth_at"].call(fen)) > 0.0, "and the bound depth read agrees")
 	print("test_cell_reads: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

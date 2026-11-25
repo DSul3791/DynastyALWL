@@ -1,10 +1,15 @@
 #!/usr/bin/env python3
-"""Carry-weight audit: flag live recipes whose ingredients weigh more than a player can carry.
+"""Carry-weight audit: list live recipes whose ingredients weigh more than a player can carry at once.
 
-Cap = carry_kg_per_body_kg x body kg (75 kg default). Warn above the free-carry
-limit (free_ratio x cap); fail above the cap. Weights: weights.json by_id,
+Cap = carry_kg_per_body_kg x body kg (75 kg default). Lists recipes above the
+free-carry limit (free_ratio x cap) and above the cap. Weights: weights.json by_id,
 then by_suffix, then default_kg. Usage: python tools/carry_audit.py [--body 75]
-Exit 1 if any live recipe exceeds the cap.
+A recipe over the cap can still be made: a craft takes its ingredients from the pack,
+loose stacks on the ground within LOOSE_STOCK_M and the player's own containers within
+CRAFT_REACH_M (src/shared/craft_stock.gd; Dave 10 Nov 2026: "or they are within 12m of
+you"), so the player brings the load over in trips. Only the ingredients are checked: a
+product heavier than the limit is put down at the player's feet (a Water wheel, 60 kg,
+needs an Improved backpack to be carried). Exit 1 only with --strict and a recipe over the cap.
 """
 import json, sys, pathlib
 D = pathlib.Path(__file__).resolve().parent.parent / "data" / "items"
@@ -35,9 +40,11 @@ for k, r in recipes.items():
         over.append(row)
     elif t > free:
         slow.append(row)
+packs = sorted((float(v["carry_bonus_kg"]), v.get("name", p)) for p, v in items.items() if v.get("carry_bonus_kg"))
 print("cap %.1f kg, free carry %.1f kg (body %g kg)" % (cap, free, body))
-for title, rows in (("OVER CAP (cannot be made)", over), ("SLOWING (over free carry)", slow)):
+for title, rows in (("OVER CAP (made from stock within 12 m: the ground or your chests by you)", over), ("SLOWING (over free carry)", slow)):
     print("\n%s: %d" % (title, len(rows)))
     for t, k, n, needs in sorted(rows, reverse=True):
-        print("  %7.1f kg  recipe %d %s  %s" % (t, n, k, " + ".join("%d %s" % (c, i) for i, c in needs)))
-sys.exit(1 if over else 0)
+        fit = next((name for bonus, name in packs if cap + bonus >= t), "")   # a pack's bonus is kilograms of limit (carry_rules.gd carry_body_kg)
+        print("  %7.1f kg  recipe %d %s  %s%s" % (t, n, k, " + ".join("%d %s" % (c, i) for i, c in needs), ("  (the %s carries it)" % fit) if fit and t > cap else ""))
+sys.exit(1 if over and "--strict" in sys.argv else 0)

@@ -143,13 +143,20 @@ func _init() -> void:
 	var promised_ms: int = left_sent
 	var craft_s: float = float(items.recipes.recipe(shovel_recipe).get("craft_s", 3.0))
 	check(promised_ms > 0, "the client is told %d ms" % promised_ms)
+	var worked: Array = []
+	items.craft_working = func(peer: int, recipe: int) -> void: worked.append([peer, recipe])   # others hear the work (server_action_cues.gd)
 	items._craft_tick(0.1)   # the craft starts: its time is fixed
+	check(worked.size() == 1 and int(worked[0][1]) == shovel_recipe, "the craft at work is told for the others to hear (%s)" % str(worked))
 	check(left_sent > 0 and absi(left_sent - (promised_ms - 100)) <= 5, "starting re-sends the same countdown (%d ms)" % left_sent)
 	items.recipes.recipe(shovel_recipe)["craft_s"] = craft_s * 3.0   # slower pace mid-craft (cold, the Rested buff ending)
 	items._craft_tick(float(promised_ms) / 1000.0 - 0.4)
 	check(pack(shovel) == 0, "not done before the countdown ends")
 	items._craft_tick(0.31)
 	check(pack(shovel) == 1, "done when the countdown ends, not later")
+	check(worked.size() == 3, "told on every tick it is worked, the last one too (%d)" % worked.size())
+	items._craft_tick(0.25)
+	check(worked.size() == 3, "and not once it is done (%d)" % worked.size())
+	items.craft_working = Callable()
 	items.recipes.recipe(shovel_recipe)["craft_s"] = craft_s
 
 	# 5. Queuing more of the craft that is last in the queue never takes ingredients it will not use: the entry holds at most

@@ -5,6 +5,7 @@ extends RefCounted
 # distance. Dialogue (step B) and the unwell fallback (step C) come later; the rows already carry a state the client animates.
 
 const Steering := preload("res://src/shared/steering.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 
 const STAND := 0
 const WALK := 1
@@ -20,7 +21,8 @@ var hour_now: Callable          # () -> hour of the game day, 0..24
 var ground_height: Callable     # (x, z) -> height
 var blocked: Callable           # (x, z) -> bool: water or anything an NPC may not enter (may be invalid)
 var player_positions: Callable  # () -> Array of Vector3
-var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain)
+var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain); tests
+var rain_at: Callable           # (pos) -> rain strength 0..1 over that spot (terrain_server _weather_here); set, it is used instead
 var wary: Callable              # (npc record) -> ServerTribes.avoid's answer for a tribe member: back off, hide, hold or watch (may be invalid)
 var back_off_mps: float = 2.4   # how fast a tribe member backs away (goblin_tribes.json back_off_mps)
 var chores: Callable            # (npc record, now seconds) -> ServerTribes.chore_plan's answer: where a tribe member goes or what it does (may be invalid)
@@ -85,6 +87,9 @@ func town_point() -> Vector2:
 
 
 func _read(path: String) -> Dictionary:
+	if not path.begins_with("res://"):
+		ItemsScript.restore_missing(path)
+
 	if not FileAccess.file_exists(path):
 		return {}
 
@@ -214,7 +219,10 @@ func package_of(npc: Dictionary, hour: float) -> String:
 	var planned: String = str(table[int(floor(fposmod(hour + float(npc["jitter_h"]), 24.0))) % 24])
 
 	# Rain sends outdoor packages to the nearest roofed marker; the day goes on when it stops.
-	if rain_now.is_valid() and float(rain_now.call()) >= float(cfg.get("shelter_rain", 0.35)) and cfg.get("shelter_from", []).has(planned):
+	var at: Vector3 = npc["pos"] if bool(npc.get("placed", true)) else (npc["home"] if npc.get("home", Vector3.INF) != Vector3.INF else npc["pos"])   # not yet placed: its home, not the world's origin
+	var rain: float = float(rain_at.call(at)) if rain_at.is_valid() else (float(rain_now.call()) if rain_now.is_valid() else 0.0)   # the rain where they are
+
+	if rain >= float(cfg.get("shelter_rain", 0.35)) and cfg.get("shelter_from", []).has(planned):
 		return "shelter"
 
 	return planned
@@ -553,8 +561,4 @@ func _save_admin() -> void:
 		if npcs[id]["home"] != Vector3.INF:
 			homes.append({"id": id, "x": npcs[id]["home"].x, "z": npcs[id]["home"].z})
 
-	var f: FileAccess = FileAccess.open(_dir + "/npc_admin.json", FileAccess.WRITE)
-
-	if f != null:
-		f.store_string(JSON.stringify({"version": 1, "markers": rows, "npc_homes": homes}))
-		f.close()
+	ItemsScript._write_file(_dir + "/npc_admin.json", JSON.stringify({"version": 1, "markers": rows, "npc_homes": homes}), false)   # whole to a .tmp, then moved over

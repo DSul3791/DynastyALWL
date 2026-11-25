@@ -412,6 +412,10 @@ func _init() -> void:
 		hinter._goals_tick()
 
 	check(said.has("Press Tab to see Health, Food, Water, Temperature and Energy."), "moving 5 m brings the next hint (%s)" % str(said.slice(-2)))
+	check(not hinter._hint_trigger_true(1, hinter._goal_state_of(1), "walked_far"), "6 m from the start is not far enough for the map hint")
+	hinter.report_position(1, Vector3(151.0, 10.0, 0.0))
+	check(hinter._hint_trigger_true(1, hinter._goal_state_of(1), "walked_far"), "151 m from the start brings the map hint's trigger")
+	hinter.report_position(1, Vector3(6.0, 10.0, 0.0))
 	hinter.action(1, Net.ACT_ADMIN_GIVE, hinter.table.number_of("stick"), 0, 9, Vector3.ZERO)
 
 	for n in range(4):
@@ -529,6 +533,21 @@ func _init() -> void:
 	check(camp._hint_trigger_true(1, hint_state, "digging_under_ceiling"), "a deep dig fires the cave-in hint")
 	camp.trees_near = func(_p, _r): return []
 	check(not camp._hint_trigger_true(1, hint_state, "near_orchard"), "no trees: no orchard hint")
+
+	# The first hour on dev (way-in check, 23 Nov 2026): every hint's goal is a real goal, and the felled tree brings a hammer hint
+	# after the trunk one (the lean-to and workbench hints say "hold your hammer").
+	var goal_ids: Dictionary = {}
+
+	for goal in camp._goals_data():
+		goal_ids[str(goal.get("id", ""))] = true
+
+	var hint_ids: Array = []
+
+	for hint in camp._hints_data():
+		hint_ids.append(str(hint["id"]))
+		check(str(hint.get("goal", "")) == "" or goal_ids.has(str(hint["goal"])), "hint %s points at a real goal (%s)" % [hint["id"], hint.get("goal", "")])
+
+	check(hint_ids.find("hammer") == hint_ids.find("trunk") + 1 and hint_ids.find("hammer") < hint_ids.find("leanto"), "the hammer hint follows the felled tree, before the lean-to")
 
 	# The drink goal's hint names the way and distance to the nearest fresh water from where the player stands (coordinator for Dave,
 	# 22 Nov 2026), worked out from the world's water map, again after a walk of WATER_HINT_MOVE_M, and no more once the player has drunk.

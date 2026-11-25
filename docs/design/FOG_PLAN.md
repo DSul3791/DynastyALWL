@@ -34,7 +34,7 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 - **Night.** The fog colour comes from the sky's horizon colour, near black at night (day_cycle NIGHT), so night fog is dark unless lit.
 - **Halos.**
   - Fires and torches keep their billboard halo (fire_weather.gd, all presets).
-  - On High and Ultra they also light the volumetric fog (`light_volumetric_fog_energy` 1.0), giving soft shafts and glows. The hand light stays out of it.
+  - On High and Ultra they also light the volumetric fog, giving soft shafts and glows, but only in real fog at the eye: `FireWeather.fog_share` = 1.0 × smoothstep(0.1, 0.4, fog at the eye), the same gate as the halo sprite. Fixture fires (wall torches, braziers, fireplaces, coals, forges, goblin fires) follow it through `FireWeather.fog_light`. A torch or lantern in the hand, its hand light and fire arrows never light it, and the held halo sprite shows only in thick fog (smoothstep 0.3 to 0.6). Dave, 24 Nov 2026, a lit torch on a clear night: "i don't like the weird halo effect around the torch makes it actually hard to see", "that would fit on a foggy night" (the volumetric fog runs over a faint valley fog layer, and every fire lit it at full share; firelight_weather_design.md already had held torches out of it).
 - **Body and drift (High and Ultra).** One FogVolume box (160 × 60 × 160 m) moves with the eye in 32 m steps, but its density is read in world space from a 3D noise texture at two crossing scales (70 m and 23 m, so no pattern repeats in view). The patches belong to places and drift slowly with the wind (a quarter of its speed, never below 0.15 m/s, so they creep even in dead calm). It is thin (0.006 per metre at full fog), and with it on the depth fog's dense end is 70 m instead of 60 m, so the two together keep Dave's distances: about 11 % at 10 m, 29 % at 20 m and 69 % at 40 m. It is lit by the ambient light, the sun and fire lights, so it is dark at night unless lit. It belongs to the layer the eye is in or over; sea fog adds body only down at sea level, not inland. It is built only the first time a High or Ultra player meets fog, starts at 0.02 fog and stops below 0.01 (no flicker), and follows a preset change at once.
 - **Shelter.**
   - Under rock (caves, tunnels), the fog at the eye goes with the light (as before), and the depth fog returns to the haze.
@@ -88,7 +88,7 @@ Design: [FOG_DESIGN_DAVE.md](FOG_DESIGN_DAVE.md) (Dave, 14 Nov 2026, approved, v
 | `VOL_PATCH_M`, `VOL_DETAIL_M` | 70 m, 23 m | the two patch sizes |
 | `VOL_DRIFT`, `VOL_DRIFT_MIN_MS` | 0.25, 0.15 m/s | drift as a share of the wind, and its least speed |
 | `VOL_CONTRAST` | 0.8 | patchiness (0 even) |
-| `FireWeather.FIRE_FOG_SHARE` | 1.0 | fire light halo in the volumetric fog |
+| `FireWeather.FIRE_FOG_SHARE` | 1.0 | fire light halo in the volumetric fog, at full fog at the eye (fog_share: none below 0.1, full from 0.4); never a held light |
 | `Weather.MIST_*`, `RAIN_FOG*`, `STEAM_*` | see weather.gd | when fog forms and clears (PR 2): gathering and burn-off hours, wind, moisture, fog in rain, steam |
 | `Weather.MIST_DEPTH_MIN_M`, `MAX` | 15, 90 m | how deep a full fog lies over the low ground |
 | `FogGround.FLOOR_REACH_M`, `VIEW_REACH_M` | 320, 1280 m | how far round counts as the low ground (bigger: broader valleys fill) |

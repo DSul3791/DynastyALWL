@@ -45,7 +45,7 @@ func make():
 	a.lair_path = func(_x, _z): return den_path
 	a.berry_bushes = func(_p, _r): return bushes
 	a.big_game.player_info = func(): return infos
-	a.big_game.hurt_player = func(_peer, _amount, _lethal, _cause):
+	a.big_game.hurt_player = func(_peer, _amount, _lethal, _cause, _from):
 		hurts += 1
 		return "hurt"
 	a.rng.seed = 11
@@ -145,6 +145,51 @@ func _init() -> void:
 	check(int(g0["state"]) == a.WARN, "a player 4 m away in the den is warned (state %d)" % int(g0["state"]))
 	steps(a, g0, 3.0)
 	check(hurts == 1, "staying through the warning gets one strike (got %d)" % hurts)
+
+	# 5b. Not through a wall: the same player 4 m off with a wall across the passage between them (the walls hook, as the server wires it).
+	infos = [{"peer": 1, "pos": g0["pos"] + Vector3(-1.5, 0.0, 0.0)}]   # just past where a lunge lands
+	var wall_x: float = g0["pos"].x - 0.75
+	a.walls = func(x0, _z0, x1, _z1, _margin): return (x0 - wall_x) * (x1 - wall_x) <= 0.0   # a wall across the passage between them
+	g0["cool"] = 0.0
+	g0["state"] = a.GRAZE
+	hurts = 0
+	steps(a, g0, 0.25)
+	var went: Array = [int(g0["state"])]
+
+	for _k in 12:   # 3 s in quarter seconds: the warning, the lunge stopped at the wall, the rest after it
+		steps(a, g0, 0.25)
+
+		if went.back() != int(g0["state"]):
+			went.append(int(g0["state"]))
+
+	check(went.has(a.big_game.CHARGE) and went.has(a.big_game.RECOVER), "it warns, lunges and recovers (%s): the wall stops the lunge, it is never stuck in it" % str(went))
+	check(hurts == 0 and g0["pos"].x > wall_x, "a wall across the passage between them: the lunge stops at it and never strikes through it (%d blows, goblin at x %.2f, the wall at %.2f)" % [hurts, g0["pos"].x, wall_x])
+	a.walls = Callable()
+
+	# 5c. A fair dodge over the link (server_big_game late_s; robots 23 Nov 2026): on a 240 ms round trip the lunge's blow waits, held at the
+	# player, and lands only if they are still within its reach of where it stopped; one who backs off once their screen showed it is clear.
+	a.big_game.ping_ms = func(_peer): return 240
+
+	for back in [0.0, 3.0]:
+		infos = [{"peer": 1, "pos": g0["pos"] + Vector3(-4.0, 0.0, 0.0)}]
+		g0["cool"] = 0.0
+		g0["state"] = a.GRAZE
+		hurts = 0
+		var held: bool = false
+
+		for _k in 24:   # 6 s in quarter seconds
+			steps(a, g0, 0.25)
+
+			if g0.has("late") and not held:
+				held = true
+				infos = [{"peer": 1, "pos": infos[0]["pos"] + Vector3(-back, 0.0, 0.0)}]   # the step back, as the server hears it during the wait
+
+		if back == 0.0:
+			check(held and hurts == 1, "on a laggy link the lunge's blow waits at the player (%s) and lands once on one who stays (%d)" % [str(held), hurts])
+		else:
+			check(held and hurts == 0, "and one who backs %.0f m off down the passage during the wait is not struck (%d)" % [back, hurts])
+
+	a.big_game.ping_ms = Callable()
 
 	# 6. Backing off during the warning avoids the strike.
 	var g1: Dictionary = band[1]

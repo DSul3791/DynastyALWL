@@ -6,7 +6,7 @@
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1            build only
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -Publish   also a PUBLIC GitHub Release build-<N> with the installer (gh);
 #       only on Dave's explicit yes (public repo, the installer holds the bought animal models; Dave 22 Nov 2026)
-# Output in ..\dynasty_export\build-<N>\: DynastySetup-<N>.exe (for players; testplayers\ holds it zipped with the download page),
+# Output in ..\dynasty_export\build-<N>\: DynastySetup-<N>.exe (for players; site\ holds it zipped with the testers' pages),
 # dynasty-server-build-<N>.tar plus compose.yaml and SERVER.md
 # (for the gaming server: docker load -i ..., then docker compose -f compose.yaml up -d). The first run compiles the engine (deploy/engine,
 # roughly 45 to 90 minutes of full CPU); later runs reuse it.
@@ -17,10 +17,10 @@ param(
 	# shader baker can run (it needs a real renderer: Godot editor/export/shader_baker_export_plugin.cpp); without it the export runs headless
 	# in a container and ships no baked shaders (they compile while playing, as in the editor).
 	[string]$WindowsEditor = "",
-	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into the game's pack (Dave 22 Nov 2026: "incorporated
-	# right in with the game"). They are copied, read only, from Dave's game folder into this clone; that folder is never changed. They are
-	# never committed and never uploaded as loose files, only inside the built game.
-	[string]$AnimalsFrom = "C:\GodotProjects\DynastyALWL\assets\animals",
+	# The bought animal models (assets/animals) go into the game's pack (Dave 22 Nov 2026: "incorporated right in with the game"). Since
+	# 23 Nov 2026 they are in the repository through Git LFS; a clone without them (older commits) copies them, read only, from Dave's game
+	# folder, which is never changed.
+	[string]$AnimalsFrom = "",
 	# A build without them (the game draws its code-built animals instead).
 	[switch]$NoAnimals,
 	[switch]$Publish
@@ -40,10 +40,22 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 	throw "make_release: the game files have changes not committed; a release is made from a commit"
 }
 
+$tracked = @(git -c core.quotepath=off ls-files -- assets/animals)
 if ($NoAnimals) {
-	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; delete that copy first" }
+	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; use a clone made with tools/skip_models.sh" }
+}
+elseif ($tracked.Count -gt 0) {
+	# The models are in the repository (Git LFS): this clone must hold the real files, not LFS pointer stubs (git lfs pull) and not a
+	# sparse checkout without them (tools/skip_models.sh).
+	if ($AnimalsFrom) { throw "make_release: the animal models are in the repository now; leave out -AnimalsFrom" }
+	$missing = @($tracked | Where-Object { -not (Test-Path -LiteralPath $_) })
+	if ($missing.Count -gt 0) { throw "make_release: $($missing.Count) model files are not in this checkout (sparse checkout?); run: git sparse-checkout disable; git lfs pull" }
+	$stubs = @($tracked | Where-Object { (Get-Item -LiteralPath $_).Length -lt 1024 -and (Get-Content -LiteralPath $_ -TotalCount 1 -ErrorAction SilentlyContinue) -like "version https://git-lfs*" })
+	if ($stubs.Count -gt 0) { throw "make_release: $($stubs.Count) model files are LFS pointers, not the models; run: git lfs pull" }
+	Write-Host "== animal models: $($tracked.Count) files from the repository"
 }
 else {
+	if (-not $AnimalsFrom) { $AnimalsFrom = "C:\GodotProjects\DynastyALWL\assets\animals" }
 	# Fail loudly rather than ship the plain animals by mistake.
 	if (-not (Get-ChildItem -LiteralPath $AnimalsFrom -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
 		throw "make_release: no animal models in $AnimalsFrom; pass -AnimalsFrom <folder> or -NoAnimals"
@@ -123,8 +135,8 @@ try {
 	# shortcut: Inno Setup 6 under Wine from a community image (amake/innosetup, floating innosetup6 tag); revisit if it breaks or moves.
 	Run "installer (Inno Setup)" { docker run --rm -v "${out}:/work" amake/innosetup:innosetup6-bookworm dynasty.iss }
 	if (-not (Test-Path "$out\DynastySetup-$build.exe")) { throw "make_release: no DynastySetup-$build.exe in $out" }
-	# The test players' download page with the zipped installer (Dave 22 Nov 2026; deploy/testplayers/HOSTING.md puts it on his server).
-	& (Join-Path $PSScriptRoot "make_testplayers_page.ps1") -Out $out
+	# The testers' site with the zipped installer (Dave 22-23 Nov 2026; deploy/testplayers/SERVER.md puts it on his web server).
+	& (Join-Path $PSScriptRoot "make_testplayers_site.ps1") -Out $out
 
 	# The server image reuses the engine just built (deploy/server/engine/godot is gitignored) instead of compiling it again.
 	Copy-Item "$out\engine\godot" deploy\server\engine\godot -Force
@@ -146,5 +158,5 @@ finally {
 }
 
 Write-Host "make_release: build $build ready in $out"
-Write-Host "  players:        testplayers\ (index.html and Dynasty-build-$build.zip; deploy\testplayers\HOSTING.md), or DynastySetup-$build.exe"
+Write-Host "  players:        site\ (the testers' site with downloads\Dynasty-build-$build.zip; deploy\testplayers\SERVER.md), or DynastySetup-$build.exe"
 Write-Host "  gaming server:  dynasty-server-build-$build.tar, compose.yaml (docker load -i dynasty-server-build-$build.tar; docker compose -f compose.yaml up -d)"

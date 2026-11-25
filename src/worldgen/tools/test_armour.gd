@@ -45,6 +45,7 @@ func slot_of(id: String) -> int:
 
 func run(seconds: float) -> void:
 	for k in range(int(ceil(seconds))):
+		items._heard_ms[1] = Time.get_ticks_msec()   # a playing game reports its spot all the time: a slow run (Windows, --jobs 2: 31 s) must not pass ABSENT_MS and leave the world
 		items.tick(1.0)
 
 
@@ -62,6 +63,7 @@ func clear_stations() -> void:
 
 
 func empty_pack() -> void:
+	items._heard_ms[1] = Time.get_ticks_msec()   # heard, as in run(): each section starts with a playing game
 	for s in inv.slot_count:
 		inv.clear_slot(s)
 
@@ -167,6 +169,7 @@ func _init() -> void:
 	items.send_notice = func(_p, text): said.append(str(text))
 	items.ground_height = func(_x, _z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
+	items._comfort_data().erase("meter")   # the armour arithmetic alone; the comfort meter's half harm is test_comfort's
 	items.admin_mode_on = func(_p): return false
 	items.skill_level = func(_p, _s): return 1.0
 	items.peer_connected_hello(1, KEY)

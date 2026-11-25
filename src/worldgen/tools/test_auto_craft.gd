@@ -107,6 +107,39 @@ func _init() -> void:
 	run(items, 40.0)
 	check(count(items, "stone_axe") == 1 and count(items, "twine") == 0 and count(items, "plant_fibre") == 0 and entries(items).is_empty(), "the axe is made and no twine is left over (%s)" % str(pack_totals(items)))
 
+	# The client's pack follows the twine the axe takes when it starts (Dave 23 Nov 2026): that happens on the craft tick, not on an action, and
+	# before the fix no slot update went out, so the client went on showing 2 twine and lit the Stone hammer it could not make.
+	items = fresh("user://test_auto_craft")
+	give(items, "stone", 2)
+	give(items, "stick", 2)
+	give(items, "plant_fibre", 6)
+	var inv = items.inventory_of(1)
+	var mirror: Dictionary = {}   # slot -> [number, count], as the client's pack sees it
+	var mirror_from_server: Callable = func() -> void:
+		mirror.clear()
+		for i in inv.slot_count:
+			mirror[i] = [inv.numbers[i], inv.counts[i]]
+	items.send_full = func(_p, _b): mirror_from_server.call()
+	items.send_slots = func(_p, bytes: PackedByteArray) -> void:
+		for k in int(bytes[0]):
+			mirror[int(bytes[1 + 9 * k])] = [bytes.decode_u32(2 + 9 * k), bytes.decode_u16(6 + 9 * k)]
+	mirror_from_server.call()
+	queue(items, 2, 1)
+	var seen_twine: int = 0
+	var t: float = 0.0
+	var tw: int = table.number_of("twine")
+
+	while t < 40.0:
+		items._craft_tick(0.5)
+		t += 0.5
+		var client_twine: int = 0
+		for slot in mirror:
+			client_twine += int(mirror[slot][1]) if int(mirror[slot][0]) == tw else 0
+		check(client_twine == count(items, "twine"), "at %.1f s the client's pack shows %d twine, the server's has %d" % [t, client_twine, count(items, "twine")])
+		seen_twine = maxi(seen_twine, client_twine)
+
+	check(seen_twine == 2 and count(items, "stone_axe") == 1, "the twine was made and then taken by the axe (most twine seen %d)" % seen_twine)
+
 	# 5 fibre is not enough for 2 twine
 	items = fresh("user://test_auto_craft")
 	give(items, "stone", 2)
@@ -253,6 +286,15 @@ func _init() -> void:
 	fake.rows[4] = {"number": 4, "name": "kept", "needs": [[a, 1]], "keeps": [[d, 1]], "gives": [b, 1], "known": true, "station": ""}
 	var tool_missing: Dictionary = Planner.plan(fake, table, 4, 1, {"have": func(i): return 5 if i == a else 0, "station_ok": func(_r): return true, "free": false})
 	check(not bool(tool_missing["ok"]), "a missing kept tool is never made for you")
+
+	# A locked recipe (Fish trap) pressed with its parts in the pack is refused out loud, never silently (the screens robot, 23 Nov 2026).
+	var lock_it = fresh("user://test_auto_craft_locked")
+	var said: Array = []
+	lock_it.send_notice = func(_p, text): said.append(str(text))
+	give(lock_it, "stick", 10)
+	give(lock_it, "twine", 4)
+	queue(lock_it, 398, 1)   # recipes.json claw_necklace (the Fish trap, 390, went live on 23 Nov 2026)
+	check(entries(lock_it).is_empty() and said.size() == 1 and said[0].begins_with("Nobody knows how to make"), "a locked recipe says why it cannot be made, once (%s)" % str(said))
 
 	print("auto craft tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynasty play-test</title>
+<meta name="description" content="The Dynasty: A Life Well Lived play-test: download build {{BUILD}}, report a bug, suggest an idea.">
+<!-- The testers' front page on Dave's web server (Dave 23 Nov 2026: three boxes side by side under the cover art). tools/make_testplayers_site.ps1
+     fills in the fields in double braces and writes it as the site's index.html, with download.html as /download/ and site.css as /css/site.css;
+     deploy/testplayers/SERVER.md puts it on the server. The bug and idea boxes say "Opening soon" until the site's own bug and idea pages
+     (deploy/testersite/site/, which then replaces this page) are installed. Dave 23 Nov: no links away from the site. No scripts. -->
+<link rel="stylesheet" href="/css/site.css">
+</head>
+<body>
+  <div class="who" data-user="{{USER}}"></div>
+  <div class="hero"><img src="/images/hero.jpg" alt="Dynasty: A Life Well Lived" width="1330" height="760"></div>
+
+  <main>
+    <nav class="choices">
+      <a class="choice main" href="/download/"><span class="glyph" aria-hidden="true">&#x2193;</span><span class="name">Download latest</span><span class="sub">Build {{BUILD}} &middot; {{SIZE_MB}} MB</span></a>
+      <div class="choice soon"><span class="glyph" aria-hidden="true">&#x2691;</span><span class="name">Submit a bug</span><span class="sub">Opening soon</span></div>
+      <div class="choice soon"><span class="glyph" aria-hidden="true">&#x2726;</span><span class="name">Suggest an idea</span><span class="sub">Opening soon</span></div>
+    </nav>
+
+    <div class="below"></div>
+
+    <footer>
+      <span class="mark">Dynasty &middot; A Life Well Lived</span>
+      Thank you for testing.
+    </footer>
+  </main>
+</body>
+</html>

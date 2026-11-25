@@ -10,11 +10,13 @@ extends Node3D
 # grass, tall grass patches). Cells are built a few rays per frame so walking never stalls.
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: lines printed on a worker (D-LAG-1)
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const Puddles := preload("res://src/client/puddles.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
+const TrailSigns := preload("res://src/client/trail_signs.gd")   # beds_for: the deer beds pressed into the run map
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -168,6 +170,8 @@ uniform sampler2D run_map : filter_linear, repeat_disable, hint_default_black;  
 uniform vec2 run_origin = vec2(0.0);    // the run map's south-west corner, world x, z
 uniform float run_size = 128.0;         // metres it covers
 uniform float run_flat = 1.0;           // 0 with the trails switched off
+uniform float run_press = 0.6;          // a trail presses harder than one fresh footstep: this share of what the trample leaves stands goes too (worn_earth.json grass_press)
+uniform float run_pale = 0.35;          // and the matted blades show paler, the straw of their undersides (worn_earth.json grass_pale)
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
@@ -201,10 +205,14 @@ void vertex() {
 	}
 	// Trails between animal places (Dave 22 Nov 2026): the grass on a run or a deer trail lies matted, as where someone walked, and stays so.
 	vec2 run_uv = (MODEL_MATRIX[3].xz - run_origin) / run_size;
+	float run = 0.0;
 	if (run_uv.x > 0.0 && run_uv.y > 0.0 && run_uv.x < 1.0 && run_uv.y < 1.0) {
-		flat_down = max(flat_down, textureLod(run_map, run_uv, 0.0).r * run_flat);
+		run = textureLod(run_map, run_uv, 0.0).r * run_flat;
+		flat_down = max(flat_down, run);
 	}
 	VERTEX.y *= 1.0 - trample_squash * flat_down;
+	// Dave 23 Nov 2026 "making game trails actually visible": a trail lies flatter than a footstep and shows paler, so the line reads from standing.
+	VERTEX.y *= 1.0 - run_press * run;
 	// Game trails (Dave 2026-10-21): where animals pass again and again the grass grows low and thin and a little paler.
 	float worn = smoothstep(trail_draw, trail_draw + 0.35, textureLod(trail_map, MODEL_MATRIX[3].xz / 1024.0, 0.0).r);
 	VERTEX.y *= 1.0 - 0.6 * worn;
@@ -236,6 +244,7 @@ void vertex() {
 	float ratio = mix(1.0, share_now / max(INSTANCE_CUSTOM.a, 0.001), step(thin_min, 0.9999));
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), ratio);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
+	blade_color = mix(blade_color, blade_color * 0.7 + vec3(0.17, 0.15, 0.08), run_pale * run);
 }
 
 void fragment() {
@@ -305,6 +314,7 @@ const RUN_TEXELS := 256                  # the run map: 256 texels of 0.5 m roun
 const RUN_TEXEL_M := 0.5
 const RUN_WIDTH_M := [0.8, 1.2]           # a rabbit run, a deer trail (trail_codec.gd route kinds; TR-5): as wide as a walked path (trample 1.6 m), so a line reads through the tufts
 const RUN_FADE_M := 0.5                    # the matting fades out over this past the half width
+var _bed_cfg: Dictionary = {}              # data/look/trail_signs.json, read once: the deer beds' count, spread and size
 const RUN_MOVE_M := 16.0                 # the map is laid again round the player after this walk
 var _run_logged: String = ""         # the last "grass runs:" line, so it is printed only when it changes
 var _run_log_msec: int = 0          # and at most once in 10 s
@@ -318,6 +328,7 @@ var _run_laid: bool = false                   # a route has been laid on the run
 var _run_laid_origin: Vector2 = Vector2.ZERO  # the corner the run map texture was last laid at
 var _worn_cfg: Dictionary = {}
 var _run_dirty: bool = false
+var _sign_patches: Array = []        # [[Vector2 spot, radius m], ...] round the trail signs (set_sign_patches), pressed like the beds
 var _run_msec: int = 0
 var _flora
 var _tables
@@ -471,6 +482,8 @@ func setup(terrain: Node3D, flora, tables) -> void:
 			_materials[n].set_shader_parameter("trail_draw", draw)
 			_materials[n].set_shader_parameter("run_map", _run_texture)
 			_materials[n].set_shader_parameter("run_size", float(RUN_TEXELS) * RUN_TEXEL_M)
+			_materials[n].set_shader_parameter("run_press", float(_worn_config().get("grass_press", 0.6)))
+			_materials[n].set_shader_parameter("run_pale", float(_worn_config().get("grass_pale", 0.35)))
 
 	set_radius(radius_m)
 
@@ -485,12 +498,19 @@ func set_trail_block(block_x: int, block_z: int, cells: Dictionary) -> void:
 
 # One block's trails between animal places (protocol 149, trail_codec.gd decode_routes): [[kind, world points], ...]. Kept per block;
 # the run map is laid from the blocks round the player.
+# The short, pale patches round the trail signs (trail_signs.gd patches_for: latrines, droppings, warrens), [[Vector2, radius m], ...].
+func set_sign_patches(patches: Array) -> void:
+	_sign_patches = patches
+	_run_dirty = true
+
+
 func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 	_run_routes[Vector2i(block_x, block_z)] = routes
 	_run_dirty = true
 
 	if not routes.is_empty():
-		print("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
+		# On a worker (lag lane 23 Nov 2026: in the PC standing plays each main-thread line here was followed by a 0.8-1.3 s freeze, D-LAG-1).
+		FreezeWatchScript.printer.line("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
 
 
 # Lays the trails within the run map round the player: each route stepped every half metre (a texel), a footprint of the texels round each
@@ -518,7 +538,7 @@ func _rebuild_runs(player: Vector3) -> void:
 	var texels: int = 0
 
 	for key in _run_routes.keys():
-		if absi(key.x - here.x) > 2 or absi(key.y - here.y) > 2:
+		if absi(key.x - here.x) > 3 or absi(key.y - here.y) > 3:   # one block wider than the server forgets at (server_trails.gd updates_for): routes are sent once (protocol 158), so the client never drops a block the server still counts as sent
 			_run_routes.erase(key)
 			continue
 
@@ -560,12 +580,16 @@ func _rebuild_runs(player: Vector3) -> void:
 							texels += 1 if data[at] == 0 else 0
 							data[at] = footprint[e + 2]
 
+			if int(route[0]) == 1 and pts.size() >= 2 and window.has_point(pts[0]):
+				texels += _press_beds(pts, data)
+
+	texels += press_patches(_sign_patches, data, _run_origin)
 	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
 
 	if line != _run_logged and Time.get_ticks_msec() >= _run_log_msec:
 		_run_logged = line
 		_run_log_msec = Time.get_ticks_msec() + 10000
-		print(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass (at most one line in 10 s)
+		FreezeWatchScript.printer.line(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass (at most one line in 10 s; on a worker, D-LAG-1)
 
 	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
 	_run_texture.update(_run_image)
@@ -578,6 +602,80 @@ func _rebuild_runs(player: Vector3) -> void:
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("run_origin", _run_origin)
+
+
+# Round patches pressed into the run map, full inside and fading over the outer quarter, the stronger kept. Returns new texels.
+static func press_patches(patches: Array, data: PackedByteArray, origin: Vector2) -> int:
+	var added: int = 0
+
+	for patch in patches:
+		var centre: Vector2 = patch[0]
+		var radius: float = float(patch[1])
+		var span: int = int(ceil(radius / RUN_TEXEL_M)) + 1
+		var tx0: int = int(floor((centre.x - origin.x) / RUN_TEXEL_M))
+		var tz0: int = int(floor((centre.y - origin.y) / RUN_TEXEL_M))
+
+		for dz in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var x: int = tx0 + dx
+				var z: int = tz0 + dz
+
+				if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
+					continue
+
+				var e: float = (origin + Vector2(float(x) + 0.5, float(z) + 0.5) * RUN_TEXEL_M).distance_to(centre) / radius
+				var v: int = int(round(255.0 * (1.0 - smoothstep(0.75, 1.0, e))))
+				var at: int = x + z * RUN_TEXELS
+
+				if v > data[at]:
+					added += 1 if data[at] == 0 else 0
+					data[at] = v
+
+	return added
+
+
+# The beds by a deer trail's home (trail_signs.gd beds_for, the same spots the signs use) pressed into the run map as ovals of bed_size_m,
+# full inside and fading over the last quarter: the grass lies flat there and the worn-earth ground bares the litter. Returns new texels.
+func _press_beds(pts: PackedVector2Array, data: PackedByteArray) -> int:
+	if _bed_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(TrailSigns.CONFIG))
+		_bed_cfg = parsed if parsed is Dictionary else {"bed_count": [0, 0]}
+
+	return press_beds(pts, data, _run_origin, _bed_cfg)
+
+
+# The ovals themselves, into a RUN_TEXELS square of RUN_TEXEL_M texels whose south-west corner is at origin (a test calls it directly).
+static func press_beds(pts: PackedVector2Array, data: PackedByteArray, origin: Vector2, c: Dictionary) -> int:
+	var size: Array = c.get("bed_size_m", [1.5, 0.8])
+	var ax: float = float(size[0]) * 0.5
+	var az: float = float(size[1]) * 0.5
+	var added: int = 0
+
+	for bed in TrailSigns.beds_for(pts[0], pts[1], c):
+		var centre: Vector2 = bed[0]
+		var along: Vector2 = Vector2(cos(float(bed[1])), sin(float(bed[1])))
+		var span: int = int(ceil(ax / RUN_TEXEL_M)) + 1
+		var tx0: int = int(floor((centre.x - origin.x) / RUN_TEXEL_M))
+		var tz0: int = int(floor((centre.y - origin.y) / RUN_TEXEL_M))
+
+		for dz in range(-span, span + 1):
+			for dx in range(-span, span + 1):
+				var x: int = tx0 + dx
+				var z: int = tz0 + dz
+
+				if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
+					continue
+
+				var d: Vector2 = origin + Vector2(float(x) + 0.5, float(z) + 0.5) * RUN_TEXEL_M - centre
+				var e: float = sqrt(pow(d.dot(along) / ax, 2.0) + pow(d.dot(along.orthogonal()) / az, 2.0))
+				var v: int = int(round(255.0 * (1.0 - smoothstep(0.75, 1.0, e))))
+				var at: int = x + z * RUN_TEXELS
+
+				if v > data[at]:
+					added += 1 if data[at] == 0 else 0
+					data[at] = v
+
+	return added
 
 
 # The texels round a step for a route kind, as [dx, dz, value 1..255] triples: full within the half width, fading over RUN_FADE_M, measured
@@ -1160,6 +1258,107 @@ func branch_near(here: Vector3, radius: float) -> Dictionary:
 				best = {"pos": mid, "d": d, "cell": key, "at": n}
 
 	return best
+
+
+# A dead branch taken by anyone (protocol 160 ground_taken; this player's own pick too). Each client draws its own branches (where they
+# lie follows the graphics tier and how the ground was built), so for each taken point this client hides its nearest branch within
+# TAKEN_NEAR_M (its own pick: that very branch), and a point heard again within TAKEN_SAME_M is kept once. Kept by grass cell for that game day, and done again whenever
+# a cell is built again; a branch's middle can lie in the next cell from its record's, so the cells round it are looked at.
+const TAKEN_NEAR_M := 1.5
+const TAKEN_SAME_M := 0.25
+var today: int = 0                     # the game day (terrain_client sets it): taken branches of an earlier day have grown back
+var _taken_branches: Dictionary = {}   # Vector2i grass cell -> [[point, game day], ...]
+
+
+func take_branch(at: Vector3, day: int = -1, drawn: Array = []) -> void:
+	var cell: Vector2i = _cell_at(at)
+	var list: Array = (_taken_branches.get(cell, []) as Array).filter(func(r): return int(r[1]) >= today)
+
+	if drawn.is_empty():
+		for row in list:
+			if (row[0] as Vector3).distance_to(at) <= TAKEN_SAME_M:
+				_taken_branches[cell] = list
+				return   # told again (a resend as this player walks): that point is in hand already
+
+	var row: Array = [at, today if day < 0 else day, []]
+	list.append(row)
+	_taken_branches[cell] = list
+
+	if drawn.is_empty():
+		_take_one(row)
+	else:   # this player's own pick: that very branch ([grass cell, record]), even when another taken point lies within TAKEN_SAME_M
+		hide_branch(drawn[0], int(drawn[1]))
+		row[2] = drawn
+
+
+# An admin world reset: every branch is back (the cells redraw as they are next built).
+func clear_taken() -> void:
+	_taken_branches.clear()
+
+
+func _cell_at(at: Vector3) -> Vector2i:
+	return Vector2i(int(floor(at.x / CELL_M)), int(floor(at.z / CELL_M)))
+
+
+# Every taken point round a cell just built, again (the build drew all its branches).
+func _hide_taken(cell: Vector2i) -> void:
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for row in _taken_branches.get(cell + Vector2i(dx, dz), []):
+				if int(row[1]) >= today:
+					_take_one(row)
+
+
+# Hides the drawn branch nearest a taken row's point within TAKEN_NEAR_M that is not hidden already. The branch it hid
+# is kept on the row ([cell, record]): while that record is still hidden the row is done, so building the cells round it again or
+# hearing the point again hides no second branch (gate review 23 Nov 2026); a rebuild of that cell draws it again and the row matches anew.
+func _take_one(row: Array) -> void:
+	var layer: int = GRASS_LAYERS + 1
+	var at: Vector3 = row[0]
+	var held: Array = row[2]
+
+	if not held.is_empty():
+		var had: Dictionary = _cells.get(held[0], {})
+
+		if not had.is_empty() and had.get("bufs", {}).has(layer):
+			var had_buffer: PackedFloat32Array = had["bufs"][layer]
+			var o0: int = int(held[1]) * 16
+
+			if o0 + 2 < had_buffer.size() and Vector2(had_buffer[o0], had_buffer[o0 + 2]).length() < 0.01:
+				return   # its branch is still hidden
+		else:
+			return   # its cell is not drawn now (out of range): the row waits for that cell to be built again, not a branch of the next cell
+
+	var home: Vector2i = _cell_at(at)
+	var best: Array = []
+	var best_d: float = TAKEN_NEAR_M
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			var cell: Vector2i = home + Vector2i(dx, dz)
+			var entry: Dictionary = _cells.get(cell, {})
+
+			if entry.is_empty() or not entry.get("bufs", {}).has(layer):
+				continue
+
+			var buffer: PackedFloat32Array = entry["bufs"][layer]
+
+			@warning_ignore("integer_division")
+			for n in range(buffer.size() / 16):
+				var o: int = n * 16
+				var mid: Vector2 = Vector2(buffer[o + 3] + buffer[o] * 0.5, buffer[o + 11] + buffer[o + 2] * 0.5)   # as branch_near
+				var d: float = mid.distance_to(Vector2(at.x, at.z))
+
+				if Vector2(buffer[o], buffer[o + 2]).length() < 0.01:
+					continue   # hidden already (a hidden record keeps only its start, so where its middle was is not known)
+
+				if d < best_d:
+					best_d = d
+					best = [cell, n]
+
+	if not best.is_empty():
+		hide_branch(best[0], int(best[1]))
+		row[2] = best
 
 
 # Hides one dead branch (a stick was picked up): its record is scaled to nothing and the group redrawn.
@@ -2265,6 +2464,7 @@ func _build(cell: Vector2i) -> int:
 			entry["count"] += count
 			tufts += count
 
+	_hide_taken(cell)   # a branch someone took stays gone when its cell is built again (protocol 160)
 	return rays
 
 

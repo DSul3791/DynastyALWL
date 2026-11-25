@@ -4,5 +4,8 @@
 	"dark": 0.85,
 	"litter_cut": 0.7,
 	"soil_color": [0.16, 0.12, 0.085],
-	"smooth": 0.1
+	"smooth": 0.1,
+	"grass_note": "Trails in grass (Dave 23 Nov 2026: 'making game trails actually visible'): on a run or deer trail the grass first lies down as under a footstep (grass_trample.json squash 0.75, a quarter of its height left), then grass_press of what is left goes too (0.6: about a tenth of its height stands), and the blades take grass_pale of a straw tint (their pale undersides), so the line reads from standing height. Was squash only, which Lane A pictures and Dave's play could not see. Provisional.",
+	"grass_press": 0.6,
+	"grass_pale": 0.35
 }

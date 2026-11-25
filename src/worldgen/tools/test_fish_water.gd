@@ -40,6 +40,12 @@ func probe(x: float, z: float) -> Array:
 	if dug and x >= 5000.0 and x < 5016.0 and z >= 0.0 and z < 16.0:
 		return [41.0, 40.0, 0]       # a hole someone dug and the rain filled
 
+	if x >= 7000.0 and x < 7040.0 and z >= 0.0 and z < 40.0:
+		return [-0.2, -0.4, 0, false]   # a fen hollow below sea level cut off from the sea (fog_ground.gd), 0.2 m of rain water in it
+
+	if x >= 7100.0 and x < 7140.0 and z >= 0.0 and z < 40.0:
+		return [0.0, -0.4, 0, true]     # the same ground joined to the open sea: the sea
+
 	return [NAN, 12.0 + x * 0.001, 0]
 
 
@@ -56,6 +62,8 @@ func _init() -> void:
 	check(fw.water_kind_at(1400.0, 400.0, now)["kind"] == "lake", "a big baked lake is a lake")
 	check(fw.water_kind_at(3012.0, 12.0, now)["kind"] == "pond", "a small baked lake is a pond")
 	check(fw.water_kind_at(500.0, 400.0, now)["kind"] == "" and fw.water_kind_at(500.0, 400.0, now)["depth"] == 0.0, "dry land is not water")
+	check(not str(fw.water_kind_at(7020.0, 20.0, now)["kind"]).begins_with("sea"), "a fen hollow below sea level cut off from the sea is no sea (%s)" % fw.water_kind_at(7020.0, 20.0, now)["kind"])
+	check(fw.water_kind_at(7120.0, 20.0, now)["kind"] == "sea_shallow", "the same ground joined to the sea is the sea")
 
 	# Never land as water: every cell on a sweep whose probe says dry (NAN or depth under the wet limit) answers "".
 	var wrong: int = 0

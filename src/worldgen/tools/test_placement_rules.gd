@@ -59,6 +59,12 @@ func _init() -> void:
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), PI * 0.5, func(_x, z): return 10.0 + 0.5 * z) == "steep", "turning the lean-to turns its footprint (the slope runs along z)")
 	check(Rules.steep(cfg, "lean_to_kit", Vector3(0, 10, 0), 0.0, hole) == "", "unknown ground never blocks by itself")
 	check(Rules.reason_text("steep") != "" and Rules.reason_text("open") == "" and Rules.reason_text("far") != "", "red states have a reason in words")
+	# Ground under WET_GROUND_M (shore mud): the server refuses it, so the ghost is red there too (hands-on screens check, 23 Nov 2026).
+	var held_src: String = FileAccess.get_file_as_string("res://src/client/held_item.gd")
+	var server_src: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")
+	check(Rules.reason_text("wet") != "" and held_src.contains("terrain < PlacementRules.WET_GROUND_M") and server_src.contains("if ground < PlacementRules.WET_GROUND_M:"), "low wet ground is red on the ghost by the server's own limit")
+	# A water piece's ghost asks the server (its own _water_refusal) and shows the words; percent -1 marks the answer as a water piece's.
+	check(held_src.contains("blueprint_state = _water_piece_state(kit)") and held_src.contains("int(_wheel_answer[2]) != -1") and server_src.contains("send_wheel_share.call(peer, at, yaw_deg, -1, _water_refusal(def, judged[0], int(judged[1])))") and held_src.contains("if kit != _wheel_asked_kit:"), "a barrel or tank ghost is red with the server's refusal where placing would refuse it")
 
 	var crowded: Array = []
 
@@ -166,15 +172,34 @@ func _init() -> void:
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var walls_before: int = items.world_item_count()
 
-	for spot in [Vector3(198.0, 10.0, 202.0), Vector3(200.0, 10.0, 202.0), Vector3(202.0, 10.0, 202.0), Vector3(200.0, 10.0, 203.0)]:
+	for spot in [Vector3(198.0, 10.0, 202.0), Vector3(200.0, 10.0, 202.0), Vector3(202.0, 10.0, 202.0), Vector3(200.0, 10.0, 204.0)]:   # (200, 203) snapped onto the middle wall: a second wall in its place, refused since 23 Nov 2026
 		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wall_section_kit"), 0, 1, Vector3.ZERO)
 		items.place_item(1, items.table.number_of("wall_section_kit"), spot, 0)
-	check(items.world_item_count() == walls_before + 4, "four wall sections stand edge to edge, 2 m and 1 m apart (%d placed)" % (items.world_item_count() - walls_before))
+	check(items.world_item_count() == walls_before + 4, "four wall sections stand edge to edge, and 2 m apart (%d placed)" % (items.world_item_count() - walls_before))
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
 	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.0), 0)
 	check(items.world_item_count() == walls_before + 4 and Rules.blocked(cfg, "chest_kit", Vector3(200.0, 10.0, 202.0), [{"pos": Vector3(200.0, 10.0, 202.0), "state": 22, "yaw": 0.0}]) == "overlap", "a chest through a wall is refused, and its ghost is red")
-	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.5), 0)
-	check(items.world_item_count() == walls_before + 5, "a chest between two walls 1 m apart, touching neither, stands (Dave 17 Nov 2026: stations go inside buildings)")
+	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 203.0), 0)
+	check(items.world_item_count() == walls_before + 5, "a chest between two walls 2 m apart, touching neither, stands (Dave 17 Nov 2026: stations go inside buildings)")
+	# 23 Nov 2026 (screens robot): a scarecrow or trellis put down in a doorway, and a gate over a fence section, were all accepted.
+	var doorway: Array = [{"pos": Vector3(400.0, 10.0, 400.0), "state": 44, "yaw": 0.0}]
+	var fence: Array = [{"pos": Vector3(400.0, 10.0, 410.0), "state": 92, "yaw": 0.0}]
+	check(Rules.blocked(cfg, "thatch_scarecrow_kit", Vector3(400.0, 10.0, 400.0), doorway, 0.0) == "overlap", "a scarecrow in a doorway is refused")
+	check(Rules.blocked(cfg, "wooden_trellis_kit", Vector3(400.0, 10.0, 400.0), doorway, 0.0) == "overlap", "a trellis in a doorway is refused")
+	check(Rules.blocked(cfg, "wooden_trellis_kit", Vector3(400.0, 10.0, 400.2), doorway, 0.0) == "", "a trellis against the doorway's wall stands")
+	check(Rules.blocked(cfg, "thatch_scarecrow_kit", Vector3(400.0, 10.0, 400.6), doorway, 0.0) == "", "a scarecrow beside the doorway stands")
+	check(Rules.blocked(cfg, "thatch_doorway_kit", Vector3(400.0, 10.0, 400.0), [{"pos": Vector3(400.0, 10.0, 400.0), "state": 164, "yaw": 0.0}], 0.0) == "overlap", "a doorway put up through a scarecrow is refused")
+	check(Rules.blocked(cfg, "antler_mount_kit", Vector3(400.0, 10.0, 400.1), doorway, 0.0) == "", "an antler mount set into the wall's face stands")
+	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(400.0, 10.0, 410.0), fence, 0.0) == "overlap", "a gate over a fence section is refused")
+	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(401.0, 10.0, 410.0), fence, 0.0) == "overlap", "a gate half over a fence section is refused")
+	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(400.0, 10.0, 410.0), fence, 180.0) == "overlap" and Rules.blocked(cfg, "thatch_gate_kit", Vector3(400.0, 10.0, 410.0), [{"pos": Vector3(400.0, 10.0, 410.0), "state": 92, "yaw": 360.0}], 0.0) == "overlap", "a gate turned round over a fence section is refused too")
+	check(Rules.blocked(cfg, "thatch_scarecrow_kit", Vector3(400.0, 9.8, 400.0), doorway, 0.0) == "overlap", "a scarecrow in a doorway on a slope (its foot 0.2 m under the doorway's spot) is refused")
+	check(Rules.blocked(cfg, "hide_rug_kit", Vector3(400.0, 10.0, 400.0), doorway, 0.0) == "", "a rug in a doorway lies there (a mat)")
+	check(Rules.blocked(cfg, "thatch_wall_kit", Vector3(403.0, 10.0, 400.0), doorway, 0.0) == "" and Rules.blocked(cfg, "double_doorway_kit", Vector3(403.0, 10.0, 400.0), doorway, 0.0) == "", "a wall, or a 4 m double doorway, beside the doorway's end stands")
+	check(Rules.blocked(cfg, "thatch_gate_kit", Vector3(402.0, 10.0, 410.0), fence, 0.0) == "", "a gate at the end of a fence section stands (a gate in the gap)")
+	check(Rules.blocked(cfg, "thatch_fence_kit", Vector3(401.0, 10.0, 411.0), fence, 90.0) == "", "a fence turning the corner at a section's end stands")
+	check(Rules.blocked(cfg, "thatch_doorway_kit", Vector3(400.0, 10.0, 400.0), [{"pos": Vector3(400.0, 10.0, 400.0), "state": 37, "yaw": 0.0}], 0.0) == "overlap", "a doorway over a wall is refused")
+	check(Rules.blocked(cfg, "thatch_wall_kit", Vector3(401.0, 10.0, 401.0), doorway, 90.0) == "", "a wall meets the doorway's end at a corner")
 	# Nothing is built in water (Dave 2026-10-22: floor sections lay on the pond): any corner wet blocks it, on the server too.
 	var pond: Callable = func(x: float, _z: float) -> float: return 1.0 if x > 300.0 else 0.0
 	check(Rules.over_water(cfg, "floor_section_kit", Vector3(301.0, 10.0, 0.0), 0.0, pond) and not Rules.over_water(cfg, "floor_section_kit", Vector3(298.0, 10.0, 0.0), 0.0, pond), "a floor with no wet corner is fine, one wet corner blocks it")

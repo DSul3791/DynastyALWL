@@ -31,6 +31,7 @@ extends Node
 const LookSettings := preload("res://src/client/look_settings.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const CanopyMapScript := preload("res://src/client/canopy_map.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: lines printed on a worker (D-LAG-1)
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
@@ -110,7 +111,11 @@ const DAY_STEP_MSEC := 1000                # sun direction and colour refresh
 const SKY_STEP_MSEC := 4000                # sky palette refresh (see the comment where it is used)
 const EASE_S := 8.0                      # seconds for a front to fade fully in or out
 const RAIN_AMOUNT := [500, 1400, 2800, 4500]
-const SNOW_AMOUNT := [350, 900, 2000, 3200]
+const SNOW_AMOUNT := [600, 1600, 3200, 5000]   # weather round 2 (Lane A, 23 Nov 2026): at 2000 flakes in a 48 m box the snow read as "a few faint specks"
+const SNOW_BOX_M := 14.0                 # half width of the box the snow falls through: near the eye, where a flake is big enough to see
+const SNOW_FLAKE_M := 0.11               # a flake's drawn size (its soft edge fades from 40 percent out): a few pixels at 10 m
+const SNOW_GLOW := [0.08, 0.55]          # the flakes' emission at night and by day (a lit flake under an overcast is no brighter than the sky)
+const STARS_GONE_COVER := Vector2(0.55, 0.85)   # cloud cover over which the stars fade out: none shine through an overcast that snows or rains
 const BOLT_FROM := 1                     # first quality level that draws the bolt itself
 const TURBULENCE_FROM := 1               # snow drifts sideways from here up
 const BOX_M := 24.0                      # half width of the box the precipitation falls through
@@ -240,6 +245,7 @@ var canopy                              # CanopyMap: where trees shelter the gro
 var _rain: GPUParticles3D
 var _rain_material: ShaderMaterial
 var _snow: GPUParticles3D
+var _snow_material: StandardMaterial3D   # the flakes' (_make_snow): its glow follows the daylight (_update_particles)
 var _bolt: MeshInstance3D
 var _bolt_material: StandardMaterial3D
 var _flash_t: float = -1.0              # seconds since the last flash began, -1 when none
@@ -261,6 +267,8 @@ var night_colour: float = 1.0           # share of the colour left by the night,
 var rainbow: float = 0.0                # 0 .. 1 the bow's strength now, eased (for checks)
 var _rain_memory: float = 0.0           # the recent rain, falling off over RAINBOW_HOLD_S
 var _rainbow_sent: float = -1.0
+var _sky_sent: Vector3 = Vector3(-1.0, -1.0, -1.0)   # coverage, gloom and flash last sent to the sky shader
+var _sky_hour_said: bool = false      # the game hour of the first sky step is printed once (lag logs: the sky's cost depends on the hour)
 var cloud_cover: float = 0.0
 var clear_day: bool = false             # Esc > Admin "Day, sunny, no fog" (Dave 2026-10-23): noon light, clear sky, no fog, for testing and viewing; the clock and the world weather go on
 var strikes_seen: int = 0
@@ -518,7 +526,7 @@ func _make_snow() -> GPUParticles3D:
 	particles.emitting = false
 	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process.emission_box_extents = Vector3(BOX_M, 0.3, BOX_M)
+	process.emission_box_extents = Vector3(SNOW_BOX_M, 0.3, SNOW_BOX_M)
 	process.direction = Vector3(0.0, -1.0, 0.0)
 	process.spread = 12.0
 	process.initial_velocity_min = 1.0
@@ -529,10 +537,10 @@ func _make_snow() -> GPUParticles3D:
 	process.turbulence_enabled = _quality >= TURBULENCE_FROM
 	particles.process_material = process
 	var quad: QuadMesh = QuadMesh.new()
-	quad.size = Vector2(0.07, 0.07)
+	quad.size = Vector2(SNOW_FLAKE_M, SNOW_FLAKE_M)
 	var gradient: Gradient = Gradient.new()
 	gradient.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
-	gradient.offsets = PackedFloat32Array([0.3, 1.0])
+	gradient.offsets = PackedFloat32Array([0.4, 1.0])
 	var texture: GradientTexture2D = GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.fill = GradientTexture2D.FILL_RADIAL
@@ -541,11 +549,21 @@ func _make_snow() -> GPUParticles3D:
 	texture.width = 32
 	texture.height = 32
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# Lit, so a flake shows white in firelight and by day and only faintly in the dark away from a fire (weather round 2: "no flakes in
+	# the firelight"); backlight, so a flake between the eye and the fire lights up too (a billboard faces the eye, the fire is behind it);
+	# a little emission keeps the nearest ones just visible on a dark night, more by day so a flake stays whiter than the overcast behind it
+	# (SNOW_GLOW). Per pixel: backlight is worked out per pixel (11 cm flakes: little fill).
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_PIXEL
+	material.backlight_enabled = true
+	material.backlight = Color(0.85, 0.87, 0.9)
+	material.emission_enabled = true
+	material.emission = Color(0.9, 0.93, 1.0)
+	material.emission_energy_multiplier = float(SNOW_GLOW[0])
+	_snow_material = material
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material.albedo_texture = texture
-	material.albedo_color = Color(0.95, 0.97, 1.0, 0.85)
+	material.albedo_color = Color(0.95, 0.97, 1.0, 0.9)
 	quad.material = material
 	particles.draw_pass_1 = quad
 	return particles
@@ -562,7 +580,7 @@ func _target() -> Dictionary:
 	if _client.sound != null and _client.sound.weather != null and (int(_client.sound_tests.weather_at) >= 0 or bool(_client.sound.weather.forced)):
 		if bool(_client.sound.weather.forced) and not _forced_logged:
 			_forced_logged = true
-			print("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
+			FreezeWatchScript.printer.line("weather look: forced to \"%s\" (--weather)" % _client.sound.weather.kind)
 
 		return TEST.get(_client.sound.weather.kind, out)
 
@@ -654,6 +672,10 @@ func _process_body(delta: float) -> void:
 	if _client == null or _client._environment == null or _client.camera == null or _client.terrain == null:
 		return
 
+	# Lag lane 23 Nov 2026: "weather look" took 414-560 ms in one frame just after every PC join (8 ms headless, so on the graphics side): each
+	# engine-facing piece is timed by name, so the next play's HITCH line says which (FrameProbe sums the pieces of a frame).
+	var tq: int = 0
+
 	var target: Dictionary = _target()
 
 	for key in _s:
@@ -677,7 +699,9 @@ func _process_body(delta: float) -> void:
 	gloom = clampf(0.3 * cloud_cover + 0.45 * rain + 0.2 * snow + 0.6 * storm, 0.0, 1.0)
 	_dark = clampf(0.5 * cloud_cover + 0.35 * rain + 0.15 * snow + 0.35 * storm, 0.0, 1.0)
 
+	tq = FrameProbe.start()
 	_update_water_murk(delta, storm, rain)
+	FrameProbe.stop("weather look: water murk", tq)
 
 	if _flash_t >= 0.0:
 		_flash_t += delta
@@ -697,7 +721,9 @@ func _process_body(delta: float) -> void:
 
 	if LookSettings.DAY_CYCLE and now_msec >= _day_next_msec and _client.get("game_clock") != null:
 		_day_next_msec = now_msec + DAY_STEP_MSEC
-		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)
+		tq = FrameProbe.start()
+		day.update(12.0 if clear_day else _client.game_clock.hour(), _client.game_clock.day_of_year(), float(_client.game_clock.seconds) / 86400.0)   # starter-calendar: the calendar day sets the sun's declination, the same for all; the row's latitude (sky_row_latitude) its height
+		FrameProbe.stop("weather look: day cycle", tq)
 
 		if _client._sun != null:
 			_client._sun.basis = day.light_basis
@@ -708,7 +734,9 @@ func _process_body(delta: float) -> void:
 		var world_weather: Variant = _client.get("weather")
 		var fire_heading: float = float(world_weather.get("wind_dir", 0.0)) if world_weather is Dictionary else 0.0
 		var wind_now: float = float(_s["wind"])
+		tq = FrameProbe.start()
 		BuildingLook.set_fire_air(fire_wind_ms(wind_now), fire_heading, still_night(day.elevation, _client.game_clock.hour(), cloud_cover, wind_now))
+		FrameProbe.stop("weather look: fire air", tq)
 
 	# The sky colours change in coarser steps than the sun: a changed sky shader parameter may make the engine redraw the
 	# sky's lighting cubemap, so it is paid once every few seconds (two game minutes), not every frame. Check the GPU table
@@ -716,8 +744,16 @@ func _process_body(delta: float) -> void:
 	if LookSettings.DAY_CYCLE and now_msec >= _sky_next_msec:
 		_sky_next_msec = now_msec + SKY_STEP_MSEC
 
+		if not _sky_hour_said and _client.get("game_clock") != null:
+			_sky_hour_said = true
+			FreezeWatchScript.printer.line("weather look: first sky step at game hour %.2f, day %d of the year" % [_client.game_clock.hour(), _client.game_clock.day_of_year()])   # starter-calendar: a log line
+
 		if _client.flora != null:
+			tq = FrameProbe.start()
 			_client.flora.set_day_sky(day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
+			FrameProbe.stop("weather look: day sky", tq)
+
+		tq = FrameProbe.start()
 
 		if _client.sea != null:
 			WaterMaterial.apply_day(_client.sea.material_override as ShaderMaterial, day.sky_top, day.sky_horizon, day.cloud_shadow, day.ambient_factor)
@@ -730,7 +766,9 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("sky_horizon_color", day.sky_horizon)
 			sky_material.set_shader_parameter("ground_horizon_color", day.ground_horizon)
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
-			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
+			sky_material.set_shader_parameter("night", stars_through(day.stars, cloud_cover))   # the stars: brighter on a moonless night (day_cycle.gd), none through an overcast
+
+		FrameProbe.stop("weather look: sea and sky colours", tq)
 
 	# A rainbow as a shower passes: recent rain, the sun low and breaking through the clearing cloud.
 	_rain_memory = maxf(rain, _rain_memory - delta / RAINBOW_HOLD_S)
@@ -744,9 +782,14 @@ func _process_body(delta: float) -> void:
 			_rainbow_sent = rainbow
 			sky_material.set_shader_parameter("rainbow", rainbow)
 
-		sky_material.set_shader_parameter("coverage", lerpf(0.62, 0.30, cloud_cover))
-		sky_material.set_shader_parameter("gloom", gloom)
-		sky_material.set_shader_parameter("flash", flash_level)
+		# Sent only when they change (23 Nov 2026): a changed sky parameter may redraw the sky's lighting cubemap (sky_clouds.gd make_sky).
+		var coverage: float = lerpf(0.62, 0.30, cloud_cover)
+
+		if absf(coverage - _sky_sent.x) > 0.002 or absf(gloom - _sky_sent.y) > 0.002 or flash_level != _sky_sent.z:
+			_sky_sent = Vector3(coverage, gloom, flash_level)
+			sky_material.set_shader_parameter("coverage", coverage)
+			sky_material.set_shader_parameter("gloom", gloom)
+			sky_material.set_shader_parameter("flash", flash_level)
 
 	# Light: the sun fades behind cloud, the sky's own light dims a little, lightning jumps both. Under rock (a cave, a tunnel
 	# dug into a hill) neither the sun nor the sky's light gets in, day or night: only torches and fires light it.
@@ -813,12 +856,16 @@ func _process_body(delta: float) -> void:
 	# Low down the sea check needs the ground window whatever the fog (fog_ground.gd under_land), under water too, so a dry tunnel
 	# read as sea before the window came clears once it comes.
 	if _summits_set and eye.y < FogGroundScript.SEA_ASK_BELOW_M:
+		tq = FrameProbe.start()
 		fog_ground.update(eye)
+		FrameProbe.stop("weather look: ground fog", tq)
 
 	if not _client.underwater:
 		var ground_wet: float = puddles.wet_mean      # the ground's own wetness, which dries in game hours (rain_look_design.md 3.4)
 
+		tq = FrameProbe.start()
 		haze.update(delta, float(_client.weather.get("temp_c", 10.0)), float(_s["cloud"]), rain, float(_client.weather.get("mist", 0.0)), ground_wet)
+		FrameProbe.stop("weather look: haze", tq)
 		# The weather fog is drawn by graphics preset (fog_look.gd PRESETS; Dave: full on Ultra, the distance fade only on Low).
 		var fog_shown: bool = not clear_day and FogLook.weather_drawn(_quality)
 		var mist: float = float(_s["mist"]) if fog_shown else 0.0
@@ -831,7 +878,9 @@ func _process_body(delta: float) -> void:
 		var eye_y: float = eye.y           # eye: the camera's position, read above for the night light
 
 		if _summits_set and fog_shown:          # set up with the summits, once joined; no asking for an undrawn fog
+			tq = FrameProbe.start()
 			fog_ground.update(eye)
+			FrameProbe.stop("weather look: ground fog", tq)
 
 		# The floors ease toward a new grid's values (a first read or a teleport), so the top never jumps.
 		var depth_now: float = float(_s["mist_depth_m"])
@@ -888,22 +937,40 @@ func _process_body(delta: float) -> void:
 		var heading_now: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 		# The body belongs to the layer the eye is in or over: the land layer, or the sea fog only down at sea level (not inland).
 		var sea_here: float = sea_fog if eye_y < SEA_LEVEL_EYE_M else 0.0
+		tq = FrameProbe.start()
 		fog_body.update(delta, environment, _quality, _client.camera.global_position, mist_inside, maxf(land, sea_here) * under_rock, land_top if land >= sea_here else sea_top, MIST_EDGE_M, wind_ms(float(_s["wind"])), heading_now)
+		FrameProbe.stop("weather look: fog body", tq)
+		tq = FrameProbe.start()
 		_water_fog(environment, sea_top, MIST_HEIGHT_DENSITY * sea_fog * (1.0 - mist_inside) * under_rock if FogLook.sky_drawn(_quality) else 0.0, under_rock)
+		FrameProbe.stop("weather look: water fog", tq)
 	else:
+		tq = FrameProbe.start()
 		_underwater_fog(environment, 1.0 - day.night, cloud_cover)
+		FrameProbe.stop("weather look: underwater fog", tq)
+		tq = FrameProbe.start()
 		fog_body.update(delta, environment, _quality, _client.camera.global_position, 0.0, 0.0, 0.0, MIST_EDGE_M, 0.0, 0.0)
+		FrameProbe.stop("weather look: fog body", tq)
+		tq = FrameProbe.start()
 		_water_fog(environment, environment.fog_height, environment.fog_height_density, 1.0)
+		FrameProbe.stop("weather look: water fog", tq)
 
+	tq = FrameProbe.start()
 	canopy.update(_client.flora, Vector2(_client.camera.global_position.x, _client.camera.global_position.z))
+	FrameProbe.stop("weather look: canopy map", tq)
 	_rain_material.set_shader_parameter("canopy_box", Vector3(canopy.origin.x, canopy.origin.y, canopy.METRES))
+	tq = FrameProbe.start()
 	_update_ground(rain, snow)
+	FrameProbe.stop("weather look: ground", tq)
 	var heading: float = float(_client.weather.get("wind_dir", 0.0)) if _client.weather is Dictionary else 0.0
 	var cave_open: float = clampf((_cave_factor - CAVE_LIGHT_DARK) / maxf(1.0 - CAVE_LIGHT_DARK, 0.001), 0.0, 1.0)
+	tq = FrameProbe.start()
 	puddles.update(delta, rain, float(_s["wind"]), Vector2(cos(heading), sin(heading)), smoothstep(0.6, 0.95, cave_open), _client.terrain.material as ShaderMaterial)
+	FrameProbe.stop("weather look: puddles", tq)
 
 	var sun_now: float = clampf(1.0 - float(_s["cloud"]) * 1.1, 0.0, 1.0) * smoothstep(0.0, 0.2, day.elevation)
+	tq = FrameProbe.start()
 	puddles.update_wet(delta, rain, float(_s["wind"]), sun_now, Vector2(cos(heading), sin(heading)), _client.terrain.material as ShaderMaterial)
+	FrameProbe.stop("weather look: wet ground", tq)
 	# The bark takes the rock's wetness (a hard surface that sheds water) and the wind's side; sent only when it changes.
 	var bark_wet: float = snappedf(float(puddles.wet[5]), 0.02)
 	var bark_wind: Vector2 = Vector2(cos(heading), sin(heading)).snapped(Vector2(0.1, 0.1))
@@ -911,12 +978,20 @@ func _process_body(delta: float) -> void:
 	if _client.flora != null and (bark_wet != _bark_wet_sent or bark_wind != _bark_wind_sent):
 		_bark_wet_sent = bark_wet
 		_bark_wind_sent = bark_wind
+		tq = FrameProbe.start()
 		_client.flora.set_wet(bark_wet, bark_wind)
+		FrameProbe.stop("weather look: wet bark", tq)
 
+	tq = FrameProbe.start()
 	_update_summits(delta, heading)
+	FrameProbe.stop("weather look: summits", tq)
+	tq = FrameProbe.start()
 	_update_particles(rain, snow, float(_s["wind"]))
+	FrameProbe.stop("weather look: particles", tq)
 	breath.update(delta)
+	tq = FrameProbe.start()
 	_update_tree_wind()
+	FrameProbe.stop("weather look: tree wind", tq)
 
 
 # The water shader writes its own fog (FOG), so it is fed the environment's fog each frame: the same distance and height fog,
@@ -1204,7 +1279,8 @@ func _update_summits(delta: float, heading: float) -> void:
 
 	_summit_next_msec = now + 1000
 	var top: Vector3 = summits.highest_near(eye, SUMMIT_NEAR_M)
-	var phase: float = WeatherRules.year_phase(float(_client.game_clock.seconds)) * 4.0 - 0.5
+	var row: int = int(_client.get("_row_here")) if _client.get("_row_here") != null else WeatherRules.STARTER_ROW   # starter-calendar: a client with no row yet
+	var phase: float = WeatherRules.year_phase_at(float(_client.game_clock.seconds), row, int(_client.get("_eq_row")) if _client.get("_eq_row") != null else 0) * 4.0 - 0.5   # the row's own year
 	var from: int = posmod(int(floor(phase)), 4)
 	var share: float = lerpf(float(SUMMIT_SNOW_SHARE[from]), float(SUMMIT_SNOW_SHARE[(from + 1) % 4]), smoothstep(0.0, 1.0, phase - floor(phase)))
 	var want: Vector2 = Vector2(top.y, share)
@@ -1220,7 +1296,7 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	var under: bool = _client.underwater
 	var tilt: float = wind * 0.4
 	_rain.global_position = eye + Vector3(0.0, 12.0, 0.0)
-	_snow.global_position = eye + Vector3(0.0, 10.0, 0.0)
+	_snow.global_position = eye + Vector3(0.0, 8.0, 0.0)   # 9 s at 1 to 1.9 m/s: they fall past the eye, from 8 m above to 1 to 9 m below it
 	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under, 1.0 - day.night)
 	# BUG-009 (Dave's QA list, 3 Nov 2026): rain showed inside caves. The particles fall from above the eye, so under rock they would fall through it;
 	# they thin out under an overhang and stop in a cave, the same rock enclosure that dims the light.
@@ -1254,7 +1330,18 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 		_client.sound.weather.canopy_drip = drips.store   # the drip sound after the rain (canopy_drip_design.md)
 
 	if _snow.emitting:
+		var glow: float = lerpf(float(SNOW_GLOW[0]), float(SNOW_GLOW[1]), 1.0 - day.night)
+
+		if _snow_material != null and absf(glow - _snow_material.emission_energy_multiplier) > 0.02:
+			_snow_material.emission_energy_multiplier = glow
+
 		(_snow.process_material as ParticleProcessMaterial).direction = Vector3(tilt * 0.8, -1.0, tilt * 0.3).normalized()
+
+
+# The stars' brightness under this cloud cover: full in a clear sky or through the gaps of a broken one, none through the overcast that
+# rain or snow brings (weather round 2: "clear sky with stars" over a snowing night). The sky shader still thins them behind each cloud.
+static func stars_through(stars: float, cover: float) -> float:
+	return stars * (1.0 - smoothstep(STARS_GONE_COVER.x, STARS_GONE_COVER.y, cover))
 
 
 # Flash level over time: a hard first pulse, a flicker, a softer return.

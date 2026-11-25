@@ -6,7 +6,9 @@ extends RefCounted
 # prices every deal itself.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const TradePrices := preload("res://src/shared/trade_prices.gd")   # the sums the shop window shows too
 const Attributes := preload("res://src/shared/attributes.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 const TALK_RANGE_M := 4.5
 const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
@@ -28,25 +30,40 @@ func setup(store_dir: String = "") -> void:
 	_shops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	_path = store_dir.path_join("trade_state.json") if store_dir != "" else ""
 
+	if _path != "":
+		ItemsScript.restore_missing(_path)
+
 	if _path != "" and FileAccess.file_exists(_path):
 		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
 		_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
 
 
-# Shelves and purses are saved after every deal (a few hundred bytes); the player's side of the deal (pack, coins) goes in the world save
-# that the deal brings forward (save_soon): seconds later, not up to a minute.
+# Shelves and purses go in the same whole save as the player's side of the deal (pack, coins): the deal brings that save forward
+# (save_soon), seconds later. Until in_save_set (no world save to join, as in some tests) they are written on their own after every deal.
 func save() -> void:
 	if items != null:
 		items.save_soon()
 
-	if _path == "":
+	if _path == "" or _in_set:
 		return
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "traders": _state}), false)   # whole to a .tmp, then moved over: a hard stop never tears it
 
-	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "traders": _state}))
-		file.close()
+
+var _in_set: bool = false
+
+
+# trade_state.json joins the world save's file set (server_items.gd set_extras): a hard stop mid-save never keeps a shelf from one save and
+# the pack that paid for it from another (it used to be written at once while the pack waited for the next save). Read again the way the
+# set reads its files, so a shelf from a save that never finished is read from its .prev. Call after setup, with the items loaded.
+func in_save_set(world_items) -> void:
+	if _path == "" or world_items == null:
+		return
+
+	var saved: Variant = world_items.read_set_file(_path.get_file(), 1)
+	_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
+	world_items.set_extras[_path.get_file()] = func(): return {"version": 1, "traders": _state.duplicate(true)}
+	_in_set = true
 
 
 func _game_s() -> float:
@@ -231,14 +248,11 @@ func _note_sale(npc_id: String, item_id: String, count: int) -> void:
 
 
 func price_to_pay(value: int, mult: float) -> int:
-	return maxi(int(ceil(float(value) * mult - 0.0001)), 1) if value > 0 else 0
+	return TradePrices.lot_to_pay(value, mult)
 
 
 func price_to_get(value: int, mult: float, life: float = 1.0) -> int:
-	if value <= 0 or life <= 0.0:
-		return 0
-
-	return maxi(int(floor(float(value) * mult * life + 0.0001)), 1)
+	return TradePrices.lot_to_get(value, mult, life)
 
 
 # The trader's window: the player is close enough to talk and the NPC trades.
@@ -334,7 +348,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 			return ""
 
 		var number: int = items.table.number_of(str(ids[a]))
-		var each: int = price_to_pay(int(items.table.entry(str(ids[a])).get("value", 0)), float(m["pay"]) * supply(npc_id, str(ids[a])))
+		var row: Dictionary = items.table.entry(str(ids[a]))
+		var each: int = price_to_pay(int(row.get("value", 0)), float(m["pay"]) * supply(npc_id, str(ids[a])))   # a lot's price (one unit for most goods)
+		var shelf_lot: int = TradePrices.shelf_lot(row)   # cheap goods are sold by the lot, as he buys them (coordinator ruling for Dave, 23 Nov 2026)
 		var shelf: int = stock_of(npc_id, str(ids[a]))
 
 		if shelf <= 0:
@@ -346,13 +362,15 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		if count <= 0:
 			return "You cannot carry any more."
 
-		if items.coins_of(peer) < each * count:
+		var cost: int = TradePrices.total_to_pay(each, shelf_lot, count)
+
+		if items.coins_of(peer) < cost:
 			return "You cannot afford that."
 
-		items.take_coins(peer, each * count)
+		items.take_coins(peer, cost)
 		var st: Dictionary = _refresh(npc_id)
 		st["stock"][str(ids[a])] = float(st["stock"][str(ids[a])]) - float(count)
-		st["purse"] = minf(float(st["purse"]) + float(each * count), _purse_cap(npc_id))   # the coin goes into his till
+		st["purse"] = minf(float(st["purse"]) + float(cost), _purse_cap(npc_id))   # the coin goes into his till
 		save()
 		items._gain_source = "trade"
 		items.give(peer, number, count)
@@ -361,7 +379,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 		if dealt.is_valid():
 			dealt.call(peer, npc_id)
-		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
+		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(cost)]
 
 	if a < 0 or a >= inv.slot_count or inv.numbers[a] == 0:
 		return ""
@@ -392,13 +410,12 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	count = mini(count, inv.counts[a])
 	var item_id: String = items.table.id_of(number2)
-	var value: int = int(round(float(entry.get("value", 0)) * SmithingRules.value_mult(inv.inst_of(a))))   # craftsmanship raises it (master s2.9 item 3)
-	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
 	var brule: Dictionary = _buy_rule(npc_id, item_id)
+	var terms: Array = TradePrices.sell_terms(entry, brule, SmithingRules.value_mult(inv.inst_of(a)))   # craftsmanship raises it (master s2.9 item 3); a lot (Dave 1 Nov: sell_lot, one price per lot, a single stone pays nothing) or his own buy rule
+	var lot: int = int(terms[0])
+	var value: int = int(terms[1])
 
-	if not brule.is_empty():   # this trader's own price and daily limit for the item (shops.json buy_rules)
-		lot = maxi(int(brule.get("lot", lot)), 1)
-		value = int(brule.get("lot_value", value))
+	if not brule.is_empty():   # this trader's daily limit for the item (shops.json buy_rules)
 		count = mini(count, buy_room(npc_id, item_id))
 
 		if count <= 0:
@@ -411,28 +428,16 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 		if count <= 0:
 			return "He buys %s %d at a time." % [items.table.sentence_name(number2) + "s", lot]
-	var total: int = 0
-	var paid_for: int = 0
 	var base_demand: float = demand(npc_id, item_id)
 	var drop: float = float(_cfg().get("demand", {}).get("drop_per_sale", 0.03))
 	var floor_d: float = float(_cfg().get("demand", {}).get("floor", 0.3))
 
 	var st2: Dictionary = _refresh(npc_id)
 	var till: int = int(floor(float(st2["purse"])))
-
-	# Each unit sold lowers the price of the next; the trader can only pay what is in his purse.
-	for k in count:
-		var each_k: int = price_to_get(value, float(m["get"]) * maxf(base_demand - drop * float(k), floor_d), life)
-
-		if each_k <= 0 or total + each_k > till:
-			break
-
-		if (k + 1) % lot == 0:   # the lot's copper is paid with its last unit
-			total += each_k
-
-		paid_for += 1
-
-	paid_for -= paid_for % lot
+	# Each unit sold lowers the price of the next; the trader can only pay what is in his purse (TradePrices.sale, the window's estimate too).
+	var made: Array = TradePrices.sale(value, lot, count, float(m["get"]), base_demand, drop, floor_d, life, till)
+	var paid_for: int = int(made[0])
+	var total: int = int(made[1])
 
 	if paid_for <= 0:   # his purse is spent (it refills purse_regen_per_day a game day, one real hour)
 		return PURSE_EMPTY_SAY if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
@@ -480,6 +485,7 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	var before_coins: int = items.coins_of(peer)
 	var sold: int = 0
 	var refused: String = ""
+	var kept: int = 0   # kinds he took only part of, or none, because his purse ran dry or he had his fill: the rest stays in the pack
 
 	for slot in range(inv.slot_count):
 		if inv.numbers[slot] == 0:
@@ -499,13 +505,18 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 
 		if said != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
 			sold += 1
+
+			if inv.numbers[slot] != 0 and inv.counts[slot] >= int(TradePrices.sell_terms(entry, _buy_rule(npc_id, items.table.id_of(inv.numbers[slot])), SmithingRules.value_mult(inv.inst_of(slot)))[0]):
+				kept += 1   # a whole lot or more is still there: he stopped short
 		elif said == PURSE_EMPTY_SAY or said.contains("Come back in a little while"):
 			refused = said
+			kept += 1
 
 	if sold == 0:   # a spent purse or a day's limit is said as itself, not as "nothing to sell" (TEST-003)
 		return refused if refused != "" else "You have no extra stuff he will buy."
 
-	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
+	var rest: String = "" if kept == 0 else " He could not take it all (his purse, or he has his fill), so the rest stays in your pack."
+	return "Sold %d kinds of extra stuff for %s.%s" % [sold, items._coin_words(items.coins_of(peer) - before_coins), rest]
 
 
 # What a smith asks to mend the tool in a pack slot (0 = nothing to mend, or a disposable tool: master s2.2 rules 1-3). `most` is its current

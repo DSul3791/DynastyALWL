@@ -17,11 +17,14 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const LayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file and restore_missing: whole-file saves (a hard stop never tears one)
 const LAYOUT_KEY := "layout"        # a removals file: the flora layout version the marks were made under (flora_layout.gd)
 const REMOVED_DIR := "flora_removed"    # one file per chunk with removals, <cx>_<cz>.json: {"layout", "ids"} (audit 18 Nov 2026 finding 6)
 const LEGACY_FILE := "flora_removed.json"   # the one file of every chunk before 18 Nov 2026: read once, written out per chunk, kept as .migrated
 const MEMORY_CHUNKS := 2048
-const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
+const ITEMS_CHUNKS := 400             # chunks of placed items kept by items_of, the least recently asked dropped first: every player warms the 9 round them
+                                      # (terrain_server _warm_flora), so 160 thrashed at 32 players spread out and a blow on a tree placed its chunk again on
+                                      # the main thread, 0.5 to 2 s each (server load test 23 Nov 2026)
 const TREES_CHUNKS := 512             # trees-only placed lists kept (_placed; about 30 KB each)
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
 const SLOW_LOCK_MS := 20.0            # a chunk holding the flora lock longer prints a "server flora:" line (the main thread's shelter checks wait for it)
@@ -30,6 +33,7 @@ const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or tall
 const BRUSH_CHUNKS := 64              # chunks kept in the undergrowth index (oldest dropped first; a dropped one is made again on a worker)
 
 var placer
+var pack = null                             # prebuilt plants (flora_pack.gd), read before the placer; null = none
 var dynamic: Callable                       # (home chunk) -> flora-style items of saplings and grown trees, {} when none (server_items.gd)
 var chunks_made: int = 0
 var layout_cleared: bool = false            # true when setup dropped saved removals because the flora layout changed
@@ -77,7 +81,8 @@ func items_of(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 # full one: spring cover shrubs make room before trees in the full list), so far chunks streamed past do not push near ones out.
 # One placement per chunk and form at a time: a second asker waits for the first instead of placing it again (a join at the spawn placed
 # 11 to 13 of its 36 chunk lists twice side by side, Dave's PC and David4, 15 Nov 2026; flora_pool_profile.gd).
-# shortcut: a kept list does not follow later live water (sim_snapshot) until new tiles clear it, as items_of already did; a chunk dropped
+# shortcut: a kept list does not follow later live water (sim_snapshot) until new tiles clear it, as items_of already did (prebuilt lists,
+# flora_pack.gd, are placed over the baked water and never follow it); a chunk dropped
 # from a store is placed again on its next change, as before. Revisit if either shows in play.
 func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 	var key: Vector3i = Vector3i(home.x, home.y, 0 if trees_only else 1)
@@ -85,8 +90,13 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 
 	while true:
 		_items_mutex.lock()
-		var kept: Dictionary = (_trees_kept if trees_only else _items).get(key, {})
+		var store: Dictionary = _trees_kept if trees_only else _items
+		var kept: Dictionary = store.get(key, {})
 		var start: bool = kept.is_empty() and not _placing.has(key)
+
+		if not kept.is_empty():
+			store.erase(key)
+			store[key] = kept   # asked again: last in the drop order (least recently used first)
 
 		if start:
 			_placing[key] = true
@@ -103,7 +113,12 @@ func _placed(home: Vector2i, trees_only: bool) -> Dictionary:
 		OS.delay_msec(5)
 
 	# Taken untyped: a script error inside the placer returns null, and the key must still be freed or every later asker would wait forever.
-	var got = placer.chunk_items(home, trees_only)
+	var prebuilt = pack   # read once: the main thread drops it when the tiles change
+	var got = prebuilt.items(home, trees_only) if prebuilt != null else null   # prebuilt by the generator (flora_pack.gd); null = not in it
+
+	if got == null:
+		got = placer.chunk_items(home, trees_only)
+
 	var made: Dictionary = got if got is Dictionary else {}
 	_items_mutex.lock()
 
@@ -139,6 +154,16 @@ func items_cached(chunk: Vector2i) -> Dictionary:
 
 	_items_mutex.unlock()
 	return kept
+
+
+# Whether a chunk's items are in memory, an empty chunk (open sea, bare rock) too: items_cached gives {} for both an empty chunk and one not
+# made yet, so a look that must know the difference (the Map's landmarks, terrain_server _map_landmarks) asks here.
+func chunk_cached(chunk: Vector2i) -> bool:
+	var home: Vector2i = placer.normalize(chunk)
+	_items_mutex.lock()
+	var cached: bool = _items.has(Vector3i(home.x, home.y, 1)) or _trees_kept.has(Vector3i(home.x, home.y, 0))
+	_items_mutex.unlock()
+	return cached
 
 
 # Whether the chunk's full list is kept or being placed now: asking for the full form then costs no placement of its own (_placed waits).
@@ -204,6 +229,10 @@ func _chunk_files() -> Array:
 
 	if not DirAccess.dir_exists_absolute(_dir):
 		return out
+
+	for file in DirAccess.get_files_at(_dir):
+		if file.ends_with(".json.tmp") or file.ends_with(".json.prev"):
+			ItemsScript.restore_missing(_dir + "/" + file.get_basename())   # a chunk file a hard stop caught between its two renames
 
 	for file in DirAccess.get_files_at(_dir):
 		var parts: PackedStringArray = file.trim_suffix(".json").split("_")
@@ -334,21 +363,29 @@ func _fill_cover(home: Vector2i, crowns: Dictionary) -> void:
 		cover.remove_chunk(_cover_order.pop_front())
 
 
-# The game season, for bare winter broadleaves (Cover.leafless_for; docs/design/cover_by_season_design.md). Cheap to call every tick.
-func set_season(season: String) -> void:
-	var bare: bool = CoverScript.leafless_for(season)
-
-	if bare == cover.leafless:
-		return
-
-	_lock_noting("set_season")
-	cover.leafless = bare
-	_mutex.unlock()
+var season_at: Callable   # (position) -> the season there (Weather.season_at); unset: the broadleaves stay in leaf
+var _bare_bands: Dictionary = {}   # 1 km band of z -> [msec read, bare]: the spot's season read once a band every 5 s (under _mutex)
+const BARE_BAND_M := 1000.0
+const BARE_KEEP_MSEC := 5000
 
 
-# Whether a spot is under a tree's canopy (Cover.at on the server's index).
+# Whether a spot is under a tree's canopy (Cover.at on the server's index). With season_at the broadleaves are bare by the spot's own season
+# (half a year on across the equator; docs/design/cover_by_season_design.md). Cost: the season is read once a 1 km band every 5 s, so an
+# animal's sight line (up to 12 calls) costs no more than before.
 func covered(pos: Vector3) -> bool:
 	_lock_noting("covered")
+
+	if season_at.is_valid():
+		var band: int = floori(pos.z / BARE_BAND_M)   # shortcut: a season changes only at the equator's row edge, a band edge while equator_tile_row is 0
+		var kept: Array = _bare_bands.get(band, [-BARE_KEEP_MSEC - 1, false])
+		var now: int = Time.get_ticks_msec()
+
+		if now - int(kept[0]) > BARE_KEEP_MSEC:
+			kept = [now, CoverScript.leafless_for(str(season_at.call(pos)))]
+			_bare_bands[band] = kept
+
+		cover.leafless = bool(kept[1])
+
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
 	return yes
@@ -582,19 +619,14 @@ func save_removed(force: bool = false) -> void:
 		var path: String = "%s/%d_%d.json" % [_dir, chunk.x, chunk.y]
 
 		if (writes[chunk] as Array).is_empty():
-			if FileAccess.file_exists(path):
-				DirAccess.remove_absolute(path)
+			for one in [path + ".tmp", path + ".prev", path]:   # its earlier copies go too (first, so a stop between leaves nothing to put back), or the next start would put the old one back
+				if FileAccess.file_exists(one):
+					DirAccess.remove_absolute(one)
 
 			continue
 
-		var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
-
-		if file == null:
+		if not ItemsScript._write_file(path, JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}), false):   # whole to a .tmp, then moved over
 			failed.append(chunk)
-			continue
-
-		file.store_string(JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}))
-		file.close()
 
 	if not failed.is_empty():
 		# Tried again at the next save; the one-file save is kept until every chunk it held is written.

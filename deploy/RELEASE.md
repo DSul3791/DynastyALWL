@@ -14,7 +14,7 @@ Server/client split plan steps C1 to C3 (`/mnt/project-files/server-client-split
 4. `deploy/server/Dockerfile`: the server image of the same build, stamped, saved as `dynasty-server-build-<N>.tar` with `compose.yaml` and `SERVER.md`.
 5. Only with `-Publish`: a GitHub Release `build-<N>` (marked pre-release) with the installer, made with `gh` (signed in on Dave's PC). The repository is public (Dave, 22 Nov 2026), so that is a public download of a game that holds the bought animal models: use it only on Dave's explicit yes. The default hand-off is the installer file on Dave's PC, shared by his own link.
 
-6. `tools/make_testplayers_page.ps1` (called by make_release): `testplayers\` with the installer zipped (`Dynasty-build-<N>.zip`) and the test players' download page `index.html` (build, size and SHA-256 filled in). Dave hosts it on his game server at https://hannibalshouse.duckdns.org/dynasty/testplayers/ (Dave 22 Nov 2026): `deploy/testplayers/HOSTING.md`.
+6. `tools/make_testplayers_site.ps1` (called by make_release): `site\`, the testers' site for Dave's own web server at https://hannibalshouse.duckdns.org/ (Dave 22-23 Nov 2026): the front page with Download latest, Submit a bug and Suggest an idea, the /download/ page, and the installer zipped as `downloads/Dynasty-build-<N>.zip`. `deploy/testplayers/SERVER.md` copies it up.
 
 Everything lands in `..\dynasty_export\build-<N>\`.
 
@@ -47,6 +47,8 @@ Each step has a hard time limit that closes whatever it started:
 5. `compose stop`: the server must save and exit 0 inside the 90 s grace. Then `compose down -v` removes the test container and its volume.
 6. Uninstall silently. The install folder and the uninstall entry must be gone.
 
+Every game start also FAILs when Windows logged an Application Error for that install's Dynasty.exe while it ran (a crash, including one in the engine's teardown). The cold play ends with `OS.kill`, so its exit code is always 0: it is judged by that event check and by its log reaching the game's `EXIT:` line. The two short starts quit through the engine, so a non-zero exit still FAILs them.
+
 Docker steps have time limits too. A test container or install left by a cut-off run is removed at the next run. The `docker load` also tags the image `dynasty-server:latest` on that PC, as `make_release.ps1` already did. `-NoServer` skips steps 3 to 5. Logs are in `..\dynasty_export\build-<N>\first_run\`; record the driver lines, the ground ready line and the longest FREEZE with the run.
 
 On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then `docker load -i dynasty-server-build-<N>.tar` and `docker compose -f compose.yaml up -d` (SERVER.md has admin keys, password and ports).
@@ -55,7 +57,7 @@ Players: download `DynastySetup-<N>.exe` from the release and run it. Windows Sm
 
 ## Known limits
 
-- The bought animal models (`assets/animals`, gitignored by licence) go inside the game's pack (Dave, 22 Nov 2026: "incorporated right in with the game"). The script copies them, read only, from `-AnimalsFrom` (default `C:\GodotProjects\DynastyALWL\assets\animals`, Dave's game folder, never changed) into the release clone, and stops if there are none; `-NoAnimals` builds without them. They are never committed, never uploaded loose, and never in the server image.
+- The bought animal models (`assets/animals`) go inside the game's pack (Dave, 22 Nov 2026: "incorporated right in with the game"). Since 23 Nov 2026 they are in the repository through Git LFS (Dave 22-23 Nov 2026: "we can keep the bought models in the github with all other models because even though its public nobody knows about it", then "we are able to move the files to the github now"): a release clone needs them checked out (`git lfs pull`; the script stops on missing files or LFS pointer stubs). A clone of an older commit copies them, read only, from `-AnimalsFrom` (default Dave's game folder, never changed). `-NoAnimals` builds without them, in a clone made with `tools/skip_models.sh`. They are never in the server image.
 - The game is not code-signed.
 - `amake/innosetup` is a community image (Inno Setup 6 under Wine) on a floating tag. If `innosetup6-bookworm` is gone, use `amake/innosetup:innosetup6` in `tools/make_release.ps1`.
 - The script stops if a world record folder is in the release clone. Keep that clone for releases only: the editor's import may touch its files.

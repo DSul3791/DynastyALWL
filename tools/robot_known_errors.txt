@@ -1,0 +1,9 @@
+# Engine ERROR lines tools/robot_check.py lets pass (one Python regular expression a line). SCRIPT ERROR lines always fail.
+# Add a line only for an error that is understood and harmless in a headless robot run, with a comment saying why and who checked.
+# Engine teardown after a normal quit (23 Nov 2026, measured on every robot run on 2aa2ea24 and c6defa0d): headless clients report leftover
+# resources as they exit. The abort that follows ("corrupted size vs. prev_size") is a real fault, passed to the packaging thread; this is
+# only its leak notice.
+^ERROR: \d+ resources still in use at exit
+# Quitting with the crafting screen open (the screens plan, 23 Nov 2026, robot 1 on dev 7eaee33b): the engine reports the screen's fonts,
+# shaped text and dummy textures as leaked RIDs at exit. Teardown only, after the pack check; the rejoin pass checks nothing was lost.
+^ERROR: \d+ RID allocations of type '\w+' were leaked at exit\.

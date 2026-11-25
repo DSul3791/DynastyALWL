@@ -5,6 +5,8 @@ extends Node
 # a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 20 px on the 1920x1080 canvas (26 on the old 2880x1620 one), readable on a 55 inch 4K.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const TradePrices := preload("res://src/shared/trade_prices.gd")   # the server's own price sums (server_trade.gd)
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const FONT_PX := 20
 const MAX_CHOICES := 5
 
@@ -15,6 +17,7 @@ var player_position: Callable
 var voice_line: Callable = Callable()   # (voice_id, text) -> void; text to voice listens here
 
 var _panel: PanelContainer = null
+var _shop_close: Button = null             # its Close button, relabelled with the bound key each time it opens
 var _shop_panel: PanelContainer = null     # the trade window (protocol 62)
 var _shop_npc: String = ""
 var _shop_title: String = ""
@@ -28,14 +31,16 @@ var _shop_repairs: bool = false            # this trader mends tools (data/npcs/
 var _extras_kinds: Array = ["material", "food", "medicine"]   # coins.json trade.sell_extras: what the one-click sale may sell
 var _extras_below: int = 50                 # and only stacks worth less than this many copper each
 var _repair_rate: float = 0.4              # data/items/coins.json trade.repair.rate
+var _demand_drop: float = 0.03             # coins.json trade.demand: each unit sold lowers the next one's price by this much of the base
+var _demand_floor: float = 0.3             # and never under this
 var _shop_till: int = -1                   # the coin in the trader's purse, -1 = unlimited
 var _shop_tired: Dictionary = {}           # item id -> demand multiple (the trader is tired of buying it)
+var _shop_rules: Dictionary = {}           # item id -> this trader's buy rule (data/npcs/shops.json buy_rules: lot, lot_value)
 var _shop_buy_box: VBoxContainer
 var _shop_sell_box: VBoxContainer
 var _trader_ids: Array = []                 # npc ids in data/npcs/shops.json (they get the extras button)
 var _extras_button: Button                   # the same one-click sale on the dialogue screen itself (trade kind 3)
 var _shop_sell_all: Button                  # "Sell all but tools": the first press shows the total, the second sells
-var _sell_all_result: Array = []             # "Sold ..." segments (text and coin amounts) shown beside the purse after the button
 var _shop_sell_all_price: RichTextLabel
 var _sell_all_slots: Array = []             # pack slots the button would sell
 var _sell_all_total: int = 0
@@ -157,7 +162,7 @@ func _on_say(npc_id: String, npc_name: String, text: String, voice_id: String, c
 
 	if ends or _count == 0:
 		var done: Button = Button.new()
-		done.text = "Close (E)"
+		done.text = "Close (%s)" % KeyBindings.label("interact")
 		done.add_theme_font_size_override("font_size", FONT_PX)
 		done.pressed.connect(close)
 		_choices.add_child(done)
@@ -183,7 +188,7 @@ func _choose(index: int) -> void:
 
 func _key(event: InputEventKey) -> bool:
 	if _shop_panel != null and _shop_panel.visible:
-		if event.keycode == KEY_E or event.keycode == KEY_ESCAPE:
+		if KeyBindings.matches(event, "interact") or event.keycode == KEY_ESCAPE:
 			close()
 
 		return true
@@ -192,7 +197,7 @@ func _key(event: InputEventKey) -> bool:
 		_choose(event.keycode - KEY_1)
 		return true
 
-	if event.keycode == KEY_E and (_ends or _count == 0):
+	if KeyBindings.matches(event, "interact") and (_ends or _count == 0):
 		close()
 		return true
 
@@ -207,7 +212,6 @@ func close() -> void:
 		_shop_panel.visible = false
 
 	_shop_npc = ""
-	_sell_all_result = []
 
 	if _shop_reply != null:
 		_shop_reply.text = ""
@@ -251,7 +255,8 @@ func _build_shop(layer: CanvasLayer) -> void:
 	_shop_purse = items.make_coin_label(SHOP_PX)
 	head.add_child(_shop_purse)
 	var close_button: Button = Button.new()
-	close_button.text = "Close (E)"
+	_shop_close = close_button
+	close_button.text = "Close (%s)" % KeyBindings.label("interact")
 	close_button.add_theme_font_size_override("font_size", SHOP_PX)
 	close_button.pressed.connect(close)
 	head.add_child(close_button)
@@ -314,12 +319,15 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 	var shops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
 	var coins: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_shop_repairs = typeof(shops) == TYPE_DICTIONARY and bool(shops.get(npc_id, {}).get("repairs", false))
+	_shop_rules = (shops.get(npc_id, {}).get("buy_rules", {}) as Dictionary) if typeof(shops) == TYPE_DICTIONARY else {}
 	_repair_rate = float(coins.get("trade", {}).get("repair", {}).get("rate", 0.4)) if typeof(coins) == TYPE_DICTIONARY else 0.4
 
 	if typeof(coins) == TYPE_DICTIONARY:
 		var extras: Dictionary = coins.get("trade", {}).get("sell_extras", {})
 		_extras_kinds = extras.get("kinds", _extras_kinds)
 		_extras_below = int(extras.get("valuable_from", _extras_below))
+		_demand_drop = float(coins.get("trade", {}).get("demand", {}).get("drop_per_sale", _demand_drop))
+		_demand_floor = float(coins.get("trade", {}).get("demand", {}).get("floor", _demand_floor))
 
 	for i in ids.size():
 		_shop_stock[ids[i]] = stock[i]
@@ -329,6 +337,7 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		_shop_tired[tired_ids[i]] = float(tired_milli[i]) / 1000.0
 	_panel.visible = false
 	_shop_panel.visible = true
+	_shop_close.text = "Close (%s)" % KeyBindings.label("interact")   # the key may have been rebound since the window was built
 	_refresh_shop()
 
 	if not items.dialogue_open:
@@ -336,18 +345,19 @@ func _on_shop(npc_id: String, title: String, ids: PackedStringArray, pay_milli: 
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 
-# What the trader pays for a stack slot of the pack (each), the same rule as the server: worn tools and old food pay less.
-func _price_to_get(slot: int) -> int:
+# What the trader pays for a stack slot of the pack, the same rule as the server: [the lot he buys it in, what he pays a lot] (a lot is one unit
+# for most goods; cheap goods go by items.json sell_lot, and his own buy rule wins). Worn tools and old food pay less; [1, 0] when he pays nothing.
+func _price_to_get(slot: int) -> Array:
 	var number: int = items.inventory.numbers[slot]
 	var entry: Dictionary = items.table.entry(items.table.id_of(number))
-	var value: int = int(entry.get("value", 0))
+	var terms: Array = TradePrices.sell_terms(entry, _shop_rules.get(items.table.id_of(number), {}), SmithingRules.value_mult(items.inventory.inst_of(slot)))   # craftsmanship raises it, as on the server
+	var value: int = int(terms[1])
 
 	if value <= 0 or not (_shop_buys.has("all") or _shop_buys.has(str(entry.get("kind", "")))):
-		return 0
+		return [1, 0]
 
 	var life: float = 1.0
 	var durability: int = items.inventory.max_durability(slot)
-	value = int(round(float(value) * SmithingRules.value_mult(items.inventory.inst_of(slot))))   # craftsmanship raises it, as on the server
 
 	if durability > 0:
 		life = clampf(1.0 - float(items.inventory.wear[slot]) / float(durability), 0.0, 1.0)
@@ -356,7 +366,12 @@ func _price_to_get(slot: int) -> int:
 		life = minf(life, items.table.freshness(number, items.inventory.wear[slot]))
 
 	var tired: float = float(_shop_tired.get(items.table.id_of(number), 1.0))
-	return maxi(int(floor(float(value) * _shop_get * tired * life + 0.0001)), 1) if life > 0.0 else 0
+	return [int(terms[0]), TradePrices.lot_to_get(value, _shop_get * tired, life), value, life, tired]
+
+
+# " each", or " for 60" for goods sold by the lot.
+func _lot_note(lot: int) -> String:
+	return "  each" if lot <= 1 else "  for %d" % lot
 
 
 # The smith's price for the pack slot, the same rule as the server's repair_cost.
@@ -387,7 +402,6 @@ func _refresh_shop() -> void:
 	if _shop_till >= 0:
 		purse_line.append_array(["His purse: ", _shop_till, "    "])
 
-	purse_line.append_array(_sell_all_result)
 	items.fill_coin_line(_shop_purse, purse_line)
 
 	for child in _shop_buy_box.get_children():
@@ -399,19 +413,25 @@ func _refresh_shop() -> void:
 	for i in _shop_ids.size():
 		var id: String = _shop_ids[i]
 		var number: int = items.table.number_of(id)
-		var price: int = maxi(int(ceil(float(items.table.entry(id).get("value", 0)) * _shop_pay * float(_shop_supply.get(id, 1.0)) - 0.0001)), 1) if int(items.table.entry(id).get("value", 0)) > 0 else 0
+		var price: int = TradePrices.lot_to_pay(int(items.table.entry(id).get("value", 0)), _shop_pay * float(_shop_supply.get(id, 1.0)))   # a lot's price, as the server charges
+		var lot: int = TradePrices.shelf_lot(items.table.entry(id))
 		var left: int = int(_shop_stock.get(id, 0))
-		_shop_row(_shop_buy_box, "%s  x%d  -" % [items.table.name_of(number), left] if left > 0 else "%s  -  sold out" % items.table.name_of(number), items._tooltip(number, 1) + "\nYou pay %s each." % items.coin_text(price), i, 0, left > 0 and items.purse_copper >= price, price if left > 0 else -1)
+		var first: int = TradePrices.total_to_pay(price, lot, mini(lot, maxi(left, 1)))   # what one click buys (a lot, or what is left of one)
+		_shop_row(_shop_buy_box, "%s  x%d  -" % [items.table.name_of(number), left] if left > 0 else "%s  -  sold out" % items.table.name_of(number), items._tooltip(number, 1) + "\nYou pay %s%s." % [items.coin_text(price), _lot_note(lot)], i, 0, left > 0 and items.purse_copper >= first, price if left > 0 else -1, "" if lot <= 1 else _lot_note(lot), lot)
 
 	var any: bool = false
 	_sell_all_slots.clear()
 	_sell_all_total = 0
+	var till: int = _shop_till if _shop_till >= 0 else 1 << 30   # the one-click sale stops where his purse does, as the server's does
+	var sold_by_id: Dictionary = {}   # units of an item the estimate has sold already: a second stack starts at the lower price, as on the server
 
 	for slot in items.inventory.numbers.size():
 		if items.inventory.numbers[slot] == 0:
 			continue
 
-		var each: int = _price_to_get(slot)
+		var quote: Array = _price_to_get(slot)
+		var lot2: int = int(quote[0])
+		var each: int = int(quote[1])
 
 		if each <= 0:
 			continue
@@ -419,12 +439,17 @@ func _refresh_shop() -> void:
 		any = true
 		var entry2: Dictionary = items.table.entry(items.table.id_of(items.inventory.numbers[slot]))
 
-		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below:
+		if _extras_kinds.has(str(entry2.get("kind", ""))) and str(entry2.get("tool_class", "")) == "" and int(entry2.get("value", 0)) < _extras_below and not items.inventory.inst_of(slot).has("bag") and not items.inventory.maturing_at(slot):   # the server refuses a full bag and a maturing batch
 			_sell_all_slots.append(slot)
-			_sell_all_total += each * items.inventory.counts[slot]
+			var id2: String = items.table.id_of(items.inventory.numbers[slot])
+			var start: float = maxf(float(quote[4]) - _demand_drop * float(sold_by_id.get(id2, 0)), _demand_floor)
+			var made: Array = TradePrices.sale(int(quote[2]), lot2, items.inventory.counts[slot], _shop_get, start, _demand_drop, _demand_floor, float(quote[3]), till)   # the falling price and his purse, as the server pays (a trader's daily limit is not known here: "about")
+			_sell_all_total += int(made[1])
+			till -= int(made[1])
+			sold_by_id[id2] = int(sold_by_id.get(id2, 0)) + int(made[0])
 
 		var number2: int = items.inventory.numbers[slot]
-		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true, each, "  each")
+		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s%s." % [items.coin_text(each), _lot_note(lot2)], slot, 1, items.inventory.counts[slot] >= lot2, each, _lot_note(lot2), lot2)
 
 	if bool(_shop_repairs):
 		for slot in items.inventory.numbers.size():
@@ -467,15 +492,11 @@ func _on_sell_all_pressed() -> void:
 	if _sell_all_slots.is_empty():
 		return
 
-	_sell_all_result = ["Sold %d kinds of extra stuff for about " % _sell_all_slots.size(), _sell_all_total, "."]
-
-	for slot in _sell_all_slots.duplicate():
-		net.trade.rpc_id(1, _shop_npc, 1, slot, 999)
-
-	_refresh_shop()
+	net.trade.rpc_id(1, _shop_npc, 3, 0, 0)   # one sale on the server; its answer ("Sold 7 kinds of extra stuff for <what he really paid>") shows in the reply line (Dave 24 Nov 2026)
 
 
-func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kind: int, enabled: bool, price: int = -1, price_note: String = "") -> void:
+# `step`: the units one click buys or sells (a lot of goods sold by the lot); x10 buys ten of those, All sells the stack.
+func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kind: int, enabled: bool, price: int = -1, price_note: String = "", step: int = 1) -> void:
 	var row: HBoxContainer = HBoxContainer.new()
 	parent.add_child(row)
 	var button: Button = Button.new()
@@ -485,7 +506,7 @@ func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kin
 	button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	button.add_theme_font_size_override("font_size", SHOP_PX)
 	button.disabled = not enabled
-	button.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, 1))
+	button.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, step if kind != 2 else 1))
 	row.add_child(button)
 
 	if price >= 0:
@@ -498,5 +519,5 @@ func _shop_row(parent: VBoxContainer, text: String, tip: String, index: int, kin
 	more.text = "x10" if kind == 0 else "All"
 	more.add_theme_font_size_override("font_size", SHOP_PX - 4)
 	more.disabled = not enabled
-	more.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, 10 if kind == 0 else 999))
+	more.pressed.connect(func(): net.trade.rpc_id(1, _shop_npc, kind, index, mini(10 * step, 999) if kind == 0 else 999))
 	row.add_child(more)

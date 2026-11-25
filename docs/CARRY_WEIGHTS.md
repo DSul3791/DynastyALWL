@@ -28,7 +28,9 @@ The game is already **more generous than reality** for a normal adult, so raisin
 | any `*nuts` (suffix) | 0.050 | 0.012 | A chestnut or walnut in shell is about 10 to 15 g. |
 | any `*acorns` (suffix) | 0.030 | 0.005 | An acorn is 3 to 8 g. |
 
-Unchanged on purpose: plant fibre 0.005, leaves 0.02, nettles 0.02, stone 1.0 (a hand stone), clay/soil/sand/gravel 0.1 (a handful, light on purpose), firewood 3.5, seeds 0.01, apples and pears (150 to 250 g is right), kits (they keep the weight of what made them).
+Unchanged on purpose: plant fibre 0.005, leaves 0.02, nettles 0.02, stone 1.0 (a hand stone), clay/soil/sand/gravel 0.1 (a handful, light on purpose), firewood 3.5, apples and pears (150 to 250 g is right), kits (they keep the weight of what made them).
+
+Seeds (Dave 23 Nov 2026: "typical seeds weigh 5-7mg so you really need to fix that for all seeds"; QA #5, #6): every seed weighs ONE real seed from its thousand-seed weight (flax and linseed 6 mg, wheat 45 mg, carrot 1.2 mg, peas 250 mg); tree seeds, stones, cones and nuts their real larger weights (acorn 4 g, walnut 11 g, hazelnut 2.5 g, beechnut 0.25 g, mango stone 30 g); made-up plants 6 mg. The seed bundle stays a bundle (30 g). Weights show in kg, g or mg with a stack total (CarryRules.weight_text).
 
 ## What a normal meadow pick weighs now (free carry 42 kg at 75 kg)
 | Load | kg |
@@ -48,7 +50,7 @@ That is 64 percent of the free load, so a few dozen of each early gatherable doe
 
 ## Economy and kits
 - `tools/economy_first_day.py` uses prices and assumed picks per minute, not weights: no change. Lighter picks only mean a player can carry a whole trip to Hob, which the model already assumes.
-- The heavy-kit QA card `heavy-kits-carry` is about cut stone blocks (25 kg), bricks and mortar, and kit weights. None of those changed, so the card stands (stone wall kit still about 314 kg of ingredients).
+- The heavy-kit QA card `heavy-kits-carry` is about cut stone blocks (25 kg), bricks and mortar, and kit weights. None of those changed, so the card stands (stone wall kit still about 314 kg of ingredients). Kits are gone since then (no kits, #292, Dave 4 Nov), and a craft takes its ingredients from the ground and the player's own chests within 12 m (src/shared/craft_stock.gd), so a heavy recipe is made in trips; `tools/carry_audit.py` lists such recipes and no longer warns (23 Nov 2026).
 
 ## Tests
 `validate_items`, `inventory`, `server_items`, `economy` checks and Steve's `test_carry_many_light` (merged from 76c78d5f). Also passed: `test_logs_carry`, `test_trade`, `test_economy_guard`, all eight `items_check` steps, and the fruit tests (`test_fruit_tree`, `test_fruit_share`, `test_season_fruit`).

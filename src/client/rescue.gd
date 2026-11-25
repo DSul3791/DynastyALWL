@@ -1,5 +1,8 @@
 extends RefCounted
 
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const NetScript := preload("res://src/stream/terrain_net.gd")
+
 # Every way the client stands the player back on the surface: inside rock, under the ground with nothing below, and floating in empty
 # space under the world. One owner (Systems) for what used to be four functions in terrain_client.gd (Willy's rock rescue 625 and
 # the void rescue 644 merged). Each rescue writes a RESCUE line so we can see how often it fires.
@@ -9,6 +12,11 @@ const DIG_SKIP_MSEC := 1800000          # ... for half an hour
 const VOID_COOLDOWN_MSEC := 6000        # a still-loading block must not cause a rescue loop
 const VOID_COLUMN_M := 40               # no solid ground this far below, with the whole column loaded, means the player left the world
 const SURFACE_LIFT_M := 1.2
+const POCKET_UP_M := 12                 # a player stuck in rock under the ground is stood on the nearest floor of air (a cave's, a tunnel's) this far above ...
+const POCKET_DOWN_M := 2                # ... or this far below the body's middle ...
+const POCKET_SIDE_M := [0.0, 1.5, 3.0]  # ... in their own column or those this far round it ...
+const POCKET_HEADROOM := 3              # ... with this many voxels of air over it (at least 2 m: the 1.8 m body fits); else on the surface as before
+const BODY_HALF_M := 0.9                # the body's position is the middle of its 1.8 m capsule (terrain_client _make_player)
 
 var dig_guard: bool = true              # test: switched off by --no-dig-guard (shows the old behaviour)
 var rescued: int = 0                    # times the player was lifted back above the ground
@@ -55,7 +63,7 @@ func inside_solid(here: Vector3) -> bool:
 	var tool: VoxelTool = _client.terrain.get_voxel_tool()
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 
-	for lift in [0.2, 0.9, 1.6]:
+	for lift in [-0.7, 0.0, 0.7]:   # feet, middle and eyes: the body's position is its capsule's middle (BODY_HALF_M over the feet)
 		if tool.get_voxel_f(Vector3i((here + Vector3(0.0, lift, 0.0)).floor())) > -0.3:
 			return false
 
@@ -125,7 +133,7 @@ func _free_if_in_void(now: int) -> void:
 	rescued += 1
 	embed_rescues += 1
 	_client._telemetry.event("RESCUE: player was in empty space under the world at %s, stood on the surface at y %.1f" % [str(here), float(hit["position"].y)])
-	print("Terrain client: void rescue from %s to y %.1f" % [str(here), float(hit["position"].y)])
+	FreezeWatchScript.printer.line("Terrain client: void rescue from %s to y %.1f" % [str(here), float(hit["position"].y)])
 
 
 # Off the floor for a while and below the highest collider overhead: the player slipped through the ground (a gap, or collision that
@@ -150,14 +158,82 @@ func _under_the_ground() -> bool:
 	if not inside and not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
 		return false
 
-	body.global_position = Vector3(here.x, float(hit["position"].y) + SURFACE_LIFT_M, here.z)
+	# Inside rock under a cave's or a tunnel's floor or wall: back onto that floor, not up onto the hill over the cave (physical world audit round 6,
+	# 23 Nov 2026: a player who slipped into the rock of the Ragtooth camp cave was stood on the hillside 6 m over its room).
+	var to: Vector3 = Vector3(here.x, float(hit["position"].y) + SURFACE_LIFT_M, here.z)
+
+	var reach: AABB = AABB(here + Vector3(-3.5, -float(POCKET_DOWN_M) - 1.0, -3.5), Vector3(7.0, float(POCKET_UP_M + POCKET_DOWN_M + POCKET_HEADROOM) + 2.0, 7.0))
+	var tool: VoxelTool = _client.terrain.get_voxel_tool() if inside else null
+
+	if inside and tool.is_area_editable(reach):   # every voxel searched loaded: no floor made up at an unloaded block's edge
+		tool.channel = VoxelBuffer.CHANNEL_SDF
+		var pocket: Vector3 = pocket_near(func(cell: Vector3i) -> float: return tool.get_voxel_f(cell), here, float(hit["position"].y))
+
+		if not is_nan(pocket.y):
+			to = pocket
+
+			# Stuck in a cave's rock: the server carries the player to the nearest campfire out of the rock (Dave 23 Nov 2026); until it answers,
+			# and on a server with no campfire to carry them to, they stand on the floor here.
+			if _client.get("net") != null and _client.multiplayer.has_multiplayer_peer() and not (_client.multiplayer.multiplayer_peer is OfflineMultiplayerPeer) and not _client.multiplayer.is_server():
+				_client.net.inventory_action.rpc_id(1, NetScript.ACT_STUCK, 0, 0, 0, here)
+
+	body.global_position = to
 	body.velocity = Vector3.ZERO
 	floor_msec = Time.get_ticks_msec()
 
 	if _client.crash_report != null:
-		_client.crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s" % [str(here.round()), float(hit["position"].y), inside])
+		_client.crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s, %s" % [str(here.round()), to.y, inside, "onto the surface" if to.y > float(hit["position"].y) else "onto the floor of the air nearest"])
 
 	return true
+
+
+# The nearest place to stand in the air under the ground round `here`: the lowest floor of air with POCKET_HEADROOM voxels over it in each of
+# the columns at POCKET_SIDE_M round `here`, from POCKET_DOWN_M under the body's middle to POCKET_UP_M over it and under `roof_y` (the surface over it),
+# the body's middle BODY_HALF_M + 5 cm over that floor (the SDF's zero between the solid voxel and the air over it). `here` is the body's middle.
+# shortcut: the air is not followed to an exit, so a sealed bubble near the player counts (the player can dig out of it); no flood fill.
+# Vector3(NAN, NAN, NAN) when there is none.
+# sdf: (Vector3i voxel) -> its distance value (over 0 air; unloaded reads 0, never air here; inside a passage it is a few tenths at most).
+static func pocket_near(sdf: Callable, here: Vector3, roof_y: float) -> Vector3:
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_d: float = INF
+	var low: int = int(floor(here.y)) - POCKET_DOWN_M
+	var high: int = mini(int(floor(here.y)) + POCKET_UP_M, int(floor(roof_y)) - POCKET_HEADROOM)
+
+	for r in POCKET_SIDE_M:
+		var turns: int = 1 if float(r) == 0.0 else 8
+
+		for k in turns:
+			var x: float = here.x + cos(TAU * float(k) / float(turns)) * float(r)
+			var z: float = here.z + sin(TAU * float(k) / float(turns)) * float(r)
+			var cx: int = int(floor(x))
+			var cz: int = int(floor(z))
+
+			for y in range(low, high):
+				var under: float = float(sdf.call(Vector3i(cx, y, cz)))
+
+				if under >= 0.0:
+					continue
+
+				var open: bool = true
+
+				for up in range(1, POCKET_HEADROOM + 1):
+					if float(sdf.call(Vector3i(cx, y + up, cz))) <= 0.0:
+						open = false
+						break
+
+				if not open:
+					continue
+
+				var over: float = float(sdf.call(Vector3i(cx, y + 1, cz)))
+				var spot: Vector3 = Vector3(x, float(y) + (-under) / (over - under) + BODY_HALF_M + 0.05, z)
+
+				if spot.distance_to(here) < best_d:
+					best = spot
+					best_d = spot.distance_to(here)
+
+				break   # the lowest floor in this column
+
+	return best
 
 
 func _surface_above(here: Vector3) -> Dictionary:

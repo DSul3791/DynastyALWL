@@ -40,6 +40,9 @@ UNITS = [
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("cold store", "src/worldgen/tools/test_cold_store.gd"),
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
+    ("cold pass out", "src/worldgen/tools/test_cold_pass_out.gd"),
+    ("cave rescue", "src/worldgen/tools/test_cave_rescue.gd"),
+    ("ground landing", "src/worldgen/tools/test_ground_landing.gd"),
     ("skills", "src/worldgen/tools/test_skills.gd"),
     ("sickness", "src/worldgen/tools/test_sickness.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
@@ -109,12 +112,27 @@ CLIENTS = [
         ("over-exerted is 10 percent slower, not capped", r"1: pace x0.9 cap 0.0 \|", None, None),
         ("fainted locks movement", r"2: pace x1.0 cap -1.0", None, None),
     ]),
+    ("crouchwalk", ["--walk", "--crouchwalk"], 30000, [   # Dave 23 Nov 2026: crouched, an invisible wall on flat ground under a tree
+        ("crouched walks past trees never stop dead", r"crouch walk: (\d+) of [1-9]\d* stuck", 0, 0),
+        ("nearly head on, crouched walks slide round the trunk (walks counted)", r"stuck, (\d+) head on", 4, 16),
+    ]),
+    ("crouchslow", ["--walk", "--crouchwalk", "--runspeed=0.25"], 30000, [   # the same at a slow, loaded or tired pace (a few mm a step)
+        ("slow crouched walks never stop dead", r"crouch walk: (\d+) of [1-9]\d* stuck", 0, 0),
+        ("nearly head on, slow crouched walks slide round the trunk (walks counted)", r"stuck, (\d+) head on", 4, 16),
+    ]),
     ("plantpick", ["--plantpick"], 6000, [
         ("plants were picked", r"tried (\d+), gone", 3, 20),
         ("none left standing", r"still standing (\d+)", 0, 0),
     ]),
     ("leanto", ["--leanto"], 4000, [
         ("roof gives cover", r"cover under it " + NUM, 0.9, 1.0),
+    ]),
+    ("screenaudit", ["--screenaudit"], 9000, [   # every screen at every text size (coordinator 23 Nov 2026): nothing off the screen, cut off or under another
+        ("self test catches every kind", r"Screen audit self test: (\d+) of 5 kinds caught", 5, 5),
+        ("screens audited", r"Screen audit: \d+ problems on (\d+) screens", 20, 400),
+        ("no layout problems", r"Screen audit: (\d+) problems on \d+ screens", 0, 0),
+        ("canvas is 1920 wide", r"Screen audit: \d+ problems on \d+ screens \(canvas (\d+)x", 1920, 1920),
+        ("canvas is 1080 high", r"Screen audit: \d+ problems on \d+ screens \(canvas \d+x(\d+)", 1080, 1080),
     ]),
     ("texttest", ["--texttest"], 3000, [
         ("slot buttons stay valid", r"all valid (true)", None, None),

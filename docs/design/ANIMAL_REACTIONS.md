@@ -119,3 +119,27 @@ Dave, 21 Nov 2026: "animals are still teleporting and not actually running".
 ## For Dave
 
 Please review the values above. They can be changed in `animals.json` without any code change.
+
+## Stare before running, growl before attacking (23 Nov 2026)
+
+Dave, 23 Nov 2026: animals "should look up and stare at the player before running away or growling before attacking. fight should not just be animals teleporting around almost impossible to hit." The coordinator's steer: the stare must be clearly readable, about 1.5 to 2 s when the player is first noticed at a distance and down toward 0.5 s only when they are close or running at it; the growl long enough to hear, turn and react, about 1 s.
+
+**The stare (`server_animals.gd _stares`).** A grazing or walking animal that a player comes within its flee distance of stops, lifts its head and stares at them (ALERT, state 3, heading on the player; the client turns the head to them and plays its alert call), then bolts. The stare is `reactions.startle_s` [0.5, 1.75] s: the long end for a player at the flee distance, shorter as they are nearer, the short end for one running at it. It bolts at once when hurt, when it was already watching them (it stared as they came from its notice distance), when a player is within `reactions.startle_close_m` (3 m), for birds, and for temperaments that never watch. Herd mates set off by the first one still follow after their own alarm moment.
+
+**The growl (`server_big_game.gd warn_min_s`).** Every warning before a charge lasts at least `warn_min_s` (1.0 s): the head-down stand and the warning call. A player running off, or a blow during the warning, cuts it to no less. Goblins and bandits (`give_way` "player") keep their own short squaring-up. A hunter giving chase to a player who is already running has no stand: it roars as it sets off (the client voices the charge as a threat call).
+
+**Voices.** Twelve kinds had no voice, so their warnings were silent. They borrow one until Dave's recordings exist (docs/SOUND_MAP.md, "Stand-in animal voices").
+
+**The blow waits for its lunge (`strike_min_s`, 0.6 s; goblins and bandits 0.35 s).** A charge's blow lands only once the charge has run this long, so every screen draws the lunge first (a warthog charging from 1 m used to hit 0.18 s in, drawn 1.7 to 2.8 m short of the player; at 0.35 s a rhino charging from 3.6 m still struck before a robot over 120 ms drew its charge). A charge set off close runs at the pace that reaches the player as the blow may land (at least `CLOSE_PACE_X`, 0.3, of its charge speed), not at full speed into a hold; a chase of a runner keeps its full speed.
+
+## The models' own attacks up close (23 Nov 2026, protocol 167)
+
+Dave, 23 Nov 2026: "not all animals charge they actually have actions built in to them and I believe attacks are in there"; "make sure to use models that have the actions we need." The clip lists are in `data/animals/model_clips.json`; the coordinator's list is `animal-fights/MODEL_ATTACKS_2026-11-23.md` in the project files.
+
+**Close blows (`server_big_game.gd _close_attack`, `_step_close`).** A warning that ends with its player already at the animal (within `contact_m + start_m`) ends in a blow where it stands, not a charge: `strike` (state 25: a swipe, bite, horn, tusk or stomp) or, for the donkey and the goat, `kick` (state 26: it turns its back and kicks; the donkey, which has both, takes turns, kick first). It winds up for `windup_s` (0.5 to 0.9 s), then lands `damage_x` of its damage on a player still within `contact_m + reach_m`, inside `arc_deg` of where it faces (behind it for a kick), judged after the fair-dodge wait as a charge's blow is. `start_m` is 0.2 m inside `reach_m`, so a player who stands still is struck and one who steps back or aside in the wind-up is not. Then it recovers for `recover_s`. A bluff, a dog, a wall between or a player farther off still gets the charge. Kinds: fox, boar, bear, donkey, bighorn, goat, puma, lion, leopard, rhino, elephant, kangaroo, mammoth, tiger (their `defend` rows in `animals.json`). Wolves keep their own pack attack. Kinds with no attack clip on any model we own stay as they were.
+
+**The clips (`animal_view.gd _close_blow`).** The client plays the model's `strike` clip (taking turns with `strike2` where a model has two) or its `kick` clip once, sped so its blow (`hit_at` of the clip, 0.45 unless the model row says) comes `windup_s` after the state began, and started the rows' lateness into it, so the paw or hoof lands on screen when the server's blow does. The numbers are first guesses for the Lane A picture check.
+
+**The models.** Wolf, fox and donkey are drawn only from the look that has attack clips (Wolf_1, Fox_1, the dark donkey). The lion's second look is the lioness with attacks (Lioness_1); the Lioness look without one and the second boar are no longer drawn. The bear with the melee attacks (bear_2) is the first bear look.
+
+**Built for the "server sends plans" choice.** The server decides the blow and when it lands; the client only plays the clip to that time. If Dave chooses to have the server send plans for the client to play, these states are already plans of that kind.

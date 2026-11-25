@@ -20,6 +20,7 @@ const Proportions := preload("res://src/client/character/dynasty_proportions.gd"
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
 const HairModels := preload("res://src/client/character/hair_models.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -55,7 +56,10 @@ const CLIP_MAP := {
 	# stretched after it. The last element is [impact in the source, new length, new impact time].
 	"swing": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.7, 0.37]],
 	"swing_fp": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.95, 0.5]],
-	"chop": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.95, 0.5]],
+	# The chop (an axe on a trunk, a hammer on a site, every tool but the pick) lands at waist height: impact at 1.47 s (the hands at the hips' height
+	# coming down, the head 0.26 m lower than standing) and cut at 1.53 s. Taken at 1.68 s, the source's sledge into the ground, the body was bent double
+	# with the head at the knees through the whole second half (Lane A pictures S5 and S7, 23 Nov 2026: "reads as stooping or picking something up").
+	"chop": ["Heavy_Hammer_Swing", 0.5, 1.53, false, 1.0, [1.47, 0.95, 0.5]],
 	"pick_overhead": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 1.0, 0.52]],
 	"jab": ["Right_Jab_from_Guard", 0.0, -1.0, false, 0.4],
 	"throw": ["Charged_Spell_Cast", 0.0, -1.0, false, 0.4],
@@ -126,7 +130,7 @@ static func warm(models: Array = [], hairs: Array = []) -> void:
 			if not _loaded_here.has(path):
 				var t0: int = Time.get_ticks_msec()
 				_loaded_here[path] = load(path)
-				print("dynasty body: %s read on the main thread (headless) in %d ms" % [path.get_file(), Time.get_ticks_msec() - t0])
+				FreezeWatchScript.printer.line("dynasty body: %s read on the main thread (headless) in %d ms" % [path.get_file(), Time.get_ticks_msec() - t0])
 		elif ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 			ResourceLoader.load_threaded_request(path, "", true)
 
@@ -182,7 +186,7 @@ static func available(model_id: String = BodyModels.DEFAULT) -> bool:
 					_checked[model_id] = true
 
 		if not _checked[model_id]:
-			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: %s this run (run godot --import once)" % [path, "using the previous body" if model_id == BodyModels.DEFAULT else "wearing the default body instead"])
+			FreezeWatchScript.printer.line("dynasty body: %s is not imported or has no skeleton, mesh or animations: %s this run (run godot --import once)" % [path, "using the previous body" if model_id == BodyModels.DEFAULT else "wearing the default body instead"])
 
 	return bool(_checked[model_id])
 
@@ -360,8 +364,21 @@ func _build_animations() -> void:
 				_torch_carry(carry, skeleton)
 				library.add_animation(game_name + "_torch", carry)
 
+			# The bow raised and drawn (protocol 162, other players' archers looked idle): the same gait, both arms held in the aim.
+			if game_name in BOW_AIM_CLIPS:
+				for pose in ["bow_raised", "bow_drawn"]:
+					var aim: Animation = made.duplicate(true)
+					_bow_aim(aim, skeleton, pose == "bow_drawn")
+					library.add_animation(game_name + "_" + pose, aim)
+
+			# The shield raised (B held, the more byte's shield flag): the same gait, the left forearm across before the chest (Lane A S3, 23 Nov 2026: it hung at the hip).
+			if game_name in SHIELD_UP_CLIPS:
+				var guard: Animation = made.duplicate(true)
+				_shield_up(guard, skeleton)
+				library.add_animation(game_name + "_shield_up", guard)
+
 		_libraries[model] = library
-		print("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
+		FreezeWatchScript.printer.line("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
@@ -657,6 +674,61 @@ static func _torch_carry(anim: Animation, skel: Skeleton3D) -> void:
 
 		for k in range(1, anim.track_get_key_count(wrist)):
 			anim.track_set_key_value(wrist, k, still)
+
+
+# The bow in the aim (no bow clip in Dave's file; 23 Nov 2026, so another player's archer no longer looks idle): the LEFT arm straight out ahead at
+# shoulder height holding the grip, the RIGHT hand on the string, before the chest while raised, back at the jaw with the elbow high behind
+# at full draw. Skeleton space (left +X, up +Y, front +Z) on the clip's first key, as _torch_carry; the wrists held still.
+const BOW_AIM_CLIPS := ["idle", "walk"]
+const BOW_LEFT_UPPER := Vector3(0.2, 0.05, 0.98)
+const BOW_LEFT_FORE := Vector3(0.12, 0.05, 0.99)
+const BOW_RIGHT_UPPER_RAISED := Vector3(-0.35, -0.35, 0.87)
+const BOW_RIGHT_FORE_RAISED := Vector3(0.55, 0.3, 0.78)
+const BOW_RIGHT_UPPER_DRAWN := Vector3(-0.6, 0.12, -0.79)
+const BOW_RIGHT_FORE_DRAWN := Vector3(0.55, 0.2, 0.81)
+
+
+# The shield up: the LEFT upper arm forward and a little out, the elbow bent so the forearm lies across before the chest at shoulder height,
+# the fist to the right of the body's middle; the shield (player_view.gd) faces ahead from the fist. Skeleton space as _torch_carry; the wrist held still.
+const SHIELD_UP_CLIPS := ["idle", "walk", "jog", "run"]
+const SHIELD_UPPER := Vector3(0.35, -0.25, 0.9)
+const SHIELD_FORE := Vector3(-0.8, 0.35, 0.48)
+
+
+static func _shield_up(anim: Animation, skel: Skeleton3D) -> void:
+	if skel == null:
+		return
+
+	var chain: Array = ["Hips", "Spine", "Spine1", "Spine2", "LeftShoulder", "LeftArm"]
+	_aim_bone(anim, skel, chain, "LeftForeArm", SHIELD_UPPER)
+	_aim_bone(anim, skel, chain + ["LeftForeArm"], "LeftHand", SHIELD_FORE)
+	var wrist: int = _rot_track(anim, "LeftHand")
+
+	if wrist >= 0 and anim.track_get_key_count(wrist) > 0:
+		var still: Variant = anim.track_get_key_value(wrist, 0)
+
+		for k in range(1, anim.track_get_key_count(wrist)):
+			anim.track_set_key_value(wrist, k, still)
+
+
+static func _bow_aim(anim: Animation, skel: Skeleton3D, drawn: bool) -> void:
+	if skel == null:
+		return
+
+	var spine: Array = ["Hips", "Spine", "Spine1", "Spine2"]
+	_aim_bone(anim, skel, spine + ["LeftShoulder", "LeftArm"], "LeftForeArm", BOW_LEFT_UPPER)
+	_aim_bone(anim, skel, spine + ["LeftShoulder", "LeftArm", "LeftForeArm"], "LeftHand", BOW_LEFT_FORE)
+	_aim_bone(anim, skel, spine + ["RightShoulder", "RightArm"], "RightForeArm", BOW_RIGHT_UPPER_DRAWN if drawn else BOW_RIGHT_UPPER_RAISED)
+	_aim_bone(anim, skel, spine + ["RightShoulder", "RightArm", "RightForeArm"], "RightHand", BOW_RIGHT_FORE_DRAWN if drawn else BOW_RIGHT_FORE_RAISED)
+
+	for wrist_bone in ["LeftHand", "RightHand"]:
+		var wrist: int = _rot_track(anim, wrist_bone)
+
+		if wrist >= 0 and anim.track_get_key_count(wrist) > 0:
+			var still: Variant = anim.track_get_key_value(wrist, 0)
+
+			for k in range(1, anim.track_get_key_count(wrist)):
+				anim.track_set_key_value(wrist, k, still)
 
 
 # A harmless stand-in when the glb cannot be used, so nothing that holds this body meets a null (my_character.gd make_avatar never picks it; this is the last guard).

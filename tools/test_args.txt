@@ -4,3 +4,4 @@
 test_step_up_slow engine --fixed-fps 60
 test_stairs_climb engine --fixed-fps 60
 test_step_up engine --fixed-fps 60
+test_step_onto_ledge engine --fixed-fps 60

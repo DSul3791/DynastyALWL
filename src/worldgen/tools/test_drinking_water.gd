@@ -245,6 +245,29 @@ func _server() -> void:
 	rows_here = [{"kind": "salt"}]
 	check(not _drinks(items, v) and said.has(str(sources.get("say_salt", ""))), "at the sea the player hears the salt line (%s)" % str(said))
 
+	# The sea with no salt row in the record (Dave 24 Nov 2026: "it should tell you that is too salty"): the fish map's sea still says so, and
+	# standing in the sea it is never a drink even where the settled water shows water.
+	said.clear()
+	rows_here = []
+	items.water_kind_at = func(_x, _z): return {"kind": "sea_shallow", "depth": 1.0}
+	check(not _drinks(items, v) and said.has(str(sources.get("say_salt", ""))), "the sea with no record row: the salt line (%s)" % str(said))
+	said.clear()
+	items.water_near = func(_pos, _reach): return true
+	check(not _drinks(items, v) and said.has(str(sources.get("say_salt", ""))), "standing in the sea it is never a drink (%s)" % str(said))
+	rows_here = [{"kind": "river"}]
+	check(_drinks(items, v), "a river the fish map calls sea (its bed under 0 m) that the record holds as fresh is a drink")
+	rows_here = [{"kind": "lake"}]
+	check(_drinks(items, v), "and so is a lagoon the record holds as a lake")
+	rows_here = []
+	items.water_kind_at = func(_x, _z): return {"kind": "lake", "depth": 1.0}
+	check(_drinks(items, v), "water the fish map calls a lake is a drink")
+	items.water_kind_at = func(_x, _z): return {"kind": "", "depth": 0.0}
+	check(_drinks(items, v), "and water with no fish map kind is too")
+	items.water_kind_at = func(_x, _z): return {"kind": "sea_shallow", "depth": 1.0}
+	check(str(sources.get("say_salt", "")).contains("too salty") and str(sources.get("say_salt", "")).contains("fresh water"), "the line says too salty and to find fresh water")
+	items.water_kind_at = Callable()
+	items.water_near = func(_pos, _reach): return false
+
 	# Where the settled water shows nothing (docs/design/drink_prompt_design.md (a)): a ground spring head is a drink, a dry August bed of a
 	# record brook is "The bed is dry", and with no record row it is the plain refusal as before.
 	season[0] = "summer"

@@ -395,7 +395,7 @@ func _init() -> void:
 		print("  %s | %s | %d | %d | %d | %s | %s | %s" % [species_name, row["item"], have_1, have_3, sticks_after - sticks_before, "yes" if stays else "NO", "nothing" if not second_try else "GAVE MORE", "yes" if bool(verdict["ok"]) else "NO"])
 		check(ok, "harvest row %s: product, counts, no sticks, stays, once a season, label agrees" % species_name)
 
-	# Wild rose (D-ROSE-1): petals in summer, hips and 1 to 2 seeds in autumn, nothing in spring though the bush is in leaf; the client's prompt agrees.
+	# Wild rose (D-ROSE-1): petals in summer, hips and plenty of seeds in autumn (drops.json seed_drops), nothing in spring though the bush is in leaf; the client's prompt agrees.
 	var rose_flora: Dictionary = flora_rows["wild_rose"]
 	var rose_avg: float = (float(rose_flora["height_m"][0]) + float(rose_flora["height_m"][1])) * 0.5
 	var rose_got: Dictionary = {}
@@ -412,7 +412,7 @@ func _init() -> void:
 	print("wild rose by season [picked, petals, hips, seeds, prompt]: %s" % str(rose_got))
 	check(rose_got["spring"] == [false, 0, 0, 0, false], "a wild rose gives nothing in spring and the prompt says not in season")
 	check(rose_got["summer"][0] and rose_got["summer"][1] >= 20 and rose_got["summer"][2] == 0 and rose_got["summer"][3] == 0 and rose_got["summer"][4], "a wild rose gives petals only in summer")
-	check(rose_got["autumn"][0] and rose_got["autumn"][1] == 0 and rose_got["autumn"][2] >= 150 and rose_got["autumn"][3] >= 1 and rose_got["autumn"][3] <= 2 and rose_got["autumn"][4], "a wild rose gives hips and 1 to 2 seeds in autumn")
+	check(rose_got["autumn"][0] and rose_got["autumn"][1] == 0 and rose_got["autumn"][2] >= 150 and rose_got["autumn"][3] >= int(g._drops["seed_drops"]["wild_rose"]["rows"][0][1]) and rose_got["autumn"][3] <= int(g._drops["seed_drops"]["wild_rose"]["rows"][0][2]) and rose_got["autumn"][4], "a wild rose gives hips and its seed row's seeds in autumn")
 	check(str(GatherRulesScript.harvest_row(g._drops, "wild_rose").get("item", "")) == "rose_petals" and GatherRulesScript.harvest_row(g._drops, "wild_rose", "winter").is_empty(), "with no season the first row names the product; a season without a row has none")
 	check(GatherRulesScript.harvest_count({"count": 10}, 0.01) == 1 and GatherRulesScript.harvest_count({"count": 0}, 0.5) == 1, "a harvest count is never 0")
 	check(GatherRulesScript.harvest_count({"count": 10}, 3.0) == 30 and GatherRulesScript.harvest_count({"count": 7}, 1.2) == 9, "counts are the table number times size, rounded up")
@@ -516,11 +516,15 @@ func _init() -> void:
 	var stone_slot: int = 1
 	t.action(1, Net.ACT_THROW, stone_slot, 0, 0, Vector3(1.0, 0.3, 0.0))
 	check(t.inventory_of(1).count_of(stone) == 1 and t._flights.is_empty(), "a stone is not a throwing weapon")
+	var startled: Array = []
+	t.animal_alarm = func(point, radius): startled.append([point, radius])
 	t.action(1, Net.ACT_THROW, 0, 0, 0, Vector3(1.0, 0.3, 0.0))
 	check(t.inventory_of(1).count_of(spear) == 0 and t._flights.size() == 1, "spear leaves the inventory")
 	for n in range(400):
 		t.tick(0.02)
 	check(t._flights.is_empty() and t.world_item_count() >= 1, "spear came down as a world item")
+	check(startled.size() == 1 and float(startled[0][1]) == float(t._bow.cfg["land_alarm_m"]) and float(startled[0][1]) > 0.0, "a spear that missed startles the animals where it came down (%s)" % str(startled))
+	t.animal_alarm = Callable()
 	var landed: Vector3 = Vector3.ZERO
 
 	for k in t._items:
@@ -531,15 +535,19 @@ func _init() -> void:
 
 	# A thrown spear hits the first animal on its path for its throw_damage and drops there (MikeW, 3 Nov).
 	var struck: Array = []
-	t.hit_animal_path = func(_peer, from, to, amount) -> Dictionary:
+	var struck_lag: Array = []
+	t.hit_animal_path = func(_peer, from, to, amount, lag) -> Dictionary:
 		if from.x <= 6.0 and to.x >= 6.0:
 			struck.append(amount)
+			struck_lag.append(lag)
 			return {"at": Vector3(6.0, 11.0, 0.0)}
 
 		return {}
 	t.action(1, Net.ACT_ADMIN_GIVE, spear, 0, 1, Vector3.ZERO)
 	var before: int = t.world_item_count()
 	t._last_throw.clear()
+	var thrown_seen: int = Time.get_ticks_msec()
+	t.action(1, Net.ACT_SEEN, 0, thrown_seen - 150, thrown_seen - 20, Vector3.ZERO)   # how far behind the thrower saw the animals goes with the spear
 	t.action(1, Net.ACT_THROW, t.inventory_of(1).numbers.find(spear), 0, 0, Vector3(1.0, 0.1, 0.0))
 
 	for n in range(100):
@@ -554,6 +562,7 @@ func _init() -> void:
 
 	check(struck.size() == 1 and is_equal_approx(float(struck[0]), want_damage) and want_damage > 0.0, "a thrown spear hurts the animal it hits for its throw_damage (%s)" % str(struck))
 	check(by_animal and t._flights.is_empty() and t.world_item_count() == before + 1, "the spear drops where it struck the animal")
+	check(struck_lag.size() == 1 and (struck_lag[0] as Array).size() == 2 and int(struck_lag[0][0]) >= 150 and int(struck_lag[0][1]) >= 20 and int(struck_lag[0][1]) < int(struck_lag[0][0]), "its hit is judged where the thrower saw the animals (%s)" % str(struck_lag))
 
 	# Fires.
 	var f = make("user://test_server_items_d")
@@ -656,6 +665,26 @@ func _init() -> void:
 			ck_aged = ck_aged or absi(int(ck_inv.wear[sl]) - ck_want) <= 1
 
 	check(ck_aged, "a roast carries twice the raw life left (wear %d wanted)" % ck_want)
+	# The same in the fire's store (it used to give a fresh roast, so meat near rotting came out with the roast's whole life).
+	var ck_fire: Dictionary = f._items[open_id]["fire"]
+	var ck_box = f._chests[int(ck_fire["uid"])]
+	var ck_roasts_before: int = ck_box.count_of(ck_roast_n)
+	ck_box.add(ck_meat, 1, int(f.table.shelf_units(ck_meat) / 2))
+
+	for n in range(10):
+		f._tend_fire(open_id, f._items[open_id], ck_fire, 2.0)
+
+	var ck_box_aged: bool = false
+
+	for sl in range(ck_box.slot_count):
+		if ck_box.numbers[sl] == ck_roast_n:
+			ck_box_aged = ck_box_aged or absi(int(ck_box.wear[sl]) - ck_want) <= 1
+
+	check(ck_box.count_of(ck_roast_n) == ck_roasts_before + 1 and ck_box_aged, "the fire's store roasts half-stale meat with twice its life left, not a fresh roast (wear %d wanted, store %s)" % [ck_want, str(ck_box.wear)])
+
+	for sl in range(ck_box.slot_count):
+		if ck_box.numbers[sl] == ck_roast_n:
+			ck_box.take_from_slot(sl, ck_box.counts[sl])
 	f.vitals_of(1)["warmth"] = 50.0
 	f._last_eat.clear()
 
@@ -819,7 +848,11 @@ func _init() -> void:
 	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 3
 	m._last_mine.clear()
 	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).wear[axe_slot] == wear_was, "a blow on the resting patch breaks nothing and wears nothing")
+	m._last_mine.clear()
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(8.5, 10.0, 0.0))   # the next 8 m patch, still within reach
 	check(m.inventory_of(1).wear[axe_slot] == wear_was + 3, "a blow on rock wears the axe by the table's number (%d to %d)" % [wear_was, m.inventory_of(1).wear[axe_slot]])
+	m.inventory_of(1).remove(rock_stone, 1)   # that patch's stone back out: the counts below are the first patch's
 	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 5
 
 	m.report_position(1, Vector3(-5.0, 10.0, 0.0))
@@ -1034,6 +1067,51 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(patches_of.call() == 3, "a path out of reach does nothing")
+	# Dave's play test 24 Nov 2026 (a Beech stood in the middle of a trodden path): no path on a standing tree; young trees under a path are trodden out;
+	# nothing is planted on a path.
+	var path_says: Array = []
+	var was_notice: Callable = m.send_notice
+	var was_near: Callable = m.trees_near
+	var was_info: Callable = m.tree_info
+	var was_cut: Callable = m.cut_tree
+	var was_clock: Callable = m.game_seconds
+	var beech_at: Array = [Vector3(5.5, 10.0, -1.5)]
+	var cut_ids: Array = []
+	m.send_notice = func(_p, text): path_says.append(text)
+	m.trees_near = func(p, r): return [[Vector2i(0, 0), 4242]] if Vector2(p.x - beech_at[0].x, p.z - beech_at[0].z).length() <= r else []
+	m.tree_info = func(_c, _id): return {"name": "Beech", "position": beech_at[0], "height": 20.0, "trunk": 0.5}
+	m.cut_tree = func(c, tid): cut_ids.append(tid); return m.remove_dynamic(c, tid)
+	m.game_seconds = func(): return 100.0 * 86400.0
+	var before_tree: int = patches_of.call()
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(5.5, 10.0, -1.5))
+	check(patches_of.call() == before_tree and path_says.size() == 1 and str(path_says[0]).begins_with("A beech stands there"), "no path patch is laid on a standing tree's trunk, and the player is told (%s)" % str(path_says))
+	beech_at[0] = Vector3(5.5, 10.0, 1.6)   # 3.1 m off: the path goes past it
+	var young_tree: Dictionary = {"slot": 0, "chunk": [0, 0], "species": 1, "pos": Vector3(5.3, 10.0, -0.8), "planted_at": 99.0 * 86400.0}   # 1 game day old, 0.73 m off the patch
+	var grown_tree: Dictionary = {"slot": 1, "chunk": [0, 0], "species": 1, "pos": Vector3(4.0, 10.0, -3.5), "planted_at": 50.0 * 86400.0}   # grown full, 2.5 m off: stays
+	var saplings_were: Array = m._saplings.duplicate()
+	m._saplings.append(young_tree)
+	m._saplings.append(grown_tree)
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(5.5, 10.0, -1.5))
+	check(patches_of.call() == before_tree + 1, "a patch is laid beside a tree, clear of its trunk")
+	check(not m._saplings.has(young_tree) and m._saplings.has(grown_tree) and cut_ids == [(1 << 16) | 0xFFFF], "the young tree under the new patch is trodden out (clients told), the grown one off the path stays (%s)" % str(cut_ids))
+	grown_tree["pos"] = Vector3(4.6, 10.0, -3.0)
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(4.7, 10.0, -2.9))
+	check(patches_of.call() == before_tree + 1 and m._saplings.has(grown_tree), "a planted tree grown full stops a patch on its trunk too")
+	var on_path: String = m._sapling_refusal("oak_seed", Vector3(5.9, 10.0, -1.0))
+	check(on_path == "Nothing grows on a trodden path." or on_path.begins_with("The ground is frozen"), "a seed is not planted on a path patch (%s)" % on_path)
+	check(m._spawn_zones.kind_near(5.9, -1.0, ItemsScript.PLANT_PATH_GAP_M, m._items, "path_patch") and not m._spawn_zones.kind_near(5.5, 3.0, ItemsScript.PLANT_PATH_GAP_M, m._items, "path_patch"), "the path lookup finds a patch 0.64 m off and none 3 m off")
+	m._saplings = saplings_were
+	m.send_notice = was_notice
+	m.trees_near = was_near
+	m.tree_info = was_info
+	m.cut_tree = was_cut
+	m.game_seconds = was_clock
+	for patch_id in m._items.keys():
+		if m._items[patch_id].has("struct") and str(m._items[patch_id]["struct"]["kind"]) == "path_patch" and Vector2(m._items[patch_id]["pos"].x - 5.5, m._items[patch_id]["pos"].z + 1.5).length() < 0.1:
+			m._items.erase(patch_id)   # the checks below count the patches laid before
 	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
 	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
 	digs.clear()
@@ -1948,6 +2026,26 @@ func _init() -> void:
 	vt._breath[1] = 1.0
 	vt.report_position(1, Vector3(50.0, 5.0, 50.0))
 	var faint_seen: bool = false
+	var lowest: float = 100.0
+
+	for n in range(40):
+		vt.tick(1.0)
+		faint_seen = faint_seen or int(vt._strain.get(1, {}).get("state", 0)) == 2
+		lowest = minf(lowest, float(vt.vitals_of(1)["health"]))
+
+		if vt.remains_ids().size() > 0:
+			break
+
+	check(faint_seen and vt.remains_ids().is_empty() and lowest <= 2.0, "[%d remains, lowest health %.0f] fainting under water leaves 1 health, not dead (death.json stop_at_1; then the pass-out, test_cold_pass_out)" % [vt.remains_ids().size(), lowest])
+	vt._death_cfg["stop_at_1"] = false
+	vt._vitals[vt._peer_key[1]]["health"] = 100.0
+	vt._suffocate.erase(1)
+	vt._strain.erase(1)
+	vt._cold_out.erase(1)   # the pass-out above (test_cold_pass_out) carried them out of the water: back under
+	vt._out_water.erase(1)
+	vt.set_head_under(1, true)
+	vt._breath[1] = 1.0
+	faint_seen = false
 
 	for n in range(40):
 		vt.tick(1.0)
@@ -1956,7 +2054,8 @@ func _init() -> void:
 		if vt.remains_ids().size() > 0:
 			break
 
-	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	check(faint_seen and vt.remains_ids().size() == 1 and float(vt.vitals_of(1)["health"]) > 90.0, "[%d remains, health %.0f] with stop_at_1 off fainting under water drowns: remains left, vitals start over" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	vt._death_cfg["stop_at_1"] = true
 	vt.set_head_under(1, false)
 	vt.tick(1.0)
 	vt.vitals_of(1)["fed"] = 0.0   # the death above started the vitals over
@@ -1999,6 +2098,7 @@ func _init() -> void:
 		DirAccess.remove_absolute(td + "/" + file)
 
 	var th = make(td)
+	th._comfort_data().erase("meter")   # the thirst arithmetic alone; the comfort meter's slower drain is test_comfort's
 	var tsent: Array = []
 	var thirst_rejects: Array = []
 	th.send_vitals = func(_p, hunger, health, weight, thirst, luck, fitness): tsent.append(thirst)
@@ -2644,16 +2744,22 @@ func _init() -> void:
 	hs.give(1, hs.table.number_of("hand_saw"), 1)   # a tool new in the pack goes on the first empty hotbar key (inventory step 4)
 	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
 	hs._last_queue_act.clear()
-	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
-	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "a saw in the pack but not in hand saws nothing (Dave 17 Nov 2026: equip the saw)")
-	hs._last_queue_act.clear()
-	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3(float(saw_slot + 1), 0.0, 0.0))   # at.x: the saw in hand + 1 (126)
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)   # nothing in hand: the saw in the pack counts (Dave 24 Nov 2026)
+	check(hs.craft_queue_of(1).size() == 1, "a saw in the pack, not in hand, still saws (Dave 24 Nov 2026: \"if you have a knife in you inventory or on your hotbar it should count\")")
 
 	for n in 100:
 		hs._craft_tick(0.25)
 
 	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 6 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 6 lumber")
 	check(saw_slot >= 0 and hs.inventory_of(1).on_hotbar(saw_slot) and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
+	var far_slot: int = hs.inventory_of(1).slot_count - 1
+	hs.inventory_of(1).move(saw_slot, far_slot)   # off the hotbar, deep in the pack
+	check(not hs.inventory_of(1).on_hotbar(far_slot) and hs._hand_tool_ok(1, hs.inventory_of(1), by_hand, -1) and hs._craft_tool_slot(hs.inventory_of(1), "saw") == far_slot, "a saw deep in the pack, off the hotbar, still counts for a craft and is the one it wears")
+	var saw_wear: int = hs.inventory_of(1).wear[far_slot]
+	hs.inventory_of(1).wear[far_slot] = hs.inventory_of(1).max_durability(far_slot)   # worn out
+	check(not hs._hand_tool_ok(1, hs.inventory_of(1), by_hand, -1), "a broken saw in the pack does not count")
+	hs.inventory_of(1).wear[far_slot] = saw_wear
+	hs.inventory_of(1).move(far_slot, saw_slot)
 
 	# Saw speed (TREE_WOOD_TOOLS_DESIGN.md s5): the first saw on the hotbar sets the pace of a craft that keeps a saw (Copper 0.5, Iron 1.0), a Sawbuck in reach halves the time.
 	hs.ground_height = func(_x, _z): return 10.0
@@ -2682,10 +2788,7 @@ func _init() -> void:
 	hs.vitals_of(1)["weight"] = 5000.0   # the six blocks the plan makes must fit; carrying is not under test here
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3.ZERO)
-	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "a Chopping block that would saw its block from a log is refused without the saw in hand, and the log stays")
-	hs._last_queue_act.clear()
-	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3(float(copper_slot + 1), 0.0, 0.0))
-	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in hand it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
+	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in the pack (nothing in hand) it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
 	hs._cancel_craft(1, 1)
 	hs._cancel_craft(1, 0)
 	hs.send_notice = Callable()

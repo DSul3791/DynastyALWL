@@ -70,9 +70,9 @@ func _init() -> void:
 
 	check(not winter_any and not FarmRules.plantable_now(crops, "hazel_bush", "bush", "winter") and not FarmRules.plantable_now(crops, "oak_seed", "tree", "winter"), "plantable_now: nothing at all in winter (the ground is frozen hard)")
 	# The hoe grid (Dave 14 Nov 2026): width by length, turned by the wheel, spaced for the plant; unturned 1 m grids sit on the metre cells.
-	var one: Array = FarmRules.grid_points(1, 1, 1.0, FarmRules.grid_centre(1, 1, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
-	check(one.size() == 1 and one[0].is_equal_approx(Vector2(3.5, -2.5)), "hoe grid: one point, moved onto the aimed metre cell's centre (%s)" % str(one))
-	var even: Array = FarmRules.grid_points(2, 3, 1.0, FarmRules.grid_centre(2, 3, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
+	var one: Array = FarmRules.grid_points(1, 1, 1.0, FarmRules.grid_from_corner(1, 1, 1.0, Vector2(3.5, -2.5), 0, Vector2(0.0, -1.0)), 0)
+	check(one.size() == 1 and one[0].is_equal_approx(Vector2(3.5, -2.5)), "hoe grid: one point, on the aimed metre cell's centre (%s)" % str(one))
+	var even: Array = FarmRules.grid_points(2, 3, 1.0, FarmRules.grid_from_corner(2, 3, 1.0, Vector2(3.5, -2.5), 0, Vector2(0.0, -1.0)), 0)
 	check(even.size() == 6 and even.all(func(c): return is_equal_approx(fposmod(c.x, 1.0), 0.5) and is_equal_approx(fposmod(c.y, 1.0), 0.5)) and even.any(func(c): return c.is_equal_approx(Vector2(3.5, -2.5))), "hoe grid: 2 by 3 is 6 points, every one on a cell centre, one on the aimed cell (%s)" % str(even))
 	var xs: Dictionary = {}
 	var zs: Dictionary = {}
@@ -86,6 +86,12 @@ func _init() -> void:
 	check(turned.any(func(c): return c.is_equal_approx(Vector2(0.0, 1.0))) and turned.any(func(c): return c.is_equal_approx(Vector2(0.0, -1.0))), "hoe grid: turned 90 degrees, a row across x lies along z (%s)" % str(turned))
 	var tilt: Array = FarmRules.grid_points(2, 2, 1.0, Vector2.ZERO, 15)
 	check(is_equal_approx(tilt[0].distance_to(tilt[1]), 1.0) and is_equal_approx(tilt[0].distance_to(tilt[2]), 1.0), "hoe grid: turned 15 degrees, the points stay 1 m apart")
+	# The grid's bottom left point at the crosshair, running forward and to the right of the player (Dave 24 Nov 2026).
+	var from_corner: Array = FarmRules.grid_points(3, 2, 1.0, FarmRules.grid_from_corner(3, 2, 1.0, Vector2(0.5, 0.5), 0, Vector2(0.0, -1.0)), 0)
+	check(from_corner.any(func(c): return c.is_equal_approx(Vector2(0.5, 0.5))) and from_corner.all(func(c): return c.x >= 0.49 and c.y <= 0.51), "hoe grid from the corner: facing -z, a 3 by 2 grid starts on the aimed cell and runs right (+x) and forward (-z) (%s)" % str(from_corner))
+	var facing_x: Array = FarmRules.grid_points(2, 2, 1.0, FarmRules.grid_from_corner(2, 2, 1.0, Vector2.ZERO, 0, Vector2(1.0, 0.0)), 0)
+	check(facing_x.any(func(c): return c.is_equal_approx(Vector2.ZERO)) and facing_x.all(func(c): return c.x >= -0.01 and c.y >= -0.01), "facing +x the grid still runs forward (+x) and to the right (+z) (%s)" % str(facing_x))
+	check(FarmRules.across_is_right(0, Vector2(0.0, -1.0)) and not FarmRules.across_is_right(0, Vector2(1.0, 0.0)) and not FarmRules.across_is_right(90, Vector2(0.0, -1.0)), "Alt + Right widens the side that points right: an unturned grid's width facing -z, its length facing +x or turned 90 degrees")
 	check(FarmRules.spacing_of("seed") == 1.0 and FarmRules.spacing_of("bush") == 2.0 and FarmRules.spacing_of("tree") == 3.0 and FarmRules.spacing_of("seed", {"spacing_m": 2.0}) == 2.0, "hoe grid: spacing by kind (1, 2, 3 m), a crop row's spacing_m wins")
 	check(FarmRules.on_square(Vector2(0.6, 0.0), Vector2.ZERO, 0.55, 45.0) and not FarmRules.on_square(Vector2(0.5, 0.5), Vector2.ZERO, 0.55, 45.0) and FarmRules.on_square(Vector2(0.5, 0.5), Vector2.ZERO, 0.55, 0.0), "on_square: a bed turned 45 degrees holds its own diamond, not the unturned corner")
 	# Tree seeds (a felled tree drops 1 to 5 of its own <Tree> seed); planted in open ground through the bush action, 3 m apart.

@@ -169,7 +169,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
+			"hint": "Hold your hammer, press R and pick Wooden - Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
 			"after": [
 				"hammer"
 			],
@@ -183,7 +183,7 @@
 		{
 			"id": "spear",
 			"title": "Make a spear",
-			"hint": "A Wooden - Spear (1 stick, keep a stone) then 2 twine for a Stone - Spear.",
+			"hint": "A Wooden - Spear (1 stick, keep a stone) then 2 twine and a stone for a Stone - Spear.",
 			"after": [
 				"twine"
 			],
@@ -195,26 +195,55 @@
 		},
 		{
 			"id": "knife",
-			"title": "Make a Stone - Knife and work a kill",
-			"hint": "2 stones and a stick make a knife. Strike a rabbit with the spear, then work the body with the knife.",
+			"title": "Make a Stone - Knife",
+			"hint": "Open the inventory (I) and craft a Stone - Knife: 2 stones and a stick. You carve, skin and cut with it.",
 			"after": [
 				"spear"
 			],
 			"check": {
-				"event": "carcass_worked",
-				"count": 1
+				"made_item": "stone_knife",
+				"count": 1,
+				"or_have": true
+			},
+			"stage": "start"
+		},
+		{
+			"id": "fishing_spear",
+			"title": "Make a Fishing spear",
+			"hint": "With your knife in your pack, craft a Fishing spear from a stick (the knife is kept). It spears fish in shallow water.",
+			"after": [
+				"knife"
+			],
+			"check": {
+				"made_item": "fishing_spear",
+				"count": 1,
+				"or_have": true
 			},
 			"stage": "start"
 		},
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) and fish at the water.",
+			"hint": "Hold the Fishing spear, stand still (not swimming) within reach of water between ankle and waist deep, and jab it in. Later a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) catches more.",
 			"after": [
-				"twine"
+				"fishing_spear"
 			],
 			"check": {
 				"event": "fish_caught",
+				"count": 1
+			},
+			"stage": "start"
+		},
+		{
+			"id": "hunt",
+			"title": "Hunt a rabbit and work the body",
+			"hint": "Strike a rabbit with your spear, then hold your knife and work the body: meat, hide and bone. You need them for jerky, warm clothes and a fishing hook; bigger animals also give fat for candles.",
+			"after": [
+				"spear",
+				"knife"
+			],
+			"check": {
+				"event": "carcass_worked",
 				"count": 1
 			},
 			"stage": "start"

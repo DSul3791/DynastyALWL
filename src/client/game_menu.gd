@@ -28,6 +28,8 @@ var _c
 var _pages: Dictionary = {}
 var _column: VBoxContainer
 var _sound_scroll: ScrollContainer     # Settings > Sound, scrolls when the window is short
+var _help_scroll: ScrollContainer      # Controls > help text, scrolls in what the window leaves
+var _admin_scroll: ScrollContainer     # the Admin page, taller than the canvas
 var _test_scroll: ScrollContainer      # Settings > Sound > Sound test list
 var _vsync_switch
 var _clear_day_switch
@@ -106,11 +108,10 @@ func build(client) -> void:
 	_button(reset, "No, keep them", func(): show_page("admin"))
 	var world: VBoxContainer = _page("reset_world")
 	var world_warn: Label = Label.new()
-	world_warn.text = "Reset the WHOLE world for everyone?
-Every dig and fill, every dropped item and everything built or placed
-(chests and stations with their contents, fires, beds, farm beds) is deleted.
-Characters, packs, worn gear and skills are kept. This cannot be undone."
+	world_warn.text = "Reset the WHOLE world for everyone?\nEvery dig and fill, every dropped item and everything built or placed (chests and stations with their contents, fires, beds, farm beds) is deleted. Characters, packs, worn gear and skills are kept. This cannot be undone."
 	world_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	world_warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # wraps in its width: the hand-broken lines ran past the label at every text size (screen audit, Lane A 23 Nov 2026)
+	world_warn.custom_minimum_size = Vector2(620.0, 0.0)
 	world_warn.add_theme_font_size_override("font_size", 20)
 	world.add_child(world_warn)
 	_button(world, "Yes, reset the world", func():
@@ -167,6 +168,12 @@ func show_page(page_name: String) -> void:
 
 	if _test_scroll != null:
 		_test_scroll.custom_minimum_size = Vector2(BUTTON_W + 150.0, room)
+
+	if _admin_scroll != null:
+		_admin_scroll.custom_minimum_size = Vector2(BUTTON_W + 30.0, room)
+
+	if _help_scroll != null:
+		_help_scroll.custom_minimum_size = Vector2(1020.0, room)
 
 	if note != null:
 		note.text = ""
@@ -250,7 +257,11 @@ This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 	text.add_theme_font_size_override("font_size", 20)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.custom_minimum_size = Vector2(1000.0, 0.0)
-	help.add_child(text)
+	# The whole help ran off the bottom of the screen (screen audit, Lane A 23 Nov 2026): it scrolls in what the window leaves, Back stays in view.
+	_help_scroll = ScrollContainer.new()
+	_help_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_help_scroll.add_child(text)
+	help.add_child(_help_scroll)
 	_button(help, "Back", func(): show_page("controls"))
 
 
@@ -333,7 +344,7 @@ func _build_display() -> void:
 		_c._apply_quality()
 		_c._save_display()
 		refresh()
-		_c._report_display("Display reset: High, windowed 1920x1080, VSync on. "))
+		_c._report_display("Display reset: High, windowed, VSync on. "))
 	_button(display, "Back", func(): show_page("settings"))
 
 
@@ -371,6 +382,10 @@ func _build_gameplay() -> void:
 	_refresh_idle_button()
 	# Camera motion (head bob, landing dip, blow jolt, speed widening; feel_kicks.gd): 0 % turns it off for anyone it bothers, 150 % is the most. Saved at once.
 	_slider(gameplay, "Camera motion", float(_c.feel.intensity), func(value: float): _c.feel.set_intensity(value), 1.5)
+	# Mouse sensitivity: how fast the view turns with the mouse, 100 % the game's own rate, 10 % to 300 %; saved with the display choices.
+	_slider(gameplay, "Mouse sensitivity", float(_c.display.mouse_look), func(value: float):
+		_c.display.mouse_look = clampf(value, DisplaySettingsScript.MOUSE_LOOK_MIN, DisplaySettingsScript.MOUSE_LOOK_MAX)
+		_c._save_display(), DisplaySettingsScript.MOUSE_LOOK_MAX, DisplaySettingsScript.MOUSE_LOOK_MIN)
 	_damage_switch = _switch_row(gameplay, "Damage numbers", func(on: bool):
 		_c.display.damage_numbers = on
 		_c._save_display())
@@ -435,7 +450,13 @@ func _build_sound_test() -> void:
 
 
 func _build_admin() -> void:
-	var admin: VBoxContainer = _page("admin")
+	# The Admin page is taller than the canvas (screen audit 23 Nov 2026: its Back button sat at y 1088 of 1080): it scrolls like the sound pages.
+	_admin_scroll = ScrollContainer.new()
+	_admin_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_page("admin").add_child(_admin_scroll)
+	var admin: VBoxContainer = VBoxContainer.new()
+	admin.add_theme_constant_override("separation", 7)
+	_admin_scroll.add_child(admin)
 	_heading(admin, "Admin")
 	_admin_mode_switch = _switch_row(admin, "Admin mode (crafting is free)", func(on: bool):
 		if _c.items != null:
@@ -484,7 +505,7 @@ func _build_admin() -> void:
 	_button(admin, "Respawn showroom (take it away and fill it again)", func(): if _c.showroom != null: _c.showroom.respawn())
 	_button(admin, "Clear dropped items within 50 m", func(): _c.net.inventory_action.rpc_id(1, Net.ACT_CLEAR_DROPS, 50, 0, 0, Vector3.ZERO))
 	_button(admin, "Developer tools", func(): show_page("developer"))
-	_button(admin, "Back", func(): show_page("main"))
+	_button(_pages["admin"], "Back", func(): show_page("main"))   # outside the scroll list, always in view
 
 
 # What the programmers use to track a problem down; each line says in plain words what it does.
@@ -568,13 +589,13 @@ func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	return toggle
 
 
-func _slider(parent: VBoxContainer, text: String, value: float, changed: Callable, top: float = 1.0) -> void:
+func _slider(parent: VBoxContainer, text: String, value: float, changed: Callable, top: float = 1.0, low: float = 0.0) -> void:
 	var label: Label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	parent.add_child(label)
 	var slider: HSlider = HSlider.new()
-	slider.min_value = 0.0
+	slider.min_value = low
 	slider.max_value = top
 	slider.step = 0.01
 	slider.value = value

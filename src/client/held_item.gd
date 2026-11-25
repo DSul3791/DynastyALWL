@@ -8,6 +8,7 @@ extends Node
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
 const FeelKicks := preload("res://src/client/feel_kicks.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 # The held-item label sits 8 px over the hotbar tray (redesign section 9: the tray top is at y 948 of the 1080 canvas).
 const LABEL_ABOVE := 1080.0 - ArtKit.HOTBAR_TRAY.position.y + 8.0
@@ -125,6 +126,8 @@ var _off_shown: int = 0
 var _inv                                  # InventoryView
 var _hanging_net: Mesh                    # the shore net as it hangs from the hand (BasicLook "hand_net_hanging"), built once
 var _net
+var report_now: Callable                  # () -> sends this client's position to the server now (terrain_client send_position_now), just before a blow
+var seen_ms: Callable                     # () -> [server ms, server ms] the animals are drawn at (animal_view.seen_server_ms; protocol 155), sent with a blow
 var _camera: Camera3D
 var _root: Node3D
 var _ground_below: Callable
@@ -149,7 +152,7 @@ var _bow_cfg: Dictionary = {}               # data/items/bow.json, read on the f
 var _draw_t: float = -1.0                 # the bow up and drawing (Dave 10 Nov 2026: right mouse held): seconds since it went up, -1 when it is down
 var _aim_dir: Vector3 = Vector3.ZERO      # where the drawn bow points now: the middle of the view, which the sway and the pull turn (bow_view_turn)
 var _reticle = null                       # BowReticle: the cross while the bow is up
-var animal_aim_rows: Callable = Callable()   # () -> [[position, heading], ...] of the animals drawn near; set by the client scene (aim assist)
+var animal_aim_rows: Callable = Callable()   # () -> [[position, heading, body_m], ...] of the animals drawn near; set by the client scene (aim assist)
 var rig_drawing: bool = false              # the shot runner's --shot-draw (look rig only): the bow is held up and drawing as if right were held, so the crosshair, sway and loosed arrows can be pictured
 var rig_keep_dark: bool = false            # the shot runner (look rig only), given a dark torch or lantern without --shot-lit: selecting it does not light it
 var rig_lit: bool = false                  # the shot runner's --shot-lit (look rig only): the held flame's light stays on beside a fire light at Low
@@ -161,6 +164,8 @@ var _sound                                # SoundStage (hit sounds)
 var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush or shrub the swing line passes through, or []; set by the client scene
 var swath_cut: Callable                 # (held pack slot, tool class) -> radius: one sickle or scythe swing (harvest.gd swath; 0 when nothing was sent)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
+var trunks_round: Callable                 # (point, radius) -> [[root, trunk radius, height]]: the ghost goes red over a standing tree (terrain_client _trunks_round)
+var trunks_version: Callable               # () -> int, rising when the held trees change (a tree felled under a still ghost)
 var _swing_t: float = -1.0
 signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
 var _caption_age: float = 1.0
@@ -187,10 +192,13 @@ var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
 
 const MotionExtra := preload("res://src/client/character/motion_extra.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const SWING_S := MotionExtra.CHOP_LENGTH        # a chop is a whole swing: wind-up, wide stroke, impact, follow-through, recovery (31 Oct 2026: 0.95 s, was the 0.55 s hammer rhythm)
 const PICK_SWING_S := MotionExtra.PICK_LENGTH
 const SWING_PAUSE_S := 0.1                       # the short pause before the next swing when the button is held
-const NET_THROW_M := 6.0                        # how far ahead the shore net lands (server reach: fishing.json net.reach_m, 8 m)
+const NET_THROW_M := 6.0                        # how far ahead the shore net lands looking level (server reach: fishing.json net.reach_m, 8 m)
+const NET_NEAR_M := 2.0                         # the nearest a net is thrown, looking down at the water
+const NET_FAR_M := 7.0                          # the furthest, inside the server's 8 m (it measures from the last reported position)
 const HIT_STOP_S := 0.045
 const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
 const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
@@ -428,22 +436,47 @@ func held_number() -> int:
 # Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
 # every HELD_REPORT_S; the server checks it against the pack.
 const HELD_REPORT_S := 0.5
-var _held_sent: int = -1
+# From 159 with the left hand's item and what the hands are doing, for the other players to see (server_players.gd): a flag change goes at
+# once (at most every HAND_REPORT_S), an item change at most every HELD_REPORT_S.
+const HAND_REPORT_S := 0.1
+const HAND_BOW_RAISED := 1
+const HAND_BOW_DRAWN := 2
+const HAND_SHIELD_UP := 4
+const HAND_LADDER := 8
+var _held_sent: Array = []
 var _held_wait: float = 0.0
+
+
+# The shield up, and the bow raised or drawn (protocol 162: drawn on the other players' screens, dynasty_body.gd _bow_aim; one send when the
+# draw starts and one at full draw). The ladder bit is kept for its pose on other players (not made yet).
+func hand_flags() -> int:
+	var flags: int = HAND_SHIELD_UP if blocking else 0
+
+	if _bow_posing():
+		var state: String = bow_state()
+		flags |= HAND_BOW_DRAWN if state == "drawn" else (HAND_BOW_RAISED if state == "raised" else 0)
+
+	return flags
 
 
 func _report_held(delta: float) -> void:
 	_held_wait -= delta
 
-	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
-		return   # no server to tell (offline, a headless check, or this is the server)
+	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree():
+		return
 
-	var number: int = held_number()
+	var line: MultiplayerPeer = _net.multiplayer.multiplayer_peer
 
-	if number != _held_sent:
-		_held_sent = number
-		_held_wait = HELD_REPORT_S
-		_net.held_item.rpc_id(1, number)
+	if line == null or line.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED or _net.multiplayer.get_unique_id() == 1:
+		return   # no server to tell (offline, a headless check, a line closed on quitting, or this is the server)
+
+	var now: Array = [held_number(), off_number(), hand_flags()]
+
+	if now != _held_sent:
+		var items_changed: bool = _held_sent.is_empty() or now[0] != _held_sent[0] or now[1] != _held_sent[1]
+		_held_sent = now
+		_held_wait = HELD_REPORT_S if items_changed else HAND_REPORT_S
+		_net.held_item.rpc_id(1, int(now[0]), int(now[1]), int(now[2]))
 
 
 func held_id() -> String:
@@ -725,6 +758,7 @@ func _loose() -> void:
 	_aim_dir = -_camera.global_transform.basis.z   # through the cross in the middle of the screen
 	var draw_ms: int = int(_draw_t * 1000.0)
 	var arrow: int = arrow_to_shoot()
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_SHOOT, held_slot, draw_ms, arrow, _aim_dir)
 
 	if arrow != 0:
@@ -821,6 +855,19 @@ func _update_bow(delta: float) -> void:
 
 func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
+
+
+# Held the way a spear is held (placement only; the jab, throw and crosshair stay the spear's): a spear, or in third person any "shaft" look
+# (pike, lance, quarterstaff, halberd, javelin), whose mesh lies point to -Z, not handle to head along +Y. Laid along the fingers like a tool
+# they sat 0.15-0.27 m off the hand (23 Nov 2026, the check in test_remote_players found it on other players; the player's own body had the
+# same). First person keeps the hand clip's hold: a long shaft hung down from the view would swing its butt up past the eye.
+func _held_as_shaft() -> bool:
+	return _is_spear() or (not _first_person and not (_is_placeable() or _is_look_item()) and shaft_look(held_id()))
+
+
+# A "shaft" look (looks.json shape): one rule for the player's own body and other players (player_view.gd held_kind).
+static func shaft_look(item_id: String) -> bool:
+	return str(BasicLook.entry(item_id).get("shape", "")) == "shaft"
 
 
 # The Fishing spear (Part C): held and jabbed like a spear, only at water, and never thrown.
@@ -960,36 +1007,96 @@ func _make_look_model() -> Node3D:
 
 
 # Anything in hand is a weapon (Dave 19 Nov 2026 play test: "I just tried to hit a pig with an axe and it is doing no damage"; "any thing in your
-# hand should be able to be used as a weapon"): true when an animal is drawn in front within the held item's reach (MeleeRules; the server's
-# target_along rule: inside 0.6 m, or within about 35 degrees of the look). A left click then strikes it instead of the item's own use.
+# hand should be able to be used as a weapon"): the animal drawn in front within the held item's reach (MeleeRules; the server's
+# target_along rule: inside 0.6 m, or within about 35 degrees of the look), as [id, where it is drawn], else []. A left click then strikes it
+# instead of the item's own use. `margin_m` asks for that much inside the reach (a predicted hit, _melee_strike).
 var _melee_cfg: Dictionary = {}
 
 
-func _animal_in_reach() -> bool:
-	if not animal_aim_rows.is_valid() or _camera == null or not holding or held_number() == 0 or _inv.is_broken(held_slot):
-		return false
+func _animal_aimed(margin_m: float = 0.0) -> Array:
+	var bare: bool = held_number() == 0   # empty hands punch (melee.json bare_hand, Dave 23 Nov 2026)
+
+	if not animal_aim_rows.is_valid() or _camera == null or carrying_log or (not bare and _inv.is_broken(held_slot)):
+		return []
 
 	if _melee_cfg.is_empty():
 		_melee_cfg = MeleeRules.load_config()
 
-	var reach: float = float(MeleeRules.blow(_inv.table.entry(held_id()), _melee_cfg)["reach_m"])
+	var reach: float = float((_melee_cfg.get("bare_hand", {}) as Dictionary).get("reach_m", 1.8)) if bare else float(MeleeRules.blow(_inv.table.entry(held_id()), _melee_cfg)["reach_m"])
 	var eye: Vector3 = _camera.global_position
 	var look: Vector3 = -_camera.global_transform.basis.z
 	var flat: Vector2 = Vector2(look.x, look.z).normalized()
 
-	for row in animal_aim_rows.call():
+	var best: Array = []
+	var best_d: float = reach
+
+	for row in animal_aim_rows.call():   # the nearest body, as server_animals.target_along takes
 		var at: Vector3 = row[0]
 		var to: Vector2 = Vector2(at.x - eye.x, at.z - eye.z)
 
-		if to.length() <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
-			return true
+		var body: float = float(row[2]) if (row as Array).size() > 2 else 0.0   # a blow reaches the body, not its middle (server_animals.target_along)
+		var d: float = to.length() - body
 
-	return false
+		if d <= best_d and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5 and (row as Array).size() > 3:
+			best_d = d
+			best = [int(row[3]), at]
+
+	if best.is_empty() or best_d > reach - margin_m:
+		return []
+
+	# A predicted blow is not shown through a wall, a fence or a roof (the server's blow_blocked drops it): anything solid between the eye and the body's middle.
+	if margin_m > 0.0 and _camera.is_inside_tree():
+		var mid: Vector3 = (best[1] as Vector3) + Vector3(0.0, PREDICT_MID_M, 0.0)
+
+		if not _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye, mid)).is_empty():
+			return []
+
+	return best
+
+
+# Feel (Dave 24 Nov 2026: "give as much control to the client as it takes to make them feel natural and fight like they should in a real great
+# video game"; docs/design/ANIMAL_NETCODE.md "Plans" step 3): a blow this screen sees land shows at once. The client runs the server's own test
+# (target_along, on the animals as drawn, which is where the server judges the blow: seen_ms) PREDICT_MARGIN_M inside the reach, at most once
+# per the item's recover_ms and PREDICT_SLACK_MS (the server drops a faster blow unheard), with nothing solid in between, and emits blow_landing; the server's animal_hit for it then plays no
+# second thud or flinch (animal_view.confirm_hit). The damage, the blood and the number still come only from the server.
+const PREDICT_MARGIN_M := 0.2
+const PREDICT_MID_M := 0.6        # the body's middle over its drawn point, for the wall check
+const PREDICT_SLACK_MS := 100     # the server paces on arrival, not on the click: a blow just past recover_ms may reach it just inside after jitter
+const STRIKE_RECOVER_MS := 600   # server_items STRIKE_COOLDOWN_MS: an item with no recover_ms of its own
+signal blow_landing(id: int, at: Vector3)   # a blow this screen sees land on animal `id`, drawn at `at`
+var _paced_ms: int = -100000   # when the last blow went that the server takes (it keeps the same clock: a blow inside recover_ms is dropped and does not restart it)
 
 
 # One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
 func _melee_strike() -> void:
-	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+	var seen: Array = seen_ms.call() if seen_ms.is_valid() else [0, 0]   # protocol 155: the blow is judged where this screen showed the animals
+
+	if report_now.is_valid():
+		report_now.call()   # and from where we stand now, not the last report up to 0.2 s back (server_items strike_origin)
+
+	_predict_blow()
+	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot if held_number() != 0 else -1, int(seen[0]), int(seen[1]), -_camera.global_transform.basis.z)   # -1: a bare-handed punch
+
+
+# The predicted landing of the blow being sent (see PREDICT_MARGIN_M): none for a rope or twine (it binds a bandit, server_items BIND_ITEMS) or
+# inside the item's recover_ms of the last blow the server took, hit or miss.
+func _predict_blow() -> void:
+	if _melee_cfg.is_empty():
+		_melee_cfg = MeleeRules.load_config()
+
+	var bare: bool = held_number() == 0
+	var recover: int = int((_melee_cfg.get("bare_hand", {}) as Dictionary).get("recover_ms", STRIKE_RECOVER_MS)) if bare else int(_inv.table.entry(held_id()).get("recover_ms", STRIKE_RECOVER_MS))
+	var now: int = Time.get_ticks_msec()
+
+	if now - _paced_ms < recover:
+		return
+
+	var slack: bool = now - _paced_ms < recover + PREDICT_SLACK_MS   # taken, but close enough to the pace that it may not be: not shown
+	_paced_ms = now
+	var aimed: Array = _animal_aimed(PREDICT_MARGIN_M)
+
+	if not aimed.is_empty() and not slack and (bare or not held_id() in ["rope", "twine"]):
+		blow_landing.emit(int(aimed[0]), aimed[1])
 
 
 func _is_axe() -> bool:
@@ -1183,7 +1290,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	# A left click at an animal in reach strikes it with whatever is in hand (Dave 19 Nov 2026). The axe and pick strike at the impact of their
 	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint, the hoe's list and the build screen keep their click.
-	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _pipe_hand() and not _hoe_menu_open and not blueprints.is_open and _animal_in_reach():
+	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _pipe_hand() and not _hoe_menu_open and not blueprints.is_open and not _animal_aimed().is_empty():
 		_arm_play("use", 0.6)
 		_melee_strike()
 		return true
@@ -1264,9 +1371,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		if button == MOUSE_BUTTON_LEFT and str(_inv.table.entry(held_id()).get("tool_class", "")) == "net":
 			if pressed:
 				_arm_play("use", 0.6)
-				var ahead: Vector3 = -_camera.global_transform.basis.z
-				ahead = Vector3(ahead.x, 0.0, ahead.z).normalized()
-				_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0, 0, _camera.global_position + ahead * NET_THROW_M - Vector3(0.0, 1.6, 0.0))
+				_net.inventory_action.rpc_id(1, Net.ACT_NET, held_slot, 0, 0, net_landing(_camera.global_position, -_camera.global_transform.basis.z))
 
 			return true
 
@@ -1328,6 +1433,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_dig_here()
 			elif str(_inv.table.entry(held_id()).get("tool_class", "")) == "rod":
 				_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 4.0)
+				_cast_at = _camera.global_position - _camera.global_transform.basis.z * 4.0   # where the line went in (the server's cast point)
+				_cast_msec = Time.get_ticks_msec()
 
 				if _sound != null:
 					_sound.slots.play("net_cast", _camera.global_position - _camera.global_transform.basis.z * 2.0)   # shortcut: the shore-net throw clip stands in for the rod cast until a line-cast clip exists (Jason, 2 Nov 2026; to hear)
@@ -1342,6 +1449,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if carcass != 0:
 				_arm_play("use", 0.6)
+
+				if _sound != null:
+					_sound.spear.hit("flesh", (_inv._world[carcass]["pos"] as Vector3) + Vector3(0.0, 0.3, 0.0), _sound.KNIFE_CUT_STRENGTH)   # the cut is heard (others hear it too: action_cue)
+
 				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # the knife in hand (protocol 117)
 				return true
 
@@ -1370,7 +1481,13 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_arm_play("jab", JAB_S)
 			_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 2.5 - Vector3(0.0, 1.2, 0.0))
 			if not _is_fish_spear():
-				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+				var seen_b: Array = seen_ms.call() if seen_ms.is_valid() else [0, 0]   # protocol 155
+
+				if report_now.is_valid():
+					report_now.call()   # judged from where we stand now (server_items strike_origin)
+
+				_predict_blow()
+				_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, int(seen_b[0]), int(seen_b[1]), -_camera.global_transform.basis.z)
 
 			if _sound != null:
 				_sound.spear.jab(_camera.global_position - _camera.global_transform.basis.z)
@@ -1380,9 +1497,26 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Where the rod's float sits, for the bite's splash (23 Nov 2026: it sounded 1.5 m in front of the angler): the last cast's point, at the
+# feet's height (the water's face, near enough), while it is recent and near the angler at `feet_near`; INF otherwise.
+func float_point(feet_near: Vector3) -> Vector3:
+	if not _cast_at.is_finite() or Time.get_ticks_msec() - _cast_msec > CAST_KEEP_MS or Vector2(_cast_at.x - feet_near.x, _cast_at.z - feet_near.z).length() > CAST_NEAR_M:
+		return Vector3.INF
+
+	return Vector3(_cast_at.x, feet_near.y - 0.8, _cast_at.z)
+
+
+# Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
+func _send_seen() -> void:
+	if seen_ms.is_valid():
+		var seen: Array = seen_ms.call()
+		_net.inventory_action.rpc_id(1, Net.ACT_SEEN, 0, int(seen[0]), int(seen[1]), Vector3.ZERO)
+
+
 func _throw() -> void:
 	_arm_play("throw", 0.8)
 	var direction: Vector3 = -_camera.global_transform.basis.z
+	_send_seen()
 	_net.inventory_action.rpc_id(1, Net.ACT_THROW, held_slot, 0, 0, direction)
 	aiming = false
 	var node: Node3D = _make_spear_model()
@@ -1400,6 +1534,11 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const CAST_KEEP_MS := 180000        # a rod cast this long ago is still where the float is (float_point)
+const CAST_NEAR_M := 8.0             # and only while the angler stands by it
+var _cast_at: Vector3 = Vector3.INF
+var _cast_msec: int = 0
+const SEEN_ARROW_RANGE_M := 200.0   # another player's arrow: its bow is not known here, so it is flown until it lands (the 6 s cap)
 const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
 
 
@@ -1409,6 +1548,45 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 		return {}
 
 	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, to))
+
+
+# Another player's arrow or thrown weapon (flight_seen, protocol 159): flown here like this player's own (gravity, the ground, an arrow
+# stops in a trunk), look only. A thrown weapon (items.json kind "weapon") is drawn by its hand look, an arrow by its arrow model.
+func add_seen_flight(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	if _root == null or not _root.is_inside_tree() or _inv == null or number <= 0 or velocity.length() < 0.1:
+		return
+
+	var id: String = _inv.table.id_of(number)
+	var arrow: bool = str(_inv.table.entry(id).get("kind", "")) != "weapon"
+	var node: Node3D = _make_arrow_model(number) if arrow else (look_tool_node(id) if BasicLook.has_look(id) and HELD_LOOK_TURN.has(str(BasicLook.entry(id).get("shape", ""))) else _make_arrow_model(number))
+	_root.add_child(node)
+	node.global_position = from + velocity.normalized() * 0.8
+
+	if absf(velocity.normalized().y) < 0.99:
+		node.look_at(node.global_position + velocity, Vector3.UP)
+
+	if fire:
+		var glow: OmniLight3D = OmniLight3D.new()   # as this player's own fire arrow
+		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_volumetric_fog_energy = 0.0   # a short glow on the wing: no orange flare in the volumetric fog
+		glow.light_energy = 1.6
+		glow.omni_range = 2.0
+		glow.shadow_enabled = false
+		node.add_child(glow)
+
+	_flights.append({"node": node, "vel": velocity, "age": 0.0, "arrow": true})
+
+	# Heard as well as seen (23 Nov 2026, the coordinator's silent-sounds pass: another player's shot or throw made no sound): the bow's
+	# twang where it was loosed and the thunk where it comes down, or a thrown weapon's heave, its flight and its landing, as this
+	# player's own. A hit on an animal thuds through animal_hit for everyone already.
+	if _sound != null:
+		if arrow:
+			_sound.slots.play("bow_loose", from)
+			var landed: Array = _arrow_landing(node.global_position, velocity, SEEN_ARROW_RANGE_M)
+			_sound.spear.arrow(landed[0], landed[1], landed[2])
+		else:
+			var landing: Vector3 = _predict_landing(node.global_position, velocity)
+			_sound.spear.throw(node.global_position, landing, velocity.length(), "wood" if _tree_near.is_valid() and not _tree_near.call(landing).is_empty() else "soil")
 
 
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
@@ -1423,6 +1601,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	if bool(_inv.table.entry(_inv.table.id_of(arrow)).get("fire", false)) and _inv._lit_fire_near(_camera.global_position, float(_bow_cfg.get("fire_arrow", {}).get("light_m", 3.0))):
 		var glow: OmniLight3D = OmniLight3D.new()   # a burning fire arrow (Part C plan 6): a stand-in orange glow until Kathleen's flame look
 		glow.light_color = Color(1.0, 0.55, 0.15)
+		glow.light_volumetric_fog_energy = 0.0   # a short glow on the wing: no orange flare in the volumetric fog
 		glow.light_energy = 1.6
 		glow.omni_range = 2.0
 		glow.shadow_enabled = false
@@ -1431,11 +1610,17 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	if _sound == null:
 		return
 
-	var at: Vector3 = _camera.global_position
+	var landed: Array = _arrow_landing(_camera.global_position, v, BowAim.bow_range_m(_bow_cfg, bow_id))
+	_sound.spear.arrow(landed[0], landed[1], landed[2])
+
+
+# Where and when an arrow flown from `from` at `velocity` comes down (within range_m of flight, 6 s at most), and what it thunks into:
+# [point, seconds, "wood" or "soil"]. Something upright on the way (a trunk's collider, a wall) stops it as wood.
+func _arrow_landing(from: Vector3, velocity: Vector3, range_m: float) -> Array:
+	var at: Vector3 = from
+	var v: Vector3 = velocity
 	var flown: float = 0.0
 	var t: float = 0.0
-	var range_m: float = BowAim.bow_range_m(_bow_cfg, bow_id)
-
 	var into_wood: bool = false
 
 	while t < 6.0 and flown < range_m:
@@ -1457,7 +1642,7 @@ func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 			at.y = ground
 			break
 
-	_sound.spear.arrow(at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil")
+	return [at, t, "wood" if into_wood or (_tree_near.is_valid() and not _tree_near.call(at).is_empty()) else "soil"]
 
 
 # The shot's power from the draw time, as the server works it out (bow.json): a draw under draw_min_ms is weak_power, then
@@ -1645,7 +1830,7 @@ func _process_body(delta: float) -> void:
 
 		if bool(flight.get("arrow", false)) and (flight["vel"] as Vector3).length() > 0.1:
 			flight["node"].look_at(flight["node"].global_position + flight["vel"], Vector3.UP)   # an arrow points along its flight
-		var ground: float = _ground_below.call(flight["node"].global_position)
+		var ground: float = _ground_below.call(flight["node"].global_position) if _ground_below.is_valid() else NAN
 
 		if flight["age"] > 6.0 or (not is_nan(ground) and flight["node"].global_position.y <= ground):
 			flight["node"].queue_free()
@@ -1797,6 +1982,40 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 # The nocked arrow: its nock (the arrow mesh's back end, x = -ARROW_NOCK_M) on the string at `nock`, its shaft straight toward the target (the bow's +z, which is the
 # view's forward) along the left side of the stave over the bow hand. Parallel to the view, the shaft points at the crosshair from below (Dave 10 Nov 2026: "the
 # bow and arrow should be adjusted so the arrow lines up with the crosshairs"); it no longer angles off to the left of it.
+# The string's two cords (tips to the nock point) and the nocked arrow (hidden until shown) on a bow whose own space has the limbs along x
+# and the back toward +z: the player's own bow (_make_look_tool_model) and another player's (player_view.gd _pose_bow, Lane A S8 23 Nov 2026).
+static func add_bow_parts(bow: Node3D) -> void:
+	if bow.get_node_or_null("StringTop") != null:
+		return
+
+	for cord_name in ["StringTop", "StringBottom"]:
+		var cord: MeshInstance3D = MeshInstance3D.new()
+		cord.name = cord_name
+		var line: CylinderMesh = CylinderMesh.new()
+		line.top_radius = BasicLook.BOW_STRING_R
+		line.bottom_radius = BasicLook.BOW_STRING_R
+		line.height = 1.0
+		line.radial_segments = 4
+		line.rings = 1
+		var gut: StandardMaterial3D = StandardMaterial3D.new()
+		gut.albedo_color = Color(0.85, 0.82, 0.72)
+		gut.roughness = 0.8
+		line.material = gut
+		cord.mesh = line
+		cord.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		bow.add_child(cord)
+
+	_set_bow_string(bow, Vector3.ZERO)
+	# The arrow on the string while the bow is up (shown only with an arrow in the pack): its nock on the string, its shaft over the left side of the bow,
+	# resting on the bow hand (Dave 10 Nov 2026: "you place the arrow over the left side and then draw back and sight along the arrow shaft").
+	var nocked: MeshInstance3D = MeshInstance3D.new()
+	nocked.name = "NockedArrow"
+	nocked.mesh = BasicLook.mesh_for("stone_arrow")
+	nocked.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	nocked.visible = false
+	bow.add_child(nocked)
+
+
 static func _place_nocked_arrow(bow: Node3D, nock: Vector3, shown: bool) -> void:
 	var arrow: MeshInstance3D = bow.get_node_or_null("NockedArrow") as MeshInstance3D
 
@@ -1852,7 +2071,36 @@ func _ghost_clean(node: Node) -> void:
 
 # The red ghost's reason in words; a door's carries the shape of the doorway it is aimed at (_door_shape).
 func _reason() -> String:
+	if blueprint_state == "water_say":
+		return water_say.trim_suffix(".").left(1).to_lower() + water_say.trim_suffix(".").substr(1)   # the server's sentence, in the caption's lower-case style
+
 	return PlacementRules.reason_text(blueprint_state, _door_shape)
+
+
+# Whether the ghost stands over a standing tree's trunk (PlacementRules.over_trunk, as the server checks it). The trunks are listed only when the
+# ghost has moved TREE_LOOK_M, turned, changed piece, or the trees changed (one felled under it) since the last look.
+const TREE_LOOK_M := 0.1
+var _tree_look_key: Vector4 = Vector4.INF
+var _tree_look_over: bool = false
+var _tree_look_kit: String = ""
+var _tree_look_version: int = -1
+
+
+func _over_tree(kit: String) -> bool:
+	if not trunks_round.is_valid():
+		return false
+
+	var at: Vector3 = _blueprint.global_position
+	var key: Vector4 = Vector4(at.x, at.y, at.z, float(_blueprint_yaw))
+	var version: int = int(trunks_version.call()) if trunks_version.is_valid() else 0
+
+	if not _tree_look_key.is_finite() or Vector3(key.x, key.y, key.z).distance_to(Vector3(_tree_look_key.x, _tree_look_key.y, _tree_look_key.z)) >= TREE_LOOK_M or key.w != _tree_look_key.w or kit != _tree_look_kit or version != _tree_look_version:
+		_tree_look_key = key
+		_tree_look_kit = kit
+		_tree_look_version = version
+		_tree_look_over = PlacementRules.over_trunk(_placement, kit, at, deg_to_rad(float(_blueprint_yaw)), trunks_round.call(at, PlacementRules.footprint_reach(_placement, kit)))
+
+	return _tree_look_over
 
 
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
@@ -2027,6 +2275,12 @@ func _update_blueprint() -> void:
 		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
 		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
 
+		if blueprint_state == "" and PlacementRules.seats_low(_placement, kit):   # shown where the server sets it: at the lowest ground under its footprint
+			var middle: float = float(probe.call(_blueprint_at.x, _blueprint_at.z))
+
+			if not is_nan(middle):
+				_blueprint.global_position.y = PlacementRules.seated_ground(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe, middle)
+
 	if blueprint_state == "":
 		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0
 		var terrain: float = _terrain_y(_blueprint_at.x, _blueprint_at.z, _blueprint_at.y, 14.0)   # 14 m reaches down past a stack of four foundations
@@ -2034,11 +2288,19 @@ func _update_blueprint() -> void:
 		if not is_nan(terrain):
 			blueprint_state = PlacementRules.off_ground(_placement, kit, _blueprint_at.y - lifted, terrain, on_base and attach != "table", on_grid.size() > 3)   # a platter's base is a table: the server snaps with foundation rows only, so no exemption
 
+			if blueprint_state == "" and terrain < PlacementRules.WET_GROUND_M:
+				blueprint_state = "wet"   # ground this low is shore mud: the server refuses it (server_items _place)
+
+	if blueprint_state == "" and _over_tree(kit):
+		blueprint_state = "tree"   # the server refuses it the same way (server_items _place)
+
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
 
 	if blueprint_state == "" and PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water"):
 		blueprint_state = _wheel_state(kit)
+	elif blueprint_state == "" and _carries_water(kit):
+		blueprint_state = _water_piece_state(kit)
 
 	if blueprint_state == "" and water_depth_at.is_valid() and PlacementRules.water_short(_placement, kit, _blueprint_at, water_depth_at):
 		blueprint_state = "shallow"   # a fish trap off the water or in too little of it, as the server refuses
@@ -2092,10 +2354,16 @@ var _wheel_asked_at: Vector3 = Vector3(INF, INF, INF)
 var _wheel_asked_yaw: int = -1
 var _wheel_asked_msec: int = -100000
 var _wheel_answer: Array = []            # [at, yaw degrees, percent, why] of the last answer
+var _wheel_asked_kit: String = ""       # the kit the last ask was for: another kit at the same spot asks again (a water piece's answer is not a sawmill's)
 var wheel_note: String = ""               # the ghost's caption line for a sawmill: "Sawmill: 62 %", or "" (tests read it)
 
 
 func _wheel_state(kit: String) -> String:
+	if kit != _wheel_asked_kit:
+		_wheel_asked_kit = kit
+		_wheel_asked_at = Vector3(INF, INF, INF)
+		_wheel_answer = []   # the last answer was another piece's
+
 	var moved: bool = _wheel_asked_at.distance_to(_blueprint_at) > WHEEL_MOVE_M or _wheel_asked_yaw != _blueprint_yaw
 
 	if moved and Time.get_ticks_msec() - _wheel_asked_msec >= WHEEL_ASK_MS and _net != null:
@@ -2106,8 +2374,8 @@ func _wheel_state(kit: String) -> String:
 
 	wheel_note = ""
 
-	if _wheel_answer.is_empty() or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
-		return ""   # no answer for this spot yet
+	if _wheel_answer.is_empty() or int(_wheel_answer[2]) == -1 or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
+		return ""   # no answer for this spot yet (a -1 answer is a water piece's)
 
 	if str(_wheel_answer[3]) != "":
 		return "wheel_" + str(_wheel_answer[3])
@@ -2120,10 +2388,32 @@ func _on_wheel_share(at: Vector3, yaw_deg: int, percent: int, why: String) -> vo
 	_wheel_answer = [at, yaw_deg, percent, why]
 
 
+# A water piece's ghost (a barrel, tank, well, trough...): the server's own refusal for this spot (a loop, too many sources, no ground water to
+# reach) comes back as a wheel_share with percent -1 and the words; asked and kept exactly as the wheel's (_wheel_state). Until the answer for
+# this spot comes the ghost keeps its other colour. Pipes laid from the hand have their own line (pipe_lay), not this ghost.
+var water_say: String = ""   # the server's words for the red ghost ("water_say"), or ""
+
+
+func _carries_water(kit: String) -> bool:
+	var block: Variant = PlacementRules.structure_of_kit(_placement, kit).get("water", {})
+	return typeof(block) == TYPE_DICTIONARY and not (block as Dictionary).is_empty()
+
+
+func _water_piece_state(kit: String) -> String:
+	_wheel_state(kit)   # the ask and the answer's spot check are the wheel's
+	wheel_note = ""
+
+	if _wheel_answer.is_empty() or int(_wheel_answer[2]) != -1 or (_wheel_answer[0] as Vector3).distance_to(_blueprint_at) > WHEEL_MOVE_M or int(_wheel_answer[1]) != _blueprint_yaw:
+		return ""
+
+	water_say = str(_wheel_answer[3])
+	return "water_say" if water_say != "" else ""
+
+
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
 # tree-fall and the harvest of ground; for now the axe only swings and sounds.)
 func _strike() -> void:
-	if _animal_in_reach():   # an animal in front takes the blow (Dave 19 Nov 2026: the axe did nothing to a pig)
+	if not _animal_aimed().is_empty():   # an animal in front takes the blow (Dave 19 Nov 2026: the axe did nothing to a pig)
 		_melee_strike()
 		return
 
@@ -2249,7 +2539,7 @@ var garden_pick: String = ""             # Plant: the item id picked to plant (s
 var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
 var _garden_rows: Array = []             # the plant list as shown: [{"id", "kind"}]
 var _hoe_menu_grey: Array = []           # per shown row: true when it cannot be planted now (out of season, or winter), drawn dim and not picked
-var season_now: Callable = Callable()    # -> "spring" | "summer" | "autumn" | "winter" (terrain_client: the synced game clock); none: every row open
+var season_now: Callable = Callable()    # -> "spring" | "summer" | "autumn" | "winter" (terrain_client: the season where the player stands, from the synced game clock); none: every row open
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null
@@ -2871,6 +3161,9 @@ func _hoe_here(action: int, b: int = 0) -> void:
 var garden_w: int = 1
 var garden_d: int = 1
 var garden_yaw: int = 0                  # degrees, the way a structure's yaw turns
+var _garden_box: BoxMesh = null           # the till grid's square marks
+var _garden_dot: SphereMesh = null        # the Plant grid's dots
+var _grid_yaw: int = 0                    # the turn the grid was last drawn at (garden_yaw, or a bed's)
 var _garden_centre: Vector2 = Vector2.ZERO   # the last plan's grid centre (the click sends it)
 var _verdict: Dictionary = {}            # the server's last hoe_verdict: {"kind", "code", "at", "state", "why", "cells"}
 var _asked: Array = []                   # the last check sent: [kind, code, at]
@@ -2906,6 +3199,7 @@ func _grid_request(aim: Vector3) -> Dictionary:
 
 	var flat_aim: Vector2 = Vector2(aim.x, aim.z)
 	var anchor: Variant = null
+	var yaw: int = garden_yaw
 
 	if kind == "seed":
 		var beds: Array = _inv.bed_rows(aim, Vector2(float(w), float(d)).length() * step + 3.0)
@@ -2913,18 +3207,28 @@ func _grid_request(aim: Vector3) -> Dictionary:
 
 		for row in beds:
 			if int(row[0]) == under and under != 0:
-				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at
+				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at...
+				yaw = posmod(roundi(float(row[3])), 360)   # ...and turn with it, so a turned garden's beds and the seed grid match (tester report, QA #8)
 
-	if anchor == null and (kind == "seed" or kind == "till") and garden_yaw == 0 and is_equal_approx(step, roundf(step)):
+	if anchor == null and (kind == "seed" or kind == "till") and yaw == 0 and is_equal_approx(step, roundf(step)):
 		anchor = Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)   # unturned: on the world's metre cells, like the beds the server snaps
 
-	_garden_centre = FarmRules.grid_centre(w, d, step, flat_aim, garden_yaw, anchor)
+	# The grid's bottom left point at the crosshair (or the bed or metre cell under it), the grid running forward and to the right (Dave 24 Nov 2026):
+	# centred on the aim, a big grid reached back behind the player where it could not be seen.
+	_grid_yaw = yaw
+	var corner: Vector2 = flat_aim
+
+	if typeof(anchor) == TYPE_VECTOR2:
+		corner = anchor
+
+	var eye: Vector3 = _camera.global_position if _camera != null else aim
+	_garden_centre = FarmRules.grid_from_corner(w, d, step, corner, yaw, Vector2(aim.x - eye.x, aim.z - eye.z))
 	var at: Vector3 = Vector3(_garden_centre.x, aim.y, _garden_centre.y)
 
 	if hoe_mode == "garden":
-		return {"kind": Net.ACT_PLANT_GRID, "code": garden_yaw * 10000 + w * 100 + d, "at": at, "number": number, "points": FarmRules.grid_points(w, d, step, _garden_centre, garden_yaw), "step": step}
+		return {"kind": Net.ACT_PLANT_GRID, "code": yaw * 10000 + w * 100 + d, "at": at, "number": number, "points": FarmRules.grid_points(w, d, step, _garden_centre, yaw), "step": step, "yaw": yaw}
 
-	return {"kind": Net.ACT_TILL_GARDEN, "code": (10000 if hoe_mode == "soil" else 0) + w * 100 + d, "at": at, "number": 0, "points": FarmRules.grid_points(w, d, 1.0, _garden_centre, garden_yaw), "step": 1.0}
+	return {"kind": Net.ACT_TILL_GARDEN, "code": (10000 if hoe_mode == "soil" else 0) + w * 100 + d, "at": at, "number": 0, "points": FarmRules.grid_points(w, d, 1.0, _garden_centre, yaw), "step": 1.0, "yaw": yaw}
 
 
 func _send_grid(request: Dictionary, check: bool) -> void:
@@ -2933,7 +3237,7 @@ func _send_grid(request: Dictionary, check: bool) -> void:
 	if int(request["kind"]) == Net.ACT_PLANT_GRID:
 		_net.inventory_action.rpc_id(1, Net.ACT_PLANT_GRID, held_slot, int(request["number"]), code, request["at"])
 	else:
-		_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, garden_yaw, code, request["at"])
+		_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, int(request.get("yaw", garden_yaw)), code, request["at"])
 
 
 # The server's answer for the grid as `request` asks it, {} when it has not answered that one yet.
@@ -3009,8 +3313,17 @@ func garden_resize(across: int, along: int) -> bool:
 		_inv._on_notice("Till Soil 2m is always a 2 m patch")
 		return true
 
-	garden_w = clampi(garden_w + across, 1, FarmRules.GRID_MAX_SIDE)
-	garden_d = clampi(garden_d + along, 1, FarmRules.GRID_MAX_SIDE)
+	# across: Alt + Right / Left, the grid's reach to the player's right; along: Alt + Up / Down, its reach forward. The corner at the crosshair stays put and the
+	# grid grows or shrinks away from it (Dave 24 Nov 2026), so the keys go to whichever of the grid's sides points right and forward as the player looks.
+	var look: Vector3 = -_camera.global_transform.basis.z if _camera != null else Vector3(0.0, 0.0, -1.0)
+
+	if FarmRules.across_is_right(_grid_yaw, Vector2(look.x, look.z)):   # the turn the grid is drawn at (a seed grid on a bed takes the bed's)
+		garden_w = clampi(garden_w + across, 1, FarmRules.GRID_MAX_SIDE)
+		garden_d = clampi(garden_d + along, 1, FarmRules.GRID_MAX_SIDE)
+	else:
+		garden_w = clampi(garden_w + along, 1, FarmRules.GRID_MAX_SIDE)
+		garden_d = clampi(garden_d + across, 1, FarmRules.GRID_MAX_SIDE)
+
 	_inv._on_notice("Hoe grid: %d by %d" % [garden_w, garden_d])
 	return true
 
@@ -3085,11 +3398,20 @@ func _garden_preview() -> void:
 
 	var side: float = minf(float(request.get("step", 1.0)), 1.0) * 0.8
 
+	if _garden_box == null:
+		_garden_box = BoxMesh.new()
+		_garden_box.size = Vector3(1.0, 0.04, 1.0)
+		_garden_dot = SphereMesh.new()   # Plant: a dot exactly where each seed or plant goes (Dave 24 Nov 2026), not a square
+		_garden_dot.radius = 0.07
+		_garden_dot.height = 0.14
+		_garden_dot.radial_segments = 8   # a hundred dots stay cheap
+		_garden_dot.rings = 4
+
+	var dots: bool = hoe_mode == "garden"
+
 	while _garden_marks.size() < points.size():
 		var mark: MeshInstance3D = MeshInstance3D.new()
-		var box: BoxMesh = BoxMesh.new()
-		box.size = Vector3(1.0, 0.04, 1.0)
-		mark.mesh = box
+		mark.mesh = _garden_box
 		mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_root.add_child(mark)
 		_garden_marks.append(mark)
@@ -3106,15 +3428,23 @@ func _garden_preview() -> void:
 			continue
 
 		var on_bed: bool = _inv.bed_id_at(Vector3(flat.x, y, flat.y)) != 0
-		mark.global_position = Vector3(flat.x, y + (0.35 if on_bed else 0.05), flat.y)   # over a bed or plot: above its frame
-		mark.rotation.y = deg_to_rad(float(garden_yaw))   # square with the grid
-		mark.scale = Vector3(side, 1.0, side)
+		mark.global_position = Vector3(flat.x, y + ((0.3 if on_bed else 0.08) if dots else (0.35 if on_bed else 0.05)), flat.y)   # over a bed or plot: above its frame
+		mark.rotation.y = deg_to_rad(float(request.get("yaw", garden_yaw)))   # square with the grid (a seed grid turns with the bed it is on)
+		if dots:
+			mark.mesh = _garden_dot
+		else:
+			mark.mesh = _garden_box
+
+		mark.scale = Vector3.ONE if dots else Vector3(side, 1.0, side)
 		var state: int = 1
 
 		if not known.is_empty():
 			state = int(cells[n]) if n < cells.size() else (1 if int(known["state"]) != 0 else 0)
 
-		mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
+		if dots:
+			mark.material_override = _garden_mark_ok if state == 1 else _garden_mark_bad   # green where the seeds reach, red past them (and where nothing can go)
+		else:
+			mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
 
 	garden_preview_cells = points.size()
 
@@ -3158,7 +3488,28 @@ func _fill_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
 
 	if _sound != null:
-		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
+		_sound.placed.shovel_load(fill_is_stony(_fill_order(), func(n: String) -> int: return _inv.inventory.count_of(_inv.table.number_of(n))), hit["position"])   # played when the click is sent (the server may still refuse)
+
+
+const STONY_FILL := ["gravel", "stone"]   # these scoop with the stone sound, soil, sand and clay with the soil one
+var _fill_names: Array = []
+
+
+# What the server fills with: the first of digging.json "fill" the pack holds (server_items._fill takes the same order).
+static func fill_is_stony(order: Array, count_of: Callable) -> bool:
+	for item in order:
+		if int(count_of.call(str(item))) > 0:
+			return STONY_FILL.has(str(item))
+
+	return false
+
+
+func _fill_order() -> Array:
+	if _fill_names.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/digging.json"))
+		_fill_names = (parsed.get("fill", []) as Array) if typeof(parsed) == TYPE_DICTIONARY else []
+
+	return _fill_names
 
 
 var raise_mode: bool = false              # the shovel raises ground (Dave 2026-10-22); false digs
@@ -3276,7 +3627,7 @@ func _mount_model() -> void:
 
 	if third_fist != null:
 		third_fist.visible = false      # shown again by _mount_model_third
-	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _is_spear() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
+	var kind: String = "kit" if (_is_placeable() or _is_look_item()) else "spear" if _held_as_shaft() else ("torch" if _is_torch() else ("knife" if _is_knife() else ("axe" if _is_axe() else "other")))
 
 	if not _mounted:
 		_camera.add_child(_model)
@@ -3372,7 +3723,7 @@ const SPEAR_REST_DOWN_DEG := 35.0
 
 
 func _aim_spear() -> void:
-	if _model == null or not _mounted or not _is_spear() or not _model.is_inside_tree():
+	if _model == null or not _mounted or not _held_as_shaft() or not _model.is_inside_tree():
 		return
 
 	var mount: Node3D = _model.get_parent() as Node3D
@@ -3458,10 +3809,10 @@ func _third_skin_color() -> Color:
 	return Color(THIRD_SKIN.r * tint.r, THIRD_SKIN.g * tint.g, THIRD_SKIN.b * tint.b)
 
 
-# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
+# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B (KeyBindings "block") raises a shield.
 func _show_off_model(delta: float) -> void:
 	var number: int = _left_number() if _inv != null else 0
-	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
+	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and KeyBindings.held("block")
 	var shown: int = -number if number != 0 and _slot_out(_left_slot()) else number   # a torch that went out is drawn again, without its flame
 
 	if shown != _off_shown:
@@ -3526,11 +3877,17 @@ const TORCH_LEAN := 0.12      # third-person torch carry: the shaft leans this m
 # Third person, torch in the left hand (Dave's torch carry infographic, 6 Nov 2026): the torch stands upright in the world, leaning a little forward and out
 # from the body, whatever the hand's own angle, with the grip in the fist. The arm pose that puts the hand up in front is the body's (dynasty_body.gd _torch_carry).
 func _stand_torch_upright() -> void:
-	var skel: Node3D = _avatar_rig.get("skeleton") as Node3D
-	var mount: Node3D = _avatar_rig.hand_mount_l as Node3D
+	if stand_torch(_off_model, _avatar_rig):
+		_third_fist_on(_off_model).visible = true
 
-	if skel == null or mount == null or not mount.is_inside_tree():
-		return
+
+# The same for any torch `model` in `rig`'s left hand (another player's too: player_view.gd).
+static func stand_torch(model: Node3D, rig: Node3D) -> bool:
+	var skel: Node3D = rig.get("skeleton") as Node3D if rig != null else null
+	var mount: Node3D = rig.get("hand_mount_l") as Node3D if rig != null else null
+
+	if skel == null or mount == null or model == null or not mount.is_inside_tree():
+		return false
 
 	var front: Vector3 = skel.global_basis * Vector3.BACK      # the Dynasty skeleton faces +Z, its left is +X
 	var left: Vector3 = skel.global_basis * Vector3.RIGHT
@@ -3538,16 +3895,21 @@ func _stand_torch_upright() -> void:
 	left.y = 0.0
 
 	if front.length() < 0.001 or left.length() < 0.001:
-		return
+		return false
 
 	front = front.normalized()
 	left = left.normalized()
 	var shaft: Vector3 = (Vector3.UP + front * TORCH_LEAN + left * TORCH_LEAN).normalized()
 	var across: Vector3 = shaft.cross(front).normalized()
 	var upright: Basis = Basis(across, shaft, across.cross(shaft).normalized())
-	var grip: float = float(_off_model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
-	_off_model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
-	_third_fist_on(_off_model).visible = true
+	var grip: float = float(model.get_meta("grip_y", GRIP_ALONG_Y["torch"])) * THIRD_CHOKE
+	model.global_transform = Transform3D(upright, mount.global_position + shaft * grip)
+	var fist: Node3D = model.get_node_or_null(THIRD_FIST_NAME) as Node3D
+
+	if fist != null:
+		fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+
+	return true
 
 
 # Same grips as the right hand, on the left mount (first person arms, or the body in third person).
@@ -3796,32 +4158,7 @@ func _make_look_tool_model() -> Node3D:
 		node.set_meta("bow", true)
 		node.set_meta("nock", Vector3.ZERO)   # the nock point in the bow's own space (mesh axes: limbs along x, back of the bow toward +z)
 
-		for cord_name in ["StringTop", "StringBottom"]:
-			var cord: MeshInstance3D = MeshInstance3D.new()
-			cord.name = cord_name
-			var line: CylinderMesh = CylinderMesh.new()
-			line.top_radius = BasicLook.BOW_STRING_R
-			line.bottom_radius = BasicLook.BOW_STRING_R
-			line.height = 1.0
-			line.radial_segments = 4
-			line.rings = 1
-			var gut: StandardMaterial3D = StandardMaterial3D.new()
-			gut.albedo_color = Color(0.85, 0.82, 0.72)
-			gut.roughness = 0.8
-			line.material = gut
-			cord.mesh = line
-			cord.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			node.add_child(cord)
-
-		_set_bow_string(node, Vector3.ZERO)
-		# The arrow on the string while the bow is up (shown only with an arrow in the pack): its nock on the string, its shaft over the left side of the bow,
-		# resting on the bow hand (Dave 10 Nov 2026: "you place the arrow over the left side and then draw back and sight along the arrow shaft").
-		var nocked: MeshInstance3D = MeshInstance3D.new()
-		nocked.name = "NockedArrow"
-		nocked.mesh = BasicLook.mesh_for("stone_arrow")
-		nocked.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		nocked.visible = false
-		node.add_child(nocked)
+		add_bow_parts(node)
 
 	if shape == "arrow":
 		node.set_meta("held_pitch_deg", 30.0)
@@ -3921,11 +4258,10 @@ func _make_lantern_model(id: String) -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(row.get("light_m", 8.0))
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
 	light.light_cull_mask = 0xFFFFFFFD
 	light.position = body.position
 	lantern.add_child(light)
-	FireWeather.register(light)   # reach and halo follow fog and snow, as a torch's
+	FireWeather.register(light, 1.0, true)   # reach and halo follow fog and snow, as a torch's; in the hand it never lights the volumetric fog
 	return lantern
 
 
@@ -4067,11 +4403,10 @@ func _make_torch_model(id: String = "", out: bool = false) -> Node3D:
 	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0)) * FlameRules.TORCH_REACH_MULT
 	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
-	FireWeather.register(light)   # reach and halo follow fog and snow
+	FireWeather.register(light, 1.0, true)   # reach and halo follow fog and snow; in the hand it never lights the volumetric fog
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)
@@ -4220,22 +4555,22 @@ func run_net_test() -> void:
 	var net_n: int = table.number_of("shore_net")
 	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, net_n, 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(2.0).timeout
-	print("NET TEST: pack before: %s" % _net_test_pack())
+	FreezeWatchScript.printer.line("NET TEST: pack before: %s" % _net_test_pack())
 
 	for slot in range(8):
 		if _inv.inventory.numbers[slot] == net_n:
 			select(slot)
 
-	print("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
+	FreezeWatchScript.printer.line("NET TEST: holding %s in slot %d" % [held_id(), held_slot])
 
 	for n in 4:
 		var used: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 		await get_tree().create_timer(0.3).timeout
 		mouse_button(MOUSE_BUTTON_LEFT, false)
 		await get_tree().create_timer(9.0).timeout   # the net sinks for hold_s (6 s) and is hauled back
-		print("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
+		FreezeWatchScript.printer.line("NET TEST: click %d (used %s): nets in pack %d, nets on the ground %d; pack %s" % [n + 1, used, _inv.inventory.count_of(net_n), _net_test_ground(net_n), _net_test_pack()])
 
-	print("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
+	FreezeWatchScript.printer.line("NET TEST: %s" % ("PASS: still one net" if _inv.inventory.count_of(net_n) == 1 and _net_test_ground(net_n) == 0 else "FAIL: the net count changed"))
 
 
 func _net_test_pack() -> String:
@@ -4271,14 +4606,14 @@ func run_test() -> void:
 		if _inv.inventory.numbers[slot] == table.number_of("wooden_spear"):
 			select(slot)
 
-	print("Spear test: holding %s" % held_id())
+	FreezeWatchScript.printer.line("Spear test: holding %s" % held_id())
 	var jabbed: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(0.5).timeout
 	mouse_button(MOUSE_BUTTON_RIGHT, true)
 	var aimed: bool = aiming
 	mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(5.0).timeout
-	print("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
+	FreezeWatchScript.printer.line("Spear test: jab %s, aimed %s, still aiming %s, spears in pack %d, things on ground %d" % [jabbed, aimed, aiming, _inv.inventory.count_of(table.number_of("wooden_spear")), _inv._world.size()])
 	_net.inventory_action.rpc_id(1, Net.ACT_CRAFT, 2, 0, 0, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 
@@ -4288,7 +4623,7 @@ func run_test() -> void:
 
 	var swung: bool = mouse_button(MOUSE_BUTTON_LEFT, true)
 	await get_tree().create_timer(1.0).timeout
-	print("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
+	FreezeWatchScript.printer.line("Spear test: holding %s, swung %s, last hit sound '%s'" % [held_id(), swung, _sound.hits.last_hit if _sound != null else "none"])
 	_net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var kit_slot: int = -1
@@ -4310,7 +4645,7 @@ func run_test() -> void:
 			lit += 1
 			states.append(_inv._world[id]["state"])
 
-	print("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
+	FreezeWatchScript.printer.line("Spear test: campfire kit slot %d, ground %s, fires in view %d, states %s" % [kit_slot, str(ground), lit, str(states)])
 
 
 func inv_slots() -> int:
@@ -4675,3 +5010,20 @@ func _pipe_off() -> void:
 
 	if _pipe_line != null:
 		_pipe_line.visible = false
+
+
+# Where a thrown shore net lands: where the look meets the water about the feet's height (camera 1.6 m up), NET_NEAR_M to NET_FAR_M away, so a
+# player can throw it onto a splash or a school's dark fish (24 Nov 2026, Dave: "will we also be able to thow the net at the school of fish").
+# Looking level or up, it lands NET_THROW_M ahead as before.
+static func net_landing(eye: Vector3, look: Vector3) -> Vector3:
+	var flat: Vector3 = Vector3(look.x, 0.0, look.z)
+
+	if flat.length() < 0.001:
+		flat = Vector3(0.0, 0.0, -1.0)
+
+	var dist: float = NET_THROW_M
+
+	if look.y < -0.05:
+		dist = clampf(1.6 / -look.y * flat.length(), NET_NEAR_M, NET_FAR_M)
+
+	return eye + flat.normalized() * dist - Vector3(0.0, 1.6, 0.0)

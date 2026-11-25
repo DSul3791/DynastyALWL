@@ -24,7 +24,7 @@ static func parse(text: String) -> Dictionary:
 	var address: String = text.strip_edges()
 
 	if address == "":
-		return {"error": "Type the server's address, for example play.example.org or 203.0.113.5:24600."}
+		return {"error": "The Address box (the first one) is empty: type the server's address there, for example play.example.org or 203.0.113.5:24600."}
 
 	var parts: PackedStringArray = address.split(":")
 

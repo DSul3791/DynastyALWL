@@ -11,6 +11,10 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const SkillWebScript := preload("res://src/shared/skill_web.gd")
+const RangesScript := preload("res://src/stream/server_ranges.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 
 var passes: int = 0
 var failures: int = 0
@@ -275,6 +279,10 @@ func _init() -> void:
 	choke_checks()
 	pile_checks()
 	wiring_checks()
+	tracking_checks()
+	sign_checks()
+	sent_trail_checks()
+	gap_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -353,6 +361,7 @@ func pile_checks() -> void:
 
 	traps.cfg["base_chance"] = 0.0001
 	taken.clear()
+	looks[0] = 0   # setting them read each one's trail once (Tracking practice); a pass is what is measured
 	traps.on_pass(501, "rabbit", Vector3(705.0, 10.0, 700.0), Vector3(701.0, 10.0, 700.0))
 	check(looks[0] > 0 and looks[0] <= 2 * traps.PASS_LOOK_MAX, "a rabbit by a pile of 300 snares is rolled by at most %d of them (%d trail looks)" % [traps.PASS_LOOK_MAX, looks[0]])
 	traps.cfg["base_chance"] = 100.0
@@ -634,7 +643,7 @@ func away_checks() -> void:
 
 	# The time away goes by the rabbits' own hours: twelve hours of day (rabbits abed) catch nothing, twelve of night do.
 	items.report_position(1, Vector3(5000.0, 10.0, 0.0))
-	items.species_active_at = func(sp, hour): return 1.0 if sp == "rabbit" and (hour >= 20.0 or hour < 8.0) else 0.0
+	items.species_active_at = func(sp, hour, _z): return 1.0 if sp == "rabbit" and (hour >= 20.0 or hour < 8.0) else 0.0
 	var by_day: int = 0
 	var by_night: int = 0
 
@@ -649,3 +658,178 @@ func away_checks() -> void:
 		by_night += 1 if traps.check_away(id) else 0
 
 	check(by_day == 0 and by_night > 100, "a day away catches nothing while the rabbits sleep, a night does (%d, %d of 400)" % [by_day, by_night])
+
+
+# Tracking practice (Dave 23 Nov 2026, "you should get xp for placing snares on trails"; traps.json "tracking"): a snare set on a trail
+# trains it, set again on the same spot it does not, off a trail never; walking along a trail trains it, standing on one or walking
+# off one does not; and the numbers reach the map's trails level (map.json trails_tracking) in a few hours of tracking, not hundreds of kills.
+func tracking_checks() -> void:
+	var items = make("user://test_traps_tracking", true)
+	var traps = items._traps
+	items.run_distance = func(x, _z, _kind): return 0.1 if x < 1000.0 else 10.0   # a trail everywhere west of x 1000
+	strength = 0.0
+	var pts: Callable = func() -> float: return float(items._skill_records(1).get("tracking", {}).get("p", 0.0))
+	var fresh: Callable = func() -> void: items._last_practice.clear()   # the 2 s practice cooldown is real time
+
+	var p0: float = pts.call()
+	var first: int = lay(items, Vector3(10.0, 10.0, 0.0))
+	var p1: float = pts.call()
+	check(p1 > p0, "a snare set on a trail trains Tracking (%.1f -> %.1f units)" % [p0, p1])
+	items._items.erase(first)
+	fresh.call()
+	lay(items, Vector3(12.0, 10.0, 0.0))
+	check(is_equal_approx(pts.call(), p1), "taken up and set again on the same spot it does not (%.1f)" % pts.call())
+	fresh.call()
+	lay(items, Vector3(60.0, 10.0, 0.0))
+	var p2: float = pts.call()
+	check(p2 > p1, "set on the trail elsewhere it does (%.1f)" % p2)
+	fresh.call()
+	lay(items, Vector3(2000.0, 10.0, 0.0))
+	check(is_equal_approx(pts.call(), p2), "off any trail never (%.1f)" % pts.call())
+
+	var check_s: float = float(traps.cfg["check_s"])
+	items.report_position(1, Vector3(100.0, 10.0, 0.0))
+	traps.tick(check_s)
+	fresh.call()
+	traps.tick(check_s)
+	check(is_equal_approx(pts.call(), p2), "standing on a trail trains nothing")
+	items.report_position(1, Vector3(115.0, 10.0, 0.0))
+	fresh.call()
+	traps.tick(check_s)
+	var p3: float = pts.call()
+	check(p3 > p2, "walking along it does (%.1f)" % p3)
+	items.report_position(1, Vector3(1500.0, 10.0, 0.0))
+	fresh.call()
+	traps.tick(check_s)
+	check(is_equal_approx(pts.call(), p3), "walking off the trails does not")
+
+	var cfg: Dictionary = items._skills_cfg
+	var level: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/map.json")).get("trails_tracking", 10))
+	var need: float = SkillWebScript.units_for(cfg, "tracking", level)
+	var each: float = p3 - p2
+	var follow_per_h: float = 3600.0 / check_s
+	var hours: float = maxf(need / each / follow_per_h, need / float(cfg["system"]["day_cap_units"]))   # a game day is an hour of play
+	var kills: float = need / (each * 0.5)
+	print("tracking numbers: ", "Tracking %d in about %.1f hours of following trails (%.0f units, %.1f a practice; by kills alone %.0f); first signs at %d" % [int(level), hours, need, each, kills, int(float(JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json")).get("see_level", 25)))])
+	check(hours >= 1.0 and hours <= 4.0, "Tracking %d (the map's trails) in about %.1f hours of following trails (%.0f units, %.1f a practice; by kills alone %.0f)" % [int(level), hours, need, each, kills])
+	var see: float = float(JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json")).get("see_level", 25))
+	check(see <= 5.0, "the first trail signs show from Tracking %d (%.0f minutes of following)" % [int(see), SkillWebScript.units_for(cfg, "tracking", see) / each / follow_per_h * 60.0])
+
+
+# Spotting a trail sign (protocol 153; Dave 23 Nov 2026): Tracking once per sign per character; not again for the same sign, not for a
+# spot far from the player or off any trail; from the first level (signs are there for everyone). The admin skill set (look rig --shot-skill).
+func sign_checks() -> void:
+	var items = make("user://test_traps_signs", true)
+	items.run_distance = func(x, _z, _kind): return 1.0 if x < 1000.0 else 10.0
+	var pts: Callable = func() -> float: return float(items._skill_records(1).get("tracking", {}).get("p", 0.0))
+	var fresh: Callable = func() -> void: items._last_practice.clear()
+	var at: Vector3 = Vector3(100.0, 10.0, 0.0)
+	items.report_position(1, at)
+	var p0: float = pts.call()
+	check(items.sign_spotted(1, Vector2(103.0, 0.0)) and pts.call() > p0, "untrained, a sign spotted trains Tracking (Dave 23 Nov 2026: signs are there for everyone; %.1f -> %.1f)" % [p0, pts.call()])
+	var names: Array = (items._skills_cfg["skills"] as Dictionary).keys()
+	items.admin_set_skill(1, names.find("tracking"), 6)
+	check(absf(items.working_level(1, "tracking") - 6.0) < 0.6, "the admin skill set puts Tracking at 6 (%.2f)" % items.working_level(1, "tracking"))
+	var p1: float = pts.call()
+	fresh.call()
+	check(not items.sign_spotted(1, Vector2(103.5, 0.5)) and is_equal_approx(pts.call(), p1), "the same sign again trains nothing")
+	fresh.call()
+	check(not items.sign_spotted(1, Vector2(160.0, 0.0)), "a sign far from the player trains nothing")
+	items.report_position(1, Vector3(1500.0, 10.0, 0.0))
+	fresh.call()
+	check(not items.sign_spotted(1, Vector2(1503.0, 0.0)), "nor a spot with no trail by it")
+	items.report_position(1, at)
+	fresh.call()
+	check(items.sign_spotted(1, Vector2(96.0, 4.0)), "another sign does")
+	fresh.call()
+	items.practice(1, "track_follow")   # a trail-following look just before
+	check(items.sign_spotted(1, Vector2(100.0, 8.0)), "and a sign spotted just after a trail-following look still trains (its own cooldown)")
+
+
+# A snare set on a trail the player was sent always reads a trail (the robots, 23 Nov 2026: one at 57911.9, 71133.1 on a deer trail read
+# 0.00, so it never caught nor trained Tracking). Only the 3 x 3 blocks round a player are worked out; a trail in the ring of that 3 x 3
+# read "not known" while a block beyond it was not. Every sent route point of every block, round players in blocks far apart.
+func sent_trail_checks() -> void:
+	var items = make("user://test_traps_sent", true)
+	var r = RangesScript.new()
+	r.setup()
+	r.world_seed = 11
+	r.ground_height = func(x, z): return 10.0 + 1.5 * sin(x * 0.01) + 1.2 * cos(z * 0.013)
+	r.blocked = func(_x, _z): return false
+	r.no_spawn = func(_x, _z): return false
+	r.cfg["budget_ms"] = 1000.0
+	items.run_distance = func(x, z, kind): return r.route_distance(x, z, kind)
+	strength = 0.0
+	var points: int = 0
+	var off: int = 0
+	var worst: String = ""
+
+	for c in [Vector2i(0, 0), Vector2i(7, -3), Vector2i(-5, 9), Vector2i(226, 278)]:
+		var at: Vector3 = Vector3((float(c.x) + 0.5) * TrailCodec.ROUTE_BLOCK_M, 10.0, (float(c.y) + 0.5) * TrailCodec.ROUTE_BLOCK_M)
+
+		for k in 80:
+			r.tick([at], 1000 + k)
+
+		for dz in range(-1, 2):
+			for dx in range(-1, 2):
+				var key: Vector2i = c + Vector2i(dx, dz)
+
+				for route in TrailCodec.decode_routes(r.wire(key, 1000), key, TrailCodec.ROUTE_BLOCK_M):
+					var pts: PackedVector2Array = route[1]
+
+					for i in range(0, pts.size(), 3):
+						if absi(r.block_of(pts[i].x, pts[i].y).x - c.x) > 1 or absi(r.block_of(pts[i].x, pts[i].y).y - c.y) > 1:
+							continue   # spilled past the 3 x 3: never near this player
+
+						points += 1
+						var t: float = items._traps.trail_at(Vector3(pts[i].x, 10.0, pts[i].y))
+
+						if t <= 0.0:
+							off += 1
+							worst = "%.1f,%.1f in block %s (kind %d)" % [pts[i].x, pts[i].y, str(key), int(route[0])]
+
+	check(points > 2000 and off == 0, "a snare on any sent trail point reads a trail (%d of %d points off%s)" % [off, points, ("; e.g. " + worst) if worst != "" else ""])
+	var pts_of: Callable = func() -> float: return float(items._skill_records(1).get("tracking", {}).get("p", 0.0))
+	var before: float = pts_of.call()
+	var ring: Array = TrailCodec.decode_routes(r.wire(Vector2i(225, 277), 1000), Vector2i(225, 277), TrailCodec.ROUTE_BLOCK_M)
+	var spot: Vector2 = (ring[0][1] as PackedVector2Array)[0]
+	items.report_position(1, Vector3(spot.x, 10.0, spot.y))
+	items._last_practice.clear()
+	lay(items, Vector3(spot.x, 10.0, spot.y))
+	check(pts_of.call() > before, "and set there it trains Tracking (%.1f -> %.1f)" % [before, pts_of.call()])
+
+	# Snares set at a place's home and its stops (the robots: one by a deer's water stop dropped the deer's trails, so it read no trail):
+	# a trap never settles the ground, so the trails stay and the snare still reads one.
+	r.no_spawn = func(x, z): return items.spawn_blocked(x, z)
+	var key0: Vector2i = Vector2i(226, 278)
+	var count0: int = TrailCodec.decode_routes(r.wire(key0, 50000), key0, TrailCodec.ROUTE_BLOCK_M).size()
+	var set_at: int = 0
+
+	for place in r.blocks[key0]["places"]:
+		for q in [place["home"]] + (place["outs"] as Array):
+			var sid: int = lay(items, Vector3(q.x, 10.0, q.y))
+			items._spawn_zones.add(sid, q.x, q.y)
+			set_at += 1
+
+	var count1: int = TrailCodec.decode_routes(r.wire(key0, 70000), key0, TrailCodec.ROUTE_BLOCK_M).size()
+	var some: Dictionary = r.blocks[key0]["places"][0]
+	check(set_at > 3 and count0 > 0 and count1 == count0 and items._traps.trail_at(Vector3(some["home"].x, 10.0, some["home"].y)) > 0.0, "snares at %d homes and stops settle nothing: the trails stay (%d -> %d routes)" % [set_at, count0, count1])
+	var hut: int = lay(items, Vector3(some["home"].x, 10.0, some["home"].y), "lean_to")
+	items._spawn_zones.add(hut, some["home"].x, some["home"].y)
+	check(items.spawn_blocked(some["home"].x, some["home"].y), "but a shelter there does")
+
+
+# Snares and bird traps (Dave 22 and 23 Nov 2026: no limit): 60 cm apart is enough, nearer says why plainly, and a chunk takes any number.
+func gap_checks() -> void:
+	var items = make("user://test_traps_gap", true)
+	var cfg: Dictionary = items._structures_cfg
+	var state: int = int(cfg["structures"]["snare_trap"]["state"])
+	var rows: Array = [{"pos": Vector3(10.0, 10.0, 10.0), "state": state, "yaw": 0.0}]
+	check(PlacementRules.blocked(cfg, "snare", Vector3(11.0, 10.0, 10.0), rows) == "", "a second snare 1 m from the first goes down (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(11.0, 10.0, 10.0), rows))
+	var too_near: String = PlacementRules.blocked(cfg, "snare", Vector3(10.3, 10.0, 10.0), rows)
+	check(too_near == "spaced" and PlacementRules.reason_text(too_near).contains("60 cm"), "30 cm away it is refused, saying how far apart (%s: %s)" % [too_near, PlacementRules.reason_text(too_near)])
+
+	for n in 40:
+		rows.append({"pos": Vector3(1.0 + float(n % 8), 10.0, 1.0 + float(n >> 3)), "state": state, "yaw": 0.0})
+
+	check(PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows) == "", "forty snares in one chunk, and room for another (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows))

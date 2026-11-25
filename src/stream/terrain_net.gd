@@ -40,7 +40,24 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 151  # 151 (22 Nov 2026, the friends' play test: players could not see each other): report_position gains yaw (the body's facing); new my_look (client to server: the character's name, body model and body code), player_look (server to client: another player's look and worn pieces) and players (server to client, unreliable, about 8 a second: the other players within 150 m), src/stream/server_players.gd and src/client/player_view.gd. Client and server must be updated together.
+const PROTOCOL_VERSION := 170  # 170 (24 Nov 2026, Dave: skip the night when everyone sleeps): game_time(game_seconds) tells every client the clock after a night skip, and their copy jumps to it (sky, sun, weather). Client and server must be updated together.
+# 169 (24 Nov 2026, Dave: "are fish pools actually a thing in the rivers yet because I have never seen any"): fish_jump(at, kind, seed), server to client, unreliable: a fish of a school jumped there (kind = size class * 4 + group); fish_shadows(rows), server to client, reliable: the schools within 40 m in shallow water, [x, y, z, radius, size class] per school (src/server/server_fish_signs.gd). Client and server must be updated together.
+# 168 (24 Nov 2026, Dave: "give as much control to the client as it takes to make them feel natural"): a moving animal's row carries its plan, a Vector2 (x, z) of where it is walking to, after the six fixed fields and a dog foe, before the health share (server_animals plan, rows_near); the client draws every animal on the ground at the present, carried on along its way but never past its plan, and the server judges blows on all of them at present_ms (docs/design/ANIMAL_NETCODE.md "Plans"). Client and server must be updated together.
+# 167 (23 Nov 2026, Dave: "not all animals charge they actually have actions built in to them"): animal rows may carry states 25 (STRIKE, a blow up close) and 26 (KICK, a kick behind) from server_big_game, each wound up where it stands; the client plays the model's own attack clip timed to land with the server's blow. Client and server must be updated together.
+# 166 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
+# 165 (23 Nov 2026, the status strip beside the hotbar: a player slowed or chilled saw nothing saying why): soak(percent, windy), how rain-soaked the clothes are in steps of 10 and whether the wind cuts through them, at hello and when either changes. Client and server must be updated together.
+# 164 (23 Nov 2026, Dave: the comfort meter): comfort(tenths, target, trend, tip) replaces comfort(level, rested level, rested minutes, tip): the always-on meter 0..10 in tenths, the level it heads for, rising or falling, and the tooltip ("" = unchanged). Client and server must be updated together.
+# 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
+# 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
+# 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+# 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
+# 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
+# 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
+# 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+# 154 (23 Nov 2026, Dave on the real server: animals "teleporting and jumping right through us"): a standing animal's row carries the send time; ENet never drops unreliable packets on purpose (data/network.json packet_throttle_*); see PROTOCOL.md. Client and server must be updated together.
+# 153 (23 Nov 2026, Dave: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"): sign_spotted(x, z), client to server, a trail sign this player has just spotted; the server checks it and trains Tracking (server_traps sign_found). Client and server must be updated together.
+# 152 (23 Nov 2026, Dave: game trails "auto added to the map once you get to a certain skill level"): map_trails(block_x, block_z, routes), the game trails of a 256 m trail block this character has been near, kept in its map record (server_map.gd note_trails) and sent on joining and when new; the Map page draws them inside the surveyed cells at Tracking data/map.json trails_tracking and up. Client and server must be updated together.
+# 151 (22 Nov 2026, the friends' play test: players could not see each other): report_position gains yaw (the body's facing); new my_look (client to server: the character's name, body model and body code), player_look (server to client: another player's look and worn pieces) and players (server to client, unreliable, about 8 a second: the other players within 150 m), src/stream/server_players.gd and src/client/player_view.gd. Client and server must be updated together.
 # 150 (22 Nov 2026, Dave: "if you place a snare it will mark on your map"): trap_marks(rows), the snares and Bird traps this character has set, [[x, z, kind], ...] oldest first (server_traps.gd marks_of), sent when they change; the Journal Map page marks them. Client and server must be updated together.
 # 149 (22 Nov 2026, Dave: game trails "where animals might travel occassionally and we could set traps or snares"): trails(block_x, block_z, bytes, routes), routes the block's trails between animal places (src/shared/trail_codec.gd decode_routes: [kind, world points]), drawn as matted grass. Client and server must be updated together.
 # 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
@@ -51,6 +68,7 @@ const PROTOCOL_VERSION := 151  # 151 (22 Nov 2026, the friends' play test: playe
 # 142 (19 Nov 2026, abandoned mines, Dave: "abandoned mines that already have bracing"): cave_dressing bone kinds 6 (mine timber set), 7 (mine prop) and 8 (fallen set); a mine's leftover tools and ore lie as ordinary world items. Client and server must be updated together. 141 (19 Nov 2026, cave den signs, Dave: "natural caves will become dens for animals or creatures"): cave_dressing bone kinds 4 (den droppings) and 5 (den bedding) at the caves bears, wolves and foxes den in (TileTerrainData.animal_den_species). Client and server must be updated together. 139 (19 Nov 2026, Autoload, Dave: "an autoload button on carts and wagons or barrels and such", "a check box beside it to make it continuously autoload every 10 minutes"): ACT_AUTOLOAD 84 (a = the container, b = the item, 0 stops its standing autoload, count = 1 keeps loading it every 10 minutes): the container takes that item from the ground within 30 m, nearest first, as much as it holds; autoload_info(id, number) is the open container's standing autoload. Client and server must be updated together. 138 (19 Nov 2026, pipes laid from the hand, Dave: click a connection point, then the next; docs/design/PLUMBING_DESIGN.md s9): pipe_lay(slot, from, to): the held pipe lays one straight run from the connection point at `from` to `to` (another point, or the open air), or a held tap or drip head is fitted on the open pipe end at `to`; a pipe run row's extra gains pitch and len, a barrel's water_l; world_items structure row index 21 (a run's pitch, len and paid). Client and server must be updated together. 135 (19 Nov 2026, garden moisture stage 2, Dave: pipes run "into an irrigation trench"): ACT_DIG_TRENCH 83 (a = the held hoe slot, b = the way the player faces in whole degrees, at = the ground point): the hoe digs one 2 m irrigation trench piece, structure state 457. Client and server must be updated together. 134 (18 Nov 2026, server/client split A5): admin_status(on), the server tells a client after its hello whether its player key is an admin there; the client hides its Admin menu and admin keys when not. Client and server must be updated together. 133 (18 Nov 2026, server/client split step A1, Dave: the server refuses a client whose build number differs): hello(player_key, build) carries the client's stamped build number (src/shared/build_stamp.gd, 0 for an editor run), and a stamped server answers a different one with join_refused(text) and drops it. Client and server must be updated together. 132 (18 Nov 2026, server/client split A3, Dave: separate the parts): the client reads no world tiles; ask_summits / summits (the summits round a tile, for cap clouds and summit snow) and ask_fog_cells / fog_cells (a valley-fog window's cells, fog_ground.gd pack_cells) come from the server. Client and server must be updated together. 131 (18 Nov 2026, BugsList_Current.md entry 7, Dave: a sickle gathers everything in a 1.5 m radius and a scythe in 3 m in one swing): cut_swath (the held pack slot and the plants in the circle as chunk x, chunk z, flora id triples): one sickle or scythe swing. Client and server must be updated together. 130 130 (18 Nov 2026, audit finding 7, Dave approved 18 Nov): water_changed_in names a list of areas (Array of Rect2: the live water window, where it was, each dig window now and where they were), not one rectangle round them all. Client and server must be updated together. 129 (18 Nov 2026, BugsList_Current.md entries 5 and 6): ACT_TILL_GARDEN count = check * 10000000 + mode * 10000 + width * 100 + length (mode 0 Till Garden Grid with a 20 m blend, 1 Till Soil 2m; check asks only); ACT_PLANT_GRID (a = the held hoe slot, b = the item, count = check * 10000000 + yaw * 10000 + width * 100 + length, at = the grid centre): one click plants the grid from the crafting stock; hoe_verdict (kind, code, at, state 0 red / 1 green / 2 done, why, cells) answers both. Client and server must be updated together. 128 (18 Nov 2026, Dave: the ground took minutes to load): ask_edits_since and edits_since: at the join a client whose saved copy of a tile is at an older revision asks for the ground edits since, and forgets only the blocks round them instead of the whole tile. Client and server must be updated together. 127 (17 Nov 2026, Dave: survey a path at any distance; the survey line): ACT_HOE_GRADE_POINT b = 1 is the next marker of the same survey at any distance, up to 160 m from the player; a marker whose line crosses a building is refused; a path_patch row's extra gains road (a surveyed road: grass kept off 2 m either side); world_items structure row index 20. Client and server must be updated together. 126 (17 Nov 2026, Dave: "we should have to equip the saw then we can do it"; "if you are making something that requires a tool that tool must be in your hand"): ACT_CRAFT_QUEUE and ACT_CRAFT at.x = the held pack slot + 1; a recipe that keeps a tool (CraftStock.hand_tools) is refused without it in hand. Client and server must be updated together. 125 (16 Nov 2026, Dave: "I just want normal physics to work for logs"): loose logs are rigid bodies on the server; ACT_PUSH_LOG (a walker pushing a log) and logs_moved (a moving log's spot and full pose: rot_y, pitch, spin); a log row's extra gains pitch and spin. Client and server must be updated together. 124 (14 Nov 2026, hoe grid; Dave: till a garden with a sized and turned grid, level it, feather its edges): ACT_TILL_GARDEN (a = the held pack slot, b = the grid's turn in degrees, c = width * 100 + length, at = its centre); ACT_TILL b = the grid's turn in degrees (0 snaps to the metre cell as before); crops.json keys a bed by its position ("b" + 5 cm steps; old "x,z" keys move over at load). Client and server must be updated together. 123 (14 Nov 2026, Dave): the purse holds coins as received, purse(counts) in coins.json ladder order; only a trader redenominates (PROTOCOL.md). 122 (14 Nov 2026, Dave: "Gather plant fiber 0/50"): goals rows gain the amount needed and the count so far (fields 8 and 9), and goal_progress sends the counts of unfinished goals with an amount as they move. Client and server must be updated together. 121 (14 Nov 2026, GOALS-REPAIR WP-METAL R4): ACT_CHEST_PUT at.x is the store slot the stack was dragged onto + 1 (0 none); Coal or Charcoal dragged onto the Advanced smelter's input goes in as steel carbon. Client and server must be updated together. 120 (14 Nov 2026, GOALS-REPAIR WP-MAP): map_blocks (the charcoal Map: one block of the character's own surveyed cells, src/shared/map_codec.gd; server_map.gd); skills.json gains the mapping skill (its row index shifts nothing before it). 119 (14 Nov 2026, GOALS-REPAIR WP-GUIDE-UI): goals (the whole goal list in its authored order with each goal's how-to, reward and done flag, at the join; silent) and goal_done (a goal just completed and the copper it paid, for the Goal Achieved placard); `after` is no longer a lock. Client and server must be updated together. 118 (13 Nov 2026, BUGLIST-001 BUG-001; coordinator ruled yes, not Dave): ACT_MINE b = 1 means the swing struck nothing (the client's ray hit nothing; at is a point 2.5 m ahead of the eye): the server holds the tool's effort and gives nothing else (no stone, no wear, no practice), whatever lies under the point; b = 0 is a blow on the ground as before. Client and server must be updated together. 117 (13 Nov 2026): every swing names the tool in hand (Dave 13 Nov 2026): ACT_MINE a, ACT_HIT_SHRUB at.x, a carcass ACT_PROCESS at.x, ACT_REPAIR_STRUCT b and a chopping block ACT_USE_STRUCT count carry the held pack slot + 1; ACT_DIG, ACT_FILL, ACT_TILL and the ACT_HOE_* strokes use their a, the held pack slot. 116 (13 Nov 2026): the pack grows past 30 slots when full and gives empty end slots back, down to 30 (Dave 12 Nov 23:06Z; weight is its limit): Inventory.FORMAT 4 carries the slot count; a pack that changes size is sent as inventory_full. 115 (13 Nov 2026, TEST-013; 113 was set aside for it, 114 landed first): the tool in hand does the work, not the best one on the hotbar: a boulder ACT_HIT carries the held pack slot + 1 in count, a tree ACT_HIT and a wood ACT_PROCESS (trunk, stump, loose log) in at.x. 114 (13 Nov 2026): far_fires (lit campfires 100 m to 2 km off, nearest 32, for their smoke only; TEST-011, Dave approved far smoke 13 Nov 2026; 113 was left for the combat branch, which landed as 115). 112 (12 Nov 2026): the hotbar is the pack's slots 0 to 9, real slots (Dave, playtest TEST-008/006): ACT_HOTBAR_SET and the hotbar rpc are gone; characters.json "hotbar" is no longer read or written. 111 (12 Nov 2026): the Handcart and loaded crates (catalog Phase 10, M001-T17): ACT_CART (grab, let go, load a crate, set it down), cart_pull, items_moved; world_items.json version 3 (a crate's cart and bed spot); a structure row's extra gains "on" for a crate riding on a cart. 110 (12 Nov 2026): temporary food effects (catalog Phase 7): food_effects, food_ask, ACT_EAT b (the answer); serving platters (Phase 8): state 280, row extra board and portions, ACT_USE_STRUCT b. 109 (12 Nov 2026): carrying (catalog Phase 5, M001-T15): a bag's contents ride in its instance data (`bag` rows), so inventory bytes, inventory_slots, chest_contents and worn carry them; ACT_CHEST_OPEN / PUT / TAKE name a worn bag as container -1 - its worn position; clothing.json worn gains seven positions (27: back roll, four belt points, shoulder, chest strap). 108 (12 Nov 2026): storage locks and views (catalog Phase 9): ACT_CHEST_LOCK, ACT_VIEW_OPEN, ACT_VIEW_TAKE, ACT_VIEW_PUT, chest_lock, storage_view; world_items.json version 2. 107 (12 Nov 2026): clothing layers (catalog Phase 4a, M001-T11): worn carries one entry per worn position (clothing.json worn, "slot:layer", 20 today; the first eight are the old eight slots), and ACT_UNWEAR a is a worn position. 106 (12 Nov 2026): item instances (catalog Phase 1b): Inventory.FORMAT 3 and inventory_slots carry per-slot instance data after the slots, worn gains its pieces' instance data. 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 # 137 (19 Nov 2026, server pick page, Dave: servers may have a password, 3 tries): every join passes the join handshake first (src/shared/server_auth.gd, Godot's SceneMultiplayer auth: ok / challenge / proof / wrong / busy) before the welcome; the block line answers a STATUS frame (block_link_server.gd KIND_STATUS) with the server's name, message, build, players and padlock. Client and server must be updated together. 135 (19 Nov 2026, garden moisture stage 2, Dave: pipes run "into an irrigation trench"): ACT_DIG_TRENCH 83 (a = the held hoe slot, b = the way the player faces in whole degrees, at = the ground point): the hoe digs one 2 m irrigation trench piece, structure state 457. Client and server must be updated together. 134 (18 Nov 2026, server/client split A5): admin_status(on), the server tells a client after its hello whether its player key is an admin there; the client hides its Admin menu and admin keys when not. Client and server must be updated together. 133 (18 Nov 2026, server/client split step A1, Dave: the server refuses a client whose build number differs): hello(player_key, build) carries the client's stamped build number (src/shared/build_stamp.gd, 0 for an editor run), and a stamped server answers a different one with join_refused(text) and drops it. Client and server must be updated together. 132 (18 Nov 2026, server/client split A3, Dave: separate the parts): the client reads no world tiles; ask_summits / summits (the summits round a tile, for cap clouds and summit snow) and ask_fog_cells / fog_cells (a valley-fog window's cells, fog_ground.gd pack_cells) come from the server. Client and server must be updated together. 131 (18 Nov 2026, BugsList_Current.md entry 7, Dave: a sickle gathers everything in a 1.5 m radius and a scythe in 3 m in one swing): cut_swath (the held pack slot and the plants in the circle as chunk x, chunk z, flora id triples): one sickle or scythe swing. Client and server must be updated together. 130 130 (18 Nov 2026, audit finding 7, Dave approved 18 Nov): water_changed_in names a list of areas (Array of Rect2: the live water window, where it was, each dig window now and where they were), not one rectangle round them all. Client and server must be updated together. 129 (18 Nov 2026, BugsList_Current.md entries 5 and 6): ACT_TILL_GARDEN count = check * 10000000 + mode * 10000 + width * 100 + length (mode 0 Till Garden Grid with a 20 m blend, 1 Till Soil 2m; check asks only); ACT_PLANT_GRID (a = the held hoe slot, b = the item, count = check * 10000000 + yaw * 10000 + width * 100 + length, at = the grid centre): one click plants the grid from the crafting stock; hoe_verdict (kind, code, at, state 0 red / 1 green / 2 done, why, cells) answers both. Client and server must be updated together. 128 (18 Nov 2026, Dave: the ground took minutes to load): ask_edits_since and edits_since: at the join a client whose saved copy of a tile is at an older revision asks for the ground edits since, and forgets only the blocks round them instead of the whole tile. Client and server must be updated together. 127 (17 Nov 2026, Dave: survey a path at any distance; the survey line): ACT_HOE_GRADE_POINT b = 1 is the next marker of the same survey at any distance, up to 160 m from the player; a marker whose line crosses a building is refused; a path_patch row's extra gains road (a surveyed road: grass kept off 2 m either side); world_items structure row index 20. Client and server must be updated together. 126 (17 Nov 2026, Dave: "we should have to equip the saw then we can do it"; "if you are making something that requires a tool that tool must be in your hand"): ACT_CRAFT_QUEUE and ACT_CRAFT at.x = the held pack slot + 1; a recipe that keeps a tool (CraftStock.hand_tools) is refused without it in hand. Client and server must be updated together. 125 (16 Nov 2026, Dave: "I just want normal physics to work for logs"): loose logs are rigid bodies on the server; ACT_PUSH_LOG (a walker pushing a log) and logs_moved (a moving log's spot and full pose: rot_y, pitch, spin); a log row's extra gains pitch and spin. Client and server must be updated together. 124 (14 Nov 2026, hoe grid; Dave: till a garden with a sized and turned grid, level it, feather its edges): ACT_TILL_GARDEN (a = the held pack slot, b = the grid's turn in degrees, c = width * 100 + length, at = its centre); ACT_TILL b = the grid's turn in degrees (0 snaps to the metre cell as before); crops.json keys a bed by its position ("b" + 5 cm steps; old "x,z" keys move over at load). Client and server must be updated together. 123 (14 Nov 2026, Dave): the purse holds coins as received, purse(counts) in coins.json ladder order; only a trader redenominates (PROTOCOL.md). 122 (14 Nov 2026, Dave: "Gather plant fiber 0/50"): goals rows gain the amount needed and the count so far (fields 8 and 9), and goal_progress sends the counts of unfinished goals with an amount as they move. Client and server must be updated together. 121 (14 Nov 2026, GOALS-REPAIR WP-METAL R4): ACT_CHEST_PUT at.x is the store slot the stack was dragged onto + 1 (0 none); Coal or Charcoal dragged onto the Advanced smelter's input goes in as steel carbon. Client and server must be updated together. 120 (14 Nov 2026, GOALS-REPAIR WP-MAP): map_blocks (the charcoal Map: one block of the character's own surveyed cells, src/shared/map_codec.gd; server_map.gd); skills.json gains the mapping skill (its row index shifts nothing before it). 119 (14 Nov 2026, GOALS-REPAIR WP-GUIDE-UI): goals (the whole goal list in its authored order with each goal's how-to, reward and done flag, at the join; silent) and goal_done (a goal just completed and the copper it paid, for the Goal Achieved placard); `after` is no longer a lock. Client and server must be updated together. 118 (13 Nov 2026, BUGLIST-001 BUG-001; coordinator ruled yes, not Dave): ACT_MINE b = 1 means the swing struck nothing (the client's ray hit nothing; at is a point 2.5 m ahead of the eye): the server holds the tool's effort and gives nothing else (no stone, no wear, no practice), whatever lies under the point; b = 0 is a blow on the ground as before. Client and server must be updated together. 117 (13 Nov 2026): every swing names the tool in hand (Dave 13 Nov 2026): ACT_MINE a, ACT_HIT_SHRUB at.x, a carcass ACT_PROCESS at.x, ACT_REPAIR_STRUCT b and a chopping block ACT_USE_STRUCT count carry the held pack slot + 1; ACT_DIG, ACT_FILL, ACT_TILL and the ACT_HOE_* strokes use their a, the held pack slot. 116 (13 Nov 2026): the pack grows past 30 slots when full and gives empty end slots back, down to 30 (Dave 12 Nov 23:06Z; weight is its limit): Inventory.FORMAT 4 carries the slot count; a pack that changes size is sent as inventory_full. 115 (13 Nov 2026, TEST-013; 113 was set aside for it, 114 landed first): the tool in hand does the work, not the best one on the hotbar: a boulder ACT_HIT carries the held pack slot + 1 in count, a tree ACT_HIT and a wood ACT_PROCESS (trunk, stump, loose log) in at.x. 114 (13 Nov 2026): far_fires (lit campfires 100 m to 2 km off, nearest 32, for their smoke only; TEST-011, Dave approved far smoke 13 Nov 2026; 113 was left for the combat branch, which landed as 115). 112 (12 Nov 2026): the hotbar is the pack's slots 0 to 9, real slots (Dave, playtest TEST-008/006): ACT_HOTBAR_SET and the hotbar rpc are gone; characters.json "hotbar" is no longer read or written. 111 (12 Nov 2026): the Handcart and loaded crates (catalog Phase 10, M001-T17): ACT_CART (grab, let go, load a crate, set it down), cart_pull, items_moved; world_items.json version 3 (a crate's cart and bed spot); a structure row's extra gains "on" for a crate riding on a cart. 110 (12 Nov 2026): temporary food effects (catalog Phase 7): food_effects, food_ask, ACT_EAT b (the answer); serving platters (Phase 8): state 280, row extra board and portions, ACT_USE_STRUCT b. 109 (12 Nov 2026): carrying (catalog Phase 5, M001-T15): a bag's contents ride in its instance data (`bag` rows), so inventory bytes, inventory_slots, chest_contents and worn carry them; ACT_CHEST_OPEN / PUT / TAKE name a worn bag as container -1 - its worn position; clothing.json worn gains seven positions (27: back roll, four belt points, shoulder, chest strap). 108 (12 Nov 2026): storage locks and views (catalog Phase 9): ACT_CHEST_LOCK, ACT_VIEW_OPEN, ACT_VIEW_TAKE, ACT_VIEW_PUT, chest_lock, storage_view; world_items.json version 2. 107 (12 Nov 2026): clothing layers (catalog Phase 4a, M001-T11): worn carries one entry per worn position (clothing.json worn, "slot:layer", 20 today; the first eight are the old eight slots), and ACT_UNWEAR a is a worn position. 106 (12 Nov 2026): item instances (catalog Phase 1b): Inventory.FORMAT 3 and inventory_slots carry per-slot instance data after the slots, worn gains its pieces' instance data. 105 (10 Nov 2026): wheel_share (the sawmill ghost asks the server what its water wheel would give: ACT_WHEEL_ASK; water rules section 10). 104 (10 Nov 2026): worn carries eight slots (clothing.json outer and waist added at the end). 103 (10 Nov 2026): step_to (crafting at a station within the crafting reach moves you to it; data/items/station_step.json). 102 (9 Nov 2026): the admin spyglass (docs/design/spyglass_design.md): ACT_SPYGLASS, animal_info. 101 (9 Nov 2026): drink_points (the record's brook cells and spring heads in a flora chunk, for the E-to-drink prompt; docs/design/drink_prompt_design.md). 100 (8 Nov 2026): the pointer hotbar (docs/design/INVENTORY_CRAFTING_REPORT.md step 4): keys hold item numbers, not pack slots; ACT_HOTBAR_SET, hotbar. 99 (8 Nov 2026): bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3): ACT_BULK, ACT_FAVOURITE, favourites, bulk_done. 98 (8 Nov 2026): crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2): ACT_CHEST_KEEP_OUT, ACT_CRAFT_STOCK, chest_info, craft_stock. 97 (8 Nov 2026): ice_holes (live ice fishing holes within 120 m and when each closes, for the ice look; #729). 96 (8 Nov 2026): animal_hit (the animal and body zone of a hit, to every player within 60 m) and a hurt animal's health share on its row (docs/design/hunt_feedback_server.md). 95 (8 Nov 2026): fire coals (76) and warm ash (77) world-item states, a fire row's glow. 94 (7 Nov 2026): deliver_fine_water (the dig regions' 2 m water, Sullivan water). 93 (5 Nov 2026): cave_dressing (a tile's cave bone piles and stalagmites/stalactites). 92 (4 Nov 2026): training (today's fitness training for the Tab screen). 91 (4 Nov 2026): nests (inland bird nest spots). 90 (4 Nov 2026): ACT_REPAIR_STRUCT (hammer repair of a worn building piece). 89 (3 Nov 2026): road_marker_done (88: water_changed_in, 87: cave_streams, #183)
 
+signal sign_spotted_requested(peer_id, x, z)
 signal welcome_received(info: Dictionary)
 signal blocks_requested(peer_id: int, keys: PackedInt32Array, urgent: int)
 signal blocks_received(keys: PackedInt32Array, payloads: Array)
@@ -93,11 +111,11 @@ signal cave_dens_received(tile: Vector2i, dens: PackedVector3Array)
 signal cave_dressing_received(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat32Array)
 signal shop_received(npc_id: String, title: String, ids: PackedStringArray, pay_milli: int, get_milli: int, buys: PackedStringArray, tired_ids: PackedStringArray, tired_milli: PackedInt32Array, stock: PackedInt32Array, supply_milli: PackedInt32Array, trader_purse: int)
 signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: int)
-signal held_reported(peer_id: int, number: int)
+signal held_reported(peer_id: int, number: int, left: int, flags: int)
 signal purse_received(counts: PackedInt32Array)
 signal carry_received(item_id: String)
 signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray)
-signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray)
+signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
@@ -130,18 +148,25 @@ signal breath_received(deciseconds: int)
 signal energy_received(percent: int)
 signal sick_received(hours: int)
 signal limp_received(percent: int)
+signal soak_received(percent: int, windy: bool)
 signal body_received(bpm: int, eta_s: int, phase: int)
 signal remains_received(rows: Array)
 signal worn_received(numbers: PackedInt32Array, insts: PackedByteArray)
 signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal player_look_received(peer_id: int, char_name: String, body: String, code: String, worn: PackedInt32Array)
-signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array)
+signal action_cue_received(peer_id: int, cue: int, detail: int, at: Vector3)
+signal fish_jump_received(at: Vector3, kind: int, seed_value: int)
+signal fish_shadows_received(rows: PackedFloat32Array)
+signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray, cast: PackedInt32Array)
+signal flight_seen_received(number: int, from: Vector3, velocity: Vector3, fire: bool)
+signal ground_taken_received(kind: int, points: PackedVector3Array, days: PackedInt32Array)
 signal animals_received(rows: Array, server_ms: int)
 signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
 signal burrows_received(points: PackedVector3Array)
 signal trap_marks_received(rows: Array)
+signal map_trails_received(block_x: int, block_z: int, routes: PackedByteArray)
 signal nests_received(points: PackedVector3Array, kinds: PackedByteArray)
 signal ice_holes_received(points: PackedVector3Array, untils: PackedFloat32Array)
 signal far_fires_received(points: PackedVector3Array, tiers: PackedByteArray)
@@ -151,7 +176,7 @@ signal admin_place_requested(peer_id: int, kind: String, pos: Vector3, arg: Stri
 signal thought_received(line_id: String, text: String, kind: String)
 signal skills_received(attributes: PackedInt32Array, rows: Array)
 signal warmth_received(percent: int)
-signal comfort_received(level: int, rested_level: int, rested_minutes: int, tip: String)
+signal comfort_received(tenths: int, target: int, trend: int, tip: String)
 signal died_received(cause: String, spawn: Vector3)
 signal final_death_received(cause: String)
 signal hit_number_received(at: Vector3, amount: int)
@@ -173,6 +198,7 @@ signal tunnel_settings_received(on: bool, cave_in_s: int)
 signal start_at_received(position: Vector3)
 signal admin_status_received(on: bool)
 signal inventory_action_requested(peer_id: int, kind: int, a: int, b: int, count: int, at: Vector3)
+signal game_time_received(game_seconds: float)
 signal inventory_full_received(bytes: PackedByteArray)
 signal inventory_slots_received(bytes: PackedByteArray)
 signal world_items_received(added: Array, removed: PackedInt32Array)
@@ -217,6 +243,9 @@ const ACT_PUSH_LOG := 81   # a = the log's world id, b = 1000 when sprinting + h
 const ACT_TILL_GARDEN := 80   # a = the held pack slot, b = the grid's turn in degrees, c = check * 10000000 + mode * 10000 + width * 100 + length in beds (mode 0 the garden grid, 1 the 2 m soil patch; check: only answer), at = the grid's centre: level and till a garden (124, 129)
 const ACT_PLANT_GRID := 82   # a = the held pack slot (the hoe), b = the item to plant, c = check * 10000000 + yaw * 10000 + width * 100 + length, at = the grid's centre: plant every usable point from the crafting stock (129)
 const ACT_DIG_TRENCH := 83   # a = the held pack slot (the hoe), b = the way the player faces in whole degrees, at = the ground point: dig one 2 m irrigation trench piece there, turned that way (135)
+const ACT_ADMIN_SKILL := 85   # admin only, tests and the look rig (--shot-skill): a = the skill's place in skills.json "skills", count = the value it is set to (no protocol change)
+const ACT_STUCK := 87   # at = where the body was stuck inside rock (feet, middle and eyes in solid ground) when the client stood it on a cave's or tunnel's floor near by (rescue.gd): the server, finding that point inside rock under the ground, carries the player to the nearest campfire out of the rock (Dave 23 Nov 2026); no protocol change: an older server ignores it and the client's own rescue stands
+const ACT_SEEN := 86   # b = the server ms this screen showed the animals at, count = the same for a committed charge (the row clock, as ACT_STRIKE's b and count), sent just before ACT_SHOOT or ACT_THROW: the arrow or spear is judged against the animals where this player saw them, at most rewind_max_ms back (protocol 157)
 const ACT_AUTOLOAD := 84   # a = a storage container's world id, b = the item number (0: stop its standing autoload), count = 1: keep loading it every 10 minutes: the container takes that item from the ground within 30 m of it, nearest first, as much as it holds (139); answered with autoload_info and a notice
 # 51 was ACT_SOW (E on a bed sowed a seed from the pack), retired 19 Nov 2026 (Dave play test: seeds went in without the hoe in hand); sowing is ACT_PLANT_GRID only. A server ignores an unknown kind, so no protocol bump.
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
@@ -240,7 +269,7 @@ const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
 const ACT_LITTER := 33     # at = a dead branch lying on the forest floor within reach: one stick into the pack (the client hides that branch)
-const ACT_STRIKE := 32     # a = the held slot (any item: Dave 19 Nov 2026, anything in hand is a weapon), at = aim direction: one blow at an animal in front (the server checks reach, pace and the item)
+const ACT_STRIKE := 32     # b, count = server ms the striker saw the animals at, and the present (protocol 155; 0 = judged now); a = the held slot (any item: Dave 19 Nov 2026, anything in hand is a weapon), at = aim direction: one blow at an animal in front (the server checks reach, pace and the item)
 const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the loose dropped items within it of the player; no protocol change, just a new kind
 const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch, off at every login (Dave 11 Nov 2026); while on, an admin crafts anything free (no protocol change)
 const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone
@@ -252,7 +281,7 @@ const ACT_CRAFT_STOCK := 65      # ask for craft_stock: what a craft may use bes
 const ACT_BULK := 66             # a = 0 Take all, 1 Store all (the open container), 2 Stack to nearby (own chests within 12 m holding the item), 3 Sort (the pack and an open chest; b = the sort key: 1 name, 2/3 weight, 4/5 value, 0 name); favourites and pack slots 1 to 10 never move; answered with bulk_done (protocol 99)
 const ACT_FAVOURITE := 67        # a = pack slot, b = 1 favourite, 0 not: bulk buttons and Sort leave a favourite where it is; answered with favourites (protocol 99)
 const ACT_SPYGLASS := 69         # a = 1 looking through the admin spyglass, 0 not; b = the watched animal id (0 none). Admin only: the server sends animals out to the spyglass radius and animal_info for the watched one; a non-admin gets animal_info(-1, {}). a = 2 (10 Nov 2026): looking through the spyglass item in pack slot `count` (no admin; the tier's radius, data/items/spyglass.json; refused without one)
-const ACT_WHEEL_ASK := 70        # at = the sawmill ghost's spot, a = its turn in degrees, b = the kit's item number: what would its water wheel give there? Answered with wheel_share (protocol 105)
+const ACT_WHEEL_ASK := 70        # at = the sawmill ghost's spot, a = its turn in degrees, b = the kit's item number: what would its water wheel give there? Answered with wheel_share (protocol 105); a water piece's ghost (a structure with a water block) asks the same and gets percent -1 with placing's refusal words, or "" (23 Nov 2026, no protocol change: an older server does not answer, and the ghost keeps its colour)
 const ACT_CHEST_LOCK := 71       # a = container world id, b = 0 set the code, 1 take the lock off, 2 enter a code, 3 let the player beside it in, 4 withdraw every grant; count = the code 0 to 9999 (four digits, leading zeros: 42 is "0042") for 0 and 2. Owner only but 2; answered with chest_lock (protocol 108)
 const ACT_VIEW_OPEN := 72        # a = world id of a Storage sign or Warehouse desk within reach: answered with storage_view, the totals of the nearby containers this player may open (protocol 108)
 const ACT_VIEW_TAKE := 73        # a = view world id, b = item number, count = how many: taken from those containers into the pack, nearest first; answered with storage_view (protocol 108)
@@ -264,6 +293,14 @@ const ACT_RESET_WORLD := 79      # admin only (BLOCKER-001, Dave 12 Nov 2026): t
 @rpc("authority", "call_remote", "reliable")
 func welcome(info: Dictionary) -> void:
 	welcome_received.emit(info)
+
+
+# An animal sign this player has just spotted (153, Dave 23 Nov 2026): the sign's spot on the ground. The server checks the spot, the
+# player's Tracking and its own record of signs this character already found, and trains Tracking (server_traps sign_found).
+@rpc("any_peer", "call_remote", "reliable")
+func sign_spotted(x: float, z: float) -> void:
+	if multiplayer.is_server():
+		sign_spotted_requested.emit(multiplayer.get_remote_sender_id(), x, z)
 
 
 @rpc("any_peer", "call_remote", "reliable")
@@ -386,10 +423,49 @@ func player_look(peer_id: int, char_name: String, body_model: String, code: Stri
 
 # Protocol 151 (server_players.gd): the other players within 150 m, nearest first: peer ids, positions (the body's middle), facings (rotation.y),
 # states (stance 0 stand / 1 crouch / 2 sit / 3 lie, +4 swimming, +8 a log on the shoulder), the item number in the hand (0 none) and the server
-# ms each position came in. About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
+# ms each position came in; from 159 the left-hand item (torch, lantern, shield; 0 none) and `more` (PlayersScript MORE_*: a burning torch or
+# lantern, bow raised, bow drawn, shield up, on a ladder, and bits 5..7 a count of eats and drinks); from 162 `cast`, the rod's float (PlayersScript.cast_code, 0 none). About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
 @rpc("authority", "call_remote", "unreliable")
-func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array) -> void:
-	players_received.emit(ids, positions, yaws, states, held, times)
+func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray, cast: PackedInt32Array) -> void:
+	players_received.emit(ids, positions, yaws, states, held, times, left, more, cast)
+
+
+# Another player's arrow or thrown weapon leaving the hand (159): item number, where it left (the eye), its velocity, burning or not. The
+# receiving client flies it with the server's gravity (server_items.gd THROW_GRAVITY), look only. To players within 150 m but the thrower.
+@rpc("authority", "call_remote", "unreliable")   # look only: a lost one is a missed arrow, and it never holds up the reliable channel
+func flight_seen(number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	flight_seen_received.emit(number, from, velocity, fire)
+
+
+# Protocol 160: forest-floor pickups seen alike. kind 0 dead branches picked (the litter's branch middles), 1 tide-line nodes used (their
+# shore cell's middle, y 0), 2 bird nests robbed (the nest's spot); days = the game day each was taken. Sent when one is taken to the players
+# within 150 m, and every one round a player as it walks into a new 32 m square (server_items.gd _tell_taken_near).
+@rpc("authority", "call_remote", "reliable")
+func ground_taken(kind: int, points: PackedVector3Array, days: PackedInt32Array) -> void:
+	ground_taken_received.emit(kind, points, days)
+
+
+# Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material; material 5 a knife cut on a carcass),
+# 2 a plant gathered (detail = the flora species id), 3 a craft being worked, again every 4.5 s while it goes on (detail = the recipe number), 4 a container
+# opened, shut, filled or emptied (detail = op 0 to 3 + 4 for a chest's lid), 5 the player hurt by an attack (detail = health lost), 6 a mouthful of water,
+# 7 a thing picked up off the ground (detail = its item number); 4 to 7 added 23 Nov 2026 without a new number: an older client plays nothing for a cue it does not know. Sent only to players within its earshot.
+@rpc("authority", "call_remote", "unreliable")
+func action_cue(peer_id: int, cue: int, detail: int, at: Vector3) -> void:
+	action_cue_received.emit(peer_id, cue, detail, at)
+
+
+# Protocol 169 (server_fish_signs.gd): a fish of a school jumped at `at` (on the water surface); kind = size class (0 small, 1 mid, 2 big) * 4 + group
+# (0 small fish, 1 big: salmon, pike, carp, cod); seed_value varies the look. Sent only to players within 100 m, at most one per 3 s each.
+@rpc("authority", "call_remote", "unreliable")
+func fish_jump(at: Vector3, kind: int, seed_value: int) -> void:
+	fish_jump_received.emit(at, kind, seed_value)
+
+
+# Protocol 169 (server_fish_signs.gd): the schools within 40 m of this player in shallow water, [x, y, z, radius, size class] per school, nearest
+# first (y the water surface); empty when none. Sent when the list changed.
+@rpc("authority", "call_remote", "reliable")
+func fish_shadows(rows: PackedFloat32Array) -> void:
+	fish_shadows_received.emit(rows)
 
 
 # A player pressed + (1) or - (-1): step the flow rate of all water.
@@ -724,6 +800,13 @@ func trap_marks(rows: Array) -> void:
 	trap_marks_received.emit(rows)
 
 
+# The Map's game trails (protocol 152, server_map.gd note_trails): one 256 m trail block's routes (trail_codec.gd decode_routes) this
+# character has been near; map_knowledge.gd keeps them for the Map page.
+@rpc("authority", "call_remote", "reliable")
+func map_trails(block_x: int, block_z: int, routes: PackedByteArray) -> void:
+	map_trails_received.emit(block_x, block_z, routes)
+
+
 # Animal burrows (protocol 87, MikeW 3 Nov): ground positions of the burrows of living animals within 120 m, nearest 40, sent
 # when the set changes. The client draws a mound at each (looks: Kathleen); with nothing connected the signal is ignored.
 @rpc("authority", "call_remote", "reliable")
@@ -802,6 +885,13 @@ func limp(percent: int) -> void:
 	limp_received.emit(percent)
 
 
+# Rain-soaked clothes (protocol 165, warmth.json soak_*, for the status strip): the soak in steps of 10 percent and whether the wind
+# cuts through it (body_703 wet_wind_say_*). At hello and on change, from the server's slow vitals tick.
+@rpc("authority", "call_remote", "reliable")
+func soak(percent: int, windy: bool) -> void:
+	soak_received.emit(percent, windy)
+
+
 # The heart in the ears and the wake timer (protocol 59, sleep.json and exertion.json): beats per minute (0 when awake), real
 # seconds until the sleeper or fainted player is awake again (steps of 5), and the phase: 0 awake, 1 falling asleep, 2 out
 # (asleep or fainted), 3 waking. Sent whenever one of them changes.
@@ -810,10 +900,11 @@ func body(bpm: int, eta_s: int, phase: int) -> void:
 	body_received.emit(bpm, eta_s, phase)
 
 
-# Comfort level and the Rested buff (protocol 80, docs/COMFORT_DESIGN.md): at hello and whenever the level, the buff's level or its whole minutes left change. rested_level 0 = no buff.
+# The comfort meter (protocol 164, docs/COMFORT_DESIGN.md s11): the meter in tenths (0..100), the level it heads for (0..10), the trend (-1 falling,
+# 0 steady, 1 rising) and the tooltip ("" = unchanged since the last one). At hello and whenever the tenths, the target or the trend change.
 @rpc("authority", "call_remote", "reliable")
-func comfort(level: int, rested_level: int, rested_minutes: int, tip: String) -> void:
-	comfort_received.emit(level, rested_level, rested_minutes, tip)
+func comfort(tenths: int, target: int, trend: int, tip: String) -> void:
+	comfort_received.emit(tenths, target, trend, tip)
 
 
 # Body warmth, 0 to 100 percent (protocol 36, data/items/warmth.json): at hello and whenever the whole percent changes.
@@ -826,6 +917,12 @@ func warmth(percent: int) -> void:
 @rpc("authority", "call_remote", "reliable")
 func energy(percent: int) -> void:
 	energy_received.emit(percent)
+
+
+# The game clock jumped (protocol 170, the night skip: everyone slept, the night passed to dawn): the client's copy takes the server's value again.
+@rpc("authority", "call_remote", "reliable")
+func game_time(game_seconds: float) -> void:
+	game_time_received.emit(game_seconds)
 
 
 # Air left under water in tenths of a second, or -1 when the head is above the surface (the oxygen symbol hides).
@@ -946,16 +1043,19 @@ func trade(npc_id: String, kind: int, a: int, count: int) -> void:
 
 # What the player holds now (146, Dave 20 Nov 2026: goblins at a camp react to "a weapon in hand"): the item number in the hand (0 empty), sent
 # by the client when it changes, at most twice a second. The server keeps it only while that item is in the pack (server_items.gd held_number).
+# From 159 also the left-hand item (0 none, kept only while in the pack) and flags (held_item.gd HAND_*: bow raised 1, bow drawn 2,
+# shield up 4, on a ladder 8), shown to the other players (server_players.gd); a flag change is sent at once, at most ten a second.
 @rpc("any_peer", "call_remote", "reliable")
-func held_item(number: int) -> void:
+func held_item(number: int, left: int, flags: int) -> void:
 	if multiplayer.is_server():
-		held_reported.emit(multiplayer.get_remote_sender_id(), number)
+		held_reported.emit(multiplayer.get_remote_sender_id(), number, left, flags)
 
 
 # Game trails (protocol 65): one block of worn grass, compressed (src/shared/trail_codec.gd decode() gives {cell index: strength 0..1};
 # index = local_x + local_z * 64 from the block's south-west corner; block = 256 m, cell = 4 m, see data/animals/trails.json).
 # Sent for the 3 x 3 blocks around the player when they enter a block and when a block changes (at most every 30 s a block).
 # routes (protocol 149): the block's trails between animal places, trail_codec.gd decode_routes (empty while not worked out).
+# routes is trail_codec.gd ROUTES_SAME (protocol 158) when this peer already has the block's routes and only the cells changed.
 @rpc("authority", "call_remote", "reliable")
 func trails(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 	trails_received.emit(block_x, block_z, bytes, routes)
@@ -1018,6 +1118,10 @@ func goal_progress(changes: Dictionary) -> void:
 	goal_progress_received.emit(changes)
 
 
+# A server asked to stop (stop.now: a restart or an update) tells every player this as a notice before it saves and closes their
+# connections; the client shows it on its "connection lost" window (terrain_client.gd _on_server_lost). Any build of either side: a notice.
+const SERVER_CLOSING := "The server is restarting. Everything is being saved: your character, your pack and the world. Join again in a minute or two."
+
 # A short message for the player ("too many trunks lie here", and so on).
 @rpc("authority", "call_remote", "reliable")
 func notice(text: String) -> void:
@@ -1028,9 +1132,10 @@ func notice(text: String) -> void:
 # compressed (src/shared/map_codec.gd decode() gives {cell index: [q, height m, water, trees]}; index = local_x + local_z * 32, cells
 # 16 m, data/map.json). Heights come rounded to the step of each cell's own Mapping skill q. Sent to the character's own connection
 # only: every block on joining (a few a pass), then each block a survey changes. Nothing is ever sent for ground it has not surveyed.
+# marks: the landmarks this character has seen in the block, [kind, x, z, label] (protocol 166); paths: its path cells, index * 4 + 1 path / 2 road.
 @rpc("authority", "call_remote", "reliable")
-func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray) -> void:
-	map_block_received.emit(block_x, block_z, bytes)
+func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array) -> void:
+	map_block_received.emit(block_x, block_z, bytes, marks, paths)
 
 
 # Protocol 128 (Dave 18 Nov 2026, ground missing for minutes after a join): the client's saved copy of `tile` is at revision `since`; the

@@ -452,6 +452,23 @@ func _init() -> void:
 			want_item.call(String(row[0]), "drops.json seed_drops.%s" % key)
 			obtainable[String(row[0])] = true
 
+	# A plant's own yield by the dozen (drops.json plant_yield.counts, Dave 23 Nov 2026: "you should get plenty of seeds"): a real item, [lo, hi] with 1 <= lo <= hi.
+	var yield_counts: Dictionary = (drops.get("plant_yield", {}) as Dictionary).get("counts", {})
+
+	for yid in yield_counts:
+		want_item.call(String(yid), "drops.json plant_yield.counts")
+		var span: Array = yield_counts[yid] if typeof(yield_counts[yid]) == TYPE_ARRAY else []
+
+		if span.size() != 2 or int(span[0]) < 1 or int(span[0]) > int(span[1]):
+			fail("drops.json plant_yield.counts.%s: want [lo, hi] with 1 <= lo <= hi" % yid)
+
+	# Every crop sows a pinch of seed per planting spot (crops.json sow_seeds, at least 1).
+	var crop_rows: Dictionary = _read("crops.json").get("crops", {})
+
+	for cid in crop_rows:
+		if typeof(crop_rows[cid]) == TYPE_DICTIONARY and int(crop_rows[cid].get("sow_seeds", 0)) < 1:
+			fail("crops.json %s: sow_seeds missing or below 1 (seeds one planting spot takes)" % cid)
+
 	var trunk: Dictionary = drops.get("trunk", {})
 
 	if trunk.has("roots"):
@@ -602,7 +619,7 @@ func _init() -> void:
 	for action in _read("skills.json").get("actions", {}):
 		var def: Dictionary = _read("skills.json")["actions"][action]
 
-		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet", "accuracy"]:   # quiet: less noise (stalk, server_animals brush noise); accuracy: the Map sketch (survey, server_map.gd)
+		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet", "accuracy", "damage"]:   # damage: a blow's strength (punch, the weapon skills); quiet: less noise (stalk, server_animals brush noise); accuracy: the Map sketch (survey, server_map.gd)
 			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness, quiet or accuracy" % action)
 
 	# smithing.json (catalog Phase 2c): its whetstone is an item, and its grindstone, Master smithy and temper stations are served.
@@ -1108,7 +1125,7 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (the Stone - Pickaxe, TREE_WOOD_TOOLS_DESIGN.md W-12).
+		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (W-12 used it for the Stone - Pickaxe until 23 Nov 2026).
 		# A retired row is kept only for its number (mango, orange and lemon, D-TODO-7 21 Nov 2026): it needs no source.
 		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id) and not bool(entry.get("legacy", false)) and not bool(entry.get("retired", false)):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)

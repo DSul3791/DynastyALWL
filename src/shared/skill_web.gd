@@ -214,7 +214,10 @@ static func gain(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dic
 
 	var cap: float = float(cap_of(cfg, skill, records))
 	var v: float = raw_value(cfg, skill, record)
-	var slow: float = clampf((cap - v) / float(system.get("slow_last", 6)), 0.0, 1.0)
+	# Use slows to nothing just under the cap (24, 49, 74: a trainer opens the next class). In the last class it slows to the top itself, so
+	# Master reaches 100 by use (Dave 23 Nov 2026: every skill runs 1 to 100).
+	var top: float = float(system.get("max_value", 100))
+	var slow: float = clampf((cap + (1.0 if cap >= top else 0.0) - v) / float(system.get("slow_last", 6)), 0.0, 1.0) if v < top else 0.0
 	var speed: float = (1.0 + float(system.get("trait_speed", 0.01)) * trait_points(cfg, skill, attrs)) * pow(float(system.get("train_speed", 1.2)), float(record.get("t", 0)))
 	var g: float = share * float(system.get("gain_units", 7.0)) * difficulty * speed * slow
 
@@ -231,6 +234,32 @@ static func gain(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dic
 
 # One success at a skill: the skill gets specific_share, the rest goes up the parents split by their weights, and each further
 # generation passes on feed_ratio of what it received. Returns the units the skill itself gained.
+# The skill a success at `skill` trains now (Dave 23 Nov 2026: everyone starts at 1 in all skills and gains experience by doing): the skill
+# itself once unlocked, else its nearest unlocked parent (the heaviest first), so the practice that will unlock it is not lost; "" when none.
+static func trainable(cfg: Dictionary, skill: String, records: Dictionary, seen: Dictionary = {}) -> String:
+	var skills: Dictionary = cfg.get("skills", {})
+
+	if not skills.has(skill) or seen.has(skill):
+		return ""   # seen: a looped graph (validate reports it) ends here
+
+	seen[skill] = true
+
+	if unlocked(cfg, skill, records):
+		return skill
+
+	var parents: Dictionary = skills[skill].get("parents", {})
+	var order: Array = parents.keys()
+	order.sort_custom(func(a: Variant, b: Variant) -> bool: return float(parents[a]) > float(parents[b]))
+
+	for p in order:
+		var got: String = trainable(cfg, str(p), records, seen)
+
+		if got != "":
+			return got
+
+	return ""
+
+
 static func practice(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dictionary, difficulty: float, now_s: float) -> float:
 	var system: Dictionary = cfg["system"]
 	var share: float = float(system.get("specific_share", 0.8))
@@ -267,13 +296,15 @@ static func train_problem(cfg: Dictionary, skill: String, records: Dictionary, n
 	if not cfg.get("skills", {}).has(skill):
 		return "unknown skill"
 
-	if level * int(system.get("step", 25)) >= int(system.get("max_value", 100)) + int(system.get("step", 25)):
+	# Three trainings reach the last band (caps 25, 50, 75, 100); a fourth would only jump the skill to the top.
+	if level * int(system.get("step", 25)) >= int(system.get("max_value", 100)):
 		return "already at the top"
 
 	if not unlocked(cfg, skill, records):
 		return "locked"
 
-	if raw_value(cfg, skill, record) < float(cap_of(cfg, skill, records) - int(system.get("train_near_cap", 5))):
+	# The value it reads as (a decayed or unpractised skill still reads its training floor), with a hair of slack for float round trips.
+	if effective(cfg, skill, records) + 0.001 < float(cap_of(cfg, skill, records) - int(system.get("train_near_cap", 5))):
 		return "not near the cap yet"
 
 	if now_s - float(record.get("tlast", -1.0e12)) < float(system.get("train_cooldown_days", 3.0)) * DAY_S:
@@ -306,6 +337,40 @@ static func train(cfg: Dictionary, skill: String, records: Dictionary, now_s: fl
 	record["last"] = now_s
 	records[skill] = record
 	return ""
+
+
+# --- Build 9257 saves (training floors) ---
+
+# A training before 23 Nov 2026 set the family floor floor_over_cap (then 5) over the band: 30, 55, 80. Dave's rule since (SKILL_TRAINING.md)
+# puts it at the band floor: 25, 50, 75. A character trained under the old rule keeps what its skills read then: every skill whose family
+# floor under the old number is above what it reads now has its practice lifted to that old floor, once, when the save is read. Returns how
+# many records were lifted. A character never trained is not touched.
+static func keep_old_floors(cfg: Dictionary, records: Dictionary, old_over: int) -> int:
+	var system: Dictionary = cfg.get("system", {})
+	var lifted: int = 0
+
+	for skill in cfg.get("skills", {}):
+		var level: int = int(records.get(skill, {}).get("t", 0)) if typeof(records.get(skill, {})) == TYPE_DICTIONARY else 0
+
+		for a in ancestors(cfg, str(skill)):
+			if typeof(records.get(a, {})) == TYPE_DICTIONARY:
+				level = maxi(level, int(records.get(a, {}).get("t", 0)))
+
+		if level <= 0:
+			continue
+
+		var old_floor: float = minf(float(int(system.get("step", 25)) * level + old_over), float(system.get("max_value", 100)))
+
+		if effective(cfg, str(skill), records) >= old_floor - 0.0001:
+			continue
+
+		var record: Dictionary = records.get(skill, {}) if typeof(records.get(skill, {})) == TYPE_DICTIONARY else {}
+		record["p"] = maxf(float(record.get("p", 0.0)), units_for(cfg, str(skill), old_floor))
+		record["peak"] = maxf(float(record.get("peak", 0.0)), float(record["p"]))
+		records[skill] = record
+		lifted += 1
+
+	return lifted
 
 
 # --- Old saves (protocol 37) ---
@@ -395,11 +460,22 @@ static func validate(cfg: Dictionary) -> Array:
 					seen[n] = true
 					todo.append(n)
 
+	# The classes follow the training bands: one class per step, the first from 1, each next from step x its place, the last up to the top.
+	var system: Dictionary = cfg.get("system", {})
+	var classes: Array = system.get("classes", [])
+
+	if classes.size() * int(system.get("step", 25)) != int(system.get("max_value", 100)):
+		problems.append("%d classes do not cover 1 to %d in steps of %d" % [classes.size(), int(system.get("max_value", 100)), int(system.get("step", 25))])
+
+	for i in classes.size():
+		if int(classes[i].get("from", -1)) != (1 if i == 0 else i * int(system.get("step", 25))) or str(classes[i].get("name", "")) == "":
+			problems.append("class %d (%s) does not start at %d" % [i, str(classes[i].get("name", "")), 1 if i == 0 else i * int(system.get("step", 25))])
+
 	for action in cfg.get("actions", {}):
 		if not skills.has(str(cfg["actions"][action].get("skill", ""))):
 			problems.append("action %s names an unknown skill" % action)
-		elif skills[str(cfg["actions"][action]["skill"])].has("needs"):
-			problems.append("action %s trains a locked skill" % action)
+		elif trainable(cfg, str(cfg["actions"][action]["skill"]), {}) == "":
+			problems.append("action %s trains a locked skill with no unlocked parent" % action)
 
 	return problems
 

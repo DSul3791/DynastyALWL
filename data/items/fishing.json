@@ -123,7 +123,7 @@
 		"say_depth": "Stab where the water is between ankle and waist deep."
 	},
 	"trap": {
-		"note": "Fish traps (structures.json fish_trap: true and min_water_m 0.3; Part C plan 2). Each game hour a trap rolls its fishing cell's stock at hour_chance, or bait_chance with one of bait in its slots (a catch eats it). The fish goes into its slots and E takes it out; a full or frozen trap catches nothing. Missed hours (sleep) are rolled up to catch_up_h.",
+		"note": "Fish traps (structures.json fish_trap: true and min_water_m 0.3; Part C plan 2). Every game hour a trap stands rolls its fishing cell's stock at hour_chance, or bait_chance with one of bait in its slots (a catch eats it). The hours are rolled when someone opens it (no server work while nobody looks, 23 Nov 2026), at most catch_up_h of them. The fish goes into its slots and E takes it out; a full or frozen trap catches nothing.",
 		"hour_chance": 0.12,
 		"bait_chance": 0.2,
 		"bait": [
@@ -133,7 +133,7 @@
 		"catch_up_h": 24
 	},
 	"spear": {
-		"note": "Spear fishing (Tyler): a jab with a spear at water within reach_m, standing still (moving under still_below), in water no deeper than max_depth_m when the server can tell. Novices hit about base_chance of the time, better with the Fishing skill, up to max_chance; murky water (rain over rain_over, storm) and noon glare lower it. A strike at water wears the spear one point, a catch uses up one fish of the cell's stock; the spear is never thrown away.",
+		"note": "Spear fishing (Tyler): a jab with a spear at water within reach_m, standing still (moving under still_below), in water no deeper than max_depth_m when the server can tell. Novices hit about base_chance of the time, better with the Fishing skill, up to max_chance; murky water (rain over rain_over, storm) and noon glare lower it. A jab with no school within school_reach_m (school factor under school_factor_min) says say_no_fish on a miss, so a player is pointed at the fish signs; the odds are the same. A strike at water wears the spear one point, a catch uses up one fish of the cell's stock; the spear is never thrown away.",
 		"reach_m": 3.0,
 		"still_below": 0.25,
 		"cooldown_s": 1.2,
@@ -150,6 +150,9 @@
 		"say_hit": "You spear a %s.",
 		"say_miss": "You miss.",
 		"say_move": "Stand still a moment, the fish are watching.",
+		"school_reach_m": 1.0,
+		"school_factor_min": 0.5,
+		"say_no_fish": "No fish right here. Look for ripples, jumps or dark fish in the shallows and stab at them.",
 		"say_ice": "Spear fishing needs open water."
 	},
 	"net": {

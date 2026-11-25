@@ -93,6 +93,25 @@ func _blocks(data) -> Array:
 		out.append(Vector3i(int(floor(centre.x / 32.0)) * 32, int(floor((float(body["top"]) + float(body["bottom"])) * 0.5 / 32.0)) * 32, int(floor(centre.y / 32.0)) * 32))
 		out.append(Vector3i(int(floor(centre.x / 32.0)) * 32, int(floor(float(body["top"]) / 32.0)) * 32, int(floor(centre.y / 32.0)) * 32))
 
+	# Blocks scattered over the nine baked tiles at every level and depth, two fifths of them on a tile seam (east-west or north-south) (one tile
+	# per block or two, buried columns, river banks), from a fixed seed.
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 7
+
+	for n in range(160):
+		var lod: int = [0, 0, 0, 0, 1, 2, 3][rng.randi() % 7]
+		var span: float = 32.0 * pow(2.0, float(lod))
+		var x: float = 58167.0 + rng.randf_range(-9000.0, 9000.0)
+		var z: float = 71364.0 + rng.randf_range(-9000.0, 9000.0)
+
+		if n % 5 == 0:
+			x = round(x / 15360.0) * 15360.0 + rng.randf_range(-40.0, 40.0)
+		elif n % 5 == 1:
+			z = round(z / 15360.0) * 15360.0 + rng.randf_range(-40.0, 40.0)
+
+		var y: float = generator.surface_height(x, z) + rng.randf_range(-3.0, 1.5) * span
+		out.append([Vector3i(int(floor(x / span)) * int(span), int(floor(y / span)) * int(span), int(floor(z / span)) * int(span)), lod])
+
 	if not data.caves.is_empty() and not data.caves[0]["chambers"].is_empty():
 		var cave: Vector3 = data.caves[0]["chambers"][0]["center"]
 		out.append(Vector3i(int(floor(cave.x / 32.0)) * 32, int(floor(cave.y / 32.0)) * 32, int(floor(cave.z / 32.0)) * 32))
@@ -111,6 +130,10 @@ func _run(blocks: Array, shortcuts: bool) -> Array:
 	generator.ore_columns_skipped = shortcuts
 	generator.bodies_prepared = shortcuts
 	generator.lookups_shared = shortcuts
+	generator.ores_prepared = shortcuts
+	generator.buried_columns_skipped = shortcuts
+	generator.heights_gridded = shortcuts
+	generator.dry_soil_shortcut = shortcuts
 	var hashes: Array = []
 	var started: int = Time.get_ticks_usec()
 

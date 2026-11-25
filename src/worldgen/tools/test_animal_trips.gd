@@ -94,25 +94,51 @@ func _init() -> void:
 
 	var ok_runs: bool = true
 	var ok_apart: bool = true
+	var run_lens: Array = []
+	var links: int = 0
+	var spill: float = 0.0
 
 	for p in p1:
-		for route in p["routes"]:
+		for route in r1.trails_of(p):
 			var pts: PackedVector2Array = route
+			var box: Rect2 = Rect2(Vector2(r1.block_of(p["home"].x, p["home"].y)) * 256.0, Vector2(256.0, 256.0))
 
 			for i in range(1, pts.size()):
 				ok_runs = ok_runs and pts[i - 1].distance_to(pts[i]) <= 6.0
 
+			for q in pts:
+				spill = maxf(spill, maxf(maxf(box.position.x - q.x, q.x - box.end.x), maxf(box.position.y - q.y, q.y - box.end.y)))
+
+		links += (p.get("links", []) as Array).size()
+
 		if str(p["sp"]) == "rabbit":
 			for out in p["outs"]:
 				var d: float = (out as Vector2).distance_to(p["home"])
-				ok_runs = ok_runs and d >= 14.9 and d <= 40.1
+				run_lens.append(d)
+				ok_runs = ok_runs and d <= float(r1.cfg["warren"]["forage_m"]) + 0.1
 		elif bool(p.get("drawn", true)):   # a deer, moose or elk range (a fox's rounds are checked in fox_checks)
 			var d2: float = (p["outs"][0] as Vector2).distance_to(p["home"])
-			var span: Array = r1.cfg[str(p["sp"])]["apart_m"]
-			ok_apart = ok_apart and d2 >= float(span[0]) and d2 <= float(span[1])
+			ok_apart = ok_apart and d2 >= float(r1.cfg[str(p["sp"])]["patch_m"])
 
-	check(ok_runs, "every trail is a chain of points a few metres apart; runs are 15 to 40 m")
-	check(ok_apart, "a deer's (moose's, elk's) bed and feeding ground are their apart_m apart")
+	run_lens.sort()
+	var median: float = float(run_lens[run_lens.size() >> 1]) if not run_lens.is_empty() else 0.0
+	check(ok_runs and median >= 80.0, "every trail is a chain of points a few metres apart; runs go to grazing ground within forage_m, no set length (%d runs, shortest %.0f m, median %.0f m, longest %.0f m)" % [run_lens.size(), run_lens[0] if not run_lens.is_empty() else 0.0, median, run_lens[run_lens.size() - 1] if not run_lens.is_empty() else 0.0])
+	var ends: Dictionary = {}
+	var twice: int = 0
+
+	for p in p1:
+		for link in p.get("links", []):
+			var pts: PackedVector2Array = link
+			var e0: Vector2 = pts[0].snapped(Vector2(0.01, 0.01))
+			var e1: Vector2 = pts[pts.size() - 1].snapped(Vector2(0.01, 0.01))
+			var k: String = str([e0, e1]) if e0 < e1 else str([e1, e0])
+			twice += 1 if ends.has(k) else 0
+			ends[k] = true
+
+	check(twice == 0, "a join between two warrens is laid by one end only (%d laid twice of %d)" % [twice, ends.size()])
+	check(links > 0, "warrens join their neighbours and deer trails go on to water (%d drawn joins and water legs)" % links)
+	check(spill <= r1.REACH_OUT_M, "no trail runs farther past its block than REACH_OUT_M (%.0f m of %.0f)" % [spill, r1.REACH_OUT_M])
+	check(ok_apart, "a deer's (moose's, elk's) feeding ground is another patch than its bed (patch_m)")
 
 	# A trail goes round a steep hill rather than over it (lines of least resistance).
 	var round_hill = r1.lay_route(Vector2(640.0, 700.0), Vector2(760.0, 700.0), 3)
@@ -155,9 +181,9 @@ func _init() -> void:
 	var dropped: int = 0
 
 	for p in r1.blocks[r1.block_of(a_place["home"].x, a_place["home"].y)]["places"]:
-		dropped += (p["routes"] as Array).size() if r1.settled(p) and bool(p.get("drawn", true)) else 0   # any other place reaching into the same zone goes too (a fox's rounds are never sent)
+		dropped += r1.trails_of(p).size() if r1.settled(p) and bool(p.get("drawn", true)) else 0   # any other place reaching into the same zone goes too (a fox's rounds are never sent)
 
-	check(after.size() == before.size() - dropped and dropped >= (a_place["routes"] as Array).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
+	check(after.size() == before.size() - dropped and dropped >= r1.trails_of(a_place).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
 	check(not r1.places_near("rabbit", Vector3(a_place["home"].x, 10.0, a_place["home"].y), 1.0).has(a_place), "and no animal is made there")
 	settled_at = Vector2(INF, INF)
 
@@ -193,7 +219,15 @@ func _init() -> void:
 		r5.tick([Vector3(128.0, 10.0, 128.0)], 10000 + k)
 
 	check(r5.is_ready(Vector2i(0, 0)) and str(all_places(r5)) == str(all_places(r2)), "and the same places once it is in")
-	check(is_inf(r5.route_distance(128.0, 506.0)), "next to a block not worked out, a run's distance is not known")
+	var unknown: int = 0
+	var found_far: int = 0
+
+	for n in 32:   # along the edge next to block 0,2 (not worked out): a trail found in the blocks worked out is the answer, else not known
+		var d: float = r5.route_distance(float(n) * 8.0 + 4.0, 506.0)
+		unknown += 1 if is_inf(d) else 0
+		found_far += 1 if not is_inf(d) and d >= 10.0 else 0
+
+	check(unknown > 0 and found_far == 0, "next to a block not worked out, a run's distance is not known unless a trail is found (%d of 32 not known)" % unknown)
 
 	# The trail block carries the routes, and goes out at once when they are first worked out.
 	var t = TrailsScript.new()
@@ -214,6 +248,27 @@ func _init() -> void:
 	check(t.updates_for(3, Vector3(128.0, 10.0, 128.0), 3000).is_empty(), "and not again while unchanged")
 	t.updates_for(3, Vector3(128.0 + 4.0 * 256.0, 10.0, 128.0), 4000)   # walked four blocks off: the client forgets the old ones
 	check(t.updates_for(3, Vector3(128.0, 10.0, 128.0), 5000).size() == next.size(), "back again, the blocks and their trails are sent again")
+
+	# A player standing still while animals wear the grass around them (the stutter hunt, protocol 158): the worn cells go again, the
+	# routes do not; the client keeps the routes it has and does no work for them.
+	var cell_sends: int = 0
+	var route_sends: int = 0
+
+	for k in 6:   # three minutes, a pass every 31 s
+		for step in 5:
+			t.note(900 + k, "deer", Vector3(60.0 + 4.0 * float(step), 10.0, 60.0 + 8.0 * float(k)))
+		for u in t.updates_for(3, Vector3(128.0, 10.0, 128.0), 36000 + k * 31000):
+			cell_sends += 1
+			route_sends += 0 if (u[3] as PackedByteArray) == Codec.ROUTES_SAME else 1
+
+	check(cell_sends >= 5, "the worn cells changing still go out (%d sends in three minutes)" % cell_sends)
+	check(route_sends == 0, "but a standing player is never sent the same routes again (%d repeats)" % route_sends)
+	var sig_was: int = int(t._sent[3][Vector2i(0, 0)][2])
+	t._sent[3][Vector2i(0, 0)][2] = sig_was + 1   # as if the routes this peer has were older ones
+	t.note(950, "deer", Vector3(200.0, 10.0, 200.0))
+	var changed: Array = t.updates_for(3, Vector3(128.0, 10.0, 128.0), 36000 + 7 * 31000).filter(func(u): return u[0] == 0 and u[1] == 0)
+	check(changed.size() == 1 and (changed[0][3] as PackedByteArray) != Codec.ROUTES_SAME and not (changed[0][3] as PackedByteArray).is_empty(), "routes that changed go out in full again")
+	check(Codec.decode_routes(Codec.ROUTES_SAME, Vector2i(0, 0), Codec.ROUTE_BLOCK_M).is_empty() and Codec.ROUTES_SAME.size() < 6, "the unchanged mark is never a real routes block")
 
 	# The clock and the trips.
 	var a = AnimalsScript.new()
@@ -327,7 +382,7 @@ func sun_checks(p1: Array) -> void:
 	s.hour_now = func(): return hour
 	s.setup()
 	var rise: Array = [6.0]
-	s.sunrise_now = func(): return rise[0]
+	s.sunrise_now = func(_z): return rise[0]
 	var same: bool = true
 
 	for h in 48:
@@ -336,7 +391,7 @@ func sun_checks(p1: Array) -> void:
 
 	check(same, "at the equinox (sunrise 6) the sun periods are the fixed hours")
 	rise[0] = 7.15   # midwinter at the starter row: sunrise 07:09, sunset 16:51
-	s._sun = [-1, 0.0]
+	s._sun = {}
 	check(s.period_now(17.5) == "dusk" and s.period_now(16.0) == "day" and s.period_now(20.5) == "night" and s.period_now(8.5) == "dusk" and s.period_now(9.5) == "day", "in midwinter dusk comes at sunset (17:30 dusk, 16:00 day, 20:30 night, 08:30 still dawn)")
 	var deer: Dictionary = {"id": 7, "sp": "deer", "herd": 0}
 	var bun: Dictionary = {"id": 7, "sp": "rabbit", "herd": 0}
@@ -347,7 +402,7 @@ func sun_checks(p1: Array) -> void:
 	hour = 9.0
 	check(not s.wants_out(bun), "and a rabbit is home by 09:00")
 	rise[0] = 4.85   # midsummer: sunrise 04:51, sunset 19:09
-	s._sun = [-1, 0.0]
+	s._sun = {}
 	hour = 17.0
 	check(not s.wants_out(bun) and s.period_now(17.0) == "day", "in midsummer a rabbit is still home at 17:00, full day")
 	hour = 21.0
@@ -510,7 +565,7 @@ func fox_checks(r1, p1: Array) -> void:
 	var drawn: int = 0
 
 	for p in r1.blocks[key]["places"]:
-		drawn += (p["routes"] as Array).size() if bool(p.get("drawn", true)) and not r1.settled(p) else 0
+		drawn += r1.trails_of(p).size() if bool(p.get("drawn", true)) and not r1.settled(p) else 0
 
 	check(sent.size() == drawn, "a fox's rounds are not sent as trails (%d sent, %d drawn routes in the block)" % [sent.size(), drawn])
 	var mid: Vector2 = Vector2(INF, INF)   # the point of any round nearest the worked-out middle, so the blocks round it are known

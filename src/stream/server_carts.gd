@@ -17,6 +17,9 @@ extends RefCounted
 
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
+const CAVE_PROBE_UP_M := 0.5   # a cart in a cave: its floor is looked for in the cave's air this far over its wheels (as terrain_generator and server_items CAVE_PROBE_UP_M)
+const CAVE_WALL_M := 0.8   # ground ahead this far over a cart in a cave with no cave floor there is the cave's wall (lower: the end of a mouth's cut)
+const CAVE_DROP_M := 1.0   # a cart in a cave goes no further where the floor falls more than this in one step (a spring pool's basin)
 const OP_GRAB := 0      # ACT_CART b: take the handle of cart a
 const OP_RELEASE := 1   # let go of the handle (a ignored)
 const OP_LOAD := 2      # a = a crate's world id: lift it onto the nearest free cart within that cart's load_reach_m of it
@@ -282,6 +285,17 @@ func _blocked(from: Vector3, to: Vector3, heading: Vector2, v: Dictionary) -> St
 
 	var fit: float = float(v.get("fit_m", 0.6))
 
+	if _in_cave_air(from, from.y) and float(host.ground_height.call(to.x, to.z)) > from.y + 0.05:
+		var cave_to: float = _cave_floor(to.x, from.y, to.z)
+
+		# A cave wall: the cart stays in the cave's air. Where the ground ahead is less than CAVE_WALL_M over the wheels it is the end of a mouth's
+		# cut rising to the surface (cave_floor_at reads no cave floor within CAVE_UNDER_M of the ground): the cart goes on out.
+		if is_nan(cave_to) and float(host.ground_height.call(to.x, to.z)) - from.y > CAVE_WALL_M:
+			return "The %s will not fit through there." % noun_of(v)
+
+		if not is_nan(cave_to) and from.y - cave_to > CAVE_DROP_M:
+			return "The %s cannot go there." % noun_of(v)   # the edge of a spring pool's 20 m basin (the water checks read the surface water only)
+
 	if host.structure_blocks(to.x, to.z, fit) or host.structure_blocks_step(from.x, from.z, to.x, to.z, fit):   # the step too: a thin wall is never jumped
 		return "The %s will not fit through there." % noun_of(v)
 
@@ -301,7 +315,8 @@ func _rest_y(at: Vector3, was_y: float) -> float:
 	var surface: float = float(host.ground_height.call(at.x, at.z))
 
 	if host.floor_below.is_valid():
-		var rest: float = float(host.floor_below.call(Vector3(at.x, maxf(surface, was_y) + 1.0, at.z)))
+		var start: float = (was_y if _in_cave_air(at, was_y) else maxf(surface, was_y)) + 1.0   # in a cave from where it stood: the hill over it is not its ground
+		var rest: float = float(host.floor_below.call(Vector3(at.x, start, at.z)))
 
 		if not is_nan(rest):
 			return rest
@@ -309,13 +324,30 @@ func _rest_y(at: Vector3, was_y: float) -> float:
 	return surface
 
 
-# The ground's rise over run along the heading, across one metre of the cart's length (0 where the ground is unknown).
+# Whether a spot at height y (the cart's wheels) is under the generated surface in a cave's air (a passage, chamber or a mouth's cut).
+func _in_cave_air(at: Vector3, y: float) -> bool:
+	return host.cave_floor.is_valid() and y < float(host.ground_height.call(at.x, at.z)) - 0.05 and not is_nan(_cave_floor(at.x, y, at.z))
+
+
+func _cave_floor(x: float, y: float, z: float) -> float:
+	return float(host.cave_floor.call(Vector3(x, y + CAVE_PROBE_UP_M, z)))
+
+
+# The ground's rise over run along the heading, across one metre of the cart's length (0 where the ground is unknown). In a cave, the cave
+# floor (the generated surface is the hill over it).
 func _grade(at: Vector3, heading: Vector2) -> float:
 	if not host.ground_height.is_valid():
 		return 0.0
 
 	var front: float = float(host.ground_height.call(at.x + heading.x * 0.5, at.z + heading.y * 0.5))
 	var back: float = float(host.ground_height.call(at.x - heading.x * 0.5, at.z - heading.y * 0.5))
+
+	if _in_cave_air(at, at.y):
+		var cave_front: float = _cave_floor(at.x + heading.x * 0.5, at.y, at.z + heading.y * 0.5)
+		var cave_back: float = _cave_floor(at.x - heading.x * 0.5, at.y, at.z - heading.y * 0.5)
+		front = front if is_nan(cave_front) else cave_front
+		back = back if is_nan(cave_back) else cave_back
+
 	return 0.0 if is_nan(front) or is_nan(back) else absf(front - back)
 
 
@@ -373,7 +405,7 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 		rough = float(v.get("rough", {}).get(ground, 1.0))
 
 		# shortcut (W-16): "wet grass" is any rain at all over a soft grass soil (no per-cell wetness, and under a roof it still reads as rain); revisit with a wetness query.
-		if not wet.is_empty() and host.rain_now.is_valid() and float(host.rain_now.call()) >= float(wet.get("rain", 0.2)):
+		if not wet.is_empty() and host._rain_here(cart["pos"]) >= float(wet.get("rain", 0.2)):   # the rain where the cart is
 			rough = float(wet.get("rough", {}).get(ground, rough))
 
 	# A laid path or road (a path_patch within path_speed.json range_m near the puller: the server shares its one-second path look-up with the player, so the cart position is used only when that is stale) slows a vehicle with a "path" multiplier: the sled's runners drag on it.
@@ -587,12 +619,12 @@ func dismantle(peer: int, inv, id: int) -> void:
 
 	var trial = inv.copy()
 
-	if not _unpack(trial, box, row):
+	if not _unpack(trial, box, row, cart["struct"].get("kinds", {})):
 		host._say(peer, "Make room in your pack first: the %s's load and its parts must all fit." % noun_for(id))
 		return
 
 	release(peer, "")
-	_unpack(inv, box, row)
+	_unpack(inv, box, row, cart["struct"].get("kinds", {}))
 
 	for rider in riders_of(id):
 		_set_down(host._items[rider], set_down_spot(id, rider, true))
@@ -603,15 +635,16 @@ func dismantle(peer: int, inv, id: int) -> void:
 
 
 # Puts the cart's cargo and its blueprint materials into `inv`; false when something does not fit (inv is then partly filled: only call on a copy first).
-func _unpack(inv, box, row: Dictionary) -> bool:
+func _unpack(inv, box, row: Dictionary, kinds: Dictionary = {}) -> bool:
 	if box != null:
 		for slot in box.slot_count:
 			if box.numbers[slot] != 0 and inv.add(box.numbers[slot], box.counts[slot], box.wear[slot], box.inst_of(slot)) > 0:
 				return false
 
 	for need in row.get("cost", []):
-		if inv.add(host._refund_number(host.table.number_of(str(need[0]))), int(need[1])) > 0:
-			return false
+		for pair in host._kinds_back(str(need[0]), int(need[1]), kinds):   # the items it was built from (server_items _note_kinds); an older cart: a group's lowest member
+			if inv.add(int(pair[0]), int(pair[1])) > 0:
+				return false
 
 	return true
 

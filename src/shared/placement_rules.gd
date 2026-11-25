@@ -14,6 +14,8 @@ const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes o
 const POT_ATTACH_M := 2.0
 const STATION_HEIGHT_M := 1.6       # PROVISIONAL (PL-3): how tall a station or piece of furniture counts when checked against the walls round it (data height_m wins)
 const SUPPORT_REACH_M := 0.6        # a station aimed this near a floor's top (above or below) stands on that floor
+const LINE_FREE := ["wall_torch", "torch_sconce", "improved_torch_sconce", "iron_wall_lantern", "antler_mount", "tusk_mount", "sign", "storage_sign", "wooden_hanging_lantern", "iron_hanging_lantern", "chandelier", "hide_rug", "wool_rug"]   # hung on or set into a wall, hung from above, or flat on the floor (a mat in a doorway): free of _stands_in
+const LINE_KINDS := ["wall", "fence", "railing"]   # piece_kinds that stand along a line (_in_line)
 const OVERLAP_SLACK_M := 0.05       # boxes that only touch (a chest on a floor, a bench against a wall) do not clash
 const BED_GAP_M := 0.9              # PROVISIONAL: a bed's or plot's square metre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
 const FLOOR_SKIP := ["attach_to", "needs_base_lift_m", "needs_running_water", "min_water_m", "walkover", "support", "shelter", "water"]   # PROVISIONAL (PL-1): what never stands on a building floor: what hangs on something, the sawmill and water wheel (their own rules), a fish trap, a path or bed in the soil, a mine prop, a lean-to, a well or pump
@@ -170,8 +172,18 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 					continue
 
-				if best.is_empty() or d < float(best[2]) - ANCHOR_TIE_M or (d <= float(best[2]) + ANCHOR_TIE_M and absf(at.y - spot.y) < absf((best[0] as Vector3).y - spot.y)):
-					best = [at, anchor_turn, d]
+				var heights: Array = [at.y]
+
+				if piece_kind == "floor" and bool(base.get("foundation", false)):
+					heights.append_array(wall_tops_by(cfg, at, rows))
+				elif piece_kind == "wall" and bool(base.get("foundation", false)):
+					heights.append_array(storey_tops_at(cfg, at, rows))   # a wall over a wall: on the lower wall's top or the ceiling on it
+
+				for h in heights:
+					var here: Vector3 = Vector3(at.x, float(h), at.z)
+
+					if best.is_empty() or d < float(best[2]) - ANCHOR_TIE_M or (d <= float(best[2]) + ANCHOR_TIE_M and absf(here.y - spot.y) < absf((best[0] as Vector3).y - spot.y)):
+						best = [here, anchor_turn, d]
 
 		if best.is_empty():
 			best = held
@@ -186,6 +198,84 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# The tops of the walls standing round a ceiling cell whose middle is `cell` (a foundation's floor anchor): each wall (piece_kind "wall", any opening or tier)
+# whose middle is a cell's half width from it across the ground, at or above the cell's foot. A ceiling is "the ceiling of the room below, set on walls"
+# (DYNASTY_MASTER_ITEMS 195; physical world audit round 5, 23 Nov 2026: aimed at a wall top it fell to the foundation floor, as snap knew only the
+# foundation's own anchors). Two storeys of walls give two tops; the cursor's height picks one (ANCHOR_TIE_M).
+const CEILING_WALL_REACH_M := 1.1   # a wall on a cell's edge stands 1 m from its middle (cells are 2 m)
+const DOUBLE_WALL_HALF_M := 2.0     # half the widest wall's run (a 4 m double doorway)
+
+
+static func wall_tops_by(cfg: Dictionary, cell: Vector3, rows: Array) -> Array:
+	var out: Array = []
+
+	for row in rows:
+		var apart: Vector2 = Vector2(cell.x - float(row["pos"].x), cell.z - float(row["pos"].z))
+
+		if apart.length() > CEILING_WALL_REACH_M + DOUBLE_WALL_HALF_M or float(row["pos"].y) < cell.y - 0.05:
+			continue   # far off across the ground (the cheap test first: the ghost asks this every frame), or below the cell
+
+		var def: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if str(def.get("piece_kind", "")) != "wall":
+			continue
+
+		var turn: float = deg_to_rad(float(row.get("yaw", 0.0)))
+		var along: Vector2 = Vector2(cos(turn), -sin(turn))   # the wall's run, as roof_connections reads it
+		var half: float = float(def.get("footprint_x", WALL_CELL_M)) * 0.5
+
+		if (apart - along * clampf(apart.dot(along), -half, half)).length() > CEILING_WALL_REACH_M:
+			continue   # measured to the nearest point of its run: a 4 m double doorway's middle is 1.4 m from either cell it closes
+
+		var top: float = snappedf(float(row["pos"].y) + float(def.get("height_m", WALL_HEIGHT_M)), 0.001)
+
+		if not out.has(top):
+			out.append(top)
+
+	return out
+
+
+# Where a wall on a foundation's edge point `at` may stand above the foundation: on the top of each wall whose run holds it and on each ceiling whose edge
+# runs through it (its top). A second storey of walls was refused: snap offered only the foundation's own height, inside the lower wall (shelter walk,
+# 23 Nov 2026; Dave 17 Nov 2026 puts stations "on top of ceilings like on the second floor"). The cursor's height picks one (ANCHOR_TIE_M).
+const CEILING_EDGE_REACH_M := 0.3   # an edge point on a ceiling's rim, the 2 m cells snapped to the foundation's own points
+
+
+static func storey_tops_at(cfg: Dictionary, at: Vector3, rows: Array) -> Array:
+	var out: Array = []
+
+	for row in rows:
+		if float(row["pos"].y) < at.y - 0.05 or Vector2(at.x - float(row["pos"].x), at.z - float(row["pos"].z)).length() > DOUBLE_WALL_HALF_M + CEILING_EDGE_REACH_M:
+			continue   # below the point, or too far across the ground (the cheap test first: the ghost asks this every frame)
+
+		var def: Dictionary = structure_of_state(cfg, int(row["state"]))
+		var kind: String = str(def.get("piece_kind", ""))
+
+		if kind != "wall" and kind != "floor":
+			continue
+
+		var local: Vector2 = local_of(row, at)
+		var hx: float = float(def.get("footprint_x", 2.0)) * 0.5
+		var hz: float = float(def.get("footprint_z", 2.0)) * 0.5
+		var top: float
+
+		if kind == "wall":
+			if absf(local.x) > hx + CEILING_EDGE_REACH_M or absf(local.y) > CEILING_EDGE_REACH_M:
+				continue   # the point on this wall's own run (a wall round the corner does not hold one up: take-down asks this too)
+
+			top = snappedf(float(row["pos"].y) + float(def.get("height_m", WALL_HEIGHT_M)), 0.001)
+		else:
+			if float(row["pos"].y) < at.y + 0.05 or absf(local.x) > hx + CEILING_EDGE_REACH_M or absf(local.y) > hz + CEILING_EDGE_REACH_M:
+				continue   # a floor laid on the foundation itself is not a storey: the ground floor's walls stand on the foundation (test_placement_rules)
+
+			top = snappedf(float(row["pos"].y) + anchor_top(def), 0.001)
+
+		if not out.has(top):
+			out.append(top)
+
+	return out
 
 
 # `spot` across the ground in the frame of `row` ({pos, yaw degrees}): metres along the piece's own x and z from its middle. world_of goes back.
@@ -879,6 +969,41 @@ static func holds(base: Dictionary, row: Dictionary, spot: Vector3) -> bool:
 	return absf(local.x) <= float(base.get("footprint_x", 4.0)) * 0.5 and absf(local.y) <= float(base.get("footprint_z", 4.0)) * 0.5
 
 
+# True when a standing tree's trunk comes up through the piece placed at `spot` (yaw in radians): `trunks` are [root position, trunk radius m,
+# height m] (server_items trunks_near). A trunk counts while the piece is below its top half (a floor high over a short tree is clear of it).
+# Physical world audit round 4 (coordinator 23 Nov 2026: "yes to refusing placement over a standing tree"): nothing stopped a foundation, wall or
+# station being placed over a tree, and its trunk stood through the floor. Saplings have no trunk and are not listed.
+static func over_trunk(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, trunks: Array) -> bool:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	var half: Vector2 = Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5
+
+	for trunk in trunks:
+		var root: Vector3 = trunk[0]
+		var r: float = float(trunk[1])
+
+		if spot.y > root.y + maxf(TRUNK_CLEAR_M, 0.5 * float(trunk[2])):
+			continue
+
+		var local: Vector2 = Vector2(root.x - spot.x, root.z - spot.z).rotated(yaw)
+		var nearest: Vector2 = Vector2(clampf(local.x, -half.x, half.x), clampf(local.y, -half.y, half.y))
+
+		if local.distance_to(nearest) < r - TRUNK_TOUCH_M:
+			return true
+
+	return false
+
+
+# How far round a piece's middle to look for trunks (over_trunk): its half diagonal and the widest trunk the server's trunk search margin covers
+# (tree_trunks.gd SEARCH_TRUNK_M; wider trunks terrain_server finds by their own radius).
+static func footprint_reach(cfg: Dictionary, kit_id: String) -> float:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	return 0.5 * Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))).length() + 2.0
+
+
+const TRUNK_CLEAR_M := 3.0     # over_trunk: a piece this far over a tree's root (or half its height, if more) is above its trunk
+const TRUNK_TOUCH_M := 0.05    # and a footprint may graze the bark this much (the trunk's measured radius is a quartile, not the widest bark)
+
+
 # The top of the building floor a station, furniture or a fire is aimed at, or NAN: a foundation, or with `floors` a ceiling too (piece_kind "floor", the
 # floor of the storey above: Dave 17 Nov 2026 "on foundations and on top of ceilings like on the second floor"), whose footprint holds `spot` across the
 # ground and whose top lies within SUPPORT_REACH_M of the aim's height; the nearest such top wins, so a ground-floor aim is not lifted to the floor above.
@@ -914,8 +1039,10 @@ static func stands_on_floor(def: Dictionary) -> bool:
 
 # Why `row` (a fire or structure standing, {pos, state, yaw degrees}) keeps a new `def` (a structures row with "kind"; not the campfire) at `spot` turned
 # `yaw_deg` from going there, else "": the server's check (server_items._place_structure) and the ghost's colour, so green always places.
-# - furniture (gap_exempt), a walkover patch or bed, a pot over a fire and a bed inside a lean-to never clash (as before);
-# - two building pieces never clash here (their own points and anchors decide);
+# - a walkover patch or bed, a pot over a fire and a bed inside a lean-to never clash; furniture (gap_exempt) clashes only when its middle stands in a
+#   wall, doorway or fence line ("overlap", _stands_in);
+# - two building pieces clash here only when both stand along a line (wall, doorway, fence, gate, railing), run the same way and their boxes meet
+#   ("overlap"); otherwise their own points and anchors decide;
 # - a building piece and a station or furniture clash only where their boxes meet ("overlap"): a station stands on a floor, beside a wall, under a
 #   ceiling, but never through a wall, a pillar, a fence or a doorway (Dave 17 Nov 2026). Roofs never meet a station (PROVISIONAL PL-4);
 # - anything else (two stations, a fire and anything but a floor it stands on) keeps the gap_m between middles ("close").
@@ -927,12 +1054,26 @@ static func keeps_off(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: 
 	if not fire and other.is_empty():
 		return ""
 
-	if bool(def.get("gap_exempt", false)) or bool(other.get("gap_exempt", false)) or bool(other.get("walkover", false)) or (fire and str(def.get("attach_to", "")) == "fire") or bed_in_shelter(cfg, def, row, spot):
+	if bool(other.get("walkover", false)) or (fire and str(def.get("attach_to", "")) == "fire") or bed_in_shelter(cfg, def, row, spot):
+		return ""
+
+	var other_yaw: float = float(row.get("yaw", 0.0))
+
+	if bool(def.get("gap_exempt", false)) or bool(other.get("gap_exempt", false)):
+		# Furniture and garden things stand close to anything, but never in a wall, doorway or fence line (23 Nov 2026: a scarecrow or trellis in a doorway).
+		if not fire and (_stands_in(def, spot, other, row["pos"], other_yaw) or _stands_in(other, row["pos"], def, spot, yaw_deg)):
+			return "overlap"
+
 		return ""
 
 	var piece: bool = bool(def.get("piece", false))
 
 	if piece and bool(other.get("piece", false)):
+		# Pieces meet at their anchors and corners; two wall, doorway, fence, gate or railing pieces along the same line on the same stretch are one
+		# too many (23 Nov 2026: a gate put down over a fence section, a doorway over a wall).
+		if _in_line(def) and _in_line(other) and _parallel(yaw_deg, other_yaw) and _boxes_meet(_box(def, spot, yaw_deg), _box(other, row["pos"], other_yaw)):
+			return "overlap"
+
 		return ""
 
 	if not fire and piece != bool(other.get("piece", false)):
@@ -941,7 +1082,50 @@ static func keeps_off(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: 
 
 		return "overlap" if _boxes_meet(_box(def, spot, yaw_deg), _box(other, row["pos"], float(row.get("yaw", 0.0)))) else ""
 
-	return "close" if (row["pos"] as Vector3).distance_to(spot) < float(cfg.get("gap_m", 2.5)) else ""
+	var gap: float = float(cfg.get("gap_m", 2.5))
+
+	if def.has("gap_m") or other.has("gap_m"):
+		# A small thing with its own gap (a snare: Dave 23 Nov 2026, "no limit" on snares): the smaller gap decides, and it says so plainly.
+		gap = minf(float(def.get("gap_m", gap)), float(other.get("gap_m", gap)))
+		return "spaced" if (row["pos"] as Vector3).distance_to(spot) < gap else ""
+
+	return "close" if (row["pos"] as Vector3).distance_to(spot) < gap else ""
+
+
+# A wall, doorway, window, fence, gate or railing: a piece that stands along a line.
+static func _in_line(def: Dictionary) -> bool:
+	return str(def.get("piece_kind", "")) in LINE_KINDS
+
+
+# Two yaws (degrees) that run the same way, either direction.
+static func _parallel(a_deg: float, b_deg: float) -> bool:
+	return absf(wrapf(a_deg - b_deg, -90.0, 90.0)) < 1.0
+
+
+# Whether a thing standing on the ground (`free`: not a piece, not hung on or laid into something) has its middle inside line piece `line`'s room:
+# in the wall's thickness, the doorway's opening or the fence's run, from its foot to its top. Things set against a wall keep their middle outside.
+static func _stands_in(free: Dictionary, free_pos: Vector3, line: Dictionary, line_pos: Vector3, line_yaw: float) -> bool:
+	if not _in_line(line):
+		return false
+
+	if bool(free.get("piece", false)) or free.has("attach_to") or free.has("hand_laid") or str(free.get("kind", free.get("item", ""))) in LINE_FREE:
+		return false
+
+	var box: Array = _box(line, line_pos, line_yaw)
+
+	# The foot can be lower than the piece's own spot on a slope (a wall stands where its ends rise up to max_rise_m): only its top bounds it from above.
+	# A station sits at its lowest corner (seated_ground), up to its own rise under the ground at its middle: that counts too.
+	var low: float = maxf(float(line.get("max_rise_m", 0.0)), OVERLAP_SLACK_M)
+
+	if _seats_low_def(free):
+		low = maxf(low, _station_rise(free))
+
+	if free_pos.y < float(box[3]) - low or free_pos.y > float(box[4]) - OVERLAP_SLACK_M:
+		return false
+
+	var apart: Vector2 = Vector2(free_pos.x, free_pos.z) - (box[0] as Vector2)
+	var half: Vector2 = box[1]
+	return absf(apart.dot(_side(box, 0))) < half.x - OVERLAP_SLACK_M and absf(apart.dot(_side(box, 1))) < half.y + OVERLAP_SLACK_M
 
 
 static func _is_roof(def: Dictionary) -> bool:
@@ -1134,6 +1318,9 @@ static func water_short(cfg: Dictionary, kit_id: String, spot: Vector3, depth: C
 
 
 # Why a spot is red in words (the ghost's caption; the server says it too when it refuses).
+const WET_GROUND_M := 1.0   # ground lower than this (shore mud, at the sea) takes no placed thing (server_items _place, the ghost in held_item)
+
+
 static func reason_text(state: String, opening: String = "") -> String:   # opening: given for a door's refusal ("nodoorway", "mismatch", "taken"): the doorway's shape, doorway_fit's "opening"
 	match state:
 		"nodoorway":
@@ -1142,8 +1329,12 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "this doorway takes %s" % str(OPENING_DOORS.get(opening, opening))
 		"close":
 			return "too close to another fire or building"
+		"tree":
+			return "a tree is in the way: fell it first"
 		"overlap":
 			return "something is in the way: a wall, a post or another piece stands there"
+		"spaced":
+			return "too close: leave about 60 cm between a trap and the next thing set there"   # structures.json snare_trap and bird_trap_set gap_m
 		"bed":
 			return "a bed or planter is already in that spot"
 		"crowded":
@@ -1158,6 +1349,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "it is too far above or below the ground"
 		"water":
 			return "you cannot build in water"
+		"wet":
+			return "the ground is too wet here"
 		"shallow":
 			return "it needs deeper water"
 		"nofire":
@@ -1193,8 +1386,26 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 # "steep" when the ground under the kit is not level enough to stand it on, else "" (design 10.1: the outline is red until the
 # terrain is a reasonable shape; leveling comes with blueprints later). The ground is sampled at the middle and the corners of the
 # footprint turned by `yaw` (radians, the camera's), or on a ring of 0.8 m for a campfire; `height` is Callable(x, z) -> float
-# (NAN where unknown). The allowed rise from lowest to highest sample is "max_rise_m" of the structure, else of the file.
+# (NAN where unknown). The allowed rise from lowest to highest sample is rise_limit: a structure's own max_rise_m, else the file's, else for a
+# station or furniture (seats_low) one that grows with its size (23 Nov 2026).
 static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable) -> String:
+	var samples: PackedFloat32Array = ground_samples(cfg, kit_id, spot, yaw, height)
+
+	if samples.is_empty():
+		return ""
+
+	var low: float = INF
+	var high: float = -INF
+
+	for h in samples:
+		low = minf(low, h)
+		high = maxf(high, h)
+
+	return "steep" if high - low > rise_limit(cfg, kit_id) else ""
+
+
+# The ground heights `steep` samples (the middle and the footprint's corners, or the campfire's ring), the unknown ones left out.
+static func ground_samples(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable) -> PackedFloat32Array:
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var offsets: Array = [Vector2.ZERO]
 
@@ -1210,20 +1421,68 @@ static func steep(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, he
 		for corner in [Vector2(hx, hz), Vector2(-hx, hz), Vector2(hx, -hz), Vector2(-hx, -hz)]:
 			offsets.append(Vector2(corner.x * cos(yaw) + corner.y * sin(yaw), -corner.x * sin(yaw) + corner.y * cos(yaw)))
 
-	var low: float = INF
-	var high: float = -INF
+	var out: PackedFloat32Array = PackedFloat32Array()
 
 	for o in offsets:
 		var h: float = float(height.call(spot.x + o.x, spot.z + o.y))
 
-		if is_nan(h):
-			continue
+		if not is_nan(h):
+			out.append(h)
 
+	return out
+
+
+# Stations and furniture on the ground (physical world audit, coordinator 23 Nov 2026): one stood at the ground under its middle, and the rise rule
+# let any of them stand across 1.0 m whatever its size (a 0.8 m crate on a 51 degree slope), so a corner hung up to 0.5 m in the air on an even
+# slope and 1.0 m on a crest. Now one sits at the lowest ground under its footprint (seated_ground: it never floats, the uphill side is in the
+# ground) and its rise limit grows with its size: STATION_RISE_PER_M of its longer side, at least STATION_RISE_MIN_M, never over the file's
+# max_rise_m. A foundation, a building piece, a structure with its own max_rise_m and the campfire keep their limits.
+const STATION_RISE_PER_M := 0.35
+const STATION_RISE_MIN_M := 0.15
+
+
+# Whether a kit is set down by the station rule: a structure that is neither a foundation nor a building piece, is not set on something else
+# (attach_to: a pot on its fire, a door in its doorway) and has no max_rise_m of its own.
+static func seats_low(cfg: Dictionary, kit_id: String) -> bool:
+	return _seats_low_def(structure_of_kit(cfg, kit_id))
+
+
+static func _seats_low_def(def: Dictionary) -> bool:
+	return not def.is_empty() and not bool(def.get("foundation", false)) and not bool(def.get("piece", false)) and not def.has("attach_to") and not def.has("max_rise_m")
+
+
+# A station's own rise limit (before the file's max_rise_m caps it): STATION_RISE_PER_M of its longer side, at least STATION_RISE_MIN_M.
+static func _station_rise(def: Dictionary) -> float:
+	return maxf(STATION_RISE_MIN_M, STATION_RISE_PER_M * maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))))
+
+
+# How much higher the highest ground sample may be than the lowest (steep).
+static func rise_limit(cfg: Dictionary, kit_id: String) -> float:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+
+	if def.is_empty():
+		return float(cfg.get("campfire", {}).get("max_rise_m", 0.6))
+
+	var limit: float = float(def.get("max_rise_m", cfg.get("max_rise_m", 1.0)))
+
+	if _seats_low_def(def):
+		limit = minf(limit, _station_rise(def))
+
+	return limit
+
+
+# The ground height a kit set on the ground stands at: for a station (seats_low) the lowest of the ground samples, so no corner hangs in the air;
+# else (and where nothing is known) `middle`, the ground under its middle.
+static func seated_ground(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, height: Callable, middle: float) -> float:
+	if not seats_low(cfg, kit_id):
+		return middle
+
+	var low: float = middle
+
+	for h in ground_samples(cfg, kit_id, spot, yaw, height):
 		low = minf(low, h)
-		high = maxf(high, h)
 
-	var limit: float = float(def.get("max_rise_m", cfg.get("campfire", {}).get("max_rise_m", 0.6) if def.is_empty() else cfg.get("max_rise_m", 1.0)))
-	return "steep" if high - low > limit else ""
+	return low
 
 
 # "float" when a spot is too far above or below the terrain under it, else "" (the server's "You cannot place that there"; the ghost asks the same, wherever it can read the

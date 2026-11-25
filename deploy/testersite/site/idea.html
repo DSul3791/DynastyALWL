@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suggest an idea</title>
+<!-- The tester site's idea form (deploy/testersite). Dave 23 Nov 2026: "ridiculously simple"; the build is filled in from /latest.json. -->
+<link rel="stylesheet" href="/css/dynasty.css">
+<script src="/js/tester.js" defer></script>
+</head>
+<body>
+  <div class="who"></div>
+  <div class="hero short"><img src="/images/hero.jpg" alt="" width="1330" height="760"></div>
+  <main class="form-page">
+    <section class="panel">
+      <a class="back" href="/">&larr; Front page</a>
+      <h1>Suggest an idea</h1>
+      <form data-kind="idea">
+        <div class="field">
+          <label for="build">Build</label>
+          <input type="text" id="build" name="build" placeholder="Build 9250" maxlength="200">
+        </div>
+        <div class="field">
+          <label for="title">Short title</label>
+          <input type="text" id="title" name="title" maxlength="120" placeholder="Let me name my horse">
+        </div>
+        <div class="field">
+          <label for="idea">Your idea</label>
+          <textarea id="idea" name="idea" required maxlength="20000" style="min-height:160px"></textarea>
+        </div>
+        <button class="button wide" type="submit" data-label="Submit idea">Submit idea</button>
+      </form>
+      <div class="result" id="result" role="status"></div>
+    </section>
+    <footer><span class="mark">Dynasty &middot; A Life Well Lived</span>Thank you for testing.</footer>
+  </main>
+</body>
+</html>

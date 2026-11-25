@@ -23,6 +23,31 @@ static func weight_of(item_id: String, cfg: Dictionary) -> float:
 	return float(cfg.get("default_kg", 0.1))
 
 
+# One weight as a player reads it (Dave 23 Nov 2026: "typical seeds weigh 5-7mg"): kilograms from 1 kg, grams from 1 g, milligrams below that,
+# with enough figures that a tiny weight never rounds to a wrong one; under 0.01 mg it says so.
+static func weight_text(kg: float) -> String:
+	if kg >= 1.0:
+		return "%.2f kg" % kg
+
+	if kg >= 0.001:
+		return _figures(kg * 1000.0) + " g"
+
+	if kg >= 0.00000001:
+		return _figures(kg * 1000000.0) + " mg"
+
+	return "under 0.01 mg" if kg > 0.0 else "0 g"
+
+
+# A value of 1 to 999 with three figures at most and no trailing zeros: 640, 64, 6.4, 0.64.
+static func _figures(v: float) -> String:
+	var text: String = "%.0f" % v if v >= 100.0 else ("%.1f" % v if v >= 10.0 else "%.2f" % v)
+
+	if text.contains("."):
+		text = text.rstrip("0").rstrip(".")
+
+	return text
+
+
 # Kilograms an inventory holds, with what each bag in it holds (catalog Phase 5).
 static func carried_kg(inventory, table, cfg: Dictionary) -> float:
 	var total: float = 0.0
@@ -125,6 +150,20 @@ static func speed_factor(carried: float, body_kg: float, cfg: Dictionary) -> flo
 const MIN_EACH_KG := 0.0005
 # Float sums drift by a few millionths of a kilo; a pick-up is only allowed if the total stays within the cap plus this.
 const SLACK_KG := 0.000001
+
+
+# How the load feels (carry feel, 23 Nov 2026), one set of thresholds for the pack window and anything on the HUD: 0 comfortable, 1 heavy (slower),
+# 2 at the limit (within 2 percent: the slowest walk), 3 over it (past the client's rounding of the body, up to 35 g).
+static func load_state(load_kg: float, body_kg: float, cfg: Dictionary) -> int:
+	var limit: float = cap_kg(body_kg, cfg)
+
+	if load_kg <= comfort_kg(body_kg, cfg):
+		return 0
+
+	if load_kg > limit + 0.05:
+		return 3
+
+	return 2 if load_kg >= limit * 0.98 else 1
 
 
 # How many of `count` more of an item fit before the hard cap. Never more than fit: the floor of the division is checked

@@ -37,6 +37,21 @@ func advance(real_seconds: float) -> void:
 	seconds += real_seconds * RATIO
 
 
+var _follow_usec: int = -1
+
+
+# Server, each frame: the counter advances by the real time since the last call (`now_usec`, Time.get_ticks_usec), not the frame's delta.
+# Godot clips a long frame's delta (about 0.13 s however long the frame took: a 3 s freeze gave 0.18 s), so the server's clock fell behind
+# the clients' (which follow their own tick counter from the welcome) by every hitch and freeze: players who joined at different times saw
+# different times of day, and the sky disagreed with the server's crops, fires and seasons (two players see the same world, 23 Nov 2026).
+# The server's own frame timers (a fire's burn, animals, NPCs) still run on the clipped delta, so in a freeze they fall behind the clock.
+func follow(now_usec: int) -> void:
+	if _follow_usec >= 0 and now_usec > _follow_usec:
+		advance(float(now_usec - _follow_usec) / 1000000.0)
+
+	_follow_usec = now_usec
+
+
 func hour() -> float:
 	return fposmod(seconds, SECONDS_PER_DAY) / 3600.0
 
@@ -49,8 +64,11 @@ func year() -> int:
 	return int(floorf(seconds / (SECONDS_PER_DAY * float(DAYS_PER_YEAR))))
 
 
+# The season turns at the same moment as the sky's (weather.gd season_of: a quarter of the year, 91.25 days, so at 06:00 on day 91): the
+# whole-day count turned it up to 18 game hours later, and crops, food and the season stamp said spring while the trees, the fog and the
+# sky already said summer (weather and seasons walk, 23 Nov 2026).
 func season_index() -> int:
-	return day_of_year() * SEASON_NAMES.size() / DAYS_PER_YEAR
+	return int(fposmod(seconds / SECONDS_PER_DAY, float(DAYS_PER_YEAR)) / float(DAYS_PER_YEAR) * float(SEASON_NAMES.size())) % SEASON_NAMES.size()
 
 
 func season() -> String:

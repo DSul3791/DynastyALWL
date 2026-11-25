@@ -25,6 +25,10 @@ var _owned_built: bool = false     # false until the first ask (a loaded save's 
 var _fine: Dictionary = {}         # Vector2i FINE_M cell -> Array of set trap ids, for passes (stale ids are dropped a few at a time)
 var _marks_cache: Dictionary = {}  # owner key -> [game-free ms it was made, rows]: marks_of is asked every send, rebuilt at most every marks_refresh_s
 
+var _follow_at: Dictionary = {}    # peer -> where it stood at the last check_s look (Tracking: following a trail)
+var _sign_xp: Dictionary = {}      # owner key -> [[x, z, game s], ...]: the trail signs that character found (Tracking), kept sign_spot_s; saved (tracking_marks.json)
+var _sign_levels: Dictionary = {}  # data/look/trail_signs.json, read once: the level a sign shows from
+var _snare_xp: Dictionary = {}     # owner key -> [[x, z, game s], ...]: where a snare set on a trail last trained its Tracking; saved too
 const GRID_M := 32.0               # the sweeps round players
 const FINE_M := 4.0                # passes: a step reads the few 4 m cells round it
 const PASS_LOOK_MAX := 16          # at most this many trap ids read per step, however many are packed into the cells round it
@@ -162,7 +166,7 @@ func chance_at(at: Vector3, row: Dictionary, baited: bool, c: Dictionary = {}) -
 	if is_night(use):
 		p *= float(use.get("night_mult", 1.0))
 
-	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(use.get("storm_rain", 0.6)):
+	if host._rain_here(at) >= float(use.get("storm_rain", 0.6)):   # the rain over the snare itself (not the starter row's)
 		p *= float(use.get("storm_mult", 1.0))
 
 	return clampf(p, 0.0, 1.0)
@@ -217,6 +221,7 @@ func tick(delta: float) -> void:
 	if host._peer_pos.is_empty():
 		return
 
+	_follow_checks()
 	_ensure_grid()
 
 	if _grid.is_empty():
@@ -243,8 +248,18 @@ func _came_near(id: int, now: float) -> void:
 	var it: Dictionary = host._items[id]
 	var st: Dictionary = it["struct"]
 
+	if float(_of_item(it).get("test_chance", 0.0)) > 0.0:
+		check_one(id)   # the smoke knob: an imagined animal every look
+
+		if not host._items.has(id):
+			return   # broke on its catch
+
 	if not st.has("run") or now - float(st.get("away_at", now)) >= 3600.0:
 		_note_run(it)   # the places round it are worked out now that someone is near
+
+		if not st.has("run"):
+			return   # not worked out yet (the player has just come back): the time away is kept for the next look, not rolled as off a run
+
 		check_away(id)
 
 	if not host._items.has(id):
@@ -252,8 +267,80 @@ func _came_near(id: int, now: float) -> void:
 
 	st["away_at"] = now
 
-	if float(_of_item(it).get("test_chance", 0.0)) > 0.0:
-		check_one(id)   # the smoke knob: an imagined animal every look
+
+# What a restart keeps of a set trap beyond its owner and wear (server_items world row 24, JSON; "" for nothing): how squarely it sits on
+# a run and by a fox earth or a choke, and its away clock and quiet time. The catch it holds is a carcass, saved itself; after_load
+# finds it again. The coordinator, 23 Nov 2026: a restart while the player was away lost the run
+# note, so the time away rolled as off a run and nothing was caught; a catch waiting in its snare was lost.
+const SAVED_KEYS := ["run", "fox", "choke", "away_at", "quiet"]
+
+
+func saved_state(it: Dictionary) -> String:
+	var st: Dictionary = it["struct"]
+	var out: Dictionary = {}
+
+	for k in SAVED_KEYS:
+		if st.has(k):
+			out[k] = st[k]
+
+	return "" if out.is_empty() else JSON.stringify(out)
+
+
+func restore_state(entry: Dictionary, text: String) -> void:
+	var parsed: Variant = JSON.parse_string(text)
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	for k in SAVED_KEYS:
+		if (parsed as Dictionary).has(k):
+			entry["struct"][k] = parsed[k]
+
+	if typeof(parsed.get("held", null)) == TYPE_ARRAY and (parsed["held"] as Array).size() == 2:
+		entry["struct"]["held"] = parsed["held"]
+
+
+# After a load: each trap holds its catch again. The carcass is saved itself (server_items _kept_transient), with new ids after a load, so
+# the trap finds the snared carcass lying at its spot. A save from before carcasses were kept has the catch's species and life ("held")
+# instead: it is laid again, still marked as snared (no Tracking or Hunting for it again).
+func after_load() -> void:
+	var bodies: Array = []
+
+	for id in host._items:
+		if str(host._items[id].get("struct", {}).get("kind", "")) == "carcass" and bool(host._items[id]["struct"].get("snared", false)):
+			bodies.append(id)
+
+	for id in host._items.keys():
+		var it: Dictionary = host._items[id]
+
+		if not it.has("struct") or not is_kind(str(it["struct"].get("kind", ""))):
+			continue
+
+		var spot: Vector3 = it["pos"] + Vector3(float(_of_item(it).get("carcass_offset_m", 0.7)), 0.0, 0.0)
+
+		for b in bodies:
+			var at: Vector3 = host._items[b]["pos"]
+
+			if Vector2(at.x - spot.x, at.z - spot.z).length() < 0.5:   # x and z only: the carcass sits on the ground, which a slope lifts
+				it["struct"]["catch"] = b
+				bodies.erase(b)
+				break
+
+		if not it["struct"].has("held"):
+			continue
+
+		var held: Array = it["struct"]["held"]
+		it["struct"].erase("held")
+
+		if host._items.has(int(it["struct"].get("catch", 0))):
+			continue
+
+		var c: int = host.make_carcass(str(held[0]), spot, -1)
+
+		if host._items.has(c):
+			host._items[c]["struct"]["snared"] = true
+			host._items[c]["left"] = float(held[1])
+			it["struct"]["catch"] = c
 
 
 # An animal stepped from `from` to `to` (server_animals.gd, only for animals near a player). A trap it has just come within lure_m of
@@ -324,7 +411,7 @@ func check_one(id: int, row: Dictionary = {}) -> bool:
 	return true
 
 
-# Quiet after a catch until a game second ("quiet", not saved).
+# Quiet after a catch until a game second ("quiet", saved with the trap: saved_state).
 func _quiet(st: Dictionary) -> bool:
 	return host._now_game_s() < float(st.get("quiet", 0.0))
 
@@ -457,7 +544,7 @@ func _note_run(it: Dictionary) -> void:
 
 	var d: float = float(host.run_distance.call(it["pos"].x, it["pos"].z, int(_of_item(it).get("away_run_kind", 0))))
 
-	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted
+	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted. shortcut: a trail found while a nearer one's block is not worked out notes the farther one (a lower share) until the player walks on; narrow, and only ever fewer catches
 		it["struct"]["run"] = _share(d)
 
 		if host.fox_near.is_valid():   # a fox earth near enough that its rounds pass the runs here (TR-10)
@@ -541,7 +628,7 @@ func check_away(id: int) -> bool:
 	if bait >= 0:
 		mult *= float(c.get("bait_mult", 2.0))
 
-	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(c.get("storm_rain", 0.6)):
+	if host._rain_here(it["pos"]) >= float(c.get("storm_rain", 0.6)):   # the rain over the snare itself
 		mult *= float(c.get("storm_mult", 1.0))
 
 	# Each game hour of the time away (the latest away_max_hours) at that hour's activity of the rabbits (and the fox): worked out once,
@@ -554,8 +641,8 @@ func check_away(id: int) -> bool:
 
 	for h in n:
 		var hour: float = fmod((from_s + (float(h) + 0.5) * 3600.0) / 3600.0, 24.0)
-		var ph: float = p * _active_at(sp, hour) * mult
-		var pf: float = p * fox_share * _active_at("fox", hour) * mult if fox_share > 0.0 else 0.0
+		var ph: float = p * _active_at(sp, hour, it["pos"].z) * mult
+		var pf: float = p * fox_share * _active_at("fox", hour, it["pos"].z) * mult if fox_share > 0.0 else 0.0
 		miss *= 1.0 - clampf(ph + pf, 0.0, 1.0)
 		sum_p += ph
 		sum_fox += pf
@@ -582,10 +669,11 @@ func check_away(id: int) -> bool:
 	return true
 
 
-# How active a species is at a game hour (0..1): the animals' own rows (species_active_at), else how active it is now, else 1.
-func _active_at(sp: String, hour: float) -> float:
+# How active a species is at a game hour (0..1) at ground z (its row's sun): the animals' own rows (species_active_at), else how active it is
+# now, else 1.
+func _active_at(sp: String, hour: float, z: float = NAN) -> float:
 	if host.species_active_at.is_valid():
-		return float(host.species_active_at.call(sp, hour))
+		return float(host.species_active_at.call(sp, hour, z))
 
 	return float(host.species_active.call(sp)) if host.species_active.is_valid() else 1.0
 
@@ -622,6 +710,7 @@ func on_placed(peer: int, id: int) -> void:
 		_ensure_grid()   # the first build takes in this one too
 
 	_own(str(st["owner"]), id)
+	_snare_practice(peer, host._items[id])
 
 	if str(st.get("kind", "")) == str(cfg.get("kind", "snare_trap")):
 		host._goal_event(peer, "snare_set")   # ADD-08: a snare, not the Bird trap kind
@@ -720,3 +809,128 @@ func _own(key: String, id: int) -> void:
 		_owned[key] = ids
 
 	_marks_cache.erase(key)   # a trap just set is on the Map at the next send
+
+
+# Tracking practice (Dave 23 Nov 2026, "you should get xp for placing snares on trails"; coordinator pick, recorded for his review: Tracking
+# grows by tracking, not only by kills). The numbers are traps.json "tracking". A snare set on a trail (trail_at over snare_min) trains
+# it, but only away from the spots where that character's snares trained it within snare_spot_s: taking one up and setting it again
+# there trains nothing. And every check_s, a player standing on a trail who has walked follow_m since the last look is following it.
+# One run_distance read per player per check_s; no work for set snares.
+func _snare_practice(peer: int, it: Dictionary) -> void:
+	var tc: Dictionary = cfg.get("tracking", {})
+
+	if tc.is_empty() or str(it["struct"].get("kind", "")) != str(cfg.get("kind", "snare_trap")) or trail_at(it["pos"]) < float(tc.get("snare_min", 0.5)):
+		return
+
+	var key: String = str(host._peer_key.get(peer, ""))
+	var now: float = host._now_game_s()
+	var kept: Array = []
+	var near: bool = false
+
+	for spot in _snare_xp.get(key, []):
+		if now - float(spot[2]) < float(tc.get("snare_spot_s", 86400.0)):
+			kept.append(spot)
+			near = near or Vector2(float(spot[0]) - it["pos"].x, float(spot[1]) - it["pos"].z).length() < float(tc.get("snare_spot_m", 15.0))
+
+	if not near and host.practice(peer, "track_snare") > 0.0:
+		kept.append([it["pos"].x, it["pos"].z, now])
+
+	_snare_xp[key] = kept.slice(maxi(kept.size() - 64, 0))
+
+
+func _follow_checks() -> void:
+	var tc: Dictionary = cfg.get("tracking", {})
+
+	if tc.is_empty() or not host.run_distance.is_valid():
+		return
+
+	for peer in _follow_at.keys():
+		if not host._peer_pos.has(peer):
+			_follow_at.erase(peer)
+
+	for peer in host._peer_pos:
+		var p: Vector3 = host._peer_pos[peer]
+		var last: Vector3 = _follow_at.get(peer, p)
+
+		if Vector2(p.x - last.x, p.z - last.z).length() < float(tc.get("follow_m", 10.0)) and _follow_at.has(peer):
+			continue   # standing about: not following anything (the spot to measure from is kept)
+
+		_follow_at[peer] = p
+
+		if last != p and trail_at(p) >= float(tc.get("follow_min", 0.5)):
+			host.practice(int(peer), "track_follow")
+
+
+# What a restart keeps of Tracking's memory (server_items writes it as tracking_marks.json): the signs each character found and where their
+# snares trained it, so a restart never trains the same sign or snare spot again before its time is up.
+func saved_marks() -> Dictionary:
+	return {"version": 1, "signs": _sign_xp, "snares": _snare_xp}
+
+
+func load_marks(parsed: Variant) -> void:
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	for part in [["signs", _sign_xp], ["snares", _snare_xp]]:
+		var rows: Variant = parsed.get(part[0], {})
+
+		if typeof(rows) != TYPE_DICTIONARY:
+			continue
+
+		for key in rows:
+			if typeof(rows[key]) != TYPE_ARRAY:
+				continue
+
+			var spots: Array = []
+
+			for spot in rows[key]:
+				if typeof(spot) == TYPE_ARRAY and (spot as Array).size() >= 3:
+					spots.append([float(spot[0]), float(spot[1]), float(spot[2])])
+
+			(part[1] as Dictionary)[str(key)] = spots
+
+
+# A trail sign the player at `peer` has just spotted (protocol 153; Dave 23 Nov 2026, "spotting animal markings should highlight the
+# markings, make a slight sound and give xp for finding them"). The client works the signs out from the routes and plays the highlight
+# and sound; this trains Tracking once per sign per character in sign_spot_s, and only for a spot the player is near (sign_reach_m), with
+# a trail within sign_trail_m (every sign lies on or beside one) and the Tracking to see the first signs (trail_signs.json see_level: 0 since
+# Dave's 23 Nov 2026 ruling that signs are there for everyone, so this gate stays only as a knob).
+# Work only when a player spots one: nothing per sign. Returns whether it trained.
+func sign_found(peer: int, at: Vector2) -> bool:
+	var tc: Dictionary = cfg.get("tracking", {})
+
+	if tc.is_empty() or not host._peer_pos.has(peer) or not host.run_distance.is_valid():
+		return false
+
+	var p: Vector3 = host._peer_pos[peer]
+
+	if Vector2(p.x, p.z).distance_to(at) > float(tc.get("sign_reach_m", 12.0)):
+		return false
+
+	if _sign_levels.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/look/trail_signs.json"))
+		_sign_levels = parsed if typeof(parsed) == TYPE_DICTIONARY else {"see_level": 5}
+
+	if host.working_level(peer, "tracking") < float(_sign_levels.get("see_level", 5)) - 0.5:   # the client shows the whole level; a little rust does not refuse it
+		return false
+
+	if float(host.run_distance.call(at.x, at.y, -1)) > float(tc.get("sign_trail_m", 6.0)):
+		return false   # INF too: the ground there is not worked out
+
+	var key: String = str(host._peer_key.get(peer, ""))
+	var now: float = host._now_game_s()
+	var kept: Array = []
+	var known: bool = false
+
+	for spot in _sign_xp.get(key, []):
+		if now - float(spot[2]) < float(tc.get("sign_spot_s", 259200.0)):
+			kept.append(spot)
+			known = known or Vector2(float(spot[0]), float(spot[1])).distance_to(at) < float(tc.get("sign_same_m", 2.0))
+
+	var trained: bool = not known and host.practice(peer, "track_sign", 1.0, true) > 0.0   # its own 2 s cooldown: a follow or snare look just before does not eat it
+
+	if trained:
+		kept.append([at.x, at.y, now])
+
+	_sign_xp[key] = kept.slice(maxi(kept.size() - 256, 0))
+	return trained

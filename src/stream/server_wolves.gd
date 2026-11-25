@@ -11,6 +11,8 @@ extends RefCounted
 # Pure server code; the animals module calls tick() once per server tick and owns the records.
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const WeatherScript := preload("res://src/shared/weather.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a wolf comes to a player (_make_way)
 
 const STALK := 6      # wire states (animal rows): 0 graze, 1 hop, 6 stalk or circle, 7 attack
 const ATTACK := 7
@@ -23,8 +25,9 @@ const DENS_FILE := "wolf_dens.json"
 var host                          # the animals module (animals, cfg, rng, ground_height, blocked, species_def, spawn, damage)
 var take_meat: Callable           # (peer) -> int: takes every piece of meat out of the pack, returns how many
 var player_info: Callable         # () -> Array of {peer, pos, stance, hp 0..1, meat bool, spear bool, torch bool}
+var heard_of: Callable            # (peer) -> how far that player's loud work carries (server_animals heard_x of server_action_cues loud_of; 0.0 none): a chopping player is noticed farther
 var fires: Callable               # () -> Array of Vector3, burning fires
-var hurt_player: Callable         # (peer, damage, lethal, cause) -> "hurt" | "maimed" | "dead"
+var hurt_player: Callable         # (peer, damage, lethal, cause, from: the biter's position, for a raised shield) -> "hurt" | "maimed" | "dead"
 var notice: Callable              # (peer, text)
 var fire_radius: Callable         # (fire position) -> metres wolves keep from that fire (its tier's protect_m); invalid = animals.json fire_light_m
 var is_day: Callable              # () -> bool, play only by day (invalid = always)
@@ -276,6 +279,12 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 		packs.erase(pack["id"])
 		return
 
+	if str(pack["phase"]) in ["stalk", "rush"] and _info_of(infos, int(pack["target"])).is_empty():
+		# The player it hunts is gone (left, or a dropped line parked 15 s: server_items is_absent): it lets go, here before the frozen check
+		# below, so a pack frozen mid-rush does not take them up again on their return.
+		pack["phase"] = "prowl"
+		pack["target"] = -1
+
 	var c: Vector3 = _centre(members)
 	var active: float = float(host.cfg.get("active_radius_m", 200.0))
 	var near_any: bool = false
@@ -286,13 +295,14 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 	if not near_any:
 		return   # frozen until a player comes within active_radius_m
 
+	host._weather_for(c)   # the pack walks by the snow where it is, not the starter row's (weather and seasons walk, 23 Nov 2026)
 	var w: Dictionary = cfgw()
 	pack["timer"] -= dt
 	pack["hunger"] = minf(float(pack["hunger"]) + dt / maxf(float(w.get("hunger_full_s", 3600.0)), 1.0), 1.0)
 
 	# Prey draws a pack that is stalking or waiting (never one in the middle of a rush).
 	# A player's dog draws a prowling pack too (dog_companion_design.md 11).
-	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed":
+	if pack["phase"] in ["stalk", "wait", "prowl_target", "prowl"] and pack["phase"] != "feed" and float(pack.get("let_go_until", 0.0)) <= _clock:
 		var prey: int = _prey_near(c, float(w.get("distract_m", 80.0))) if pack["phase"] != "prowl" else _dog_near(c, float(w.get("distract_m", 80.0)))
 
 		if prey != 0:
@@ -324,20 +334,51 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 	for m in members:
 		var moved: bool = bool(m.get("moving", false))
 
+		if m["pos"] == m.get("paced_pos") and pack["phase"] != "rush":
+			_make_way(m, infos, dt)   # a resting or prowling wolf a player walked into steps out of them (robot play-testers 23 Nov 2026)
+
 		pace(m, now_ms)
-		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
+		if pack["phase"] == "rush":
+			m["state"] = ATTACK if bool(m.get("lunge", false)) else STALK   # the battle ring: only the lunging wolf attacks, the rest circle
+		elif pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false)):
+			m["state"] = ATTACK
+		elif pack["phase"] in ["stalk", "den_guard"]:
+			m["state"] = STALK
+		elif float(m.get("play", 0.0)) > 0.0:
+			m["state"] = int(m["play_kind"])
+		else:
+			m["state"] = 1 if moved else 0
 
 
-# The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and the
-# first think it stood (stood_ms), so rows_near sends the server's move times and the client draws a steady trot that stops dead.
+# A pack wolf standing this think with a player inside its contact distance steps out (ServerAnimals.make_way; the pack brain moves wolves,
+# so the per-animal tick that does it for the other animals never sees them).
+func _make_way(m: Dictionary, infos: Array, dt: float) -> void:
+	var cm: float = AnimalContact.contact_m(str(m["sp"]))
+
+	for info in infos:
+		var at: Vector3 = info["pos"]
+
+		if Vector2(at.x - m["pos"].x, at.z - m["pos"].z).length() < cm and absf(at.y - m["pos"].y) < 2.0:
+			host.make_way(m, at, dt, infos)
+			return
+
+
+# The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and
+# whether it moved this think (moving), so rows_near sends the server's move times, and a standing wolf's row the send time (protocol 154),
+# and the client draws a steady trot that stops dead, held where it stopped (stopped_ms).
 func pace(m: Dictionary, now_ms: int) -> void:
-	if m["pos"] != m.get("paced_pos"):
+	var was_moving: bool = bool(m.get("paced_moving", false))   # pace's own last word: the brain sets "moving" itself earlier in the think
+	m["moving"] = m["pos"] != m.get("paced_pos")
+	m["paced_moving"] = m["moving"]
+
+	if was_moving and not bool(m["moving"]):
+		m["stopped_ms"] = now_ms   # this think stopped it: its rows say it stops here (server_animals row_plan), as the tick does for the others
+
+	if bool(m["moving"]):
+		var was: Vector3 = m.get("paced_pos", m["pos"])
 		m["paced_pos"] = m["pos"]
 		m["moved_ms"] = now_ms
-		m["paced_moving"] = true
-	elif bool(m.get("paced_moving", false)):
-		m["paced_moving"] = false
-		m["stood_ms"] = now_ms
+		host.note_past(m, was)   # where it was, for a blow judged when the player saw it (protocol 155)
 
 
 # A player's dog within reach comes first (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md: wolves go for the dog); otherwise the nearest deer or moose.
@@ -397,12 +438,18 @@ func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) 
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.lit(x, z, infos)
+	host.plan(m, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:
+		var was: Vector3 = m["pos"]
 		m["pos"] = r["pos"]
 		m["heading"] = r["heading"]
+		host.bend_plan(m, was, dt)   # going round something: its row's plan is the way it goes (protocol 168, step 2)
+
+		if host.keep_off_players(m, was, infos) and m["pos"] == was:
+			m["moving"] = false   # up against the player: it stands there and bites, not running on the spot (Dave 23 Nov 2026)
 
 	return bool(r["arrived"])
 
@@ -424,9 +471,11 @@ func _prowl(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		if in_town(info["pos"]):
 			continue   # the town keep-out: a player in town is not stalked
 
+		var heard: float = float(heard_of.call(int(info["peer"]))) if heard_of.is_valid() else 0.0
+
 		for m in members:
 			var d: float = Vector2(info["pos"].x - m["pos"].x, info["pos"].z - m["pos"].z).length()
-			var seen: float = d / host._sense_factor(m, def, info["pos"], d, int(info.get("stance", 0))) / (1.0 + boldness(pack, info["pos"]) * float(w.get("den_notice_gain", 1.0)))
+			var seen: float = d / host._sense_factor(m, def, info["pos"], d, int(info.get("stance", 0)), 1.0, heard) / (1.0 + boldness(pack, info["pos"]) * float(w.get("den_notice_gain", 1.0)))
 			calm = calm and seen > float(w.get("notice_m", 35.0)) * 2.0
 
 			if seen < best_d:
@@ -570,6 +619,8 @@ func _stalk(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 	pack["phase"] = "rush"
 	pack["sprint"] = 0.0
 	pack["bite"] = {}
+	pack.erase("ring")   # each rush takes its ring places afresh (_ring_turns)
+	pack.erase("turn")
 	pack["meat_hits"] = 0
 	pack["for_meat"] = meaty and not hurt_weak and not starving   # only after the meat: dropping it ends the attack
 	_say_to(target, str(w.get("say_rush", "The wolves are coming for you!")))
@@ -611,15 +662,19 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 
 	pack["sprint"] += dt
 	var speed: float = float(def.get("sprint_mps", 10.5)) if pack["sprint"] <= float(def.get("sprint_s", 5.0)) else float(def.get("chase_mps", 7.0))
+	_ring_turns(pack, members, p, dt)
 
 	for m in members:
-		_walk(m, p, speed, dt, infos)
 		var id: int = int(m["id"])
 		pack["bite"][id] = float(pack["bite"].get(id, 0.0)) - dt
 
-		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
+		if not _ring_step(pack, m, p, speed, dt, infos):
+			continue   # circling, winding up or backing off: no bite this step
+
+		if Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("lunge_reach_m", 2.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid() and not host.blow_blocked(m["pos"], p):   # a ring lunge comes right in (robots 23 Nov 2026: biting from 3 m it was drawn just outside a spear's 3 m), never through a wall
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
-			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))   # a higher-level wolf bites harder
+			pack["turn"][id] = {"step": "recover", "t": 0.0}   # one bite a lunge, a moment standing in reach (the opening), then back to its place
+			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves", m["pos"]))   # a higher-level wolf bites harder
 
 			# Meat is the prize: a few bites in, the pack tears it out of the pack and runs (never in a fire's or torch's light).
 			if result == "hurt" and bool(pack["for_meat"]) and not lit_target and take_meat.is_valid():
@@ -643,6 +698,120 @@ func _rush(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 				return
 
 
+# The battle ring (Dave 23 Nov 2026: animals "so robotic", "not actually acting like animals"; RESEARCH_2026-11-23.md 7 and 9): in a rush each
+# wolf keeps a place on a ring ring_m round the player, from the side it came, the places spread evenly and drifting round. Only
+# lunge_at_once wolves attack at a time (one more for every extra_lunge_per in the pack): one is given a turn, stands and winds up (windup_s,
+# the crouch you can read), lunges in for one bite (lunge_s at most), stands in reach recover_s (the opening to hit it), and backs off to
+# its place (back_s); then the one that waited longest goes. The others circle and watch.
+func _ring_turns(pack: Dictionary, members: Array, p: Vector3, dt: float) -> void:
+	var w: Dictionary = cfgw()
+
+	if not pack.has("ring") or not pack.has("turn"):
+		pack["ring"] = {}
+		pack["turn"] = {}
+		pack["ring_dir"] = 1.0 if int(pack["id"]) % 2 == 0 else -1.0
+
+	var ring: Dictionary = pack["ring"]
+	var fresh: bool = false
+
+	for m in members:
+		if not ring.has(int(m["id"])):
+			ring[int(m["id"])] = atan2(m["pos"].z - p.z, m["pos"].x - p.x)   # from the side it came (then spread evenly in that order)
+			fresh = true
+
+	if fresh:   # spread evenly in the order they stand round the player
+		var order: Array = members.map(func(m): return int(m["id"]))
+		order.sort_custom(func(x, y): return float(ring[x]) < float(ring[y]))
+		var first: float = float(ring[order[0]])
+
+		for k in order.size():
+			ring[order[k]] = first + TAU * float(k) / float(order.size())
+
+	for id in ring.keys():
+		ring[id] = float(ring[id]) + float(pack["ring_dir"]) * float(w.get("ring_rad_s", 0.25)) * dt
+
+	var turn: Dictionary = pack["turn"]
+
+	for id in turn.keys():
+		if not members.any(func(m): return int(m["id"]) == int(id)):
+			turn.erase(id)
+
+	if turn.size() >= mini(int(w.get("lunge_at_once", 1)) + int(members.size() / maxf(float(w.get("extra_lunge_per", 6)), 1.0)), members.size()):
+		return
+
+	var best: Dictionary = {}
+	var best_wait: float = -1.0
+
+	for m in members:
+		var near_ring: bool = Vector2(m["pos"].x - p.x, m["pos"].z - p.z).length() <= float(w.get("ring_m", 6.0)) + 3.0
+		var waited: float = _clock - float(m.get("turn_ended", -1000.0))
+
+		if not turn.has(int(m["id"])) and near_ring and waited >= float(w.get("turn_gap_s", 1.5)) and waited > best_wait:
+			best_wait = waited
+			best = m
+
+	if not best.is_empty():
+		turn[int(best["id"])] = {"step": "windup", "t": 0.0}
+
+
+# One wolf's step in the ring; true when it is lunging and may bite now.
+func _ring_step(pack: Dictionary, m: Dictionary, p: Vector3, speed: float, dt: float, infos: Array) -> bool:
+	var w: Dictionary = cfgw()
+	var def: Dictionary = host.species_def("wolf")
+	var id: int = int(m["id"])
+	var place: Vector3 = p + Vector3(cos(float(pack["ring"][id])), 0.0, sin(float(pack["ring"][id]))) * float(w.get("ring_m", 6.0))
+	var face: float = atan2(p.z - m["pos"].z, p.x - m["pos"].x)
+	var t: Dictionary = pack["turn"].get(id, {})
+	m["lunge"] = false
+
+	if t.is_empty():   # circle: run to its place while far, trot round once there, always facing in when it stops
+		var far: bool = Vector2(m["pos"].x - place.x, m["pos"].z - place.z).length() > 4.0
+		_walk(m, place, speed if far else float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)
+
+		if not bool(m.get("moving", false)):
+			m["heading"] = face
+
+		return false
+
+	t["t"] = float(t["t"]) + dt
+
+	if str(t["step"]) == "windup":   # stands, crouched and facing the player: the tell
+		m["moving"] = false
+		m["heading"] = face
+
+		if float(t["t"]) < float(w.get("windup_s", 0.6)):
+			return false
+
+		t = {"step": "lunge", "t": 0.0}   # wound up: the lunge starts this same step (state 7 at once, no step of lag)
+		pack["turn"][id] = t
+
+	if str(t["step"]) == "lunge":
+		m["lunge"] = true
+		_walk(m, p, float(def.get("sprint_mps", 10.5)), dt, infos)
+
+		if float(t["t"]) >= float(w.get("lunge_s", 1.5)):
+			pack["turn"][id] = {"step": "back", "t": 0.0}
+
+		return true
+
+	if str(t["step"]) == "recover":   # after its bite it stands in reach, facing in, for recover_s: the opening to hit it (robots 23 Nov 2026: near only for the lunge)
+		m["moving"] = false
+		m["heading"] = face
+
+		if float(t["t"]) >= float(w.get("recover_s", 0.9)):
+			pack["turn"][id] = {"step": "back", "t": 0.0}
+
+		return false
+
+	_walk(m, place, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)   # backing off to its place
+
+	if float(t["t"]) >= float(w.get("back_s", 1.2)):
+		pack["turn"].erase(id)
+		m["turn_ended"] = _clock
+
+	return false
+
+
 # Back off away from the victim; `wait` is how long before the pack may come back (a maimed player is remembered).
 func _retreat(pack: Dictionary, members: Array, c: Vector3, from: Vector3, wait_s: float, keep_target: bool) -> void:
 	var w: Dictionary = cfgw()
@@ -652,6 +821,11 @@ func _retreat(pack: Dictionary, members: Array, c: Vector3, from: Vector3, wait_
 	pack["phase"] = "wait"
 	pack["timer"] = wait_s
 	pack["hurt"] = false
+	pack.erase("ring")   # a fresh ring, from where they stand, when they come back
+	pack.erase("turn")
+
+	for m in members:
+		m["lunge"] = false
 
 	if not keep_target:
 		pack["target"] = -1
@@ -687,6 +861,8 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 	pack["phase"] = "rush"
 	pack["sprint"] = 0.0
 	pack["bite"] = {}
+	pack.erase("ring")   # each rush takes its ring places afresh (_ring_turns)
+	pack.erase("turn")
 	_say_to(target, str(w.get("say_return", "The wolves are back.")))
 
 
@@ -701,13 +877,20 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		pack["timer"] = 0.0
 		return
 
+	if prey_id != 0 and host.animals.has(prey_id) and float(pack["timer"]) <= 0.0 and host.wall_between(c, host.animals[prey_id]["pos"]):
+		pack["prey"] = 0   # walled off (a player's dog in its pen) for the whole feed time: the pack gives it up rather than wait at the pen for ever,
+		pack["phase"] = "prowl"   # and takes no new prey for another feed time (else it picked the same dog again at once)
+		pack["home"] = c
+		pack["let_go_until"] = _clock + float(cfgw().get("feed_s", 60.0))
+		return
+
 	if prey_id != 0 and host.animals.has(prey_id):
 		var prey: Dictionary = host.animals[prey_id]
 
 		for m in members:
 			_walk(m, prey["pos"], float(def.get("sprint_mps", 10.5)), dt, infos)
 
-		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)):
+		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)) and not host.wall_between(members[0]["pos"], prey["pos"]):   # never through a wall or a shut gate (a dog in its pen)
 			if prey.has("companion_id"):
 				# A dog fights back and is bitten, a bite every dog_bite_s, through the one damage hook (its death is the companion's death).
 				pack["dog_bite_in"] = float(pack.get("dog_bite_in", 0.0)) - dt
@@ -836,15 +1019,20 @@ func pup_cfg() -> Dictionary:
 
 
 # Late spring to about 3 months on (pups.days, day of the year): pups are at the den.
-func pup_season() -> bool:
+# `den`: where the pups would be; its own row's day of the year (half a year on across the equator: Weather.day_of_year_at), else the calendar's.
+func pup_season(den: Vector3 = Vector3.INF) -> bool:
 	var days: Array = pup_cfg().get("days", [60, 150])
-	var doy: int = int(floorf(_now_s() / DAY_S)) % 365
+	var doy: int = int(floorf(_now_s() / DAY_S)) % 365   # starter-calendar: the fallback with no row
+
+	if den.is_finite() and host.row_of.is_valid():
+		doy = WeatherScript.day_of_year_at(_now_s(), int(host.row_of.call(den)), host.equator_row)
+
 	return doy >= int(days[0]) and doy <= int(days[1])
 
 
 # The pack's pups at its den: natural packs in pup season (forced: tests and admin). Returns how many the pack has.
 func make_pups(pid: int, forced: bool = false) -> int:
-	if not packs.has(pid) or (not forced and not pup_season()):
+	if not packs.has(pid) or (not forced and not pup_season(packs[pid]["den"])):
 		return 0
 
 	var pack: Dictionary = packs[pid]
@@ -927,6 +1115,7 @@ func step_pup(a: Dictionary, dt: float) -> void:
 		a["state"] = PLAY
 		return
 
+	host.plan(a, a["target"])   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(a["pos"], a["target"], 1.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 	if r["moved"]:
@@ -987,12 +1176,18 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z, infos)
+	host.plan(m, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:
+		var was: Vector3 = m["pos"]
 		m["pos"] = r["pos"]
 		m["heading"] = r["heading"]
+		host.bend_plan(m, was, dt)   # going round something: its row's plan is the way it goes (protocol 168, step 2)
+
+		if host.keep_off_players(m, was, infos) and m["pos"] == was:
+			m["moving"] = false   # up against the player: it stands there and bites, not running on the spot (Dave 23 Nov 2026)
 
 
 # The den guard: the pack stands between the den and the player for warn_s (circling, growling); a player who backs out past guard_m
@@ -1070,9 +1265,9 @@ func _den_guard(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: 
 		var id: int = int(m["id"])
 		pack["bite"][id] = float(pack["bite"].get(id, 0.0)) - dt
 
-		if _flat(m["pos"], p) <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid():
+		if _flat(m["pos"], p) <= float(w.get("reach_m", 3.0)) and absf(m["pos"].y - p.y) < 3.0 and float(pack["bite"][id]) <= 0.0 and hurt_player.is_valid() and not host.blow_blocked(m["pos"], p):   # never through a wall
 			pack["bite"][id] = float(w.get("bite_every_s", 1.0))
-			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves"))
+			var result: String = str(hurt_player.call(target, float(w.get("bite", 8.0)) * host.level_x(m, "damage"), pack["maimed"].has(target), "wolves", m["pos"]))
 
 			if result == "maimed" or result == "dead":
 				if result == "maimed":
@@ -1215,6 +1410,9 @@ func save_dens() -> void:
 
 
 func load_dens() -> void:
+	if store_dir != "":
+		ItemsScript.restore_missing(store_dir + "/" + DENS_FILE)
+
 	if store_dir == "" or not FileAccess.file_exists(store_dir + "/" + DENS_FILE):
 		return
 

@@ -10,19 +10,25 @@ const MAX_DRAWN := 30
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a body comes to the player (data/animals/contact.json)
 const AnimalGait := preload("res://src/client/animal_gait.gd")   # which leg clip and how fast, smoothed (Dave 21 Nov 2026: no running without moving the feet)
 const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const LIE := 19        # lying down to rest: a companion at heel, or a wild grazer bedded down (protocol 148)
 const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown (server_bandits.gd)
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
+const CHARGE := 11                    # server_big_game.CHARGE: a locked charge (AHEAD_STATES)
+const LUNGE_STATES := [11, 12]         # charge and recover: a lunge that came already done is eased on at MotionBuffer.LUNGE_MPS
 const DRINK := 21                     # server_animals.DRINK: standing at the bank drinking (docs/design/animals_at_water_server.md)
 const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
 signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
+signal took_off(kind: String, at: Vector3)                       # a bird bursts up into flight (server_flight.FLY): its wings, where it rose (creature_sounds.took_off)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
 
@@ -33,19 +39,47 @@ const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit nea
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
 const BURROW_KINDS := ["rabbit"]          # a wounded rabbit can go to ground on its trail: it leaves the rows alive
-const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
+const FLY := 15                       # server_flight.FLY: a bird in flight (climbing)
+const GLIDE := 17                     # server_flight.GLIDE: gliding; a glide that climbs again goes back to FLY, which is no new take-off
+const VOICED_STATES := [2, 3, 7, 10, 11, 16, 25, 26]   # flee, alert, a wolf's attack (server_wolves.ATTACK), warn, charge, the jaw-pop warning, a close blow, a kick
+const ATTACK_STATES := [7, 11, 25, 26]        # a wolf attacking, big game charging or striking up close: the one biting you (attacker_near)
+const BITE_END_STATES := [7, 11]               # an attack that ends in the model's bite clip as it ends (a strike or kick plays its own clip as it starts)
+const CLOSE_STATES := [25, 26]                # server_big_game STRIKE and KICK: a blow wound up where it stands, its clip timed to land when the server's does
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
+# Drawn at the present, not a delay behind (Dave 23 Nov 2026: "battle was almost impossible"): warn, charge, recover and the jaw-pop. A charge's
+# line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
+# player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
+const AHEAD_STATES := [10, 11, 12, 16, 25, 26]
+const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
+const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
+const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
+# Drawn a delay behind, on the row clock: a bird in the air (FLY, GLIDE). Every other animal is drawn at the present (protocol 168, Dave 24 Nov
+# 2026: "give as much control to the client as it takes to make them feel natural"; docs/design/ANIMAL_NETCODE.md "Plans"): a moving one carried
+# on along its way past its newest point, never past where its row's plan says it stops (MotionBuffer.at_plan). server_animals AIR_DRAWN.
+const AIR_DRAWN := [15, 17]
+const PLAN_CARRY_S := 0.6                     # the longest a body at the present carries on past its newest point (a late or lost batch)
 
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
-var _rows_at: float = -1.0       # seconds the last rows came (Time ticks)
-var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
-var _clock_off: float = INF      # local seconds minus server seconds, the smallest seen (the fastest delivery): MotionBuffer.clock_off
-var _server_ms: int = -1         # the server clock on the last batch
+var _clock: Dictionary = MotionBuffer.clock_new()   # the rows' clock: offset, interval, holes and lateness, for the draw delay (MotionBuffer.clock_note)
+var look_points: Callable        # () -> Array of Vector3: the players' heads (this one and the others drawn), for head tracking; unset in tests
+var _look_points: Array = []     # this frame's look_points, fetched the first time an animal looks in a frame
+var _look_frame: int = -1        # the _t-frame _look_points was fetched in
+var _frame: int = 0              # counts _process_body calls
+var _frame_s: float = -1.0       # when _process_body last ran (s, the ticks clock)
+var _held_since_ms: int = -1     # walker_stop: when the walker was first held at bodies this time, -1 when free
+var _held_last_ms: int = -100000 # and the last frame it was held
+var _settle_until: float = -1.0  # after this computer's own stall: until then bodies are drawn where their points are (MotionBuffer.settle)
+var player_at: Callable          # () -> Vector3: the local player's body (its xz), so a charge is never drawn inside them (AnimalContact.stop_toward); unset in tests
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
+var _scenes_of: Dictionary = {}   # species number -> its model files that exist (_species_scenes)
+var _scene_held: Dictionary = {}  # model file path -> its scene or texture, loaded on a worker (_scenes_ready) and kept so load() finds it cached
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
+var _alpha_tasks: Dictionary = {}  # texture path -> the worker task finding its alpha (_scenes_ready)
+var _alpha_done: Dictionary = {}   # texture path -> its alpha, written by _alpha_job under _alpha_mutex
+var _alpha_mutex: Mutex = Mutex.new()
 var _mats: Dictionary = {}
 var _t: float = 0.0
 var water_level: Callable        # (x, z) -> water surface height or NAN; set by the client: a swimmer below it plays its "swim" clip
@@ -99,6 +133,12 @@ const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
+
+
+# A bird takes off when its row goes from the ground into flight (FLY); a glide climbing again (GLIDE to FLY) or a row sent again in
+# flight is the same flight. A body first drawn already flying starts in that state, so it is no take-off either.
+static func takes_off(was: int, now: int) -> bool:
+	return now == FLY and not was in [FLY, GLIDE]
 
 
 # A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
@@ -329,6 +369,34 @@ const FLINCH := Vector3(1.08, 0.88, 1.08)
 const FLINCH_S := 0.2
 
 
+# The player's own blow seen to land (held_item blow_landing; docs/design/ANIMAL_NETCODE.md "Plans" step 3): the flinch now, not a round trip
+# later. True when it flinched, so the caller plays the thud too. The server's animal_hit for it, within PREDICT_KEEP_S, then plays neither
+# again (confirm_hit). A blow the server judges a miss after all has only flinched (and played its hit clip); it does no damage and leaves no blood.
+const PREDICT_KEEP_S := 0.8
+var _predicted: Dictionary = {}   # id -> _t of the blow this screen saw land and has not yet heard the server's hit for
+
+
+func predict_hit(id: int) -> bool:
+	if not _bodies.has(id):
+		return false
+
+	for was in _predicted.keys():   # blows the server never confirmed (judged a miss, or the animal went) are let go
+		if _t - float(_predicted[was]) > PREDICT_KEEP_S:
+			_predicted.erase(was)
+
+	_predicted[id] = _t
+	flinch(id)
+	return true
+
+
+# The server's hit on animal `id` (animal_hit): true when it is the blow already shown (predict_hit, inside PREDICT_KEEP_S), which plays no
+# second flinch or thud; false for any other hit, which plays them as before.
+func confirm_hit(id: int) -> bool:
+	var at: float = float(_predicted.get(id, -INF))
+	_predicted.erase(id)
+	return _t - at <= PREDICT_KEEP_S
+
+
 func flinch(id: int) -> void:
 	if not _bodies.has(id) or not is_instance_valid(_bodies[id]["node"]):
 		return
@@ -346,6 +414,140 @@ func flinch(id: int) -> void:
 	var tween: Tween = node.create_tween()
 	tween.tween_property(node, "scale", rest * FLINCH, FLINCH_S * 0.3).set_ease(Tween.EASE_OUT)
 	tween.tween_property(node, "scale", rest, FLINCH_S * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+	# A model with a hit clip plays it once: standing still, or any time when the clip is a hit taken on the run (HitInRunHead_F).
+	# A standing hit clip on a running body would slide it along with its legs still.
+	var roles: Dictionary = (node.get_meta("player") as AnimationPlayer).get_meta("roles", {}) if node.has_meta("player") else {}
+
+	if int(_bodies[id].get("state", 0)) != LIE and (float(_bodies[id].get("spd", 0.0)) <= HIT_STILL_MPS or str(roles.get("hit", "")).to_lower().contains("run")):      # a lying body has no standing hit to show
+		_play_once(_bodies[id], "hit", HIT_MAX_S)
+
+
+# The plan in an animal row (protocol 168, server_animals rows_near): where a moving animal is walking to on the ground, a Vector2 (x, z)
+# after the fixed six fields (for STOP_PLAN_MS after its step stopped it, where it stands: server_animals row_plan); null when it has none.
+static func plan_of(row: Array) -> Variant:
+	for i in range(6, row.size()):
+		if row[i] is Vector2:
+			return row[i]
+
+	return null
+
+
+# One-shot clips (Dave 23 Nov 2026: animals "like really bad animatronics"): a bite as an attack ends, a hit, a death. The model's
+# "bite", "hit" and "die" roles (models.json) are copies that do not loop. While one plays (up to cap_s), _animate_model leaves the clip
+# alone, then blends back to the state's own clip. False when the model has no clip for the role.
+const ONCE_ROLES := ["bite", "hit", "die", "strike", "strike2", "kick"]
+const HIT_STILL_MPS := 1.0     # a standing hit clip plays only on a body slower than this
+const HIT_MAX_S := 0.9         # a hit clip is cut here: the animal is back in its state's clip within a second
+const BITE_MAX_S := 1.2
+const BLOW_MAX_S := 2.0         # a strike or kick clip is cut here
+const HIT_AT := 0.45           # where in a strike or kick clip the blow lands, as a share of its length, when the model row gives no "hit_at"
+const ANIMALS_PATH := "res://data/animals/animals.json"
+static var _windups: Dictionary = {}   # kind -> {"strike": s, "kick": s}: each close blow's wind-up (animals.json defend rows), read once
+const DIE_MAX_S := 2.0         # short: the carcass is already on the ground there (carcass_look.gd), so the falling body goes soon
+const DIE_HOLD_S := 0.3        # the last pose of a death clip is held this long before the body goes
+
+
+# A strike or kick begins (server_big_game _close_attack): the model's own attack clip plays once, sped so its blow (hit_at of the clip) lands
+# when the server's does, windup_s after the state began. The row came the clock's lateness after that, so the clip starts that far in.
+# A kind with two strikes ("strike2") takes turns between them.
+func _close_blow(b: Dictionary, state: int) -> void:
+	var how: String = "kick" if state == CLOSE_STATES[1] else "strike"
+	var role: String = how
+
+	if how == "strike":
+		b["strikes"] = int(b.get("strikes", -1)) + 1
+		role = "strike2" if int(b["strikes"]) % 2 == 1 else "strike"
+
+	if not _play_once(b, role, BLOW_MAX_S, windup_s(str(b.get("kind", "")), how), float(_clock["late"])) and role == "strike2":
+		_play_once(b, "strike", BLOW_MAX_S, windup_s(str(b.get("kind", "")), how), float(_clock["late"]))
+
+
+# The wind-up of kind's close blow `how` ("strike" or "kick") from animals.json, 0.7 s when it has none.
+static func windup_s(kind: String, how: String) -> float:
+	if _windups.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH)) if FileAccess.file_exists(ANIMALS_PATH) else null
+		var species: Dictionary = (parsed as Dictionary).get("species", {}) if parsed is Dictionary else {}
+		_windups["_read"] = true
+
+		for sp in species:
+			var defend: Dictionary = (species[sp] as Dictionary).get("defend", {}) if species[sp] is Dictionary else {}
+
+			for k in ["strike", "kick"]:
+				if defend.get(k, null) is Dictionary:
+					if not _windups.has(sp):
+						_windups[sp] = {}
+
+					_windups[sp][k] = float(defend[k].get("windup_s", 0.7))
+
+	return float((_windups.get(kind, {}) as Dictionary).get(how, 0.7))
+
+
+# land_in_s > 0: the clip is sped so its blow (the model row's "hit_at" share of the clip, else HIT_AT) comes land_in_s after it began, and
+# it starts from_s into that (the row's lateness).
+func _play_once(b: Dictionary, role: String, cap_s: float, land_in_s: float = 0.0, from_s: float = 0.0) -> bool:
+	var node: Node3D = b.get("node", null)
+
+	if node == null or not is_instance_valid(node) or not node.has_meta("player"):
+		return false
+
+	var player: AnimationPlayer = node.get_meta("player")
+	var clip: String = str((player.get_meta("roles", {}) as Dictionary).get(role, ""))
+
+	if clip == "" or not player.has_animation(clip):
+		return false
+
+	var length: float = player.get_animation(clip).length
+	var rate: float = 1.0
+
+	if land_in_s > 0.0:
+		rate = clampf(float((node.get_meta("model_row", {}) as Dictionary).get("hit_at", HIT_AT)) * length / land_in_s, 0.5, 3.0)
+
+	var into: float = clampf(from_s * rate, 0.0, length * 0.9)
+	player.play(clip, 0.1)
+	player.speed_scale = rate
+
+	if into > 0.0:
+		player.seek(into, true)
+
+	b["once_until"] = _t + minf((length - into) / rate, cap_s)
+	return true
+
+
+# A killed animal with a death clip falls where it is drawn and goes after the clip: true when it does (the caller then drops it
+# from the rows without freeing it), false when it has none (it goes at once, as before).
+func _die(b: Dictionary) -> bool:
+	if not is_inside_tree() or not _play_once(b, "die", DIE_MAX_S):
+		return false
+
+	var node: Node3D = b["node"]
+
+	if node.has_meta("head_look"):
+		(node.get_meta("head_look") as SkeletonModifier3D).active = false      # the death clip's own head (head tracking stops)
+
+	get_tree().create_timer(float(b["once_until"]) - _t + DIE_HOLD_S).timeout.connect(node.queue_free)
+	return true
+
+
+# The kind and place of the nearest animal attacking or charging within `max_m` of `at` ({} when none): who bit you, for its snarl.
+func attacker_near(at: Vector3, max_m: float) -> Dictionary:
+	var best: Dictionary = {}
+	var best_m: float = max_m
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+
+		if not int(b["state"]) in ATTACK_STATES or str(b["kind"]) == "" or not is_instance_valid(b["node"]):
+			continue
+
+		var where: Vector3 = (b["node"] as Node3D).global_position
+		var d: float = where.distance_to(at)
+
+		if d <= best_m:
+			best_m = d
+			best = {"kind": str(b["kind"]), "at": where}
+
+	return best
 
 
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
@@ -365,6 +567,32 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 	return false
 
 
+# The walker's frame move from `before` to `after` (feet) stopped at the animals drawn near: the correction to add (AnimalContact.walker_stop).
+# Bodies of AnimalContact.BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
+func walker_stop(before: Vector3, after: Vector3) -> Vector3:
+	var bodies: Array = []
+
+	for id in _bodies:
+		var b: Dictionary = _bodies[id]
+		if AnimalContact.body_m(str(b["kind"])) < AnimalContact.BLOCK_M:
+			continue
+
+		var m: float = float(b["contact_m"]) - AnimalContact.WALK_INTO_M
+		var at: Vector3 = (b["node"] as Node3D).global_position
+
+		if Vector2(at.x - after.x, at.z - after.z).length() < m + 1.0:
+			bodies.append([at, m])
+
+	var stop: Vector3 = AnimalContact.walker_stop(before, after, bodies) if not bodies.is_empty() else Vector3.ZERO
+	var wanted: float = Vector2(after.x - before.x, after.z - before.z).length()
+	var made: float = Vector2(after.x + stop.x - before.x, after.z + stop.z - before.z).length()
+	var pinned: bool = stop.length() >= 0.001 and made < wanted * 0.3   # held, not sliding round it
+	var held: Array = AnimalContact.walker_held([_held_since_ms, _held_last_ms], Time.get_ticks_msec(), pinned, PINNED_MS, HELD_GAP_MS)
+	_held_since_ms = int(held[0])
+	_held_last_ms = int(held[1])
+	return Vector3.ZERO if bool(held[2]) else stop   # held so long they go through: a walker is never shut in
+
+
 # [[id, drawn position], ...] of every animal drawn: the admin spyglass picks the one nearest its centre.
 func drawn_positions() -> Array:
 	var out: Array = []
@@ -375,7 +603,8 @@ func drawn_positions() -> Array:
 	return out
 
 
-# [[drawn position, heading], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these (BowAim.zone_points).
+# [[drawn position, heading, body_m], ...] of the animals drawn within `range_m` of `from`: the bow's aim assist finds their vital zones from these
+# (BowAim.zone_points); a blow's reach is to the body, body_m short of its middle (held_item._animal_aimed).
 func aim_rows(from: Vector3, range_m: float) -> Array:
 	var out: Array = []
 
@@ -383,21 +612,28 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position
 
 		if at.distance_to(from) <= range_m:
-			out.append([at, float(_bodies[id]["heading"])])
+			out.append([at, float(_bodies[id]["heading"]), AnimalContact.body_m(str(_bodies[id]["kind"])), id])   # its reach from middle to nose: a blow reaches its body, not its middle
 
 	return out
+
+
+# The server moments this screen shows the animals at now (protocol 155, a blow sends them; docs/design/ANIMAL_NETCODE.md "Fair hits"):
+# [the row clock's draw time, the present a committed charge is drawn at], in server ms; [0, 0] before any rows came.
+func seen_server_ms() -> Array:
+	var off: float = float(_clock["off"])
+
+	if off == INF:
+		return [0, 0]
+
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	return [int(round((now_s - MotionBuffer.clock_delay(_clock) - off) * 1000.0)), int(round((now_s - float(_clock["late"]) - off) * 1000.0))]
 
 
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-
-	if _rows_at >= 0.0:
-		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
-
-	_rows_at = now_s
-	_clock_off = MotionBuffer.clock_off(_clock_off, now_s, server_ms, _server_ms)
-	_server_ms = server_ms
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
+	MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -415,6 +651,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			if _bodies.size() >= max_drawn:
 				continue
 
+			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it.
+			if not _scenes_ready(int(row[1])):
+				continue
+
 			var node: Node3D = _make_for_species(int(row[1]), id, young)
 
 			if node == null:
@@ -426,25 +666,42 @@ func on_rows(rows: Array, server_ms: int) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": []}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": [], "contact_m": AnimalContact.contact_m(str(KIND_OF_SPECIES.get(int(row[1]), ""))), "turn_rad_s": AnimalContact.draw_turn_rad_s(str(KIND_OF_SPECIES.get(int(row[1]), "")))}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
+		elif takes_off(int(_bodies[id]["state"]), int(row[4])) and KIND_OF_SPECIES.has(int(row[1])):
+			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
+
+		# An attack ending (a wolf's lunge, big game's charge) ends in a bite or a blow: the model's bite clip plays once.
+		if int(_bodies[id]["state"]) in BITE_END_STATES and not int(row[4]) in ATTACK_STATES:
+			_play_once(_bodies[id], "bite", BITE_MAX_S)
+		elif int(row[4]) in CLOSE_STATES and int(row[4]) != int(_bodies[id]["state"]):
+			_close_blow(_bodies[id], int(row[4]))
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
-		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), _clock_off, _gap)   # when the server moved it, on this clock; a repeat is skipped
+		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 154 a standing animal's
+		# row carries the send time, so every leg between two points is one the animal really made.
+		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), float(_clock["off"]), INF)
+
+		if int(_bodies[id].get("row_ms", -1)) == int(row[5]):
+			_bodies[id]["plan"] = plan_of(row)   # an older row out of order (dropped by push_row) leaves the newer plan
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()
 
 	for id in _bodies.keys():
 		if not seen.has(id):
-			if killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points)):
+			var killed: bool = killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points))
+
+			if killed:
 				fell.emit(str(_bodies[id]["kind"]), _bodies[id]["target"], str(_bodies[id]["kind"]) in SMALL_FALL_KINDS)
 
-			_bodies[id]["node"].queue_free()
+			if not (killed and _die(_bodies[id])):
+				_bodies[id]["node"].queue_free()
+
 			_bodies.erase(id)
 
 
@@ -574,7 +831,14 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_t += delta
-	var drawn_at: float = float(Time.get_ticks_usec()) / 1.0e6 - MotionBuffer.delay_s(_gap)
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall: rows read now came late because nobody read them
+	var settle: bool = now_s <= _settle_until
+	_frame_s = now_s
+	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
+	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: every animal on the ground is drawn there (protocol 168), a committed charge too (AHEAD_STATES)
+	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
+	_frame += 1
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -585,9 +849,42 @@ func _process_body(delta: float) -> void:
 			state = 10
 
 		var before: Vector3 = node.position
-		var drawn: Array = MotionBuffer.at(b["samples"], drawn_at)
-		node.position = drawn[0]
-		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+
+		if settle:
+			MotionBuffer.settle(b)
+
+		var ahead: bool = int(b["state"]) in AHEAD_STATES
+		if int(b["state"]) in AIR_DRAWN:
+			b["air_until"] = _t + MotionBuffer.MAX_DELAY_S   # a bird just landed is drawn a delay behind until it has stood that long: no jump forward on landing
+		var at_present: bool = ahead or (not int(b["state"]) in AIR_DRAWN and _t >= float(b.get("air_until", -1.0)))
+		var t_drawn: float = present if at_present else drawn_at
+		var drawn: Array
+
+		if ahead:
+			drawn = MotionBuffer.at(b["samples"], t_drawn, MotionBuffer.AHEAD_CARRY_S if int(b["state"]) == CHARGE else 0.0)   # only a charge carries on; the others stand
+		elif at_present:
+			drawn = MotionBuffer.at_plan(b["samples"], t_drawn, PLAN_CARRY_S, b.get("plan", null))   # on along its way, never past where it stops
+		else:
+			drawn = MotionBuffer.at(b["samples"], t_drawn)
+		var spot: Vector3 = drawn[0]
+
+		if not ahead:
+			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
+
+		if me != Vector3.INF:
+			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
+			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
+			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - AnimalContact.WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
+
+		if ahead:
+			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
+
+		if int(b["state"]) in LUNGE_STATES:
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.LUNGE_MPS, delta, 1.05, 1.0)
+		else:
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
+		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
 		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
 		b["spd"] = spd
@@ -646,7 +943,114 @@ func _model_rows() -> Dictionary:
 	return _models
 
 
+# Every model file a species may be drawn from (the scenes of its row, its variants and its young model, and their materials' colour
+# textures) that exists.
+func _species_scenes(number: int) -> PackedStringArray:
+	if not _scenes_of.has(number):
+		var row: Dictionary = _model_rows().get(str(KIND_OF_SPECIES.get(number, "")), {})
+		var rows: Array = [row] + (row.get("variants", []) as Array)
+
+		if row.get("young_model", null) is Dictionary:
+			rows.append(row["young_model"])
+
+		var out: PackedStringArray = PackedStringArray()
+
+		for r in rows:
+			if not r is Dictionary:
+				continue
+
+			var paths: Array = [str((r as Dictionary).get("scene", ""))]
+
+			for entry in ((r as Dictionary).get("materials", []) as Array):      # the colour textures _model_materials lays over the file's own
+				if entry is Dictionary:
+					paths.append(str((entry as Dictionary).get("albedo", "")))
+
+			for path in paths:
+				if path != "" and not out.has(path) and ResourceLoader.exists(path):
+					out.append(path)
+
+		_scenes_of[number] = out
+
+	return _scenes_of[number]
+
+
+# True when every model scene of the species is loaded, so drawing one does not read the file on the main thread. Lane A route plays,
+# 23 Nov 2026: the first moose, black bear, horse, wildebeest or warthog drawn was a 0.6 to 1.4 s freeze, about half the freezes of a
+# walk, because load() read the model (2 to 3 MB) on the main thread. A scene not loaded yet is asked of a worker and false returned;
+# one that fails to load counts as ready, and _make_model then falls back to the code-built body as before.
+func _scenes_ready(number: int) -> bool:
+	if DisplayServer.get_name() == "headless":
+		return true      # the dummy renderer's stores are not thread safe (test_worker_resources): headless clients load as before
+
+	var all_in: bool = true
+
+	for path in _species_scenes(number):
+		if not _scene_held.has(path):
+			var status: int = ResourceLoader.load_threaded_get_status(path)
+
+			if status == ResourceLoader.THREAD_LOAD_LOADED:
+				_scene_held[path] = ResourceLoader.load_threaded_get(path)
+			elif status == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+				all_in = false
+			elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.has_cached(path):
+				_scene_held[path] = load(path)      # already in memory (another view loaded it): no file read
+			elif status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE and ResourceLoader.load_threaded_request(path, "", true) == OK:
+				all_in = false
+			else:
+				_scene_held[path] = null      # it failed: _make_model's own load() says so and draws the code-built body
+
+		if _scene_held.get(path) is Texture2D and not _alpha_ready(path, _scene_held[path]):
+			all_in = false
+
+	return all_in
+
+
+# A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them. The unpacking of a 4096 texture is the slow
+# part: it is done on a worker, before the animal is drawn (_scenes_ready). The read back stays here, on the main thread, so the worker
+# only touches its own Image (no renderer call to wait on, so _exit_tree can wait for it). `source` is the Texture2D, or its Image
+# (tests). False until the answer is in _alpha_of; the first call starts the worker.
+func _alpha_ready(path: String, source: Variant) -> bool:
+	if _alpha_of.has(path):
+		return true
+
+	if not _alpha_tasks.has(path):
+		var img: Image = source as Image if source is Image else (source as Texture2D).get_image()
+		_alpha_tasks[path] = WorkerThreadPool.add_task(_alpha_job.bind(img, path), false, "animal texture alpha")
+		return false
+
+	if not WorkerThreadPool.is_task_completed(int(_alpha_tasks[path])):
+		return false
+
+	WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
+	_alpha_tasks.erase(path)
+	_alpha_mutex.lock()
+	_alpha_of[path] = bool(_alpha_done.get(path, false))
+	_alpha_done.erase(path)
+	_alpha_mutex.unlock()
+	return true
+
+
+# On a worker (_scenes_ready): whether a texture's pixels `img` have see-through ones, as _has_alpha works it out. Only this Image is touched.
+func _alpha_job(img: Image, path: String) -> void:
+	if img != null and img.is_compressed():
+		img.decompress()      # its own copy: the main thread let go of it
+
+	var has: bool = img != null and img.detect_alpha() != Image.ALPHA_NONE
+	_alpha_mutex.lock()
+	_alpha_done[path] = has
+	_alpha_mutex.unlock()
+
+
+# Alpha tests still running on a worker are waited for: their bound calls hold this view.
+func _exit_tree() -> void:
+	for path in _alpha_tasks:
+		WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
+
+	_alpha_tasks.clear()
+
+
 func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
+	_clip_maps.clear()      # the last model's rig is drawn now, or freed: its maps are not wanted
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
@@ -764,6 +1168,15 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 			if not missing.is_empty():
 				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
+
+	# The head turns to watch a player (head_look.gd); a row with "head_look": false keeps its clip's head.
+	var head_bone: Array = BreathLook.head_bone_of(inst) if bool(row.get("head_look", true)) else []
+
+	if not head_bone.is_empty():
+		var look: SkeletonModifier3D = HeadLookScript.new()
+		look.setup(head_bone[0], int(head_bone[1]), root)
+		(head_bone[0] as Skeleton3D).add_child(look)
+		root.set_meta("head_look", look)
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -809,6 +1222,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					break
 
 				var anim: Animation = player.get_animation(anim_name)
+				var refuse_as: String = anim_name
 
 				# clip_loop {role: [t0, t1, blend_s]}: a file with no looping clip for a role (the mink has only start clips) loops a
 				# window of another one; tools/find_loop.gd finds the window whose ends are most alike, and the last blend_s seconds
@@ -821,31 +1235,56 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					if player.has_animation_library("") and not player.has_animation(loop_name):
 						player.get_animation_library("").add_animation(loop_name, _loop_copy(anim, float(loop_spec[0]), float(loop_spec[1]), float(loop_spec[2]) if (loop_spec as Array).size() > 2 else 0.1))
 
+					refuse_as = anim_name      # a refused loop copy refuses its source clip, so the next clip for the role is tried
 					anim_name = loop_name
 					anim = player.get_animation(anim_name)
 					_model_note(kind, "role %s loops %s from %.3f to %.3f s" % [str(key), anim_name, float(loop_spec[0]), float(loop_spec[1])])
 
-				_fit_clip_units(player, anim, kind, anim_name)
+				if not _fit_clip_units(player, anim, kind, anim_name):
+					refused[refuse_as] = true
+					continue
 
 				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
 				var clip_h: float = _clip_height(player, anim, rig)
 
 				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
-				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
+				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
-					refused[anim_name] = true
+					refused[refuse_as] = true
 					continue
+
+				# A clip that throws the model far taller than it stands (the elephant's Hit_Head_Right-IP stood 4 times its height and
+				# drew nothing on screen: Lane A one-shot check, 23 Nov 2026) is broken the other way: the next clip for the role is tried.
+				if rest_h > 0.0001 and clip_h > rest_h * TALL_SHARE:
+					_model_note(kind, "clip %s throws the model up (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
+					refused[refuse_as] = true
+					continue
+
+				# A bite, a hit or a death plays once (_play_once) from its own copy, so a looping role naming the same clip keeps looping.
+				if str(key) in ONCE_ROLES:
+					var once_name: String = anim_name.get_slice("|", anim_name.count("|")) + "_once"
+
+					if player.has_animation_library("") and not player.has_animation(once_name):
+						var once: Animation = anim.duplicate() as Animation
+						once.loop_mode = Animation.LOOP_NONE
+						_strip_root_drift(player, once, rig, kind, once_name)
+						player.get_animation_library("").add_animation(once_name, once)
+
+					if player.has_animation(once_name):
+						roles[str(key)] = once_name
+
+					break
 
 				anim.loop_mode = Animation.LOOP_LINEAR
 				_strip_root_drift(player, anim, rig, kind, anim_name)
 
-				# An in-place walk or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
-				if (str(key) == "walk" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
+				# An in-place walk, trot or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
+				if (str(key) == "walk" or str(key) == "trot" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
 					anim.set_meta("stride_measured", true)
 					var stride_mps: float = _measure_stride(player, anim, rig)
 
-					var typed_mps: float = float(row.get(str(key) + "_mps", 0.0))   # walk_mps or run_mps: the speed the row says this clip was made at
+					var typed_mps: float = float(row.get(str(key) + "_mps", 0.0))   # walk_mps, trot_mps or run_mps: the speed the row says this clip was made at
 
 					if stride_mps >= 0.2 and stride_mps <= 25.0 and AnimalGait.stride_ok(stride_mps, typed_mps):
 						anim.set_meta("travel_mps", stride_mps)
@@ -859,6 +1298,41 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 		player.set_meta("roles", roles)
 		_model_note(kind, "clips by role %s" % str(roles))
+
+		# Idle life: the row's idle_variants {role: [clip...]} are the other idle or graze clips of the file, each played once now and then
+		# between spells of the role's own clip (_idle_life). Checked like a role clip: one that lays the model flat is left out.
+		var idle: Dictionary = {}
+
+		for idle_key in (row.get("idle_variants", {}) as Dictionary):
+			if not roles.has(str(idle_key)):
+				continue
+
+			var idle_list: Array = []
+
+			for idle_name in row["idle_variants"][idle_key]:
+				var idle_full: String = _clip_full(player, row, str(idle_name))
+
+				if idle_full == "" or idle_full == str(roles[str(idle_key)]):
+					continue
+
+				var idle_anim: Animation = player.get_animation(idle_full)
+				if not _fit_clip_units(player, idle_anim, kind, idle_full):
+					continue
+
+				var idle_h: float = _clip_height(player, idle_anim, rig)
+
+				if rest_h > 0.0001 and (idle_h < rest_h * float(row.get("flat_share", 0.5)) or idle_h > rest_h * TALL_SHARE):
+					_model_note(kind, "idle clip %s lays the model flat or throws it up: not used" % idle_full)
+					continue
+
+				idle_anim.loop_mode = Animation.LOOP_LINEAR
+				_strip_root_drift(player, idle_anim, rig, kind, idle_full)
+				idle_list.append(idle_full)
+
+			if not idle_list.is_empty():
+				idle[str(idle_key)] = idle_list
+
+		player.set_meta("idle", idle)
 		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0); the file's clips: %s" % _clip_names(player)))
 
 	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
@@ -1026,6 +1500,7 @@ static func _lie_change(bare: String) -> bool:
 	return false
 
 
+const TALL_SHARE := 3.0       # a clip taller than this many times the standing height is a broken one (a standing animal's clips stay well under 2)
 const LIE_FLAT_SHARE := 0.2   # a lying clip lower than this share of the standing height is a broken one (the bear's legless tube)
 
 
@@ -1191,39 +1666,96 @@ func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
 	return box
 
 
+# Which of a clip's tracks move which bone of the rig's skeleton, and which move the nodes between the skeleton and the rig, worked out
+# once per clip and rig: _clip_bones samples a walk 41 times and every role's first frame, and resolving each track's node and bone by
+# name on every sample was most of the first moose's 0.8 s (Lane A route plays, 23 Nov 2026). Empty with no skeleton.
+# The rig's nodes must not be renamed or moved between calls (they are not: the model is set up before it is drawn).
+var _clip_maps: Dictionary = {}
+
+func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Dictionary:
+	var key: String = "%d:%d" % [anim.get_instance_id() if anim != null else 0, rig.get_instance_id()]
+
+	if _clip_maps.has(key):
+		return _clip_maps[key]
+
+	if _clip_maps.size() >= 64:
+		_clip_maps.clear()      # one model's clips at a time are all that is wanted; an old rig's nodes may be freed
+
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var map: Dictionary = {}
+
+	if not skeletons.is_empty():
+		var sk: Skeleton3D = skeletons[0]
+		var base: Node = player.get_node_or_null(player.root_node) if anim != null else null
+		var bones: Array = []
+		var chain: Array = []
+
+		if anim != null:
+			for t in anim.get_track_count():
+				var kind: int = anim.track_get_type(t)
+
+				if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
+					continue
+
+				var path: NodePath = anim.track_get_path(t)
+
+				if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
+					continue
+
+				var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+
+				if bone < 0 or anim.track_get_key_count(t) == 0:
+					continue
+
+				bones.append([t, bone, kind])
+
+		var up: Node = sk
+
+		while up != null and up != rig:
+			if up is Node3D:
+				var tracks: Array = []
+
+				if anim != null and up != sk:
+					for t in anim.get_track_count():
+						var tp: NodePath = anim.track_get_path(t)
+
+						if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base == null or base.get_node_or_null(NodePath(str(tp.get_concatenated_names()))) != up:
+							continue
+
+						var kind: int = anim.track_get_type(t)
+
+						if kind == Animation.TYPE_POSITION_3D or kind == Animation.TYPE_ROTATION_3D or kind == Animation.TYPE_SCALE_3D:
+							tracks.append([t, kind])
+
+				chain.append([up, tracks])
+
+			up = up.get_parent()
+
+		map = {"sk": sk, "bones": bones, "chain": chain}
+
+	_clip_maps[key] = map
+	return map
+
+
 # The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
 # and the bone rests: no running player needed.
 func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: float = 0.0) -> PackedVector3Array:
-	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+	var map: Dictionary = _clip_map(player, anim, rig)
 
-	if skeletons.is_empty():
+	if map.is_empty():
 		return PackedVector3Array()
 
-	var sk: Skeleton3D = skeletons[0]
+	var sk: Skeleton3D = map["sk"]
 	var local: Array = []
 
 	for i in sk.get_bone_count():
 		local.append(sk.get_bone_pose(i))      # the pose as imported (the bear stands in it on the animal sheet)
 
 	if anim != null:
-		var base: Node = player.get_node_or_null(player.root_node)
-
-		for t in anim.get_track_count():
-			var kind: int = anim.track_get_type(t)
-
-			if kind != Animation.TYPE_POSITION_3D and kind != Animation.TYPE_ROTATION_3D and kind != Animation.TYPE_SCALE_3D:
-				continue
-
-			var path: NodePath = anim.track_get_path(t)
-
-			if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
-				continue
-
-			var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
-
-			if bone < 0 or anim.track_get_key_count(t) == 0:
-				continue
-
+		for entry in (map["bones"] as Array):      # [track, bone, track type]
+			var t: int = entry[0]
+			var bone: int = entry[1]
+			var kind: int = entry[2]
 			var bone_xf: Transform3D = local[bone]
 
 			if kind == Animation.TYPE_POSITION_3D:
@@ -1238,37 +1770,28 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 	# Tracks on the nodes above the skeleton (RigRoot) count too: a clip can scale or turn the whole rig (the elk's second Walk
 	# shrinks it to a hundredth).
 	var to_rig: Transform3D = Transform3D.IDENTITY
-	var up: Node = sk
 
-	while up != null and up != rig:
-		if up is Node3D:
-			var xf: Transform3D = (up as Node3D).transform
+	for link in (map["chain"] as Array):      # [node, [[track, track type]]], from the skeleton up to the rig
+		var up: Node3D = link[0]
+		var xf: Transform3D = up.transform
 
-			if anim != null and up != sk:
-				var base_node: Node = player.get_node_or_null(player.root_node)
-				var origin: Vector3 = xf.origin
-				var turn: Quaternion = xf.basis.get_rotation_quaternion()
-				var size: Vector3 = xf.basis.get_scale()
+		if anim != null and up != sk:
+			var origin: Vector3 = xf.origin
+			var turn: Quaternion = xf.basis.get_rotation_quaternion()
+			var size: Vector3 = xf.basis.get_scale()
 
-				for t in anim.get_track_count():
-					var tp: NodePath = anim.track_get_path(t)
+			for track in (link[1] as Array):
+				match int(track[1]):
+					Animation.TYPE_POSITION_3D:
+						origin = anim.position_track_interpolate(int(track[0]), time)
+					Animation.TYPE_ROTATION_3D:
+						turn = anim.rotation_track_interpolate(int(track[0]), time)
+					Animation.TYPE_SCALE_3D:
+						size = anim.scale_track_interpolate(int(track[0]), time)
 
-					if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base_node == null or base_node.get_node_or_null(NodePath(str(tp.get_concatenated_names()))) != up:
-						continue
+			xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
 
-					match anim.track_get_type(t):
-						Animation.TYPE_POSITION_3D:
-							origin = anim.position_track_interpolate(t, time)
-						Animation.TYPE_ROTATION_3D:
-							turn = anim.rotation_track_interpolate(t, time)
-						Animation.TYPE_SCALE_3D:
-							size = anim.scale_track_interpolate(t, time)
-
-				xf = Transform3D(Basis(turn) * Basis.from_scale(size), origin)
-
-			to_rig = xf * to_rig
-
-		up = up.get_parent()
+		to_rig = xf * to_rig
 
 	var world: Array = []
 	world.resize(sk.get_bone_count())
@@ -1292,18 +1815,24 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 	return out
 
 
+const UNIT_FIT_MAX := 1500.0   # a clip further off its skeleton than this is not in other units but broken
+
+
 # Some files keep their bone positions in other units than the skeleton's rest pose (a centimetre clip on a metre skeleton):
 # played as they are, every bone falls into the body. The middle ratio of rest length to the clip's first key over the
-# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it. Once per clip.
-func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> void:
+# position tracks gives the factor; far from 1 (below 0.2 or above 5), every position key is scaled by it; beyond UNIT_FIT_MAX the clip is
+# broken, not in other units: false, and the caller does not use it. Once per clip.
+
+
+func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, anim_name: String) -> bool:
 	if anim.has_meta("units_fitted"):
-		return
+		return not anim.has_meta("units_broken")
 
 	anim.set_meta("units_fitted", true)
 	var base: Node = player.get_node_or_null(player.root_node)
 
 	if base == null:
-		return
+		return true
 
 	var ratios: Array = []
 	var tracks: Array = []
@@ -1331,19 +1860,29 @@ func _fit_clip_units(player: AnimationPlayer, anim: Animation, kind: String, ani
 			ratios.append(rest_len / key_len)
 
 	if ratios.size() < 3:
-		return
+		return true
 
 	ratios.sort()
 	var k: float = float(ratios[int(ratios.size() * 0.5)])
 
 	if k > 0.2 and k < 5.0:
-		return
+		return true
+
+	# No real unit is a thousand times off (centimetres, inches, millimetres are 100, 39, 1000): a clip whose positions are nearly all
+	# zero (the elephant's hit clips, about a millionth of the skeleton) is broken. Scaled up it stood four times the elephant's height
+	# (Lane A tall check, 23 Nov 2026); played with its turns only it crumpled the elephant into a ball floating a body-height up (Lane A
+	# one-shot check of #1712). It is not used.
+	if k > UNIT_FIT_MAX or k < 1.0 / UNIT_FIT_MAX:
+		anim.set_meta("units_broken", true)
+		_model_note(kind, "clip %s bone positions about x%.0f off the skeleton: broken, not used" % [anim_name, k])
+		return false
 
 	for t in tracks:
 		for i in anim.track_get_key_count(t):
 			anim.track_set_key_value(t, i, (anim.track_get_key_value(t, i) as Vector3) * k)
 
 	_model_note(kind, "clip %s bone positions rescaled x%.4f to the skeleton" % [anim_name, k])
+	return true
 
 
 # Some clips carry the animal forward themselves (root motion). In the WildMesh files the travel sits on the RigRoot node above
@@ -1628,7 +2167,7 @@ func _model_note(kind: String, text: String) -> void:
 
 	if not _model_notes.has(key):
 		_model_notes[key] = true
-		print("animal model %s: %s" % [kind, text])
+		FreezeWatchScript.printer.line("animal model %s: %s" % [kind, text])
 
 
 # Whether a drinking animal has its head up to look round at time t (seconds): once per DRINK_SLOT_S slot, starting 6 to 14 s into it and lasting
@@ -1649,14 +2188,16 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	var clip: String = str(clips.get(str(state), clips.get("0", "")))
 	var walk_mps: float = float(row.get("walk_mps", 1.5))
 	var run_mps: float = float(row.get("run_mps", 7.0))
+	var trot_mps: float = float(row.get("trot_mps", 0.0)) if clips.has("trot") else 0.0      # a row with a trot clip trots between the walk and the run
+	var typed: Dictionary = {"walk": walk_mps, "trot": trot_mps, "run": run_mps}
 	var ref: float = 0.0
-	# Standing, walking or running, with a margin either side so the clip does not flick at the edge (AnimalGait.role).
-	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps) if state != 10 and state != 12 and state != WARN_POP else ""
+	# Standing, walking, trotting or running, with a margin either side so the clip does not flick at the edge (AnimalGait.role).
+	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps, trot_mps) if state != 10 and state != 12 and state != WARN_POP and not state in CLOSE_STATES else ""
 	b["gait_role"] = moving
 
 	if moving != "":
 		clip = str(clips.get(moving, clip))
-		ref = run_mps if moving == "run" else walk_mps
+		ref = float(typed[moving])
 
 	if count_gait:
 		b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
@@ -1665,6 +2206,14 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		return
 
 	var player: AnimationPlayer = node.get_meta("player")
+	var once: bool = _t < float(b.get("once_until", -1.0))
+
+	if node.has_meta("head_look"):
+		_steer_head(node, b, state, speed, once, delta)
+
+	if once:
+		return      # a bite, hit or death clip is playing once (_play_once)
+
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"
 
@@ -1693,13 +2242,20 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = 0.0
 
 	# A moving animal plays a moving clip: a model with a walk but no run (or the other way) uses the one it has, not its idle pose.
-	clip = AnimalGait.moving_clip(roles, role) if role == "walk" or role == "run" else str(roles.get(role, roles.get("0", "")))
+	var gait: bool = role == "walk" or role == "trot" or role == "run"
+	clip = AnimalGait.moving_clip(roles, role) if gait else str(roles.get(role, roles.get("0", "")))
 
-	if (role == "walk" or role == "run") and not roles.has(role):
-		if roles.has("walk") or roles.has("run"):
-			ref = walk_mps if role == "run" else run_mps      # the other moving clip stands in: played by its own speed
-		else:
-			ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
+	if not gait and state == GRAZE:
+		clip = _idle_life(b, player, role, clip)
+	else:
+		b.erase("idle_role")      # moving or any other state (warn, alert, lie): the next stop starts on its own clip
+
+	if gait and not roles.has(role):
+		ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
+
+		for other in typed:
+			if roles.has(other) and str(roles[other]) == clip:
+				ref = float(typed[other])      # another moving clip stands in: played by its own speed
 
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
@@ -1708,6 +2264,83 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = AnimalGait.rate(speed, ref)
+
+
+# Idle life (Dave 23 Nov 2026: animals "like really bad animatronics"): a grazing or standing animal played one clip for minutes. Now it
+# plays its role's own clip (`base`) for IDLE_BASE_S, then one of the model's idle variants for that clip's own length (once through: a
+# shake, a look up from grazing, a fidget), then its own clip again. A change of role starts again on the own clip, after a staggered
+# first spell so a herd does not change in step. Drawing only: the server's state is untouched. Returns the clip to play.
+const IDLE_FIRST_S := [2.0, 12.0]
+const IDLE_BASE_S := [6.0, 16.0]
+const IDLE_MIN_S := 1.0        # a variant shorter than this plays through more than once
+
+
+func _idle_life(b: Dictionary, player: AnimationPlayer, role: String, base: String) -> String:
+	var pool: Array = (player.get_meta("idle", {}) as Dictionary).get(role, [])
+
+	if pool.is_empty() or base == "":
+		b.erase("idle_role")      # a role with no variants: coming back to one with variants starts on its own clip
+		return base
+
+	if str(b.get("idle_role", "")) != role or not b.has("idle_until"):
+		b["idle_role"] = role
+		b["idle_clip"] = base
+		b["idle_until"] = _t + randf_range(float(IDLE_FIRST_S[0]), float(IDLE_FIRST_S[1]))
+	elif _t >= float(b["idle_until"]):
+		if str(b["idle_clip"]) == base:
+			var pick: String = str(pool[randi() % pool.size()])
+			b["idle_clip"] = pick
+			b["idle_until"] = _t + maxf(player.get_animation(pick).length if player.has_animation(pick) else 0.0, IDLE_MIN_S)
+		else:
+			b["idle_clip"] = base
+			b["idle_until"] = _t + randf_range(float(IDLE_BASE_S[0]), float(IDLE_BASE_S[1]))
+
+	return str(b["idle_clip"])
+
+
+# Head tracking (head_look.gd): an animal on watch (alert, stalking, warning, recovering, sneaking, or a drinker looking up) follows
+# the nearest player's head within LOOK_WATCH_M; a calm one (grazing, standing, lying) only one within LOOK_CALM_M, and less strongly (LOOK_CALM_STRENGTH);
+# moving faster than LOOK_STILL_MPS, an attack, a charge or a one-shot clip: it looks where it goes (the clip's own head).
+const LOOK_WATCH_STATES := [3, 6, 10, 12, 13, 16]
+const LOOK_CALM_STATES := [GRAZE, LIE]
+const LOOK_WATCH_M := 30.0
+const LOOK_CALM_M := 8.0
+const LOOK_CALM_STRENGTH := 0.6
+const LOOK_STILL_MPS := 1.5
+
+
+static func look_strength(state: int, speed: float, once: bool, drink_up: bool) -> Vector2:
+	if once or speed > LOOK_STILL_MPS:
+		return Vector2.ZERO
+
+	if state in LOOK_WATCH_STATES or (state == DRINK and drink_up):
+		return Vector2(1.0, LOOK_WATCH_M)
+
+	if state in LOOK_CALM_STATES:
+		return Vector2(LOOK_CALM_STRENGTH, LOOK_CALM_M)
+
+	return Vector2.ZERO
+
+
+func _steer_head(node: Node3D, b: Dictionary, state: int, speed: float, once: bool, delta: float) -> void:
+	var look = node.get_meta("head_look")      # head_look.gd (untyped: its own fields are read)
+
+	if not is_instance_valid(look):
+		return
+
+	var how: Vector2 = look_strength(state, speed, once, state == DRINK and drink_looking(int(b.get("id", 0)), _t))
+	var want: Vector3 = Vector3.ZERO
+
+	if how.x > 0.0 and _look_frame != _frame:
+		_look_frame = _frame
+		_look_points = look_points.call() if look_points.is_valid() else []
+
+	if how.x > 0.0 and not _look_points.is_empty():
+		var sk: Skeleton3D = look.get_skeleton()
+		var at: Vector3 = sk.global_transform * sk.get_bone_global_pose(int(look.head)).origin if sk != null else node.global_position
+		want = HeadLookScript.goal(at, node.global_transform.basis, _look_points, how.y, how.x)
+
+	look.steer(want, delta)
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).

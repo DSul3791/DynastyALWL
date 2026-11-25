@@ -5,7 +5,9 @@ extends RefCounted
 # and the facing that came with each position report, and sends:
 #   - player_look to everyone when a player's look or worn pieces change, and every known look to a player who just sent theirs;
 #   - players rows, unreliable, about eight times a second: the other players within NEAR_M (nearest MAX_ROWS), each with its position,
-#     facing, state byte (stance 0..3, +4 swimming, +8 a log on the shoulder), the item in the hand and the server ms that position came in.
+#     facing, state byte (stance 0..3, +4 swimming, +8 a log on the shoulder, +16 asleep, bits 5..7 a count of its tool swings, so
+#     others play the chop, pick or jab clip: no new field, an older client ignores the high bits), the item in the hand and the server ms
+#     that position came in.
 #     A receiver gets them only when one of its rows has news, or every RESEND_MS; the client draws each between sent points (motion_buffer.gd).
 # Cost: one distance test per pair of players per send (32 players: about 1000 a send, 8000 a second), the per-player readings once a send.
 # Nothing here acts on another player: no collision, no damage, no looting (robbery.enabled and player-versus-player rules are Dave's).
@@ -14,25 +16,45 @@ const SEND_S := 0.125
 const NEAR_M := 150.0
 const MAX_ROWS := 31
 const RESEND_MS := 1000
+const SILENT_MS := 15000           # a player not heard from this long (its game froze, or it crashed and the line has not timed out, up to 2 minutes: net_settings.gd) leaves the others' view, and is back with its next report
 const LOOK_GAP_MS := 1000          # at most one look a second per player
 const NAME_MAX := 24               # character_record.gd NAME_MAX
 const BODY_MAX := 32
 const CODE_MAX := 400              # a body code (body_generator.gd encode) is well under 200 characters
 const SWIM := 4
 const CARRY := 8
+const ASLEEP := 16
+const SWING_SHIFT := 5             # bits 5..7: the player's swing count, mod 8
+const Net := preload("res://src/stream/terrain_net.gd")
+# A blow with the tool in hand (one per swing, at its impact: held_item.gd), shown to the others as a swing.
+const MORE_LIT := 1                # more byte (159): a burning torch or lantern...
+const MORE_HANDS_SHIFT := 1        # ...the client's hand flags (held_item.gd HAND_*: bow raised, drawn, shield up, ladder) in bits 1..4...
+const MORE_MEAL_SHIFT := 5         # ...and bits 5..7 a count of eats and drinks, mod 8 (the others play the drink clip)
+const MEAL_ACTS := [Net.ACT_EAT, Net.ACT_DRINK]
+# Not ACT_TILL_GARDEN: the hoe's grid preview sends it as a check-only poll about once a second.
+# A strike (a fight blow, any item or bare hands), a hammer blow on a building piece or blueprint site, a rod's cast and pull, and a split on
+# the chopping block (ACT_USE_STRUCT with the held slot in count) are blows the others see too (23 Nov 2026: they stood still before).
+const SWING_ACTS := [Net.ACT_HIT, Net.ACT_MINE, Net.ACT_PROCESS, Net.ACT_DIG, Net.ACT_FILL, Net.ACT_TILL, Net.ACT_HIT_SHRUB,
+		Net.ACT_DIG_TRENCH, Net.ACT_HOE_PATH, Net.ACT_HOE_SMOOTH, Net.ACT_ICEHOLE, Net.ACT_STRIKE, Net.ACT_REPAIR_STRUCT, Net.ACT_FISH]
 
-var items                          # ServerItems: peer_ids, position_of, stance_of, held_number, worn_of, is_swimming, carries_log
-var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array)
+var items                          # ServerItems: peer_ids, position_of, stance_of, fainted_of, fishing_float, held_number, worn_of, is_swimming, carries_log, sleeping_of, left_hand_number, hand_flags, torch_burning
+var send_rows: Callable            # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array, states PackedByteArray, held PackedInt32Array, times PackedInt32Array, left PackedInt32Array, more PackedByteArray, cast PackedInt32Array)
 var send_look: Callable            # (to peer, about peer, name, body, code, worn PackedInt32Array)
+var send_flight: Callable          # (to peer, item number, from, velocity, burning): flight_seen (159)
 var now_ms: Callable = func() -> int: return Time.get_ticks_msec()
 
 var _looks: Dictionary = {}        # peer -> [name, body, code]
 var _yaw: Dictionary = {}          # peer -> facing (the body's rotation.y, radians)
-var _report_ms: Dictionary = {}    # peer -> server ms of its latest position report
+var _report_ms: Dictionary = {}    # peer -> server ms of its latest position report (its stamp: note_move)
+var _move: Dictionary = {}         # peer -> [last reported position, its send time on the client's own timeline (s), offset ms, arrival ms, stamp ms]
 var _worn_sent: Dictionary = {}    # peer -> the worn numbers last told to everyone
 var _look_ms: Dictionary = {}      # peer -> server ms of its last accepted look
 var _sent: Dictionary = {}         # receiver -> [newest row ms sent, ids sent, ms sent]
+var _swings: Dictionary = {}       # peer -> [swing count mod 8, server ms of the latest]
+var _meals: Dictionary = {}        # peer -> eats and drinks mod 8
+var _shown: Dictionary = {}        # peer -> [left, more] as last worked out, and the server ms it changed: a change is news
 var _t: float = 0.0
+var _last_tick_ms: int = 0         # server ms of the last rows pass
 
 
 # A player's look (my_look). Clipped, never trusted further: the receiving client decodes the code and falls back to a plain body.
@@ -69,7 +91,52 @@ static func clean_name(raw: String) -> String:
 
 func note_report(peer: int, yaw: float) -> void:
 	_yaw[peer] = wrapf(yaw, -PI, PI) if is_finite(yaw) else 0.0
-	_report_ms[peer] = int(now_ms.call())
+	_report_ms[peer] = int((_move[peer] as Array)[4]) if _move.has(peer) else int(now_ms.call())
+
+
+# A position report came in (report_position, before its facing: note_report). Its row time is when the client sent it, put on the
+# server's clock, not when it arrived: the others draw a player between its points by these times, so an arrival 30 ms late followed by
+# one on time made a 0.2 s leg look 0.14 s long, drawn at 1.4 times the walker's speed (robots, 23 Nov 2026: 1.3 to 1.7x bursts at 120 +- 30 ms).
+# The client's report carries its velocity over its own gap since its last report (terrain_client.gd: (here - last) / seconds), so the
+# gap is (moved . velocity) / speed^2 while it moves; standing, the arrival gap. The send times are put on the server clock by the
+# smallest arrival offset seen (the fastest report), rising STAMP_CREEP_MS a report so a slow drift is followed; never after the arrival,
+# never more than STAMP_BEHIND_MS before it. No protocol change: the rows' times only come out steadier.
+const STAMP_JITTER_S := 0.15       # the moved gap is kept within this of the arrival gap (a lost report, or a client's made-up velocity)
+const STAMP_CREEP_MS := 2.0
+const STAMP_BEHIND_MS := 250.0
+const STAMP_MIN_MPS := 0.5         # slower than this the arrival gap is used (a standing player's jitter moves nothing)
+
+
+# When its latest report arrived (server ms): news is judged on arrivals, like a swing's or a hand's, not on the earlier send stamp.
+func _arrived_ms(peer: int) -> int:
+	return int((_move[peer] as Array)[3]) if _move.has(peer) else int(_report_ms.get(peer, 0))
+
+
+func note_move(peer: int, position: Vector3, velocity: Vector3) -> void:
+	var now: int = int(now_ms.call())
+	var m: Array = _move.get(peer, [])
+
+	if not position.is_finite() or not velocity.is_finite():
+		position = (m[0] if not m.is_empty() else Vector3.ZERO)
+		velocity = Vector3.ZERO   # a made-up report: timed by its arrival
+
+	if m.is_empty():
+		_move[peer] = [position, 0.0, float(now), now, now]
+		return
+
+	var arrived: float = float(now - int(m[3])) / 1000.0
+	var gap: float = arrived
+	var speed2: float = velocity.length_squared()
+
+	if speed2 >= STAMP_MIN_MPS * STAMP_MIN_MPS:
+		var moved_s: float = (position - (m[0] as Vector3)).dot(velocity) / speed2
+		gap = clampf(moved_s, arrived - STAMP_JITTER_S, arrived + STAMP_JITTER_S) if is_finite(moved_s) else arrived
+
+	var sent_s: float = float(m[1]) + maxf(gap, 0.01)
+	var off: float = minf(float(m[2]) + STAMP_CREEP_MS, float(now) - sent_s * 1000.0)
+	off = maxf(off, float(now) - STAMP_BEHIND_MS - sent_s * 1000.0)
+	var stamp: int = maxi(int(round(sent_s * 1000.0 + off)), int(m[4]) + 1)
+	_move[peer] = [position, sent_s, off, now, mini(stamp, now)]
 
 
 # The worn pieces changed (server_items send_worn): everyone sees the new clothes.
@@ -78,10 +145,39 @@ func worn_changed(peer: int, numbers: PackedInt32Array) -> void:
 		_tell_all(peer)
 
 
+# A pack action came in (server_items action): a blow with the tool in hand counts a swing, so the others see it (the next rows).
+func note_action(peer: int, kind: int, held_slot: int = 0) -> void:
+	if kind in MEAL_ACTS:
+		_meals[peer] = (int(_meals.get(peer, 0)) + 1) & 7
+
+	if kind in SWING_ACTS or (kind == Net.ACT_USE_STRUCT and held_slot > 0):
+		var count: int = int((_swings.get(peer, [0, 0]) as Array)[0])
+		_swings[peer] = [(count + 1) & 7, int(now_ms.call())]
+
+
+# An arrow or thrown weapon left `thrower`'s hand (server_items.gd _shoot, _throw): every other player within NEAR_M with a look sees it fly.
+func flight(thrower: int, number: int, from: Vector3, velocity: Vector3, fire: bool) -> void:
+	if items == null or not send_flight.is_valid():
+		return
+
+	for peer in items.peer_ids():
+		if peer == thrower or not _looks.has(peer):
+			continue
+
+		var at: Variant = items.position_of(peer)
+
+		if at != null and (at as Vector3).distance_to(from) <= NEAR_M:
+			send_flight.call(peer, number, from, velocity, fire)
+
+
 func forget(peer: int) -> void:
+	_swings.erase(peer)
+	_meals.erase(peer)
+	_shown.erase(peer)
 	_looks.erase(peer)
 	_yaw.erase(peer)
 	_report_ms.erase(peer)
+	_move.erase(peer)
 	_worn_sent.erase(peer)
 	_sent.erase(peer)
 	_look_ms.erase(peer)
@@ -89,6 +185,11 @@ func forget(peer: int) -> void:
 
 func look_of(peer: int) -> Array:
 	return _looks.get(peer, [])
+
+
+# The body's facing (rotation.y, radians) from its last report, 0 when none (server_action_cues.gd: where its hands are).
+func yaw_of(peer: int) -> float:
+	return float(_yaw.get(peer, 0.0))
 
 
 func tick(delta: float) -> void:
@@ -104,7 +205,10 @@ func tick(delta: float) -> void:
 		return
 
 	var now: int = int(now_ms.call())
+	var server_stalled: bool = _last_tick_ms > 0 and now - _last_tick_ms > 2000   # the server itself stalled (a long save): its own lateness is no one's silence
+	_last_tick_ms = now
 	var at: Dictionary = {}
+	var heard: Dictionary = {}   # the players shown to the others: heard from within SILENT_MS (no ghost standing for a game that is gone)
 	var info: Dictionary = {}
 
 	for peer in peers:
@@ -114,17 +218,45 @@ func tick(delta: float) -> void:
 			continue   # a player is shown once its look and its first facing report came in
 
 		at[peer] = pos
-		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0)
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer])]
+
+		if server_stalled or now - _arrived_ms(peer) <= SILENT_MS:
+			heard[peer] = pos
+
+		var swing: Array = _swings.get(peer, [0, 0])
+		var down: bool = items.fainted_of(peer)
+		var stance: int = 3 if down else clampi(int(items.stance_of(peer)), 0, 3)   # fainted, or passed out from cold or in water: drawn lying, as it is
+		# a body down in water is not shown treading water (the swim clip wins over lying)
+		var state: int = stance | (SWIM if items.is_swimming(peer) and not down else 0) | (CARRY if items.carries_log(peer) else 0) \
+				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
+		var left: int = int(items.left_hand_number(peer))
+		var more: int = (MORE_LIT if items.torch_burning(peer) else 0) | ((int(items.hand_flags(peer)) & 15) << MORE_HANDS_SHIFT) | (int(_meals.get(peer, 0)) << MORE_MEAL_SHIFT)
+		var cast: int = cast_code(pos, items.fishing_float(peer))
+		var shown: Array = _shown.get(peer, [])
+
+		if shown.is_empty() or int(shown[0]) != left or int(shown[1]) != more or int(shown[3]) != cast:
+			shown = [left, more, now, cast]
+			_shown[peer] = shown
+
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more, cast]
+
+	var grid: Dictionary = grid_of(heard)   # filed once, so each receiver looks at its 9 cells, not at every player (load test 23 Nov 2026)
 
 	for receiver in at:
-		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
+		var rows: Array = []
+
+		if heard.has(receiver):
+			rows = rows_for(receiver, heard, grid)
+		else:
+			var pool: Dictionary = heard.duplicate()
+			pool[receiver] = at[receiver]   # a silent player is still sent the others (its rows wait in the line)
+			rows = rows_for(receiver, pool)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
+
 		var ids: PackedInt32Array = PackedInt32Array()
 		var newest: int = 0
 
 		for row in rows:
 			ids.append(int(row[0]))
-			newest = maxi(newest, int(info[row[0]][3]))
+			newest = maxi(newest, int(info[row[0]][4]))   # a new position or a swing is news
 
 		var last: Array = _sent.get(receiver, [-1, PackedInt32Array(), -RESEND_MS])
 
@@ -140,6 +272,9 @@ func tick(delta: float) -> void:
 		var states: PackedByteArray = PackedByteArray()
 		var held: PackedInt32Array = PackedInt32Array()
 		var times: PackedInt32Array = PackedInt32Array()
+		var lefts: PackedInt32Array = PackedInt32Array()
+		var mores: PackedByteArray = PackedByteArray()
+		var casts: PackedInt32Array = PackedInt32Array()
 
 		for row in rows:
 			var one: Array = info[row[0]]
@@ -148,16 +283,34 @@ func tick(delta: float) -> void:
 			states.append(int(one[1]))
 			held.append(int(one[2]))
 			times.append(int(one[3]))
+			lefts.append(int(one[5]))
+			mores.append(int(one[6]))
+			casts.append(int(one[7]))
 
-		send_rows.call(receiver, ids, positions, yaws, states, held, times)
+		send_rows.call(receiver, ids, positions, yaws, states, held, times, lefts, mores, casts)
 
 	for gone in _sent.keys():
 		if not peers.has(gone):
 			_sent.erase(gone)
 
 
+# A rod's float (`float_at`, INF for none) as one int beside a row at `body`: bit 24 set, then x, y and z from the body in signed 0.12 m
+# steps, 8 bits each (within 15.2 m: a cast lands within the rod's reach, fishing.json reach_m 8, and the angler may walk 6 m before the
+# line is taken in, move_cancel_m). 0 = no line in the water. player_view.gd cast_point reads it back.
+const CAST_ON := 1 << 24
+const CAST_STEP_M := 0.12
+
+static func cast_code(body: Vector3, float_at: Vector3) -> int:
+	if not float_at.is_finite() or not body.is_finite():
+		return 0
+
+	var d: Vector3 = (float_at - body) / CAST_STEP_M
+	return CAST_ON | ((clampi(roundi(d.x), -127, 127) & 255) << 16) | ((clampi(roundi(d.y), -127, 127) & 255) << 8) | (clampi(roundi(d.z), -127, 127) & 255)
+
+
 # The others near `me`, nearest first, at most MAX_ROWS: [[peer, position], ...]. `at` is peer -> position of the players that can be shown.
-static func rows_for(me: int, at: Dictionary) -> Array:
+# With `grid` (grid_of(at)) only the players in the 9 NEAR_M cells round `me` are looked at; the answer is the same.
+static func rows_for(me: int, at: Dictionary, grid: Dictionary = {}) -> Array:
 	var here: Variant = at.get(me, null)
 	var out: Array = []
 
@@ -165,8 +318,17 @@ static func rows_for(me: int, at: Dictionary) -> Array:
 		return out
 
 	var reach2: float = NEAR_M * NEAR_M
+	var pool: Array = at.keys()
 
-	for peer in at:
+	if not grid.is_empty():
+		var home: Vector2i = _cell_of(here)
+		pool = []
+
+		for dx in range(-1, 2):
+			for dz in range(-1, 2):
+				pool.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+
+	for peer in pool:
 		if peer == me:
 			continue
 
@@ -177,6 +339,25 @@ static func rows_for(me: int, at: Dictionary) -> Array:
 
 	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
 	return out.slice(0, MAX_ROWS)
+
+
+# peer -> position filed into NEAR_M cells (x, z): any player within NEAR_M of a spot is in one of the 9 cells round it.
+static func grid_of(at: Dictionary) -> Dictionary:
+	var grid: Dictionary = {}
+
+	for peer in at:
+		var cell: Vector2i = _cell_of(at[peer])
+
+		if not grid.has(cell):
+			grid[cell] = []
+
+		grid[cell].append(peer)
+
+	return grid
+
+
+static func _cell_of(pos: Vector3) -> Vector2i:
+	return Vector2i(floori(pos.x / NEAR_M), floori(pos.z / NEAR_M))
 
 
 func _tell_all(about: int) -> void:

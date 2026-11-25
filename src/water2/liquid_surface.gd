@@ -341,7 +341,10 @@ void fragment() {
 	// water the gap is taken from the water's own depth plus the lift instead, smooth across the quads.
 	float lifted = point_grid > 0.5 ? smoothstep(0.3, 1.0, length(t.gb)) * smoothstep(0.0, 0.05, depth) : 0.0;
 	through = mix(through, depth + chunk_lift, lifted);
-	float contact = smoothstep(0.0, contact_m, through);
+	// The contact fade is for a bank, where the sheet meets the ground; where the live window's sheet itself holds water (from 3 to 12 cm) there is no bank to hide,
+	// and looking down on a shallow reach `through` is short, so the fade took the water away (Dave's play-test 24 Nov 2026, a reedy river at
+	// x 57864 z 71571 on Medium: "looks like I can see right under the water": the near water was about 15 percent water colour, the far water blue).
+	float contact = max(smoothstep(0.0, contact_m, through), smoothstep(0.03, 0.12, depth) * (1.0 - point_grid));   // the live window's depth is the water's own; a chunk sheet's is a stand-in (1 m in, 0.3 m at the shore), so its bank keeps the fade
 
 	// Colour by depth, a sky reflection by angle.
 	// The cloud after rain clears on its own curve, running water faster than still (water_look_after_rain.md 1).
@@ -413,13 +416,13 @@ void fragment() {
 		foam = foam_line;
 	}
 	ALBEDO = mix(mix(water, sky_color, fresnel * 0.6), foam_tint, foam);
-	EMISSION = foam_tint * foam * 0.15 * daylight;
+	EMISSION = (foam_tint * foam * 0.15 + water * (1.0 - foam) * 0.2) * daylight;   // the body's own colour, a little, so thin water over a brown bed does not read grey
 	ROUGHNESS = 0.06 + 0.35 * foam;
 	SPECULAR = 0.5;
 	// Dave's QA list BUG-010 (3 Nov 2026): river and fall water read almost invisible. Running water is stirred up and catches the light, so it
 	// gets body with its speed; a fall face is near opaque. Still water keeps the clear look of the art direction (you see the bed).
 	float running = 0.75 * smoothstep(0.5, 2.0, speed) * smoothstep(0.05, 0.4, depth);
-	ALPHA = clamp(max(max(0.35 + 0.6 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;
+	ALPHA = clamp(max(max(0.45 + 0.5 * thick, running), max(foam, fall * 0.85)), 0.0, 1.0) * shore * edge * contact;   // still water: 45 % water colour at the thinnest (was 35), the bed soft beneath
 
 	// Frozen water (docs/design/frozen_water_look.md). Where: the shallows first (shore cover under 0.3 m, the deep cover from 2 m); a sheet only on water
 	// under 0.5 m/s (USACE), border ice along the bank up to 0.9 m/s, open water above and on falls; none within a spring's open length. Look: black
@@ -579,6 +582,53 @@ func _init() -> void:
 func set_debug(on: bool) -> void:
 	debug_on = 1 if on else 0
 	_material.set_shader_parameter("debug_sheet", float(debug_on))
+
+
+# The surface a sheet draws at (x, z) from its image (texel (0, 0) centred on `corner`, texels `texel_m` apart), as the shader draws it: each texel's
+# height its level in red, or 0.4 m under that where it is dry (the vertex tucks under the bed there), blended bilinearly; NAN where the depth in alpha
+# read bilinearly (a chunk sheet's fragment, fetch_bilinear) is under wet_min (the fragment discards there), or outside the image. The game's water
+# (wading, swimming, drinking: flora_view water_surface_at) reads this, so it acts on the water a player sees. Left out: the few cm the live window's
+# B-spline per pixel (sample_smooth) differs by, and the lift running water is drawn with over the ground's bumps (chunk_lift, thin_lift), which is
+# a look, not depth to wade in.
+static func drawn_surface(im: Image, corner: Vector2, texel_m: float, x: float, z: float) -> float:
+	if im == null or texel_m <= 0.0:
+		return NAN
+
+	var w: int = im.get_width()
+	var h: int = im.get_height()
+	var fx: float = (x - corner.x) / texel_m
+	var fz: float = (z - corner.y) / texel_m
+
+	if w < 2 or h < 2 or fx < 0.0 or fz < 0.0 or fx > float(w - 1) or fz > float(h - 1):
+		return NAN
+
+	var i0: int = mini(int(fx), w - 2)
+	var j0: int = mini(int(fz), h - 2)
+	var tx: float = fx - float(i0)
+	var tz: float = fz - float(j0)
+	var c00: Color = im.get_pixel(i0, j0)
+	var c10: Color = im.get_pixel(i0 + 1, j0)
+	var c01: Color = im.get_pixel(i0, j0 + 1)
+	var c11: Color = im.get_pixel(i0 + 1, j0 + 1)
+	if maxf(maxf(c00.a, c10.a), maxf(c01.a, c11.a)) < 0.0005:
+		return NAN   # dry all round (most calls: grass_view asks for every grass point)
+
+	var t: Color = c00.lerp(c10, tx).lerp(c01.lerp(c11, tx), tz)
+
+	if t.a < _wet_min(t):
+		return NAN
+
+	return lerpf(lerpf(_drawn_height(c00), _drawn_height(c10), tx), lerpf(_drawn_height(c01), _drawn_height(c11), tx), tz)
+
+
+# The shader's wet_min: the least depth that still draws, 4 mm for slow water, half a millimetre where it runs fast.
+static func _wet_min(t: Color) -> float:
+	return lerpf(0.004, 0.0005, smoothstep(0.6, 2.0, Vector2(t.g, t.b).length()))
+
+
+# A texel's vertex height (the shader's vertex(), without the lifts): its level, 0.4 m under it where dry.
+static func _drawn_height(t: Color) -> float:
+	return t.r if t.a > _wet_min(t) else t.r - 0.4
 
 
 # A chunk's settled water (water_grid.gd decode: count x count points `spacing` apart from the chunk's corner) as a liquid image: R surface, G/B the current,

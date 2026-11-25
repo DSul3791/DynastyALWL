@@ -1,5 +1,7 @@
 extends RefCounted
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # Window and display choices that are saved between runs (owner, 2026-10-20): the 3D
 # resolution (16:9 sizes, 1920x1080 the highest), windowed or fullscreen windowed, VSync
 # and the quality tier. Esc > Settings changes them; the file is user://display_settings.cfg.
@@ -31,13 +33,25 @@ const TEXT_NAMES := ["small", "medium", "large", "extra large"]
 const SORT_NAMES := ["Unsorted", "Name", "Weight (ascending)", "Weight (descending)", "Value (ascending)", "Value (descending)"]
 var sort_index: int = 0                  # inventory sort: unsorted (order picked up), name, weight, value
 var text_index: int = 1                  # size of the crafting and inventory screen's text (default a little smaller)
-var hud_text: bool = true                # F4: the text overlay (build, position, debug lines) shown or hidden
+var hud_text: bool = not OS.has_feature("template")   # Ctrl+Shift+F4: the developer text (build, fps, position, last sound) shown or hidden; off in the installed game
+var hud_text_chosen: bool = false        # the player turned it on or off with the key: only then does the installed game keep the saved choice
 var idle_minutes: int = 60               # Esc > Settings > Display, Idle timeout: minutes without input before the game warns and then closes (60 to 120, idle_timeout.gd)
 var damage_numbers: bool = true         # Esc > Settings > Gameplay, Damage numbers: floating text where a hit lands (Dave 2 Nov 2026, on by default)
 static var fahrenheit: bool = false      # Esc > Settings > Gameplay, Temperature: show body temperature in C or F (Dave 2 Nov 2026, saved; static so every screen reads it)
 static var reduce_motion: bool = false   # Esc > Settings > Gameplay, Reduce motion: the inventory's eases, fly-to-slot and shimmer become instant (look doc section 11; static so every slot reads it)
+var mouse_look: float = 1.0              # Esc > Settings > Gameplay, Mouse sensitivity: times the base turn rate (MOUSE_LOOK_MIN to MOUSE_LOOK_MAX)
+const MOUSE_LOOK_MIN := 0.1
+const MOUSE_LOOK_MAX := 3.0
+var fitted: Vector2i = Vector2i.ZERO      # the window size apply() last asked for (the chosen size, or smaller to fit the screen)
 var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (pitch black under rock without a light) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
+
+
+# The developer text is off in the installed game unless the player chose it with the key (Dave 23 Nov 2026: a tester's first run showed it).
+# Every display save wrote hud_text, so an installed game's settings file can hold the old default (on) from build 9257: only a choice made
+# with the key counts there. Run from the editor, the saved value counts as before.
+static func pick_hud_text(saved: bool, chosen: bool, exported: bool) -> bool:
+	return saved if (chosen or not exported) else false
 
 
 func load_saved() -> void:
@@ -46,20 +60,22 @@ func load_saved() -> void:
 	if file.load(path) != OK:
 		return
 
-	size_index = clampi(int(file.get_value("display", "size", DEFAULT_SIZE)), 0, SIZES.size() - 1)
-	fullscreen = bool(file.get_value("display", "fullscreen", false))
-	vsync_index = clampi(int(file.get_value("display", "vsync", 0)), 0, VSYNC_MODES.size() - 1)
-	quality = int(file.get_value("display", "quality", -1))
-	text_index = clampi(int(file.get_value("display", "text", 1)), 0, TEXT_SCALES.size() - 1)
-	hud_text = bool(file.get_value("display", "hud_text", true))
-	cave_dark = bool(file.get_value("display", "cave_dark", true))
-	damage_numbers = bool(file.get_value("display", "damage_numbers", true))
-	idle_minutes = clampi(int(file.get_value("display", "idle_minutes", 60)), 60, 120)
-	fahrenheit = bool(file.get_value("display", "fahrenheit", false))
-	reduce_motion = bool(file.get_value("display", "reduce_motion", false))
+	size_index = clampi(SettingsRead.whole(file, "display", "size", DEFAULT_SIZE), 0, SIZES.size() - 1)
+	fullscreen = SettingsRead.flag(file, "display", "fullscreen", false)
+	vsync_index = clampi(SettingsRead.whole(file, "display", "vsync", 0), 0, VSYNC_MODES.size() - 1)
+	quality = SettingsRead.whole(file, "display", "quality", -1)
+	text_index = clampi(SettingsRead.whole(file, "display", "text", 1), 0, TEXT_SCALES.size() - 1)
+	hud_text_chosen = SettingsRead.flag(file, "display", "hud_text_chosen", false)
+	hud_text = pick_hud_text(SettingsRead.flag(file, "display", "hud_text", true), hud_text_chosen, OS.has_feature("template"))
+	cave_dark = SettingsRead.flag(file, "display", "cave_dark", true)
+	damage_numbers = SettingsRead.flag(file, "display", "damage_numbers", true)
+	idle_minutes = clampi(SettingsRead.whole(file, "display", "idle_minutes", 60), 60, 120)
+	fahrenheit = SettingsRead.flag(file, "display", "fahrenheit", false)
+	reduce_motion = SettingsRead.flag(file, "display", "reduce_motion", false)
+	mouse_look = clampf(SettingsRead.number(file, "display", "mouse_look", 1.0), MOUSE_LOOK_MIN, MOUSE_LOOK_MAX)
 	# Saved choices from before the six-way list: 2 weight and 3 value were highest first; they map to descending.
-	var saved_sort: int = int(file.get_value("display", "sort", 0))
-	var sort_version: int = int(file.get_value("display", "sort_version", 1))
+	var saved_sort: int = SettingsRead.whole(file, "display", "sort", 0)
+	var sort_version: int = SettingsRead.whole(file, "display", "sort_version", 1)
 	sort_index = clampi(saved_sort, 0, SORT_NAMES.size() - 1)
 
 	if sort_version < 2:
@@ -74,11 +90,13 @@ func save() -> void:
 	file.set_value("display", "quality", quality)
 	file.set_value("display", "text", text_index)
 	file.set_value("display", "hud_text", hud_text)
+	file.set_value("display", "hud_text_chosen", hud_text_chosen)
 	file.set_value("display", "idle_minutes", clampi(idle_minutes, 60, 120))
 	file.set_value("display", "cave_dark", cave_dark)
 	file.set_value("display", "damage_numbers", damage_numbers)
 	file.set_value("display", "fahrenheit", fahrenheit)
 	file.set_value("display", "reduce_motion", reduce_motion)
+	file.set_value("display", "mouse_look", clampf(mouse_look, MOUSE_LOOK_MIN, MOUSE_LOOK_MAX))
 	file.set_value("display", "sort", sort_index)
 	file.set_value("display", "sort_version", 2)
 	file.save(path)
@@ -100,6 +118,18 @@ static func air_text(air_c: float) -> String:
 	if fahrenheit:
 		return "%.0f °F" % (air_c * 9.0 / 5.0 + 32.0)
 	return "%.0f °C" % air_c
+
+
+# What apply(keep_current) does with the window's present mode: MODE_FULLSCREEN when the player has it fullscreen (either kind), MODE_MAXIMIZED
+# when maximised and the saved choice is windowed, else -1 (the saved choice is applied as usual).
+static func keep_mode(current: int, saved_fullscreen: bool) -> int:
+	if current == Window.MODE_FULLSCREEN or current == Window.MODE_EXCLUSIVE_FULLSCREEN:
+		return Window.MODE_FULLSCREEN
+
+	if current == Window.MODE_MAXIMIZED and not saved_fullscreen:
+		return Window.MODE_MAXIMIZED
+
+	return -1
 
 
 # Back to the first-run choices (the game puts the quality back to High).
@@ -134,6 +164,19 @@ func render_size(quality_tier: int) -> Vector2i:
 	return Vector2i(roundi(width), roundi(width * 9.0 / 16.0))
 
 
+# The windowed size for `want` on a screen whose usable area is `room`: `want`, or the biggest 16:9 size inside `room` when it does not fit.
+static func fit_window(want: Vector2i, room: Vector2i) -> Vector2i:
+	if room.x <= 0 or room.y <= 0 or (want.x <= room.x and want.y <= room.y):
+		return want
+
+	if room.x * want.y <= room.y * want.x:   # the width limits: whole numbers, so the limiting side is exactly the room
+		@warning_ignore("integer_division")
+		return Vector2i(room.x, maxi(room.x * want.y / want.x, 1))
+
+	@warning_ignore("integer_division")
+	return Vector2i(maxi(room.y * want.x / want.y, 1), room.y)
+
+
 func size() -> Vector2i:
 	return SIZES[size_index]
 
@@ -142,23 +185,41 @@ func size_text() -> String:
 	return "%dx%d" % [size().x, size().y]
 
 
-# Puts the choices on the window (nothing in a headless run).
-func apply(window: Window) -> void:
+# Puts the choices on the window (nothing in a headless run). keep_current (joining a world, opening the title page): a window the player
+# made larger themselves (maximised, or fullscreen from the title bar or the keyboard) stays as it is (Dave 23 Nov 2026: he went fullscreen
+# before joining and the join shrank the window; "we need consistency"); a fullscreen one is saved as the Fullscreen choice. The Settings
+# switches pass false, so turning Fullscreen off still makes a window.
+func apply(window: Window, keep_current: bool = false) -> void:
 	if DisplayServer.get_name() == "headless":
 		return
+
+	var mode: int = keep_mode(window.mode, fullscreen) if keep_current else -1
+
+	if mode == Window.MODE_FULLSCREEN and not fullscreen:
+		fullscreen = true
+		save()
 
 	DisplayServer.window_set_vsync_mode(VSYNC_MODES[vsync_index])
 	window.content_scale_mode = Window.CONTENT_SCALE_MODE_VIEWPORT
 	window.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
 	window.content_scale_size = BASE
 
+	if mode == Window.MODE_MAXIMIZED:
+		return   # maximised by the player: left so
+
 	if fullscreen:
 		window.mode = Window.MODE_FULLSCREEN
 		return
 
 	window.mode = Window.MODE_WINDOWED
-	window.size = size()
+	# A window never larger than the screen's usable area (the 1366x768 floor with the 1920x1080 default would hang off the screen): the
+	# chosen size, else the biggest 16:9 size that fits. The 3D picture keeps the chosen size (render_size) and is scaled to it.
+	var decor: Vector2i = window.get_size_with_decorations() - window.size   # the title bar and borders: the usable area holds them too
+	fitted = fit_window(size(), DisplayServer.screen_get_usable_rect(window.current_screen).size - decor)
+	window.size = fitted
 	# Keep the window on the screen after it grew.
 	var screen: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	var outer: Vector2i = window.size + decor
+	var title: Vector2i = window.position - window.get_position_with_decorations()   # the client area's offset inside the frame (title bar, border)
 	@warning_ignore("integer_division")
-	window.position = Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - window.size.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - window.size.y) / 2))
+	window.position = title + Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - outer.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - outer.y) / 2))

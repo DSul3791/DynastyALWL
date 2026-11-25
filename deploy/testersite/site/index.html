@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynasty play-test</title>
+<!-- The tester site's front page (deploy/testersite/INSTALL.md): the three choices Dave asked for on 23 Nov 2026 (Download latest with
+     the build number, Submit a bug, Suggest an idea) and the high-score table under them. The build number comes from /latest.json
+     (tools/make_testplayers_site.ps1); the login name and the scores from the report service at /api/. -->
+<link rel="stylesheet" href="/css/dynasty.css">
+<script src="/js/tester.js" defer></script>
+</head>
+<body>
+  <div class="who">{{placeholder "http.auth.user.id"}}</div>
+  <div class="hero"><img src="/images/hero.jpg" alt="Dynasty: A Life Well Lived" width="1330" height="760"></div>
+
+  <main>
+    <nav class="choices">
+      <a class="choice primary" href="/download/">
+        <span class="icon" aria-hidden="true">&#8595;</span>
+        <span class="name">Download latest</span>
+        <span class="sub" data-build>The newest build</span>
+        <span class="sub">Install and join steps inside</span>
+      </a>
+      <a class="choice" href="/bug.html">
+        <span class="icon" aria-hidden="true">&#9873;</span>
+        <span class="name">Submit a bug</span>
+        <span class="sub">Something broke or felt wrong</span>
+      </a>
+      <a class="choice" href="/idea.html">
+        <span class="icon" aria-hidden="true">&#10022;</span>
+        <span class="name">Suggest an idea</span>
+        <span class="sub">Something you would like to see</span>
+      </a>
+    </nav>
+
+    <section class="panel">
+      <h2>High scores <small>Every bug and idea counts one point</small></h2>
+      <table class="scores" id="scores">
+        <thead>
+          <tr>
+            <th scope="col"><span class="sr">#</span></th>
+            <th scope="col" class="player" data-key="user"><button type="button">Player</button></th>
+            <th scope="col" data-key="bugs"><button type="button">Bugs<span class="long"> reported</span></button></th>
+            <th scope="col" data-key="ideas"><button type="button">Ideas</button></th>
+            <th scope="col" data-key="total"><button type="button"><span class="long">Total </span>Score</button></th>
+            <th scope="col" class="barhead"></th>
+          </tr>
+        </thead>
+        <tbody><tr><td class="player" colspan="6">Loading the scores&hellip;</td></tr></tbody>
+      </table>
+      <div class="legend" aria-hidden="true"><span><i style="background:var(--bar-bug)"></i>Bugs</span><span><i style="background:var(--bar-idea)"></i>Ideas</span></div>
+      <p class="note" id="scores-note"></p>
+    </section>
+
+    <section class="panel" id="recent-panel" hidden>
+      <h2>Latest reports</h2>
+      <ul class="recent" id="recent"></ul>
+    </section>
+
+    <footer>
+      <span class="mark">Dynasty &middot; A Life Well Lived</span>
+      Thank you for testing.
+    </footer>
+  </main>
+</body>
+</html>

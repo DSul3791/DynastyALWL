@@ -113,8 +113,8 @@ func _init() -> void:
 	players[0] = Vector3(spot.x - 10.0, 10.0, spot.z)
 	var before: float = 10.0
 
-	for n in 30:
-		a.tick(0.05)
+	for n in 60:
+		a.tick(0.05)   # it stares first (reactions.startle_s, up to 1.75 s)
 
 	check(a.animals[one]["state"] == AnimalsScript.FLEE, "a player within 14 m makes it bolt")
 	run(a, 4.0)
@@ -169,7 +169,7 @@ func _init() -> void:
 	var lead: Vector3 = deer_zoo.animals[deer[0]]["pos"]
 	var watcher: Array = deer_zoo.player_positions.call()
 	watcher[0] = Vector3(lead.x - 15.0, 10.0, lead.z)
-	run(deer_zoo, 0.5)
+	run(deer_zoo, 2.0)   # it stares first (about 1 s at 15 m: reactions.startle_s)
 	var fleeing: int = 0
 
 	for id in deer:
@@ -191,6 +191,29 @@ func _init() -> void:
 	var rows: Array = a.rows_near(players[0])
 	check(rows.size() == 30, "at most 30 rows are sent (%d)" % rows.size())
 	check(rows[0][2].distance_to(players[0]) <= rows[29][2].distance_to(players[0]) + 0.01, "nearest first")
+
+	# A send pass (terrain_server _send_npcs; load test 23 Nov 2026): the animals found by grid and each row built once. Same animals, same order.
+	for n in 25:
+		a.spawn("deer", -300.0 + 25.0 * float(n), -90.0 + 7.0 * float(n))
+
+	var ids_of: Callable = func(list: Array) -> Array: return list.map(func(r): return int(r[0]))
+	var spots: Array = [players[0], Vector3(-200.0, 10.0, -60.0), Vector3(63.9, 10.0, 0.1), Vector3(-64.0, 10.0, -64.0), Vector3(5000.0, 10.0, 0.0)]
+	var plain: Array = []
+
+	for at in spots:
+		plain.append([ids_of.call(a.rows_near(at)), ids_of.call(a.rows_near(at, 300.0, 60))])
+
+	a.begin_send_pass()
+	var in_pass: Array = []
+
+	for at in spots:
+		in_pass.append([ids_of.call(a.rows_near(at)), ids_of.call(a.rows_near(at, 300.0, 60))])
+
+	var twice: Array = [a.rows_near(players[0]), a.rows_near(players[0])]
+	a.end_send_pass()
+	check(in_pass == plain, "in a send pass, rows_near finds the same animals, nearest first, as looking at every animal")
+	check(not twice[0].is_empty() and is_same(twice[0][0], twice[1][0]), "and each animal's row is built once per pass")
+	check(not a._in_pass and a._pass_rows.is_empty(), "the pass ends clean")
 
 	# Far away: frozen, then dropped.
 	players[0] = Vector3(260.0, 10.0, 0.0)
@@ -383,7 +406,9 @@ func _hunting() -> void:
 	check(not zoo.animals.has(bled_id) and carcasses_after == carcasses_before + 1, "a wounded animal bleeds out and leaves a carcass")
 	var test_one: int = items.make_carcass("rabbit", Vector3(3.0, 10.0, 0.0))
 	check(test_one != 0 and items.make_carcass("dragon", Vector3.ZERO) == 0, "the admin test carcass works for a known species only")
+	items._dirty = true
 	items.save()
+	items._finish_writer()
 	var again = ItemsScript.new()
 	again.send_full = func(_p, _b): pass
 	again.send_slots = func(_p, _b): pass
@@ -394,4 +419,4 @@ func _hunting() -> void:
 	for id in again._items:
 		kept += 1 if again._items[id].has("struct") and str(again._items[id]["struct"]["kind"]) == "carcass" else 0
 
-	check(kept == 0, "carcasses are not saved")
+	check(kept >= 1, "carcasses are kept over a restart (23 Nov 2026: a kill was lost at every restart)")

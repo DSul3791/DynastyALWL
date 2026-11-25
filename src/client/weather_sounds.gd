@@ -59,6 +59,7 @@ const THUNDER_WIND_LOST_DB := 14.0       # at wind 1, past 10 km (Jamie: a faint
 const AirBands := preload("res://src/client/air_bands.gd")
 const OutdoorAir := preload("res://src/client/outdoor_air.gd")
 const GameClock := preload("res://src/shared/game_clock.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const SPEED_OF_SOUND := 343.0
 
 # kind: rain (0 to 1), wind (0 to 1), hush (0 to 1, quiets the nature layer), thunder (0 or 1),
@@ -119,6 +120,8 @@ var roofed: float = 0.0                 # 0 no roof overhead, 1 under a roof (le
 var snow_fresh: float = 0.0             # --sound-outdoors: 1 snow just fell .. 0 settled (outdoor_air.gd); the hush follows it, not the snow lying
 var outdoors: bool = false
 var covered: float = 0.0                # 0 open, 1 under a canopy (smoothed); the ground there stays dry
+var in_rock: float = 0.0                # the cave's rock enclosure (cave_sounds.rock_enclosure, smoothed there): from IN_ROCK_DRY the ground underfoot is a cave's, dry in any rain
+const IN_ROCK_DRY := 0.5                # cave_air.json deep_from_enclosure: the enclosure from which the player counts as inside rock
 var last_thunder: String = ""
 var world_wind: float = 0.35            # the world's wind (0.15 calm to 1 storm), smoothed: sets the wind sound
 
@@ -283,6 +286,7 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 		ground_class = forced_ground if forced_ground != "" else _stage.rain_ground(body)
 
 	covered = move_toward(covered, _cover_target, delta / 1.5)
+	in_rock = float(_stage.cave.rock_enclosure) if _stage.get("cave") != null else 0.0
 	roofed = move_toward(roofed, _roof_target, delta / 1.5)
 	var cover: float = covered
 	var roof: float = minf(roofed, cover)
@@ -331,8 +335,8 @@ func _roof_over(pos: Vector3) -> bool:
 
 # The ground soaks and dries, snow settles and melts (slowly; a test kind forces temperature to cold).
 func _ground(delta: float) -> void:
-	if covered > 0.5:
-		ground_wet = move_toward(ground_wet, 0.0, delta / DRY_UNDER_SEC)         # the canopy keeps the ground dry
+	if covered > 0.5 or in_rock >= IN_ROCK_DRY:
+		ground_wet = move_toward(ground_wet, 0.0, delta / DRY_UNDER_SEC)         # the canopy, or a cave's rock overhead, keeps the ground dry (no mud steps in a cave in the rain)
 	elif rain >= 0.25:
 		ground_wet = move_toward(ground_wet, minf(rain * 1.5, 1.0), delta / WET_RISE_SEC)
 	else:
@@ -352,6 +356,13 @@ func _ground(delta: float) -> void:
 		return
 
 	snow_hush = move_toward(snow_hush, minf(0.8 * ground_snow + falling, 1.0), delta / HUSH_EASE_SEC)
+
+
+# Snow lies underfoot for the steps (sound_stage.step_ground): the ground's snow memory has reached `cover_from`, and, for the listener's
+# own feet, the player is not inside a cave's rock, where no snow lies whatever falls outside. Another player's step (`own_feet` false)
+# reads the snow outside: whether they are in a cave is not known here.
+func snow_underfoot(cover_from: float, own_feet: bool = true) -> bool:
+	return ground_snow >= cover_from and (not own_feet or in_rock < IN_ROCK_DRY)
 
 
 # Under trees in rain: now and then a drop falls from a leaf nearby.
@@ -519,7 +530,7 @@ func strike(distance_m: float, angle: float = -1.0) -> bool:
 	_pending.append([thunder_delay(distance_m), voice, offset])
 	thunders_played += 1
 	last_thunder = "%s %.0f m, %s, heard in %.1f s" % [sound_name, distance_m, voice.bus, thunder_delay(distance_m)]
-	print("sound rumble: thunder ", last_thunder)   # far thunder grumbles like a rumble (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave)
+	FreezeWatchScript.printer.line("sound rumble: thunder " + str(last_thunder))   # far thunder grumbles like a rumble (Dave 2 Nov 2026: cave-in rumbles nowhere near a cave)
 	return true
 
 

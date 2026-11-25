@@ -8,6 +8,8 @@ const BARS := 5
 const SILENCE_MSEC := [600, 1200, 2500, 5000, 9000]      # silence that caps the bars at 4, 3, 2, 1, 0
 const RTT_MS := [60.0, 120.0, 200.0, 350.0]              # round trip below which the bars are 5, 4, 3, 2 (else 1)
 const LOSS_PERCENT := [1.0, 3.0, 10.0]                   # loss above which the bars are at most 4, 3, 2
+const SAY_SILENT_MSEC := 8000                            # silence this long puts a plain line under the bars (coordinator 23 Nov 2026: a server restarting or a long spike left the
+                                                         # world frozen with no word until the line timed out, 60 to 120 s: net_settings.gd)
 
 var bars: int = BARS
 var rtt_ms: float = 0.0
@@ -20,6 +22,16 @@ var on_drop: Callable                                    # (text) when the bars 
 var _last_pulse_msec: int = 0
 var _peer_of: Callable
 var _next_check_msec: int = 0
+var _note: Label = null
+
+
+# What the line under the bars says after `silent_ms` of no word from the server ("" while it talks).
+static func silence_words(silent_ms: int) -> String:
+	if silent_ms < SAY_SILENT_MSEC:
+		return ""
+
+	@warning_ignore("integer_division")
+	return "No word from the server for %d s. Waiting for it: it may be restarting, or the connection is slow." % (silent_ms / 1000)
 
 
 # peer_of returns the ENetPacketPeer of the server (or null).
@@ -46,6 +58,7 @@ func client_stalled(delta: float) -> void:
 
 func set_lost() -> void:
 	lost = true
+	_say_silence("")   # the lost notice says it from here
 	bars = 0
 	queue_redraw()
 
@@ -63,6 +76,7 @@ func _process(_delta: float) -> void:
 	_next_check_msec = now + 200
 	var peer: ENetPacketPeer = _peer_of.call() if _peer_of.is_valid() else null
 	silence_msec = now - _last_pulse_msec
+	_say_silence(silence_words(silence_msec) if heard else "")
 	var count: int = BARS
 
 	if peer == null or peer.get_state() != ENetPacketPeer.STATE_CONNECTED:
@@ -91,6 +105,23 @@ func _process(_delta: float) -> void:
 
 		bars = count
 		queue_redraw()
+
+
+func _say_silence(words: String) -> void:
+	if words == "" and _note == null:
+		return
+
+	if _note == null:
+		_note = Label.new()
+		_note.position = Vector2(0.0, size.y + 4.0)
+		_note.add_theme_font_size_override("font_size", 18)
+		_note.add_theme_color_override("font_outline_color", Color.BLACK)
+		_note.add_theme_constant_override("outline_size", 6)
+		_note.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_note)
+
+	_note.text = words
+	_note.visible = words != ""
 
 
 func _draw() -> void:

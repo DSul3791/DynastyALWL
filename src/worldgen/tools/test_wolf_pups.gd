@@ -46,7 +46,7 @@ func make():
 	w.fires = func(): return fires_at
 	w.notice = func(_p, _t): pass
 	w.game_seconds = func(): return now
-	w.hurt_player = func(peer, dmg, lethal, _cause):
+	w.hurt_player = func(peer, dmg, lethal, _cause, _from):
 		log_bites += 1
 		health[peer] = float(health.get(peer, 100.0)) - dmg
 		if lethal and health[peer] <= 0.0:
@@ -153,6 +153,34 @@ func _init() -> void:
 	check(log_bites == 0 and not bool(pack.get("guard_rush", false)), "no rush during the 3 s warning")
 	think(a, pid, 6.0)
 	check(log_bites > 0, "after the warning a player 20 m from the den is rushed, torch or not (%d bites)" % log_bites)
+
+	# 5b. Never through a wall (coordinator's fight walk, 23 Nov 2026: wolves bit through walls): with a wall on every line from a wolf to
+	# the player (wall_between, no margin) but none in their way (crosses_wall has a body margin), the den guard still rushes, and bites
+	# nothing; without it the same rush bites.
+	var health_was: Dictionary = health.duplicate()
+
+	for walled in [true, false]:
+		var g = make()
+
+		if walled:
+			g.walls = func(_x0, _z0, _x1, _z1, margin): return margin == 0.0
+
+		var pidg: int = g.wolves.spawn_pack(100.0, 0.0)
+		g.wolves.make_pups(pidg)
+		players = [player(1, 120.0, 0.0)]
+		fires_at = []
+		health = {1: 100000.0}   # no maim: the rush runs on
+		var bites_was: int = log_bites
+		var rushed: bool = false
+
+		for _s in 100:
+			think(g, pidg, 0.1)
+			rushed = rushed or bool(g.wolves.packs[pidg].get("guard_rush", false))
+
+		var bit: int = log_bites - bites_was
+		check(rushed and (bit == 0 if walled else bit > 0), "%s, the den guard rushes (%s) and lands %d bites" % ["with a wall between them" if walled else "with no wall", str(rushed), bit])
+
+	health = health_was
 
 	# 6. A campfire by the player holds the pack at its den.
 	var b = make()

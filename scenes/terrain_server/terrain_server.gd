@@ -14,6 +14,7 @@ extends Node
 #   --store=DIR     server store folder (default user://server_store/<world name>)
 #   --threads=N     worker threads making blocks (default: usable CPUs - 1; cpu_budget.gd counts a container's CPU limit)
 #   --quit-after=S  stop after S seconds (headless checks)
+#   --profile=S     (load tests, tools/load_test.sh) every S seconds a PROFILE line of each frame step's time, and every telemetry line also on stdout
 #   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
 #                      if nobody joins (the "play" launcher's own server)
@@ -30,6 +31,7 @@ extends Node
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const WaterAreas := preload("res://src/shared/water_areas.gd")
 const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # a blow reaches an animal's body, not its middle (hit_animal)
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const IceMoatScript := preload("res://src/shared/ice_moat.gd")
@@ -47,11 +49,14 @@ const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const BogIronScript := preload("res://src/shared/bog_iron.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # Edda and Hob's fire: where a player rescued to the town wakes (_rescue_spots)
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const PlayersScript := preload("res://src/stream/server_players.gd")
+const CuesScript := preload("res://src/stream/server_action_cues.gd")
+const FishSignsScript := preload("res://src/server/server_fish_signs.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
@@ -76,8 +81,15 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ActionLimitsScript := preload("res://src/shared/action_limits.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const FloraPackScript := preload("res://src/stream/flora_pack.gd")   # prebuilt plants (Dave 23 Nov 2026)
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
+# Lag lane 23 Nov 2026 (cloud join, timestamped): a new player's far ground reaches the neighbour tiles (a client's coarse LOD blocks go out
+# several km), and those tiles were read only when the first such block was asked for, one after another at 1.4-2.6 s each: the ground was
+# ready 13.5 s after the welcome, 6 s of it waiting for tiles (4, 4), (3, 5) and (4, 5). Every tile within this of the spawn is now read at
+# start-up, and of a returning player's spot at the hello, each on its own worker, so the reads overlap and are mostly done before they are needed.
+const JOIN_TILE_MARGIN_M := 6000.0
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
 const ServerAuthScript := preload("res://src/shared/server_auth.gd")
@@ -87,11 +99,13 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const TunnelWatchScript := preload("res://src/stream/tunnel_watch.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
-const MAX_PLAYERS := 32                 # ENet's peer limit; the server pick page shows "2 / 32"
+const MAX_PLAYERS := 32                 # the most players at once; the server pick page shows "2 / 32"
+var max_players: int = MAX_PLAYERS       # --max-players=N (tests: a full server with 1 player)
 const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
+const ClimateScript := preload("res://src/shared/climate.gd")
 const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
 const CellReadsScript := preload("res://src/stream/cell_reads.gd")   # a scatter cell's ground, water and ore reads bound to its tile (one generator lock a cell)
 const ThunderScript := preload("res://src/shared/thunder.gd")
@@ -106,6 +120,7 @@ const WATER_BASE_RATE := 10.0           # m3 per second at each spring (about 15
 const IDLE_LODS := 4                   # detail levels the idle builder keeps ahead of players
 const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of that level
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
+const IDLE_SAVED_SPOTS := 8            # characters' saved spots (most recent) prebuilt at start-up, with the spawn
 
 var _commit: String = GitStamp.short_commit()   # read once at start (Dave 17 Nov 2026): a server left running after a pull must name the code it runs, not the checkout now on disk, or the client's out-of-date check is fooled
 var _server_settings = ServerSettingsScript.new()
@@ -127,26 +142,31 @@ var identity = IdentityScript.new()      # who a peer is (src/stream/identity_pr
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var players                            # ServerPlayers: what each player sees of the others (protocol 151)
+var cues                               # ServerActionCues: other players' blows, picks and crafts heard nearby (protocol 156)
+var fish_signs                         # ServerFishSigns: fish jumps and shadows near players (protocol 169)
 var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
 var trade                              # ServerTrade: shops (coins)
 var _npc_sent_ms: Dictionary = {}
 var _animal_sent_ms: Dictionary = {}
-var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last sent
+var _npc_sent: Dictionary = {}         # peer -> hash of the NPC rows last sent
 var _npc_send_t: float = 0.0
 var _pulse_t: float = 0.0
 var _water_updates: int = 0
-var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
+var weather: Dictionary = {}           # the starter row's weather at sea level (WeatherScript.state), refreshed every second: the flora season, the log line, fallbacks
 var _weather_next_msec: int = 0
+var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
+var _weather_here_msec: int = -100000
+var _rain_hours_cache: Dictionary = {}   # Vector3i(tile row, height band, hours looked back) -> _rain_hours_at's answer, for the game hour it was made
+var _rain_hours_hour: int = -1
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
 var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
-var _swell: float = 0.0
-var _dry: float = 0.0
+var _river_rows: Dictionary = {}   # tile row -> [swell, dry]: each live row's rivers follow their own row's weather, lagged (not saved: they settle in WEATHER_LAG_S)
 var _weather_bucket: int = -1
 var _water_seen: Dictionary = {}        # tile -> msec a player was last in it (the live water set keeps a tile WATER_KEEP_MS after)
 var _water_live_next: int = 0
@@ -157,6 +177,12 @@ var tunnels = TunnelWatchScript.new()     # tunnel grace timers, shaking and col
 var water_live                         # the starter tile's running water, tuned with + and - on the client
 var _world_dir: String = ""
 var _bake_running: bool = false        # a tile bake is writing the tile files (store.baking)
+# The idle builders wait while the main thread is pressed: with players spread out they took the CPUs the main thread needed (server load test
+# 23 Nov 2026, 4 CPUs, 32 players over 2 km: 4 frames a second with them, 19 without). Set on the main thread, read by the idle threads.
+const IDLE_YIELD_GAP_MS := 50          # a frame gap this long ...
+const IDLE_YIELD_MS := 3000            # ... keeps the idle builders waiting this long
+var _idle_hold_until_msec: int = 0
+var _last_frame_msec: int = 0
 var settings
 var spawn: Vector3 = Vector3.ZERO
 var net
@@ -164,6 +190,7 @@ var _queue: Array = []                 # urgent [peer, key Vector4i], oldest fir
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
 var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _flora_running: int = 0            # workers making a flora chunk now (under _queue_mutex); at most _max_running - 1, so one is always free for ground
 var _key_budget: Dictionary = {}       # peer -> [keys left, msec of the last refill] (queue mutex)
 var _water_queue: Array = []           # [peer, chunk Vector2i] water to pack on a worker thread (never on the main thread), oldest first
 var _water_done: Array = []            # [peer, chunk, bytes] packed, waiting to be sent by the main thread
@@ -231,7 +258,10 @@ var _edit_by: int = 0                  # the admin whose dig this is (_on_dig_re
 var _edits_held: Dictionary = {}        # peer -> [[centre, radius, material (-1 = a dig)], ...] oldest first, not yet sent to that player
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
+var _last_report: String = ""   # the 10 s status lines as last printed: unchanged, they wait for the 5 min heartbeat (Dave's server log, 23 Nov 2026)
+var _last_report_msec: int = 0
 var _usable_cpus: int = 1               # CPUs this process may use (cpu_budget.gd: a container's limit counts)
+var _cpus_setting: int = 0              # --cpus=N or DYNASTY_SERVER_CPUS: the CPU threads the server may use in all (0 = no setting)
 var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
 var _idle_workers: Array = []
 var _idle_offsets: Array = []          # [lod, dx, dz] nearest first, same for every player
@@ -245,6 +275,9 @@ var _clear_generated_at_start: bool = false
 var _flag_check_msec: int = 0
 var _store_path: String = ""
 var ice_moat = IceMoatScript.new()   # the thaw's open shore moat, as the client draws it (ice_moat.gd)
+var _night_frames: int = 0           # a night skip's catch-up frames so far (the log line)
+var _night_cost_usec: int = 0
+var _night_worst_usec: int = 0
 var game_clock = GameClockScript.new()   # the one game clock; advances only while the server runs
 var _clock_saved_msec: int = 0
 
@@ -257,8 +290,10 @@ func _ready() -> void:
 	var port: int = 24600
 	var world_dir: String = "res://worlds/base_world"
 	var store_dir: String = ""
-	_usable_cpus = CpuBudgetScript.usable()
+	_cpus_setting = CpuBudgetScript.setting(OS.get_cmdline_user_args(), OS.get_environment("DYNASTY_SERVER_CPUS"))
+	_usable_cpus = CpuBudgetScript.allowed(CpuBudgetScript.usable(), _cpus_setting)   # --cpus / DYNASTY_SERVER_CPUS holds it to fewer (SERVER.md, CPUs)
 	_max_running = maxi(_usable_cpus - 1, 1)   # a container held to fewer CPUs than the machine has gets fewer threads (David4, 15 Nov 2026)
+	_idle_threads = CpuBudgetScript.idle_threads_for(_cpus_setting, _idle_threads)
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--port="):
@@ -269,6 +304,8 @@ func _ready() -> void:
 			_clear_generated_at_start = true
 		elif argument.begins_with("--store="):
 			store_dir = argument.trim_prefix("--store=")
+		elif argument.begins_with("--max-players="):
+			max_players = clampi(int(argument.trim_prefix("--max-players=")), 1, MAX_PLAYERS)
 		elif argument.begins_with("--threads="):
 			_max_running = maxi(int(argument.trim_prefix("--threads=")), 1)
 		elif argument.begins_with("--idle-threads="):
@@ -279,6 +316,9 @@ func _ready() -> void:
 			_dedicated = true
 		elif argument.begins_with("--dev-reset-world="):
 			_dev_reset_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--dev-reset-world=")) * 1000.0)
+		elif argument.begins_with("--profile="):
+			_events.profile_every_msec = int(float(argument.trim_prefix("--profile=")) * 1000.0)   # load tests: PROFILE lines (event_log.gd)
+			_events.profile_frame_phase = "clock"
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
 
@@ -325,14 +365,36 @@ func _ready() -> void:
 
 	print("server: name \"%s\"; %s" % [_server_settings.server_name, _server_settings.note])
 	_load_game_clock()
+
+	# Test plays (lag lane 23 Nov 2026): --game-hour=H starts the clock at hour H of its current day, so standing-play hitch counts taken on
+	# different days compare (the sky's cost depends on the hour). Nothing else changes; the clock runs on from there and is saved as usual.
+	# For throwaway test stores only: it can move the clock back up to a day, which skews item, trade and animal timers on a kept world.
+	# --game-day=D (look rig --day, weather walk 23 Nov 2026) moves the clock to day D of the year (0 to 364) at the same hour, in the same year,
+	# so the season turns and winter can be pictured; read before --game-hour, which then sets the hour of that day. Throwaway stores only.
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--game-day=") and argument.trim_prefix("--game-day=").is_valid_int():
+			var year_start: float = float(game_clock.year()) * float(GameClockScript.DAYS_PER_YEAR) * GameClockScript.SECONDS_PER_DAY   # starter-calendar: the admin --game-day sets the one clock
+			game_clock.seconds = year_start + float(clampi(int(argument.trim_prefix("--game-day=")), 0, GameClockScript.DAYS_PER_YEAR - 1)) * GameClockScript.SECONDS_PER_DAY + game_clock.hour() * 3600.0   # starter-calendar: the admin --game-day sets the one clock
+			print("server: --game-day: the clock is at day %d (%s), hour %.2f" % [game_clock.day_of_year(), game_clock.season(), game_clock.hour()])   # starter-calendar: a log line
+
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--game-hour=") and argument.trim_prefix("--game-hour=").is_valid_float():
+			var day_start: float = floorf(game_clock.seconds / GameClockScript.SECONDS_PER_DAY) * GameClockScript.SECONDS_PER_DAY
+			game_clock.seconds = day_start + clampf(float(argument.trim_prefix("--game-hour=")), 0.0, 23.99) * 3600.0
+			print("server: --game-hour: the clock starts at hour %.2f of day %d" % [game_clock.hour(), game_clock.day_of_year()])   # starter-calendar: a log line
+
 	var problem: String = store.setup(generator, store_dir)
 
 	if _clear_generated_at_start:
 		store.clear_generated()
 		print("server: cleared the generated ground as asked (--clear-generated)")
 
+	if problem == "" and not _store_writable(store_dir):
+		problem = "the store folder %s cannot be written (read-only, full, or not this user's)" % store_dir
+
 	if problem != "":
-		push_error("Terrain server: %s" % problem)
+		push_error("Terrain server: cannot start: %s. The store is left as it was; nothing is saved over it." % problem)
+		_refused_start = true   # no frame runs on a half-made server, and nothing is saved at exit
 		get_tree().quit(1)
 		return
 
@@ -342,6 +404,14 @@ func _ready() -> void:
 	placer.setup(generator, tables, rules)
 	flora = FloraStoreScript.new()
 	flora.setup(placer, store_dir)
+	var flora_pack = FloraPackScript.new()
+	flora_pack.open(store_dir + "/" + FloraPackScript.FOLDER, FloraPackScript.fingerprint(store.tiles_stamp))
+
+	if flora_pack.chunks() > 0:
+		flora.pack = flora_pack
+
+	if flora_pack.chunks() > 0 or flora_pack.stale > 0:
+		print("server flora: prebuilt plants for %d chunks in %d tiles%s" % [flora_pack.chunks(), flora_pack.tiles, ("; %d tile files were made from other tiles, data or placer code and are not used (build them again)" % flora_pack.stale) if flora_pack.stale > 0 else ""])
 	items = ItemsScript.new()
 	@warning_ignore("confusable_local_declaration")
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
@@ -415,23 +485,35 @@ func _ready() -> void:
 	items.send_energy = func(peer, percent): net.energy.rpc_id(peer, percent)
 	@warning_ignore("confusable_local_declaration")
 	items.send_warmth = func(peer, percent): net.warmth.rpc_id(peer, percent)
-	items.send_comfort = func(peer, level, rested_level, rested_minutes, tip): net.comfort.rpc_id(peer, level, rested_level, rested_minutes, tip)
+	items.send_comfort = func(peer, tenths, target, trend, tip): net.comfort.rpc_id(peer, tenths, target, trend, tip)
 	@warning_ignore("confusable_local_declaration")
 	items.send_sick = func(peer, hours): net.sick.rpc_id(peer, hours)
 	@warning_ignore("confusable_local_declaration")
 	items.send_body = func(peer, bpm, eta, phase): net.body.rpc_id(peer, bpm, eta, phase)
 	@warning_ignore("confusable_local_declaration")
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
-	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed))
+	items.send_soak = func(peer, percent, windy): net.soak.rpc_id(peer, percent, windy)
+	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed), _row_of(pos), settings.equator_tile_row)   # the row's own winter
 	@warning_ignore("confusable_local_declaration")
 	items.send_worn = func(peer, numbers, insts):
 		net.worn.rpc_id(peer, numbers, insts)
 		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
 	players = PlayersScript.new()
 	players.items = items
-	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times, left, more, cast): net.players.rpc_id(peer, ids, positions, yaws, states, held, times, left, more, cast)
+	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
+	items.send_flight = players.flight
+	items.send_taken = func(peer, kind, points, days): net.ground_taken.rpc_id(peer, kind, points, days)   # protocol 160
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
+	net.position_reported.connect(players.note_move)   # before facing_reported (report_position emits both, position first): the row's time
 	net.facing_reported.connect(players.note_report)
+	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
+	cues.items = items
+	cues.yaw_of = players.yaw_of
+	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
+	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
+	items.craft_working = cues.craft_working
+	items.hurt_heard = cues.hurt   # an attack on a player: the gasp for the others near
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -440,8 +522,12 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_skills = func(peer, attributes, rows): net.skills.rpc_id(peer, attributes, rows)
 	items.weather_now = func(): return weather
+	items.weather_at = _weather_here   # the weather over the spot itself (its row and height), as its player's client works it out
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
+	items.cave_rescue = func(pos: Vector3): return _cave_rescue(pos) if _under_rock(pos) else []   # a player stuck in a cave's rock goes to the nearest campfire (Dave 23 Nov 2026)
+	items.player_under_rock = func(pos: Vector3) -> bool: return _under_rock(pos)   # a stuck rescue is taken only for a player who is in a cave or tunnel
+	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
@@ -502,7 +588,7 @@ func _ready() -> void:
 		return Vector3(0.0, NAN, 0.0) if best.y == INF and skipped else best   # NAN: not known yet (a tile the reach touches is not loaded)
 	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
 	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
-	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed)), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
+	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed), _row_of(pos), settings.equator_tile_row), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
@@ -510,7 +596,7 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
-	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, water_live, x, z)   # the four above, bound to one tile (copper and tin rocks, boulders)
+	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, water_live, x, z, _sea_cut_off)   # the four above, bound to one tile (copper and tin rocks, boulders)
 	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
 		var water: Array = _water_at(Vector3(x, 0.0, z))
 		var baked: int = 0
@@ -521,8 +607,20 @@ func _ready() -> void:
 			if not tile_data.placeholder and not tile_data.water_class.is_empty():
 				baked = int(tile_data.water_class[tile_data.nearest(x, z)])
 
-		return [water[0], water[1], baked])
+		return [water[0], water[1], baked, float(water[1]) <= 0.0 and not _sea_cut_off(x, z)])
 	items.water_kind_at = func(x: float, z: float) -> Dictionary: return fish_water.water_kind_at(x, z)
+	fish_signs = FishSignsScript.new()   # the schools seen: jumps and shadows near players (protocol 169)
+	fish_signs.items = items
+	fish_signs.surface_at = func(x: float, z: float) -> float: return float(_water_at(Vector3(x, 0.0, z))[0])
+	fish_signs.ready_at = func(x: float, z: float) -> bool:
+		# Never read a tile on the main thread (a read takes seconds): a cell on a tile not in memory is asked for and skipped this pass.
+		if generator.tile_cached(x, z):
+			return true
+
+		generator.prefetch_tile(x, z)
+		return false
+	fish_signs.send_jump = func(peer: int, at: Vector3, kind: int, seed_value: int) -> void: net.fish_jump.rpc_id(peer, at, kind, seed_value)
+	fish_signs.send_shadows = func(peer: int, rows: PackedFloat32Array) -> void: net.fish_shadows.rpc_id(peer, rows)
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
@@ -582,9 +680,10 @@ func _ready() -> void:
 	items.send_favourites = func(peer, flags): net.favourites.rpc_id(peer, flags)
 	items.send_bulk_done = func(peer, kind, stacks, containers, ids): net.bulk_done.rpc_id(peer, kind, stacks, containers, ids)
 	items.game_seconds = func(): return game_clock.seconds
-	items.season_now = func(): return game_clock.season()
+	items.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
 	items.season_at = func(pos): return WeatherScript.season_at(game_clock.seconds, pos.z, float(settings.tile_size_m), settings.equator_tile_row)   # a place's own season (drinking water by source)
-	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()
+	items.season_stamp = func(): return game_clock.year() * 4 + game_clock.season_index()   # starter-calendar: the fallback only (season_stamp_at)
+	items.season_stamp_at = func(pos): return WeatherScript.season_stamp_at(game_clock.seconds, _row_of(pos), settings.equator_tile_row)   # a place's own season count
 	items.rock_at = func(x, z):
 		var tile_data = generator.get_tile(generator.tile_of(x, z))
 
@@ -612,6 +711,7 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+	items.ground_edits = func(): return store.ops.count   # the header's "digs": a hard stop drops the digs and fills after the last whole save (store.setup)
 
 	if not items.load_failures.is_empty():
 		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
@@ -622,11 +722,14 @@ func _ready() -> void:
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
 		return
 
+	items.cut_felled_flora(flora)   # a stump saved before its tree's removal was (a crash between them): the tree stays cut
+
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
 	items.restore_flora = func() -> void: flora.restore_all()
 	items.floor_below = _floor_below
+	items.cave_floor = generator.cave_floor_at
 	items.edits_near = func(point, radius): return store.ops.edits_near(point, radius)   # the hoe's levelling reads the ground through the saved digs and fills
 	items.water_flow_at = _water_flow_at
 	items.water_wheel = _water_wheel
@@ -651,6 +754,7 @@ func _ready() -> void:
 		return not is_nan(water[0]) and float(water[0]) - float(water[1]) > 0.7
 	npcs.player_positions = func(): return items.peer_positions()
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
+	npcs.rain_at = func(pos): return float(_weather_here(pos).get("rain", 0.0))   # town people shelter from the rain over the town, not the starter row's
 	npcs.setup(store_dir)
 	tribes = TribesScript.new()
 	tribes.items = items
@@ -666,7 +770,9 @@ func _ready() -> void:
 	tribes.setup(store_dir)
 	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, stand guard at a weapon in hand, and hide from a player who struck one
 	npcs.chores = tribes.chore_plan   # and keep busy round their camp (camp life, Dave 20 Nov 2026)
-	net.held_reported.connect(items.report_held)   # the item in each player's hand (protocol 146), for "a weapon in hand"
+	net.held_reported.connect(func(peer: int, number: int, left: int, flags: int) -> void:
+		if limits.allow(peer, "held_item"):   # a client flipping its hands as fast as it can would make every client near it rebuild a torch
+			items.report_held(peer, number, left, flags))   # the item in each player's hand (protocol 146), for "a weapon in hand"
 	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	items.tribe_stock_line = tribes.stock_line   # what a goblin camp's chest and racks hold (the light version, Dave 20 Nov 2026)
 	animals = AnimalsScript.new()
@@ -674,9 +780,11 @@ func _ready() -> void:
 	edited_ground.ops = store.ops
 	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
 	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	items.ground_now = edited_ground.height   # where carcasses, arrows, thrown things, litter and regrown plants come down (round 7)
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
+	animals.in_cave_at = _in_cave   # no blow through a cave roof (server_animals.blow_blocked)
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN
@@ -707,13 +815,20 @@ func _ready() -> void:
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
+	items.rain_hours_at = _rain_hours_at   # the drink rule's hours since rain, where the player drinks
+	animals.weather_at = _weather_here   # each animal by the weather where it stands (its row and height), as players are
 	coarse_ground.net = net
 	coarse_ground.tiles_dir = world_dir + "/tiles"
 	coarse_ground.tile_size_m = float(settings.tile_size_m)
 	animals.fog_world = {"tiles_dir": world_dir + "/tiles", "tile_size_m": float(settings.tile_size_m)}   # the cold-air floor for animals' sight in fog (fog_ground.gd)
-	animals.weather_ahead = func(hours): return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(4), 0.0, 0.0)   # the starter tile's row, as _update_weather (animals_in_weather_design.md 3)
+	animals.weather_ahead_at = func(hours, pos):   # a storm coming to the animal's own row (animals_in_weather_design.md 3; not the starter row's)
+		var row: int = floori(pos.z / float(settings.tile_size_m))
+		return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+	animals.row_of = func(pos): return floori(pos.z / float(settings.tile_size_m))
 	animals.canopy = func(point): return flora.covered(point)
-	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
+	animals.air_at = func(pos):   # Weather.air_c at the animal (#620): its own row's zone and season (across the equator too) and its height
+		var row: int = floori(pos.z / float(settings.tile_size_m))
+		return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(row), maxf(pos.y, 0.0), int(settings.master_seed), row, settings.equator_tile_row)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
 	animals.ice_moat_at = items.ice_moat_at     # and the same open moat in a thaw
 	animals.game_seconds = func(): return game_clock.seconds
@@ -721,9 +836,15 @@ func _ready() -> void:
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
+	animals.player_loud = func(): return cues.loud_kinds()   # a blow, a cry or craft work carries farther to animals (hearing-range pass)
 	animals.hour_now = func(): return game_clock.hour()
-	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
-	animals.season_now = func(): return game_clock.season()
+	animals.sun_row_m = float(settings.tile_size_m)
+	animals.sunrise_now = func(z): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR), NAN if is_nan(z) else ClimateScript.latitude_of_row(ClimateScript.row_of_z(z, float(settings.tile_size_m)), settings.equator_tile_row))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it. starter-calendar: the declination is the one sky's, the latitude the row's
+	animals.season_now = func(): return game_clock.season()   # starter-calendar: the fallback only (season_at)
+	items.night_skip = func(peers: Array) -> float: return _night_skip_real_s(peers)
+	animals.equator_row = settings.equator_tile_row
+	animals.season_at = items.season_at   # an animal's seasons (young, the rut's threat) where it is
+	flora.season_at = items.season_at   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md), by each spot's own season
 	var biome_names: Dictionary = {}
 
 	for biome_entry in tables.get_entries("biomes"):
@@ -782,15 +903,21 @@ func _ready() -> void:
 	map_knowledge.observe = _map_observe
 	map_knowledge.trees_near = func(point, radius): return _cached_trees(point, radius).map(func(tree): return tree[1]) if flora != null else []
 	map_knowledge.in_cave = _in_cave
+	map_knowledge.landmarks_near = _map_landmarks
 	map_knowledge.setup(store_dir)
+	items.map_look = func(peer, at): map_knowledge.look_now(peer, at)
+	items.fish_caught = func(peer, at): map_knowledge.note_catch(peer, at)
 	items.forgot_key = func(key): map_knowledge.forget_key(key)
 	animals.wolves.player_info = func(): return items.wolf_info()
-	animals.wolves.fires = func(): return items._lit_fires()
-	animals.wolves.fire_radius = func(at): return items.fire_protect_m(at)
-	animals.fires = func(): return items._lit_fires()             # every wild animal keeps out of a fire's or a torch's keep-off radius (Dave 6 Nov 2026)
-	animals.fire_radius = func(at): return items.fire_protect_m(at)
+	animals.wolves.heard_of = func(peer): return animals.heard_x(cues.loud_of(peer))   # a pack hears loud work too (hearing-range pass)
+	# Every wild animal keeps out of a fire's or a torch's keep-off radius (Dave 6 Nov 2026). The fires come from _fire_spots, worked out from the world
+	# items FIRE_SPOTS_MS apart (_refresh_fire_spots): the animals asked for every fire's radius every frame, and each ask walked every record.
+	animals.wolves.fires = func(): return _fire_at
+	animals.wolves.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
+	animals.fires = func(): return _fire_at
+	animals.fire_radius = func(at): return float(_fire_keep_off[at]) if _fire_keep_off.has(at) else items.fire_protect_m(at)
 	@warning_ignore("confusable_local_declaration")
-	animals.wolves.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)))
+	animals.wolves.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, float(animals.cfg.get("wolves", {}).get("maim_hp", 25.0)), "", 0.0, from)
 	@warning_ignore("confusable_local_declaration")
 	animals.wolves.notice = func(peer, text): items._say(peer, text)
 	@warning_ignore("confusable_local_declaration")
@@ -820,7 +947,10 @@ func _ready() -> void:
 	animals.thieves.fires = func(): return animals.wolves.fires.call() if animals.wolves.fires.is_valid() else []
 	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
-	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
+	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
+	animals.big_game.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
+		var blow: Dictionary = ItemsScript.weapon_blow(items.table.entry(str(weapon)), {})
+		return items.hurt_player(peer, amount, lethal, cause, 10.0, str(blow["mode"]), float(blow["pen"]), from)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer):
 		if sp == "bandit" or sp == "horse":
@@ -829,13 +959,16 @@ func _ready() -> void:
 		items.make_carcass(sp, pos, peer)
 	@warning_ignore("confusable_local_declaration")
 	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
-	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
+	items.hit_animal_path = func(shooter, from, to, amount, lag) -> Dictionary:
 		var member: String = tribes.member_on_segment(from, to)
 
 		if member != "":   # a goblin tribe member cannot be hurt (Dave's side, 19 Nov 2026): the tribe turns on the archer and the arrow flies on
 			tribes.harm(shooter, member)
 
-		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
+		var now: int = Time.get_ticks_msec()   # lag (server_items.shot_lag): the animals are taken where the shooter sees them at this moment
+		var seen_at: int = now - int(lag[0]) if lag.size() == 2 else -1
+		var present_at: int = now - int(lag[1]) if lag.size() == 2 and int(lag[1]) >= 0 else -1
+		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5, seen_at, present_at)
 
 		if found.is_empty():
 			return {}
@@ -844,6 +977,12 @@ func _ready() -> void:
 		animals.report_hit(int(found["id"]), int(found.get("zone", 0)), found.get("point", found["at"]))   # every player near sees which animal and where (hunt_feedback_server.md)
 		return found
 	items.animal_alarm = func(point, radius): animals.alarm_near(point, radius)
+
+	if OS.get_cmdline_user_args().has("--robot-audit"):   # the robot play-testers' server lines (src/server/robot_audit.gd, tools/robots.sh); testing only
+		var audit: Node = preload("res://src/server/robot_audit.gd").new()
+		add_child(audit)
+		audit.setup(items, animals)
+
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
@@ -852,13 +991,18 @@ func _ready() -> void:
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
 	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
 	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
-	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
+	items.species_active_at = func(sp, hour, z): return animals.activity_at(animals.species_def(sp), hour, z)   # by the sun of the snare's row
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
-		var target: int = animals.target_along(origin, dir, reach)
+
+		if member != "" and animals.wall_between(origin, npcs.npcs[member]["pos"]):
+			member = ""   # a tribe member behind a wall is out of reach of the blow, as an animal is (server_animals.target_along)
+
+		var seen: Array = items.strike_seen.get(peer, [-1, -1])   # protocol 155: judged where the player saw the animals, at most rewind_max_ms back
+		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
-		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() if target != 0 else INF
+		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() - AnimalContact.body_m(str(animals.animals[target]["sp"])) if target != 0 else INF   # to its body, as target_along
 
 		if member != "" and member_d <= animal_d:   # a blow at a goblin tribe member (the nearer one) hurts nobody: the tribe turns on that player (server_tribes.gd harm)
 			tribes.harm(peer, member)
@@ -867,7 +1011,7 @@ func _ready() -> void:
 		if target == 0:
 			return {}
 
-		var point: Vector3 = animals.jab_point(target, origin, dir, reach)
+		var point: Vector3 = animals.jab_point(target, origin, dir, reach, 0.5, int(seen[0]), int(seen[1])) + animals.moved_since(target, int(seen[0]), int(seen[1]))   # struck where the player saw it; that spot on the body now
 		var zone: int = animals.hit_zone(target, point)
 		animals.report_hit(target, zone, point)   # before the damage: a killing blow still reaches the players near (the flesh sound and the flinch)
 		animals.damage(target, amount, peer, "spear")
@@ -880,6 +1024,7 @@ func _ready() -> void:
 	trade.npcs = npcs
 	trade.game_seconds = func(): return game_clock.seconds
 	trade.setup(store_dir)
+	trade.in_save_set(items)   # shelves land in the same whole save as the packs that paid
 	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
@@ -931,7 +1076,22 @@ func _ready() -> void:
 	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
+	TreeTrunks.warm()   # the trunk collider table (_cached_trees), read once at start
+	bandits.trees_at = func(camp_at: Vector2, camp_reach: float) -> Variant:   # the trunks round a camp fire, null until every chunk under it is made (no flora is made for it)
+		var made: float = camp_reach + TreeTrunks.widest_m()   # a wide trunk (everember) is listed from its root, up to widest_m beyond the camp
+		for corner in [Vector2(-made, -made), Vector2(made, -made), Vector2(-made, made), Vector2(made, made)]:
+			if flora.items_cached(flora.placer.chunk_of(camp_at.x + corner.x, camp_at.y + corner.y)).is_empty():
+				return null
+
+		var feet: Array = []
+
+		for trunk in _arrow_trunks(Vector3(camp_at.x, 0.0, camp_at.y), camp_reach):
+			feet.append([Vector2(trunk[0].x, trunk[0].z), float(trunk[1])])
+
+		return feet
 	animals.bandit_camps = bandits
+	animals.big_game.weapon_of = bandits.weapon_of   # a bandit's blow is his weapon's kind (a sword cuts), not a beast's
+	animals.big_game.ping_ms = func(ping_peer): return _ping_ms(int(ping_peer))   # a fair dodge: a goblin's or bandit's blow judged once the player's step has come back
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
@@ -945,6 +1105,7 @@ func _ready() -> void:
 	bandits.flush_world = func(): items.save()
 	animals.big_game.struck = func(struck_animal, struck_peer, struck_result): bandits.struck(struck_animal, struck_peer, struck_result)   # a landed charge (it changes nothing about the blow)
 	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
+	bandits.captor_absent = items.is_absent   # a captive waits for a captor whose line dropped
 	bandits.guards_at = func():
 		var guard_spots: Array = []
 
@@ -967,7 +1128,9 @@ func _ready() -> void:
 	_start_water()
 
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = server_peer.create_server(port, MAX_PLAYERS)
+	# One seat more than the players: ENet turns a peer past its limit away before any message, so the game could not tell "full" from
+	# "down". The extra peer is let in only to be told the server is full (hello, below) and dropped.
+	var error: int = server_peer.create_server(port, max_players + 1)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -979,6 +1142,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = server_peer
 	# Every client passes the join handshake before it counts as connected: an open server lets it straight through, a server with a password
 	# checks it first (server_auth.gd). Until then the client gets no welcome and none of its calls are heard.
+	_auth.protocol = NetScript.PROTOCOL_VERSION   # a client of another protocol is told why at the first word (161), before any call it would misread
 	_auth.password_hash = _server_settings.password_hash
 	_auth.salt = _server_settings.salt
 	_auth.address_of = func(peer: int) -> String: return server_peer.get_peer(peer).get_remote_address() if server_peer.get_peer(peer) != null else "?"
@@ -997,6 +1161,7 @@ func _ready() -> void:
 	# in 90 starts; this makes the first call of every placer function happen on one thread.
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)), int(floor(spawn.z / placer.chunk_m))), true)
 	flora.chunk_bytes(Vector2i(int(floor(spawn.x / placer.chunk_m)) + 1, int(floor(spawn.z / placer.chunk_m))), false)
+	generator.prefetch_around(spawn.x, spawn.z, JOIN_TILE_MARGIN_M)   # the tiles the first join's far ground needs, read in parallel now, after the flora warm-up above (JOIN_TILE_MARGIN_M)
 	_link = BlockLinkScript.new()
 	_link.on_request = _on_blocks_requested
 	_link.is_peer = _is_connected_peer
@@ -1016,6 +1181,9 @@ func _ready() -> void:
 		_on_blocks_requested(peer_id, keys, urgent)
 		_slow_rpc("blocks_requested", t0))
 	net.dig_requested.connect(_on_dig_requested)
+	net.sign_spotted_requested.connect(func(peer_id, x, z) -> void:   # a trail sign spotted (153): Tracking, once per sign (server_traps sign_found)
+		if is_finite(float(x)) and is_finite(float(z)):
+			items.sign_spotted(int(peer_id), Vector2(float(x), float(z))))
 	net.edits_since_requested.connect(func(peer_id, tile, since) -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_edits_since_requested(peer_id, tile, since)
@@ -1041,6 +1209,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	net.hello_requested.connect(func(peer, key, build):
 		var t0: int = Time.get_ticks_usec()
+
+		if _peers.has(peer) and _peers[peer].has("refused"):
+			return   # refused once: a later hello from the same connection is never let in while it is being closed
+
 		var refused: String = BuildStamp.refusal(_stamped_build, build)
 
 		if refused != "":
@@ -1052,12 +1224,19 @@ func _ready() -> void:
 		if account == "":
 			return
 
+		if _full_for(peer, identity.store_key(account)):
+			_refuse_join(peer, build, SERVER_FULL % max_players)
+			return
+
+		if _peers.has(peer):
+			_peers[peer]["player"] = true   # counted by _full_for from here on
+
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
 			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
+			bandits.captor_back(old_peer, peer)   # a bandit they tied waits for this connection now
 
-			if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
-				multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+			_drop_replaced(old_peer)
 
 		_slow_rpc("hello: peer_connected_hello", t0)
 		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 134: the client's Admin menu follows it
@@ -1065,6 +1244,7 @@ func _ready() -> void:
 		var resume: Array = items.start_position_for(peer)
 
 		if resume.size() == 3:
+			generator.prefetch_around(float(resume[0]), float(resume[2]), JOIN_TILE_MARGIN_M)   # a returning player's far ground, read in parallel, started before _resume_spot's own tile read (JOIN_TILE_MARGIN_M)
 			net.start_at.rpc_id(peer, _resume_spot(Vector3(float(resume[0]), float(resume[1]), float(resume[2]))))
 
 		_slow_rpc("hello: done", t0))
@@ -1081,7 +1261,20 @@ func _ready() -> void:
 		_slow_rpc("surface_requested", t0))
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
-	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
+	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		var cue_before: Array = []
+
+		if cues != null:
+			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+			cue_before = cues.before_action(peer, kind, a, b)
+
+		items.action(peer, kind, a, b, count, at)
+
+		if cues != null and not cue_before.is_empty():
+			cues.after_action(peer, kind, a, b, cue_before)   # after: a container, a drink or a pickup is heard only when the server let it through
+
+		if players != null:
+			players.note_action(peer, kind, count))
 	@warning_ignore("confusable_local_declaration")
 	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
@@ -1095,13 +1288,15 @@ func _ready() -> void:
 		_idle_threads = maxi(int(OS.get_environment("DYNASTY_IDLE_THREADS")), 0)
 
 	_make_idle_offsets()
+	_seed_idle_spots()
 
 	for n in range(_idle_threads):
 		var idle: Thread = Thread.new()
 		idle.start(_idle_loop, Thread.PRIORITY_LOW)
 		_idle_workers.append(idle)
 
-	print("Terrain server listening on port %d with %d worker threads (%d usable CPUs of %d); store %s; spawn %s" % [port, _max_running, _usable_cpus, OS.get_processor_count(), store_dir, str(spawn)])
+	print("Terrain server listening on port %d with %d worker threads and %d idle builders (%d usable CPUs of %d%s); store %s; spawn %s" % [port, _max_running, _idle_threads, _usable_cpus, OS.get_processor_count(),
+		", CPU setting %d" % _cpus_setting if _cpus_setting > 0 else "", store_dir, str(spawn)])
 
 
 # Owner (2026-10-19): spawn here (x, z in meters) instead of the baked spot at the bay
@@ -1144,7 +1339,7 @@ func _trunks_near(at: Vector2, reach: float) -> PackedVector2Array:
 
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
-			var held: Dictionary = flora.placer.chunk_items(Vector2i(centre.x + dx, centre.y + dz))
+			var held: Dictionary = flora.items_of(Vector2i(centre.x + dx, centre.y + dz))   # kept, or prebuilt (flora_pack.gd): never placed again on the main thread
 
 			for n in range(held["ids"].size()):
 				var p: Vector3 = held["positions"][n]
@@ -1176,7 +1371,111 @@ func _map_observe(x: float, z: float) -> Array:
 		return [height, MapCodec.WATER_SEA]
 
 	var water_class: int = int(tile_data.water_class[tile_data.nearest(x, z)]) if not tile_data.water_class.is_empty() else 0
+
+	if MapScript.water_kind(water_class) == MapCodec.WATER_NONE and not tile_data.water_class.is_empty():
+		# A river narrower than the cell runs past its centre: four more looks across the cell find it (Dave 23 Nov 2026: the map must show rivers).
+		for d in [Vector2(-5.0, -5.0), Vector2(5.0, -5.0), Vector2(-5.0, 5.0), Vector2(5.0, 5.0)]:
+			if int(tile_data.water_class[tile_data.nearest(x + d.x, z + d.y)]) == 3:
+				return [height, MapCodec.WATER_RIVER]
+
 	return [height, MapScript.water_kind(water_class)]
+
+
+# What a person would mark on their map round `point` (Dave 23 Nov 2026: "anything a human would find of interest should be marked"):
+# [kind, x, z, label] rows for server_map.gd look_round, or null while the tile or its flora is not loaded (nothing then changes on the map).
+# Cave mouths ("spring" where a spring comes out of one), bog iron patches, fruit trees by kind (data/map.json fruit_trees), a goblin
+# tribe's camp under its name, a bandit camp once it stands, and the world items (server_items.map_marks_near: campfires, ore rocks
+# started and left, paths and roads). Every source is a list kept for its own work: nothing here scans the world.
+func _map_landmarks(point: Vector3, radius: float) -> Variant:
+	# Every terrain tile and flora chunk the circle touches must be in memory: a look that cannot see part of the circle changes nothing,
+	# so a cave or a stand of trees across an unloaded edge is never taken off the map.
+	var tiles: Array = []
+
+	for corner in [Vector2(-radius, -radius), Vector2(radius, -radius), Vector2(-radius, radius), Vector2(radius, radius)]:
+		var x: float = point.x + corner.x
+		var z: float = point.z + corner.y
+
+		if not generator.tile_cached(x, z):
+			return null
+
+		var tile_data = generator.get_tile(generator.tile_of(x, z))
+
+		if tile_data == null:
+			return null
+
+		if not tiles.has(tile_data):
+			tiles.append(tile_data)
+
+	if flora != null:
+		var size: float = flora.placer.chunk_m
+
+		for cz in range(int(floor((point.z - radius) / size)), int(floor((point.z + radius) / size)) + 1):
+			for cx in range(int(floor((point.x - radius) / size)), int(floor((point.x + radius) / size)) + 1):
+				if not flora.chunk_cached(Vector2i(cx, cz)):
+					return null
+
+	var here: Vector2 = Vector2(point.x, point.z)
+	var out: Array = items.map_marks_near(point, radius)
+
+	for tile_data in tiles:
+		if tile_data.placeholder:
+			continue
+
+		for row in tile_data.cave_mouths:
+			var mouth: Vector2 = Vector2((row[0] as Vector3).x, (row[0] as Vector3).z)
+
+			if mouth.distance_to(here) <= radius:
+				var spring: bool = false
+
+				for at in tile_data.spring_mouths:
+					spring = spring or at.distance_to(mouth) < 6.0
+
+				out.append(["spring" if spring else "cave", mouth.x, mouth.y, "Spring" if spring else "Cave"])
+
+	for patch in items._bog_patches_near(point.x, point.z, radius):
+		if Vector2(float(patch["x"]), float(patch["z"])).distance_to(here) <= radius:
+			out.append(["bog_iron", float(patch["x"]), float(patch["z"]), "Bog iron"])
+
+	var fruit: Dictionary = map_knowledge.cfg.get("fruit_trees", {})
+
+	if flora != null and not fruit.is_empty():
+		var groups: Dictionary = {}   # group -> [count, sum x, sum z]
+
+		for tree in _cached_trees(point, radius):
+			var row: Array = fruit.get(str(tree[2]), [])
+
+			if row.size() >= 2 and Vector2(tree[1].x, tree[1].z).distance_to(here) <= radius:
+				var g: Array = groups.get(str(row[0]), [0, 0.0, 0.0])
+				groups[str(row[0])] = [int(g[0]) + 1, float(g[1]) + tree[1].x, float(g[2]) + tree[1].z]
+
+		var groves: Dictionary = map_knowledge.cfg.get("fruit_groups", {})
+
+		for group in groups:
+			var g: Array = groups[group]
+			var names: Array = groves.get(group, [str(group).capitalize() + " tree", str(group).capitalize() + " trees", ""])
+			var label: String = str(names[0]) if int(g[0]) == 1 else str(names[1])
+
+			if int(g[0]) >= int(map_knowledge.cfg.get("orchard_from", 6)) and str(names[2]) != "":
+				label = str(names[2])
+
+			out.append(["fruit:" + str(group), float(g[1]) / float(g[0]), float(g[2]) / float(g[0]), label])
+
+	if tribes != null:
+		for tribe in tribes.tribes():
+			var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+			var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+			if not at.is_empty() and Vector2(float(at.get("x", 0.0)), float(at.get("z", 0.0))).distance_to(here) <= radius:
+				out.append(["goblin_camp", float(at["x"]), float(at["z"]), str(tribe).capitalize()])   # the clan's name under its face (Dave 23 Nov 2026)
+
+	if bandits != null:
+		for cell in bandits.sites:
+			var site: Dictionary = bandits.sites[cell]
+
+			if int(site.get("stage", 0)) >= 3 and Vector2(float(site.get("x", 0.0)), float(site.get("z", 0.0))).distance_to(here) <= radius:
+				out.append(["bandit_camp", float(site["x"]), float(site["z"]), "Bandits"])
+
+	return out
 
 
 # Whether the baked tile has water (any class but none) at a point.
@@ -1192,6 +1491,17 @@ func _pool_summary() -> String:
 	var landscape: bool = items != null and items._resource_task != -1
 	return "pool jobs: tile reads %d, undergrowth %d, cover %d, landscape %s; block line sends in progress %d" % [generator._prefetch_tasks.busy() if generator != null else 0,
 		flora._brush_tasks.busy() if flora != null else 0, _cover_tasks.busy(), "on" if landscape else "off", _link.sending() if _link != null else 0]
+
+
+# A peer's round trip in ms as ENet measures it (0 when there is no such peer), for a fair dodge (server_big_game late_s).
+func _ping_ms(peer_id: int) -> int:
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+
+	if enet == null or not _peers.has(peer_id):
+		return 0
+
+	var link: ENetPacketPeer = enet.get_peer(peer_id)
+	return int(link.get_statistic(ENetPacketPeer.PEER_ROUND_TRIP_TIME)) if link != null else 0
 
 
 # The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
@@ -1212,7 +1522,32 @@ func _event_state() -> String:
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
 	queued += ", " + _pool_summary()
+	# What the memory holds (the long run, 23 Nov 2026: is a slow rise what players added or a leak): engine objects, nodes, resources, world
+	# items, ground edits and animals.
+	queued += ", objects %d nodes %d resources %d, world items %d, ground edits %d, animals %d" % [int(Performance.get_monitor(Performance.OBJECT_COUNT)), int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
+		int(Performance.get_monitor(Performance.OBJECT_RESOURCE_COUNT)), items.world_item_count() if items != null else 0, store.ops.count, animals.animals.size() if animals != null else 0]
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
+
+
+const FIRE_SPOTS_MS := 250   # how often the animals' list of fires and torches is worked out again (a lit fire is avoided within this)
+var _fire_at: Array = []             # positions of the burning fires, torch bearers and guard lights (items.fire_spots)
+var _fire_keep_off: Dictionary = {}  # position -> keep-off metres, for those positions
+var _fire_spots_msec: int = -FIRE_SPOTS_MS
+
+
+func _refresh_fire_spots() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _fire_spots_msec < FIRE_SPOTS_MS:
+		return
+
+	_fire_spots_msec = now
+	_fire_at = []
+	_fire_keep_off = {}
+
+	for spot in items.fire_spots():
+		_fire_at.append(spot[0])
+		_fire_keep_off[spot[0]] = float(spot[1])
 
 
 # Join diagnosis (Sonny, 1 Nov 2026): an RPC handler that ran over 100 ms on the main thread says so in the telemetry file (crash_reports/telemetry_server_<port>.log), with the
@@ -1272,20 +1607,57 @@ func _publish_status() -> void:
 		"stamped": _stamped_build > 0,
 		"protocol": NetScript.PROTOCOL_VERSION,
 		"players": _peers.size(),
-		"max_players": MAX_PLAYERS,
+		"max_players": max_players,
 		"locked": _server_settings.locked(),
 	})
 
 
 # A stamped server and a client of another build (step A1, Dave 18 Nov 2026): the client is told why, gets nothing of the player's,
 # and is dropped a moment later so the reason arrives first.
+# The same character joined again on a new connection (a rejoin before the dropped line timed out, or a second window): the old one is told
+# why on its screen, then closed (its pack and spot already went to the new one, server_items.gd peer_connected_hello).
+func _drop_replaced(old_peer: int) -> void:
+	if not _peers.has(old_peer):
+		return
+
+	_peers[old_peer].erase("player")   # its character is the new connection's now: it no longer counts towards a full server
+
+	net.join_refused.rpc_id(old_peer, "This character joined the server again from another game window or computer, so this one was closed. Nothing was lost.")
+	await get_tree().create_timer(1.0).timeout
+
+	if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
+		multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+		_on_peer_disconnected(old_peer)   # forgotten now: a dead line never answers the close, so it stayed in the lists (and was sent to, 2,540 send errors in 6 min) until its 60 to 120 s timeout (robots 23 Nov 2026); the engine's own leave later finds nothing (a force close would skip that leave and keep the peer in the engine's list)
+
+
+# The words a player past max_players is given (the client titles its window "Server full" when it sees "server is full").
+const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
+
+
+# Whether a hello from `peer` (character `store_key`) finds the server full: only connections whose hello was let in count (not the ones
+# still at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
+func _full_for(peer: int, store_key: String) -> bool:
+	var let_in: int = 0
+
+	for other in _peers:
+		if other == peer or not _peers[other].has("player") or _peers[other].has("refused"):
+			continue
+
+		if items.key_of(other) == store_key:
+			return false
+
+		let_in += 1
+
+	return let_in >= max_players
+
+
 func _refuse_join(peer: int, build: int, text: String) -> void:
 	if not _peers.has(peer) or _peers[peer].has("refused"):
 		return   # one refusal per connection, however many hellos it sends
 
 	_peers[peer]["refused"] = true
-	print("Join refused for peer %d: client build %d, this server build %d" % [peer, build, _stamped_build])
-	_events.event("peer %d refused: client build %d, server build %d" % [peer, build, _stamped_build])
+	print("Join refused for peer %d (client build %d, this server build %d): %s" % [peer, build, _stamped_build, text])
+	_events.event("peer %d refused (client build %d, server build %d): %s" % [peer, build, _stamped_build, text])
 	net.join_refused.rpc_id(peer, text)
 	await get_tree().create_timer(1.0).timeout
 
@@ -1326,9 +1698,17 @@ func _starter_stamp() -> String:
 # Swimmer (deep water, feet well under the surface) and head-under (the breath runs down) come from a reported
 # position by src/shared/swim.gd; the client swims by the same rules, the server decides the cost.
 # [water surface (NAN if none), ground height] at a reported position: the sea at 0, or the simulated tile's water.
-func _water_at(position: Vector3) -> Array:
+# `main_thread` false (the tunnel watch's own thread): the old rule, all ground at or under 0 m is sea, since the animals' fog windows that
+# answer _sea_cut_off are swapped on the main thread with no lock.
+func _water_at(position: Vector3, main_thread: bool = true) -> Array:
 	var tile: Vector2i = generator.tile_of(position.x, position.z)
-	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position)
+	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position, _sea_cut_off if main_thread else Callable())
+
+
+# Ground below sea level cut off from the open sea (a fen hollow behind sand above 0 m) is not the sea: no sea water to fill, no sea fish,
+# no wading in a sea the client does not draw there (fog_ground.gd under_land, read from the animals' windows round the players).
+func _sea_cut_off(x: float, z: float) -> bool:
+	return animals != null and animals.sea_cut_off(x, z)
 
 
 # As _water_at, for a player's reported position: under the hill, a spring cave pool's water counts (BUG-008), its floor taken as the
@@ -1370,7 +1750,7 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 	else:
 		generator.prefetch_tile(position.x, position.z)
 
-	items.report_position(peer_id, position)
+	items.report_position(peer_id, position, velocity)   # with its velocity: a blow is judged from where the striker is now (strike_origin)
 
 	if map_knowledge != null:
 		map_knowledge.note_position(peer_id, position)   # the charcoal Map: a survey every few metres walked (server_map.gd)
@@ -1393,6 +1773,11 @@ func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -
 
 
 # Whether a point is in a spring cave pool (icy water, BUG-008).
+# The tile row of a position (Climate.row_of_z): its own seasons, sun and weather.
+func _row_of(pos: Vector3) -> int:
+	return floori(pos.z / float(settings.tile_size_m))
+
+
 func _in_cave_pool(position: Vector3) -> bool:
 	return not is_nan(_cave_pool_surface(position))
 
@@ -1415,6 +1800,9 @@ func _is_connected_peer(peer_id: int) -> bool:
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
+	if not _peers.has(peer_id):
+		return   # forgotten already (_drop_replaced): the engine's own leave of that line, a minute or two later
+
 	var info: Dictionary = _peers.get(peer_id, {})
 	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0
@@ -1444,6 +1832,10 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_burrows_sent.erase(peer_id)
 	_trap_marks_sent.erase(peer_id)
 	players.forget(peer_id)
+	cues.forget(peer_id)
+
+	if fish_signs != null:
+		fish_signs.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -1662,6 +2054,50 @@ func _weather_at(pos: Vector3) -> Dictionary:
 	return WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), pos.y, 0.0, row, settings.equator_tile_row)
 
 
+# The weather over a spot as the player's client there works it out (terrain_client._update_weather: the zone of its row, its height), so
+# what the server does to a player (warmth, wet clothes, a fire or torch put out by rain, sleep, drinking) follows the sky that player
+# sees: up a mountain it snows (no rain cooling, no fire put out) while it rains at the coast (weather and seasons walk, 23 Nov 2026).
+# One answer per row and Weather.HEIGHT_BAND_M of height (band_height) a second, so many fires and players cost a few noise reads.
+func _weather_here(pos: Vector3) -> Dictionary:
+	var now: int = Time.get_ticks_msec()
+
+	if now - _weather_here_msec >= 1000:
+		_weather_here_cache.clear()
+		_weather_here_msec = now
+
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	var height: float = WeatherScript.band_height(pos.y)
+	var key := Vector2i(row, int(round(height)))
+
+	if not _weather_here_cache.has(key):
+		_weather_here_cache[key] = WeatherScript.state(settings.master_seed, game_clock.seconds, settings.get_zone_group_for_row(row), height, 0.0, row, settings.equator_tile_row)
+
+	return _weather_here_cache[key]
+
+
+# Game hours since it last rained over a spot (Weather.rain_hours_ago at its row and 10 m band, as _weather_here), up to max_h; INF when it
+# did not. The drink rule's brooks (DrinkRules.runs) run after the rain that fell where the player stands, not the starter row's (Dave:
+# nothing is based on where the spawn is). Worked out once a row and band a game hour.
+func _rain_hours_at(pos: Vector3, max_h: float) -> float:
+	var hour: int = floori(game_clock.seconds / 3600.0)
+
+	if hour != _rain_hours_hour:
+		_rain_hours_cache.clear()
+		_rain_hours_hour = hour
+
+	var row: int = floori(pos.z / float(settings.tile_size_m))
+	var height: float = WeatherScript.band_height(pos.y)
+	var look: int = ceili(maxf(max_h, 0.0))
+	var key := Vector3i(row, int(round(height)), look)
+
+	if _rain_hours_cache.has(key):
+		return float(_rain_hours_cache[key])
+
+	var ago: float = WeatherScript.rain_hours_ago(settings.master_seed, float(hour) * 3600.0, settings.get_zone_group_for_row(row), height, row, settings.equator_tile_row, float(look))
+	_rain_hours_cache[key] = ago
+	return ago
+
+
 # The weather over the starter tile (zone from its row, season and time from the game clock,
 # town spirit a neutral placeholder until it exists) swells the rivers: rain feeds the springs,
 # lagged because runoff takes time (snow just piles up).
@@ -1672,21 +2108,48 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
+	var row: int = WeatherScript.STARTER_ROW               # starter-calendar: the fallback weather (weather_now, rain_now) for code with no place; the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
-	if flora != null:
-		flora.set_season(str(weather["season"]))   # bare winter broadleaves shelter nothing (docs/design/cover_by_season_design.md): the row's own season (Weather.season_at)
 	var bucket: int = int(float(weather["rain"]) * 4.0) + 10 * int(float(weather["snow"]) * 4.0)
 
 	if bucket != _weather_bucket:
 		_weather_bucket = bucket
-		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
+		print("server: starter row weather %s, rain %.2f snow %.2f storm %.2f, %.0f C; live water row %d rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.centre.y, water_live.runoff])
 
-	_swell += (WeatherScript.river_push(weather) - _swell) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	_dry += (WeatherScript.river_dry(weather) - _dry) * (1.0 - exp(-1.0 / WEATHER_LAG_S))
-	water_live.set_runoff(maxf(1.0 + WEATHER_SWELL * _swell - DRY_SHRINK * _dry, RUNOFF_FLOOR))
+	water_live.set_runoff(_river_runoff(game_s, water_live.centre.y))
+
+
+# The runoff for the running water tile (row `running`: the hub's centre, the first baked tile of set_live): its own row's rain and heat at
+# sea level, lagged WEATHER_LAG_S, so a river rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn
+# is). The rows of the next few live tiles are followed too, so a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
+# shortcut: a tile's rivers rise by their own tile row; an upstream stretch in another row is not weighted in (physical world thread
+# 23 Nov 2026: nearly every catchment sits inside its own tile or the next). set_runoff is one number: any other live tile in another row
+# runs on the running tile's runoff. A row is forgotten once no live tile is in it (WATER_KEEP_MS after the last player left), so walking
+# back into a flooded row after that starts its rivers again from the baked flow and they swell over WEATHER_LAG_S.
+func _river_runoff(game_s: float, running: int) -> float:
+	var rows: Array = [running]
+
+	for tile in _water_live_last.slice(0, 4):   # set_live's four at most
+		if not rows.has((tile as Vector2i).y):
+			rows.append((tile as Vector2i).y)
+
+	for row in _river_rows.keys():
+		if not rows.has(row):
+			_river_rows.erase(row)
+
+	var k: float = 1.0 - exp(-1.0 / WEATHER_LAG_S)
+
+	for row in rows:
+		var here: Dictionary = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
+		var push: float = WeatherScript.river_push(here)
+		var dry: float = WeatherScript.river_dry(here)
+		var was: Array = _river_rows.get(row, [0.0, 0.0])   # a row newly live starts from its baked flow, as its new water window does, and swells from there
+		_river_rows[row] = [float(was[0]) + (push - float(was[0])) * k, float(was[1]) + (dry - float(was[1])) * k]
+
+	var run: Array = _river_rows[rows[0]]
+	return maxf(1.0 + WEATHER_SWELL * float(run[0]) - DRY_SHRINK * float(run[1]), RUNOFF_FLOOR)
 
 
 # The water sim follows the players (tech/WATER_NINE_TILES_PLAN.md): the tiles they stand in, kept
@@ -2122,7 +2585,8 @@ func _berries_near_cached(point: Vector3, radius: float) -> PackedVector3Array:
 # flora stream (a worker) has made it.
 const TREE_LISTS_KEPT := 200
 const TREE_CELL_M := 16.0
-var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name]
+const WIDE_CELL := Vector2i(2147483647, 2147483647)   # _tree_lists key of a chunk's trunks wider than TreeTrunks.SEARCH_TRUNK_M
+var _tree_lists: Dictionary = {}     # chunk Vector2i -> Dictionary: 16 m cell Vector2i -> Array of [id, position, species name, trunk collider radius, height]
 var _tree_names: Dictionary = {}     # placer species id -> name, trees only (built once)
 
 
@@ -2139,12 +2603,14 @@ func _trees_near_cached(point: Vector3, radius: float) -> Array:
 
 
 # Standing tree trunks near a point for an arrow's flight (Dave 10 Nov 2026: an arrow shot at a tree must stick in it), from the same cached cells:
-# [root position, trunk radius m, height m] each. The radius is the collider's (flora_placer.collider_radius: the species trunk scaled by the tree's height).
+# [root position, trunk radius m, height m] each. The radius is the collider's (flora_placer.collider_radius: the species trunk scaled by the tree's height;
+# saplings, with none, are left out).
 func _arrow_trunks(point: Vector3, radius: float) -> Array:
 	var found: Array = []
 
 	for tree in _cached_trees(point, radius):
-		found.append([tree[1], float(tree[3]), float(tree[4])])
+		if float(tree[3]) > 0.0:   # saplings have no trunk collider (flora_placer.SAPLING_M)
+			found.append([tree[1], float(tree[3]), float(tree[4])])
 
 	return found
 
@@ -2153,7 +2619,8 @@ func _arrow_trunks(point: Vector3, radius: float) -> Array:
 func _cached_trees(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
-	var reach: int = maxi(int(ceil(radius / size)), 1)
+	var widest: float = TreeTrunks.widest_m()
+	var reach: int = maxi(int(ceil((radius + widest) / size)), 1)
 	var found: Array = []
 
 	if _tree_names.is_empty():
@@ -2172,7 +2639,7 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 			var near_x: float = clampf(point.x, corner.x, corner.x + size)
 			var near_z: float = clampf(point.z, corner.y, corner.y + size)
 
-			if Vector2(near_x - point.x, near_z - point.z).length() > radius:
+			if Vector2(near_x - point.x, near_z - point.z).length() > radius + widest:
 				continue
 
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
@@ -2201,7 +2668,17 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 						if not cells.has(cell):
 							cells[cell] = []
 
-						cells[cell].append([ids[n], at, tree_name, float(species["trunk"]) * tall / ref_height, tall])
+						# The trunk collider the client makes (tree_trunks.gd standing_collider: as wide as it is drawn): 0 for a sapling, which carts, rolling logs, digging and arrows pass through.
+						var trunk_r: float = PlacerScript.collider_radius(PlacerScript.KIND_TREE, float(species["trunk"]), tall / ref_height, tall)
+						var tree: Array = [ids[n], at, tree_name, TreeTrunks.standing_collider(str(tree_name), ids[n], tall, trunk_r), tall]
+
+						if float(tree[3]) > TreeTrunks.SEARCH_TRUNK_M:
+							cell = WIDE_CELL   # a trunk wider than the callers' search margins (the everember): found by its own radius below
+
+							if not cells.has(cell):
+								cells[cell] = []
+
+						cells[cell].append(tree)
 
 				while _tree_lists.size() >= TREE_LISTS_KEPT:
 					_tree_lists.erase(_tree_lists.keys()[0])
@@ -2229,6 +2706,19 @@ func _cached_trees(point: Vector3, radius: float) -> Array:
 
 						if not gone.has(tree[0]):
 							found.append(tree)
+
+			# The wide trunks of this chunk: within `radius` of the point or reaching it (their own radius past it), so a caller's fixed
+			# margin for an ordinary trunk still finds them (an arrow at an everember's bark, a cart beside it).
+			for tree in listed.get(WIDE_CELL, []):
+				if Vector2(tree[1].x - point.x, tree[1].z - point.z).length() > radius + float(tree[3]):
+					continue
+
+				if not gone_read:
+					gone = flora.removed_in(chunk)
+					gone_read = true
+
+				if not gone.has(tree[0]):
+					found.append(tree)
 
 	return found
 
@@ -2405,6 +2895,9 @@ func _pick_flora(peer_id: int, chunk: Vector2i, id: int, near_m: float = -1.0) -
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
 
+	if gave and cues != null:
+		cues.cue(peer_id, CuesScript.CUE_PICK, id >> 16, all["positions"][at] + Vector3(0.0, minf(float(all["heights"][at]) * 0.5, 1.5), 0.0))   # the others nearby hear it picked (protocol 156; a swath's many plants give one: the cue gap)
+
 	if gave and fruit_tree:
 		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).
 		net.flora_fruit.rpc(chunk, PackedInt32Array([id]), PackedInt32Array([items.fruit_taken(key)]))
@@ -2510,7 +3003,7 @@ func _start_tunnels() -> void:
 		store.load_block(buffer, block, 0)
 		return buffer
 	tunnels.water_above = func(x: float, z: float) -> float:      # the sea is 0 m; a river or lake is its live level (read on the watch's own thread)
-		return float(_water_at(Vector3(x, 0.0, z))[0])
+		return float(_water_at(Vector3(x, 0.0, z), false)[0])
 	tunnels.surface_h = func(x: float, z: float) -> float: return generator.surface_height(x, z)
 	tunnels.start()
 
@@ -2647,29 +3140,9 @@ func _water_wheel(a: Vector3, b: Vector3) -> Dictionary:
 	return WaterFlowScript.wheel(generator, water_live.data_of(generator.tile_of(a.x, a.z)), a, b, WaterFlowScript.load_rules(), items.water_depth_at)
 
 
-# Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface with the
-# saved digs and fills laid over it, in order (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them).
-# Natural caves are not known to this probe (only the surface height and the edits are), so an item dropped inside a natural cave
-# keeps its height. Returns the resting height, or NAN when there is no ground within 24 m below.
+# Where a loose item let go at `from` comes to rest (terrain_generator.floor_below: the generated ground, a cave's floor, the saved digs and fills).
 func _floor_below(from: Vector3) -> float:
-	var edits: Array = store.ops.edits_near(Vector3(from.x, from.y - 12.0, from.z), 12.0)   # every edit touching the 24 m column, oldest first
-	var surface: float = generator.surface_height(from.x, from.z)
-	var y: float = from.y + 0.05
-
-	for step in range(480):   # 0.05 m steps, 24 m
-		var p: Vector3 = Vector3(from.x, y, from.z)
-		var solid: bool = p.y < surface
-
-		for op in edits:
-			if p.distance_to(op[1]) <= float(op[2]):
-				solid = int(op[0]) == 1
-
-		if solid:
-			return y + 0.05
-
-		y -= 0.05
-
-	return NAN
+	return generator.floor_below(from, store.ops.edits_near(Vector3(from.x, from.y - 12.0, from.z), 12.0))   # every edit touching the 24 m column, oldest first
 
 
 # Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
@@ -2751,7 +3224,17 @@ func _tunnel_tick() -> void:
 		_events.event("tunnel collapse: %d cells, %d fills, victims %s" % [int(collapse["cells"]), (collapse["fills"] as Array).size(), str(collapse["victims"])])
 
 		for victim in collapse["victims"]:
-			items.kill(int(victim), "cave-in")
+			var was: Variant = items.position_of(int(victim))
+			var above: Vector3 = items.respawn_point
+			var fire: Array = _cave_rescue(was) if was != null else []   # dug out and carried to the nearest campfire (Dave 23 Nov 2026)
+
+			if not fire.is_empty():
+				above = fire[0][0]
+			elif was != null:   # no fire out of the rock: the top of the ground (a fill on it counts) or of the water over it, never inside rock or under a lake
+				above = Vector3(was.x, ItemsScript.dug_out_height(float(generator.surface_height(was.x, was.z)), float(animals.ground_height.call(was.x, was.z)), float(_water_at(Vector3(was.x, 0.0, was.z))[0])), was.z)
+
+			if not items.survive_cave_in(int(victim), above, not fire.is_empty()):   # death.json stop_at_1: dug out onto the ground above, health 1
+				items.kill(int(victim), "cave-in")
 
 		for fill in collapse["fills"]:
 			_fill_ground(fill[0], fill[1], tunnels.rubble_material)
@@ -3056,6 +3539,8 @@ func _send_npcs(delta: float) -> void:
 			animals.watched[int(watched_id)] = true   # the animal an admin watches through the spyglass keeps living (server_animals tick)
 
 	# Each player is looked at about four times a second, a fifth of them per pass, so the work never lands on one tick.
+	animals.begin_send_pass()   # each animal's row built once this pass, the animals found by grid (docs/design/SERVER_SCALE.md)
+
 	for n in range(_send_round % 5, peers.size(), 5):
 		var peer: int = int(peers[n])
 		var at: Variant = items.position_of(peer)
@@ -3064,13 +3549,13 @@ func _send_npcs(delta: float) -> void:
 			continue
 
 		var rows: Array = npcs.rows_near(at)
-		var signature: String = str(rows)
+		var signature: int = hash(rows)   # not str(rows): turning every player's rows into text 4 times a second was the dearest part (load test 23 Nov 2026)
 
 		# The rows ride an unreliable channel and an idle crowd never changes, so a lost first packet (or one that came before the
 		# client had built its NPC view) was never sent again: Dave's Ctrl+N saw "roster 2, drawn 0". Resend unchanged rows every 2 s.
 		var now_ms: int = Time.get_ticks_msec()
 
-		if _npc_sent.get(peer, "") != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
+		if not _npc_sent.has(peer) or int(_npc_sent[peer]) != signature or now_ms - int(_npc_sent_ms.get(peer, 0)) > 2000:
 			_npc_sent[peer] = signature
 			_npc_sent_ms[peer] = now_ms
 			net.npcs.rpc_id(peer, rows)
@@ -3080,7 +3565,7 @@ func _send_npcs(delta: float) -> void:
 		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
 		var reach: Array = items.spyglass_reach(peer, animals.cfg.get("spyglass", {}))
 		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at)
-		var sig: String = str(beasts)
+		var sig: int = hash(beasts)
 
 		if spy == -1:
 			items.spyglass.erase(peer)
@@ -3088,16 +3573,20 @@ func _send_npcs(delta: float) -> void:
 		elif spy > 0:
 			net.animal_info.rpc_id(peer, spy, animals.info_of(spy))
 
-		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
+		if not _animal_sent.has(peer) or int(_animal_sent[peer]) != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
 			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
 
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])
+			map_knowledge.note_trails(peer, Vector2i(block[0], block[1]), block[3])   # kept for the Map's trails (protocol 152)
 
 		for block in map_knowledge.updates_for(peer, now_ms):
-			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
+			net.map_blocks.rpc_id(peer, block[0], block[1], block[2], block[3], block[4])
+
+		for block in map_knowledge.trail_updates_for(peer):
+			net.map_trails.rpc_id(peer, block[0], block[1], block[2])
 
 		var marks_sig: int = items.trap_marks_sig(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150): sent when they change
 
@@ -3144,6 +3633,8 @@ func _send_npcs(delta: float) -> void:
 			_far_fires_sent[peer] = far_sig
 			net.far_fires.rpc_id(peer, far_rows[0], far_rows[1])
 
+	animals.end_send_pass()
+
 
 # Admin placement: only player keys listed in data/admin.json. Nobody is an admin when that file is absent.
 func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void:
@@ -3164,6 +3655,18 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 		items.make_carcass(arg, pos)
 
 
+# A small file written whole and taken away again: a read-only store, or one with no room for a save, stops the start with a clear line
+# instead of a server that plays on and saves nothing.
+func _store_writable(dir: String) -> bool:
+	var probe: String = dir + "/write_check.json"
+	var ok: bool = ItemsScript._write_file(probe, JSON.stringify({"version": 1, "checked": Time.get_unix_time_from_system(), "room": " ".repeat(65536)}))
+
+	for one in [probe, probe + ".prev", probe + ".tmp"]:
+		DirAccess.remove_absolute(one)
+
+	return ok
+
+
 func _process(delta: float) -> void:
 	if _refused_start:
 		return
@@ -3171,7 +3674,13 @@ func _process(delta: float) -> void:
 	if store == null:
 		return
 
-	game_clock.advance(delta)
+	game_clock.follow(Time.get_ticks_usec())   # real time, not the clipped frame delta (game_clock.gd follow)
+	var frame_now: int = Time.get_ticks_msec()
+
+	if _last_frame_msec > 0 and frame_now - _last_frame_msec >= IDLE_YIELD_GAP_MS:
+		_idle_hold_until_msec = frame_now + IDLE_YIELD_MS
+
+	_last_frame_msec = frame_now
 	_events.tick(_event_state, 1000, 500)
 	_events.mark("clock")
 
@@ -3184,6 +3693,10 @@ func _process(delta: float) -> void:
 	_update_weather()
 	_events.mark("items")
 	items.tick(delta)
+	_night_skip_frame()
+	_events.mark("fish signs")
+	if fish_signs != null:
+		fish_signs.tick()
 	_events.mark("tunnels+buried")
 	_tunnel_tick()
 	_send_buried()
@@ -3192,6 +3705,7 @@ func _process(delta: float) -> void:
 	tribes.tick(delta)
 	npcs.tick(delta)
 	_events.mark("animals")
+	_refresh_fire_spots()
 	animals.tick(delta)
 	coarse_ground.tick()
 	_events.mark("trails")
@@ -3292,7 +3806,9 @@ func _process(delta: float) -> void:
 		_events.mark("checks: revisions file")
 		store.save_revisions()
 		_events.mark("checks: flora removed file")
-		flora.save_removed()
+
+		if items.fells_on_disk():   # a felled tree's removal is written after its stump and logs (server_items fells_on_disk)
+			flora.save_removed()
 
 	_events.mark("checks: flags, report")
 	var flag_path: String = _store_path + "/clear_generated.now"
@@ -3313,7 +3829,7 @@ func _process(delta: float) -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(_store_path + STOP_NOW))
 			print("server: stop asked (stop.now); saving and closing with %d players here" % _peers.size())
 			_events.event("QUIT: stop asked (stop.now), %d players here" % _peers.size())
-			_quit_at_msec = now
+			_quit_at_msec = now + _tell_closing()
 			_run_note("closing", _listen_port)
 
 		if FileAccess.file_exists(flag_path):
@@ -3331,6 +3847,7 @@ func _process(delta: float) -> void:
 		# A bake finished: the ground is made again from the new tiles, and clients reload.
 		if store.check_tiles(now):
 			generator.forget_tiles()
+			flora.pack = null   # prebuilt plants stand on the old tiles: placed afresh until a pack for the new tiles is installed
 			flora.clear_memory()
 			WaterGridScript.forget_ground()
 
@@ -3348,12 +3865,22 @@ func _process(delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		_print_off_main("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
-			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
-		])
+		var report: String = "server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d, air from the table %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
+			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, store.air_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
+		]
 
 		if _link != null and _link.blocks_out > 0:
-			_print_off_main("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
+			report += "\nserver: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0]
+
+		var rows: String = store.made_rows_report()
+
+		if rows != "":
+			report += "\nserver: " + rows
+
+		if report != _last_report or now - _last_report_msec >= 300000:   # an idle server printed the same two lines every 10 s; once in 5 min shows it is alive
+			_last_report = report
+			_last_report_msec = now
+			_print_off_main(report)
 
 	if _quit_when_empty and _quit_at_msec < 0:
 		if not _peers.is_empty():
@@ -3390,6 +3917,7 @@ func _process(delta: float) -> void:
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1
+		_close_players()
 		var flush_from: int = Time.get_ticks_msec()
 		store.flush()
 		_events.event("shutdown: ground flushed in %d ms" % (Time.get_ticks_msec() - flush_from))
@@ -3439,6 +3967,35 @@ func _run_note(state: String, listen_port: int, why: String = "") -> void:
 # pull) and asks it to close. Only a request naming this process and another commit is obeyed, only by a server Play started
 # (--quit-when-empty), and only with nobody playing on it: it closes the normal way (ground flushed, world and inventories saved in
 # _exit_tree), so Play can start one on the new code.
+# A stop with players here (a restart or an update, run_server.sh stop.now): each is told why (NetScript.SERVER_CLOSING) and the quit waits
+# CLOSING_TELL_MS for that notice to go out; returns that wait (0 with nobody here).
+const CLOSING_TELL_MS := 1500
+
+
+func _tell_closing() -> int:
+	if _peers.is_empty():
+		return 0
+
+	for peer in _peers.keys():
+		net.notice.rpc_id(int(peer), NetScript.SERVER_CLOSING)
+
+	return CLOSING_TELL_MS
+
+
+# The players' connections are closed the normal way as the server quits (their games hear it at once and show the "connection lost"
+# window with the reason, not 60 to 120 s later at their line's timeout). Their spots are noted and saved as before (_exit_tree).
+func _close_players() -> void:
+	var peer: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+
+	if peer == null or _peers.is_empty():
+		return
+
+	for id in _peers.keys():
+		peer.disconnect_peer(int(id))   # a polite goodbye (not forced): each game gets server_disconnected
+
+	peer.host.flush()
+
+
 func _stop_if_asked(now: int) -> void:
 	if not FileAccess.file_exists(STOP_NOTE):
 		return
@@ -3474,6 +4031,11 @@ func _send(peer_id: int, batch: Array) -> void:
 	_peers[peer_id]["bytes"] += int(batch[2])
 
 
+# True while a flora chunk may take a worker: flora leaves one worker for the ground (the join, lag lane 23 Nov 2026); one worker in all takes both.
+static func flora_may_start(flora_running: int, max_running: int) -> bool:
+	return flora_running < max_running - 1 or max_running <= 1
+
+
 # Worker thread: takes the next block, urgent ones first, and makes it.
 func _worker_loop() -> void:
 	while true:
@@ -3485,8 +4047,11 @@ func _worker_loop() -> void:
 		# Order: urgent blocks, flora chunks, prefetch blocks.
 		var water_item: Array = []
 
-		if _queue.is_empty() and not _flora_queue.is_empty():
+		# Lag lane 23 Nov 2026 (cloud join, timestamped): the joining player's first flora chunks (about 1 s each) took all three workers, and
+		# urgent ground waited behind them: 3 blocks in the first 6 s after the welcome. Flora now leaves one worker for the ground.
+		if _queue.is_empty() and not _flora_queue.is_empty() and flora_may_start(_flora_running, _max_running):
 			flora_item = _flora_queue.pop_front()
+			_flora_running += 1
 		elif _queue.is_empty() and not _water_queue.is_empty():
 			water_item = _water_queue.pop_front()
 
@@ -3518,6 +4083,13 @@ func _worker_loop() -> void:
 			_done_mutex.lock()
 			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes, flora_item[2]])
 			_done_mutex.unlock()
+			_queue_mutex.lock()
+			_flora_running -= 1
+			var flora_left: bool = not _flora_queue.is_empty()
+			_queue_mutex.unlock()
+
+			if flora_left:
+				_work.post()   # a flora chunk passed over at the cap above gets a worker now
 			continue
 
 		if item.is_empty():
@@ -3587,6 +4159,20 @@ func _make_idle_offsets() -> void:
 	_idle_offsets = list.map(func(item): return [item[1], item[2], item[3]])
 
 
+# The spawn and the most recent saved spots go in as idle anchors under ids below zero (no peer has one), so the idle
+# builders make and save the ground round them with no one connected: after a TERRAIN_VERSION change threw the
+# generated ground away, the first joins find it built. With the ground already saved this is only store look-ups.
+# Each such anchor is dropped once its circle is done; players' own anchors always go first.
+func _seed_idle_spots() -> void:
+	var spots: Array = [spawn]
+	spots.append_array(items.saved_spots(IDLE_SAVED_SPOTS))
+	var id: int = -1
+
+	for spot in spots:
+		_idle_anchor[id] = Vector3i(int(floor(spot.x / 16.0)), 0, int(floor(spot.z / 16.0)))
+		id -= 1
+
+
 # Idle thread: while no player is waiting for anything, makes and saves the
 # blocks around each player, starting with the ones closest to them. Real
 # requests always go first (checked before every block).
@@ -3609,13 +4195,18 @@ func _idle_loop() -> void:
 		if stopping:
 			return
 
-		if busy or anchors.is_empty() or _bake_running:
+		if busy or anchors.is_empty() or _bake_running or Time.get_ticks_msec() < _idle_hold_until_msec:
 			OS.delay_msec(20)
 			continue
 
 		var worked: bool = false
+		# Players in the order they asked (ids above zero), then the start-up spots, spawn first.
+		var order: Array = anchors.keys().filter(func(id): return id > 0)
+		var spots: Array = anchors.keys().filter(func(id): return id < 0)
+		spots.sort_custom(func(a, b): return a > b)
+		order.append_array(spots)
 
-		for peer in anchors:
+		for peer in order:
 			var anchor: Vector3i = anchors[peer]
 			var cursor: Array = cursors.get(peer, [Vector3i(), 0])
 
@@ -3634,6 +4225,14 @@ func _idle_loop() -> void:
 					break
 
 			cursors[peer] = cursor
+
+			if peer < 0 and cursor[1] >= _idle_offsets.size():
+				_queue_mutex.lock()
+				var dropped: bool = _idle_anchor.erase(peer)   # the other idle thread may have finished it first
+				_queue_mutex.unlock()
+
+				if dropped:
+					print("server: ground round start-up spot %d is claimed (built, found saved, or being built by the other idle thread)" % -peer)
 
 			if worked:
 				break
@@ -3692,6 +4291,7 @@ func _idle_prebuild_column(anchor: Vector3i, offset: Array) -> bool:
 func _load_game_clock() -> void:
 	var path: String = _store_path + "/game_clock.json"
 	_clock_saved_msec = Time.get_ticks_msec()
+	ItemsScript.restore_missing(path)
 
 	if not FileAccess.file_exists(path):
 		return
@@ -3741,6 +4341,7 @@ func _exit_tree() -> void:
 		items.note_spots_on_close()   # players still in: where they stand now, not the last 10 s note
 		items.save()
 		items._finish_writer()   # a save with nothing new returns early: the last autosave's files and log lines still finish before the exit
+		print("server save: %d flushes to the disk, %.1f ms each on average (sync -f before and after each header)" % [ItemsScript.syncs, ItemsScript.sync_ms / maxf(1.0, float(ItemsScript.syncs))])
 
 	_bury_mutex.lock()
 	_bury_queue.clear()
@@ -3807,6 +4408,96 @@ func _exit_tree() -> void:
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
+# Under rock (a cave or a dug tunnel, _under_rock) the nearest campfire out of the rock comes first (_cave_rescue, Dave 23 Nov 2026).
+# Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town (Edda and
+# Hob's fire; without one the square of data/npcs/markers.json, else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
+# off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
+# [[Vector3, "goblin" | "bandit" | "town"]], or [] when there is none. Not on the tick: only when someone passes out.
+func _rescue_spots(near: Vector3) -> Array:
+	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
+	var out: Array = []
+
+	if _under_rock(near):   # passed out in a cave or tunnel: to the nearest campfire out of the rock (Dave 23 Nov 2026), else as below
+		var fire: Array = _cave_rescue(near)
+
+		if not fire.is_empty():
+			return fire
+
+	for tribe in tribes.tribes():
+		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+		var at: Dictionary = camp.get("fire", {})   # only a camp with a fire: a cave mouth alone has no warmth to wake in
+
+		if at.has("x"):
+			out.append([Vector2(float(at.get("x", 0.0)) + off_m, float(at.get("z", 0.0))), "goblin"])
+
+	for cell in bandits.sites:
+		var site: Dictionary = bandits.sites[cell]
+
+		if int(site.get("stage", 0)) >= int(bandits.CAMP):
+			out.append([Vector2(float(site.get("x", 0.0)) + off_m, float(site.get("z", 0.0))), "bandit"])
+
+	# The town: beside Edda and Hob's fire (it always burns), not on the square 19 m off it, out of its warmth (coordinator 23 Nov 2026: "you wake
+	# inside the warmth of its fire"). Its tree stands on the fire's west side (data/npcs/camp.json), so off_m east is clear of the trunk.
+	var town: Vector2 = NpcCampScript.fire_spot()
+
+	if town.x != INF:
+		town.x += off_m
+	else:
+		town = animals.town
+
+		for row in npcs._read("res://data/npcs/markers.json").get("markers", []):
+			if str(row.get("kind", "")) == "square" and not row.has("npc"):
+				town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+
+	if town.x != INF:
+		out.append([town, "town"])
+
+	var best: Array = []
+
+	for spot in out:
+		if best.is_empty() or (spot[0] as Vector2).distance_to(Vector2(near.x, near.z)) < (best[0] as Vector2).distance_to(Vector2(near.x, near.z)):
+			best = spot
+
+	return [] if best.is_empty() else [[_rescue_ground(best[0]), best[1]]]
+
+
+# Under rock: in a generated cave (_in_cave), or with more than CAVE_ROOF_M of ground over it as dug and filled (a dug tunnel; an open pit is not).
+func _under_rock(p: Vector3) -> bool:
+	if _in_cave(p):
+		return true
+
+	if generator == null or not generator.tile_cached(p.x, p.z):
+		return false   # a tile not in memory is not read for this on the main thread (a far fire): taken as open
+
+	var top: float = float(animals.ground_height.call(p.x, p.z)) if animals != null and animals.ground_height.is_valid() else NAN
+	return not is_nan(top) and top - p.y > CAVE_ROOF_M
+
+
+# A player rescued in a cave or tunnel (Dave 23 Nov 2026: "if you are in a cave and end up getting rescued they should deposit you at the
+# nearest civilization and for these purposes that means campfire for now"): the nearest campfire that is not itself under rock, any owner's,
+# lit or not, the town's and the goblin and bandit camps' fires included, set down off_fire_m off it inside its warmth as every wake spot
+# (_rescue_ground). [[spot, "campfire" | "town" | "goblin" | "bandit"]], or [] when there is no fire out of the rock (the caller's own place stands).
+func _cave_rescue(near: Vector3) -> Array:
+	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 2.5))
+	var fires: Array = items.campfires()   # the camps' fires are world items too (camp fires, lay_bandit_camp)
+	var best: Array = ItemsScript.nearest_fire_out_of_rock(fires, near, func(p: Vector3) -> bool: return _under_rock(p), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)))
+	return [] if best.is_empty() else [[_rescue_ground(Vector2(best[0].x + off_m, best[0].z)), best[1]]]
+
+
+# A step off a tree or wet ground stays within search_m (warmth.json pass_out wake_search_m) of the spot, so the player still wakes in the fire's warmth.
+func _rescue_ground(at: Vector2) -> Vector3:
+	var search_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("wake_search_m", 1.5))
+	var trunks: PackedVector2Array = _trunks_near(at, 32.0)
+	var ground_at: Callable = func(x: float, z: float) -> float: return float(generator.surface_height(x, z))
+	var wet_at: Callable = func(x: float, z: float) -> bool: return _baked_wet(x, z)
+	var clear: Vector2 = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at, {"search_m": search_m, "ring_m": 0.5, "clear_m": 1.3})
+
+	if clear == at and not SpawnPointScript._trunk_free(at, trunks, 1.3):
+		clear = SpawnPointScript.clear_of(at, trunks, ground_at, wet_at)   # a thicket round the fire: out of a tree first, the warmth second
+	var edited: float = float(animals.ground_height.call(clear.x, clear.y)) if animals != null and animals.ground_height.is_valid() else NAN
+	return Vector3(clear.x, ItemsScript.dug_out_height(float(generator.surface_height(clear.x, clear.y)), edited, NAN), clear.y)   # 2 m over the ground, a fill on it too
+
+
 func _resource_dangers() -> Array:
 	var reach: float = float((items._boulder_cfg.get("distribution", {}) as Dictionary).get("danger_m", 200.0))
 	var out: Array = []
@@ -3827,3 +4518,41 @@ func _resource_dangers() -> Array:
 			out.append([float(site.get("x", 0.0)), float(site.get("z", 0.0)), reach])
 
 	return out
+
+
+# Skipping the night (server_items.gd night_skip): the real seconds to pass so the latest sleeper's sunrise comes, when it is night at every
+# sleeper's spot (after their sunset or before their sunrise: sunset is as far after noon as sunrise is before it), else 0. No skip in a polar
+# day (no night) or a polar night (no dawn).
+func _night_skip_real_s(peers: Array) -> float:
+	var day: float = WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR)   # starter-calendar: the declination is the one sky's, the latitude each sleeper's row (as animals.sunrise_now)
+	var sunrises: Array = []
+
+	for peer in peers:
+		var pos: Vector3 = items._peer_pos.get(peer, Vector3.INF)
+		sunrises.append(WeatherScript.sunrise_hour(day, NAN if not pos.is_finite() else ClimateScript.latitude_of_row(ClimateScript.row_of_z(pos.z, float(settings.tile_size_m)), settings.equator_tile_row)))
+
+	return ItemsScript.night_to_dawn_h(game_clock.hour(), sunrises) * 3600.0 / GameClockScript.RATIO
+
+
+# One frame of a night skip: the clock moves on by a step and the world's slow work and the players' vitals catch up by the same (a minute of
+# real time a frame, so the catch-up is spread out instead of one long freeze); at the end everyone wakes and the clients' clocks jump with it.
+func _night_skip_frame() -> void:
+	if not items.night_skipping():
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var step: float = minf(items._night_left, items.NIGHT_SKIP_STEP_S)
+	game_clock.advance(step)
+	items.night_skip_step()
+	_night_cost_usec += Time.get_ticks_usec() - t0
+	_night_worst_usec = maxi(_night_worst_usec, Time.get_ticks_usec() - t0)
+	_night_frames += 1
+
+	if not items.night_skipping():
+		items.night_skip_finish()
+		net.game_time.rpc(game_clock.seconds)
+		_save_game_clock()
+		print("night skip: dawn at hour %.2f, day %d; %d frames, %.1f ms in all, %.1f ms the longest frame" % [game_clock.hour(), game_clock.day_of_year(), _night_frames, float(_night_cost_usec) / 1000.0, float(_night_worst_usec) / 1000.0])   # starter-calendar: a log line
+		_night_frames = 0
+		_night_cost_usec = 0
+		_night_worst_usec = 0

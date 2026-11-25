@@ -36,6 +36,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
 | Chests by nail tier | [Chest tiers](design/CHEST_TIERS.md) | Which chest each nail metal builds, the "or better" nails and hinges groups, provisional CT-1..CT-5. | Relevant task record |
 | Character attributes | [Attributes 0 to 100](design/ATTRIBUTES.md) | Every attribute 0 to 100 like a percent, 50 average; the bell-shaped creation roll (player fitness 40 to 60); old saves converted; provisional ATTR-1, ATTR-3, ATTR-4. | This design's For Dave section |
+| Skill training and caps | [Skill training](design/SKILL_TRAINING.md) | Dave's rule: 1 to 24 by use alone, a trainer for each band after; a visit jumps to the band floor (25, 50, 75) and speeds gains. Numbers in data/items/skills.json. | This design |
 | Autoload | [Autoload](design/AUTOLOAD.md) | A container loads an item from the ground within 30 m, once or every 10 minutes; provisional AL-1 to AL-5. | This design's For Dave section |
 | No spawning near builds | [No-spawn zones](design/NO_SPAWN_ZONES.md) | Nothing wild spawns or regrows within 20 m of what players put down; grass cleared close round it. | This design's For Dave section |
 | Server pick page (client) | [Server pick page](design/SERVER_PICK_PAGE.md) | Approved by Dave 19 Nov: official server, saved servers with live status and padlock, passwords (3 tries), plain failure words. | This design's For Dave section |
@@ -68,6 +69,7 @@ Keep these separate from the design: they own assignments, implementation state,
 
 | Work area | Records | Purpose |
 |---|---|---|
+| Robot play-testers | [Robot play-testers](ROBOT_PLAYTESTERS.md) | Headless robot players over a simulated internet link (delay, jitter, loss) checking pack sync, animal and player jumps, held items, crouch movement and rejoin against the server. |
 | To-do list | [TODO](TODO.md), [current bugs](../BugsList_Current.md), [fixed bugs](../BugsList_Fixed.md) | What is not built yet, grouped into thread-sized pieces; Dave's play-test problems until he has played the fix. |
 | Goal authoring | [Working walkthrough draft](design/PLAYER_GOALS_REWARDS_DRAFT.md), [corrected review catalog](design/PLAYER_GOALS_CATALOG_CORRECTED.md) | Current walkthrough authoring/regeneration inputs; use mission decisions for approvals, amounts and activation. |
 | Goals/progression repair | [State](ai-team/missions/GOALS-REPAIR/STATE.md), [decisions](ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md) | Current mission state and scoped decisions/assumptions. |
@@ -90,8 +92,11 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
 | Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
+| Server scale (hundreds, then thousands of players) | [Server scale](design/SERVER_SCALE.md) | 23 Nov 2026 load tests at 32 to 256 bots (what breaks first, top costs with numbers) and the plan in order of gain; the 32-player cap stays Dave's call. |
+| Animals over a real connection | [Animal netcode](design/ANIMAL_NETCODE.md) | 23 Nov 2026 research (how other games sync, move and fight animals, with sources), the diagnosis of Dave's live-server play test (ENet's throttle, the draw delay, pass-through, robot steering) and the protocol 154 fixes; the order of the next steps. |
 | Animals lying down, rabbit groups | [Animal resting](design/ANIMAL_RESTING.md) | 21 Nov 2026 (D-ANIM-1, protocol 148): grazers sent lying (state 19) by their active share; rabbits in groups of 2 to 4 (HB-4, provisional). |
 | Animal routines, game trails, trapping | [Routines, trails and trapping](design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md) | 22 Nov 2026 (protocol 149, D-TRAP-1/2/3): warrens and deer ranges, daily trips along trails drawn as matted grass, snares on runs and while away, "Snare a rabbit" goal; stage 2a animals keep to the sun, moose and elk ranges; stage 2b fox earths and night rounds by the warrens, a fox now and then in a snare while away; stage 2c players' own worn paths and choke points; stage 2d signs along trails by Tracking; stages 3-4 planned. |
+| Hunting signs, reading sign, fresh tracks | [Hunting signs](design/HUNTING_SIGNS.md) | 23 Nov 2026: signs for everyone with a faint highlight by Tracking, deer beds and rubbed trees, read a sign with E, trails flatter and paler in grass, fresh prints from live animals. |
 
 ## Further design areas — routing review pending
 

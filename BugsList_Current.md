@@ -10,130 +10,6 @@ The hoe should make preparing land predictable and convenient. The player can le
 
 The existing entry numbers are retained for tracking. Detailed behaviour has one home below; cross-references replace repeated instructions.
 
-## 1. Level terrain without lifting the player or creating free fill
-
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Level checks (target held, nothing edited under the feet, no soil means no fill, fills use soil, foundation target). Found in Dave's play test (14 Nov he found the old Level working but "to small an area and its too week"; later the lifting below). Fix played 19 Nov (Dave play test: filling took soil to raise the level; cutting gave none back, entry 50).
-
-**Problem:** Raising soil beneath the player lifts them, and their new height then drives further raising. The resulting terrain climbs higher with repeated use.
-
-**Required outcome:**
-- Level uses the bottom of the player's feet as its target height, captured before that action changes terrain.
-- It cuts high ground down and fills low ground up to that target. Terrain altered by the action must not create a higher reference and feed back into further raising.
-- The action must not move the player up or down. Preserve the ground supporting the player as needed to accomplish this.
-- Filling low ground consumes soil, using the normal crafting resource system: inventory, loose soil nearby, and nearby containers. Without sufficient soil, do not create unpaid fill.
-- The soil requirement belongs to raising/filling with Level. The two tilling modes in entry 6 instead redistribute terrain to an average height and require no soil.
-
-**Acceptance:** Level a site while standing still. The player stays at the same height, the target does not creep upward, and filling consumes available soil.
-
-## 2. Foundations must use the edited ground surface
-
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items: a foundation placed on ground raised 1.6 m by a saved fill. Found in Dave's play test. Fix not yet played.
-
-**Problem:** A raised, flattened building site is rejected as too far above or below ground, as though the new soil were not ground.
-
-**Required outcome:** Foundation height/contact checks must use the current terrain surface, including player edits. A valid site made with the hoe must be usable immediately. Other existing foundation requirements, such as support and obstruction checks, still apply.
-
-**Acceptance:** Raise and level a suitable site, then place a foundation on its new surface without an erroneous original-ground-height refusal.
-
-## 3. Rocks must visibly deplete as they are mined
-
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items stone counts by size (yield 0.04, provisional RK-1); the cracks and crumble are drawn by the client and have not been seen. Found in Dave's play test. Fix not yet played.
-
-**Problem:** A rock can yield hundreds of stones without shrinking or breaking.
-
-**Required outcome:**
-- Give each rock a finite stone supply proportional to its original physical size. Use original rock volume as the basis for this proportionality.
-- As that supply is extracted, show increasing cracks and a shrinking rock.
-- Exhausted rocks break and stop yielding stone.
-- Yield, visible depletion and exhaustion must describe the same remaining resource, including after saving and reloading.
-
-**Acceptance:** Larger rocks provide proportionally more stone, every rock is exhaustible, and visual changes communicate progress toward exhaustion.
-
-## 4. Keep the hoe menu readable on screen
-
-**Status: Implemented — awaiting player verification.** Second fix (PR #1283), after Dave's play test of the first one (PR #1252). Found in Dave's play test. Second fix not yet played.
-
-**Dave play test 19 Nov 2026** (screenshot of the hoe's right-click list): "this is what the right click menu on the hoe looks like. what is wrong here". The first fix did not work: the list started at the middle of the screen and ran off the right edge (the panel was anchored at the centre but grew only to the right), every row carried its full explanation so each line was cut off mid-sentence, and it lay over the hotbar and the "Level (right click: choose what it does)" caption on a faint backdrop.
-
-**Problem:** The hoe's right-click menu extends beyond the screen.
-
-**Required outcome:** The list always fits inside the game window at any window size and text size, does not cover the hotbar or its caption, and reads as a menu.
-
-**Now:** a raised plate centred just above the hotbar caption; the six actions as short names (Dave's entry 5 names and order, unchanged), the current one on a lit band with a gold bar; only the highlighted action's explanation, wrapped inside the plate, under the list; the keys on a short line at the bottom. It follows the player's text size and is capped to the window; a plant list too long for the window shows the rows round the highlighted one with "..." for the rest. Headless test `test_hoe_menu` checks the plate is inside the window, above the caption and centred at every text size.
-
-**Acceptance:** All menu choices remain readable and selectable at the player's window size.
-
-## 5. Present the hoe actions in a practical order
-
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Pathen one-click checks; the menu order is in the code and CONTROLS.md, not seen. Found in Dave's play test. Fix not yet played.
-
-Use this order and these labels:
-
-| Order | Menu label | Purpose |
-|---|---|---|
-| 1 | Level | Prepare ground at the player's standing height; entry 1. |
-| 2 | Plant | Choose a plant and place it with a planting grid; entry 6. |
-| 3 | Till Garden Grid - 20m Edge Blend | Create an adjustable garden with blended edges; entry 6. |
-| 4 | Till Soil 2m | Prepare a small level patch without edge blending; entry 6. |
-| 5 | Pathen | One click makes one level path spot with the normal path texture. |
-| 6 | Survey a Path | Retain the existing implemented behaviour. |
-
-Survey a Path is included for menu placement; this list does not request rebuilding it.
-
-## 6. Make gardening and planting deliberate, quick and predictable
-
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_farming garden, soil patch, obstacle, countdown and plant-grid checks; the neon preview and countdown have not been seen. Found in Dave's play test of the 14 Nov gardening hoe. Fix not yet played.
-
-### Shared placement behaviour
-
-- Show the area the player is about to use before they commit. Planting uses a neon-green grid; garden tilling uses a similar preview.
-- Trees and large rocks obstruct placement. Turn the preview red and refuse the action until the site is cleared.
-- Automatically pick up small, collectable rocks when the action is successfully confirmed. Do not destroy them or pick them up merely by hovering a preview.
-- Buildings obstruct placement. Do not wrap a grid around them or leave building-shaped holes.
-- Neither tilling mode may change ground beneath a building or within 2 metres of any building piece. This protection also applies to garden edge blending.
-- Validate the complete affected terrain area before modifying it. If an obstacle or protected building area prevents the operation, refuse it without partially tilling or blending the terrain.
-
-### Plant
-
-1. Open a selection window listing the plant types and seeds available from inventory, nearby containers and loose items on the ground, using the normal crafting resource system.
-2. After selection, show a neon-green planting grid. Alt + arrow keys change the number of rows and columns. The selected plant type determines spacing.
-3. One left-click fills usable positions with the selected type until the grid is full or available planting supplies run out. Consume resources for the plants actually placed. A shortage permits a partially filled grid.
-4. Right-click returns to plant selection so the player can choose another type.
-
-Crops, including wheat and barley, require tilled soil. Bushes and trees do not. Existing plants and other occupied positions must not receive duplicate plants.
-
-### Till Garden Grid - 20m Edge Blend
-
-**Purpose:** Turn a cleared area into one flat garden that joins naturally to the surrounding land.
-
-- Alt + arrow keys adjust the garden's length and width.
-- On the confirming left-click, capture all original terrain heights within the garden together and calculate their average.
-- In that single operation, level the entire garden to the average, remove grass, till it and apply a dark, rich garden-soil texture. No soil is required or consumed.
-- Blend the perimeter into the surrounding terrain. The transition must be 45 degrees or gentler and reach the existing terrain within a maximum of 20 metres outward from the garden edge.
-- The full affected area, including the blend, must respect the obstacle and building-clearance rules above.
-- If these conditions cannot all be satisfied, show a red grid and block placement. Do not silently steepen the slope, extend past 20 metres or modify protected ground.
-- After a successful action, replace the garden grid with a 20-second countdown in medium-sized red numbers at the centre of the screen. Further Garden Grid tilling is unavailable until it reaches zero, even if the player changes position. Restore the preview when the countdown ends.
-- This is one click and one terrain operation, not continuous tilling while the button is held.
-
-### Till Soil 2m
-
-**Purpose:** Quickly prepare a small patch with the same soil treatment, without the large garden's edge transition.
-
-- Affect a 2-metre-wide patch.
-- Capture the original heights beneath it, average them, and level the patch to that average in one action.
-- Remove grass, till the patch and apply the same dark, rich garden-soil texture.
-- Require no soil and perform no edge blending.
-- Apply the shared tilling obstacle and building-clearance rules.
-- Do not apply the Garden Grid's 20-second countdown to this mode.
-
-### Acceptance
-
-- Both tilling modes average the original ground rather than repeatedly chasing a changed height or the player's position.
-- A garden's preview and actual placement agree about obstacles, blending and building clearance.
-- A successful garden creates level, plantable soil with compliant edges and starts the visible countdown.
-- Crops can be planted on either tilled surface; trees and bushes can also be planted on suitable untilled ground.
-- One planting click uses available supplies without demanding enough resources to fill every grid position.
-
 ## 7. Sickle and scythe do nothing when swung
 
 Dave, 18 Nov 2026: "the first time I tried to use a sickle and a scythe they didn't actually do anything. I left clicked and they just said nothing to use on." Cause: no left-click action was ever built for either tool; the swing fell through to the generic "nothing to use it on yet" line. A sickle only raised a grain crop's E harvest to the full yield when it was on the hotbar, and the scythe did nothing at all.
@@ -201,18 +77,6 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 | 46 | Craft button should be Craft 1 / Craft x (17 Nov, *inferred* from using the Craft button of #1056) | #1228 | Fix not yet played |
 | 47 | Crafting ran on past the quantity; click should only select (12 Nov) | #1056 | Unclear (two-step inference: he used a Craft button and asked for it to be split, entry 46) |
 | 48 | Felling, carrying and processing of the 15 Nov wood system | #1148-#1153 | Partly played: felling (entry 16), logs (17), saw (26); chopping block, sawbuck, carving station, bows and benches unclear |
-
-## 50. Level gives no soil back when it cuts ground
-
-**Status: Implemented - awaiting player verification.** PR #1286, merged to dev e5272847 (head 607a6dde). The code was independently reviewed. Automated checks: Lane B (David4) 201 of 201 on the exact head, test_server_items included (a refused cut gives no soil; a cutting stroke gives soil back). Found in Dave's play test 19 Nov 2026. Fix not yet played.
-
-Dave, 19 Nov 2026: "when using the hoe in this playtest it takes soil to bring up the level but its not giving me soil back when it cuts down the level. if I am leveling and it has to cut down the soil it should give me back the soil its removing."
-
-**Cause:** entry 1 (#1252) charged soil for every fill, but nothing was ever credited for a cut; the soil was not lost or dropped, it was never given.
-
-**Required outcome:** when Level cuts high ground down, the player gets that soil back, at the same rate a fill of the same depth costs, so levelling neither creates nor destroys soil. Pathen, the two tilling modes (entry 6) and the survey road level to the ground's own average and move no soil either way; the shovel already gives soil when it digs and uses it when it fills.
-
-**Acceptance:** Level a slope with a high side. Cutting the high side adds Soil to the pack (or at the feet when the pack is full), and that Soil fills the low side on the strokes that follow.
 
 Delivered with no play evidence yet (not yet played): door system (13 Nov), plumbing and wells, backpack tiers #1171, cooking stations #1218, no spawning near builds #1215, tool tiers #1247 #1267, chisel tiers #1272, dig water #1268, the 18 Nov audit fixes, and the server and client split pieces.
 
@@ -731,22 +595,6 @@ Not done: no stash chest (the stash is not seen until it drops); unattended cart
 
 Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 at the floor after a refused toll, the 2 most valuable stacks, not the item in hand, a full bag or coins; BANDIT-35 the stash saved with the camp, dropped by the fire when it is cleared, dissolves or sleeps.
 
-## 84. Sixty NPCs cost over 1 ms a server tick (test_npcs timing check red on Lane A)
-
-**Status: Fixed in dev - nothing to play (no behaviour change).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC). test_npcs "60 NPCs cost under 1 ms a tick", run alone, read 1.019 and 1.022 ms on dev 8b83b176, 1.036 and 1.031 on 95bb7530, and 1.036 and 1.039 on 00d407d5 (limit 1.00, load scale 1.00); it passed on David4 and would block the full pass before main. Cause: the goblin camp (entry 71) added three tribe NPCs and their three own markers; most of the test's NPCs (60, 63 with the tribe members) find no free chair on every 10 Hz step and each such claim scanned every marker, and each dormant tribe NPC worked out its anchor twice per player every tick. Fix: PR #1364, merged to dev at 763b8531 (head 0471044d) after independent review (PASS, no Must-fix or Should-fix findings): a claim reads only the markers of its kind (same order, so the same choice), and a dormant NPC's anchor and the tick's settings are read once a tick. The test and its limit are unchanged. Lane A on the exact head: test_npcs alone passed twice at 0.678 and 0.677 ms (the same step count on both runs), test_goblin_camp 0.113 ms at chores (dev 0.127); import 0 errors; 37 of 37 selected tests passed (35 fast, 2 timing), 0 script errors; warnings 381, identical to dev per file.
-
-**Required outcome:** the server's NPC tick stays within its 1 ms budget for 60 NPCs on Dave's PC, with every NPC doing exactly what it did before.
-
-**Acceptance:** test_npcs passes on Lane A run alone; nothing to see in play.
-
-## 85. The warning check passed when a script did not parse (merge gate hole)
-
-**Status: Fixed in dev - nothing to play (test tools only).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC). A PR head had a parse error in tools/creature_check.gd. tools/check_warnings.gd runs under --debug, so Godot 4.7.2 stopped it at the local debugger's "debug>" prompt; it never printed its "scripts checked" line and hung to the 600 s timeout, and tools/check_warnings.sh still exited 0 with empty output, so tools/local_check.sh passed ("0 total"). Fix: PR #1365, merged to dev at d0aae1d3 (head 4f27e26d) after independent review (PASS on fb946102; delta PASS on 8a57768a and 4f27e26d). check_warnings.sh passes --ignore-error-breaks (no wait at the prompt), exits 2 when the check did not finish (no godot, timed out, no "scripts checked" line) and 3 when a script does not parse, named on stderr; check_warnings.gd names each script that loads invalid; local_check.sh fails on any of these, and its three-script parse check fails when godot cannot start or times out; --update-baseline refuses to write from a failed run. New self-test tools/test_check_warnings.sh (stub cases and a real-engine case on a broken script in a temp folder). tools/warning_baseline.txt is unchanged. Lane B (David4) on the exact head: the self-test all ok including both real-engine cases; check_warnings exit 0, 381 warnings; local_check PASS; 11 of 11 selected tests passed. Lane A on the exact head: the self-test exit 0 in 23 s; check_warnings exit 0 in 76 s; with the creature_check.gd parse error put back in the lane clone, exit 3 after 77 s, "script does not parse: tools/creature_check.gd", no hang (then discarded); local_check PASS; 11 of 11 selected tests passed.
-
-**Required outcome:** a script that does not parse fails the warning check quickly and by name, on Windows and Linux; a check that did not finish is never reported as a pass.
-
-**Acceptance:** `REQUIRE_GODOT=1 bash tools/test_check_warnings.sh` passes on both lanes; nothing to see in play.
-
 ## 86. Goblin camp, the light version: the chest and racks fill to a small stock
 
 **Status: Implemented - awaiting player verification.** Dave's choice, 20 Nov 2026 (thread "Build a goblin trading camp"; the camp is entry 71, camp life entry 80). PR #1369, merged to dev at 0d6415cc (head 00193ed4) after independent review (3 rounds; the first asked for the stock to start filling when the server first runs rather than at the first look, and for wording; the third re-read it after the Vrixa and Grikka merge; final PASS on the exact head). Lane A (Dave's PC, clean clone) on the exact head: 265 of 265 selected tests passed (255 fast, 8 timing, 2 slow), 0 script errors, test_goblin_camp among them; warnings 381, zero new. Camp cost measured there with five goblins (whole NPC tick): 0.181 ms per 10 Hz tick at chores, 0.275 ms with a weapon carrier by the fire; test_npcs 65 NPCs 0.714 ms against 1 ms. No protocol or item change; tribes_state.json gains a stock_from key (same version, old files load). Not yet played.
@@ -760,14 +608,6 @@ Dave, 20 Nov 2026: "Build the light version of the goblin camp." (Offered to him
 Not done: the stock is told only in words, nothing is drawn on the racks or by the fire; it cannot be traded for or taken (no theft rule yet); the chores still carry nothing real.
 
 Assumed on Dave's behalf (provisional, docs/design/GOBLIN_CAMP.md): GOBLIN-16 the amounts and caps, filling from the server's first run; GOBLIN-17 nobody can take the stock, no theft rule yet; GOBLIN-18 the stock is shown in words only.
-
-## 87. The first look build cost check failed now and then on Lane A (test_look_build_cost flake)
-
-**Status: Fixed in dev - nothing to play (no behaviour change you can see).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC), where test_look_build_cost failed now and then and passed on a rerun, which tonight's gate does not accept. Cause, most likely (not measured apart): the saws are model looks, and the first build of each read its .glb file cold inside the timed build, 56 ms and 248 ms on Dave's PC against the 40 ms limit, 9 to 11 ms on later runs. Fix: PR #1371, merged to dev at c081b92a (head 3389f369) after independent review: BasicLook.warm_models() reads every model look's file ahead when the inventory looks are prewarmed at join (on the loader thread in a window, on the main thread headless), so the first build should no longer wait on the disk. The test reads them ahead the same way, checks that every model look's file was read ahead, and keeps the 40 ms limit; it now runs alone in the serial lane (tools/test_lanes.json). Lane B (David4) on the exact head: local_check PASS, 381 warnings zero new, 120 of 120 selected tests passed, 0 script errors, join smoke clean; test_look_build_cost alone 3 of 3 PASS, files read ahead in 19.6, 19.3 and 20.5 ms (3 files), slowest look plant_fibre 5.5 ms. Lane A (Dave's PC) on the exact head: test_look_build_cost alone 3 of 3 PASS, files read ahead in 31.2, 31.4 and 29.7 ms (3 files, every model look's file read ahead), slowest look plant_fibre 6.9, 7.2 and 6.9 ms, no saw among the slowest.
-
-**Required outcome:** the first build of every item look stays under 40 ms on Dave's PC, with the cost of reading model files paid once at join, not in the middle of play.
-
-**Acceptance:** test_look_build_cost passes alone on Lane A every time; nothing to see in play. In a window the read ahead runs on the loader thread, not yet seen on screen.
 
 ## 88. New goblins Vrixa Thornfang and Grikka Ragtooth at the Ragtooth camp; goblin textures committed
 
@@ -922,32 +762,6 @@ Not done: facial hair (no models yet); deleting the old drawn hair styles in bod
 - Load a world that had a Wooden hand pump: the pump is gone, and its materials lie where it stood.
 
 Not yet played.
-
-## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
-
-**Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
-
-**Required outcome:** "they should start 1m above ground then face whatever it is they need to photograph and take the images."
-
-**Cause:** the shot runner (src/debug/shot_runner.gd) held the body at 400 m above each spot until the ground there loaded, and only then put it at the shot height. --frametime started counting 10 s after joining, wherever the body was at that moment.
-
-**As built (PR #1384, reviewed head 07a92b06, dev 51352924):**
-- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height (aerial shots over 40 m and absolute-height shots start at their own height), held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
-- Subject shots (--pieces, --look, --showroom and held items) also hide the plants, so a reed bed cannot block the subject.
-- A plain spawn view faces the camp fire, the way a new character does.
-- --frametime measures standing at the spot after landing, and look_rig.sh prints the frametime line itself.
-
-This changes debug tooling only. There is no game, protocol, save or terrain change.
-
-**Evidence:**
-- Independent review PASS on 07a92b06.
-- Lane B: 26 PASS / 0 FAIL, and warnings stay at 381.
-- Lane A, windowed, 5 runs, all exit 0. Every start was about 1 m over the server ground (y 5.7 over 4.7), and every landing was 1.7 m over it. The camp fire, pieces, saw and showroom were visible.
-- Remaining issues found by these runs, outside the rig: the spawn frame time had 4 frames over 100 ms (max 138.5 ms); two showroom pictures miss their items on the sandy slope at the new spawn (the framing was already like that before this change); and reeds stand in front of a new player's first view.
-
-**Acceptance:** run tools/look_rig.sh at the spawn. The log shows "starts at y" about 1 m over the ground, then "landed", and the picture shows its subject. A --frametime run prints its frametime line from the script.
-
-Not a game change; nothing to play.
 
 ## 97. The Raised cistern is a big tank: copper lined, on a wooden frame, fed by rain and gravity
 
@@ -1382,7 +1196,7 @@ Not yet played; not yet seen in a picture.
 - test_smelters 3b checks the row on leaving and going back: no bellows to both players when left, and 2 to the worker and 1 to the other when back.
 
 **Known limits:**
-- A smelter already being worked when you log in plays its bellows strokes while the world loads. The quiet load (entry 123) covers placed-thing sounds only.
+- ~~A smelter already being worked when you log in plays its bellows strokes while the world loads.~~ Fixed in #1632: the bellows wait for the quiet load too (not yet played).
 - The look and the sound have not been seen or heard in game.
 
 **Acceptance:** light an Improved smelter and press E. The prompt turns to "Press E to stop using the bellows", the fire brightens, and the smoke puffs with a bellows sound about every 1.4 s. Press E again: "You leave the bellows", and the light, puffs and sound stop while it stays lit. A second player nearby sees and hears the same.
@@ -1410,7 +1224,7 @@ Not yet played.
 - Tests cover the fuel slot, the refusal, Sort, burning only while making, and the three looks (test_stations, test_resource_bins 9a-9d, test_forge_models, test_mission001_walkthrough and the bronze and iron routes).
 
 **Known limits:**
-- The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
+- ~~The part-burnt unit is not saved.~~ Fixed in #1632: it is saved in smithies.json "fuel"; a save from before #1632 starts the next unit, as before (not yet played).
 - The coals and flare have not been seen in game.
 - Release note, old saves: a smithy built before #1428 may still hold a product in its first slot, which is now the fuel slot. It then reads "no fuel" until the player takes that item out and puts Coal or Charcoal in. Nothing is lost.
 
@@ -1633,32 +1447,6 @@ Not yet played.
 
 Not yet played.
 
-## 119. The goblin camp is at the cave nearest the spawn
-
-**Status: Replaced by entry 131 (the camp brings its own cave, PR #1456).** The camp no longer stands at 3,4#8006; the text below is history. Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
-
-**What was found:** the Ragtooth camp sat at spring cave 3,4#8013, about 3.6 km north-north-west of the spawn. The nearest cave is 3,4#8006, about 1.6 km west-south-west. The nearer hills, about 1.2 km south and north of the spawn, have no cave.
-
-**Required outcome:** the whole camp (cave, five goblins, props, stock, keep zone) at the nearest hill or cave to the spawn, nothing left at the old place, existing worlds loading with the camp at the new place. No path yet.
-
-**As built (PR #1378, reviewed head e5846163, merged to dev at 1acec47b):**
-- data/creatures/goblin_tribes.json: the camp moves to cave 3,4#8006, with its mouth at x 56560 z 71776 and its fire at x 56608 z 71800. The fire, Small chest, two Log benches, Drying rack, Tanning rack and the five goblins stand on a dry bench of 3 to 11 degrees on the brook's south bank. The bench is about 50 m south-east of the mouth. The wood and fibre points are on the slope 25 to 40 m further east. Every spot was read from the baked tile and is checked on it by test_goblin_camp.
-- TileTerrainData.CAMP_CAVES keeps wild goblins and animal dens out of the camp cave. Without it, 8006 would hold a goblin band and a wolf den. 8013 is no longer reserved; by its id it holds neither, and the tile's always-goblins cave stays 3,4#8002.
-- The new mouth is farther from the camp than angry_keep_m. A struck goblin running for the mouth now goes all the way in, and gives up after twice the run time plus 10 s. While in the cave it also counts a striker who waits at its camp spot, so it stays in until that striker goes.
-- Existing worlds: the fire and props are laid by the server and never saved, so after a restart the camp is at the new cave and nothing is left at the old one. Standing, anger and the stock clock carry over per tribe.
-- The test that the camp's stock carries over a server restart (entry 86) went in with it.
-- Provisional: GOBLIN-19 in docs/design/GOBLIN_CAMP.md. A possible follow-up for Dave is a cave carved into the nearer hill about 1.2 km from the spawn; it needs cave carving, a TERRAIN_VERSION and a new starter cache.
-
-**Evidence:**
-- Independent review PASS on d9d5b30b, 948659f8, 6673aad0, d97be1f2 and e5846163.
-- Lane B on 6673aad0: 268 pass / 1 fail. test_goblin_camp failed because Skritch stopped short of the mouth; this was fixed.
-- Lane B on e5846163: 270 pass / 0 fail (260 fast, 8 timing, test_worldgen and test_bake_from_record), test_goblin_camp 0 failures. Warnings stay at 381, validate_items had 0 errors, all 340 looks are drawable, and the join smoke was clean.
-- Tile 3,4's mines are identical before and after the move (a one-off Lane B check, print_tile_mines_3_4.gd in the project files: MINES 2 on both), so the version 79 starter cache stays valid.
-
-**Acceptance:** walk about 1.6 km west and a little south from the spawn to the brook coming out of the hill. The Ragtooth camp is by the cave mouth, with the goblins at their chores. Strike one and they all run into the cave, staying in while you wait at the camp. Nothing is left at the old cave.
-
-Not yet played.
-
 ## 128. Each nail metal has its own use, and stone-age pieces need no metal or chisel
 
 **Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 17:53Z: "anything that uses copper cladding should use copper nails to attach the copper sheets. copper nails are also good for light duty connections like decorations or small light boxes and such. bronze are slightly stronger and bigger and better for stronger construction like chests, cabinets, upholstery, iron are stronger and great for construction and building strong boxes, etc. steel is the strongest and is best for fortification level strength like steel rivets and fortified doors etc. use judgement based on these suggestions." The chisel and stone-age follow-ups were ruled by the coordinator under Dave's 21 Nov questions rule (D-CHISEL-1, GR-1, GR-2, GR-3).
@@ -1803,6 +1591,48 @@ Not yet played.
 **Acceptance:** walk out from the spawn at dusk. Matted lines run between rabbit warrens; set a Simple snare across one and come back next morning to a rabbit some of the time. Deer, moose and elk walk wider trails between bed and feeding ground, out around sunset and back after sunrise.
 
 Not yet played.
+
+## 133. The plant grid does not line up with tilled soil
+
+**Status: Implemented - awaiting player verification.** Aimed at a tilled bed, the Plant grid now takes that bed's turn as well as its centre, so a turned garden's beds and the seed grid line up (before, the grid kept the hoe's own turn). Not yet played. Tester DungeonMaster, build 9257, 24 Nov 2026, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("planting interface doesn't match tilled soil"). The hoe's Plant preview should sit on the tilled beds it will sow.
+
+## 134. A blast of static while the game loads
+
+**Status: Implemented - awaiting player verification.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game loading, shrieking noise sound, ocean surf?"); Dave, 24 Nov 2026: "the sound glitch is real. when you first load it has a 1 second blast of what sounds like old tv static". Cause: the two wind loops began playing during sound setup at 0 dB, about 40 dB over their real level, until the first sound update set it; the long first frames of a join filled that gap. Now they start silent, and the world's sound buses (wind, surf, nature, weather, footsteps and tools) stay silent until the player has landed, then fade in over 2 s (sound_stage loading, LOAD_BUSES). Menus and the heartbeat are never hushed. Not yet played.
+
+## 135. Mud footsteps sound strange and far too loud
+
+**Status: Implemented - awaiting player verification.** Mud steps 6 dB quieter (data/sound/step_levels.json mud -10 to -16 dB, provisional QA-1); the sound itself is unchanged. Not yet played. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("mud sounds strange, way too loud").
+
+## 136. Odd gear sounds while running
+
+**Status: Implemented - awaiting player verification.** The cloth rustle that fibre, grass and woollen clothes add to every step is 10 dB quieter (gear_sounds.gd cloth -30 to -40 dB, provisional QA-2); it is a generated placeholder sound. Not yet played. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("really weird gear sounds when running").
+
+## 138. Prompts to pick fruit and drink water do not say which key
+
+**Status: Not fixed - needs detail.** The exact wording the tester saw has not been found in the game's text yet. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk. The sea half is now entry 141 (too salty, find fresh water); the fruit key half still needs the wording.
+
+## 139. The till and plant grid goes behind the player; Plant shows squares, not dots
+
+**Status: Implemented - awaiting player verification.** Dave's play test, 24 Nov 2026: "the actual grid that goes down when you try to till soil or plant plants should put the bottom left corner of the grid at your crosshairs. right now it does a weird thing where it goes behind the player and you cant see where you are placing it. also it shouldnt give big squares for a grid when planting plants it should show dots exactly where each plant or seed will go and it should make the dots green for the spots you have enough seeds for but red for the later dots if you dont have enough seeds to fill them."
+
+Now the grid's bottom left point sits at the crosshair (on the bed or metre cell under it) and the grid runs forward and to the right as the player sees it, whatever its turn (FarmRules.grid_from_corner; test_farm_prompt). The server measures a grid's reach to its nearest point, not its middle. Plant shows a small dot at each spot: green where the seeds in reach will go, red past them and where nothing can go. Not yet played.
+
+## 140. Alt + arrows grow the hoe grid from its corner, to the right and forward
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "with planting grids you can use alt+arrows to adjust the grid sizes but it should be 0,0 at the bottom left and pressing altright or altforward increases the grid size". The corner at the crosshair stays put; Alt + Right / Left grows or shrinks the grid to the right, Alt + Up / Down forward, whichever of the grid's sides points that way as the player looks (FarmRules.across_is_right; test_farm_prompt). Not yet played.
+
+## 141. Drinking from the ocean should say it is too salty
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "when you try to drink water from the ocean it should tell you that is too salty. try to find some fresh water." Before, the sea showed no drink prompt and E did nothing; the server said its salt line only where the world record had salt water rows, and otherwise "No water within reach." Now the sea shows "Sea water — Press E to drink", and E says "This water is too salty to drink. Try to find some fresh water." Sea water is never drunk: the server refuses it standing in the sea, or with only the sea in reach, record row or not (server_items _drink_water; test_drinking_water). Not yet played.
+
+## 142. A crafting tool should count from the pack, not only in the hand
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026, at the Fishing spear (the card showed Any knife 1 / 1 and then "Short: any knife in your hand."): "won't let me make a fishing spear", then "no its not a bug. it wanted the knife in my hand", then "though we should remove that requirement if you have a knife in you inventory or on your hotbar it should count". Now every recipe that keeps a tool (knife, saw, chisel, needle, scraper, mortar and pestle) crafts while one, unbroken, is anywhere in the pack or on the hotbar; the craft's wear goes to the hotbar's one first, else the pack's (CraftStock.has_tool, server_items _hand_tool_ok and _craft_tool_slot; test_server_items). The "in your hand" line is gone; a missing tool says "needs any knife in your pack". Not yet played.
+
+## 143. The Fibre shoulder bag should be a Fibre backpack
+
+**Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "a fiber handbag does not make any sense in a game like this. especially since its a backpack of somesort. remove it or call it a FiberBackpack". The item is now Fibre - Backpack (same item id, so saves and recipes keep it), with its description and the docs changed to match. It is still worn in the Shoulder position, so it goes with one of the four backpacks on the Back (coordinator ruling, 24 Nov 2026); its placeholder model is the pack shape on the back. On the I screen the Back well shows it while no backpack is worn there (click opens it, drag it out to take it off; test_you_column); with a backpack worn, it is on the Tab screen's worn list. Not yet played.
 
 ## Rewrite interpretation
 

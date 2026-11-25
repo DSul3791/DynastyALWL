@@ -52,7 +52,7 @@ Roasting at a fire turned ONE raw forage item into one Roast forage (400 kcal): 
 ## Campfire cooks only meat (Dave, 2026-10-31)
 `cooking.json cookable_suffixes` is now empty and the berry and egg rows are gone from `cooks_into`: a campfire cooks only raw meat (since 2 Nov it cooks what is put in its store with F; no more E or hold-E roasting) (roast meat), fish (roast fish), shellfish and crab meat (steamed shellfish) and seal meat. Plants are cooked in a pot or on a clay hearth:
 - Berries: pot recipes Stewed berries (3 raspberries, blueberries, blackberries or strawberries + water give 2).
-- Nuts, caps, bananas, fiddleheads, pears: clay hearth recipes Roast forage (3 hazelnuts, chestnuts, walnuts, beechnuts, morels, fiddleheads or pears, or 2 bananas give 2; Campfire Stew item).
+- Nuts, caps, bananas, fiddleheads, pears: clay hearth recipes Roast forage (3 hazelnuts, chestnuts, walnuts, beechnuts, morels or pears, 12 fiddleheads, or 2 bananas give 2; Campfire Stew item).
 - Roots and mushrooms: Roast Roots and Mushroom skewer moved to the clay hearth. Acorn mash and berry compote were already pot recipes.
 - Eggs: Boiled egg is a pot recipe (2 eggs + water give 2).
 - Nettles: now give 1-2 plant fibre and 2-4 Nettles per plant; Nettle tea is a pot recipe (3 nettles + water); Forager's stew and Egg and nettle fry use Nettles.

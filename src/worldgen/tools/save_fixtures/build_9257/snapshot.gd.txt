@@ -1,0 +1,124 @@
+extends SceneTree
+
+# Loads a server store with the code checked out and writes what it holds, by item id (not number), to OUT:
+#   godot --headless --path . --script <this> -- --store=DIR --out=FILE
+# Works on build 9257 (a27c98df) and on dev, so the two can be compared.
+
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const SkillWebScript := preload("res://src/shared/skill_web.gd")
+
+
+func slots(table, inv) -> Array:
+	var out: Array = []
+
+	for s in inv.slot_count:
+		if inv.numbers[s] != 0:
+			out.append("%s x%d w%d" % [table.id_of(inv.numbers[s]) if table.id_of(inv.numbers[s]) != "" else "#%d" % inv.numbers[s], inv.counts[s], inv.wear[s]])
+
+	out.sort()
+	return out
+
+
+func idn(table, number: int) -> String:
+	return table.id_of(number) if table.id_of(number) != "" else "#%d" % number
+
+
+func _init() -> void:
+	var store: String = ""
+	var out_path: String = ""
+
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--store="):
+			store = a.trim_prefix("--store=")
+		elif a.begins_with("--out="):
+			out_path = a.trim_prefix("--out=")
+
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.ground_height = func(_x, _z): return 6.0
+	items.setup(ItemTableScript.load_default(), store)
+	var table = items.table
+
+	if OS.get_cmdline_user_args().has("--join"):   # every character joins (and leaves), as a player coming back would
+		var peer: int = 500
+
+		for key in items._characters.keys():
+			items.peer_connected_hello(peer, key)
+			items.report_position(peer, Vector3(58167.0, 6.0, 71364.0))
+			items.tick(0.25)
+			items.peer_left(peer)
+			peer += 1
+
+	var snap: Dictionary = {"characters": {}, "packs": {}, "worn": {}, "structs": {}, "ground": {}, "stores": {}, "crops": {}, "trees": 0, "fires": {}, "sites": {}}
+
+	for key in items._characters:
+		var c: Dictionary = items._characters[key]
+		var sk: Dictionary = {}
+
+		for s in c.get("skills", {}):
+			var row: Variant = c["skills"][s]
+			sk[s] = snappedf(float(row.get("p", 0.0)) if row is Dictionary else float(row), 0.001)
+
+		var eff: Dictionary = {}
+		var cfg: Dictionary = SkillWebScript.config()
+
+		for s in cfg["skills"]:
+			var v: float = SkillWebScript.effective(cfg, str(s), c.get("skills", {}))
+
+			if v > 1.0001:
+				eff[s] = "%.2f cap %d" % [v, SkillWebScript.cap_of(cfg, str(s), c.get("skills", {}))]
+
+		snap["characters"][key] = {"effective": eff, "skills": sk, "purse": c.get("purse", {}), "learned": (c.get("learned", {}) as Dictionary).keys(), "last": c.get("last", {}).get("pos", []), "stats": [c.get("fitness"), c.get("dexterity"), c.get("perception"), c.get("luck")]}
+		var worn: Array = []
+
+		for w in c.get("worn", []):
+			if int(w[0]) != 0:
+				var bag: Array = []
+				var inst: Variant = w[3] if w.size() > 3 else {}
+
+				if inst is Dictionary and inst.has("bag"):
+					bag = [str(inst["bag"]).length()]
+
+				worn.append("%s w%d %s" % [idn(table, int(w[0])), int(w[2]), str(bag)])
+
+		snap["worn"][key] = worn
+
+	for key in items._inventories:
+		snap["packs"][key] = slots(table, items._inventories[key])
+
+	for id in items._items:
+		var it: Dictionary = items._items[id]
+		var where: String = "%d,%d" % [roundi(it["pos"].x * 10.0), roundi(it["pos"].z * 10.0)]
+
+		if it.has("tree"):
+			snap["trees"] += 1
+		elif it.has("fire"):
+			snap["fires"][where] = {"state": int(it["fire"]["state"]), "burn_left": snappedf(float(it["fire"].get("burn_left", 0.0)), 1.0), "number": idn(table, int(it["number"]))}
+
+			if items._chests.has(int(it["fire"].get("uid", 0))):
+				snap["stores"]["fire@" + where] = slots(table, items._chests[int(it["fire"]["uid"])])
+		elif it.has("struct"):
+			var st: Dictionary = it["struct"]
+			var k: String = str(st["kind"]) + "@" + where
+			snap["structs"][k] = {"number": idn(table, int(it["number"])), "owner": str(st.get("owner", "")), "wear": int(it.get("wear", 0)), "fields": st.keys().filter(func(f): return not ["yaw", "uid", "born", "seq"].has(f))}
+
+			if st.has("site"):
+				snap["sites"][k] = st["site"].get("have", {})
+
+			if items._chests.has(int(st.get("uid", 0))):
+				snap["stores"][k] = slots(table, items._chests[int(st["uid"])])
+		else:
+			var gk: String = idn(table, int(it["number"]))
+			snap["ground"][gk] = int(snap["ground"].get(gk, 0)) + int(it["count"])
+
+	for key in items._crops:
+		snap["crops"][key] = [str(items._crops[key]["crop"]), snappedf(float(items._crops[key]["age"]), 0.01)]
+
+	var f: FileAccess = FileAccess.open(out_path, FileAccess.WRITE)
+	f.store_string(JSON.stringify(snap, " ", true))
+	f.close()
+	print("snapshot: %d characters, %d structs, %d stores, %d ground kinds, %d crops, %d trees, %d fires" % [snap["characters"].size(), snap["structs"].size(), snap["stores"].size(), snap["ground"].size(), snap["crops"].size(), snap["trees"], snap["fires"].size()])
+	quit(0)

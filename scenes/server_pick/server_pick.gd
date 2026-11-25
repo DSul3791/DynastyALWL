@@ -130,6 +130,17 @@ func select(address: String) -> void:
 	refresh_list()
 
 
+# The Add box's two fields as [address, name]: an address typed into the Name box with the Address box left empty (Dave's first try,
+# 23 Nov 2026) is taken as the address. Anything else is left as typed.
+static func add_fields(address: String, shown: String) -> Array:
+	var name_text: String = shown.strip_edges()
+
+	if address.strip_edges() == "" and (name_text.contains(".") or name_text.contains(":")) and not JoinAddress.parse(name_text).has("error"):
+		return [name_text, ""]
+
+	return [address, shown]
+
+
 # Adds a typed server (Add new server). Returns "" when added, else the reason in plain words (nothing saved).
 func add_server(text: String, shown: String = "") -> String:
 	var result: Dictionary = ServerList.add(rows, text, shown)
@@ -488,8 +499,7 @@ func _build_dialogs() -> void:
 	var help: Label = Label.new()
 	help.text = "Address: an IP or a name such as hannibalshouse.duckdns.org.\nAdd :port only if the server is not on %d." % JoinAddress.DEFAULT_PORT
 	box.add_child(help)
-	_add_address = LineEdit.new()
-	_add_address.placeholder_text = "hannibalshouse.duckdns.org"
+	_add_address = LineEdit.new()   # no grey example inside (Dave 23 Nov 2026 took it for text he could not delete): the label above gives it
 	box.add_child(_add_address)
 	var name_help: Label = Label.new()
 	name_help.text = "Name (optional; the server's own name is used if blank)"
@@ -523,11 +533,12 @@ func _open_add() -> void:
 	_add_name.text = ""
 	_add_error.text = ""
 	_add_dialog.popup_centered()
-	_add_address.grab_focus()
+	_add_address.call_deferred("grab_focus")   # after the window is up, so typing goes into the Address box
 
 
 func _add_confirmed() -> void:
-	var why: String = add_server(_add_address.text, _add_name.text)
+	var fields: Array = add_fields(_add_address.text, _add_name.text)
+	var why: String = add_server(str(fields[0]), str(fields[1]))
 
 	if why != "":
 		_add_error.text = why

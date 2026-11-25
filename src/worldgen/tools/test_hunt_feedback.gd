@@ -108,5 +108,113 @@ func _init() -> void:
 	check(not d.animals.has(did) and sent.size() == 1, "and when it kills (%d sent)" % sent.size())
 	players = []
 
+	# 6. Fair hits (protocol 155, Dave 23 Nov 2026: "battle was almost impossible"): a blow is judged where the player's screen showed the
+	# animal, up to rewind_max_ms back. A deer ran from x 0 to 2 (300 ms ago) and on to 4 (100 ms ago).
+	var e = make()
+	var eid: int = deer_at(e)
+	var ed: Dictionary = e.animals[eid]
+	var now: int = Time.get_ticks_msec()
+	ed["pos"] = Vector3(2.0, GROUND, 0.0)
+	ed["moved_ms"] = now - 300
+	e.note_past(ed, Vector3(0.0, GROUND, 0.0))
+	ed["pos"] = Vector3(4.0, GROUND, 0.0)
+	ed["moved_ms"] = now - 100
+	e.note_past(ed, Vector3(2.0, GROUND, 0.0))
+	check(e.pos_at(ed, now - 300).is_equal_approx(Vector3(2.0, GROUND, 0.0)) and e.pos_at(ed, now - 200).is_equal_approx(Vector3(3.0, GROUND, 0.0)) and e.pos_at(ed, now).is_equal_approx(Vector3(4.0, GROUND, 0.0)) and e.pos_at(ed, -1).is_equal_approx(Vector3(4.0, GROUND, 0.0)), "where it was: x 2 at 300 ms ago, 3 at 200, 4 now (%s, %s)" % [str(e.pos_at(ed, now - 300)), str(e.pos_at(ed, now - 200))])
+	var eye: Vector3 = Vector3(2.0, GROUND + 0.5, -2.0)
+	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5) == 0, "a jab at where it was 300 ms ago, judged now, misses (it has run on)")
+	check(e.target_along(eye, Vector3(0.0, 0.0, 1.0), 2.5, now - 300, now - 300) == eid, "judged at the moment the player saw it, it hits")
+	check(absf(e.jab_point(eid, eye, Vector3(0.0, 0.0, 1.0), 2.5, 0.5, now - 300, now - 300).z) < 0.01, "and lands where the player saw it")
+	var long_ago: int = maxi(now - 5000, 1)   # a headless test starts a second or two after the clock does: a positive time, still too old
+	check(e.judged_ms(ed, long_ago, long_ago) >= now - int(e.cfg.get("rewind_max_ms", 500)) - 1 and e.judged_ms(ed, 0, 0) == -1, "never judged more than rewind_max_ms back; a client that sends none is judged now")
+	check(e.moved_since(eid, now - 300, now - 300).is_equal_approx(Vector3(2.0, 0.0, 0.0)), "it has gone 2 m since, so the struck spot is moved onto the body as it is now")
+	# One that stood 10 s and then stepped: until the step it was where it stood.
+	var st: Dictionary = e.animals[deer_at(e, 20.0)]
+	st["moved_ms"] = now - 10000
+	e.note_past(st, Vector3(0.0, GROUND, 19.0))
+	st["pos"] = Vector3(1.0, GROUND, 20.0)
+	st["moved_ms"] = now
+	e.note_past(st, Vector3(0.0, GROUND, 20.0), 100)   # a 0.1 s step
+	check(e.pos_at(st, now - 200).is_equal_approx(Vector3(0.0, GROUND, 20.0)), "an animal that stood, then stepped, was where it stood 200 ms ago (%s)" % str(e.pos_at(st, now - 200)))
+	# An arrow's step (target_on_segment) is judged the same way: across x 2, it misses the deer now at x 4, and hits where the archer saw it
+	# 300 ms ago; the struck point is moved onto the body as it is now.
+	var across_from: Vector3 = Vector3(2.0, GROUND + 0.5, -2.0)
+	var across_to: Vector3 = Vector3(2.0, GROUND + 0.5, 2.0)
+	check(e.target_on_segment(across_from, across_to, 0.6, 0.5).is_empty(), "an arrow across where it was, judged now, misses")
+	var shot: Dictionary = e.target_on_segment(across_from, across_to, 0.6, 0.5, now - 300, now - 300)
+	check(int(shot.get("id", 0)) == eid and absf((shot.get("point", Vector3.ZERO) as Vector3).x - 4.0) < 0.01 and (shot.get("at", Vector3.ZERO) as Vector3).is_equal_approx(ed["pos"]), "judged where the archer saw it, it hits, on the body as it is now (%s)" % str(shot))
+	ed["state"] = 10
+	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "a warning or charging animal is judged at the present the player's screen draws it at")
+	ed["state"] = 0
+	check(e.judged_ms(ed, now - 400, now - 50) >= now - 51, "since protocol 168 a grazing or walking animal is judged at the present too (every animal on the ground is drawn there)")
+	ed["state"] = 15
+	check(e.judged_ms(ed, now - 400, now - 50) <= now - 399, "a bird in the air (drawn a delay behind) is judged at the moment drawn")
+
+	# 7. The plan (protocol 168): a moving animal's row carries where it is walking to (a Vector2 after the six fixed fields, before the
+	# health share); a standing one's has none, and an old walk goal (over PLAN_FRESH_MS) is not sent.
+	var f = make()
+	var fid: int = deer_at(f)
+	var fd: Dictionary = f.animals[fid]
+	fd["moving"] = true
+	f.plan(fd, Vector3(10.0, GROUND, 3.0))
+	var prow: Array = row_of(f, fid)
+	check(prow.size() == 7 and prow[6] is Vector2 and (prow[6] as Vector2).is_equal_approx(Vector2(10.0, 3.0)), "a walking deer's row ends in its plan (%s)" % str(prow.slice(5)))
+	fd["hp_max"] = float(fd["hp"])
+	fd["hp"] = float(fd["hp"]) * 0.5
+	prow = row_of(f, fid)
+	check(prow.size() == 8 and prow[6] is Vector2 and prow[7] is float, "hurt, its health share is still the last field, after the plan (%s)" % str(prow.slice(5)))
+	fd["plan_ms"] = Time.get_ticks_msec() - AnimalsScript.PLAN_FRESH_MS - 100
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "an old walk goal is not sent")
+	fd["plan_ms"] = Time.get_ticks_msec()
+	fd["moving"] = false
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "a standing animal's row has no plan")
+	# Its own step stopped it (24 Nov 2026, test_animal_draw_replay): for STOP_PLAN_MS its rows say it stops where it stands, so every
+	# player's client holds it there instead of carrying it on past the stop; after that, and for a move made elsewhere, nothing.
+	fd["stopped_ms"] = Time.get_ticks_msec()
+	fd["pos"] = Vector3(1.23, GROUND, 4.56)
+	var stop_row: Array = row_of(f, fid)
+	check(stop_row.size() == 8 and stop_row[6] is Vector2 and (stop_row[6] as Vector2).is_equal_approx(Vector2(1.2, 4.6)) and stop_row[7] is float, "a deer its step stopped says it stops there, its health share still last (%s)" % str(stop_row.slice(5)))
+	check(row_of(f, fid).any(func(v): return v is Vector2), "and so does its next row (another player's, or after a lost one)")
+	fd["stopped_ms"] = Time.get_ticks_msec() - AnimalsScript.STOP_PLAN_MS - 100
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "but not once it has stood a while")
+	fd.erase("stopped_ms")
+	fd["pos"] = Vector3(2.0, GROUND, 4.56)   # moved by something other than its step: no stopped_ms, no plan
+	check(not row_of(f, fid).any(func(v): return v is Vector2), "a move made elsewhere says nothing")
+	fd["pos"] = Vector3(0.0, GROUND, 0.0)   # back where deer_at put it: the make_way check below walks a player into it there
+	# A pack wolf is moved by the pack brain, not the tick: its pace stamps the stop the same way.
+	var wolf: Dictionary = {"pos": Vector3.ZERO, "moving": false}
+	f.wolves.pace(wolf, 1000)
+	wolf["pos"] = Vector3(1.0, GROUND, 0.0)
+	f.wolves.pace(wolf, 1100)
+	check(bool(wolf["moving"]) and not wolf.has("stopped_ms"), "a pack wolf on the move has no stop")
+	wolf["moving"] = false   # as the brain's own phase does before pace (_walk, a stalk's hold, a ring windup)
+	f.wolves.pace(wolf, 1200)
+	check(int(wolf.get("stopped_ms", -1)) == 1200 and AnimalsScript.row_plan(wolf, 1300) is Vector2, "the think that stops it stamps the stop, and its row says it stops there")
+	# A detour (step 2): a step well off the line to its goal (Steering turning it round an obstacle) makes the plan the way it goes, half a
+	# second on at that pace; a step back on the line makes it the goal again.
+	var g = make()
+	var gid: int = deer_at(g)
+	var gd: Dictionary = g.animals[gid]
+	gd["moving"] = true
+	g.plan(gd, Vector3(10.0, GROUND, 0.0))
+	gd["pos"] = Vector3(0.0, GROUND, 0.5)
+	g.bend_plan(gd, Vector3(0.0, GROUND, 0.0), 0.25)   # 0.5 m at right angles to its goal in 0.25 s: 2 m/s
+	var grow: Array = row_of(g, gid)
+	check(grow.size() == 7 and grow[6] is Vector2 and (grow[6] as Vector2).is_equal_approx(Vector2(0.0, 1.5)), "a deer going round an obstacle plans the way it goes, 1 m on (%s)" % str(grow.slice(5)))
+	gd["pos"] = Vector3(0.5, GROUND, 0.5)
+	g.bend_plan(gd, Vector3(0.0, GROUND, 0.5), 0.25)
+	grow = row_of(g, gid)
+	check(grow.size() == 7 and (grow[6] as Vector2).is_equal_approx(Vector2(10.0, 0.0)), "back on its line, its plan is its goal again (%s)" % str(grow.slice(5)))
+	gd["pos"] = Vector3(0.5, GROUND, 1.0)
+	g.bend_plan(gd, Vector3(0.5, GROUND, 0.5), 0.25)   # off its line again
+	g.plan(gd, Vector3(-20.0, GROUND, 0.0))            # then a new walk (it flees)
+	grow = row_of(g, gid)
+	check(grow.size() == 7 and (grow[6] as Vector2).is_equal_approx(Vector2(-20.0, 0.0)), "a new walk goal drops the old detour (%s)" % str(grow.slice(5)))
+
+	# A standing animal a player walks into steps out (make_way): its plan is that step, not an older walk goal.
+	fd["plan_to"] = Vector3(-30.0, GROUND, 0.0)
+	var stepped: bool = f.make_way(fd, Vector3(0.2, GROUND, 0.0), 0.1)
+	check(stepped and (fd["plan_to"] as Vector3).is_equal_approx(fd["pos"]), "a deer stepping out of a player plans that step (%s, at %s)" % [str(fd["plan_to"]), str(fd["pos"])])
+
 	print("test_hunt_feedback: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

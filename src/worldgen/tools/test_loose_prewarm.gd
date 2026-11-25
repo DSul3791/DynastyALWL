@@ -14,6 +14,18 @@ func _init() -> void:
 	view._prewarm_loose_meshes()
 	var cached: int = view._meshes.size()
 
+	# The rock hulls are queued at the join, one a frame (lag lane 23 Nov 2026: 43-67 ms each on the first boulder of a shape while walking).
+	if view._hull_queue.size() != 10:
+		print("FAIL rock hulls queued: %d, want 10 (the granite boulder and 3 shapes x 3 variants)" % view._hull_queue.size())
+		failures += 1
+
+	while not view._hull_queue.is_empty():
+		view._hull_step()
+
+	if view._boulder_hulls.size() != 10 or view._boulder_hulls.values().any(func(h): return (h as PackedVector3Array).is_empty()):
+		print("FAIL rock hulls made: %d, some empty" % view._boulder_hulls.size())
+		failures += 1
+
 	if cached < 5:
 		print("FAIL prewarm cached only %d meshes" % cached)
 		failures += 1
@@ -49,6 +61,19 @@ func _init() -> void:
 
 	if world.get_child_count() != 1 or ViewScript._felled_bark_shader == null:
 		print("FAIL stump not prewarmed (%d nodes)" % world.get_child_count())
+		failures += 1
+
+	# Lag lane 23 Nov 2026: the first lit fire took about 1 s at the join (the starter town's bonfire); one lit and one unlit fire of each size
+	# are made at load, out of sight, and dropped with the stump.
+	view._prewarm_fires()
+	var fires: int = 0
+
+	for child in world.get_children():
+		if child.position.y < -9000.0 and child.get_node_or_null("Light") != null:
+			fires += 1
+
+	if world.get_child_count() != 7 or fires != 3 or view._felled_warm.size() != 7:
+		print("FAIL fires not prewarmed (%d nodes, %d lit, %d to drop)" % [world.get_child_count(), fires, view._felled_warm.size()])
 		failures += 1
 
 	view._drop_felled_warm()

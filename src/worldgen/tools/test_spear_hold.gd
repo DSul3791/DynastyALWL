@@ -7,6 +7,9 @@ extends SceneTree
 
 const HeldItem := preload("res://src/client/held_item.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const SoundStage := preload("res://src/client/sound_stage.gd")
+const SlotSounds := preload("res://src/client/slot_sounds.gd")
+const SpearSounds := preload("res://src/client/spear_sounds.gd")
 
 var failures: int = 0
 
@@ -81,6 +84,7 @@ func run() -> void:
 	view.inventory.counts.fill(0)
 	view.inventory.numbers[0] = table.number_of("wooden_spear")
 	view.inventory.numbers[1] = table.number_of("stone_axe")
+	view.inventory.numbers[2] = table.number_of("iron_pike")
 	root.add_child(view)
 	var camera: Camera3D = Camera3D.new()
 	view.add_child(camera)
@@ -157,6 +161,24 @@ func run() -> void:
 	_check(held._model.get_parent() == rig.hand_mount_r, "third person: the spear is in the body's right hand")
 	_check(tip.normalized().dot(facing) > 0.999 and absf(up - HeldItem.SPEAR_LIFT_DEG) < 0.5, "third person: it points the way the body faces, %.0f degrees up (%.1f)" % [HeldItem.SPEAR_LIFT_DEG, up])
 	_check(held._model.global_position.distance_to(rig.hand_mount_r.global_position - held._model.global_basis.z * HeldItem.SPEAR_GRIP_Z) < 0.001, "third person: the fist is on the shaft")
+	# A pike (a "shaft" look, not a spear weapon class) is held the same way: it sat 0.15 to 0.27 m off the hand before (23 Nov 2026).
+	held.press_slot(2)
+	held._process(0.05)
+	held._process(0.05)
+	tip = -held._model.global_basis.z.normalized()
+	tip.y = 0.0
+	_check(held.held_id() == "iron_pike" and held._model.get_parent() == rig.hand_mount_r, "third person: the pike is in the body's right hand")
+	_check(tip.normalized().dot(facing) > 0.999, "third person: the pike points the way the body faces")
+	_check(held._model.global_position.distance_to(rig.hand_mount_r.global_position - held._model.global_basis.z * HeldItem.SPEAR_GRIP_Z) < 0.001, "third person: the fist is on the pike's shaft")
+	_check(not held._is_spear() and held._reticle != null and not held._reticle.visible, "the pike is not a spear for the jab and the crosshair")
+	held._process(0.05)
+	_check(held._jab_t < 0.0, "no jab runs with the pike")
+	held.set_first_person(true)
+	held._process(0.05)
+	_check(not held._held_as_shaft() and held._model != null and held._model.get_parent() != rig.hand_mount_r, "first person: the pike keeps the hand clip's hold (not hung down from the view)")
+	held.set_first_person(false)
+	held.press_slot(0)
+	held._process(0.05)
 	held.set_first_person(true)
 
 	# TEST-010: a log on the shoulder puts the right-hand tool away; laid down, it comes back.
@@ -170,5 +192,38 @@ func run() -> void:
 	held.carrying_log = false
 	held._process(0.05)
 	_check(held.held_id() == "stone_axe" and held._model != null, "the log laid down: the axe is back in hand")
+	# 159: another player's arrow and thrown spear are flown here too (flight_seen), look only.
+	var flying: int = held._flights.size()
+	held.add_seen_flight(table.number_of("wooden_arrow"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 2.0, -30.0), false)
+	held.add_seen_flight(table.number_of("wooden_spear"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 0.0, -15.0), true)
+	_check(held._flights.size() == flying + 2 and (held._flights[flying]["node"] as Node3D).is_inside_tree(), "another player's arrow and spear fly here (%d)" % (held._flights.size() - flying))
+	held._process(0.05)
+	_check((held._flights[flying]["node"] as Node3D).global_position.z < -1.0, "and move on along their way")
+	# Heard too (23 Nov 2026, the coordinator's silent-sounds pass): the bow's twang where it was loosed and a thunk where the arrow comes
+	# down; a thrown spear's heave, flight and landing.
+	var stage: SoundStage = SoundStage.new()
+	world.add_child(stage)
+
+	for wind in ["_wind_low", "_wind_gust"]:                # set up by setup() in the game; its _exit_tree stops them
+		var bed: AudioStreamPlayer = AudioStreamPlayer.new()
+		stage.add_child(bed)
+		stage.set(wind, bed)
+
+	stage.slots = SlotSounds.new()
+	stage.add_child(stage.slots)
+	stage.slots.setup(stage)
+	stage.spear = SpearSounds.new()
+	stage.add_child(stage.spear)
+	stage.spear.setup(stage)
+	held._sound = stage
+	held._ground_below = func(_p: Vector3) -> float: return 0.0
+	held.add_seen_flight(table.number_of("wooden_arrow"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 2.0, -30.0), false)
+	var arrow_flight: Array = stage.spear._flights.duplicate()
+	_check(int(stage.slots.played.get("bow_loose", 0)) == 1, "another player's arrow: the twang where it was loosed (%s)" % str(stage.slots.played))
+	_check(arrow_flight.size() == 1 and float(arrow_flight[0]["dur"]) > 0.5 and (arrow_flight[0]["to"] as Vector3).z < -15.0 and absf((arrow_flight[0]["to"] as Vector3).y) < 0.01,
+			"and a thunk where it comes down, on the ground well ahead (%s)" % str(arrow_flight))
+	held.add_seen_flight(table.number_of("wooden_spear"), Vector3(0.0, 1.6, 0.0), Vector3(0.0, 0.0, -15.0), false)
+	_check(stage.spear._flights.size() == 2 and int(stage.spear.played.get("spear_throw", 0)) == 1, "another player's thrown spear: its heave and its flight to the landing (%d flights, %s)" % [stage.spear._flights.size(), str(stage.spear.played)])
+	held._sound = null   # this stage has only the slots and the spear: the held item's frame would ask for the rest
 	print("test_spear_hold: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

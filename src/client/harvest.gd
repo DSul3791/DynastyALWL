@@ -120,7 +120,7 @@ func _branch(radius: float, view_only: bool) -> Dictionary:
 func _pick_branch(branch: Dictionary) -> void:
 	_items.note_hold_took()
 	_net.inventory_action.rpc_id(1, Net.ACT_LITTER, 0, 0, 0, branch["pos"])
-	_client.grass.hide_branch(branch["cell"], int(branch["at"]))
+	_client.grass.take_branch(branch["pos"], -1, [branch["cell"], branch["at"]])   # hidden now and when its cell is built again (protocol 160; the others are told by the server)
 	_items.clear_prompt()
 	_hint_left = 0.0
 
@@ -269,7 +269,7 @@ func product_name_at(point: Vector3) -> String:
 	if not named_for_product(row):
 		return ""
 
-	var season: String = _client.game_clock.season()
+	var season: String = _client.season_here() if _client.has_method("season_here") else _client.game_clock.season()   # where the player stands (as the server reads it); starter-calendar: a test's stand-in client
 	var berry: Dictionary = GatherRules.harvest_row(_drops, str(row.get("name", "")))
 
 	if berry.is_empty() or _client.flora.is_stripped(found[0], id):
@@ -331,7 +331,7 @@ func _candidates(radius: float, view_only: bool = false) -> Array:
 		for dz in [-radius, 0.0, radius]:
 			chunks[Vector2i(int(floor((here.x + dx) / CHUNK_M)), int(floor((here.z + dz) / CHUNK_M)))] = true
 
-	var season: String = _client.game_clock.season()
+	var season: String = _client.season_here() if _client.has_method("season_here") else _client.game_clock.season()   # where the player stands (as the server reads it); starter-calendar: a test's stand-in client
 	var now_s: float = _client.game_clock.seconds
 	var has_tool: Callable = func(tool_class: String) -> bool: return _items.has_tool_class(tool_class)
 	var exists: Callable = func(item_id: String) -> bool: return _items.table.has_id(item_id)

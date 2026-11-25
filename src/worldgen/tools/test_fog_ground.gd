@@ -75,6 +75,35 @@ func _initialize() -> void:
 	_check(not island.under_land(shore_x + 30.0, z_mid), "30 m inland: still the sea's (within 64 m of the sea bed)")
 	_check(not island.under_land(origin.x - 500.0, z_mid), "off the window: the old rule, sea")
 	_check(not FogGround.new().under_land(shore_x + 300.0, z_mid), "no window yet: the old rule, sea")
+	# Fen flats cut off from the sea (Lane A 22 Nov 2026, the fen at 58408,71560 drawn as white sea): sea bed west of column 16, sand flats at
+	# 0.3 m east of it, a hollow at -0.4 m (columns 40 to 44, rows 40 to 44) with sand all round, and a creek at -0.3 m from the sea along
+	# row 10 to column 40.
+	var flats: PackedFloat32Array = PackedFloat32Array()
+	flats.resize(n * n)
+
+	for j in range(n):
+		for i in range(n):
+			flats[j * n + i] = -10.0 if i < 16 else (-0.4 if i >= 40 and i <= 44 and j >= 40 and j <= 44 else (-0.3 if j == 10 and i <= 40 else 0.3))
+
+	var fen: FogGround = FogGround.new()
+	fen.grid = FogGround.build_grid(flats, fresh, n, origin)
+	var cell: Callable = func(i: int, j: int) -> Vector2: return origin + Vector2((float(i) + 0.5) * FogGround.CELL_M, (float(j) + 0.5) * FogGround.CELL_M)
+	var hollow: Vector2 = cell.call(42, 42)
+	var creek: Vector2 = cell.call(40, 10)
+	var shore: Vector2 = cell.call(17, 42)
+	_check(fen.under_land(hollow.x, hollow.y), "a hollow below sea level cut off from the sea is not sea (no sea plane, no surf over it)")
+	_check(not fen.under_land(creek.x, creek.y), "a creek below sea level joined to the sea is sea, 750 m up it")
+	_check(not fen.under_land(shore.x, shore.y), "the flats beside the sea are still the sea's (the surf line)")
+	_check(FogGround.sample(fen.grid, "low", hollow.x, hollow.y, -1.0) <= FogGround.LAND_ABOVE_M, "the steam fog's water level (low) is unchanged")
+	var unknown: PackedFloat32Array = flats.duplicate()
+
+	for j in range(n):
+		for i in range(16):
+			unknown[j * n + i] = NAN
+
+	var dark: FogGround = FogGround.new()
+	dark.grid = FogGround.build_grid(unknown, fresh, n, origin)
+	_check(not dark.under_land(creek.x, creek.y), "unknown cells (no tile) count as open sea, the old rule")
 	# The real tiles, if this checkout has them: the read finds ground.
 	var real: Dictionary = FogGround.read_window("res://worlds/base_world/tiles", 15360.0, Vector2(53296.0 - 2048.0, 68080.0 - 2048.0))
 

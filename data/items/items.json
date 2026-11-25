@@ -202,7 +202,7 @@
 		"tree_roots": {
 			"number": 18,
 			"name": "Roots",
-			"description": "Roots from the base of a felled tree.",
+			"description": "Roots from the base of a felled tree. They burn in a fire like firewood.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
@@ -774,7 +774,7 @@
 		"roast_meat": {
 			"number": 69,
 			"name": "Roast meat",
-			"description": "Meat roasted over a fire. Filling, and it keeps a couple of days.",
+			"description": "Meat roasted over a fire. Filling, and it keeps 5 to 8 game days in a pack.",
 			"kind": "food",
 			"stack": 10,
 			"value": 14,
@@ -903,7 +903,7 @@
 		"roast_fish": {
 			"number": 80,
 			"name": "Roast fish",
-			"description": "Fish cooked over a fire. Filling, and keeps a day or two.",
+			"description": "Fish cooked over a fire. Filling, and it keeps 4 to 6 game days in a pack.",
 			"kind": "food",
 			"stack": 10,
 			"value": 12,
@@ -2599,6 +2599,7 @@
 			"description": "A flat blade on a long handle. Paths the ground and tills beds.",
 			"kind": "tool",
 			"tool_class": "hoe",
+			"till_speed": 1.0,
 			"stack": 1,
 			"unstackable": true,
 			"durability": 2025,
@@ -2626,6 +2627,7 @@
 			"description": "A hoe with an iron blade.",
 			"kind": "tool",
 			"tool_class": "hoe",
+			"till_speed": 2.0,
 			"material": "iron",
 			"tier": 4,
 			"stack": 1,
@@ -2651,6 +2653,7 @@
 			"description": "A hoe with a steel blade.",
 			"kind": "tool",
 			"tool_class": "hoe",
+			"till_speed": 2.5,
 			"material": "steel",
 			"tier": 5,
 			"stack": 1,
@@ -3228,7 +3231,7 @@
 		"fine_leather": {
 			"number": 284,
 			"name": "Fine leather",
-			"description": "The best of a batch of leather, soft and even.",
+			"description": "The best of a batch of leather, soft and even. Nothing uses it yet.",
 			"kind": "material",
 			"stack": 10,
 			"look_alikes": [],
@@ -3373,8 +3376,7 @@
 		"stone_pickaxe": {
 			"number": 297,
 			"name": "Stone - Pickaxe",
-			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly. No longer made: the Stone Hammer does its work.",
-			"legacy": true,
+			"description": "A heavy stone head on a haft. Breaks boulders and ore, slowly.",
 			"kind": "tool",
 			"tool_class": "pick",
 			"material": "stone",
@@ -3568,7 +3570,7 @@
 		"clay_jug": {
 			"number": 308,
 			"name": "Clay jug",
-			"description": "A tall fired jug with a handle and a narrow mouth. Holds water, ale or mead.",
+			"description": "A tall fired jug with a handle and a narrow mouth. Holds water; ale and mead are not in the game yet.",
 			"kind": "container",
 			"stack": 1,
 			"unstackable": true,
@@ -3612,9 +3614,9 @@
 		"wicker_shield": {
 			"number": 312,
 			"name": "Wicker - Shield",
-			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Raised, it stops 35% of a frontal blow.",
 			"kind": "weapon",
-			"tool_class": "shield",
+			"tool_class": "shield", "block": 0.35,
 			"offhand": true,
 			"tier": 1,
 			"stack": 1,
@@ -3633,9 +3635,9 @@
 		"plank_shield": {
 			"number": 314,
 			"name": "Wooden - Shield",
-			"description": "Boards bound with hide. Sturdier than wicker.",
+			"description": "Boards bound with hide. Sturdier than wicker. Raised, it stops 45% of a frontal blow.",
 			"kind": "weapon",
-			"tool_class": "shield",
+			"tool_class": "shield", "block": 0.45,
 			"offhand": true,
 			"tier": 2,
 			"stack": 1,
@@ -3652,13 +3654,13 @@
 		},
 		"bronze_sword": {"number": 315, "name": "Bronze - Sword", "description": "A bronze blade on a short grip. Quick and sharp.", "kind": "weapon", "weapon_class": "sword", "tier": 3, "stack": 1, "unstackable": true, "damage": 12.0, "durability": 900, "look_alikes": [], "repair": [["bronze_ingot", 1]], "value": 70, "repair_station": "forge", "edge": true, "damage_mode": "slashing"},
 		"bronze_mace": {"number": 316, "name": "Bronze - Mace", "description": "A cast bronze head on a stout haft.", "kind": "weapon", "weapon_class": "mace", "tier": 3, "stack": 1, "unstackable": true, "damage": 11.0, "durability": 900, "look_alikes": [], "repair": [["bronze_ingot", 1]], "value": 65, "repair_station": "forge", "damage_mode": "blunt"},
-		"bronze_shield": {"number": 317, "name": "Bronze - Shield", "description": "A wicker shield faced with hide, rimmed and bossed with bronze.", "kind": "weapon", "tool_class": "shield", "offhand": true, "tier": 3, "stack": 1, "unstackable": true, "durability": 700, "look_alikes": [], "repair": [["bronze_ingot", 1]], "value": 60, "repair_station": "forge"},
+		"bronze_shield": {"number": 317, "name": "Bronze - Shield", "description": "A wicker shield faced with hide, rimmed and bossed with bronze. Raised, it stops 55% of a frontal blow.", "kind": "weapon", "tool_class": "shield", "block": 0.55, "offhand": true, "tier": 3, "stack": 1, "unstackable": true, "durability": 700, "look_alikes": [], "repair": [["bronze_ingot", 1]], "value": 60, "repair_station": "forge"},
 		"iron_sword": {"number": 318, "name": "Iron - Sword", "description": "A forged iron blade with a leather grip.", "kind": "weapon", "weapon_class": "sword", "tier": 4, "stack": 1, "unstackable": true, "damage": 16.0, "durability": 1800, "look_alikes": [], "repair": [["iron_ingot", 1]], "value": 120, "repair_station": "brick_forge", "edge": true, "damage_mode": "slashing"},
 		"iron_mace": {"number": 319, "name": "Iron - Mace", "description": "A flanged iron head that breaks armour.", "kind": "weapon", "weapon_class": "mace", "tier": 4, "stack": 1, "unstackable": true, "damage": 15.0, "durability": 1800, "look_alikes": [], "repair": [["iron_ingot", 1]], "value": 110, "repair_station": "brick_forge", "damage_mode": "blunt"},
-		"iron_shield": {"number": 320, "name": "Iron - Shield", "description": "Boards held by iron bands. Hard to break.", "kind": "weapon", "tool_class": "shield", "offhand": true, "tier": 4, "stack": 1, "unstackable": true, "durability": 1500, "look_alikes": [], "repair": [["iron_ingot", 1]], "value": 110, "repair_station": "brick_forge"},
+		"iron_shield": {"number": 320, "name": "Iron - Shield", "description": "Boards held by iron bands. Hard to break. Raised, it stops 65% of a frontal blow.", "kind": "weapon", "tool_class": "shield", "block": 0.65, "offhand": true, "tier": 4, "stack": 1, "unstackable": true, "durability": 1500, "look_alikes": [], "repair": [["iron_ingot", 1]], "value": 110, "repair_station": "brick_forge"},
 		"steel_sword": {"number": 321, "name": "Steel - Sword", "description": "A forged steel blade on a leather grip. Holds a keen edge longer than iron.", "kind": "weapon", "weapon_class": "sword", "tier": 5, "stack": 1, "unstackable": true, "damage": 22.0, "durability": 3200, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 250, "repair_station": "brick_forge", "edge": true, "damage_mode": "slashing"},
 		"steel_mace": {"number": 322, "name": "Steel - Mace", "description": "A steel flanged head on a long haft.", "kind": "weapon", "weapon_class": "mace", "tier": 5, "stack": 1, "unstackable": true, "damage": 20.0, "durability": 3200, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 230, "repair_station": "brick_forge", "damage_mode": "blunt"},
-		"steel_shield": {"number": 323, "name": "Steel - Shield", "description": "A long steel-faced shield that covers shoulder to shin.", "kind": "weapon", "tool_class": "shield", "offhand": true, "tier": 5, "stack": 1, "unstackable": true, "durability": 2800, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 230, "repair_station": "brick_forge"},
+		"steel_shield": {"number": 323, "name": "Steel - Shield", "description": "A long steel-faced shield that covers shoulder to shin. Raised, it stops 75% of a frontal blow.", "kind": "weapon", "tool_class": "shield", "block": 0.75, "offhand": true, "tier": 5, "stack": 1, "unstackable": true, "durability": 2800, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 230, "repair_station": "brick_forge"},
 		"leather_cap": {"number": 324, "name": "Leather - Cap", "description": "A close leather cap. Better than bare hide.", "kind": "clothing", "slot": "head", "wear_layer": "base", "fabric": "leather", "warmth": 0.08, "stack": 1, "unstackable": true, "look_alikes": [], "value": 25, "protect": {"slashing": 0.12, "piercing": 0.08, "blunt": 0.08, "projectile": 0.1}, "cover": 0.6},
 		"leather_jerkin": {"number": 325, "name": "Leather - Jerkin", "description": "A stiff leather vest. Turns a glancing blow.", "kind": "clothing", "slot": "body", "wear_layer": "padding", "fabric": "leather", "warmth": 0.22, "stack": 1, "unstackable": true, "look_alikes": [], "value": 60, "protect": {"slashing": 0.25, "piercing": 0.15, "blunt": 0.12, "projectile": 0.18}, "cover": 0.8, "durability": 400, "repair": [["leather", 1]], "repair_station": "leatherworking_table"},
 		"bronze_helm": {"number": 326, "name": "Bronze - Helm", "description": "A beaten bronze cap with a nose guard.", "kind": "clothing", "slot": "head", "wear_layer": "rigid", "fabric": "metal", "warmth": 0.05, "stack": 1, "unstackable": true, "look_alikes": [], "value": 90, "protect": {"slashing": 0.45, "piercing": 0.35, "blunt": 0.3, "projectile": 0.45}, "cover": 0.6, "durability": 800, "repair": [["bronze_ingot", 1]], "repair_station": "forge"},
@@ -3729,7 +3731,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"barley_seeds": {
 			"number": 339,
@@ -3739,7 +3741,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"carrot_seeds": {
 			"number": 340,
@@ -3749,7 +3751,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"potato_seeds": {
 			"number": 341,
@@ -3759,7 +3761,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"turnip_seeds": {
 			"number": 342,
@@ -3769,7 +3771,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"flax_seeds": {
 			"number": 343,
@@ -3779,7 +3781,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"quern": {
 			"number": 344,
@@ -4154,7 +4156,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"rye_seeds": {
 			"number": 381,
@@ -4164,7 +4166,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"cabbage_seeds": {
 			"number": 382,
@@ -4174,7 +4176,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"onion_seeds": {
 			"number": 383,
@@ -4184,7 +4186,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"peas_seeds": {
 			"number": 384,
@@ -4194,7 +4196,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"beet_seeds": {
 			"number": 385,
@@ -4204,7 +4206,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"oat_porridge": {
 			"number": 386,
@@ -4586,7 +4588,7 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"lettuce_seeds": {
 			"number": 429,
@@ -4596,12 +4598,12 @@
 			"stack": 40,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15
+			"sell_lot": 100
 		},
 		"apple_early": {
 			"number": 431,
 			"name": "Early summer apple",
-			"description": "A small tart apple of July. Eat it soon: it keeps only 3 game days.",
+			"description": "A small tart apple of July. Eat it soon: in a pack in summer it keeps about 8 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
@@ -4610,7 +4612,7 @@
 		"apple_summer": {
 			"number": 432,
 			"name": "Summer apple",
-			"description": "A sweet juicy apple of August. Keeps about 7 game days.",
+			"description": "A sweet juicy apple of August. In a pack in summer it keeps about 19 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
@@ -4619,7 +4621,7 @@
 		"apple_autumn": {
 			"number": 433,
 			"name": "Autumn apple",
-			"description": "A crisp all-round apple of September and October. Keeps about 20 game days.",
+			"description": "A crisp all-round apple of September and October. Keeps about 80 game days in a pack.",
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
@@ -4637,7 +4639,7 @@
 		"apple_cooking": {
 			"number": 435,
 			"name": "Cooking apple",
-			"description": "A big sour apple that goes soft and sweet when cooked. Keeps a month.",
+			"description": "A big sour apple that goes soft and sweet when cooked. Keeps about 120 game days in a pack.",
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
@@ -4646,7 +4648,7 @@
 		"pear_summer": {
 			"number": 436,
 			"name": "Summer pear",
-			"description": "A small sweet pear of August. It goes soft in 4 game days.",
+			"description": "A small sweet pear of August. In a pack in summer it goes soft in about 11 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 7,
@@ -4655,7 +4657,7 @@
 		"pear_autumn": {
 			"number": 437,
 			"name": "Autumn pear",
-			"description": "A juicy pear of September and October. Keeps a couple of weeks.",
+			"description": "A juicy pear of September and October. Keeps about 60 game days in a pack.",
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
@@ -4673,7 +4675,7 @@
 		"sour_cherries": {
 			"number": 439,
 			"name": "Sour cherries",
-			"description": "Dark tart cherries of July. Good cooked, sharp raw. They spoil in 2 game days.",
+			"description": "Dark tart cherries of July. Good cooked, sharp raw. In summer they spoil in about 5 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
@@ -4682,7 +4684,7 @@
 		"plums": {
 			"number": 440,
 			"name": "Plums",
-			"description": "Soft purple plums of August and September. They spoil in 4 game days.",
+			"description": "Soft purple plums of August and September. They spoil in 11 to 16 game days.",
 			"kind": "food",
 			"stack": 20,
 			"value": 6,
@@ -4938,10 +4940,6 @@
 			"repair": [
 				[
 					"bronze_ingot",
-					1
-				],
-				[
-					"stick",
 					1
 				]
 			],
@@ -7610,7 +7608,7 @@
 			"wooden_trellis": {
 				"number": 705,
 				"name": "Trellis",
-				"description": "A lattice of sticks to set beside a plot for climbing plants.",
+				"description": "A lattice of sticks to set beside a plot for climbing plants. Nothing grows up it yet.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
@@ -8727,7 +8725,6 @@
 				"description": "A pale sweet root grown in a tilled bed. Frost makes it sweeter.",
 				"kind": "material",
 				"stack": 20,
-				"future": true,
 				"look_alikes": [
 					"Carrot"
 				],
@@ -8739,10 +8736,9 @@
 				"description": "Seeds for sowing parsnip. Plant in a tilled bed.",
 				"kind": "material",
 				"stack": 40,
-				"future": true,
 				"look_alikes": [],
 				"value": 1,
-				"sell_lot": 15
+				"sell_lot": 100
 			},
 			"mug": {
 				"number": 812,
@@ -8840,7 +8836,6 @@
 				"kind": "placeable",
 				"stack": 5,
 				"unstackable": true,
-				"future": true,
 				"durability": 40,
 				"repair": [
 					[
@@ -8870,7 +8865,6 @@
 				"kind": "placeable",
 				"stack": 5,
 				"unstackable": true,
-				"future": true,
 				"durability": 20,
 				"repair": [
 					[
@@ -9618,7 +9612,7 @@
 				"look_alikes": [],
 				"value": 50,
 				"durability": 2250,
-				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair": [["iron_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9635,7 +9629,7 @@
 				"look_alikes": [],
 				"value": 100,
 				"durability": 5625,
-				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair": [["steel_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9670,7 +9664,7 @@
 				"look_alikes": [],
 				"value": 40,
 				"durability": 1667,
-				"repair": [["bronze_ingot", 1], ["stick", 1]],
+				"repair": [["bronze_ingot", 1]],
 				"repair_station": "forge",
 				"edge": true
 			},
@@ -9687,7 +9681,7 @@
 				"look_alikes": [],
 				"value": 60,
 				"durability": 2500,
-				"repair": [["iron_ingot", 1], ["stick", 1]],
+				"repair": [["iron_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9704,7 +9698,7 @@
 				"look_alikes": [],
 				"value": 100,
 				"durability": 6250,
-				"repair": [["steel_ingot", 1], ["stick", 1]],
+				"repair": [["steel_ingot", 1]],
 				"repair_station": "brick_forge",
 				"edge": true
 			},
@@ -9875,7 +9869,7 @@
 			"iron_trident": {"number": 940, "name": "Iron - Trident", "description": "A three-pronged iron spear. Thrusts and pins.", "kind": "weapon", "stack": 1, "unstackable": true, "look_alikes": [], "value": 90, "weapon_class": "spear", "tier": 4, "damage": 12.0, "damage_mode": "piercing", "reach_m": 3.4, "throw_damage": 9.0, "durability": 1800, "repair": [["iron_ingot", 1]], "repair_station": "brick_forge", "edge": true},
 			"light_crossbow": {"number": 941, "name": "Light crossbow", "description": "A small crossbow, quick to span. Fires bolts.", "kind": "weapon", "stack": 1, "unstackable": true, "look_alikes": [], "value": 60, "weapon_class": "crossbow", "tier": 3, "durability": 600, "repair": [["sinew", 1]]},
 			"heavy_crossbow": {"number": 942, "name": "Heavy crossbow", "description": "A stout crossbow with a strong stock. Slow to span. Fires bolts.", "kind": "weapon", "stack": 1, "unstackable": true, "look_alikes": [], "value": 110, "weapon_class": "crossbow", "tier": 4, "durability": 1000, "repair": [["sinew", 1]]},
-			"iron_buckler": {"number": 943, "name": "Iron - Buckler", "description": "A small round iron shield worn on the arm. Light, for turning blows aside.", "kind": "weapon", "stack": 1, "unstackable": true, "look_alikes": [], "value": 80, "tool_class": "shield", "offhand": true, "tier": 4, "durability": 1200, "repair": [["iron_ingot", 1]], "repair_station": "brick_forge"},
+			"iron_buckler": {"number": 943, "name": "Iron - Buckler", "description": "A small round iron shield worn on the arm, for turning blows aside. Raised, it stops 50% of a frontal blow.", "kind": "weapon", "stack": 1, "unstackable": true, "look_alikes": [], "value": 80, "tool_class": "shield", "block": 0.5, "offhand": true, "tier": 4, "durability": 1200, "repair": [["iron_ingot", 1]], "repair_station": "brick_forge"},
 			"bronze_arrow": {"number": 944, "name": "Bronze - Arrow", "description": "An arrow with a cast bronze head. Needs a bow.", "kind": "material", "stack": 20, "look_alikes": [], "value": 7, "ammo_class": "arrow", "damage": 10.0, "damage_mode": "projectile", "tip": "bronze"},
 			"iron_arrow": {"number": 945, "name": "Iron - Arrow", "description": "An arrow with a forged iron head. Needs a bow.", "kind": "material", "stack": 20, "look_alikes": [], "value": 7, "ammo_class": "arrow", "damage": 11.0, "damage_mode": "projectile", "tip": "iron"},
 			"steel_arrow": {"number": 946, "name": "Steel - Arrow", "description": "An arrow with a steel head. Needs a bow.", "kind": "material", "stack": 20, "look_alikes": [], "value": 11, "ammo_class": "arrow", "damage": 12.0, "damage_mode": "projectile", "tip": "steel"},
@@ -9933,7 +9927,7 @@
 			"leather_shoes": {"number": 979, "name": "Leather - Shoes", "description": "Light leather shoes, quiet for everyday wear.", "kind": "clothing", "slot": "feet", "wear_layer": "footwear", "fabric": "leather", "stack": 1, "unstackable": true, "look_alikes": [], "value": 30, "warmth": 0.08, "protect": {"slashing": 0.08, "piercing": 0.05, "blunt": 0.04, "projectile": 0.05}, "cover": 0.8, "durability": 300, "repair": [["leather", 1]], "repair_station": "leatherworking_table"},
 			"wool_socks": {"number": 980, "name": "Wool - Socks", "description": "Wool socks worn under footwear for warmth.", "kind": "clothing", "slot": "feet", "wear_layer": "socks", "fabric": "wool", "stack": 1, "unstackable": true, "look_alikes": [], "value": 10, "warmth": 0.06},
 			"wool_scarf": {"number": 981, "name": "Wool - Scarf", "description": "A wool scarf that keeps the neck and face warm.", "kind": "clothing", "slot": "neck", "wear_layer": "base", "fabric": "wool", "stack": 1, "unstackable": true, "look_alikes": [], "value": 14, "warmth": 0.08},
-			"fibre_shoulder_bag": {"number": 982, "name": "Fibre - Shoulder bag", "description": "A small plant-fibre bag on a strap. The first pack, before hides.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "shoulder", "bag_slots": 4, "bag_takes": "any"},
+			"fibre_shoulder_bag": {"number": 982, "name": "Fibre - Backpack", "description": "A small woven plant-fibre backpack. The first pack, before hides.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "shoulder", "bag_slots": 4, "bag_takes": "any"},
 			"wicker_pack_basket": {"number": 983, "name": "Wicker - Pack basket", "description": "A woven basket worn on the back. Cheap, lets you carry a little more, but awkward and poor in the wet.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 20, "retired": true, "note": "Retired 15 Nov 2026 (Dave: the four backpack tiers replace the old packs); the row stays for its number, renames.json loads a saved one as simple_backpack."},
 			"leather_satchel": {"number": 984, "name": "Leather - Satchel", "description": "A small leather bag worn on the shoulder for light things.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 45, "slot": "shoulder", "bag_slots": 6, "bag_takes": "small"},
 			"belt_pouch": {"number": 985, "name": "Belt pouch", "description": "A small pouch worn on the belt for quick reach.", "kind": "gear", "stack": 1, "unstackable": true, "look_alikes": [], "value": 12, "slot": "waist", "wear_layer": "pouch", "bag_slots": 4, "bag_takes": "small"},
@@ -11036,7 +11030,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"pine_cones": {
@@ -11080,7 +11074,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"hardwood_seeds": {
@@ -11091,7 +11085,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"acacia_pods": {
@@ -11146,7 +11140,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"beech_seed": {
@@ -11157,7 +11151,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"coconut_palm_seed": {
@@ -11168,7 +11162,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"rowan_seed": {
@@ -11179,7 +11173,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"wild_apple_seed": {
@@ -11190,7 +11184,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"wild_pear_seed": {
@@ -11201,7 +11195,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"wild_cherry_seed": {
@@ -11212,7 +11206,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"sweet_chestnut_seed": {
@@ -11223,7 +11217,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"walnut_seed": {
@@ -11234,7 +11228,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"date_palm_seed": {
@@ -11245,7 +11239,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"mirrorbark_seed": {
@@ -11256,7 +11250,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"wardpine_seed": {
@@ -11267,7 +11261,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"hearthwood_seed": {
@@ -11278,7 +11272,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"everember_seed": {
@@ -11289,7 +11283,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"witness_tree_seed": {
@@ -11300,7 +11294,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"apple_early_seed": {
@@ -11311,7 +11305,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"apple_summer_seed": {
@@ -11322,7 +11316,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"apple_autumn_seed": {
@@ -11333,7 +11327,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"apple_keeping_seed": {
@@ -11344,7 +11338,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"apple_cooking_seed": {
@@ -11355,7 +11349,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"pear_summer_seed": {
@@ -11366,7 +11360,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"pear_autumn_seed": {
@@ -11377,7 +11371,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"pear_winter_seed": {
@@ -11388,7 +11382,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"sour_cherry_seed": {
@@ -11399,7 +11393,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"plum_seed": {
@@ -11410,7 +11404,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"damson_seed": {
@@ -11421,7 +11415,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"quince_seed": {
@@ -11432,7 +11426,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"medlar_seed": {
@@ -11443,7 +11437,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"fig_seed": {
@@ -11454,7 +11448,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"olive_seed": {
@@ -11465,7 +11459,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"pomegranate_seed": {
@@ -11476,7 +11470,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"mango_seed": {
@@ -11487,7 +11481,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
 			"retired": true
 		},
@@ -11499,7 +11493,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
 			"retired": true
 		},
@@ -11511,7 +11505,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
 			"retired": true
 		},
@@ -11523,7 +11517,7 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
+			"sell_lot": 100,
 			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
 		},
 		"fern_seed": {
@@ -11534,8 +11528,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"heather_seed": {
 			"number": 1406,
@@ -11545,8 +11539,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"reeds_seed": {
 			"number": 1407,
@@ -11556,8 +11550,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"nettle_seed": {
 			"number": 1408,
@@ -11567,8 +11561,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"bramble_seed": {
 			"number": 1524,
@@ -11578,8 +11572,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"juniper_seed": {
 			"number": 1525,
@@ -11589,8 +11583,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"gorse_seed": {
 			"number": 1526,
@@ -11600,8 +11594,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"dwarf_birch_seed": {
 			"number": 1527,
@@ -11611,8 +11605,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"saltbush_seed": {
 			"number": 1528,
@@ -11622,8 +11616,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"cactus_seed": {
 			"number": 1529,
@@ -11633,8 +11627,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"raspberry_seed": {
 			"number": 1530,
@@ -11644,8 +11638,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"elder_seed": {
 			"number": 1531,
@@ -11655,8 +11649,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"blackthorn_seed": {
 			"number": 1533,
@@ -11666,8 +11660,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"hawthorn_seed": {
 			"number": 1534,
@@ -11677,8 +11671,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"sea_buckthorn_seed": {
 			"number": 1535,
@@ -11688,8 +11682,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"rosemary_seed": {
 			"number": 1536,
@@ -11699,8 +11693,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"wild_banana_seed": {
 			"number": 1537,
@@ -11710,8 +11704,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"prickly_pear_seed": {
 			"number": 1538,
@@ -11721,8 +11715,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"drakethorn_seed": {
 			"number": 1539,
@@ -11732,8 +11726,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"sunberry_seed": {
 			"number": 1540,
@@ -11743,8 +11737,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"hagwillow_seed": {
 			"number": 1541,
@@ -11754,8 +11748,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"honeyspindle_seed": {
 			"number": 1542,
@@ -11765,8 +11759,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"sleetberry_seed": {
 			"number": 1543,
@@ -11776,8 +11770,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"sunsilver_vine_seed": {
 			"number": 1544,
@@ -11787,8 +11781,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
 		"cotton_grass_seed": {
 			"number": 1409,
@@ -11798,8 +11792,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"alpine_flowers_seed": {
 			"number": 1410,
@@ -11809,8 +11803,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"blueberry_seed": {
 			"number": 1411,
@@ -11820,8 +11814,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"lingonberry_seed": {
 			"number": 1412,
@@ -11831,8 +11825,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"cranberry_seed": {
 			"number": 1413,
@@ -11842,8 +11836,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"cloudberry_seed": {
 			"number": 1414,
@@ -11853,8 +11847,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_strawberry_seed": {
 			"number": 1415,
@@ -11864,8 +11858,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"crowberry_seed": {
 			"number": 1416,
@@ -11875,8 +11869,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_garlic_seed": {
 			"number": 1417,
@@ -11886,8 +11880,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_thyme_seed": {
 			"number": 1418,
@@ -11897,8 +11891,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_mint_seed": {
 			"number": 1419,
@@ -11908,8 +11902,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"sorrel_seed": {
 			"number": 1420,
@@ -11919,8 +11913,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"dandelion_seed": {
 			"number": 1421,
@@ -11930,8 +11924,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"watercress_seed": {
 			"number": 1422,
@@ -11941,8 +11935,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"samphire_seed": {
 			"number": 1423,
@@ -11952,8 +11946,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_marjoram_seed": {
 			"number": 1424,
@@ -11963,8 +11957,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_sage_seed": {
 			"number": 1425,
@@ -11974,8 +11968,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"lavender_seed": {
 			"number": 1426,
@@ -11985,8 +11979,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"yarrow_seed": {
 			"number": 1427,
@@ -11996,8 +11990,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"plantain_seed": {
 			"number": 1428,
@@ -12007,8 +12001,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"chamomile_seed": {
 			"number": 1429,
@@ -12018,8 +12012,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"comfrey_seed": {
 			"number": 1430,
@@ -12029,8 +12023,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"st_johns_wort_seed": {
 			"number": 1431,
@@ -12040,8 +12034,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"valerian_seed": {
 			"number": 1432,
@@ -12051,8 +12045,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"meadowsweet_seed": {
 			"number": 1433,
@@ -12062,8 +12056,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"feverfew_seed": {
 			"number": 1434,
@@ -12073,8 +12067,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"burdock_seed": {
 			"number": 1435,
@@ -12084,8 +12078,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"mugwort_seed": {
 			"number": 1436,
@@ -12095,8 +12089,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"arnica_seed": {
 			"number": 1437,
@@ -12106,8 +12100,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"angelica_seed": {
 			"number": 1438,
@@ -12117,8 +12111,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"aloe_seed": {
 			"number": 1439,
@@ -12128,8 +12122,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"foxglove_seed": {
 			"number": 1440,
@@ -12139,8 +12133,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"belladonna_seed": {
 			"number": 1441,
@@ -12150,8 +12144,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wolfsbane_seed": {
 			"number": 1442,
@@ -12161,8 +12155,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"owlpetal_seed": {
 			"number": 1443,
@@ -12172,8 +12166,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"staunchmoss_seed": {
 			"number": 1444,
@@ -12183,8 +12177,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"emberroot_seed": {
 			"number": 1445,
@@ -12194,8 +12188,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wispbloom_seed": {
 			"number": 1446,
@@ -12205,8 +12199,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"hushfern_seed": {
 			"number": 1447,
@@ -12216,8 +12210,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"heartroot_seed": {
 			"number": 1448,
@@ -12227,8 +12221,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"tideglass_weed_seed": {
 			"number": 1449,
@@ -12238,8 +12232,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"gloomthistle_seed": {
 			"number": 1450,
@@ -12249,8 +12243,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"dewlantern_seed": {
 			"number": 1451,
@@ -12260,8 +12254,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"marrowroot_seed": {
 			"number": 1452,
@@ -12271,8 +12265,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"riverbraid_seed": {
 			"number": 1453,
@@ -12282,8 +12276,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"brinebell_seed": {
 			"number": 1454,
@@ -12293,8 +12287,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"quenchbell_seed": {
 			"number": 1455,
@@ -12304,8 +12298,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"whisperfern_seed": {
 			"number": 1456,
@@ -12315,8 +12309,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"duskmallow_seed": {
 			"number": 1457,
@@ -12326,8 +12320,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"tanglewort_seed": {
 			"number": 1458,
@@ -12337,8 +12331,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"stormreed_seed": {
 			"number": 1459,
@@ -12348,8 +12342,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"truthsage_seed": {
 			"number": 1460,
@@ -12359,8 +12353,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"echo_moss_seed": {
 			"number": 1461,
@@ -12370,8 +12364,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"nightcrown_seed": {
 			"number": 1462,
@@ -12381,8 +12375,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"mournbloom_seed": {
 			"number": 1463,
@@ -12392,8 +12386,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"pilgrims_cup_seed": {
 			"number": 1464,
@@ -12403,8 +12397,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"frostglass_orchid_seed": {
 			"number": 1465,
@@ -12414,8 +12408,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"sevenyear_lily_seed": {
 			"number": 1466,
@@ -12425,8 +12419,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"gloaming_star_seed": {
 			"number": 1467,
@@ -12436,8 +12430,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"tidecrown_seed": {
 			"number": 1468,
@@ -12447,8 +12441,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"thatch_grass_seed": {
 			"number": 1469,
@@ -12458,8 +12452,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"dune_grass_seed": {
 			"number": 1470,
@@ -12469,8 +12463,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"cattail_seed": {
 			"number": 1514,
@@ -12480,8 +12474,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
 		},
 		"tussock_sedge_seed": {
 			"number": 1515,
@@ -12491,8 +12485,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
 		},
 		"moss_hummock_seed": {
 			"number": 1516,
@@ -12502,8 +12496,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
 		},
 		"sea_holly_seed": {
 			"number": 1471,
@@ -12513,8 +12507,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives plenty (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"wild_rose_seed": {
 			"number": 1523,
@@ -12524,8 +12518,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 1,
-			"sell_lot": 15,
-			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). Wild rose (D-ROSE-1, coordinator pick 22 Nov 2026 for Dave's review): the seeds inside the hips, 1 to 2 with the hips picked in autumn (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+			"sell_lot": 100,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). Wild rose (D-ROSE-1, coordinator pick 22 Nov 2026 for Dave's review): the seeds inside the hips, plenty with the hips picked in autumn (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"small_garden_plot": {
 			"number": 1472,
@@ -12678,13 +12672,13 @@
 			"note_provisional": "Dave 15 Nov 2026: \"add copper nails to our items list\". The recipe (1 Copper ingot to 100 at the Primitive smithy) mirrors Bronze nails and is assumed for his review. The Quality - Backpack asks for them and takes any nails instead (wood_species.json group copper_nails)."
 		},
 		"copper_hammer": {"number": 1497, "name": "Copper - Hammer", "description": "A cast copper head on a short haft. Builds from blueprints, repairs, and breaks stone from boulders.", "kind": "tool", "tool_class": "hammer", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 5000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"copper_knife": {"number": 1498, "name": "Copper - Knife", "description": "A copper blade on a bone grip. Dresses a kill and cuts bark.", "kind": "tool", "tool_class": "knife", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 20, "look_alikes": [], "edge": true, "cut": 1.1, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_knife": {"number": 1498, "name": "Copper - Knife", "description": "A copper blade on a bone grip. Dresses a kill and cuts bark.", "kind": "tool", "tool_class": "knife", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1000, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 20, "look_alikes": [], "edge": true, "cut": 1.1, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"stone_saw": {"number": 1499, "name": "Stone - Saw", "description": "A notched flint blade on a stick. Saws logs into wooden blocks, planks and boards, very slowly.", "kind": "tool", "tool_class": "saw", "material": "stone", "tier": 2, "stack": 1, "unstackable": true, "durability": 600, "value": 15, "look_alikes": [], "saw_speed": 0.3, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"copper_hoe": {"number": 1500, "name": "Copper - Hoe", "description": "A hoe with a copper blade.", "kind": "tool", "tool_class": "hoe", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"bronze_hoe": {"number": 1501, "name": "Bronze - Hoe", "description": "A hoe with a bronze blade.", "kind": "tool", "tool_class": "hoe", "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_hoe": {"number": 1500, "name": "Copper - Hoe", "description": "A hoe with a copper blade.", "kind": "tool", "tool_class": "hoe", "till_speed": 1.25, "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"bronze_hoe": {"number": 1501, "name": "Bronze - Hoe", "description": "A hoe with a bronze blade.", "kind": "tool", "tool_class": "hoe", "till_speed": 1.5, "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_shovel": {"number": 1502, "name": "Copper - Shovel", "description": "A shovel with a copper blade.", "kind": "tool", "tool_class": "shovel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "shovel_size": "medium", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"bronze_shovel": {"number": 1503, "name": "Bronze - Shovel", "description": "A shovel with a bronze blade.", "kind": "tool", "tool_class": "shovel", "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "shovel_size": "large", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"copper_sickle": {"number": 1504, "name": "Copper - Sickle", "description": "A curved copper blade on a short handle. Cuts grain and grass.", "kind": "tool", "tool_class": "sickle", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1100, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_sickle": {"number": 1504, "name": "Copper - Sickle", "description": "A curved copper blade on a short handle. Cuts grain and grass.", "kind": "tool", "tool_class": "sickle", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1100, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_scythe": {"number": 1505, "name": "Copper - Scythe", "description": "A long copper blade on a snath. Mows grain and grass.", "kind": "tool", "tool_class": "scythe", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 4000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_chisel": {"number": 1506, "name": "Copper - Chisel", "description": "A copper chisel. Carves stone.", "kind": "tool", "tool_class": "chisel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 300, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_pipe": {"number": 1508, "name": "Copper - Pipe", "description": "A drawn copper pipe, three metres long. Lay it from the hand between water points; it never rots.", "kind": "material", "stack": 20, "look_alikes": [], "value": 18, "pipe_m": 3.0, "note": "Laid from the hand (PLUMBING_DESIGN s9): one piece covers 3 m of a run (Dave: one copper makes about 3 m); the laid run is structure kind copper_pipe (state 458). PROVISIONAL (PLUMBING_DESIGN s9, Dave 19 Nov 2026 pipe rework): values assumed for Dave to retune."},

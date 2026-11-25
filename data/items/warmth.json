@@ -41,6 +41,31 @@
 	"say_cold": "You are getting cold",
 	"say_freezing": "You are freezing",
 	"say_warm": "You feel warm again",
+	"pass_out": {
+		"note": "Cold down to 1 health: the player passes out and wakes at the nearest goblin camp, bandit camp or the starter town's square (Dave 23 Nov 2026). The whole pack is kept and the player is rescued wherever they wake, no capture or theft for now (Dave 23 Nov 2026). Each one line: enabled; out_s seconds passed out (the faint look; nothing hurts them); wake_health; wake_warmth_over hurt_at; off_fire_m metres off the place's own fire (the town: Edda and Hob's), and a step off a tree or wet ground at most wake_search_m more, so the player wakes inside its warmth (fire_tiers heat_radius_m 4 to 5 m; coordinator 23 Nov 2026); a player's own bed is not used. Fainting under water with death.json stop_at_1 is the same pass-out and rescue, with its own lines (say_out_water, say_wake_water; coordinator 23 Nov 2026: else the faint and the wake came round for ever with the head still under). server_items.gd _cold_pass_out. In a cave or dug tunnel (under rock) the player is carried instead to the nearest campfire out of the rock, any owner's, lit or not, the town's and camps' too (Dave 23 Nov 2026: \"if you are in a cave and end up getting rescued they should deposit you at the nearest civilization and for these purposes that means campfire for now\"; terrain_server _cave_rescue).",
+		"enabled": true,
+		"out_s": 6.0,
+		"wake_health": 10.0,
+		"wake_warmth_over": 5.0,
+		"off_fire_m": 2.5,
+		"wake_search_m": 1.5,
+		"say_out": "The cold takes you. You pass out.",
+		"say_wake": {
+			"town": "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here, to the town.",
+			"goblin": "You wake up feeling pain through your bones. Goblins found you frozen almost to death and dragged you to their fire.",
+			"bandit": "You wake up feeling pain through your bones. Bandits found you frozen almost to death and brought you to their camp.",
+			"campfire": "You wake up feeling pain through your bones. Someone found you frozen almost to death in the dark and carried you out to the nearest campfire.",
+			"here": "You come to where you fell, aching with cold. Find a fire."
+		},
+		"say_out_water": "The water closes over you. You black out.",
+		"say_wake_water": {
+			"town": "You wake up coughing water. A traveler pulled you out of the water and brought you here, to the town.",
+			"goblin": "You wake up coughing water. Goblins fished you out of the water and dragged you to their fire.",
+			"bandit": "You wake up coughing water. Bandits pulled you out of the water and brought you to their camp.",
+			"campfire": "You wake up coughing water. Someone pulled you out of the cave's water and carried you to the nearest campfire.",
+			"here": "You come to, coughing up water."
+		}
+	},
 	"water_base_c": 12.0,
 	"water_follow": 0.7,
 	"water_comfort_c": 26.0,
@@ -61,7 +86,11 @@
 		"severe_hurt_mult": 2.0,
 		"moderate_pace": 1.5,
 		"severe_pace": 2.5,
-		"say_severe": "You have stopped shivering. Get to a fire, now."
+		"say_severe": "You have stopped shivering. Get to a fire, now.",
+		"say_wet_wind": "You are soaked and the wind cuts through your clothes. Get under a roof or to a fire.",
+		"say_wet_wind_note": "Said once a cold spell, with the getting-cold, freezing or stopped-shivering line, while soaked at least wet_wind_say_soak and in a wind of at least wet_wind_say_wind and not under a roof: the player is told why their clothes do not help (coordinator 23 Nov 2026). Told again only after they are warm again.",
+		"wet_wind_say_soak": 0.5,
+		"wet_wind_say_wind": 0.3
 	},
 	"cave_climate": {
 		"note": "Cave air by depth and season (docs/design/cave_climate_design.md; Jamie #709 underground-climate.md, coordinator 8 Nov 2026, Dave may revert). Deep in, the year mean at the height (cave_mean_c, 5.5 C at cave 8002). In from the mouth: lerp(outside air with day_swing_kept of its day swing, deep, smoothstep(near_m, reach_m, depth_m)), the band by which way the cave runs from the mouth (rises, drops or level) and the season (summer = outside warmer than the cave); depth_m is the straight distance to the nearest mouth. Inside draught_m a draught of draught_per_c m/s for each degree between outside and cave, at most draught_max_ms; none past. Drying under cover: none past dry_mouth_m; at the mouth winter_dry_share of dry_cover_per_h when the outside is winter_dry_c or more colder than the cave, else none. Remove this block for the flat cave of #667.",

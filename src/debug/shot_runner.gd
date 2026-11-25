@@ -17,6 +17,7 @@ extends Node
 #                       diag) 0.2 to 1.5 m away aimed at it, each logged with the pose read back and the fill of the frame (FAILED under a third, exit code 1);
 #                       --shot-item-at=X,Z drops it there instead of 1 m ahead of the shot position (item_cam.gd)
 #   --shot-stance=NAME  hold a stance (stand, crouch, sit, lie) so the third-person body shows that pose (use with --cam left, --walk 0)
+#   --shot-skill=SKILL:VALUE  an admin skill set 6 s after connecting (look rig --skill): e.g. tracking:5 to see the trail signs (data/look/trail_signs.json)
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
 #   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
@@ -45,6 +46,8 @@ const LookTable := preload("res://src/client/look_table.gd")
 const ItemCam := preload("res://src/debug/item_cam.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const StanceScript := preload("res://src/client/stance.gd")
+const BuildingLookScript := preload("res://src/client/building_look.gd")
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const NpcCamp := preload("res://src/shared/npc_camp.gd")
 
 var client = null
@@ -105,6 +108,8 @@ var _fell_trunk: int = 0
 var _fell_stump: int = 0
 var _fell_extra: Dictionary = {}   # the fallen tree's stump extra (yaw, length, radius), kept
 var _fell_up: Vector2 = Vector2.ZERO
+var skill_set: String = ""      # --shot-skill=SKILL:VALUE: an admin skill set 6 s after connecting (e.g. tracking:5 for the trail signs)
+var _skill_sent: bool = false
 var give_item: String = ""      # --shot-give=ITEM[:N]: an admin give 8 s after connecting (a large log goes onto the shoulder)
 var give_count: int = 1
 var _stance_msec: int = 0
@@ -310,6 +315,8 @@ func setup(owner_client, args: Array) -> void:
 			if give_item.contains(":"):
 				give_count = int(give_item.get_slice(":", 1))
 				give_item = give_item.get_slice(":", 0)
+		elif argument.begins_with("--shot-skill="):
+			skill_set = argument.trim_prefix("--shot-skill=")
 		elif argument == "--shot-piece-views":
 			piece_views = true
 		elif argument.begins_with("--shot-shadow-bias="):
@@ -424,6 +431,16 @@ func _process(delta: float) -> void:
 	if ready_held and _given and not _selected and _give_tries < 3 and now - _give_msec > 5000 and client.items.inventory != null and not client.items.inventory.numbers.has(client.items.table.number_of(give_item)):
 		_given = false
 		print("shot runner: %s not in the pack %.1f s after the give; giving again" % [give_item, float(now - _give_msec) / 1000.0])
+
+	if skill_set.contains(":") and not _skill_sent and client.items.inventory != null and now - client.connected_msec > 6000:
+		_skill_sent = true
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))
+		var index: int = ((parsed.get("skills", {}) as Dictionary).keys() if typeof(parsed) == TYPE_DICTIONARY else []).find(skill_set.get_slice(":", 0))
+		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_SKILL, index, 0, int(skill_set.get_slice(":", 1)), Vector3.ZERO)
+		print("shot runner: skill %s set (skill %d)" % [skill_set, index])   # skill N: its place in skills.json "skills" (the admin action's index)
+
+		if skill_set.begins_with("tracking") and client.trail_signs != null:
+			client.trail_signs.glow_keep = true   # a spotted sign's glow stays lit for the pictures
 
 	if give_item != "" and not _given and (now - client.connected_msec > 8000 or (ready_held and client.items.inventory != null and now - client.connected_msec > 1500)):
 		_given = true
@@ -1264,6 +1281,17 @@ func _show_pieces(now: int) -> void:
 
 		if fire_light != null and (int(piece_extra.get("forge", 0)) >= 1 or int(piece_extra.get("lit", 0)) >= 1):
 			fire_light.visible = true
+		elif fire_light == null and int(piece_extra.get("lit", 0)) >= 1 and bool(def.get("lights", false)):
+			# A lit torch, lantern, lamp or brazier: in the game the world row adds its flame and light (inventory_view, BuildingLook.lit_fixture).
+			var fixture: Node3D = BuildingLookScript.lit_fixture(StructureLookScript.look_of(int(def["state"])))
+			model.add_child(fixture)
+			var lamp: Light3D = fixture.get_node_or_null("Light") as Light3D
+
+			if lamp != null:
+				lamp.visible = true   # in the game the lights list switches it on (inventory_view), which the rig does not run
+
+			if lamp is OmniLight3D and float(def.get("light_m", 0.0)) > 0.0:
+				(lamp as OmniLight3D).omni_range = float(def["light_m"])
 
 		client.add_child(model)
 		model.set_meta("piece_name", str(piece_name))
@@ -1850,6 +1878,14 @@ func _run_view(now: int) -> void:
 		_hide_other_items()
 
 	if _view_msec == 0:
+		if not _subject_set and skill_set.begins_with("tracking") and client.trail_signs != null and client.trail_signs.last_spot != Vector3.INF:
+			_subject = client.trail_signs.last_spot   # --skill tracking:N: the views look at the sign the player spotted (its glow kept lit)
+			_subject_set = true
+			print("shot runner: views aimed at the spotted sign at %s" % str(_subject))
+
+		if not _subject_set and skill_set.begins_with("tracking"):
+			print("shot runner: WARNING no sign spotted yet (none within spot_m of the player, or the settle was short): the views look 4 m north as usual")
+
 		if not _subject_set:
 			var p: Vector3 = client.body.global_position
 			_subject = Vector3(p.x, _ground(p.x, p.z - 4.0), p.z - 4.0)

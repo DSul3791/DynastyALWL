@@ -27,8 +27,11 @@ const RECORDED_DIR := "res://assets/audio/recorded/creatures/"
 # zones: weight of each zone the kind lives in, hours: when it calls by itself (from, to; wraps midnight),
 # every: seconds between its natural calls, cutoff: far-distance muffling (Hz).
 const KINDS := {
-	"deer": {"calls": {"idle": "deer_grunt", "alert": "deer_snort", "threat": "deer_snort"}, "db": -8.0, "dist": [25.0, 110.0], "reach": 260.0, "unit": 10.0,
+	"deer": {"calls": {"idle": "deer_grunt", "alert": "deer_snort", "threat": "deer_snort"}, "db": -2.0, "dist": [25.0, 110.0], "reach": 260.0, "unit": 10.0, "near_max": 4.0,
 		"zones": {"meadow": 1.0, "forest": 0.6, "highland": 0.2, "water": 0.3}, "hours": [4.0, 22.0], "every": [160.0, 400.0], "cutoff": 7000.0},
+	# deer db -2 (was -8, 23 Nov 2026 level pass, assets/audio/level_pass.py): a deer's alarm snort at 40 m was 9 dB under the winter forest bed; a real one carries
+	# 100 m and more. Its unit stays 10, so rain and gales still mask it like a mid-sized sound (outdoor_air.gd small_share); near_max keeps its close-in
+	# ceiling where it was (4 dB: the snort clip peaks at -7 dBFS, not -14).
 	"rabbit": {"calls": {"idle": "rabbit_thump", "alert": "rabbit_thump", "threat": "rabbit_squeak"}, "db": -14.0, "dist": [6.0, 25.0], "reach": 45.0, "unit": 3.0,
 		"zones": {"meadow": 1.0, "forest": 0.3}, "hours": [5.0, 21.0], "every": [300.0, 700.0], "cutoff": 6000.0},
 	"fox": {"calls": {"idle": "fox_bark", "alert": "fox_bark", "threat": "fox_scream"}, "db": -8.0, "dist": [40.0, 170.0], "reach": 320.0, "unit": 12.0,
@@ -46,6 +49,22 @@ const KINDS := {
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
+# Kinds with no clips of their own that sound like one that has (stand-ins until their own recordings): an American black bear growls
+# like a bear, an elk calls like a moose. Without these their warnings and charges were silent. The big cats, the hyena and the lynx growl
+# and roar like the bear; the boar and warthog grunt and snort like the moose; the rhino, buffalo, elephant and mammoth snort and bellow like
+# it (Dave 23 Nov 2026: animals growl before attacking; coordinator's ruling: stand-ins until Dave's recordings, listed in docs/SOUND_MAP.md).
+const CALL_AS := {"black_bear": "bear", "elk": "moose", "lion": "bear", "tiger": "bear", "leopard": "bear", "puma": "bear", "lynx": "bear",
+	"hyena": "bear", "boar": "moose", "warthog": "moose", "rhino": "moose", "buffalo": "moose", "elephant": "moose", "mammoth": "moose"}
+# Close by (Godot caps a voice's volume_db plus its distance gain at max_db, default 3): with 3 a wolf growl (-5 dB, unit 40 m) was
+# equally loud anywhere within 16 m and a bear roar within 7 m, so near and far could not be told apart. A call may now rise
+# NEAR_RISE_DB over its own level (the level stops rising at a quarter of its unit size: a wolf 10 m, a bear 4 m), never past
+# NEAR_MAX_DB (the clips peak near -14 dBFS, so -5 dBFS at most).
+const NEAR_RISE_DB := 12.0
+const NEAR_MAX_DB := 9.0
+# A pack rushing in sends every wolf to attack in one row: threat calls skip the voice budget and are never shed, so at most
+# THREAT_VOICES of them sound at once, and one kind's threat call at most every THREAT_EVERY_MS.
+const THREAT_VOICES := 3
+const THREAT_EVERY_MS := 400
 const BIRD_IDLE := ["bird_whistle", "bird_feebee", "bird_trill", "bird_chirp"]
 
 var tier: int = 2
@@ -56,6 +75,7 @@ var last: String = ""                   # kind, mood, file and distance for the 
 var _stage                              # SoundStage (ambient weights, hour, weather, voice budget)
 var _streams: Dictionary = {}
 var _voices: Array = []
+var _threat_until: Dictionary = {}      # kind -> ticks msec before which it calls no threat again
 var _next: Dictionary = {}              # kind -> seconds until its next natural call
 var _rng := RandomNumberGenerator.new()
 
@@ -91,6 +111,8 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	if kind == "bird":
 		return _bird(at, mood)
 
+	kind = str(CALL_AS.get(kind, kind))
+
 	if not KINDS.has(kind):
 		return false
 
@@ -104,6 +126,15 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 
 	if mood != "threat" and (_voices.size() >= int(_stage.preset["creature_voices"]) or not _stage.has_room()):
 		return false
+
+	if mood == "threat":
+		var now: int = Time.get_ticks_msec()
+		var threats: int = _voices.filter(func(v) -> bool: return is_instance_valid(v) and v.has_meta("keep")).size()
+
+		if threats >= THREAT_VOICES or now < int(_threat_until.get(kind, 0)):
+			return false
+
+		_threat_until[kind] = now + THREAT_EVERY_MS
 
 	var sound_name: String = str(info["calls"].get(mood, info["calls"]["idle"]))
 	var list: Array = _variants(sound_name)
@@ -121,6 +152,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	player.unit_size = float(info["unit"])
 	player.max_distance = float(info["reach"]) * 1.2
 	player.attenuation_filter_cutoff_hz = float(info["cutoff"])
+	player.max_db = minf(player.volume_db + NEAR_RISE_DB, float(info.get("near_max", NEAR_MAX_DB)))
 	add_child(player)
 	player.add_to_group("world_sounds")
 
@@ -236,6 +268,38 @@ func _main_zone() -> String:
 			best = str(zone)
 
 	return best
+
+
+# A bird bursting up into flight (animal_view.took_off, the server's FLY state), heard where it rose: the game birds' whirr of wings
+# (ambient_life.flush, medium wings; the big slow flaps only after a crow's alarm, Dave 3 Nov 2026), a crow caws its alarm and flaps off.
+# Birds with no flight of their own (ducks, geese, gulls, hens run) and every other animal: nothing. False when nothing played.
+# Heard within TAKE_OFF_REACH_M, while the voice budget has room, one kind at most every TAKE_OFF_EVERY_MS (a covey flushing together is one whirr).
+const TAKE_OFF := {"grouse": "medium", "pheasant": "medium", "guineafowl": "medium", "crow": "crow"}
+const TAKE_OFF_REACH_M := 80.0
+const TAKE_OFF_EVERY_MS := 1500
+var _take_off_until: Dictionary = {}     # kind -> msec before which its next take-off is not heard
+
+
+func took_off(kind: String, at: Vector3) -> bool:
+	if not TAKE_OFF.has(kind) or _stage == null or _stage.get("ambient") == null or not at.is_finite() or not _stage.has_room():
+		return false
+
+	var camera: Camera3D = get_viewport().get_camera_3d() if get_viewport() != null else null
+
+	if camera != null and camera.global_position.distance_to(at) > TAKE_OFF_REACH_M:
+		return false
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < int(_take_off_until.get(kind, 0)):
+		return false
+
+	var played: bool = _stage.ambient.alarm(at) if str(TAKE_OFF[kind]) == "crow" else _stage.ambient.flush(at, 0.0, str(TAKE_OFF[kind]))
+
+	if played:
+		_take_off_until[kind] = now + TAKE_OFF_EVERY_MS   # only a take-off heard holds the next one back
+
+	return played
 
 
 func _bird(at: Vector3, mood: String) -> bool:

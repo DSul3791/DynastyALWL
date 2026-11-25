@@ -1,5 +1,7 @@
 extends Node
 
+const SettingsRead := preload("res://src/client/settings_read.gd")
+
 # The first sound stage (client only; DESIGN_IDEAS Section 6.17, budget in
 # ARCHITECTURE_BUDGET Section 9). Three things for now:
 #
@@ -55,6 +57,7 @@ const ItemScript := preload("res://src/client/item_sounds.gd")
 const InnerVoiceScript := preload("res://src/client/inner_voice_sounds.gd")
 const AirBands := preload("res://src/client/air_bands.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const FLOORS_DIR := "res://assets/audio/floors/"   # generated built-floor steps (make_floors.py)
@@ -64,7 +67,25 @@ const WaterVolume := preload("res://src/shared/water_volume.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "sound setup: <part>" splits of the join step (Steve, 4 Nov 2026: 0.87 s on Dave's PC)
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const VOICES := 6                       # footstep and swish players, reused in turn
+# Other players' footsteps (step_at): heard where the foot lands, as loud at OTHER_STEP_UNIT_M as the own step is at the own ears, falling
+# 6 dB per doubling past it (a walk on grass is lost by about 15 m, a run on gravel carries to 30 m or more), none past OTHER_STEP_REACH_M.
+const OTHER_STEP_UNIT_M := 2.0
+const OTHER_STEP_REACH_M := 45.0
+const OTHER_STEP_VOICES := 6           # other players' steps sounding at once (judged: three players running close by)
+# Other players' blows, picks and craft work (other_action, protocol 156): cue numbers as server_action_cues.gd sends them.
+const CUE_BLOW := 1
+const CUE_PICK := 2
+const CUE_CRAFT := 3
+const CUE_STORE := 4                    # server_action_cues.gd: detail = op (0 open, 1 close, 2 put, 3 take) + 4 for a chest's lid
+const CUE_HURT := 5                     # detail = the health lost: the gasp at the head
+const CUE_DRINK := 6                    # a mouthful of water at the mouth
+const CUE_PICKUP := 7                   # detail = the item number (terrain_client passes its id): picked up off the ground where it lay
+const KNIFE_CUT_STRENGTH := 0.35       # a knife cut on a carcass: the flesh hit clip, soft (held_item.gd plays the own; other_action material 5)
+const OTHER_WORK_UNIT_M := 1.5         # craft work is as loud at 1.5 m as the own is at the own ears (item_sounds WORK_DB, flat)
+const OTHER_WORK_REACH_M := 25.0
+const OTHER_WORK_DB := -18.0
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
 # Soil ids (data/tables/soils.json) to footstep surfaces. Rock (MATERIAL_ROCK
@@ -77,7 +98,7 @@ const SOIL_SURFACE := {
 }
 const SURFACE_DB := {
 	"grass": -15.0, "dirt": -10.0, "sand": -11.0, "gravel": -9.0, "stone": -8.0,
-	"leaves": -6.0, "mud": -10.0, "snow": -11.0, "ice": -9.0, "water": -10.0,
+	"leaves": -6.0, "mud": -16.0, "snow": -11.0, "ice": -9.0, "water": -10.0,
 	"grass_tall": -14.0, "bushes": -13.0,
 }
 # Exposed rock under the soles (rock id = material - MATERIAL_ROCK; data/tables/rocks.json):
@@ -139,6 +160,9 @@ const SHELTER_MSEC := 2500
 const SHELTER_HITS := 16
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
+var others_steps: int = 0               # other players' footsteps played (step_at)
+var others_actions: int = 0             # other players' blows, picks and craft work played (other_action)
+var _other_step_voices: Array = []      # their voices still sounding (other_step_room)
 var swishes_played: int = 0
 var puddles_played: int = 0
 var surface: String = ""                # what the feet were last on
@@ -505,6 +529,16 @@ func setup(terrain: VoxelLodTerrain, flora, grass) -> void:
 	_load_settings()
 	_build_warm_list()
 
+	# The wind loops start silent: until the first update sets their level they played at 0 dB, about 40 dB over their real level, through the
+	# long first frames of a join (the "old tv static" at load, Dave 24 Nov 2026).
+	_wind_low.volume_db = -80.0
+	_wind_gust.volume_db = -80.0
+
+	if loading:
+		_load_hush = 1.0
+		_load_applied = 1.0
+		_apply_buses()
+
 	if _wind_low.stream != null:
 		_wind_low.play()
 
@@ -591,13 +625,13 @@ func _sound_log_tick(body: CharacterBody3D) -> void:
 
 	if now > sound_log_until_msec:
 		sound_log_until_msec = 0
-		print("SOUND LOG finished")
+		FreezeWatchScript.printer.line("SOUND LOG finished")
 		return
 
 	for line in sound_log_lines(body.global_position, int(float(now - _sound_log_start_msec) / 1000.0)):
-		print(line)
+		FreezeWatchScript.printer.line(str(line))
 
-	print("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
+	FreezeWatchScript.printer.line("SOUND LOG mix: " + ambient_dump(body).replace("\n", " | "))
 
 
 func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool) -> void:
@@ -707,9 +741,12 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	_muffle.cutoff_hz = 500.0 if underwater else 20000.0
 	_wind_filter.cutoff_hz *= 1.0 - SNOW_HUSH_WIND_CUT * weather.snow_hush
 
-	if absf(weather.snow_hush - _hush_applied) > 0.02 or absf(breath.world_mute - _faint_applied) > 0.02 or (breath.world_mute == 0.0 and _faint_applied != 0.0):
+	_load_hush = 1.0 if loading else move_toward(_load_hush, 0.0, delta / LOAD_FADE_S)
+
+	if absf(weather.snow_hush - _hush_applied) > 0.02 or absf(breath.world_mute - _faint_applied) > 0.02 or (breath.world_mute == 0.0 and _faint_applied != 0.0) or absf(_load_hush - _load_applied) > 0.02 or (_load_hush == 0.0 and _load_applied != 0.0):
 		_hush_applied = weather.snow_hush
 		_faint_applied = breath.world_mute
+		_load_applied = _load_hush
 		_apply_buses()
 
 	if _grass != null:
@@ -781,7 +818,7 @@ func _shed(body: CharacterBody3D, count: int) -> void:
 func _shed_rank(player: AudioStreamPlayer3D, body: CharacterBody3D) -> float:
 	var distance: float = player.global_position.distance_to(body.global_position)
 	var rank: float = distance - player.volume_db * 4.0              # far and quiet sorts last
-	var bus: String = AirBands.parent_of(String(player.bus))
+	var bus: String = AirBands.parent_of(String(player.bus).trim_prefix(Sound3D.REAR_PREFIX))   # a voice behind the ears ranks as its own bus
 
 	if bus in AMBIENT_BUSES:
 		rank += 1000.0
@@ -976,73 +1013,16 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	boost_db += stance.step_db()                                  # crouched steps are softer, and the gear with them
 	pool_pace = 1.0
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
-	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
-
-	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0) and sea_below(feet):
-		water_here = 0.0                                              # the sea
-
-	var depth: float = water_here - feet.y if not is_nan(water_here) else -1.0
+	var depth: float = _step_depth(feet)
 
 	if depth > SWIM_M:
 		return
 
-	var soil: int = _ground_under(feet)
-	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
-	var thick: float = 0.0
-	var tall: float = 0.0
-
-	if _grass != null and soil >= 0 and soil < Layout.MATERIAL_ROCK:
-		var grass: Vector2 = _grass.grass_at(feet.x, feet.z, soil)
-		thick = grass.x
-		tall = grass.y
-
-	if depth > DAMP_M and ice.walkable():
-		surface = "ice"                                          # a frozen pond bears the step
-		thick = 0.0
-	elif depth > WATER_STEP_M:
-		surface = "water"
-		thick = 0.0
-	elif depth > DAMP_M:
-		surface = "mud"                                          # wet ground at the waterline
-		thick = 0.0
-	elif soil < 0:
-		surface = "stone"
-	elif soil >= Layout.MATERIAL_ROCK:
-		var rock: Array = ROCK_STEP.get(soil - Layout.MATERIAL_ROCK, ["stone", 0.0, 1.0])
-		var ore: int = _ore_under(feet)
-		var found: Array = ORE_STEP.get(ore, ["stone", 1.0, 1.07] if ore in ORE_METAL else rock)
-		surface = found[0]
-		tune = [found[1], found[2]]
-	elif _in_bush(feet):
-		surface = "bushes"
-	elif Layout.is_wetland(soil):
-		surface = "mud"                                          # fen, bog and swamp squelch underfoot, grass or not
-		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
-	elif thick >= GRASS_MIN and soil != 8:
-		surface = "grass_tall" if tall > 0.35 else "grass"
-	else:
-		surface = str(SOIL_SURFACE.get(soil, "dirt"))
-		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
-
-		if surface in ["dirt", "leaves"] and weather != null and weather.ground_wet >= RAIN_SOAK:
-			surface = "mud"                                      # soaked ground
-			tune = [-2.0, 1.0]
-
-	# A built floor under the soles replaces the ground (not in water).
-	var built: String = floor_surface
-
-	if built == "" and floor_under.is_valid():
-		built = str(floor_under.call(feet))
-
-	if built != "" and FLOOR_SURFACES.has(built) and depth <= DAMP_M:
-		surface = built
-		tune = [0.0, 1.0]
-		thick = 0.0
-
-	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches.
-	if weather != null and weather.ground_snow >= SNOW_COVER and surface in SNOW_SURFACES:
-		surface = "snow"
-		tune = [0.0, 1.0]
+	var ground: Dictionary = step_ground(feet, depth, floor_surface)
+	var soil: int = int(ground["soil"])
+	var tune: Array = ground["tune"]
+	var built: String = str(ground["built"])
+	surface = str(ground["surface"])
 
 	# Steady ground: a different surface must show on two steps in a row before the sound
 	# changes, so one odd sample (a bush, a patch edge) never flips it back and forth.
@@ -1111,6 +1091,201 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		_play("step_water", puddle_db + float(gait_db[gait]) - float(gait_db[0]) + _rng.randf_range(-2.0, 1.0), _rng.randf_range(0.95, 1.15) * float(gait_pitch[gait]), foot)
 
 	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
+
+
+# One footfall of another player (player_view.stepped), heard where it lands: the ground under that foot as the own step reads it, at the
+# own step's level for that ground and gait (crouched softer), positional. Deep water has no step. Counted in others_steps (HUD, tests).
+func step_at(feet: Vector3, gait: int, crouched: bool = false) -> bool:
+	var depth: float = _step_depth(feet)
+
+	if depth > SWIM_M or not other_step_room():
+		return false
+
+	var ground: Dictionary = step_ground(feet, depth, "", false)
+	return play_other_step(feet, str(ground["surface"]), ground["tune"], gait, crouched)
+
+
+# True while another player's step may start: the voice budget has room and fewer than OTHER_STEP_VOICES of them are sounding
+# (a crowd of runners would otherwise fill the budget between its 0.25 s counts and push out calls and drips).
+func other_step_room() -> bool:
+	_other_step_voices = _other_step_voices.filter(func(p) -> bool: return is_instance_valid(p) and not p.is_queued_for_deletion())
+	return has_room() and _other_step_voices.size() < OTHER_STEP_VOICES
+
+
+# The positional voice of another player's step on ground `kind` (step_ground's surface and [dB, pitch] tune).
+func play_other_step(feet: Vector3, kind: String, tune: Array, gait: int, crouched: bool) -> bool:
+	var sound_name: String = "step_" + kind
+	var list: Array = _variants(sound_name)
+
+	if list.is_empty():
+		list = _variants(sound_name + "_left")
+
+	if list.is_empty():
+		list = _variants("step_grass")
+
+	if list.is_empty():
+		return false
+
+	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", OTHER_STEP_UNIT_M, OTHER_STEP_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = step_level_db(kind, gait) + float(tune[0]) + (StanceScript.CROUCH_STEP_DB if crouched else 0.0) + _rng.randf_range(-1.5, 1.0)
+	player.pitch_scale = float(gait_pitch[clampi(gait, 0, 2)]) * _rng.randf_range(0.96, 1.04) * float(tune[1])
+	player.global_position = feet
+	player.finished.connect(player.queue_free)
+	player.play()
+	count_other_step(player)
+	others_steps += 1
+	return true
+
+
+# Another player's step or swimming stroke now sounding: other_step_room counts it against OTHER_STEP_VOICES.
+func count_other_step(player: AudioStreamPlayer3D) -> void:
+	_other_step_voices.append(player)
+
+
+# Another player's work heard where it happened (protocol 156 action_cue, server_action_cues.gd): cue 1 a blow (detail = tool * 8 + material; 5 a knife on a carcass),
+# 2 a plant gathered (`flora_row` is its species row, harvest.gd's flora list), 3 a craft being worked (`recipe` is its recipe row; sent again as each clip ends),
+# 4 a container opened, shut, filled or emptied (a chest's lid creaks), 5 the player hurt (the own gasp, louder for a bigger blow), 6 a mouthful
+# of water, 7 a thing picked up off the ground (`item_id` its id, for the material). The same clips
+# and levels as the own blow, pick and craft work, positional. False when nothing played (an unknown cue, no room). Counted in others_actions.
+func other_action(cue: int, detail: int, at: Vector3, flora_row: Dictionary = {}, recipe: Dictionary = {}, item_id: String = "") -> bool:
+	if not has_room() or not at.is_finite():
+		return false
+
+	var done: bool = false
+
+	match cue:
+		CUE_BLOW:
+			@warning_ignore("integer_division")
+			var tool: String = "pick" if detail / 8 == 1 else "axe"
+			var material: int = detail % 8
+
+			if material == 5:
+				done = spear != null and spear.hit("flesh", at, KNIFE_CUT_STRENGTH)
+			elif material == 3:
+				done = hits != null and hits.hit_ground(tool, at, 1.0)
+			elif material in [0, 1, 2, 4]:
+				done = hits != null and hits.hit(tool, ["wood", "stone", "soil", "", "wood"][material], at, 0.7 if material == 4 else 1.0)
+		CUE_PICK:
+			done = harvestfx != null and harvestfx.pick(flora_row, at)
+		CUE_CRAFT:
+			done = _other_work(recipe, at)
+		CUE_STORE:
+			var op: int = detail % 4
+
+			if placed != null and op <= 1:
+				done = detail >= 4 and placed.chest(op == 0, at)   # a lid; a barrel or crate opening makes no sound of its own (nor for the one opening it)
+			elif placed != null and op <= 3:
+				done = placed.container(op == 2, at)
+		CUE_HURT:
+			done = slots != null and slots.play("player_hurt", at, Vector3.INF, clampf(float(detail) / 25.0, 0.4, 1.0))
+		CUE_DRINK:
+			done = itemfx != null and itemfx.other_at("", at)
+		CUE_PICKUP:
+			done = itemfx != null and item_id != "" and itemfx.other_at(item_id, at)
+
+	if done:
+		others_actions += 1
+
+	return done
+
+
+# One craft's work sound (item_sounds.gd work_type: knap, twine, carve ...) at another player's hands: quiet, close by.
+func _other_work(recipe: Dictionary, at: Vector3) -> bool:
+	if itemfx == null or recipe.is_empty():
+		return false
+
+	var list: Array = itemfx._variants("craft_" + str(itemfx.work_type(recipe)))
+
+	if list.is_empty():
+		list = itemfx._variants("craft_knap")
+
+	if list.is_empty():
+		return false
+
+	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", OTHER_WORK_UNIT_M, OTHER_WORK_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = OTHER_WORK_DB + _rng.randf_range(-1.0, 1.0)
+	player.pitch_scale = _rng.randf_range(0.97, 1.03)
+	player.global_position = at
+	player.finished.connect(player.queue_free)
+	player.play()
+	return true
+
+
+# The water over the soles at `feet` (the sea counts below sea level), -1 on dry ground.
+func _step_depth(feet: Vector3) -> float:
+	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
+
+	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0) and sea_below(feet):
+		water_here = 0.0                                              # the sea
+
+	return water_here - feet.y if not is_nan(water_here) else -1.0
+
+
+# What a foot landing at `feet` sounds on, for the own steps and other players' (step_at): {"surface", "tune" [dB, pitch], "soil", "built"}.
+# `own_floor` is the own built floor (set_floor); otherwise the floor ray (floor_under) is asked at the feet.
+func step_ground(feet: Vector3, depth: float, own_floor: String = "", own_feet: bool = true) -> Dictionary:
+	var soil: int = _ground_under(feet)
+	var kind: String = ""
+	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
+	var thick: float = 0.0
+	var tall: float = 0.0
+
+	if _grass != null and soil >= 0 and soil < Layout.MATERIAL_ROCK:
+		var grass: Vector2 = _grass.grass_at(feet.x, feet.z, soil)
+		thick = grass.x
+		tall = grass.y
+
+	if depth > DAMP_M and ice.walkable():
+		kind = "ice"                                          # a frozen pond bears the step
+		thick = 0.0
+	elif depth > WATER_STEP_M:
+		kind = "water"
+		thick = 0.0
+	elif depth > DAMP_M:
+		kind = "mud"                                          # wet ground at the waterline
+		thick = 0.0
+	elif soil < 0:
+		kind = "stone"
+	elif soil >= Layout.MATERIAL_ROCK:
+		var rock: Array = ROCK_STEP.get(soil - Layout.MATERIAL_ROCK, ["stone", 0.0, 1.0])
+		var ore: int = _ore_under(feet)
+		var found: Array = ORE_STEP.get(ore, ["stone", 1.0, 1.07] if ore in ORE_METAL else rock)
+		kind = found[0]
+		tune = [found[1], found[2]]
+	elif _in_bush(feet):
+		kind = "bushes"
+	elif Layout.is_wetland(soil):
+		kind = "mud"                                          # fen, bog and swamp squelch underfoot, grass or not
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
+	elif thick >= GRASS_MIN and soil != 8:
+		kind = "grass_tall" if tall > 0.35 else "grass"
+	else:
+		kind = str(SOIL_SURFACE.get(soil, "dirt"))
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
+
+		if kind in ["dirt", "leaves"] and weather != null and weather.ground_wet >= RAIN_SOAK:
+			kind = "mud"                                      # soaked ground
+			tune = [-2.0, 1.0]
+
+	# A built floor under the soles replaces the ground (not in water).
+	var built: String = own_floor
+
+	if built == "" and floor_under.is_valid():
+		built = str(floor_under.call(feet))
+
+	if built != "" and FLOOR_SURFACES.has(built) and depth <= DAMP_M:
+		kind = built
+		tune = [0.0, 1.0]
+
+	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches; not under the listener's own feet inside a cave
+	# (weather_sounds.snow_underfoot).
+	if weather != null and weather.snow_underfoot(SNOW_COVER, own_feet) and kind in SNOW_SURFACES:
+		kind = "snow"
+		tune = [0.0, 1.0]
+
+	return {"surface": kind, "tune": tune, "soil": soil, "built": built}
 
 
 # Reads data/sound/step_levels.json over the built-in numbers; a missing or broken file leaves them as they were.
@@ -1232,7 +1407,7 @@ func loudest_text(bus_name: String) -> String:
 	voices.append_array(find_children("*", "AudioStreamPlayer", true, false))
 
 	for player in voices:
-		if not is_instance_valid(player) or not player.playing or player.stream == null or str(player.bus) != bus_name:
+		if not is_instance_valid(player) or not player.playing or player.stream == null or str(player.bus).trim_prefix(Sound3D.REAR_PREFIX) != bus_name:
 			continue
 
 		var db: float = player.volume_db
@@ -1294,6 +1469,16 @@ const FAINT_BUSES := ["Wind", "Surf", "Foley", "Nature", "Weather", "Interface"]
 const FAINT_BUS_DB := -60.0
 var _faint_applied: float = 0.0
 
+# While the world loads (Dave 24 Nov 2026: "when you first load it has a 1 second blast of what sounds like old tv static"): the world's buses
+# are silent, then fade in over LOAD_FADE_S once the client says the world is ready (terrain_client _world_loading). Off by default, so a
+# headless check that never sets it hears everything as before. The menus (Interface) and the heartbeat (Body) are never hushed.
+const LOAD_BUSES := ["Wind", "Surf", "Foley", "Nature", "Weather"]
+const LOAD_BUS_DB := -60.0
+const LOAD_FADE_S := 2.0
+var loading: bool = false
+var _load_hush: float = 0.0       # 1 silent .. 0 full, eased toward 0 over LOAD_FADE_S once loading ends
+var _load_applied: float = 0.0
+
 
 func _apply_buses() -> void:
 	var shares: Dictionary = {
@@ -1313,7 +1498,7 @@ func _apply_buses() -> void:
 		if index >= 0:
 			var share: float = shares[bus_name]
 			AudioServer.set_bus_mute(index, share <= 0.001)
-			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied + (FAINT_BUS_DB if bus_name in FAINT_BUSES else 0.0) * _faint_applied)
+			AudioServer.set_bus_volume_db(index, linear_to_db(maxf(share, 0.001)) + float(SNOW_HUSH_BUS_DB.get(bus_name, 0.0)) * _hush_applied + (FAINT_BUS_DB if bus_name in FAINT_BUSES else 0.0) * _faint_applied + (LOAD_BUS_DB if bus_name in LOAD_BUSES else 0.0) * _load_applied)
 
 
 # Sound files are loaded the first time a layer needs them, which cost 5 to 20 ms frames (first rain, first
@@ -1396,11 +1581,11 @@ func _load_settings() -> void:
 
 	if file.load(SETTINGS_PATH) == OK:
 		for group in MIX_GROUPS:
-			var old_step: int = clampi(int(file.get_value("mixer", group, 0)), 0, VOLUME_STEPS.size() - 1)   # the old 100/75/50/25/off steps
-			mix_level[group] = clampf(float(file.get_value("mixer_level", group, VOLUME_STEPS[old_step])), 0.0, 1.0)
+			var old_step: int = clampi(SettingsRead.whole(file, "mixer", group, 0), 0, VOLUME_STEPS.size() - 1)   # the old 100/75/50/25/off steps
+			mix_level[group] = clampf(SettingsRead.number(file, "mixer_level", group, VOLUME_STEPS[old_step]), 0.0, 1.0)
 
 		for sound_name in levels:
-			levels[sound_name] = clampf(float(file.get_value("levels", sound_name, 1.0)), 0.0, 1.0)
+			levels[sound_name] = clampf(SettingsRead.number(file, "levels", sound_name, 1.0), 0.0, 1.0)
 
 	_apply_buses()
 
@@ -1917,6 +2102,7 @@ func _exit_tree() -> void:
 	_later.clear()
 
 	AirBands.remove_all()
+	Sound3D.remove_rear_buses()
 
 	for sound_name in ["Wind", "Surf", "Foley", "Nature", "Weather", "World"]:
 		var index: int = AudioServer.get_bus_index(sound_name)
