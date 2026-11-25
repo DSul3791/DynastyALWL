@@ -77,6 +77,10 @@ var _scenes_of: Dictionary = {}   # species number -> its model files that exist
 var _scene_held: Dictionary = {}  # model file path -> its scene or texture, loaded on a worker (_scenes_ready) and kept so load() finds it cached
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
+const SCENE_WAIT_MS := 8000      # the longest a kind is held undrawn while its model files load on a worker (_waited_out; QA #12)
+var _wait_since: Dictionary = {}  # species number -> clock_ms when it was first held undrawn for its files (_waited_out)
+var _code_body_only: bool = false # set while an animal past SCENE_WAIT_MS is made: _make_model gives null, so the code-built body is drawn
+var clock_ms: Callable = func() -> int: return Time.get_ticks_msec()   # the clock for the wait (tests set it)
 var _alpha_tasks: Dictionary = {}  # texture path -> the worker task finding its alpha (_scenes_ready)
 var _alpha_done: Dictionary = {}   # texture path -> its alpha, written by _alpha_job under _alpha_mutex
 var _alpha_mutex: Mutex = Mutex.new()
@@ -651,11 +655,17 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			if _bodies.size() >= max_drawn:
 				continue
 
-			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it.
-			if not _scenes_ready(int(row[1])):
+			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it. Never longer than
+			# SCENE_WAIT_MS (QA #12, 25 Nov 2026: a tester on a slow 2-core PC saw no animals at all): past it, the animal is drawn with
+			# its code-built body, and later ones of its kind get the model once it is in.
+			var files_in: bool = _scenes_ready(int(row[1]))
+
+			if not files_in and not _waited_out(int(row[1])):
 				continue
 
+			_code_body_only = not files_in
 			var node: Node3D = _make_for_species(int(row[1]), id, young)
+			_code_body_only = false
 
 			if node == null:
 				continue
@@ -1005,7 +1015,27 @@ func _scenes_ready(number: int) -> bool:
 		if _scene_held.get(path) is Texture2D and not _alpha_ready(path, _scene_held[path]):
 			all_in = false
 
+	if all_in:
+		_wait_since.erase(number)
+
 	return all_in
+
+
+# Whether a kind has waited SCENE_WAIT_MS (clock_ms, tests) for its model files since it was first sent: then it is drawn anyway, with the
+# code-built body, and the log says so once per kind ("animal model <kind>: still loading after N s ..."). The clock starts again once
+# its files are all in (_scenes_ready), so a kind that waits again later gets its own full wait.
+func _waited_out(number: int) -> bool:
+	var now: int = int(clock_ms.call())
+
+	if not _wait_since.has(number):
+		_wait_since[number] = now
+		return false
+
+	if now - int(_wait_since[number]) < SCENE_WAIT_MS:
+		return false
+
+	_model_note(str(KIND_OF_SPECIES.get(number, number)), "still loading after %d s: drawn with the code-built body until its files are in" % int(SCENE_WAIT_MS / 1000))
+	return true
 
 
 # A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them. The unpacking of a 4096 texture is the slow
@@ -1054,6 +1084,10 @@ func _exit_tree() -> void:
 
 func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
 	_clip_maps.clear()      # the last model's rig is drawn now, or freed: its maps are not wanted
+
+	if _code_body_only:
+		return null      # its files are still loading past SCENE_WAIT_MS: no load() on the main thread, the code-built body instead
+
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
