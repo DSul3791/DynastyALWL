@@ -61,7 +61,7 @@ uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction
 // Only the violet veins glow (Dave's 18 Oct design; 25 Nov 2026 he saw the whole canopy glow, which is not it): the
 // veins are the only violet in the leaf texture (make_tree_textures.py witness_leaf: blue 1.2, green 0.72 of the grey
 // blade), so vein_mask is how far blue stands above green. The grey blade and the green tint give 0.
-const float VEIN_FROM = 0.08;   // (blue - green) / blue of a texel: the grey blade is 0, a vein line 0.4
+const float VEIN_FROM = 0.08;   // (blue - green) / blue of a texel, read in linear light: the grey blade is 0, a vein line about 0.65 (0.4 in the sRGB file)
 const float VEIN_FULL = 0.3;
 uniform vec3 glow : source_color = vec3(0.0);
 // Snow lying on the crown (art_weather_light.md 8.2.2), 0 none .. 1 full: the ground's snow memory (weather_look.gd, set_snow).
