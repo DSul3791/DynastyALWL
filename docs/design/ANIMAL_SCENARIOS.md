@@ -574,6 +574,10 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    have: `RunFastWounded_F`, `WalkSlowWounded_F`), beds down in cover 100 to 200 m on if not followed, and is pushed on by a player who
    comes within its flee distance; bleed scaled by the hit (and by size) so a good hit ends within one blood trail. `server_animals.gd`
    `bleed`, `blood`; `animals.json` blood.
+   Built 25 Nov 2026 on the server (`server_animals._runs_on_hurt`, `bleed`; `animals.json` blood bleed_s, bleed_max_s,
+   wounded_speed_x, bed_m, bed_s): each wound bleeds its own damage over 60 s (never slower than its whole health over 15 minutes); hurt, its
+   lope is 0.7 as fast; left alone it runs on 100 m, up to 200 m looking for trees, lies up (drawn lying) 5 to 10 minutes, and a player
+   within its flee distance pushes it on. Not yet: the wounded gait clips on the client (the row does not say an animal is hurt).
 9. **An animal that has beaten a player to 1 health has no ending** (check). The core rule stops damage, but nothing seen in the code tells the animal it won.
    Fix: a defensive animal (bear, moose, elk, boar, cattle) stops, watches for a few seconds and walks off; a hunting predator leaves
    too (the game never lets it eat the player).
