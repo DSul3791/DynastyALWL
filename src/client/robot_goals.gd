@@ -153,7 +153,7 @@ func _lighten() -> void:
 	for n in range(inv.numbers.size() - 1, -1, -1):
 		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
 
-		var keep: int = 40 if item in ["thatch", "reed_stems", "bedding"] else 0
+		var keep: int = 20 if item in ["thatch", "reed_stems", "bedding", "samphire"] else (40 if item == "stick" else 0)
 		keep = 10 if item.begins_with("apple_") or item.ends_with("berries") or item in ["cherries", "fiddleheads", "foxglove_leaves"] else keep
 		var junk: bool = item.begins_with("log_") or item.ends_with("_seed") or item.ends_with("_seeds") or item == "linseed" or keep > 0
 
@@ -191,6 +191,17 @@ func _weigh_if_heavy(from: int) -> void:
 		parts.append("%s x%d %.2f kg" % [row[1], row[2], row[0]])
 
 	_line("WEIGHT carried %.2f of %.2f kg: %s" % [c.items.carried_kg(), c.items.carry_limit_kg(), ", ".join(parts)])
+
+
+# Back to the starter camp in 60 s legs; the seconds walked.
+func _walk_home(limit_s: float) -> float:
+	var leg_s: float = 0.0
+
+	while leg_s < limit_s and c.body.global_position.distance_to(_home) > 8.0:
+		await r._go_to(_home, 60.0, 6.0)
+		leg_s += 60.0
+
+	return leg_s
 
 
 func _pack() -> String:
@@ -859,11 +870,24 @@ func _path(strokes: int) -> String:
 	var said: int = r._notices.size()
 
 	# Each stroke lands 1 m past the last along one line: the game lays nothing within 0.7 m (PATH_SPACING_M) of a patch.
+	# At the shore ("You cannot tread a path in water.") a player turns along the bank and keeps going until the goal counts.
 	var start: Vector3 = c.body.global_position
 	var missed: int = 0
+	var sent: int = 0
+	var along: int = 0
 
-	for n in range(strokes + 3):
-		var ground: Vector3 = start + dir * (1.5 + float(n))
+	for n in range(strokes * 2 + 6):
+		if bool(c.items.goal_book.row("path").get("done", false)):
+			break
+
+		if str(r._notices.slice(maxi(said, r._notices.size() - 1))).contains("in water"):
+			dir = dir.rotated(Vector3.UP, PI * 0.5)
+			start = c.body.global_position
+			along = 0
+			said = r._notices.size()
+
+		var ground: Vector3 = start + dir * (1.5 + float(along))
+		along += 1
 		await r._go_to(ground - dir * 1.2, 6.0, 0.5)
 
 		if Vector2(ground.x - c.body.global_position.x, ground.z - c.body.global_position.z).length() > 2.5:
@@ -873,9 +897,10 @@ func _path(strokes: int) -> String:
 		var y: float = float(c.items._ground_below.call(ground))
 		ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 		c.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH, slot, 0, 0, ground)
+		sent += 1
 		await r._wait(0.8)
 
-	_line("PATH %d hoe strokes toward the water, %d out of reach%s" % [strokes + 3 - missed, missed, _said(said)])
+	_line("PATH %d hoe strokes toward the water, %d out of reach%s" % [sent, missed, _said(said)])
 	return ""
 
 
@@ -898,6 +923,10 @@ func _build(structure: String) -> String:
 		return why2
 
 	var hammer: int = _hold("stone_hammer")
+
+	if not c.items._world.has(int(_sites.get(structure, -1))):
+		await _walk_home(240.0)   # a player builds at the camp, not at the shore where the last gather ended ("The ground is too wet here.")
+
 	var known: Dictionary = c.items._world.duplicate()
 	var said: int = r._notices.size()
 	var at: Vector3 = Vector3.ZERO
@@ -939,12 +968,8 @@ func _build(structure: String) -> String:
 # --- Hob: sell him something from the pack -------------------------------------------------------------------------------------------
 func _sell() -> String:
 	var hob: Vector3 = Vector3.INF
-	var leg_s: float = 0.0
 	await _gather("plant_fibre", 50)   # Hob buys fibre in lots of 50 (server_trade.gd: "He buys plant fibres 50 at a time.")
-
-	while leg_s < 480.0 and c.body.global_position.distance_to(_home) > 8.0:   # back to the starter camp, where Hob trades (NPCs are sent within 120 m)
-		await r._go_to(_home, 60.0, 6.0)
-		leg_s += 60.0
+	var leg_s: float = await _walk_home(480.0)   # the starter camp, where Hob trades (NPCs are sent within 120 m)
 
 	await r._wait(3.0)
 	_line("HOME %.0f m from the start spot after %.0f s of walking, pack %s" % [c.body.global_position.distance_to(_home), leg_s, _pack()])
