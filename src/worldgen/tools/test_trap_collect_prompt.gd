@@ -73,7 +73,30 @@ func _init() -> void:
 	view._world[3]["whole"] = false
 	check(str(view._probe_structure_for(3).get("prompt", "")) == "Cut the rabbit with a knife", "a hunted or cut carcass is for the knife (%s)" % str(view._probe_structure_for(3).get("prompt", "")))
 
+	# Through the world sync, as the server sends it: a snare seen empty, then re-sent holding a catch with the carcass added, then the catch cut,
+	# then the snare emptied. The rows keep their state, so the client keeps their entries and must take the new extras.
+	view._world.clear()
+	var scene_root: Node3D = Node3D.new()
+	get_root().add_child.call_deferred(scene_root)
+	view._root = scene_root
+	view._ground_below = func(_at: Vector3) -> float: return 0.0
+	var snare_row: Array = [11, table.number_of("snare_trap"), 1, Vector3(1.5, 0.0, 0.0), snare_state, {"yaw": 0.0, "age": 0.0, "sp": "", "lit": false}]
+	var body_row: Array = [12, table.number_of("carcass"), 1, Vector3(1.5, 0.0, 0.0), 19, {"yaw": 0.0, "age": 0.0, "sp": "rabbit", "lit": false, "whole": true}]
+	view._on_world_items([snare_row], PackedInt32Array())
+	check(str(view._probe_structure_for(11).get("prompt", "")).begins_with("Hold E to take down"), "synced: the empty snare is taken down (%s)" % str(view._probe_structure_for(11).get("prompt", "")))
+	var held_row: Array = snare_row.duplicate(true)
+	held_row[5]["catch"] = 12
+	view._on_world_items([held_row, body_row], PackedInt32Array())
+	check(view._nearest_struct(true) == 11 and str(view._probe_structure_for(11).get("prompt", "")).begins_with("Press E to collect the rabbit and reset the snare"), "synced: a catch made while you stand there is offered at the snare (%s)" % str(view._probe_structure_for(11).get("prompt", "")))
+	var cut_row: Array = body_row.duplicate(true)
+	cut_row[5].erase("whole")
+	view._on_world_items([cut_row], PackedInt32Array())
+	check(str(view._probe_structure_for(11).get("prompt", "")).begins_with("Finish cutting"), "synced: once cut it is for the knife (%s)" % str(view._probe_structure_for(11).get("prompt", "")))
+	view._on_world_items([snare_row], PackedInt32Array([12]))
+	check(not view._world[11].has("catch") and str(view._probe_structure_for(11).get("prompt", "")).begins_with("Hold E to take down"), "synced: emptied, the snare holds nothing again (%s)" % str(view._probe_structure_for(11).get("prompt", "")))
+
 	view._prompt.free()
 	view.free()
+	scene_root.queue_free()
 	print("Test done: %s" % ("pass" if failures == 0 else "%d fail" % failures))
 	quit(1 if failures > 0 else 0)

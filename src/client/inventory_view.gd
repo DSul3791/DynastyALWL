@@ -1773,6 +1773,22 @@ func _untrapped(ids: Array) -> Array:
 	return out
 
 
+# A structure row's trap and carcass extras (server_items _struct_extra): a trap's "catch" (absent: it holds none), a carcass's animal and
+# whether E takes it whole. Kept on the row's entry when it is first drawn and each time it is re-sent.
+func _note_catch(id: int, extra: Variant, state: int) -> void:
+	if typeof(extra) != TYPE_DICTIONARY:
+		return
+
+	if (extra as Dictionary).has("catch"):
+		_world[id]["catch"] = int(extra["catch"])
+	else:
+		_world[id].erase("catch")
+
+	if state == CARCASS_STATE:
+		_world[id]["sp"] = str(extra.get("sp", ""))
+		_world[id]["whole"] = bool(extra.get("whole", false))
+
+
 # The carcass lying in trap `trap` (the server's link), 0 for none.
 func catch_in(trap: int) -> int:
 	var c: int = int(_world[trap].get("catch", 0))
@@ -3234,6 +3250,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("water_l"):
 				_world[id]["water_l"] = int(row[5]["water_l"])
 
+			if _world[id]["state"] == state and state >= 5 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("yaw"):
+				_note_catch(id, row[5], state)   # a trap that caught or was emptied, a catch cut with the knife: re-sent with the same state
+
 			var pipe_moved: bool = row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("len") and (absf(float(row[5]["len"]) - float(_world[id].get("len", 0.0))) > 0.001 or (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.001)   # a run split by a junction: drawn again
 
 			if _world[id]["state"] == state and not pipe_moved:
@@ -3316,12 +3335,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				_world[id]["len"] = float(row[5]["len"])   # a pipe run (PLUMBING_DESIGN s9): its ends are PipeRules.ends(pos, yaw, pitch, len)
 				_world[id]["pitch"] = float(row[5].get("pitch", 0.0))
 
-			if state == CARCASS_STATE and row.size() > 5:
-				_world[id]["sp"] = str(row[5].get("sp", ""))   # a carcass: its animal, and whether E takes it whole (a trap's catch not yet cut)
-				_world[id]["whole"] = bool(row[5].get("whole", false))
-
-			if row.size() > 5 and (row[5] as Dictionary).has("catch"):
-				_world[id]["catch"] = int(row[5]["catch"])   # a trap holding its catch: that carcass's id
+			if row.size() > 5:
+				_note_catch(id, row[5], state)
 
 			if row.size() > 5 and (row[5] as Dictionary).has("water_l"):
 				_world[id]["water_l"] = int(row[5]["water_l"])   # a barrel's water: E drinks from it instead of opening it

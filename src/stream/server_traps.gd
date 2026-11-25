@@ -586,6 +586,7 @@ func collect(peer: int, id: int) -> bool:
 
 	if not host.can_take_whole(peer, number, age):
 		return true   # too heavy or no room: said, and the catch stays in the trap
+
 	host._items.erase(int(st["catch"]))
 	st.erase("catch")
 	host._dirty = true

@@ -8641,7 +8641,7 @@ func _sync_record(id: int, it: Dictionary) -> Array:
 	if it.has("struct"):
 		signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
 		signature += 211 * int(round(float(it["struct"].get("len", 0.0)) * 20.0)) + 409 * int(floor(_barrel_water_l(id) / 5.0))   # a pipe run split shorter, a barrel's water by 5 L
-		signature += (89 if _whole_catch(it) else 0) + 97 * (_trap_catch(it) % 9973)   # a catch cut with the knife, or a trap that caught or was emptied, is sent again
+		signature += (89 if _whole_catch(it) else 0) + 97 * _trap_catch(it)   # a catch cut with the knife, or a trap that caught or was emptied, is sent again
 
 	var bin_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {}) if it.has("struct") else {}
 	var bin_box = _chests.get(int(it["struct"].get("uid", -1))) if BinRules.is_bin(bin_def) and it["struct"].has("uid") else null
