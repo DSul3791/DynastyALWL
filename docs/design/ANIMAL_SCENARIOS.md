@@ -540,6 +540,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    80% passive deer, bighorn, chamois, goats, pronghorn, wildebeest, kangaroo and 90% of lynx. Real cornered deer strike, cornered
    kangaroos kick, cornered cats claw. Fix: keep "passive" as "never starts a fight", but let a cornered or grabbed animal of any
    temperament strike once and break away (a small hit, then flight). `server_animals.gd` `_at_bay`, `server_big_game.provoke`.
+   Built 25 Nov 2026 for the cornered case (`server_big_game.break_away`: a close strike or kick at 0.3 of its damage on a player
+   within reach, then flight and its cool-down; never at a player in firelight; kinds that may fight still warn). The grabbed case
+   waits until there is a way to grab an animal.
 4. **Animals call when they flee or look up, and borrow other species' voices.** The client voices every flee (state 2) and alert
    (state 3) (`terrain_client.gd` `state_changed` hook), so a bear growls, a lion roars and a boar snorts like a moose each time it looks
    or runs; bears and big cats roar as their warning. Real: flight is silent; the alarm call is species-own (deer snort, elk bark,

@@ -27,6 +27,8 @@ const WALL_LOOK_S := 0.2        # each charging step keeps this far (at its spee
 const WALL_TRIES := 3           # charges again after one a wall kept from its foe, before it calms
 const STRIKE := 25             # wire state: a blow up close (a swipe, a bite, a horn or tusk, a stomp), wound up where it stands
 const KICK := 26               # wire state: a kick behind (a donkey or a goat turns its back and kicks)
+const BREAK_ROW := {"start_m": 1.5, "reach_m": 1.0, "windup_s": 0.5, "arc_deg": 70.0}   # a break-away blow by a kind with no strike row (a deer's fore hooves)
+const BREAK_SHARE := 0.3        # a break-away blow does this share of the kind's damage: a small hit, to get free, not a fight
 const CLOSE_PACE_X := 0.3       # a charge set off close runs no slower than this share of its charge_mps (paced to land at strike_min_s)
 
 var host                        # ServerAnimals
@@ -420,6 +422,7 @@ func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -
 	if near.is_empty() or near.has("dog") or host.wall_between(a["pos"], near["pos"]):
 		return false
 
+	a.erase("break_away")   # a real attack, never a left-over break-away blow
 	var body: float = AnimalContact.contact_m(str(a["sp"]))
 	var how: String = ""
 
@@ -447,10 +450,54 @@ func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -
 	return true
 
 
+# A cornered animal that does not fight (passive: it never starts one) lashes out once to get free (docs/design/ANIMAL_SCENARIOS.md gap 3:
+# "keep passive as never starts a fight, but let a cornered ... animal of any temperament strike once and break away (a small hit, then
+# flight)"; a cornered deer strikes with its fore hooves, a kangaroo kicks, a cat claws): with the player within its strike's (or kick's)
+# start_m it winds up and lands one blow of BREAK_SHARE of its damage on a player still in reach (the same dodge as any close blow), then
+# bolts (_step_close) and does not do it again for its cool_s. Never at a player in a fire's or a torch's light (fire keeps everything away,
+# Dave 25 Nov 2026), never through a wall. True when it began one.
+func break_away(a: Dictionary, at: Vector3) -> bool:
+	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
+
+	if def.is_empty() or float(a.get("cool", 0.0)) > 0.0 or handles(a) or a.has("mother") or host.may_attack(a):   # one that may fight warns instead
+		return false
+
+	var near: Dictionary = _nearest(at)
+
+	if near.is_empty():
+		return false
+
+	var d: float = Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length()
+	var body: float = AnimalContact.contact_m(str(a["sp"]))
+	var how: String = ""
+
+	if def.get("kick", null) is Dictionary and d <= body + float(def["kick"].get("start_m", 1.5)):
+		how = "kick"
+	elif d <= body + float((def.get("strike", BREAK_ROW) as Dictionary).get("start_m", 1.5)):
+		how = "strike"
+
+	# The cheap distance test first: the wall and fire checks run only for a player already on it.
+	if how == "" or host.wall_between(a["pos"], near["pos"]) or host._fire_guard(near["pos"]) != Vector3.INF:
+		return false
+
+	a["state"] = KICK if how == "kick" else STRIKE
+	a["timer"] = float((def.get(how, BREAK_ROW) as Dictionary).get("windup_s", 0.5))
+	a["attack"] = how
+	a["break_away"] = true
+	a["foe_peer"] = int(near.get("peer", 0))
+	a["hit"] = false
+	a["heading"] = atan2(near["pos"].z - a["pos"].z, near["pos"].x - a["pos"].x) + (PI if how == "kick" else 0.0)
+	a["dir"] = a["heading"]
+	a["target"] = a["pos"]
+	a.erase("bay")
+	return true
+
+
 # One step of STRIKE or KICK: it stands wound up; at windup_s the blow lands on its foe if they are still in reach and in its arc, judged once
 # their dodge has come back over the link (late_s, as a charge's); then it recovers (the row's recover_s).
 func _step_close(a: Dictionary, def: Dictionary, foe: Dictionary, dt: float) -> void:
-	var row: Dictionary = def.get(str(a.get("attack", "strike")), {})
+	var breaking: bool = bool(a.get("break_away", false))
+	var row: Dictionary = def.get(str(a.get("attack", "strike")), BREAK_ROW if breaking else {})
 	a["timer"] = float(a["timer"]) - dt
 
 	if float(a["timer"]) > 0.0:
@@ -460,9 +507,19 @@ func _step_close(a: Dictionary, def: Dictionary, foe: Dictionary, dt: float) -> 
 		return   # the blow is judged once the player has seen it come and their step has come back (late_s; 0 without fair_dodge)
 
 	for info in ([foe] if not foe.is_empty() and not foe.has("dog") else []):
+		if breaking and host._fire_guard(info["pos"]) != Vector3.INF:
+			continue   # they reached a fire's or a torch's light during the wind-up: fire keeps everything away
 		if in_reach(a, row, info["pos"]) and hurt_player.is_valid():
 			a["hit"] = true
-			_land(a, def, int(info["peer"]), float(row.get("damage_x", 1.0)))
+			_land(a, def, int(info["peer"]), float(row.get("damage_x", 1.0)) * (BREAK_SHARE if breaking else 1.0))
+
+	if breaking:   # free: it runs (break_away), and does not lash out again for its cool-down
+		a.erase("break_away")
+		a.erase("attack")
+		a.erase("foe_peer")
+		a["cool"] = float(def.get("cool_s", 30.0))
+		host._bolt(a, foe["pos"] if not foe.is_empty() else a["pos"] - Vector3(cos(a["heading"]), 0.0, sin(a["heading"])), host.species_def(a["sp"]))
+		return
 
 	a["state"] = RECOVER
 	a["timer"] = float(row.get("recover_s", def.get("recover_s", 3.0)))
