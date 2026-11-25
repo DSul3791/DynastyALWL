@@ -69,7 +69,8 @@ static func choose_clip_moving(stance: int, velocity_local: Vector2, vertical: f
 
 # Plan 20: the one call the client makes each frame. A body that has the plan 19 clips (a generated body) gets choose_clip_moving with its local velocity, the air time
 # (the floor must be lost for AIR_DELAY seconds before it counts as in the air, so steps and slope edges do not flicker) and a landing: after a fall of LAND_AFTER
-# seconds or more the `land` clip is asked for until it is over. Any other body (the old ragdoll) gets exactly choose_clip. The timers live in meta on the avatar.
+# seconds or more, at LAND_MAX_PACE or slower, the `land` clip is asked for until it is over (faster, even off a high drop, the gait goes on: the land clip
+# plants both feet, so moving it slid them). The jump clip (0.15 s) starts after AIR_DELAY and ends near the top of a 7 m/s jump, where the fall takes over. Any other body (the old ragdoll) gets exactly choose_clip. The timers live in meta on the avatar.
 static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_floor: bool, pace: float, current: String, carrying: bool, delta: float) -> String:
 	var player: AnimationPlayer = avatar.get("animation_player") as AnimationPlayer
 

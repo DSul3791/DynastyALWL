@@ -10,7 +10,7 @@ extends SkeletonModifier3D
 const P := "mixamorig_"
 const PERIOD_S := 4.2                 # one breath at rest (about 14 a minute)
 const FADE_S := 0.5                   # ease in and out when the body enters or leaves a breathing clip
-const CLIPS := ["sit", "idle", "carry_idle", "idle_torch"]   # the clips that hold still (since 25 Nov 2026, QA #15, the standing idle too: Idle's first frame, dynasty_body.gd)
+const CLIPS := ["sit", "idle", "carry_idle", "idle_torch", "idle_bow_raised", "idle_bow_drawn", "idle_shield_up"]   # the clips that hold still (since 25 Nov 2026, QA #15, the standing idle too: Idle's first frame, dynasty_body.gd)
 # Bone -> peak turn in degrees about its own X (side-to-side) axis. The neck takes back the spine's turn so the head stays level.
 const BONES := {"Spine1": 0.45, "Spine2": 0.6, "Neck": -1.05}
 
