@@ -1468,6 +1468,10 @@ func release_e() -> void:
 	if _e_active.is_empty():
 		return
 
+	if body_out():
+		_e_active = {}   # passing out, fainted or waking: an E begun before does not go off (QA #19)
+		return
+
 	var found: Dictionary = _e_active
 	_e_active = {}
 	found["tap"].call()
@@ -1475,6 +1479,10 @@ func release_e() -> void:
 
 func _hold_e_check() -> void:
 	if _e_active.is_empty() or not KeyBindings.held("interact"):
+		return
+
+	if body_out():
+		_e_active = {}   # passing out: a hold E begun before does not finish (QA #19)
 		return
 
 	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):

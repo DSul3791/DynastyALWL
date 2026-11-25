@@ -94,9 +94,10 @@ def pass_out():
     check("R-CORE-PASS-OUT", "items.body_out() and not (event is InputEventMouseMotion) and event.is_pressed()" in client, "no key or button reaches the world while passing out")
     check("R-CORE-PASS-OUT", "moving = false   # passing out" in client, "no footsteps while passing out, fainted or waking")
     held = (ROOT / "src/client/held_item.gd").read_text(encoding="utf-8")
-    check("R-CORE-PASS-OUT", held.count("_body_out()") >= 4, "no swing, strike or drawn bow while passing out")
+    check("R-CORE-PASS-OUT", all(t in held for t in ("_right_held() or _body_out()", "func _start_swing() -> void:\n\tif _body_out():", "_swing_t >= 0.0 and _body_out()", 'hoe_mode != "smooth" or _body_out()')),
+          "no swing, strike, drawn bow or hoe levelling while passing out")
     server = (ROOT / "src/stream/server_items.gd").read_text(encoding="utf-8")
-    check("R-CORE-PASS-OUT", '(16 if passing_out(peer) else 0)' in server and "and not passing_out(peer):" in server, "the server tells the client and refuses a stance while passing out")
+    check("R-CORE-PASS-OUT", '(16 if strain_going(peer) else 0)' in server and "and not strain_going(peer):" in server, "the server tells the client and refuses a stance while passing out")
 
 
 def seeds():

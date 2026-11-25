@@ -2704,7 +2704,7 @@ func _init() -> void:
 
 	check(dropped_fill == 500, "a dropped bucket keeps its water (%d)" % dropped_fill)
 
-	# Blackout is smooth and depends on the overshoot: right at the threshold it takes about slow_s, a long way over it about fast_s.
+	# Blackout is smooth and depends on the overshoot: right at the threshold it takes fall_s (2.5 s), a long way over it about fast_s.
 	var seconds_to_black: Array = []
 	var smooth: bool = true
 
@@ -2740,7 +2740,7 @@ func _init() -> void:
 	sa._stance[1] = 0
 	sa._exertion[1] = 1.0
 	sa._strain_tick(1, 0.25)
-	check(sa.passing_out(1) and sa.stance_of(1) == 3, "crossing the faint threshold drops the player to lying at once")
+	check(sa.strain_going(1) and sa.stance_of(1) == 3, "crossing the faint threshold drops the player to lying at once")
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a player passing out cannot stand up")
 	check(sa.exertion_of(1) == 0.0, "a player passing out makes no effort")
@@ -2751,7 +2751,7 @@ func _init() -> void:
 		sa._strain_tick(1, 0.25)
 		went_out = went_out or int(sa.strain_of(1)["state"]) == 2
 
-	check(went_out and not sa.passing_out(1), "resting under the threshold does not call off passing out: it ends in the faint")
+	check(went_out and not sa.strain_going(1), "resting under the threshold does not call off passing out: it ends in the faint")
 
 	# Tools batch 1: the hand saw turns a log into lumber by the balance row and wears; the hammer and adze recipes use live items.
 	var hs_dir: String = "user://test_server_items_handsaw"

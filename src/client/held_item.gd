@@ -1108,13 +1108,13 @@ func tool_busy() -> bool:
 	return _swing_t >= 0.0 or _pause_t > 0.0 or _stop_t > 0.0
 
 
-# One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
 # Passing out, fainted or waking (inventory_view.body_out): the hands are not the player's (Dave 25 Nov 2026, QA #19). A test's stand-in
 # view without it is never out.
 func _body_out() -> bool:
 	return _inv != null and _inv.has_method("body_out") and _inv.body_out()
 
 
+# One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
 func _start_swing() -> void:
 	if _body_out():
 		return   # passing out, fainted or waking: no swing (Dave 25 Nov 2026, QA #19)
@@ -2520,7 +2520,7 @@ func _hoe_repeat(delta: float) -> void:
 			_hoe_menu_t = 0.0
 			_hoe_menu_refresh()
 
-	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or hoe_mode != "smooth":
+	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or hoe_mode != "smooth" or _body_out():   # passing out stops the levelling (QA #19)
 		_hoe_t = 0.0
 		return
 

@@ -1,6 +1,9 @@
 {
 	"note": "Old rules Dave replaced. Each phrase must not appear in an active file (tools/check_rulings.py): when a ruling in docs/RULINGS.md replaces an older one, add the older rule's telltale phrase here and remove it from every active file in the same PR. Lower case; matched without case.",
 	"retired": [
+		{"phrase": "brisk 140", "replaced_by": "R-CORE-PASS-OUT", "since": "2026-11-25"},
+		{"phrase": "while the heart still races", "replaced_by": "R-CORE-PASS-OUT", "since": "2026-11-25"},
+		{"phrase": "takes slow_s seconds right at the threshold", "replaced_by": "R-CORE-PASS-OUT", "since": "2026-11-25"},
 		{"phrase": "a faint purple light sits in each mature crown", "replaced_by": "R-FLORA-WITNESS-GLOW", "since": "2026-11-25"},
 		{"phrase": "once 3 flagged changes are in the branch", "replaced_by": "R-TEAM-WARN-TO-BLOCK", "since": "2026-11-25"},
 		{"phrase": "flagged more than 3 times", "replaced_by": "R-TEAM-WARN-TO-BLOCK", "since": "2026-11-25"},

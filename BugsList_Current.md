@@ -1680,7 +1680,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 154. The first goals do not say where stones come from
 
-**Found by:** tester, [QA #16](https://github.com/DSul3791/DynastyALWL-QA/issues/16), build 10587, 25 Nov 2026: "How to get stones? Mine pumpkin sized rock with an axe?" **Status: Implemented - awaiting player verification.** The Stone - Axe goal now says "Stones and sticks lie loose on the ground (most on slopes): press E to pick them up." Loose stones and sticks lie on the ground everywhere (more on slopes and round the spawn), and a Stone - Hammer breaks stones off boulders, but the Stone - Axe goal, the first that needs a stone, says neither. The same report's "quest guide says straw bed, only thatch bed in queue" is already answered by the bed goal (a Thatch - Bed from the pack, or a Straw - Bed with the hammer).
+**Found by:** tester, [QA #16](https://github.com/DSul3791/DynastyALWL-QA/issues/16), build 10587, 25 Nov 2026: "How to get stones? Mine pumpkin sized rock with an axe?" **Status: Implemented - awaiting player verification.** The Stone - Axe goal now says "Stones lie loose on the ground (most on slopes) and sticks under the trees: press E to pick them up." Loose stones and sticks lie on the ground everywhere (more on slopes and round the spawn), and a Stone - Hammer breaks stones off boulders, but the Stone - Axe goal, the first that needs a stone, says neither. The same report's "quest guide says straw bed, only thatch bed in queue" is already answered by the bed goal (a Thatch - Bed from the pack, or a Straw - Bed with the hammer).
 
 ## 155. Floating objects and water standing in walls
 

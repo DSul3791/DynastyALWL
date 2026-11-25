@@ -6097,7 +6097,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (_move_held("jump") and not sleeping_now):
+	if (input != Vector3.ZERO or (_move_held("jump") and not sleeping_now)) and not (items != null and items.body_out()):   # no stand-up asks while passing out (QA #19)
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
