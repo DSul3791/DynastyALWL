@@ -60,19 +60,26 @@ def added_lines(*range_args):
     return out
 
 
+def line_problems(path, line):
+    """(check, message) for each problem in one line of a file. The checks are named for tools/warn_watch.py."""
+    out = []
+    if CLIENT.match(path) and path not in PRINTS_ON_PURPOSE and PRINT.match(line):
+        out.append(("client-print", f"{path}: a bare print() in client code; use FreezeWatch.printer.line"))
+    for rx, what in SECRETS:
+        if rx.search(line) and not (rx is VALUE_CHECK and FIXTURE.search(path)):
+            out.append(("secret", f"{path}: this line looks like {what}; the repos are public"))
+    return out
+
+
 def findings(*range_args):
-    """(check, path, line number, line, message) for each problem the diff adds. The checks are named for tools/warn_watch.py."""
+    """(check, path, line number, line, message) for each problem the diff adds."""
     found = []
     changed = set(git(*(DIFF[:1] + range_args + DIFF[2:] if range_args else DIFF), "--name-only", "--diff-filter=d").splitlines())
     for f in PRIVATE_FILES:
         if f in changed:
             found.append(("private-file", f, 1, "", f"{f} is a machine's private file: keep it out of the commit"))
     for path, number, line in added_lines(*range_args):
-        if CLIENT.match(path) and path not in PRINTS_ON_PURPOSE and PRINT.match(line):
-            found.append(("client-print", path, number, line, f"{path}: a bare print() in client code; use FreezeWatch.printer.line"))
-        for rx, what in SECRETS:
-            if rx.search(line) and not (rx is VALUE_CHECK and FIXTURE.search(path)):
-                found.append(("secret", path, number, line, f"{path}: this line looks like {what}; the repos are public"))
+        found += [(check, path, number, line, msg) for check, msg in line_problems(path, line)]
     return found
 
 
