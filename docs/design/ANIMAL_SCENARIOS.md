@@ -215,37 +215,377 @@ own attack moves".
 
 ---
 
-## Other animals
+## Every animal in the game
 
-(In progress. The temperate forest animals come next, then birds, mountain, plains and the big game.)
+Taken from `data/animals/animals.json` (52 species rows) and `data/animals/models.json`. Goblins and bandits are people, not animals,
+and are left out (`GOBLINS.md`, `BANDIT_CAMPS.md`). "Today" columns are the live data: health, flee speed and how long it holds it
+(`flee_mps` for `burst_s` seconds, then `trot_share` of it), and the temperament shares (P passive, D defensive, N neutral, A aggressive,
+F friendly). The player runs 9.0 m/s and never tires.
+
+| Species row | Real species the model is | Where | Health | Flee today | Temperament today |
+|---|---|---|---|---|---|
+| rabbit | European rabbit (WildMesh Rabbit) | grass, heath, forest edge | 5 | 7.5 m/s 3 s, then 3.8 | runs, burrows |
+| deer | white-tailed deer / red deer (WildMesh Deer, 7 looks) | forest, grass, marsh | 20 | 12 m/s 6 s, then 6 | P .8 D .2 |
+| elk | wapiti / red deer stag (WildMesh Elk) | forest, grass, alpine | 70 | 13 m/s 8 s, then 5.9 | D .7 N .3 |
+| moose | moose (WildMesh Moose) | boreal, mixed, marsh | 90 | 10 m/s 8 s, then 4.5 | D .7 N .3 |
+| wolf | grey wolf (WildMesh Wolf_1) | packs, own brain (`server_wolves.gd`) | 30 | pack decides | pack |
+| fox | red fox (WildMesh Fox_1) | forest, grass, heath | 12 | 11 m/s 6 s, then 6 | P .8 N .15 F .05 |
+| boar | wild boar (WildMesh WildBoar) | forest, grass, marsh | 40 | 8 m/s 6 s, then 4 | P .3 D .65 A .05 |
+| lynx | Eurasian lynx (WildMesh Lynx) | boreal, mixed | 30 | 12 m/s 6 s, then 6.6 | P .9 N .1 |
+| bear, black_bear | brown bear, American black bear | forest | 120, 90 | 9 m/s 6 s, then 4.5 | see Bears |
+| puma | cougar (WildMesh Puma) | mountains, forest | 60 | 13 m/s 6 s, then 7.2 | P .6 D .3 A .1, hunter |
+| tiger, leopard | tiger, leopard | forest, marsh; savanna | 120, 55 | 13 m/s 6 s, then 7.2 | P .4 D .4 A .2; P .6 D .3 A .1 |
+| lion, hyena | lion (two looks), spotted hyena | savanna, grassland | 110, 45 | 12 and 11 m/s 6 s | P .3 D .5 A .2; P .5 D .4 A .1 |
+| beaver | North American beaver | water in forest, marsh | 14 | 4 m/s (swims) | runs to water |
+| mink | American mink | marsh, banks | 6 | 5.2 m/s | P .85 D .15 |
+| raccoon | raccoon | forest, marsh | 10 | 7 m/s | P .6 N .25 F .15 |
+| rat | brown rat | marsh, forest, beach | 2 | 3 m/s | runs |
+| bighorn, mountain_goat, chamois | bighorn sheep, mountain goat, chamois | alpine, rock | 30, 28, 22 | 11, 9, 12 m/s | P .8 D .2 |
+| pronghorn, wildebeest, kangaroo | pronghorn, blue wildebeest, eastern grey kangaroo | open plains | 22, 60, 40 | 16, 13, 12 m/s 6 s | P .8 D .2 |
+| horse, donkey, camel | feral horse, donkey, dromedary | grass, heath, savanna | 60, 45, 70 | 13.7, 11, 9 m/s 8 s | defensive, tame value |
+| buffalo ("Wild ox") | Cape buffalo look, wild cattle | grass, savanna | 110 | 10 m/s 8 s | D .6 N .2 A .2 |
+| cow, goat, chicken, cat, dog | farm and stray animals | near people (target_per_player 0) | 80, 25, 3, 6, 25 | | stock |
+| warthog, honey_badger | warthog, honey badger | savanna | 35, 25 | 8, 7 m/s | P .2 D .75 A .05; D .6 N .4 |
+| rhino, elephant, mammoth | rhinoceros, African elephant, woolly mammoth | savanna; tundra (mammoth) | 160, 300, 300 | 10, 6, 6 m/s 8 s | mostly defensive |
+| alligator | American alligator | marsh, forest water | 110 | 4 m/s, swims | P .4 D .5 A .1 |
+| songbirds, crow, pheasant, grouse, guineafowl | small birds, crow, ring-necked pheasant, grouse, helmeted guineafowl | ground birds, flush or perch | 1 to 6 | fly | flocks |
+| duck, goose, seabird | mallard flock, goose, gull | water, shore | 3 to 10 | fly, swim | flocks |
+| frog, seal | frog, harbour seal | water's edge | 1, 20 | jumps or slides into water | runs to water |
+
+### The rules that hold for every species (from the research)
+
+1. **Prey sprints first, then keeps going faster than a person.** Deer reach 15.6 m/s, elk 18 to 20, moose 15.6, wolves 15.6, foxes 13.4,
+   pronghorn 24 (and 18 for 10 km), horses 15 to 19. A healthy animal is never run down on foot. Our player runs 9 m/s for ever, and
+   every species drops under that after its burst, so in our game **every animal can be run down**. That is the biggest single gap (gap 1).
+2. **Stare, then signal, then go.** Most prey first lifts its head and looks, then gives its alarm (deer snort, stamp and flag the tail;
+   elk cow barks; rabbits thump; chamois whistle; geese honk; crows caw; guineafowl chatter), then runs to cover. Our "stare before
+   fleeing" ruling fits.
+3. **Most animals are silent when they run.** The calls belong to the alarm, the warning, the fight and the hurt, not to the flight.
+4. **Hurt animals that are left alone lie down soon.** A deer hit through the lungs sprints off and lies down and dies after a short run;
+   pushing it makes it run hundreds of metres more (TPWD). This is how a blood trail ends in a body.
+5. **Defence is a ladder.** Big animals warn before they hit: moose ears back, hackles up, lip licking; elk teeth grinding; boar
+   snorting and mock charging; bears huffing and jaw-popping; kangaroos standing tall; cats hissing. Most charges are bluffs.
+6. **Mothers matter most.** The worst danger from deer, elk, moose, boar, cattle, geese and most big game is a mother with young. Young
+   of hiders (deer, elk, pronghorn, hares) lie still alone; young of followers (moose, horse, wildebeest) run with the mother.
+7. **Predators hunt from cover and give up quickly.** Cats stalk to 5 to 20 m and rush under 100 to 200 m; lynx ambush by trails; wolves
+   test and chase over hundreds of metres to a few kilometres; a lone wolf kills an adult elk only 2% of the time (NPS). Running from a
+   predator can start a chase (Panthera, NPS).
+8. **Wind and smell.** For deer, wolves, bears, boar, elephants and rhinos smell is the best sense; walking downwind of them is how
+   hunters get close. Wolves in Sweden fled earlier when the wind carried human scent to them (Frontiers 2022).
+9. **Fire.** Wild animals flee fire and smoke. Bears, raccoons, gulls, crows, hyenas and stray dogs come to camps for food. No agency
+   advises a campfire as a deterrent. Dave's rule wins (see "Fire"): they circle the edge of the light and wait.
+
+### Rabbit (European rabbit; cottontail notes)
+
+Numbers: cottontail top speed 8 m/s in zig-zag bounds; groups of 2 to 20 at a warren; home range 2 to 3 ha; active dusk to dawn, rests by
+day in a form or burrow; feeding peaks 2 to 3 h after dawn and in the hour after sunset; strong wind, heavy rain and a full moon cut
+activity (Wildlife Online, ADW).
+- S1 to S3: grazes near cover, hops; rests in the burrow or a form by day. In game: as today (warrens, runs, out 18:00 to 08:00).
+- S4 to S6: freezes, slinks low, then a zig-zag dash to the burrow, white tail showing; may sit up to look. A hind-foot **thump** warns
+  the others. In game: freeze and stare (startle), thump (sound), then zig-zag to the burrow. Already close.
+- S7, S8: goes to ground. Cornered or caught: kicks, struggles, gives a loud **distress scream** (ADW).
+- S10, S11: a wounded rabbit dives into its burrow on its trail (today, `BURROW_KINDS`). Dies with a squeal.
+- S12 snare: struggles and screams, then goes still. Dave 25 Nov: it lies in the snare, E collects it and resets the snare.
+- S13: the doe visits the nest once a day for a few minutes; young stay hidden. No defence.
+- S15 to S17: prey of fox, lynx, wolves, birds of prey; groups feed together and one thump sends all.
+- S19: less out in wind, rain and bright moon (today: small animals cut by wind; add moon if the moon is modelled).
+- S20: a fire, building, placed torch or tilled bed within 20 m empties the warren (ruling).
+- S21 sounds: thump when alarmed (once or twice), scream when caught or hurt, otherwise silent. Today: `rabbit_thump` idle and alert,
+  `rabbit_squeak` threat; fine, but no idle thump with nobody near (a natural thump means danger).
+
+### Deer (white-tailed deer, red deer notes)
+
+Numbers: top 15.6 m/s, jumps 2.4 m (Indiana DNR, Maryland DNR); red deer stag clocked at 19 m/s. Flight from a car: median 69 m (PLoS ONE
+2014); no good figure on foot (our flee 35 m, notice 60 m are fine). Home range about 2.6 km². Does and fawns together, bucks alone or in
+bachelor bands; red deer hinds about 5 to 7 in a group. Active dawn and dusk, beds by day.
+- S1 to S3: browse and graze, bed in cover by day chewing the cud (today: lying by share, ANIMAL_RESTING).
+- S4: head up, ears forward, stare; a **head-bob and foot stamp**; a **snort**, which carries far (MDC). In game: stare, stamp, snort.
+- S5, S6: bounds off with the white tail flagged (white-tailed) or a bark (red deer). In game: as today plus the tail flag if the model
+  allows, and sprint 13 to 15 m/s then **lope at least 10 m/s** to 70 m.
+- S7: keeps running, uses cover and jumps; a pushed deer leaves the area. Being chased in winter costs it fat (Idaho F&G).
+- S8: a cornered or caught deer strikes with the front hooves; a buck in rut may use antlers. In game: deer are passive or defensive;
+  a cornered one strikes (needs a strike move: the deer file has none named, gap 4).
+- S9: surprised close it bolts; a rutting buck may stand.
+- S10: hit through heart or lungs: jumps or kicks, sprints the way it faced, then lies down and dies after a short run; followed too soon
+  it runs hundreds of metres (TPWD). In game: a wounded deer runs, then **beds down within 100 to 200 m** if not followed, and bleeds out
+  there; one pushed within 30 m gets up and runs again.
+- S11: falls, kicks; may bleat or groan.
+- S12: fights the trap and can die of stress (capture myopathy). Deer are never snared in our game today (traps.json); keep it.
+- S13: fawns lie hidden alone for about 3 weeks; the doe visits 2 to 3 times a day; a fawn freezes, heart rate down to a third. In game:
+  a found fawn lies still; the doe stamps and snorts nearby; a doe charges only a player who touches the fawn.
+- S14: late winter: weak, slow, stays in sheltered yards.
+- S16: flees wolves, bears, cougars, lynx, dogs as it flees players.
+- S17: herd 3 to 6 (today), one watches; the first to bolt alarms the rest (today).
+- S18: dawn and dusk most, some night (today day 0.4, dusk 1, night 0.5).
+- S19: rut October to mid-December: bucks move more, grunt, fight (snort-wheeze); deer move more on windy days, less on windy nights
+  (Penn State). Snow: yards up.
+- S21 sounds: snort (alarm, once), stamp, bleat (fawn, hurt), grunt (rut, doe to fawn). Never a call while fleeing.
+
+### Elk (wapiti)
+
+Numbers: herds up to a few hundred (cows, calves, young bulls); old bulls apart until autumn; feed morning and evening, rest at midday;
+NPS asks people to stay 30 m away; top speed about 18 to 20 m/s (widely quoted, not checked). Wolves' main prey (85% of winter kills,
+Yellowstone).
+- S4, S5: head up, ears turning, stiff walk; a cow **barks** to warn the herd; the herd moves off together.
+- S9, S13: cows with calves (late spring) and bulls in rut (August to early winter) kick or chase people; teeth grinding and pinned ears
+  are the warning; an elk that walks toward you is dangerous (NPS Grand Canyon).
+- S10: as deer.
+- S13: calves are hidden alone in tall grass for about 2 weeks, then join the herd.
+- S19: rut September to mid-October; bulls **bugle** (rising squeal, then grunts) at dawn and dusk and through the night in the rut;
+  winter moves downhill.
+- S21: cow bark (alarm), bugle (rut only, often), calf mew; no call when fleeing. Today: elk borrows the moose's snort and bellow.
+- In game: flee as deer (faster lope); cows with calves and rutting bulls warn and charge (today defensive 0.7 does this).
+
+### Moose
+
+Numbers: gallops to 15.6 m/s in short runs; swims up to 19 km; poor sight, keen hearing and smell; feeds dawn and dusk; mostly alone,
+cow and calf pairs, winter groups up to 12 to 15; cannot bear long heat over 24 °C (SUNY ESF, Michigan DNR).
+- S4, S5: often stands and watches instead of running; walks off if pushed.
+- S9: warning signs: **ears laid back, hump hair raised, lip licking**, walking toward you (ADF&G). Most charges are bluffs. A real one:
+  kicks with the front hooves and may stomp a downed person until they lie still. "It won't chase you very far." (ADF&G)
+- S13: cows are very protective in late spring and summer; calves follow (they do not hide).
+- S14: worse-tempered hungry and tired in deep snow in late winter (ADF&G).
+- S16: treats dogs as wolves and kicks them.
+- S19: rut September to November (bulls grunt and bellow, cows moan); in heat it stands in water and shade.
+- S21: grunt (rut), cow moan, calf bawl; silent otherwise.
+- In game: today D .7 N .3 with a ladder: fits. Its charge already stops at 24 m (`charge_m`), which fits "it won't chase you very far". Add: a moose that has put a
+  player down to 1 health stands over them a few seconds and then walks off. In summer heat it stands in water.
+
+### Wolf
+
+Numbers: trots 2.2 m/s for hours, top 15.6 m/s; up to 72 km a day; packs average 9.8 (Yellowstone), lone wolves 2 to 5%; smell best,
+excellent night sight; a lone wolf kills an adult elk 2% of the time, success rises with pack size to about 4; howls carry 11 km in
+forest, 16 km in the open; about four times more howling in February than in May (NPS).
+- S4, S5 (people): in Sweden 18 of 21 GPS wolves fled walkers, mostly before the walkers came closest, moved a median 1.5 km, and stayed
+  away about 75 minutes (Frontiers 2022). In game: a pack that is not hunting slips away from a player it notices.
+- S15: tests a herd, picks the weak, chases over hundreds of metres to kilometres.
+- S13: pups born mid-April in a den; the pack defends the den.
+- S17: today's pack brain (`server_wolves.gd`, wolf pups design) covers stalk, rush, den guard.
+- S20: no study shows a campfire deters wolves; Dave's rule wins: no pack enters firelight (today the den guard rushes "torch or not":
+  gap 7).
+- S21: howl (night, more in winter; replies at kills and pup sites), growl and snarl at a fight, bark-howl alarm near the den, silent
+  while hunting.
+
+### Red fox
+
+Numbers: top 13.4 m/s; mostly dawn, dusk and night; home range 13 to 26 km²; kits 4 to 5, out of the den at 4 to 5 weeks; about 12 calls;
+mouse-pounce in a high arc (CPW, MDC).
+- S2, S15: mouses: stands still, listens, leaps high onto prey under grass or snow.
+- S4 to S6: cautious, watches, slips away; town foxes bolder. In game: today P .8 N .15 F .05 fits.
+- S8: cornered or caught: gapes, screams, bites.
+- S12: snare: struggles, then lies low (trap studies: smaller, nimble species hurt themselves more).
+- S13: moves kits if the den is disturbed.
+- S19: winter breeding: the **scream** (mid to late winter nights), barks and yips near kits.
+- S21: bark (night, often), scream (winter), silent while hunting or fleeing. Today fine.
+
+### Wild boar
+
+Numbers: forages about 1 km/h, trots 6 to 10 km/h, flees to 11 m/s; smell best, poor sight; mostly nocturnal, starts about an hour
+before sunset, rests up to 12 h by day in thick cover; sounders up to 6 sows plus litters (to 30); adult males alone (Wildlife Online,
+Forestry England, eXtension).
+- S4: hears or smells people first and often **walks toward the noise to look**, which looks like aggression (Forestry England); old
+  males stand and watch.
+- S9, S13: a sow puts herself between people and piglets, snorting, while others lead the young away; she may mock charge if people keep
+  coming.
+- S8, S10: wounded or cornered boars charge with tusks.
+- S19: wallows in heat (no sweat glands); more active on humid nights.
+- S21: alarm bark (loud, once), grunts while feeding, squeals in fights, piglets whine; males rarely call. Today the boar borrows the
+  moose's snort and bellow: it needs its own bark, grunt and squeal.
+- In game: today fits (P .3 D .65 A .05, night active). Flee 8 m/s is under the real 11: raise to 11 with a lope over 9.
+
+### Lynx (Eurasian; Canada lynx notes)
+
+Numbers: ambush hunter, mostly walks, short rushes of tens of metres; mainly nocturnal (more by day in March to April mating); one roe
+deer a week, feeds on a kill 3 days and stays near it; "lynx are no threat to humans" (KORA); Canada lynx eat 1 to 2 hares a day.
+- S4 to S6: very shy, usually gone before seen. Today P .9 N .1: fits.
+- S8, S12: cornered: hisses, swipes. Trapped cats tend to sit rather than fight the trap.
+- S15: lies by small game trails and pounces (our rabbit runs are the place).
+- S16: climbs trees to escape wolves.
+- S21: silent hunting; mating calls in spring; hiss and growl when cornered. Today the lynx borrows the bear's growl and roar: a lynx
+  needs a hiss, a growl and a spring call (its file has `idle_call_01`, `_02`).
+
+### Cougar (puma)
+
+Numbers: dusk to dawn, also by day; stalks, then a short rush from behind; one deer-sized kill every 6 to 12 days, cached under leaves and
+revisited; solitary; bounds 12 m; cannot roar: growls, hisses, chirps and the mating scream (CPW, CDFW, Arizona Extension). Attacks on
+people are rare; running can start a chase; most people who fight back drive it off.
+- In game: today P .6 D .3 A .1 with stalking: fits. Add: it guards a cached kill (S9); silent stalking; a hiss and growl warning;
+  **never a roar** (today it borrows the bear roar); a scream at night in its mating season.
+
+### Beaver, mink, raccoon, rat
+
+- **Beaver:** nocturnal, out in the evening; colonies of 2 to 12; startled, it **slaps its tail** on the water and dives (stays under 6 to
+  8 min); slow on land, lives by water and lodge (Maine IF&W, Smithsonian). Cornered on land: hisses and bites. In game: run to water,
+  tail slap sound, dive (today runs to water: add the slap).
+- **Mink:** nocturnal, alone, checks every hole along banks; musk when threatened. Cornered: hisses, screeches, bites. In game: as today.
+- **Raccoon:** top 4.5 to 6.7 m/s, short; escapes up the nearest tree; nocturnal; raids camps and food; threat: lowered head, bared teeth,
+  arched back, hisses, growls. In game: at night it comes to food left out but stops at the firelight edge; cornered it hisses and
+  bites (today P .6 N .25 F .15; the friendly share should only mean "bold near camps", not walking up to players).
+- **Rat:** dusk and night, rarely more than 120 m from its burrow; shy of new things and traps for days; squeaks when caught. In game: as
+  today.
+
+### Birds
+
+- **Songbirds:** flush at 5 to 20 m from a walking person; dawn chorus, silent at night; a thin "seet" for a hawk overhead, harsh chips
+  to mob a cat or owl. In game: as today (flocks, perch).
+- **Crow:** flush 15 to 50 m; recognise faces; loud repeated cawing is the alarm and mobbing call, which draws other crows; scavenges
+  carcasses and camps after people leave. In game: crows come to a carcass once the player is 30 m off; caw at a predator.
+- **Pheasant:** runs into cover first, bursts up at 2 to 10 m with a whirr and a "kuk-kuk-kuk"; cocks crow at dawn in spring.
+- **Grouse:** sits tight, explodes up at 3 to 10 m and puts trees between; ruffed grouse drum at dawn in spring (heard 400 m); a hen with
+  chicks does a broken-wing act or rushes at intruders.
+- **Duck (mallard):** flush 20 to 100 m, take off straight up from water; only hens quack (alarm on take-off); hens do the broken-wing act
+  for ducklings; flightless 3 to 4 weeks in late summer.
+- **Goose:** pairs for life; at the nest the gander hisses, spreads wings, runs or flies at a person and hits with wings and bill;
+  honks in flight and on alarm. In game: a nesting goose charges and pecks lightly (small damage), never follows far.
+- **Gull:** bold scavenger at shores and camps; dive-bombs near nests with a "kek-kek" alarm.
+- **Guineafowl:** runs rather than flies; loud "kek-kek-kaaa" alarm at the first sign of anything, which other animals heed (a sentinel:
+  today's alarm group fits).
+- **Chicken:** "eeee" for a hawk (crouch), loud cackle for a ground predator; roosts at dusk.
+
+### Water's edge: frog, seal, alligator
+
+- **Frog:** jumps into water at 1 to 3 m (bullfrogs farther); calls on warm wet nights (bullfrog "jug-o-rum" heard 1.6 km); hibernates
+  in mud. In game: as today; calls at night near water in summer.
+- **Seal:** raises its head, then humps to the water and goes in; slow and clumsy on land; flushes from walkers at shorter range than from
+  ships (ships at 100 m flush almost all); bites if cornered on land. In game: flee to water (today); cornered on land it bites.
+- **Alligator:** short land bursts of 4 to 5 m/s over a few metres only; ambush at the water's edge at dusk and night; usually slides into
+  the water away from people; close up opens its mouth and **hisses**, then lunges or snaps; females guard nests June to September;
+  dormant below 13 °C (FWC, UF/IFAS). In game: never chases on land beyond a few metres; hiss before a lunge; inactive in cold weather.
+
+### Mountain animals: bighorn, mountain goat, chamois
+
+- **Bighorn:** 14 to 15 m/s on flat ground; spots movement far off; ewes and lambs in groups of 10 or more; flees up to cliffs; rams clash
+  heads in the rut (November to December), heard over 1 km. In game: flee uphill to rock, not away on the flat.
+- **Mountain goat:** not fast (about 8 m/s bursts); escapes by climbing to ledges; salt-seeking goats follow hikers; rutting males gore
+  (one fatal case, Olympic NP 2010); NPS: stay 45 m away. In game: walks off uphill; in the November rut a billy may follow and butt a
+  player who stays near.
+- **Chamois:** notices people at about 400 m in the open, alert at 176 m, flees at a mean 124 m (15 to 367) from hikers; most just walk off
+  a few metres and 73% reacted only when people left the trail; dogs cause flights over 500 m; alarm: a sharp whistle-snort and foot
+  stamp (Mutton 2019). In game: notice 50 m and flee 40 m today are much shorter than real; fine for play, but a whistle alarm and an
+  uphill flight are missing.
+
+### Open plains: pronghorn, wildebeest, kangaroo, horse, donkey, camel, wild ox
+
+- **Pronghorn:** top 24 m/s, holds 18 m/s for 10 km; sees movement at about 5 km; flees at 100 to 400 m; flashes its white rump to warn
+  the herd; fawns hide 3 weeks. In game: the fastest thing in the world; never caught by running.
+- **Wildebeest:** to 22 m/s; herds 10 to 1,000; stops, stares, snorts, then bolts and wheels; constant "gnu" grunts; calves run with the
+  herd minutes after birth.
+- **Kangaroo:** hops 14 to 17 m/s, cruises 6 to 7 m/s for long; dawn and dusk; mobs of 2 to 10; thumps a foot in alarm; warns by standing
+  tall, chest-rubbing, growling; a big male grabs and kicks; heads for water when chased (Queensland Gov.).
+- **Horse (feral):** gallops 15 to 19 m/s; family bands of 3 to 20; head up, snort, band bunches and runs with the lead mare in front;
+  cornered: rears, strikes, kicks; whinny carries about 1 km. In game: today the horse is tame-able and curious; it should still run as
+  a band when startled.
+- **Donkey:** freezes and looks rather than bolting; hostile to dogs and wolves (kicks, bites, chases); bray carries about 3 km at dawn
+  and dusk.
+- **Camel:** sprints to 18 m/s; rutting bulls dangerous (gurgle, push out the pink dulla, bite); groans when disturbed.
+- **Wild ox (buffalo row):** herds 50 to 500; stares, then moves off; lone bulls and wounded ones circle back and ambush hunters; a calf's
+  bawl brings the herd. In game: wounded ones ambush from cover (S10), the herd answers a calf.
+
+### Big game: lion, leopard, tiger, hyena, honey badger, warthog, rhino, elephant, mammoth
+
+- **Lion:** charges 14 to 17 m/s but tires after 100 to 200 m, so it stalks first; rests 18 to 20 h a day; hunts at night and dawn, about
+  25% success; prides of 3 to 30; roars at night heard 8 km; usually avoids people on foot; a growling mock charge stops at a few metres
+  if the person stands. In game: charge limited to about 150 m; roars at night far off (not near the player as a warning: near it
+  growls).
+- **Leopard:** stalks to 5 to 10 m then pounces; nocturnal; hoists kills into trees; avoids people and is rarely seen; wounded or cornered
+  ones are very dangerous; call is a rasping "sawing" of 10 to 15 strokes. In game: rarely seen; guards a kill in a tree.
+- **Tiger:** stalks to 10 to 20 m, rushes under 100 m; nocturnal; 10 to 20 km a night; man-eaters attack from behind; prusten "chuff"
+  greeting. In game: as today's hunter; attacks from behind only.
+- **Hyena:** travels 2.8 m/s, chases at 14 m/s over 1 to 3 km; nocturnal; clans of 8 to 80; whoops heard 5 km; bold around camps at
+  night; mobs lions at kills. In game: night only, comes to the edge of firelight and waits; whoops at night.
+- **Honey badger:** solitary, digs; usually ignores people; threatened, it turns and charges with a rattling growl, bites, musks. In
+  game: today D .6 N .4 fits; it never runs far.
+- **Warthog:** 14 m/s, tail straight up; strictly by day; sleeps in burrows, backs in tusks out; flees at 50 to 100 m; mothers charge
+  jackals. In game: by day only (today day 1, night 0.05: fits); bolts to a burrow.
+- **Rhino:** poor sight (a still person past 30 m barely seen), superb smell and hearing; black rhino charges at sounds and smells then
+  veers; white rhino usually runs. In game: walking upwind gets you close; a charge that misses runs on past.
+- **Elephant:** 7 to 11 m/s; smell best, senses people at kilometres; rumbles heard 2 to 10 km; mock charge with ears out, head shaking,
+  dust; real charge silent, ears pinned, head down; families bunch around calves; musth bulls aggressive for weeks. In game: today's
+  ladder; a real charge is silent.
+- **Mammoth:** as the elephant (no direct evidence); herds led by a matriarch; young males alone.
+
+### Farm and strays: cow, goat, chicken, cat, dog
+
+- **Cow:** tame cattle have no flight zone; range cattle have a big one; cows with new calves charge people and dogs; bulls paw and stand
+  side-on before a charge; calm down 20 to 30 minutes after a scare (Grandin).
+- **Goat:** sneeze-snort and stamp in alarm, the herd runs uphill; kids lie out while the mother browses; hates rain.
+- **Chicken:** see Birds.
+- **Cat (feral):** flees to cover at 10 to 30 m; cornered: arched back, hiss, spit, growl, then claws.
+- **Dog (stray):** keeps 10 to 50 m off; barks; may bite from behind if a person runs (today's stray-dog taming fits).
 
 ---
 
 ## Gap list (biggest first, one fix each)
 
-(Bear items now; the rest is added as each section lands.)
+Each item: what is wrong today, what to do, where. Values are recommendations for the fix thread to tune; Dave plays and rules.
 
-1. **Bears never fight back when born "passive"** (half of all black bears: temperament passive 0.5). Passive means `attacks: false`, so
-   `server_big_game.provoke` and `_threat_m` do nothing: hurt or cornered, it only runs. Fix: bears get no passive share (black bear
-   defensive 0.85, neutral 0.1, aggressive 0.05), and a cornered or run-down bear fights (S8).
-   `data/animals/animals.json` black_bear temperament; `server_animals.gd` on hit, `_at_bay`.
-2. **A fleeing bear can be caught on foot.** Flee 9 m/s for 6 s (`burst_s`), then 4.5 m/s (`trot_share` 0.5); the player runs 9 m/s for
-   ever. Fix: bear flee 12.5 to 13.5 m/s for 8 s, then at least 10 m/s until `safe_m` 150 m. Both bears. Check the run clip's rate cap
-   (`animal_gait.gd` RATE_MAX 2.5) keeps legs matched at 13 m/s.
-3. **Bears growl and roar all the time.** Fleeing and watching play `bear_growl`; warning and charge play `bear_roar`; a natural growl
-   plays in the forest every 7 to 15 minutes. Fix: no bear call when fleeing, watching, eating or wandering; no natural far bear calls;
-   huff at the first warning, jaw-pop at the second, a bawl in a fight, moans when trapped (sound table above). Needs huff, jaw-pop,
-   bawl and moan recordings (Dave's listening). `terrain_client.gd` `state_changed` hook, `creature_sounds.gd` KINDS bear `every`.
-4. **No hind-leg stand, swipe or bite for the black bear** (see the model table). Fix: one of options (a) to (c).
-5. **Threatened bears do not rear up first.** Today warning is the angry stand (brown) or plain breathing (black). Fix: the ladder is
-   rear up on hind legs, huff, drop, jaw-pop, then charge with a swipe or bite (Dave's order).
-6. **A starving bear is not modelled.** Only the season scales boldness. Fix: a hunger flag (spring after the den; poor food) that stops
-   it running from a player and draws it to camps and carcasses, never into firelight.
-7. **Fire exceptions break "fire keeps everything away".** The bear den ignores torches and fires; mothers and wolf pup dens attack "torch
-   or not". Fix: remove them; hold at the light's edge instead.
-8. **A bear that has beaten a player to 1 health does not leave** (check: the core rule stops the damage, nothing tells the bear it won).
-9. **No bear trap.** Snares catch rabbits and foxes only. Fix: a baited heavy snare or pit (trap stage 3), caught bear tethered 2 m.
-10. **No midday rest or bedding for bears**; the black bear's `LyingBreathing` clip is unused.
+1. **Every animal can be run down on foot.** The player runs 9 m/s and never tires; every species falls below that after its burst
+   (`flee_mps` for `burst_s`, then `trot_share`): deer 12 then 6 m/s, elk 13 then 5.9, horse 13.7 then 6.9, pronghorn 16 then 8, bears
+   9 then 4.5. Real deer, elk, moose, wolves, horses and bears all hold well over 9 m/s for a long way. Fix: for every large runner
+   (deer, elk, moose, bears, wolves when fleeing, fox, horse, donkey, camel, pronghorn, wildebeest, kangaroo, big cats, boar, buffalo)
+   a lope after the burst of at least 10 m/s (pronghorn 18) held until `safe_m`, then a walk; small animals go to burrow, water, tree or
+   cover instead. A hurt animal runs slower (below). Whether the player should get stamina is a separate call for Dave.
+   `data/animals/animals.json` (new `lope_mps` or raise `trot_share`), `server_animals.gd` flee speed (line about 1723),
+   `animal_gait.gd` RATE_MAX for the legs.
+2. **Half the black bears never fight back** (passive 0.5). Bear item 1 above. `animals.json` black_bear temperament.
+3. **Cornered or run-down animals that are "passive" never defend themselves.** Passive means `threat_x 0` and `attacks false` for the
+   80% passive deer, bighorn, chamois, goats, pronghorn, wildebeest, kangaroo and 90% of lynx. Real cornered deer strike, cornered
+   kangaroos kick, cornered cats claw. Fix: keep "passive" as "never starts a fight", but let a cornered or grabbed animal of any
+   temperament strike once and break away (a small hit, then flight). `server_animals.gd` `_at_bay`, `server_big_game.provoke`.
+4. **Animals call when they flee or look up, and borrow other species' voices.** The client voices every flee (state 2) and alert
+   (state 3) (`terrain_client.gd` `state_changed` hook), so a bear growls, a lion roars and a boar snorts like a moose each time it looks
+   or runs; bears and big cats roar as their warning. Real: flight is silent; the alarm call is species-own (deer snort, elk bark,
+   rabbit thump, beaver tail slap, chamois whistle, fox bark); cats and black bears do not roar. Fix: no call on flee; one alarm call on
+   the first alert only for species that have one; warnings by species (huff and jaw-pop for bears, hiss and growl for cats, snort and
+   stamp for deer and boar, lip-lick silent for moose); recordings needed for bear huff, jaw-pop, bawl and moan, boar bark and grunt,
+   cat hiss and growl, elk bark and bugle, beaver slap. `creature_sounds.gd` KINDS and CALL_AS; Dave listens.
+5. **Natural far bear calls.** A bear growl plays in the forest every 7 to 15 minutes by day whatever is near. Fix: remove for bears and
+   big cats (keep wolf howls at night, more in winter; fox barks and screams at night, winter; frogs on warm nights; rut bugles and
+   bellows in autumn; birds by day). `creature_sounds.gd` KINDS bear `every`.
+6. **Animals that fight have no attack move of their own.** No bite, strike or kick clip is mapped for black bear, deer, moose, elk,
+   lynx, mountain goat, horse, buffalo, warthog, hyena, wildebeest, alligator, honey badger, chamois, mink, raccoon, cow, cat, dog,
+   pronghorn or camel (`models.json` clips `bite`, `strike`, `kick`). Several files have threat clips that are unused
+   (`GrazingOnSpotA2IdleThreat` for moose, buffalo, warthog, hyena, honey badger; `ClackTeeth` for the black bear; hyena `Howling_*`).
+   Fix: map what each file has; for files with none, choose with the coordinator (borrow a look with moves, retarget, or a new model).
+   The black bear first (bear item 4).
+7. **Fire exceptions break "fire keeps everything away".** Bear den ignores fire and torches (`_in_den`); a mother with a player near
+   her young attacks "torch or not"; a wolf pack at its pups' den rushes "torch or not" (`server_wolves.gd`); a charge already started is
+   locked and may pass into new light. Fix: no exceptions; hold at the light's edge; a charge turns off at the edge.
+8. **A hurt animal does not slow down or bed in cover, and bleeds at one rate.** Every wound drains 0.15 health a second whatever the
+   animal (a deer of 20 dies in about 2 minutes, an elephant of 300 in 33), and it flees at full speed (`bleed` says it "runs, rests and finally dies"; check how it rests). Real: a badly hit
+   deer runs a short way and lies down; pushed, it runs much farther. Fix: a hurt animal runs slower (the wounded gait clips most files
+   have: `RunFastWounded_F`, `WalkSlowWounded_F`), beds down in cover 100 to 200 m on if not followed, and is pushed on by a player who
+   comes within its flee distance; bleed scaled by the hit (and by size) so a good hit ends within one blood trail. `server_animals.gd`
+   `bleed`, `blood`; `animals.json` blood.
+9. **An animal that has beaten a player to 1 health has no ending** (check). The core rule stops damage, but nothing seen in the code tells the animal it won.
+   Fix: a defensive animal (bear, moose, elk, boar, cattle) stops, watches for a few seconds and walks off; a hunting predator leaves
+   too (the game never lets it eat the player).
+10. **No starving state.** Only the season scales boldness (spring threat x1.5 for bears). Fix: a hunger flag for bears and predators
+    (late winter, spring after the den, a poor year) that makes them stand their ground, come to camps, food and carcasses, and bolder
+    with prey, never into firelight (bear item 6).
+11. **Cornered by a chase is not a thing.** Today "cornered" means blocked by water or a cliff (`_at_bay`). Fix: a player who keeps
+    within about 10 m of a fleeing animal for 5 s has cornered it: big animals turn and fight (Dave, for bears), small ones dive for
+    cover.
+12. **Mothers with young need species rules.** Today one rule: a player between a mother and young within `between_m` is attacked at
+    once. Real: black bear and deer mothers mostly bluff; moose, elk, boar, cattle and brown bears really attack; hiders' young lie
+    still alone, followers' young run with her. Fix: per species `young` rows for bluff or real, hide or follow.
+13. **Predators guarding kills.** Cougars cache and revisit kills, leopards hoist them, lynx feed on one for 3 days, bears guard
+    carcasses. Not modelled. Fix: once animals kill prey, a predator stays by its kill and warns a player who comes within 20 m.
+14. **Bears and big animals have no trap.** Snares catch rabbits and foxes only (traps.json). Dave wants bears trapped. Fix: trap stage 3
+    (heavy snare, pit, deadfall), baited; a caught animal stays tethered and fights at the end of its reach.
+15. **Hours and rest.** Bears, lions and cats nap through the middle of the day; elk, bighorn and chamois rest on ledges or in shade at
+    midday; boar rest up to 12 h by day. Today resting covers grazers by share (`ANIMAL_RESTING.md`). Fix: midday rest rows for the
+    rest, lying clips where the file has them.
+16. **Seasons missing.** Rut calls and rut aggression (deer October to December, elk September to October, moose September to November,
+    bighorn November to December, mountain goat November), bear dens in winter, fox screams in winter, frogs in spring and summer nights.
+    Today 16 species have season rows for threat and spook only. Fix: add the calls and the winter bear den.
+17. **Flight distances for mountain animals are short.** Chamois flee real hikers at a mean 124 m and notice them at 400 m (Mutton 2019);
+    pronghorn at 100 to 400 m. Today 40 m and 45 m. Fix: raise for chamois, bighorn and pronghorn on open ground, flee uphill for the
+    mountain three.
+18. **Scavengers at camps.** Raccoons, crows, gulls, hyenas and stray dogs come to food and carcasses. Today only thieves (fox, raccoon,
+    honey badger) steal. Fix: crows to carcasses once the player is 30 m off; hyenas and raccoons to the edge of firelight at night.
+19. **Animals meeting animals.** Prey do not flee predators other than wolves, and predators do not hunt other animals (wolves aside).
+    Fix later (it costs server time): prey treat a bear, cougar or lynx in view as a player.
 
 ## Sources
 
@@ -257,3 +597,30 @@ own attack moves".
 - [NPS] US National Park Service, "Bear attacks": https://nps.gov/articles/bearattacks.htm
 - [PC] Parks Canada, "If an attack occurs" (black bear): https://parks.canada.ca/docs/v-g/oursnoir-blackbear/page4
 - Bombieri et al. 2019, brown bear attacks on humans, Scientific Reports: https://www.nature.com/articles/s41598-019-44341-w
+
+Other animals (main sources; the full list, with which were checked, is in `docs/knowledge/animal-research-notes-2026-11-25.md`):
+- Indiana DNR, white-tailed deer: https://www.in.gov/dnr/fish-and-wildlife/wildlife-resources/animals/white-tailed-deer-biology/
+- Maryland DNR, white-tailed deer: https://dnr.maryland.gov/wildlife/pages/hunt_trap/wtdeerbiology.aspx
+- Missouri Department of Conservation, deer dialogue: https://mdc.mo.gov/magazines/conservationist/2014-11/deer-dialogue
+- Deer flight from vehicles, PLoS ONE 2014: https://pmc.ncbi.nlm.nih.gov/articles/PMC4198184
+- Texas Parks and Wildlife, after the shot: https://tpwd.texas.gov/education/hunter-education/online-course/hunting-skills-1/after-the-shot
+- Penn State, wind and deer movement: https://www.deer.psu.edu/winds-surprising-effects-on-deer-movement/
+- Idaho Fish and Game, winter disturbance: https://idfg.idaho.gov/press/winter-activities-can-affect-wildlife
+- Wildlife Online, red deer: https://www.wildlifeonline.me.uk/animals/article/red-deer-behaviour-social-structure
+- Alaska Department of Fish and Game, aggressive moose: https://www.adfg.alaska.gov/index.cfm%3Fadfg%3Dlivewith.aggressivemoose
+- SUNY ESF, moose: https://www.esf.edu/aec/adks/mammals/moose.php ; Michigan DNR, moose: https://www.michigan.gov/dnr/education/michigan-species/mammals/moose/moose-biology-and-habitat
+- NPS, elk (Rocky Mountain, Yellowstone, Grand Canyon): https://www.nps.gov/romo/learn/nature/elk.htm , https://www.nps.gov/yell/learn/nature/elk.htm , https://www.nps.gov/grca/learn/nature/elk-danger.htm
+- NPS, Yellowstone wolf facts: https://www.nps.gov/articles/yellowstone-wolf-facts.htm ; limits of wolf hunting: https://www.nps.gov/yell/learn/ys-24-1-understanding-the-limits-to-wolf-hunting-ability.htm ; why wolves howl: https://www.nps.gov/articles/why-wolves-howl.htm
+- Wolf responses to people, Frontiers in Ecology and Evolution 2022: https://www.frontiersin.org/articles/10.3389/fevo.2022.792916/full
+- Colorado Parks and Wildlife, red fox: https://cpw.state.co.us/species/red-fox ; MDC red fox: https://mdc.mo.gov/node/240878
+- Wildlife Online, European rabbit: https://www.wildlifeonline.me.uk/animals/species/european-rabbit ; ADW, eastern cottontail: https://animaldiversity.org/accounts/Sylvilagus_floridanus/
+- Wildlife Online, wild boar: https://www.wildlifeonline.me.uk/animals/species/wild-boar ; Forestry England: https://www.forestryengland.uk/article/wild-boar-the-forest-dean ; eXtension feral hogs: https://wildlife-damage-management.extension.org/?p=888
+- KORA, Eurasian lynx: https://www.kora.ch/en/species/lynx/profile ; Alaska F&G, lynx: https://www.adfg.alaska.gov/static/education/wns/lynx.pdf
+- Maine IF&W, beaver: https://www.maine.gov/IFW/fish-wildlife/wildlife/species-information/mammals/beaver.html ; NY DEC, mink: https://dec.ny.gov/nature/animals-fish-plants/mink ; SUNY ESF, raccoon: https://www.esf.edu/aec/adks/mammals/raccoon.php ; ICWDM, Norway rat: https://icwdm.org/species/rodents/norway-rats/norway-rat-biology/
+- NPS, grizzly facts and bear safety: https://www.nps.gov/yell/learn/yellowstone-grizzly-bear-facts.htm , https://www.nps.gov/subjects/bears/safety.htm , https://www.nps.gov/articles/yell-wildlife-bear-differences.htm
+- CPW, mountain lions: https://cpw.state.co.us/living-mountain-lions ; CDFW, mountain lion behaviour: https://wildlife.ca.gov/Conservation/Mammals/Mountain-Lion/Behavior ; University of Arizona Extension: https://www.extension.arizona.edu/sites/extension.arizona.edu/files/attachment/MountainLions.pdf
+- Pennsylvania Game Commission, capture myopathy: https://www.pa.gov/agencies/pgc/wildlife/wildlife-health/wildlife-diseases/capture-myopathy.html
+- Colorado Parks and Wildlife, protect your campsite: https://cpw.state.co.us/protect-your-campsite-wildlife
+- Mutton 2019, chamois and hikers in Tyrol: https://www.karwendel.org/wp-content/uploads/2022/04/2019_LEIGH-MUTTON_Human-Disturbance-of-Chamois-in-Tyrol_Masterarbeit_klein.pdf
+- FWC, alligator facts: https://myfwc.com/wildlifehabitats/managed/alligator/facts/ ; NPS Olympic, mountain goats: https://www.nps.gov/olym/goats-and-your-safety.htm ; NPS, pronghorn: https://www.nps.gov/thro/learn/nature/pronghorn.htm ; Queensland Government, kangaroos: https://www.qld.gov.au/environment/plants-animals/animals/living-with/kangaroos ; Grandin, flight zone: https://www.grandin.com/behaviour/principles/flight.zone.html ; San Diego Zoo, spotted hyena: https://ielc.libguides.com/sdzg/factsheets/spottedhyena/behavior-ecology ; ElephantVoices: https://www.elephantvoices.org/elephant-acoustic-communication ; hunting success rates, BBC Wildlife: https://www.discoverwildlife.com/animal-facts/mammals/hunting-success-rates-how-predators-compare
+- Panthera, wild cat encounters: https://www.panthera.org/blog-post/what-do-if-you-encounter-wild-cat
