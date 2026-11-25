@@ -859,9 +859,9 @@
 			"run_mps": 9.0,
 			"stride_m": 1.1,
 			"clips": {
-				"0": "Idle",
+				"0": "Idle_Breathing_01",
 				"3": "Idle_Breathing_01",
-				"10": "StandHind_Idle_01",
+				"10": "Performance_RoarStandup",
 				"16": "Attack_StandAngry_01_Low",
 				"11": "Sprint",
 				"12": "Idle_Breathing_01",
@@ -874,13 +874,13 @@
 				"strike": "Attack_MeleeLeft",
 				"strike2": "Attack_SwingForward"
 			},
-			"note": "Dave 25 Nov 2026 play test: a threatened bear stands its ground, rears up on its hind legs, then attacks with claws or bite. The WildMesh BlackBear file (SK_BlackBear.fbx, 136 clips) has no hind-leg stand, swipe or bite: its rig is the pack's grazer rig (Frighten, Grazing, StandStraight clips), not the 35-bone bear rig, so bear_2's clips cannot be played on it. The black bear is drawn from the bear_2 model (WildMesh Realistic Animals/Bear) at black bear size (length_m 1.7) with its fur darkened by tint: it stands up (StandHind_Idle_01) to warn, swats low (Attack_StandAngry_01_Low) for the jaw-pop rung, and bites and claws. The old file's ClackTeeth and Snorting go unused with it. The old row is in git history (before this change) if a black bear model with attacks is bought.",
+			"note": "Dave 25 Nov 2026 play test: a threatened bear stands its ground, rears up on its hind legs, then attacks with claws or bite. The WildMesh BlackBear file (SK_BlackBear.fbx, 136 clips) has no hind-leg stand, swipe or bite: its rig is the pack's grazer rig (Frighten, Grazing, StandStraight clips), not the 35-bone bear rig, so bear_2's clips cannot be played on it. The black bear is drawn from the bear_2 model (WildMesh Realistic Animals/Bear) at black bear size (length_m 1.7) with its fur darkened by tint: it rears up tall (Performance_RoarStandup; bear_2's StandHind clips sit on the haunches, Lane A picture 25 Nov) to warn, stands on all fours breathing at rest (its Idle lies flat), swats low (Attack_StandAngry_01_Low) for the jaw-pop rung, and bites and claws. The old file's ClackTeeth and Snorting go unused with it. The old row is in git history (before this change) if a black bear model with attacks is bought.",
 			"length_m": 1.7,
 			"materials": [
 				{
 					"match": "",
 					"albedo": "res://assets/animals/bear_2/Textures/T_Bear_Body.png",
-					"tint": [0.45, 0.42, 0.4]
+					"tint": [0.28, 0.26, 0.25]
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Bear",
