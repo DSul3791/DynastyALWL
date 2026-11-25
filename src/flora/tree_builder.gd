@@ -1651,7 +1651,7 @@ static func _hazel(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 # with violet veins (leaf_witness.png) that glow soft purple at night (the
 # "witness" leaf material); pale purple flower clusters in spring; violet,
 # burgundy and crimson in autumn; bare in winter. Young trees (4 to 8 m) are
-# slim and pale.
+# slim and pale. Dave's picture of the look (25 Nov 2026): art/references/witness_tree_dave_2026-11-25.jpg (R-FLORA-WITNESS-GLOW).
 # Variants: 0 and 1 mature, 2 and 3 young (young_below_m picks them).
 static func _witness(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, variant: int, far: bool, season: String) -> void:
 	var bare: bool = season == "winter"
