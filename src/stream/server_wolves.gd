@@ -851,8 +851,8 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		if Vector2(m["pos"].x - spot.x, m["pos"].z - spot.z).length() > 3.0:
 			# Backing off with a player close behind, a wolf lopes away faster than the player runs (lope_mps, ANIMAL_SCENARIOS.md gap 1);
 			# with nobody near it trots.
-			var pace: float = float(def.get("lope_mps", def.get("trot_mps", 5.0))) if _player_within(m["pos"], infos, float(def.get("safe_m", 60.0))) else float(def.get("trot_mps", 5.0))
-			_walk(m, spot, pace * _snow_x("speed_x"), dt, infos)
+			var lope: float = float(def.get("lope_mps", def.get("trot_mps", 5.0))) if _player_within(m["pos"], infos, float(def.get("safe_m", 60.0))) else float(def.get("trot_mps", 5.0))
+			_walk(m, spot, lope * _snow_x("speed_x"), dt, infos)
 		else:
 			m["moving"] = false
 
