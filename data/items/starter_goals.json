@@ -251,7 +251,7 @@
 		{
 			"id": "snare",
 			"title": "Snare a rabbit",
-			"hint": "Make a Snare (3 twine and 2 sticks) and set it on a rabbit run: a thin line of matted grass leading out from a warren. Rabbits come out along their runs from dusk to dawn, so set it in the evening and look in the morning. Work the catch with a knife.",
+			"hint": "Make a Snare (3 twine and 2 sticks) and set it on a rabbit run: a thin line of matted grass leading out from a warren. Rabbits come out along their runs from dusk to dawn, so set it in the evening and look in the morning. Press E on the snare to collect the catch and set it again, then lay the catch on the ground and work it with a knife.",
 			"after": [
 				"twine"
 			],

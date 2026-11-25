@@ -32,6 +32,8 @@ SPECIAL = {
     "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.6), "lumber": ("board", "#b98d57", 1.0), "hardwood_board": ("board", "#7a5232", 1.0),
     "iron_ingot": ("ingot", "#6c6f75", 1.0), "steel_ingot": ("ingot", "#9aa3ad", 1.0),
     "soil": ("clump", "#4a3322", 1.0), "clay": ("clump", "#a0603c", 1.0), "sand": ("grit", "#d6c18b", 1.0), "gravel": ("grit", "#8d8a84", 1.0),
+    # PLACEHOLDER: a trap's whole catch in the pack (Dave 25 Nov 2026) shows as a hide in its coat colour; laid down it is the carcass model.
+    "whole_rabbit": ("hide", "#73593f", 0.9), "whole_fox": ("hide", "#b85620", 1.3), "whole_grouse": ("hide", "#7a5a3a", 0.7), "whole_pheasant": ("hide", "#8a4a22", 0.8),
     "hide": ("hide", "#8a6a4a", 1.0), "bone": ("bone", "#b3a98f", 1.0), "sinew": ("bundle", "#d0b898", 0.6), "animal_fat": ("chunk", "#f1ead2", 0.8),
     "feather": ("feather", "#b9b4a8", 1.0), "rotten_food": ("pile", "#4f5a2c", 0.8), "backpack": ("sack", "#7a5a3a", 1.5),
     "poultice": ("bowl", "#0e9488", 0.7), "bandage": ("coil", "#f4f4f4", 0.8), "medicine": ("bottle", "#e01e1e", 0.8),
