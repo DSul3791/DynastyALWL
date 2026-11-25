@@ -8,6 +8,7 @@ extends CanvasLayer
 
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
+const SettingsRead := preload("res://src/client/settings_read.gd")
 const SEEN_PATH := "user://welcome_seen.cfg"
 const WIDTH_PX := 620.0      # on the 1920 x 1080 canvas
 const BOTTOM_GAP_PX := 210.0 # above the hotbar: the HUD stays low, the crosshair stays clear (about 230 px tall at 18 px: its top near y 640)
@@ -45,7 +46,7 @@ static func key_text(id: String) -> String:
 
 func seen(character_id: String) -> bool:
 	var file: ConfigFile = ConfigFile.new()
-	return file.load(seen_path) == OK and bool(file.get_value("seen", character_id, false))
+	return file.load(seen_path) == OK and SettingsRead.flag(file, "seen", character_id, false)
 
 
 func _mark_seen(character_id: String) -> void:
