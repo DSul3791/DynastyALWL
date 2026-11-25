@@ -298,7 +298,7 @@ func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 			_spawn_young(id)
 
 	# Starving (ANIMAL_SCENARIOS gap 10): a bear or a big cat is born hungry at its season's chance where it spawns (hunger.seasons).
-	if traits and def.has("hunger") and not _spawning_young:
+	if traits and def.has("hunger") and not _spawning_young and not bool(animals[id].get("protective", false)):   # a mother keeps to her young
 		animals[id]["starving"] = rng.randf() < float((def["hunger"].get("seasons", {}) as Dictionary).get(_season_here(), 0.0))   # luck-exempt: whether it is starving
 
 	return id
@@ -1623,7 +1623,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	var starving: bool = def.has("defend") and bool(a.get("starving", false))
 	var stands: bool = def.has("defend") and a["state"] != FLEE and (starving or (bool(a.get("protective", false)) and not (traits and def.has("young"))))
 
-	if stands and seen_d <= float(def["defend"].get("warn_m", 20.0)):
+	if stands and seen_d <= float(def["defend"].get("warn_m", 20.0)) and _fire_guard(seen_p) == Vector3.INF:
 		if big_game.warn(a, seen_p):
 			return
 	elif seen_d <= _spook_m(a, def) and a["state"] != FLEE and not stands:

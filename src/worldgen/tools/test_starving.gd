@@ -126,5 +126,47 @@ func _initialize() -> void:
 
 	check(not sneaked_lit and food.size() == 1, "food in a torch's light is safe from a starving bear")
 
+	# 5. A starving lion (warn_m 18) and a player at a fire: it never warns or charges into the light. And a charge already on stops
+	# when the player steps into a torch's light.
+	var l = make()
+	var lion: Dictionary = l.animals[l.spawn("lion", 0.0, 0.0)]
+	lion["temper"] = "passive"
+	lion["starving"] = true
+	lion["protective"] = false
+	players = [{"peer": 1, "pos": Vector3(14.0, 10.0, 0.0), "stance": 0, "hp": 1.0}]
+	food = {}
+	var lit_attack: bool = false
+	l.fires = func(): return [Vector3(16.0, 10.0, 0.0)]
+	l.fire_radius = func(_at): return 5.0
+
+	for _n in int(10.0 / 0.05):
+		l.tick(0.05)
+		lit_attack = lit_attack or int(lion["state"]) in [l.WARN, l.WARN + 1, l.big_game.STRIKE, l.big_game.KICK]
+
+	check(not lit_attack, "a starving lion never warns or charges at a player by a fire (state %d)" % int(lion["state"]))
+
+	var c = make()
+	var charger: Dictionary = c.animals[c.spawn("lion", 0.0, 0.0)]
+	charger["starving"] = true
+	players = [{"peer": 1, "pos": Vector3(14.0, 10.0, 0.0), "stance": 0, "hp": 1.0}]
+	var lit: Array = []
+	c.fires = func(): return lit
+	c.fire_radius = func(_at): return 9.0
+	c.big_game.warn(charger, players[0]["pos"], 0.1, true)
+	var charged: bool = false
+
+	for _n in int(4.0 / 0.05):
+		c.tick(0.05)
+		charged = charged or int(charger["state"]) == c.WARN + 1
+
+		if charged:
+			break
+
+	lit.append(players[0]["pos"])   # the player lights a torch
+
+	for _n in 4:
+		c.tick(0.05)
+	check(charged and not int(charger["state"]) in [c.WARN, c.WARN + 1, c.big_game.STRIKE], "a charge on stops when the player lights a torch (charged %s, state %d)" % [charged, int(charger["state"])])
+
 	print("test_starving: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

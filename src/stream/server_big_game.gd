@@ -214,6 +214,12 @@ func step(a: Dictionary, dt: float) -> void:
 	var near: Dictionary = _foe(a)
 	var state: int = int(a["state"])
 
+	# Fire keeps everything away (Dave 25 Nov 2026): a warning, a charge or a blow wound up ends when its foe is in a fire's or a torch's
+	# light, or it has come into one itself; it backs off as after any charge (_calm). A break-away blow judges the light as it lands.
+	if state != RECOVER and not bool(a.get("break_away", false)) and ((not near.is_empty() and host._fire_guard(near["pos"]) != Vector3.INF) or host._fire_guard(a["pos"]) != Vector3.INF):
+		_calm(a, def)
+		return
+
 	if state == WARN or state == WARN_POP:
 		a["timer"] -= dt
 
@@ -662,6 +668,7 @@ func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("foe_dog")
 	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only
+	a.erase("break_away")
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))
 	a["alert"] = 0.0

@@ -89,7 +89,7 @@ func step(a: Dictionary, dt: float) -> void:
 		var goal: Variant = _food_pos(int(a.get("food", -1)), a["pos"], float(def.get("smell_m", 30.0)) * 1.6 + 10.0)
 
 		# Gone, or a person came near the food or the fox, or a fire was lit: it gives up and slips away.
-		if goal == null or _frightened(a["pos"], float(def.get("scare_m", 18.0))) or _frightened(goal, float(def.get("scare_m", 18.0))) or _fire_near(goal, float(def.get("fire_m", 10.0))):
+		if goal == null or _frightened(a["pos"], float(def.get("scare_m", 18.0))) or _frightened(goal, float(def.get("scare_m", 18.0))) or _fire_near(goal, float(def.get("fire_m", 10.0))) or _fire_near(a["pos"], 0.0):   # never through a light on its way
 			_give_up(a)
 			return
 

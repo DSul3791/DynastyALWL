@@ -587,7 +587,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
     Built 25 Nov 2026 (`animals.json` hunger rows and block; `server_animals` spawn, `may_attack`, `_threat_m`, `thief_row`): bears,
     black bears and the big cats and hyena are born starving at a season chance (bears 40% in spring, 30% in winter). A starving one
     stands its ground and warns by the ladder at 1.5 times its threat range, whatever its temperament, and comes for food left out
-    unless a player is within 6 m of it. Neither it nor a fox ever goes for food in a fire's or a torch's light. Not yet: carcasses,
+    unless a player is within 6 m of it (a mother with young is never born starving). Like any animal that may fight it chases a
+    player who runs from it close by (hunter chase_m). Neither it nor a fox ever goes for food in, or creeps through, a fire's or a
+    torch's light, and any warning, charge or blow ends when its foe is in such a light or it has come into one (`server_big_game.step`). Not yet: carcasses,
     bolder with prey, a poor food year.
 11. **Cornered by a chase is not a thing.** Today "cornered" means blocked by water or a cliff (`_at_bay`). Fix: a player who keeps
     within about 10 m of a fleeing animal for 5 s has cornered it: big animals turn and fight (Dave, for bears), small ones dive for
