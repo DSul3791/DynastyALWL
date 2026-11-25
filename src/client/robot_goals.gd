@@ -56,7 +56,7 @@ func _init(robot) -> void:
 
 	for group in ((woods as Dictionary).get("ingredient_groups", {}) if woods is Dictionary else {}):
 		if group != "note" and woods["ingredient_groups"][group] is Array:
-			var members: Array = [str(group)]   # the key item counts too, first (item_table.gd: a plain Log fills a log need)
+			var members: Array = [str(group)] if c.items.table.has_id(str(group)) else []   # a key that is an item counts too, first (item_table.gd: a plain Log fills a log need)
 
 			for m in woods["ingredient_groups"][group]:
 				if not members.has(str(m)):
@@ -590,12 +590,13 @@ func _break_rock(rock: int, item: String) -> String:
 	var reach: float = float(entry["radius"]) + 1.2
 	var legs: int = 0
 
-	while legs < 8 and c.body.global_position.distance_to(at) > reach + 0.6:   # a far rock (ore is looked for up to 400 m away) is walked to in legs
+	while legs < 8 and Time.get_ticks_msec() < _end_ms and _flat(at) > reach + 0.6:   # a far rock (ore is looked for up to 400 m away) is walked to in legs
 		await r._go_to(at, 60.0, reach)
 		legs += 1
 
-	if c.body.global_position.distance_to(at) > reach + 0.6:
-		return "walked %d legs and is still %.0f m from it" % [legs, c.body.global_position.distance_to(at)]
+	if _flat(at) > reach + 0.6:
+		return "walked %d legs and is still %.0f m from it" % [legs, _flat(at)]
+
 	var had: int = _count(item)
 	var said: int = r._notices.size()
 	var blows: int = 0
@@ -611,6 +612,11 @@ func _break_rock(rock: int, item: String) -> String:
 	await _sweep_up(6.0)
 	_line("ROCK %d at %s: %d blows with the %s, +%d %s%s" % [rock, str(at.round()), blows, tool, _count(item) - had, item, _said(said)])
 	return ""
+
+
+# Ground distance from the robot (a rock on a bank above the feet is still in reach).
+func _flat(p: Vector3) -> float:
+	return Vector2(p.x - c.body.global_position.x, p.z - c.body.global_position.z).length()
 
 
 func _key(p: Vector3) -> String:
