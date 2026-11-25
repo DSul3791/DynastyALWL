@@ -1748,43 +1748,35 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 	return _aimed_or_nearest(_untrapped(_unframed(ids)), here)
 
 
-# A trap's catch lies in the trap (Dave 25 Nov 2026): E works the trap (collect the catch and set it again), so the carcass in it is left out.
-# Only near ones are looked at: a trap is checked against the few carcasses in reach.
-const TRAP_ITEMS := ["snare_trap", "bird_trap_set"]   # traps.json kinds (map_knowledge TRAP_KINDS)
+# A trap's catch lies in the trap (Dave 25 Nov 2026): E works the trap (collect the catch and set it again), so the carcass a trap among the
+# candidates holds (its row's "catch", from the server) is left out.
+const TRAP_ITEMS := ["snare_trap", "bird_trap_set"]   # traps.json kinds (as map_knowledge.gd TRAP_KINDS)
 const CARCASS_STATE := 19
-const CATCH_IN_TRAP_M := 0.5
 
 
 func _untrapped(ids: Array) -> Array:
+	var held: Dictionary = {}
+
+	for id in ids:
+		if int(_world[id].get("catch", 0)) != 0:
+			held[int(_world[id]["catch"])] = true
+
+	if held.is_empty():
+		return ids
+
 	var out: Array = []
 
 	for id in ids:
-		if int(_world[id]["state"]) != CARCASS_STATE or trap_holding(id, ids) == 0:
+		if not held.has(int(id)):
 			out.append(id)
 
 	return out
 
 
-# The trap among `ids` (or anywhere in the world when empty) whose catch is carcass `carcass`, 0 for none.
-func trap_holding(carcass: int, ids: Array = []) -> int:
-	var at: Vector3 = _world[carcass]["pos"]
-
-	for other in (ids if not ids.is_empty() else _world.keys()):
-		if other != carcass and _world.has(other) and str(_structure_by_state(int(_world[other]["state"])).get("item", "")) in TRAP_ITEMS and Vector2(_world[other]["pos"].x - at.x, _world[other]["pos"].z - at.z).length() < CATCH_IN_TRAP_M:
-			return other
-
-	return 0
-
-
-# The carcass lying in trap `trap`, 0 for none.
+# The carcass lying in trap `trap` (the server's link), 0 for none.
 func catch_in(trap: int) -> int:
-	var at: Vector3 = _world[trap]["pos"]
-
-	for id in _world:
-		if int(_world[id]["state"]) == CARCASS_STATE and Vector2(_world[id]["pos"].x - at.x, _world[id]["pos"].z - at.z).length() < CATCH_IN_TRAP_M:
-			return id
-
-	return 0
+	var c: int = int(_world[trap].get("catch", 0))
+	return c if _world.has(c) else 0
 
 
 # Where a world piece is reached from `here`: a laid pipe run's nearest point (PLUMBING_DESIGN s9: a 30 m run is taken down from anywhere along it),
@@ -1915,7 +1907,7 @@ func carcass_near(point: Vector3) -> int:
 	for id in _world:
 		var entry: Dictionary = _world[id]
 
-		if entry["state"] == 19 and is_instance_valid(entry["node"]):
+		if entry["state"] == CARCASS_STATE and is_instance_valid(entry["node"]):
 			var d: float = point.distance_to(entry["pos"])
 
 			if d < best_d:
@@ -3327,6 +3319,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if state == CARCASS_STATE and row.size() > 5:
 				_world[id]["sp"] = str(row[5].get("sp", ""))   # a carcass: its animal, and whether E takes it whole (a trap's catch not yet cut)
 				_world[id]["whole"] = bool(row[5].get("whole", false))
+
+			if row.size() > 5 and (row[5] as Dictionary).has("catch"):
+				_world[id]["catch"] = int(row[5]["catch"])   # a trap holding its catch: that carcass's id
 
 			if row.size() > 5 and (row[5] as Dictionary).has("water_l"):
 				_world[id]["water_l"] = int(row[5]["water_l"])   # a barrel's water: E drinks from it instead of opening it

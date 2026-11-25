@@ -317,14 +317,14 @@ func after_load() -> void:
 			continue
 
 		var spot: Vector3 = it["pos"] + Vector3(float(_of_item(it).get("carcass_offset_m", 0.7)), 0.0, 0.0)
+		var found: int = _body_at(bodies, spot)
 
-		for b in bodies:
-			var at: Vector3 = host._items[b]["pos"]
+		if found == 0:
+			found = _body_at(bodies, it["pos"] + Vector3(LEGACY_OFFSET_M, 0.0, 0.0))   # a world saved before the catch lay in the snare (0.7 m beside it)
 
-			if Vector2(at.x - spot.x, at.z - spot.z).length() < 0.5:   # x and z only: the carcass sits on the ground, which a slope lifts
-				it["struct"]["catch"] = b
-				bodies.erase(b)
-				break
+		if found != 0:
+			it["struct"]["catch"] = found
+			bodies.erase(found)
 
 		if not it["struct"].has("held"):
 			continue
@@ -536,6 +536,25 @@ func _lay_catch(id: int, sp: String, c: Dictionary) -> void:
 			host._say(_owner_peer(st), str(c.get("say_broke", "")))
 
 
+const LEGACY_OFFSET_M := 0.7   # where a catch lay before 25 Nov 2026 (beside its snare)
+
+
+# The nearest of `bodies` within 0.5 m of a spot (x and z only: the carcass sits on the ground, which a slope lifts), 0 for none.
+func _body_at(bodies: Array, spot: Vector3) -> int:
+	var best: int = 0
+	var best_d: float = 0.5
+
+	for b in bodies:
+		var at: Vector3 = host._items[b]["pos"]
+		var d: float = Vector2(at.x - spot.x, at.z - spot.z).length()
+
+		if d < best_d:
+			best_d = d
+			best = int(b)
+
+	return best
+
+
 # Dave 25 Nov 2026: "they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset
 # the snare". E on a trap whose uncut catch lies in it: the catch goes to the pack whole (traps.json whole_items, give: the usual carry
 # rules, what the pack cannot take lies at the feet as the carcass again) and the trap is set again where it stands (its quiet avoid_s
@@ -561,9 +580,12 @@ func collect(peer: int, id: int) -> bool:
 	var number: int = host.table.number_of(str((c.get("whole_items", {}) as Dictionary).get(str(body["struct"].get("species", "")), "")))
 
 	if number <= 0:
-		return false   # a species with no whole item (none today): the knife works it where it lies
+		return false   # a species with no whole item: the knife works it where it lies
 
-	var age: int = host.whole_age(number, float(body.get("left", 0.0)))   # how far it has gone off (a carcass rots in 2 game days, the whole item as fast)
+	var age: int = host.whole_age(number, float(body.get("left", 0.0)))   # how far it has gone off (a carcass rots in 2 game days, the whole item about as fast)
+
+	if not host.can_take_whole(peer, number, age):
+		return true   # too heavy or no room: said, and the catch stays in the trap
 	host._items.erase(int(st["catch"]))
 	st.erase("catch")
 	host._dirty = true

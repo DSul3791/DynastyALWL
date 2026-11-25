@@ -4018,10 +4018,53 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 func _struct_extra(it: Dictionary) -> Dictionary:
 	var extra: Dictionary = {"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))}
 
-	if str(it["struct"].get("kind", "")) == "carcass" and bool(it["struct"].get("snared", false)) and int(it["struct"].get("blows", 0)) == 0:
+	if _whole_catch(it):
 		extra["whole"] = true
 
+	var held: int = _trap_catch(it)
+
+	if held != 0:
+		extra["catch"] = held   # a trap holding its catch: which carcass (the client sends E to the trap, not the carcass in it)
+
 	return extra
+
+
+# A snared carcass not yet cut, of a species with a whole item (traps.json whole_items): E takes it whole.
+func _whole_catch(it: Dictionary) -> bool:
+	var st: Dictionary = it.get("struct", {})
+	return str(st.get("kind", "")) == "carcass" and bool(st.get("snared", false)) and int(st.get("blows", 0)) == 0 and _whole_number(str(st.get("species", ""))) > 0
+
+
+# The whole item of a species (traps.json whole_items), 0 for none.
+func _whole_number(species: String) -> int:
+	return 0 if _traps == null else table.number_of(str((_traps.cfg.get("whole_items", {}) as Dictionary).get(species, "")))
+
+
+# The carcass a set trap holds (its catch, still lying there), 0 for none.
+func _trap_catch(it: Dictionary) -> int:
+	if _traps == null or not _traps.is_snare(it):
+		return 0
+
+	var c: int = int(it["struct"].get("catch", 0))
+	return c if _items.has(c) else 0
+
+
+# Whether the pack takes one whole catch (weight and room: the usual carry rules); says why not. The catch stays where it lies.
+func can_take_whole(peer: int, number: int, age: int) -> bool:
+	var inv = inventory_of(peer)
+
+	if inv == null:
+		return false
+
+	if _fit(peer, inv, number, 1) < 1:
+		_say(peer, "Too heavy to carry the %s." % table.in_sentence(table.name_of(number)))
+		return false
+
+	if inv.copy().add(number, 1, age) > 0:
+		_say(peer, "Your pack has no room for the %s." % table.in_sentence(table.name_of(number)))
+		return false
+
+	return true
 
 
 # A trap's catch carried whole (Dave 25 Nov 2026, server_traps collect; items.json carcass_of): its slot's age (spoilage wear) is how far
@@ -4056,13 +4099,15 @@ func _lay_whole(number: int, count: int, position: Vector3, item_wear: int) -> b
 # E on a snared carcass lying on the ground (a whole catch put down again): taken whole, as from the snare. A hunted kill or one begun with
 # the knife is worked where it lies.
 func _pick_up_whole(peer: int, id: int) -> void:
-	var st: Dictionary = _items[id]["struct"]
-	var number: int = 0 if _traps == null else table.number_of(str((_traps.cfg.get("whole_items", {}) as Dictionary).get(str(st.get("species", "")), "")))
-
-	if not bool(st.get("snared", false)) or int(st.get("blows", 0)) > 0 or number <= 0:
+	if not _whole_catch(_items[id]):
 		return
 
+	var number: int = _whole_number(str(_items[id]["struct"].get("species", "")))
 	var age: int = whole_age(number, float(_items[id].get("left", 0.0)))
+
+	if not can_take_whole(peer, number, age):
+		return
+
 	_items.erase(id)
 	_dirty = true
 	give(peer, number, 1, {}, age)
@@ -8596,6 +8641,7 @@ func _sync_record(id: int, it: Dictionary) -> Array:
 	if it.has("struct"):
 		signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
 		signature += 211 * int(round(float(it["struct"].get("len", 0.0)) * 20.0)) + 409 * int(floor(_barrel_water_l(id) / 5.0))   # a pipe run split shorter, a barrel's water by 5 L
+		signature += (89 if _whole_catch(it) else 0) + 97 * (_trap_catch(it) % 9973)   # a catch cut with the knife, or a trap that caught or was emptied, is sent again
 
 	var bin_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {}) if it.has("struct") else {}
 	var bin_box = _chests.get(int(it["struct"].get("uid", -1))) if BinRules.is_bin(bin_def) and it["struct"].has("uid") else null

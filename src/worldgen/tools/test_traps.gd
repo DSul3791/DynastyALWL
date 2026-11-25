@@ -855,9 +855,20 @@ func collect_checks() -> void:
 	var inv = items.inventory_of(1)
 	var whole: int = items.table.number_of("whole_rabbit")
 	check(whole > 0, "a whole rabbit item exists")
+	check(int(items._struct_extra(items._items[id]).get("catch", 0)) == carcass, "the client is told which carcass the snare holds")
+	var sig_full: int = int(items._sync_record(id, items._items[id])[1])
+
+	# Too heavy: said, and the catch stays in the snare.
+	var stone: int = items.table.number_of("stone")
+	inv.add(stone, 2000)
+	said.clear()
+	items._use_struct(1, inv, id)
+	check(items._items.has(carcass) and int(items._items[id]["struct"].get("catch", 0)) == carcass and inv.count_of(whole) == 0 and not said.is_empty(), "an overloaded pack leaves the catch in the snare and says why (%s)" % str(said))
+	inv.remove(stone, 2000)
 	items._use_struct(1, inv, id)
 	check(not items._items.has(carcass) and inv.count_of(whole) == 1, "E on the snare takes the rabbit whole into the pack")
 	check(items._items.has(id) and not items._items[id]["struct"].has("catch"), "and the snare is still set where it stood")
+	check(int(items._sync_record(id, items._items[id])[1]) != sig_full and not items._struct_extra(items._items[id]).has("catch"), "the emptied snare is sent again, holding nothing")
 	var slot: int = inv.numbers.find(whole)
 	check(slot >= 0 and int(inv.wear[slot]) <= 1, "a fresh catch goes in fresh (age %d)" % (int(inv.wear[slot]) if slot >= 0 else -1))
 	items._items[id]["struct"]["quiet"] = 0.0
@@ -865,7 +876,9 @@ func collect_checks() -> void:
 
 	# Half cut: it stays for the knife.
 	var second: int = int(items._items[id]["struct"]["catch"])
+	var sig_whole: int = int(items._sync_record(second, items._items[second])[1])
 	items._items[second]["struct"]["blows"] = 1
+	check(int(items._sync_record(second, items._items[second])[1]) != sig_whole and not items._struct_extra(items._items[second]).has("whole"), "a cut catch is sent again, no longer whole")
 	said.clear()
 	items._use_struct(1, inv, id)
 	check(items._items.has(second) and inv.count_of(whole) == 1 and said.has(str(traps.cfg["say_half_cut"])), "a catch begun with the knife stays in the snare (%s)" % str(said))
@@ -895,3 +908,21 @@ func collect_checks() -> void:
 	var kill: int = items.make_carcass("rabbit", Vector3(1.0, 10.0, -1.0), -1)
 	items._pickup(1, inv, kill)
 	check(items._items.has(kill) and inv.count_of(whole) == 1, "a hunted carcass is worked where it lies, not picked up")
+
+	# A bird trap's pheasant is collected the same way.
+	near = [{"id": 31, "sp": "pheasant", "pos": Vector3(-20.0, 10.0, 1.0)}]
+	items.report_position(1, Vector3(-20.0, 10.0, 0.0))
+	var bird: int = lay(items, Vector3(-20.0, 10.0, 0.0), "bird_trap_set")
+	traps.kinds_cfg["bird_trap_set"]["base_chance"] = 100.0
+	check(traps.check_one(bird), "collect: the bird trap catches")
+	var pheasant: int = items.table.number_of("whole_pheasant")
+	check(bool(items._struct_extra(items._items[int(items._items[bird]["struct"]["catch"])]).get("whole", false)), "its pheasant can be taken whole")
+	items._use_struct(1, inv, bird)
+	check(pheasant > 0 and inv.count_of(pheasant) == 1 and not items._items[bird]["struct"].has("catch"), "E on the bird trap takes the pheasant whole and sets it again")
+
+	# A world saved before 25 Nov 2026 had the catch 0.7 m beside its snare: it is still that snare's catch after a load.
+	var old: int = lay(items, Vector3(40.0, 10.0, 0.0))
+	var body: int = items.make_carcass("rabbit", Vector3(40.7, 10.0, 0.0), -1)
+	items._items[body]["struct"]["snared"] = true
+	traps.after_load()
+	check(int(items._items[old]["struct"].get("catch", 0)) == body, "an older world's catch 0.7 m beside its snare is re-linked to it")

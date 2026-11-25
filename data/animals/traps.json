@@ -56,7 +56,7 @@
 	"default_durability": 20,
 	"carcass_offset_m": 0.0,
 	"collect_note": "Dave 25 Nov 2026: \"they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset the snare\". The catch lies in the trap itself (carcass_offset_m 0, was 0.7 m beside it). E on a trap holding an uncut catch takes it whole into the pack (whole_items: the item per species, the usual carry rules) and the trap is set again where it stands (its quiet avoid_s still runs). A catch someone has started to cut stays: the knife finishes it. Bait rules are unchanged.",
-	"whole_items": {"rabbit": "whole_rabbit", "fox": "whole_fox", "grouse": "whole_grouse"},
+	"whole_items": {"rabbit": "whole_rabbit", "fox": "whole_fox", "grouse": "whole_grouse", "pheasant": "whole_pheasant"},
 	"say_half_cut": "It is half cut: finish it with your knife.",
 	"no_cap_note": "Dave 22 Nov 2026: no limit on how many snares or bird traps a player sets (was 6 each, the oldest taken back).",
 	"gap_m": 8.0,
