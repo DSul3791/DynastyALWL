@@ -2497,7 +2497,7 @@ func activity_chance(def: Dictionary) -> float:
 	if not def.has("active") or not hour_now.is_valid():
 		return clampf(weather_activity_x(def), 0.0, 1.0)
 
-	return clampf(float((def["active"] as Dictionary).get(fog_period(def, float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+	return clampf(_active_value(def, float(hour_now.call())) * weather_activity_x(def), 0.0, 1.0)
 
 
 # The same at a given game hour (a snare's time away, server_traps.gd check_away) and ground z (NAN: the starter row): the row's "active"
@@ -2508,9 +2508,25 @@ func activity_at(def: Dictionary, hour: float, z: float = NAN) -> float:
 
 	var was: float = sun_z
 	sun_z = z
-	var out: float = clampf(float((def["active"] as Dictionary).get(fog_period(def, hour), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+	var out: float = clampf(_active_value(def, hour) * weather_activity_x(def), 0.0, 1.0)
 	sun_z = was
 	return out
+
+
+# The species' "active" value at a game hour: its period's (day, dusk, night), and in the middle of the day (rest.midday_hours) its
+# "midday" value where the row has one (ANIMAL_SCENARIOS gap 15: bears and the cats nap through midday, elk and the mountain grazers
+# lie up in shade or on ledges).
+func _active_value(def: Dictionary, hour: float) -> float:
+	var row: Dictionary = def["active"]
+	var period: String = fog_period(def, hour)
+
+	if period == "day" and row.has("midday"):
+		var span: Array = cfg.get("rest", {}).get("midday_hours", [11.0, 15.0])
+
+		if hour >= float(span[0]) and hour < float(span[1]):
+			return float(row["midday"])
+
+	return float(row.get(period, 1.0))
 
 
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)

@@ -5,7 +5,9 @@
 		"note": "MikeW 2026-11-02: an animal outside its active hours (active chance at or under below) beds down: no wandering, grazes graze_x times longer, and wakes at spook_share of its spook distance.",
 		"below": 0.1,
 		"graze_x": 3.0,
-		"spook_share": 0.6
+		"spook_share": 0.6,
+		"midday_hours": [11.0, 15.0],
+		"midday_note": "ANIMAL_SCENARIOS gap 15 (25 Nov 2026): between midday_hours of a day an \"active\" row's midday value replaces its day value: bears 0.1 and the cats 0.05 nap (rest); elk 0.1 lies up; bighorn, chamois, mountain goat and warthog 0.3 (most of the herd bedded)."
 	},
 	"despawn_m": 300.0,
 	"near_m": 60.0,
@@ -1030,7 +1032,7 @@
 				"mixed_forest": 1.0,
 				"boreal_forest": 1.0
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 1.0,
 				"dusk": 1.0,
 				"night": 0.05
@@ -1351,7 +1353,7 @@
 				"temperate_forest": 0.5,
 				"alpine_meadow": 0.5
 			},
-			"active": {
+			"active": {"midday": 0.05, 
 				"day": 0.15,
 				"dusk": 0.9,
 				"night": 1.0
@@ -1450,7 +1452,7 @@
 				"mixed_forest": 1.0,
 				"boreal_forest": 0.8
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 1.0,
 				"dusk": 1.0,
 				"night": 0.05
@@ -1564,7 +1566,7 @@
 				"boreal_forest": 0.5,
 				"alpine_meadow": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.6,
 				"dusk": 1.0,
 				"night": 0.3
@@ -1644,7 +1646,7 @@
 				"tundra": 0.5,
 				"heath": 0.3
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.5,
 				"night": 0.05
@@ -1741,7 +1743,7 @@
 				"alpine_meadow": 0.9,
 				"tundra": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.5,
 				"night": 0.05
@@ -1889,7 +1891,7 @@
 				"bare_rock": 0.8,
 				"boreal_forest": 0.2
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.5,
 				"night": 0.05
@@ -2826,7 +2828,7 @@
 				"boreal_forest": 0.5,
 				"temperate_forest": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.05, 
 				"day": 0.15,
 				"dusk": 1.0,
 				"night": 0.9
@@ -3024,7 +3026,7 @@
 				"savanna": 1.0,
 				"temperate_grassland": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.4,
 				"night": 0.05
@@ -3275,7 +3277,7 @@
 				"savanna": 1.0,
 				"temperate_grassland": 0.3
 			},
-			"active": {
+			"active": {"midday": 0.05, 
 				"day": 0.4,
 				"dusk": 1.0,
 				"night": 0.9
@@ -3352,7 +3354,7 @@
 				"temperate_forest": 0.4,
 				"mixed_forest": 0.3
 			},
-			"active": {
+			"active": {"midday": 0.05, 
 				"day": 0.15,
 				"dusk": 1.0,
 				"night": 1.0
@@ -4043,7 +4045,7 @@
 				"marsh": 0.5,
 				"boreal_forest": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.05, 
 				"day": 0.15,
 				"dusk": 1.0,
 				"night": 1.0

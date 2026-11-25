@@ -610,6 +610,8 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
 15. **Hours and rest.** Bears, lions and cats nap through the middle of the day; elk, bighorn and chamois rest on ledges or in shade at
     midday; boar rest up to 12 h by day. Today resting covers grazers by share (`ANIMAL_RESTING.md`). Fix: midday rest rows for the
     rest, lying clips where the file has them.
+    Built 25 Nov 2026 (`active` midday values, `rest.midday_hours` 11 to 15, `server_animals._active_value`): bears and the cats nap
+    (they rest), elk lie up, bighorn, chamois, mountain goat and warthog are mostly bedded at midday. Boar already rest all day.
 16. **Seasons missing.** Rut calls and rut aggression (deer October to December, elk September to October, moose September to November,
     bighorn November to December, mountain goat November), bear dens in winter, fox screams in winter, frogs in spring and summer nights.
     Today 16 species have season rows for threat and spook only. Fix: add the calls and the winter bear den.
