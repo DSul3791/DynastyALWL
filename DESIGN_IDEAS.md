@@ -1582,7 +1582,7 @@ Horses are wild first and later tamed. Every horse has a tamable value (a per-an
 
 ## Tester and play-test wishes, 25 Nov 2026 (build 10587) [Waiting for Dave's pick, nothing built]
 
-From the tester site (DynastyALWL-QA). Bugs from the same reports are in [BugsList_Current.md](BugsList_Current.md) (152 to 158).
+From the tester site (DynastyALWL-QA). Bugs from the same reports are in [BugsList_Current.md](BugsList_Current.md) (153 to 159).
 
 - **[Idea] Stealth as its own study (Dave, [QA #11](https://github.com/DSul3791/DynastyALWL-QA/issues/11)).** "characters need to be able to craft or buy clothing geared towards stealth. they need to be able to get magic enchantments, items, charms, potions and such that improve stealth and stealth related skills like stalking. we should outline how players can improve things like seeing in the dark, hunting at night, eliminate body odors or mask them. they should be able to crouch quietly wearing special boots and other clothing designed for silence. they should be able to buy gear that is blacked out designed to hide shiny bits etc. this is a concept not a full idea. it needs to be explored and expanded into its own study."
 - **[Idea] An aiming dot (tester, [QA #18](https://github.com/DSul3791/DynastyALWL-QA/issues/18)).** "when you're looking at the ground or at planted crops, would be nice if game had an aiming reticle so you can tell at what you're pointing". Today a cross shows only with a drawn bow or a spear in hand.
