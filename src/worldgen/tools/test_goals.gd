@@ -274,6 +274,12 @@ func _init() -> void:
 		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty() and done("fell") and count("kindling") == kindling_fell and said.slice(fell_lines).any(func(t): return t.begins_with("Goal done: Fell a tree") and t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
+	# QA #9 (Dave 25 Nov 2026, a bear): the hunt goal's done line names the animal really worked, not a rabbit.
+	var hunt_lines: int = said.size()
+	var hunt_was_done: bool = done("hunt")
+	items._goal_what[1] = "black bear"
+	items._goal_event(1, "carcass_worked")
+	check(hunt_was_done or (done("hunt") and said.slice(hunt_lines).any(func(t): return t.begins_with("Goal done: You worked a black bear with your knife."))), "working a bear completes the hunt goal and its line names the bear (%s)" % str(said.slice(hunt_lines).slice(0, 1)))
 	# What a felled tree breaks into as it falls is its feller's gathering, once; the record clients get does not name the feller.
 	var stump_id: int = -1
 

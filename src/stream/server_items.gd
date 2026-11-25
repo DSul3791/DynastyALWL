@@ -908,6 +908,7 @@ func peer_left(peer: int) -> void:
 	_zone_checked.erase(peer)
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
+	_goal_what.erase(peer)
 	if not still_in:
 		_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")   # a stale connection never writes its old spot over the live one's
 
@@ -4061,6 +4062,7 @@ func _process_carcass(peer: int, inv, id: int, held_slot: int) -> void:   # held
 	if int(st["blows"]) >= blows_total:
 		_items.erase(id)
 		practice(peer, "dress_carcass")
+		_goal_what[peer] = str(st["species"]).replace("_", " ")   # the done line names the animal (QA #9: a bear was called a rabbit)
 		_goal_event(peer, "carcass_worked")
 
 		if bool(st.get("snared", false)):
@@ -25388,6 +25390,7 @@ var send_goals: Callable       # (peer, rows Array): the whole goal list at the 
 var send_goal_done: Callable   # (peer, id String, copper int): a goal this character has just completed and the copper it paid (protocol 119)
 var send_goal_progress: Callable   # (peer, changes Dictionary id -> count): how far the unfinished goals with an amount have got, as they move (protocol 122)
 var _goal_sent: Dictionary = {}    # peer -> {goal id -> the count last sent}: goal_progress sends only what moved
+var _goal_what: Dictionary = {}    # peer -> the animal last worked, for a goal's "done" line ({what}; QA #9)
 
 
 func _goals_data() -> Array:
@@ -25710,6 +25713,10 @@ func _goals_check(peer: int) -> void:
 			# One notice for the goal, its reward and the next goal: two lines in a row left only the second on screen, so a goal's coins
 			# looked like they came from the tree or plant being worked (playtest 12 Nov 2026 TEST-009).
 			var line: String = "Goal done: %s." % str(goal.get("title", id))
+
+			if goal.has("done") and _goal_what.has(peer):   # what was really done, in the goal's own words: "You worked a black bear." (QA #9)
+				var what: String = str(_goal_what[peer])
+				line = "Goal done: %s." % str(goal["done"]).replace("{what}", ("an " if what.left(1) in ["a", "e", "i", "o", "u"] else "a ") + what)
 
 			if paid > 0:
 				line += " You earn %s." % _coin_words(paid)

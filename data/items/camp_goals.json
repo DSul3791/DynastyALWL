@@ -3,7 +3,7 @@
 	"goals": [
 		{
 			"id": "torch_night",
-			"title": "Light the night",
+			"title": "Make a torch",
 			"hint": "Craft a Simple - Torch from a stick, a twine and a plant fibre, and carry it after dark.",
 			"after": [
 				"fire"
@@ -48,7 +48,7 @@
 		},
 		{
 			"id": "candle",
-			"title": "Work by candlelight",
+			"title": "Make a candle",
 			"hint": "Render 2 animal fat into tallow at the campfire pot, then make candles (tallow and a plant fibre) to light your shelter. Rabbits give no fat: hunt a deer, boar or badger for it.",
 			"after": [
 				"shelter",
@@ -259,7 +259,7 @@
 		},
 		{
 			"id": "winter_store",
-			"title": "Fill your winter store",
+			"title": "Pack food that keeps",
 			"hint": "Hold 5 foods that keep: smoked fish, jerky, dried berries, salted fish, trail bread.",
 			"after": [
 				"smoke_fish",
@@ -434,7 +434,7 @@
 		{
 			"id": "tanning_rack",
 			"title": "Build a Tanning rack",
-			"hint": "Hold your hammer, press R and pick Tanning rack: 6 logs and 4 twine. Hides are tanned into leather on it.",
+			"hint": "Hold your knife, press R and pick Tanning rack: 6 logs and 4 twine. Hides are tanned into leather on it.",
 			"after": [
 				"hunt",
 				"hammer"
@@ -447,11 +447,27 @@
 			"stage": "copper_bronze"
 		},
 		{
+			"id": "hide_scraper",
+			"title": "Make a Hide scraper",
+			"hint": "At the Workbench make a Hide scraper: a flint, a stick and a twine. Flint now and then comes away when you break a boulder with a pick. The scraper is kept when you scrape a hide.",
+			"after": [
+				"workbench",
+				"tanning_rack"
+			],
+			"check": {
+				"made_item": "hide_scraper",
+				"count": 1,
+				"or_have": true
+			},
+			"stage": "copper_bronze"
+		},
+		{
 			"id": "leather",
 			"title": "Tan leather",
-			"hint": "Dry a hide on the drying rack into a Processed hide, then put it on the tanning rack with 2 tannin bark (press E on an oak) and a full water container. Each hide makes a Leather.",
+			"hint": "With the Hide scraper in your pack, scrape a hide on the drying rack into a Scraped hide. Then tan it on the tanning rack with 2 tannin bark and a full water container. Tannin bark lies beside the logs when you fell an oak. Each hide makes a Leather.",
 			"after": [
 				"tanning_rack",
+				"hide_scraper",
 				"drying_rack"
 			],
 			"check": {
@@ -477,13 +493,13 @@
 		{
 			"id": "leather_strap",
 			"title": "Cut leather straps",
-			"hint": "At the Leatherworking table cut a Leather into 2 Leather straps. Every metal axe is bound with one, so cut 4: one each for copper, bronze, iron and steel.",
+			"hint": "At the Leatherworking table cut each Leather into 2 Leather straps. Every metal axe is bound with one, so cut both Leathers: 4 straps, one each for copper, bronze, iron and steel.",
 			"after": [
 				"leatherworking_table"
 			],
 			"check": {
 				"made_item": "leather_strap",
-				"count": 4
+				"count": 2
 			},
 			"stage": "copper_bronze"
 		},
@@ -581,7 +597,7 @@
 		{
 			"id": "bronze_tools",
 			"title": "Make every bronze tool",
-			"hint": "At the Primitive smithy make the whole bronze set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), a saw (2), a shovel (2), a hoe (2), a sickle (1), a scythe (2) and a chisel (1). That is eighteen bronze ingots in all; each copper ore smelted with a tin ore makes two, so find nine more of each.",
+			"hint": "At the Primitive smithy make the whole bronze set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), a saw (2), a shovel (2), a hoe (2), a sickle (1), a scythe (2) and a chisel (1). That is eighteen bronze ingots in all; each copper ore smelted with a tin ore makes two, so with the pickaxe made, find eight more of each.",
 			"after": [
 				"bronze_tool",
 				"leather_strap"
@@ -676,7 +692,7 @@
 		{
 			"id": "iron_tools",
 			"title": "Make every iron tool",
-			"hint": "At the Improved smithy make the whole iron set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), a Hand saw (2), a shovel (2), a hoe (2), a sickle (1), a Scythe (2) and a chisel (1). That is eighteen iron ingots in all.",
+			"hint": "At the Improved smithy make the whole iron set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), an Iron - Saw (2), a shovel (2), a hoe (2), a sickle (1), an Iron - Scythe (2) and a chisel (1). That is eighteen iron ingots in all.",
 			"after": [
 				"iron_tool",
 				"leather_strap"

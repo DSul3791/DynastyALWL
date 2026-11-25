@@ -259,8 +259,8 @@
 		},
 		{
 			"id": "hunt",
-			"title": "Hunt a rabbit and work the body",
-			"hint": "Strike a rabbit with your spear, then hold your knife and work the body: meat, hide and bone. You need them for jerky, warm clothes and a fishing hook; bigger animals also give fat for candles.",
+			"title": "Hunt an animal and work the body",
+			"hint": "Strike an animal with your spear (a rabbit is the easiest), then hold your knife and work the body: meat, hide and bone. You need them for jerky, warm clothes and a fishing hook; bigger animals such as deer, boar and badger also give fat for candles.",
 			"after": [
 				"spear",
 				"knife"
@@ -269,11 +269,12 @@
 				"event": "carcass_worked",
 				"count": 1
 			},
-			"stage": "start"
+			"stage": "start",
+			"done": "You worked {what} with your knife"
 		},
 		{
 			"id": "snare",
-			"title": "Snare a rabbit",
+			"title": "Snare small game",
 			"hint": "Make a Snare (3 twine and 2 sticks) and set it on a rabbit run: a thin line of matted grass leading out from a warren. Rabbits come out along their runs from dusk to dawn, so set it in the evening and look in the morning. Work the catch with a knife.",
 			"after": [
 				"twine"
@@ -282,7 +283,8 @@
 				"event": "snare_catch",
 				"count": 1
 			},
-			"stage": "start"
+			"stage": "start",
+			"done": "You worked {what} from your snare"
 		},
 		{
 			"id": "sell",
