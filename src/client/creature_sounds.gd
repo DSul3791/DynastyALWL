@@ -12,7 +12,8 @@ extends Node
 #
 # Kinds: deer, rabbit, fox, wolf, bear, and "bird" (a songbird by day, crow alarm when alert or
 # threat, played by ambient_life.gd). Moods: "idle" (a normal call), "alert" (it noticed something),
-# "threat" (angry or hurt: a danger cue, always allowed even when the voice budget is full).
+# "threat" (angry or hurt: a danger cue, always allowed even when the voice budget is full), "warn" (the low warning before an attack:
+# the kind's "warn" call, else its "alert" one, allowed like a threat so a warning is never lost to a full budget).
 # Sounds: generated in assets/audio/creatures/ (make_creatures.py); recordings in
 # assets/audio/recorded/creatures/ win. Names: deer_grunt, deer_snort, rabbit_thump, rabbit_squeak,
 # fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar, moose_grunt/snort/bellow, horse_snort/whinny, duck_quack, goblin_chitter,
@@ -48,7 +49,7 @@ const KINDS := {
 		"zones": {}, "hours": [0.0, 24.0], "every": [600.0, 1200.0], "cutoff": 7000.0},   # camp goblins at a weapon in hand (npc_view.gd goblin_called, Dave 20 Nov 2026): never a natural call
 	# Bears are near silent (Dave 25 Nov 2026: "the bear roaring constantly in the woods is unrealistic"; NPS, bear.org "Harmless Bluster",
 	# NH Fish and Game "Bear talk": a bear that is not bothered makes no calls, a nervous one huffs, blows and pops its jaws, a roar is a fight):
-	# no natural calls in the woods (zones empty, as the camp goblins), and MOODS_BY_STATE below.
+	# no natural calls in the woods (zones empty, as the camp goblins), and mood_for below.
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
 		"zones": {}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
@@ -63,19 +64,33 @@ const CALL_AS := {"black_bear": "bear", "elk": "moose", "lion": "bear", "tiger":
 # NEAR_RISE_DB over its own level (the level stops rising at a quarter of its unit size: a wolf 10 m, a bear 4 m), never past
 # NEAR_MAX_DB (the clips peak near -14 dBFS, so -5 dBFS at most).
 # Which call an animal's drawn state gives (animal_view state_changed: 2 flee, 3 alert, 7 a wolf's attack, 10 warn, 11 charge, 16 the jaw-pop,
-# 25 a close blow, 26 a kick); "" is silent. Kinds not listed: an alert or a flight gives "alert", the rest "threat" (as before). The bears
-# run off and notice in silence, warn (standing up) and pop their jaws with the low growl (the stand-in for a huff), and roar only as they
-# charge or strike: before, every flight, every look and every warning played a growl or a roar.
-const MOODS_BY_STATE := {"bear": {2: "", 3: "", 10: "alert", 16: "alert"}, "black_bear": {2: "", 3: "", 10: "alert", 16: "alert"}}
+# 25 a close blow, 26 a kick); "" is silent. docs/design/ANIMAL_SCENARIOS.md gap 4 (research: flight is silent; the alarm call is the
+# species' own; cats hiss and growl, black bears huff and pop their jaws, neither roars):
+# - every flight is silent;
+# - a look-up (3) calls only for kinds with an alarm call of their own (deer snort, rabbit thump, fox bark, horse snort, duck quack, wolf),
+#   and animal_view plays it on an animal's first look only; a kind that borrows another's voice (CALL_AS) looks up in silence;
+# - warnings by kind ("warn": never dropped by a full voice budget, Dave 23 Nov 2026 "growl before attacking"): the bears and the cats
+#   growl low (the stand-in for a huff or a hiss), the boar and warthog snort, not bellow;
+# - the black bear, lynx and puma never roar: their charge and blow are the low growl ("warn") too. The rest keep "threat".
+const ALARM_KINDS := ["deer", "rabbit", "fox", "horse", "duck", "wolf", "goblin"]
+const LOW_WARN := ["bear", "black_bear", "lion", "tiger", "leopard", "puma", "lynx", "boar", "warthog"]
+const NEVER_ROARS := ["black_bear", "lynx", "puma"]
 
 
 func mood_for(kind: String, state: int) -> String:
-	var row: Dictionary = MOODS_BY_STATE.get(kind, {})
+	if state == 2:
+		return ""
 
-	if row.has(state):
-		return str(row[state])
+	if state == 3:
+		return "alert" if kind in ALARM_KINDS else ""
 
-	return "alert" if state == 3 or state == 2 else "threat"
+	if (state == 10 or state == 16) and kind in LOW_WARN:
+		return "warn"
+
+	if kind in NEVER_ROARS:
+		return "warn"
+
+	return "threat"
 
 
 const NEAR_RISE_DB := 12.0
@@ -143,10 +158,12 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 
 	_prune()
 
-	if mood != "threat" and (_voices.size() >= int(_stage.preset["creature_voices"]) or not _stage.has_room()):
+	var danger: bool = mood == "threat" or mood == "warn"   # a danger cue: never lost to a full budget
+
+	if not danger and (_voices.size() >= int(_stage.preset["creature_voices"]) or not _stage.has_room()):
 		return false
 
-	if mood == "threat":
+	if danger:
 		var now: int = Time.get_ticks_msec()
 		var threats: int = _voices.filter(func(v) -> bool: return is_instance_valid(v) and v.has_meta("keep")).size()
 
@@ -155,7 +172,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 
 		_threat_until[kind] = now + THREAT_EVERY_MS
 
-	var sound_name: String = str(info["calls"].get(mood, info["calls"]["idle"]))
+	var sound_name: String = str(info["calls"].get(mood, info["calls"].get("alert", info["calls"]["idle"]) if mood == "warn" else info["calls"]["idle"]))
 	var list: Array = _variants(sound_name)
 
 	if list.is_empty():
@@ -175,7 +192,7 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 	add_child(player)
 	player.add_to_group("world_sounds")
 
-	if mood == "threat":
+	if danger:
 		player.set_meta("keep", true)                            # a danger cue: never shed
 
 	player.global_position = at

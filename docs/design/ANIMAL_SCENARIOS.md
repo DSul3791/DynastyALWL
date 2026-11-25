@@ -550,6 +550,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    the first alert only for species that have one; warnings by species (huff and jaw-pop for bears, hiss and growl for cats, snort and
    stamp for deer and boar, lip-lick silent for moose); recordings needed for bear huff, jaw-pop, bawl and moan, boar bark and grunt,
    cat hiss and growl, elk bark and bugle, beaver slap. `creature_sounds.gd` KINDS and CALL_AS; Dave listens.
+   Built 25 Nov 2026 with the voices we have (`creature_sounds.mood_for`, `animal_view` first look): every flight silent; a look-up
+   calls only for deer, rabbit, fox, horse, duck and wolf, once per animal; borrowed voices look up in silence; bears, cats, boar and
+   warthog warn with the low growl or snort; black bear, lynx and puma never roar. The recordings above are still needed.
 5. **Natural far bear calls.** A bear growl plays in the forest every 7 to 15 minutes by day whatever is near. Fix: remove the bear's
    natural calls (the only big animal with them; cats borrow bear voices only for warnings) (keep wolf howls at night, more in winter; fox barks and screams at night, winter; frogs on warm nights; rut bugles and
    bellows in autumn; birds by day). `creature_sounds.gd` KINDS bear `every`.

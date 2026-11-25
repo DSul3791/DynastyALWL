@@ -3479,7 +3479,7 @@ func _warmth_cfg() -> Dictionary:
 	return _warmth_cfg_cache
 
 
-# A bite or a charge lands: the animal doing it snarls where it is (a wolf's growl, a bear's roar), so a fight is heard from the attacker,
+# A bite or a charge lands: the animal doing it snarls where it is (a wolf's growl, a brown bear's roar, a black bear's growl: creature_sounds.mood_for), so a fight is heard from the attacker,
 # at most once every SNARL_EVERY_MS. Nothing when the blow came from no attacking animal (a fall, a bandit).
 const SNARL_M := 5.0
 const SNARL_EVERY_MS := 1500
@@ -3511,7 +3511,7 @@ func _attacker_snarl() -> void:
 		return
 
 	_snarl_ms = Time.get_ticks_msec() + SNARL_EVERY_MS
-	sound.creatures.call_at(str(who["kind"]), who["at"], "threat")
+	sound.creatures.call_at(str(who["kind"]), who["at"], sound.creatures.mood_for(str(who["kind"]), 11))   # the attack's own call: a black bear, lynx or puma growls, never roars
 
 
 # The footstep and ice tier (sound_stage, gear_sounds, ice_feel: 0 walk, 1 the middle step a jump push-off uses, 2 run).
