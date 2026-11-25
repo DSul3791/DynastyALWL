@@ -43,6 +43,9 @@ func _initialize() -> void:
 		for state in [11, 25, 26]:
 			check(s.mood_for(kind, state) == "warn", "a %s never roars (state %d)" % [kind, state])
 
+	var snarl: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
+	check(snarl.contains('call_at(str(who["kind"]), who["at"], sound.creatures.mood_for(str(who["kind"]), 11))'), "the snarl when a blow lands takes its mood from mood_for (a black bear never roars there either)")
+
 	for kind in ["lion", "bear", "moose", "boar"]:
 		check(s.mood_for(kind, 11) == "threat", "a %s still gives its threat call charging" % kind)
 
