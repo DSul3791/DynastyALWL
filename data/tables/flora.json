@@ -7181,7 +7181,7 @@
 			"height_m": [18, 28],
 			"crown_m": 9.0,
 			"trunk_m": 0.45,
-			"color": [0.3, 0.42, 0.24],
+			"color": [0.26, 0.44, 0.16],
 			"per_hectare": {
 				"temperate_forest": 0.02,
 				"mixed_forest": 0.015,
