@@ -594,6 +594,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
 11. **Cornered by a chase is not a thing.** Today "cornered" means blocked by water or a cliff (`_at_bay`). Fix: a player who keeps
     within about 10 m of a fleeing animal for 5 s has cornered it: big animals turn and fight (Dave, for bears), small ones dive for
     cover.
+    Built 25 Nov 2026 (`server_animals._run_down`, `animals.json` run_down): a big animal (one with a defend row) chased within 10 m
+    for 5 s turns: a bear or one that may fight warns, then fights; one that will not strikes once if the player is on it, else runs on.
+    Never at a torch bearer. Small animals keep going to burrow, water or cover as before.
 12. **Mothers with young need species rules.** Today one rule: a player between a mother and young within `between_m` is attacked at
     once. Real: black bear and deer mothers mostly bluff; moose, elk, boar, cattle and brown bears really attack; hiders' young lie
     still alone, followers' young run with her. Fix: per species `young` rows for bluff or real, hide or follow.
