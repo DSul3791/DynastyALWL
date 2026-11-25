@@ -13,6 +13,7 @@ extends RefCounted
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
@@ -96,8 +97,10 @@ func play(limit_s: float) -> void:
 		r._step = "goal " + id
 		_line("GOAL %s try %d at %.0f s: %s" % [id, int(_tries[id]), t, str(g.get("title", ""))])
 		await _lighten()
+		var heard: int = r._notices.size()
 		var why: String = await _play_goal(g)
 		await r._wait(2.0)   # the server's goal_progress after the last step
+		_weigh_if_heavy(heard)
 
 		if bool(book.row(id).get("done", false)):
 			_line("GOAL %s done in %.0f s" % [id, _s() - t])
@@ -150,7 +153,8 @@ func _lighten() -> void:
 	for n in range(inv.numbers.size() - 1, -1, -1):
 		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
 
-		var keep: int = 40 if item in ["thatch", "reed_stems", "bedding", "apple_summer", "raspberries", "elderberries", "strawberries"] else 0
+		var keep: int = 40 if item in ["thatch", "reed_stems", "bedding"] else 0
+		keep = 10 if item.begins_with("apple_") or item.ends_with("berries") or item in ["cherries", "fiddleheads", "foxglove_leaves"] else keep
 		var junk: bool = item.begins_with("log_") or item.ends_with("_seed") or item.ends_with("_seeds") or item == "linseed" or keep > 0
 
 		if junk and int(inv.counts[n]) > keep:
@@ -160,6 +164,33 @@ func _lighten() -> void:
 
 	if not dropped.is_empty():
 		_line("DROPPED %s" % ", ".join(dropped))
+
+
+# When the game said "Too heavy" during a goal: the real load per item (CarryRules.weight_of, as the server weighs it), heaviest first.
+func _weigh_if_heavy(from: int) -> void:
+	var heavy: bool = false
+
+	for said in r._notices.slice(from):
+		heavy = heavy or str(said).contains("Too heavy")
+
+	if not heavy:
+		return
+
+	var inv = c.items.inventory
+	var rows: Array = []
+
+	for n in range(inv.numbers.size()):
+		if int(inv.numbers[n]) > 0:
+			var item: String = c.items.table.id_of(int(inv.numbers[n]))
+			rows.append([CarryRules.weight_of(item, c.items._carry_cfg) * float(inv.counts[n]), item, int(inv.counts[n])])
+
+	rows.sort_custom(func(a, b): return a[0] > b[0])
+	var parts: PackedStringArray = PackedStringArray()
+
+	for row in rows:
+		parts.append("%s x%d %.2f kg" % [row[1], row[2], row[0]])
+
+	_line("WEIGHT carried %.2f of %.2f kg: %s" % [c.items.carried_kg(), c.items.carry_limit_kg(), ", ".join(parts)])
 
 
 func _pack() -> String:
@@ -820,15 +851,24 @@ func _path(strokes: int) -> String:
 	var dir: Vector3 = Vector3(water.x - c.body.global_position.x, 0.0, water.z - c.body.global_position.z).normalized() if not is_nan(water.x) else Vector3.FORWARD
 	var said: int = r._notices.size()
 
+	# Each stroke lands 1 m past the last along one line: the game lays nothing within 0.7 m (PATH_SPACING_M) of a patch.
+	var start: Vector3 = c.body.global_position
+	var missed: int = 0
+
 	for n in range(strokes + 3):
-		var ground: Vector3 = c.body.global_position + dir * 1.5
+		var ground: Vector3 = start + dir * (1.5 + float(n))
+		await r._go_to(ground - dir * 1.2, 6.0, 0.5)
+
+		if Vector2(ground.x - c.body.global_position.x, ground.z - c.body.global_position.z).length() > 2.5:
+			missed += 1
+			continue
+
 		var y: float = float(c.items._ground_below.call(ground))
 		ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 		c.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH, slot, 0, 0, ground)
 		await r._wait(0.8)
-		await r._go_to(c.body.global_position + dir, 3.0, 0.3)
 
-	_line("PATH %d hoe strokes toward the water%s" % [strokes + 3, _said(said)])
+	_line("PATH %d hoe strokes toward the water, %d out of reach%s" % [strokes + 3 - missed, missed, _said(said)])
 	return ""
 
 
