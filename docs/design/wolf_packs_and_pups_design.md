@@ -44,8 +44,8 @@ What the game takes from this:
 - **The pack guards them** (decision text: "a pack that sees a player near its pups rushes at once, torch or not"):
   1. A player within `pups.guard_m` (40 m) of the den, while the pack is alive: the pack comes home at a run (a new `den_guard` phase) and growls (a "growl" event and the threat call).
   2. **The warning:** for `pups.warn_s` (3 s) it circles between the player and the pups. A player who backs out past `guard_m` ends it; the pack goes back to prowling.
-  3. **The rush:** a player still within `pups.rush_m` (25 m) after the warning is rushed, **torch or not**.
-     - A placed campfire still holds the pack; only the torch rule is lifted at the den.
+  3. **The rush:** a player still within `pups.rush_m` (25 m) after the warning is rushed, unless the player is in a fire's or torch's light.
+     - A placed campfire or a torch holds the pack. [Dave, 25 Nov 2026 3:19 AM Halifax, project chat: "Also remember fire keeps everything away from the players." It replaces decision 4's "torch or not".]
      - Two players together still make it back off, as today.
      - The warning comes first so the rush is never a surprise, the same fairness as the bear ladder (#600).
 
@@ -90,7 +90,7 @@ The `tame` row sketched in `wolf_pup_taming_design.md` section 4 becomes this `c
 
 | file | change |
 |---|---|
-| `server_wolves.gd` | town keep-out; a cap on pack wolves only; pups made with a pack in season; the pup step (play, hide); the `den_guard` phase (come home, warn, then rush with the torch rule lifted); orphaning on the last death; `wolf_dens.json` |
+| `server_wolves.gd` | town keep-out; a cap on pack wolves only; pups made with a pack in season; the pup step (play, hide); the `den_guard` phase (come home, warn, then rush, held by a torch or a campfire); orphaning on the last death; `wolf_dens.json` |
 | `server_companions.gd` | an `orphan` source next to `stray` (made at the den from the orphan record, the same feeding); young companions and growing up; `keep_off_torch`; no barking or growling at companion animals |
 | `server_animals.gd` | the pup hook in `_step`; pups are never snared while the pack lives |
 | `terrain_server.gd` | load and save `wolf_dens.json` |
@@ -106,7 +106,7 @@ The client needs nothing new: young drawing, play (9) and the threat call (10) a
   - a pack made on day 100 has 2 to 5 pups at its den, and one made on day 200 has none;
   - pups hide from a standing player 20 m off, and stay out for a crouched, still one;
   - a player 35 m from the den gets the growl and the circling, and backing off ends it;
-  - a player 20 m from the den after the warning is rushed even with a torch, but not beside a campfire;
+  - a player 20 m from the den after the warning is rushed, but not with a torch or beside a campfire;
   - killing the pack's last adult orphans the pups, and the cell stays empty;
   - 3 game days of meals make an orphan follow as a young companion, and it grows up after 20 game days;
   - a companion wolf keeps outside its owner's torch light;
@@ -120,7 +120,7 @@ The client needs nothing new: young drawing, play (9) and the threat call (10) a
 ## 9. Must not break
 
 - No wild pack on main before Dino's PC check of the switch PR.
-- Wild wolves' fire and torch keep-off everywhere except the torch at their own den.
+- Wild wolves' fire and torch keep-off everywhere, their own den included (Dave 25 Nov 2026).
 - Meat stealing and the two-player retreat.
 - The dog companion (#613).
 

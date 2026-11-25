@@ -306,7 +306,7 @@ func no_spawn_at(x: float, z: float) -> bool:
 
 
 # Young (Dave 6 Nov 2026): a mother with young runs from a player sooner, but a player who comes between her and them (near a young
-# one) is attacked hard, torch or not. The young are animals of the same species that follow her at follow_m and run when she runs.
+# one) is attacked hard, unless the player is in a fire's or torch's light (Dave 25 Nov 2026). The young are animals of the same species that follow her at follow_m and run when she runs.
 func _spawn_young(mother: int) -> void:
 	var m: Dictionary = animals[mother]
 	var y: Dictionary = species_def(m["sp"])["young"]
@@ -698,7 +698,8 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if not defend.is_empty():
 		for info in (big_game.player_info.call() if big_game.player_info.is_valid() else []):
 			if int(info["peer"]) == source_peer and Vector2(info["pos"].x - a["pos"].x, info["pos"].z - a["pos"].z).length() <= float(defend.get("provoked_m", 10.0)):
-				if big_game.provoke(a, info["pos"], float(defend.get("provoked_warn_s", 0.8))):
+				# trapped_fights (the bears, Dave 25 Nov 2026): even a shy one, chased down and hurt this close, turns and fights.
+				if big_game.provoke(a, info["pos"], float(defend.get("provoked_warn_s", 0.8)), bool(defend.get("trapped_fights", false))):
 					return false
 
 	a["state"] = FLEE
@@ -1545,8 +1546,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if a.has("fly"):
 				return   # alarmed into the air
 
-	# A player who has come between a mother and her young (near one of them) is attacked at once, torch or not.
-	if def.has("defend") and def.has("young") and seen_p != Vector3.INF:
+	# A player who has come between a mother and her young (near one of them) is attacked at once, unless the player is in a fire's or a
+	# torch's light: fire keeps everything away from the players (Dave 25 Nov 2026; it was "torch or not").
+	if def.has("defend") and def.has("young") and seen_p != Vector3.INF and _fire_guard(seen_p) == Vector3.INF:
 		for kid in _young_of(a):
 			if Vector2(seen_p.x - animals[kid]["pos"].x, seen_p.z - animals[kid]["pos"].z).length() <= float(def["young"].get("between_m", 8.0)):
 				if big_game.warn(a, seen_p, float(def["young"].get("warn_s", 0.6)), true):
@@ -1555,9 +1557,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 				break
 
 	# Fire (Dave 6 Nov 2026): wild animals keep away from a burning fire or a torch bearer, out of its keep-off radius (the wolves' rule),
-	# unless trapped; a bear at its den does not give way to a torch.
-	var in_den: bool = _in_den(a, def)
-	var fire_at: Vector3 = Vector3.INF if in_den or a.has("pack") else _fire_guard(a["pos"])
+	# unless trapped; at its den too (Dave 25 Nov 2026: "fire keeps everything away from the players"; a bear at its den used to hold).
+	var fire_at: Vector3 = Vector3.INF if a.has("pack") else _fire_guard(a["pos"])
 
 	if fire_at != Vector3.INF and a["state"] != FLEE:
 		_bolt(a, fire_at, def)
@@ -1569,9 +1570,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
-	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, except at
-	# the den. The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
-	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and (in_den or _fire_guard(seen_p) == Vector3.INF):
+	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, at a
+	# den too (Dave 25 Nov 2026). The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
+	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and _fire_guard(seen_p) == Vector3.INF:
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
 			return
 
@@ -1699,7 +1700,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if a.has("den"):
 				a["target"] = _den_target(a, def)
 
-			if _fire_guard(a["target"]) != Vector3.INF and not _in_den(a, def, a["target"]):
+			if _fire_guard(a["target"]) != Vector3.INF:
 				a["target"] = a["pos"]   # never wanders into a fire's light
 
 			# A friendly horse is curious: it ambles toward a player it can see until it is stop_m away.
@@ -1773,14 +1774,19 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if r["arrived"] or not r["moved"]:
 		if a["state"] == FLEE and near_d < float(def.get("safe_m", 35.0)):
+			# Pinned: it could not step and is not at its leg's end. Steering reports the step after arriving as not moved too, so `arrived`
+			# must be ruled out: a flight read every leg's end as a wall, broke off up to 69 degrees at random and, with the player within
+			# corner_m, turned at bay (Dave 25 Nov 2026: he chased a bear down on foot; the test's black bear ran 10 m/s where it runs 13).
+			var pinned: bool = not r["moved"] and not r["arrived"]
+
 			# Big game cornered (it cannot get away and the player is right there) stands and fights: warn first, always.
-			if def.has("defend") and not r["moved"] and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2))):
+			if def.has("defend") and pinned and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2)), bool(def["defend"].get("trapped_fights", false))):
 				return
 
 			# Still too close: keep running away from the player, by a way it can go (_flee_target), or at bay when there is none.
 			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized()
 
-			if not r["moved"]:
+			if pinned:
 				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a pinned animal breaks (a wall or a fence the ground check cannot see)
 
 			_flee_target(a, near_p, away, def)
@@ -2721,6 +2727,13 @@ func _flee_target(a: Dictionary, from: Vector3, away: Vector2, def: Dictionary, 
 
 			if bool(a.get("to_burrow", false)):
 				return   # a rabbit with its burrow at hand dives in
+
+			# Trapped with the threat close, an animal that fights when trapped (trapped_fights: the bears) warns and comes at it instead
+			# (Dave 25 Nov 2026: a bear "should have run away unless it was starving or trapped").
+			var trap: Dictionary = def.get("defend", {})
+
+			if bool(trap.get("trapped_fights", false)) and Vector2(from.x - a["pos"].x, from.z - a["pos"].z).length() <= float(trap.get("corner_m", 7.0)) and big_game.warn(a, from, float(trap.get("corner_warn_s", 1.2)), true):
+				return
 
 			a["state"] = ALERT   # cornered: it stands at bay facing the threat, not spinning (_at_bay), then tries again
 			a["alert"] = BAY_S

@@ -20,7 +20,7 @@
 - **Ranges** (`animals.json`): `spook_m` is the flee range; `defend.threat_m` is the attack range. Bear 15 m at its den and 9 m elsewhere, moose 8, boar 6, deer 3.5, horse 3, fox 2. Cornered animals hit weakly (4 to 10 damage).
 - **Temperament** (`"temperament"` in `animals.json`, drawn at birth): passive (never attacks), defensive, neutral (never runs, attacks inside its range), aggressive (never runs, attacks from twice its range), friendly (walks up and stops 5 m short). Mixes: bear 60/25/15 defensive/neutral/aggressive, moose 70/30, boar 70/30 defensive/aggressive, deer 80/20 passive/defensive, fox 60/25/15 passive/neutral/friendly.
 - **Seasons** (`"seasons"`): scale `threat_x` and `spook_x`. Bear ×1.5 in spring and ×0.7 in autumn; moose and deer ×1.5 in the autumn rut.
-- **Young** (`"young"`): real animals with 30% of the mother's health that follow her and never attack. They go on the wire as species number + 100 and are drawn at half size. A mother flees ×1.4 sooner and attacks anyone within `between_m` of her young, torch or not. Chances: moose, bear and boar 30%, deer 25%, horse 20%.
+- **Young** (`"young"`): real animals with 30% of the mother's health that follow her and never attack. They go on the wire as species number + 100 and are drawn at half size. A mother flees ×1.4 sooner and attacks anyone within `between_m` of her young, unless that player is in a fire's or torch's light (Dave 25 Nov 2026). Chances: moose, bear and boar 30%, deer 25%, horse 20%.
 - **Bear** (#480, open): 15 m den, roams up to 80 m, half its trips go fishing at a river edge, charges at 12 m/s for 35 damage, 120 HP.
 - **Also:** animals stop at walls and heavy stations (#328); thrown spears hit for `throw_damage` (#224).
 

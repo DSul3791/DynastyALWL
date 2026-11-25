@@ -1157,15 +1157,11 @@ func pup_hurt(a: Dictionary, peer: int) -> void:
 	_event("growl", pack["den"])
 
 
-# Placed fires only: a torch bearer's own light does not hold a pack at its den (the torch rule is lifted there; a campfire still holds).
-func fire_lit(x: float, z: float, infos: Array) -> bool:
+# Fire keeps everything away from the players (Dave 25 Nov 2026), at the pack's den too: a torch bearer's light holds the pack there as a
+# campfire does (it used to be lifted at the den).
+func fire_lit(x: float, z: float) -> bool:
 	for f in _fire_cache:
-		var bearer: bool = false
-
-		for info in infos:
-			bearer = bearer or (bool(info.get("torch", false)) and _flat(info["pos"], f) <= 1.5)
-
-		if not bearer and Vector2(f.x - x, f.z - z).length() < _fire_m(f):
+		if Vector2(f.x - x, f.z - z).length() < _fire_m(f):
 			return true
 
 	return false
@@ -1175,7 +1171,7 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 	var host_blocked: Callable = host.ice_blocked(host.blocked, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.blocked
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
-	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z, infos)
+	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z)
 	host.plan(m, goal)   # where it is going: sent with its row (protocol 168, rows_near)
 	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
@@ -1191,7 +1187,7 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 
 
 # The den guard: the pack stands between the den and the player for warn_s (circling, growling); a player who backs out past guard_m
-# ends it; one still within rush_m after the warning is rushed, torch or not. A campfire by the player and a second player still hold it.
+# ends it; one still within rush_m after the warning is rushed. A torch or a campfire by the player, and a second player, hold it (Dave 25 Nov 2026).
 func _den_guard(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array) -> void:
 	var w: Dictionary = cfgw()
 	var pc: Dictionary = pup_cfg()
@@ -1222,7 +1218,7 @@ func _den_guard(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: 
 	for m in members:
 		low = low or float(m["hp"]) < float(def.get("health", 30.0)) * float(w.get("flee_hp_share", 0.4))
 
-	var held: bool = fire_lit(p.x, p.z, infos)
+	var held: bool = fire_lit(p.x, p.z)
 
 	if others > 0 or low:
 		pack["guard_rush"] = false

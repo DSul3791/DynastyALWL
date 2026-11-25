@@ -1722,7 +1722,10 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.look_points = func() -> Array: return _look_points()      # head tracking: an animal watches the nearest player (head_look.gd)
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
-		sound.creatures.call_at(kind, at, "alert" if state == 3 or state == 2 else "threat"))      # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget)
+		var mood: String = sound.creatures.mood_for(kind, state)   # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget); a bear stays quiet till it warns
+
+		if mood != "":
+			sound.creatures.call_at(kind, at, mood))
 	animal_view.took_off.connect(func(kind: String, at: Vector3) -> void:
 		if sound != null and sound.creatures != null:
 			sound.creatures.took_off(kind, at))      # a grouse, pheasant or guineafowl bursts up with a whirr of wings, a crow caws and flaps off

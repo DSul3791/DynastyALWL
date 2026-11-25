@@ -953,7 +953,7 @@
 			"number": 14,
 			"weather": "hunter",
 			"name": "Brown bear",
-			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (a torch does not protect you at its den), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
+			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (at its den too, Dave 25 Nov 2026), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
 			"target_per_player": 1,
 			"spawn_share": 0.3,
 			"health": 120.0,
@@ -964,7 +964,7 @@
 				"range_m": 80.0,
 				"fish_share": 0.5
 			},
-			"defend": {"strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
+			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving is not built (no hunger for bears yet). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 12.0,
@@ -993,7 +993,7 @@
 				40.0
 			],
 			"wander_m": 20.0,
-			"flee_run_m": 40.0,
+			"flee_run_m": 120.0,
 			"alarm_s": [
 				0.2,
 				0.9
@@ -1002,12 +1002,13 @@
 				1.5,
 				3.0
 			],
-			"burst_s": 6.0,
-			"trot_share": 0.5,
-			"zig_deg": 20.0,
-			"zig_leg_m": 15.0,
+			"burst_s": 10.0,
+			"trot_share": 0.85,
+			"zig_deg": 10.0,
+			"zig_leg_m": 40.0,
 			"eye_m": 1.1,
-			"flee_mps": 9.0,
+			"flee_mps": 14.0,
+			"note_flee": "Dave 25 Nov 2026 play test: a bear \"should be able to out run me\", he chased one down on foot and stabbed it (flee 9.0 m/s, the player runs 9.0, and after its 6 s burst it trotted at half). Bears run 48 to 56 km/h in bursts (NPS Staying Safe Around Bears; North American Bear Center): flee_mps 13 to 14, a 10 s burst, then a lope (trot_share 0.85) still faster than the player's 9 m/s run, in long straight legs (zig 10 degrees, 40 m: a bear crashes off through the brush, it does not jink like a deer), and it keeps going 120 m. The way to take one is to learn to trap it (Dave).",
 			"herd_pull_m": 0.0,
 			"habitat": {
 				"slope_max": 0.6,
@@ -1380,7 +1381,7 @@
 			"spawn_share": 0.3,
 			"health": 90.0,
 			"protective_share": 0.0,
-			"defend": {"fair_dodge": true, 
+			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving is not built (no hunger for bears yet). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 10.0,
@@ -1409,7 +1410,7 @@
 				40.0
 			],
 			"wander_m": 20.0,
-			"flee_run_m": 40.0,
+			"flee_run_m": 120.0,
 			"alarm_s": [
 				0.2,
 				0.9
@@ -1418,12 +1419,13 @@
 				1.5,
 				3.0
 			],
-			"burst_s": 6.0,
-			"trot_share": 0.5,
-			"zig_deg": 20.0,
-			"zig_leg_m": 15.0,
+			"burst_s": 10.0,
+			"trot_share": 0.85,
+			"zig_deg": 10.0,
+			"zig_leg_m": 40.0,
 			"eye_m": 1.1,
-			"flee_mps": 9.0,
+			"flee_mps": 13.0,
+			"note_flee": "Dave 25 Nov 2026 play test: a bear \"should be able to out run me\", he chased one down on foot and stabbed it (flee 9.0 m/s, the player runs 9.0, and after its 6 s burst it trotted at half). Bears run 48 to 56 km/h in bursts (NPS Staying Safe Around Bears; North American Bear Center): flee_mps 13 to 14, a 10 s burst, then a lope (trot_share 0.85) still faster than the player's 9 m/s run, in long straight legs (zig 10 degrees, 40 m: a bear crashes off through the brush, it does not jink like a deer), and it keeps going 120 m. The way to take one is to learn to trap it (Dave).",
 			"herd_pull_m": 0.0,
 			"habitat": {
 				"slope_max": 0.6,
@@ -4329,7 +4331,7 @@
 		"town_keep_m": 300.0, "town_keep_note": "Coordinator for Dave, 22 Nov 2026: within town_keep_m of the starter town's markers (server_npcs.gd town_point, never the spawn) packs do not stalk, rush or hunt, and a rush breaks off. Behaviour only: no den is moved.",
 		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",
 		"pups": {
-			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m, torch or not (a campfire and a second player still hold it). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile). (The old den keep-out is gone; wolves.town_keep_m is now behaviour only: no stalk, rush or hunt near the town markers.)",
+			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m (a torch, a campfire and a second player hold it, Dave 25 Nov 2026). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile). (The old den keep-out is gone; wolves.town_keep_m is now behaviour only: no stalk, rush or hunt near the town markers.)",
 			"days": [60, 150],
 			"count": [2, 5],
 			"hp_x": 0.25,

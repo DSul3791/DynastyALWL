@@ -114,7 +114,7 @@ The rebuild makes these places real: marsh, swamp, fen and bog by cause, tarns, 
 
 | Dweller | Where | Verbs | Notes |
 |---|---|---|---|
-| Bear | Spring cave den | A, H | Hibernates; torch does not protect in its den ([Dave]). |
+| Bear | Spring cave den | A, H | Hibernates. Fire or a torch keeps it off a player even at its den ([Dave] 25 Nov 2026 3:19 AM Halifax, project chat: "Also remember fire keeps everything away from the players"; it replaces his earlier "torch does not protect in its den"). |
 | Goblins | Dry offshoot den | A, Study | [Existing] groups of 2-5, nocturnal, skittish, steal from the dark. |
 | Bats | Any deep dry cave, out at dusk | D, Ally | [Proposal G-08] A dusk emergence: a free spectacle and a clue that the cave is deep and has a second opening. |
 | Glowworm ceilings | Wet chambers | D | [Proposal] Real; the one light in a truly dark cave. |

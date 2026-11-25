@@ -104,8 +104,8 @@ func warn(a: Dictionary, at: Vector3, warn_s: float = -1.0, forced: bool = false
 # charge, or still cooling down from one, warns again (short). A jab lands every 0.6 s, inside the 0.8 s provoked warning, and each one used
 # to turn the warning into a flight that the next step turned back into a fresh warning: it faced the player until it died. Returns true
 # when the animal fights (the caller leaves it be); false when it may not attack at all (it runs).
-func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
-	if host.species_def(a["sp"]).get("defend", {}).is_empty() or not host.may_attack(a):
+func provoke(a: Dictionary, at: Vector3, warn_s: float, forced: bool = false) -> bool:
+	if host.species_def(a["sp"]).get("defend", {}).is_empty() or not host.may_attack(a, forced):
 		return false
 
 	var state: int = int(a["state"])
