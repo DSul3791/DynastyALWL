@@ -56,8 +56,13 @@ uniform float flutter = 0.06;
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
 uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction.md: crowns read near-black at noon; more sun through the leaves)
 // Leaves that glow (the witness tree): EMISSION = glow times the instance
-// custom alpha (how strongly this tree glows; young ones weakly). Black for
-// every other species. Faint by day, plain at night.
+// custom alpha (how strongly this tree glows; young ones weakly) times the vein
+// mask. Black for every other species. Faint by day, plain at night.
+// Only the violet veins glow (Dave's 18 Oct design; 25 Nov 2026 he saw the whole canopy glow, which is not it): the
+// veins are the only violet in the leaf texture (make_tree_textures.py witness_leaf: blue 1.2, green 0.72 of the grey
+// blade), so vein_mask is how far blue stands above green. The grey blade and the green tint give 0.
+const float VEIN_FROM = 0.08;   // (blue - green) / blue of a texel: the grey blade is 0, a vein line 0.4
+const float VEIN_FULL = 0.3;
 uniform vec3 glow : source_color = vec3(0.0);
 // Snow lying on the crown (art_weather_light.md 8.2.2), 0 none .. 1 full: the ground's snow memory (weather_look.gd, set_snow).
 uniform float snow = 0.0;
@@ -106,7 +111,8 @@ void fragment() {
 	ALBEDO = mix(ALBEDO, vec3(0.86, 0.88, 0.92), snowed * 0.9);
 	BACKLIGHT = ALBEDO * backlight * (1.0 - snowed);
 	ROUGHNESS = 1.0;
-	EMISSION = glow * glow_amount * (0.6 + 0.4 * t.r);
+	float vein_mask = smoothstep(VEIN_FROM, VEIN_FULL, (t.b - t.g) / max(t.b, 0.01));
+	EMISSION = glow * glow_amount * vein_mask;
 }
 """
 
@@ -3271,8 +3277,8 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 				if log_size.x > 0.0:
 					shapes.append([species_id, log_size.x, p + Vector3(0.0, log_size.x, 0.0), log_size.y, float(items["yaws"][n])])
 
-	# Glowing trees (everember, witness tree) light the ground around them, near the player
-	# only: one warm light per GLOW_CELL_M square, at most GLOW_LIGHTS per chunk.
+	# Glowing bark (everember) lights the ground around it, near the player only: one warm light per GLOW_CELL_M square, at most
+	# GLOW_LIGHTS per chunk. The witness tree sends no light (only its leaf veins glow: R-FLORA-WITNESS-GLOW).
 	if (level & 8) != 0:
 		var lit: Dictionary = {}
 

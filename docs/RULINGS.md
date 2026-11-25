@@ -65,6 +65,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 
 ## World, server and releases
 - **R-WORLD-GENERATOR** · 23 Nov 2026 · "the server/generator the generator part should prebuild our entire world or the parts we are working with right now. the server doesnt build anything it just serves the prebuilt stuff up to the clients." "right now we are just working on the design that makes the starting 9 chunks good enough then we will look at expanding in the future."
+- **R-FLORA-WITNESS-GLOW** · 25 Nov 2026 · Only the violet veins of the witness tree's leaves glow soft purple at night (his 18 Oct 2026 design); the rest of the canopy does not glow and the tree sends no light. "I have noticed these trees at night and its not just the veins its the entire canopy is glowing violet. which is not per the design."
 - **R-WORLD-SEA-FLOOR** · 24 Nov 2026 · "I do plan on them diving on shipwrecks and exploring under sea caves and such." The sea floor stays real terrain.
 - **R-WORLD-TUNNELS** · 23 Nov 2026 · Old tunnels are not checked at start-up; "the second somebody digs near them again they will become unstable."
 - **R-SERVER-SCALE** · 23 Nov 2026 · "plan for thousands and be happy when it works for hundreds right now." The server's core count is a setting; the player cap stays 32 until Dave says.

@@ -122,6 +122,21 @@ def e_prompts():
     check("R-HUD-PROMPTS", taps >= 20, f"the E actions were found ({taps})")
 
 
+def witness_glow():
+    """R-FLORA-WITNESS-GLOW: only the violet veins of the witness tree's leaves glow; the canopy does not, and the tree sends no light."""
+    rows = data("data/tables/flora.json")
+    rows = rows.get("species", rows.get("entries")) if isinstance(rows, dict) else rows
+    tree = next(e for e in rows if e.get("name") == "witness_tree")
+    check("R-FLORA-WITNESS-GLOW", tree.get("leaf_glow") is True, "the witness tree's leaves glow at night (leaf_glow)")
+    check("R-FLORA-WITNESS-GLOW", "glow" not in tree and "glow_energy" not in tree, "the witness tree sends no light of its own (no glow colour or energy: a light in the crown lit the whole canopy violet)")
+    src = (ROOT / "src/flora/flora_view.gd").read_text(encoding="utf-8")
+    foliage = src[src.index("const FOLIAGE_SHADER"):src.index("const BARK_SHADER")]
+    emission = re.findall(r"^\s*EMISSION = (.+);", foliage, re.M)
+    check("R-FLORA-WITNESS-GLOW", emission == ["glow * glow_amount * vein_mask"], f"the leaf glow is masked to the veins (EMISSION = {emission})")
+    start = float(re.search(r"const float VEIN_FROM = ([0-9.]+);", foliage).group(1))
+    check("R-FLORA-WITNESS-GLOW", start > 0.0, f"the grey leaf blade (vein measure 0) never glows (VEIN_FROM {start})")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -133,11 +148,12 @@ def ruling_lines():
 
 def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
-             "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts}
+             "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
+             "R-FLORA-WITNESS-GLOW": witness_glow}
     for key, step in steps.items():
         try:
             step()
-        except (KeyError, TypeError, ValueError, AttributeError, OSError) as e:   # a row or key the check reads is gone: a failure, not a crash
+        except (KeyError, TypeError, ValueError, AttributeError, OSError, StopIteration) as e:   # a row or key the check reads is gone: a failure, not a crash
             check(key, False, f"the data this check reads is missing or changed shape ({type(e).__name__}: {e})")
     rulings = ruling_lines()
     for key in {k for k, _, _ in results}:

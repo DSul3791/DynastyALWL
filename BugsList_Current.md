@@ -1666,6 +1666,10 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 **Found by:** tester list, Dave's pick, 25 Nov 2026: "included a tree falling sound from Pixabay.com royalty free etc etc". **Status: Implemented - awaiting player verification.** Dave's recording is now the crash when a felled tree hits the ground (recorded/trees/tree_crash_0.ogg; credits row in assets/audio/CREDITS.csv; notes in assets/audio/README.md). It plays from the tree (directional) like before. Not yet played.
 
+## 151. The witness tree's whole canopy glows violet at night
+
+**Found by:** Dave, his own play, 25 Nov 2026: "I have noticed these trees at night and its not just the veins its the entire canopy is glowing violet. which is not per the design." (R-FLORA-WITNESS-GLOW.) **Status: Implemented - awaiting player verification.** Two causes: the leaf shader lit every leaf at 60 to 100% of the glow, not only the veins, and each grown witness tree hung a violet light in its crown (45% of its height, reaching 60% of it) that lit the whole canopy from inside. Now only the violet vein lines in the leaf texture glow (flora_view.gd FOLIAGE_SHADER vein_mask), and the tree sends no light (data/tables/flora.json). The everember was checked: its glow is already only in its bark veins, and its light stays at 2 m to light the ground. Guarded by `tools/check_dave_rules.py`. Not yet played; needs a night picture near and far.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
