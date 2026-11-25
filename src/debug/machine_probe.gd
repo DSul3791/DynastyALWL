@@ -21,6 +21,7 @@ var _ms: Array = []
 var _gpu: Array = []
 var _cpu: Array = []
 var _draws: Array = []
+var _main: Array = []             # main-thread script time per frame (process + physics), ms
 var _rows: Array = []
 var _start_quality: int = 2
 var _start_yaw: float = 0.0
@@ -80,6 +81,7 @@ func _begin_tier(index: int) -> void:
 	_gpu = []
 	_cpu = []
 	_draws = []
+	_main = []
 
 
 func _process(delta: float) -> void:
@@ -103,6 +105,7 @@ func _process(delta: float) -> void:
 		_gpu.append(RenderingServer.viewport_get_measured_render_time_gpu(vp))
 		_cpu.append(RenderingServer.viewport_get_measured_render_time_cpu(vp) + RenderingServer.get_frame_setup_time_cpu())
 		_draws.append(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+		_main.append((Performance.get_monitor(Performance.TIME_PROCESS) + Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)) * 1000.0)
 
 		if elapsed >= MEASURE_SEC:
 			_rows.append(_row())
@@ -121,9 +124,10 @@ func _row() -> String:
 	sorted.sort()
 	var avg_ms: float = _mean(_ms)
 	var slow: float = float(sorted[mini(int(float(sorted.size()) * 0.99), sorted.size() - 1)])
-	return "%-6s %5.1f fps  1%% low %5.1f fps  worst %6.1f ms  gpu %5.1f ms  cpu %5.1f ms  draws %5d  VRAM %5d MB" % [
+	return "%-6s %5.1f fps  1%% low %5.1f fps  worst %6.1f ms  gpu %5.1f ms  cpu %5.1f ms  script %5.1f ms  draws %5d  VRAM %5d MB  RAM %5d MB" % [
 		_client.QUALITY_NAMES[TIERS[_at]], 1000.0 / maxf(avg_ms, 0.001), 1000.0 / maxf(slow, 0.001), sorted[sorted.size() - 1],
-		_mean(_gpu), _mean(_cpu), int(_mean(_draws)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0)]
+		_mean(_gpu), _mean(_cpu), _mean(_main), int(_mean(_draws)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
+		int(OS.get_static_memory_usage() / 1048576)]
 
 
 static func _mean(values: Array) -> float:
