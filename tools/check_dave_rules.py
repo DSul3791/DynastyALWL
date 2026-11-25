@@ -22,6 +22,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
+    "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
 }
 
 results = []   # (key, ok, what)

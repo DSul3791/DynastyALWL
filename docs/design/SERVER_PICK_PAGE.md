@@ -87,6 +87,7 @@ Dave: "servers need the ability to also have a password. so once you pick your s
 - Third wrong: the popup closes and a message says **"You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."** with OK, which goes back to the server page with that server still chosen. The player may try again from there.
 - Cancel goes back to the server page at any time.
 - Continue on a locked server asks for the password the same way (unless it is remembered, choice 3).
+- The box asks once (Dave, 25 Nov 2026, `RULINGS.md` R-JOIN-PASSWORD-ONCE): a typed password is held in memory for that run of the game and answers by itself when a dropped join is retried or the server is joined again; it asks again only when the server says the password is wrong.
 
 **Server side**
 - Optional setting: no password means an open server, exactly as today. The setting lives in the server's store (`<store>/server.json`, beside the name and message) and can also be given to the Docker container as an environment variable, so it never has to sit in a file inside the image. The exact setting name is agreed with the Docker/server work before it is built.

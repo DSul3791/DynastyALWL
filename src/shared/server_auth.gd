@@ -50,6 +50,14 @@ var _trying_hash: PackedByteArray = PackedByteArray()
 var _tried_remembered: bool = false
 var heard: bool = false             # the server has said anything in the handshake (false at a failure: it does not speak this join)
 var remembered_was_wrong: bool = false   # the last wrong try was the remembered password (the server's password changed since): forget it
+var session_address: String = ""    # "host:port" of the server being joined: a password typed for it is reused on every new connection (below)
+
+# Dave 25 Nov 2026 (R-JOIN-PASSWORD-ONCE): "it should save the password temporarily until it makes the connection. even if it has to try
+# multiple times. it should only ever ask once". Once the player types a password, its key (SHA256(salt + password), as for Remember) is
+# kept in memory for this run of the game, per server, and answers that server's next challenge by itself: a dropped join and Retry
+# (the scene reloads), the --wait retry or a re-join never bring the box back. Only a "wrong" from the server clears it, and then the box
+# asks. Held on Engine metadata so it outlives the scene; never on disk (Remember still decides that), never in a log or crash report.
+const SESSION_META := "join_keys_this_session"
 
 var _mp: SceneMultiplayer
 
@@ -262,16 +270,20 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 			_client_salt = str(message.get("salt", "")).hex_decode()
 			_client_nonce = str(message.get("nonce", "")).hex_decode()
 			var saved: String = str(remembered.call(_client_salt.hex_encode())) if remembered.is_valid() else ""
+			var typed_before: String = session_key(session_address, _client_salt.hex_encode())
 
 			if saved != "":
 				_tried_remembered = true
 				_send_proof(saved.hex_decode())
+			elif typed_before != "":
+				_send_proof(typed_before.hex_decode())   # typed earlier this run: not asked again
 			else:
 				password_needed.emit(TRIES, false)
 		"wrong":
 			var left: int = int(message.get("left", 0))
 			remembered_was_wrong = _tried_remembered
 			_tried_remembered = false
+			session_forget(session_address)   # nothing right is held any more: the box asks
 
 			if left <= 0:
 				refused.emit("wrong")
@@ -283,9 +295,38 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 			refused.emit("busy")
 
 
-# The player's typed password for the challenge now open.
-func submit(password: String) -> void:
-	_send_proof(hash_password(_client_salt, password))
+# The player's typed password for the challenge now open. `keep`: the player ticked Remember (carried to the next connection with the key).
+func submit(password: String, keep: bool = false) -> void:
+	var key: PackedByteArray = hash_password(_client_salt, password)
+	session_remember(session_address, _client_salt.hex_encode(), key.hex_encode(), keep)
+	_send_proof(key)
+
+
+# The keys typed this run, "host:port" -> {"salt", "hash", "keep"} (R-JOIN-PASSWORD-ONCE above). An empty address keeps nothing (tests, bots).
+static func session_remember(address: String, salt_hex: String, hash_hex: String, keep: bool) -> void:
+	if address == "":
+		return
+
+	var keys: Dictionary = Engine.get_meta(SESSION_META, {})
+	keys[address] = {"salt": salt_hex, "hash": hash_hex, "keep": keep}
+	Engine.set_meta(SESSION_META, keys)
+
+
+static func session_key(address: String, salt_hex: String) -> String:
+	var row: Variant = (Engine.get_meta(SESSION_META, {}) as Dictionary).get(address)
+	return str((row as Dictionary).get("hash", "")) if address != "" and row is Dictionary and str((row as Dictionary).get("salt", "")) == salt_hex else ""
+
+
+static func session_keeps(address: String) -> bool:
+	var row: Variant = (Engine.get_meta(SESSION_META, {}) as Dictionary).get(address)
+	return row is Dictionary and bool((row as Dictionary).get("keep", false))
+
+
+static func session_forget(address: String) -> void:
+	var keys: Dictionary = Engine.get_meta(SESSION_META, {})
+
+	if keys.erase(address):
+		Engine.set_meta(SESSION_META, keys)
 
 
 func _send_proof(key: PackedByteArray) -> void:

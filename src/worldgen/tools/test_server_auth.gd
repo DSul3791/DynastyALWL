@@ -23,7 +23,8 @@ func check(ok: bool, what: String) -> void:
 
 # One join: a server (open when password is "") and a client that answers each ask from `answers` in turn. Returns what happened.
 # Both sides speak protocol `server_protocol` / `client_protocol` (server_auth.gd 161; 0 is the handshake from before 161, as a 9257 build).
-func join(password: String, answers: Array, server_auth = null, server_protocol: int = Net.PROTOCOL_VERSION, client_protocol: int = Net.PROTOCOL_VERSION) -> Dictionary:
+# `session`: the client's session_address (a game joining that server; "" as a bot or a test with no address).
+func join(password: String, answers: Array, server_auth = null, server_protocol: int = Net.PROTOCOL_VERSION, client_protocol: int = Net.PROTOCOL_VERSION, session: String = "") -> Dictionary:
 	port += 1
 	var server_mp: SceneMultiplayer = SceneMultiplayer.new()
 	var client_mp: SceneMultiplayer = SceneMultiplayer.new()
@@ -42,13 +43,14 @@ func join(password: String, answers: Array, server_auth = null, server_protocol:
 	server_auth.protocol = server_protocol
 	var client_auth = ServerAuth.new()
 	client_auth.protocol = client_protocol
+	client_auth.session_address = session
 	client_auth.outdated.connect(func(text: String) -> void: result["outdated"] = text)
 	client_auth.password_needed.connect(func(left: int, wrong: bool) -> void:
 		result["asked"].append([left, wrong])
 		var index: int = result["asked"].size() - 1
 
 		if index < answers.size():
-			client_auth.submit(str(answers[index])))
+			client_auth.submit(str(answers[index]), true))
 	client_auth.refused.connect(func(reason: String) -> void: result["refused"] = reason)
 	client_auth.accepted.connect(func(_salt: String, hash_hex: String) -> void: result["accepted"] = hash_hex)
 	server_auth.attach_server(server_mp)
@@ -99,6 +101,32 @@ func _initialize() -> void:
 	check(not fourth["connected"] and fourth["refused"] == "busy" and fourth["asked"].size() == 2, "the fifth wrong from one address within a minute: refused (busy)")
 	var fifth: Dictionary = await join("", [], guard)
 	check(not fifth["connected"] and fifth["refused"] == "busy" and fifth["asked"].is_empty(), "the next join from that address is refused at once, before any ask")
+
+	# R-JOIN-PASSWORD-ONCE (Dave 25 Nov 2026: "it should only ever ask once"): a typed password answers by itself on every new connection.
+	# Each join below is a fresh client, as after a dropped join and Retry (the scene reloads) or a re-join.
+	var address: String = "127.0.0.1:%d" % port
+	ServerAuth.session_forget(address)
+	var host = ServerAuth.new()
+	var typed: Dictionary = await join("Hannibal", ["Hannibal"], host, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, address)
+	check(typed["connected"] and typed["asked"] == [[3, false]], "the first join asks once and gets in")
+	var retry: Dictionary = await join("", [], host, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, address)
+	check(retry["connected"] and retry["asked"].is_empty(), "after the connection drops, Retry gets in without asking again")
+	var third: Dictionary = await join("", [], host, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, address)
+	check(third["connected"] and third["asked"].is_empty(), "and so does every try after that")
+	check(ServerAuth.session_keeps(address), "a ticked Remember is carried to the next connection")
+	var wrong_first: Dictionary = await join("", ["hannibal"], host, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, "127.0.0.1:1")
+	check(wrong_first["asked"] == [[3, false], [2, true]] and ServerAuth.session_key("127.0.0.1:1", host.salt.hex_encode()) == "", "a typed password the server calls wrong is not kept")
+	var changed = ServerAuth.new()
+	changed.salt = host.salt
+	changed.password_hash = ServerAuth.hash_password(host.salt, "Carthage")   # the server's password changed while the game was running
+	var stale: Dictionary = await join("", ["Carthage"], changed, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, address)
+	check(stale["connected"] and stale["asked"] == [[2, true]], "a kept password the server calls wrong: the box asks then, the only other time")
+	var bot: Dictionary = await join("", [], host, Net.PROTOCOL_VERSION, Net.PROTOCOL_VERSION, "")
+	check(not bot["connected"] and bot["asked"] == [[3, false]], "a client with no address keeps nothing")
+	ServerAuth.session_forget(address)
+	ServerAuth.session_forget("127.0.0.1:1")
+	var client_code: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
+	check(client_code.contains("_auth.session_address = ") and client_code.contains("_auth.submit(typed, keep)"), "the game gives its server address to the handshake")
 
 	# Protocol 161: a game and a server of different versions say so at the first word, before any call either would misread (a build 9257
 	# client on a newer server, 23 Nov 2026: every call landed on the wrong method and the player was never told).
