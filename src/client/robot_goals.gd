@@ -17,7 +17,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
-const GOAL_S := 420.0                      # one goal's time at most
+const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
 const GATHER_S := 300.0                    # one gather's time at most
 
 var r                       # the robot (robot_play.gd)
@@ -32,6 +32,7 @@ var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not ai
 var _depth: int = 0
 var _sites: Dictionary = {}       # structure -> its blueprint site's world id
 var _home: Vector3 = Vector3.ZERO   # where the character first stood: the starter camp
+var _groups: Dictionary = {}      # ingredient group id -> member item ids (wood_species.json ingredient_groups: "berries" is any sweet berry)
 
 
 func _init(robot) -> void:
@@ -49,6 +50,12 @@ func _init(robot) -> void:
 
 			if row is Dictionary and (row as Dictionary).has("item"):
 				_gives[species] = (_gives.get(species, []) as Array) + [str(row["item"])]
+
+	var species: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/wood_species.json"))
+
+	for group in ((species as Dictionary).get("ingredient_groups", {}) if species is Dictionary else {}):
+		if group != "note" and species["ingredient_groups"][group] is Array:
+			_groups[str(group)] = (species["ingredient_groups"][group] as Array).map(func(m): return str(m))
 
 	var bp: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))
 
@@ -85,7 +92,7 @@ func play(limit_s: float) -> void:
 	book.achieved.connect(func(row: Dictionary, copper: int) -> void: _line("GOAL %s achieved at %.0f s (%s), %d copper" % [str(row.get("id", "")), _s(), str(row.get("title", "")), copper]))
 	_line("GOALS start: %d goals, %d done, pack %s" % [book.rows.size(), book.done_count(), _pack()])
 
-	while _s() < limit_s:
+	while _s() < limit_s - GOAL_S:
 		var g: Dictionary = _next(book)
 
 		if g.is_empty():
@@ -154,7 +161,7 @@ func _lighten() -> void:
 	for n in range(inv.numbers.size() - 1, -1, -1):
 		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
 
-		var keep: int = 20 if item in ["thatch", "reed_stems", "bedding", "samphire"] else (40 if item == "stick" else 0)
+		var keep: int = 20 if item in ["thatch", "reed_stems", "bedding", "samphire", "straw", "kindling"] else (40 if item == "stick" else 0)
 		keep = 10 if item.begins_with("apple_") or item.ends_with("berries") or item in ["cherries", "fiddleheads", "foxglove_leaves"] else keep
 		var junk: bool = item.begins_with("log_") or item.ends_with("_seed") or item.ends_with("_seeds") or item == "linseed" or keep > 0
 
@@ -290,6 +297,14 @@ func _check_of(id: String) -> Dictionary:
 
 
 func _count(item: String) -> int:
+	if _groups.has(item):   # a group need is filled by any member
+		var total: int = 0
+
+		for member in _groups[item]:
+			total += int(r._count(member))
+
+		return total
+
 	return int(r._count(item))
 
 
@@ -300,6 +315,15 @@ func _have(item: String, n: int, make: bool) -> String:
 
 	if not make and _count(item) >= n:
 		return ""
+
+	var station: String = ""
+
+	if recipe.is_empty():
+		recipe = _station_recipe_for(item)
+		station = str(recipe.get("station", ""))
+
+	if recipe.is_empty() and _groups.has(item):
+		return await _gather_group(item, n)
 
 	if recipe.is_empty():
 		return await _gather(item, n)
@@ -331,6 +355,13 @@ func _have(item: String, n: int, make: bool) -> String:
 	if why != "":
 		return "for %s: %s" % [item, why]
 
+	if station != "":   # a player walks to the station they built and makes it there
+		var site: int = int(_sites.get(station, -1))
+		await _walk_home(240.0)
+
+		if c.items._world.has(site):
+			await r._go_to(c.items._world[site]["pos"], 30.0, 1.8)
+
 	return await _craft(recipe, runs)
 
 
@@ -343,6 +374,33 @@ func _recipe_for(item: String) -> Dictionary:
 			return row
 
 	return {}
+
+
+# A station recipe that gives `item`, at a station this robot has built (its site still stands); {} when none.
+func _station_recipe_for(item: String) -> Dictionary:
+	for key in r._recipes:
+		var row: Dictionary = r._recipes[key]
+		var station: String = str(row.get("station", ""))
+
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))):
+			return row
+
+	return {}
+
+
+# `n` of a group (any member): the member already carried most of, else each member in turn until the group's count is reached.
+func _gather_group(group: String, n: int) -> String:
+	var members: Array = (_groups[group] as Array).duplicate()
+	members.sort_custom(func(a, b): return int(r._count(a)) > int(r._count(b)))
+	var why: String = ""
+
+	for member in members.slice(0, 4):
+		if _count(group) >= n:
+			return ""
+
+		why = await _gather(str(member), int(r._count(member)) + n - _count(group))
+
+	return "" if _count(group) >= n else "for %s (any of %s): %s" % [group, ", ".join(members.slice(0, 4)), why]
 
 
 # A kept tool (an item id, or a tool class such as "knife"): one in the pack, made if need be.
@@ -443,7 +501,7 @@ func _gather(item: String, n: int) -> String:
 		var spot: Dictionary = _nearest_source(item)
 
 		if spot.is_empty() and item in ["stone", "flint", "copper_ore", "tin_ore", "iron_ore"]:
-			var rock: int = _nearest_boulder()
+			var rock: int = _nearest_boulder(item)
 
 			if rock != 0:
 				_taken["rock%d" % rock] = true
@@ -485,14 +543,17 @@ func _gather(item: String, n: int) -> String:
 
 
 # The nearest boulder within SEARCH_M not yet worked (inventory_view.gd _boulders: stone, and the ore rocks).
-func _nearest_boulder() -> int:
+func _nearest_boulder(item: String = "stone") -> int:
 	var best: int = 0
-	var best_d: float = SEARCH_M
+	var metal: String = item.trim_suffix("_ore")
+	var best_d: float = 400.0 if item.ends_with("_ore") else SEARCH_M   # a player looks further for the green rocks along a river (all drawn rocks are known)
 
 	for id in c.items._boulders:
 		var d: float = (c.items._boulders[id]["pos"] as Vector3).distance_to(c.body.global_position)
+		var ore: String = str(c.items._boulders[id].get("ore", "")).trim_suffix("_ore")
+		var fits: bool = ore == metal if item.ends_with("_ore") else ore == ""
 
-		if d < best_d and not _taken.has("rock%d" % int(id)):
+		if fits and d < best_d and not _taken.has("rock%d" % int(id)):
 			best_d = d
 			best = int(id)
 
@@ -613,7 +674,7 @@ func _wood(item: String, n: int) -> String:
 	var trees: int = 0
 
 	while _count(item) < n and trees < 3:
-		if item in ["leaves", "stick"]:   # an axe chops a bush into leaves and sticks (held_item.gd _strike, ACT_HIT_SHRUB)
+		if item == "leaves":   # an axe chops a bush into leaves (and sticks) (held_item.gd _strike, ACT_HIT_SHRUB)
 			await _chop_shrubs(8)
 
 			if _count(item) >= n:
@@ -647,7 +708,7 @@ func _chop_one() -> String:
 	trees.sort_custom(func(a, b): return (a[0] as Vector3).distance_to(here) < (b[0] as Vector3).distance_to(here))
 	var trunk: Vector3 = Vector3.INF
 
-	for tree in trees:   # the nearest the robot can walk up to (a trunk on a slope or behind a rock is passed by)
+	for tree in trees.slice(0, 5):   # the nearest of five the robot can walk up to (a trunk on a slope or behind a rock is passed by)
 		if _taken.has("tree" + _key(tree[0])):
 			continue
 
@@ -658,7 +719,7 @@ func _chop_one() -> String:
 			break
 
 	if trunk == Vector3.INF:
-		return "walked to %d trees and reached none within 1.6 m" % trees.size()
+		return "walked to %d trees and reached none within 1.6 m" % mini(5, trees.size())
 
 	var known: Dictionary = c.items._world.duplicate()
 	var said: int = r._notices.size()
@@ -796,7 +857,7 @@ func _fire() -> String:
 	if fire < 0:
 		return "laid the campfire kit 2.5 m ahead; no fire came%s" % _said(said)
 
-	_press_e_at(c.items._world[fire]["pos"])
+	await _press_e_at(c.items._world[fire]["pos"])
 	await r._wait(3.0)
 
 	for n in range(4):   # sticks on, and lit (E on a laid fire; the call it makes if E gave another choice)
@@ -953,7 +1014,7 @@ func _build(structure: String) -> String:
 	else:
 		for side in range(12):   # a player turns to open ground when the game says a tree is in the way
 			var heard: int = r._notices.size()
-			at = c.body.global_position - (c.body.global_transform.basis.z * (4.0 + 4.0 * float(side >= 4) + 4.0 * float(side >= 8))).rotated(Vector3.UP, float(side) * PI * 0.5)
+			at = c.body.global_position - (c.body.global_transform.basis.z * (5.0 + 8.0 * float(side >= 4) + 10.0 * float(side >= 8))).rotated(Vector3.UP, float(side) * PI * 0.5)
 			var y: float = float(c.items._ground_below.call(at))
 			at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 			c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
@@ -965,7 +1026,7 @@ func _build(structure: String) -> String:
 
 			var told: String = str(r._notices.slice(heard))
 
-			if site >= 0 or not (told.contains("in the way") or told.contains("build away") or told.contains("too wet") or told.contains("in water") or told.contains("stands there")):
+			if site >= 0 or not (told.contains("in the way") or told.contains("build away") or told.contains("too wet") or told.contains("in water") or told.contains("stands there") or told.contains("above or below")):
 				break
 
 		_sites[structure] = site
@@ -986,7 +1047,10 @@ func _build(structure: String) -> String:
 # --- Hob: sell him something from the pack -------------------------------------------------------------------------------------------
 func _sell() -> String:
 	var hob: Vector3 = Vector3.INF
-	await _gather("plant_fibre", 50)   # Hob buys fibre in lots of 50 (server_trade.gd: "He buys plant fibres 50 at a time.")
+	var short: String = await _gather("plant_fibre", 50)   # Hob buys fibre in lots of 50 (server_trade.gd: "He buys plant fibres 50 at a time.")
+
+	if short != "" and _count("stone") < 60 and _count("twine") <= 0:
+		return "nothing to sell in a lot Hob buys: %s" % short
 	var leg_s: float = await _walk_home(480.0)   # the starter camp, where Hob trades (NPCs are sent within 120 m)
 
 	await r._wait(3.0)

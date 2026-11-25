@@ -646,7 +646,7 @@ func run() -> void:
 		await _roam()
 	elif plan == "goals":
 		# A new player through the goal list, no gifts (robot_goals.gd); GOALS_S short of the client's --timeout (tools/robots.sh ROBOT_S).
-		await RobotGoalsScript.new(self).play(float(OS.get_environment("ROBOT_GOALS_S")) if OS.get_environment("ROBOT_GOALS_S") != "" else 2400.0)
+		await RobotGoalsScript.new(self).play(float(OS.get_environment("ROBOT_GOALS_S")) if OS.get_environment("ROBOT_GOALS_S") != "" else 2450.0)
 	else:
 		if admin:
 			await _craft_chain()
