@@ -161,8 +161,10 @@ static func frame(delta: float) -> void:
 		if ms >= HITCH_MS and now_msec >= _hitch_next_msec:
 			_hitch_next_msec = now_msec + 2000
 			var top: String = _top_text(5)
-			FreezeWatch.printer.line("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
-				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+			# "process max" and "physics max" are Godot's monitors: the LONGEST step in the last second, not this frame. "wall" is this frame's own
+			# clock split (freeze_watch.gd): where the time went when the timed pieces are small.
+			FreezeWatch.printer.line("HITCH %.0f ms: %s; wall: %s; process max %.0f ms, physics max %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
+				FreezeWatch.split, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])

@@ -5514,6 +5514,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 # the one freeze left at the join. In a window they are built a few each frame instead (WARM_BUDGET_USEC), in the order below, while the ground
 # is still loading (2 s or more after the welcome). A mesh wanted before its turn is built on the spot by _mesh_for, as before any prewarm.
 const WARM_BUDGET_USEC := 6000
+const SLOW_WARM_MS := 50.0         # a single loose mesh slower than this is named in the log
 var _warm_queue: Array = []        # item numbers still to build
 var _warm_usec: int = 0            # time spent building them so far
 var _warm_frames: int = 0
@@ -5555,7 +5556,13 @@ func _warm_step() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	while not _warm_queue.is_empty() and Time.get_ticks_usec() - t0 < WARM_BUDGET_USEC:
-		_mesh_for(int(_warm_queue.pop_front()))
+		var number: int = int(_warm_queue.pop_front())
+		var t_one: int = Time.get_ticks_usec()
+		_mesh_for(number)
+		var one_ms: float = float(Time.get_ticks_usec() - t_one) / 1000.0
+
+		if one_ms > SLOW_WARM_MS:   # Lane A 25 Nov 2026: one warm-up step held the main thread 896 ms; this names the item
+			FreezeWatchScript.printer.line("client prewarm: loose mesh %s took %.0f ms" % [table.id_of(number), one_ms])
 
 	_warm_usec += Time.get_ticks_usec() - t0
 	_warm_frames += 1
