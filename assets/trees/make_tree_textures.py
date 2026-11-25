@@ -377,9 +377,10 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
     # Witness tree (owner, 2026-10-18; Dave's picture 25 Nov 2026, art/references/witness_tree_dave_2026-11-25.jpg):
     # an oval, finely toothed leaf whose veins are barely seen by day and glow at night as a clear feather: one
     # midrib and four pairs of side veins, bold enough to read as lines on each leaf. The albedo vein is only a
-    # shade paler than the blade; md (leaf_witness_veins.png) is the glow: 255 at the centre of a vein line,
-    # falling off to its edge, 0 on the blade. Each leaf blanks the mask under it, so a leaf in front hides the
-    # veins of the leaves behind.
+    # shade paler than the blade; md (leaf_witness_veins.png) is the glow: 255 on a thin core at the centre of a
+    # vein line, 150 over the rest of the line (violet, not white), and a faint 10 over the blade inside a dark rim, so at
+    # night each leaf still reads as a broad dark shape round its veins, not only a skeleton (Lane A, 25 Nov 2026).
+    # Each leaf covers the mask under it, so a leaf in front hides the veins of the leaves behind.
     ca, sa = math.cos(angle), math.sin(angle)
     def at(x, y):
         return (cx + x * ca - y * sa, cy + x * sa + y * ca)
@@ -395,7 +396,7 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
         pts.append(at(t * length, w))
     rd.polygon(pts, fill=grey(shade))
     ad.polygon(pts, fill=255)
-    md.polygon(pts, fill=0)
+    md.polygon(pts, fill=10, outline=0, width=max(1, int(width * 0.04)))   # a dark rim parts it from the leaves behind
     vein = (int(min(255, shade * 1.06)), int(min(255, shade * 1.02)), int(min(255, shade * 1.08)))   # a shade paler: barely seen by day
     lines = [(at(length * 0.04, 0), at(length * 0.9, 0), 0.075)]
     for k in range(1, 5):
@@ -405,10 +406,10 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
             lines.append((at(x - length * 0.02, 0), at(x + length * 0.16, side * w), 0.05))
     for a, b, frac in lines:
         rd.line([a, b], fill=vein, width=max(1, int(width * frac)))
-    for a, b, frac in lines:   # the glow: a soft edge, then a bright core
-        md.line([a, b], fill=120, width=max(1, int(width * frac * 1.6)))
+    for a, b, frac in lines:   # the glow: the violet line, then a thin bright core
+        md.line([a, b], fill=150, width=max(1, int(width * frac * 1.4)))
     for a, b, frac in lines:
-        md.line([a, b], fill=255, width=max(1, int(width * frac * 0.8)))
+        md.line([a, b], fill=255, width=max(1, int(width * frac * 0.35)))
 
 
 def witness(name, size, seed):
@@ -425,7 +426,7 @@ def witness(name, size, seed):
         length = w * rng.uniform(0.28, 0.38)
         width = length * rng.uniform(0.52, 0.62)
         angle = rng.uniform(0, math.tau)
-        shade = rng.uniform(130, 235) * (1.0 - 0.3 * r)
+        shade = rng.uniform(150, 240) * (1.0 - 0.25 * r)
         witness_leaf(rd, ad, md, cx - math.cos(angle) * length / 2, cy - math.sin(angle) * length / 2, length, width, angle, shade, rng)
     finish(rgb, alpha, name, size)
     mask.resize(size, Image.LANCZOS).save(os.path.join(HERE, name.replace(".png", "_veins.png")))

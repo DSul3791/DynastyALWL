@@ -116,7 +116,7 @@ void fragment() {
 	ROUGHNESS = 1.0;
 	if (glow_energy > 0.0) {
 		float vein_mask = texture(veins, UV).r;
-		EMISSION = mix(glow, glow_core, smoothstep(0.6, 1.0, vein_mask)) * vein_mask * glow_energy * glow_amount;
+		EMISSION = mix(glow, glow_core, smoothstep(0.85, 1.0, vein_mask)) * vein_mask * glow_energy * glow_amount;
 	}
 }
 """
@@ -531,8 +531,8 @@ void fragment() {
 """
 
 const KINDS := ["tree", "shrub", "plant"]
-const WITNESS_GLOW_NIGHT := 1.4   # the witness vein glow at night: the line centres just over the glow threshold (1.2), so no haze round them
-const WITNESS_GLOW_DAY := 0.08    # and by day: barely seen (Dave's picture, left half)
+const WITNESS_GLOW_NIGHT := 0.9   # the witness vein glow at night: under the glow threshold (1.2) and low enough that the tone map keeps it violet (1.4 read white, Lane A 25 Nov 2026)
+const WITNESS_GLOW_DAY := 0.02    # and by day: barely seen (Dave's picture, left half; 0.08 still showed purple lines on Lane A's day picture)
 const GLOW_CELL_M := 24.0   # one glow light per this square of a glowing grove
 const GLOW_LIGHTS := 24     # at most this many glow lights per chunk
 const PART_M := [256.0, 128.0, 128.0]
@@ -1413,8 +1413,8 @@ func _make_tree_materials() -> void:
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
 	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
 	_tree_materials["witness"].set_shader_parameter("veins", _load_texture("res://assets/trees/leaf_witness_veins.png"))
-	_tree_materials["witness"].set_shader_parameter("glow", Color(0.6, 0.28, 1.0))         # violet vein lines
-	_tree_materials["witness"].set_shader_parameter("glow_core", Color(1.0, 0.85, 1.0))    # near white at their centres
+	_tree_materials["witness"].set_shader_parameter("glow", Color(0.55, 0.18, 1.0))        # saturated violet vein lines
+	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.9, 0.7, 1.0))     # paler only at the very centre
 	_tree_materials["witness"].set_shader_parameter("glow_energy", WITNESS_GLOW_NIGHT)   # set_day_sky turns it down by day
 
 
