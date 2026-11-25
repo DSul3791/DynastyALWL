@@ -46,6 +46,14 @@ Read the plan's `why`; `TEST_GATES.md` owns the change plan, the dev sweep (`--w
 
 At most three heavy Godot jobs share the PC through `tools/godot_slot.sh`; test runners take slots automatically, other long jobs must use the wrapper. Do not disable the guard to evade contention. No heavy cloud Godot/headless tests, bakes or renders; permitted static/lint/CI checks may run in the cloud. `TEST_GATES.md` owns machine/water-record prerequisites and evidence.
 
+## Lessons loop
+Weekly, about an hour (Dave 25 Nov 2026; `docs/RULINGS.md` R-TEAM-LESSONS):
+- When: each Wednesday after the token reset, the coordinator's scheduled task wakes it and it gives one thread the week's lessons.
+- Read: that week's independent-review findings, `tools/check_dave_rules.py` FAILs, and bugs entered again that `BugsList_Fixed.md` already holds.
+- Fix: a mistake seen twice in the week becomes one small PR to `dev` that stops it coming back, a new check or a skill fix, with independent review under `TEST_GATES.md`.
+- Ask first: anything that would change a ruling, a rulebook or a test gate goes to Dave through the coordinator, never straight into a PR.
+- Report: one line to the coordinator (the PR link, or "nothing seen twice"), kept in `/mnt/project-files/lessons/` for the next week.
+
 ## Backups and resource arrangements
 Reuse an existing approved backup arrangement without asking again. Before enabling unattended backups, obtain one-time approval for exact source paths, destination (prefer another physical drive), retention, verification and schedule. Follow approved retention, record success/failure and verify recovery; a copied folder alone is insufficient. Do not silently expand scope, discard backups/live water records/manual assets/uncommitted tiles, or modify Dave's checkout. Back up before authorized `main` promotion as required by the approved arrangement.
 
