@@ -94,14 +94,16 @@
 		},
 		{
 			"id": "hoe",
-			"title": "Make a hoe",
-			"hint": "A hoe treads paths and breaks ground for beds. Craft one in the inventory (I): a Wooden - Hoe is 2 sticks and a twine (keep a stone in your pack).",
+			"title": "Make the wooden tools",
+			"hint": "Craft both in the inventory (I), keeping a stone in your pack: a Wooden - Hoe (2 sticks, 1 twine) treads paths and breaks ground for beds, and a Wooden - Shovel (2 sticks) digs clay, sand and bog iron.",
 			"after": [
 				"fire"
 			],
 			"check": {
-				"made_item": "wooden_hoe",
-				"count": 1,
+				"made_item_all": [
+					"wooden_hoe",
+					"wooden_shovel"
+				],
 				"or_have": true
 			},
 			"stage": "start"
@@ -203,6 +205,27 @@
 			"check": {
 				"made_item": "stone_knife",
 				"count": 1,
+				"or_have": true
+			},
+			"stage": "start"
+		},
+		{
+			"id": "stone_tools",
+			"title": "Make every stone tool",
+			"hint": "Craft the rest of the stone set in the inventory (I): a Stone - Pickaxe (3 stones, 2 sticks, 2 twine) breaks boulders and takes copper, tin and coal, and a Stone - Saw (2 stones, 1 stick, 1 twine) cuts logs into boards by hand. With your Stone - Axe, Stone - Hammer and Stone - Knife that is all five.",
+			"after": [
+				"axe",
+				"hammer",
+				"knife"
+			],
+			"check": {
+				"made_item_all": [
+					"stone_axe",
+					"stone_hammer",
+					"stone_knife",
+					"stone_pickaxe",
+					"stone_saw"
+				],
 				"or_have": true
 			},
 			"stage": "start"

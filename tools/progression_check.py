@@ -100,7 +100,7 @@ def unknown_ids(r):
             for k in ["made_item", "got_item", "have_item"]:
                 if ch.get(k) and ch[k] not in ids:
                     out.append("goal %s %s names %s" % (g.get("id"), k, ch[k]))
-            for k in ["made_item_any", "have_item_any", "stored_item_any"]:
+            for k in ["made_item_any", "made_item_all", "have_item_any", "stored_item_any"]:
                 for iid in ch.get(k, []):
                     if iid not in ids:
                         out.append("goal %s %s names %s" % (g.get("id"), k, iid))
