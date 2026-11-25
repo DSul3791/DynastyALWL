@@ -29,6 +29,17 @@ func _init() -> void:
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, -4.0, 0), Basis.IDENTITY, false, 0.0, "jump", false, 0.3) == "fall", "dropping in the air: fall")
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "fall", false, 0.016) == "land", "back on the floor after a long fall: land")
 	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -1.0), Basis.IDENTITY, true, 1.0, "land", false, 0.5) == "walk", "once the landing is over: the plain walk (no strafe clips on this body)")
+	# QA #15 (25 Nov 2026): a running jump lands straight back into the gait (the land clip plants both feet, at a run they slid), and the fall is one still air pose.
+	AvatarDriverScript.clip_for(body, 0, Vector3(0, -4.0, -6.0), Basis.IDENTITY, false, 6.0, "run", false, 0.5)
+	_check(AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, -6.0), Basis.IDENTITY, true, 6.0, "fall", false, 0.016) != "land", "back on the floor at a run after a long fall: no land clip")
+	var fall: Animation = body.animation_player.get_animation("fall")
+	var still: bool = true
+
+	for t in range(fall.get_track_count()):
+		if fall.track_get_type(t) == Animation.TYPE_ROTATION_3D and fall.track_get_key_count(t) > 1:
+			still = still and (fall.track_get_key_value(t, 0) as Quaternion).is_equal_approx(fall.track_get_key_value(t, fall.track_get_key_count(t) - 1) as Quaternion)
+
+	_check(still, "the fall holds one air pose (no legs running in the air)")
 	# No jog since 10 Nov 2026 (the walk is 3.2 m/s): walking backwards on this body plays the gait in reverse; forwards it plays as is.
 	var back_clip: String = AvatarDriverScript.clip_for(body, 0, Vector3(0, 0, 3.2), Basis.IDENTITY, true, 3.2, "walk", false, 0.5)
 	_check(AvatarDriverScript.backward_sign(body, back_clip) < 0.0, "walking backwards at 3.2 m/s: the %s clip plays in reverse" % back_clip)

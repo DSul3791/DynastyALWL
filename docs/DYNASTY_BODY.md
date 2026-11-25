@@ -22,7 +22,7 @@ Mount convention: grip 7 cm into the palm along the forearm, -Z along fingers, +
 
 | game clip | Dave's clip | note |
 |---|---|---|
-| idle, carry_idle | Idle | |
+| idle, carry_idle | Idle_10 | since 25 Nov 2026 (QA #15, coordinator pick): Idle turned the head 56 and the hips 55 degrees every 4 s |
 | walk, carry_walk | Walking | the arm does not rise to steady a shoulder log |
 | jog | Running | |
 | run | RunFast | |
