@@ -3464,6 +3464,7 @@ func _measure() -> void:
 
 	client.quality = quality_was
 	client._apply_quality()
+	client.hud.visible = true   # the GPU table hides the HUD while it is up
 	DisplayServer.window_set_vsync_mode(vsync_was)
 
 	FreezeWatchScript.printer.line("ROBOT %s step measure: done" % robot_name)

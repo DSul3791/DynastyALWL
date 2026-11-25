@@ -16,6 +16,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# powershell -File passes "-Plays m8,m4" as one string: split it here.
+$Plays = @($Plays | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
+$known = @("m8", "m4", "r4")
+
+if (@($Plays | Where-Object { $known -notcontains $_ }).Count -gt 0 -or $Plays.Count -eq 0) {
+	Write-Output "LOW MEASURE STOPPED: -Plays must be some of m8, m4, r4 (got: $($Plays -join ', '))"
+	exit 1
+}
 $started = @()
 
 function Stop-Started {

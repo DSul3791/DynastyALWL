@@ -164,8 +164,8 @@ func _census() -> String:
 		stack.append_array(node.get_children())
 
 		if node.is_processing() or node.is_physics_processing() or node.is_processing_internal() or node.is_physics_processing_internal():
-			var script: Script = node.get_script() as Script
-			var key: String = script.resource_path.get_file() if script != null else node.get_class()
+			var attached: Script = node.get_script() as Script
+			var key: String = attached.resource_path.get_file() if attached != null else node.get_class()
 			counts[key] = int(counts.get(key, 0)) + 1
 
 	var keys: Array = counts.keys()

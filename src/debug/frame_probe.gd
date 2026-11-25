@@ -131,7 +131,7 @@ static func frame(delta: float) -> void:
 			str(context.call()) if context.is_valid() else "", _shown_text()
 		])
 
-	# BugsList 108: single physics steps of 44-51 ms on Dave's PC, with nothing of ours in them (no script runs in the client's physics step). One
+	# BugsList 108: single physics steps of 44-51 ms on Dave's PC, with nothing of ours in them (only terrain_client's one-line _physics_process stamp runs in the client's physics step). One
 	# line at most every 5 s names the physics server's load and what this frame did, so a play log says whether new colliders (flora trunks,
 	# ground) or many moving bodies are the cause.
 	var physics_ms: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0

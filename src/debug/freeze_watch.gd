@@ -16,7 +16,7 @@ const GAP_MS := 500                     # a main-thread frame gap this long prin
 const LATE_MS := 250                    # the watch woke this late: its stuck reading is not trusted (the thread was starved)
 const DRAW_START := "draw start (every _process and deferred call done)"     # a stall after it is in the draw
 const DRAWN := "drawn (the draw done; next the physics step, then frame start)"   # a stall after it: the window's present, or physics callbacks
-const PHYSICS_STEP := "physics callbacks done (next the physics engine's step)"     # a stall after it: the physics engine (terrain_client _physics_process)
+const PHYSICS_STEP := "physics callbacks done (next the physics engine's step, the network poll, then frame start)"   # terrain_client _physics_process
 
 const PrintQueueScript := preload("res://src/shared/print_queue.gd")
 static var printer = PrintQueueScript.new()   # the client's diagnostic lines, printed on a worker (D-LAG-1): a print on the main thread flushed the log 0.4-1.6 s
@@ -30,7 +30,9 @@ static var _beat_usec: int = 0
 static var _pre_usec: int = 0
 static var _post_usec: int = 0
 static var _phys_usec: int = 0
-static var split: String = ""            # "process N, draw N, present N, physics engine N" for the frame that just ended (ms)
+static var split: String = ""            # "process N, draw N, present N, physics step and poll N" for the frame that just ended (ms); "present" runs
+                                          # from the draw's end to the last physics callback, "physics step and poll" from there to the next frame's
+                                          # start (the physics engine's step, the network poll, any _process before the client's)
 
 var _thread: Thread
 var _running: bool = false
@@ -43,8 +45,10 @@ static func beat() -> void:
 	if _beat_usec > 0 and _pre_usec > _beat_usec and _post_usec >= _pre_usec:
 		var after: int = (_phys_usec if _phys_usec > _post_usec else now_usec) - _post_usec
 		var engine: int = now_usec - _phys_usec if _phys_usec > _post_usec else 0
-		split = "process %.0f, draw %.0f, present %.0f, physics engine %.0f" % [float(_pre_usec - _beat_usec) / 1000.0, float(_post_usec - _pre_usec) / 1000.0,
+		split = "process %.0f, draw %.0f, present %.0f, physics step and poll %.0f" % [float(_pre_usec - _beat_usec) / 1000.0, float(_post_usec - _pre_usec) / 1000.0,
 			float(after) / 1000.0, float(engine) / 1000.0]
+	else:
+		split = "no draw"   # no frame drawn since the last beat (minimised, headless): no split for it
 
 	_beat_usec = now_usec
 	_mutex.lock()
