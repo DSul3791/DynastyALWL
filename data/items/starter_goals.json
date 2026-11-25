@@ -152,7 +152,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Make a bed and place it in your lean-to: a Thatch - Bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine), or a Straw - Bed with the hammer. Any bed counts.",
+			"hint": "Make a bed and place it in your lean-to: a Thatch - Bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine), or a Straw - Bed from the hammer's build list (hold the hammer, press R: 12 straw, 6 sticks, 2 twine). Any bed counts.",
 			"after": [
 				"shelter"
 			],
