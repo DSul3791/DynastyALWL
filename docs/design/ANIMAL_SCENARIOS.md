@@ -22,8 +22,8 @@ Earlier work this builds on, not replaced: the temperament table and hunters (`A
 
 ## Rules every animal keeps (standing rulings)
 
-1. **Fire keeps everything away from players** (Dave, 25 Nov 2026). See "Fire" below. How far it reaches past hunger, cornering, young
-   and dens is this document's reading, for Dave to confirm.
+1. **Fire keeps everything away from players** (Dave, 25 Nov 2026). See "Fire" below. It beats hunger, cornering, young and dens: by
+   Dave's standing rule "newer rules override older ideas" (23 Nov 2026) it replaces the older den rulings of 6 and 8 Nov (see "Fire").
 2. Animals **stare before fleeing** and **warn before attacking** (growl, huff, stamp; Dave 23 Nov 2026).
 3. No teleporting, sliding or passing through players; every animal can be hit; each model uses **its own** moves and attacks (Dave's
    play-test rulings 19 to 24 Nov 2026, relayed by the coordinator; see `ANIMAL_NETCODE.md`).
@@ -49,7 +49,8 @@ them. An animal inside one bolts away; none wanders in; none charges or stalks a
 | Torch or lantern carried, lit | 9 m | `server_items.gd` TORCH_PROTECT_M |
 | Standing torch, torch post, pillar, iron stand (lit) | 8 m | `data/items/structures.json` protect_m |
 
-Exceptions in the code today, from earlier rulings, which Dave's 25 Nov words would replace only if he confirms (the bear den: Dave
+Exceptions in the code today, from older rulings that Dave's 25 Nov words replace under his 23 Nov rule "newer rules override older
+ideas" (the coordinator tells Dave, who can bring them back) (the bear den: Dave
 6 Nov 2026 in the brown bear row note, "a torch does not protect you at its den", and `bear_threat_design.md` "Fire still does not help
 inside the den ring"; the wolf pup den: `wolf_packs_and_pups_design.md`, "torch or not", a campfire still holds): a bear at its den ignores a torch or fire (`_in_den`); a mother with a player
 between her and her young attacks "torch or not"; a wolf pack rushes a player near its pups' den "torch or not" (a campfire still holds
@@ -60,7 +61,7 @@ food (NPS, bear.org), and fire alone does not stop a determined predator. Dave's
 
 In our game (recommended):
 - Keep today's radii. They scale with the fire's size, which is easy to learn.
-- **No exceptions** (if Dave confirms it replaces the den and pup-den rulings). A starving animal circles at the edge of the light and waits, it does not come in. A cornered animal next to a fire
+- **No exceptions** (the den, mother and pup-den exceptions are removed under the 25 Nov ruling). A starving animal circles at the edge of the light and waits, it does not come in. A cornered animal next to a fire
   breaks away along the edge, never through the light and never at the player in it. A mother whose young is near a player standing in
   firelight calls the young away instead of charging. A den guard holds at the edge.
 - The player should see where safe is. Today the glow is smaller than the keep-off ring for the small and medium fires (light 3.5 and
@@ -185,7 +186,7 @@ A roar is not a black bear sound. Keep `bear_roar` only, if at all, for a brown 
 | S17 Group | Solitary. | Single; mothers with 1 to 3 cubs (share 0.3 today). |
 | S18 Day and night | Day and dusk; naps by day; mostly beds at night. | Today: day 1.0, dusk 1.0, night 0.05. Keep, add the midday rest. |
 | S19 Weather, seasons | Dens up to 7 months in the north; spring hungry; autumn eats heavily (hyperphagia). Heat makes them rest. | Winter: in dens, not out (or very few). Spring: hungrier, bolder (threat x1.5 today). Autumn: busy feeding, warier of people (x0.7 today). Rain: little change. |
-| S20 Fire | Avoids people and fire unless food-conditioned. | Fire rule above (no den exception, if Dave confirms). |
+| S20 Fire | Avoids people and fire unless food-conditioned. | Fire rule above (no den exception, 25 Nov ruling). |
 | S21 Sounds | See the sound table. | See the sound table. |
 
 ### Brown bear: what differs
@@ -556,10 +557,11 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    warthog's was turned down on purpose, it drops onto its haunches; `ClackTeeth` for the black bear; hyena `Howling_*`).
    Fix: map what each file has; for files with none, choose with the coordinator (borrow a look with moves, retarget, or a new model).
    The black bear first (bear item 4).
-7. **Fire exceptions, for Dave to confirm.** The bear den ignores fire and torches (`_in_den`, Dave 6 Nov 2026 and
-   `bear_threat_design.md`); a mother with a player near her young attacks "torch or not"; a wolf pack at its pups' den rushes "torch or
-   not" (`wolf_packs_and_pups_design.md`); a charge already started is locked and may pass into new light. If Dave's 25 Nov "fire keeps
-   everything away" replaces these: remove them; hold at the light's edge; a charge turns off at the edge.
+7. **Fire exceptions are removed** (Dave 25 Nov 2026 "fire keeps everything away from the players", newer than the bear den ruling
+   of 6 Nov 2026 and the wolf pup den and bear ladder rulings of 8 Nov 2026, under his 23 Nov rule "newer rules override older ideas").
+   Today the bear den ignores fire and torches (`_in_den`); a mother with a player near her young attacks "torch or not"; a wolf pack at
+   its pups' den rushes "torch or not" (`wolf_packs_and_pups_design.md`); a charge already started is locked and may pass into new
+   light. Fix: remove them; hold at the light's edge; a charge turns off at the edge. (The bear fix thread has this in hand.)
 8. **A hurt animal does not slow down or bed in cover, and bleeds at one rate.** Every wound drains 0.15 health a second whatever the
    animal (a deer of 20 dies in about 2 minutes, an elephant of 300 in 33), and it flees at full speed (`bleed` says it "runs, rests and finally dies"; check how it rests). Real: a badly hit
    deer runs a short way and lies down; pushed, it runs much farther. Fix: a hurt animal runs slower (the wounded gait clips most files
