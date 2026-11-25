@@ -69,6 +69,7 @@ the store, so the server serves it instead of making it as players walk. Ground 
 before. The pack also holds the tiles' trees and plants (flora_pack/); the server's start line says
 `server flora: prebuilt plants for N chunks in N tiles`, or that a plants file was made from other game files and is not used
 (build the pack again from the same commit as the image).
+   Release check: an old pack's plants stay valid only if no file in `src/stream/flora_pack.gd` SOURCES or `data/tables/*.json` changed in a way that can move a plant since it was built. Comments, blank lines and the look-only fields of `data/tables/flora.json` (`flora_pack.gd` LOOK_KEYS: a tree's colour, glow, names and uses) do not count (25 Nov 2026), so a look-only change needs no rebuild. Any other change to those files does: build the pack again, or the server places those plants itself (0.5 to 0.9 s a 256 m chunk) and says so at start.
 1. Build, on the PC, in a clone at the same commit as the server image (the pack must come from the same tiles; the install refuses
    one that does not). The starter tile takes about an hour (ground about 40 minutes, plants about 20) and 6-10 GB plus about 0.5 GB of plants; a stopped build goes on where it was when run again:
    `& <godot> --headless --path E:\Software\godotDev\dynasty_release --script res://src/worldgen/tools/prebuild_ground.gd -- --tiles=3_4 --out=E:/Software/godotDev/ground_pack`

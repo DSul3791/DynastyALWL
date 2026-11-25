@@ -192,7 +192,6 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"name": str(entry["name"]),
 			"kind": KINDS.find(str(entry["kind"])),
 			"shape": str(entry["shape"]),
-			"color": entry["color"],
 			"height_min": float(height[0]),
 			"height_max": float(height[1]),
 			"crown": float(entry["crown_m"]),

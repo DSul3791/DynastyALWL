@@ -44,6 +44,49 @@ func check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+# A look-only edit (a tree's colour or glow, a comment) leaves the pack valid; an edit that moves plants does not (25 Nov 2026).
+func _check_look_only() -> void:
+	var flora_path: String = "res://data/tables/flora.json"
+	var flora: String = FileAccess.get_file_as_string(flora_path)
+	var base: String = FloraPackScript.placing_text(flora_path, flora)
+	var looked: Dictionary = JSON.parse_string(flora)
+	var placed: Dictionary = JSON.parse_string(flora)
+	var witness: int = -1
+
+	for n in range(looked["entries"].size()):
+		if str(looked["entries"][n].get("name", "")) == "witness_tree":
+			witness = n
+
+	check(witness >= 0, "the witness tree row is found")
+	looked["entries"][witness]["color"] = [0.1, 0.9, 0.1]
+	looked["entries"][witness]["glow"] = [1.0, 0.0, 1.0]
+	looked["entries"][witness]["leaf_glow"] = false
+	looked["note"] = "another note"
+	check(FloraPackScript.placing_text(flora_path, JSON.stringify(looked, "\t")) == base, "a colour, glow or note change to flora.json keeps the pack valid")
+	placed["entries"][witness]["crown_m"] = float(placed["entries"][witness]["crown_m"]) + 1.0
+	check(FloraPackScript.placing_text(flora_path, JSON.stringify(placed, "\t")) != base, "a spacing change to flora.json makes the pack stale")
+	placed = JSON.parse_string(flora)
+	placed["entries"][witness]["height_m"] = [10, 12]
+	check(FloraPackScript.placing_text(flora_path, JSON.stringify(placed, "\t")) != base, "a height change to flora.json makes the pack stale")
+	var code: String = "var a := 1\n\n# a note\n\tvar b := 2   # trailing\n"
+	check(FloraPackScript.placing_text("res://x.gd", code) == FloraPackScript.placing_text("res://x.gd", "var a := 1\n\t# moved note\n\tvar b := 2   # trailing\r\n"),
+		"a whole-line comment or blank line in placer code keeps the pack valid")
+	check(FloraPackScript.placing_text("res://x.gd", code) != FloraPackScript.placing_text("res://x.gd", "var a := 2\n\tvar b := 2   # trailing\n"), "a code change makes the pack stale")
+	var read_by: Array = []
+
+	for source in FloraPackScript.SOURCES:
+		if not String(source).ends_with(".gd"):
+			continue
+
+		var text: String = FileAccess.get_file_as_string(source)
+
+		for key in FloraPackScript.LOOK_KEYS:
+			if text.contains('entry["%s"]' % key) or text.contains('entry.get("%s"' % key) or text.contains('entry.has("%s")' % key):
+				read_by.append("%s reads %s" % [source.get_file(), key])
+
+	check(read_by.is_empty(), "no placer source reads a look-only flora field %s" % str(read_by))
+
+
 func _init() -> void:
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(WORLD + "/world.json", errors)
@@ -59,6 +102,7 @@ func _init() -> void:
 	var print_text: String = FloraPackScript.fingerprint(stamp)
 	check(print_text.length() == 32 and print_text == FloraPackScript.fingerprint(stamp), "the fingerprint is the same each time")
 	check(FloraPackScript.fingerprint(stamp + "x") != print_text, "other tiles give another fingerprint")
+	_check_look_only()
 
 	var folder: String = "user://test_flora_pack/" + FloraPackScript.FOLDER
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))

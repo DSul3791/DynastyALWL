@@ -25,6 +25,11 @@ const SOURCES := [
 	"res://worlds/base_world/world.json",
 ]
 const FOLDERS := [["res://data/tables", ".json"], ["res://worlds/base_world/water", ".water"]]   # every such file in them (the baked water: shore plants)
+# Look-only fields of a flora.json row: how a plant is drawn, named or used, never where it stands, how tall, or its trunk. They are left out of
+# the fingerprint, so a change to a tree's look (the witness glow, 25 Nov 2026) does not make every tile's pack stale. No placer source may read
+# one (test_flora_pack checks that); a field that starts to matter for placing must come out of this list.
+const LOOK_KEYS := ["color", "autumn_colors", "young_color", "young_m", "glow", "glow_energy", "glow_height", "leaf_glow", "display", "look_alikes",
+	"familiarity", "uses", "properties", "rarity", "yields", "discovery", "time_of_day", "bloom_years", "fantasy"]
 
 var _index: Dictionary = {}     # Vector2i chunk -> [path, full offset, full size, full raw, trees offset, trees size, trees raw]
 var tiles: int = 0              # files in use
@@ -55,9 +60,43 @@ static func _md5_of(path: String) -> String:
 		return "-"
 
 	if path.ends_with(".gd") or path.ends_with(".json"):
-		return FileAccess.get_file_as_string(path).replace("\r\n", "\n").md5_text()
+		return placing_text(path, FileAccess.get_file_as_string(path)).md5_text()
 
 	return FileAccess.get_md5(path)
+
+
+# The part of a source file that can move a plant: code without its whole-line comments and blank lines, and flora.json without its notes
+# and its rows' LOOK_KEYS. A comment or a look change leaves the fingerprint, and so every tile's pack, as it was.
+static func placing_text(path: String, text: String) -> String:
+	text = text.replace("\r\n", "\n")
+
+	if path.ends_with(".gd"):
+		var kept: PackedStringArray = PackedStringArray()
+
+		for line in text.split("\n"):
+			var bare: String = line.strip_edges()
+
+			if bare != "" and not bare.begins_with("#"):
+				kept.append(line)
+
+		return "\n".join(kept)
+
+	if path.ends_with("/flora.json"):
+		var table: Variant = JSON.parse_string(text)
+
+		if typeof(table) != TYPE_DICTIONARY:
+			return text                                   # not readable: hash it whole (the placer will fail on it anyway)
+
+		(table as Dictionary).erase("note")
+
+		for entry in (table as Dictionary).get("entries", []):
+			if typeof(entry) == TYPE_DICTIONARY:
+				for key in LOOK_KEYS:
+					(entry as Dictionary).erase(key)
+
+		return JSON.stringify(table, "", true, true)
+
+	return text
 
 
 static func file_name(tile: Vector2i) -> String:
