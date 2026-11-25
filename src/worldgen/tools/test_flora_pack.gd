@@ -86,7 +86,7 @@ func _check_look_only() -> void:
 			var hits: int = text.count('"%s"' % key) + text.count("'%s'" % key)
 
 			if source.ends_with("/tree_builder.gd") and key == "color":
-				hits -= text.count('"color": Color(')      # its own fern look table (FERN_LOOKS), not a flora row
+				hits -= text.count('"color": Color(') + text.count('look["color"]')   # its own fern look table (FERN_LOOKS), not a flora row
 
 			if hits > 0:
 				read_by.append("%s names %s" % [source.get_file(), key])
