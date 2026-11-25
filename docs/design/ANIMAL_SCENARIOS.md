@@ -585,7 +585,7 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
     (late winter, spring after the den, a poor year) that makes them stand their ground, come to camps, food and carcasses, and bolder
     with prey, never into firelight (bear item 6).
     Built 25 Nov 2026 (`animals.json` hunger rows and block; `server_animals` spawn, `may_attack`, `_threat_m`, `thief_row`): bears,
-    black bears and the big cats and hyena are born starving at a season chance (bears: 40% in the first 30 days of spring only, after Dave's 25 Nov ruling below). A starving one
+    black bears and the big cats and hyena are born starving at a season chance (bears: 40% on days 0 to 30 of spring only, after Dave's 25 Nov ruling below). A starving one
     stands its ground and warns by the ladder at 1.5 times its threat range, whatever its temperament, and comes for food left out
     unless a player is within 6 m of it (a mother with young is never born starving). Like any animal that may fight it chases a
     player who runs from it close by (hunter chase_m). Neither it nor a fox ever goes for food in, or creeps through, a fire's or a

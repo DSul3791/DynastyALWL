@@ -1753,6 +1753,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 			if _fire_guard(a["target"]) != Vector3.INF:
 				a["target"] = a["pos"]   # never wanders into a fire's light
+				a.erase("feed_at")   # nor eats there
 
 			# A friendly horse is curious: it ambles toward a player it can see until it is stop_m away.
 			if _curious(a, def, seen_d) and seen_d > _stop_m(a, def):
@@ -2131,14 +2132,14 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 	a["fishing"] = false
 
 	if berry_bushes.is_valid() and rng.randf() < float(den_cfg.get("berry_share", 0.0)):   # luck-exempt: whether it goes to the berries next
-		var open: Array = []
+		var near: PackedVector3Array = berry_bushes.call(den, range_m)
 
-		for at in berry_bushes.call(den, range_m):
-			if _fire_guard(at) == Vector3.INF and dry_line(def, a["pos"], at):
-				open.append(at)
+		for _try in (PICK_TRIES if not near.is_empty() else 0):   # a few random bushes, not every one in range: berries are everywhere
+			var bush: Vector3 = near[rng.randi_range(0, near.size() - 1)]   # luck-exempt: which bush it eats at
 
-		if not open.is_empty():
-			var bush: Vector3 = open[rng.randi_range(0, open.size() - 1)]   # luck-exempt: which bush it eats at
+			if _fire_guard(bush) != Vector3.INF or not dry_line(def, a["pos"], bush):
+				continue
+
 			var side: Vector3 = Vector3(a["pos"].x - bush.x, 0.0, a["pos"].z - bush.z)
 			var spot: Vector3 = bush + (side.normalized() if side.length() > 0.01 else Vector3.RIGHT) * 1.2   # beside the bush, not in it
 			a["feed_at"] = spot
@@ -2158,7 +2159,7 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 # fishing spot it went to (feed_at, within FED_NEAR_M), so a starving one counts it; after hunger.meals of them it is fed and starving
 # no more: it runs from players again by its temperament and leaves food left out alone.
 func _ate(a: Dictionary, def: Dictionary) -> void:
-	if not a.has("feed_at") or a["pos"].distance_to(a["feed_at"]) > FED_NEAR_M:
+	if not a.has("feed_at") or Vector2(a["pos"].x - a["feed_at"].x, a["pos"].z - a["feed_at"].z).length() > FED_NEAR_M:   # flat: a fishing spot keeps its den's height
 		return
 
 	a.erase("feed_at")

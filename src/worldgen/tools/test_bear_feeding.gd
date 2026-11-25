@@ -113,5 +113,25 @@ func _initialize() -> void:
 
 	check(not bool(bear["starving"]), "fed after %d meals: starving no more" % meals)
 
+	# 4. Fishing on a bank below the den (the spot keeps the den's height): the meal still counts.
+	var g = make()
+	var fisher: Dictionary = g.animals[g.spawn("bear", 0.0, 0.0)]
+	fisher["starving"] = true
+	fisher["feed_at"] = Vector3(30.0, 10.0, 0.0)
+	fisher["pos"] = Vector3(30.5, 0.0, 0.0)   # on the bank, 10 m under the den
+	g._ate(fisher, g.species_def("bear"))
+	check(int(fisher.get("meals", 0)) == 1, "a meal at a fishing spot below the den counts (%d)" % int(fisher.get("meals", 0)))
+
+	# 5. Through the bear's own step: a graze ending at its bush is a meal; one ending after it ran off is not.
+	for ran in [false, true]:
+		var h = make()
+		var s: Dictionary = h.animals[h.spawn("black_bear", 0.0, 0.0)]
+		s["starving"] = true
+		s["state"] = h.GRAZE
+		s["timer"] = 0.0
+		s["feed_at"] = Vector3(40.0, 10.0, 0.0) if ran else s["pos"]
+		h._step(s, 0.1, INF, Vector3.INF, INF, Vector3.INF)
+		check(int(s.get("meals", 0)) == (0 if ran else 1), "a graze %s is %s meal (meals %d)" % ["away from the bush" if ran else "at the bush", "no" if ran else "a", int(s.get("meals", 0))])
+
 	print("test_bear_feeding: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
