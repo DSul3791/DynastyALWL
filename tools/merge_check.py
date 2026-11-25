@@ -273,6 +273,13 @@ rulings = subprocess.run([sys.executable, "tools/check_rulings.py"], capture_out
 if rulings.returncode != 0:   # one live line per ruling, replaced rules removed (CONSTITUTION.md, "Rulings")
     for line in rulings.stdout.splitlines():
         bad("rulings: " + line)
+dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
+if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (docs/RULINGS.md)
+    for line in dave.stdout.splitlines():
+        if line.startswith("FAIL"):
+            bad("dave rule: " + line[5:])
+    if "FAIL" not in dave.stdout:
+        bad("check_dave_rules crashed: " + dave.stderr[-200:])
 rulings_self = subprocess.run([sys.executable, "-I", "tools/test_check_rulings.py"], capture_output=True, text=True)
 if rulings_self.returncode != 0:
     bad("rulings check self-test: " + rulings_self.stdout.strip()[-200:])
