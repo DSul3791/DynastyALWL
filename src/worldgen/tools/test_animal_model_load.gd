@@ -89,6 +89,16 @@ func _initialize() -> void:
 		stand_in.free()
 	check(v._scenes_ready(2), "headless, a kind's files count as in, so the wait never starts there")
 
+	# The animals line for the log (QA #12): it runs with bodies drawn and with none, and starts its counts again.
+	v._report_batches = 3
+	v._report_held = 2
+	v._report(Vector3(1.0, 0.0, 1.0))
+	check(v._report_batches == 0 and v._report_held == 0, "the animals line starts its counts again")
+	var empty = AnimalViewScript.new()
+	empty._report(Vector3.INF)
+	empty.free()
+	check(true, "the animals line with no bodies and no player does not stop the game")
+
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCENE))
 	print("test_animal_model_load: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

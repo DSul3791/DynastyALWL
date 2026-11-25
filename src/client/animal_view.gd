@@ -77,6 +77,11 @@ var _scenes_of: Dictionary = {}   # species number -> its model files that exist
 var _scene_held: Dictionary = {}  # model file path -> its scene or texture, loaded on a worker (_scenes_ready) and kept so load() finds it cached
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
 var _alpha_of: Dictionary = {}     # texture path -> has see-through pixels (_has_alpha)
+const REPORT_MS := 30000         # how often the log gets the animals line (_report; QA #12)
+var _report_ms: int = 0           # clock_ms of the last animals line
+var _report_rows: int = 0         # rows in the newest batch
+var _report_batches: int = 0      # batches since the last line
+var _report_held: int = 0         # rows held undrawn for model files since the last line
 const SCENE_WAIT_MS := 8000      # the longest a kind is held undrawn while its model files load on a worker (_waited_out; QA #12)
 var _wait_since: Dictionary = {}  # species number -> clock_ms when it was first held undrawn for its files (_waited_out)
 var _code_body_only: bool = false # set while an animal past SCENE_WAIT_MS is made: _make_model gives null, so the code-built body is drawn
@@ -635,6 +640,8 @@ func seen_server_ms() -> Array:
 
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
+	_report_rows = rows.size()
+	_report_batches += 1
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
 	MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)
@@ -661,6 +668,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			var files_in: bool = _scenes_ready(int(row[1]))
 
 			if not files_in and not _waited_out(int(row[1])):
+				_report_held += 1
 				continue
 
 			_code_body_only = not files_in
@@ -853,6 +861,10 @@ func _process_body(delta: float) -> void:
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
 	_frame += 1
 
+	if int(clock_ms.call()) - _report_ms >= REPORT_MS:
+		_report_ms = int(clock_ms.call())
+		_report(me)
+
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
 		var node: Node3D = b["node"]
@@ -1021,6 +1033,51 @@ func _scenes_ready(number: int) -> bool:
 	return all_in
 
 
+# The log line every REPORT_MS (QA #12, 25 Nov 2026: Dave saw no animals on the live server though bodies were built): how many rows the
+# last batch had and how many batches came, how many bodies are drawn and how many rows were held for model files, and the nearest drawn
+# body: its kind, distance, drawn height, the height the server sent, the first thing under it (one ray down from 60 m above: the ground, or a
+# tree or roof over it) and whether it is shown. One line, so the log says
+# whether the server sends none near, or the client holds, hides or misplaces them.
+func _report(me: Vector3) -> void:
+	var near_id: int = -1
+	var near_d: float = INF
+
+	for id in _bodies:
+		var at: Vector3 = (_bodies[id]["node"] as Node3D).global_position if (_bodies[id]["node"] as Node3D).is_inside_tree() else (_bodies[id]["node"] as Node3D).position
+		var d: float = Vector2(at.x - me.x, at.z - me.z).length() if me != Vector3.INF else 0.0
+
+		if d < near_d:
+			near_d = d
+			near_id = int(id)
+
+	var nearest: String = "none"
+
+	if near_id >= 0:
+		var node: Node3D = _bodies[near_id]["node"]
+		var at: Vector3 = node.global_position if node.is_inside_tree() else node.position
+		var ground: float = _ground_under(at)
+		var sent_y: float = float((_bodies[near_id]["target"] as Vector3).y)
+		nearest = "%s %.0f m off, drawn at y %.1f, sent at y %.1f, first hit below it %s, %s" % [str(_bodies[near_id]["kind"]), near_d, at.y, sent_y, "%.1f" % ground if not is_nan(ground) else "none", "shown" if node.is_visible_in_tree() else "hidden"]
+
+	FreezeWatchScript.printer.line("Animals: %d rows in the last batch, %d batches in %.0f s, %d drawn, %d held for model files; nearest drawn %s; player at %s" % [_report_rows, _report_batches, REPORT_MS / 1000.0, _bodies.size(), _report_held, nearest, "%.0f %.0f" % [me.x, me.z] if me != Vector3.INF else "unknown"])
+	_report_batches = 0
+	_report_held = 0
+
+
+# The drawn ground's height under a point (one ray from 60 m above to 200 m below), NAN when nothing is hit or there is no world.
+func _ground_under(at: Vector3) -> float:
+	if not is_inside_tree() or get_world_3d() == null:
+		return NAN
+
+	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
+
+	if space == null:
+		return NAN
+
+	var hit: Dictionary = space.intersect_ray(PhysicsRayQueryParameters3D.create(at + Vector3.UP * 60.0, at + Vector3.DOWN * 200.0))
+	return float((hit["position"] as Vector3).y) if not hit.is_empty() else NAN
+
+
 # Whether a kind has waited SCENE_WAIT_MS (clock_ms, tests) for its model files since it was first sent: then it is drawn anyway, with the
 # code-built body, and the log says so once per kind ("animal model <kind>: still loading after N s ..."). The clock starts again once
 # its files are all in (_scenes_ready), so a kind that waits again later gets its own full wait.
@@ -1034,7 +1091,7 @@ func _waited_out(number: int) -> bool:
 	if now - int(_wait_since[number]) < SCENE_WAIT_MS:
 		return false
 
-	_model_note(str(KIND_OF_SPECIES.get(number, number)), "still loading after %d s: drawn with the code-built body until its files are in" % int(SCENE_WAIT_MS / 1000))
+	_model_note(str(KIND_OF_SPECIES.get(number, number)), "still loading after %.0f s: drawn with the code-built body until its files are in" % (SCENE_WAIT_MS / 1000.0))
 	return true
 
 
