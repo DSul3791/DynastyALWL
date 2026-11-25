@@ -34,5 +34,21 @@ func _init() -> void:
 	_check(neck.size.z > float(d["neck"]) * 0.8, "neck reaches forward (%.2f)" % neck.size.z)
 	_check(neck.size.y < float(d["width"]) * 0.7, "neck lies low (%.2f tall)" % neck.size.y)
 	deer.free()
+
+	# Every animal's body is named for it, never a bare "Carcass" (Dave 25 Nov 2026, R-HUNT-DEAD-NAME: "it should say Dead WhateverAnimalItwas").
+	var animals: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
+	var named: int = 0
+
+	for sp in animals["species"]:
+		var called: String = CarcassLook.dead_name(sp)
+		_check(called.begins_with("Dead ") and called != "Dead animal" and called.to_lower().find("carcass") < 0, "%s's body is named for it (%s)" % [sp, called])
+		named += 1
+
+	_check(named >= 40, "every species was named (%d)" % named)
+	_check(CarcassLook.dead_name("deer") == "Dead deer", "a deer's body is Dead deer (%s)" % CarcassLook.dead_name("deer"))
+	_check(CarcassLook.dead_name("black_bear") == "Dead black bear", "a black bear's is Dead black bear (%s)" % CarcassLook.dead_name("black_bear"))
+	_check(CarcassLook.dead_name("duck") == "Dead duck", "one duck, not Dead ducks (%s)" % CarcassLook.dead_name("duck"))
+	_check(CarcassLook.dead_name("red_squirrel") == "Dead red squirrel", "a kind only carcass.json has reads its id (%s)" % CarcassLook.dead_name("red_squirrel"))
+	_check(CarcassLook.dead_name("") == "Dead animal", "no kind at all is a Dead animal, not a Carcass (%s)" % CarcassLook.dead_name(""))
 	print("carcass look tests: %d failures" % _fails)
 	quit(1 if _fails > 0 else 0)
