@@ -1670,6 +1670,30 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 **Found by:** Dave, his own play, 25 Nov 2026: "I have noticed these trees at night and its not just the veins its the entire canopy is glowing violet. which is not per the design." (R-FLORA-WITNESS-GLOW.) **Status: Implemented - awaiting player verification.** Two causes: the leaf shader lit every leaf at 60 to 100% of the glow, not only the veins, and each grown witness tree hung a violet light in its crown (45% of its height, reaching 60% of it) that lit the whole canopy from inside. Now only the violet vein lines in the leaf texture glow (flora_view.gd FOLIAGE_SHADER vein_mask), and the tree sends no light (data/tables/flora.json). The everember was checked: its glow is already only in its bark veins, and its light stays at 2 m to light the ground. Guarded by `tools/check_dave_rules.py`. Merged in PR #1929; Lane A's night picture then showed the crown as a pale lavender fern mesh, not Dave's picture (`art/references/witness_tree_dave_2026-11-25.jpg`, 25 Nov 2026: "this is how I was envisioning the tree"). The follow-up repaints the leaf card with 48 big leaves instead of 170 small ones, each with one midrib and four pairs of bold side veins; the veins are barely seen by day, and a separate glow mask (`assets/trees/leaf_witness_veins.png`) makes only those lines glow violet at night, near white at their centres, on dark leaves. Merged in PR #1931; on its Lane A pictures the veins read near white, the leaves at night as thin frond skeletons and by day near black with purple lines. The tuning pass makes the lines saturated violet with only a thin paler core, gives each leaf a faint dark-violet blade inside a dark rim so it reads as a broad leaf at night, turns the vein glow down to almost nothing by day, and makes the leaves a normal dark green. Not yet played; needs a night picture near and far.
 
+## 152. Passing out: the body keeps going, and loud footsteps play on waking
+
+**Found by:** Dave, [QA #19](https://github.com/DSul3791/DynastyALWL-QA/issues/19), build 10587, 25 Nov 2026: "When a person has over exerted to the point the game starts the passing out process they must stop whatever activity they are doing right then because they no longer have control of their body. they cant keep running they must stop and fall down. if they are working or fighting they must stop the second the game determines its time to pass out. also when you wake up right now it seems to have a sound buffer full of loud footsteps. this shouldn't be. no strange sounds just waking up and you can stand up when the fainting is over." **Status: Open.** Cause of the first part: past the faint line the blackout builds over a few seconds (server_items.gd, strain "black") while the player can still run, work and fight; control is only taken when it reaches full black. The footsteps on waking are not yet explained.
+
+## 153. No animals and no fish seen in build 10587
+
+**Found by:** tester, [QA #12](https://github.com/DSul3791/DynastyALWL-QA/issues/12), build 10587, 25 Nov 2026: "last build had quite a few animals / noticed when quest sent me to fish and there were no fish / signs of rabbits but no rabbits". **Status: Open, needs a look at the live world.** Nothing in dev since 10587 changes how many animals or fish there are.
+
+## 154. The first goals do not say where stones come from
+
+**Found by:** tester, [QA #16](https://github.com/DSul3791/DynastyALWL-QA/issues/16), build 10587, 25 Nov 2026: "How to get stones? Mine pumpkin sized rock with an axe?" **Status: Open.** Loose stones and sticks lie on the ground everywhere (more on slopes and round the spawn), and a Stone - Hammer breaks stones off boulders, but the Stone - Axe goal, the first that needs a stone, says neither. The same report's "quest guide says straw bed, only thatch bed in queue" is already answered by the bed goal (a Thatch - Bed from the pack, or a Straw - Bed with the hammer).
+
+## 155. Floating objects and water standing in walls
+
+**Found by:** tester, [QA #17](https://github.com/DSul3791/DynastyALWL-QA/issues/17), build 10587, 25 Nov 2026: "floating objects / water held up by force-fields". **Status: Open.** Two screenshots are on the tester site (pictures 14-1 and 14-2); not yet looked at.
+
+## 156. Animation: the character looks around too much, chopping arms come loose, no running jump
+
+**Found by:** tester, [QA #15](https://github.com/DSul3791/DynastyALWL-QA/issues/15), build 10587, 25 Nov 2026: "character still looking around too much / log chopping animation limbs not attached / jumping animation odd / no running jump". **Status: Open.** The same tester said the character looked around too much in build 9257 (QA #8, about the creator's doll).
+
+## 157. Lying down always looks like sleeping; there is no crawl
+
+**Found by:** Dave, [QA #10](https://github.com/DSul3791/DynastyALWL-QA/issues/10), build 10587, 25 Nov 2026: "right now when you lay down its always like you are sleeping. that should only be when you are lying on a bed or when you hold Z to go to sleep. otherwise you should first drop like you are being stealthy and crawling. Crouching and Crawling should drastically reduce your visibility and sound that you make." **Status: Open.** Crouching already makes animals notice the player later (server_animals.gd reads the stance); lying flat and crawling are not built.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
