@@ -600,6 +600,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
 12. **Mothers with young need species rules.** Today one rule: a player between a mother and young within `between_m` is attacked at
     once. Real: black bear and deer mothers mostly bluff; moose, elk, boar, cattle and brown bears really attack; hiders' young lie
     still alone, followers' young run with her. Fix: per species `young` rows for bluff or real, hide or follow.
+    Built 25 Nov 2026 (`animals.json` young.bluff_share, young.hides): deer and black bear mothers bluff 8 charges in 10 for their
+    young, pronghorn 6 in 10; the rest press home. Deer, elk and pronghorn young drop and lie still while the mother runs or warns,
+    then go back to her; the rest run at her side.
 13. **Predators guarding kills.** Cougars cache and revisit kills, leopards hoist them, lynx feed on one for 3 days, bears guard
     carcasses. Not modelled. Fix: once animals kill prey, a predator stays by its kill and warns a player who comes within 20 m.
 14. **Bears and big animals have no trap.** Snares catch rabbits and foxes only (traps.json). Dave wants bears trapped. Fix: trap stage 3

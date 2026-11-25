@@ -175,6 +175,7 @@ func warn_left(a: Dictionary) -> float:
 
 func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
+	a.erase("mother_bluff")   # only the warning for her young that sets it (after this) decides its charge
 	a.erase("run_m")   # a warned charge runs the species' own charge_m
 	a["warned_s"] = 0.0
 	warn_s = maxf(warn_s, warn_min_s(def))
@@ -196,6 +197,13 @@ func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> voi
 # Whether the charge about to start is a bluff: bluff_share, scaled by the temperament (bluff_x) and at the den (den_bluff_x); never after
 # a run during the warning or for a mother's young.
 func _bluffs(a: Dictionary, def: Dictionary) -> bool:
+	if a.has("mother_bluff"):   # a mother whose kind mostly bluffs for its young (young.bluff_share, gap 12): once, for this charge
+		var mother: float = float(a["mother_bluff"])
+		a.erase("mother_bluff")
+
+		if not bool(a.get("no_bluff", false)):
+			return host.rng.randf() < mother   # luck-exempt: whether a mother bluffs
+
 	if bool(a.get("no_bluff", false)):
 		return false
 
@@ -670,6 +678,7 @@ func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("foe_peer")
 	a.erase("run_m")   # a chase's run length, for that chase only
 	a.erase("break_away")
+	a.erase("mother_bluff")
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))
 	a["alert"] = 0.0

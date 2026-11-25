@@ -427,6 +427,18 @@ func _step_young(a: Dictionary, dt: float) -> void:
 	a["target"] = m["pos"] + a["off"]
 	var far: float = Vector2(a["pos"].x - a["target"].x, a["pos"].z - a["target"].z).length()
 	var running: bool = int(m["state"]) == FLEE or int(m["state"]) == WARN + 1   # charging
+
+	# A hider's young (deer, elk, pronghorn: young.hides; ANIMAL_SCENARIOS gap 12) does not run with her: it drops where it is and lies
+	# still (drawn lying) until she is calm again, then goes back to her. A follower's young (moose, horse, wildebeest) runs at her side.
+	var warning: bool = int(m["state"]) == WARN or int(m["state"]) == big_game.WARN_POP
+
+	if bool(def.get("young", {}).get("hides", false)) and (running or warning or a.has("hiding")) and not int(m["state"]) in [GRAZE, HOP]:
+		a["hiding"] = true
+		a["state"] = GRAZE
+		a["target"] = a["pos"]
+		return
+
+	a.erase("hiding")
 	a["state"] = FLEE if running else (HOP if far > 1.0 else GRAZE)
 
 	if a["state"] == GRAZE:
@@ -1560,6 +1572,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		a.erase("mother")   # orphaned: from now on an ordinary (passive) animal
+		a.erase("hiding")
 
 	if a["alarm"] >= 0.0:
 		a["alarm"] -= dt
@@ -1577,6 +1590,12 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		for kid in _young_of(a):
 			if Vector2(seen_p.x - animals[kid]["pos"].x, seen_p.z - animals[kid]["pos"].z).length() <= float(def["young"].get("between_m", 8.0)):
 				if big_game.warn(a, seen_p, float(def["young"].get("warn_s", 0.6)), true):
+					# Species rules (ANIMAL_SCENARIOS gap 12): a deer or black bear mother mostly bluffs (young.bluff_share); moose, elk,
+					# boar, cattle and brown bears press home (no bluff_share: the forced warning's no_bluff stands).
+					if def["young"].has("bluff_share"):
+						a["no_bluff"] = false
+						a["mother_bluff"] = float(def["young"]["bluff_share"])
+
 					return
 
 				break
@@ -2778,8 +2797,8 @@ func _wire_state_now(a: Dictionary) -> int:
 	if a["state"] == GRAZE and bool(a.get("drinking", false)):
 		return DRINK
 
-	if a["state"] == GRAZE and a.has("bedded"):
-		return LIE   # a hurt animal lying up (gap 8)
+	if a["state"] == GRAZE and (a.has("bedded") or a.has("hiding")):
+		return LIE   # a hurt animal lying up (gap 8), a hider's young lying still while its mother is away (gap 12)
 
 	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
 		return HUNCH
@@ -2839,6 +2858,7 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a["state"] = FLEE
 	a["burst"] = 0.0
 	a["alert"] = 0.0
+	a.erase("chased_s")   # a new flight: a chase that ran it down starts counting again (_run_down)
 	a.erase("trip")
 	a.erase("lured")
 	a.erase("hunch")
