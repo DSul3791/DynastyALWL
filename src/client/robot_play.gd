@@ -3451,6 +3451,19 @@ func _measure() -> void:
 	while client._machine_probe.running():
 		await get_tree().process_frame
 
+	# Then the GPU breakdown (src/debug/gpu_probe.gd) at Low: what each piece of the picture costs there (user://gpu_probe.txt).
+	var quality_was: int = client.quality
+	client.quality = 0
+	client._apply_quality()
+	await _wait(8.0)
+	client._gpu_probe.toggle()
+	await get_tree().process_frame
+
+	while client._gpu_probe._at >= 0:
+		await get_tree().process_frame
+
+	client.quality = quality_was
+	client._apply_quality()
 	DisplayServer.window_set_vsync_mode(vsync_was)
 
 	FreezeWatchScript.printer.line("ROBOT %s step measure: done" % robot_name)

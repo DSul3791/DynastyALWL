@@ -80,6 +80,9 @@ try {
 			if (-not (Test-Path -LiteralPath $run) -or (Get-Item -LiteralPath $run).LastWriteTime -lt $t0) { throw "play $n ended without a new measure table (see $log)" }
 
 			Copy-Item -LiteralPath $run "$Out\machine_run_$n.txt" -Force
+			$gpuRun = Join-Path (Split-Path $run) "gpu_probe.txt"
+
+			if ((Test-Path -LiteralPath $gpuRun) -and (Get-Item -LiteralPath $gpuRun).LastWriteTime -ge $t0) { Copy-Item -LiteralPath $gpuRun "$Out\gpu_probe_$n.txt" -Force }
 		}
 
 		Write-Output "play $n done ($([int]((Get-Date) - $t0).TotalSeconds) s)"
