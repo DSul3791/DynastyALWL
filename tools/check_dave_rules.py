@@ -114,13 +114,12 @@ def ruling_lines():
 
 
 def main():
-    run = player_run_mps()
-    steps = {"R-ANIMAL-BEAR": lambda: bears(run), "R-HUD-STATUS": status_strip, "R-HUNT-GLOW": tracking, "R-ITEM-WEIGHTS": seeds,
+    steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards}
     for key, step in steps.items():
         try:
             step()
-        except (KeyError, TypeError, ValueError, AttributeError) as e:   # a row or key the check reads is gone: a failure, not a crash
+        except (KeyError, TypeError, ValueError, AttributeError, OSError) as e:   # a row or key the check reads is gone: a failure, not a crash
             check(key, False, f"the data this check reads is missing or changed shape ({type(e).__name__}: {e})")
     rulings = ruling_lines()
     for key in {k for k, _, _ in results}:
