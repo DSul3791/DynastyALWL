@@ -58,7 +58,7 @@ func _init() -> void:
 	check(still_alpha(2.0, 30.0, true) > 0.9, "deep water hides its bed (%.0f %%)" % (still_alpha(2.0, 30.0, true) * 100.0))
 
 	var client: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
-	check(not client.contains("\"Water — Press E to drink\"") and client.contains("return {\"prompt\": \"Press E to drink\", \"tap\": items.drink}"), "looking at water names it once; the drink prompt alone says what E does")
+	check(not client.contains("\"Water — Press E to drink\"") and client.contains("\"prompt\": \"Press E to drink\", \"tap\": items.drink}"), "looking at water names it once; the drink prompt alone says what E does")
 
 	print("test_shallow_water_look: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)

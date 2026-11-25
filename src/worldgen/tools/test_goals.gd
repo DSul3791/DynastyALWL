@@ -528,6 +528,20 @@ func _init() -> void:
 	check(camp._goal_progress(1, set_state, set_check) == Vector2i(1, 2) and not camp._goal_met(1, set_state, set_check, "stone_tools"), "two pickaxes made: the set is 1 of 2, still open")
 	camp._goal_made(1, camp.table.number_of("stone_saw"))
 	check(camp._goal_met(1, set_state, set_check, "stone_tools"), "a pickaxe and a saw made: the set is met")
+	# The spread's once-a-second look (_goals_poll, coordinator 25 Nov 2026): a have goal completes through it, admin-given units do not count, and
+	# a look with nothing moved since the last is skipped.
+	var poll_state: Dictionary = camp._goal_state_of(1)
+	poll_state["goals_done"].erase("charcoal")
+	camp._goal_poll_sig.erase(1)
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("charcoal"), 0, 4, Vector3.ZERO)
+	camp._goals_poll(1)
+	check(not poll_state["goals_done"].has("charcoal") or camp._goals_paused(1), "4 admin-given charcoal: the poll leaves the charcoal goal open")
+	var sig_was: int = int(camp._goal_poll_sig.get(1, 0))
+	camp._goals_poll(1)
+	check(int(camp._goal_poll_sig.get(1, 0)) == sig_was, "nothing moved: the next look keeps the same signature (skipped)")
+	camp.inventory_of(1).add(camp.table.number_of("charcoal"), 4)
+	camp._goals_poll(1)
+	check(poll_state["goals_done"].has("charcoal") or camp._goals_paused(1), "4 more charcoal of its own: the poll completes the charcoal goal")
 	camp.trees_near = func(_p, _r): return [[Vector2i.ZERO, 1]]
 	check(camp._tool_slot(camp.inventory_of(1), "axe") < 0 or camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "an axe on the hotbar beside a tree fires the fell hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
