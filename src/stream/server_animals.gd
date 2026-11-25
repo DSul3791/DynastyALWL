@@ -1719,9 +1719,14 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		speed = stalk_mps   # a hunter walking in on a player, low and steady
 
 	if a["state"] == FLEE:
-		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
+		# Sprint for burst_s seconds, then a lope: the trot (flee_mps x trot_share), or lope_mps where that is faster. Every large runner
+		# lopes faster than a running player (9 m/s) until it is safe_m away (docs/design/ANIMAL_SCENARIOS.md gap 1, Dave 25 Nov 2026:
+		# "the bear really should be able to out run me"); the small ones get away to a burrow, water or cover instead.
 		a["burst"] += dt
-		speed = float(def.get("flee_mps", 7.5)) * (1.0 if a["burst"] <= float(def.get("burst_s", 3.0)) else float(def.get("trot_share", 0.5)))
+		speed = float(def.get("flee_mps", 7.5))
+
+		if a["burst"] > float(def.get("burst_s", 3.0)):
+			speed = maxf(speed * float(def.get("trot_share", 0.5)), float(def.get("lope_mps", 0.0)))
 
 	var moves: Array = _walk_moves(a, def)
 	var ground_for: Callable = moves[0]
@@ -1790,6 +1795,17 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a pinned animal breaks (a wall or a fence the ground check cannot see)
 
 			_flee_target(a, near_p, away, def)
+
+			# At a leg's end the step that found it had not moved: it runs on along the new leg in this same step, not stand a whole
+			# step at every leg's end (a puma sprinting at 13 m/s made 10 over 12 m legs; ANIMAL_SCENARIOS.md gap 1).
+			if a["state"] == FLEE and r["arrived"]:
+				plan(a, a["target"])   # the new leg is the plan the client draws toward
+				var on: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+
+				if on["moved"]:
+					a["pos"] = on["pos"]
+					a["heading"] = on["heading"]
+
 			return
 
 		if a["state"] == FLEE:

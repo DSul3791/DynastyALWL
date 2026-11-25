@@ -812,6 +812,15 @@ func _ring_step(pack: Dictionary, m: Dictionary, p: Vector3, speed: float, dt: f
 	return false
 
 
+# Whether any player stands within `reach` metres of `at` (flat distance).
+func _player_within(at: Vector3, infos: Array, reach: float) -> bool:
+	for info in infos:
+		if _flat(info["pos"], at) <= reach:
+			return true
+
+	return false
+
+
 # Back off away from the victim; `wait` is how long before the pack may come back (a maimed player is remembered).
 func _retreat(pack: Dictionary, members: Array, c: Vector3, from: Vector3, wait_s: float, keep_target: bool) -> void:
 	var w: Dictionary = cfgw()
@@ -840,7 +849,10 @@ func _wait(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		var spot: Vector3 = pack["point"] + Vector3(cos(float(k)), 0.0, sin(float(k))) * 5.0
 
 		if Vector2(m["pos"].x - spot.x, m["pos"].z - spot.z).length() > 3.0:
-			_walk(m, spot, float(def.get("trot_mps", 5.0)) * _snow_x("speed_x"), dt, infos)
+			# Backing off with a player close behind, a wolf lopes away faster than the player runs (lope_mps, ANIMAL_SCENARIOS.md gap 1);
+			# with nobody near it trots. Deep snow slows both (speed_x, as for the rest of the pack).
+			var lope: float = float(def.get("lope_mps", def.get("trot_mps", 5.0))) if _player_within(m["pos"], infos, float(def.get("safe_m", 60.0))) else float(def.get("trot_mps", 5.0))
+			_walk(m, spot, lope * _snow_x("speed_x"), dt, infos)
 		else:
 			m["moving"] = false
 

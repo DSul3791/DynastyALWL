@@ -109,7 +109,8 @@
 			"target_per_player": 5,
 			"health": 20.0,
 			"walk_mps": 1.8,
-			"flee_mps": 12.0,
+			"flee_mps": 13.0,
+			"lope_mps": 10.5,
 			"graze_s": [
 				5.0,
 				20.0
@@ -234,7 +235,8 @@
 			"sprint_mps": 10.5,
 			"sprint_s": 5.0,
 			"chase_mps": 7.0,
-			"flee_mps": 7.0,
+			"flee_mps": 13.0,
+			"lope_mps": 11.0,
 			"graze_s": [
 				4.0,
 				10.0
@@ -263,7 +265,8 @@
 			"spawn_share": 0.2,
 			"health": 90.0,
 			"walk_mps": 1.6,
-			"flee_mps": 10.0,
+			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -370,6 +373,7 @@
 			"health": 12.0,
 			"walk_mps": 1.4,
 			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -506,6 +510,7 @@
 			"health": 60.0,
 			"walk_mps": 1.6,
 			"flee_mps": 13.7,
+			"lope_mps": 11.0,
 			"graze_s": [
 				6.0,
 				22.0
@@ -623,7 +628,8 @@
 				"threat_warn_s": 0.6
 			},
 			"walk_mps": 1.6,
-			"flee_mps": 8.0,
+			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				5.0,
 				20.0
@@ -1213,6 +1219,7 @@
 			"health": 45.0,
 			"walk_mps": 1.3,
 			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				6.0,
 				22.0
@@ -1311,6 +1318,7 @@
 			"health": 30.0,
 			"walk_mps": 1.5,
 			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -1494,7 +1502,8 @@
 			"spawn_share": 0.35,
 			"health": 70.0,
 			"walk_mps": 1.6,
-			"flee_mps": 13.0,
+			"flee_mps": 14.0,
+			"lope_mps": 11.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -2679,7 +2688,8 @@
 			"spawn_share": 0.2,
 			"health": 110.0,
 			"walk_mps": 1.6,
-			"flee_mps": 10.0,
+			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -2780,6 +2790,7 @@
 			"health": 60.0,
 			"walk_mps": 1.4,
 			"flee_mps": 13.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -2857,7 +2868,8 @@
 			"target_per_player": 3,
 			"health": 22.0,
 			"walk_mps": 1.6,
-			"flee_mps": 16.0,
+			"flee_mps": 22.0,
+			"lope_mps": 18.0,
 			"graze_s": [
 				5.0,
 				20.0
@@ -3050,6 +3062,7 @@
 			"health": 45.0,
 			"walk_mps": 1.3,
 			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -3127,6 +3140,7 @@
 			"health": 60.0,
 			"walk_mps": 1.4,
 			"flee_mps": 13.0,
+			"lope_mps": 11.0,
 			"graze_s": [
 				5.0,
 				20.0
@@ -3223,6 +3237,7 @@
 			"health": 110.0,
 			"walk_mps": 1.5,
 			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -3300,6 +3315,7 @@
 			"health": 55.0,
 			"walk_mps": 1.3,
 			"flee_mps": 13.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -3568,7 +3584,8 @@
 			"spawn_share": 0.15,
 			"health": 70.0,
 			"walk_mps": 1.1,
-			"flee_mps": 9.0,
+			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				6.0,
 				22.0
@@ -3792,6 +3809,7 @@
 			"health": 40.0,
 			"walk_mps": 1.8,
 			"flee_mps": 12.0,
+			"lope_mps": 10.5,
 			"graze_s": [
 				5.0,
 				20.0
@@ -3986,6 +4004,7 @@
 			"health": 120.0,
 			"walk_mps": 1.3,
 			"flee_mps": 13.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
