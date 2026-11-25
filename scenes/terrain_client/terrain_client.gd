@@ -63,6 +63,7 @@ const ShowroomScript := preload("res://src/client/showroom.gd")
 const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
 const DeathScreenScript := preload("res://src/client/death_screen.gd")
 const CharacterStoreScript := preload("res://src/client/character/character_store.gd")
+const WelcomeCardScript := preload("res://src/client/welcome_card.gd")
 const DripViewScript := preload("res://src/client/drip_view.gd")
 const ThunderScript := preload("res://src/shared/thunder.gd")
 const GameMenuScript := preload("res://src/client/game_menu.gd")
@@ -464,6 +465,7 @@ var test_spear: bool = false
 var test_chop: bool = false
 var lag_run: Node = null               # --lag-run: the scripted early-game lag run (src/client/lag_run.gd, tools/lag_run.sh)
 var motion_audit = null                 # --motion-audit or a robot: the walk measured against the keys (src/client/motion_audit.gd)
+var welcome_card = null                # the welcome card, once per character on this computer (welcome_card.gd)
 var robot: Node = null                 # --robot=NAME: a robot play-tester drives this client by key presses (src/client/robot_play.gd, tools/robots.sh)
 var _block_port_override: int = 0      # --block-port=N: the block line connects here instead of the port the server named (a test relay, tools/lossy_link.py)
 var test_shoot: bool = false            # --shoot: draw and loose one arrow with no key presses (SHOOT TEST lines)
@@ -2805,12 +2807,23 @@ func _world_loading() -> bool:
 	return connected_msec == 0 or waiting_for_ground or _connect_window != null or Time.get_ticks_msec() < _load_quiet_until_msec
 
 
+func _welcome():
+	if welcome_card == null:
+		welcome_card = WelcomeCardScript.new()
+		add_child(welcome_card)
+
+	return welcome_card
+
+
 # The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
 # surface and protect it for a few seconds, so arriving is not a fall (Dave 2026-10-21: damage and a faint every landing).
 func _arrive_on_ground() -> void:
 	if connected_msec > 0 and not _ground_logged:
 		_ground_logged = true
 		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
+
+		if robot == null and not test_screen_audit:   # a robot or the screen audit never stops for it (the audit shows it as one of its screens)
+			_welcome().offer(CharacterStoreScript.active_id())
 
 	var ground: float = _ground_below(body.global_position)
 	var water: Dictionary = _water_here()
@@ -4519,6 +4532,7 @@ func _run_screen_audit() -> void:
 		items.set_text_scale(display.TEXT_SCALES[text_index])
 		var scale_name: String = display.TEXT_NAMES[text_index]
 		var shows: Array = [["HUD", func() -> void: pass, func() -> void: pass],
+			["welcome card", func() -> void: _welcome().show_card(), func() -> void: _welcome().close()],
 			["inventory", func() -> void: items.toggle(), func() -> void: items.toggle()],
 			["character", func() -> void: items.toggle_character(), func() -> void: items.toggle_character()],
 			["character, everything shown", func() -> void:
@@ -5503,6 +5517,9 @@ func _input(event: InputEvent) -> void:
 func _unhandled_input(event: InputEvent) -> void:
 	if body == null:
 		return
+
+	if welcome_card != null and event is InputEventKey and welcome_card.take_key(event):
+		return   # Enter or Esc closes the welcome card first (Esc does not open the menu under it)
 
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
 		if spyglass.active:
