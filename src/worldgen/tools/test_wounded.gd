@@ -111,5 +111,13 @@ func _initialize() -> void:
 
 	check(not d.has("bedded") and d["pos"].distance_to(bedded_at) > 10.0, "a player walking up pushes it on (%.0f m from its bed)" % d["pos"].distance_to(bedded_at))
 
+	# 4. Far from every player (past three quarters of active_radius_m) it lies up at once: it would freeze, not bleed, out of reach.
+	a = make()
+	d = deer_in(a, "passive")
+	d["wound"] = true
+	d["state"] = a.FLEE
+	var moves: Array = a._walk_moves(d, a.species_def("deer"))
+	check(a._runs_on_hurt(d, a.species_def("deer"), 7.0, 0.1, moves[0], moves[1], 160.0) and d.has("bedded"), "160 m from the nearest player it lies up at once (state %d)" % int(d["state"]))
+
 	print("test_wounded: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

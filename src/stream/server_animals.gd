@@ -1831,7 +1831,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 			return
 
-		if a["state"] == FLEE and a.get("wound", false) and _runs_on_hurt(a, def, speed, dt, ground_for, blocked_for):
+		if a["state"] == FLEE and a.get("wound", false) and _runs_on_hurt(a, def, speed, dt, ground_for, blocked_for, near_d):
 			return
 
 		if a["state"] == FLEE:
@@ -1895,22 +1895,32 @@ func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt:
 # runs a short way and lies down, pushed it runs much farther): it runs on until it has run blood.bed_m[0] since it was hurt or last got up,
 # and on to bed_m[1] while it is not under trees, then lies up there (bedded: drawn lying, LIE) for bed_s, bleeding. A player who comes
 # within its flee distance pushes it on (_bolt), and it runs bed_m again before it lies down. True while it runs on.
-func _runs_on_hurt(a: Dictionary, def: Dictionary, speed: float, dt: float, ground_for: Callable, blocked_for: Callable) -> bool:
+func _runs_on_hurt(a: Dictionary, def: Dictionary, speed: float, dt: float, ground_for: Callable, blocked_for: Callable, near_d: float) -> bool:
 	if def.has("flight") or def.has("flock") or a.get("to_burrow", false) or a.has("pack"):
 		return false
 
 	var b: Dictionary = cfg.get("blood", {})
 	var bed: Array = b.get("bed_m", [100.0, 200.0])
 	var run: float = float(a.get("wound_run", 0.0))
-	var covered: bool = not canopy.is_valid() or bool(canopy.call(a["pos"]))
+	var known: bool = canopy.is_valid() and (not canopy_ready.is_valid() or bool(canopy_ready.call(a["pos"].x, a["pos"].z)))
+	var covered: bool = not known or bool(canopy.call(a["pos"]))   # crowns not made yet round it: no cover hunt, it lies up at bed_m[0]
+	# It lies up before it runs out of the players' reach: past active_radius_m it would freeze, not bleed, and past despawn_m be lost.
+	var far: bool = near_d >= float(cfg.get("active_radius_m", 200.0)) * 0.75
 
-	if run < float(bed[0]) or (run < float(bed[1]) and not covered):
+	if not far and (run < float(bed[0]) or (run < float(bed[1]) and not covered)):
 		var away: Vector2 = Vector2.from_angle(float(a["heading"]))
-		_flee_target(a, a["pos"] - Vector3(away.x, 0.0, away.y) * 5.0, away, def)
+
+		if bool(a.get("hurt_stuck", false)):
+			away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way it breaks when its last step was blocked (as a pinned flight)
+
+		var behind: float = float(species_def(a["sp"]).get("defend", {}).get("corner_m", 7.0)) + 1.0   # the run-on's "threat" past corner_m: no warn at nobody
+		_flee_target(a, a["pos"] - Vector3(away.x, 0.0, away.y) * behind, away, def)
 
 		if a["state"] == FLEE:
 			plan(a, a["target"])
 			var on: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+
+			a["hurt_stuck"] = not on["moved"]
 
 			if on["moved"]:
 				a["wound_run"] = run + a["pos"].distance_to(on["pos"])
@@ -1927,6 +1937,7 @@ func _runs_on_hurt(a: Dictionary, def: Dictionary, speed: float, dt: float, grou
 	a["target"] = a["pos"]
 	a["bedded"] = true
 	a["wound_run"] = 0.0
+	a.erase("hurt_stuck")
 	a["timer"] = rng.randf_range(float(lie[0]), float(lie[1]))   # luck-exempt: how long a hurt animal lies up
 	return true
 
