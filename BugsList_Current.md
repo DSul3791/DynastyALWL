@@ -1,8 +1,12 @@
 # Current Bugs
 
-All Currently unfixed bugs go here.
+**The one bug list** (Dave, 25 Nov 2026: one bug list instead of five). Every bug goes here, whoever finds it: Dave's play, a tester's report, a robot play-tester, a test or a rule check (`tools/check_dave_rules.py`). Each new entry opens with **Found by** (Dave / tester, QA #n / robot / test / rule check), the date and the words of whoever found it, then **Status**. An entry stays here until Dave has played the fix, then moves to [BugsList_Fixed.md](BugsList_Fixed.md).
 
-This list records the problems Dave found in his play tests and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. Entries stay here until Dave confirms the fix in play. Each entry says what he played: "found in play" (the problem came from his play test), "fix played" (he has played the fixed version) or "fix not yet played". When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md). Work that is not built yet, including the open parts of entries here, is listed in [docs/TODO.md](docs/TODO.md) (reviewed 21 Nov 2026: every PR named in entries 1 to 127 is in dev; none of them has been played yet).
+Where the rest lives, so nothing is listed twice:
+- Tester reports arrive as issues in DynastyALWL-QA. A valid one gets an entry here naming its issue; the issue is closed with "Fixed in build N" once a build carries the fix.
+- Work that is not built yet and is not a bug: [docs/TODO.md](docs/TODO.md).
+- Dave's rulings: [docs/RULINGS.md](docs/RULINGS.md). A bug against a ruling names its R- key.
+- The coordinator's play-test notes keep Dave's words as he said them; each bug in them is entered here by a thread.
 
 ## Intended experience
 
@@ -1633,6 +1637,26 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 ## 143. The Fibre shoulder bag should be a Fibre backpack
 
 **Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "a fiber handbag does not make any sense in a game like this. especially since its a backpack of somesort. remove it or call it a FiberBackpack". The item is now Fibre - Backpack (same item id, so saves and recipes keep it), with its description and the docs changed to match. It is still worn in the Shoulder position, so it goes with one of the four backpacks on the Back (coordinator ruling, 24 Nov 2026); its placeholder model is the pack shape on the back. On the I screen the Back well shows it while no backpack is worn there (click opens it, drag it out to take it off; test_you_column); with a backpack worn, it is on the Tab screen's worn list. Not yet played.
+
+## 144. A bear could be run down on foot, and roared all the time
+
+**Found by:** Dave, play test of build 10587, 25 Nov 2026: "the bear really should be able to out run me. also a threatened bear should turn and fight back. first it should stand its ground and standup on its hind legs. then it should attack with its claws or mouth." "the bear roaring constantly in the woods is unrealistic." (quotes as in PR #1906, which names the build.) **Status: Implemented - awaiting player verification** (PRs #1906, #1908, #1913, #1920; R-ANIMAL-BEAR, R-ANIMAL-BEAR-FOOD). Guarded by `tools/check_dave_rules.py` and `test_bear_threat`.
+
+## 145. A snared animal should lie in the snare
+
+**Found by:** Dave, 25 Nov 2026: "they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset the snare". **Status: Implemented - awaiting player verification** (PR #1902; R-HUNT-SNARE-CATCH).
+
+## 146. The hunt goal said a rabbit when a bear was killed
+
+**Found by:** Dave, QA #9, build 10587, 25 Nov 2026 (issue title "[Bug] Killed a bear bad text"). **Status: Implemented - awaiting player verification** (PR #1905; QA #9 closed).
+
+## 147. New players are not told the E, F and inspect keys
+
+**Found by:** tester, QA #8, build 9257, 24 Nov 2026 ("game says pick fruit, no indication what button it is"); Dave, 25 Nov 2026: "there should be a pop up for first time players or new characters that says the basics". **Status: Implemented - awaiting player verification** (PRs #1901, #1903; R-HUD-PROMPTS).
+
+## 148. Animal sign glowed from Tracking 10, the ruling says 25
+
+**Found by:** rule check (`tools/check_dave_rules.py`, R-HUNT-GLOW), 25 Nov 2026. Dave, 23 Nov 2026: "you will start seeing some animal signs glowing at a close distance say 10 meters even further at higher levels." **Status: Implemented - awaiting player verification** (PR #1923).
 
 ## Rewrite interpretation
 

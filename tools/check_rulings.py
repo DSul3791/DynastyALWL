@@ -9,7 +9,7 @@ folders below. Exit 0 clean, 1 with one line per problem.
 import json, pathlib, re, subprocess, sys
 
 HISTORY = ("docs/archive/", "proposed_removals/", "BugsList_Fixed.md", "docs/RULINGS.md", "docs/retired_rules.json")
-SUFFIXES = (".md", ".json")
+SUFFIXES = (".md", ".json")   # .gd next, with the last two hub comments (terrain_net.gd, server_animals.gd)
 LINE = re.compile(r"^- \*\*(R-[A-Z0-9-]+)\*\* · (\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}) · ")
 
 
