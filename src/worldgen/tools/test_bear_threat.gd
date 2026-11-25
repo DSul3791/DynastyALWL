@@ -209,9 +209,10 @@ func _init() -> void:
 	for kind in ["bear", "black_bear"]:
 		check(sounds.mood_for(kind, 2) == "" and sounds.mood_for(kind, 3) == "", "a %s is silent when it flees or looks" % kind)
 		check(sounds.mood_for(kind, 10) == "alert" and sounds.mood_for(kind, 16) == "alert", "a %s growls low as its warning" % kind)
-		check(sounds.mood_for(kind, 11) == "threat", "a %s roars only in a charge" % kind)
 
-	check(sounds.mood_for("deer", 2) == "alert" and sounds.mood_for("deer", 11) == "threat", "a deer keeps its moods")
+	check(sounds.mood_for("bear", 11) == "threat", "a brown bear roars only in a charge")
+	check(sounds.mood_for("black_bear", 11) == "alert", "a black bear never roars, even charging (gap 4)")
+	check(sounds.mood_for("deer", 2) == "" and sounds.mood_for("deer", 3) == "alert" and sounds.mood_for("deer", 11) == "threat", "a deer runs in silence, snorts on a look, snorts in a fight")
 	sounds.free()
 
 	print("test_bear_threat: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
