@@ -132,9 +132,11 @@ def witness_glow():
     src = (ROOT / "src/flora/flora_view.gd").read_text(encoding="utf-8")
     foliage = src[src.index("const FOLIAGE_SHADER"):src.index("const BARK_SHADER")]
     emission = re.findall(r"^\s*EMISSION = (.+);", foliage, re.M)
-    check("R-FLORA-WITNESS-GLOW", emission == ["glow * glow_amount * vein_mask"], f"the leaf glow is masked to the veins (EMISSION = {emission})")
-    start = float(re.search(r"const float VEIN_FROM = ([0-9.]+);", foliage).group(1))
-    check("R-FLORA-WITNESS-GLOW", start > 0.0, f"the grey leaf blade (vein measure 0) never glows (VEIN_FROM {start})")
+    check("R-FLORA-WITNESS-GLOW", emission == ["(glow * vein_mask + glow_core * smoothstep(0.6, 1.0, vein_mask)) * glow_energy * glow_amount"],
+          f"the leaf glow is masked to the veins (EMISSION = {emission})")
+    check("R-FLORA-WITNESS-GLOW", re.search(r"^\s*float vein_mask = texture\(veins, UV\)\.r;", foliage, re.M) and "uniform sampler2D veins : hint_default_black" in foliage,
+          "the mask is the painted vein texture, black (no glow) where none is set")
+    check("R-FLORA-WITNESS-GLOW", (ROOT / "assets/trees/leaf_witness_veins.png").is_file(), "the witness leaf's vein mask is there")
 
 
 def ruling_lines():

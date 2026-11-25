@@ -55,15 +55,16 @@ uniform float flutter = 0.06;
 // Leaves are not opaque: about 40% of the sunlight comes through, so a crown
 // glows when the sun is behind it (owner, 2026-10-18: autumn leaves shine).
 uniform float backlight = 0.4;      // 0.3 to 0.4 (Kathleen 3 Nov, Art_Direction.md: crowns read near-black at noon; more sun through the leaves)
-// Leaves that glow (the witness tree): EMISSION = glow times the instance
-// custom alpha (how strongly this tree glows; young ones weakly) times the vein
-// mask. Black for every other species. Faint by day, plain at night.
-// Only the violet veins glow (Dave's 18 Oct design; 25 Nov 2026 he saw the whole canopy glow, which is not it): the
-// veins are the only violet in the leaf texture (make_tree_textures.py witness_leaf: blue 1.2, green 0.72 of the grey
-// blade), so vein_mask is how far blue stands above green. The grey blade and the green tint give 0.
-const float VEIN_FROM = 0.08;   // (blue - green) / blue of a texel, read in linear light: the grey blade is 0, a vein line about 0.65 (0.4 in the sRGB file)
-const float VEIN_FULL = 0.3;
+// Leaves that glow (the witness tree): only the veins (R-FLORA-WITNESS-GLOW; Dave's picture,
+// art/references/witness_tree_dave_2026-11-25.jpg: near-black leaves at night, each with a midrib and side veins
+// glowing bright violet, almost white at the centre of each line). veins is the glow mask painted with the leaf
+// texture (leaf_witness_veins.png: 1 at the centre of a vein line, 0 on the blade); EMISSION = (glow x the mask
+// + glow_core on the line centres) x glow_energy x the instance custom alpha (how strongly this tree glows; young
+// ones weakly). Black for every other species. Faint by day, plain at night.
+uniform sampler2D veins : hint_default_black, filter_linear_mipmap, repeat_disable;
 uniform vec3 glow : source_color = vec3(0.0);
+uniform vec3 glow_core : source_color = vec3(0.0);
+uniform float glow_energy = 1.0;
 // Snow lying on the crown (art_weather_light.md 8.2.2), 0 none .. 1 full: the ground's snow memory (weather_look.gd, set_snow).
 uniform float snow = 0.0;
 varying vec3 tint;
@@ -111,8 +112,8 @@ void fragment() {
 	ALBEDO = mix(ALBEDO, vec3(0.86, 0.88, 0.92), snowed * 0.9);
 	BACKLIGHT = ALBEDO * backlight * (1.0 - snowed);
 	ROUGHNESS = 1.0;
-	float vein_mask = smoothstep(VEIN_FROM, VEIN_FULL, (t.b - t.g) / max(t.b, 0.01));
-	EMISSION = glow * glow_amount * vein_mask;
+	float vein_mask = texture(veins, UV).r;
+	EMISSION = (glow * vein_mask + glow_core * smoothstep(0.6, 1.0, vein_mask)) * glow_energy * glow_amount;
 }
 """
 
@@ -1402,7 +1403,10 @@ func _make_tree_materials() -> void:
 	_tree_materials["grass"].set_shader_parameter("flutter", 0.01)
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
 	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
-	_tree_materials["witness"].set_shader_parameter("glow", Color(0.42, 0.26, 0.7))   # soft lavender night glow
+	_tree_materials["witness"].set_shader_parameter("veins", _load_texture("res://assets/trees/leaf_witness_veins.png"))
+	_tree_materials["witness"].set_shader_parameter("glow", Color(0.6, 0.28, 1.0))         # violet vein lines
+	_tree_materials["witness"].set_shader_parameter("glow_core", Color(1.0, 0.85, 1.0))    # near white at their centres
+	_tree_materials["witness"].set_shader_parameter("glow_energy", 2.0)
 
 
 # A painted texture, imported by the editor or else read straight from the file.
