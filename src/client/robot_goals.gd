@@ -872,13 +872,15 @@ func _path(strokes: int) -> String:
 		return why
 
 	var slot: int = _hold("wooden_hoe")
+	await _walk_home(240.0)   # "from camp to the water": the path starts at the camp
 	var water: Vector3 = await r._find_water()
 	var dir: Vector3 = Vector3(water.x - c.body.global_position.x, 0.0, water.z - c.body.global_position.z).normalized() if not is_nan(water.x) else Vector3.FORWARD
 	var said: int = r._notices.size()
 
 	# Each stroke lands 1 m past the last along one line: the game lays nothing within 0.7 m (PATH_SPACING_M) of a patch.
-	# At the shore ("You cannot tread a path in water.") a player turns along the bank and keeps going until the goal counts.
-	var start: Vector3 = c.body.global_position
+	# At the shore ("You cannot tread a path in water.") a player starts another line from the camp and keeps going until the goal counts.
+	var start: Vector3 = _home
+	var base: Vector3 = dir
 	var missed: int = 0
 	var sent: int = 0
 	var along: int = 0
@@ -890,12 +892,13 @@ func _path(strokes: int) -> String:
 			break
 
 		# The goal's own count is the truth: two strokes in a row that laid nothing (water, a patch already there, a tree) and the robot turns.
+		# A new line out from the camp (round it by 70 degrees a time), so a turn never walks the robot along the shore into the water.
 		if dry >= 2:
-			dir = dir.rotated(Vector3.UP, PI * 0.5 * (1.0 if turns % 2 == 0 else -1.0))
-			start = c.body.global_position
+			turns += 1
+			dir = base.rotated(Vector3.UP, deg_to_rad(70.0) * float(turns))
+			start = _home
 			along = 0
 			dry = 0
-			turns += 1
 
 		var ground: Vector3 = start + dir * (1.5 + float(along))
 		along += 1
