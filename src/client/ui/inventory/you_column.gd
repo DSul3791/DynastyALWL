@@ -102,7 +102,8 @@ func _figure() -> Control:
 	holder = SubViewportContainer.new()
 	holder.custom_minimum_size = FIGURE
 	holder.stretch = true
-	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	holder.mouse_filter = Control.MOUSE_FILTER_STOP   # grab the character and turn it (Dave 25 Nov 2026)
+	holder.gui_input.connect(_on_figure_input)
 	holder.visible = false
 	preview = SubViewport.new()
 	preview.own_world_3d = true
@@ -123,6 +124,7 @@ func _figure() -> Control:
 	rim.light_energy = 1.4
 	preview.add_child(rim)
 	rig = MyCharacter.make_avatar()
+	rig.rotation.y = FACING_YOU   # it showed its back before (Dave 25 Nov 2026)
 	preview.add_child(rig)
 
 	if rig.has_method("play"):
@@ -135,7 +137,27 @@ func _figure() -> Control:
 # "when visible" or "disabled" as it is shown or hidden), so the preview is turned on and off by showing its container.
 func set_active(on: bool) -> void:
 	if holder != null and is_instance_valid(holder):
+		if on and not holder.visible and rig != null and is_instance_valid(rig):
+			rig.rotation.y = FACING_YOU   # faces you each time the inventory opens (Dave 25 Nov 2026: "should face forward on opening inventory")
+
 		holder.visible = on
+
+
+# Dragging on the character with the left mouse button turns it (Dave 25 Nov 2026: "you should be able to grab and rotate the doll with the mouse").
+const FACING_YOU := PI       # a body faces -Z (the game's forward, dynasty_body.gd) and the camera looks from +Z: turned half round, it faces the camera
+const TURN_PER_PX := 0.012   # radians per pixel dragged: a drag across the 196 px figure turns it about 135 degrees
+
+
+func _on_figure_input(event: InputEvent) -> void:
+	if event is InputEventMouseMotion and ((event as InputEventMouseMotion).button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
+		turn_by((event as InputEventMouseMotion).relative.x)
+		holder.accept_event()
+
+
+# Turns the character by a drag of `dx` pixels (right turns it to its left, as a hand pushing it round).
+func turn_by(dx: float) -> void:
+	if rig != null and is_instance_valid(rig):
+		rig.rotation.y = fposmod(rig.rotation.y + dx * TURN_PER_PX, TAU)
 
 
 # The gear wells from what is worn and what is in hand; the rig re-dressed when what is worn changed.
