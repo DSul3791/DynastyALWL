@@ -376,9 +376,9 @@ def twig_birch(name, size, seed):
 def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
     # Witness tree (owner, 2026-10-18; Dave's picture 25 Nov 2026, art/references/witness_tree_dave_2026-11-25.jpg):
     # an oval, finely toothed leaf whose veins are barely seen by day and glow at night as a clear feather: one
-    # midrib and four pairs of side veins, bold enough to read as lines on each leaf. The albedo vein is only a
+    # midrib and three pairs of side veins, bold enough to read as lines on each leaf. The albedo vein is only a
     # shade paler than the blade; md (leaf_witness_veins.png) is the glow: 255 on a thin core at the centre of a
-    # vein line, 150 over the rest of the line (violet, not white), and a faint 10 over the blade inside a dark rim, so at
+    # vein line, 150 over the rest of the line (violet, not white), and a faint 5 over the blade inside a dark rim, so at
     # night each leaf still reads as a broad dark shape round its veins, not only a skeleton (Lane A, 25 Nov 2026).
     # Each leaf covers the mask under it, so a leaf in front hides the veins of the leaves behind.
     ca, sa = math.cos(angle), math.sin(angle)
@@ -396,14 +396,14 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
         pts.append(at(t * length, w))
     rd.polygon(pts, fill=grey(shade))
     ad.polygon(pts, fill=255)
-    md.polygon(pts, fill=10, outline=0, width=max(1, int(width * 0.04)))   # a dark rim parts it from the leaves behind
+    md.polygon(pts, fill=5, outline=0, width=max(1, int(width * 0.05)))   # a dark rim parts it from the leaves behind
     vein = (int(min(255, shade * 1.06)), int(min(255, shade * 1.02)), int(min(255, shade * 1.08)))   # a shade paler: barely seen by day
-    lines = [(at(length * 0.04, 0), at(length * 0.9, 0), 0.075)]
-    for k in range(1, 5):
-        x = length * (0.1 + 0.17 * k)
-        w = math.sin(min(0.95, x / length + 0.12) * math.pi) ** 0.7 * width * 0.4
+    lines = [(at(length * 0.04, 0), at(length * 0.88, 0), 0.1)]
+    for k in range(1, 4):   # three pairs of bold side veins, swept toward the tip (four thin pairs read as a busy frond, Lane A 25 Nov 2026)
+        x = length * (0.08 + 0.2 * k)
+        w = math.sin(min(0.95, x / length + 0.12) * math.pi) ** 0.7 * width * 0.38
         for side in (-1, 1):
-            lines.append((at(x - length * 0.02, 0), at(x + length * 0.16, side * w), 0.05))
+            lines.append((at(x - length * 0.02, 0), at(x + length * 0.2, side * w), 0.075))
     for a, b, frac in lines:
         rd.line([a, b], fill=vein, width=max(1, int(width * frac)))
     for a, b, frac in lines:   # the glow: the violet line, then a thin bright core
