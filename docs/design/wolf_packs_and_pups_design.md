@@ -41,11 +41,11 @@ What the game takes from this:
 - **Season:** pups are at the den from game day `pups.days[0]` (60, late spring) to `pups.days[1]` (150, about 3 months later). Outside that window a pack has none: its pups have grown into the pack. A new world starts on day 100, so the first player meets pups.
 - **How many:** `pups.count` [2, 5]. That is fewer than the research's 5 to 6, to keep within the animal cap. Pups are made with the pack, at its den, as wolf records sent as young (number + 100), with `pups.hp_x` (0.25) of a wolf's health. They are not pack members (no `pack` key), so the pack brain doesn't move them.
 - **What they do:** they stay within `pups.play_m` (8 m) of the den. By day they play (state 9, the existing wolf play) and rest. A player within `pups.hide_m` (25 m) who is standing or moving makes them run into the den (HIDDEN 5: not sent, not hunted). They come out again once that player has backed off or is crouched and still.
-- **The pack guards them** (decision text: "a pack that sees a player near its pups rushes at once, torch or not"):
+- **The pack guards them:**
   1. A player within `pups.guard_m` (40 m) of the den, while the pack is alive: the pack comes home at a run (a new `den_guard` phase) and growls (a "growl" event and the threat call).
   2. **The warning:** for `pups.warn_s` (3 s) it circles between the player and the pups. A player who backs out past `guard_m` ends it; the pack goes back to prowling.
   3. **The rush:** a player still within `pups.rush_m` (25 m) after the warning is rushed, unless the player is in a fire's or torch's light.
-     - A placed campfire or a torch holds the pack. [Dave, 25 Nov 2026 3:19 AM Halifax, project chat: "Also remember fire keeps everything away from the players." It replaces decision 4's "torch or not".]
+     - A placed campfire or a torch holds the pack. (`RULINGS.md` R-ANIMAL-FIRE.)
      - Two players together still make it back off, as today.
      - The warning comes first so the rush is never a surprise, the same fairness as the bear ladder (#600).
 

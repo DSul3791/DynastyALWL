@@ -269,6 +269,14 @@ export = subprocess.run([sys.executable, "tools/export_check.py"], capture_outpu
 if export.returncode != 0:   # a release build would lack a file it loads or carry what it must not (server/client split C2); fix server-only creep with --write
     bad("export_check: " + " | ".join([l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")] + export.stderr.strip().splitlines()[-3:]))
 
+rulings = subprocess.run([sys.executable, "tools/check_rulings.py"], capture_output=True, text=True)
+if rulings.returncode != 0:   # one live line per ruling, replaced rules removed (CONSTITUTION.md, "Rulings")
+    for line in rulings.stdout.splitlines():
+        bad("rulings: " + line)
+rulings_self = subprocess.run([sys.executable, "-I", "tools/test_check_rulings.py"], capture_output=True, text=True)
+if rulings_self.returncode != 0:
+    bad("rulings check self-test: " + rulings_self.stdout.strip()[-200:])
+
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
     print("WARNING:", master.stdout.strip())

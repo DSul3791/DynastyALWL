@@ -25,7 +25,7 @@ Stop starting risky changes near nightly integration. Integrate reviewed ready w
 
 No unresolved finding may be hidden, dropped or archived as if fixed. Record owner, reproduction/evidence, severity and disposition in current task state. Unresolved blockers and missing required checks stop dependent integration/release until resolved and verified. Known noncritical baseline defects require explicit reviewer disposition under `TEST_GATES.md`; no new blanket waiver is created here. Unaffected work can continue.
 
-Dave playtests through Godot F6 at his pace. Log observed/expected behavior, reproduction, scene/screenshot, severity and build SHA. Workers investigate immediately on isolated branches. Do not replace his checkout, change his tested revision, launch heavy jobs during his session or kill Godot blindly. Remote `dev` may advance without changing his running build. Defer PC runs until a guarded slot is available.
+Dave playtests dev in Godot, or the installed build, at his pace. Log observed/expected behavior, reproduction, scene/screenshot, severity and build SHA. Workers investigate immediately on isolated branches. Do not replace his checkout, change his tested revision, launch heavy jobs during his session or kill Godot blindly. Remote `dev` may advance without changing his running build. Defer PC runs until a guarded slot is available.
 
 Messages to Dave are short and use Atlantic time. Prefer `Dev ready: <SHA>. Changes: <sentence>. Known issues: <sentence>. Pull dev and play.` Or `Dev not ready: <reason>; play <last-known-good SHA>.` Test summary: counts, one line per failure; anything Dave must do uses numbered steps. Detailed evidence stays in the task record, using `HANDOFF_TEMPLATE.md`.
 

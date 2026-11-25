@@ -49,12 +49,7 @@ them. An animal inside one bolts away; none wanders in; none charges or stalks a
 | Torch or lantern carried, lit | 9 m | `server_items.gd` TORCH_PROTECT_M |
 | Standing torch, torch post, pillar, iron stand (lit) | 8 m | `data/items/structures.json` protect_m |
 
-Exceptions in the code today, from older rulings that Dave's 25 Nov words replace under his 23 Nov rule "newer rules override older
-ideas" (the coordinator tells Dave, who can bring them back) (the bear den: Dave
-6 Nov 2026 in the brown bear row note, "a torch does not protect you at its den", and `bear_threat_design.md` "Fire still does not help
-inside the den ring"; the wolf pup den: `wolf_packs_and_pups_design.md`, "torch or not", a campfire still holds): a bear at its den ignores a torch or fire (`_in_den`); a mother with a player
-between her and her young attacks "torch or not"; a wolf pack rushes a player near its pups' den "torch or not" (a campfire still holds
-it); wolf packs skip the general fire check and use their own (`a.has("pack")`).
+There are no exceptions: no den, mother or pup den lets an animal into a fire's or torch's light (`RULINGS.md` R-ANIMAL-FIRE, PR #1906).
 
 Real animals: most wild mammals avoid fire and smoke, and people at a camp. Food-conditioned bears and wolves do walk into camps for
 food (NPS, bear.org), and fire alone does not stop a determined predator. Dave's rule wins: in our game a lit fire always holds.
@@ -368,8 +363,7 @@ forest, 16 km in the open; about four times more howling in February than in May
 - S15: tests a herd, picks the weak, chases over hundreds of metres to kilometres.
 - S13: pups born mid-April in a den; the pack defends the den.
 - S17: today's pack brain (`server_wolves.gd`, wolf pups design) covers stalk, rush, den guard.
-- S20: no study shows a campfire deters wolves; Dave's rule wins: no pack enters firelight (today the den guard rushes "torch or not":
-  gap 7).
+- S20: no study shows a campfire deters wolves; Dave's rule wins: no pack enters firelight (R-ANIMAL-FIRE).
 - S21: howl (night, more in winter; replies at kills and pup sites), growl and snarl at a fight, bark-howl alarm near the den, silent
   while hunting.
 
@@ -563,11 +557,8 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    warthog's was turned down on purpose, it drops onto its haunches; `ClackTeeth` for the black bear; hyena `Howling_*`).
    Fix: map what each file has; for files with none, choose with the coordinator (borrow a look with moves, retarget, or a new model).
    The black bear first (bear item 4).
-7. **Fire exceptions are removed** (Dave 25 Nov 2026 "fire keeps everything away from the players", newer than the bear den ruling
-   of 6 Nov 2026 and the wolf pup den and bear ladder rulings of 8 Nov 2026, under his 23 Nov rule "newer rules override older ideas").
-   Today the bear den ignores fire and torches (`_in_den`); a mother with a player near her young attacks "torch or not"; a wolf pack at
-   its pups' den rushes "torch or not" (`wolf_packs_and_pups_design.md`); a charge already started is locked and may pass into new
-   light. Fix: remove them; hold at the light's edge; a charge turns off at the edge. (The bear fix thread has this in hand.)
+7. **Fire exceptions:** done in PR #1906 (`RULINGS.md` R-ANIMAL-FIRE). Left: a charge already started may still pass into new light; it
+   should turn off at the light's edge.
 8. **A hurt animal does not slow down or bed in cover, and bleeds at one rate.** Every wound drains 0.15 health a second whatever the
    animal (a deer of 20 dies in about 2 minutes, an elephant of 300 in 33), and it flees at full speed (`bleed` says it "runs, rests and finally dies"; check how it rests). Real: a badly hit
    deer runs a short way and lies down; pushed, it runs much farther. Fix: a hurt animal runs slower (the wounded gait clips most files
