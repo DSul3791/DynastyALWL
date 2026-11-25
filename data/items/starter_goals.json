@@ -82,7 +82,7 @@
 		{
 			"id": "fire",
 			"title": "Light a fire",
-			"hint": "Make a Campfire (6 sticks, 16 stones) and place it. Put sticks on it with F, then press E near it to light it.",
+			"hint": "Make a Campfire (6 sticks, 16 stones) and place it. Put sticks on it with F, then press E near it to light it. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
 			"after": [
 				"fell"
 			],
@@ -111,7 +111,7 @@
 		{
 			"id": "path",
 			"title": "Tread a path from camp to the water",
-			"hint": "Hold the hoe and left click along the ground from your fire towards the water. Or Shift + right click to drop survey markers as you walk and the road builds itself. Paths are faster to walk.",
+			"hint": "Hold the hoe and left click along the ground from your fire towards the water. Or Shift + right click to drop survey markers as you walk and the road builds itself. Paths are faster to walk. Each stroke on fresh ground lays one patch; a stroke on ground already trodden adds none.",
 			"after": [
 				"hoe"
 			],
@@ -137,7 +137,7 @@
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Hold your hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
+			"hint": "Hold your hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you. A felled broadleaf tree (oak, birch, beech) drops about a hundred leaves in heaps round where its crown lands: pick them up with E. Pines, spruces and firs drop none, and a bush chopped with the axe gives 10 to 20.",
 			"after": [
 				"fire",
 				"hammer"
@@ -171,7 +171,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Wooden - Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
+			"hint": "Hold your hammer, press R and pick Wooden - Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
 			"after": [
 				"hammer"
 			],
@@ -198,7 +198,7 @@
 		{
 			"id": "knife",
 			"title": "Make a Stone - Knife",
-			"hint": "Open the inventory (I) and craft a Stone - Knife: 2 stones and a stick. You carve, skin and cut with it.",
+			"hint": "Open the inventory (I) and craft a Stone - Knife: 2 stones and a stick. You carve, skin and cut with it. When the loose stones round camp run out, hold your Stone - Hammer and strike a boulder: each blow breaks off a stone.",
 			"after": [
 				"spear"
 			],

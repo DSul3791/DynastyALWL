@@ -1431,7 +1431,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 137, unconfirm
 | Quake dust | falling dust and camera shake | src/client/quake_view.gd | CPUParticles3D box emitter | 2 | header; collapse switched off server-side |
 | Faint vignette | narrow, blur, fade to black | src/client/faint_effect.gd | screen shader | 2 | owner 2026-10-20 |
 | Cave-in skull | grey skull and crossbones drawn on death | src/client/cavein_death.gd _draw_skull | drawn with Control draw calls | 1 | header: "v1 ... drawn skull; Kathleen's art ... drop in"; skull PNG still wanted (archived handoff) |
-| Glowing groves (witness tree, everember) | emissive leaves/veins and one soft OmniLight per 24 m of glowing grove | src/flora/flora_view.gd (leaf and ember shaders, GLOW_CELL_M) | shader emission plus OmniLight3D | 3 | built for the fantasy trees; ART_DIRECTION.md does not review it; not seen rendered |
+| Glowing groves (witness tree, everember) | witness tree: only its leaf veins glow, no light (R-FLORA-WITNESS-GLOW); everember: glowing bark veins and one soft OmniLight per 24 m of grove | src/flora/flora_view.gd (leaf and ember shaders, GLOW_CELL_M) | shader emission plus OmniLight3D | 3 | built for the fantasy trees; ART_DIRECTION.md does not review it; not seen rendered |
 | Far-tree impostors | two crossed quads showing a baked front/side view of each species | src/flora/tree_impostor.gd; ART_DIRECTION.md section 16 | rendered at startup from the live models | 3 | section 16, 19, 20, 36 |
 | NPC name labels | name text above an NPC | src/client/npc_view.gd line 183 (Label3D) | Label3D | 2 | functional |
 | Rain splashes | sound only; no visual | src/client/rain_splashes.gd | no mesh found (sound detail) | 0 | header describes sounds only [not visible] |

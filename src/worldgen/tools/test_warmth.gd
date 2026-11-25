@@ -34,8 +34,12 @@ func make(dir: String):
 	return items
 
 
+# Game seconds, one tick each. The client is heard from all the while, as a connected one is (it reports its position several times a
+# second): the server parks a player it has not heard from for ABSENT_MS of real time, and on a slow machine this test's 11,000 ticks
+# take longer than that (Lane A 25 Nov 2026: 8 checks failed with the player parked out of the world).
 func run(items, seconds: int) -> void:
 	for n in seconds:
+		items._heard_ms[1] = Time.get_ticks_msec()
 		items.tick(1.0)
 
 

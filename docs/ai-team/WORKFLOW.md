@@ -19,13 +19,13 @@ The coordinator owns priorities, assignments, shared state, dependencies and esc
 Newer explicit priorities govern within scope. Standing fallback priority: terrain/water, Dave's playtest bugs, freezes/lag, testing, first-hour bugs, body/movement, flora/fauna, art, audio, tuning, guides/docs, parked ideas. Use the current task queue rather than historical personal rosters. Dave may speak to a worker directly; log substantive changes in shared state and notify the coordinator.
 
 ## Integration, playtesting and blocking findings
-Before handoff, fetch `dev`, check conflicts, run `MERGE_CHECK_BASE=origin/dev python3 tools/merge_check.py` and applicable tests/controls/parse checks on permitted runners. Review the final candidate and evidence. Label runtime delivery RUNTIME (no restart), RESTART (close after pulling) or BAKE (needs a tile bake). A `TERRAIN_VERSION` change ships only with its authorized bake.
+Claude Code warns before a `git commit` (a bare print() in client code; a key, token or password) and before a `git push` (the rule checks), from `tools/hooks/` via `.claude/settings.json`; these local warnings never block: fix what they name. GitHub checks every file a change touches for the same problems (`tools/warn_watch.py`): a problem is flagged each time its file is touched and blocks on its 3rd flag until fixed; a key or password blocks at once. Before handoff, fetch `dev`, check conflicts, run `MERGE_CHECK_BASE=origin/dev python3 tools/merge_check.py` and applicable tests/controls/parse checks on permitted runners. Review the final candidate and evidence. Label runtime delivery RUNTIME (no restart), RESTART (close after pulling) or BAKE (needs a tile bake). A `TERRAIN_VERSION` change ships only with its authorized bake.
 
 Stop starting risky changes near nightly integration. Integrate reviewed ready work and publish the exact committed `dev` SHA and relevant evidence. Apply the startup/world-load gate before calling it playable; if unavailable report `DEV COMMITTED — PLAYABILITY UNVERIFIED` and offer a last-known-green SHA. Distinguish implemented, reviewed, tested, integrated and played.
 
 No unresolved finding may be hidden, dropped or archived as if fixed. Record owner, reproduction/evidence, severity and disposition in current task state. Unresolved blockers and missing required checks stop dependent integration/release until resolved and verified. Known noncritical baseline defects require explicit reviewer disposition under `TEST_GATES.md`; no new blanket waiver is created here. Unaffected work can continue.
 
-Dave playtests through Godot F6 at his pace. Log observed/expected behavior, reproduction, scene/screenshot, severity and build SHA. Workers investigate immediately on isolated branches. Do not replace his checkout, change his tested revision, launch heavy jobs during his session or kill Godot blindly. Remote `dev` may advance without changing his running build. Defer PC runs until a guarded slot is available.
+Dave playtests dev in Godot, or the installed build, at his pace. Every bug, from any source, goes in `BugsList_Current.md` (the one bug list; its header says how). Log observed/expected behavior, reproduction, scene/screenshot, severity and build SHA. Workers investigate immediately on isolated branches. Do not replace his checkout, change his tested revision, launch heavy jobs during his session or kill Godot blindly. Remote `dev` may advance without changing his running build. Defer PC runs until a guarded slot is available.
 
 Messages to Dave are short and use Atlantic time. Prefer `Dev ready: <SHA>. Changes: <sentence>. Known issues: <sentence>. Pull dev and play.` Or `Dev not ready: <reason>; play <last-known-good SHA>.` Test summary: counts, one line per failure; anything Dave must do uses numbered steps. Detailed evidence stays in the task record, using `HANDOFF_TEMPLATE.md`.
 
@@ -46,10 +46,18 @@ Read the plan's `why`; `TEST_GATES.md` owns the change plan, the dev sweep (`--w
 
 At most three heavy Godot jobs share the PC through `tools/godot_slot.sh`; test runners take slots automatically, other long jobs must use the wrapper. Do not disable the guard to evade contention. No heavy cloud Godot/headless tests, bakes or renders; permitted static/lint/CI checks may run in the cloud. `TEST_GATES.md` owns machine/water-record prerequisites and evidence.
 
+## Lessons loop
+Weekly, about an hour (Dave 25 Nov 2026; `docs/RULINGS.md` R-TEAM-LESSONS):
+- When: each Wednesday after the token reset, the coordinator's scheduled task wakes it and it gives one thread the week's lessons.
+- Read: that week's independent-review findings, `tools/check_dave_rules.py` FAILs, and bugs entered again that `BugsList_Fixed.md` already holds.
+- Fix: a mistake seen twice in the week becomes one small PR to `dev` that stops it coming back, a new check or a skill fix, with independent review under `TEST_GATES.md`.
+- Ask first: anything that would change a ruling, a rulebook or a test gate goes to Dave through the coordinator, never straight into a PR.
+- Report: one line to the coordinator (the PR link, or "nothing seen twice"), kept in `/mnt/project-files/lessons/` for the next week.
+
 ## Backups and resource arrangements
 Reuse an existing approved backup arrangement without asking again. Before enabling unattended backups, obtain one-time approval for exact source paths, destination (prefer another physical drive), retention, verification and schedule. Follow approved retention, record success/failure and verify recovery; a copied folder alone is insufficient. Do not silently expand scope, discard backups/live water records/manual assets/uncommitted tiles, or modify Dave's checkout. Back up before authorized `main` promotion as required by the approved arrangement.
 
-Preserve the established weekly token pacing (reset Wednesday 03:00 Atlantic); work directly, using local Qwen only for bulk reading. At the authorized bedtime backup, ask for weekly usage and record it in `C:\GodotProjects\Claude_Usage_Log.md`. This does not authorize a new backup job or PC access.
+Preserve the established weekly token pacing (reset Wednesday 03:00 Atlantic).
 
 ## Documentation and removal lifecycle
 Maintain one authority per topic and concise task state; `CONSTITUTION.md` owns decision provenance. Update current instructions in place, repair affected readers and preserve source decisions/unique knowledge before retiring a duplicate. Required licenses/attribution stay with distributed assets for as long as needed. No archive can conceal an unresolved issue.

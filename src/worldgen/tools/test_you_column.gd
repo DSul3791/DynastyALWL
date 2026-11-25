@@ -160,6 +160,20 @@ func _initialize() -> void:
 	part.set_active(true)
 	await process_frame
 	check(part.preview.render_target_update_mode != SubViewport.UPDATE_DISABLED, "it renders while the window is open")
+	# The character faces you when the inventory opens and a left drag turns it (Dave 25 Nov 2026).
+	check(is_equal_approx(part.rig.rotation.y, YouColumn.FACING_YOU), "the character faces forward when the inventory opens")
+	var drag: InputEventMouseMotion = InputEventMouseMotion.new()
+	drag.button_mask = MOUSE_BUTTON_MASK_LEFT
+	drag.relative = Vector2(100.0, 0.0)
+	part._on_figure_input(drag)
+	check(absf(part.rig.rotation.y - YouColumn.FACING_YOU - 100.0 * YouColumn.TURN_PER_PX) < 0.001, "a left drag of 100 px turns it (%.2f rad)" % part.rig.rotation.y)
+	var hover: InputEventMouseMotion = InputEventMouseMotion.new()
+	hover.relative = Vector2(100.0, 0.0)
+	part._on_figure_input(hover)
+	check(absf(part.rig.rotation.y - YouColumn.FACING_YOU - 100.0 * YouColumn.TURN_PER_PX) < 0.001, "moving the mouse without a button held does not turn it")
+	part.set_active(false)
+	part.set_active(true)
+	check(is_equal_approx(part.rig.rotation.y, YouColumn.FACING_YOU), "shut and opened again, it faces forward again")
 	check(built.get_combined_minimum_size().x <= ArtKit.YOU.size.x - 2.0 * ArtKit.INSET + 1.0, "gear and figure fit the You column's 408 px")
 	part.set_active(false)
 	await process_frame

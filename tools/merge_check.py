@@ -269,6 +269,27 @@ export = subprocess.run([sys.executable, "tools/export_check.py"], capture_outpu
 if export.returncode != 0:   # a release build would lack a file it loads or carry what it must not (server/client split C2); fix server-only creep with --write
     bad("export_check: " + " | ".join([l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")] + export.stderr.strip().splitlines()[-3:]))
 
+rulings = subprocess.run([sys.executable, "tools/check_rulings.py"], capture_output=True, text=True)
+if rulings.returncode != 0:   # one live line per ruling, replaced rules removed (CONSTITUTION.md, "Rulings")
+    for line in rulings.stdout.splitlines():
+        bad("rulings: " + line)
+dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
+if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (docs/RULINGS.md)
+    for line in dave.stdout.splitlines():
+        if line.startswith("FAIL"):
+            bad("dave rule: " + line[5:])
+    if "FAIL" not in dave.stdout:
+        bad("check_dave_rules crashed: " + dave.stderr[-200:])
+rulings_self = subprocess.run([sys.executable, "-I", "tools/test_check_rulings.py"], capture_output=True, text=True)
+if rulings_self.returncode != 0:
+    bad("rulings check self-test: " + rulings_self.stdout.strip()[-200:])
+warn_self = subprocess.run([sys.executable, "-I", "tools/test_agent_warn.py"], capture_output=True, text=True)
+if warn_self.returncode != 0:   # the warn-only commit and push hooks (tools/hooks/)
+    bad("hook warnings self-test: " + warn_self.stdout.strip()[-200:])
+watch_self = subprocess.run([sys.executable, "-I", "tools/test_warn_watch.py"], capture_output=True, text=True)
+if watch_self.returncode != 0:   # warn first, block on the 3rd flag (tools/warn_watch.py)
+    bad("watched checks self-test: " + watch_self.stdout.strip()[-200:])
+
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
     print("WARNING:", master.stdout.strip())

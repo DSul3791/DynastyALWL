@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **215 slots: 23 recorded, 182 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **215 slots: 24 recorded, 181 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -15,7 +15,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `rain_heavy` | generated | 1 | weather_sounds.gd: heavy rain and storm loop | A heavy downpour loop, seamless |
 | 1 | `rain_light` | generated | 1 | weather_sounds.gd: drizzle and light rain loop | A light rain on open ground loop, seamless |
 | 1 | `thunder` | generated | 3 | weather_sounds.gd: a mid-distance thunder roll | 2 to 3 rolling thunder claps, 5 to 9 s |
-| 1 | `tree_crash` | generated | 3 | tree_sounds.gd: the tree hits the ground (1.5 s after it starts to fall) | 3 big tree crashes: snapping branches and a deep thud, 2 to 3 s |
+| 1 | `tree_crash` | recorded | 1 | tree_sounds.gd: the tree hits the ground (1.5 s after it starts to fall) | 3 big tree crashes: snapping branches and a deep thud, 2 to 3 s |
 | 1 | `water_brook` | recorded | 1 | water_sounds.gd: a fast shallow stream, positional loop | A babbling brook loop, seamless |
 | 1 | `water_river` | generated | 1 | water_sounds.gd: a wide slow river, positional loop | A broad river flow loop, seamless |
 | 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |

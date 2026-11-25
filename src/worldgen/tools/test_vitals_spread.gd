@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Vitals and goals spread over frames (load test 23 Nov 2026, docs/design/SERVER_SCALE.md): each player is looked at about 4 times a
+# Vitals and goals spread over frames (load test 23 Nov 2026, docs/design/SERVER_SCALE.md; the goals once a second since 25 Nov 2026): each player is looked at about 4 times a
 # second with its own elapsed time, a share of the players each frame. The drains come out the same as the old all-at-once quarter-second
 # tick, no frame looks at more than its share, and a long frame (tests' tick(1.0)) looks at everyone with the whole time.
 #   godot --headless --path . --script res://src/worldgen/tools/test_vitals_spread.gd
@@ -102,7 +102,7 @@ func _init() -> void:
 	long._vitals_spread(0.25)
 	check(not long._vit_spent.has(3), "a player who left is dropped from the vitals turn")
 
-	# The goals: a share each frame, every player about 4 times a second.
+	# The goals: a share each frame, every player once a second (GOAL_POLL_S; coordinator 25 Nov 2026, the events check their own goals).
 	var goals = make("user://test_vitals_spread_goals")
 
 	var goal_looks: Dictionary = {}
@@ -117,7 +117,12 @@ func _init() -> void:
 	for n in PLAYERS:
 		fewest_goals = mini(fewest_goals, int(goal_looks.get(n + 1, 0)))
 
-	check(goal_looks.size() == PLAYERS and fewest_goals >= 15, "every player's goals looked at about 4 times a second (fewest %d in 4 s)" % fewest_goals)
+	var most_goals: int = 0
+
+	for n in PLAYERS:
+		most_goals = maxi(most_goals, int(goal_looks.get(n + 1, 0)))
+
+	check(goal_looks.size() == PLAYERS and fewest_goals >= 3 and most_goals <= 5, "every player's goals looked at about once a second (%d to %d in 4 s)" % [fewest_goals, most_goals])
 
 	# Someone who joins mid-run joins the vitals turn from then on.
 	spread.peer_connected_hello(PLAYERS + 1, "spreadkeylate")

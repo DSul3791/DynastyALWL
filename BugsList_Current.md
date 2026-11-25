@@ -1,8 +1,12 @@
 # Current Bugs
 
-All Currently unfixed bugs go here.
+**The one bug list** (Dave, 25 Nov 2026: one bug list instead of five). Every bug goes here, whoever finds it: Dave's play, a tester's report, a robot play-tester, a test or a rule check (`tools/check_dave_rules.py`). Each new entry opens with **Found by** (Dave / tester, QA #n / robot / test / rule check), the date and the words of whoever found it, then **Status**. An entry stays here until Dave has played the fix, then moves to [BugsList_Fixed.md](BugsList_Fixed.md).
 
-This list records the problems Dave found in his play tests and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. Entries stay here until Dave confirms the fix in play. Each entry says what he played: "found in play" (the problem came from his play test), "fix played" (he has played the fixed version) or "fix not yet played". When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md). Work that is not built yet, including the open parts of entries here, is listed in [docs/TODO.md](docs/TODO.md) (reviewed 21 Nov 2026: every PR named in entries 1 to 127 is in dev; none of them has been played yet).
+Where the rest lives, so nothing is listed twice:
+- Tester reports arrive as issues in DynastyALWL-QA. A valid one gets an entry here naming its issue; the issue is closed with "Fixed in build N" once a build carries the fix.
+- Work that is not built yet and is not a bug: [docs/TODO.md](docs/TODO.md).
+- Dave's rulings: [docs/RULINGS.md](docs/RULINGS.md). A bug against a ruling names its R- key.
+- The coordinator's play-test notes keep Dave's words as he said them; each bug in them is entered here by a thread.
 
 ## Intended experience
 
@@ -1610,7 +1614,7 @@ Not yet played.
 
 ## 138. Prompts to pick fruit and drink water do not say which key
 
-**Status: Not fixed - needs detail.** The exact wording the tester saw has not been found in the game's text yet. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk. The sea half is now entry 141 (too salty, find fresh water); the fruit key half still needs the wording.
+**Status: Implemented - awaiting player verification.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). Dave, 25 Nov 2026: "if you look at a fruit tree or bush or anything in the game that has the ability to be used by pressing e it should say Press E to ... if you have inspect mode on." (R-HUD-PROMPTS.) Every E action the client offers now carries a prompt that names its key; `tools/check_dave_rules.py` fails a merge if one does not (45 found). The one gap was the work station prompt ("Press F to use the ..."), which now says "Press E or F". Prompts still show only in inspect mode. The sea half is entry 141 (too salty, find fresh water). Not yet played.
 
 ## 139. The till and plant grid goes behind the player; Plant shows squares, not dots
 
@@ -1633,6 +1637,38 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 ## 143. The Fibre shoulder bag should be a Fibre backpack
 
 **Status: Implemented - awaiting player verification.** Dave, 24 Nov 2026: "a fiber handbag does not make any sense in a game like this. especially since its a backpack of somesort. remove it or call it a FiberBackpack". The item is now Fibre - Backpack (same item id, so saves and recipes keep it), with its description and the docs changed to match. It is still worn in the Shoulder position, so it goes with one of the four backpacks on the Back (coordinator ruling, 24 Nov 2026); its placeholder model is the pack shape on the back. On the I screen the Back well shows it while no backpack is worn there (click opens it, drag it out to take it off; test_you_column); with a backpack worn, it is on the Tab screen's worn list. Not yet played.
+
+## 144. A bear could be run down on foot, and roared all the time
+
+**Found by:** Dave, play test of build 10587, 25 Nov 2026: "the bear really should be able to out run me. also a threatened bear should turn and fight back. first it should stand its ground and standup on its hind legs. then it should attack with its claws or mouth." "the bear roaring constantly in the woods is unrealistic." (quotes as in PR #1906, which names the build.) **Status: Implemented - awaiting player verification** (PRs #1906, #1908, #1913, #1920; R-ANIMAL-BEAR, R-ANIMAL-BEAR-FOOD). Guarded by `tools/check_dave_rules.py` and `test_bear_threat`.
+
+## 145. A snared animal should lie in the snare
+
+**Found by:** Dave, 25 Nov 2026: "they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset the snare". **Status: Implemented - awaiting player verification** (PR #1902; R-HUNT-SNARE-CATCH).
+
+## 146. The hunt goal said a rabbit when a bear was killed
+
+**Found by:** Dave, QA #9, build 10587, 25 Nov 2026 (issue title "[Bug] Killed a bear bad text"). **Status: Implemented - awaiting player verification** (PR #1905; QA #9 closed).
+
+## 147. New players are not told the E, F and inspect keys
+
+**Found by:** tester, QA #8, build 9257, 24 Nov 2026 ("game says pick fruit, no indication what button it is"); Dave, 25 Nov 2026: "there should be a pop up for first time players or new characters that says the basics". **Status: Implemented - awaiting player verification** (PRs #1901, #1903; R-HUD-PROMPTS).
+
+## 148. Animal sign glowed from Tracking 10, the ruling says 25
+
+**Found by:** rule check (`tools/check_dave_rules.py`, R-HUNT-GLOW), 25 Nov 2026. Dave, 23 Nov 2026: "you will start seeing some animal signs glowing at a close distance say 10 meters even further at higher levels." **Status: Implemented - awaiting player verification** (PR #1923).
+
+## 149. The inventory character should face you and turn with the mouse
+
+**Found by:** tester list, Dave's pick, 25 Nov 2026: "the character int he inventory should face forward on opening inventory and you should be able to crab and rotate the doll with the mouse." **Status: Implemented - awaiting player verification.** The figure on the I screen faces the player every time the screen opens; holding the left mouse button on it and dragging sideways turns it (you_column.gd; test_you_column). Not yet played; the facing has not been seen on screen.
+
+## 150. A tree falling used a made-up crash sound
+
+**Found by:** tester list, Dave's pick, 25 Nov 2026: "included a tree falling sound from Pixabay.com royalty free etc etc". **Status: Implemented - awaiting player verification.** Dave's recording is now the crash when a felled tree hits the ground (recorded/trees/tree_crash_0.ogg; credits row in assets/audio/CREDITS.csv; notes in assets/audio/README.md). It plays from the tree (directional) like before. Not yet played.
+
+## 151. The witness tree's whole canopy glows violet at night
+
+**Found by:** Dave, his own play, 25 Nov 2026: "I have noticed these trees at night and its not just the veins its the entire canopy is glowing violet. which is not per the design." (R-FLORA-WITNESS-GLOW.) **Status: Implemented - awaiting player verification.** Two causes: the leaf shader lit every leaf at 60 to 100% of the glow, not only the veins, and each grown witness tree hung a violet light in its crown (45% of its height, reaching 60% of it) that lit the whole canopy from inside. Now only the violet vein lines in the leaf texture glow (flora_view.gd FOLIAGE_SHADER vein_mask), and the tree sends no light (data/tables/flora.json). The everember was checked: its glow is already only in its bark veins, and its light stays at 2 m to light the ground. Guarded by `tools/check_dave_rules.py`. Not yet played; needs a night picture near and far.
 
 ## Rewrite interpretation
 

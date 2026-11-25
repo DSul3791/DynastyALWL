@@ -4,7 +4,7 @@
 
 This file is the one home for work that is **not built yet**. Other records keep their own jobs:
 
-- [BugsList_Current.md](../BugsList_Current.md): Dave's play-test problems and requests. An entry stays there until Dave has played the fix, then moves to [BugsList_Fixed.md](../BugsList_Fixed.md).
+- [BugsList_Current.md](../BugsList_Current.md): the one bug list, whoever finds the bug (Dave, testers, robots, tests, rule checks). A bug found here moves there.
 - [Design_Ideas_Approved.md](../Design_Ideas_Approved.md): approved designs. This file only says whether they are built.
 - The coordinator's Library logs (`/mnt/project-files/coordinator-log/`): the play-test notes and the day's merge log.
 

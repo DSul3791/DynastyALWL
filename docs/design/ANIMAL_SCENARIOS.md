@@ -49,12 +49,7 @@ them. An animal inside one bolts away; none wanders in; none charges or stalks a
 | Torch or lantern carried, lit | 9 m | `server_items.gd` TORCH_PROTECT_M |
 | Standing torch, torch post, pillar, iron stand (lit) | 8 m | `data/items/structures.json` protect_m |
 
-Exceptions in the code today, from older rulings that Dave's 25 Nov words replace under his 23 Nov rule "newer rules override older
-ideas" (the coordinator tells Dave, who can bring them back) (the bear den: Dave
-6 Nov 2026 in the brown bear row note, "a torch does not protect you at its den", and `bear_threat_design.md` "Fire still does not help
-inside the den ring"; the wolf pup den: `wolf_packs_and_pups_design.md`, "torch or not", a campfire still holds): a bear at its den ignores a torch or fire (`_in_den`); a mother with a player
-between her and her young attacks "torch or not"; a wolf pack rushes a player near its pups' den "torch or not" (a campfire still holds
-it); wolf packs skip the general fire check and use their own (`a.has("pack")`).
+There are no exceptions: no den, mother or pup den lets an animal into a fire's or torch's light (`RULINGS.md` R-ANIMAL-FIRE, PR #1906).
 
 Real animals: most wild mammals avoid fire and smoke, and people at a camp. Food-conditioned bears and wolves do walk into camps for
 food (NPS, bear.org), and fire alone does not stop a determined predator. Dave's rule wins: in our game a lit fire always holds.
@@ -168,7 +163,7 @@ A roar is not a black bear sound. Keep `bear_roar` only, if at all, for a brown 
 | # | What the real black bear does | In our game |
 |---|---|---|
 | S1 Unaware | Walks slowly, nose down, alone. Mostly silent. | Wander at walk 1.2 to 1.3 m/s; no calls. |
-| S2 Eating | Forages berries, nuts, insects, roots, carrion. Reluctant to leave rich food; a bluff charge "when you confront a bear that is trying to get a meal" [NH]. | Grazes and forages (graze clips). At a carcass or berry patch it holds its ground and warns a player within 20 m instead of fleeing at once. |
+| S2 Eating | Forages berries, nuts, insects, roots, carrion. Reluctant to leave rich food; a bluff charge "when you confront a bear that is trying to get a meal" [NH]. | **Dave 25 Nov 2026: "this world is abundant with berries so that's what they spend most of their time doing is eating and they like to fish so they will go to the streams and rivers."** Most of its day it walks from berry bush to berry bush or to a fishing spot on a stream or river bank, and grazes there (graze clips; `den.berry_share`/`fish_share`, black bear `feeds`). At a carcass or berry patch it holds its ground and warns a player within 20 m instead of fleeing at once. |
 | S3 Sleeping | Naps once or twice by day, beds at night in thick cover or at the foot of a big tree [BO27]. | Rest a game hour around midday and through the night, lying (`LyingBreathing`); wakes at 0.6 of its flee distance (rest rule). |
 | S4 Notices far | Hears or smells us first. **Stands on its hind legs to see and smell better: curiosity, "not a sign of aggression"** [FWC]. | Within 50 m: stops, sniffs, maybe stands up for a few seconds, then usually walks or runs off. No growl. |
 | S5 Comes closer | Usually leaves; a startled one "runs away, often to a tree" [BO254]. | Flee at 32 m (today's table). |
@@ -180,7 +175,7 @@ A roar is not a black bear sound. Keep `bear_roar` only, if at all, for a brown 
 | S11 Dying | Collapses; hunters describe a death moan. | Bleeds out on the trail (blood rule); one low moan; its own death clip (brown bear has them; black bear: `WalkSlowWounded2Lying` then lying). |
 | S12 Snared, trapped | Biologists catch bears with baited foot snares (a cable on the foot, anchored) and barrel traps. A caught bear tears up the ground in reach, moans and huffs, lunges at people. | **Dave: "the goal will be to learn how to trap them."** A bear trap (a later trap stage: heavy cable snare or pit, baited with meat, fish or honey). A bear smells bait downwind from about 200 m. Caught, it stays within 2 m of the anchor, faces the player, huffs, jaw-pops, moans, and lunges with a swipe at anyone inside 2.5 m. It can be killed from outside its reach. A weak trap may break after a few game hours. |
 | S13 With cubs | Black bear mothers rarely defend cubs by attacking: "defense of cubs is a grizzly bear trait"; a sow "may send her cubs up a tree and false-charge you" [BO27], [NH]. | Cubs follow within 4 m. A mother bluff charges a player within 10 m of a cub; she attacks for real only if the player hurts a cub or stays after the bluff. |
-| S14 Hungry, starving | In poor food years bears range farther and come to people's food [FWC]. | **Dave: it runs "unless it was starving or trapped."** A starving bear (spring after the den, or a poor autumn) does not run from a player: it stands its ground, comes to camps and food left out, takes carcasses, and attacks by the ladder if pushed. It still never enters firelight. |
+| S14 Hungry, starving | In poor food years bears range farther and come to people's food [FWC]. | **Dave: it runs "unless it was starving or trapped."** **Dave 25 Nov 2026: a bear "will eat berries until it's not starving anymore ... so the only real dangerous time will be early in the spring."** Bears are born starving only in the first month of spring, and a starving bear is fed after three meals at a berry bush or fishing spot. A starving bear does not run from a player: it stands its ground, comes to camps and food left out, takes carcasses, and attacks by the ladder if pushed. It still never enters firelight. |
 | S15 Hunting | Mostly a forager; takes fawns and calves in spring; rare predatory attacks on people are silent, by a stalking bear [BS], [BO254]. | Only aggressive-born bears (10% of black bears, 5% of brown bears) stalk a player, silently, at 1.2 m/s; never into firelight; never by night. Takes fawns in spring if animal-on-animal hunting is added. |
 | S16 Meets another animal | Yields to brown bears; wolves may harass it; deer avoid it. | Deer, elk and moose treat a bear like a player (flee). A black bear gives way to a brown bear. |
 | S17 Group | Solitary. | Single; mothers with 1 to 3 cubs (share 0.3 today). |
@@ -368,8 +363,7 @@ forest, 16 km in the open; about four times more howling in February than in May
 - S15: tests a herd, picks the weak, chases over hundreds of metres to kilometres.
 - S13: pups born mid-April in a den; the pack defends the den.
 - S17: today's pack brain (`server_wolves.gd`, wolf pups design) covers stalk, rush, den guard.
-- S20: no study shows a campfire deters wolves; Dave's rule wins: no pack enters firelight (today the den guard rushes "torch or not":
-  gap 7).
+- S20: no study shows a campfire deters wolves; Dave's rule wins: no pack enters firelight (R-ANIMAL-FIRE).
 - S21: howl (night, more in winter; replies at kills and pup sites), growl and snarl at a fight, bark-howl alarm near the den, silent
   while hunting.
 
@@ -563,11 +557,8 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    warthog's was turned down on purpose, it drops onto its haunches; `ClackTeeth` for the black bear; hyena `Howling_*`).
    Fix: map what each file has; for files with none, choose with the coordinator (borrow a look with moves, retarget, or a new model).
    The black bear first (bear item 4).
-7. **Fire exceptions are removed** (Dave 25 Nov 2026 "fire keeps everything away from the players", newer than the bear den ruling
-   of 6 Nov 2026 and the wolf pup den and bear ladder rulings of 8 Nov 2026, under his 23 Nov rule "newer rules override older ideas").
-   Today the bear den ignores fire and torches (`_in_den`); a mother with a player near her young attacks "torch or not"; a wolf pack at
-   its pups' den rushes "torch or not" (`wolf_packs_and_pups_design.md`); a charge already started is locked and may pass into new
-   light. Fix: remove them; hold at the light's edge; a charge turns off at the edge. (The bear fix thread has this in hand.)
+7. **Fire exceptions:** done in PR #1906 (`RULINGS.md` R-ANIMAL-FIRE). Left: a charge already started may still pass into new light; it
+   should turn off at the light's edge.
 8. **A hurt animal does not slow down or bed in cover, and bleeds at one rate.** Every wound drains 0.15 health a second whatever the
    animal (a deer of 20 dies in about 2 minutes, an elephant of 300 in 33), and it flees at full speed (`bleed` says it "runs, rests and finally dies"; check how it rests). Real: a badly hit
    deer runs a short way and lies down; pushed, it runs much farther. Fix: a hurt animal runs slower (the wounded gait clips most files
@@ -585,12 +576,19 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
     (late winter, spring after the den, a poor year) that makes them stand their ground, come to camps, food and carcasses, and bolder
     with prey, never into firelight (bear item 6).
     Built 25 Nov 2026 (`animals.json` hunger rows and block; `server_animals` spawn, `may_attack`, `_threat_m`, `thief_row`): bears,
-    black bears and the big cats and hyena are born starving at a season chance (bears 40% in spring, 30% in winter). A starving one
+    black bears and the big cats and hyena are born starving at a season chance (bears: 40% on days 0 to 30 of spring only, after Dave's 25 Nov ruling below). A starving one
     stands its ground and warns by the ladder at 1.5 times its threat range, whatever its temperament, and comes for food left out
     unless a player is within 6 m of it (a mother with young is never born starving). Like any animal that may fight it chases a
     player who runs from it close by (hunter chase_m). Neither it nor a fox ever goes for food in, or creeps through, a fire's or a
     torch's light, and any warning, charge or blow ends when its foe is in such a light or it has come into one (`server_big_game.step`). Not yet: carcasses,
     bolder with prey, a poor food year.
+    Bears feed (Dave 25 Nov 2026: a bear "will eat berries until it's not starving anymore and this world is abundant with berries so
+    that's what they spend most of their time doing is eating and they like to fish so they will go to the streams and rivers so they
+    will eat fish also so the only real dangerous time will be early in the spring"): a bear's hunger row is spring only, on days 0 to
+    30 of its row's year (`hunger.days`; `server_animals._born_starving`). Brown bears go fishing half the time and to a berry bush
+    (outside every fire's light) 80% of the rest; black bears, which have no den, feed the same way round their home (`feeds` row:
+    fishing 30%, berries 80% of the rest). A starving bear that finishes a graze at its bush or fishing spot has had a meal, and after
+    `hunger.meals` (3) it is starving no more (`_ate`). Cornered, trapped and run down are unchanged. The big cats keep their rows.
 11. **Cornered by a chase is not a thing.** Today "cornered" means blocked by water or a cliff (`_at_bay`). Fix: a player who keeps
     within about 10 m of a fleeing animal for 5 s has cornered it: big animals turn and fight (Dave, for bears), small ones dive for
     cover.

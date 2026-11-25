@@ -1445,7 +1445,7 @@ func _welcome_body(info: Dictionary) -> void:
 		cache_mb_from_quality = true
 
 	if clear_cache:
-		var folder: String = ProjectSettings.globalize_path(cache_dir)
+		var folder: String = CacheScript.base_path(cache_dir)
 
 		for file in DirAccess.get_files_at(folder):
 			DirAccess.remove_absolute(folder + "/" + file)
@@ -1453,6 +1453,10 @@ func _welcome_body(info: Dictionary) -> void:
 		FreezeWatchScript.printer.line("Terrain client: cleared the saved ground cache")
 
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
+
+	if cache.fell_back != "":
+		FreezeWatchScript.printer.line("Terrain client: the ground cache folder %s could not be made; using %s" % [cache.fell_back, CacheScript.FALLBACK_DIR])
+
 	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
 	_starter_seeded = seeded
 
@@ -1913,14 +1917,16 @@ func _welcome_body(info: Dictionary) -> void:
 	harvest = HarvestScript.new()
 	harvest.setup(self, items, net)
 	items.register_interactable("drink", 35, func():
-		if _water_ahead() and items.held_container_has_room():
-			return {"prompt": "Press E to fill", "tap": items.drink}
+		var water: Vector3 = _water_ahead_point()   # its point lets it compete for the reticle with a reed or plant beside it (current_interaction)
+
+		if not is_nan(water.x) and items.held_container_has_room():
+			return {"kind": "water", "point": water, "prompt": "Press E to fill", "tap": items.drink}
 
 		if items.thirst >= 100:
 			return {}
 
-		if _water_ahead():
-			return {"prompt": "Press E to drink", "tap": items.drink}
+		if not is_nan(water.x):
+			return {"kind": "water", "point": water, "prompt": "Press E to drink", "tap": items.drink}
 
 		# The record's water where the settled water shows none (docs/design/drink_prompt_design.md (a); Kathleen: name what is there).
 		var source: String = _record_drink_here()
@@ -2780,10 +2786,15 @@ func _bed_in_reach(x: float, z: float) -> bool:
 	return not is_nan(bed) and not DrinkRules.too_far_below(bed, body.global_position.y)
 
 
-func _water_ahead() -> bool:
+# The drinkable spot ahead (at the feet, 1 m and 2 m forward) best centred on the reticle, on the water's surface; NAN when none. The drink probe gives
+# it as its point, so E at the water's edge drinks when the reticle is on the water and gathers a reed only when the reticle is on the reed (robot
+# goals run 25 Nov 2026: looking down at the water among reeds, E offered "gather"; Dave 21 Nov 2026: E acts on what is closest to the reticle).
+func _water_ahead_point() -> Vector3:
 	var forward: Vector3 = -camera.global_transform.basis.z
 	forward.y = 0.0
 	forward = forward.normalized() if forward.length() > 0.01 else Vector3.ZERO
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_cos: float = -2.0
 
 	for step in [0.0, 1.0, 2.0]:
 		var spot: Vector3 = body.global_position + forward * step
@@ -2799,9 +2810,14 @@ func _water_ahead() -> bool:
 			continue   # no ground read yet (its collision not built) is no answer: depth() would take the whole surface height for the depth
 
 		if WaterVolume.depth(surface, ground) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
-			return true
+			var at: Vector3 = Vector3(spot.x, surface, spot.z)
+			var aim: float = items.aim_cos_of(at) if items != null else 0.0
 
-	return false
+			if aim > best_cos:
+				best_cos = aim
+				best = at
+
+	return best
 
 
 # The world is still loading round the player (Dave 21 Nov 2026: at login "it makes the sounds of building everything really fast ... it can mute

@@ -909,6 +909,7 @@ func peer_left(peer: int) -> void:
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
 	_goal_what.erase(peer)
+	_goal_poll_sig.erase(peer)
 	if not still_in:
 		_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")   # a stale connection never writes its old spot over the live one's
 
@@ -10991,6 +10992,7 @@ func _boulder_drop_spot(peer: int, it: Dictionary, size_now: float) -> Vector3:
 	var reach: float = maxf(flat.length(), size_now) + 1.0
 	var spot: Vector3 = Vector3(it["pos"].x + away.x * reach, _peer_pos[peer].y, it["pos"].z + away.y * reach)
 	_boulder_drops[key] = spot
+	_say(peer, "Too heavy to carry: what you break off piles up behind you.")   # once per miner and rock: the pile was silent (lane A robot run 25 Nov 2026)
 	return spot
 
 
@@ -14152,7 +14154,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 		return
 
 	if _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
-		_say(peer, "Too far to repair that.")
+		_say(peer, "Too far to build that. Walk up to the blueprint." if it["struct"].has("site") else "Too far to repair that.")   # a blue blueprint is filled by this same hit (lane A robot run 25 Nov 2026: "repair" read wrong)
 		return
 
 	var hammer: int = _swing_tool(peer, inv, held_slot, "hammer")
@@ -25658,8 +25660,16 @@ func _goal_admin_gave(peer: int, item: int, n: int) -> void:
 # How many of the item the pack holds that count for a goal: the admin-given units are taken off. They are taken to be the first to leave the pack, so the
 # record never exceeds what is held and later gathered units count.
 # shortcut: units are not tagged; an admin give followed by gathering and then using the gathered ones undercounts, admin testers only; revisit with GA-41 origin events.
+var _goal_pack: Dictionary = {}       # item number -> count in the pack, read once a pass while _goals_check runs (_goal_pack_on)
+var _goal_pack_on: bool = false
+var _goal_number: Dictionary = {}     # item id -> number, for the goal checks' ids
+
+
 func _goal_have(st: Dictionary, inv, id: String) -> int:
-	var held: int = inv.count_of(table.number_of(id))
+	if not _goal_number.has(id):
+		_goal_number[id] = table.number_of(id)
+
+	var held: int = int(_goal_pack.get(_goal_number[id], 0)) if _goal_pack_on else inv.count_of(int(_goal_number[id]))
 	var k: String = "admin:" + id
 
 	if not st["goal_counts"].has(k):
@@ -25781,8 +25791,52 @@ func _goal_next(st: Dictionary) -> Dictionary:
 	return {}
 
 
+# The goals whose check no event announces: what the pack holds (have_item, have_item_any, or_have, a set held), the worn gear and the night walk.
+var _goal_polled: Array = []
+var _goal_polled_built: bool = false
+
+
+func _goals_polled() -> Array:
+	if not _goal_polled_built:
+		_goal_polled_built = true
+
+		for goal in _goals_data():
+			var check: Dictionary = goal.get("check", {})
+
+			if str(check.get("event", "")) in ["worn_warmth", "moved_lit_night"] or check.has("have_item") or check.has("have_item_any") or bool(check.get("or_have", false)):
+				_goal_polled.append(goal)
+
+	return _goal_polled
+
+
+# The spread's look (GOAL_POLL_S): _goals_check over the polled goals only.
+# Nothing a polled goal reads has moved since the last look (the pack's slots, the worn gear, the night walk's metres, the goal record's size):
+# the look is skipped, so a player standing about costs a hash a second.
+var _goal_poll_sig: Dictionary = {}   # peer -> the signature at its last look
+
+
+func _goals_poll(peer: int) -> void:
+	if _goals_polled().is_empty():
+		return
+
+	var inv = inventory_of(peer)
+	var st: Dictionary = _goal_state_of(peer)
+
+	if inv == null or st.is_empty():
+		return
+
+	var sig: int = hash([inv.numbers, inv.counts, worn_of(peer), st["goal_counts"].get("moved_lit_night", 0.0), st["goal_counts"].size(), st["goals_done"].size(), _goals_paused(peer)])
+
+	if int(_goal_poll_sig.get(peer, 0)) == sig:
+		return
+
+	_goal_poll_sig[peer] = sig
+	_goals_check(peer, _goals_polled())
+
+
 # Completes every goal that is met, pays its reward and tells the client (one completion can meet another's check, so it loops until nothing changes).
-func _goals_check(peer: int) -> void:
+# only: the goals to look at (the spread's polled ones); empty, every goal.
+func _goals_check(peer: int, only: Array = []) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
 	if st.is_empty() or _goals_paused(peer):
@@ -25794,8 +25848,9 @@ func _goals_check(peer: int) -> void:
 	while changed:
 		changed = false
 		counts = {}
+		_goal_pack_read(peer)
 
-		for goal in _goals_data():
+		for goal in (_goals_data() if only.is_empty() else only):
 			var id: String = str(goal["id"])
 
 			if st["goals_done"].has(id):
@@ -25839,7 +25894,26 @@ func _goals_check(peer: int) -> void:
 
 			_say(peer, line)
 
+	_goal_pack_on = false
+	_goal_pack.clear()
 	_send_goal_progress(peer, counts)
+
+
+# The pack's counts by item number, read once for a pass of _goals_check: every have and or_have check then looks them up, not walking the slots
+# again for each id (a set goal names ten).
+func _goal_pack_read(peer: int) -> void:
+	_goal_pack.clear()
+	var inv = inventory_of(peer)
+	_goal_pack_on = inv != null
+
+	if inv == null:
+		return
+
+	for i in inv.slot_count:
+		var number: int = int(inv.numbers[i])
+
+		if number != 0:
+			_goal_pack[number] = int(_goal_pack.get(number, 0)) + int(inv.counts[i])
 
 
 # Sends the counts that moved since the last send (the have checks move both ways). The join's list carries them all (goals_rows).
@@ -25858,9 +25932,12 @@ func _send_goal_progress(peer: int, counts: Dictionary) -> void:
 		send_goal_progress.call(peer, moved)
 
 
-# Goals spread over frames like the vitals (_vitals_spread): every player's goals about 4 times a second, a share of the players each
-# frame. shortcut: every goal is looked at for every player at each look (the have and worn checks read the pack); fine for the 49 live
-# goals, the full catalog needs indexed events (GA-49).
+# Goals spread over frames like the vitals (_vitals_spread): every player's goals once every GOAL_POLL_S, a share of the players each frame.
+# The events that complete goals (_goal_event, _goal_made, _goal_got, _goal_stored, a talk) check every goal at once themselves, so the spread
+# looks only at the goals nothing tells it about: what the pack or worn gear holds and the night walk (_goals_poll; coordinator 25 Nov 2026: the
+# full look 4 times a second cost 0.53 ms a player each time after #1905, about 2.1 ms a player a second; Dave: small actions with huge server costs
+# are critical).
+const GOAL_POLL_S := 1.0
 var _goal_owed: float = 0.0
 var _goal_turn: int = 0
 var _goals_spread_usec: int = 0   # the time spent since the last slow tick, for its detail line
@@ -25877,7 +25954,7 @@ func _goals_spread(delta: float) -> void:
 		_goal_owed = 0.0
 		return
 
-	_goal_owed = minf(_goal_owed + float(peers.size()) * delta / SLOW_TICK_S, float(peers.size()))
+	_goal_owed = minf(_goal_owed + float(peers.size()) * delta / GOAL_POLL_S, float(peers.size()))
 	var n: int = int(_goal_owed)
 	_goal_owed -= float(n)
 	var tg: int = Time.get_ticks_usec()
@@ -25890,7 +25967,7 @@ func _goals_spread(delta: float) -> void:
 		_goal_turn += 1
 
 		if _peer_key.has(peer):
-			_goals_check(peer)
+			_goals_poll(peer)
 
 			if goal_check_seen.is_valid():
 				goal_check_seen.call(peer)
