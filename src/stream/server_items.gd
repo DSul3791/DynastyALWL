@@ -18290,6 +18290,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		if int(_stance.get(peer, 0)) >= 2 and (lying_pace if int(_stance.get(peer, 0)) == 3 else speed) > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
 			_stance[peer] = 0
 			_asleep.erase(peer)
+			_crawling.erase(peer)
 			_strain_sent.erase(peer)
 
 	_motion[peer] = [position, now]
