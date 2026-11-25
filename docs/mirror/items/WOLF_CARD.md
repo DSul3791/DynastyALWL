@@ -19,7 +19,7 @@ Wolves are rare, live only in forest and hill country away from the starter town
 | Density | 1 pack per 4 square km of forest or hill; never within 400 m of the spawn or a placed campfire; none in the starter tile |
 | Health | 30 each (deer 20, spear 8 per hit = four hits, three with a good skill) |
 | Speed | walk 2.0, trot 5.0, sprint 10.5 m/s for 5 s then 7 (player run 6, jog 3.2: you cannot outrun them, you can reach a fire or a tree line) |
-| Senses | alert 60 m, notice 35 m; smells you from 1.5x farther downwind, half upwind; crouching 0.4 (R-PLAYER-CRAWL); hills block sight (same senses block as deer) |
+| Senses | alert 60 m, notice 35 m; smells you from 1.5x farther downwind, half upwind; crouching 0.6; hills block sight (same senses block as deer) |
 | Behaviour | prowl as a pack, shadow a lone player at 25 m for 10 to 20 s ("stalk"), then circle and rush; the pack backs off if one is wounded (flee at 40 percent health) |
 | Attack | bite 8 health, one bite per second per wolf, 3 m reach; a pack of 4 on a lone player is about 30 health a second at worst, so a lone fight is lost in 4 s |
 | Armour | clothing warmth does not help; a later leather armour value can cut bites by up to 40 percent |
