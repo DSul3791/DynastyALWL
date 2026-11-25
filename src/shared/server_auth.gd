@@ -283,7 +283,7 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 			var left: int = int(message.get("left", 0))
 			remembered_was_wrong = _tried_remembered
 			_tried_remembered = false
-					session_forget(session_address)   # nothing right is held any more: the box asks
+			session_forget(session_address)   # nothing right is held any more: the box asks
 
 			if left <= 0:
 				refused.emit("wrong")
