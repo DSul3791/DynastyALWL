@@ -27,7 +27,7 @@ const LUNGE_STATES := [11, 12]         # charge and recover: a lunge that came a
 const DRINK := 21                     # server_animals.DRINK: standing at the bank drinking (docs/design/animals_at_water_server.md)
 const DRINK_SLOT_S := 17.0            # drinking, the head comes up once a slot: after 6 to 14 s, for 1.5 to 3 s (so 6 to 24 s between looks)
 
-signal state_changed(kind: String, state: int, at: Vector3)     # an animal alerts, flees, warns or charges (sounds listen)
+signal state_changed(kind: String, state: int, at: Vector3, body: Node3D)     # an animal alerts, flees, warns or charges (sounds listen; the call follows its body)
 signal took_off(kind: String, at: Vector3)                       # a bird bursts up into flight (server_flight.FLY): its wings, where it rose (creature_sounds.took_off)
 signal stepped(kind: String, at: Vector3)                       # a hoof or paw lands (each whole count of the gait; a rabbit hop lands): the step sounds listen
 signal fell(kind: String, at: Vector3, small: bool)            # an animal went down from a hit: it vanished right after a hit landed on it (sounds listen)
@@ -86,6 +86,7 @@ const SCENE_WAIT_MS := 8000      # the longest a kind is held undrawn while its 
 var _wait_since: Dictionary = {}  # species number -> clock_ms when it was first held undrawn for its files (_waited_out)
 var _code_body_only: bool = false # set while an animal past SCENE_WAIT_MS is made: _make_model gives null, so the code-built body is drawn
 var clock_ms: Callable = func() -> int: return Time.get_ticks_msec()   # the clock for the wait (tests set it)
+var files_ready: Callable          # (species number) -> bool: stands in for _scenes_ready (tests: headless always loads at once); unset in the game
 var _alpha_tasks: Dictionary = {}  # texture path -> the worker task finding its alpha (_scenes_ready)
 var _alpha_done: Dictionary = {}   # texture path -> its alpha, written by _alpha_job under _alpha_mutex
 var _alpha_mutex: Mutex = Mutex.new()
@@ -554,7 +555,7 @@ func attacker_near(at: Vector3, max_m: float) -> Dictionary:
 
 		if d <= best_m:
 			best_m = d
-			best = {"kind": str(b["kind"]), "at": where}
+			best = {"kind": str(b["kind"]), "at": where, "node": b["node"]}   # node: the snarl follows the body
 
 	return best
 
@@ -665,7 +666,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it. Never longer than
 			# SCENE_WAIT_MS (QA #12, 25 Nov 2026: a tester on a slow 2-core PC saw no animals at all): past it, the animal is drawn with
 			# its code-built body, and later ones of its kind get the model once it is in.
-			var files_in: bool = _scenes_ready(int(row[1]))
+			var files_in: bool = bool(files_ready.call(int(row[1]))) if files_ready.is_valid() else _scenes_ready(int(row[1]))
 
 			if not files_in and not _waited_out(int(row[1])):
 				_report_held += 1
@@ -690,7 +691,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			pass   # one alarm call: an animal gives it the first time it looks up, not each look (ANIMAL_SCENARIOS gap 4)
 		elif int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			_bodies[id]["alarmed"] = _bodies[id].get("alarmed", false) or int(row[4]) == 3
-			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
+			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2], _bodies[id]["node"])
 		elif takes_off(int(_bodies[id]["state"]), int(row[4])) and KIND_OF_SPECIES.has(int(row[1])):
 			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
 
@@ -1079,8 +1080,8 @@ func _ground_under(at: Vector3) -> float:
 
 
 # Whether a kind has waited SCENE_WAIT_MS (clock_ms, tests) for its model files since it was first sent: then it is drawn anyway, with the
-# code-built body, and the log says so once per kind ("animal model <kind>: still loading after N s ..."). The clock starts again once
-# its files are all in (_scenes_ready), so a kind that waits again later gets its own full wait.
+# code-built body, and the log says so once per kind ("animal model <kind>: still loading after N s ..."). Its files all in (_scenes_ready),
+# the wait is forgotten. Bodies already drawn with the code-built body keep it until they leave; the next ones get the model.
 func _waited_out(number: int) -> bool:
 	var now: int = int(clock_ms.call())
 

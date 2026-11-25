@@ -89,6 +89,23 @@ func _initialize() -> void:
 		stand_in.free()
 	check(v._scenes_ready(2), "headless, a kind's files count as in, so the wait never starts there")
 
+	# Through on_rows (files_ready stands in for _scenes_ready, which headless always answers yes): a deer held while its files load,
+	# drawn with the code-built body once SCENE_WAIT_MS has passed, and the next deer drawn from its model once the files are in.
+	var loaded: Array = [false]
+	v.files_ready = func(_number: int) -> bool: return bool(loaded[0])
+	v._wait_since.clear()
+	clock[0] = 100000
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1000]], 1000)
+	check(not v._bodies.has(31), "a deer whose files are loading is held undrawn")
+	clock[0] = 100000 + v.SCENE_WAIT_MS
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1250]], 1250)
+	check(v._bodies.has(31) and not bool((v._bodies[31]["node"] as Node3D).get_meta("model", false)), "past the limit it is drawn, with the code-built body")
+	check(not v._code_body_only, "the code-built flag is down again after the body is made")
+	loaded[0] = true
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1500], [32, 2, Vector3(4.0, 0.0, 2.0), 0.0, 0, 1500]], 1500)
+	check(v._bodies.has(32) and bool((v._bodies[32]["node"] as Node3D).get_meta("model", false)), "with its files in, the next deer is drawn from its model")
+	v.files_ready = Callable()
+
 	# The animals line for the log (QA #12): it runs with bodies drawn and with none, and starts its counts again.
 	v._report_batches = 3
 	v._report_held = 2

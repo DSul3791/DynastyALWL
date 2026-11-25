@@ -66,7 +66,7 @@ func _initialize() -> void:
 	root.add_child(view)
 	view.set_process(false)   # the test feeds rows itself; its frame loop would draw the hand-made body
 	var heard: Array = []
-	view.state_changed.connect(func(kind, state, _at): heard.append([kind, state]))
+	view.state_changed.connect(func(kind, state, _at, _body): heard.append([kind, state]))
 	var node: Node3D = Node3D.new()
 	view.add_child(node)
 	view._bodies[5] = {"node": node, "state": 0, "spd": 0.0, "id": 5, "target": Vector3.ZERO, "kind": "rabbit", "samples": [], "heading": 0.0, "phase": 0.0, "step_count": -1, "contact_m": 0.3, "turn_rad_s": 6.0}
