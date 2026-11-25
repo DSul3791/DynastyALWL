@@ -173,6 +173,13 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 		return
 
 	check(float(items._wear_cfg.get("site_gather_m", 0.0)) == 12.0, "the gather reach is 12 m, from the json")
+	# Hit from beyond reach: the line names the blueprint, not a repair (lane A robot run 25 Nov 2026), and nothing goes in.
+	var stood: Vector3 = items._peer_pos[1]
+	items.report_position(1, items._items[site]["pos"] + Vector3(5.0, 0.0, 0.0))
+	said.clear()
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
+	check(said == ["Too far to build that. Walk up to the blueprint."] and (items._site_of(items._items[site])["have"] as Dictionary).is_empty(), "a blueprint hit from 5 m away says to walk up to it (%s)" % str(said))
+	items.report_position(1, stood)
 	var block_n: int = items.table.number_of("cut_stone_block")
 	# The 20 m stack is out of reach: nothing comes, and the line says what is missing.
 	items.inventory_of(1).remove(items.table.number_of("mortar"), _have("mortar"))

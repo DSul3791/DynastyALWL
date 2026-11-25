@@ -3457,6 +3457,8 @@ func _init() -> void:
 	bo.vitals_of(1)["weight"] = 1.0   # a tiny body: nothing more fits in the pack
 	bo._items[900003] = {"number": 0, "count": 500, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 10, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 500}}
 	var full_rejects: int = bo_rejects.size()
+	var bo_said: Array = []
+	bo.send_notice = func(_p, text): bo_said.append(text)
 
 	for n in range(6):
 		bo._last_hit.clear()
@@ -3471,6 +3473,8 @@ func _init() -> void:
 
 	check(bo_rejects.size() == full_rejects and int(bo._items[900003]["count"]) == 500 - 18, "a full pack is not refused: 6 blows of an iron pick still take 18 stones (%d left)" % int(bo._items[900003]["count"]))
 	check(behind_piles.size() == 1 and int(behind_piles[0]["count"]) == 18 and behind_piles[0]["pos"].z < 5.0, "and they lie in one pile behind the miner, away from the rock (%s)" % str(behind_piles))
+	check(bo_said.count("Too heavy to carry: what you break off piles up behind you.") == 1, "the miner is told once that the pieces pile up behind them (%s)" % str(bo_said))
+	bo.send_notice = Callable()
 	bo._items.erase(900003)
 	bo.clear_dropped(Vector3.ZERO, 1.0e7)
 	bo.vitals_of(1)["weight"] = 5000.0
