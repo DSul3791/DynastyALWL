@@ -1,7 +1,7 @@
 # The Dynasty game server on the gaming server (server/client split plan step C4). deploy/server/SERVER.md has the steps.
 #   docker compose -f compose.yaml up -d      start (and start again after a reboot, unless it was stopped by hand)
 #   docker compose -f compose.yaml down       stop: the server saves and closes within the 90 s grace
-# DYNASTY_TAG picks the image (default latest), for example DYNASTY_TAG=build-7979 to go back to a build.
+# DYNASTY_TAG picks the image (default latest). Every new build is a clean install with the old image removed (deploy/server/SERVER.md).
 # DYNASTY_PORT (default 24600) with DYNASTY_BLOCK_PORT (must be DYNASTY_PORT + 1: the block line) and DYNASTY_CONTAINER (default dynasty-server) are for a second server
 # on one machine, such as tools/release_first_run.ps1's test server; the server listens on the same port inside, since it tells
 # clients its block line port.
