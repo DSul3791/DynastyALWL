@@ -13,7 +13,7 @@
 				"0": "Idle",
 				"1": "Walk",
 				"3": "IdleHind_Idle_01",
-				"10": "IdleAngry_Breathing_01",
+				"10": "IdleHind_Idle_01",
 				"11": "Sprint",
 				"12": "Idle_Breathing_01",
 				"walk": "Walk",
@@ -21,7 +21,7 @@
 				"16": "Attack_IdleAngry_01_Low",
 				"trot": "Trot"
 			},
-			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn is the angry breathing stance; charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear's file has no such clip: it falls back to its warning pose.",
+			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn stands up on its hind legs too (Dave 25 Nov 2026: a threatened bear stands its ground and rears up first, then attacks with claws or bite; it was the angry breathing stance); charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear's file has no such clip: it falls back to its warning pose, now A_StandStraight (standing up), and it has no attack clips at all (MODEL_ATTACKS: a model with them is needed).",
 			"length_m": 2.0,
 			"materials": [
 				{
@@ -52,7 +52,7 @@
 					"clips": {
 						"0": "Idle",
 						"3": "Idle_Breathing_01",
-						"10": "Attack_StandAngry_01_Low",
+						"10": "StandHind_Idle_01",
 						"11": "Sprint",
 						"12": "Idle_Breathing_01",
 						"walk": "Walk",
@@ -91,7 +91,7 @@
 						"0": "Idle",
 						"1": "Walk",
 						"3": "IdleHind_Idle_01",
-						"10": "IdleAngry_Breathing_01",
+						"10": "IdleHind_Idle_01",
 						"11": "Sprint",
 						"12": "Idle_Breathing_01",
 						"walk": "Walk",
@@ -861,7 +861,7 @@
 			"clips": {
 				"0": "GrazingOnSpotA_1",
 				"3": "Sniffing",
-				"10": "Idle_Breathing",
+				"10": "A_StandStraight_Seco_49c0363",
 				"11": "RunFast_F",
 				"12": "Idle",
 				"walk": "WalkMedium_F",

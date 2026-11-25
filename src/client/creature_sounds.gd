@@ -46,8 +46,11 @@ const KINDS := {
 		"zones": {"water": 1.0}, "hours": [5.0, 21.0], "every": [300.0, 700.0], "cutoff": 7000.0},
 	"goblin": {"calls": {"idle": "goblin_chitter", "alert": "goblin_chitter", "threat": "goblin_hiss"}, "db": -9.0, "dist": [10.0, 40.0], "reach": 90.0, "unit": 6.0,
 		"zones": {}, "hours": [0.0, 24.0], "every": [600.0, 1200.0], "cutoff": 7000.0},   # camp goblins at a weapon in hand (npc_view.gd goblin_called, Dave 20 Nov 2026): never a natural call
+	# Bears are near silent (Dave 25 Nov 2026: "the bear roaring constantly in the woods is unrealistic"; NPS, bear.org "Harmless Bluster",
+	# NH Fish and Game "Bear talk": a bear that is not bothered makes no calls, a nervous one huffs, blows and pops its jaws, a roar is a fight):
+	# no natural calls in the woods (zones empty, as the camp goblins), and MOODS_BY_STATE below.
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
-		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
+		"zones": {}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
 # Kinds with no clips of their own that sound like one that has (stand-ins until their own recordings): an American black bear growls
 # like a bear, an elk calls like a moose. Without these their warnings and charges were silent. The big cats, the hyena and the lynx growl
@@ -59,6 +62,22 @@ const CALL_AS := {"black_bear": "bear", "elk": "moose", "lion": "bear", "tiger":
 # equally loud anywhere within 16 m and a bear roar within 7 m, so near and far could not be told apart. A call may now rise
 # NEAR_RISE_DB over its own level (the level stops rising at a quarter of its unit size: a wolf 10 m, a bear 4 m), never past
 # NEAR_MAX_DB (the clips peak near -14 dBFS, so -5 dBFS at most).
+# Which call an animal's drawn state gives (animal_view state_changed: 2 flee, 3 alert, 7 a wolf's attack, 10 warn, 11 charge, 16 the jaw-pop,
+# 25 a close blow, 26 a kick); "" is silent. Kinds not listed: an alert or a flight gives "alert", the rest "threat" (as before). The bears
+# run off and notice in silence, warn (standing up) and pop their jaws with the low growl (the stand-in for a huff), and roar only as they
+# charge or strike: before, every flight, every look and every warning played a growl or a roar.
+const MOODS_BY_STATE := {"bear": {2: "", 3: "", 10: "alert", 16: "alert"}, "black_bear": {2: "", 3: "", 10: "alert", 16: "alert"}}
+
+
+func mood_for(kind: String, state: int) -> String:
+	var row: Dictionary = MOODS_BY_STATE.get(kind, {})
+
+	if row.has(state):
+		return str(row[state])
+
+	return "alert" if state == 3 or state == 2 else "threat"
+
+
 const NEAR_RISE_DB := 12.0
 const NEAR_MAX_DB := 9.0
 # A pack rushing in sends every wolf to attack in one row: threat calls skip the voice budget and are never shed, so at most

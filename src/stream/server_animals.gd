@@ -698,7 +698,8 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	if not defend.is_empty():
 		for info in (big_game.player_info.call() if big_game.player_info.is_valid() else []):
 			if int(info["peer"]) == source_peer and Vector2(info["pos"].x - a["pos"].x, info["pos"].z - a["pos"].z).length() <= float(defend.get("provoked_m", 10.0)):
-				if big_game.provoke(a, info["pos"], float(defend.get("provoked_warn_s", 0.8))):
+				# trapped_fights (the bears, Dave 25 Nov 2026): even a shy one, chased down and hurt this close, turns and fights.
+				if big_game.provoke(a, info["pos"], float(defend.get("provoked_warn_s", 0.8)), bool(defend.get("trapped_fights", false))):
 					return false
 
 	a["state"] = FLEE
@@ -1773,14 +1774,19 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if r["arrived"] or not r["moved"]:
 		if a["state"] == FLEE and near_d < float(def.get("safe_m", 35.0)):
+			# Pinned: it could not step and is not at its leg's end. Steering reports the step after arriving as not moved too, so `arrived`
+			# must be ruled out: a flight read every leg's end as a wall, broke off up to 69 degrees at random and, with the player within
+			# corner_m, turned at bay (Dave 25 Nov 2026: he chased a bear down on foot; the test's black bear ran 10 m/s where it runs 13).
+			var pinned: bool = not r["moved"] and not r["arrived"]
+
 			# Big game cornered (it cannot get away and the player is right there) stands and fights: warn first, always.
-			if def.has("defend") and not r["moved"] and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2))):
+			if def.has("defend") and pinned and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2)), bool(def["defend"].get("trapped_fights", false))):
 				return
 
 			# Still too close: keep running away from the player, by a way it can go (_flee_target), or at bay when there is none.
 			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized()
 
-			if not r["moved"]:
+			if pinned:
 				away = away.rotated(rng.randf_range(-1.2, 1.2))   # luck-exempt: which way a pinned animal breaks (a wall or a fence the ground check cannot see)
 
 			_flee_target(a, near_p, away, def)
@@ -2721,6 +2727,13 @@ func _flee_target(a: Dictionary, from: Vector3, away: Vector2, def: Dictionary, 
 
 			if bool(a.get("to_burrow", false)):
 				return   # a rabbit with its burrow at hand dives in
+
+			# Trapped with the threat close, an animal that fights when trapped (trapped_fights: the bears) warns and comes at it instead
+			# (Dave 25 Nov 2026: a bear "should have run away unless it was starving or trapped").
+			var trap: Dictionary = def.get("defend", {})
+
+			if bool(trap.get("trapped_fights", false)) and Vector2(from.x - a["pos"].x, from.z - a["pos"].z).length() <= float(trap.get("corner_m", 7.0)) and big_game.warn(a, from, float(trap.get("corner_warn_s", 1.2)), true):
+				return
 
 			a["state"] = ALERT   # cornered: it stands at bay facing the threat, not spinning (_at_bay), then tries again
 			a["alert"] = BAY_S

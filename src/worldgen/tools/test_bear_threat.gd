@@ -3,7 +3,8 @@ extends SceneTree
 # The bear threat ladder (docs/design/bear_threat_design.md, Dave 8 Nov 2026): the warning runs huff (10) then jaw-pop (16) then a charge
 # (11); backing off during either rung ends it calmly; running away during the warning skips to a real charge; with bluff_share 1 the
 # charge stops bluff_stop_m short with no hit; a mother's charge for her young is never a bluff; a row without the new keys (the moose)
-# warns and charges as before.
+# warns and charges as before; a shy bear outruns a player chasing it at a run, and one chased down and stabbed stands and fights
+# (trapped_fights, Dave 25 Nov 2026).
 #   godot --headless --path . --script res://src/worldgen/tools/test_bear_threat.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -138,6 +139,53 @@ func _init() -> void:
 	a.big_game.warn(m, players[0]["pos"], 1.0)
 	seen = steps(a, m, 6.0)
 	check(not seen.has(a.big_game.WARN_POP) and hurt_log.size() == 1, "the moose warns once and its charge hits (%s, %d hits)" % [str(seen), hurt_log.size()])
+
+	# 8. Dave 25 Nov 2026 play test: a bear kept running, he chased it on foot and stabbed it ("the bear really should be able to out run me";
+	# "it should have run away unless it was starving or trapped"; "a threatened bear should turn and fight back"). A shy (passive) bear of
+	# each kind, put to flight by a player 6 m off who then chases it at a run (terrain_client RUN_SPEED 9 m/s) for 20 s, gets away: the gap
+	# grows and never closes to within a spear's reach.
+	for kind in ["black_bear", "bear"]:
+		a = make()
+		players = [at(-6.0)]
+		var fid: int = a.spawn(kind, 0.0, 0.0)
+		var f: Dictionary = a.animals[fid]
+		f["temper"] = "passive"
+		a.damage(fid, 0.0, -1, "noise")   # a scare with no hunter near: it bolts (damage with nobody close runs)
+		var closest: float = INF
+		var gap: float = 0.0
+
+		for _n in int(20.0 / 0.05):
+			var p: Vector3 = players[0]["pos"]
+			var to: Vector3 = f["pos"] - p
+			to.y = 0.0
+			players[0]["pos"] = p + to.normalized() * minf(9.0 * 0.05, maxf(to.length() - 1.0, 0.0))
+			a.tick(0.05)
+			gap = Vector2(f["pos"].x - players[0]["pos"].x, f["pos"].z - players[0]["pos"].z).length()
+			closest = minf(closest, gap)
+
+		check(gap > 40.0 and closest > 3.0, "a shy %s outruns a player chasing it at 9 m/s (%.0f m ahead after 20 s, closest %.1f m)" % [kind, gap, closest])
+
+	# 9. Chased down and hurt close by, even a shy bear turns and fights (trapped_fights): it warns, standing up, and its charge is real.
+	for kind in ["black_bear", "bear"]:
+		a = make()
+		hurt_log = []
+		players = [at(2.5)]
+		var hid: int = a.spawn(kind, 0.0, 0.0)
+		var h: Dictionary = a.animals[hid]
+		h["temper"] = "passive"
+		a.species_def(kind)["defend"]["bluff_share"] = 0.0
+		a.damage(hid, 5.0, 1, "spear")
+		check(int(h["state"]) == a.big_game.WARN, "a shy %s stabbed from 2.5 m stands and warns (state %d)" % [kind, int(h["state"])])
+		steps(a, h, 8.0)
+		check(hurt_log.size() >= 1, "and its attack lands on a player who stays (%d hits)" % hurt_log.size())
+
+	# 10. A row without trapped_fights (the deer, passive): stabbed, it only runs, as before.
+	a = make()
+	players = [at(2.5)]
+	var did: int = a.spawn("deer", 0.0, 0.0)
+	a.animals[did]["temper"] = "passive"
+	a.damage(did, 5.0, 1, "spear")
+	check(int(a.animals[did]["state"]) == a.FLEE, "a shy deer stabbed runs (state %d)" % int(a.animals[did]["state"]))
 
 	print("test_bear_threat: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
