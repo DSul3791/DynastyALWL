@@ -40,3 +40,4 @@ Supplied recordings:
 | Animal sign spotted (a soft intake of breath, a faint hum) (`recorded/sign/*`) | Own synthesis (assets/audio/make_sign.py) | own code | own-made | none required |
 | Skill-up tock (a small wooden block knocked softly) (`recorded/skill/*`) | Own synthesis (Jason; assets/audio/make_skill.py) | own code | own-made | none required |
 | Goal Achieved fanfare (two synthesized brass voices: three quick notes and a held fourth, an original figure) (`recorded/ui/ui_goal_*`) | Own synthesis (GOALS-REPAIR; assets/audio/make_ui.py fanfare) | own code | own-made | none required |
+| Falling tree: the trunk hits the ground, a bounce and the settle (trimmed from 0.8 s to 5.0 s of the file) (`recorded/trees/tree_crash*`) | Pixabay contributor (Dave supplied the file) | Pixabay.com (file falling-tree.mp3, supplied by Dave 25 Nov 2026; page URL unknown) | Pixabay-Content-License | none required (verify the Pixabay terms before release) |

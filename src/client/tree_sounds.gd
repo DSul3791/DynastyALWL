@@ -12,7 +12,8 @@ signal landed(at: Vector3, size: float)   # a felled tree reaches the ground: th
 # A stump present when the world first settles (SETTLE_MSEC), or one no longer fresh (the tree landed long ago), makes no
 # sound. The axe blows on the standing tree are `sound.hits` (held_item.gd). Bigger trees (length, radius) are louder, lower
 # and heard farther; the crash lands when the logs reach the ground (FALL_S matches inventory_view FALL_S).
-# Sounds: generated in assets/audio/trees/ (make_trees.py); recordings in assets/audio/recorded/trees/ win.
+# Sounds: generated in assets/audio/trees/ (make_trees.py); recordings in assets/audio/recorded/trees/ win. The crash is Dave's Pixabay
+# falling tree (25 Nov 2026, assets/audio/README.md): its peak limit leaves it 4 dB under the placeholder, so tree_crash went from -2 to +2 dB.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/trees/"
@@ -20,7 +21,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/trees/"
 
 const FALL_S := 1.5
 const SETTLE_MSEC := 6000
-const BASE_DB := {"tree_creak": -9.0, "tree_leaves": -14.0, "tree_crash": -2.0, "stump_chips": -10.0}
+const BASE_DB := {"tree_creak": -9.0, "tree_leaves": -14.0, "tree_crash": 2.0, "stump_chips": -10.0}
 const MAX_DISTANCE_M := 260.0
 const REF_HEIGHT_M := 20.0
 const SEEN_CAP := 20000                 # trees remembered as already felled (ids are small ints; far more than a world holds)
