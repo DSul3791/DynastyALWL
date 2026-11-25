@@ -1,9 +1,7 @@
 extends SceneTree
 
 # Hair styles in the character creator (Dave 20 Nov 2026: his Meshy hair models; "everyone is allowed to use any hair style ... we will just include them all in the lineup").
-# (The size bounds allow a jaw-length bob, Medium bob, 21 Nov 2026: up to 26 cm across and 28 cm front to back with the idle pose's tilt (Medium shag), ending up to 12 cm below the head joint.
-# Since 25 Nov 2026 the idle is Idle_02 (QA #15), whose head tips a little further: a box drawn round a tipped style grows, so up to 29 cm front to back and its top up to 7 cm over the
-# top bone's tip (the old bounds were set on Idle; on Idle_02 Medium swept back measures 28.0 cm and Medium shag 6.4 cm).)
+# (The size bounds allow a jaw-length bob, Medium bob, 21 Nov 2026: up to 26 cm across and 28 cm front to back with the idle pose's tilt (Medium shag), ending up to 12 cm below the head joint.)
 # Checks: every style of hair_models.gd is imported as one mesh, one-sided, casting ordinary shadows, with its textures VRAM Compressed (docs/design/CHARACTER_MESHES.md);
 # body_1 and body_2 wear every style on the head bone, sitting on the head (crown, sides and back) in the idle pose; the Head slider grows the hair with the head; changing
 # the style swaps the one hair node and "" takes it off; the hair colour tints it (the default colour leaves it as painted); the creator offers every style and no hair
@@ -144,7 +142,7 @@ func _init() -> void:
 
 			var box: AABB = m["box"]
 			var top: Vector3 = m["top"]
-			_check(box.end.y > top.y - 0.03 and box.end.y < top.y + 0.07, "%s %s: the hair's top is at the crown (%.3f m, crown %.3f m)" % [model, id, box.end.y, top.y])
+			_check(box.end.y > top.y - 0.03 and box.end.y < top.y + 0.06, "%s %s: the hair's top is at the crown (%.3f m, crown %.3f m)" % [model, id, box.end.y, top.y])
 			_check(box.position.y > m["head"].y - 0.12, "%s %s: nothing hangs far below the head joint (bottom %.3f m, joint %.3f m)" % [model, id, box.position.y, m["head"].y])
 			var crown_mid: Vector3 = m["crown_mid"]
 			var skull: Vector3 = m["skull"]
@@ -153,7 +151,7 @@ func _init() -> void:
 			# And the skull the hair is fitted to sits on this body's head: the top bone's tip stands about 4 cm in front of the skull's middle.
 			var placed: float = Vector2(skull.x - top.x, skull.z - top.z).length()
 			_check(placed < 0.08, "%s %s: the hair sits on this body's head (skull middle %.3f m from the top bone)" % [model, id, placed])
-			_check(box.size.x > 0.13 and box.size.x < 0.26 and box.size.z > 0.15 and box.size.z < 0.29, "%s %s: the hair is head sized (%.3f x %.3f m)" % [model, id, box.size.x, box.size.z])
+			_check(box.size.x > 0.13 and box.size.x < 0.26 and box.size.z > 0.15 and box.size.z < 0.28, "%s %s: the hair is head sized (%.3f x %.3f m)" % [model, id, box.size.x, box.size.z])
 
 		# The Head slider grows the hair with the head.
 		g["hair_model"] = "crew_cut"

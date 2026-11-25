@@ -25,7 +25,7 @@ const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
 const CLIP_MAP := {
-	"idle": ["Idle_02", 0.0, -1.0, true, 1.0],   # QA #15 (25 Nov 2026, "character still looking around too much"): Idle turned the head 56 and the hips 55 degrees every 4 s; Idle_02 stands upright and calm (head 5 degrees, hips 95 cm as Idle; Idle_10, the first pick, is a low wide stance, hips 67 cm, hands at the chest). Coordinator pick, Dave may ask for Idle back
+	"idle": ["Idle", 0.0, -1.0, true, 1.0],   # QA #15 (25 Nov 2026, "character still looking around too much"): Dave's Idle looks back over each shoulder in turn every 4 s (the head turns 56 degrees on the neck, the hips 55); it is now held on its first frame, still, and breathes (dynasty_breath.gd). Its hands are the pose every held tool was fitted to; Idle_02 (upright, calm) hangs a bow 38 cm lower, Idle_10 is a low wide stance. Coordinator's call, Dave may ask for the old idle back
 	"walk": ["Walking", 0.0, -1.0, true, 0.82],         # 1.15 m/s in place, 1.4 wanted
 	"jog": ["Running", 0.0, -1.0, true, 1.22],           # 3.9 m/s in place, 3.2 wanted
 	"run": ["RunFast", 0.0, -1.0, true, 1.22],           # 7.3 m/s in place, 6.0 wanted
@@ -68,7 +68,7 @@ const CLIP_MAP := {
 	"jab": ["Right_Jab_from_Guard", 0.0, -1.0, false, 0.4],
 	"throw": ["Charged_Spell_Cast", 0.0, -1.0, false, 0.4],
 	"use": ["Push_Forward_and_Stop", 0.0, -1.0, false, 0.5],
-	"carry_idle": ["Idle_02", 0.0, -1.0, true, 1.0],
+	"carry_idle": ["Idle", 0.0, -1.0, true, 1.0],
 	"carry_walk": ["Walking", 0.0, -1.0, true, 0.95],    # 1.15 m/s in place, 1.1 wanted
 	# Not played by the game yet (needs a state hook, docs/DYNASTY_BODY.md): swimming, drinking, sitting down and standing up, waking.
 	"swim": ["Swim_Forward", 0.0, -1.0, true, 1.0],
@@ -358,8 +358,8 @@ func _build_animations() -> void:
 				_ground_sit(made, own.get("Idle", made), skeleton)
 			elif game_name == "sit_chair":
 				_hold_first(made)
-			elif game_name == "fall":
-				_hold_first(made, false)   # the air pose held whole, head too
+			elif game_name == "fall" or game_name == "idle" or game_name == "carry_idle":
+				_hold_first(made, false)   # held whole, head too: the air pose; Idle's first frame (QA #15)
 
 			library.add_animation(game_name, made)
 
