@@ -1725,17 +1725,17 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.name = "Animals"
 	add_child(animal_view)
 	_animal_view_node = animal_view
-	npc_view.goblin_called.connect(func(at: Vector3, mood: String) -> void: sound.creatures.call_at("goblin", at, mood))   # a camp goblin squaring up to a weapon (Dave 20 Nov 2026: "make angry sounds")
+	npc_view.goblin_called.connect(func(at: Vector3, mood: String, who: Node3D) -> void: sound.creatures.call_at("goblin", at, mood, who))   # a camp goblin squaring up to a weapon (Dave 20 Nov 2026: "make angry sounds")
 	npc_view.goblin_maker = animal_view.make_goblin   # goblin tribe members wear the wild goblin's model (data/creatures/goblin_tribes.json)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	animal_view.player_at = func() -> Vector3: return body.global_position if body != null and body.is_inside_tree() else Vector3.INF   # the capsule's middle, about 1 m above the feet the server uses: only its xz matters (stop_toward's 2 m height gate is that much looser): a charge is never drawn inside the player
 	animal_view.look_points = func() -> Array: return _look_points()      # head tracking: an animal watches the nearest player (head_look.gd)
 	net.animals_received.connect(animal_view.on_rows)
-	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
+	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3, who: Node3D) -> void:
 		var mood: String = sound.creatures.mood_for(kind, state)   # an animal noticing, bolting, warning or charging calls (rate limited by the voice budget); a bear stays quiet till it warns
 
 		if mood != "":
-			sound.creatures.call_at(kind, at, mood))
+			sound.creatures.call_at(kind, at, mood, who))   # the call moves with the animal (Dave 25 Nov 2026: a running bear's growl stayed behind)
 	animal_view.took_off.connect(func(kind: String, at: Vector3) -> void:
 		if sound != null and sound.creatures != null:
 			sound.creatures.took_off(kind, at))      # a grouse, pheasant or guineafowl bursts up with a whirr of wings, a crow caws and flaps off
@@ -3534,7 +3534,7 @@ func _attacker_snarl() -> void:
 		return
 
 	_snarl_ms = Time.get_ticks_msec() + SNARL_EVERY_MS
-	sound.creatures.call_at(str(who["kind"]), who["at"], sound.creatures.mood_for(str(who["kind"]), 11))   # the attack's own call: a black bear, lynx or puma growls, never roars
+	sound.creatures.call_at(str(who["kind"]), who["at"], sound.creatures.mood_for(str(who["kind"]), 11), who.get("node", null))   # the attack's own call: a black bear, lynx or puma growls, never roars
 
 
 # The footstep and ice tier (sound_stage, gear_sounds, ice_feel: 0 walk, 1 the middle step a jump push-off uses, 2 run).
