@@ -49,7 +49,7 @@ At most three heavy Godot jobs share the PC through `tools/godot_slot.sh`; test 
 ## Backups and resource arrangements
 Reuse an existing approved backup arrangement without asking again. Before enabling unattended backups, obtain one-time approval for exact source paths, destination (prefer another physical drive), retention, verification and schedule. Follow approved retention, record success/failure and verify recovery; a copied folder alone is insufficient. Do not silently expand scope, discard backups/live water records/manual assets/uncommitted tiles, or modify Dave's checkout. Back up before authorized `main` promotion as required by the approved arrangement.
 
-Preserve the established weekly token pacing (reset Wednesday 03:00 Atlantic); work directly, using local Qwen only for bulk reading. At the authorized bedtime backup, ask for weekly usage and record it in `C:\GodotProjects\Claude_Usage_Log.md`. This does not authorize a new backup job or PC access.
+Preserve the established weekly token pacing (reset Wednesday 03:00 Atlantic).
 
 ## Documentation and removal lifecycle
 Maintain one authority per topic and concise task state; `CONSTITUTION.md` owns decision provenance. Update current instructions in place, repair affected readers and preserve source decisions/unique knowledge before retiring a duplicate. Required licenses/attribution stay with distributed assets for as long as needed. No archive can conceal an unresolved issue.

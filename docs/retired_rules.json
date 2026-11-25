@@ -1,6 +1,9 @@
 {
 	"note": "Old rules Dave replaced. Each phrase must not appear in an active file (tools/check_rulings.py): when a ruling in docs/RULINGS.md replaces an older one, add the older rule's telltale phrase here and remove it from every active file in the same PR. Lower case; matched without case.",
 	"retired": [
+		{"phrase": "local qwen", "replaced_by": "R-TEAM-TOOLS", "since": "2026-11-25"},
+		{"phrase": "claude_usage_log", "replaced_by": "R-TEAM-TOOLS", "since": "2026-11-25"},
+		{"phrase": "qwen phase 1", "replaced_by": "R-TEAM-TOOLS", "since": "2026-11-25"},
 		{"phrase": "torch or not", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "fire does not help at the den", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "does not protect you at its den", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},

@@ -70,3 +70,4 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-SERVER-SCALE** · 23 Nov 2026 · "plan for thousands and be happy when it works for hundreds right now." The server's core count is a setting; the player cap stays 32 until Dave says.
 - **R-RELEASE-CLEAN** · 25 Nov 2026 · "the server is always a clean install no keeping backups." *(unverified: coordinator's note)* A fresh world and characters each week is fine.
 - **R-REPO-PUBLIC** · 22 Nov 2026 · "so we will keep it public." Bought models never go in the repo.
+- **R-TEAM-TOOLS** · 25 Nov 2026 · No local Qwen model for bulk reading and no weekly usage log: "they go. we dont even use qwen now".
