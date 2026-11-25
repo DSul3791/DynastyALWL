@@ -17,7 +17,7 @@ services:
       - "${DYNASTY_BLOCK_PORT:-24601}:${DYNASTY_BLOCK_PORT:-24601}/tcp"   # ground blocks (port + 1)
     command: ["--port=${DYNASTY_PORT:-24600}"]   # added after the image's own server options (scenes/terrain_server --port)
     volumes:
-      - dynasty-data:/data  # the world's store, characters, admin.json and logs: kept across restarts and new images
+      - dynasty-data:/data  # the world's store, characters, admin.json and logs: kept across restarts (a new build is a clean install: SERVER.md)
     environment:
       DYNASTY_SERVER_PASSWORD: ${DYNASTY_SERVER_PASSWORD:-}   # optional join password (SERVER.md step 5); empty = the store's server.json decides
       DYNASTY_SERVER_CPUS: ${DYNASTY_SERVER_CPUS:-4}   # CPU threads the server may keep busy (SERVER.md, CPUs): 4 = main + 3 ground makers; 2 idle builders work only when the makers have nothing queued; not a docker quota

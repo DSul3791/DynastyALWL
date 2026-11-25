@@ -9,7 +9,7 @@ Server/client split plan step C4 (`/mnt/project-files/server-client-split/PLAN.m
 - `Dockerfile`: stage 1 makes the engine (Godot 4.7.2 with Voxel Tools 1.7, headless, by `tools/build_godot_linux.sh`, about 30 to 40 minutes the first time, then cached), or takes a ready binary from `deploy/server/engine/godot`. Stage 2 is Ubuntu 24.04 with the engine and the project in `/game`, imported once at build time.
 - It runs the project from source with that engine (`godot --headless --path /game ... terrain_server.tscn -- --dedicated --store=/data/store`), because there are no export templates for our engine yet (plan C1). When C1 lands, the image switches to the exported "Linux Server" preset.
 - `run_server.sh` is the container's first process. `docker stop` sends it TERM; it writes `stop.now`, and the server saves and closes with exit 0 (plan A4, PR #1274). Compose allows 90 s for that.
-- Everything the server writes lives in the `/data` volume: `/data/store` (ground edits, characters, chests, `admin.json`, `logs/`, `server_run.json`) and Godot's user folder under `/data/home`. A new image keeps the volume, so the world carries on.
+- Everything the server writes lives in the `/data` volume: `/data/store` (ground edits, characters, chests, `admin.json`, `logs/`, `server_run.json`) and Godot's user folder under `/data/home`. A restart keeps the volume, so the world carries on; a new build is a clean install that removes it ("Another build" below).
 - The world (the nine baked tiles of `worlds/base_world`) is inside the image.
 - Health check: healthy once `/data/store/server_run.json` says `running` (the server is listening).
 
@@ -77,8 +77,8 @@ before. The pack also holds the tiles' trees and plants (flora_pack/); the serve
    pack's size on disk; a stopped run goes on when run again with the same N). (`--tiles=nine` for all nine tiles, about 6 hours and 55-90 GB plus about 4.5 GB of plants; `--threads=N` to leave the PC some room). It ends with a
    `prebuild_ground: DONE` line.
 2. Copy it over: `scp -r E:\Software\godotDev\ground_pack dave@192.168.0.108:/home/dave/dynasty/`
-3. Install it, on the server, with the server stopped (a fresh world, or over the current one: digs and fills are kept):
-   (in a clean install, after its step 4) `docker compose -f compose.yaml run --rm --no-deps -v /home/dave/dynasty/ground_pack:/pack:ro --entrypoint godot dynasty-server --headless --path /game --script res://src/worldgen/tools/install_ground.gd -- --pack=/pack --store=/data/store`
+3. Install it, on the server, with the server stopped. The normal case is a new build's clean install, after its step 4 (installing over a running world also works, digs and fills are kept, but a new build never keeps the world):
+   `docker compose -f compose.yaml run --rm --no-deps -v /home/dave/dynasty/ground_pack:/pack:ro --entrypoint godot dynasty-server --headless --path /game --script res://src/worldgen/tools/install_ground.gd -- --pack=/pack --store=/data/store`
    which ends with `install_ground: DONE` (or `install_ground: FAILED: <why>`, the store left as it was; after a crash the server's
    run note still says running: add `--server-stopped` at the end once `docker ps` shows the server is down), then
    `docker compose -f compose.yaml up -d`. The copy needs the pack's size free again on the server's disk; the folder
