@@ -40,7 +40,7 @@ const QUARTER_M := 70.0
 var roster: Dictionary = {}      # id -> {name, role, outfit}
 var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ragdoll (data/npcs/outfits.json)
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
-signal goblin_called(at: Vector3, mood: String)   # a camp goblin's angry call (creature_sounds.gd "goblin"): chitter on guard, hiss as it starts
+signal goblin_called(at: Vector3, mood: String, body: Node3D)   # a camp goblin (its drawn body: the call moves with it)'s angry call (creature_sounds.gd "goblin"): chitter on guard, hiss as it starts
 var goblin_maker: Callable       # (variant, look_seed) -> Node3D or null: a goblin tribe member's body (AnimalView.make_goblin), set by the client
 var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
 var _rows_at: float = -1.0       # when the last rows came
@@ -270,14 +270,14 @@ func _chitter(node: Node3D, body: Dictionary, state: int, delta: float) -> void:
 
 		if now - float(body.get("hissed", -INF)) >= HISS_GAP_S:   # one hiss as it squares up, not one per flicker at the edge of spook_m
 			body["hissed"] = now
-			goblin_called.emit(node.global_position, "threat")
+			goblin_called.emit(node.global_position, "threat", node)
 
 		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
 
 	wait -= delta
 
 	if wait <= 0.0:
-		goblin_called.emit(node.global_position, "alert")
+		goblin_called.emit(node.global_position, "alert", node)
 		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
 
 	body["chitter"] = wait
