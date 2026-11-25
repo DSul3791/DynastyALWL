@@ -39,7 +39,7 @@ with tempfile.TemporaryDirectory() as d:
     def run():
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            n = ww.watch("dev", "HEAD")
+            n = ww.watch("dev")
         return n, out.getvalue()
 
     def pr(rel, text):
@@ -69,6 +69,26 @@ with tempfile.TemporaryDirectory() as d:
     n, out = pr(C, "func f():\n\tFreezeWatch.printer.line(\"x\")\n\tprint(2)\n")
     expect("a new print in the same file starts its own count", n == 0 and "(flag 1;" in out, out)
 
+    n, out = pr(C, "func f():\n\tprint(1)\n")
+    expect("the same line put back after its fix starts again at flag 1", n == 0 and "(flag 1;" in out, out)
+    change(C, PRINT, "the print is back")
+    change(C, "func f():\n\tif true:\n\t\tprint(1)\n", "re-indented")
+    n, out = pr(C, "func f():\n\tif true:\n\t\tprint(1)\nfunc h():\n\tpass\n")
+    expect("re-indenting keeps its count", n == 1 and "flag 3: blocked" in out, out)
+    change("src/client/gone.gd", PRINT, "a print in a file")
+    change("src/client/gone.gd", PRINT + "#\n", "touched once")
+    g("rm", "-q", "src/client/gone.gd"); g("commit", "-q", "-m", "file deleted")
+    n, out = pr("src/client/gone.gd", PRINT)
+    expect("a deleted file's count is gone when it comes back", n == 0 and "(flag 1;" in out, out)
+    n, out = pr("src/client/gone.gd", PRINT + PRINT.replace("f()", "g()"))
+    expect("two identical lines in one file are one count, both shown", n == 0 and out.count("(flag 1;") == 2, out)
+
+    n, out = pr("deploy/key.pem", "-----BEGIN RSA PRIVATE KEY-----\nabc\n")
+    expect("a private key in any kind of file blocks", n == 1 and "first sight" in out, out)
+    n, out = pr("deploy/.env.local", "API_TOKEN=\"" + "ghp_" + "c" * 36 + "\"\n")
+    expect("a token in a file with no usual suffix blocks", n >= 1 and "first sight" in out, out)
+    n, out = pr("data/admin.json", "{}\n")
+    expect("a private file blocks", n == 1 and "private file" in out, out)
     n, out = pr("deploy/a.json", "{\"password\": \"hunter22secret\"}\n")
     expect("a password blocks on first sight", n == 1 and "first sight" in out, out)
     expect("a secret's text stays out of the log", "hunter22secret" not in out, out)
@@ -87,6 +107,16 @@ with tempfile.TemporaryDirectory() as d:
     n, out = run()
     expect("a --no-ff merge is one touch and a PR that merged dev counts once", n == 0 and "(flag 2;" in out, out)
     g("checkout", "-q", "dev")
+
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        rc = ww.main(["warn_watch.py", "no-such-base"])
+    expect("a git failure is one error line and exit 1", rc == 1 and out.getvalue().startswith("::error::"), out.getvalue())
+    import os
+    os.environ["GITHUB_ACTIONS"] = "true"
+    n, out = pr(C, PRINT)
+    expect("annotations in GitHub's form", " file=src/client/a.gd,line=2::" in out, out)
+    del os.environ["GITHUB_ACTIONS"]
 
 print("test_warn_watch: " + ("PASS" if not bad else f"{bad} FAIL"))
 sys.exit(1 if bad else 0)

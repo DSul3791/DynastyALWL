@@ -39,12 +39,11 @@ def git(*args):
 DIFF = ("diff", "HEAD", "--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/")   # the same shape whatever the machine's git config
 
 
-def added_lines(*range_args):
-    """(path, line number, line) for every line added in a diff: against HEAD by default, so a tracked file staged or not (a `git commit
-    -a` commits both); files not yet added are not seen (in `git add . && git commit` the hook runs before the add). tools/warn_watch.py
-    passes a commit range."""
+def added_lines():
+    """(path, line number, line) for every line added against HEAD to a tracked file, staged or not (a `git commit -a` commits both);
+    files not yet added are not seen (in `git add . && git commit` the hook runs before the add)."""
     path, number, in_hunk, out = "", 0, False, []
-    for line in git(*(DIFF[:1] + range_args + DIFF[2:] if range_args else DIFF), "--unified=0").splitlines():
+    for line in git(*DIFF, "--unified=0").splitlines():
         if line.startswith("diff --git "):
             path, in_hunk = "", False
         elif not in_hunk and line.startswith("+++ "):
@@ -71,20 +70,13 @@ def line_problems(path, line):
     return out
 
 
-def findings(*range_args):
-    """(check, path, line number, line, message) for each problem the diff adds."""
-    found = []
-    changed = set(git(*(DIFF[:1] + range_args + DIFF[2:] if range_args else DIFF), "--name-only", "--diff-filter=d").splitlines())
-    for f in PRIVATE_FILES:
-        if f in changed:
-            found.append(("private-file", f, 1, "", f"{f} is a machine's private file: keep it out of the commit"))
-    for path, number, line in added_lines(*range_args):
-        found += [(check, path, number, line, msg) for check, msg in line_problems(path, line)]
-    return found
-
-
 def commit_findings():
-    return [f[4] for f in findings()]
+    """A message for each problem the lines being committed add."""
+    changed = set(git(*DIFF, "--name-only", "--diff-filter=d").splitlines())
+    found = [f"{f} is a machine's private file: keep it out of the commit" for f in PRIVATE_FILES if f in changed]
+    for path, _, line in added_lines():
+        found += [msg for _, msg in line_problems(path, line)]
+    return found
 
 
 def push_findings():
