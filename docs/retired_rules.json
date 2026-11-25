@@ -4,6 +4,8 @@
 		{"phrase": "torch or not", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "fire does not help at the den", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "does not protect you at its den", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
+		{"phrase": "fire does not help there", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
+		{"phrase": "torch does not protect in its den", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "fire still does not help", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "kept tool must be in hand", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
 		{"phrase": "a tool a recipe keeps must be in hand", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},

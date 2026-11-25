@@ -30,6 +30,8 @@ case("clean", ok, "Fire holds every animal.", 0)
 case("second line", ok + "- **R-A** · 26 Nov 2026 · again.\n", "", 1)
 case("struck through", ok + "~~old~~\n", "", 1)
 case("old rule in a doc", ok, "The pack rushes, Torch or not.", 1)
-case("undated line", "- **R-A** fire.\n", "", 2)   # bad line, and R-A then missing for the retired phrase
+case("undated line", "- **R-A** fire.\n", "", 2)
+case("date without a day", "- **R-A** · Nov 2026 · fire.\n", "", 2)
+case("mixed-case phrase", ok, "Torch Or Not", 1)   # bad line, and R-A then missing for the retired phrase
 print("test_check_rulings: %s" % ("FAIL" if fails else "PASS"))
 sys.exit(1 if fails else 0)

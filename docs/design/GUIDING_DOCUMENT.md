@@ -114,7 +114,7 @@ The rebuild makes these places real: marsh, swamp, fen and bog by cause, tarns, 
 
 | Dweller | Where | Verbs | Notes |
 |---|---|---|---|
-| Bear | Spring cave den | A, H | Hibernates. Fire or a torch keeps it off a player even at its den ([Dave] 25 Nov 2026 3:19 AM Halifax, project chat: "Also remember fire keeps everything away from the players"; it replaces his earlier "torch does not protect in its den"). |
+| Bear | Spring cave den | A, H | Hibernates. Fire or a torch keeps it off a player even at its den (`RULINGS.md` R-ANIMAL-FIRE). |
 | Goblins | Dry offshoot den | A, Study | [Existing] groups of 2-5, nocturnal, skittish, steal from the dark. |
 | Bats | Any deep dry cave, out at dusk | D, Ally | [Proposal G-08] A dusk emergence: a free spectacle and a clue that the cave is deep and has a second opening. |
 | Glowworm ceilings | Wet chambers | D | [Proposal] Real; the one light in a truly dark cave. |
@@ -199,7 +199,7 @@ Pass: antler-moss stag, stone-hide boar of fire islands, ember-wolf, roc, yeti, 
 | Creature | Sign | Warning | Verbs | Counterplay |
 |---|---|---|---|---|
 | Deer | Tracks, rubbed bark, a soft call at dusk | Head up, ears turn, stamp | Hunt, Discover | Downwind, still, a spear from cover |
-| Bear at den | Clawed trees, torn logs, a bone pile | Turns to face you [Existing]; huff, jaw-pop and standing [Proposal]; then charge | Avoid, Hunt, Study | Stay out of the den ring; fire does not help there |
+| Bear at den | Clawed trees, torn logs, a bone pile | Turns to face you [Existing]; huff, jaw-pop and standing [Proposal]; then charge | Avoid, Hunt, Study | Stay out of the den ring, or keep a fire or torch lit |
 | Wolf | Howl, tracks in a line | Growl, low circling | Avoid, Hunt, Tame (pup) [Proposal] | Torch 9 m (`torch_light_m` in `animals.json`), fight at a chokepoint |
 | Goblin band | Footprints at the fire's edge, a missing item, glinting eyes | Sudden retreat, a whistle | Avoid, Study, Ally [Proposal] | Stay in light; never corner them |
 | Beaver | Gnawed stumps, a lodge, a new pond | Tail slap | Discover, Harvest, Ally | Break the dam; fish the pond |

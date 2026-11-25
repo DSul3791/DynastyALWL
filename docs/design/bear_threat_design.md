@@ -6,7 +6,7 @@ Steve, 8 Nov 2026. This is guiding document section 7.1, card "Bear at den", whi
 
 - **Den** (`animals.json` bear `den`):
   - The den ring is 15 m. Anyone inside `den.threat_m` 15 is threatened.
-  - A fire's or torch's keep-off radius protects you everywhere, at the den too (`server_animals.gd` `_fire_guard`). [Dave, 25 Nov 2026 3:19 AM Halifax, project chat: "Also remember fire keeps everything away from the players." It replaces the 6 Nov rule that a torch did not protect at the den.]
+  - A fire's or torch's keep-off radius protects you everywhere, at the den too (`server_animals.gd` `_fire_guard`). (`RULINGS.md` R-ANIMAL-FIRE.)
 - **Warning and charge** (`server_big_game.gd`):
   - **WARN** (state 10): the bear faces the player for `warn_s` 1.5 s, or 0.8 s when threatened or cornered. The client plays `IdleAngry_Breathing_01`.
   - **CHARGE** (state 11): 12 m/s for up to 25 m. It turns only 0.35 rad/s, so a step aside dodges it. A hit does 35 damage.

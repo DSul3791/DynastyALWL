@@ -10,7 +10,7 @@ import json, pathlib, re, subprocess, sys
 
 HISTORY = ("docs/archive/", "proposed_removals/", "BugsList_Fixed.md", "docs/RULINGS.md", "docs/retired_rules.json")
 SUFFIXES = (".md", ".json")
-LINE = re.compile(r"^- \*\*(R-[A-Z0-9-]+)\*\* · ([^·]+) · ")
+LINE = re.compile(r"^- \*\*(R-[A-Z0-9-]+)\*\* · (\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}) · ")
 
 
 def problems(root: pathlib.Path) -> list:
@@ -23,7 +23,7 @@ def problems(root: pathlib.Path) -> list:
             continue
         m = LINE.match(line)
         if not m:
-            out.append(f"docs/RULINGS.md:{n}: a ruling line needs '- **R-KEY** · date · words'")
+            out.append(f"docs/RULINGS.md:{n}: a ruling line needs '- **R-KEY** · 25 Nov 2026 · words'")
             continue
         if m.group(1) in keys:
             out.append(f"docs/RULINGS.md:{n}: {m.group(1)} is already on line {keys[m.group(1)]}: replace that line, do not add a second")
@@ -32,7 +32,10 @@ def problems(root: pathlib.Path) -> list:
     for r in retired:
         if r["replaced_by"] not in keys:
             out.append(f"docs/retired_rules.json: '{r['phrase']}' names {r['replaced_by']}, which is not in docs/RULINGS.md")
-    files = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True).stdout.splitlines()
+    listed = subprocess.run(["git", "ls-files"], cwd=root, capture_output=True, text=True)
+    if listed.returncode != 0:
+        return out + ["git ls-files failed: run from the repository"]
+    files = listed.stdout.splitlines()
     for rel in files:
         if not rel.endswith(SUFFIXES) or rel.startswith(HISTORY):
             continue
@@ -41,7 +44,7 @@ def problems(root: pathlib.Path) -> list:
         except (OSError, UnicodeDecodeError):
             continue
         for r in retired:
-            if r["phrase"] in text:
+            if r["phrase"].lower() in text:
                 out.append(f"{rel}: still states a replaced rule ('{r['phrase']}', replaced by {r['replaced_by']})")
     return out
 
