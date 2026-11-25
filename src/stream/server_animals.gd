@@ -673,7 +673,6 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	# Each wound bleeds by how hard it was (ANIMAL_SCENARIOS gap 8): the hit's own damage again over blood.bleed_s, so a hit that took half
 	# its health ends it within one blood trail and a graze takes long; never slower than its whole health over bleed_max_s (Dave 23 Nov
 	# 2026: "if they bleed enough they die eventually"). Size counts through its health: the same blow is a smaller share of a moose's.
-	a["hp_full"] = float(a.get("hp_full", float(a["hp"]) + amount))   # its health before its first wound
 	a["bleed"] = float(a.get("bleed", 0.0)) + amount / maxf(float(cfg.get("blood", {}).get("bleed_s", 60.0)), 1.0)
 	a["hurt_by"] = source_peer
 	a["drops"] = 0
@@ -1763,7 +1762,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["pos"] = r["pos"]
 		a["heading"] = r["heading"]
 
-		if a.get("wound", false) and a["pos"].distance_to(a["last_drop"]) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
+		if a.get("wound", false) and a["pos"].distance_to(a.get("last_drop", a["pos"])) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
 			_drop_blood(a)
 
 		if a.get("wound", false) and a["state"] == FLEE:
@@ -1937,7 +1936,7 @@ func bleed(a: Dictionary, dt: float) -> bool:
 	if not a.get("wound", false):
 		return false
 
-	var slowest: float = float(a.get("hp_full", a["hp"])) / maxf(float(cfg.get("blood", {}).get("bleed_max_s", 900.0)), 1.0)
+	var slowest: float = float(a.get("hp_max", species_def(a["sp"]).get("health", a["hp"]))) / maxf(float(cfg.get("blood", {}).get("bleed_max_s", 900.0)), 1.0)
 	a["hp"] -= maxf(float(a.get("bleed", 0.0)), slowest) * dt
 
 	if a["hp"] > 0.0:
