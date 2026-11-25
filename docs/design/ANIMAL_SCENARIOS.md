@@ -60,7 +60,7 @@ food (NPS, bear.org), and fire alone does not stop a determined predator. Dave's
 
 In our game (recommended):
 - Keep today's radii. They scale with the fire's size, which is easy to learn.
-- **No exceptions.** A starving animal circles at the edge of the light and waits, it does not come in. A cornered animal next to a fire
+- **No exceptions** (if Dave confirms it replaces the den and pup-den rulings). A starving animal circles at the edge of the light and waits, it does not come in. A cornered animal next to a fire
   breaks away along the edge, never through the light and never at the player in it. A mother whose young is near a player standing in
   firelight calls the young away instead of charging. A den guard holds at the edge.
 - The player should see where safe is. Today the glow is smaller than the keep-off ring for the small and medium fires (light 3.5 and
@@ -185,7 +185,7 @@ A roar is not a black bear sound. Keep `bear_roar` only, if at all, for a brown 
 | S17 Group | Solitary. | Single; mothers with 1 to 3 cubs (share 0.3 today). |
 | S18 Day and night | Day and dusk; naps by day; mostly beds at night. | Today: day 1.0, dusk 1.0, night 0.05. Keep, add the midday rest. |
 | S19 Weather, seasons | Dens up to 7 months in the north; spring hungry; autumn eats heavily (hyperphagia). Heat makes them rest. | Winter: in dens, not out (or very few). Spring: hungrier, bolder (threat x1.5 today). Autumn: busy feeding, warier of people (x0.7 today). Rain: little change. |
-| S20 Fire | Avoids people and fire unless food-conditioned. | Fire rule above, no den exception. |
+| S20 Fire | Avoids people and fire unless food-conditioned. | Fire rule above (no den exception, if Dave confirms). |
 | S21 Sounds | See the sound table. | See the sound table. |
 
 ### Brown bear: what differs
