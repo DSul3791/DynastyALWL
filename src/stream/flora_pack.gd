@@ -60,7 +60,7 @@ static func _md5_of(path: String) -> String:
 		return "-"
 
 	if path.ends_with("/flora.json"):
-		return placing_bytes(path, FileAccess.get_file_as_string(path)).hex_encode().md5_text()
+		return placing_bytes(FileAccess.get_file_as_string(path)).hex_encode().md5_text()
 
 	if path.ends_with(".gd") or path.ends_with(".json"):
 		return placing_text(path, FileAccess.get_file_as_string(path)).md5_text()
@@ -89,7 +89,7 @@ static func placing_text(path: String, text: String) -> String:
 
 # flora.json as the placer sees it: without its note and its rows' LOOK_KEYS, keys sorted, numbers as their exact 64-bit values
 # (var_to_bytes, so a Windows pack build and a Linux server agree; float text could differ between their C libraries).
-static func placing_bytes(path: String, text: String) -> PackedByteArray:
+static func placing_bytes(text: String) -> PackedByteArray:
 	var table: Variant = JSON.parse_string(text.replace("\r\n", "\n"))
 
 	if typeof(table) != TYPE_DICTIONARY:

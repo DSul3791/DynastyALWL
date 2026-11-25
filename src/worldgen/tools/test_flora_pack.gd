@@ -48,7 +48,7 @@ func check(ok: bool, what: String) -> void:
 func _check_look_only() -> void:
 	var flora_path: String = "res://data/tables/flora.json"
 	var flora: String = FileAccess.get_file_as_string(flora_path)
-	var base: PackedByteArray = FloraPackScript.placing_bytes(flora_path, flora)
+	var base: PackedByteArray = FloraPackScript.placing_bytes(flora)
 	var looked: Dictionary = JSON.parse_string(flora)
 	var placed: Dictionary = JSON.parse_string(flora)
 	var witness: int = -1
@@ -62,12 +62,12 @@ func _check_look_only() -> void:
 	looked["entries"][witness]["glow"] = [1.0, 0.0, 1.0]
 	looked["entries"][witness]["leaf_glow"] = false
 	looked["note"] = "another note"
-	check(FloraPackScript.placing_bytes(flora_path, JSON.stringify(looked, "\t", true, true)) == base, "a colour, glow or note change to flora.json keeps the pack valid")
+	check(FloraPackScript.placing_bytes(JSON.stringify(looked, "\t", true, true)) == base, "a colour, glow or note change to flora.json keeps the pack valid")
 	placed["entries"][witness]["crown_m"] = float(placed["entries"][witness]["crown_m"]) + 1.0
-	check(FloraPackScript.placing_bytes(flora_path, JSON.stringify(placed, "\t", true, true)) != base, "a spacing change to flora.json makes the pack stale")
+	check(FloraPackScript.placing_bytes(JSON.stringify(placed, "\t", true, true)) != base, "a spacing change to flora.json makes the pack stale")
 	placed = JSON.parse_string(flora)
 	placed["entries"][witness]["height_m"] = [10, 12]
-	check(FloraPackScript.placing_bytes(flora_path, JSON.stringify(placed, "\t", true, true)) != base, "a height change to flora.json makes the pack stale")
+	check(FloraPackScript.placing_bytes(JSON.stringify(placed, "\t", true, true)) != base, "a height change to flora.json makes the pack stale")
 	var code: String = "var a := 1\n\n# a note\n\tvar b := 2   # trailing\n"
 	check(FloraPackScript.placing_text("res://x.gd", code) == FloraPackScript.placing_text("res://x.gd", "var a := 1\n\t# moved note\n\tvar b := 2   # trailing\r\n"),
 		"a whole-line comment or blank line in placer code keeps the pack valid")
