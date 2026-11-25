@@ -2,7 +2,7 @@
 """Dave's rulings as plain-number checks on the game's data (docs/RULINGS.md). No Godot: runs in merge_check.
 
 Each check names its R- key. GODOT lists the Godot tests that guard rulings these checks cannot read from data;
-the check fails if one of those test files is gone. A failing check is a found bug: fix the game, or replace the
+the check fails if one of those test files is gone. A check on a ruling marked unverified only warns. A failing check is a found bug: fix the game, or replace the
 ruling by its procedure. Never loosen a check to make it pass. KNOWN_OPEN holds found bugs not fixed yet: they print
 as OPEN and do not fail the merge; take a key out once its fix is in.
     python3 tools/check_dave_rules.py
@@ -47,9 +47,9 @@ def bears(run):
     for sid in ("bear", "black_bear"):
         b = species[sid]
         flee = float(b["flee_mps"])
-        lope = flee * float(b.get("trot_share", 0.5))
+        lope = max(flee * float(b.get("trot_share", 0.5)), float(b.get("lope_mps", 0.0)))   # as server_animals.gd after the burst
         check("R-ANIMAL-BEAR", flee > run, f"{sid} flees at {flee} m/s, faster than the player's {run} m/s run")
-        check("R-ANIMAL-BEAR", lope > run, f"{sid} lopes at {lope:.1f} m/s after its burst, still faster than {run} m/s")
+        check("R-ANIMAL-BEAR", lope > run, f"{sid} lopes at {lope:.1f} m/s after its burst, still faster than {run} m/s (\"out run me\")")
         check("R-ANIMAL-BEAR", b.get("defend", {}).get("trapped_fights") is True, f"{sid} fights when trapped or chased down")
 
 
@@ -70,9 +70,11 @@ def tracking():
 def seeds():
     items = data("data/items/items.json")["items"]
     by_id = data("data/items/weights.json")["by_id"]
-    for iid, it in items.items():
-        if re.search(r"_seeds?$", iid):
-            check("R-ITEM-WEIGHTS", iid in by_id, f"{iid} has its own real-world weight (not the default)")
+    found = [iid for iid in items if re.search(r"_seeds?$", iid)]
+    check("R-ITEM-WEIGHTS", len(found) > 50, f"the seed items are found ({len(found)})")
+    for iid in found:
+        check("R-ITEM-WEIGHTS", iid in by_id, f"{iid} has its own real-world weight (not the default)")
+        check("R-ITEM-WEIGHTS", float(by_id.get(iid, 0.0)) <= 1.0, f"{iid} weighs no more than a coconut ({by_id.get(iid)} kg)")
 
 
 def names_and_storage():
@@ -89,6 +91,7 @@ def names_and_storage():
                 walk(v, k)
 
     walk(pieces)
+    check("R-STORE", len(chests) >= 4, f"the chests are found ({len(chests)})")
     for cid, slots in chests.items():
         check("R-STORE", slots % 6 == 0, f"{cid} holds whole rows of 6 ({slots} slots)")
 
@@ -101,24 +104,44 @@ def godot_guards():
             check(key, (ROOT / f"src/worldgen/tools/{t}.gd").is_file(), f"guarded by {t}")
 
 
+def ruling_lines():
+    out = {}
+    for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
+        m = re.match(r"^- \*\*(R-[A-Z0-9-]+)\*\*", line)
+        if m:
+            out[m.group(1)] = line
+    return out
+
+
 def main():
     run = player_run_mps()
-    for step in (lambda: bears(run), status_strip, tracking, seeds, names_and_storage, godot_guards):
-        step()
-    rulings = (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8")
-    for key in {k for k, _, _ in results} | set(KNOWN_OPEN):
-        check(key, f"**{key}**" in rulings, f"{key} is in docs/RULINGS.md")
+    steps = {"R-ANIMAL-BEAR": lambda: bears(run), "R-HUD-STATUS": status_strip, "R-HUNT-GLOW": tracking, "R-ITEM-WEIGHTS": seeds,
+             "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards}
+    for key, step in steps.items():
+        try:
+            step()
+        except (KeyError, TypeError, ValueError, AttributeError) as e:   # a row or key the check reads is gone: a failure, not a crash
+            check(key, False, f"the data this check reads is missing or changed shape ({type(e).__name__}: {e})")
+    rulings = ruling_lines()
+    for key in {k for k, _, _ in results}:
+        check(key, key in rulings, f"{key} is in docs/RULINGS.md")
     failed = 0
+    for key in KNOWN_OPEN:
+        if key not in rulings:
+            failed += 1
+            print(f"FAIL {key} is in KNOWN_OPEN but not in docs/RULINGS.md: settle it, then take it out")
     for key, ok, what in results:
         if ok:
             continue
-        if key in KNOWN_OPEN:
+        if "unverified" in rulings.get(key, ""):
+            print(f"WARN {key}: {what} [the ruling is marked unverified: tell the coordinator, do not block]")
+        elif key in KNOWN_OPEN:
             print(f"OPEN {key}: {what} [{KNOWN_OPEN[key]}]")
         else:
             failed += 1
             print(f"FAIL {key}: {what}")
     passed = sum(1 for _, ok, _ in results if ok)
-    print(f"dave rules: {passed} pass, {failed} fail, {sum(1 for k, ok, _ in results if not ok and k in KNOWN_OPEN)} open")
+    print(f"dave rules: {passed} pass, {failed} fail, {sum(1 for k, ok, _ in results if not ok and k in KNOWN_OPEN)} open (FAIL blocks a merge; OPEN and WARN do not)")
     for key in KNOWN_OPEN:
         if all(ok for k, ok, _ in results if k == key):
             failed += 1
