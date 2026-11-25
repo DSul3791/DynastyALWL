@@ -1453,6 +1453,9 @@ func _welcome_body(info: Dictionary) -> void:
 		FreezeWatchScript.printer.line("Terrain client: cleared the saved ground cache")
 
 	cache.setup(cache_dir, info, info["revisions"], cache_mb)
+
+	if cache.fell_back != "":
+		FreezeWatchScript.printer.line("Terrain client: the ground cache folder %s could not be made; using %s" % [cache.fell_back, CacheScript.FALLBACK_DIR])
 	var seeded: int = cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
 	_starter_seeded = seeded
 

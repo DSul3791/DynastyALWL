@@ -25,6 +25,8 @@ var misses: int = 0
 
 var _dir: String = ""
 var _base_dir: String = ""
+const FALLBACK_DIR := "user://terrain_cache/fallback"
+var fell_back: String = ""              # the cache folder asked for when it could not be made (setup used FALLBACK_DIR)
 var _generation: int = 0              # bumped by clear_all(): a fresh folder, the old one is purged at the next start
 var _tile_size_m: float = 15360.0
 var _world_min_m: float = -153600.0
@@ -47,10 +49,23 @@ const STALE_MARGIN_VOXELS := 2        # an edit also changes the distances this 
 # `world` holds tile_size_m, min_tile and tiles_per_side (from the server's
 # welcome); `revisions` maps "x,z" to the tile's revision.
 func setup(cache_dir: String, world: Dictionary, revisions: Dictionary, budget_mb: int) -> void:
-	_base_dir = ProjectSettings.globalize_path(cache_dir)
+	# Forward slashes only: a Windows "--cache=E:\x\cache" came back from the purge's parent + "/" + folder spelled differently, so
+	# the purge took the cache's own new folder for an old one and deleted it; every ground file then failed to open and the join
+	# waited for ground forever (Lane A, 25 Nov 2026).
+	_base_dir = base_path(cache_dir)
 	_generation = _read_generation()
 	_dir = _generation_dir(_generation)
 	DirAccess.make_dir_recursive_absolute(_dir)
+
+	# A folder that cannot be made (no drive, no rights) would leave every ground file unopenable and the join waiting forever:
+	# the game's own folder is used instead, and fell_back names the one refused (the client logs it).
+	if not DirAccess.dir_exists_absolute(_dir) and cache_dir != FALLBACK_DIR:
+		fell_back = _dir
+		_base_dir = base_path(FALLBACK_DIR)
+		_generation = _read_generation()
+		_dir = _generation_dir(_generation)
+		DirAccess.make_dir_recursive_absolute(_dir)
+
 	_purge_other_generations()
 	_tile_size_m = float(world["tile_size_m"])
 	_tiles_per_side = int(world["tiles_per_side"])
@@ -58,6 +73,11 @@ func setup(cache_dir: String, world: Dictionary, revisions: Dictionary, budget_m
 	_period_m = float(_tiles_per_side) * _tile_size_m
 	budget_bytes = budget_mb * 1024 * 1024
 	set_revisions(revisions)
+
+
+# The cache folder as an absolute path with forward slashes (Godot opens these on Windows too).
+static func base_path(cache_dir: String) -> String:
+	return ProjectSettings.globalize_path(cache_dir).replace("\\", "/").simplify_path()
 
 
 func tile_of_block(block: Vector3i, lod: int) -> Vector2i:

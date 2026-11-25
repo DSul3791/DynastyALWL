@@ -244,5 +244,21 @@ func _init() -> void:
 	else:
 		print("ok   ", truth.size(), " blocks saved from 4 threads survive a reopen")
 
+	# A cache folder spelled with backslashes (Lane A, 25 Nov 2026: --cache=E:\lane_low\cache) keeps its own folder: the purge of old
+	# generations once compared it with a forward-slash spelling and deleted it.
+	if CacheScript.base_path("C:\\a\\b\\cache") != "C:/a/b/cache":
+		fail("base_path gave %s for a backslash path" % CacheScript.base_path("C:\\a\\b\\cache"))
+
+	var slashed: String = ProjectSettings.globalize_path("user://test_block_roundtrip_slash").replace("/", "\\")
+	var backed = CacheScript.new()
+	backed.setup(slashed, {"tile_size_m": 15360.0, "min_tile": -10, "tiles_per_side": 21}, {}, 64)
+
+	if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path("user://test_block_roundtrip_slash")):
+		fail("a backslash cache path lost its own folder at setup")
+	elif backed.fell_back != "":
+		fail("a backslash cache path fell back to %s" % CacheScript.FALLBACK_DIR)
+	else:
+		print("ok   a backslash cache path keeps its folder")
+
 	print("block round trip: %d failures" % failures)
 	quit(failures)
