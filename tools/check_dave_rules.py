@@ -71,8 +71,15 @@ def sign_sound():
     signs = data("data/look/trail_signs.json")
     slots = data("data/sound/batch3_slots.json")
     slot = slots.get("slots", slots)["sign_spot"]
-    items = data("data/items/items.json")
-    items = items.get("items", items)
+    items = set()
+    todo = [data("data/items/items.json")]
+    while todo:   # every item row, at any depth (weapons sit in their own section)
+        node = todo.pop()
+        for k, v in node.items():
+            if isinstance(v, dict):
+                if "name" in v:
+                    items.add(k)
+                todo.append(v)
     gear = signs["sound_with"]
     check("R-HUNT-SIGN-SOUND", float(slot.get("play_db", 0.0)) <= -10.0, f"the sign sound plays at least 10 dB under its file (play_db {slot.get('play_db')})")
     check("R-HUNT-SIGN-SOUND", all(g in items for g in gear) and {"wooden_spear", "wooden_bow", "snare"} <= set(gear), f"sound_with names real hunting weapons, snares and traps ({len(gear)})")
