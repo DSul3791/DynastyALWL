@@ -882,16 +882,20 @@ func _path(strokes: int) -> String:
 	var missed: int = 0
 	var sent: int = 0
 	var along: int = 0
+	var dry: int = 0
+	var turns: int = 0
 
 	for n in range(strokes * 2 + 6):
 		if bool(c.items.goal_book.row("path").get("done", false)):
 			break
 
-		if str(r._notices.slice(maxi(said, r._notices.size() - 1))).contains("in water"):
-			dir = dir.rotated(Vector3.UP, PI * 0.5)
+		# The goal's own count is the truth: two strokes in a row that laid nothing (water, a patch already there, a tree) and the robot turns.
+		if dry >= 2:
+			dir = dir.rotated(Vector3.UP, PI * 0.5 * (1.0 if turns % 2 == 0 else -1.0))
 			start = c.body.global_position
 			along = 0
-			said = r._notices.size()
+			dry = 0
+			turns += 1
 
 		var ground: Vector3 = start + dir * (1.5 + float(along))
 		along += 1
@@ -903,11 +907,13 @@ func _path(strokes: int) -> String:
 
 		var y: float = float(c.items._ground_below.call(ground))
 		ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+		var had: int = int(c.items.goal_book.row("path").get("have", 0))
 		c.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH, slot, 0, 0, ground)
 		sent += 1
 		await r._wait(0.8)
+		dry = dry + 1 if int(c.items.goal_book.row("path").get("have", 0)) == had else 0
 
-	_line("PATH %d hoe strokes toward the water, %d out of reach%s" % [sent, missed, _said(said)])
+	_line("PATH %d hoe strokes toward the water, %d out of reach, %d turns, goal has %s%s" % [sent, missed, turns, str(c.items.goal_book.row("path").get("have", "?")), _said(said)])
 	return ""
 
 
@@ -942,9 +948,9 @@ func _build(structure: String) -> String:
 	if site >= 0:
 		at = c.items._world[site]["pos"]
 	else:
-		for side in range(8):   # a player turns to open ground when the game says a tree is in the way
+		for side in range(12):   # a player turns to open ground when the game says a tree is in the way
 			var heard: int = r._notices.size()
-			at = c.body.global_position - (c.body.global_transform.basis.z * (4.0 + 2.0 * (2.0 if side >= 4 else 0.0) / 2.0)).rotated(Vector3.UP, float(side) * PI * 0.5)
+			at = c.body.global_position - (c.body.global_transform.basis.z * (4.0 + 4.0 * float(side >= 4) + 4.0 * float(side >= 8))).rotated(Vector3.UP, float(side) * PI * 0.5)
 			var y: float = float(c.items._ground_below.call(at))
 			at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 			c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
@@ -954,7 +960,9 @@ func _build(structure: String) -> String:
 				if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
 					site = int(w)
 
-			if site >= 0 or not str(r._notices.slice(heard)).contains("in the way"):
+			var told: String = str(r._notices.slice(heard))
+
+			if site >= 0 or not (told.contains("in the way") or told.contains("build away") or told.contains("too wet") or told.contains("in water") or told.contains("stands there")):
 				break
 
 		_sites[structure] = site
