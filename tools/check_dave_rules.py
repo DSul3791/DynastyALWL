@@ -20,7 +20,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
-    "R-PLAYER-CRAWL": ["test_crawl", "test_animal_senses", "test_remote_players"],
+    "R-PLAYER-CRAWL": ["test_crawl", "test_crawl_server", "test_animal_senses", "test_remote_players"],
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],

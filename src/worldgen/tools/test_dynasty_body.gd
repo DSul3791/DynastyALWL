@@ -124,7 +124,7 @@ func _init() -> void:
 	_check(crouch_hips.y > 0.35 and crouch_hips.y < 0.6, "crouch: hips low")
 
 	# The stealthy crawl (Dave QA #10, 25 Nov 2026): lying still holds the low crawl's first frame; crawling forward is Crawl_Backward played backwards. No sliding (Dave):
-	# while a hand is down on the ground it moves back under the body (forward is +Z) at about the crawl's 0.4 m/s at speed scale 1 (avatar_driver.gd speed_scale),
+	# while a hand is down on the ground it moves back under the body (the rig's forward is +Z; the model node is turned to face the game's -Z) at about the crawl's 0.4 m/s at speed scale 1 (avatar_driver.gd speed_scale),
 	# and backwards it moves forward; the body is drawn in place (the game moves it).
 	var prone_at: Array = []
 
@@ -148,7 +148,7 @@ func _init() -> void:
 			body.animation_player.seek(anim.length * float(n) / float(samples), true)
 			await process_frame
 			await process_frame
-			rows.append([(s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_LeftHand"))).origin, (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightHand"))).origin])
+			rows.append([s.get_bone_global_pose(s.find_bone("mixamorig_LeftHand")).origin * 0.01, s.get_bone_global_pose(s.find_bone("mixamorig_RightHand")).origin * 0.01])   # skeleton space (the rig faces +Z), centimetres to metres
 
 		var dt: float = anim.length / float(samples)
 		var speeds: Array = []

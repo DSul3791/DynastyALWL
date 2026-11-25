@@ -5312,7 +5312,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
-		_avatar.set_meta("lie_rest", lying_at_rest())   # lying: the sleep pose at rest, the crawl otherwise (avatar_driver.gd lie_clip)
+		_avatar.set_meta("lie_rest", lying_at_rest())   # lying: the sleep pose at rest, the crawl otherwise (avatar_driver.gd crawl_clip; a --shot-stance=lie picture shows the crawl's still pose)
 		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
 
 		if not _seat.is_empty() and stance.stance == StanceScript.SIT and _avatar.animation_player != null and _avatar.animation_player.has_animation("sit_chair"):
@@ -6110,7 +6110,8 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if (input != Vector3.ZERO and not crawling()) or (_move_held("jump") and not sleeping_now):
+	# A crawler who reaches deep water stands up to swim (review of PR #1939: a lying swimmer crept along at the crawl's pace).
+	if (input != Vector3.ZERO and (not crawling() or swimming)) or (_move_held("jump") and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -6336,7 +6337,7 @@ func _show_tunnel_buttons() -> void:
 
 # On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
 func _climb_ladder(delta: float, strain_cap: float) -> bool:
-	if items == null or strain_cap < 0.0 or (items.ladders.is_empty() and not ladder.climbing()):
+	if items == null or strain_cap < 0.0 or (items.ladders.is_empty() and not ladder.climbing()) or (stance.stance == StanceScript.LIE and not ladder.climbing()):   # a crawler does not start up a ladder
 		ladder.let_go()
 		return false
 

@@ -299,7 +299,7 @@ func _process(delta: float) -> void:
 			b["swing_due"] = false   # a blow far off is not played when the body comes near later
 			var rest: bool = lie_rest(b, delta)
 			rig.set_meta("lie_rest", rest)
-			var pose: int = (int(b["state"]) & (3 | ASLEEP | SWIM)) | (64 if rest else 0)
+			var pose: int = (int(b["state"]) & (3 | ASLEEP | SWIM)) | (FAR_REST if rest else 0)
 
 			if int(b.get("far_pose", -1)) != pose:   # far off the body is not animated, but it still lies, sits or swims when the player does (robots 23 Nov 2026: a far player lying down was drawn standing)
 				b["far_pose"] = pose
@@ -730,6 +730,7 @@ func _show_left(b: Dictionary, distance: float) -> void:
 var lit_most: Callable = func() -> int: return LIT_MOST
 var bed_near: Callable = Callable()   # (feet position) -> true when a bed is under them (terrain_client.gd: inventory_view.gd bed_near); unset: no beds known
 const BED_LOOK_S := 1.0               # how often a lying body looks for a bed under it
+const FAR_REST := 64                  # the far pose's own bit (not on the wire): lying at rest, drawn asleep
 
 
 # Another player lying at rest, drawn in the sleep pose: asleep (the state's bit), or on a bed. Lying any other way is the stealthy crawl (Dave, QA #10,

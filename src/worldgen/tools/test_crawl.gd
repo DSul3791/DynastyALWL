@@ -68,17 +68,6 @@ func _initialize() -> void:
 	check(is_equal_approx(3.2 * float(StanceScript.SPEED[StanceScript.LIE]), StanceScript.CRAWL_MPS) and is_equal_approx(StanceScript.CRAWL_MPS, 0.4), "lying moves at the crawl's 0.4 m/s")
 	check(is_equal_approx(AvatarDriver.speed_scale("crawl", StanceScript.CRAWL_MPS), 1.0) and is_equal_approx(AvatarDriver.speed_scale("crawl_back", 0.2), 0.5), "the crawl clips follow the real pace")
 
-	# The keys: a movement key stands a sitter up, and a lier unless crawling.
-	var st = StanceScript.new()
-	st.set_stance(StanceScript.LIE)
-	st.moved(true)
-	check(st.stance == StanceScript.LIE, "crawling: a movement key keeps the player lying")
-	st.moved()
-	check(st.stance == StanceScript.STAND, "lying at rest: a movement key stands the player up")
-	st.set_stance(StanceScript.SIT)
-	st.moved(true)
-	check(st.stance == StanceScript.STAND, "sitting: a movement key stands the player up")
-
 	body.free()
 	plain.free()
 	print("test_crawl: ", "FAIL (%d)" % failures if failures > 0 else "ok")

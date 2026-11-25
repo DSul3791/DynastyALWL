@@ -52,9 +52,9 @@ func set_stance(wanted: int) -> bool:
 	return true
 
 
-# A movement key was pressed: up from sitting, and from lying unless `crawl` (lying off a bed, awake: the keys crawl). Crouching stays.
-func moved(crawl: bool = false) -> void:
-	if stance == SIT or (stance == LIE and not crawl):
+# A movement key was pressed: up from sitting or lying (crouching stays).
+func moved() -> void:
+	if stance == SIT or stance == LIE:
 		set_stance(STAND)
 
 

@@ -18271,8 +18271,12 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
 
-		# Crawling (lying and moving, Dave QA #10, 25 Nov 2026) is work like walking (exertion.json crawl_effort), and not resting (crawling_of).
-		var crawl: bool = int(_stance.get(peer, 0)) == 3 and speed > float(_exertion_cfg.get("crawl_from_mps", 0.15)) and not _asleep.has(peer)
+		# Crawling (lying and moving, Dave QA #10, 25 Nov 2026) is work like walking (exertion.json crawl_effort), and not resting (crawling_of). A crawler's pace is
+		# read from the velocity its client sent with the position (_peer_move), not from the arrival times: two reports bunched by the network would read a 0.4 m/s
+		# crawl as twice that and stand the crawler up (review of PR #1939).
+		var told: Vector3 = _peer_move.get(peer, [Vector3.ZERO])[0]
+		var lying_pace: float = minf(speed, Vector2(told.x, told.z).length())
+		var crawl: bool = int(_stance.get(peer, 0)) == 3 and lying_pace > float(_exertion_cfg.get("crawl_from_mps", 0.15)) and not _asleep.has(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2
 
 		if crawl:
 			target = maxf(target, float(_exertion_cfg.get("crawl_effort", 0.4)))
@@ -18283,7 +18287,7 @@ func _note_motion(peer: int, position: Vector3) -> void:
 		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
 
 		# Walking off stands a sitting or lying player up.
-		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
+		if int(_stance.get(peer, 0)) >= 2 and (lying_pace if int(_stance.get(peer, 0)) == 3 else speed) > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
 			_stance[peer] = 0
 			_asleep.erase(peer)
 			_strain_sent.erase(peer)
