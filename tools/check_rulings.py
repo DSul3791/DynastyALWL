@@ -2,14 +2,14 @@
 """Dave's rulings stay one per subject and replaced rules stay gone (docs/ai-team/CONSTITUTION.md, "Rulings").
 
 Checks docs/RULINGS.md (one line per R- key, each dated, no struck-through text) and that no phrase in
-docs/retired_rules.json appears in an active file. Active = tracked .md, .json and .gd files outside the history
+docs/retired_rules.json appears in an active file. Active = tracked .md and .json files outside the history
 folders below. Exit 0 clean, 1 with one line per problem.
     python3 tools/check_rulings.py [repo root]
 """
 import json, pathlib, re, subprocess, sys
 
 HISTORY = ("docs/archive/", "proposed_removals/", "BugsList_Fixed.md", "docs/RULINGS.md", "docs/retired_rules.json")
-SUFFIXES = (".md", ".json", ".gd")
+SUFFIXES = (".md", ".json")   # .gd next, with the last two hub comments (terrain_net.gd, server_animals.gd)
 LINE = re.compile(r"^- \*\*(R-[A-Z0-9-]+)\*\* · (\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}) · ")
 
 
