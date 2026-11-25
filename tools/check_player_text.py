@@ -149,7 +149,7 @@ def targets(check):
     for key in ("made_item", "got_item", "have_item", "what"):
         if isinstance(check.get(key), str):
             out.add(check[key])
-    for key in ("made_item_any", "what_any"):
+    for key in ("made_item_any", "made_item_all", "what_any"):
         out |= set(check.get(key, []))
     return out
 
