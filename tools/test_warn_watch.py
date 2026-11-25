@@ -83,7 +83,7 @@ with tempfile.TemporaryDirectory() as d:
     n, out = pr("src/client/gone.gd", PRINT + PRINT.replace("f()", "g()"))
     expect("two identical lines in one file are one count, both shown", n == 0 and out.count("(flag 1;") == 2, out)
 
-    n, out = pr("deploy/key.pem", "-----BEGIN RSA PRIVATE KEY-----\nabc\n")
+    n, out = pr("deploy/key.pem", "-----BEGIN RSA " + "PRIVATE KEY-----\nabc\n")
     expect("a private key in any kind of file blocks", n == 1 and "first sight" in out, out)
     n, out = pr("deploy/.env.local", "API_TOKEN=\"" + "ghp_" + "c" * 36 + "\"\n")
     expect("a token in a file with no usual suffix blocks", n >= 1 and "first sight" in out, out)
