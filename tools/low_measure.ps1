@@ -3,7 +3,7 @@
 # r4 (the robot route at Low, 4 cores one thread each). The server runs on two other cores (a tester's server is remote).
 # Run from the lane's own clone, with Dave's Godot and installed game closed:
 #   powershell -ExecutionPolicy Bypass -File tools\low_measure.ps1 -Exe E:\Software\godotDev\testlane_a_bin\godot_lane_a.exe
-# A play that has not joined within -JoinLimit seconds, or runs past -PlayLimit, stops the WHOLE run at once. Every process
+# -Plays m8 runs only that play. A play that has not joined within -JoinLimit seconds, or runs past -PlayLimit, stops the WHOLE run at once. Every process
 # this script started is closed on exit, also on an error or Ctrl+C. Logs: $Out\<play>.log, server.log, machine_run_<play>.txt.
 
 param(
@@ -11,7 +11,8 @@ param(
 	[string]$Out = "E:\Software\godotDev\lane_low",
 	[int]$Port = 24710,
 	[int]$JoinLimit = 240,
-	[int]$PlayLimit = 900
+	[int]$PlayLimit = 900,
+	[string[]]$Plays = @("m8", "m4", "r4")
 )
 
 $ErrorActionPreference = "Stop"
@@ -44,13 +45,13 @@ try {
 
 	if ($srv.HasExited) { throw "the server stopped while starting (see $Out\server_err.log)" }
 
-	$plays = @(
+	$playList = @(
 		@{ Name = "m8"; Mask = 0x0FF; Args = @('--robot-plan=measure') },
 		@{ Name = "m4"; Mask = 0x055; Args = @('--robot-plan=measure') },
 		@{ Name = "r4"; Mask = 0x055; Args = @('--robot-plan=route', '--quality=0') }
 	)
 
-	foreach ($play in $plays) {
+	foreach ($play in ($playList | Where-Object { $Plays -contains $_.Name })) {
 		$n = $play.Name
 		$log = "$Out\$n.log"
 		$all = @('--path', '.', '--resolution', '1920x1080', 'res://scenes/terrain_client/terrain_client.tscn', '--', '--server=127.0.0.1', "--port=$Port", "--cache=$cache", '--robot=Robot_1', '--robot-admin', "--timeout=$PlayLimit") + $play.Args

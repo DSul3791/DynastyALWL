@@ -3442,10 +3442,16 @@ func _quit_at_once() -> void:
 # turning; the table goes to the log and user://machine_run.txt. For lane runs that stand in for a slower machine (cores capped).
 func _measure() -> void:
 	_step = "measure"
+	# VSync off for the run (not saved): with it on, a 60 Hz screen holds every frame between 17 and 33 ms at exactly 30 fps, so the
+	# tiers cannot be told apart (Lane A, 25 Nov 2026: Low, Medium and High all 30.0 fps).
+	var vsync_was: int = DisplayServer.window_get_vsync_mode()
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	client._machine_probe.toggle()
 
 	while client._machine_probe.running():
 		await get_tree().process_frame
+
+	DisplayServer.window_set_vsync_mode(vsync_was)
 
 	FreezeWatchScript.printer.line("ROBOT %s step measure: done" % robot_name)
 
