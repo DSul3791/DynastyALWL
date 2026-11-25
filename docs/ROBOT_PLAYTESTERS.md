@@ -79,6 +79,15 @@ Plans `fight_goblin` / `fight_bandit`: the shield goes up at the drawn warning o
 capture the mouse) and is lowered if the warning never becomes a charge; even charges are a side-step (every other one at run speed). Each
 blow prints `ENEMY hit|miss` (warning lead, gap, dodge, shield, facing); the server prints `AUDIT enemy_hit` with its own gap and shield.
 
+Plan `goals` (one robot, Dave 25 Nov 2026 "try to improve the goals playthrough"; `ROBOT_S=2700 ROBOT_GOALS_S=2450 tools/robots.sh 1 goals`,
+about 45 minutes; `src/client/robot_goals.gd`): a fresh character with no gifts plays the starter goal book in order, as a player would: it aims
+(body yaw and camera pitch) and presses E to gather and drink, left-clicks the axe at trees, bushes and rocks, crafts through the craft queue, places
+blueprints and hammers them, lights a campfire, treads a path with the hoe and sells to Hob (closing his shop window after). Each goal prints
+`GOAL <id> try|done|stuck`, with GATHER, MADE, FELL, ROCK, BUSHES, BUILT, PATH, SOLD and DROPPED lines on the way, and a WEIGHT line (each item's
+real kg, heaviest first) after a goal where the game said "Too heavy". A goal it cannot play yet says "robot cannot" (fish, hunt, snare, order, clay,
+story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
+Between goals it drops what a player would leave behind (logs, seed stacks, spare food over 10, straw and reeds over 20, sticks over 40).
+
 Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30
 --loss 0.03`, any species name in data/animals/animals.json; a wolf is a pack: `kind_wolf` is one robot with `ROBOT_S=360`, run 380 m out of town and
 unarmed until bitten, since a pack keeps off the town, a player with a spear and a player with another within 10 m): Robot 1 places one 15 m ahead and both hunt it with spears,

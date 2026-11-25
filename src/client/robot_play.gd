@@ -31,6 +31,7 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const RobotGoalsScript := preload("res://src/client/robot_goals.gd")
 const PackFuzz := preload("res://src/client/robot_pack_fuzz.gd")
 
 const QUIET_S := 3.0             # a pack check waits until no pack message came for this long
@@ -643,6 +644,9 @@ func run() -> void:
 		await _moves_built()
 	elif plan == "roam":
 		await _roam()
+	elif plan == "goals":
+		# A new player through the goal list, no gifts (robot_goals.gd); GOALS_S short of the client's --timeout (tools/robots.sh ROBOT_S).
+		await RobotGoalsScript.new(self).play(float(OS.get_environment("ROBOT_GOALS_S")) if OS.get_environment("ROBOT_GOALS_S") != "" else 2400.0)
 	else:
 		if admin:
 			await _craft_chain()

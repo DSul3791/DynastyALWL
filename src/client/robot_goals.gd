@@ -1,0 +1,1015 @@
+extends RefCounted
+
+# --- plan goals (Dave 25 Nov 2026: "test play ... see what bugs you can find ... improve the goals playthrough") -------------------------------
+# One robot plays a brand-new character through the goal list as a new player would, with no admin gifts: it takes the first goal whose
+# `after` goals are done, gets what that goal needs the way a player does and moves on. A player's means only:
+# - it gathers by looking at a thing and pressing E (loose stones and sticks, plants, dead branches);
+# - it chops and works wood by left clicks with the axe in hand (held_item.gd mouse_button, the real swing);
+# - it crafts through the craft queue as the crafting window does, and builds blueprints with the hammer;
+# - it drinks with E at the water's edge, eats from the pack, sells to Hob through his trade window's call.
+# Each goal prints `GOAL <id> done|stuck ...` with the seconds it took and why it stuck; a GOALS line ends the run. A goal the robot
+# cannot play yet says "robot cannot" (a note, not a bug). Anything the game refused prints the notice the player would read.
+# Results are bugs only where the game is at fault: a step that should work but did nothing, a goal not credited, a misleading notice.
+
+const NetScript := preload("res://src/stream/terrain_net.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
+
+const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
+const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
+const GOAL_S := 420.0                      # one goal's time at most
+const GATHER_S := 300.0                    # one gather's time at most
+
+var r                       # the robot (robot_play.gd)
+var c                       # its client (terrain_client.gd)
+var _drops: Dictionary = {}
+var _gives: Dictionary = {}   # flora species name -> [item ids a pick gives] (drops.json by_species and harvest rows)
+var _blueprints: Dictionary = {}   # structure -> blueprint row
+var _tries: Dictionary = {}   # goal id -> tries
+var _why: Dictionary = {}     # goal id -> last reason
+var _t0: int = 0
+var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not aimed at again
+var _depth: int = 0
+var _sites: Dictionary = {}       # structure -> its blueprint site's world id
+var _home: Vector3 = Vector3.ZERO   # where the character first stood: the starter camp
+
+
+func _init(robot) -> void:
+	r = robot
+	c = robot.client
+	var drops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
+	_drops = drops if drops is Dictionary else {}
+
+	for species in (_drops.get("by_species", {}) as Dictionary):
+		_gives[species] = ((_drops["by_species"][species]) as Array).map(func(row): return str(row[0]))
+
+	for key in ["berry_yield", "harvest_yield", "fruit_tree"]:
+		for species in (_drops.get(key, {}) as Dictionary):
+			var row: Variant = _drops[key][species]
+
+			if row is Dictionary and (row as Dictionary).has("item"):
+				_gives[species] = (_gives.get(species, []) as Array) + [str(row["item"])]
+
+	var bp: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))
+
+	var rows: Variant = (bp as Dictionary).get("blueprints", {}) if bp is Dictionary else {}
+
+	for row in ((rows as Dictionary).values() if rows is Dictionary else rows):
+		if row is Dictionary and not bool(row.get("retired", false)) and str(row.get("station", "")) == "":
+			_blueprints[str(row.get("structure", ""))] = row
+
+
+func _line(text: String) -> void:
+	FreezeWatchScript.printer.line("ROBOT %s %s" % [r.robot_name, text])
+
+
+func _s() -> float:
+	return float(Time.get_ticks_msec() - _t0) / 1000.0
+
+
+# The whole play-through: goals in the book's order as they open, until none is left that the robot can try or `limit_s` runs out.
+func play(limit_s: float) -> void:
+	_t0 = Time.get_ticks_msec()
+	_home = c.body.global_position
+	r._step = "goals"
+	var book = c.items.goal_book
+
+	while (book == null or book.rows.is_empty()) and _s() < 30.0:
+		await r._wait(0.5)
+		book = c.items.goal_book
+
+	if book == null or book.rows.is_empty():
+		r._fail("goals", "book", "no goal list came from the server within 30 s of joining")
+		return
+
+	book.achieved.connect(func(row: Dictionary, copper: int) -> void: _line("GOAL %s achieved at %.0f s (%s), %d copper" % [str(row.get("id", "")), _s(), str(row.get("title", "")), copper]))
+	_line("GOALS start: %d goals, %d done, pack %s" % [book.rows.size(), book.done_count(), _pack()])
+
+	while _s() < limit_s:
+		var g: Dictionary = _next(book)
+
+		if g.is_empty():
+			break
+
+		var id: String = str(g["id"])
+		_tries[id] = int(_tries.get(id, 0)) + 1
+		var t: float = _s()
+		r._step = "goal " + id
+		_line("GOAL %s try %d at %.0f s: %s" % [id, int(_tries[id]), t, str(g.get("title", ""))])
+		_close_windows()
+		await _lighten()
+		var heard: int = r._notices.size()
+		var why: String = await _play_goal(g)
+		await r._wait(2.0)   # the server's goal_progress after the last step
+		_weigh_if_heavy(heard)
+
+		if bool(book.row(id).get("done", false)):
+			_line("GOAL %s done in %.0f s" % [id, _s() - t])
+			continue
+
+		if why == "":
+			why = "every step went through and the goal was not credited (have %s of %s)" % [str(book.row(id).get("have", "?")), str(book.row(id).get("need", "?"))]
+
+		_why[id] = why
+		_line("GOAL %s stuck after %.0f s: %s" % [id, _s() - t, why])
+
+	var left: Array = book.rows.filter(func(row): return not bool(row.get("done", false)))
+	_line("GOALS end at %.0f s: %d of %d done, pack %s" % [_s(), book.done_count(), book.rows.size(), _pack()])
+
+	for row in left:
+		var id: String = str(row.get("id", ""))
+		var why: String = str(_why.get(id, "not reached (its earlier goals were not done, or time ran out)"))
+		_line("GOAL %s left: %s" % [id, why])
+
+		if _why.has(id) and not why.begins_with("robot cannot"):
+			r._fail("goals", id, "goal %s (%s) stuck: %s" % [id, str(row.get("title", "")), why])
+
+
+# The first goal not done whose `after` goals are all done, tried at most twice.
+func _next(book) -> Dictionary:
+	for row in book.rows:
+		if bool(row.get("done", false)) or int(_tries.get(str(row["id"]), 0)) >= 2:
+			continue
+
+		if str(_why.get(str(row["id"]), "")).begins_with("robot cannot"):
+			continue
+
+		var open: bool = true
+
+		for before in row.get("after", []):
+			if not bool(book.row(str(before)).get("done", true)):
+				open = false
+
+		if open:
+			return row
+
+	return {}
+
+
+# A player drops what weighs them down and no goal ahead needs: loose logs and seed stacks (the pack said "Too heavy").
+func _lighten() -> void:
+	var inv = c.items.inventory
+	var dropped: PackedStringArray = PackedStringArray()
+
+	for n in range(inv.numbers.size() - 1, -1, -1):
+		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
+
+		var keep: int = 20 if item in ["thatch", "reed_stems", "bedding", "samphire"] else (40 if item == "stick" else 0)
+		keep = 10 if item.begins_with("apple_") or item.ends_with("berries") or item in ["cherries", "fiddleheads", "foxglove_leaves"] else keep
+		var junk: bool = item.begins_with("log_") or item.ends_with("_seed") or item.ends_with("_seeds") or item == "linseed" or keep > 0
+
+		if junk and int(inv.counts[n]) > keep:
+			dropped.append("%s x%d" % [item, int(inv.counts[n]) - keep])
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_DROP, n, 0, int(inv.counts[n]) - keep, c.body.global_position + Vector3(0.6, 0.0, 0.0))
+			await r._wait(0.3)
+
+	if not dropped.is_empty():
+		_line("DROPPED %s" % ", ".join(dropped))
+
+
+# When the game said "Too heavy" during a goal: the real load per item (CarryRules.weight_of, as the server weighs it), heaviest first.
+func _weigh_if_heavy(from: int) -> void:
+	var heavy: bool = false
+
+	for said in r._notices.slice(from):
+		heavy = heavy or str(said).contains("Too heavy")
+
+	if not heavy:
+		return
+
+	var inv = c.items.inventory
+	var rows: Array = []
+
+	for n in range(inv.numbers.size()):
+		if int(inv.numbers[n]) > 0:
+			var item: String = c.items.table.id_of(int(inv.numbers[n]))
+			rows.append([CarryRules.weight_of(item, c.items._carry_cfg) * float(inv.counts[n]), item, int(inv.counts[n])])
+
+	rows.sort_custom(func(a, b): return a[0] > b[0])
+	var parts: PackedStringArray = PackedStringArray()
+
+	for row in rows:
+		parts.append("%s x%d %.2f kg" % [row[1], row[2], row[0]])
+
+	_line("WEIGHT carried %.2f of %.2f kg: %s" % [c.items.carried_kg(), c.items.carry_limit_kg(), ", ".join(parts)])
+
+
+# A player closes a trader's window before walking off (an open window holds the movement keys).
+func _close_windows() -> void:
+	if c.items.dialogue_open and c.items.dialogue_close.is_valid():
+		c.items.dialogue_close.call()
+
+
+# Back to the starter camp in 60 s legs; the seconds walked.
+func _walk_home(limit_s: float) -> float:
+	var leg_s: float = 0.0
+
+	while leg_s < limit_s and c.body.global_position.distance_to(_home) > 8.0:
+		await r._go_to(_home, 60.0, 6.0)
+		leg_s += 60.0
+
+	return leg_s
+
+
+func _pack() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+	var inv = c.items.inventory
+
+	for n in range(inv.numbers.size()):
+		if int(inv.numbers[n]) > 0:
+			parts.append("%s x%d" % [c.items.table.id_of(int(inv.numbers[n])), int(inv.counts[n])])
+
+	return "[" + ", ".join(parts) + "]"
+
+
+# --- one goal: by its check (server data/items/starter_goals.json and camp_goals.json) --------------------------------------------------
+func _play_goal(g: Dictionary) -> String:
+	var id: String = str(g["id"])
+	var check: Dictionary = _check_of(id)
+
+	match id:
+		"drink":
+			return await _drink()
+		"fell":
+			return await _fell()
+		"fire":
+			return await _fire()
+		"berries":
+			return await _eat_wild()
+		"path":
+			return await _path(int(check.get("count", 15)))
+		"sell":
+			return await _sell()
+		"fish", "hunt", "snare", "order", "story", "night_walk", "fur_for_winter", "dig_clay", "charcoal":
+			return "robot cannot play goal %s yet" % id
+
+	if check.has("made_item"):
+		return await _have(str(check["made_item"]), int(check.get("count", 1)), true)
+
+	if check.has("made_item_all"):   # a tier's tool set (PR #1905): every one made (or held, with or_have)
+		var missing: PackedStringArray = PackedStringArray()
+
+		for item in check["made_item_all"]:
+			if bool(check.get("or_have", false)) and _count(str(item)) > 0:
+				continue
+
+			var why_one: String = await _have(str(item), 1, true)
+
+			if why_one != "":
+				missing.append("%s (%s)" % [str(item), why_one])
+
+		return "" if missing.is_empty() else "of the set, could not make: " + "; ".join(missing)
+
+	if check.has("made_item_any"):
+		return await _have(str((check["made_item_any"] as Array)[0]), int(check.get("count", 1)), true)
+
+	if check.has("got_item"):
+		return await _gather(str(check["got_item"]), _count(str(check["got_item"])) + int(check.get("count", 1)))
+
+	if check.has("have_item"):
+		return await _have(str(check["have_item"]), int(check.get("count", 1)), false)
+
+	if str(check.get("event", "")) == "placed":
+		var what: String = str(check.get("what", ((check.get("what_any", [""]) as Array)[0])))
+		return await _build(what)
+
+	return "robot cannot play goal %s yet (check %s)" % [id, JSON.stringify(check)]
+
+
+var _checks: Dictionary = {}
+
+func _check_of(id: String) -> Dictionary:
+	if _checks.is_empty():
+		for file in ["res://data/items/starter_goals.json", "res://data/items/camp_goals.json"]:
+			var d: Variant = JSON.parse_string(FileAccess.get_file_as_string(file))
+
+			for row in ((d as Dictionary).get("goals", []) if d is Dictionary else []):
+				_checks[str(row.get("id", ""))] = row.get("check", {})
+
+	return _checks.get(id, {})
+
+
+func _count(item: String) -> int:
+	return int(r._count(item))
+
+
+# --- getting things -----------------------------------------------------------------------------------------------------------------
+# Have `n` of `item`: made from its hand recipe (its inputs got first), or gathered. `make` crafts even when the pack already holds it.
+func _have(item: String, n: int, make: bool) -> String:
+	var recipe: Dictionary = _recipe_for(item)
+
+	if not make and _count(item) >= n:
+		return ""
+
+	if recipe.is_empty():
+		return await _gather(item, n)
+
+	_depth += 1
+
+	if _depth > 6:
+		_depth -= 1
+		return "robot: the recipe chain for %s is too deep" % item
+
+	var runs: int = maxi(1, ceili(float(n - (0 if make else _count(item))) / float(maxi(1, int(recipe["gives"][1])))))
+	var why: String = ""
+
+	for need in recipe.get("needs", []):
+		why = await _have(str(need[0]), int(need[1]) * runs, false)
+
+		if why != "":
+			break
+
+	if why == "":
+		for keep in recipe.get("keeps", []):
+			why = await _tool(str(keep[0]))
+
+			if why != "":
+				break
+
+	_depth -= 1
+
+	if why != "":
+		return "for %s: %s" % [item, why]
+
+	return await _craft(recipe, runs)
+
+
+# A hand recipe (no station) that gives `item`, the first in recipes.json order that is known.
+func _recipe_for(item: String) -> Dictionary:
+	for key in r._recipes:
+		var row: Dictionary = r._recipes[key]
+
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station"):
+			return row
+
+	return {}
+
+
+# A kept tool (an item id, or a tool class such as "knife"): one in the pack, made if need be.
+func _tool(id: String) -> String:
+	if _tool_slot(id) >= 0:
+		return ""
+
+	for maker in ["stone_" + id, "wooden_" + id, id]:
+		if c.items.table.has_id(maker) and not _recipe_for(maker).is_empty():
+			return await _have(maker, 1, false)
+
+	if c.items.table.has_id(id):   # a kept material (a stone the hoe and wooden spear keep)
+		return await _gather(id, 1)
+
+	return "robot: no item found for the tool class %s" % id
+
+
+func _craft(recipe: Dictionary, runs: int) -> String:
+	var gives: String = str(recipe["gives"][0])
+	var before: int = _count(gives)
+	var hand: int = -1
+
+	for keep in recipe.get("keeps", []):
+		hand = _hold(str(keep[0]))
+
+	var said: int = r._notices.size()
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_QUEUE, int(recipe["number"]), 0, runs, Vector3(float(hand + 1), 0.0, 0.0))
+	var until: int = Time.get_ticks_msec() + int((float(recipe.get("craft_s", 5.0)) * float(runs) * 1.5 + 15.0) * 1000.0)
+
+	while _count(gives) < before + int(recipe["gives"][1]) * runs and Time.get_ticks_msec() < until:
+		await r._wait(0.3)
+
+	var got: int = _count(gives) - before
+	_line("MADE %d x %s (queued %d): %s%s" % [got, gives, runs, _pack(), _said(said)])
+
+	if got <= 0:
+		return "queued %d x %s with its needs in the pack; nothing came%s" % [runs, str(recipe.get("name", gives)), _said(said)]
+
+	return ""
+
+
+# The item (or one of the tool class) put in hand from the hotbar: its slot, or -1.
+func _tool_slot(id: String) -> int:
+	var inv = c.items.inventory
+
+	for n in range(inv.numbers.size()):
+		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
+
+		if item != "" and (item == id or str(c.items.table.entry(item).get("tool_class", "")) == id):
+			return n
+
+	return -1
+
+
+func _hold(id: String) -> int:
+	var slot: int = _tool_slot(id)
+	var inv = c.items.inventory
+
+	if slot < 0:
+		return -1
+
+	if not inv.on_hotbar(slot):   # a tool further in the pack goes to a free hotbar slot first, as a player drags it (the first slot if none is free)
+		var free: int = 0
+
+		for n in range(inv.slot_count):
+			if inv.on_hotbar(n) and int(inv.numbers[n]) <= 0:
+				free = n
+				break
+
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, slot, free, 0, Vector3.ZERO)
+		slot = free
+
+	if not (c.held.holding and c.held.held_slot == slot):
+		c.held.press_slot(slot)
+
+	return slot
+
+
+func _said(from: int) -> String:
+	var said: Array = r._notices.slice(from)
+	return "" if said.is_empty() else "; it said %s" % str(said)
+
+
+# Gather until the pack holds `n` of `item` (first-hand, as a player: E on loose items, plants and dead branches; wood by the axe).
+func _gather(item: String, n: int) -> String:
+	if item in ["log", "leaves", "bark", "firewood"]:
+		return await _wood(item, n)
+
+	var start: int = _count(item)
+	var until: int = Time.get_ticks_msec() + int(GATHER_S * 1000.0)
+	var said: int = r._notices.size()
+	var walks: int = 0
+	var presses: int = 0
+	var unreached: int = 0
+	var in_row: int = 0
+
+	while _count(item) < n and Time.get_ticks_msec() < until:
+		var spot: Dictionary = _nearest_source(item)
+
+		if spot.is_empty() and item in ["stone", "flint", "copper_ore", "tin_ore", "iron_ore"]:
+			var rock: int = _nearest_boulder()
+
+			if rock != 0:
+				_taken["rock%d" % rock] = true
+				await _break_rock(rock, item)
+				continue
+
+		if spot.is_empty() or in_row >= 3:
+			in_row = 0
+			walks += 1
+			_line("GATHER %s: nothing giving it within %.0f m of %s; walking on (%d)" % [item, SEARCH_M, str(c.body.global_position.round()), walks])
+			await r._go_to(c.body.global_position + Vector3.FORWARD.rotated(Vector3.UP, float(walks) * 0.8) * (30.0 + 10.0 * float(walks)), 30.0, 3.0)   # a widening spiral
+			continue
+
+		var at: Vector3 = spot["pos"]
+		_taken[_key(at)] = true
+
+		if not await r._go_to(at, 25.0, 1.4):
+			unreached += 1
+			in_row += 1
+			continue
+
+		in_row = 0
+
+		var had: int = _count(item)
+		await _press_e_at(at + (LOOK_UP if str(spot["kind"]) == "plant" else Vector3(0.0, 0.1, 0.0)))
+		presses += 1
+		var wait_until: int = Time.get_ticks_msec() + 2500
+
+		while _count(item) == had and Time.get_ticks_msec() < wait_until:
+			await r._wait(0.2)
+
+	var got: int = _count(item) - start
+	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks, %d out of reach%s" % [item, got, _count(item), n, presses, walks, unreached, _said(said)])
+
+	if _count(item) < n:
+		return "gathered %d %s in %.0f s (wanted %d more), %d E presses, %d sources out of reach%s" % [got, item, GATHER_S, n - start, presses, unreached, _said(said)]
+
+	return ""
+
+
+# The nearest boulder within SEARCH_M not yet worked (inventory_view.gd _boulders: stone, and the ore rocks).
+func _nearest_boulder() -> int:
+	var best: int = 0
+	var best_d: float = SEARCH_M
+
+	for id in c.items._boulders:
+		var d: float = (c.items._boulders[id]["pos"] as Vector3).distance_to(c.body.global_position)
+
+		if d < best_d and not _taken.has("rock%d" % int(id)):
+			best_d = d
+			best = int(id)
+
+	return best
+
+
+# Blows with the axe (or a pickaxe) on a boulder, as a player clicks at it, until it gives no more or 40 blows; then what fell is swept up.
+func _break_rock(rock: int, item: String) -> void:
+	var tool: String = "pick" if _tool_slot("pick") >= 0 else "axe"
+
+	if _tool_slot(tool) < 0 or _hold(tool) < 0:
+		return
+
+	var entry: Dictionary = c.items._boulders[rock]
+	var at: Vector3 = entry["pos"]
+	await r._go_to(at, 30.0, float(entry["radius"]) + 1.2)
+	var had: int = _count(item)
+	var said: int = r._notices.size()
+	var blows: int = 0
+
+	while blows < 40 and c.items._boulders.has(rock):
+		_look_at(at + Vector3(0.0, float(entry["radius"]) * 0.5, 0.0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		blows += 1
+		await r._wait(1.0)
+
+	await _sweep_up(6.0)
+	_line("ROCK %d at %s: %d blows with the %s, +%d %s%s" % [rock, str(at.round()), blows, tool, _count(item) - had, item, _said(said)])
+
+
+func _key(p: Vector3) -> String:
+	return "%d,%d" % [roundi(p.x * 2.0), roundi(p.z * 2.0)]
+
+
+# The nearest thing within SEARCH_M that gives `item`: a loose world item of it, a plant whose pick gives it, or (sticks) a dead branch.
+func _nearest_source(item: String) -> Dictionary:
+	var here: Vector3 = c.body.global_position
+	var best: Dictionary = {}
+	var best_d: float = SEARCH_M
+	var number: int = c.items.table.number_of(item) if c.items.table.has_id(item) else -1
+
+	for w in c.items._world:
+		var row: Dictionary = c.items._world[w]
+
+		if int(row.get("number", 0)) == number and not _taken.has(_key(row["pos"])):
+			var d: float = Vector2(row["pos"].x - here.x, row["pos"].z - here.z).length()
+
+			if d < best_d:
+				best_d = d
+				best = {"pos": row["pos"], "kind": "pickup"}
+
+	for chunk in c.flora._chunks:
+		var held: Dictionary = c.flora._chunks[chunk].get("items", {})
+
+		for k in range(held.get("ids", []).size()):
+			var p: Vector3 = held["positions"][k]
+			var d: float = Vector2(p.x - here.x, p.z - here.z).length()
+
+			if d >= best_d or _taken.has(_key(p)):
+				continue
+
+			var sp: Dictionary = c.flora._species.get(int(held["ids"][k]) >> 16, {})
+			var name: String = str(sp.get("name", ""))
+
+			if int(sp.get("kind", 0)) == 0 and not (_drops.get("fruit_tree", {}) as Dictionary).has(name):
+				continue
+
+			if item in (_gives.get(name, []) as Array):
+				best_d = d
+				best = {"pos": p, "kind": "plant"}
+
+	if item == "stick" and c.grass != null:
+		var branch: Dictionary = c.grass.branch_near(here, minf(best_d, 30.0))
+
+		if not branch.is_empty() and not _taken.has(_key(branch["pos"])):
+			best = {"pos": branch["pos"], "kind": "pickup"}
+
+	return best
+
+
+# Look at a point (the body turned, the camera pitched) and tap E as a player does.
+func _press_e_at(point: Vector3) -> void:
+	_look_at(point)
+	await r._wait(0.45)   # the harvest prompt is judged every 0.2 s
+	await r._tap("interact")
+	await r._wait(0.4)
+
+
+func _look_at(point: Vector3) -> void:
+	var eye: Vector3 = c.camera.global_position
+	var to: Vector3 = point - eye
+	var flat: float = Vector2(to.x, to.z).length()
+
+	if flat > 0.05:
+		r._face(Vector3(to.x, 0.0, to.z).normalized())
+
+	c.pitch = clampf(atan2(to.y, maxf(flat, 0.05)), -1.4, 1.4)
+
+
+# --- wood: fell a tree with the axe and work the trunk into logs, sticks, leaves and bark -------------------------------------------
+func _fell() -> String:
+	var why: String = await _tool("axe")
+
+	if why != "":
+		return why
+
+	return await _chop_one()
+
+
+func _wood(item: String, n: int) -> String:
+	var why: String = await _tool("axe")
+
+	if why != "":
+		return "for %s: %s" % [item, why]
+
+	var trees: int = 0
+
+	while _count(item) < n and trees < 3:
+		if item in ["leaves", "stick"]:   # an axe chops a bush into leaves and sticks (held_item.gd _strike, ACT_HIT_SHRUB)
+			await _chop_shrubs(8)
+
+			if _count(item) >= n:
+				break
+
+		why = await _chop_one()
+		trees += 1
+
+		if why != "":
+			return "for %s: %s" % [item, why]
+
+	return "" if _count(item) >= n else "felled and worked %d trees and had %d of %d %s" % [trees, _count(item), n, item]
+
+
+func _chop_one() -> String:
+	var slot: int = _hold("axe")
+
+	if slot < 0:
+		return "no axe in the pack to hold"
+
+	var trees: Array = r._trees_near(SEARCH_M)
+
+	if trees.is_empty():
+		await r._go_to(r._forest_spot() if not is_nan(r._forest_spot().x) else c.body.global_position + Vector3(0.0, 0.0, 60.0), 40.0, 4.0)
+		trees = r._trees_near(SEARCH_M)
+
+	if trees.is_empty():
+		return "no tree within %.0f m" % SEARCH_M
+
+	var here: Vector3 = c.body.global_position
+	trees.sort_custom(func(a, b): return (a[0] as Vector3).distance_to(here) < (b[0] as Vector3).distance_to(here))
+	var trunk: Vector3 = Vector3.INF
+
+	for tree in trees:   # the nearest the robot can walk up to (a trunk on a slope or behind a rock is passed by)
+		if _taken.has("tree" + _key(tree[0])):
+			continue
+
+		_taken["tree" + _key(tree[0])] = true
+
+		if await r._go_to(tree[0], 30.0, 1.6):
+			trunk = tree[0]
+			break
+
+	if trunk == Vector3.INF:
+		return "walked to %d trees and reached none within 1.6 m" % trees.size()
+
+	var known: Dictionary = c.items._world.duplicate()
+	var said: int = r._notices.size()
+	var swings: int = 0
+	var felled: bool = false
+	var until: int = Time.get_ticks_msec() + 120000
+
+	while Time.get_ticks_msec() < until and not felled:
+		_look_at(trunk + Vector3(0.0, 1.2, 0.0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		swings += 1
+		await r._wait(1.0)
+		felled = r._trees_near(3.0).filter(func(t): return (t[0] as Vector3).distance_to(trunk) < 0.5).is_empty()
+
+	_line("FELL tree at %s: %s after %d swings%s" % [str(trunk.round()), "down" if felled else "standing", swings, _said(said)])
+
+	if not felled:
+		return "swung the axe at a tree %d times over 120 s and it stood%s" % [swings, _said(said)]
+
+	await r._wait(4.0)   # it lands and becomes a trunk
+	var work: int = 0
+	var until_work: int = Time.get_ticks_msec() + 120000
+
+	while Time.get_ticks_msec() < until_work:
+		var piece: int = -1
+		var best: float = 25.0
+
+		for w in c.items._world:
+			if known.has(w):
+				continue
+
+			var d: float = (c.items._world[w]["pos"] as Vector3).distance_to(c.body.global_position)
+			var what: String = c.items.table.id_of(int(c.items._world[w].get("number", 0)))
+
+			if d < best and (what.begins_with("log") or what.contains("trunk") or what.contains("stump")):
+				best = d
+				piece = int(w)
+
+		if piece < 0:
+			break
+
+		var at: Vector3 = c.items._world[piece]["pos"]
+		await r._go_to(at, 15.0, 1.6)
+		_look_at(at + Vector3(0.0, 0.3, 0.0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		work += 1
+		await r._wait(1.0)
+
+		if work > 80:
+			break
+
+	_line("WOOD worked the tree in %d blows: %s" % [work, _pack()])
+	await _sweep_up(12.0)
+	return ""
+
+
+func _chop_shrubs(most: int) -> void:
+	var here: Vector3 = c.body.global_position
+	var bushes: Array = []
+
+	for chunk in c.flora._chunks:
+		var held: Dictionary = c.flora._chunks[chunk].get("items", {})
+
+		for k in range(held.get("ids", []).size()):
+			var p: Vector3 = held["positions"][k]
+
+			if int(c.flora._species.get(int(held["ids"][k]) >> 16, {}).get("kind", 0)) == 1 and p.distance_to(here) < 40.0 and not _taken.has("bush" + _key(p)):
+				bushes.append(p)
+
+	bushes.sort_custom(func(a, b): return (a as Vector3).distance_to(here) < (b as Vector3).distance_to(here))
+	var had: int = _count("leaves")
+	var said: int = r._notices.size()
+	var done: int = 0
+
+	for p in bushes.slice(0, most):
+		_taken["bush" + _key(p)] = true
+
+		if _hold("axe") < 0 or not await r._go_to(p, 15.0, 1.3):
+			continue
+
+		for n in range(4):
+			_look_at(p + Vector3(0.0, 0.5, 0.0))
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+			await r._wait(0.1)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+			await r._wait(1.0)
+
+		done += 1
+		await _sweep_up(3.0)
+
+	_line("BUSHES chopped %d of %d near: +%d leaves, pack %s%s" % [done, bushes.size(), _count("leaves") - had, _pack(), _said(said)])
+
+
+# Held E for `s` seconds: the sweep picks up what lies within 2 m, as a player clears up after a felling.
+func _sweep_up(s: float) -> void:
+	var start: Vector3 = c.body.global_position
+	r._key("interact", true)
+
+	for n in range(int(s)):
+		await r._go_to(start + Vector3(2.0, 0.0, 0.0).rotated(Vector3.UP, float(n) * 0.9), 1.0, 0.5)
+
+	r._key("interact", false)
+
+
+# --- fire: a campfire kit laid on open ground and lit (plant fibre is the tinder, cooking.json) -------------------------------------
+func _fire() -> String:
+	var why: String = await _have("campfire_kit", 1, false)
+
+	if why != "":
+		return why
+
+	why = await _have("plant_fibre", 3, false)
+
+	if why != "":
+		return "tinder: " + why
+
+	var slot: int = r._slot_of("campfire_kit")
+	var at: Vector3 = c.body.global_position - c.body.global_transform.basis.z * 2.5
+	var ground: float = float(c.items._ground_below.call(at))
+	at.y = ground if not is_nan(ground) else c.body.global_position.y - 0.9
+	var known: Dictionary = c.items._world.duplicate()
+	var said: int = r._notices.size()
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE, slot, 0, 0, at)
+	await r._wait(2.5)
+	var fire: int = -1
+
+	for w in c.items._world:
+		if not known.has(w) and (c.items._world[w]["pos"] as Vector3).distance_to(at) < 3.0:
+			fire = int(w)
+
+	if fire < 0:
+		return "laid the campfire kit 2.5 m ahead; no fire came%s" % _said(said)
+
+	_press_e_at(c.items._world[fire]["pos"])
+	await r._wait(3.0)
+
+	for n in range(4):   # sticks on, and lit (E on a laid fire; the call it makes if E gave another choice)
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
+		await r._wait(0.5)
+
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
+	await r._wait(3.0)
+	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
+	return ""
+
+
+# --- drink and eat --------------------------------------------------------------------------------------------------------------------
+func _drink() -> String:
+	var water: Vector3 = await r._find_water()
+
+	if is_nan(water.x):
+		return "no water in any loaded chunk"
+
+	await r._go_to(water, 90.0, 2.0)
+	var said: int = r._notices.size()
+	var found: Dictionary = {}
+
+	for pitch in [-0.5, -0.8, -0.3]:
+		_look_at(water)
+		c.pitch = pitch
+		await r._wait(0.4)
+		found = c.items.current_interaction()
+
+		if str(found.get("prompt", "")).contains("drink"):
+			break
+
+	_line("DRINK at %s, %.1f m from the water; E offers %s" % [str(c.body.global_position.round()), Vector2(water.x - c.body.global_position.x, water.z - c.body.global_position.z).length(), str(found.get("prompt", "nothing"))])
+
+	for n in range(3):
+		await r._tap("interact")
+		await r._wait(1.0)
+
+	return "" if str(found.get("prompt", "")).contains("drink") else "at the water's edge E offered no drink (%s)%s" % [str(found.get("prompt", "nothing")), _said(said)]
+
+
+func _eat_wild() -> String:
+	var food: String = ""
+
+	for item in ["wild_apples", "raspberries", "blackberries", "blueberries", "hazelnuts", "acorns"]:
+		if _count(item) > 0:
+			food = item
+
+	if food == "":
+		for item in ["raspberries", "blackberries", "blueberries", "wild_apples", "hazelnuts"]:
+			if not _nearest_source(item).is_empty():
+				var why: String = await _gather(item, 1)
+
+				if why == "":
+					food = item
+					break
+
+	if food == "":
+		return "found nothing wild to eat within %.0f m (berries, apples, nuts)" % SEARCH_M
+
+	var said: int = r._notices.size()
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_EAT, r._slot_of(food), 0, 0, Vector3.ZERO)
+	await r._wait(2.0)
+	_line("ATE %s%s" % [food, _said(said)])
+	return ""
+
+
+# --- the hoe treads a path toward the water ----------------------------------------------------------------------------------------
+func _path(strokes: int) -> String:
+	var why: String = await _tool("wooden_hoe")
+
+	if why != "":
+		return why
+
+	var slot: int = _hold("wooden_hoe")
+	await _walk_home(240.0)   # "from camp to the water": the path starts at the camp
+	var water: Vector3 = await r._find_water()
+	var dir: Vector3 = Vector3(water.x - c.body.global_position.x, 0.0, water.z - c.body.global_position.z).normalized() if not is_nan(water.x) else Vector3.FORWARD
+	var said: int = r._notices.size()
+
+	# Each stroke lands 1 m past the last along one line: the game lays nothing within 0.7 m (PATH_SPACING_M) of a patch.
+	# At the shore ("You cannot tread a path in water.") a player starts another line from the camp and keeps going until the goal counts.
+	var start: Vector3 = _home
+	var base: Vector3 = dir
+	var missed: int = 0
+	var sent: int = 0
+	var along: int = 0
+	var dry: int = 0
+	var turns: int = 0
+
+	for n in range(strokes * 2 + 6):
+		if bool(c.items.goal_book.row("path").get("done", false)):
+			break
+
+		# The goal's own count is the truth: two strokes in a row that laid nothing (water, a patch already there, a tree) and the robot turns.
+		# A new line out from the camp (round it by 70 degrees a time), so a turn never walks the robot along the shore into the water.
+		if dry >= 2:
+			turns += 1
+			dir = base.rotated(Vector3.UP, deg_to_rad(70.0) * float(turns))
+			start = _home
+			along = 0
+			dry = 0
+
+		var ground: Vector3 = start + dir * (1.5 + float(along))
+		along += 1
+		await r._go_to(ground - dir * 1.2, 6.0, 0.5)
+
+		if Vector2(ground.x - c.body.global_position.x, ground.z - c.body.global_position.z).length() > 2.5:
+			missed += 1
+			continue
+
+		var y: float = float(c.items._ground_below.call(ground))
+		ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+		var had: int = int(c.items.goal_book.row("path").get("have", 0))
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH, slot, 0, 0, ground)
+		sent += 1
+		await r._wait(0.8)
+		dry = dry + 1 if int(c.items.goal_book.row("path").get("have", 0)) == had else 0
+
+	_line("PATH %d hoe strokes toward the water, %d out of reach, %d turns, goal has %s%s" % [sent, missed, turns, str(c.items.goal_book.row("path").get("have", "?")), _said(said)])
+	return ""
+
+
+# --- a blueprint with the hammer: placed on open ground ahead, then hammered until it stands --------------------------------------
+func _build(structure: String) -> String:
+	var bp: Dictionary = _blueprints.get(structure, {})
+
+	if bp.is_empty():
+		return "robot cannot build %s: no hand blueprint for it" % structure
+
+	for cost in bp.get("cost", []):
+		var why: String = await _have(str(cost[0]), int(cost[1]), false)
+
+		if why != "":
+			return "materials for %s: %s" % [structure, why]
+
+	var why2: String = await _tool("stone_hammer")
+
+	if why2 != "":
+		return why2
+
+	var hammer: int = _hold("stone_hammer")
+
+	if not c.items._world.has(int(_sites.get(structure, -1))):
+		await _walk_home(240.0)   # a player builds at the camp, not at the shore where the last gather ended ("The ground is too wet here.")
+
+	var known: Dictionary = c.items._world.duplicate()
+	var said: int = r._notices.size()
+	var at: Vector3 = Vector3.ZERO
+	var site: int = int(_sites.get(structure, -1)) if c.items._world.has(int(_sites.get(structure, -1))) else -1   # a site placed on an earlier try
+
+	if site >= 0:
+		at = c.items._world[site]["pos"]
+	else:
+		for side in range(12):   # a player turns to open ground when the game says a tree is in the way
+			var heard: int = r._notices.size()
+			at = c.body.global_position - (c.body.global_transform.basis.z * (4.0 + 4.0 * float(side >= 4) + 4.0 * float(side >= 8))).rotated(Vector3.UP, float(side) * PI * 0.5)
+			var y: float = float(c.items._ground_below.call(at))
+			at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
+			await r._wait(3.0)
+
+			for w in c.items._world:
+				if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
+					site = int(w)
+
+			var told: String = str(r._notices.slice(heard))
+
+			if site >= 0 or not (told.contains("in the way") or told.contains("build away") or told.contains("too wet") or told.contains("in water") or told.contains("stands there")):
+				break
+
+		_sites[structure] = site
+
+	if site < 0:
+		return "placed the %s blueprint on open ground round the robot; no site came%s" % [structure, _said(said)]
+
+	await r._go_to(at, 10.0, 1.5)
+
+	for n in range(12):
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, site, hammer + 1, 0, Vector3.ZERO)
+		await r._wait(0.8)
+
+	_line("BUILT %s site %d at %s, drawn %s%s" % [structure, site, str(at.round()), str(c.items._world.get(site, {}).get("state", "gone")), _said(said)])
+	return ""
+
+
+# --- Hob: sell him something from the pack -------------------------------------------------------------------------------------------
+func _sell() -> String:
+	var hob: Vector3 = Vector3.INF
+	await _gather("plant_fibre", 50)   # Hob buys fibre in lots of 50 (server_trade.gd: "He buys plant fibres 50 at a time.")
+	var leg_s: float = await _walk_home(480.0)   # the starter camp, where Hob trades (NPCs are sent within 120 m)
+
+	await r._wait(3.0)
+	_line("HOME %.0f m from the start spot after %.0f s of walking, pack %s" % [c.body.global_position.distance_to(_home), leg_s, _pack()])
+
+	var seen: Array = c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []
+
+	for npc in seen:
+		if str(npc["id"]).to_lower().contains("hob") or str(npc["name"]).to_lower().contains("hob"):
+			hob = npc["pos"]
+
+	if hob == Vector3.INF:
+		return "Hob is not drawn anywhere on the client at the starter camp (people drawn: %s)" % str(seen.map(func(n): return "%s %s" % [str(n["id"]), str(n["name"])]))
+
+	await r._go_to(hob, 180.0, 2.5)
+	var said: int = r._notices.size()
+
+	for item in ["plant_fibre", "stone", "twine", "stick"]:
+		if _count(item) > 0 and not bool(c.items.goal_book.row("sell").get("done", false)):
+			c.net.trade.rpc_id(1, "hob", 1, r._slot_of(item), _count(item))
+			await r._wait(2.0)
+
+	var was_open: bool = c.items.dialogue_open   # a sale sends the shop back and the client opens its window, which holds the walk
+	_close_windows()
+	_line("SOLD to Hob (shop window opened %s, closed)%s" % [str(was_open), _said(said)])
+	return ""

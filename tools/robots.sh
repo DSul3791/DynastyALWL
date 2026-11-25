@@ -9,6 +9,7 @@
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 #   tools/robots.sh 1 drops               the link dies mid-action (6 twine queued, a basket open, asleep, in a wolf rush) and the robot comes
 #                                         straight back; a 10 s freeze; two clients as one character (about 15 min)
+#   ROBOT_S=2700 ROBOT_GOALS_S=2400 tools/robots.sh 1 goals   one new player through the goal list, no gifts (src/client/robot_goals.gd)
 #   ROBOT_S=400 tools/robots.sh 1 cold    a hard frost to 1 health, pass out, wake at a rescue spot; then goblin blows at health 1 (one robot only)
 #   ROBOT_S=200 tools/robots.sh 1 fight_goblin|fight_bandit [link]   a charging foe: shield at the warning, side-steps, jabs
 #   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
@@ -31,6 +32,7 @@ set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 [ "$PLAN" = "cold" ] && ROBOTS=1   # the frost and the control file are for one robot
 [ "$PLAN" = "together" ] || [ "$PLAN" = "seen" ] || [ "$PLAN" = "wiggle" ] || [ "$PLAN" = "pack_fuzz" ] && ROBOTS=2   # Robot 1 and Robot 2 each have their own part
+[ "$PLAN" = "goals" ] && ROBOTS=1   # one new player through the goal list (robot_goals.gd)
 [ "$PLAN" = "kind_wolf" ] && ROBOTS=1   # a pack leaves a player with another within 10 m (animals.json wolves): one robot, unarmed until bitten
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
