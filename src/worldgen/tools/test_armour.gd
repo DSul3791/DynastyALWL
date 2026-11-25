@@ -233,7 +233,7 @@ func _init() -> void:
 			for need in r["needs"]:
 				inv.add(filler(int(need[0])), int(need[1]))
 
-			for keep in r.get("keeps", []):   # a kept tool must be in hand (protocol 126): given, so it lands on a hotbar key for CraftHand.at
+			for keep in r.get("keeps", []):   # a kept tool counts from the pack (#1888): given, so it lands on a hotbar key for CraftHand.at
 				items.give(1, filler(int(keep[0])), int(keep[1]))
 
 			items._last_queue_act.clear()

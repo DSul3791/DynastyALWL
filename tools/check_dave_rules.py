@@ -10,9 +10,7 @@ as OPEN and do not fail the merge; take a key out once its fix is in.
 import json, pathlib, re, sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
-KNOWN_OPEN = {
-    "R-HUNT-GLOW": "found 25 Nov 2026: the sign halo starts at Tracking 10, the ruling says 25; fix in the next PR",
-}
+KNOWN_OPEN = {}
 GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-ANIMAL-BEAR": ["test_bear_threat"],
     "R-ANIMAL-FIRE": ["test_big_game", "test_wolf_pups"],

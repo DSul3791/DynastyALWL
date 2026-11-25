@@ -1586,7 +1586,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 				return   # alarmed into the air
 
 	# A player who has come between a mother and her young (near one of them) is attacked at once, unless the player is in a fire's or a
-	# torch's light: fire keeps everything away from the players (Dave 25 Nov 2026; it was "torch or not").
+	# torch's light: fire keeps everything away from the players (Dave 25 Nov 2026, docs/RULINGS.md R-ANIMAL-FIRE).
 	if def.has("defend") and def.has("young") and seen_p != Vector3.INF and _fire_guard(seen_p) == Vector3.INF:
 		for kid in _young_of(a):
 			if Vector2(seen_p.x - animals[kid]["pos"].x, seen_p.z - animals[kid]["pos"].z).length() <= float(def["young"].get("between_m", 8.0)):

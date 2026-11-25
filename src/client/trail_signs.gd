@@ -4,7 +4,7 @@ extends Node3D
 # scrapes where runs of different warrens meet, deer prints where a trail crosses wet ground, deer droppings by the bed. Worked out on
 # this client from the routes the server already sends with the trail blocks (route[0] is the place's home), hashed from the spot, so
 # every player sees the same sign in the same place (rubbed trees: once the same trees are loaded); no messages, no server work. Shown to
-# everyone (Dave 23 Nov 2026), within draw_m by Tracking, with a faint halo from halo_from.
+# everyone (Dave 23 Nov 2026), within draw_m by Tracking, with a faint halo from halo_from within halo_reach_m.
 # Nothing is worked out or drawn while the world is loading round the player (the first-join window), and only
 # when the routes near the player change, the player has moved rebuild_move_m or the level changed; then only the routes with a point
 # within reach + NEAR_PAD_M are worked out, so water and ground loaded since the last time are read afresh. One MultiMesh per layer (pellets, beds of latrines, scrapes, prints, rubs, halo), no shadows; the materials are plain
@@ -420,6 +420,7 @@ func _draw(player: Vector3, level: int) -> void:
 	var rows: Dictionary = {"latrine_bed": [], "pellet": [], "deer_pellet": [], "scrape": [], "print": [], "hop": [], "rub": [], "mound": [], "halo": []}
 	var at: Vector2 = Vector2(player.x, player.z)
 	var halo: float = halo_alpha(level, cfg)
+	var halo_reach: float = halo_reach_m(level, cfg)
 	unplaced = 0
 
 	for s in _signs:
@@ -434,7 +435,7 @@ func _draw(player: Vector3, level: int) -> void:
 
 		_lay(str(s[0]), spot, float(s[2]), rows)
 
-		if halo > 0.0:
+		if halo > 0.0 and spot.distance_to(at) <= halo_reach:
 			_lay_halo(str(s[0]), spot, float(s[2]), rows)
 
 	if _nodes.has("halo") or not (rows["halo"] as Array).is_empty():
@@ -502,14 +503,26 @@ static func compass(way: Vector2) -> String:
 
 
 # How strongly a skilled eye picks sign out (Dave 23 Nov 2026: "if you have a higher tracking skill maybe they get highlighted or glow a
-# little"): nothing under halo_from, halo_alpha[0] there rising to halo_alpha[1] at 100.
+# little"; from 25 "at a close distance say 10 meters even further at higher levels"): nothing under halo_from, halo_alpha[0] there
+# rising to halo_alpha[1] at 100.
 static func halo_alpha(level: int, c: Dictionary) -> float:
-	var from: int = int(c.get("halo_from", 10))
+	var from: int = int(c.get("halo_from", 25))
 
 	if level < from:
 		return 0.0
 
 	var span: Array = c.get("halo_alpha", [0.15, 0.4])
+	return lerpf(float(span[0]), float(span[1]), clampf(float(level - from) / maxf(100.0 - float(from), 1.0), 0.0, 1.0))
+
+
+# How far from the player a shown sign gets its halo: none under halo_from, halo_reach_m[0] there to halo_reach_m[1] at 100.
+static func halo_reach_m(level: int, c: Dictionary) -> float:
+	var from: int = int(c.get("halo_from", 25))
+
+	if level < from:
+		return 0.0
+
+	var span: Array = c.get("halo_reach_m", [10.0, 30.0])
 	return lerpf(float(span[0]), float(span[1]), clampf(float(level - from) / maxf(100.0 - float(from), 1.0), 0.0, 1.0))
 
 

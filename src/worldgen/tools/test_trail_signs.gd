@@ -195,6 +195,9 @@ func _init() -> void:
 	check(is_zero_approx(SignsScript.halo_alpha(from - 1, c)) and SignsScript.halo_alpha(from, c) > 0.0, "no highlight under halo_from, a faint one from it")
 	check(SignsScript.halo_alpha(50, c) > SignsScript.halo_alpha(25, c) and is_equal_approx(SignsScript.halo_alpha(100, c), float(c["halo_alpha"][1])), "the highlight grows with skill to halo_alpha at 100")
 	check(SignsScript.halo_alpha(100, c) < float(c["glow_alpha"]), "even at 100 the steady highlight is fainter than the spot glow")
+	# Dave 23 Nov 2026 (RULINGS.md R-HUNT-GLOW): the glow starts at Tracking 25, "at a close distance say 10 meters even further at higher levels".
+	check(from == 25 and is_zero_approx(SignsScript.halo_alpha(24, c)) and is_zero_approx(SignsScript.halo_reach_m(24, c)), "no glow below Tracking 25")
+	check(is_equal_approx(SignsScript.halo_reach_m(25, c), 10.0) and SignsScript.halo_reach_m(60, c) > 10.0 and SignsScript.halo_reach_m(100, c) <= float(c["draw_m"][1]) + 0.01, "at 25 the glow reaches 10 m, farther with skill, never past the signs' reach")
 	check(is_equal_approx(SignsScript.reach_m(int(c["see_level"]), c), float(c["draw_m"][0])) and is_equal_approx(SignsScript.reach_m(100, c), float(c["draw_m"][1])), "seen from 15 m at first, 30 m at 100")
 
 	# The node: nothing while loading; drawn round the player once loaded; gone when the routes go (settled ground).
@@ -296,6 +299,11 @@ func _init() -> void:
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown == drawn, "and the same again with it")
 	check(view._nodes.has("halo") and (view._nodes["halo"] as MultiMeshInstance3D).multimesh.instance_count > 0 and is_equal_approx((((view._nodes["halo"] as MultiMeshInstance3D).multimesh.mesh as PrimitiveMesh).material as StandardMaterial3D).albedo_color.a, SignsScript.halo_alpha(80, c)), "at Tracking 80 the signs carry a halo of halo_alpha(80)")
+	view._next_msec = 0
+	view.update(Vector3(120.0, 5.0, 110.0), 20, false)
+	check((view._nodes["halo"] as MultiMeshInstance3D).multimesh.instance_count == 0, "at Tracking 20 no sign glows (RULINGS.md R-HUNT-GLOW)")
+	view._next_msec = 0
+	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	var reading: Array = view.readable(stand, 80)
 	var read_ok: bool = not reading.is_empty()
 
