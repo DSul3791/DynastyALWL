@@ -109,6 +109,7 @@ func _init() -> void:
 	check(ops.count == 2 and FileAccess.file_exists(log_path + ".unfinished") and FileAccess.file_exists(log_path + ".unfinished.1"), "a second cut keeps the first set-aside log (digs.dat.unfinished.1 beside it)")
 
 	# The block store's start: a cut throws away the settled copies (they may hold the cut edits).
+	ops = null   # closes digs.dat first: Windows cannot delete a file that is still open, so the wipe left the old 2-edit log (main gate W, Lane A)
 	wipe(dir)
 	ops = GroundOps.new()
 	ops.open(log_path)
@@ -146,7 +147,9 @@ func _init() -> void:
 	items.save()   # nothing else changed
 	items._finish_writer()
 	check(ItemsScript.header_digs(dir) == 9, "a dig or fill that changed no item still brings a save, so a clean stop never drops it (%d)" % ItemsScript.header_digs(dir))
-	FileAccess.open(dir + "/world_items.json", FileAccess.WRITE).store_string("{torn")
+	var torn_file: FileAccess = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
+	torn_file.store_string("{torn")
+	torn_file.close()   # closed now: an open temporary stays open to the end of _init, and Windows cannot replace or delete an open file
 	check(ItemsScript.header_digs(dir) == 7, "a damaged header: the count of its .prev, as the items load reads it (%d)" % ItemsScript.header_digs(dir))
 	DirAccess.copy_absolute(dir + "/world_items.json.prev", dir + "/world_items.json")
 	items._finish_writer()
