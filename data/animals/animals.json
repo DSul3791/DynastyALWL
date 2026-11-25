@@ -971,7 +971,7 @@
 				"range_m": 80.0,
 				"fish_share": 0.5
 			},
-			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving is not built (no hunger for bears yet). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
+			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 12.0,
@@ -1392,7 +1392,7 @@
 			"spawn_share": 0.3,
 			"health": 90.0,
 			"protective_share": 0.0,
-			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving is not built (no hunger for bears yet). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
+			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 10.0,
@@ -4309,6 +4309,7 @@
 		"action_heard_x": {"blow": 1.4, "hurt": 1.25, "dig": 1.25, "craft": 1.1},
 		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
 	},
+	"run_down": {"note": "ANIMAL_SCENARIOS gap 11 (25 Nov 2026): a player who keeps within corner_m of a fleeing big animal for corner_s has cornered it: one that may fight, or a bear, turns and warns, then fights; one that will not lashes out once if the player is on it, else runs on (server_animals._run_down). Never at a player in a fire's or a torch's light.", "corner_m": 10.0, "corner_s": 5.0},
 	"hunger": {
 		"note": "ANIMAL_SCENARIOS gap 10 (25 Nov 2026; Dave: a bear \"should have run away unless it was starving or trapped\"): a species with a hunger row is born starving at its row's season chance (spring after the den and late winter for bears; winter for the northern cats). A starving one does not run from a player: it stands its ground and warns by the ladder at threat_x its threat range, whatever its temperament; it comes for food left out (this thief row: it is not put off by a player beyond scare_m) and takes it away to eat. It never comes into a fire's or a torch's light. A poor food year is not modelled yet.",
 		"threat_x": 1.5,

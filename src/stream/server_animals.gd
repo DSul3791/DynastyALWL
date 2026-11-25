@@ -1743,6 +1743,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		return
 
+	if a["state"] == FLEE and def.has("defend") and _run_down(a, def, near_d, near_p, dt):
+		return
+
 	var speed: float = float(def.get("walk_mps", 1.5))
 
 	if stalk_mps > 0.0:
@@ -1906,6 +1909,31 @@ func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt:
 	a["target"] = a["pos"]
 	a.erase("trip")
 	return true
+
+
+# Cornered by a chase (docs/design/ANIMAL_SCENARIOS.md gap 11): a player who keeps within run_down.corner_m of a fleeing big animal for
+# run_down.corner_s has run it down. One that may fight, or a bear (trapped_fights; Dave: it fights when "trapped"), turns and fights:
+# warn first, always. One that will not fight lashes out once if the player is on it (break_away), else runs on. Never at a player in
+# a fire's or a torch's light. True when it turned.
+func _run_down(a: Dictionary, def: Dictionary, near_d: float, near_p: Vector3, dt: float) -> bool:
+	var row: Dictionary = cfg.get("run_down", {})
+
+	if near_p == Vector3.INF or near_d > float(row.get("corner_m", 10.0)):
+		a.erase("chased_s")
+		return false
+
+	a["chased_s"] = float(a.get("chased_s", 0.0)) + dt
+
+	if float(a["chased_s"]) < float(row.get("corner_s", 5.0)) or _fire_guard(near_p) != Vector3.INF:
+		return false
+
+	a.erase("chased_s")
+	var fights: bool = bool(def["defend"].get("trapped_fights", false))
+
+	if (fights or may_attack(a)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2)), fights):
+		return true
+
+	return big_game.break_away(a, near_p)
 
 
 # A hurt animal whose flight is over (no player within safe_m) does not stop at once (docs/design/ANIMAL_SCENARIOS.md gap 8; TPWD: a hit deer
