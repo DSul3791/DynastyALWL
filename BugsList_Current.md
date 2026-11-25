@@ -1614,7 +1614,7 @@ Not yet played.
 
 ## 138. Prompts to pick fruit and drink water do not say which key
 
-**Status: Not fixed - needs detail.** The exact wording the tester saw has not been found in the game's text yet. Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). The text should name the key, and say where fresh water is when sea water cannot be drunk. The sea half is now entry 141 (too salty, find fresh water); the fruit key half still needs the wording.
+**Status: Implemented - awaiting player verification.** Tester DungeonMaster, build 9257, [QA #8](https://github.com/DSul3791/DynastyALWL-QA/issues/8) ("game says pick fruit, no indication what button it is"; "game says drink water, where? can't drink at ocean"). Dave, 25 Nov 2026: "if you look at a fruit tree or bush or anything in the game that has the ability to be used by pressing e it should say Press E to ... if you have inspect mode on." (R-HUD-PROMPTS.) Every E action the client offers now carries a prompt that names its key; `tools/check_dave_rules.py` fails a merge if one does not (45 found). The one gap was the work station prompt ("Press F to use the ..."), which now says "Press E or F". Prompts still show only in inspect mode. The sea half is entry 141 (too salty, find fresh water). Not yet played.
 
 ## 139. The till and plant grid goes behind the player; Plant shows squares, not dots
 
@@ -1657,6 +1657,18 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 ## 148. Animal sign glowed from Tracking 10, the ruling says 25
 
 **Found by:** rule check (`tools/check_dave_rules.py`, R-HUNT-GLOW), 25 Nov 2026. Dave, 23 Nov 2026: "you will start seeing some animal signs glowing at a close distance say 10 meters even further at higher levels." **Status: Implemented - awaiting player verification** (PR #1923).
+
+## 149. The inventory character should face you and turn with the mouse
+
+**Found by:** tester list, Dave's pick, 25 Nov 2026: "the character int he inventory should face forward on opening inventory and you should be able to crab and rotate the doll with the mouse." **Status: Implemented - awaiting player verification.** The figure on the I screen faces the player every time the screen opens; holding the left mouse button on it and dragging sideways turns it (you_column.gd; test_you_column). Not yet played; the facing has not been seen on screen.
+
+## 150. A tree falling used a made-up crash sound
+
+**Found by:** tester list, Dave's pick, 25 Nov 2026: "included a tree falling sound from Pixabay.com royalty free etc etc". **Status: Implemented - awaiting player verification.** Dave's recording is now the crash when a felled tree hits the ground (recorded/trees/tree_crash_0.ogg; credits row in assets/audio/CREDITS.csv; notes in assets/audio/README.md). It plays from the tree (directional) like before. Not yet played.
+
+## 151. The witness tree's whole canopy glows violet at night
+
+**Found by:** Dave, his own play, 25 Nov 2026: "I have noticed these trees at night and its not just the veins its the entire canopy is glowing violet. which is not per the design." (R-FLORA-WITNESS-GLOW.) **Status: Implemented - awaiting player verification.** Two causes: the leaf shader lit every leaf at 60 to 100% of the glow, not only the veins, and each grown witness tree hung a violet light in its crown (45% of its height, reaching 60% of it) that lit the whole canopy from inside. Now only the violet vein lines in the leaf texture glow (flora_view.gd FOLIAGE_SHADER vein_mask), and the tree sends no light (data/tables/flora.json). The everember was checked: its glow is already only in its bark veins, and its light stays at 2 m to light the ground. Guarded by `tools/check_dave_rules.py`. Not yet played; needs a night picture near and far.
 
 ## Rewrite interpretation
 
