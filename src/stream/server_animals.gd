@@ -1788,6 +1788,10 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if def.has("defend") and pinned and near_d <= float(def["defend"].get("corner_m", 7.0)) and big_game.warn(a, near_p, float(def["defend"].get("corner_warn_s", 1.2)), bool(def["defend"].get("trapped_fights", false))):
 				return
 
+			# One that will not fight lashes out once to get free when the player is on it (gap 3), then runs.
+			if def.has("defend") and pinned and big_game.break_away(a, near_p):
+				return
+
 			# Still too close: keep running away from the player, by a way it can go (_flee_target), or at bay when there is none.
 			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z).normalized()
 
@@ -2749,6 +2753,11 @@ func _flee_target(a: Dictionary, from: Vector3, away: Vector2, def: Dictionary, 
 			var trap: Dictionary = def.get("defend", {})
 
 			if bool(trap.get("trapped_fights", false)) and Vector2(from.x - a["pos"].x, from.z - a["pos"].z).length() <= float(trap.get("corner_m", 7.0)) and big_game.warn(a, from, float(trap.get("corner_warn_s", 1.2)), true):
+				return
+
+			# Any other kind with nowhere to go and the player on it lashes out once to get free, then runs (gap 3: a cornered deer strikes
+			# with its fore hooves, a kangaroo kicks); one that may fight warns first, as it always has.
+			if not trap.is_empty() and big_game.break_away(a, from):
 				return
 
 			a["state"] = ALERT   # cornered: it stands at bay facing the threat, not spinning (_at_bay), then tries again
