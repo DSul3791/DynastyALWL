@@ -9,7 +9,7 @@ Server/client split plan step C4 (`/mnt/project-files/server-client-split/PLAN.m
 - `Dockerfile`: stage 1 makes the engine (Godot 4.7.2 with Voxel Tools 1.7, headless, by `tools/build_godot_linux.sh`, about 30 to 40 minutes the first time, then cached), or takes a ready binary from `deploy/server/engine/godot`. Stage 2 is Ubuntu 24.04 with the engine and the project in `/game`, imported once at build time.
 - It runs the project from source with that engine (`godot --headless --path /game ... terrain_server.tscn -- --dedicated --store=/data/store`), because there are no export templates for our engine yet (plan C1). When C1 lands, the image switches to the exported "Linux Server" preset.
 - `run_server.sh` is the container's first process. `docker stop` sends it TERM; it writes `stop.now`, and the server saves and closes with exit 0 (plan A4, PR #1274). Compose allows 90 s for that.
-- Everything the server writes lives in the `/data` volume: `/data/store` (ground edits, characters, chests, `admin.json`, `logs/`, `server_run.json`) and Godot's user folder under `/data/home`. A new image keeps the volume, so the world carries on.
+- Everything the server writes lives in the `/data` volume: `/data/store` (ground edits, characters, chests, `admin.json`, `logs/`, `server_run.json`) and Godot's user folder under `/data/home`. A restart keeps the volume, so the world carries on; a new build is a clean install that removes it ("Another build" below).
 - The world (the nine baked tiles of `worlds/base_world`) is inside the image.
 - Health check: healthy once `/data/store/server_run.json` says `running` (the server is listening).
 
@@ -38,13 +38,20 @@ To skip the engine compile, copy a ready Linux engine (for example David4's engi
 5. Name, message and password (optional; `docs/design/SERVER_PICK_PAGE.md`): the store's `server.json`, for example `{"name": "Hannibal's House", "message": "Bring an axe.", "password": "your password"}`, copied in the same way as `admin.json` (`.../data/store/server.json`), then `docker restart dynasty-server`. At start the server replaces `password` in that file with a salted hash, so the password itself is not kept on disk. Or set the password without a file: `DYNASTY_SERVER_PASSWORD=your-password docker compose -f compose.yaml up -d` (compose passes it in; it is only hashed in memory and wins over the file). The start line in `docker logs dynasty-server` says "password: on" or "off". No password = anyone with the address may join. Players get three tries; a computer that gets it wrong five times in a minute waits a minute.
 6. The router forwards UDP 24600 and TCP 24601 to the gaming server. The server pick page asks for each server's name, players and padlock on TCP 24601, so it must be forwarded too.
 
-Stop: `docker compose -f compose.yaml down` (saves first). Run without compose, give `docker run` and `docker stop` `--stop-timeout 90` / `-t 90`, or docker kills it after 10 s. Another build: load the new image, then `docker compose -f compose.yaml up -d`. Go back a build: `DYNASTY_TAG=dev-<commit> docker compose -f compose.yaml up -d`.
+Stop: `docker compose -f compose.yaml down` (saves first). Run without compose, give `docker run` and `docker stop` `--stop-timeout 90` / `-t 90`, or docker kills it after 10 s.
+
+Another build is always a clean install (Dave 25 Nov 2026: "the server is always a clean install no keeping backups"; "our backup is in github"; "and on my computer"). Nothing is backed up on the server and there is no going back to an older build there: a broken build is fixed by a new build. In /home/dave/dynasty, with the new tar and compose.yaml copied in (step 2), and `<old>` the build running now (`docker images dynasty-server` shows its tag):
+1. `docker compose -f compose.yaml down`
+2. Optional, keep the settings that are not in GitHub (steps 4 and 5): `docker run --rm -v dynasty_dynasty-data:/data -v /home/dave/dynasty:/keep ubuntu sh -c "cp /data/store/admin.json /keep/ 2>/dev/null; cp /data/store/server.json /keep/ 2>/dev/null; ls -l /keep/admin.json /keep/server.json"`
+3. Remove the old world, the old image (its Dynasty tags only; never `docker system prune`, the machine runs other servers) and any old backup or tar files: `docker volume rm dynasty_dynasty-data`, `docker image rm dynasty-server:build-<old> dynasty-server:latest`, `rm -f dynasty-data-build-*.tgz; find . -maxdepth 1 -name 'dynasty-server-build-*.tar' ! -name 'dynasty-server-build-<N>.tar' -delete`
+4. `docker load -i dynasty-server-build-<N>.tar`, then `rm dynasty-server-build-<N>.tar`. A prebuilt ground pack, if the build has one, is installed now ("Prebuilt ground" below, step 3).
+5. `docker compose -f compose.yaml up -d`; if the settings were kept, put them back with the two `docker exec ... cat > /data/store/admin.json` / `server.json` lines of steps 4 and 5, then `docker restart dynasty-server`.
 
 The store under bad luck (#1822). Lines to watch for in `docker logs dynasty-server`:
 - `Terrain server: cannot start: ... the store folder ... cannot be written. The store is left as it was` means the store is read-only, owned by another user, or the disk is full. The server exits and saves nothing over the store. Fix the folder (owner `dynasty`, writable, space free), then start it again. The start check writes and removes `write_check.json` in the store.
 - `SERVER SAVE FAILED: ...` means a save could not be written, most often because the disk is full. The server keeps running, the store stays the last whole save, and the next save tries again. If these lines repeat, free space on the disk.
 - `server save: X is from save N, which stopped before it finished ...` appears after a hard stop (a kill or power loss mid-save). X is read from the last whole save, so packs and chests agree, and the half-written file is kept beside it as `X.unfinished`. The `.unfinished` files are safe to leave or to delete once the server has started.
-Back up and restore the store with `tar --numeric-owner` (and `-p` on restore), so the files stay owned by the `dynasty` user. `tools/crash_drill.py --from-store <copy or tar>` kills a server on a throwaway copy of a store, round after round, and checks the store each time. Never point it at the live volume.
+`tools/crash_drill.py --from-store <copy or tar>` kills a server on a throwaway copy of a store, round after round, and checks the store each time. Never point it at the live volume.
 
 CPU setting (Dave 23 Nov 2026: "make the thread/core count a setting we can set for the server to be allowed to use"): `DYNASTY_SERVER_CPUS` in
 compose.yaml, default **4**, is how many CPU threads the server plans its own threads round: the main thread, `N - 1` ground makers
@@ -70,8 +77,7 @@ before. The pack also holds the tiles' trees and plants (flora_pack/); the serve
    pack's size on disk; a stopped run goes on when run again with the same N). (`--tiles=nine` for all nine tiles, about 6 hours and 55-90 GB plus about 4.5 GB of plants; `--threads=N` to leave the PC some room). It ends with a
    `prebuild_ground: DONE` line.
 2. Copy it over: `scp -r E:\Software\godotDev\ground_pack dave@192.168.0.108:/home/dave/dynasty/`
-3. Install it, on the server, with the server stopped (a fresh world, or over the current one: digs and fills are kept):
-   `docker compose -f compose.yaml down`, then
+3. Install it, on the server, with the server stopped. The normal case is a new build's clean install, after its step 4 (installing over a running world also works, digs and fills are kept, but a new build never keeps the world):
    `docker compose -f compose.yaml run --rm --no-deps -v /home/dave/dynasty/ground_pack:/pack:ro --entrypoint godot dynasty-server --headless --path /game --script res://src/worldgen/tools/install_ground.gd -- --pack=/pack --store=/data/store`
    which ends with `install_ground: DONE` (or `install_ground: FAILED: <why>`, the store left as it was; after a crash the server's
    run note still says running: add `--server-stopped` at the end once `docker ps` shows the server is down), then

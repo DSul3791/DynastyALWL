@@ -51,7 +51,7 @@ Every game start also FAILs when Windows logged an Application Error for that in
 
 Docker steps have time limits too. A test container or install left by a cut-off run is removed at the next run. The `docker load` also tags the image `dynasty-server:latest` on that PC, as `make_release.ps1` already did. `-NoServer` skips steps 3 to 5. Logs are in `..\dynasty_export\build-<N>\first_run\`; record the driver lines, the ground ready line and the longest FREEZE with the run.
 
-On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then `docker load -i dynasty-server-build-<N>.tar` and `docker compose -f compose.yaml up -d` (SERVER.md has admin keys, password and ports).
+On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then follow the clean-install steps in deploy/server/SERVER.md ("Another build": the old world, image and files are removed, nothing is backed up on the server; it also has admin keys, password and ports).
 
 Players: download `DynastySetup-<N>.exe` from the release and run it. Windows SmartScreen warns about an unsigned program: More info, then Run anyway. The server refuses any other build, so when a new build is released, everyone installs it over the old one (the full updater, plan step A6, comes later).
 
