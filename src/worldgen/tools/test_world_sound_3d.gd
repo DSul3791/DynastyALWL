@@ -427,17 +427,17 @@ func _animal_checks(world: Node3D) -> void:
 	bear.global_position = Vector3(0.0, 0.0, -8.0)
 	var before_follow: int = creatures.get_child_count()
 	check(creatures.call_at("bear", bear.global_position, "threat", bear), "the bear's warning plays")
-	var voice: Array = _made(creatures, before_follow)
-	check(voice.size() == 1, "one voice for the warning")
+	var growl: Array = _made(creatures, before_follow)
+	check(growl.size() == 1, "one voice for the warning")
 
-	if voice.size() == 1:
+	if growl.size() == 1:
 		bear.global_position = Vector3(30.0, 0.0, -40.0)   # it runs on while it growls
 		creatures._process(0.016)
-		check((voice[0] as Node3D).global_position.is_equal_approx(bear.global_position), "the growl moves with the running bear (%s)" % str((voice[0] as Node3D).global_position))
+		check((growl[0] as Node3D).global_position.is_equal_approx(bear.global_position), "the growl moves with the running bear (%s)" % str((growl[0] as Node3D).global_position))
 		var last: Vector3 = bear.global_position
 		bear.free()
 		creatures._process(0.016)
-		check((voice[0] as Node3D).global_position.is_equal_approx(last) and not (voice[0] as Node).has_meta("follow"), "a body gone leaves the call where it was last")
+		check((growl[0] as Node3D).global_position.is_equal_approx(last) and not (growl[0] as Node).has_meta("follow"), "a body gone leaves the call where it was last")
 
 	creatures._threat_until.clear()
 	var still: int = creatures.get_child_count()
