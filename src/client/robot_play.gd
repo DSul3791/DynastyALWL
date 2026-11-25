@@ -19,7 +19,7 @@ extends Node
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
 # out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), seen (one robot raises and draws a bow, then fishes; the other checks what it draws), wiggle (one robot runs back and forth across a spot; the other measures how far off its path it draws it), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count), pack_fuzz (two robots at random in the pack and one
-# shared basket: src/client/robot_pack_fuzz.gd). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
+# shared basket: src/client/robot_pack_fuzz.gd), measure (the Measure this machine table, src/debug/machine_probe.gd). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
@@ -635,6 +635,8 @@ func run() -> void:
 		await _kind(plan.trim_prefix("kind_"))
 	elif plan == "route":
 		await _route()
+	elif plan == "measure":
+		await _measure()
 	elif plan == "moves":
 		await _moves()
 	elif plan == "moves_built":
@@ -3434,6 +3436,18 @@ func _quit_at_once() -> void:
 
 	FreezeWatchScript.printer.line("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1
+
+
+# The "Measure this machine" table (src/debug/machine_probe.gd) from the command line: Low, Medium and High standing in place, slowly
+# turning; the table goes to the log and user://machine_run.txt. For lane runs that stand in for a slower machine (cores capped).
+func _measure() -> void:
+	_step = "measure"
+	client._machine_probe.toggle()
+
+	while client._machine_probe.running():
+		await get_tree().process_frame
+
+	FreezeWatchScript.printer.line("ROBOT %s step measure: done" % robot_name)
 
 
 # Plan route (lag lane 23 Nov 2026, coordinator: "hitches while moving, which is how people really play"): a fixed route a new player takes,
