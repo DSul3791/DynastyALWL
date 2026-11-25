@@ -3,7 +3,7 @@
 	"goals": [
 		{
 			"id": "torch_night",
-			"title": "Light the night",
+			"title": "Make a torch",
 			"hint": "Craft a Simple - Torch from a stick, a twine and a plant fibre, and carry it after dark.",
 			"after": [
 				"fire"
@@ -48,7 +48,7 @@
 		},
 		{
 			"id": "candle",
-			"title": "Work by candlelight",
+			"title": "Make a candle",
 			"hint": "Render 2 animal fat into tallow at the campfire pot, then make candles (tallow and a plant fibre) to light your shelter. Rabbits give no fat: hunt a deer, boar or badger for it.",
 			"after": [
 				"shelter",
@@ -163,8 +163,8 @@
 		},
 		{
 			"id": "fruit_store",
-			"title": "Fill a Storage barrel with food for winter",
-			"hint": "A winter lasts 91 days and you eat about 2,500 kcal a day: about 2,000 apples' worth. Pick fruit in season (July to November) and dry, smoke or salt what will not keep, then open your food store with F and put food in: 1,000 for the first Storage barrel. Keeping apples, winter pears and dried or smoked food last into spring; cherries and plums do not.",
+			"title": "Store food for winter",
+			"hint": "A winter lasts 91 days and you eat about 2,500 kcal a day: about 2,000 apples' worth. Pick fruit in season (July to November) and dry, smoke or salt what will not keep, then open your food store with F and put food in until 1,000 are stored. Later a Storage barrel holds the most. Keeping apples, winter pears and dried or smoked food last into spring; cherries and plums do not.",
 			"after": [
 				"food_basket",
 				"berries"
@@ -196,7 +196,7 @@
 		},
 		{
 			"id": "winter_food",
-			"title": "Fill a second Storage barrel for winter",
+			"title": "Store enough food for the whole winter",
 			"hint": "Keep storing food that keeps until 2,000 are put away, enough to eat through the whole winter.",
 			"after": [
 				"fruit_store"
@@ -259,7 +259,7 @@
 		},
 		{
 			"id": "winter_store",
-			"title": "Fill your winter store",
+			"title": "Pack food that keeps",
 			"hint": "Hold 5 foods that keep: smoked fish, jerky, dried berries, salted fish, trail bread.",
 			"after": [
 				"smoke_fish",
@@ -432,6 +432,103 @@
 			"stage": "copper_bronze"
 		},
 		{
+			"id": "tanning_rack",
+			"title": "Build a Tanning rack",
+			"hint": "Hold your knife, press R and pick Tanning rack: 6 logs and 4 twine. Hides are tanned into leather on it.",
+			"after": [
+				"hunt",
+				"hammer"
+			],
+			"check": {
+				"event": "placed",
+				"what": "tanning_rack",
+				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "hide_scraper",
+			"title": "Make a Hide scraper",
+			"hint": "At the Workbench make a Hide scraper: a flint, a stick and a twine. Flint now and then comes away when you break a boulder with a pick. The scraper is kept when you scrape a hide.",
+			"after": [
+				"workbench",
+				"tanning_rack"
+			],
+			"check": {
+				"made_item": "hide_scraper",
+				"count": 1,
+				"or_have": true
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "leather",
+			"title": "Tan leather",
+			"hint": "With the Hide scraper in your pack, scrape a hide on the drying rack into a Scraped hide. Then tan it on the tanning rack with 2 tannin bark and a full water container. Tannin bark lies beside the logs when you fell an oak. Each hide makes a Leather.",
+			"after": [
+				"tanning_rack",
+				"hide_scraper",
+				"drying_rack"
+			],
+			"check": {
+				"made_item": "leather",
+				"count": 2
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "leatherworking_table",
+			"title": "Build a Leatherworking table",
+			"hint": "Hold your hammer, press R and pick Leatherworking table: 4 logs, 4 sticks, 4 twine and 4 stones. Straps and leather goods are cut at it.",
+			"after": [
+				"leather"
+			],
+			"check": {
+				"event": "placed",
+				"what": "leatherworking_table",
+				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "leather_strap",
+			"title": "Cut leather straps",
+			"hint": "At the Leatherworking table cut each Leather into 2 Leather straps. Every metal axe is bound with one, so cut both Leathers: 4 straps, one each for copper, bronze, iron and steel.",
+			"after": [
+				"leatherworking_table"
+			],
+			"check": {
+				"made_item": "leather_strap",
+				"count": 2
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "copper_tools",
+			"title": "Make every copper tool",
+			"hint": "At the Primitive smithy make the whole copper set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), a saw (2), a shovel (2), a hoe (2), a sickle (1), a scythe (2) and a chisel (1). That is eighteen copper ingots in all, one copper ore each, so find more copper ore. Each tool works faster and lasts longer than its stone one.",
+			"after": [
+				"copper_tool",
+				"leather_strap"
+			],
+			"check": {
+				"made_item_all": [
+					"copper_pickaxe",
+					"copper_axe",
+					"copper_hammer",
+					"copper_knife",
+					"copper_saw",
+					"copper_shovel",
+					"copper_hoe",
+					"copper_sickle",
+					"copper_scythe",
+					"copper_chisel"
+				],
+				"or_have": true
+			},
+			"stage": "copper_bronze"
+		},
+		{
 			"id": "tin_ore",
 			"title": "Find tin ore",
 			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer. Six pieces, each smelted with a copper ore, make the twelve bronze ingots the next steps need.",
@@ -494,6 +591,31 @@
 				"event": "placed",
 				"what": "improved_smelter",
 				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "bronze_tools",
+			"title": "Make every bronze tool",
+			"hint": "At the Primitive smithy make the whole bronze set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), a saw (2), a shovel (2), a hoe (2), a sickle (1), a scythe (2) and a chisel (1). That is eighteen bronze ingots in all; each copper ore smelted with a tin ore makes two, so with the pickaxe made, find eight more of each.",
+			"after": [
+				"bronze_tool",
+				"leather_strap"
+			],
+			"check": {
+				"made_item_all": [
+					"bronze_pickaxe",
+					"bronze_axe",
+					"bronze_hammer",
+					"bronze_knife",
+					"bronze_saw",
+					"bronze_shovel",
+					"bronze_hoe",
+					"bronze_sickle",
+					"bronze_scythe",
+					"bronze_chisel"
+				],
+				"or_have": true
 			},
 			"stage": "copper_bronze"
 		},
@@ -568,6 +690,31 @@
 			"stage": "iron"
 		},
 		{
+			"id": "iron_tools",
+			"title": "Make every iron tool",
+			"hint": "At the Improved smithy make the whole iron set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), an Iron - Saw (2), a shovel (2), a hoe (2), a sickle (1), an Iron - Scythe (2) and a chisel (1). That is eighteen iron ingots in all.",
+			"after": [
+				"iron_tool",
+				"leather_strap"
+			],
+			"check": {
+				"made_item_all": [
+					"iron_pickaxe",
+					"iron_axe",
+					"iron_hammer",
+					"iron_knife",
+					"hand_saw",
+					"iron_shovel",
+					"iron_hoe",
+					"iron_sickle",
+					"scythe",
+					"iron_chisel"
+				],
+				"or_have": true
+			},
+			"stage": "iron"
+		},
+		{
 			"id": "advanced_smelter",
 			"title": "Build an Advanced smelter",
 			"hint": "Hold your hammer, press R and pick Advanced smelter: 40 bricks, 40 stones, 8 mortar and 6 iron ingots. Its windmill drives its bellows, and it makes steel.",
@@ -630,6 +777,31 @@
 					"steel_chisel"
 				],
 				"count": 1
+			},
+			"stage": "steel"
+		},
+		{
+			"id": "steel_tools",
+			"title": "Make every steel tool",
+			"hint": "At the Advanced smithy make the whole steel set: a pickaxe (3 ingots), an axe (2 and a leather strap), a hammer (2), a knife (1), a saw (2), a shovel (2), a hoe (2), a sickle (1), a scythe (2) and a chisel (1). That is eighteen steel ingots in all.",
+			"after": [
+				"steel_tool",
+				"leather_strap"
+			],
+			"check": {
+				"made_item_all": [
+					"steel_pickaxe",
+					"steel_axe",
+					"steel_hammer",
+					"steel_knife",
+					"steel_saw",
+					"steel_shovel",
+					"steel_hoe",
+					"steel_sickle",
+					"steel_scythe",
+					"steel_chisel"
+				],
+				"or_have": true
 			},
 			"stage": "steel"
 		}
