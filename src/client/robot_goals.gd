@@ -32,6 +32,7 @@ var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not ai
 var _depth: int = 0
 var _sites: Dictionary = {}       # structure -> its blueprint site's world id
 var _home: Vector3 = Vector3.ZERO   # where the character first stood: the starter camp
+var _end_ms: int = 0x7FFFFFFFFFFFFFFF   # when the play must stop (play limit_s): no gather runs past it
 var _groups: Dictionary = {}      # ingredient group id -> member item ids (wood_species.json ingredient_groups: "berries" is any sweet berry)
 
 
@@ -51,11 +52,17 @@ func _init(robot) -> void:
 			if row is Dictionary and (row as Dictionary).has("item"):
 				_gives[species] = (_gives.get(species, []) as Array) + [str(row["item"])]
 
-	var species: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/wood_species.json"))
+	var woods: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/wood_species.json"))
 
-	for group in ((species as Dictionary).get("ingredient_groups", {}) if species is Dictionary else {}):
-		if group != "note" and species["ingredient_groups"][group] is Array:
-			_groups[str(group)] = (species["ingredient_groups"][group] as Array).map(func(m): return str(m))
+	for group in ((woods as Dictionary).get("ingredient_groups", {}) if woods is Dictionary else {}):
+		if group != "note" and woods["ingredient_groups"][group] is Array:
+			var members: Array = [str(group)]   # the key item counts too, first (item_table.gd: a plain Log fills a log need)
+
+			for m in woods["ingredient_groups"][group]:
+				if not members.has(str(m)):
+					members.append(str(m))
+
+			_groups[str(group)] = members
 
 	var bp: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))
 
@@ -78,6 +85,7 @@ func _s() -> float:
 func play(limit_s: float) -> void:
 	_t0 = Time.get_ticks_msec()
 	_home = c.body.global_position
+	_end_ms = Time.get_ticks_msec() + int(limit_s * 1000.0)
 	r._step = "goals"
 	var book = c.items.goal_book
 
@@ -327,7 +335,7 @@ func _have(item: String, n: int, make: bool) -> String:
 		recipe = _station_recipe_for(item)
 		station = str(recipe.get("station", ""))
 
-	if recipe.is_empty() and _groups.has(item):
+	if recipe.is_empty() and _groups.has(item) and item != "log":   # logs are felled (_gather sends "log" to _wood)
 		return await _gather_group(item, n)
 
 	if recipe.is_empty():
@@ -495,7 +503,7 @@ func _gather(item: String, n: int) -> String:
 		return await _wood(item, n)
 
 	var start: int = _count(item)
-	var until: int = Time.get_ticks_msec() + int(GATHER_S * 1000.0)
+	var until: int = mini(Time.get_ticks_msec() + int(GATHER_S * 1000.0), _end_ms)   # never past the play's own end, so its end lines print
 	var said: int = r._notices.size()
 	var walks: int = 0
 	var presses: int = 0
@@ -509,8 +517,12 @@ func _gather(item: String, n: int) -> String:
 			var rock: int = _nearest_boulder(item)
 
 			if rock != 0:
-				_taken["rock%d" % rock] = true
-				await _break_rock(rock, item)
+				_taken["rock%d" % rock] = true   # tried once, reached or not, so the loop moves on to the next rock
+				var why_rock: String = await _break_rock(rock, item)
+
+				if why_rock != "":
+					_line("ROCK %d: %s" % [rock, why_rock])
+
 				continue
 
 		if spot.is_empty() or in_row >= 3:
@@ -566,15 +578,24 @@ func _nearest_boulder(item: String = "stone") -> int:
 
 
 # Blows with the axe (or a pickaxe) on a boulder, as a player clicks at it, until it gives no more or 40 blows; then what fell is swept up.
-func _break_rock(rock: int, item: String) -> void:
-	var tool: String = "pick" if _tool_slot("pick") >= 0 else "axe"
+func _break_rock(rock: int, item: String) -> String:
+	# Ore takes a pick or a stone hammer (boulders.json tool_classes; an axe only knocks off stone); plain stone takes a pick or the axe.
+	var tool: String = "pick" if _tool_slot("pick") >= 0 else ("stone_hammer" if item.ends_with("_ore") else "axe")
 
 	if _tool_slot(tool) < 0 or _hold(tool) < 0:
-		return
+		return "no %s in the pack to break it with" % tool
 
 	var entry: Dictionary = c.items._boulders[rock]
 	var at: Vector3 = entry["pos"]
-	await r._go_to(at, 30.0, float(entry["radius"]) + 1.2)
+	var reach: float = float(entry["radius"]) + 1.2
+	var legs: int = 0
+
+	while legs < 8 and c.body.global_position.distance_to(at) > reach + 0.6:   # a far rock (ore is looked for up to 400 m away) is walked to in legs
+		await r._go_to(at, 60.0, reach)
+		legs += 1
+
+	if c.body.global_position.distance_to(at) > reach + 0.6:
+		return "walked %d legs and is still %.0f m from it" % [legs, c.body.global_position.distance_to(at)]
 	var had: int = _count(item)
 	var said: int = r._notices.size()
 	var blows: int = 0
@@ -589,6 +610,7 @@ func _break_rock(rock: int, item: String) -> void:
 
 	await _sweep_up(6.0)
 	_line("ROCK %d at %s: %d blows with the %s, +%d %s%s" % [rock, str(at.round()), blows, tool, _count(item) - had, item, _said(said)])
+	return ""
 
 
 func _key(p: Vector3) -> String:
