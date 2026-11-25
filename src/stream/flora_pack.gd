@@ -25,6 +25,11 @@ const SOURCES := [
 	"res://worlds/base_world/world.json",
 ]
 const FOLDERS := [["res://data/tables", ".json"], ["res://worlds/base_world/water", ".water"]]   # every such file in them (the baked water: shore plants)
+# Look-only fields of a flora.json row: how a plant is drawn, named or used, never where it stands, how tall, or its trunk. They are left out of
+# the fingerprint, so a change to a tree's look (the witness glow, 25 Nov 2026) does not make every tile's pack stale. No placer source may read
+# one (test_flora_pack checks that); a field that starts to matter for placing must come out of this list.
+const LOOK_KEYS := ["color", "autumn_colors", "young_color", "young_m", "glow", "glow_energy", "glow_height", "leaf_glow", "display", "look_alikes",
+	"familiarity", "uses", "properties", "rarity", "yields", "discovery", "time_of_day", "bloom_years", "fantasy"]
 
 var _index: Dictionary = {}     # Vector2i chunk -> [path, full offset, full size, full raw, trees offset, trees size, trees raw]
 var tiles: int = 0              # files in use
@@ -54,10 +59,72 @@ static func _md5_of(path: String) -> String:
 	if not FileAccess.file_exists(path):
 		return "-"
 
+	if path.ends_with("/flora.json"):
+		return placing_bytes(FileAccess.get_file_as_string(path)).hex_encode().md5_text()
+
 	if path.ends_with(".gd") or path.ends_with(".json"):
-		return FileAccess.get_file_as_string(path).replace("\r\n", "\n").md5_text()
+		return placing_text(path, FileAccess.get_file_as_string(path)).md5_text()
 
 	return FileAccess.get_md5(path)
+
+
+# The part of a source file that can move a plant: code without its whole-line comments and blank lines (no source here holds a """
+# string, test_flora_pack checks it, so no such line is data). A comment leaves the fingerprint, and so every tile's pack, as it was.
+static func placing_text(path: String, text: String) -> String:
+	text = text.replace("\r\n", "\n")
+
+	if path.ends_with(".gd"):
+		var kept: PackedStringArray = PackedStringArray()
+
+		for line in text.split("\n"):
+			var bare: String = line.strip_edges()
+
+			if bare != "" and not bare.begins_with("#"):
+				kept.append(line)
+
+		return "\n".join(kept)
+
+	return text
+
+
+# flora.json as the placer sees it: without its note and its rows' LOOK_KEYS, keys sorted, numbers as their exact 64-bit values
+# (var_to_bytes, so a Windows pack build and a Linux server agree; float text could differ between their C libraries).
+static func placing_bytes(text: String) -> PackedByteArray:
+	var table: Variant = JSON.parse_string(text.replace("\r\n", "\n"))
+
+	if typeof(table) != TYPE_DICTIONARY:
+		return text.to_utf8_buffer()                      # not readable: hash it whole (the placer will fail on it anyway)
+
+	(table as Dictionary).erase("note")
+
+	for entry in (table as Dictionary).get("entries", []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			for key in LOOK_KEYS:
+				(entry as Dictionary).erase(key)
+
+	return var_to_bytes(_sorted(table))
+
+
+static func _sorted(value: Variant) -> Variant:
+	if value is Dictionary:
+		var keys: Array = (value as Dictionary).keys()
+		keys.sort()
+		var out: Dictionary = {}
+
+		for key in keys:
+			out[key] = _sorted(value[key])
+
+		return out
+
+	if value is Array:
+		var list: Array = []
+
+		for v in value:
+			list.append(_sorted(v))
+
+		return list
+
+	return value
 
 
 static func file_name(tile: Vector2i) -> String:
