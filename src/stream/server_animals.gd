@@ -430,7 +430,9 @@ func _step_young(a: Dictionary, dt: float) -> void:
 
 	# A hider's young (deer, elk, pronghorn: young.hides; ANIMAL_SCENARIOS gap 12) does not run with her: it drops where it is and lies
 	# still (drawn lying) until she is calm again, then goes back to her. A follower's young (moose, horse, wildebeest) runs at her side.
-	if bool(def.get("young", {}).get("hides", false)) and (running or a.has("hiding")) and not int(m["state"]) in [GRAZE, HOP]:
+	var warning: bool = int(m["state"]) == WARN or int(m["state"]) == big_game.WARN_POP
+
+	if bool(def.get("young", {}).get("hides", false)) and (running or warning or a.has("hiding")) and not int(m["state"]) in [GRAZE, HOP]:
 		a["hiding"] = true
 		a["state"] = GRAZE
 		a["target"] = a["pos"]
@@ -1570,6 +1572,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 		a.erase("mother")   # orphaned: from now on an ordinary (passive) animal
+		a.erase("hiding")
 
 	if a["alarm"] >= 0.0:
 		a["alarm"] -= dt

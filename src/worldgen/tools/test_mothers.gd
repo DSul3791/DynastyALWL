@@ -106,5 +106,37 @@ func _initialize() -> void:
 		else:
 			check(moved > 1.0, "a moose calf runs at its mother's side (moved %.1f m)" % moved)
 
+	# 3. A mother's bluff is for that one warning: calmed, then provoked by a hit, a deer mother's own charge presses home.
+	var b = make()
+	var dm: Dictionary = mother(b, "deer")
+	var fawn: Dictionary = b.animals[b._young_of(dm)[0]]
+	players = [{"peer": 1, "pos": fawn["pos"] + Vector3(1.0, 0.0, 0.0), "stance": 0, "hp": 1.0}]
+	var p3: Vector3 = players[0]["pos"]
+	b._step(dm, 0.1, dm["pos"].distance_to(p3), p3, dm["pos"].distance_to(p3), p3)
+	check(dm.has("mother_bluff"), "a deer mother warning for her fawn may bluff")
+	b.big_game._calm(dm, b.species_def("deer").get("defend", {}))
+	check(not dm.has("mother_bluff"), "calmed, her bluff is gone")
+
+	# 4. A mother killed while her fawn hides: the orphan is not drawn lying for ever.
+	var o = make()
+	var om: Dictionary = mother(o, "deer")
+	var ofawn: Dictionary = o.animals[o._young_of(om)[0]]
+	players = [{"peer": 1, "pos": Vector3(-30.0, 10.0, 0.0), "stance": 0, "hp": 1.0}]
+	o._bolt(om, players[0]["pos"], o.species_def("deer"))
+	o._step_young(ofawn, 0.1)
+	check(ofawn.has("hiding"), "the fawn hides")
+	o.animals.erase(o.animals.find_key(om))
+	var op: Vector3 = Vector3(500.0, 10.0, 500.0)
+	o._step(ofawn, 0.1, 999.0, op, 999.0, op)
+	check(not ofawn.has("hiding"), "orphaned, it is not left hiding (state %d)" % o._wire_state_now(ofawn))
+
+	# 5. The fawn drops as soon as its mother warns, not only when she runs.
+	var w = make()
+	var wm: Dictionary = mother(w, "deer")
+	var wfawn: Dictionary = w.animals[w._young_of(wm)[0]]
+	wm["state"] = w.WARN
+	w._step_young(wfawn, 0.1)
+	check(wfawn.has("hiding"), "a fawn lies still while its mother warns")
+
 	print("test_mothers: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
