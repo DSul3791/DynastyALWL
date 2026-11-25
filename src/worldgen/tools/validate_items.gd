@@ -738,6 +738,22 @@ func _init() -> void:
 			want_item.call(String(row[0]), "carcass.json %s" % species_id)
 			obtainable[String(row[0])] = true
 
+	# Trapping (Dave 25 Nov 2026): E on a trap holding its catch gives the whole animal (traps.json whole_items); each names an item whose
+	# carcass_of is that species, which has a carcass.json row (laid down it is that carcass again).
+	var traps_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/traps.json"))
+	var whole_items: Dictionary = (traps_parsed as Dictionary).get("whole_items", {}) if typeof(traps_parsed) == TYPE_DICTIONARY else {}
+
+	for species_id in whole_items:
+		var whole_id: String = String(whole_items[species_id])
+		want_item.call(whole_id, "traps.json whole_items")
+		obtainable[whole_id] = true
+
+		if all.has(whole_id) and String(all[whole_id].get("carcass_of", "")) != String(species_id):
+			fail("traps.json whole_items: %s does not say carcass_of %s" % [whole_id, species_id])
+
+		if not _read("carcass.json").get("species", {}).has(species_id):
+			fail("traps.json whole_items: %s has no carcass.json row" % species_id)
+
 	# Cooking.
 	want_item.call(String(cooking.get("gives", "")), "cooking.json gives")
 	obtainable[String(cooking.get("gives", ""))] = true
