@@ -196,6 +196,13 @@ func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> voi
 # Whether the charge about to start is a bluff: bluff_share, scaled by the temperament (bluff_x) and at the den (den_bluff_x); never after
 # a run during the warning or for a mother's young.
 func _bluffs(a: Dictionary, def: Dictionary) -> bool:
+	if a.has("mother_bluff"):   # a mother whose kind mostly bluffs for its young (young.bluff_share, gap 12): once, for this charge
+		var mother: float = float(a["mother_bluff"])
+		a.erase("mother_bluff")
+
+		if not bool(a.get("no_bluff", false)):
+			return host.rng.randf() < mother   # luck-exempt: whether a mother bluffs
+
 	if bool(a.get("no_bluff", false)):
 		return false
 
