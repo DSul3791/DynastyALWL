@@ -117,7 +117,12 @@ static func _sorted(value: Variant) -> Variant:
 		return out
 
 	if value is Array:
-		return (value as Array).map(func(v): return _sorted(v))
+		var list: Array = []
+
+		for v in value:
+			list.append(_sorted(v))
+
+		return list
 
 	return value
 
