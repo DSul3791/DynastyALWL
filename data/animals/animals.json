@@ -1,11 +1,13 @@
 {
-	"note": "Animals, step B (Radar; Steve-approved plan 2026-10-21, design items/ANIMALS_DESIGN.md): one species, the rabbit. Server-owned records, no physics; they walk with the shared steering module (src/shared/steering.gd). Each player keeps up to target_per_player of a species within active_radius_m; new ones appear spawn_min_m to spawn_max_m from the player (out of sight) and never within never_within_m of any player; none are saved. Beyond active_radius_m from every player an animal is frozen (not ticked); beyond despawn_m it is dropped. Tick rates by distance to the nearest player: hz_near within near_m, hz_mid within mid_m, hz_far beyond. AI work per server tick is capped at tick_budget_ms (a quarter of the animals are looked at each tick, the rest wait). Caps: per_player_cap animals counted near one player, server_cap in all. Rabbit: grazes, hops a few metres, bolts away from a player within spook_m until safe_m, then settles. No hunting yet (damage and carcass come next). Deer (species 2, build 478): live in herds of 3 to 6; when one bolts the others follow after alarm_s seconds (the first to see a player is the sentinel). Health 20: three spear jabs. Build 480 (Tyler report 16): an animal that notices a player within alert_m (but not yet spook_m) freezes and watches for alert_s, then relaxes or bolts; a bolt zigzags (zig_deg every zig_leg_m), sprints for burst_s and then trots at trot_share of the sprint speed; herd members that stray beyond herd_pull_m graze back toward the herd centre. Build 492: senses block. A player is perceived at distance / factor: downwind of the player (the wind carries scent to the animal) factor up to 1 + scent_gain x wind, upwind down to 0.5; crouch 0.6, sit 0.8, lying 0.5; with terrain between the animal's eye and the player (sampled every los_step_m) and the player beyond always_notice_m the factor is multiplied by blind_factor. Rabbits own a burrow (their spawn spot): a bolt within burrow_m and away from the threat runs for it, the rabbit goes to ground for hide_s and is neither sent nor huntable until it comes out. Blood trail (build 493): a wounded animal drops blood every every_m while it runs (at most max_drops each, max_total on the map, dry after life_s seconds); the server sends the drops near each player as protocol 55 blood points. Habitat (build 495): a new animal tries habitat_tries spots; a spot is refused when steeper than slope_max (rise over run_m in four directions), more than above_player_m higher than the player, or within water_edge_m of deep water; a deer prefers a spot under trees when tree data is loaded there. Forest sight: a line of sight under tree crowns loses up to forest_block of its visibility (trees do not fully block it). Bleeding out (build 508): a wounded animal loses blood.bleed_hp_per_s health a second and dies where it is when it runs out (the carcass lies at the end of its trail; a deer hit once for 8 of its 20 health has about 80 s), so a hunter can follow the drops to it. Wolves (build 509, items/WOLF_CARD.md decisions): species wolf is a pack animal (pack_size); server_wolves.gd owns its brain and the wolves block here is every number. natural false = admin spawn only until Dave wants wild packs (one home per cell_m square, cell_share of cells, respawn_s after a wipe, never inside exclude [x, z, radius]).",
+	"note": "Animals, step B (Radar; Steve-approved plan 2026-10-21, design items/ANIMALS_DESIGN.md): one species, the rabbit. Server-owned records, no physics; they walk with the shared steering module (src/shared/steering.gd). Each player keeps up to target_per_player of a species within active_radius_m; new ones appear spawn_min_m to spawn_max_m from the player (out of sight) and never within never_within_m of any player; none are saved. Beyond active_radius_m from every player an animal is frozen (not ticked); beyond despawn_m it is dropped. Tick rates by distance to the nearest player: hz_near within near_m, hz_mid within mid_m, hz_far beyond. AI work per server tick is capped at tick_budget_ms (a quarter of the animals are looked at each tick, the rest wait). Caps: per_player_cap animals counted near one player, server_cap in all. Rabbit: grazes, hops a few metres, bolts away from a player within spook_m until safe_m, then settles. No hunting yet (damage and carcass come next). Deer (species 2, build 478): live in herds of 3 to 6; when one bolts the others follow after alarm_s seconds (the first to see a player is the sentinel). Health 20: three spear jabs. Build 480 (Tyler report 16): an animal that notices a player within alert_m (but not yet spook_m) freezes and watches for alert_s, then relaxes or bolts; a bolt zigzags (zig_deg every zig_leg_m), sprints for burst_s and then trots at trot_share of the sprint speed; herd members that stray beyond herd_pull_m graze back toward the herd centre. Build 492: senses block. A player is perceived at distance / factor: downwind of the player (the wind carries scent to the animal) factor up to 1 + scent_gain x wind, upwind down to 0.5; crouch 0.6, sit 0.8, lying 0.5; with terrain between the animal's eye and the player (sampled every los_step_m) and the player beyond always_notice_m the factor is multiplied by blind_factor. Rabbits own a burrow (their spawn spot): a bolt within burrow_m and away from the threat runs for it, the rabbit goes to ground for hide_s and is neither sent nor huntable until it comes out. Blood trail (build 493): a wounded animal drops blood every every_m while it runs (at most max_drops each, max_total on the map, dry after life_s seconds); the server sends the drops near each player as protocol 55 blood points. Habitat (build 495): a new animal tries habitat_tries spots; a spot is refused when steeper than slope_max (rise over run_m in four directions), more than above_player_m higher than the player, or within water_edge_m of deep water; a deer prefers a spot under trees when tree data is loaded there. Forest sight: a line of sight under tree crowns loses up to forest_block of its visibility (trees do not fully block it). Bleeding out (build 508): a wounded animal bleeds by its hit (blood.note_wounded) and dies where it is when it runs out (the carcass lies at the end of its trail; a deer hit once for 8 of its 20 health has about 90 s), so a hunter can follow the drops to it. Wolves (build 509, items/WOLF_CARD.md decisions): species wolf is a pack animal (pack_size); server_wolves.gd owns its brain and the wolves block here is every number. natural false = admin spawn only until Dave wants wild packs (one home per cell_m square, cell_share of cells, respawn_s after a wipe, never inside exclude [x, z, radius]).",
 	"active_radius_m": 200.0,
 	"rest": {
 		"note": "MikeW 2026-11-02: an animal outside its active hours (active chance at or under below) beds down: no wandering, grazes graze_x times longer, and wakes at spook_share of its spook distance.",
 		"below": 0.1,
 		"graze_x": 3.0,
-		"spook_share": 0.6
+		"spook_share": 0.6,
+		"midday_hours": [11.0, 15.0],
+		"midday_note": "ANIMAL_SCENARIOS gap 15 (25 Nov 2026): between midday_hours of a day an \"active\" row's midday value replaces its day value: bears and the cats 0.1 nap (rest; above off_hours_chance 0.05, so they are not despawned); elk 0.1 lies up; bighorn, chamois, mountain goat and warthog 0.3 (most of the herd bedded)."
 	},
 	"despawn_m": 300.0,
 	"near_m": 60.0,
@@ -109,7 +111,8 @@
 			"target_per_player": 5,
 			"health": 20.0,
 			"walk_mps": 1.8,
-			"flee_mps": 12.0,
+			"flee_mps": 13.0,
+			"lope_mps": 10.5,
 			"graze_s": [
 				5.0,
 				20.0
@@ -184,7 +187,7 @@
 					"threat_x": 1.5
 				}
 			},
-			"young": {
+			"young": {"bluff_share": 0.8, "hides": true, 
 				"share": 0.25,
 				"count": [
 					1,
@@ -234,7 +237,8 @@
 			"sprint_mps": 10.5,
 			"sprint_s": 5.0,
 			"chase_mps": 7.0,
-			"flee_mps": 7.0,
+			"flee_mps": 13.0,
+			"lope_mps": 11.0,
 			"graze_s": [
 				4.0,
 				10.0
@@ -263,7 +267,8 @@
 			"spawn_share": 0.2,
 			"health": 90.0,
 			"walk_mps": 1.6,
-			"flee_mps": 10.0,
+			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -370,6 +375,7 @@
 			"health": 12.0,
 			"walk_mps": 1.4,
 			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -506,6 +512,7 @@
 			"health": 60.0,
 			"walk_mps": 1.6,
 			"flee_mps": 13.7,
+			"lope_mps": 11.0,
 			"graze_s": [
 				6.0,
 				22.0
@@ -623,7 +630,8 @@
 				"threat_warn_s": 0.6
 			},
 			"walk_mps": 1.6,
-			"flee_mps": 8.0,
+			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				5.0,
 				20.0
@@ -949,11 +957,12 @@
 			}
 		},
 		"bear": {
+			"hunger": {"seasons": {"spring": 0.4, "winter": 0.3, "summer": 0.05, "autumn": 0.05}},
 			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 14,
 			"weather": "hunter",
 			"name": "Brown bear",
-			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (a torch does not protect you at its den), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
+			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (at its den too, Dave 25 Nov 2026), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
 			"target_per_player": 1,
 			"spawn_share": 0.3,
 			"health": 120.0,
@@ -964,7 +973,7 @@
 				"range_m": 80.0,
 				"fish_share": 0.5
 			},
-			"defend": {"strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
+			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 12.0,
@@ -993,7 +1002,7 @@
 				40.0
 			],
 			"wander_m": 20.0,
-			"flee_run_m": 40.0,
+			"flee_run_m": 120.0,
 			"alarm_s": [
 				0.2,
 				0.9
@@ -1002,12 +1011,13 @@
 				1.5,
 				3.0
 			],
-			"burst_s": 6.0,
-			"trot_share": 0.5,
-			"zig_deg": 20.0,
-			"zig_leg_m": 15.0,
+			"burst_s": 10.0,
+			"trot_share": 0.85,
+			"zig_deg": 10.0,
+			"zig_leg_m": 40.0,
 			"eye_m": 1.1,
-			"flee_mps": 9.0,
+			"flee_mps": 14.0,
+			"note_flee": "Dave 25 Nov 2026 play test: a bear \"should be able to out run me\", he chased one down on foot and stabbed it (flee 9.0 m/s, the player runs 9.0, and after its 6 s burst it trotted at half). Bears run 48 to 56 km/h in bursts (NPS Staying Safe Around Bears; North American Bear Center): flee_mps 13 to 14, a 10 s burst, then a lope (trot_share 0.85) still faster than the player's 9 m/s run, in long straight legs (zig 10 degrees, 40 m: a bear crashes off through the brush, it does not jink like a deer), and it keeps going 120 m. The way to take one is to learn to trap it (Dave).",
 			"herd_pull_m": 0.0,
 			"habitat": {
 				"slope_max": 0.6,
@@ -1022,7 +1032,7 @@
 				"mixed_forest": 1.0,
 				"boreal_forest": 1.0
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 1.0,
 				"dusk": 1.0,
 				"night": 0.05
@@ -1212,6 +1222,7 @@
 			"health": 45.0,
 			"walk_mps": 1.3,
 			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				6.0,
 				22.0
@@ -1302,6 +1313,7 @@
 			"note_temperament": "Dave 7 Nov 2026: donkeys added (MikeW, first values copied from the horse, calmer and slower)."
 		},
 		"lynx": {
+			"hunger": {"seasons": {"winter": 0.2, "spring": 0.1, "summer": 0.05, "autumn": 0.05}},
 			"number": 17,
 			"weather": "hunter",
 			"name": "Lynx",
@@ -1310,6 +1322,7 @@
 			"health": 30.0,
 			"walk_mps": 1.5,
 			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -1340,7 +1353,7 @@
 				"temperate_forest": 0.5,
 				"alpine_meadow": 0.5
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 0.9,
 				"night": 1.0
@@ -1372,6 +1385,7 @@
 			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 1. A lynx is a shy night hunter of boreal and mixed forest and alpine meadow (FAUNA_BY_BIOME rarity 4): it keeps well away from a player, bites one who corners it. Fox movement numbers, bigger and rarer."
 		},
 		"black_bear": {
+			"hunger": {"seasons": {"spring": 0.4, "winter": 0.3, "summer": 0.05, "autumn": 0.05}},
 			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 18,
 			"weather": "hunter",
@@ -1380,7 +1394,7 @@
 			"spawn_share": 0.3,
 			"health": 90.0,
 			"protective_share": 0.0,
-			"defend": {"fair_dodge": true, 
+			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 10.0,
@@ -1409,7 +1423,7 @@
 				40.0
 			],
 			"wander_m": 20.0,
-			"flee_run_m": 40.0,
+			"flee_run_m": 120.0,
 			"alarm_s": [
 				0.2,
 				0.9
@@ -1418,12 +1432,13 @@
 				1.5,
 				3.0
 			],
-			"burst_s": 6.0,
-			"trot_share": 0.5,
-			"zig_deg": 20.0,
-			"zig_leg_m": 15.0,
+			"burst_s": 10.0,
+			"trot_share": 0.85,
+			"zig_deg": 10.0,
+			"zig_leg_m": 40.0,
 			"eye_m": 1.1,
-			"flee_mps": 9.0,
+			"flee_mps": 13.0,
+			"note_flee": "Dave 25 Nov 2026 play test: a bear \"should be able to out run me\", he chased one down on foot and stabbed it (flee 9.0 m/s, the player runs 9.0, and after its 6 s burst it trotted at half). Bears run 48 to 56 km/h in bursts (NPS Staying Safe Around Bears; North American Bear Center): flee_mps 13 to 14, a 10 s burst, then a lope (trot_share 0.85) still faster than the player's 9 m/s run, in long straight legs (zig 10 degrees, 40 m: a bear crashes off through the brush, it does not jink like a deer), and it keeps going 120 m. The way to take one is to learn to trap it (Dave).",
 			"herd_pull_m": 0.0,
 			"habitat": {
 				"slope_max": 0.6,
@@ -1437,7 +1452,7 @@
 				"mixed_forest": 1.0,
 				"boreal_forest": 0.8
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 1.0,
 				"dusk": 1.0,
 				"night": 0.05
@@ -1463,7 +1478,7 @@
 					"spook_x": 1.2
 				}
 			},
-			"young": {
+			"young": {"bluff_share": 0.8, 
 				"share": 0.3,
 				"count": [
 					1,
@@ -1492,7 +1507,8 @@
 			"spawn_share": 0.35,
 			"health": 70.0,
 			"walk_mps": 1.6,
-			"flee_mps": 13.0,
+			"flee_mps": 14.0,
+			"lope_mps": 11.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -1550,7 +1566,7 @@
 				"boreal_forest": 0.5,
 				"alpine_meadow": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.6,
 				"dusk": 1.0,
 				"night": 0.3
@@ -1567,7 +1583,7 @@
 					"threat_x": 1.5
 				}
 			},
-			"young": {
+			"young": {"hides": true, 
 				"share": 0.3,
 				"count": [
 					1,
@@ -1630,7 +1646,7 @@
 				"tundra": 0.5,
 				"heath": 0.3
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.5,
 				"night": 0.05
@@ -1727,7 +1743,7 @@
 				"alpine_meadow": 0.9,
 				"tundra": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.5,
 				"night": 0.05
@@ -1875,7 +1891,7 @@
 				"bare_rock": 0.8,
 				"boreal_forest": 0.2
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.5,
 				"night": 0.05
@@ -2677,7 +2693,8 @@
 			"spawn_share": 0.2,
 			"health": 110.0,
 			"walk_mps": 1.6,
-			"flee_mps": 10.0,
+			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -2770,6 +2787,7 @@
 			"note": "Batch 3. A wild ox (the pack's buffalo model) grazes open grassland in small herds, stands its ground and charges one who comes close (protective). FAUNA_BY_BIOME has no wild cattle yet: grassland, rarity like the moose."
 		},
 		"puma": {
+			"hunger": {"seasons": {"winter": 0.2, "spring": 0.1, "summer": 0.05, "autumn": 0.05}},
 			"number": 36,
 			"weather": "hunter",
 			"name": "Puma",
@@ -2778,6 +2796,7 @@
 			"health": 60.0,
 			"walk_mps": 1.4,
 			"flee_mps": 13.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -2809,7 +2828,7 @@
 				"boreal_forest": 0.5,
 				"temperate_forest": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
 				"night": 0.9
@@ -2855,7 +2874,8 @@
 			"target_per_player": 3,
 			"health": 22.0,
 			"walk_mps": 1.6,
-			"flee_mps": 16.0,
+			"flee_mps": 22.0,
+			"lope_mps": 18.0,
 			"graze_s": [
 				5.0,
 				20.0
@@ -2927,7 +2947,7 @@
 					"threat_x": 1.5
 				}
 			},
-			"young": {
+			"young": {"bluff_share": 0.6, "hides": true, 
 				"share": 0.25,
 				"count": [
 					1,
@@ -3006,7 +3026,7 @@
 				"savanna": 1.0,
 				"temperate_grassland": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.4,
 				"night": 0.05
@@ -3040,6 +3060,7 @@
 			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A warthog grazes savanna and open grassland in small family groups by day, trots off with its tail up and fights with its tusks when cornered. Boar numbers, lighter, open ground."
 		},
 		"hyena": {
+			"hunger": {"seasons": {"winter": 0.15, "spring": 0.15, "summer": 0.15, "autumn": 0.15}},
 			"number": 39,
 			"weather": "hunter",
 			"name": "Hyena",
@@ -3048,6 +3069,7 @@
 			"health": 45.0,
 			"walk_mps": 1.3,
 			"flee_mps": 11.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -3125,6 +3147,7 @@
 			"health": 60.0,
 			"walk_mps": 1.4,
 			"flee_mps": 13.0,
+			"lope_mps": 11.0,
 			"graze_s": [
 				5.0,
 				20.0
@@ -3213,6 +3236,7 @@
 			"spawn_share": 0.35
 		},
 		"lion": {
+			"hunger": {"seasons": {"winter": 0.1, "spring": 0.1, "summer": 0.1, "autumn": 0.1}},
 			"number": 41,
 			"weather": "hunter",
 			"name": "Lion",
@@ -3221,6 +3245,7 @@
 			"health": 110.0,
 			"walk_mps": 1.5,
 			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -3252,7 +3277,7 @@
 				"savanna": 1.0,
 				"temperate_grassland": 0.3
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.4,
 				"dusk": 1.0,
 				"night": 0.9
@@ -3290,6 +3315,7 @@
 			}
 		},
 		"leopard": {
+			"hunger": {"seasons": {"winter": 0.1, "spring": 0.1, "summer": 0.1, "autumn": 0.1}},
 			"number": 42,
 			"weather": "hunter",
 			"name": "Leopard",
@@ -3298,6 +3324,7 @@
 			"health": 55.0,
 			"walk_mps": 1.3,
 			"flee_mps": 13.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -3327,7 +3354,7 @@
 				"temperate_forest": 0.4,
 				"mixed_forest": 0.3
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
 				"night": 1.0
@@ -3566,7 +3593,8 @@
 			"spawn_share": 0.15,
 			"health": 70.0,
 			"walk_mps": 1.1,
-			"flee_mps": 9.0,
+			"flee_mps": 12.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				6.0,
 				22.0
@@ -3790,6 +3818,7 @@
 			"health": 40.0,
 			"walk_mps": 1.8,
 			"flee_mps": 12.0,
+			"lope_mps": 10.5,
 			"graze_s": [
 				5.0,
 				20.0
@@ -3976,6 +4005,7 @@
 			}
 		},
 		"tiger": {
+			"hunger": {"seasons": {"winter": 0.2, "spring": 0.1, "summer": 0.05, "autumn": 0.05}},
 			"number": 50,
 			"weather": "hunter",
 			"name": "Tiger",
@@ -3984,6 +4014,7 @@
 			"health": 120.0,
 			"walk_mps": 1.3,
 			"flee_mps": 13.0,
+			"lope_mps": 10.0,
 			"graze_s": [
 				4.0,
 				14.0
@@ -4014,7 +4045,7 @@
 				"marsh": 0.5,
 				"boreal_forest": 0.4
 			},
-			"active": {
+			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
 				"night": 1.0
@@ -4280,6 +4311,12 @@
 		"action_heard_x": {"blow": 1.4, "hurt": 1.25, "dig": 1.25, "craft": 1.1},
 		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
 	},
+	"run_down": {"note": "ANIMAL_SCENARIOS gap 11 (25 Nov 2026): a player who keeps within corner_m of a fleeing big animal for corner_s has cornered it: one that may fight, or a bear, turns and warns, then fights; one that will not lashes out once if the player is on it, else runs on (server_animals._run_down). Never at a player in a fire's or a torch's light.", "corner_m": 10.0, "corner_s": 5.0},
+	"hunger": {
+		"note": "ANIMAL_SCENARIOS gap 10 (25 Nov 2026; Dave: a bear \"should have run away unless it was starving or trapped\"): a species with a hunger row is born starving at its row's season chance (spring after the den and late winter for bears; winter for the northern cats). A starving one does not run from a player: it stands its ground and warns by the ladder at threat_x its threat range, whatever its temperament; it comes for food left out (this thief row: it is not put off by a player beyond scare_m) and takes it away to eat. It never comes into a fire's or a torch's light. A poor food year is not modelled yet.",
+		"threat_x": 1.5,
+		"thief": {"smell_m": 80.0, "look_s": 4.0, "scare_m": 6.0, "fire_m": 10.0, "sneak_mps": 2.0, "run_mps": 6.0, "run_m": 60.0, "again_s": 30.0}
+	},
 	"blood": {
 		"note_drops": "max_drops 40 -> 400 and max_total 200 -> 600 (coordinator for Dave, 23 Nov 2026: \"I love the idea the animal is bleeding and if they bleed enough they die eventually\"; test_animal_fights.gd): an elk hurt by one spear blow walked on 21 m past its fortieth drop before it died, so its trail stopped short of the body. Each drop still fades after life_s, so the trail is the last few minutes of its walk.",
 		"every_m": 3.0,
@@ -4287,7 +4324,12 @@
 		"max_total": 600,
 		"life_s": 240.0,
 		"max_sent": 80,
-		"bleed_hp_per_s": 0.15
+		"bleed_s": 60.0,
+		"bleed_max_s": 900.0,
+		"wounded_speed_x": 0.7,
+		"bed_m": [100.0, 200.0],
+		"bed_s": [300.0, 600.0],
+		"note_wounded": "ANIMAL_SCENARIOS gap 8 (25 Nov 2026): each wound bleeds its own damage again over bleed_s, so a hit of half its health ends it in about a minute and a graze in many, and never slower than its whole health over bleed_max_s (the old flat 0.15 a second killed a deer of 20 in 2 minutes and an elephant of 300 in 33, whatever the hit); hurt, its lope after the burst is wounded_speed_x as fast (a deer 10 m/s becomes 7, a player can keep up); once no player is within safe_m it runs on bed_m[0] metres, and up to bed_m[1] looking for trees, then lies up for bed_s (server_animals._runs_on_hurt). A player within its flee distance pushes it on."
 	},
 	"wall_margin_m": 0.3,
 	"ground_step": {"note": "Provisional GS-1 (Dave 19 Nov 2026 play test, animals in dug ground): the most an animal jumps down (drop_m) or scrambles up (climb_m) in one step, whatever the slope, so a dug hole's steep rim is not a wall (server_animals.walk_step). Only where a dig or fill touches the step; natural ground keeps the slope rule. Deeper holes stay pits.", "climb_m": 1.0, "drop_m": 2.0},
@@ -4329,7 +4371,7 @@
 		"town_keep_m": 300.0, "town_keep_note": "Coordinator for Dave, 22 Nov 2026: within town_keep_m of the starter town's markers (server_npcs.gd town_point, never the spawn) packs do not stalk, rush or hunt, and a rush breaks off. Behaviour only: no den is moved.",
 		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",
 		"pups": {
-			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m, torch or not (a campfire and a second player still hold it). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile). (The old den keep-out is gone; wolves.town_keep_m is now behaviour only: no stalk, rush or hunt near the town markers.)",
+			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m (a torch, a campfire and a second player hold it, Dave 25 Nov 2026). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile). (The old den keep-out is gone; wolves.town_keep_m is now behaviour only: no stalk, rush or hunt near the town markers.)",
 			"days": [60, 150],
 			"count": [2, 5],
 			"hp_x": 0.25,

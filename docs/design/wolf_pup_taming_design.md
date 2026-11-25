@@ -24,7 +24,7 @@ The game keeps that shape: **only a pup, only an orphan, and only by days of car
 ## 3. How it plays [Proposal]
 
 1. **Pups exist.** In spring, a pack with a den has 2 to 5 pups at the den, which stay within `follow_m` of an adult. The pack defends its den harder than today: the existing `den_notice_gain` and `den_weak_gain` already make a pack bolder there.
-2. **Only orphans can be taken.** A pup can be approached only when its pack is gone: killed, or driven off and not returned within `orphan_s`. You never take a pup from a living pack. A pack that sees a player near its pups rushes at once, torch or not, the same way a mother does for young.
+2. **Only orphans can be taken.** A pup can be approached only when its pack is gone: killed, or driven off and not returned within `orphan_s`. You never take a pup from a living pack. A pack that sees a player near its pups rushes at once, the same way a mother does for young, unless the player is in a fire's or torch's light (Dave 25 Nov 2026: "fire keeps everything away from the players").
 3. **Approach, offer, wait, bond** (G-09's verbs):
    - **Approach:** crouched and slow. An orphan hides in the den, and standing or moving fast scares it back.
    - **Offer:** place raw meat or fish on the ground within 3 m and back off. The pup eats when you are more than `trust_gap_m` away. Each meal adds trust, at most one a game day.

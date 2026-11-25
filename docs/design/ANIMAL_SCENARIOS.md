@@ -540,6 +540,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    80% passive deer, bighorn, chamois, goats, pronghorn, wildebeest, kangaroo and 90% of lynx. Real cornered deer strike, cornered
    kangaroos kick, cornered cats claw. Fix: keep "passive" as "never starts a fight", but let a cornered or grabbed animal of any
    temperament strike once and break away (a small hit, then flight). `server_animals.gd` `_at_bay`, `server_big_game.provoke`.
+   Built 25 Nov 2026 for the cornered case (`server_big_game.break_away`: a close strike or kick at 0.3 of its damage on a player
+   within reach, then flight and its cool-down; never at a player in firelight; kinds that may fight still warn). The grabbed case
+   waits until there is a way to grab an animal.
 4. **Animals call when they flee or look up, and borrow other species' voices.** The client voices every flee (state 2) and alert
    (state 3) (`terrain_client.gd` `state_changed` hook), so a bear growls, a lion roars and a boar snorts like a moose each time it looks
    or runs; bears and big cats roar as their warning. Real: flight is silent; the alarm call is species-own (deer snort, elk bark,
@@ -547,6 +550,9 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    the first alert only for species that have one; warnings by species (huff and jaw-pop for bears, hiss and growl for cats, snort and
    stamp for deer and boar, lip-lick silent for moose); recordings needed for bear huff, jaw-pop, bawl and moan, boar bark and grunt,
    cat hiss and growl, elk bark and bugle, beaver slap. `creature_sounds.gd` KINDS and CALL_AS; Dave listens.
+   Built 25 Nov 2026 with the voices we have (`creature_sounds.mood_for`, `animal_view` first look): every flight silent; a look-up
+   calls only for deer, rabbit, fox, horse, duck and wolf, once per animal; borrowed voices look up in silence; bears, cats, boar and
+   warthog warn with the low growl or snort; black bear, lynx and puma never roar. The recordings above are still needed.
 5. **Natural far bear calls.** A bear growl plays in the forest every 7 to 15 minutes by day whatever is near. Fix: remove the bear's
    natural calls (the only big animal with them; cats borrow bear voices only for warnings) (keep wolf howls at night, more in winter; fox barks and screams at night, winter; frogs on warm nights; rut bugles and
    bellows in autumn; birds by day). `creature_sounds.gd` KINDS bear `every`.
@@ -568,18 +574,35 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    have: `RunFastWounded_F`, `WalkSlowWounded_F`), beds down in cover 100 to 200 m on if not followed, and is pushed on by a player who
    comes within its flee distance; bleed scaled by the hit (and by size) so a good hit ends within one blood trail. `server_animals.gd`
    `bleed`, `blood`; `animals.json` blood.
+   Built 25 Nov 2026 on the server (`server_animals._runs_on_hurt`, `bleed`; `animals.json` blood bleed_s, bleed_max_s,
+   wounded_speed_x, bed_m, bed_s): each wound bleeds its own damage over 60 s (never slower than its whole health over 15 minutes); hurt, its
+   lope is 0.7 as fast; left alone it runs on 100 m, up to 200 m looking for trees, lies up (drawn lying) 5 to 10 minutes, and a player
+   within its flee distance pushes it on. Not yet: the wounded gait clips on the client (the row does not say an animal is hurt).
 9. **An animal that has beaten a player to 1 health has no ending** (check). The core rule stops damage, but nothing seen in the code tells the animal it won.
    Fix: a defensive animal (bear, moose, elk, boar, cattle) stops, watches for a few seconds and walks off; a hunting predator leaves
    too (the game never lets it eat the player).
 10. **No starving state.** Only the season scales boldness (spring threat x1.5 for bears). Fix: a hunger flag for bears and predators
     (late winter, spring after the den, a poor year) that makes them stand their ground, come to camps, food and carcasses, and bolder
     with prey, never into firelight (bear item 6).
+    Built 25 Nov 2026 (`animals.json` hunger rows and block; `server_animals` spawn, `may_attack`, `_threat_m`, `thief_row`): bears,
+    black bears and the big cats and hyena are born starving at a season chance (bears 40% in spring, 30% in winter). A starving one
+    stands its ground and warns by the ladder at 1.5 times its threat range, whatever its temperament, and comes for food left out
+    unless a player is within 6 m of it (a mother with young is never born starving). Like any animal that may fight it chases a
+    player who runs from it close by (hunter chase_m). Neither it nor a fox ever goes for food in, or creeps through, a fire's or a
+    torch's light, and any warning, charge or blow ends when its foe is in such a light or it has come into one (`server_big_game.step`). Not yet: carcasses,
+    bolder with prey, a poor food year.
 11. **Cornered by a chase is not a thing.** Today "cornered" means blocked by water or a cliff (`_at_bay`). Fix: a player who keeps
     within about 10 m of a fleeing animal for 5 s has cornered it: big animals turn and fight (Dave, for bears), small ones dive for
     cover.
+    Built 25 Nov 2026 (`server_animals._run_down`, `animals.json` run_down): a big animal (one with a defend row) chased within 10 m
+    for 5 s turns: a bear or one that may fight warns, then fights; one that will not strikes once if the player is on it, else runs on.
+    Never at a torch bearer. Small animals keep going to burrow, water or cover as before.
 12. **Mothers with young need species rules.** Today one rule: a player between a mother and young within `between_m` is attacked at
     once. Real: black bear and deer mothers mostly bluff; moose, elk, boar, cattle and brown bears really attack; hiders' young lie
     still alone, followers' young run with her. Fix: per species `young` rows for bluff or real, hide or follow.
+    Built 25 Nov 2026 (`animals.json` young.bluff_share, young.hides): deer and black bear mothers bluff 8 charges in 10 for their
+    young, pronghorn 6 in 10; the rest press home. Deer, elk and pronghorn young drop and lie still while the mother runs or warns,
+    then go back to her; the rest run at her side.
 13. **Predators guarding kills.** Cougars cache and revisit kills, leopards hoist them, lynx feed on one for 3 days, bears guard
     carcasses. Not modelled. Fix: once animals kill prey, a predator stays by its kill and warns a player who comes within 20 m.
 14. **Bears and big animals have no trap.** Snares catch rabbits and foxes only (traps.json). Dave wants bears trapped. Fix: trap stage 3
@@ -587,6 +610,8 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
 15. **Hours and rest.** Bears, lions and cats nap through the middle of the day; elk, bighorn and chamois rest on ledges or in shade at
     midday; boar rest up to 12 h by day. Today resting covers grazers by share (`ANIMAL_RESTING.md`). Fix: midday rest rows for the
     rest, lying clips where the file has them.
+    Built 25 Nov 2026 (`active` midday values, `rest.midday_hours` 11 to 15, `server_animals._active_value`): bears and the cats nap
+    (they rest), elk lie up, bighorn, chamois, mountain goat and warthog are mostly bedded at midday. Boar already rest all day.
 16. **Seasons missing.** Rut calls and rut aggression (deer October to December, elk September to October, moose September to November,
     bighorn November to December, mountain goat November), bear dens in winter, fox screams in winter, frogs in spring and summer nights.
     Today 16 species have season rows for threat and spook only. Fix: add the calls and the winter bear den.

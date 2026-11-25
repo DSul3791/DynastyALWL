@@ -668,7 +668,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			add_child(node)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": [], "contact_m": AnimalContact.contact_m(str(KIND_OF_SPECIES.get(int(row[1]), ""))), "turn_rad_s": AnimalContact.draw_turn_rad_s(str(KIND_OF_SPECIES.get(int(row[1]), "")))}
 
-		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
+		if int(row[4]) == 3 and int(row[4]) != int(_bodies[id]["state"]) and bool(_bodies[id].get("alarmed", false)):
+			pass   # one alarm call: an animal gives it the first time it looks up, not each look (ANIMAL_SCENARIOS gap 4)
+		elif int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
+			_bodies[id]["alarmed"] = _bodies[id].get("alarmed", false) or int(row[4]) == 3
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
 		elif takes_off(int(_bodies[id]["state"]), int(row[4])) and KIND_OF_SPECIES.has(int(row[1])):
 			took_off.emit(KIND_OF_SPECIES[int(row[1])], row[2])
@@ -1435,6 +1438,10 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						var mat: StandardMaterial3D = StandardMaterial3D.new()
 						mat.albedo_texture = tex
 						mat.roughness = float(entry.get("roughness", 0.9))
+						var tint: Array = entry.get("tint", [])
+
+						if tint.size() == 3:
+							mat.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))   # one model as a darker kind (the black bear, from the brown bear model)
 
 						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
 						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.

@@ -130,7 +130,7 @@ Not heard by animals (by design, quiet): picks, chests, gulps and pickups. Value
 
 ## Stand-in animal voices (23 Nov 2026, coordinator's ruling; for Dave's recordings)
 
-Dave, 23 Nov 2026: animals growl before attacking. Twelve kinds had no voice, so their warning and charge were silent. Until their own recordings exist they borrow a voice through `creature_sounds.gd` `CALL_AS`. A recording named for the kind in `assets/audio/recorded/creatures/` (for example `lion_growl_0.ogg`, with a row in `KINDS`) replaces its stand-in. Remove the kind from `CALL_AS` when it has its own row.
+Dave, 23 Nov 2026: animals growl before attacking. Twelve kinds had no voice, so their warning and charge were silent. Until their own recordings exist they borrow a voice through `creature_sounds.gd` `CALL_AS`. A recording named for the kind in `assets/audio/recorded/creatures/` (for example `lion_growl_0.ogg`, with a row in `KINDS`) replaces its stand-in. Remove the kind from `CALL_AS` when it has its own row. Since 25 Nov 2026 (ANIMAL_SCENARIOS gap 4) no animal calls as it runs, a look-up calls only for a kind with its own alarm (once per animal), and the black bear, lynx and puma never roar (`creature_sounds.gd` `mood_for`); a warning is never dropped by a full voice budget (mood `warn`). Still silent, with no voice and no stand-in: donkey, bighorn, mountain goat, chamois, mink, raccoon, cow, goat, cat, dog, pronghorn, wildebeest, camel, honey badger, kangaroo, alligator, bandit.
 
 | Kind | Stands in as | Alert (stare, flee) | Threat (warn, charge) |
 |---|---|---|---|

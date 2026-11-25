@@ -400,7 +400,7 @@ func chases(kinds: Array) -> void:
 # apart, at most max_drops an animal and gone after life_s, so the trail must still be there, end to end, by the time a walker gets along it.
 func bleeding() -> void:
 	var bcfg: Dictionary = animals.cfg.get("blood", {})
-	print("\nBLEEDING (one spear blow, %.0f damage; bleeding %.2f health a second, a drop every %.0f m, at most %d, each lasting %.0f s)" % [8.0, float(bcfg.get("bleed_hp_per_s", 0.0)), float(bcfg.get("every_m", 3.0)), int(bcfg.get("max_drops", 40)), float(bcfg.get("life_s", 240.0))])
+	print("\nBLEEDING (one spear blow, %.0f damage; bleeding its hit again over %.0f s, a drop every %.0f m, at most %d, each lasting %.0f s)" % [8.0, float(bcfg.get("bleed_s", 60.0)), float(bcfg.get("every_m", 3.0)), int(bcfg.get("max_drops", 40)), float(bcfg.get("life_s", 240.0))])
 	print("  kind           health | dies after  away  | drops  trail ends short of the body | followable")
 	var deaths: Array = []
 	animals.died = func(sp, pos, _peer): deaths.append([sp, pos, clock])

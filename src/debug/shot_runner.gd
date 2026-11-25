@@ -1125,7 +1125,14 @@ func _show_animals(now: int) -> void:
 
 		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * spacing
 		var z: float = p.z - 4.0
-		var g: float = _ground(x, z)
+		# The ground as drawn and walked on (a physics ray, client._ground_below, from 20 m over the player's height), not the voxel
+		# reading: that is a whole cell at floor(x, z) and stood the row's first animal half under the ground in every picture (Lane A,
+		# PR #1906, 25 Nov 2026: the sinking followed the left spot, not the animal). The voxel reading stays as the fallback, and says so.
+		var g: float = client._ground_below(Vector3(x, p.y + 18.0, z)) if client.body != null and client.body.is_inside_tree() else NAN
+		var voxel: bool = is_nan(g)
+
+		if voxel:
+			g = _ground(x, z)
 
 		if is_nan(g):
 			g = p.y - 1.5
@@ -1145,9 +1152,9 @@ func _show_animals(now: int) -> void:
 			if clip != "" and player.has_animation(clip):
 				player.play(clip)
 
-			drawn.append("%s model, role %s plays %s" % [name_text, animal_role if roles.has(animal_role) else "0", clip])
+			drawn.append("%s model, role %s plays %s%s" % [name_text, animal_role if roles.has(animal_role) else "0", clip, " (voxel ground)" if voxel else ""])
 		else:
-			drawn.append("%s %s" % [name_text, "model" if node.has_meta("model") else "code"])
+			drawn.append("%s %s%s" % [name_text, "model" if node.has_meta("model") else "code", " (voxel ground)" if voxel else ""])
 		middle += node.position
 		count += 1
 
