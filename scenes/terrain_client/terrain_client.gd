@@ -1240,6 +1240,7 @@ func _cannot_reach(text: String) -> void:
 # Every server runs the join handshake (server_auth.gd); it must be attached before the connection opens. A server with a password asks for it:
 # --password= answers once (tests); a player gets the password popup (password_box.gd): 3 tries (Dave 19 Nov 2026), then "You got it wrong
 # 3 times..." and back to the server pick page. A password the player chose to remember is tried first (only its salted hash is kept).
+# A password typed this run is reused on every new connection to that server, so the box asks once (R-JOIN-PASSWORD-ONCE, server_auth.gd).
 func _attach_auth() -> void:
 	if _auth != null:
 		_auth.new_connection()
@@ -1248,6 +1249,7 @@ func _attach_auth() -> void:
 	_password_arg = AppConfig.get_command_line_value("password", "")
 	_auth = ServerAuthScript.new()
 	_auth.protocol = NetScript.PROTOCOL_VERSION   # said first in the handshake (161): a server of another protocol answers with why
+	_auth.session_address = "%s:%d" % [_host, _port]
 	_auth.outdated.connect(func(text: String) -> void:
 		_on_join_refused(text, "Update required")
 
@@ -1263,7 +1265,7 @@ func _attach_auth() -> void:
 		var rows: Array = ServerListScript.load_rows()
 		var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
 
-		if index >= 0 and _remember_password:
+		if index >= 0 and (_remember_password or ServerAuthScript.session_keeps("%s:%d" % [_host, _port])):   # Remember ticked before a Retry
 			rows[index]["password"] = {"salt": salt_hex, "hash": hash_hex}
 			ServerListScript.save_rows(rows))
 	_auth.refused.connect(func(reason: String) -> void:
@@ -1298,7 +1300,7 @@ func _on_password_needed(tries_left: int, wrong: bool) -> void:
 		_password_box = PasswordBoxScript.new()
 		_password_box.on_ok = func(typed: String, keep: bool) -> void:
 			_remember_password = keep
-			_auth.submit(typed)
+			_auth.submit(typed, keep)
 		_password_box.on_cancel = _back_to_servers
 		_password_box.setup(self)
 
