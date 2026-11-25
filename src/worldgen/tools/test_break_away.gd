@@ -97,5 +97,34 @@ func _initialize() -> void:
 	deer = cornered(a, "deer", "defensive", 1.5)
 	check(not deer.has("break_away"), "a deer that may fight does not break away (state %d)" % int(deer["state"]))
 
+	# 6. A torch lit during the wind-up: the blow does not land.
+	a = make()
+	hurt_log = []
+	deer = cornered(a, "deer", "passive", 1.5)
+	check(bool(deer.get("break_away", false)), "the deer winds up before the torch is lit")
+	a.fires = func(): return [Vector3(1.5, 10.0, 0.0)]
+	a.fire_radius = func(_at): return 8.0
+	a._fire_cache = [[Vector3(1.5, 10.0, 0.0), 8.0]]
+	run_big(a, deer, 2.0)
+	check(hurt_log.is_empty(), "a torch lit during the wind-up stops the blow (%d hits)" % hurt_log.size())
+
+	# 7. A passive goat kicks: it turns its back, and the kick lands small.
+	a = make()
+	hurt_log = []
+	var goat: Dictionary = cornered(a, "goat", "passive", 1.2)
+	check(int(goat["state"]) == a.big_game.KICK, "a cornered passive goat kicks (state %d)" % int(goat["state"]))
+	check(absf(angle_difference(float(goat["heading"]), PI)) < 0.01, "with its back to the player (heading %.2f)" % float(goat["heading"]))
+	run_big(a, goat, 2.0)
+	var goat_full: float = float(a.species_def("goat")["defend"].get("damage", 25.0)) * 1.2
+	check(hurt_log.size() == 1 and float(hurt_log[0][1]) <= goat_full * 0.5, "its kick lands once and is small (%s)" % str(hurt_log))
+
+	# 8. Hit during the wind-up: it runs, no left-over break-away and the cool-down holds.
+	a = make()
+	hurt_log = []
+	deer = cornered(a, "deer", "passive", 1.5)
+	a.damage(a.animals.find_key(deer), 5.0, 1)
+	check(not deer.has("break_away") and not deer.has("attack") and float(deer.get("cool", 0.0)) > 0.0, "hit mid wind-up, it drops the blow and keeps its cool-down (%s)" % str(deer.keys()))
+	check(hurt_log.is_empty(), "and no blow lands after it (%d hits)" % hurt_log.size())
+
 	print("test_break_away: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

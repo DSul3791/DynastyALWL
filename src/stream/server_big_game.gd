@@ -422,6 +422,7 @@ func _close_attack(a: Dictionary, def: Dictionary, near: Dictionary, d: float) -
 	if near.is_empty() or near.has("dog") or host.wall_between(a["pos"], near["pos"]):
 		return false
 
+	a.erase("break_away")   # a real attack, never a left-over break-away blow
 	var body: float = AnimalContact.contact_m(str(a["sp"]))
 	var how: String = ""
 
@@ -463,7 +464,7 @@ func break_away(a: Dictionary, at: Vector3) -> bool:
 
 	var near: Dictionary = _nearest(at)
 
-	if near.is_empty() or host.wall_between(a["pos"], near["pos"]) or host._fire_guard(near["pos"]) != Vector3.INF:
+	if near.is_empty():
 		return false
 
 	var d: float = Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length()
@@ -475,7 +476,8 @@ func break_away(a: Dictionary, at: Vector3) -> bool:
 	elif d <= body + float((def.get("strike", BREAK_ROW) as Dictionary).get("start_m", 1.5)):
 		how = "strike"
 
-	if how == "":
+	# The cheap distance test first: the wall and fire checks run only for a player already on it.
+	if how == "" or host.wall_between(a["pos"], near["pos"]) or host._fire_guard(near["pos"]) != Vector3.INF:
 		return false
 
 	a["state"] = KICK if how == "kick" else STRIKE
@@ -505,6 +507,8 @@ func _step_close(a: Dictionary, def: Dictionary, foe: Dictionary, dt: float) -> 
 		return   # the blow is judged once the player has seen it come and their step has come back (late_s; 0 without fair_dodge)
 
 	for info in ([foe] if not foe.is_empty() and not foe.has("dog") else []):
+		if breaking and host._fire_guard(info["pos"]) != Vector3.INF:
+			continue   # they reached a fire's or a torch's light during the wind-up: fire keeps everything away
 		if in_reach(a, row, info["pos"]) and hurt_player.is_valid():
 			a["hit"] = true
 			_land(a, def, int(info["peer"]), float(row.get("damage_x", 1.0)) * (BREAK_SHARE if breaking else 1.0))

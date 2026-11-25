@@ -702,6 +702,12 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 				if big_game.provoke(a, info["pos"], float(defend.get("provoked_warn_s", 0.8)), bool(defend.get("trapped_fights", false))):
 					return false
 
+	if a.has("break_away"):   # hurt during a break-away wind-up: it runs now, and the cool-down still holds
+		a.erase("break_away")
+		a.erase("attack")
+		a.erase("foe_peer")
+		a["cool"] = float(species_def(a["sp"]).get("defend", {}).get("cool_s", 30.0))
+
 	a["state"] = FLEE
 	a["target"] = a["pos"] + Vector3(cos(a["heading"] + PI), 0.0, sin(a["heading"] + PI)) * float(species_def(a["sp"]).get("flee_run_m", 25.0))
 	a["flee_mark"] = a["pos"]   # its progress is checked from here (a line behind it across water is given a way out after FLEE_CHECK_M)
