@@ -953,7 +953,7 @@
 			"number": 14,
 			"weather": "hunter",
 			"name": "Brown bear",
-			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (a torch does not protect you at its den), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
+			"note": "Dave 6 Nov 2026: a brown bear wanders round the river near its den, spends most of its time fishing, foraging berries or sleeping, keeps away from fire unless trapped (at its den too, Dave 25 Nov 2026), runs from a player at spook_m but charges one who gets within threat_m, and anyone who walks into its den (den.threat_m). Far side of the starter island only (level). FAUNA_BY_BIOME: rarity 4, temperate, mixed and boreal forest; ANIMAL_SPEC carcass 200 kg. Hibernation: later (no winter yet).",
 			"target_per_player": 1,
 			"spawn_share": 0.3,
 			"health": 120.0,
@@ -4331,7 +4331,7 @@
 		"town_keep_m": 300.0, "town_keep_note": "Coordinator for Dave, 22 Nov 2026: within town_keep_m of the starter town's markers (server_npcs.gd town_point, never the spawn) packs do not stalk, rush or hunt, and a rush breaks off. Behaviour only: no den is moved.",
 		"dog_prey": true, "dog_bite": 25.0, "dog_bite_s": 1.0, "dog_note": "MikeW's DOG_REACTIONS.md (dog_companion_design.md 11): a pack goes for a player's dog within distract_m before any deer, and bites it dog_bite every dog_bite_s through the damage hook.",
 		"pups": {
-			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m, torch or not (a campfire and a second player still hold it). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile). (The old den keep-out is gone; wolves.town_keep_m is now behaviour only: no stalk, rush or hunt near the town markers.)",
+			"note": "Dave 8 Nov 2026, decisions 3 and 4 (docs/design/wolf_packs_and_pups_design.md). A natural pack made between day-of-year days[0] and days[1] has count pups at its den (sent as young, hp_x of a wolf's health). They stay within play_m of the den and play by day; a player within hide_m who stands or moves sends them into the den. A player within guard_m of the den while the pack is alive: the pack comes home and warns for warn_s, then rushes one still within rush_m (a torch, a campfire and a second player hold it, Dave 25 Nov 2026). A killed pack's pups are orphans for orphan_days game days (the den gets no new pack meanwhile). (The old den keep-out is gone; wolves.town_keep_m is now behaviour only: no stalk, rush or hunt near the town markers.)",
 			"days": [60, 150],
 			"count": [2, 5],
 			"hp_x": 0.25,

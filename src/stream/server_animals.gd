@@ -1570,8 +1570,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
-	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, except at
-	# the den no more (Dave 25 Nov 2026). The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
+	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, at a
+	# den too (Dave 25 Nov 2026). The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
 	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and _fire_guard(seen_p) == Vector3.INF:
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
 			return
