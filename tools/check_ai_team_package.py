@@ -133,8 +133,18 @@ if not gate_fm or not re.search(r'^skills:\n(?:\s+- .*\n)*?\s+- ponytail-review$
     errors.append('GATE REVIEWER DOES NOT PRELOAD ponytail-review')
 import json
 settings=json.loads((root/'.claude/settings.json').read_text(encoding='utf-8'))
-for key in ('hooks','enabledPlugins','extraKnownMarketplaces','mcpServers','enableAllProjectMcpServers','enabledMcpjsonServers'):
+for key in ('enabledPlugins','extraKnownMarketplaces','mcpServers','enableAllProjectMcpServers','enabledMcpjsonServers'):
     if key in settings: errors.append(f'UNREVIEWED SETTINGS KEY {key}: review it, then update this check')
+# Hooks: only the team's own warn-only checks (Dave 25 Nov 2026, team audit step 4): PreToolUse on Bash, each running
+# tools/hooks/warn.sh, which always exits 0. Any other hook, event or a blocking onFailure needs a reviewed change here.
+WARN_HOOK=re.compile(r'^bash "\$\{CLAUDE_PROJECT_DIR\}/tools/hooks/warn\.sh" (commit|push)$')
+hooks=settings.get('hooks',{})
+if not isinstance(hooks,dict) or set(hooks)-{'PreToolUse'}:
+    errors.append('UNREVIEWED HOOK EVENT: only PreToolUse warn hooks are reviewed')
+for group in (hooks.get('PreToolUse',[]) if isinstance(hooks,dict) else []):
+    for h in group.get('hooks',[]) if group.get('matcher')=='Bash' else [{'command':'matcher '+str(group.get('matcher'))}]:
+        if h.get('type','command')!='command' or not WARN_HOOK.match(str(h.get('command',''))) or 'onFailure' in h or 'args' in h:
+            errors.append(f'UNREVIEWED HOOK: {h.get("command")}')
 for path in agent_files+skill_files:
     fm=re.match(r'\A---\n(.*?)\n---\n',path.read_text(encoding='utf-8'),re.S)
     if fm and re.search(r'^(hooks|mcpServers):', fm.group(1), re.M):
@@ -148,5 +158,5 @@ if errors:
     sys.exit(1)
 print(f'PASS: {len(core_rulebooks)} rulebooks, {len(required)} required files, {len(agent_files)} Claude Code agents, {len(skill_files)} skills')
 print('PASS: frontmatter, known instruction collisions, authority markers, guardrail references')
-print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, no hooks/plugins/MCP in shared settings, agent or skill frontmatter')
+print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, only the reviewed warn hooks and no plugins/MCP in shared settings, agent or skill frontmatter')
 print('LIMIT: static checks only; no Cowork, GitHub write, PC, Godot or live Claude evaluation.')

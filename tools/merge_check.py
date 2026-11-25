@@ -283,6 +283,9 @@ if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (
 rulings_self = subprocess.run([sys.executable, "-I", "tools/test_check_rulings.py"], capture_output=True, text=True)
 if rulings_self.returncode != 0:
     bad("rulings check self-test: " + rulings_self.stdout.strip()[-200:])
+warn_self = subprocess.run([sys.executable, "-I", "tools/test_agent_warn.py"], capture_output=True, text=True)
+if warn_self.returncode != 0:   # the warn-only commit and push hooks (tools/hooks/)
+    bad("hook warnings self-test: " + warn_self.stdout.strip()[-200:])
 
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
