@@ -30,20 +30,11 @@ jobs:
           elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
             export MERGE_CHECK_BASE="$BEFORE"
           fi
+          echo "MERGE_CHECK_BASE=${MERGE_CHECK_BASE:-origin/dev}" >> "$GITHUB_ENV"   # the watched checks step reads the same base
           python3 tools/merge_check.py
       - name: Watched checks (warn, then block on the 3rd flag; docs/RULINGS.md R-TEAM-WARN-TO-BLOCK)
-        env:
-          BEFORE: ${{ github.event.before }}
-          BASE_REF: ${{ github.base_ref }}
-        run: |
-          if [ -n "$BASE_REF" ]; then
-            base="origin/$BASE_REF"
-          elif [ -n "$BEFORE" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ]; then
-            base="$BEFORE"
-          else
-            base="origin/dev"
-          fi
-          python3 -I tools/warn_watch.py "$base"
+        if: ${{ !cancelled() }}   # its warnings show even when an earlier step failed
+        run: python3 -I tools/warn_watch.py
       - name: Deletion rule tests (Decision 61, no Godot)
         run: python3 -I tools/test_deletion_rules.py
       - name: AI team operating system static check (no Godot, no Claude run)

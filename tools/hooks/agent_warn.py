@@ -18,13 +18,22 @@ SECRETS = [
     (re.compile(r"\b(ghp|gho|ghs|github_pat)_[A-Za-z0-9_]{20,}"), "a GitHub token"),
     (re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}"), "an Anthropic key"),
     (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "an AWS key"),
-    (re.compile(r"""(?i)(password|passwd|secret|api_?key|admin_key|token)\w*["']?\s*:?[:=]\s*["'][^"'\s]{6,}["']"""), "a password or key value"),
+    (re.compile(r"""(?i)(password|passwd|secret|api_?key|admin_key|token)\w*["']?\s*:?[:=]\s*["'](?!(?-i:[A-Z0-9_]+)["'])[^"'\s]{6,}["']"""),
+     "a password or key value"),   # not an ALL_CAPS name such as an environment variable's
 ]
+VALUE_CHECK = SECRETS[-1][0]
+FIXTURE = re.compile(r"(^|/)test_[^/]+$")   # a test's made-up password or key is not a leak (real token shapes are still checked)
 PRIVATE_FILES = ("data/admin.json", "export.cfg", "export_credentials.cfg", ".env")
 
 
+STRICT = False   # tools/warn_watch.py: a git failure raises (a check that cannot read the diff must not pass); the hooks never raise
+
+
 def git(*args):
-    return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace").stdout
+    r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if STRICT and r.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args)[:120]} failed: {r.stderr.strip()[:200]}")
+    return r.stdout
 
 
 DIFF = ("diff", "HEAD", "--no-color", "--no-ext-diff", "--src-prefix=a/", "--dst-prefix=b/")   # the same shape whatever the machine's git config
@@ -54,7 +63,7 @@ def added_lines(*range_args):
 def findings(*range_args):
     """(check, path, line number, line, message) for each problem the diff adds. The checks are named for tools/warn_watch.py."""
     found = []
-    changed = set(git(*(DIFF[:1] + range_args + DIFF[2:] if range_args else DIFF), "--name-only").splitlines())
+    changed = set(git(*(DIFF[:1] + range_args + DIFF[2:] if range_args else DIFF), "--name-only", "--diff-filter=d").splitlines())
     for f in PRIVATE_FILES:
         if f in changed:
             found.append(("private-file", f, 1, "", f"{f} is a machine's private file: keep it out of the commit"))
@@ -62,7 +71,7 @@ def findings(*range_args):
         if CLIENT.match(path) and path not in PRINTS_ON_PURPOSE and PRINT.match(line):
             found.append(("client-print", path, number, line, f"{path}: a bare print() in client code; use FreezeWatch.printer.line"))
         for rx, what in SECRETS:
-            if rx.search(line):
+            if rx.search(line) and not (rx is VALUE_CHECK and FIXTURE.search(path)):
                 found.append(("secret", path, number, line, f"{path}: this line looks like {what}; the repos are public"))
     return found
 
