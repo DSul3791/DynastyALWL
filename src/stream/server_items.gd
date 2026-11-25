@@ -10992,6 +10992,7 @@ func _boulder_drop_spot(peer: int, it: Dictionary, size_now: float) -> Vector3:
 	var reach: float = maxf(flat.length(), size_now) + 1.0
 	var spot: Vector3 = Vector3(it["pos"].x + away.x * reach, _peer_pos[peer].y, it["pos"].z + away.y * reach)
 	_boulder_drops[key] = spot
+	_say(peer, "Too heavy to carry: what you break off piles up behind you.")   # once per miner and rock: the pile was silent (lane A robot run 25 Nov 2026)
 	return spot
 
 
@@ -14153,7 +14154,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 		return
 
 	if _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
-		_say(peer, "Too far to repair that.")
+		_say(peer, "Too far to build that. Walk up to the blueprint." if it["struct"].has("site") else "Too far to repair that.")   # a blue blueprint is filled by this same hit (lane A robot run 25 Nov 2026: "repair" read wrong)
 		return
 
 	var hammer: int = _swing_tool(peer, inv, held_slot, "hammer")
