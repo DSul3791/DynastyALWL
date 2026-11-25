@@ -37,6 +37,9 @@ CASES = [
     ("client scene print", {"scenes/terrain_client/c.gd": "func f():\n\tprint(1)\n"}, 1),
     ("server scene print is fine", {"scenes/terrain_server/s.gd": "func f():\n\tprint(1)\n"}, 0),
     ("lag run prints on purpose", {"src/client/lag_run.gd": "func f():\n\tprint(1)\n"}, 0),
+    ("an environment variable name is fine", {"src/stream/x.gd": "const ENV_PASSWORD := \"DYNASTY_SERVER_PASSWORD\"\n"}, 0),
+    ("a test fixture's made-up key is fine", {"src/worldgen/tools/test_x.gd": "const ADMIN_KEY := \"admincheck001\"\n"}, 0),
+    ("a real token shape in a test still warns", {"src/worldgen/tools/test_y.gd": "var t = \"ghp_" + "b" * 36 + "\"\n"}, 1),
     ("added line that starts with ++", {"src/client/b.gd": "++ x\n\tprint(1)\n"}, 1),
 ]
 

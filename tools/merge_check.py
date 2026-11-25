@@ -286,6 +286,9 @@ if rulings_self.returncode != 0:
 warn_self = subprocess.run([sys.executable, "-I", "tools/test_agent_warn.py"], capture_output=True, text=True)
 if warn_self.returncode != 0:   # the warn-only commit and push hooks (tools/hooks/)
     bad("hook warnings self-test: " + warn_self.stdout.strip()[-200:])
+watch_self = subprocess.run([sys.executable, "-I", "tools/test_warn_watch.py"], capture_output=True, text=True)
+if watch_self.returncode != 0:   # warn first, block on the 3rd flag (tools/warn_watch.py)
+    bad("watched checks self-test: " + watch_self.stdout.strip()[-200:])
 
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
