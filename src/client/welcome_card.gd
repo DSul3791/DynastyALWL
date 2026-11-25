@@ -11,6 +11,7 @@ const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const SettingsRead := preload("res://src/client/settings_read.gd")
 const SEEN_PATH := "user://welcome_seen.cfg"
 const WIDTH_PX := 620.0      # on the 1920 x 1080 canvas
+const PAD_PX := 20.0         # the text's margin inside the border
 const BOTTOM_GAP_PX := 210.0 # above the hotbar: the HUD stays low, the crosshair stays clear (about 230 px tall at 18 px: its top near y 640)
 
 var showing: bool = false
@@ -97,7 +98,12 @@ func _build() -> void:
 	_panel = PanelContainer.new()
 	_panel.name = "WelcomeCard"
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.add_theme_stylebox_override("panel", DynastyTheme.panel_style())
+	var style: StyleBoxFlat = DynastyTheme.panel_style().duplicate()
+	style.content_margin_left = PAD_PX       # the text clear of the border (Lane A 25 Nov 2026: it started a few pixels from the left edge)
+	style.content_margin_right = PAD_PX
+	style.content_margin_top = PAD_PX * 0.75
+	style.content_margin_bottom = PAD_PX * 0.75
+	_panel.add_theme_stylebox_override("panel", style)
 	_panel.custom_minimum_size = Vector2(WIDTH_PX, 0.0)
 	_panel.anchor_left = 0.5
 	_panel.anchor_right = 0.5
