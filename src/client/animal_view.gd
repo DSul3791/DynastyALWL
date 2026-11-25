@@ -1438,7 +1438,7 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						var tint: Array = entry.get("tint", [])
 
 						if tint.size() == 3:
-							mat.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))   # one model as a darker kind (the black bear from bear_2)
+							mat.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]))   # one model as a darker kind (the black bear, from the brown bear model)
 
 						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
 						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.

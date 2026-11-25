@@ -52,7 +52,7 @@
 					"clips": {
 						"0": "Idle",
 						"3": "Idle_Breathing_01",
-						"10": "StandHind_Idle_01",
+						"10": "Attack_StandAngry_01_Low",
 						"11": "Sprint",
 						"12": "Idle_Breathing_01",
 						"walk": "Walk",
