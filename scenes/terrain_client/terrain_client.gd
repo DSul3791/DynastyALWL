@@ -1269,6 +1269,9 @@ func _attach_auth() -> void:
 			rows[index]["password"] = {"salt": salt_hex, "hash": hash_hex}
 			ServerListScript.save_rows(rows))
 	_auth.refused.connect(func(reason: String) -> void:
+		if _auth.remembered_was_wrong:
+			_forget_password()   # a remembered password the guard refused (busy) would be tried, and refused, again
+
 		var words: String = "You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."
 
 		if reason == "busy":
@@ -1304,7 +1307,8 @@ func _on_password_needed(tries_left: int, wrong: bool) -> void:
 		_password_box.on_cancel = _back_to_servers
 		_password_box.setup(self)
 
-	_password_box.ask(_server_label(), tries_left, wrong and not _auth.remembered_was_wrong, _auth.remembered_was_wrong)
+	var saved_failed: bool = _auth.remembered_was_wrong or _auth.kept_was_wrong   # sent by itself, not typed now: "the saved password no longer works"
+	_password_box.ask(_server_label(), tries_left, wrong and not saved_failed, saved_failed)
 
 
 func _forget_password() -> void:
