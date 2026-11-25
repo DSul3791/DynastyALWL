@@ -1798,7 +1798,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 			# At a leg's end the step that found it had not moved: it runs on along the new leg in this same step, not stand a whole
 			# step at every leg's end (a puma sprinting at 13 m/s made 10 over 12 m legs; ANIMAL_SCENARIOS.md gap 1).
-			if a["state"] == FLEE and r["arrived"] and not r["moved"]:
+			if a["state"] == FLEE and r["arrived"]:
+				plan(a, a["target"])   # the new leg is the plan the client draws toward
 				var on: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 				if on["moved"]:

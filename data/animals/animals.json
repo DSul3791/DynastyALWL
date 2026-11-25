@@ -235,7 +235,7 @@
 			"sprint_mps": 10.5,
 			"sprint_s": 5.0,
 			"chase_mps": 7.0,
-			"flee_mps": 7.0,
+			"flee_mps": 13.0,
 			"lope_mps": 11.0,
 			"graze_s": [
 				4.0,

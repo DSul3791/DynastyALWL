@@ -49,7 +49,12 @@ func _initialize() -> void:
 		var closest: float = INF
 		var gap: float = 0.0
 
+		var safe: float = float(def.get("safe_m", 35.0))
+
 		for n in int(20.0 / 0.05):
+			if gap >= safe and n * 0.05 >= 2.0:
+				break   # got away: past safe_m it settles, and a chase on from there tests the startle, not the lope
+
 			var p: Vector3 = players[0]["pos"]
 			var to: Vector3 = f["pos"] - p
 			to.y = 0.0
@@ -60,13 +65,64 @@ func _initialize() -> void:
 			if n * 0.05 >= 2.0:
 				closest = minf(closest, gap)
 
-		check(gap > 15.0 and closest > 3.0, "a shy %s outruns a player chasing it at 9 m/s (%.0f m ahead after 20 s, closest %.1f m)" % [kind, gap, closest])
+		check(gap >= minf(15.0, safe) and closest > 3.0, "a shy %s outruns a player chasing it at 9 m/s (%.0f m ahead after 20 s, closest %.1f m)" % [kind, gap, closest])
+
+	# At a leg's end (pos on its target), a fleeing animal with the player 8 m behind runs on along a new leg in the same step: it covers at
+	# least half a step's run, is still fleeing, and heads somewhere new (it stood a whole step at every leg end). With a wall across the
+	# new way (blocked beyond x 2), it does not pass it.
+	for walled in [false, true]:
+		var e = make()
+		players = [{"peer": 1, "pos": Vector3(-8.0, 10.0, 0.0), "stance": 0, "hp": 1.0}]
+		var eid: int = e.spawn("deer", 0.0, 0.0)
+		var ed: Dictionary = e.animals[eid]
+		ed["temper"] = "passive"
+		e._bolt(ed, players[0]["pos"], e.species_def("deer"))
+		ed["burst"] = 0.0
+
+		if walled:
+			e.blocked = func(x, _z): return x > 2.0
+
+		for _n in 40:
+			if int(ed["state"]) != e.FLEE:
+				break
+
+			ed["target"] = ed["pos"]   # at its leg's end
+			var was: Vector3 = ed["pos"]
+			var pp: Vector3 = players[0]["pos"]
+			var pd: float = Vector2(pp.x - ed["pos"].x, pp.z - ed["pos"].z).length()
+			e._step(ed, 0.1, pd, pp, pd, pp)   # this animal's own step (tick staggers them)
+
+			if not walled:
+				var ran: float = Vector2(ed["pos"].x - was.x, ed["pos"].z - was.z).length()
+				check(int(ed["state"]) != e.FLEE or ran >= 0.5 * float(e.species_def("deer")["flee_mps"]) * 0.1 * 0.5, "at a leg's end a fleeing deer runs on in the same step (%.2f m)" % ran)
+				break
+
+		if walled:
+			check(float(ed["pos"].x) <= 2.0 + 0.01, "the step on from a leg's end never passes a wall (x %.2f)" % float(ed["pos"].x))
 
 	# Wolves back off as a pack (server_wolves _wait): with a player close behind they lope at lope_mps, faster than the player runs.
 	var w = make()
 	check(float(w.species_def("wolf").get("lope_mps", 0.0)) > RUN_MPS, "a wolf backing off from a player lopes faster than the player runs")
 	var infos: Array = [{"peer": 1, "pos": Vector3(10.0, 10.0, 0.0)}]
 	check(w.wolves._player_within(Vector3.ZERO, infos, 20.0) and not w.wolves._player_within(Vector3.ZERO, infos, 5.0), "a player 10 m off is within 20 m, not within 5 m")
+
+	# A pack backing off (_wait) to its retreat point: a member with a player 20 m off lopes (lope_mps), with nobody near it trots.
+	var covered: Array = []
+
+	for near in [true, false]:
+		var v = make()
+		var pid: int = v.wolves.spawn_pack(0.0, 0.0)
+		var pack: Dictionary = v.wolves.packs[pid]
+		var members: Array = (pack["ids"] as Array).map(func(i): return v.animals[i])
+		var wolf: Dictionary = members[0]
+		var from: Vector3 = wolf["pos"]
+		pack["point"] = from + Vector3(300.0, 0.0, 0.0)
+		pack["timer"] = 100.0
+		var near_by: Array = [{"peer": 1, "pos": from + Vector3(-20.0, 0.0, 0.0), "stance": 0}] if near else [{"peer": 1, "pos": from + Vector3(-500.0, 0.0, 0.0), "stance": 0}]
+		v.wolves._wait(pack, [wolf], from, 1.0, near_by)
+		covered.append(Vector2(wolf["pos"].x - from.x, wolf["pos"].z - from.z).length())
+
+	check(float(covered[0]) > RUN_MPS * 0.9 and float(covered[1]) < float(covered[0]), "a wolf backing off lopes with a player near (%.1f m in 1 s), trots with none (%.1f m)" % [float(covered[0]), float(covered[1])])
 
 	print("test_flee_lope: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
