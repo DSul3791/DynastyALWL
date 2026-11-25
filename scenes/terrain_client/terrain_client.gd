@@ -1818,6 +1818,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
 	_player_view.name = "Players"
 	_player_view.table = items.table
+	_player_view.bed_near = items.bed_near   # another player lying on a bed is drawn asleep, not crawling
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
@@ -5311,6 +5312,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
+		_avatar.set_meta("lie_rest", lying_at_rest())   # lying: the sleep pose at rest, the crawl otherwise (avatar_driver.gd lie_clip)
 		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
 
 		if not _seat.is_empty() and stance.stance == StanceScript.SIT and _avatar.animation_player != null and _avatar.animation_player.has_animation("sit_chair"):
@@ -5975,6 +5977,18 @@ func _lie_on_bed(bed_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
 		_bed_hold = {"at": at, "off": off, "yaw": body.rotation.y}
 
 
+# Lying at rest, drawn in the sleep pose (dynasty_body.gd "lie"): on a bed, asleep (held Z, or collapsed) or fainted. Lying any other way is the stealthy
+# crawl (Dave, QA #10, 25 Nov 2026: "right now when you lay down its always like you are sleeping. that should only be when you are lying on a bed or when
+# you hold Z to go to sleep. otherwise you should first drop like you are being stealthy and crawling").
+func lying_at_rest() -> bool:
+	return stance.stance == StanceScript.LIE and (not _bed_hold.is_empty() or (items != null and (items.asleep or items.strain_state >= 2)))
+
+
+# Lying off a bed and awake: the movement keys crawl (StanceScript.CRAWL_MPS) instead of standing the player up.
+func crawling() -> bool:
+	return stance.stance == StanceScript.LIE and not lying_at_rest()
+
+
 # Holds a player lying on a bed there (true while held: no gravity, no sliding off). A stance the server changed ends it.
 func _hold_bed() -> bool:
 	if _bed_hold.is_empty():
@@ -6082,7 +6096,8 @@ func _move_player(delta: float) -> void:
 	if photo.active and input != Vector3.ZERO:   # in the photo view the character walks facing where it goes (the mouse never turns it)
 		body.rotation.y = lerp_angle(body.rotation.y, photo.facing_for(direction, body.rotation.y), clampf(delta * 10.0, 0.0, 1.0))
 
-	# Any movement key stands the player up from sitting or lying; those stances do not move.
+	# Any movement key stands the player up from sitting, and from lying at rest (on a bed, asleep or fainted); lying off a bed the keys crawl
+	# (Dave, QA #10, 25 Nov 2026). Space stands up from a crawl too.
 	var sleeping_now: bool = items != null and items.asleep
 
 	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:   # waking works with a screen open too (Dave 2026-10-21: hold Space to wake)
@@ -6095,7 +6110,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (_move_held("jump") and not sleeping_now):
+	if (input != Vector3.ZERO and not crawling()) or (_move_held("jump") and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 

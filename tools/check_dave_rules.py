@@ -20,6 +20,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
+    "R-PLAYER-CRAWL": ["test_crawl", "test_animal_senses", "test_remote_players"],
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
@@ -146,6 +147,16 @@ def witness_glow():
         check("R-FLORA-WITNESS-GLOW", (ROOT / "assets/trees" / f).is_file() and (ROOT / "assets/trees" / f).stat().st_size > 1000 if f.endswith(".png") else (ROOT / "assets/trees" / f).is_file(), f"the witness leaf's vein mask is there ({f})")
 
 
+def stealth():
+    sen = data("data/animals/animals.json")["senses"]
+    crouch, lie = float(sen["crouch_factor"]), float(sen["lie_factor"])
+    check("R-PLAYER-CRAWL", 0.0 < lie < crouch <= 0.5, f"crouching ({crouch}) and crawling ({lie}) drastically cut how far animals sense you, crawling most")
+    check("R-PLAYER-CRAWL", float(sen["brush_crawl_share"]) <= float(sen["brush_crouch_share"]) < 1.0, "crawling through brush is no louder than crouching, both quieter than walking")
+    check("R-PLAYER-CRAWL", float(sen["lie_eye_m"]) < float(sen["low_eye_m"]) < 1.6, "a crawler is looked for lower than a croucher, a croucher lower than a stander")
+    stance = (ROOT / "src/client/stance.gd").read_text(encoding="utf-8")
+    check("R-PLAYER-CRAWL", re.search(r"^const SPEED := \[1\.0, [0-9.]+, 0\.0, CRAWL_MPS / 3\.2\]", stance, re.M), "lying off a bed moves (the crawl), sitting does not")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -158,7 +169,7 @@ def ruling_lines():
 def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
-             "R-FLORA-WITNESS-GLOW": witness_glow}
+             "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth}
     for key, step in steps.items():
         try:
             step()

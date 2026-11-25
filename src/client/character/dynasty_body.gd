@@ -49,7 +49,16 @@ const CLIP_MAP := {
 	# Sitting ON a seat (E on a chair, stool, log seat or bench; Dave 5 Nov 2026 "we need a sitting on a chair action"): the same chair clip held on its first frame
 	# (_hold_first), not turned into the ground sit. Its hips are 0.51 m up, about 0.28 m behind the feet, hands on the thighs: the seats are all 0.45 m high (piece_look.gd).
 	"sit_chair": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],
-	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],
+	"lie": ["Sleep_Normally", 0.0, -1.0, true, 1.0],     # lying at rest only: on a bed, asleep or fainted (avatar_driver.gd lie_rest)
+	# The stealthy crawl, lying off a bed (Dave, QA #10, 25 Nov 2026). Dave's set has no plain forward crawl and no prone idle. Checked offline on both glbs (bone positions from the
+	# files, 25 Nov 2026): Crawl_Backward's hands and left knee barely move against the body while it travels 0.3 m a loop, so it slides and is used only held still ("prone": its first
+	# frame, hips 0.33 m, head 0.45 m). Crawl_and_Look_Back is a real hands-and-knees crawl: between 0.83 and 1.63 s (one stride, the looking back left out, the pose at both ends
+	# as close as the walk's own loop) a hand on the ground moves back under the body at 0.50 to 0.61 m/s while the body travels 0.59 to 0.64 m/s (tools/clip_slide.py). Retimed 1.4, the planted hand
+	# moves at about the crawl's 0.4 m/s (stance.gd CRAWL_MPS; avatar_driver.gd speed_scale follows the real pace); backwards is the same stride played backwards (REVERSED_CLIPS).
+	# Crawling it is on hands and knees (head about 0.7 m up), lying still it drops low. Not yet seen in the game.
+	"crawl": ["Crawl_and_Look_Back", 0.833, 1.633, true, 1.4],
+	"crawl_back": ["Crawl_and_Look_Back", 0.833, 1.633, true, 1.4],
+	"prone": ["Crawl_Backward", 0.0, -1.0, true, 1.0],
 	# Heavy_Hammer_Swing is 1.83 s and holds ONE blow, read from the hand's height in the playing clip (1 Nov 2026): the stance dips at 0.46 s, the hands rise from 0.5 s to the top at 1.2 s, and
 	# the strike comes down from 1.4 s, fastest at 1.53 s, hands lowest at 1.73 s; the clip ends at 1.83 s. (The speed peak at 0.73 s is the rise, not a blow.) The game wants the blow at 0.5 s
 	# of 0.95 s (0.52 of 1.0 for the pick, held_item.gd HIT_AT), so the rise is squeezed before the impact (taken at 1.68 s, the hands nearly at their lowest) and the short follow-through is
@@ -74,6 +83,8 @@ const CLIP_MAP := {
 	"stand_up": ["Sit_to_Stand_Transition_M", 0.0, -1.0, false, 1.0],
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],
 }
+
+const REVERSED_CLIPS := ["crawl_back"]   # game clips made by playing their source backwards (crawling backwards: the forward stride reversed)
 
 static var _scenes: Dictionary = {}            # model id -> its PackedScene, once available() found it usable
 static var _checked: Dictionary = {}           # model id -> false (the glb cannot be used) or true; missing: not tried yet
@@ -349,6 +360,11 @@ func _build_animations() -> void:
 
 			var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
+			if game_name in REVERSED_CLIPS:
+				made = _reversed(made)
+			elif game_name == "prone":
+				_hold_first(made)
+
 			if game_name == "sit":
 				_hold_first(made)
 				_ground_sit(made, own.get("Idle", made), skeleton)
@@ -453,6 +469,31 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 				out.rotation_track_insert_key(track, when, src.rotation_track_interpolate(t, float(kt)))
 			else:
 				out.scale_track_insert_key(track, when, src.scale_track_interpolate(t, float(kt)))
+
+	return out
+
+
+# A copy of `anim` played backwards: every key at time t moves to length - t (the hips travel was already taken out by _clip, so the copy stays on the spot; a hand
+# planted on the ground then moves forward under the body, as it must going backwards).
+static func _reversed(anim: Animation) -> Animation:
+	var out: Animation = Animation.new()
+	out.length = anim.length
+	out.loop_mode = anim.loop_mode
+
+	for t in range(anim.get_track_count()):
+		var type: int = anim.track_get_type(t)
+		var track: int = out.add_track(type)
+		out.track_set_path(track, anim.track_get_path(t))
+
+		for k in range(anim.track_get_key_count(t)):
+			var when: float = anim.length - anim.track_get_key_time(t, k)
+
+			if type == Animation.TYPE_POSITION_3D:
+				out.position_track_insert_key(track, when, anim.track_get_key_value(t, k))
+			elif type == Animation.TYPE_ROTATION_3D:
+				out.rotation_track_insert_key(track, when, anim.track_get_key_value(t, k))
+			else:
+				out.scale_track_insert_key(track, when, anim.track_get_key_value(t, k))   # _clip makes only position, rotation and scale tracks
 
 	return out
 

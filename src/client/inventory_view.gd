@@ -5067,6 +5067,26 @@ func seat_near(at: Vector3, reach: float) -> Dictionary:
 	return best
 
 
+# A bed (a structure that sets the spawn: rough, straw, feather or canopy bed) under a body whose feet are at `feet`: its middle within BED_UNDER_M
+# across and a little height of them. Another player lying there is drawn asleep, not crawling (player_view.gd lie_rest).
+const BED_UNDER_M := 1.2   # bed.json reach_m: the server's "lying on a bed" reach
+
+
+func bed_near(feet: Vector3) -> bool:
+	for id in _world:
+		var row: Dictionary = _world[id]
+
+		if not (row.get("pos") is Vector3) or str(_structure_by_state(int(row.get("state", -1))).get("use", "")) != "set_spawn":
+			continue
+
+		var pos: Vector3 = row["pos"]
+
+		if Vector2(pos.x - feet.x, pos.z - feet.z).length() <= BED_UNDER_M and absf(pos.y - feet.y) < 1.5:
+			return true
+
+	return false
+
+
 var _def_by_state: Dictionary = {}   # structure state -> its structures.json row, built once (the craft list asks for every world row, per recipe)
 
 

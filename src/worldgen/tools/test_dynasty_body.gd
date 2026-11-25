@@ -18,7 +18,7 @@ func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
 
-	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "sit_chair", "idle_torch", "walk_torch", "jog_torch", "run_torch", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land"]:
+	for clip in ["idle", "walk", "jog", "run", "crouch", "crouch_walk", "crouch_walk_back", "crouch_walk_left", "crouch_walk_right", "crouch_walk_torch", "crouch_walk_left_torch", "crouch_walk_right_torch", "sit", "sit_chair", "idle_torch", "walk_torch", "jog_torch", "run_torch", "lie", "swing", "swing_fp", "jab", "throw", "use", "chop", "pick_overhead", "carry_idle", "carry_walk", "jump", "fall", "land", "crawl", "crawl_back", "prone"]:
 		_check(body.animation_player.has_animation(clip), "clip " + clip)
 
 	_check(body.animation_player.get_animation("walk").loop_mode == Animation.LOOP_LINEAR, "walk loops")
@@ -122,6 +122,56 @@ func _init() -> void:
 	await process_frame
 	var crouch_hips: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin
 	_check(crouch_hips.y > 0.35 and crouch_hips.y < 0.6, "crouch: hips low")
+
+	# The stealthy crawl (Dave QA #10, 25 Nov 2026): lying still holds the low crawl's first frame; crawling forward is Crawl_Backward played backwards. No sliding (Dave):
+	# while a hand is down on the ground it moves back under the body (forward is +Z) at about the crawl's 0.4 m/s at speed scale 1 (avatar_driver.gd speed_scale),
+	# and backwards it moves forward; the body is drawn in place (the game moves it).
+	var prone_at: Array = []
+
+	for at in [0.0, 0.6]:
+		body.play("prone", 1.0, 0.0)
+		body.animation_player.seek(at, true)
+		await process_frame
+		await process_frame
+		prone_at.append((s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin)
+
+	_check((prone_at[0] as Vector3).y < 0.5, "prone: hips low (%.2f m)" % (prone_at[0] as Vector3).y)
+	_check((prone_at[1] as Vector3).distance_to(prone_at[0]) < 0.03, "prone: holds still")
+
+	for spec in [["crawl", -1.0], ["crawl_back", 1.0]]:
+		var anim: Animation = body.animation_player.get_animation(spec[0])
+		var samples: int = 32
+		var rows: Array = []
+
+		for n in samples + 1:
+			body.play(spec[0], 1.0, 0.0)
+			body.animation_player.seek(anim.length * float(n) / float(samples), true)
+			await process_frame
+			await process_frame
+			rows.append([(s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_LeftHand"))).origin, (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightHand"))).origin])
+
+		var dt: float = anim.length / float(samples)
+		var speeds: Array = []
+
+		for side in 2:
+			var low: float = INF
+
+			for r in rows:
+				low = minf(low, (r[side] as Vector3).y)
+
+			for n in samples:
+				var a: Vector3 = rows[n][side]
+				var b: Vector3 = rows[n + 1][side]
+
+				if a.y < low + 0.04 and b.y < low + 0.04:
+					speeds.append((b.z - a.z) / dt)
+
+		var mean: float = 0.0
+
+		for v in speeds:
+			mean += float(v) / float(speeds.size())
+
+		_check(speeds.size() >= 4 and signf(mean) == float(spec[1]) and absf(mean) > 0.2 and absf(mean) < 0.7, "%s: a planted hand moves %s under the body at about the crawl's pace (%.2f m/s over %d steps)" % [spec[0], "back" if spec[1] < 0.0 else "forward", mean, speeds.size()])
 
 	print("dynasty body tests: %d failures" % _fails)
 	quit()

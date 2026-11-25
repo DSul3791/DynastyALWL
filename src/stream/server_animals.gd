@@ -3143,6 +3143,8 @@ func _sample_noise(players: Array, delta: float) -> void:
 
 				if pi < stances.size() and int(stances[pi]) == 1:
 					extra *= float(sen.get("brush_crouch_share", 0.5))
+				elif pi < stances.size() and int(stances[pi]) >= 3:
+					extra *= float(sen.get("brush_crawl_share", 0.25))   # crawling (Dave, QA #10, 25 Nov 2026)
 
 				noise *= 1.0 + extra / (skill * skill)
 
@@ -3205,7 +3207,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 		f *= float(sen.get("sit_factor", 0.8))
 
 	if d > float(sen.get("always_notice_m", 8.0)):
-		var sight: float = _sight(a, def, p, d, stance == 1 or stance == 3)
+		var sight: float = _sight(a, def, p, d, float(sen.get("lie_eye_m", 0.6)) if stance == 3 else (float(sen.get("low_eye_m", 1.0)) if stance == 1 else STAND_EYE_M))
 
 		if sight < 1.0:
 			f *= lerpf(float(sen.get("blind_factor", 0.35)), 1.0, sight)
@@ -3215,11 +3217,11 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
 # tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Fog cuts it by distance (animals_in_fog_server.md 4.1).
-func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, eye_m: float = STAND_EYE_M) -> float:
 	if not fog_on():
-		return _sight_clear(a, def, p, d, low)
+		return _sight_clear(a, def, p, d, eye_m)
 
-	var clear: float = _sight_clear(a, def, p, d, low)
+	var clear: float = _sight_clear(a, def, p, d, eye_m)
 	var strength: float = fog_strength_between(a["pos"], p) if clear > 0.0 else 0.0
 	var haze: float = WeatherRules.fog_haze_density(_wx)
 
@@ -3230,13 +3232,16 @@ func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> 
 	return clear * fog_sight_share(d, FogShape.depth(haze, strength), float(fc.get("sight_full_fog", 0.53)), float(fc.get("sight_gone_fog", 0.78)))
 
 
-func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+const STAND_EYE_M := 1.6   # how high above the ground an animal looks for a standing player (senses low_eye_m crouching, lie_eye_m lying or crawling)
+
+
+func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, eye_m: float = STAND_EYE_M) -> float:
 	if not ground_height.is_valid():
 		return 1.0
 
 	var sen: Dictionary = cfg.get("senses", {})
 	var eye_a: float = a["pos"].y + float(def.get("eye_m", 0.5))
-	var eye_p: float = p.y + (1.0 if low else 1.6)
+	var eye_p: float = p.y + eye_m
 	var n: int = clampi(int(d / float(sen.get("los_step_m", 4.0))), 1, 24)
 	var under: int = 0
 	var looked: int = 0

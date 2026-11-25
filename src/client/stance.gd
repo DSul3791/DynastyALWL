@@ -1,8 +1,11 @@
 extends RefCounted
 
 # The player's stance (owner, 2026-10-20): standing, crouching (C), sitting (X) and lying
-# down (Z), each key a toggle. Any movement key stands the player up from sitting or lying;
-# crouching is kept while moving, slowly. Sitting or lying drops exertion to 0 (the server's
+# down (Z), each key a toggle. Any movement key stands the player up from sitting; crouching is
+# kept while moving, slowly. Lying off a bed is a low stealthy crawl (Dave, QA #10, 25 Nov 2026:
+# "otherwise you should first drop like you are being stealthy and crawling"): the movement keys
+# crawl at CRAWL_MPS. Lying on a bed, asleep or fainted the movement keys still stand the player
+# up (terrain_client.gd _move_player decides which). Sitting or lying drops exertion to 0 (the server's
 # exertion code, owner Items, reads the stance; the client sends it when it changes, see
 # `changed`).
 #
@@ -14,7 +17,8 @@ enum { STAND, CROUCH, SIT, LIE }
 const NAMES := ["standing", "crouching", "sitting", "lying down"]
 const EYE_Y := [0.7, 0.2, -0.05, -0.55]          # camera height above the body's centre
 const SHAPE_HEIGHT := [1.8, 1.2, 1.0, 0.7]       # collision capsule height (feet stay on the ground)
-const SPEED := [1.0, 0.2, 0.0, 0.0]              # share of walking pace (crouching 0.64 m/s, as it was before the walk went to 3.2)
+const CRAWL_MPS := 0.4                           # the crawl's pace (coordinator's pick for Dave, 25 Nov 2026); dynasty_body.gd retimes the crawl stride so a planted hand moves at this
+const SPEED := [1.0, 0.2, 0.0, CRAWL_MPS / 3.2]   # share of walking pace (3.2 m/s): crouching 0.64 m/s, as it was before the walk went to 3.2; crawling CRAWL_MPS
 const EYE_RATE := 5.0                            # per second, how fast the eye height follows
 const SEAT_EYE_Y := 0.23                         # sitting ON a seat (E on a chair): eyes about 1.13 m up, the chair clip's head at 1.22 m
 
@@ -48,9 +52,9 @@ func set_stance(wanted: int) -> bool:
 	return true
 
 
-# A movement key was pressed: up from sitting or lying (crouching stays).
-func moved() -> void:
-	if stance == SIT or stance == LIE:
+# A movement key was pressed: up from sitting, and from lying unless `crawl` (lying off a bed, awake: the keys crawl). Crouching stays.
+func moved(crawl: bool = false) -> void:
+	if stance == SIT or (stance == LIE and not crawl):
 		set_stance(STAND)
 
 
