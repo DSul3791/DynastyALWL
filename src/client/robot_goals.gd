@@ -243,6 +243,11 @@ func _play_goal(g: Dictionary) -> String:
 			return await _fire()
 		"berries":
 			return await _eat_wild()
+		"copper_ore":
+			if _nearest_boulder("copper_ore") == 0:
+				return "robot cannot find copper yet: no copper rock is drawn within 400 m (a player explores along the rivers; the server's resources line gives the nearest by route)"
+
+			return await _gather("copper_ore", int(check.get("count", 1)))
 		"path":
 			return await _path(int(check.get("count", 15)))
 		"sell":
@@ -1014,7 +1019,13 @@ func _build(structure: String) -> String:
 	else:
 		for side in range(12):   # a player turns to open ground when the game says a tree is in the way
 			var heard: int = r._notices.size()
-			at = c.body.global_position - (c.body.global_transform.basis.z * (5.0 + 8.0 * float(side >= 4) + 10.0 * float(side >= 8))).rotated(Vector3.UP, float(side) * PI * 0.5)
+			var out: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, float(side) * PI * 0.5 + 0.4)
+			var far: float = 8.0 * float(side >= 4) + 10.0 * float(side >= 8)
+
+			if far > 0.0:   # farther out: walk there first, since a blueprint is placed only within reach
+				await r._go_to(_home + out * far, 30.0, 2.0)
+
+			at = c.body.global_position + out * 4.0
 			var y: float = float(c.items._ground_below.call(at))
 			at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 			c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
