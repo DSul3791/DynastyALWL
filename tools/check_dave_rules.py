@@ -23,6 +23,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
+    "R-SOUND-MENU-MUSIC": ["test_title_music"],
 }
 
 results = []   # (key, ok, what)

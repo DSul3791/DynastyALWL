@@ -22,7 +22,7 @@ Each row: owner of the next step, the exact next step, why. Nothing here has bee
 | 14 | Sound review cards for Dave | Moderator (qa.html), Jason | Moderator answers whether `Audio:` lines may render `<audio>`; then ~15 cards, one per group | Dave cannot hear the whole game |
 | 15 | Loudness test and mix table | Jason | Test reading every ogg peak vs its bus window | No guard against a too-loud clip |
 | 16 | Diff `kathleen-creature-sounds`, `-water-soft` leftovers | Jason | Per-hunk diff vs daily, then drop branches | Cherry says applied; hunks unread |
-| 17 | Music | Dave | Card: music yes/no | Undecided |
+| 17 | Music | Dave | Decided 25 Nov 2026: R-SOUND-MENU-MUSIC (docs/RULINGS.md) | Done (#1941) |
 
 ## Added 1 Nov 2026 evening (left over from the play-test fixes)
 
