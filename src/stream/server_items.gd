@@ -908,6 +908,7 @@ func peer_left(peer: int) -> void:
 	_zone_checked.erase(peer)
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
+	_goal_what.erase(peer)
 	if not still_in:
 		_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")   # a stale connection never writes its old spot over the live one's
 
@@ -4164,6 +4165,7 @@ func _process_carcass(peer: int, inv, id: int, held_slot: int) -> void:   # held
 	if int(st["blows"]) >= blows_total:
 		_items.erase(id)
 		practice(peer, "dress_carcass")
+		_goal_what[peer] = str(st["species"]).replace("_", " ")   # the done line names the animal (QA #9: a bear was called a rabbit)
 		_goal_event(peer, "carcass_worked")
 
 		if bool(st.get("snared", false)):
@@ -25486,7 +25488,7 @@ func _hints_check(peer: int) -> void:
 # Goals (data/items/starter_goals.json by Sal, camp_goals.json; Tyler 31 Oct 2026; GOALS-REPAIR WP-GUIDE-UI 14 Nov 2026): the guide's goals in their authored order.
 # Every goal tracks on its own from the start of the character and completes the moment its check is met, in any order (GA-40): `after` names the goals
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
-# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {stored_item_any: [ids], count} (units put into storage containers by hand, _goal_stored), {have_item, count} and {have_item_any: [ids], count}
+# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {made_item_all: [ids], or_have?} (one of each id: a tier's tool set), {got_item, count} (gathered first-hand, _goal_got), {stored_item_any: [ids], count} (units put into storage containers by hand, _goal_stored), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
 # goal_counts, the same atomic file as the coins); the reward (its stage's copper, goal_rewards.json; coins only, Dave 14 Nov) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
@@ -25499,6 +25501,7 @@ var send_goals: Callable       # (peer, rows Array): the whole goal list at the 
 var send_goal_done: Callable   # (peer, id String, copper int): a goal this character has just completed and the copper it paid (protocol 119)
 var send_goal_progress: Callable   # (peer, changes Dictionary id -> count): how far the unfinished goals with an amount have got, as they move (protocol 122)
 var _goal_sent: Dictionary = {}    # peer -> {goal id -> the count last sent}: goal_progress sends only what moved
+var _goal_what: Dictionary = {}    # peer -> the animal last worked, for a goal's "done" line ({what}; QA #9)
 
 
 func _goals_data() -> Array:
@@ -25727,6 +25730,23 @@ func _goal_progress(peer: int, st: Dictionary, check: Dictionary, goal_id: Strin
 
 		return Vector2i(maxi(made_any, have_any), need)
 
+	# A set: one of each id, made (or held, with or_have), and its amount is the number of ids (Dave 25 Nov 2026: "make all the wooden
+	# tools you can make early... when its stones time make all the stone stuff", one goal per tier with its tools as the list).
+	if check.has("made_item_all"):
+		var ids: Array = check["made_item_all"]
+		var have_set: int = 0
+
+		for id in ids:
+			var one: int = int(st["goal_counts"].get("made:" + str(id), 0))
+
+			if one < 1 and bool(check.get("or_have", false)) and inv != null:
+				one = _goal_have(st, inv, str(id))
+
+			if one >= 1:
+				have_set += 1
+
+		return Vector2i(have_set, ids.size())
+
 	if inv == null:
 		return Vector2i(0, need)
 
@@ -25804,6 +25824,10 @@ func _goals_check(peer: int) -> void:
 			# One notice for the goal, its reward and the next goal: two lines in a row left only the second on screen, so a goal's coins
 			# looked like they came from the tree or plant being worked (playtest 12 Nov 2026 TEST-009).
 			var line: String = "Goal done: %s." % str(goal.get("title", id))
+
+			if goal.has("done") and _goal_what.has(peer):   # what was really done, in the goal's own words: "You worked a black bear." (QA #9)
+				var what: String = str(_goal_what[peer])
+				line = "Goal done: %s." % str(goal["done"]).replace("{what}", ("an " if what.left(1) in ["a", "e", "i", "o", "u"] else "a ") + what)
 
 			if paid > 0:
 				line += " You earn %s." % _coin_words(paid)

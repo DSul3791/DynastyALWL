@@ -68,6 +68,8 @@ def targets(check):
     for k in ["made_item", "got_item", "have_item"]:
         if check.get(k):
             return ("items", [check[k]])
+    if check.get("made_item_all"):   # a set needs every item, so it is reached at its latest one
+        return ("all", list(check["made_item_all"]))
     for k in ["made_item_any", "have_item_any", "stored_item_any"]:
         if check.get(k):
             return ("items", list(check[k]))
@@ -85,7 +87,7 @@ def main():
         table = built if kind == "built" else items
         reached = [STAGES.index(table[i]) for i in ids if i in table]
         want = STAGES.index(GOAL_STAGE.get(str(g.get("stage", "")), "steel"))
-        got = min(reached) if reached else None
+        got = (max(reached) if len(reached) == len(ids) else None) if kind == "all" else (min(reached) if reached else None)
         late = got is None or got > want
         bad += late
         print("%-4s %-18s stage %-13s reached at %s" % ("LATE" if late else "ok", g["id"], g.get("stage"), STAGES[got] if got is not None else "never"))

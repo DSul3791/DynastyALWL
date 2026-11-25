@@ -200,7 +200,7 @@ func _init() -> void:
 
 	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
 		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
-	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and not (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone - Hammer (the Wooden one retired 18 Nov 2026) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
+	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and not (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and (live["hoe"].get("made_item_all", []) as Array).has("wooden_hoe") and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone - Hammer (the Wooden one retired 18 Nov 2026) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 19, Vector3.ZERO)   # axe 1 and campfire 16 (Dave 20 Nov 2026: "campfire 16 stones"), 2 to spare as before
@@ -274,6 +274,12 @@ func _init() -> void:
 		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty() and done("fell") and count("kindling") == kindling_fell and said.slice(fell_lines).any(func(t): return t.begins_with("Goal done: Fell a tree") and t.contains("You earn 5 copper.")), "felling a tree completes the fell goal and pays 5 copper, no kindling (coins only)")
+	# QA #9 (Dave 25 Nov 2026, a bear): the hunt goal's done line names the animal really worked, not a rabbit.
+	var hunt_lines: int = said.size()
+	var hunt_was_done: bool = done("hunt")
+	items._goal_what[1] = "black bear"
+	items._goal_event(1, "carcass_worked")
+	check(hunt_was_done or (done("hunt") and said.slice(hunt_lines).any(func(t): return t.begins_with("Goal done: You worked a black bear with your knife."))), "working a bear completes the hunt goal and its line names the bear (%s)" % str(said.slice(hunt_lines).slice(0, 1)))
 	# What a felled tree breaks into as it falls is its feller's gathering, once; the record clients get does not name the feller.
 	var stump_id: int = -1
 
@@ -512,6 +518,16 @@ func _init() -> void:
 	check(not camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "one block made: still open (count 2)")
 	camp._goal_made(1, camp.table.number_of("firewood"))
 	check(camp._goal_met(1, camp._goal_state_of(1), blocks_check, "chop_log_blocks"), "a block and a firewood made: met")
+	# made_item_all (Dave 25 Nov 2026, a tier's tool set): one of each id, the same one twice is still one; admin-given ones count nothing.
+	var set_check := {"made_item_all": ["stone_pickaxe", "stone_saw"], "or_have": true}
+	var set_state: Dictionary = camp._goal_state_of(1)
+	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("stone_saw"), 0, 1, Vector3.ZERO)
+	check(camp._goal_progress(1, set_state, set_check) == Vector2i(0, 2), "an admin-given saw: the set is 0 of 2 (%s)" % str(camp._goal_progress(1, set_state, set_check)))
+	camp._goal_made(1, camp.table.number_of("stone_pickaxe"))
+	camp._goal_made(1, camp.table.number_of("stone_pickaxe"))
+	check(camp._goal_progress(1, set_state, set_check) == Vector2i(1, 2) and not camp._goal_met(1, set_state, set_check, "stone_tools"), "two pickaxes made: the set is 1 of 2, still open")
+	camp._goal_made(1, camp.table.number_of("stone_saw"))
+	check(camp._goal_met(1, set_state, set_check, "stone_tools"), "a pickaxe and a saw made: the set is met")
 	camp.trees_near = func(_p, _r): return [[Vector2i.ZERO, 1]]
 	check(camp._tool_slot(camp.inventory_of(1), "axe") < 0 or camp._hint_trigger_true(1, camp._goal_state_of(1), "axe_held_near_tree"), "an axe on the hotbar beside a tree fires the fell hint")
 	camp.action(1, Net.ACT_ADMIN_GIVE, camp.table.number_of("campfire_kit"), 0, 1, Vector3.ZERO)
