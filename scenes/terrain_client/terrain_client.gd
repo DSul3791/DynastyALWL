@@ -1010,6 +1010,7 @@ func _update_connect_window() -> void:
 			_connect_window.close()
 			_connect_window = null
 			_load_quiet_until_msec = maxi(_load_quiet_until_msec, now + LOAD_QUIET_MS)
+			_offer_welcome()   # landed, also on the warm-cache first step that never logs "ground ready"
 			return
 
 		var silent_server: bool = waiting_for_ground and stream != null and _ground_received() == 0 and stream.pending() == 0 and _ground_watchdog.tries == 0
@@ -2807,6 +2808,19 @@ func _world_loading() -> bool:
 	return connected_msec == 0 or waiting_for_ground or _connect_window != null or Time.get_ticks_msec() < _load_quiet_until_msec
 
 
+var _welcome_offered: bool = false
+
+
+# The welcome card once this join, when the player is in the world: a robot or the screen audit never stops for it (the audit shows it as one of
+# its screens).
+func _offer_welcome() -> void:
+	if _welcome_offered or robot != null or test_screen_audit:
+		return
+
+	_welcome_offered = true
+	_welcome().offer(CharacterStoreScript.active_id())
+
+
 func _welcome():
 	if welcome_card == null:
 		welcome_card = WelcomeCardScript.new()
@@ -2822,8 +2836,8 @@ func _arrive_on_ground() -> void:
 		_ground_logged = true
 		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
 
-		if robot == null and not test_screen_audit:   # a robot or the screen audit never stops for it (the audit shows it as one of its screens)
-			_welcome().offer(CharacterStoreScript.active_id())
+		if _connect_window == null:
+			_offer_welcome()   # no join window up (it offers the card when it closes, so the card is never under it)
 
 	var ground: float = _ground_below(body.global_position)
 	var water: Dictionary = _water_here()

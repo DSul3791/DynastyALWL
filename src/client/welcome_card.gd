@@ -10,7 +10,7 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const SEEN_PATH := "user://welcome_seen.cfg"
 const WIDTH_PX := 620.0      # on the 1920 x 1080 canvas
-const BOTTOM_GAP_PX := 210.0 # above the hotbar: the HUD stays low, the crosshair stays clear
+const BOTTOM_GAP_PX := 210.0 # above the hotbar: the HUD stays low, the crosshair stays clear (about 230 px tall at 18 px: its top near y 640)
 
 var showing: bool = false
 var seen_path: String = SEEN_PATH
@@ -69,7 +69,7 @@ func show_card() -> void:
 	if _panel == null:
 		_build()
 
-	_text.text = "\n\n".join(lines())
+	_text.text = "\n".join(lines())
 	visible = true
 	showing = true
 
@@ -112,6 +112,6 @@ func _build() -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_text.add_theme_font_override("font", DynastyTheme.text_font())
-	_text.add_theme_font_size_override("font_size", 20)
+	_text.add_theme_font_size_override("font_size", 18)
 	_panel.add_child(_text)
 	visible = false
