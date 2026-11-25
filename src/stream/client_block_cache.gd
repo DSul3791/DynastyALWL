@@ -107,12 +107,14 @@ func _purge_other_generations() -> void:
 	var parent: String = _base_dir.get_base_dir()
 	var name: String = _base_dir.get_file()
 
+	if parent == "":
+		return   # a bare relative folder name: never list and purge the working folder
+
 	for folder in DirAccess.get_directories_at(parent):
 		var is_mine: bool = folder == name or folder.begins_with(name + "_g")
+		var path: String = parent.path_join(folder)
 
-		if is_mine and parent + "/" + folder != _dir:
-			var path: String = parent + "/" + folder
-
+		if is_mine and path != _dir:
 			for file in DirAccess.get_files_at(path):
 				DirAccess.remove_absolute(path + "/" + file)
 

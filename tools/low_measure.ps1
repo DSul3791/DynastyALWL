@@ -26,10 +26,13 @@ function Stop-Started {
 }
 
 try {
-	# Fresh folders every run: an old cache or store would change what is measured.
-	if ((Split-Path $Out -Leaf) -notlike "lane_*") { throw "-Out must be a lane folder named lane_... (it is emptied first): $Out" }
+	$Out = [IO.Path]::GetFullPath($Out)
+	$Exe = [IO.Path]::GetFullPath($Exe)
 
-	if (Test-Path $Out) { Remove-Item -Recurse -Force $Out }
+	# Fresh folders every run: an old cache or store would change what is measured.
+	if ((Split-Path $Out -Leaf) -notmatch '^lane_[A-Za-z0-9_]+$') { throw "-Out must be a lane folder named lane_... (it is emptied first): $Out" }
+
+	if (Test-Path -LiteralPath $Out) { Remove-Item -LiteralPath $Out -Recurse -Force }
 	New-Item -ItemType Directory -Force "$Out\store", "$Out\cache" | Out-Null
 	$cache = ($Out + "\cache") -replace "\\", "/"
 	$store = ($Out + "\store") -replace "\\", "/"
@@ -72,7 +75,11 @@ try {
 
 		$run = Join-Path $env:APPDATA "Godot\app_userdata\Dynasty a life well lived\machine_run.txt"
 
-		if ($n -like "m*" -and (Test-Path $run) -and (Get-Item $run).LastWriteTime -gt $t0) { Copy-Item $run "$Out\machine_run_$n.txt" -Force }
+		if ($n -like "m*") {
+			if (-not (Test-Path -LiteralPath $run) -or (Get-Item -LiteralPath $run).LastWriteTime -lt $t0) { throw "play $n ended without a new measure table (see $log)" }
+
+			Copy-Item -LiteralPath $run "$Out\machine_run_$n.txt" -Force
+		}
 
 		Write-Output "play $n done ($([int]((Get-Date) - $t0).TotalSeconds) s)"
 	}

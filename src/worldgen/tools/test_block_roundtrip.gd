@@ -260,5 +260,20 @@ func _init() -> void:
 	else:
 		print("ok   a backslash cache path keeps its folder")
 
+	# A cache folder that cannot be made (here: under a plain file) falls back to the game's own folder, which exists afterwards.
+	var blocker: String = ProjectSettings.globalize_path("user://test_block_roundtrip_file")
+	var plain: FileAccess = FileAccess.open(blocker, FileAccess.WRITE)
+	plain.store_string("not a folder")
+	plain.close()
+	var refused = CacheScript.new()
+	refused.setup(blocker + "/cache", {"tile_size_m": 15360.0, "min_tile": -10, "tiles_per_side": 21}, {}, 64)
+
+	if refused.fell_back == "":
+		fail("a cache folder under a plain file did not fall back")
+	elif not DirAccess.dir_exists_absolute(CacheScript.base_path(CacheScript.FALLBACK_DIR)):
+		fail("the fallback cache folder was not made")
+	else:
+		print("ok   a cache folder that cannot be made falls back to %s" % CacheScript.FALLBACK_DIR)
+
 	print("block round trip: %d failures" % failures)
 	quit(failures)

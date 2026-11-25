@@ -127,7 +127,7 @@ func _row() -> String:
 	return "%-6s %5.1f fps  1%% low %5.1f fps  worst %6.1f ms  gpu %5.1f ms  cpu %5.1f ms  script %5.1f ms  draws %5d  VRAM %5d MB  RAM %5d MB" % [
 		_client.QUALITY_NAMES[TIERS[_at]], 1000.0 / maxf(avg_ms, 0.001), 1000.0 / maxf(slow, 0.001), sorted[sorted.size() - 1],
 		_mean(_gpu), _mean(_cpu), _mean(_main), int(_mean(_draws)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
-		int(OS.get_static_memory_usage() / 1048576)]
+		int(float(OS.get_static_memory_usage()) / 1048576.0)]
 
 
 static func _mean(values: Array) -> float:

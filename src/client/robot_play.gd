@@ -3438,12 +3438,6 @@ func _quit_at_once() -> void:
 	client.frames_left = 1
 
 
-# Plan route (lag lane 23 Nov 2026, coordinator: "hitches while moving, which is how people really play"): a fixed route a new player takes,
-# timed stretch by stretch: round the starter town, a long run north over many block borders, the thickest woods near there, the nearest
-# river and along it, after the nearest wild animal with a spear, a chest built and opened, a full turn of the view. Each stretch prints
-#   ROBOT <name> ROUTE <stretch>: <s> s, <frames> frames, worst <ms> ms, <n> over 100 ms, <n> over 500 ms, moved <m> m, at x,z
-# and the game's own HITCH and FREEZE lines fall between its begin and end lines. Needs --robot-admin (the spear and the chest's makings).
-# The same route at Low quality: --quality=0 on the client.
 # The "Measure this machine" table (src/debug/machine_probe.gd) from the command line: Low, Medium and High standing in place, slowly
 # turning; the table goes to the log and user://machine_run.txt. For lane runs that stand in for a slower machine (cores capped).
 func _measure() -> void:
@@ -3456,6 +3450,12 @@ func _measure() -> void:
 	FreezeWatchScript.printer.line("ROBOT %s step measure: done" % robot_name)
 
 
+# Plan route (lag lane 23 Nov 2026, coordinator: "hitches while moving, which is how people really play"): a fixed route a new player takes,
+# timed stretch by stretch: round the starter town, a long run north over many block borders, the thickest woods near there, the nearest
+# river and along it, after the nearest wild animal with a spear, a chest built and opened, a full turn of the view. Each stretch prints
+#   ROBOT <name> ROUTE <stretch>: <s> s, <frames> frames, worst <ms> ms, <n> over 100 ms, <n> over 500 ms, moved <m> m, at x,z
+# and the game's own HITCH and FREEZE lines fall between its begin and end lines. Needs --robot-admin (the spear and the chest's makings).
+# The same route at Low quality: --quality=0 on the client.
 func _route() -> void:
 	var start: Vector3 = client.body.global_position
 	_route_begin("town")
