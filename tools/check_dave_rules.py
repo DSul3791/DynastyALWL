@@ -132,11 +132,17 @@ def witness_glow():
     src = (ROOT / "src/flora/flora_view.gd").read_text(encoding="utf-8")
     foliage = src[src.index("const FOLIAGE_SHADER"):src.index("const BARK_SHADER")]
     emission = re.findall(r"^\s*EMISSION = (.+);", foliage, re.M)
-    check("R-FLORA-WITNESS-GLOW", emission == ["(glow * vein_mask + glow_core * smoothstep(0.6, 1.0, vein_mask)) * glow_energy * glow_amount"],
-          f"the leaf glow is masked to the veins (EMISSION = {emission})")
+    check("R-FLORA-WITNESS-GLOW", len(emission) == 1 and "* vein_mask" in emission[0] and "glow_energy" in emission[0], f"the leaf glow is masked to the veins (EMISSION = {emission})")
+    check("R-FLORA-WITNESS-GLOW", re.search(r"uniform float glow_energy = 0\.0;", foliage), "every other species has no leaf glow (glow_energy 0 unless set)")
+    check("R-FLORA-WITNESS-GLOW", 'set_shader_parameter("veins", _load_texture("res://assets/trees/leaf_witness_veins.png"))' in src, "the witness leaves get their vein mask")
+    night = float(re.search(r"^const WITNESS_GLOW_NIGHT := ([0-9.]+)", src, re.M).group(1))
+    day = float(re.search(r"^const WITNESS_GLOW_DAY := ([0-9.]+)", src, re.M).group(1))
+    check("R-FLORA-WITNESS-GLOW", 0.0 < day <= 0.1 * night, f"the veins are barely seen by day ({day}) and glow at night ({night})")
+    check("R-FLORA-WITNESS-GLOW", "set_shader_parameter(\"glow_energy\", lerpf(WITNESS_GLOW_NIGHT, WITNESS_GLOW_DAY" in src, "the vein glow follows the daylight")
     check("R-FLORA-WITNESS-GLOW", re.search(r"^\s*float vein_mask = texture\(veins, UV\)\.r;", foliage, re.M) and "uniform sampler2D veins : hint_default_black" in foliage,
           "the mask is the painted vein texture, black (no glow) where none is set")
-    check("R-FLORA-WITNESS-GLOW", (ROOT / "assets/trees/leaf_witness_veins.png").is_file(), "the witness leaf's vein mask is there")
+    for f in ("leaf_witness_veins.png", "leaf_witness_veins.png.import"):
+        check("R-FLORA-WITNESS-GLOW", (ROOT / "assets/trees" / f).is_file() and (ROOT / "assets/trees" / f).stat().st_size > 1000 if f.endswith(".png") else (ROOT / "assets/trees" / f).is_file(), f"the witness leaf's vein mask is there ({f})")
 
 
 def ruling_lines():
