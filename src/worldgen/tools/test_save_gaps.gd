@@ -98,7 +98,9 @@ func _init() -> void:
 	check(ops.count == 4 and ops.dropped.is_empty(), "a header that counts more edits than the log holds (a ground reset since) cuts nothing")
 
 	# Windows: a stop in the cut's rename left only digs.dat.tmp; it is put back, not an empty log started.
-	DirAccess.rename_absolute(log_path, log_path + ".tmp")
+	ops = null   # closes digs.dat first: on Windows an open file cannot be renamed, and the check below would pass without a .tmp
+	var renamed: int = DirAccess.rename_absolute(log_path, log_path + ".tmp")
+	check(renamed == OK and not FileAccess.file_exists(log_path), "the log moved to digs.dat.tmp for the next check (%d)" % renamed)
 	ops = GroundOps.new()
 	ops.open(log_path)
 	check(ops.count == 4 and FileAccess.file_exists(log_path), "only digs.dat.tmp left (a stop mid-rename on Windows): it is put back whole (%d)" % ops.count)
