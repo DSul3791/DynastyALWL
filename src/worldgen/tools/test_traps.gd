@@ -283,6 +283,7 @@ func _init() -> void:
 	sign_checks()
 	sent_trail_checks()
 	gap_checks()
+	collect_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -833,3 +834,64 @@ func gap_checks() -> void:
 		rows.append({"pos": Vector3(1.0 + float(n % 8), 10.0, 1.0 + float(n >> 3)), "state": state, "yaw": 0.0})
 
 	check(PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows) == "", "forty snares in one chunk, and room for another (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows))
+
+
+# Dave 25 Nov 2026: "they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset the
+# snare". The catch lies in the snare; E takes it whole into the pack and the snare is set again; laid down it is the carcass again, which E
+# takes back up; a catch begun with the knife, or a hunted kill, is worked where it lies.
+func collect_checks() -> void:
+	strength = 0.6
+	rain = 0.0
+	var items = make("user://test_traps_collect", true)
+	var traps = items._traps
+	near = [{"id": 7, "sp": "rabbit", "pos": Vector3(1.0, 10.0, 1.0)}]
+	base_up(items)
+	var id: int = lay(items, Vector3(0.5, 10.0, 0.0))
+	check(traps.check_one(id), "collect: a sure catch is made")
+	var carcass: int = int(items._items[id]["struct"]["catch"])
+	var at: Vector3 = items._items[carcass]["pos"]
+	check(Vector2(at.x - 0.5, at.z).length() < 0.01, "the catch lies in the snare itself (%s)" % str(at))
+	check(bool(items._struct_extra(items._items[carcass]).get("whole", false)) and not items._struct_extra(items._items[id]).has("whole"), "the client is told the catch can be taken whole (and nothing extra for the snare)")
+	var inv = items.inventory_of(1)
+	var whole: int = items.table.number_of("whole_rabbit")
+	check(whole > 0, "a whole rabbit item exists")
+	items._use_struct(1, inv, id)
+	check(not items._items.has(carcass) and inv.count_of(whole) == 1, "E on the snare takes the rabbit whole into the pack")
+	check(items._items.has(id) and not items._items[id]["struct"].has("catch"), "and the snare is still set where it stood")
+	var slot: int = inv.numbers.find(whole)
+	check(slot >= 0 and int(inv.wear[slot]) <= 1, "a fresh catch goes in fresh (age %d)" % (int(inv.wear[slot]) if slot >= 0 else -1))
+	items._items[id]["struct"]["quiet"] = 0.0
+	check(traps.check_one(id), "the reset snare catches again")
+
+	# Half cut: it stays for the knife.
+	var second: int = int(items._items[id]["struct"]["catch"])
+	items._items[second]["struct"]["blows"] = 1
+	said.clear()
+	items._use_struct(1, inv, id)
+	check(items._items.has(second) and inv.count_of(whole) == 1 and said.has(str(traps.cfg["say_half_cut"])), "a catch begun with the knife stays in the snare (%s)" % str(said))
+	items._items.erase(second)
+	items._items[id]["struct"].erase("catch")
+
+	# Laid on the ground the whole rabbit is the carcass again, as old as it was; E takes it back up.
+	items._items.erase(carcass)
+	items._drop(1, inv, slot, 1, Vector3(1.0, 10.0, 1.0))
+	var laid: int = 0
+
+	for n in items._items:
+		if str(items._items[n].get("struct", {}).get("kind", "")) == "carcass":
+			laid = n
+
+	check(laid != 0 and inv.count_of(whole) == 0 and str(items._items[laid]["struct"]["species"]) == "rabbit" and bool(items._items[laid]["struct"].get("snared", false)), "a whole rabbit put down lies as a snared rabbit carcass")
+	check(laid != 0 and float(items._items[laid]["left"]) > 7000.0, "and keeps its freshness (%.0f s left)" % (float(items._items[laid]["left"]) if laid != 0 else -1.0))
+	items._pickup(1, inv, laid)
+	check(not items._items.has(laid) and inv.count_of(whole) == 1, "E on it takes it back up whole")
+
+	# Age carries both ways: a carcass a day gone is a whole rabbit half gone, and back.
+	var age: int = items.whole_age(whole, items.CARCASS_LIFE_S * 0.5)
+	var shelf: int = items.table.shelf_units(whole)
+	check(shelf > 0 and absi(age - int(shelf / 2.0)) <= 1, "a carcass half rotten goes in half spoiled (%d of %d)" % [age, shelf])
+
+	# A hunted kill is not taken whole.
+	var kill: int = items.make_carcass("rabbit", Vector3(1.0, 10.0, -1.0), -1)
+	items._pickup(1, inv, kill)
+	check(items._items.has(kill) and inv.count_of(whole) == 1, "a hunted carcass is worked where it lies, not picked up")

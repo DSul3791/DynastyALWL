@@ -2,7 +2,7 @@ extends RefCounted
 
 # Snares (Steve 2026-10-25; data/animals/traps.json): a set snare_trap struct catches small game. The items module owns the records;
 # the animals and trails come in through its hooks (animal_snare, trail_strength, run_distance). A catch lays the species' carcass
-# beside the snare, so the knife flow, parts and rot are the carcass module's. Other trap kinds (traps.json "kinds", the Bird trap of
+# in the snare, so the knife flow, parts and rot are the carcass module's; E on the snare takes it whole and sets the snare again (collect). Other trap kinds (traps.json "kinds", the Bird trap of
 # Part C plan 3) work the same way with their own numbers laid over the snare's.
 # Dave 22 Nov 2026: once a snare is out the server does no work for it. A set snare is only looked at when:
 #   - an animal that can be caught steps within lure_m of it (on_pass, called by the animals' own step, which runs only near players):
@@ -534,6 +534,41 @@ func _lay_catch(id: int, sp: String, c: Dictionary) -> void:
 
 		if _owner_peer(st) >= 0:
 			host._say(_owner_peer(st), str(c.get("say_broke", "")))
+
+
+# Dave 25 Nov 2026: "they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset
+# the snare". E on a trap whose uncut catch lies in it: the catch goes to the pack whole (traps.json whole_items, give: the usual carry
+# rules, what the pack cannot take lies at the feet as the carcass again) and the trap is set again where it stands (its quiet avoid_s
+# still runs). A catch someone has begun to cut stays for the knife. False when the trap holds no catch (E does what it did before).
+func collect(peer: int, id: int) -> bool:
+	var it: Dictionary = host._items.get(id, {})
+
+	if not is_snare(it):
+		return false
+
+	var st: Dictionary = it["struct"]
+	var body: Dictionary = host._items.get(int(st.get("catch", 0)), {})
+
+	if str(body.get("struct", {}).get("kind", "")) != "carcass":
+		return false
+
+	var c: Dictionary = _of_item(it)
+
+	if int(body["struct"].get("blows", 0)) > 0:
+		host._say(peer, str(c.get("say_half_cut", "")))
+		return true
+
+	var number: int = host.table.number_of(str((c.get("whole_items", {}) as Dictionary).get(str(body["struct"].get("species", "")), "")))
+
+	if number <= 0:
+		return false   # a species with no whole item (none today): the knife works it where it lies
+
+	var age: int = host.whole_age(number, float(body.get("left", 0.0)))   # how far it has gone off (a carcass rots in 2 game days, the whole item as fast)
+	host._items.erase(int(st["catch"]))
+	st.erase("catch")
+	host._dirty = true
+	host.give(peer, number, 1, {}, age)
+	return true
 
 
 # How squarely a snare sits on a rabbit run, noted on the snare while a player is near (the places round it are worked out only then),

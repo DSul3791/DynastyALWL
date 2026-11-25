@@ -1440,6 +1440,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if count <= 0 or number <= 0:
 		return false
 
+	if table.entry(table.id_of(number)).has("carcass_of") and _lay_whole(number, count, position, item_wear):
+		return true   # a whole catch on the ground is its carcass again (Dave 25 Nov 2026), worked with the knife
+
 	position = _settled_loose(position)
 
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item.
@@ -4008,6 +4011,61 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 	_next_id += 1
 	_items[id] = {"number": table.number_of("carcass"), "count": 1, "pos": spot, "left": CARCASS_LIFE_S, "struct": {"kind": "carcass", "yaw": float(hash(id) % 360), "species": species, "blows": 0, "transient": true}}
 	return id
+
+
+# A structure row's extra for the client. A carcass says whether E takes it whole (a snared one not yet cut: whole); the key is sent
+# for carcasses only.
+func _struct_extra(it: Dictionary) -> Dictionary:
+	var extra: Dictionary = {"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))}
+
+	if str(it["struct"].get("kind", "")) == "carcass" and bool(it["struct"].get("snared", false)) and int(it["struct"].get("blows", 0)) == 0:
+		extra["whole"] = true
+
+	return extra
+
+
+# A trap's catch carried whole (Dave 25 Nov 2026, server_traps collect; items.json carcass_of): its slot's age (spoilage wear) is how far
+# the carcass had gone off, so it rots as fast in the pack as on the ground (spoilage.json shelf = CARCASS_LIFE_S) and lays back down as
+# old as it was picked up.
+func whole_age(number: int, left_s: float) -> int:
+	return clampi(int(round(float(table.shelf_units(number)) * (1.0 - clampf(left_s / CARCASS_LIFE_S, 0.0, 1.0)))), 0, maxi(table.shelf_units(number) - 1, 0))
+
+
+# A whole catch laid on the ground is the carcass again, still marked as snared (no Hunting for it again), one per item; true when laid.
+func _lay_whole(number: int, count: int, position: Vector3, item_wear: int) -> bool:
+	var sp: String = str(table.entry(table.id_of(number)).get("carcass_of", ""))
+	var shelf: int = table.shelf_units(number)
+
+	if sp == "" or not _carcass_cfg.get("species", {}).has(sp):
+		return false
+
+	for n in count:
+		var at: Vector3 = position + Vector3(0.3 * float(n % 3), 0.0, 0.3 * floorf(float(n) / 3.0))   # a few laid together lie side by side
+		var c: int = make_carcass(sp, at, -1)
+
+		if not _items.has(c):
+			return n > 0
+
+		_items[c]["struct"]["snared"] = true
+		_items[c]["left"] = clampf(CARCASS_LIFE_S * (1.0 - float(item_wear) / float(maxi(shelf, 1))), 1.0, CARCASS_LIFE_S) if shelf > 0 else CARCASS_LIFE_S
+
+	_dirty = true
+	return true
+
+
+# E on a snared carcass lying on the ground (a whole catch put down again): taken whole, as from the snare. A hunted kill or one begun with
+# the knife is worked where it lies.
+func _pick_up_whole(peer: int, id: int) -> void:
+	var st: Dictionary = _items[id]["struct"]
+	var number: int = 0 if _traps == null else table.number_of(str((_traps.cfg.get("whole_items", {}) as Dictionary).get(str(st.get("species", "")), "")))
+
+	if not bool(st.get("snared", false)) or int(st.get("blows", 0)) > 0 or number <= 0:
+		return
+
+	var age: int = whole_age(number, float(_items[id].get("left", 0.0)))
+	_items.erase(id)
+	_dirty = true
+	give(peer, number, 1, {}, age)
 
 
 # One knife blow on a carcass (data/items/carcass.json): the parts are rolled once (luck applies) and handed out over the blows.
@@ -8445,7 +8503,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 						signature += 101 * int(line[1]) + 7 * mini(int(line[2]), int(line[1]) + 1)   # a deposit, or having enough on hand, sends it again
 
 				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else ({"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))} if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") or it.has("fall") or it.has("pitch") else {}))))])
+					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else (_struct_extra(it) if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") or it.has("fall") or it.has("pitch") else {}))))])
 					if not site_view.is_empty():
 						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
 
@@ -14873,6 +14931,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
 		return
 
+	if str(it["struct"].get("kind", "")) == "carcass":
+		_pick_up_whole(peer, id)   # a whole catch put down again; any other carcass is worked where it lies
+		return
+
 	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
@@ -15002,6 +15064,9 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
 	if _peer_pos[peer].distance_to(it["pos"]) > float(def.get("use_reach_m", 3.0)):
+		return
+
+	if _traps != null and _traps.collect(peer, id):   # a snare or bird trap holding its catch: E takes the catch whole and sets the trap again (Dave 25 Nov 2026)
 		return
 
 	if str(def.get("use", "")) == "serve":   # a placed Serving Platter (master s3.15): E eats one portion of its board

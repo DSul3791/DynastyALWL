@@ -1213,6 +1213,28 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return {"prompt": ("Hold E to take %s back" % what) if burning else ("Press E to light %s with a %s (hold E to take it back)" % [what, table.sentence_name(table.number_of(str(station_def.get("fuel", "stick"))))]), "tap": tap, "hold": take_down}
 
+	var item: String = str(station_def.get("item", ""))
+
+	if item in TRAP_ITEMS:   # a snare or bird trap: one holding its catch offers it (Dave 25 Nov 2026: E collects the animal and resets the snare)
+		var trap_name: String = "snare" if item == "snare_trap" else "bird trap"
+		var held: int = catch_in(id)
+
+		if held != 0 and bool(_world[held].get("whole", false)):
+			return {"prompt": "Press E to collect the %s and reset the %s (hold E to take the %s down)" % [str(_world[held].get("sp", "catch")), trap_name, trap_name], "tap": func():
+				clear_prompt()
+				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+		if held != 0:
+			return {"prompt": "Finish cutting the %s with your knife (hold E to take the %s down)" % [str(_world[held].get("sp", "catch")), trap_name], "tap": func(): show_notice("Finish it with your knife"), "hold": take_down}
+
+	if state == CARCASS_STATE:   # a carcass: a trap's catch put down again is taken whole; anything else is cut with a knife where it lies
+		if bool(_world[id].get("whole", false)):
+			return {"prompt": "Press E to pick up the %s" % str(_world[id].get("sp", "carcass")), "tap": func():
+				clear_prompt()
+				net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
+
+		return {"prompt": "Cut the %s with a knife" % str(_world[id].get("sp", "carcass")), "tap": func(): show_notice("Cut it with a knife")}
+
 	return {"prompt": "Hold E to take down the %s" % table.sentence_name(_world[id]["number"]), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
 
@@ -1723,7 +1745,46 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= PIECE_REACH_M:
 			ids.append(id)
 
-	return _aimed_or_nearest(_unframed(ids), here)
+	return _aimed_or_nearest(_untrapped(_unframed(ids)), here)
+
+
+# A trap's catch lies in the trap (Dave 25 Nov 2026): E works the trap (collect the catch and set it again), so the carcass in it is left out.
+# Only near ones are looked at: a trap is checked against the few carcasses in reach.
+const TRAP_ITEMS := ["snare_trap", "bird_trap_set"]   # traps.json kinds (map_knowledge TRAP_KINDS)
+const CARCASS_STATE := 19
+const CATCH_IN_TRAP_M := 0.5
+
+
+func _untrapped(ids: Array) -> Array:
+	var out: Array = []
+
+	for id in ids:
+		if int(_world[id]["state"]) != CARCASS_STATE or trap_holding(id, ids) == 0:
+			out.append(id)
+
+	return out
+
+
+# The trap among `ids` (or anywhere in the world when empty) whose catch is carcass `carcass`, 0 for none.
+func trap_holding(carcass: int, ids: Array = []) -> int:
+	var at: Vector3 = _world[carcass]["pos"]
+
+	for other in (ids if not ids.is_empty() else _world.keys()):
+		if other != carcass and _world.has(other) and str(_structure_by_state(int(_world[other]["state"])).get("item", "")) in TRAP_ITEMS and Vector2(_world[other]["pos"].x - at.x, _world[other]["pos"].z - at.z).length() < CATCH_IN_TRAP_M:
+			return other
+
+	return 0
+
+
+# The carcass lying in trap `trap`, 0 for none.
+func catch_in(trap: int) -> int:
+	var at: Vector3 = _world[trap]["pos"]
+
+	for id in _world:
+		if int(_world[id]["state"]) == CARCASS_STATE and Vector2(_world[id]["pos"].x - at.x, _world[id]["pos"].z - at.z).length() < CATCH_IN_TRAP_M:
+			return id
+
+	return 0
 
 
 # Where a world piece is reached from `here`: a laid pipe run's nearest point (PLUMBING_DESIGN s9: a 30 m run is taken down from anywhere along it),
@@ -3262,6 +3323,10 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if row.size() > 5 and (row[5] as Dictionary).has("len"):
 				_world[id]["len"] = float(row[5]["len"])   # a pipe run (PLUMBING_DESIGN s9): its ends are PipeRules.ends(pos, yaw, pitch, len)
 				_world[id]["pitch"] = float(row[5].get("pitch", 0.0))
+
+			if state == CARCASS_STATE and row.size() > 5:
+				_world[id]["sp"] = str(row[5].get("sp", ""))   # a carcass: its animal, and whether E takes it whole (a trap's catch not yet cut)
+				_world[id]["whole"] = bool(row[5].get("whole", false))
 
 			if row.size() > 5 and (row[5] as Dictionary).has("water_l"):
 				_world[id]["water_l"] = int(row[5]["water_l"])   # a barrel's water: E drinks from it instead of opening it

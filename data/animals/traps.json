@@ -1,5 +1,5 @@
 {
-	"note": "Snares (Steve 2026-10-25, plan tech/ACTION_PLANS/Steve_hide_traps.md). A set snare (struct kind snare_trap) is rolled only when an animal passes it (pass_note) or, once, when a player comes back within active_m after time away (away_note); nothing runs for it otherwise. The chance of a catch on a pass is base_chance x the worn-trail factor at the snare x the species weight of the passing animal x bait x night x storm; luck nudges the roll (fate kind snare). A catch takes that animal out of the world and lays its carcass beside the snare (the knife flow, parts, hide and rot are the carcass module's); the snare is quiet avoid_s game seconds (10 game minutes) afterwards and wears wear_per_catch and breaks at its durability. While its carcass still lies there the snare is sprung and catches nothing. Deer and bigger are never caught (species not in species_weight). All numbers here.",
+	"note": "Snares (Steve 2026-10-25, plan tech/ACTION_PLANS/Steve_hide_traps.md). A set snare (struct kind snare_trap) is rolled only when an animal passes it (pass_note) or, once, when a player comes back within active_m after time away (away_note); nothing runs for it otherwise. The chance of a catch on a pass is base_chance x the worn-trail factor at the snare x the species weight of the passing animal x bait x night x storm; luck nudges the roll (fate kind snare). A catch takes that animal out of the world and lays its carcass in the snare (collect_note: E takes it whole and sets the snare again; the knife flow, parts, hide and rot are the carcass module's); the snare is quiet avoid_s game seconds (10 game minutes) afterwards and wears wear_per_catch and breaks at its durability. While its carcass still lies there the snare is sprung and catches nothing. Deer and bigger are never caught (species not in species_weight). All numbers here.",
 	"test_chance": 0.0,
 	"test_chance_note": "Smoke runs only (Tyler 25 Oct): above 0, every look at a set snare catches an imagined rabbit with this chance; the server prints a line at load while it is on. Keep 0.",
 	"kind": "snare_trap",
@@ -54,7 +54,10 @@
 	"avoid_s": 600.0,
 	"wear_per_catch": 1,
 	"default_durability": 20,
-	"carcass_offset_m": 0.7,
+	"carcass_offset_m": 0.0,
+	"collect_note": "Dave 25 Nov 2026: \"they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset the snare\". The catch lies in the trap itself (carcass_offset_m 0, was 0.7 m beside it). E on a trap holding an uncut catch takes it whole into the pack (whole_items: the item per species, the usual carry rules) and the trap is set again where it stands (its quiet avoid_s still runs). A catch someone has started to cut stays: the knife finishes it. Bait rules are unchanged.",
+	"whole_items": {"rabbit": "whole_rabbit", "fox": "whole_fox", "grouse": "whole_grouse"},
+	"say_half_cut": "It is half cut: finish it with your knife.",
 	"no_cap_note": "Dave 22 Nov 2026: no limit on how many snares or bird traps a player sets (was 6 each, the oldest taken back).",
 	"gap_m": 8.0,
 	"say_near": "A snare needs open ground, well away from buildings.",
