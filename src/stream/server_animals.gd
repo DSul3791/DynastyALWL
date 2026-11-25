@@ -1546,8 +1546,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if a.has("fly"):
 				return   # alarmed into the air
 
-	# A player who has come between a mother and her young (near one of them) is attacked at once, torch or not.
-	if def.has("defend") and def.has("young") and seen_p != Vector3.INF:
+	# A player who has come between a mother and her young (near one of them) is attacked at once, unless the player is in a fire's or a
+	# torch's light: fire keeps everything away from the players (Dave 25 Nov 2026; it was "torch or not").
+	if def.has("defend") and def.has("young") and seen_p != Vector3.INF and _fire_guard(seen_p) == Vector3.INF:
 		for kid in _young_of(a):
 			if Vector2(seen_p.x - animals[kid]["pos"].x, seen_p.z - animals[kid]["pos"].z).length() <= float(def["young"].get("between_m", 8.0)):
 				if big_game.warn(a, seen_p, float(def["young"].get("warn_s", 0.6)), true):
@@ -1556,9 +1557,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 				break
 
 	# Fire (Dave 6 Nov 2026): wild animals keep away from a burning fire or a torch bearer, out of its keep-off radius (the wolves' rule),
-	# unless trapped; a bear at its den does not give way to a torch.
-	var in_den: bool = _in_den(a, def)
-	var fire_at: Vector3 = Vector3.INF if in_den or a.has("pack") else _fire_guard(a["pos"])
+	# unless trapped; at its den too (Dave 25 Nov 2026: "fire keeps everything away from the players"; a bear at its den used to hold).
+	var fire_at: Vector3 = Vector3.INF if a.has("pack") else _fire_guard(a["pos"])
 
 	if fire_at != Vector3.INF and a["state"] != FLEE:
 		_bolt(a, fire_at, def)
@@ -1571,8 +1571,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
 	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, except at
-	# the den. The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
-	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and (in_den or _fire_guard(seen_p) == Vector3.INF):
+	# the den no more (Dave 25 Nov 2026). The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
+	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and _fire_guard(seen_p) == Vector3.INF:
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
 			return
 
@@ -1700,7 +1700,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if a.has("den"):
 				a["target"] = _den_target(a, def)
 
-			if _fire_guard(a["target"]) != Vector3.INF and not _in_den(a, def, a["target"]):
+			if _fire_guard(a["target"]) != Vector3.INF:
 				a["target"] = a["pos"]   # never wanders into a fire's light
 
 			# A friendly horse is curious: it ambles toward a player it can see until it is stop_m away.

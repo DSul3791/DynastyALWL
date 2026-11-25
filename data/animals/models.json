@@ -1,5 +1,5 @@
 {
-	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. strike, strike2, kick (optional clip roles, played once): a close blow (server_big_game STRIKE, two strikes taking turns) and a kick behind (KICK), each sped so its blow lands when the server's does (animals.json defend strike/kick windup_s); hit_at (optional, default 0.45): where in those clips the blow lands, as a share of the clip.",
+	"note": "Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md, src/client/animal_view.gd _make_model). A species row here whose scene exists is drawn from that rigged, animated scene instead of the code-built body; no row or a missing file keeps the code body. Row: scene (res:// path of a .glb/.fbx/.tscn), scale, yaw_deg (turn so the animal faces -Z), walk_mps and run_mps (ground speeds the walk and run clips were made at), stride_m (metres per footstep), clips {state number or 'walk'/'run': clip name}; states 0 graze, 1 hop, 2 flee, 3 alert, 10 warn, 11 charge, 12 recover, 16 the jaw-pop warning (bears; falls back to 10). Example: \"bear\": {\"scene\": \"res://assets/animals/bear/bear.glb\", \"scale\": 1.0, \"yaw_deg\": 180, \"walk_mps\": 1.3, \"run_mps\": 9.0, \"stride_m\": 1.1, \"clips\": {\"0\": \"Eat\", \"3\": \"Idle\", \"10\": \"Roar\", \"11\": \"Run\", \"12\": \"Idle\", \"walk\": \"Walk\", \"run\": \"Run\"}}. clip_prefix (optional) is put before every clip name; without it a clip is found by its name after the armature ('Armature|Idle' answers 'Idle'). The model files are bought (WildMesh 3D Ultimate 3D Animal Pack, Dave 6 Nov 2026) and are NOT in git (/assets/animals/ is ignored): copy them from the pack into assets/animals/<kind>/ on a build machine. length_m: the model is scaled so its longest side is this long (any file units). materials: [{match, albedo, tint (optional [r, g, b] the texture is multiplied by)} or {match, hide: true}] colour textures set in code, first matching entry per surface (match '' = the rest). length_m values: design/wildmesh_scale_table.md (real adult length, nose to tail tip). Species added 7 Nov (deer, moose, boar, wolf, fox, rabbit): yaw, clip speeds and material matches are first guesses from the bear; the shot runner --shot-animals row checks them. pack (optional): the model's folder inside the bought pack; tools/install_animal_models.py copies it into the scene's folder (no .blend: headless import cannot read it). size_clip (optional): size and ground the model by its bones in that clip's first frame, for a file whose imported pose is not standing. bounds: mesh sizes by the skinned mesh instead of the bones. young_model (optional): a young animal of this species is drawn from this model at its own size (keys laid over the row like a variant) instead of the adult shrunk to half. flock_of [min, max] (optional): one record is a flock of that many birds built from the model, spread over spread_m, set sink_m into the surface. flat_share (optional, default 0.5): a clip is refused as flat below this share of the standing height; lower it for an upright animal that bends low to eat. bone_offsets (optional): {bone: [x, y, z] degrees in the bone's own axes} turned after every clip (src/client/bone_offsets.gd), to correct a pose the clips hold. clip_loop (optional): {role: [t0, t1, blend_s]} loops that window of the role's clip, its last blend_s seconds eased back to the first pose (tools/find_loop.gd finds the window). gait (optional): {role: {period_s, bones {bone: [phase, swing degrees, axis]}}} builds a looping clip for that role from the model's own bones (_gait_clip). sink_share (flock rows): sink by that share of the bird's height in its graze clip. strike, strike2, kick (optional clip roles, played once): a close blow (server_big_game STRIKE, two strikes taking turns) and a kick behind (KICK), each sped so its blow lands when the server's does (animals.json defend strike/kick windup_s); hit_at (optional, default 0.45): where in those clips the blow lands, as a share of the clip.",
 	"species": {
 		"bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -21,7 +21,7 @@
 				"16": "Attack_IdleAngry_01_Low",
 				"trot": "Trot"
 			},
-			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn stands up on its hind legs too (Dave 25 Nov 2026: a threatened bear stands its ground and rears up first, then attacks with claws or bite; it was the angry breathing stance); charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear's file has no such clip: it falls back to its warning pose, now A_StandStraight (standing up), and it has no attack clips at all (MODEL_ATTACKS: a model with them is needed).",
+			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn stands up on its hind legs too (Dave 25 Nov 2026: a threatened bear stands its ground and rears up first, then attacks with claws or bite; it was the angry breathing stance); charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear is drawn from bear_2, darkened (its own file has no stand-up or attack clips; see its row).",
 			"length_m": 2.0,
 			"materials": [
 				{
@@ -852,39 +852,47 @@
 			}
 		},
 		"black_bear": {
-			"scene": "res://assets/animals/black_bear/SK_BlackBear.fbx",
+			"scene": "res://assets/animals/bear_2/SK_Bear.fbx",
 			"scale": 1.0,
 			"yaw_deg": 180,
-			"walk_mps": 1.2,
-			"run_mps": 8.0,
-			"stride_m": 1.0,
+			"walk_mps": 1.3,
+			"run_mps": 9.0,
+			"stride_m": 1.1,
 			"clips": {
-				"0": "GrazingOnSpotA_1",
-				"3": "Sniffing",
-				"10": "A_StandStraight_Seco_49c0363",
-				"11": "RunFast_F",
-				"12": "Idle",
-				"walk": "WalkMedium_F",
-				"run": "RunFast_F",
-				"trot": "TrotFast_F",
-				"hit": "A_HitHead2Frighten_F"
+				"0": "Idle",
+				"3": "Idle_Breathing_01",
+				"10": "StandHind_Idle_01",
+				"16": "Attack_StandAngry_01_Low",
+				"11": "Sprint",
+				"12": "Idle_Breathing_01",
+				"walk": "Walk",
+				"run": "Run",
+				"trot": "Trot",
+				"hit": "Hit_Stand_F01",
+				"die": "Death_Stand_R01",
+				"bite": "Attack_BiteForward",
+				"strike": "Attack_MeleeLeft",
+				"strike2": "Attack_SwingForward"
 			},
-			"note": "WildMesh BlackBear (Realistic Animals/BlackBear/SK_BlackBear.fbx). 136 clips; units are centimetres (rescaled by length_m).",
+			"note": "Dave 25 Nov 2026 play test: a threatened bear stands its ground, rears up on its hind legs, then attacks with claws or bite. The WildMesh BlackBear file (SK_BlackBear.fbx, 136 clips) has no hind-leg stand, swipe or bite: its rig is the pack's grazer rig (Frighten, Grazing, StandStraight clips), not the 35-bone bear rig, so bear_2's clips cannot be played on it. The black bear is drawn from the bear_2 model (WildMesh Realistic Animals/Bear) at black bear size (length_m 1.7) with its fur darkened by tint: it stands up (StandHind_Idle_01) to warn, swats low (Attack_StandAngry_01_Low) for the jaw-pop rung, and bites and claws. The old file's ClackTeeth and Snorting go unused with it. The old row is in git history (before this change) if a black bear model with attacks is bought.",
 			"length_m": 1.7,
 			"materials": [
 				{
 					"match": "",
-					"albedo": "res://assets/animals/black_bear/Textures/T_BlackBear.png"
+					"albedo": "res://assets/animals/bear_2/Textures/T_Bear_Body.png",
+					"tint": [
+						0.3,
+						0.27,
+						0.25
+					]
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/BlackBear",
+			"pack": "WildMesh3D/Realistic Animals/Bear",
 			"trot_mps": 3.5,
 			"idle_variants": {
 				"0": [
-					"GrazingOnSpotA_2",
-					"GrazingOnSpotB_1",
-					"Idle_Breathing",
-					"A_BrownBear_Sniffing5x"
+					"Idle_02",
+					"Idle_Eating_01"
 				]
 			}
 		},

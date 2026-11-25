@@ -195,7 +195,7 @@ func _init() -> void:
 	check(a.species_def("deer").get("defend", {}).get("threat_m", 0.0) > 0.0 and a.species_def("fox").has("defend") and a.species_def("horse").has("defend"), "deer, horse and fox have a threat range too")
 	check(not a.species_def("rabbit").has("defend"), "a rabbit only ever runs")
 
-	# 9. The bear (Dave 6 Nov 2026): its den is where it spawned; a torch does not protect you there, it does away from the den.
+	# 9. The bear (Dave 6 Nov 2026): its den is where it spawned. Fire keeps everything away from the players, at the den too (Dave 25 Nov 2026).
 	a = make()
 	a.cfg["species"]["bear"]["target_per_player"] = 0
 	players = [player(10.0, 0.0)]
@@ -205,7 +205,7 @@ func _init() -> void:
 	a.animals[id]["timer"] = 100.0
 	check(a.animals[id].has("den") and a._in_den(a.animals[id], a.species_def("bear")), "a bear starts at its den")
 	run(a, 0.3)
-	check(int(a.animals[id]["state"]) == 10, "a torch bearer 10 m from a bear at its den is attacked (state %d)" % int(a.animals[id]["state"]))
+	check(int(a.animals[id]["state"]) != 10 and int(a.animals[id]["state"]) != 11, "a torch bearer 10 m from a bear at its den is not attacked (state %d)" % int(a.animals[id]["state"]))
 	a = make()
 	a.cfg["species"]["bear"]["target_per_player"] = 0
 	players = [player(65.0, 0.0)]
@@ -310,7 +310,7 @@ func _init() -> void:
 		a.fires = func(): return [players[0]["pos"]]
 		a.fire_radius = func(_at): return 8.0
 		run(a, 0.3)
-		check(int(a.animals[id]["state"]) == 10, "a player next to her calf is attacked, torch or not (state %d)" % int(a.animals[id]["state"]))
+		check(int(a.animals[id]["state"]) != 10 and int(a.animals[id]["state"]) != 11, "a player next to her calf in a torch's light is not attacked (fire keeps everything away, Dave 25 Nov 2026; state %d)" % int(a.animals[id]["state"]))
 		a = make()
 		a.traits = true
 		a.cfg["species"]["moose"]["young"]["share"] = 1.0

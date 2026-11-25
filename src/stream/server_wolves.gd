@@ -1157,15 +1157,11 @@ func pup_hurt(a: Dictionary, peer: int) -> void:
 	_event("growl", pack["den"])
 
 
-# Placed fires only: a torch bearer's own light does not hold a pack at its den (the torch rule is lifted there; a campfire still holds).
-func fire_lit(x: float, z: float, infos: Array) -> bool:
+# Fire keeps everything away from the players (Dave 25 Nov 2026), at the pack's den too: a torch bearer's light holds the pack there as a
+# campfire does (it used to be lifted at the den).
+func fire_lit(x: float, z: float, _infos: Array) -> bool:
 	for f in _fire_cache:
-		var bearer: bool = false
-
-		for info in infos:
-			bearer = bearer or (bool(info.get("torch", false)) and _flat(info["pos"], f) <= 1.5)
-
-		if not bearer and Vector2(f.x - x, f.z - z).length() < _fire_m(f):
+		if Vector2(f.x - x, f.z - z).length() < _fire_m(f):
 			return true
 
 	return false

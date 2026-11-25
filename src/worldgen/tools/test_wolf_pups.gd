@@ -2,7 +2,7 @@ extends SceneTree
 
 # Wild wolf packs and the orphan pup (docs/design/wolf_packs_and_pups_design.md, Dave 8 Nov 2026 decisions 3 and 4): no den near the town;
 # pups at the den in season only; pups hide from a standing player, not from a crouched, still one; the den guard warns, ends when the
-# player backs off, then rushes torch or not but is held by a campfire; a killed pack's pups are orphans and its den rests; three days of
+# player backs off, then rushes, but is held by a torch or a campfire (Dave 25 Nov 2026: fire keeps everything away from the players); a killed pack's pups are orphans and its den rests; three days of
 # meals make an orphan a young companion that grows up after 20 game days and keeps out of its owner's torch light; untamed orphans are gone
 # after 5 game days; the dens file survives a save; pups do not count against max_wolves.
 #   godot --headless --path . --script res://src/worldgen/tools/test_wolf_pups.gd
@@ -146,13 +146,13 @@ func _init() -> void:
 	think(a, pid, 0.2)
 	check(pack["phase"] != "den_guard", "backing off past the guard ring ends it (%s)" % pack["phase"])
 
-	# 5. Still within 25 m after the warning: rushed, torch or not.
+	# 5. Still within 25 m after the warning with a torch: held off (Dave 25 Nov 2026: fire keeps everything away from the players).
 	players = [player(1, 120.0, 0.0, 0, true)]
 	fires_at = [players[0]["pos"]]   # the torch bearer's own light is in the fire list
 	think(a, pid, 2.0)
 	check(log_bites == 0 and not bool(pack.get("guard_rush", false)), "no rush during the 3 s warning")
 	think(a, pid, 6.0)
-	check(log_bites > 0, "after the warning a player 20 m from the den is rushed, torch or not (%d bites)" % log_bites)
+	check(log_bites == 0, "after the warning a torch bearer 20 m from the den is not rushed (%d bites)" % log_bites)
 
 	# 5b. Never through a wall (coordinator's fight walk, 23 Nov 2026: wolves bit through walls): with a wall on every line from a wolf to
 	# the player (wall_between, no margin) but none in their way (crosses_wall has a body margin), the den guard still rushes, and bites
