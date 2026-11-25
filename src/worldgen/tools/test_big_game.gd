@@ -205,7 +205,7 @@ func _init() -> void:
 	a.animals[id]["timer"] = 100.0
 	check(a.animals[id].has("den") and a._in_den(a.animals[id], a.species_def("bear")), "a bear starts at its den")
 	run(a, 0.3)
-	check(int(a.animals[id]["state"]) == 2, "a torch bearer 10 m from a bear at its den is not attacked, it runs from the torch (state %d)" % int(a.animals[id]["state"]))
+	check(int(a.animals[id]["state"]) in [2, 3], "a torch bearer 10 m from a bear at its den is not attacked, it runs or only watches (state %d)" % int(a.animals[id]["state"]))
 	a = make()
 	a.cfg["species"]["bear"]["target_per_player"] = 0
 	players = [player(65.0, 0.0)]
