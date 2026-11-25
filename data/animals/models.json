@@ -21,7 +21,7 @@
 				"16": "Attack_IdleAngry_01_Low",
 				"trot": "Trot"
 			},
-			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn stands up on its hind legs too (Dave 25 Nov 2026: a threatened bear stands its ground and rears up first, then attacks with claws or bite; it was the angry breathing stance); charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear is drawn from bear_2, darkened (its own file has no stand-up or attack clips; see its row).",
+			"note": "WildMesh BrownBear (Realistic Animals/BrownBear/SK_Bear.fbx, textures in its Textures folder): 7508 triangles, 35 bones, 81 clips; faces +Z, so yaw 180. Alert stands up on its hind legs; warn stands up on its hind legs too (Dave 25 Nov 2026: a threatened bear stands its ground and rears up first, then attacks with claws or bite; it was the angry breathing stance); charge sprints. Jaw-pop (state 16, Steve #600): Attack_IdleAngry_01_Low, a low angry swat. The black bear is drawn from this model, darkened (its own file has no stand-up or attack clips; see its row).",
 			"length_m": 2.0,
 			"materials": [
 				{
@@ -43,7 +43,6 @@
 				{
 					"scene": "res://assets/animals/bear_2/SK_Bear.fbx",
 					"pack": "WildMesh3D/Realistic Animals/Bear",
-					"size_clip": "Idle_Breathing_01",
 					"materials": [
 						{
 							"match": "",
@@ -853,44 +852,63 @@
 			}
 		},
 		"black_bear": {
-			"scene": "res://assets/animals/bear_2/SK_Bear.fbx",
+			"scene": "res://assets/animals/bear/SK_Bear.fbx",
 			"scale": 1.0,
 			"yaw_deg": 180,
+			"clip_prefix": "RigRoot|",
 			"walk_mps": 1.3,
 			"run_mps": 9.0,
 			"stride_m": 1.1,
 			"clips": {
-				"0": "Idle_Breathing_01",
+				"0": "Idle",
+				"1": "Walk",
 				"3": "Idle_Breathing_01",
-				"10": "StandHind_Idle_01",
-				"16": "Attack_StandAngry_01_Low",
+				"10": "IdleHind_Idle_01",
 				"11": "Sprint",
 				"12": "Idle_Breathing_01",
+				"16": "Attack_IdleAngry_01_Low",
 				"walk": "Walk",
 				"run": "Run",
 				"trot": "Trot",
-				"hit": "Hit_Stand_F01",
-				"die": "Death_Stand_R01",
-				"bite": "Attack_BiteForward",
-				"strike": "Attack_MeleeLeft",
-				"strike2": "Attack_SwingForward"
+				"hit": "Hit_Idle_F01",
+				"die": "Death_Idle_R01",
+				"bite": "Attack_Run_01_AttackF",
+				"strike": "Attack_IdleAngry_01_High",
+				"strike2": "Attack_IdleAngry_02_High"
 			},
-			"note": "Dave 25 Nov 2026 play test: a threatened bear stands its ground, rears up on its hind legs, then attacks with claws or bite. The WildMesh BlackBear file (SK_BlackBear.fbx, 136 clips) has no hind-leg stand, swipe or bite: its rig is the pack's grazer rig (Frighten, Grazing, StandStraight clips), not the 35-bone bear rig, so bear_2's clips cannot be played on it. The black bear is drawn from the bear_2 model (WildMesh Realistic Animals/Bear) at black bear size (length_m 1.7) with its fur darkened by tint: it stands up on its hind legs (StandHind_Idle_01) to warn and stands on all fours breathing at rest. bear_2's imported rest pose does not stand: grounded by it, every clip was drawn half under the ground (Lane A pictures 25 Nov 2026), so size_clip grounds it by Idle_Breathing_01's first frame, swats low (Attack_StandAngry_01_Low) for the jaw-pop rung, and bites and claws. The old file's ClackTeeth and Snorting go unused with it. The old row is in git history (before this change) if a black bear model with attacks is bought.",
+			"note": "Dave 25 Nov 2026 play test: a threatened bear stands its ground, rears up on its hind legs, then attacks with claws or bite. The WildMesh BlackBear file (SK_BlackBear.fbx) has the pack's grazer rig and no hind-leg stand, swipe or bite, so the black bear is drawn from the base brown bear model (bear/SK_Bear.fbx, RigRoot clips, the same clips as the bear row) at black bear size (length_m 1.7) with its fur darkened by tint. The bear_2 model was tried first and dropped: Lane A pictures (25 Nov 2026) showed its idles lying flat and its StandHind clips sitting on the haunches. Warn: IdleHind_Idle_01, up on its hind legs; jaw-pop: Attack_IdleAngry_01_Low; strikes and the charge-end bite as the bear row. The old row is in git history if a black bear model with attacks is bought.",
 			"length_m": 1.7,
-			"size_clip": "Idle_Breathing_01",
 			"materials": [
 				{
+					"match": "Teeth",
+					"albedo": "res://assets/animals/bear/Textures/T_Bear_Teeth.png",
+					"roughness": 0.4
+				},
+				{
+					"match": "Head",
+					"albedo": "res://assets/animals/bear/Textures/T_Bear_Head.png",
+					"tint": [
+						0.22,
+						0.2,
+						0.19
+					]
+				},
+				{
 					"match": "",
-					"albedo": "res://assets/animals/bear_2/Textures/T_Bear_Body.png",
-					"tint": [0.22, 0.2, 0.19]
+					"albedo": "res://assets/animals/bear/Textures/T_Bear_Body.png",
+					"tint": [
+						0.22,
+						0.2,
+						0.19
+					]
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Bear",
+			"pack": "WildMesh3D/Realistic Animals/BrownBear",
 			"trot_mps": 3.5,
 			"idle_variants": {
 				"0": [
-					"Idle_02",
-					"Idle_Eating_01"
+					"Idle_1",
+					"Idle_2"
 				]
 			}
 		},
