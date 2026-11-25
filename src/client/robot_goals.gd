@@ -96,6 +96,7 @@ func play(limit_s: float) -> void:
 		var t: float = _s()
 		r._step = "goal " + id
 		_line("GOAL %s try %d at %.0f s: %s" % [id, int(_tries[id]), t, str(g.get("title", ""))])
+		_close_windows()
 		await _lighten()
 		var heard: int = r._notices.size()
 		var why: String = await _play_goal(g)
@@ -191,6 +192,12 @@ func _weigh_if_heavy(from: int) -> void:
 		parts.append("%s x%d %.2f kg" % [row[1], row[2], row[0]])
 
 	_line("WEIGHT carried %.2f of %.2f kg: %s" % [c.items.carried_kg(), c.items.carry_limit_kg(), ", ".join(parts)])
+
+
+# A player closes a trader's window before walking off (an open window holds the movement keys).
+func _close_windows() -> void:
+	if c.items.dialogue_open and c.items.dialogue_close.is_valid():
+		c.items.dialogue_close.call()
 
 
 # Back to the starter camp in 60 s legs; the seconds walked.
@@ -991,5 +998,7 @@ func _sell() -> String:
 			c.net.trade.rpc_id(1, "hob", 1, r._slot_of(item), _count(item))
 			await r._wait(2.0)
 
-	_line("SOLD to Hob%s" % _said(said))
+	var was_open: bool = c.items.dialogue_open   # a sale sends the shop back and the client opens its window, which holds the walk
+	_close_windows()
+	_line("SOLD to Hob (shop window opened %s, closed)%s" % [str(was_open), _said(said)])
 	return ""
