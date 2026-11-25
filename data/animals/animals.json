@@ -4308,7 +4308,12 @@
 		"max_total": 600,
 		"life_s": 240.0,
 		"max_sent": 80,
-		"bleed_hp_per_s": 0.15
+		"bleed_s": 60.0,
+		"bleed_max_s": 900.0,
+		"wounded_speed_x": 0.7,
+		"bed_m": [100.0, 200.0],
+		"bed_s": [300.0, 600.0],
+		"note_wounded": "ANIMAL_SCENARIOS gap 8 (25 Nov 2026): each wound bleeds its own damage again over bleed_s, so a hit of half its health ends it in about a minute and a graze in many, and never slower than its whole health over bleed_max_s (the old flat 0.15 a second killed a deer of 20 in 2 minutes and an elephant of 300 in 33, whatever the hit); hurt, its lope after the burst is wounded_speed_x as fast (a deer 10 m/s becomes 7, a player can keep up); once no player is within safe_m it runs on bed_m[0] metres, and up to bed_m[1] looking for trees, then lies up for bed_s (server_animals._runs_on_hurt). A player within its flee distance pushes it on."
 	},
 	"wall_margin_m": 0.3,
 	"ground_step": {"note": "Provisional GS-1 (Dave 19 Nov 2026 play test, animals in dug ground): the most an animal jumps down (drop_m) or scrambles up (climb_m) in one step, whatever the slope, so a dug hole's steep rim is not a wall (server_animals.walk_step). Only where a dig or fill touches the step; natural ground keeps the slope rule. Deeper holes stay pits.", "climb_m": 1.0, "drop_m": 2.0},

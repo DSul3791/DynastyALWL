@@ -670,6 +670,11 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		wolves.pup_hurt(a, source_peer)   # its pack comes at once
 
 	a["wound"] = true
+	# Each wound bleeds by how hard it was (ANIMAL_SCENARIOS gap 8): the hit's own damage again over blood.bleed_s, so a hit that took half
+	# its health ends it within one blood trail and a graze takes long; never slower than its whole health over bleed_max_s (Dave 23 Nov
+	# 2026: "if they bleed enough they die eventually"). Size counts through its health: the same blow is a smaller share of a moose's.
+	a["hp_full"] = float(a.get("hp_full", float(a["hp"]) + amount))   # its health before its first wound
+	a["bleed"] = float(a.get("bleed", 0.0)) + amount / maxf(float(cfg.get("blood", {}).get("bleed_s", 60.0)), 1.0)
 	a["hurt_by"] = source_peer
 	a["drops"] = 0
 	a["last_drop"] = a["pos"]
@@ -1659,6 +1664,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if centre != Vector3.INF and not a.has("drink_home") and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)) * fog_herd_x(def):
 				a["home"] = a["home"].lerp(centre, 0.5)
 
+		if a["timer"] <= 0.0 and a.has("bedded"):
+			a.erase("bedded")   # it gets up where it lay; still bleeding, it grazes on (gap 8)
+
 		if a["timer"] <= 0.0 and routine_trip(a):
 			return   # its clock says it is time to go home or out: it walks the trail
 
@@ -1734,6 +1742,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if a["burst"] > float(def.get("burst_s", 3.0)):
 			speed = maxf(speed * float(def.get("trot_share", 0.5)), float(def.get("lope_mps", 0.0)))
 
+			if a.get("wound", false):
+				speed *= float(cfg.get("blood", {}).get("wounded_speed_x", 0.7))   # hurt, it sprints off and then cannot hold its lope (gap 8)
+
 	var moves: Array = _walk_moves(a, def)
 	var ground_for: Callable = moves[0]
 	var blocked_for: Callable = moves[1]
@@ -1754,6 +1765,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		if a.get("wound", false) and a["pos"].distance_to(a["last_drop"]) >= float(cfg.get("blood", {}).get("every_m", 2.5)):
 			_drop_blood(a)
+
+		if a.get("wound", false) and a["state"] == FLEE:
+			a["wound_run"] = float(a.get("wound_run", 0.0)) + ran   # how far it has run hurt since it last lay down (_beds_down)
 
 		if a["state"] == FLEE and not a["to_burrow"] and near_p != Vector3.INF:
 			a["flee_path"] = float(a.get("flee_path", 0.0)) + ran
@@ -1818,6 +1832,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 			return
 
+		if a["state"] == FLEE and a.get("wound", false) and _runs_on_hurt(a, def, speed, dt, ground_for, blocked_for):
+			return
+
 		if a["state"] == FLEE:
 			a["home"] = a["pos"]
 
@@ -1875,12 +1892,53 @@ func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt:
 	return true
 
 
+# A hurt animal whose flight is over (no player within safe_m) does not stop at once (docs/design/ANIMAL_SCENARIOS.md gap 8; TPWD: a hit deer
+# runs a short way and lies down, pushed it runs much farther): it runs on until it has run blood.bed_m[0] since it was hurt or last got up,
+# and on to bed_m[1] while it is not under trees, then lies up there (bedded: drawn lying, LIE) for bed_s, bleeding. A player who comes
+# within its flee distance pushes it on (_bolt), and it runs bed_m again before it lies down. True while it runs on.
+func _runs_on_hurt(a: Dictionary, def: Dictionary, speed: float, dt: float, ground_for: Callable, blocked_for: Callable) -> bool:
+	if def.has("flight") or def.has("flock") or a.get("to_burrow", false) or a.has("pack"):
+		return false
+
+	var b: Dictionary = cfg.get("blood", {})
+	var bed: Array = b.get("bed_m", [100.0, 200.0])
+	var run: float = float(a.get("wound_run", 0.0))
+	var covered: bool = not canopy.is_valid() or bool(canopy.call(a["pos"]))
+
+	if run < float(bed[0]) or (run < float(bed[1]) and not covered):
+		var away: Vector2 = Vector2.from_angle(float(a["heading"]))
+		_flee_target(a, a["pos"] - Vector3(away.x, 0.0, away.y) * 5.0, away, def)
+
+		if a["state"] == FLEE:
+			plan(a, a["target"])
+			var on: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+
+			if on["moved"]:
+				a["wound_run"] = run + a["pos"].distance_to(on["pos"])
+				a["pos"] = on["pos"]
+				a["heading"] = on["heading"]
+
+			return true
+
+		return false
+
+	var lie: Array = b.get("bed_s", [300.0, 600.0])
+	a["state"] = GRAZE
+	a["home"] = a["pos"]
+	a["target"] = a["pos"]
+	a["bedded"] = true
+	a["wound_run"] = 0.0
+	a["timer"] = rng.randf_range(float(lie[0]), float(lie[1]))   # luck-exempt: how long a hurt animal lies up
+	return true
+
+
 # A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail. True when it died.
 func bleed(a: Dictionary, dt: float) -> bool:
 	if not a.get("wound", false):
 		return false
 
-	a["hp"] -= float(cfg.get("blood", {}).get("bleed_hp_per_s", 0.0)) * dt
+	var slowest: float = float(a.get("hp_full", a["hp"])) / maxf(float(cfg.get("blood", {}).get("bleed_max_s", 900.0)), 1.0)
+	a["hp"] -= maxf(float(a.get("bleed", 0.0)), slowest) * dt
 
 	if a["hp"] > 0.0:
 		return false
@@ -2662,6 +2720,9 @@ func _wire_state_now(a: Dictionary) -> int:
 	if a["state"] == GRAZE and bool(a.get("drinking", false)):
 		return DRINK
 
+	if a["state"] == GRAZE and a.has("bedded"):
+		return LIE   # a hurt animal lying up (gap 8)
+
 	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
 		return HUNCH
 
@@ -2698,6 +2759,7 @@ func info_of(id: int) -> Dictionary:
 func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a.erase("startle")   # whatever sent it off (the stare's end, an alarm, a wound), the stare is over
 	a.erase("bay")
+	a.erase("bedded")   # pushed from its bed it runs on (gap 8)
 
 	if def.has("flight") and flight != null:
 		flight.take_off(a, from)   # a bird with a flight row flies instead of running (bird_flight_server_design.md)
