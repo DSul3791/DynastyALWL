@@ -15,7 +15,7 @@ The scope is the creatures that exist today: bear, wolf, boar, deer, frog and go
   "warning":  [{"cue": "huff", "kind": "sound", "built": false}, {"cue": "turns to face", "kind": "pose", "built": true, "code": "big_game WARN"}],
   "verbs":    {"avoid": {"how": "...", "built": true, "code": "..."}, "hunt": {...}, "study": {...}},
   "reward":   ["meat", "hide", "knowledge"],
-  "counterplay": ["stay out of the den ring (den.threat_m 15 m); fire does not help at the den"],
+  "counterplay": ["stay out of the den ring (den.threat_m 15 m), or keep a fire or torch lit"],
   "level":    "from the spawner (levels 1-20, #485)", "tier": "spear",
   "seasons":  "from animals.json seasons and young",
   "systems":  ["server_animals", "server_big_game", "animal_sign"]

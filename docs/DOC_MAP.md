@@ -16,6 +16,7 @@ Start here to find a design topic, then read its source and the relevant working
 | Property and town management | [Property/management collection](../Design_Ideas_Unapproved.md#property-and-town-management) | Planning, permissions, property/reputation, contested claims, remote management, mail and server-town purchases; source-unverified decisions and proposals remain distinct. |
 | Founding and settlement construction | [Founding collection](../Design_Ideas_Unapproved.md#founding-and-building-a-settlement) | Markers/territory, establishment, proposed first-ten list and separately recorded planner order; numeric stage tables and open questions retained. |
 | Outposts and settlement decline | [Outpost/decline collection](../Design_Ideas_Unapproved.md#outposts-and-settlement-decline) | Outpost points/sizes and separate player/server-town decline paths; numeric tables, road/rubble persistence and claim/deletion exceptions retained. |
+| Dave's rulings | [RULINGS](RULINGS.md) | One live line per subject; beats older text in every topic doc. |
 | Design principles | [DESIGN_PRINCIPLES](../DESIGN_PRINCIPLES.md) | Values and constraints behind the designs. |
 | Approved design provenance | [Approved records](../Design_Ideas_Approved.md) | Source-backed status records; full specifications remain in owning topic files. Original-source retrieval limits are explicit. |
 | Implementation evidence | [Built records](../Design_Ideas_Built.md) | Implementation commits, checks and remaining gaps; built/tested/player-verified are separate. |

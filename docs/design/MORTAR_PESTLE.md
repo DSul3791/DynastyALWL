@@ -15,7 +15,7 @@ Asked by Dave, 17 Nov 2026: "when I made a morter and pestle I expected a stone 
 ## 2. What the game has now (dev 40f36037)
 
 - Item #807 `mortar_pestle`, "Mortar and pestle", kind `tool`, tool_class `mortar_pestle`, 1.5 kg, durability 2000, value 6. Recipe #377: 2 stone, 8 s, hand craft.
-- It is kept (not used up) by four medicine recipes: Plantain poultice #8, Comfrey poultice #9, Leaf bandage #10, Herb antidote #378. Since #1211 a kept tool must be in hand, so today the player crafts these while holding it.
+- It is kept (not used up) by four medicine recipes: Plantain poultice #8, Comfrey poultice #9, Leaf bandage #10, Herb antidote #378. It counts anywhere in the pack or on the hotbar (`RULINGS.md` R-CRAFT-KEPT-TOOL).
 - **Why it looks like a hammer (a plain bug):** it has no model of its own. In hand, `held_item.gd` `_make_other_model()` gives every tool without a model a 0.6 m rod with a grey block on the end, which reads as a hammer, and a left click plays the generic "use" arm swing. On the ground it is a plain grey stone chunk (looks.json shape `chunk`). Its inventory icon already shows a bowl with a pestle. It does **not** act as a hammer: the build screen and hammering check tool_class `hammer`, which it does not have.
 - **Hand mill** #344 (`quern`): since #1218 a placed station (two millstones on a stone base). Makes flour from wheat, barley, oats, rye and wild grain, and Bonemeal from bones.
 - **Food preparation table**: mixes and shapes uncooked dishes (dough, pies, batters). No grinding.
