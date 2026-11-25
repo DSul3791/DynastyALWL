@@ -4,7 +4,7 @@ Research notes behind `docs/design/ANIMAL_SCENARIOS.md`. Raw notes, not rules. S
 
 ## How to read this
 - **Citations:** each bullet ends with a tag like `[S12]`. The full URLs are in the source list at the end. I used tags because 40+ species with full URLs on every bullet would be unreadable.
-- **Checked (V):** I opened and checked 19 sources against the figures quoted from them. They are marked **(V)** in the list.
+- **Checked (V):** I opened and checked 16 sources against the figures quoted from them. They are marked **(V)** in the list.
 - **Not checked:** every other source came up in searches by title only. The figures cited to them are standard textbook or literature values for the topic, not checked against the page. Spot-check those before treating them as fixed. A `~` marks a typical or approximate value.
 - **No research done:** for these the bullets are my own knowledge, not sourced facts: a few stock values (horse, donkey, domestic cow and goat speeds), the elephant musth details, and the honey badger speed, bark and night travel figures.
 - **Source quality:** wildlife agencies, extension services, zoo fact sheets and peer-reviewed papers wherever possible. I used no Wikipedia pages.

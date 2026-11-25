@@ -22,13 +22,15 @@ Earlier work this builds on, not replaced: the temperament table and hunters (`A
 
 ## Rules every animal keeps (standing rulings)
 
-1. **Fire keeps everything away from players** (Dave, 25 Nov 2026). See "Fire" below. It is the one rule that beats hunger, cornering
-   and young.
+1. **Fire keeps everything away from players** (Dave, 25 Nov 2026). See "Fire" below. How far it reaches past hunger, cornering, young
+   and dens is this document's reading, for Dave to confirm.
 2. Animals **stare before fleeing** and **warn before attacking** (growl, huff, stamp; Dave 23 Nov 2026).
-3. No teleporting, sliding or passing through players; every animal can be hit; each model uses **its own** moves and attacks.
+3. No teleporting, sliding or passing through players; every animal can be hit; each model uses **its own** moves and attacks (Dave's
+   play-test rulings 19 to 24 Nov 2026, relayed by the coordinator; see `ANIMAL_NETCODE.md`).
 4. Blood trails and bleeding to death stay.
-5. Sound is directional and easy to pinpoint.
-6. **Core rule:** the game does not want the player dead unless they do something deliberately stupid. At 1 health no blow takes more.
+5. Sound is directional and easy to pinpoint (Dave 23 Nov 2026, `../SOUND_MAP.md` "Direction").
+6. **Core rule** (Dave 23 Nov 2026, quoted in `src/worldgen/tools/test_survival_loop.gd`): "this game doesn't want you to die unless you do
+   something really stupid"; at 1 health no blow takes more (the test checks a wolf bite).
    An animal that has beaten a player down to 1 health has won: it stops and leaves (a defensive animal) or stands over them only
    while they stay down (none today).
 7. Snares catch rabbits and foxes on game trails. A fire, building, placed torch or tilled bed within 20 m empties a rabbit warren.
@@ -47,7 +49,9 @@ them. An animal inside one bolts away; none wanders in; none charges or stalks a
 | Torch or lantern carried, lit | 9 m | `server_items.gd` TORCH_PROTECT_M |
 | Standing torch, torch post, pillar, iron stand (lit) | 8 m | `data/items/structures.json` protect_m |
 
-Exceptions in the code today, which **break Dave's rule**: a bear at its den ignores a torch or fire (`_in_den`); a mother with a player
+Exceptions in the code today, from earlier rulings, which Dave's 25 Nov words would replace only if he confirms (the bear den: Dave
+6 Nov 2026 in the brown bear row note, "a torch does not protect you at its den", and `bear_threat_design.md` "Fire still does not help
+inside the den ring"; the wolf pup den: `wolf_packs_and_pups_design.md`, "torch or not", a campfire still holds): a bear at its den ignores a torch or fire (`_in_den`); a mother with a player
 between her and her young attacks "torch or not"; a wolf pack rushes a player near its pups' den "torch or not" (a campfire still holds
 it); wolf packs skip the general fire check and use their own (`a.has("pack")`).
 
@@ -59,7 +63,8 @@ In our game (recommended):
 - **No exceptions.** A starving animal circles at the edge of the light and waits, it does not come in. A cornered animal next to a fire
   breaks away along the edge, never through the light and never at the player in it. A mother whose young is near a player standing in
   firelight calls the young away instead of charging. A den guard holds at the edge.
-- The light edge is a visible line in play (the glow), so the player can see where safe is.
+- The player should see where safe is. Today the glow is smaller than the keep-off ring for the small and medium fires (light 3.5 and
+  7 m against 5 and 10 m, `cooking.json`), so the glow edge is not the safe edge; align them or keep the ring larger than the glow.
 - A trapped animal (in a snare or trap) does not move; fire near it changes nothing.
 - Fire is not a weapon: an animal already charging when the player lights a torch turns off at the edge of the new radius, it does not
   pass through. (Today a charge is locked; check it.)
@@ -111,7 +116,7 @@ both behave by the black bear rules below, with the brown bear differences liste
 | What | Number | Source |
 |---|---|---|
 | Top speed | "Lean bears can exceed 30 mph" (13.4 m/s and up). Fat bears in winter coats "overheat and tire quickly" | [BO27] |
-| Our player | runs 9.0 m/s and never tires (`terrain_client.gd` RUN_SPEED; no stamina) | code |
+| Our player | runs 9.0 m/s (`terrain_client.gd` RUN_SPEED); an unfit player is over-exerted after about 35 s (pace x0.9) and faints at about 50 s (`data/items/exertion.json`) | code |
 | Smell | strongest sense; "a scent from over a mile away" (1.6 km), "seven times better than a bloodhound" | [FWC] |
 | Hearing | about twice as sensitive as ours; "often hear humans before we see them" | [FWC], [BO27] |
 | Sight | colour, good close up; forms at about 90 m, details within about 27 m | [FWC], [BO27] |
@@ -175,7 +180,7 @@ A roar is not a black bear sound. Keep `bear_roar` only, if at all, for a brown 
 | S12 Snared, trapped | Biologists catch bears with baited foot snares (a cable on the foot, anchored) and barrel traps. A caught bear tears up the ground in reach, moans and huffs, lunges at people. | **Dave: "the goal will be to learn how to trap them."** A bear trap (a later trap stage: heavy cable snare or pit, baited with meat, fish or honey). A bear smells bait downwind from about 200 m. Caught, it stays within 2 m of the anchor, faces the player, huffs, jaw-pops, moans, and lunges with a swipe at anyone inside 2.5 m. It can be killed from outside its reach. A weak trap may break after a few game hours. |
 | S13 With cubs | Black bear mothers rarely defend cubs by attacking: "defense of cubs is a grizzly bear trait"; a sow "may send her cubs up a tree and false-charge you" [BO27], [NH]. | Cubs follow within 4 m. A mother bluff charges a player within 10 m of a cub; she attacks for real only if the player hurts a cub or stays after the bluff. |
 | S14 Hungry, starving | In poor food years bears range farther and come to people's food [FWC]. | **Dave: it runs "unless it was starving or trapped."** A starving bear (spring after the den, or a poor autumn) does not run from a player: it stands its ground, comes to camps and food left out, takes carcasses, and attacks by the ladder if pushed. It still never enters firelight. |
-| S15 Hunting | Mostly a forager; takes fawns and calves in spring; rare predatory attacks on people are silent, by a stalking bear [BS], [BO254]. | Only aggressive-born bears (5%) stalk a player, silently, at 1.2 m/s; never into firelight; never by night. Takes fawns in spring if animal-on-animal hunting is added. |
+| S15 Hunting | Mostly a forager; takes fawns and calves in spring; rare predatory attacks on people are silent, by a stalking bear [BS], [BO254]. | Only aggressive-born bears (10% of black bears, 5% of brown bears) stalk a player, silently, at 1.2 m/s; never into firelight; never by night. Takes fawns in spring if animal-on-animal hunting is added. |
 | S16 Meets another animal | Yields to brown bears; wolves may harass it; deer avoid it. | Deer, elk and moose treat a bear like a player (flee). A black bear gives way to a brown bear. |
 | S17 Group | Solitary. | Single; mothers with 1 to 3 cubs (share 0.3 today). |
 | S18 Day and night | Day and dusk; naps by day; mostly beds at night. | Today: day 1.0, dusk 1.0, night 0.05. Keep, add the midday rest. |
@@ -217,10 +222,11 @@ own attack moves".
 
 ## Every animal in the game
 
-Taken from `data/animals/animals.json` (52 species rows) and `data/animals/models.json`. Goblins and bandits are people, not animals,
-and are left out (`GOBLINS.md`, `BANDIT_CAMPS.md`). "Today" columns are the live data: health, flee speed and how long it holds it
+Taken from `data/animals/animals.json` (52 species rows, 50 animals) and `data/animals/models.json`. Goblins and bandits are people, not animals,
+and are left out (`../GOBLINS.md`, `BANDIT_CAMPS.md`). "Today" columns are the live data: health, flee speed and how long it holds it
 (`flee_mps` for `burst_s` seconds, then `trot_share` of it), and the temperament shares (P passive, D defensive, N neutral, A aggressive,
-F friendly). The player runs 9.0 m/s and never tires.
+F friendly). The player runs 9.0 m/s for about 35 s before strain slows them to 8.1 m/s, and faints at about 50 s
+(`exertion.json`).
 
 | Species row | Real species the model is | Where | Health | Flee today | Temperament today |
 |---|---|---|---|---|---|
@@ -255,8 +261,8 @@ F friendly). The player runs 9.0 m/s and never tires.
 ### The rules that hold for every species (from the research)
 
 1. **Prey sprints first, then keeps going faster than a person.** Deer reach 15.6 m/s, elk 18 to 20, moose 15.6, wolves 15.6, foxes 13.4,
-   pronghorn 24 (and 18 for 10 km), horses 15 to 19. A healthy animal is never run down on foot. Our player runs 9 m/s for ever, and
-   every species drops under that after its burst, so in our game **every animal can be run down**. That is the biggest single gap (gap 1).
+   pronghorn 24 (18 for several km, 12.5 for 10 km), horses 15 to 19. A healthy animal is never run down on foot. Our player runs 9 m/s for about 35 s,
+   and every species drops to half speed or less after a 3 to 8 s burst, so in our game **every animal can be run down** well inside that. That is the biggest single gap (gap 1).
 2. **Stare, then signal, then go.** Most prey first lifts its head and looks, then gives its alarm (deer snort, stamp and flag the tail;
    elk cow barks; rabbits thump; chamois whistle; geese honk; crows caw; guineafowl chatter), then runs to cover. Our "stare before
    fleeing" ruling fits.
@@ -284,7 +290,7 @@ activity (Wildlife Online, ADW).
 - S4 to S6: freezes, slinks low, then a zig-zag dash to the burrow, white tail showing; may sit up to look. A hind-foot **thump** warns
   the others. In game: freeze and stare (startle), thump (sound), then zig-zag to the burrow. Already close.
 - S7, S8: goes to ground. Cornered or caught: kicks, struggles, gives a loud **distress scream** (ADW).
-- S10, S11: a wounded rabbit dives into its burrow on its trail (today, `BURROW_KINDS`). Dies with a squeal.
+- S10, S11: a wounded rabbit dives into its burrow on its trail (the server's burrow on the trail; the client's `BURROW_KINDS` only stops a rabbit that goes to ground being drawn as killed). Dies with a squeal.
 - S12 snare: struggles and screams, then goes still. Dave 25 Nov: it lies in the snare, E collects it and resets the snare.
 - S13: the doe visits the nest once a day for a few minutes; young stay hidden. No defence.
 - S15 to S17: prey of fox, lynx, wolves, birds of prey; groups feed together and one thump sends all.
@@ -466,7 +472,7 @@ people are rare; running can start a chase; most people who fight back drive it 
 
 ### Open plains: pronghorn, wildebeest, kangaroo, horse, donkey, camel, wild ox
 
-- **Pronghorn:** top 24 m/s, holds 18 m/s for 10 km; sees movement at about 5 km; flees at 100 to 400 m; flashes its white rump to warn
+- **Pronghorn:** top 24 m/s, holds 18 m/s for several km and 12.5 m/s for over 10 km; sees movement at about 5 km; flees at 100 to 400 m; flashes its white rump to warn
   the herd; fawns hide 3 weeks. In game: the fastest thing in the world; never caught by running.
 - **Wildebeest:** to 22 m/s; herds 10 to 1,000; stops, stares, snorts, then bolts and wheels; constant "gnu" grunts; calves run with the
   herd minutes after birth.
@@ -519,12 +525,13 @@ people are rare; running can start a chase; most people who fight back drive it 
 
 Each item: what is wrong today, what to do, where. Values are recommendations for the fix thread to tune; Dave plays and rules.
 
-1. **Every animal can be run down on foot.** The player runs 9 m/s and never tires; every species falls below that after its burst
+1. **Every animal can be run down on foot.** The player runs 9 m/s for about 35 s before strain cuts the pace to 8.1 m/s (faint at about
+   50 s, `exertion.json`); every species falls far below that after its burst
    (`flee_mps` for `burst_s`, then `trot_share`): deer 12 then 6 m/s, elk 13 then 5.9, horse 13.7 then 6.9, pronghorn 16 then 8, bears
    9 then 4.5. Real deer, elk, moose, wolves, horses and bears all hold well over 9 m/s for a long way. Fix: for every large runner
    (deer, elk, moose, bears, wolves when fleeing, fox, horse, donkey, camel, pronghorn, wildebeest, kangaroo, big cats, boar, buffalo)
    a lope after the burst of at least 10 m/s (pronghorn 18) held until `safe_m`, then a walk; small animals go to burrow, water, tree or
-   cover instead. A hurt animal runs slower (below). Whether the player should get stamina is a separate call for Dave.
+   cover instead. A hurt animal runs slower (below). The other way, a shorter player sprint in `exertion.json`, is a call for Dave.
    `data/animals/animals.json` (new `lope_mps` or raise `trot_share`), `server_animals.gd` flee speed (line about 1723),
    `animal_gait.gd` RATE_MAX for the legs.
 2. **Half the black bears never fight back** (passive 0.5). Bear item 1 above. `animals.json` black_bear temperament.
@@ -539,18 +546,20 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
    the first alert only for species that have one; warnings by species (huff and jaw-pop for bears, hiss and growl for cats, snort and
    stamp for deer and boar, lip-lick silent for moose); recordings needed for bear huff, jaw-pop, bawl and moan, boar bark and grunt,
    cat hiss and growl, elk bark and bugle, beaver slap. `creature_sounds.gd` KINDS and CALL_AS; Dave listens.
-5. **Natural far bear calls.** A bear growl plays in the forest every 7 to 15 minutes by day whatever is near. Fix: remove for bears and
-   big cats (keep wolf howls at night, more in winter; fox barks and screams at night, winter; frogs on warm nights; rut bugles and
+5. **Natural far bear calls.** A bear growl plays in the forest every 7 to 15 minutes by day whatever is near. Fix: remove the bear's
+   natural calls (the only big animal with them; cats borrow bear voices only for warnings) (keep wolf howls at night, more in winter; fox barks and screams at night, winter; frogs on warm nights; rut bugles and
    bellows in autumn; birds by day). `creature_sounds.gd` KINDS bear `every`.
 6. **Animals that fight have no attack move of their own.** No bite, strike or kick clip is mapped for black bear, deer, moose, elk,
    lynx, mountain goat, horse, buffalo, warthog, hyena, wildebeest, alligator, honey badger, chamois, mink, raccoon, cow, cat, dog,
    pronghorn or camel (`models.json` clips `bite`, `strike`, `kick`). Several files have threat clips that are unused
-   (`GrazingOnSpotA2IdleThreat` for moose, buffalo, warthog, hyena, honey badger; `ClackTeeth` for the black bear; hyena `Howling_*`).
+   (`GrazingOnSpotA2IdleThreat` for moose, hyena and honey badger, `IdleThreat` for the fox; the buffalo already warns with it and the
+   warthog's was turned down on purpose, it drops onto its haunches; `ClackTeeth` for the black bear; hyena `Howling_*`).
    Fix: map what each file has; for files with none, choose with the coordinator (borrow a look with moves, retarget, or a new model).
    The black bear first (bear item 4).
-7. **Fire exceptions break "fire keeps everything away".** Bear den ignores fire and torches (`_in_den`); a mother with a player near
-   her young attacks "torch or not"; a wolf pack at its pups' den rushes "torch or not" (`server_wolves.gd`); a charge already started is
-   locked and may pass into new light. Fix: no exceptions; hold at the light's edge; a charge turns off at the edge.
+7. **Fire exceptions, for Dave to confirm.** The bear den ignores fire and torches (`_in_den`, Dave 6 Nov 2026 and
+   `bear_threat_design.md`); a mother with a player near her young attacks "torch or not"; a wolf pack at its pups' den rushes "torch or
+   not" (`wolf_packs_and_pups_design.md`); a charge already started is locked and may pass into new light. If Dave's 25 Nov "fire keeps
+   everything away" replaces these: remove them; hold at the light's edge; a charge turns off at the edge.
 8. **A hurt animal does not slow down or bed in cover, and bleeds at one rate.** Every wound drains 0.15 health a second whatever the
    animal (a deer of 20 dies in about 2 minutes, an elephant of 300 in 33), and it flees at full speed (`bleed` says it "runs, rests and finally dies"; check how it rests). Real: a badly hit
    deer runs a short way and lies down; pushed, it runs much farther. Fix: a hurt animal runs slower (the wounded gait clips most files
@@ -595,7 +604,6 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
 - [BS] Get Bear Smart Society, "Communication": https://bearsmart.com/about-bears/communication
 - [FWC] Florida Fish and Wildlife Conservation Commission, "Bear behavior": https://myfwc.com/wildlifehabitats/wildlife/bear/facts/behavior/
 - [NPS] US National Park Service, "Bear attacks": https://nps.gov/articles/bearattacks.htm
-- [PC] Parks Canada, "If an attack occurs" (black bear): https://parks.canada.ca/docs/v-g/oursnoir-blackbear/page4
 - Bombieri et al. 2019, brown bear attacks on humans, Scientific Reports: https://www.nature.com/articles/s41598-019-44341-w
 
 Other animals (main sources; the full list, with which were checked, is in `docs/knowledge/animal-research-notes-2026-11-25.md`):
