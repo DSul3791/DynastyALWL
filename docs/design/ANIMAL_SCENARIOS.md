@@ -584,6 +584,11 @@ Each item: what is wrong today, what to do, where. Values are recommendations fo
 10. **No starving state.** Only the season scales boldness (spring threat x1.5 for bears). Fix: a hunger flag for bears and predators
     (late winter, spring after the den, a poor year) that makes them stand their ground, come to camps, food and carcasses, and bolder
     with prey, never into firelight (bear item 6).
+    Built 25 Nov 2026 (`animals.json` hunger rows and block; `server_animals` spawn, `may_attack`, `_threat_m`, `thief_row`): bears,
+    black bears and the big cats and hyena are born starving at a season chance (bears 40% in spring, 30% in winter). A starving one
+    stands its ground and warns by the ladder at 1.5 times its threat range, whatever its temperament, and comes for food left out
+    unless a player is within 6 m of it. Neither it nor a fox ever goes for food in a fire's or a torch's light. Not yet: carcasses,
+    bolder with prey, a poor food year.
 11. **Cornered by a chase is not a thing.** Today "cornered" means blocked by water or a cliff (`_at_bay`). Fix: a player who keeps
     within about 10 m of a fleeing animal for 5 s has cornered it: big animals turn and fight (Dave, for bears), small ones dive for
     cover.

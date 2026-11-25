@@ -297,6 +297,10 @@ func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 		if traits and def.has("young") and bool(animals[id]["protective"]):
 			_spawn_young(id)
 
+	# Starving (ANIMAL_SCENARIOS gap 10): a bear or a big cat is born hungry at its season's chance where it spawns (hunger.seasons).
+	if traits and def.has("hunger") and not _spawning_young:
+		animals[id]["starving"] = rng.randf() < float((def["hunger"].get("seasons", {}) as Dictionary).get(_season_here(), 0.0))   # luck-exempt: whether it is starving
+
 	return id
 
 
@@ -396,11 +400,22 @@ func _season_row(def: Dictionary) -> Dictionary:
 	return def["seasons"].get(season, {})
 
 
+# The food-stealing row an animal goes by (server_thieves.gd): its species' thief row, or the hunger one while it is starving (gap 10).
+func thief_row(a: Dictionary) -> Dictionary:
+	if bool(a.get("starving", false)) and species_def(a["sp"]).has("hunger"):
+		return cfg.get("hunger", {}).get("thief", {})
+
+	return species_def(a["sp"]).get("thief", {})
+
+
 # Whether this animal may attack at all (server_big_game.warn asks). The young never do; passive and friendly animals only when
 # forced (a mother whose young a player has come between).
 func may_attack(a: Dictionary, forced: bool = false) -> bool:
 	if a.has("mother"):
 		return false
+
+	if bool(a.get("starving", false)):
+		return true   # a starving animal fights whatever its temperament (gap 10)
 
 	return forced or bool(_temper_row(a).get("attacks", true))
 
@@ -1494,7 +1509,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		flight.step(a, dt, seen_d, seen_p)   # in the air, or sitting on a perch (bird_flight_server_design.md)
 		return
 
-	if def.has("thief") and thieves.handles(a):
+	if thieves.handles(a) and not thief_row(a).is_empty():
 		thieves.step(a, dt)
 		return
 
@@ -1604,7 +1619,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
 	# With its young modelled (traits on) it runs sooner instead, and fights only for them (above).
-	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE and not (traits and def.has("young"))
+	# A starving one (gap 10; Dave: it runs "unless it was starving or trapped") stands its ground the same way.
+	var starving: bool = def.has("defend") and bool(a.get("starving", false))
+	var stands: bool = def.has("defend") and a["state"] != FLEE and (starving or (bool(a.get("protective", false)) and not (traits and def.has("young"))))
 
 	if stands and seen_d <= float(def["defend"].get("warn_m", 20.0)):
 		if big_game.warn(a, seen_p):
@@ -1629,7 +1646,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	if a["state"] == ALERT:
 		a["alert"] -= dt
 
-		if seen_d <= _spook_m(a, def):
+		if seen_d <= _spook_m(a, def) and not starving:
 			_bolt(a, seen_p, def)
 		elif a["alert"] <= 0.0 or seen_d > alert_m * 1.3:
 			a["state"] = GRAZE
@@ -1651,7 +1668,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["alert"] = 0.0   # it forgets once the player is well away
 
 	if a["state"] == GRAZE:
-		if def.has("thief") and thieves.try_sneak(a, dt):
+		if not thief_row(a).is_empty() and thieves.try_sneak(a, dt):
 			return
 
 		a["timer"] -= dt
@@ -2018,6 +2035,9 @@ func _threat_m(a: Dictionary, def: Dictionary) -> float:
 
 	if _in_den(a, def):
 		return float(def["den"].get("threat_m", 15.0)) * season_x
+
+	if bool(a.get("starving", false)):
+		return float(def["defend"].get("threat_m", 0.0)) * season_x * float(cfg.get("hunger", {}).get("threat_x", 1.5))   # bolder, whatever its temperament
 
 	return float(def["defend"].get("threat_m", 0.0)) * season_x * float(_temper_row(a).get("threat_x", 1.0))
 

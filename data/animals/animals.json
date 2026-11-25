@@ -955,6 +955,7 @@
 			}
 		},
 		"bear": {
+			"hunger": {"seasons": {"spring": 0.4, "winter": 0.3, "summer": 0.05, "autumn": 0.05}},
 			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 14,
 			"weather": "hunter",
@@ -1310,6 +1311,7 @@
 			"note_temperament": "Dave 7 Nov 2026: donkeys added (MikeW, first values copied from the horse, calmer and slower)."
 		},
 		"lynx": {
+			"hunger": {"seasons": {"winter": 0.2, "spring": 0.1, "summer": 0.05, "autumn": 0.05}},
 			"number": 17,
 			"weather": "hunter",
 			"name": "Lynx",
@@ -1381,6 +1383,7 @@
 			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 1. A lynx is a shy night hunter of boreal and mixed forest and alpine meadow (FAUNA_BY_BIOME rarity 4): it keeps well away from a player, bites one who corners it. Fox movement numbers, bigger and rarer."
 		},
 		"black_bear": {
+			"hunger": {"seasons": {"spring": 0.4, "winter": 0.3, "summer": 0.05, "autumn": 0.05}},
 			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 18,
 			"weather": "hunter",
@@ -2782,6 +2785,7 @@
 			"note": "Batch 3. A wild ox (the pack's buffalo model) grazes open grassland in small herds, stands its ground and charges one who comes close (protective). FAUNA_BY_BIOME has no wild cattle yet: grassland, rarity like the moose."
 		},
 		"puma": {
+			"hunger": {"seasons": {"winter": 0.2, "spring": 0.1, "summer": 0.05, "autumn": 0.05}},
 			"number": 36,
 			"weather": "hunter",
 			"name": "Puma",
@@ -3054,6 +3058,7 @@
 			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A warthog grazes savanna and open grassland in small family groups by day, trots off with its tail up and fights with its tusks when cornered. Boar numbers, lighter, open ground."
 		},
 		"hyena": {
+			"hunger": {"seasons": {"winter": 0.15, "spring": 0.15, "summer": 0.15, "autumn": 0.15}},
 			"number": 39,
 			"weather": "hunter",
 			"name": "Hyena",
@@ -3229,6 +3234,7 @@
 			"spawn_share": 0.35
 		},
 		"lion": {
+			"hunger": {"seasons": {"winter": 0.1, "spring": 0.1, "summer": 0.1, "autumn": 0.1}},
 			"number": 41,
 			"weather": "hunter",
 			"name": "Lion",
@@ -3307,6 +3313,7 @@
 			}
 		},
 		"leopard": {
+			"hunger": {"seasons": {"winter": 0.1, "spring": 0.1, "summer": 0.1, "autumn": 0.1}},
 			"number": 42,
 			"weather": "hunter",
 			"name": "Leopard",
@@ -3996,6 +4003,7 @@
 			}
 		},
 		"tiger": {
+			"hunger": {"seasons": {"winter": 0.2, "spring": 0.1, "summer": 0.05, "autumn": 0.05}},
 			"number": 50,
 			"weather": "hunter",
 			"name": "Tiger",
@@ -4300,6 +4308,11 @@
 		"noise_sample_s": 0.25,
 		"action_heard_x": {"blow": 1.4, "hurt": 1.25, "dig": 1.25, "craft": 1.1},
 		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
+	},
+	"hunger": {
+		"note": "ANIMAL_SCENARIOS gap 10 (25 Nov 2026; Dave: a bear \"should have run away unless it was starving or trapped\"): a species with a hunger row is born starving at its row's season chance (spring after the den and late winter for bears; winter for the northern cats). A starving one does not run from a player: it stands its ground and warns by the ladder at threat_x its threat range, whatever its temperament; it comes for food left out (this thief row: it is not put off by a player beyond scare_m) and takes it away to eat. It never comes into a fire's or a torch's light. A poor food year is not modelled yet.",
+		"threat_x": 1.5,
+		"thief": {"smell_m": 200.0, "look_s": 2.0, "scare_m": 6.0, "fire_m": 10.0, "sneak_mps": 2.0, "run_mps": 6.0, "run_m": 60.0, "again_s": 30.0}
 	},
 	"blood": {
 		"note_drops": "max_drops 40 -> 400 and max_total 200 -> 600 (coordinator for Dave, 23 Nov 2026: \"I love the idea the animal is bleeding and if they bleed enough they die eventually\"; test_animal_fights.gd): an elk hurt by one spear blow walked on 21 m past its fortieth drop before it died, so its trail stopped short of the body. Each drop still fades after life_s, so the trail is the last few minutes of its walk.",

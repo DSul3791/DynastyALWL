@@ -34,6 +34,9 @@ func _frightened(pos: Vector3, r: float) -> bool:
 
 
 func _fire_near(pos: Vector3, r: float) -> bool:
+	if host != null and host._fire_guard(pos) != Vector3.INF:
+		return true   # in a fire's or a torch bearer's light: fire keeps everything away (Dave 25 Nov 2026)
+
 	for f in (fires.call() if fires.is_valid() else []):
 		if Vector2(f.x - pos.x, f.z - pos.z).length() < r:
 			return true
@@ -43,7 +46,7 @@ func _fire_near(pos: Vector3, r: float) -> bool:
 
 # A calm fox looks for a meal about every look_s seconds: true when it set off after one.
 func try_sneak(a: Dictionary, dt: float) -> bool:
-	var def: Dictionary = host.species_def(a["sp"]).get("thief", {})
+	var def: Dictionary = host.thief_row(a)
 
 	if def.is_empty() or not loose_food.is_valid():
 		return false
@@ -80,7 +83,7 @@ func try_sneak(a: Dictionary, dt: float) -> bool:
 
 
 func step(a: Dictionary, dt: float) -> void:
-	var def: Dictionary = host.species_def(a["sp"]).get("thief", {})
+	var def: Dictionary = host.thief_row(a)
 
 	if int(a["state"]) == SNEAK:
 		var goal: Variant = _food_pos(int(a.get("food", -1)), a["pos"], float(def.get("smell_m", 30.0)) * 1.6 + 10.0)
@@ -141,4 +144,4 @@ func _food_pos(id: int, from: Vector3, reach: float = 80.0) -> Variant:
 func _give_up(a: Dictionary) -> void:
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))
-	a["look"] = float(host.species_def(a["sp"]).get("thief", {}).get("again_s", 20.0))
+	a["look"] = float(host.thief_row(a).get("again_s", 20.0))
