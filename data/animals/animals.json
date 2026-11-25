@@ -957,7 +957,7 @@
 			}
 		},
 		"bear": {
-			"hunger": {"seasons": {"spring": 0.4, "winter": 0.3, "summer": 0.05, "autumn": 0.05}},
+			"hunger": {"seasons": {"spring": 0.4}, "days": [0, 30], "meals": 3, "note": "Dave 25 Nov 2026: a bear eats berries and fish until it is not starving, so the only dangerous time is early spring: born starving only in the first days of its row's spring (day 0 the equinox), and fed again after meals meals at a berry bush or fishing spot (server_animals _born_starving, _ate)."},
 			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 14,
 			"weather": "hunter",
@@ -971,7 +971,8 @@
 				"den_m": 15.0,
 				"threat_m": 15.0,
 				"range_m": 80.0,
-				"fish_share": 0.5
+				"fish_share": 0.5,
+				"berry_share": 0.8
 			},
 			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
 				"warn_m": 0.0,
@@ -1385,7 +1386,7 @@
 			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 1. A lynx is a shy night hunter of boreal and mixed forest and alpine meadow (FAUNA_BY_BIOME rarity 4): it keeps well away from a player, bites one who corners it. Fox movement numbers, bigger and rarer."
 		},
 		"black_bear": {
-			"hunger": {"seasons": {"spring": 0.4, "winter": 0.3, "summer": 0.05, "autumn": 0.05}},
+			"hunger": {"seasons": {"spring": 0.4}, "days": [0, 30], "meals": 3, "note": "Dave 25 Nov 2026: a bear eats berries and fish until it is not starving, so the only dangerous time is early spring: born starving only in the first days of its row's spring (day 0 the equinox), and fed again after meals meals at a berry bush or fishing spot (server_animals _born_starving, _ate)."},
 			"dog": {"notice_m": 30.0, "reaction": "stand", "attack_m": 10.0},
 			"number": 18,
 			"weather": "hunter",
@@ -1394,6 +1395,7 @@
 			"spawn_share": 0.3,
 			"health": 90.0,
 			"protective_share": 0.0,
+			"feeds": {"range_m": 80.0, "fish_share": 0.3, "berry_share": 0.8, "note": "Dave 25 Nov 2026: bears spend most of their time eating berries and go to the streams and rivers to fish. A black bear has no den: it feeds round its home (server_animals _den_target)."},
 			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
 				"warn_m": 0.0,
 				"warn_s": 1.5,
@@ -4313,7 +4315,7 @@
 	},
 	"run_down": {"note": "ANIMAL_SCENARIOS gap 11 (25 Nov 2026): a player who keeps within corner_m of a fleeing big animal for corner_s has cornered it: one that may fight, or a bear, turns and warns, then fights; one that will not lashes out once if the player is on it, else runs on (server_animals._run_down). Never at a player in a fire's or a torch's light.", "corner_m": 10.0, "corner_s": 5.0},
 	"hunger": {
-		"note": "ANIMAL_SCENARIOS gap 10 (25 Nov 2026; Dave: a bear \"should have run away unless it was starving or trapped\"): a species with a hunger row is born starving at its row's season chance (spring after the den and late winter for bears; winter for the northern cats). A starving one does not run from a player: it stands its ground and warns by the ladder at threat_x its threat range, whatever its temperament; it comes for food left out (this thief row: it is not put off by a player beyond scare_m) and takes it away to eat. It never comes into a fire's or a torch's light. A poor food year is not modelled yet.",
+		"note": "ANIMAL_SCENARIOS gap 10 (25 Nov 2026; Dave: a bear \"should have run away unless it was starving or trapped\"): a species with a hunger row is born starving at its row's season chance (bears: early spring only, and a starving bear is fed after its hunger.meals meals at berries or fish, Dave 25 Nov 2026; winter for the northern cats). A starving one does not run from a player: it stands its ground and warns by the ladder at threat_x its threat range, whatever its temperament; it comes for food left out (this thief row: it is not put off by a player beyond scare_m) and takes it away to eat. It never comes into a fire's or a torch's light. A poor food year is not modelled yet.",
 		"threat_x": 1.5,
 		"thief": {"smell_m": 80.0, "look_s": 4.0, "scare_m": 6.0, "fire_m": 10.0, "sneak_mps": 2.0, "run_mps": 6.0, "run_m": 60.0, "again_s": 30.0}
 	},

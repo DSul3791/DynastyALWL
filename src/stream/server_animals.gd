@@ -153,6 +153,7 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 
 
 const DRY_LINE_STEP_M := 2.0   # dry_line looks for deep water this often along the way
+const FED_NEAR_M := 4.0        # a meal counts when its graze ends this near the bush or fishing spot it went to (_ate)
 const PICK_TRIES := 4          # fresh picks of a wander, a herd drift or a forage spot before the animal stays where it is
 const BLOCKED_PAUSE_S := 1.5    # a walk blocked short of its target: this long a pause before the next pick (not a whole graze)
 const FLEE_CHECK_M := 6.0       # a flight checked every this many metres run: one that got less than FLEE_GAIN of it from where it was is going round in circles
@@ -299,7 +300,7 @@ func spawn(sp: String, x: float, z: float, over_cap: bool = false) -> int:
 
 	# Starving (ANIMAL_SCENARIOS gap 10): a bear or a big cat is born hungry at its season's chance where it spawns (hunger.seasons).
 	if traits and def.has("hunger") and not _spawning_young and not bool(animals[id].get("protective", false)):   # a mother keeps to her young
-		animals[id]["starving"] = rng.randf() < float((def["hunger"].get("seasons", {}) as Dictionary).get(_season_here(), 0.0))   # luck-exempt: whether it is starving
+		animals[id]["starving"] = _born_starving(def)
 
 	return id
 
@@ -1746,7 +1747,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			if a["herd"] != 0 and _groups_on():
 				a["target"] = _group_target(a, def)   # herd groups: the leader drifts, the rest keep their place round it
 
-			if a.has("den"):
+			if a.has("den") or def.has("feeds"):
+				_ate(a, def)   # the meal it just had at its bush or fishing spot (a starving bear eats until it is fed)
 				a["target"] = _den_target(a, def)
 
 			if _fire_guard(a["target"]) != Vector3.INF:
@@ -2090,12 +2092,15 @@ func _threat_m(a: Dictionary, def: Dictionary) -> float:
 
 
 # Where a den animal goes next (Dave 6 Nov 2026: a bear wanders round the river near its den and spends most of its time fishing,
-# foraging berries or sleeping): within den.range_m of its den; fish_share of the time to the water's edge (a dry spot with water
-# a few metres off), else somewhere in its range to forage. Sleeping is its rest hours (active, rest.graze_x).
+# foraging berries or sleeping; Dave 25 Nov 2026: "this world is abundant with berries so that's what they spend most of their time
+# doing is eating and they like to fish so they will go to the streams and rivers"): within range_m of its den (a "feeds" row without
+# a den: of its home), fish_share of the time to the water's edge (a dry spot with water a few metres off), else berry_share of the
+# rest to a berry bush in its range outside every fire's light, else somewhere in its range to forage. Sleeping is its rest hours.
 func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
-	var den_cfg: Dictionary = def["den"]
-	var den: Vector3 = a.get("den_out", a["den"])   # a cave-den goblin out at night ranges round the mouth it came out of
+	var den_cfg: Dictionary = def["den"] if def.has("den") else def.get("feeds", {})
+	var den: Vector3 = a.get("den_out", a.get("den", a["home"]))   # a cave-den goblin out at night ranges round the mouth it came out of
 	var range_m: float = float(den_cfg.get("range_m", 80.0))
+	a.erase("feed_at")
 
 	if water_level.is_valid() and rng.randf() < float(den_cfg.get("fish_share", 0.5)):   # luck-exempt: whether a bear goes fishing next
 		# It walks out from its den along a few random bearings, 2 m at a time, and stops at the first dry spot with water 3 m ahead:
@@ -2118,11 +2123,26 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 						break   # the bank is the far side of the river from it: another way
 
 					a["fishing"] = true
+					a["feed_at"] = spot
 					return spot
 
 				dist += 2.0
 
 	a["fishing"] = false
+
+	if berry_bushes.is_valid() and rng.randf() < float(den_cfg.get("berry_share", 0.0)):   # luck-exempt: whether it goes to the berries next
+		var open: Array = []
+
+		for at in berry_bushes.call(den, range_m):
+			if _fire_guard(at) == Vector3.INF and dry_line(def, a["pos"], at):
+				open.append(at)
+
+		if not open.is_empty():
+			var bush: Vector3 = open[rng.randi_range(0, open.size() - 1)]   # luck-exempt: which bush it eats at
+			var side: Vector3 = Vector3(a["pos"].x - bush.x, 0.0, a["pos"].z - bush.z)
+			var spot: Vector3 = bush + (side.normalized() if side.length() > 0.01 else Vector3.RIGHT) * 1.2   # beside the bush, not in it
+			a["feed_at"] = spot
+			return spot
 
 	for _try in PICK_TRIES:
 		var angle: float = rng.randf() * TAU   # luck-exempt: where it forages next
@@ -2132,6 +2152,42 @@ func _den_target(a: Dictionary, def: Dictionary) -> Vector3:
 			return forage
 
 	return a["pos"]   # every way it looked was across deep water: it stays this graze
+
+
+# A meal (Dave 25 Nov 2026: a bear "will eat berries until it's not starving anymore"): its graze is over at the berry bush or the
+# fishing spot it went to (feed_at, within FED_NEAR_M), so a starving one counts it; after hunger.meals of them it is fed and starving
+# no more: it runs from players again by its temperament and leaves food left out alone.
+func _ate(a: Dictionary, def: Dictionary) -> void:
+	if not a.has("feed_at") or a["pos"].distance_to(a["feed_at"]) > FED_NEAR_M:
+		return
+
+	a.erase("feed_at")
+
+	if not bool(a.get("starving", false)):
+		return
+
+	a["meals"] = int(a.get("meals", 0)) + 1
+
+	if int(a["meals"]) >= int(def.get("hunger", {}).get("meals", 3)):
+		a["starving"] = false
+		a.erase("meals")
+
+
+# Whether an animal spawned now at _here is born starving: its hunger row's season chance there, and, with hunger.days, only on
+# those days of its row's own year (day 0 its spring equinox; bears: early spring, Dave 25 Nov 2026: "the only real dangerous time
+# will be early in the spring"). Without a clock or a row the days are not known and the season alone decides (tests).
+func _born_starving(def: Dictionary) -> bool:
+	var row: Dictionary = def["hunger"]
+	var chance: float = float((row.get("seasons", {}) as Dictionary).get(_season_here(), 0.0))
+
+	if row.has("days") and game_seconds.is_valid() and row_of.is_valid() and _here.is_finite():
+		var doy: int = WeatherRules.day_of_year_at(float(game_seconds.call()), int(row_of.call(_here)), equator_row)
+		var days: Array = row["days"]
+
+		if doy < int(days[0]) or doy > int(days[1]):
+			chance = 0.0
+
+	return rng.randf() < chance   # luck-exempt: whether it is starving
 
 
 # Keep each player's share topped up: new animals out of sight (spawn_min_m..spawn_max_m away), never near any player.
