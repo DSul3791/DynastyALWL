@@ -28610,7 +28610,7 @@ func _sync_body(peer: int, state: int, st: Dictionary) -> void:
 		eta = maxf(float(_exertion_cfg.get("faint_s", 8.0)) - float(st["t"]), 0.0) + float(_exertion_cfg.get("wake_s", 12.0))
 	elif state == 3:
 		phase = 3
-		bpm = float(fb.get("wake", 140))
+		bpm = float(fb.get("wake", 90))
 		eta = maxf(float(_exertion_cfg.get("wake_s", 12.0)) - float(st["t"]), 0.0)
 	elif _asleep.has(peer):
 		var cfg: Dictionary = _sleep_cfg.get("bpm", {})
