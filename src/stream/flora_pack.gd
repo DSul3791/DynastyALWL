@@ -59,14 +59,17 @@ static func _md5_of(path: String) -> String:
 	if not FileAccess.file_exists(path):
 		return "-"
 
+	if path.ends_with("/flora.json"):
+		return placing_bytes(path, FileAccess.get_file_as_string(path)).hex_encode().md5_text()
+
 	if path.ends_with(".gd") or path.ends_with(".json"):
 		return placing_text(path, FileAccess.get_file_as_string(path)).md5_text()
 
 	return FileAccess.get_md5(path)
 
 
-# The part of a source file that can move a plant: code without its whole-line comments and blank lines, and flora.json without its notes
-# and its rows' LOOK_KEYS. A comment or a look change leaves the fingerprint, and so every tile's pack, as it was.
+# The part of a source file that can move a plant: code without its whole-line comments and blank lines (no source here holds a """
+# string, test_flora_pack checks it, so no such line is data). A comment leaves the fingerprint, and so every tile's pack, as it was.
 static func placing_text(path: String, text: String) -> String:
 	text = text.replace("\r\n", "\n")
 
@@ -81,22 +84,42 @@ static func placing_text(path: String, text: String) -> String:
 
 		return "\n".join(kept)
 
-	if path.ends_with("/flora.json"):
-		var table: Variant = JSON.parse_string(text)
-
-		if typeof(table) != TYPE_DICTIONARY:
-			return text                                   # not readable: hash it whole (the placer will fail on it anyway)
-
-		(table as Dictionary).erase("note")
-
-		for entry in (table as Dictionary).get("entries", []):
-			if typeof(entry) == TYPE_DICTIONARY:
-				for key in LOOK_KEYS:
-					(entry as Dictionary).erase(key)
-
-		return JSON.stringify(table, "", true, true)
-
 	return text
+
+
+# flora.json as the placer sees it: without its note and its rows' LOOK_KEYS, keys sorted, numbers as their exact 64-bit values
+# (var_to_bytes, so a Windows pack build and a Linux server agree; float text could differ between their C libraries).
+static func placing_bytes(path: String, text: String) -> PackedByteArray:
+	var table: Variant = JSON.parse_string(text.replace("\r\n", "\n"))
+
+	if typeof(table) != TYPE_DICTIONARY:
+		return text.to_utf8_buffer()                      # not readable: hash it whole (the placer will fail on it anyway)
+
+	(table as Dictionary).erase("note")
+
+	for entry in (table as Dictionary).get("entries", []):
+		if typeof(entry) == TYPE_DICTIONARY:
+			for key in LOOK_KEYS:
+				(entry as Dictionary).erase(key)
+
+	return var_to_bytes(_sorted(table))
+
+
+static func _sorted(value: Variant) -> Variant:
+	if value is Dictionary:
+		var keys: Array = (value as Dictionary).keys()
+		keys.sort()
+		var out: Dictionary = {}
+
+		for key in keys:
+			out[key] = _sorted(value[key])
+
+		return out
+
+	if value is Array:
+		return (value as Array).map(func(v): return _sorted(v))
+
+	return value
 
 
 static func file_name(tile: Vector2i) -> String:

@@ -48,7 +48,7 @@ func check(ok: bool, what: String) -> void:
 func _check_look_only() -> void:
 	var flora_path: String = "res://data/tables/flora.json"
 	var flora: String = FileAccess.get_file_as_string(flora_path)
-	var base: String = FloraPackScript.placing_text(flora_path, flora)
+	var base: PackedByteArray = FloraPackScript.placing_bytes(flora_path, flora)
 	var looked: Dictionary = JSON.parse_string(flora)
 	var placed: Dictionary = JSON.parse_string(flora)
 	var witness: int = -1
@@ -62,12 +62,12 @@ func _check_look_only() -> void:
 	looked["entries"][witness]["glow"] = [1.0, 0.0, 1.0]
 	looked["entries"][witness]["leaf_glow"] = false
 	looked["note"] = "another note"
-	check(FloraPackScript.placing_text(flora_path, JSON.stringify(looked, "\t")) == base, "a colour, glow or note change to flora.json keeps the pack valid")
+	check(FloraPackScript.placing_bytes(flora_path, JSON.stringify(looked, "\t")) == base, "a colour, glow or note change to flora.json keeps the pack valid")
 	placed["entries"][witness]["crown_m"] = float(placed["entries"][witness]["crown_m"]) + 1.0
-	check(FloraPackScript.placing_text(flora_path, JSON.stringify(placed, "\t")) != base, "a spacing change to flora.json makes the pack stale")
+	check(FloraPackScript.placing_bytes(flora_path, JSON.stringify(placed, "\t")) != base, "a spacing change to flora.json makes the pack stale")
 	placed = JSON.parse_string(flora)
 	placed["entries"][witness]["height_m"] = [10, 12]
-	check(FloraPackScript.placing_text(flora_path, JSON.stringify(placed, "\t")) != base, "a height change to flora.json makes the pack stale")
+	check(FloraPackScript.placing_bytes(flora_path, JSON.stringify(placed, "\t")) != base, "a height change to flora.json makes the pack stale")
 	var code: String = "var a := 1\n\n# a note\n\tvar b := 2   # trailing\n"
 	check(FloraPackScript.placing_text("res://x.gd", code) == FloraPackScript.placing_text("res://x.gd", "var a := 1\n\t# moved note\n\tvar b := 2   # trailing\r\n"),
 		"a whole-line comment or blank line in placer code keeps the pack valid")
@@ -80,11 +80,18 @@ func _check_look_only() -> void:
 
 		var text: String = FileAccess.get_file_as_string(source)
 
-		for key in FloraPackScript.LOOK_KEYS:
-			if text.contains('entry["%s"]' % key) or text.contains('entry.get("%s"' % key) or text.contains('entry.has("%s")' % key):
-				read_by.append("%s reads %s" % [source.get_file(), key])
+		check(not text.contains('"' + '""'), "%s holds no multi-line string (its whole-line comments are dropped from the fingerprint)" % source.get_file())
 
-	check(read_by.is_empty(), "no placer source reads a look-only flora field %s" % str(read_by))
+		for key in FloraPackScript.LOOK_KEYS:
+			var hits: int = text.count('"%s"' % key) + text.count("'%s'" % key)
+
+			if source.ends_with("/tree_builder.gd") and key == "color":
+				hits -= text.count('"color": Color(')      # its own fern look table (FERN_LOOKS), not a flora row
+
+			if hits > 0:
+				read_by.append("%s names %s" % [source.get_file(), key])
+
+	check(read_by.is_empty(), "no placer source names a look-only flora field %s" % str(read_by))
 
 
 func _init() -> void:
