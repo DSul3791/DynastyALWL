@@ -1199,7 +1199,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to drink, or to fill what you hold (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if str(station_def.get("station", "")) != "":
-		return {"prompt": "Press F to use the %s%s" % [table.sentence_name(_world[id]["number"]), wheel_note(id)], "tap": _open_station.bind(id), "hold": take_down}
+		return {"prompt": "Press E or F to use the %s%s" % [table.sentence_name(_world[id]["number"]), wheel_note(id)], "tap": _open_station.bind(id), "hold": take_down}
 
 	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
 	if str(station_def.get("use", "")) == "light":
