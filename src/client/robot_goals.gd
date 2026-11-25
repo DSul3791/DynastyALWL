@@ -29,6 +29,7 @@ var _why: Dictionary = {}     # goal id -> last reason
 var _t0: int = 0
 var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not aimed at again
 var _depth: int = 0
+var _sites: Dictionary = {}       # structure -> its blueprint site's world id
 var _home: Vector3 = Vector3.ZERO   # where the character first stood: the starter camp
 
 
@@ -94,6 +95,7 @@ func play(limit_s: float) -> void:
 		var t: float = _s()
 		r._step = "goal " + id
 		_line("GOAL %s try %d at %.0f s: %s" % [id, int(_tries[id]), t, str(g.get("title", ""))])
+		await _lighten()
 		var why: String = await _play_goal(g)
 		await r._wait(2.0)   # the server's goal_progress after the last step
 
@@ -138,6 +140,26 @@ func _next(book) -> Dictionary:
 			return row
 
 	return {}
+
+
+# A player drops what weighs them down and no goal ahead needs: loose logs and seed stacks (the pack said "Too heavy").
+func _lighten() -> void:
+	var inv = c.items.inventory
+	var dropped: PackedStringArray = PackedStringArray()
+
+	for n in range(inv.numbers.size() - 1, -1, -1):
+		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
+
+		var keep: int = 40 if item in ["thatch", "reed_stems", "bedding", "apple_summer", "raspberries", "elderberries", "strawberries"] else 0
+		var junk: bool = item.begins_with("log_") or item.ends_with("_seed") or item.ends_with("_seeds") or item == "linseed" or keep > 0
+
+		if junk and int(inv.counts[n]) > keep:
+			dropped.append("%s x%d" % [item, int(inv.counts[n]) - keep])
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_DROP, n, 0, int(inv.counts[n]) - keep, c.body.global_position + Vector3(0.6, 0.0, 0.0))
+			await r._wait(0.3)
+
+	if not dropped.is_empty():
+		_line("DROPPED %s" % ", ".join(dropped))
 
 
 func _pack() -> String:
@@ -703,6 +725,8 @@ func _fire() -> String:
 
 	var slot: int = r._slot_of("campfire_kit")
 	var at: Vector3 = c.body.global_position - c.body.global_transform.basis.z * 2.5
+	var ground: float = float(c.items._ground_below.call(at))
+	at.y = ground if not is_nan(ground) else c.body.global_position.y - 0.9
 	var known: Dictionary = c.items._world.duplicate()
 	var said: int = r._notices.size()
 	c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE, slot, 0, 0, at)
@@ -832,16 +856,24 @@ func _build(structure: String) -> String:
 	var at: Vector3 = c.body.global_position - c.body.global_transform.basis.z * 4.0
 	var y: float = float(c.items._ground_below.call(at))
 	at.y = y if not is_nan(y) else c.body.global_position.y - 0.9
-	c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
-	await r._wait(3.0)
-	var site: int = -1
+	var site: int = int(_sites.get(structure, -1)) if c.items._world.has(int(_sites.get(structure, -1))) else -1   # a site placed on an earlier try
 
-	for w in c.items._world:
-		if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
-			site = int(w)
+	if site >= 0:
+		at = c.items._world[site]["pos"]
+	else:
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
+		await r._wait(3.0)
+
+		for w in c.items._world:
+			if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
+				site = int(w)
+
+		_sites[structure] = site
 
 	if site < 0:
 		return "placed the %s blueprint 4 m ahead; no site came%s" % [structure, _said(said)]
+
+	await r._go_to(at, 10.0, 1.5)
 
 	for n in range(12):
 		c.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, site, hammer + 1, 0, Vector3.ZERO)
@@ -854,8 +886,14 @@ func _build(structure: String) -> String:
 # --- Hob: sell him something from the pack -------------------------------------------------------------------------------------------
 func _sell() -> String:
 	var hob: Vector3 = Vector3.INF
-	await r._go_to(_home, 180.0, 6.0)   # back to the starter camp, where Hob trades
+	var leg_s: float = 0.0
+
+	while leg_s < 480.0 and c.body.global_position.distance_to(_home) > 8.0:   # back to the starter camp, where Hob trades (NPCs are sent within 120 m)
+		await r._go_to(_home, 60.0, 6.0)
+		leg_s += 60.0
+
 	await r._wait(3.0)
+	_line("HOME %.0f m from the start spot after %.0f s of walking, pack %s" % [c.body.global_position.distance_to(_home), leg_s, _pack()])
 
 	var seen: Array = c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []
 
