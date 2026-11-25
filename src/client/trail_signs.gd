@@ -51,8 +51,9 @@ var _retry_msec: int = 0           # when unplaced > 0: rebuild again at this ti
 var _retries: int = 0              # such tries since the player last moved (at most ground_retries, so a spot with no ground costs nothing for long)
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
-# a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
-# slight sound there and tells the server, which trains Tracking once per sign). One a look, so a cluster comes one by one.
+# a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene tells the
+# server, which trains Tracking once per sign, and plays the sound there only with hunting gear in hand, sounds_with: Dave 25 Nov 2026,
+# R-HUNT-SIGN-SOUND). One a look, so a cluster comes one by one.
 var on_spot: Callable              # (kind: String, spot: Vector3) when a sign is spotted
 # A place of interest found (Dave wants what a player finds on the map): a warren or a deer's bedding place, the first time one of its
 # signs is spotted this session. The map listens; its own record keeps it. [kind "warren" or "bed", Vector3 on the ground].
@@ -65,6 +66,18 @@ var _glow_texture: Texture2D = null
 var last_spot: Vector3 = Vector3.INF   # the last sign spotted, on the ground (the look rig aims its views there)
 var glow_keep: bool = false        # the look rig (--skill tracking:N): the glow stays lit for the pictures instead of fading
 var _spot_msec: int = 0            # the next spot not before this: one sign every spot_gap_s, the server's practice cooldown (skills.json cooldown_s 2 s)
+
+
+# Whether the spot sound plays with these items in hand (Dave 25 Nov 2026, QA #20: "it shouldn't always sound. maybe only when we have a
+# hunting weapon in our hand or a snare or trap"): true when either hand holds one of cfg sound_with. The glow and the XP do not ask.
+static func sounds_with(config: Dictionary, in_hands: Array) -> bool:
+	var gear: Array = config.get("sound_with", [])
+
+	for id in in_hands:
+		if str(id) != "" and gear.has(str(id)):
+			return true
+
+	return false
 
 
 func _init() -> void:

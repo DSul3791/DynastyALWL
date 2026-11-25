@@ -224,6 +224,7 @@ var _path_cells: Dictionary = {}        # Vector2i (1 m ground cell) -> how many
 var strain: float = 0.0
 var strain_state: int = 0
 var strain_fade: float = 0.0
+var passing_out: bool = false                # the server's strain stance bit 16: past the faint threshold, falling (body_out)
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
@@ -1691,7 +1692,7 @@ func _process_body(_delta: float) -> void:
 		_site_list.visible = _site_list.text != ""
 	FrameProbe.stop("inventory: prompt", t)
 
-	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
+	if _prompt.text == "" and stance_confirmed == 3 and not asleep and not body_out():
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
 
 
@@ -2595,6 +2596,7 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	stance_confirmed = stance & 3
 	asleep = (stance & 4) != 0
 	forced_sleep = (stance & 8) != 0
+	passing_out = (stance & 16) != 0
 	_update_panel_bars()
 
 	if _character != null:
@@ -2617,9 +2619,15 @@ func request_sleep(want: int) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, want, 0, 0, Vector3.ZERO)
 
 
-# Movement the over-exertion allows: -1 none (fainted or waking), else a speed cap in m/s (0 = no cap).
+# The body is out of the player's hands: passing out, fainted or waking (Dave 25 Nov 2026, QA #19: "they must stop the second the
+# game determines its time to pass out"). No movement, no tool, no E, no stance key until the faint is over.
+func body_out() -> bool:
+	return strain_state >= 2 or passing_out
+
+
+# Movement the over-exertion allows: -1 none (passing out, fainted or waking), else a speed cap in m/s (0 = no cap).
 func move_cap() -> float:
-	if strain_state >= 2 or forced_sleep:
+	if body_out() or forced_sleep:
 		return -1.0
 
 	# Over-exerted is only a slow-down (over_speed_factor, see over_pace_factor); running on is allowed until the blackout.

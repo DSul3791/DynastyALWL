@@ -2227,6 +2227,21 @@ func _init() -> void:
 		seen[int(sx.strain_of(1).get("state", 0))] = true
 
 	check(seen.has(1) and seen.has(2) and seen.has(3), "running without rest goes over-exerted, faints and wakes: %s" % str(seen.keys()))
+	# Dave 25 Nov 2026 (QA #19): the client is told the moment passing out starts (stance bit 16), and a faint wakes calm (not over-exerted).
+	var going_sent: bool = false
+	var after_wake: int = -1
+	var last_state: int = 0
+
+	for row in strains:
+		going_sent = going_sent or ((int(row[3]) & 16) != 0 and int(row[1]) <= 1 and (int(row[3]) & 3) == 3)
+
+		if last_state == 3 and int(row[1]) <= 1 and after_wake < 0:
+			after_wake = int(row[1])
+
+		last_state = int(row[1])
+
+	check(going_sent, "passing out is sent to the client, already lying, before the faint itself (stance bit 16)")
+	check(after_wake == 0, "a faint wakes calm, not over-exerted (wake_strain under over_off; woke to state %d)" % after_wake)
 	sx._exertion[1] = 0.5
 	var st_walk: float = float(sx.strain_of(1).get("s", 0.0))
 	var sw = make(ed)
@@ -2710,13 +2725,33 @@ func _init() -> void:
 
 		seconds_to_black.append(waited)
 
-	check(seconds_to_black[0] > 11.0 and seconds_to_black[0] < 17.0, "right at the threshold the blackout takes about 14 s (%.1f)" % seconds_to_black[0])
-	check(seconds_to_black[0] > seconds_to_black[1] and seconds_to_black[1] > seconds_to_black[2] and seconds_to_black[2] > seconds_to_black[3], "the further over the threshold the faster it comes on (%s s)" % str(seconds_to_black))
-	check(seconds_to_black[3] < 2.5, "a long way over it blacks out in about 1.5 s (%.2f)" % seconds_to_black[3])
+	# Dave 25 Nov 2026 (QA #19): once passing out starts it is quick and cannot be run off: at most blackout.fall_s (2.5 s), faster far over.
+	check(seconds_to_black[0] >= 2.0 and seconds_to_black[0] <= 3.0, "right at the threshold the blackout takes about fall_s, 2.5 s (%.1f)" % seconds_to_black[0])
+	check(seconds_to_black[0] >= seconds_to_black[1] and seconds_to_black[1] >= seconds_to_black[2] and seconds_to_black[2] > seconds_to_black[3], "the further over the threshold the faster it comes on, never slower than fall_s (%s s)" % str(seconds_to_black))
+	check(seconds_to_black[3] < 2.0, "a long way over it blacks out in about 1.5 s (%.2f)" % seconds_to_black[3])
 	check(smooth, "the blackout level only climbs and never jumps")
 	check(int(sa.strain_of(1)["state"]) == 2 and sa.stance_of(1) == 3, "fainting forces lying")
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")
+
+	# The moment the threshold is crossed the body is not the player's: lying at once, no stance choice, no effort, and resting
+	# (strain falling back under the threshold) does not call it off; the black climbs on to the faint.
+	sa._strain[1] = {"s": 1.45, "state": 1, "t": 0.0}
+	sa._stance[1] = 0
+	sa._exertion[1] = 1.0
+	sa._strain_tick(1, 0.25)
+	check(sa.passing_out(1) and sa.stance_of(1) == 3, "crossing the faint threshold drops the player to lying at once")
+	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	check(sa.stance_of(1) == 3, "a player passing out cannot stand up")
+	check(sa.exertion_of(1) == 0.0, "a player passing out makes no effort")
+	var went_out: bool = false
+
+	for n in 20:
+		sa._strain[1]["s"] = 0.5
+		sa._strain_tick(1, 0.25)
+		went_out = went_out or int(sa.strain_of(1)["state"]) == 2
+
+	check(went_out and not sa.passing_out(1), "resting under the threshold does not call off passing out: it ends in the faint")
 
 	# Tools batch 1: the hand saw turns a log into lumber by the balance row and wears; the hammer and adze recipes use live items.
 	var hs_dir: String = "user://test_server_items_handsaw"

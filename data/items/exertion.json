@@ -28,9 +28,12 @@
 		"slow_s": 14.0,
 		"fast_s": 1.5,
 		"margin": 0.25,
-		"recover_s": 6.0
+		"recover_s": 6.0,
+		"fall_s": 2.5,
+		"fall_note": "Dave 25 Nov 2026 (QA #19): passing out takes the body at once. From the moment strain crosses faint_at the player drops to lying with no control, and the black climbs to full in at most fall_s seconds (faster for a big overshoot, fast_s); recover_s only drains a blackout that was not passing out (out of air)."
 	},
-	"wake_strain": 1.1,
+	"wake_strain": 0.6,
+	"wake_note": "Dave 25 Nov 2026 (QA #19): 'no strange sounds just waking up and you can stand up when the fainting is over.' A faint wakes calm: strain 0.6 (under over_off, so no chest heaves and no over-exerted slow-down after) and the heart at faint_bpm.wake (was 1.1 and 140).",
 	"wake_fall_mult": 0.4,
 	"over_speed_factor": 0.9,
 	"reference_body_kg": 75.0,
@@ -55,6 +58,6 @@
 	],
 	"faint_bpm": {
 		"out": 172,
-		"wake": 140
+		"wake": 90
 	}
 }

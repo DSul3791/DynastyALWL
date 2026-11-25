@@ -833,7 +833,7 @@ func _right_held() -> bool:
 
 
 func _update_bow(delta: float) -> void:
-	if _draw_t >= 0.0 and (not _is_bow() or not _right_held()):
+	if _draw_t >= 0.0 and (not _is_bow() or not _right_held() or _body_out()):   # passing out lowers it too (QA #19)
 		_draw_t = -1.0   # the bow put away, or right let go outside the game window
 
 	if rig_drawing and _draw_t < 0.0 and _is_bow() and holding and has_arrow() and _camera != null:
@@ -1109,7 +1109,16 @@ func tool_busy() -> bool:
 
 
 # One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
+# Passing out, fainted or waking (inventory_view.body_out): the hands are not the player's (Dave 25 Nov 2026, QA #19). A test's stand-in
+# view without it is never out.
+func _body_out() -> bool:
+	return _inv != null and _inv.has_method("body_out") and _inv.body_out()
+
+
 func _start_swing() -> void:
+	if _body_out():
+		return   # passing out, fainted or waking: no swing (Dave 25 Nov 2026, QA #19)
+
 	_swing_t = 0.0
 	_swing_hit = false
 	_pause_t = 0.0
@@ -1738,6 +1747,13 @@ func _process_body(delta: float) -> void:
 		_stop_t -= delta
 
 		if _stop_t <= 0.0 and _arms != null:
+			_arms.animation_player.speed_scale = 1.0
+
+	if _swing_t >= 0.0 and _body_out():
+		_swing_t = -1.0   # a swing under way when the player passes out never lands (Dave 25 Nov 2026, QA #19: "they must stop the second ...")
+		_stop_t = 0.0
+
+		if _arms != null:
 			_arms.animation_player.speed_scale = 1.0
 
 	if _swing_t >= 0.0 and _stop_t <= 0.0:
