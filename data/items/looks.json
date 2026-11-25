@@ -5319,6 +5319,26 @@
   "campfire_roasting_spit": {"shape": "cookware", "color": "#3a3a3c", "size": 1.4, "bits": ["spit", "iron"]},
   "iron_grill_grate": {"shape": "cookware", "color": "#3a3a3c", "size": 1.0, "bits": ["grate", "iron"]},
   "iron_frying_pan": {"shape": "cookware", "color": "#3a3a3c", "size": 1.0, "bits": ["pan", "iron"]},
-  "iron_cauldron": {"shape": "cookware", "color": "#3a3a3c", "size": 1.2, "bits": ["cauldron", "iron"]}
+  "iron_cauldron": {"shape": "cookware", "color": "#3a3a3c", "size": 1.2, "bits": ["cauldron", "iron"]},
+  "whole_rabbit": {
+   "shape": "hide",
+   "color": "#73593f",
+   "size": 0.9
+  },
+  "whole_fox": {
+   "shape": "hide",
+   "color": "#b85620",
+   "size": 1.3
+  },
+  "whole_grouse": {
+   "shape": "hide",
+   "color": "#7a5a3a",
+   "size": 0.7
+  },
+  "whole_pheasant": {
+   "shape": "hide",
+   "color": "#8a4a22",
+   "size": 0.8
+  }
  }
 }

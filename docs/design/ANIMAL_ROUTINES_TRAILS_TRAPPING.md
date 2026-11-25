@@ -20,7 +20,7 @@ recorded). Values marked TR-n are provisional and live in data files.
   it away. Sent to clients (protocol 65), drawn by `grass_view.gd` as lower, paler grass.
 - `server_traps.gd` (25 Oct): the Snare (twine 3, stick 2, by hand) is set as `snare_trap`; while a player is within 150 m it looks
   every 30 s for a rabbit or fox within 2.5 m (or draws one from 30 m) and rolls 0.35 x the worn-trail factor x night x bait x
-  storm. A catch lays a carcass. The Bird trap is a second kind. The fish trap is separate.
+  storm. A catch lays a carcass in the trap; E on the trap takes it whole into the pack and sets the trap again (Dave 25 Nov 2026; traps.json collect_note). The Bird trap is a second kind. The fish trap is separate.
 - Changed 22 Nov 2026 (Dave: "the server doesn't have to do any work once a trap is put out"): no looks and no draw. A catchable
   animal stepping within lure_m of a set snare (animals step only near players) gets one roll for that pass. A snare off any animal
   trail never catches. With nobody near nothing runs; when a player comes back within 200 m (the animals' own active radius) the time away is rolled once, by the
