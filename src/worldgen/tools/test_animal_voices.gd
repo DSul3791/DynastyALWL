@@ -11,6 +11,13 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 var failures: int = 0
 
 
+class FullStage:   # a sound stage with no room left: every voice is in use
+	var preset: Dictionary = {"creature_voices": 0}
+
+	func has_room() -> bool:
+		return false
+
+
 func check(ok: bool, what: String) -> void:
 	if not ok:
 		failures += 1
@@ -23,27 +30,38 @@ func _initialize() -> void:
 	for kind in AnimalView.KIND_OF_SPECIES.values():
 		check(s.mood_for(kind, 2) == "", "a %s runs in silence" % kind)
 
-	for kind in ["deer", "rabbit", "fox", "horse", "duck", "wolf"]:
+	for kind in ["deer", "rabbit", "fox", "horse", "duck", "wolf", "goblin"]:
 		check(s.mood_for(kind, 3) == "alert", "a %s gives its own alarm call when it looks up" % kind)
 
 	for kind in s.CALL_AS:
 		check(s.mood_for(kind, 3) == "", "a %s (a borrowed voice) looks up in silence" % kind)
 
 	for kind in ["lion", "tiger", "leopard", "puma", "lynx", "bear", "black_bear", "boar", "warthog"]:
-		check(s.mood_for(kind, 10) == "alert", "a %s warns low (growl or snort), no roar or bellow" % kind)
+		check(s.mood_for(kind, 10) == "warn", "a %s warns low (growl or snort), no roar or bellow" % kind)
 
 	for kind in ["black_bear", "lynx", "puma"]:
 		for state in [11, 25, 26]:
-			check(s.mood_for(kind, state) == "alert", "a %s never roars (state %d)" % [kind, state])
+			check(s.mood_for(kind, state) == "warn", "a %s never roars (state %d)" % [kind, state])
 
 	for kind in ["lion", "bear", "moose", "boar"]:
 		check(s.mood_for(kind, 11) == "threat", "a %s still gives its threat call charging" % kind)
 
 	s.free()
 
+	# A full voice budget drops a look-up, never a warning (Dave 23 Nov 2026: animals growl before attacking).
+	var full = CreatureSounds.new()
+	root.add_child(full)
+	await process_frame   # call_at needs the tree (its listener is the viewport's camera)
+	full._stage = FullStage.new()
+	check(not full.call_at("deer", Vector3(5.0, 0.0, 0.0), "alert"), "a full budget drops a deer's look-up snort")
+	check(full.call_at("black_bear", Vector3(5.0, 0.0, 0.0), full.mood_for("black_bear", 11)), "a full budget still plays a black bear's charge growl")
+	check(full.call_at("boar", Vector3(5.0, 0.0, 0.0), full.mood_for("boar", 10)) and full.last.contains("moose_snort"), "and a boar's warning snort, not a grunt (%s)" % full.last)
+	full.queue_free()
+
 	# The first look only: a rabbit looking up a second time gives no second alarm.
 	var view = AnimalView.new()
 	root.add_child(view)
+	view.set_process(false)   # the test feeds rows itself; its frame loop would draw the hand-made body
 	var heard: Array = []
 	view.state_changed.connect(func(kind, state, _at): heard.append([kind, state]))
 	var node: Node3D = Node3D.new()
