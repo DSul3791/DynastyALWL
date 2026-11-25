@@ -179,7 +179,7 @@ Fill-ins: review each thread's pushes for architecture drift; keep BUILD_LOG.md 
 ## Questions for Dave (pickable)
 - **Q1 Rain and weather pattern: ANSWERED by Dave 2026-10-20.** Zone north to south, seasons everywhere, dry zones dry, polar snow, town spirit modifies local weather (high: sun and gentle night rain; low: storms, blizzards, multi-day rain). See DESIGN_IDEAS 4.2.
 - **Q2 Character style: ANSWERED by Dave 2026-10-20: slightly stylised heroic.** Art direction may start character and building looks in that style.
-- **Q3 Music: ANSWERED by Dave 2026-11-25: R-SOUND-MENU-MUSIC (docs/RULINGS.md), his own song on the menu pages only.** Sounds item 7: done in #1941.
+- **Q3 Music: ANSWERED by Dave 2026-10-20: no music for now.** Sounds skips item 7.
 - **Q4 Forest floor objects: ANSWERED by Dave 2026-10-20: fallen branches and leaf litter first**, then reeds, driftwood and pebbles later.
 - **Q5 Tool and hit sounds: ANSWERED by Dave 2026-10-20: basic set** (axe, pick, hammer, spade on wood, stone and soil).
 
