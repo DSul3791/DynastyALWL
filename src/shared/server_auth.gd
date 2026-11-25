@@ -50,6 +50,8 @@ var _trying_hash: PackedByteArray = PackedByteArray()
 var _tried_remembered: bool = false
 var heard: bool = false             # the server has said anything in the handshake (false at a failure: it does not speak this join)
 var remembered_was_wrong: bool = false   # the last wrong try was the remembered password (the server's password changed since): forget it
+var kept_was_wrong: bool = false    # the last wrong try was the password typed earlier this run, sent by itself (the box says so)
+var _tried_kept: bool = false
 var session_address: String = ""    # "host:port" of the server being joined: a password typed for it is reused on every new connection (below)
 
 # Dave 25 Nov 2026 (R-JOIN-PASSWORD-ONCE): "it should save the password temporarily until it makes the connection. even if it has to try
@@ -234,6 +236,8 @@ func new_connection() -> void:
 	heard = false
 	_tried_remembered = false
 	remembered_was_wrong = false
+	_tried_kept = false
+	kept_was_wrong = false
 	_trying_hash = PackedByteArray()
 
 	if _mp != null:
@@ -276,13 +280,16 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 				_tried_remembered = true
 				_send_proof(saved.hex_decode())
 			elif typed_before != "":
+				_tried_kept = true
 				_send_proof(typed_before.hex_decode())   # typed earlier this run: not asked again
 			else:
 				password_needed.emit(TRIES, false)
 		"wrong":
 			var left: int = int(message.get("left", 0))
 			remembered_was_wrong = _tried_remembered
+			kept_was_wrong = _tried_kept
 			_tried_remembered = false
+			_tried_kept = false
 			session_forget(session_address)   # nothing right is held any more: the box asks
 
 			if left <= 0:
@@ -292,6 +299,11 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 			_client_nonce = str(message.get("nonce", "")).hex_decode()
 			password_needed.emit(left, true)
 		"busy":
+			if not _trying_hash.is_empty():   # the guard counted the proof just sent as wrong: a kept or remembered key would burn a try next time too
+				remembered_was_wrong = _tried_remembered
+				kept_was_wrong = _tried_kept
+				session_forget(session_address)
+
 			refused.emit("busy")
 
 
