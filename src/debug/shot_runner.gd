@@ -1125,7 +1125,10 @@ func _show_animals(now: int) -> void:
 
 		var x: float = p.x + (float(i) - float(n - 1) * 0.5) * spacing
 		var z: float = p.z - 4.0
-		var g: float = _ground(x, z)
+		var g: float = _drawn_ground(x, z, p.y)
+
+		if is_nan(g):
+			g = _ground(x, z)
 
 		if is_nan(g):
 			g = p.y - 1.5
@@ -2219,6 +2222,20 @@ func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	var hit = tool.raycast(Vector3(x, from_y, z), Vector3.DOWN, from_y + 500.0)
 	return float(hit.position.y) if hit != null else NAN
+
+
+# The ground as it is drawn and walked on at x, z: a physics ray from 20 m above the player's height down onto the terrain's collision.
+# The voxel reading (_ground) is a whole cell at floor(x, z) and can be over 1 m off: the animals row stood its first animal half
+# under the ground in every picture (Lane A, PR #1906, 25 Nov 2026: the sinking followed the left spot, not the animal). NAN when no hit.
+func _drawn_ground(x: float, z: float, near_y: float) -> float:
+	if client.body == null or not client.body.is_inside_tree():
+		return NAN
+
+	var space: PhysicsDirectSpaceState3D = client.body.get_world_3d().direct_space_state
+	var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, near_y + 20.0, z), Vector3(x, near_y - 40.0, z))
+	ray.exclude = [client.body.get_rid()] if client.body is CollisionObject3D else []
+	var hit: Dictionary = space.intersect_ray(ray)
+	return float((hit["position"] as Vector3).y) if not hit.is_empty() else NAN
 
 
 const GUARD_ABOVE_M := 1.0
