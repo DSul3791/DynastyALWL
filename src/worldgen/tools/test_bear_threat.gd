@@ -1,5 +1,7 @@
 extends SceneTree
 
+const CreatureSounds := preload("res://src/client/creature_sounds.gd")
+
 # The bear threat ladder (docs/design/bear_threat_design.md, Dave 8 Nov 2026): the warning runs huff (10) then jaw-pop (16) then a charge
 # (11); backing off during either rung ends it calmly; running away during the warning skips to a real charge; with bluff_share 1 the
 # charge stops bluff_stop_m short with no hit; a mother's charge for her young is never a bluff; a row without the new keys (the moose)
@@ -186,6 +188,31 @@ func _init() -> void:
 	a.animals[did]["temper"] = "passive"
 	a.damage(did, 5.0, 1, "spear")
 	check(int(a.animals[did]["state"]) == a.FLEE, "a shy deer stabbed runs (state %d)" % int(a.animals[did]["state"]))
+
+	# 11. Trapped (walled in on every side, the player within corner_m): a shy bear warns and comes at the player instead of standing at
+	# bay; a shy deer in the same spot does not fight (trapped_fights is the bears' alone).
+	for kind in ["black_bear", "deer"]:
+		a = make()
+		players = [at(4.0)]
+		var tid: int = a.spawn(kind, 0.0, 0.0)
+		var t: Dictionary = a.animals[tid]
+		t["temper"] = "passive"
+		a.blocked = func(x, z): return Vector2(x, z).length() > 0.5   # nowhere to go
+		a._flee_target(t, players[0]["pos"], Vector2(-1.0, 0.0), a.species_def(kind))
+		var warned: bool = int(t["state"]) == a.big_game.WARN
+		check(warned == (kind == "black_bear"), "a trapped shy %s %s (state %d)" % [kind, "warns" if kind == "black_bear" else "does not fight", int(t["state"])])
+
+	# 12. The bear's voice by state (creature_sounds mood_for): silent when it runs or looks, a low growl (alert) as the warning and the
+	# jaw-pop, the roar (threat) only in a charge; a deer keeps the old moods.
+	var sounds = CreatureSounds.new()
+
+	for kind in ["bear", "black_bear"]:
+		check(sounds.mood_for(kind, 2) == "" and sounds.mood_for(kind, 3) == "", "a %s is silent when it flees or looks" % kind)
+		check(sounds.mood_for(kind, 10) == "alert" and sounds.mood_for(kind, 16) == "alert", "a %s growls low as its warning" % kind)
+		check(sounds.mood_for(kind, 11) == "threat", "a %s roars only in a charge" % kind)
+
+	check(sounds.mood_for("deer", 2) == "alert" and sounds.mood_for("deer", 11) == "threat", "a deer keeps its moods")
+	sounds.free()
 
 	print("test_bear_threat: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

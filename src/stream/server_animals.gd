@@ -306,7 +306,7 @@ func no_spawn_at(x: float, z: float) -> bool:
 
 
 # Young (Dave 6 Nov 2026): a mother with young runs from a player sooner, but a player who comes between her and them (near a young
-# one) is attacked hard, torch or not. The young are animals of the same species that follow her at follow_m and run when she runs.
+# one) is attacked hard, unless the player is in a fire's or torch's light (Dave 25 Nov 2026). The young are animals of the same species that follow her at follow_m and run when she runs.
 func _spawn_young(mother: int) -> void:
 	var m: Dictionary = animals[mother]
 	var y: Dictionary = species_def(m["sp"])["young"]

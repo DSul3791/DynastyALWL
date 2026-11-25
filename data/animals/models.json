@@ -880,11 +880,7 @@
 				{
 					"match": "",
 					"albedo": "res://assets/animals/bear_2/Textures/T_Bear_Body.png",
-					"tint": [
-						0.3,
-						0.27,
-						0.25
-					]
+					"tint": [0.45, 0.42, 0.4]
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Bear",

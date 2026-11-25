@@ -178,7 +178,7 @@ func _init() -> void:
 	check(hurt_log.size() <= 1 and (hurt_log.is_empty() or hurt_log[0][1] < 25.0), "a boar's charge hurts less than a moose's (%s)" % str(hurt_log))
 
 	# 8. Threat range (Dave 6 Nov 2026, most animals): a player who gets inside threat_m is attacked, not fled from; one standing in a fire's or a
-	# torch's keep-off radius is left alone, except at a bear's den.
+	# torch's keep-off radius is left alone, at a bear's den too (Dave 25 Nov 2026).
 	a = make()
 	hurt_log.clear()
 	players = [player(5.0, 0.0)]
@@ -205,7 +205,7 @@ func _init() -> void:
 	a.animals[id]["timer"] = 100.0
 	check(a.animals[id].has("den") and a._in_den(a.animals[id], a.species_def("bear")), "a bear starts at its den")
 	run(a, 0.3)
-	check(int(a.animals[id]["state"]) != 10 and int(a.animals[id]["state"]) != 11, "a torch bearer 10 m from a bear at its den is not attacked (state %d)" % int(a.animals[id]["state"]))
+	check(int(a.animals[id]["state"]) == 2, "a torch bearer 10 m from a bear at its den is not attacked, it runs from the torch (state %d)" % int(a.animals[id]["state"]))
 	a = make()
 	a.cfg["species"]["bear"]["target_per_player"] = 0
 	players = [player(65.0, 0.0)]
@@ -310,7 +310,7 @@ func _init() -> void:
 		a.fires = func(): return [players[0]["pos"]]
 		a.fire_radius = func(_at): return 8.0
 		run(a, 0.3)
-		check(int(a.animals[id]["state"]) != 10 and int(a.animals[id]["state"]) != 11, "a player next to her calf in a torch's light is not attacked (fire keeps everything away, Dave 25 Nov 2026; state %d)" % int(a.animals[id]["state"]))
+		check(int(a.animals[id]["state"]) == 2, "a player next to her calf in a torch's light is not attacked (fire keeps everything away, Dave 25 Nov 2026; state %d)" % int(a.animals[id]["state"]))
 		a = make()
 		a.traits = true
 		a.cfg["species"]["moose"]["young"]["share"] = 1.0

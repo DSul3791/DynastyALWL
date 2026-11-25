@@ -6,7 +6,7 @@ Steve, 8 Nov 2026. This is guiding document section 7.1, card "Bear at den", whi
 
 - **Den** (`animals.json` bear `den`):
   - The den ring is 15 m. Anyone inside `den.threat_m` 15 is threatened.
-  - A torch does not protect you at the den. Outside the den, a fire's or torch's keep-off radius does (`server_animals.gd` `_in_den` and `_fire_guard`).
+  - A fire's or torch's keep-off radius protects you everywhere, at the den too (`server_animals.gd` `_fire_guard`). [Dave, 25 Nov 2026 3:19 AM Halifax, project chat: "Also remember fire keeps everything away from the players." It replaces the 6 Nov rule that a torch did not protect at the den.]
 - **Warning and charge** (`server_big_game.gd`):
   - **WARN** (state 10): the bear faces the player for `warn_s` 1.5 s, or 0.8 s when threatened or cornered. The client plays `IdleAngry_Breathing_01`.
   - **CHARGE** (state 11): 12 m/s for up to 25 m. It turns only 0.35 rad/s, so a step aside dodges it. A hit does 35 damage.
@@ -39,7 +39,7 @@ A bear goes up one rung at a time. Each rung is a visible and audible cue, so th
 
 **Running makes it worse.** A player who runs **away** (faster than `run_trigger_mps` away from the bear) during rung 1 or 2 skips the rest of the warning. A player who runs in and stops still gets the whole warning, so the warning contract holds: it goes straight to rung 3, and that charge is never a bluff. This is the one new rule that teaches the real-world advice.
 
-**The den keeps its own rule.** Fire still does not help inside the den ring, and the bluff share is halved there. A mother between her and her cubs never bluffs.
+**The den keeps its own rule.** The bluff share is halved inside the den ring (fire protects there too since 25 Nov, above). A mother between her and her cubs never bluffs.
 
 ## 4. Data (all in the existing `defend` block; new keys are optional and default to today's behaviour)
 
@@ -80,7 +80,7 @@ Black bear: a higher `bluff_share` (0.75). Black bears bluff more and rarely pre
 ## 7. Must not break
 
 - Every attack stays dodgeable.
-- A torch still does not protect at the den.
+- A torch protects at the den too (Dave 25 Nov 2026, above).
 - The goblin rule still holds: goblins never den within 120 m of a bear (`lair.avoid_m`).
 - The moose, boar and goblin share `server_big_game.gd`. They get the new keys only if their rows add them, so with no row change their behaviour is unchanged.
 
