@@ -2782,10 +2782,6 @@ func _bed_in_reach(x: float, z: float) -> bool:
 	return not is_nan(bed) and not DrinkRules.too_far_below(bed, body.global_position.y)
 
 
-func _water_ahead() -> bool:
-	return not is_nan(_water_ahead_point().x)
-
-
 # The drinkable spot ahead (at the feet, 1 m and 2 m forward) best centred on the reticle, on the water's surface; NAN when none. The drink probe gives
 # it as its point, so E at the water's edge drinks when the reticle is on the water and gathers a reed only when the reticle is on the reed (robot
 # goals run 25 Nov 2026: looking down at the water among reeds, E offered "gather"; Dave 21 Nov 2026: E acts on what is closest to the reticle).
