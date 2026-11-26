@@ -45,7 +45,9 @@ func _init() -> void:
 
 	var shape: String = str(BasicLook.entry(item).get("shape", ""))
 
-	if item == "" or not HeldItem.HELD_LOOK_TURN.has(shape) or shape in ["bow", "hand_net", "shaft"]:
+	var plain: bool = item != "" and HeldItem.holds_plain_look(item, str(ItemTableScript.load_default().entry(item).get("kind", "")))   # a look held along the hand (a crossbow, a whetstone), as the game does
+
+	if item == "" or not (HeldItem.HELD_LOOK_TURN.has(shape) or plain) or shape in ["bow", "hand_net", "shaft"]:
 		print("shot held: FAIL %s has no held look this tool can pose (shape '%s'; bows, nets and spears are held by code of their own, use tools/look_rig.sh)" % [item, shape])
 		quit(2)
 		return
