@@ -608,7 +608,7 @@ func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary
 	return Vector3(x, y, z)
 
 
-# The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
+# The blood trail within send_radius_m (or big_game_send_m, the wider) of a point (nearest first, at most max_sent), dropping what has dried.
 func blood_near(point: Vector3) -> PackedVector3Array:
 	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)
 	var now: int = Time.get_ticks_msec()
@@ -616,7 +616,7 @@ func blood_near(point: Vector3) -> PackedVector3Array:
 	while not blood.is_empty() and now - int(blood[0][1]) > life_ms:
 		blood.pop_front()
 
-	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var radius: float = maxf(float(cfg.get("send_radius_m", 120.0)), float(cfg.get("big_game_send_m", 0.0)))   # as far as a wounded deer is sent (R-ANIMAL-SEEN-FAR)
 	var found: Array = []
 
 	for drop in blood:
@@ -1280,6 +1280,8 @@ func tick(delta: float) -> void:
 	var active_r: float = float(cfg.get("active_radius_m", 200.0))
 	var near_m: float = float(cfg.get("near_m", 60.0))
 	var mid_m: float = float(cfg.get("mid_m", 120.0))
+	var big_far: float = float(cfg.get("big_game_send_m", 0.0))   # big game in sight out to here ticks at least hz_mid (R-ANIMAL-SEEN-FAR)
+	var big_kinds: Array = cfg.get("big_game", [])
 	var despawn_m: float = float(cfg.get("despawn_m", 300.0))
 	var budget_us: int = int(float(cfg.get("tick_budget_ms", 1.0)) * 1000.0)
 	var started: int = Time.get_ticks_usec()
@@ -1378,6 +1380,8 @@ func tick(delta: float) -> void:
 
 		if watched.has(id):
 			hz = maxf(hz, float(cfg.get("hz_mid", 3.0)))   # watched through the spyglass: smooth enough to follow
+		elif near_d <= big_far and big_kinds.has(a["sp"]):
+			hz = maxf(hz, float(cfg.get("hz_mid", 3.0)))   # big game is sent out to 200 m (R-ANIMAL-SEEN-FAR): no half-speed 2 s jumps in view
 
 		if a["acc"] < 1.0 / hz:
 			continue

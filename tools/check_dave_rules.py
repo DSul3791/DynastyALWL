@@ -223,7 +223,8 @@ def ruling_lines():
 def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
-             "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out}
+             "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
+             "R-ANIMAL-SEEN-FAR": seen_far}
     for key, step in steps.items():
         try:
             step()

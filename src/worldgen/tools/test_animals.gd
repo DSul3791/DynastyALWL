@@ -236,6 +236,9 @@ func _init() -> void:
 
 	for id in [far_deer, far_rabbit, too_far_deer, near_rabbit]:
 		a.animals.erase(id)   # taken out again: the rest of this test counts animals
+	a.blood.append([far_at + Vector3(180.0, 0.0, 0.0), Time.get_ticks_msec()])   # a wounded deer's drop as far as the deer is sent
+	check(a.blood_near(far_at).has(far_at + Vector3(180.0, 0.0, 0.0)), "blood is sent as far as big game: a deer bleeding out 180 m off falls on its trail")
+	a.blood.pop_back()
 
 	# Far away: frozen, then dropped.
 	players[0] = Vector3(260.0, 10.0, 0.0)

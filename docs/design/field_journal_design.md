@@ -9,7 +9,7 @@ The journal records knowledge per character and per species. Each species climbs
 | rung | how it is reached (all server side) | what it shows |
 |---|---|---|
 | 1 Heard of | An NPC talks about it, a rumour on the news rail (G-19) names it, or the character reads a journal that has it | name, a rough region |
-| 2 Sighted | The species is within sight and in front of the player for 2 s or more (within the animal send radius, `send_radius_m`, plus a line-of-sight test and the view cone), or the player hears its call within reach | picture, size, the biome it was seen in |
+| 2 Sighted | The species is within sight and in front of the player for 2 s or more (within the animal send radius, `send_radius_m`, or `big_game_send_m` (200 m) for big game, plus a line-of-sight test and the view cone), or the player hears its call within reach | picture, size, the biome it was seen in |
 | 3 Observed | The player watches one animal at no more than its alert distance, for 20 s spread over at least two of its states (graze, rest, fish, forage), while it is **not** fleeing. This uses the animal's state machine and `alert_m` | habits, active hours (`active`), diet, temperament |
 | 4 Tracked | The player inspects 3 of its signs (`data/animals/animal_sign.json`, two kinds at least) and then sights the animal within 300 m of the last one, within one game day | range, den or burrow, the season it moves |
 | 5 Studied | Three of these, each from a different encounter: a harvest without a kill (milk, wool, eggs, honey), a carcass examined, a tamed one handled (G-09), or a library lesson | weak points, drops, safe approach, lore |

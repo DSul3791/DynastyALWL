@@ -4,7 +4,7 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 # Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
 # tail). The server sends rows about four times a second; the view draws each between the sent points (motion_buffer.gd), faces the way it goes and hops while moving
-# (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
+# (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30: within 120 m, big game within 200 m).
 
 const MAX_DRAWN := 30
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
