@@ -77,6 +77,9 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 			var bone: String = str(part["bone"])
 
+			if bone in YOKE_BONES and not frames.has(bone):
+				continue
+
 			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
 			# when the skeleton has no bone of the old name. The old body is untouched by this.
 			if frames.has(bone):
@@ -475,6 +478,8 @@ const JOINTS := [
 	["thigh_r", "shin_r", -0.45, 1.05], ["thigh_l", "shin_l", -0.45, 1.05], ["shin_r", "foot_r", -0.4, 1.05], ["shin_l", "foot_l", -0.4, 1.05],
 ]
 const JOINT_REACH_M := 0.06      # a piece whose end comes this near a joint covers it
+const YOKE_LEN_M := 0.15         # the collarbone's length the yoke is written for (dynasty_body.gd WORN_BONES stretches it to the body's own)
+const YOKE_BONES := ["shoulder_r", "shoulder_l"]   # hung only on a body whose worn_frames name them (Dave's body); others have no frame for the collarbone
 
 
 # QA #15 (25 Nov 2026, a tester: "log chopping animation limbs not attached"; Lane A stills of the chop: the sleeve and body pieces are rigid per bone, so at a bent elbow the
@@ -505,5 +510,13 @@ static func joint_caps(parts: Array) -> Array:
 		if parent_covered and width > 0.0 and not has_ball:
 			var d: float = width * float(joint[3])
 			caps.append(_p(str(joint[1]), "sph", Vector3.ZERO, Vector3(d, d, d)))
+
+			# The shoulder: a body with collarbones (Dave's: the arm hangs 15 cm out from the breastbone on the collarbone, which lifts and swings the arm far from where the
+			# chest piece is) also gets a long ball along the collarbone, from the root by the neck to past the shoulder joint, so the sleeve stays joined to the body when
+			# the arm is raised or swung (Lane A stills, 26 Nov 2026: the gambeson's sleeves left the body with neck, chest and shoulder bare). Hung only where the body
+			# gives the collarbone a frame (attach), so a body without one keeps the plain shoulder ball.
+			if str(joint[0]) == "chest":
+				var yoke: String = "shoulder_" + str(joint[1]).right(1)
+				caps.append(_p(yoke, "sph", Vector3(0.0, -YOKE_LEN_M * 0.5, 0.0), Vector3(width, YOKE_LEN_M + width * 0.6, width)))
 
 	return caps

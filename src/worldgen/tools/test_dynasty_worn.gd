@@ -139,6 +139,23 @@ func _init() -> void:
 
 		_check(nearest < 0.03, "a ball on the %s joint of Dave's body (%.3f m off)" % [str(bone_pair[0]), nearest])
 
+	# The collarbone's yoke (Lane A stills 26 Nov 2026: the gambeson's sleeves left the body when the arm swung up on the collarbone): along Dave's right collarbone,
+	# its middle halfway from the root by the neck to the shoulder joint; a body with no collarbone frame (the old ragdoll) hangs none and keeps the shoulder ball.
+	var clavicle: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightShoulder"))).origin
+	var shoulder: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightArm"))).origin
+	var yoke_off: float = INF
+
+	for node in pieces.get("shoulder_r", []):
+		yoke_off = minf(yoke_off, (node as Node3D).global_position.distance_to(clavicle.lerp(shoulder, 0.5)))
+
+	_check(yoke_off < 0.03, "a yoke along Dave's right collarbone (%.3f m from its middle)" % yoke_off)
+	var old_body: Node3D = Ragdoll.new()
+	root.add_child(old_body)
+	var old_hung: int = WornLook.attach(old_body, ["gambeson"], false)
+	var old_pieces: Dictionary = _pieces(old_body.get("skeleton") as Skeleton3D)
+	_check(old_hung > 0 and not old_pieces.has("shoulder_r") and old_pieces.has("arm_r"), "the old ragdoll body (no collarbones) hangs no yoke, the sleeves still (%s)" % str(old_pieces.keys()))
+	old_body.queue_free()
+
 	for part in tunic:
 		if str(part["bone"]) == "arm_r" and str(part["shape"]) == "sph":
 			_check(float((part["size"] as Vector3).x) >= 0.15, "the shoulder ball is wider than the sleeve (%.3f m)" % float((part["size"] as Vector3).x))

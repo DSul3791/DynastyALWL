@@ -278,6 +278,7 @@ const WORN_BONES := {
 	"hips": ["Hips", "upright", "", 0.0], "chest": ["Spine1", "upright", "", 0.0], "head": ["Head", "upright", "", 0.0],
 	"arm_r": ["RightArm", "limb", "RightForeArm", 0.29], "forearm_r": ["RightForeArm", "limb", "RightHand", 0.26], "hand_r": ["RightHand", "after", "RightForeArm", 0.0],
 	"arm_l": ["LeftArm", "limb", "LeftForeArm", 0.29], "forearm_l": ["LeftForeArm", "limb", "LeftHand", 0.26], "hand_l": ["LeftHand", "after", "LeftForeArm", 0.0],
+	"shoulder_r": ["RightShoulder", "limb", "RightArm", 0.15], "shoulder_l": ["LeftShoulder", "limb", "LeftArm", 0.15],   # the collarbones, for a sleeve's yoke (worn_look.gd joint_caps, QA #15)
 	"thigh_r": ["RightUpLeg", "limb", "RightLeg", 0.45], "shin_r": ["RightLeg", "limb", "RightFoot", 0.4], "foot_r": ["RightFoot", "upright", "", 0.0],
 	"thigh_l": ["LeftUpLeg", "limb", "LeftLeg", 0.45], "shin_l": ["LeftLeg", "limb", "LeftFoot", 0.4], "foot_l": ["LeftFoot", "upright", "", 0.0],
 }
