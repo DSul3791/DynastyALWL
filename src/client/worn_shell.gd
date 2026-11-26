@@ -208,7 +208,7 @@ static func hang(rig: Node, skeleton: Skeleton3D, builder: String, material: Mat
 	node.skin = body.skin
 	node.material_override = material
 	node.layers = body.layers
-	skeleton.add_child(node)
+	skeleton.add_child(node, true)      # readable name kept even beside another one ("Worn_Shell_tunic2"), so attach's "Worn_" sweep always finds it
 	node.transform = body.transform if body.get_parent() == skeleton else Transform3D.IDENTITY
 	node.skeleton = node.get_path_to(skeleton)
 	_copy_shapes(body, node)

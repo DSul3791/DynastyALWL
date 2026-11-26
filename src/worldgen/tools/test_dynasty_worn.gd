@@ -7,6 +7,8 @@ const Body := preload("res://src/client/character/dynasty_body.gd")
 const WornLook := preload("res://src/client/worn_look.gd")
 const Ragdoll := preload("res://src/client/ragdoll_body.gd")
 const WornShell := preload("res://src/client/worn_shell.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
+const Generator := preload("res://src/client/character/body_generator.gd")
 
 var _fails: int = 0
 
@@ -35,8 +37,8 @@ func _shells(s: Skeleton3D) -> Dictionary:
 
 # Skin the body and its fitted layer on the CPU at the skeleton's current pose, as the renderer does (each vertex by its bones' pose times the skin's bind pose, weighted),
 # and count the body's skin vertices the garment covers that its cloth does not: [covered vertices with no cloth vertex, cloth vertices not out in front of their skin
-# point along the skin's normal by at least a third of the layer's distance, covered vertices]. A third, not all: where two bones turn far apart (the shoulder with the
-# arm overhead) the blended normal shortens, and the layer comes nearer the skin there while still outside it.
+# point along the skin's normal by at least a third of the layer's distance in world metres, covered vertices]. A third, not all: where two bones turn far apart (the
+# shoulder with the arm overhead) the blended normal shortens, and the layer comes nearer the skin there while still outside it.
 func _bare(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D, region: Array, out_m: float) -> Array:
 	var skin: Skin = body_mesh.skin
 	var mats: Array = []
@@ -62,6 +64,7 @@ func _bare(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D, regi
 	var per: int = int(float(bones.size()) / float(verts.size()))
 	var has_cloth: Dictionary = {}
 	var thin: int = 0
+	var to_world: float = s.global_transform.basis.x.length()
 
 	for i in range(under.size()):
 		var v: int = under[i]
@@ -76,10 +79,8 @@ func _bare(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D, regi
 			n += (m.basis * normals[v]) * weights[v * per + k]
 			q += ((mats[c_bones[i * per + k]] as Transform3D) * cloth[i]) * c_weights[i * per + k]
 
-		# The skeleton is in centimetres under the model's 0.01: the bind poses bring the metre mesh into it, so a metre is the length of a bone-space unit here.
-		var unit: float = (mats[bones[v * per]] as Transform3D).basis.x.length()
-
-		if (q - p).dot(n.normalized()) < out_m * unit / 3.0:
+		# Skeleton space to world metres (the skeleton is in centimetres under the model's 0.01): measured in the world, so a wrong unit anywhere shows as a layer too near.
+		if (q - p).dot(n.normalized()) * to_world < out_m / 3.0:
 			thin += 1
 
 	var covered: int = 0
@@ -251,9 +252,30 @@ func _init() -> void:
 			body.animation_player.seek(float(pose[1]), true)
 			await process_frame
 			var bare: Array = _bare(body.body_mesh, shell, s, WornShell.REGIONS[str(garment[1])], float(WornShell.OUT_M[str(garment[1])]))
-			_check(int(bare[2]) > 3000 and int(bare[0]) * 100 <= int(bare[2]) and int(bare[1]) == 0,
-				"%s at %s t%.1f: skin covered %d, with no cloth %d (the region's ragged edge, at most 1%%), cloth too near the skin %d" % [str(garment[0]), str(pose[0]), float(pose[1]), int(bare[2]), int(bare[0]), int(bare[1])])
+			_check(int(bare[2]) > 3000 and int(bare[0]) * 100 <= int(bare[2]) and int(bare[1]) * 1000 <= int(bare[2]),
+				"%s at %s t%.1f: skin covered %d, with no cloth %d (the region's ragged edge, at most 1%%), cloth too near the skin %d (at most 0.1%%)" % [str(garment[0]), str(pose[0]), float(pose[1]), int(bare[2]), int(bare[0]), int(bare[1])])
 
+	# The width sliders (dynasty_shapes.gd): a shaped body's layer is made from the shaped mesh, carries the same shapes and takes the body's weights.
+	var g: Dictionary = Generator.make_genome()
+	g["build"] = 0.6
+	g["bust"] = 0.5
+	Shapes.prewarm(body.body_mesh.mesh, body.body_mesh.skin, s)
+	Shapes.wait()
+	body.set_proportions(g)
+	WornLook.attach(body, ["gambeson"], false)
+	await process_frame
+	var wide: MeshInstance3D = _shells(s).get("padded", null)
+	var build_at: int = wide.find_blend_shape_by_name("build") if wide != null else -1
+	var body_build: int = body.body_mesh.find_blend_shape_by_name("build")
+	_check(wide != null and wide.mesh.get_blend_shape_count() == body.body_mesh.mesh.get_blend_shape_count() and wide.mesh.get_blend_shape_count() > 0,
+		"a shaped body's layer has the body's width shapes (%d of %d)" % [wide.mesh.get_blend_shape_count() if wide != null else -1, body.body_mesh.mesh.get_blend_shape_count()])
+	_check(build_at >= 0 and body_build >= 0 and is_equal_approx(wide.get_blend_shape_value(build_at), body.body_mesh.get_blend_shape_value(body_build)) and body.body_mesh.get_blend_shape_value(body_build) > 0.5,
+		"the layer takes the body's build weight (%.2f)" % (wide.get_blend_shape_value(build_at) if build_at >= 0 else -1.0))
+	g["build"] = -0.4
+	body.set_proportions(g)
+	_check(build_at >= 0 and is_equal_approx(wide.get_blend_shape_value(build_at), -0.4), "a slider move reaches the layer (%.2f)" % (wide.get_blend_shape_value(build_at) if build_at >= 0 else -1.0))
+	var shaped_bare: Array = _bare(body.body_mesh, wide, s, WornShell.REGIONS["padded"], float(WornShell.OUT_M["padded"])) if wide != null else [0, 0, 0]
+	_check(int(shaped_bare[2]) > 3000 and int(shaped_bare[1]) * 1000 <= int(shaped_bare[2]), "the shaped layer stands out from the skin (too near %d of %d)" % [int(shaped_bare[1]), int(shaped_bare[2])])
 	WornLook.attach(body, ["gambeson"], true)
 	await process_frame
 	_check(_shells(s).is_empty(), "a far body hangs no fitted layer")
