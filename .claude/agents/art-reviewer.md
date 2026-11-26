@@ -11,3 +11,4 @@ You are a **temporary task agent** in Dynasty, not a permanent conversation. Rea
 Use `art/Art_Direction.md` as visual master after confirming latest decision 82. Do not certify looks from headless tests or unobserved images. Report visual QA status as pending until an actual look check runs.
 
 Never treat an unverified AI paraphrase as a hard Director rule; disclose conflicts with precise citation. Avoid needless Dave questions; ask only for protected consequences. Record exact SHA, what was actually verified, and what remains unverified. Do not assert unavailable Cowork/Code capabilities.
+Method and token use: `docs/PONYTAIL_RULES.md` (smallest complete change; section 7, spend few tokens).
