@@ -39,37 +39,8 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/BrownBear",
+			"variants_note": "Coordinator 26 Nov 2026, Lane A pictures pr_bearclose_rear at 96ec6be0: the bear_2 look (WildMesh Bear) has no clip that stands on its hind legs in time (its warn Attack_StandAngry_01_Low is a low crouch; its StandHind clips sit on the haunches, as the black bear's pictures of 25 Nov showed), so it is no longer drawn: Dave 26 Nov 2026, up close a bear should \"turn rear on its hind legs growl and fight\". Every brown bear is this look, which rears (IdleHind_Idle_01), jaw-pops (16) and has its strikes and bite. A look's clips replace the row's whole clips, so each look names every role it plays.",
 			"variants": [
-				{
-					"scene": "res://assets/animals/bear_2/SK_Bear.fbx",
-					"pack": "WildMesh3D/Realistic Animals/Bear",
-					"materials": [
-						{
-							"match": "",
-							"albedo": "res://assets/animals/bear_2/Textures/T_Bear_Body.png"
-						}
-					],
-					"clips": {
-						"0": "Idle",
-						"3": "Idle_Breathing_01",
-						"10": "Attack_StandAngry_01_Low",
-						"11": "Sprint",
-						"12": "Idle_Breathing_01",
-						"walk": "Walk",
-						"run": "Run",
-						"trot": "Trot",
-						"hit": "Hit_Stand_F01",
-						"die": "Death_Stand_R01",
-						"bite": "Attack_BiteForward",
-						"strike": "Attack_MeleeLeft",
-						"strike2": "Attack_SwingForward"
-					},
-					"idle_variants": {
-						"0": [
-							"Idle_02"
-						]
-					}
-				},
 				{
 					"scene": "res://assets/animals/bear/SK_Bear.fbx",
 					"materials": [
@@ -94,6 +65,7 @@
 						"10": "IdleHind_Idle_01",
 						"11": "Sprint",
 						"12": "Idle_Breathing_01",
+						"16": "Attack_IdleAngry_01_Low",
 						"walk": "Walk",
 						"run": "Run",
 						"trot": "Trot",
@@ -109,7 +81,8 @@
 							"Idle_2",
 							"IdleHind_Idle_01"
 						]
-					}
+					},
+					"ground_m": -0.091
 				}
 			],
 			"trot_mps": 3.5
@@ -217,7 +190,8 @@
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F",
 				"10": "Idle_Breathing",
-				"trot": "TrotFast_F"
+				"trot": "TrotFast_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Deer (Realistic Animals/Deer/SK_Deer.fbx, textures in its Textures folder). 113 clips. Alert stands breathing, head up. Seven looks picked by id (variants): four stags (deer, buck, red deer, second-rig stag) and three hinds (doe, doe second rig, hind), each with its own clips. Checked 7 Nov 2026.",
 			"length_m": 2.0,
@@ -253,7 +227,8 @@
 						"run": "RunFast_F",
 						"10": "Idle_Breathing",
 						"trot": "TrotFast_F",
-						"hit": "HitInRunHead_F"
+						"hit": "HitInRunHead_F",
+						"19": "Sitting_Breathing"
 					},
 					"idle_variants": {
 						"0": [
@@ -261,7 +236,8 @@
 							"GrazingOnSpotB_3",
 							"Idle_Breathing"
 						]
-					}
+					},
+					"ground_m": -0.1
 				},
 				{
 					"scene": "res://assets/animals/deer_buck/SK_Buck.fbx",
@@ -303,7 +279,8 @@
 						"0": [
 							"Idle_1"
 						]
-					}
+					},
+					"ground_m": 0.015
 				},
 				{
 					"scene": "res://assets/animals/deer_red_stag/SK_RedDeerMale.fbx",
@@ -326,7 +303,8 @@
 						"die": "Death_Stand_R01"
 					},
 					"size_clip": "Idle",
-					"note": "Red deer stag"
+					"note": "Red deer stag",
+					"ground_m": -0.094
 				},
 				{
 					"scene": "res://assets/animals/deer_doe/SK_Doe.fbx",
@@ -365,7 +343,8 @@
 						"0": [
 							"Idle_1"
 						]
-					}
+					},
+					"ground_m": 0.003
 				},
 				{
 					"scene": "res://assets/animals/deer_doe_1/SK_Doe_1.fbx",
@@ -391,7 +370,8 @@
 						"trot": "trot"
 					},
 					"length_m": 1.8,
-					"note": "Hind (second rig): body texture alpha is not a cut-out (opaque)"
+					"note": "Hind (second rig): body texture alpha is not a cut-out (opaque)",
+					"ground_m": -0.098
 				},
 				{
 					"scene": "res://assets/animals/deer_female/SK_FemaleDeer.fbx",
@@ -420,7 +400,8 @@
 						"0": [
 							"Idle_Breathing_01"
 						]
-					}
+					},
+					"ground_m": -0.085
 				},
 				{
 					"scene": "res://assets/animals/deer_1/SK_Deer_1.fbx",
@@ -445,10 +426,12 @@
 						"10": "alerted",
 						"trot": "trot"
 					},
-					"note": "Stag (second rig): body texture alpha is not a cut-out (opaque)"
+					"note": "Stag (second rig): body texture alpha is not a cut-out (opaque)",
+					"ground_m": -0.09
 				}
 			],
-			"trot_mps": 4.0
+			"trot_mps": 4.0,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"moose": {
 			"scene": "res://assets/animals/moose/SK_Moose.fbx",
@@ -466,7 +449,8 @@
 				"run": "RunFast_F",
 				"swim": "WalkSlow_F",
 				"trot": "TrotSlow_F",
-				"hit": "HitLegFL2RunFast_F"
+				"hit": "HitLegFL2RunFast_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Moose (Realistic Animals/Moose/SK_Moose.fbx, textures in its Textures folder). 99 clips. Body texture is 4096: set its import size limit to 2048 (art budget). Swim clip (8 Nov 2026): its file has no swim clip: the slow walk, mostly under water. gait_fallback swim: a hand-made paddling walk with the neck and head lifted out of the water; rename to gait to use it instead of the slow walk (axes a first guess until a creature check).",
 			"length_m": 3.0,
@@ -562,7 +546,9 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.18,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -623,7 +609,8 @@
 							"idle_eat_look_around_01",
 							"idle_eat_look_up_short"
 						]
-					}
+					},
+					"ground_m": -0.063
 				}
 			],
 			"trot_mps": 3.0
@@ -662,7 +649,8 @@
 					"Idle_2",
 					"Idle_3"
 				]
-			}
+			},
+			"ground_m": -0.099
 		},
 		"fox": {
 			"scene": "res://assets/animals/fox_1/SK_Fox 1.fbx",
@@ -701,7 +689,8 @@
 					"Idle_3",
 					"Idle_4"
 				]
-			}
+			},
+			"ground_m": -0.052
 		},
 		"rabbit": {
 			"scene": "res://assets/animals/rabbit/SK_Rabbit.fbx",
@@ -727,7 +716,8 @@
 					"albedo": "res://assets/animals/rabbit/Textures/T_Rabbit.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Rabbit"
+			"pack": "WildMesh3D/Realistic Animals/Rabbit",
+			"ground_m": -0.013
 		},
 		"horse": {
 			"scene": "res://assets/animals/horse/SK_Horse.fbx",
@@ -777,7 +767,8 @@
 					"Idle_Fidget_05",
 					"Idle_03"
 				]
-			}
+			},
+			"ground_m": -0.135
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey_2/SK_Donkey.fbx",
@@ -798,7 +789,7 @@
 				"strike": "front leg kick",
 				"kick": "rear leg kick"
 			},
-			"note": "WildMesh Donkey (Realistic Animals/Donkey/SK_Donkey.fbx, textures in its Textures folder): the dark donkey with its own clips, the only donkey look since 23 Nov 2026 (Dave: \"make sure to use models that have the actions we need\"): a front leg kick in front (strike) and a rear leg kick behind (kick). The Donkey_1 look had no attack and is no longer drawn.",
+			"note": "WildMesh Donkey (Realistic Animals/Donkey/SK_Donkey.fbx, textures in its Textures folder): the dark donkey with its own clips, the only donkey look since 23 Nov 2026 (Dave: \"make sure to use models that have the actions we need\"): a front leg kick in front (strike) and a rear leg kick behind (kick). The Donkey_1 look had no attack and is no longer drawn. T_Donkey_1_Body.png's alpha is not a cut-out (no pixel fully opaque, 98% in between: a gloss map, measured 26 Nov 2026), so the body is drawn opaque; cut out, it showed white specks on its back (Lane A, pr1959_donkey_cow.png). Its Hair texture is a real cut-out.",
 			"length_m": 2.0,
 			"materials": [
 				{
@@ -807,11 +798,13 @@
 				},
 				{
 					"match": "",
-					"albedo": "res://assets/animals/donkey_2/Textures/T_Donkey_1_Body.png"
+					"albedo": "res://assets/animals/donkey_2/Textures/T_Donkey_1_Body.png",
+					"opaque": true
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Donkey",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.104
 		},
 		"lynx": {
 			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
@@ -849,7 +842,8 @@
 					"idle_shake_01",
 					"idle_stretching_01"
 				]
-			}
+			},
+			"ground_m": -0.048
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -910,7 +904,8 @@
 					"Idle_1",
 					"Idle_2"
 				]
-			}
+			},
+			"ground_m": -0.077
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -951,7 +946,8 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Elk",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"ground_m": 0.014
 		},
 		"bighorn": {
 			"scene": "res://assets/animals/bighorn/SK_BighornSheep.fbx",
@@ -970,7 +966,8 @@
 				"21": "GrazingOnSpotA_1",
 				"trot": "TrotFast_F",
 				"hit": "HitLegFL2RunFast_F",
-				"strike": "Stomping_1"
+				"strike": "Stomping_1",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Bighorn Sheep (Realistic Animals/BighornSheep/SK_BighornSheep.fbx). 114 clips; units are centimetres. Idle_Breathing lies down, so alert and recover stand in Idle (creature check, 7 Nov 2026).",
 			"length_m": 1.6,
@@ -993,7 +990,9 @@
 					"Idle_Breathing",
 					"bleat"
 				]
-			}
+			},
+			"ground_m": -0.082,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -1010,7 +1009,8 @@
 				"run": "RunFast_F",
 				"10": "Idle_Breathing",
 				"trot": "TrotFast_F",
-				"hit": "HitInRunHead_F"
+				"hit": "HitInRunHead_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Mountain Goat (Realistic Animals/MountainGoat/SK_MountainGoat.fbx). 116 clips; units are centimetres. Horn surface is called MountainGoat_Antle.",
 			"length_m": 1.4,
@@ -1033,7 +1033,9 @@
 					"Idle_Breathing",
 					"Idle_SecondaryMoveCalm_1"
 				]
-			}
+			},
+			"ground_m": -0.07,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -1149,7 +1151,8 @@
 				"0": [
 					"Idle"
 				]
-			}
+			},
+			"ground_m": -0.04
 		},
 		"chamois": {
 			"scene": "res://assets/animals/chamois/SK_ChamoisMale.fbx",
@@ -1185,7 +1188,8 @@
 					"Idle",
 					"Idle_2"
 				]
-			}
+			},
+			"ground_m": -0.061
 		},
 		"mink": {
 			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
@@ -1205,7 +1209,7 @@
 				"19": "rest_idle_01",
 				"hit": "hit_chest_front_01"
 			},
-			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs. clip_loop (8 Nov 2026, Dave: give it a walk): its walk loops starttrot_fwd_01 from 0.133 to 0.600 s and its run startsprint_fwd_01 from 0.183 to 0.483 s, the windows tools/find_loop.gd found with the closest ends (7 and 12 degrees per bone), eased together over the last 0.12 and 0.1 s. gait_fallback: a hand-made walk (four-beat) and run (bound) from its own bones, kept ready; rename it to gait to use it in place of the clip_loop walk and run (the axes are a first guess until a creature check).",
+			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs. clip_loop (8 Nov 2026, Dave: give it a walk): its walk loops starttrot_fwd_01 from 0.133 to 0.600 s (its run once looped startsprint_fwd_01 from 0.183 to 0.483 s: see gait_note), the windows tools/find_loop.gd found with the closest ends (7 and 12 degrees per bone), eased together over the last 0.12 and 0.1 s. gait_fallback: a hand-made walk (four-beat) from its own bones, kept ready; its hand-made run (bound) is now the gait run (the axes are a first guess until a creature check).",
 			"length_m": 0.6,
 			"materials": [
 				{
@@ -1218,11 +1222,6 @@
 					0.133,
 					0.6,
 					0.12
-				],
-				"run": [
-					0.183,
-					0.483,
-					0.1
 				]
 			},
 			"gait_fallback": {
@@ -1295,7 +1294,15 @@
 							"y"
 						]
 					}
-				},
+				}
+			},
+			"idle_variants": {
+				"0": [
+					"idle_shake_01"
+				]
+			},
+			"ground_m": -0.029,
+			"gait": {
 				"run": {
 					"period_s": 0.3,
 					"bones": {
@@ -1342,11 +1349,7 @@
 					}
 				}
 			},
-			"idle_variants": {
-				"0": [
-					"idle_shake_01"
-				]
-			}
+			"gait_note": "BugsList 179 (picture sweep, 26 Nov 2026): the run looped from startsprint_fwd_01 is a leap, the whole body a body's height off the ground, which loops as gliding hops at 5 m/s; the run is the hand-made bound (gait run) instead. The walk stays the clip_loop walk; gait_fallback keeps the hand-made walk."
 		},
 		"raccoon": {
 			"scene": "res://assets/animals/raccoon/SK_Racoon.fbx",
@@ -1385,7 +1388,8 @@
 					"idle eat 2",
 					"idle stretch"
 				]
-			}
+			},
+			"ground_m": -0.039
 		},
 		"rat": {
 			"scene": "res://assets/animals/rat/SK_Rat.fbx",
@@ -1412,7 +1416,8 @@
 					"match": "",
 					"albedo": "res://assets/animals/rat/Textures/T_Rat.png"
 				}
-			]
+			],
+			"ground_m": -0.025
 		},
 		"crow": {
 			"scene": "res://assets/animals/crow/SK_Crow.fbx",
@@ -1464,6 +1469,10 @@
 				"0": [
 					"Look2"
 				]
+			},
+			"ground_m": 0.005,
+			"ground_clips": {
+				"Look2": 0.127
 			}
 		},
 		"pheasant": {
@@ -1494,7 +1503,8 @@
 					"StandGrazingB",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.042
 		},
 		"goose": {
 			"scene": "res://assets/animals/goose/SK_Goose.fbx",
@@ -1510,9 +1520,11 @@
 				"12": "Idle",
 				"walk": "WalkMedium",
 				"run": "RunFast",
-				"swim": "SwimMoveMedium"
+				"swim": "SwimMoveMedium",
+				"15": "FlyFlapping",
+				"17": "FlyGliding"
 			},
-			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx). Swim clip (8 Nov 2026): SwimMoveMedium from its own swim clips.",
+			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx). Swim clip (8 Nov 2026): SwimMoveMedium from its own swim clips. Flight clips (25 Nov 2026, geese fly when startled): its own FlyFlapping (15, flying) and FlyGliding (17, gliding).",
 			"length_m": 0.9,
 			"materials": [
 				{
@@ -1526,7 +1538,8 @@
 					"StandGrazingB",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.031
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
@@ -1573,7 +1586,8 @@
 						"albedo": "res://assets/animals/calf/Textures/T_Calf.png"
 					}
 				],
-				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young."
+				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young.",
+				"ground_m": -0.064
 			},
 			"trot_mps": 3.0,
 			"idle_variants": {
@@ -1581,7 +1595,8 @@
 					"Idle_2",
 					"Idle_3"
 				]
-			}
+			},
+			"ground_m": -0.127
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -1616,7 +1631,8 @@
 				"0": [
 					"idle"
 				]
-			}
+			},
+			"ground_m": -0.068
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1645,7 +1661,8 @@
 			],
 			"variants": [
 				{
-					"scene": "res://assets/animals/chicken/SK_Chicken.fbx"
+					"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
+					"ground_m": -0.021
 				},
 				{
 					"scene": "res://assets/animals/rooster/SK_Rooster.fbx",
@@ -1671,7 +1688,8 @@
 							"Idle_4",
 							"Oneleg01"
 						]
-					}
+					},
+					"ground_m": -0.023
 				}
 			]
 		},
@@ -1708,7 +1726,8 @@
 					"Idle02",
 					"Idle03"
 				]
-			}
+			},
+			"ground_m": -0.03
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -1737,7 +1756,8 @@
 			],
 			"variants": [
 				{
-					"scene": "res://assets/animals/dog/SK_Labrador.fbx"
+					"scene": "res://assets/animals/dog/SK_Labrador.fbx",
+					"ground_m": -0.065
 				},
 				{
 					"scene": "res://assets/animals/bloodhound/SK_Bloodhund.fbx",
@@ -1761,7 +1781,8 @@
 						"0": [
 							"idle shake"
 						]
-					}
+					},
+					"ground_m": -0.053
 				}
 			],
 			"trot_mps": 2.5,
@@ -1790,7 +1811,8 @@
 				"walk": "WalkMedium_F",
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
-				"hit": "HitInRunHead_F"
+				"hit": "HitInRunHead_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Wild ox (Realistic Animals/Buffalo/SK_Buffalo.fbx).",
 			"length_m": 3.0,
@@ -1811,7 +1833,9 @@
 					"GrazingOnSpotB_1",
 					"Standstraight_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.137,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1880,7 +1904,8 @@
 				}
 			],
 			"size_clip": "idle pose",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.089
 		},
 		"pronghorn": {
 			"scene": "res://assets/animals/pronghorn/SK_Pronghorn.fbx",
@@ -1917,7 +1942,8 @@
 					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Body.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"ground_m": 0.007
 		},
 		"warthog": {
 			"scene": "res://assets/animals/warthog/SK_Warthog.fbx",
@@ -1939,7 +1965,8 @@
 				],
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
-				"hit": "HitLegFL2RunFast_F"
+				"hit": "HitLegFL2RunFast_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Warthog (Realistic Animals/Warthog/SK_Warthog.fbx). Imported mid-run: sized by its Idle (size_clip). GrazingOnSpotA2IdleThreat drops onto its haunches, so warn stands in Idle_Breathing. Checked 7 Nov 2026.",
 			"length_m": 1.4,
@@ -1961,7 +1988,9 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.07,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"hyena": {
 			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
@@ -1983,7 +2012,8 @@
 				],
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
-				"hit": "HitInRunHead_F"
+				"hit": "HitInRunHead_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Hyena (Realistic Animals/Hyena/SK_Hyena.fbx). Laughs when it warns. Checked 7 Nov 2026.",
 			"length_m": 1.5,
@@ -2000,7 +2030,9 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.068,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -2022,7 +2054,8 @@
 				],
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
-				"hit": "HitInRunHead_F"
+				"hit": "HitInRunHead_F",
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Wildebeest (Realistic Animals/Wildebeest/SK_Wildebeest.fbx). Checked 7 Nov 2026.",
 			"length_m": 2.3,
@@ -2043,7 +2076,9 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.111,
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
@@ -2106,7 +2141,8 @@
 							"idle_stretching_01",
 							"idle_smell_01"
 						]
-					}
+					},
+					"ground_m": -0.136
 				},
 				{
 					"scene": "res://assets/animals/lioness_1/SK_Lioness 1.fbx",
@@ -2147,7 +2183,8 @@
 							"idle_stretching_01",
 							"idle_smell_01"
 						]
-					}
+					},
+					"ground_m": -0.125
 				}
 			],
 			"size_clip": "Idle",
@@ -2183,7 +2220,11 @@
 					"albedo": "res://assets/animals/leopard/Textures/T_Leopard_Body.png"
 				}
 			],
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.069,
+			"ground_clips": {
+				"Idle_2": 0.023
+			}
 		},
 		"rhino": {
 			"scene": "res://assets/animals/rhino/SK_Rhinoceros.fbx",
@@ -2202,7 +2243,11 @@
 				"walk": "Walk-IP",
 				"run": "Run-IP",
 				"trot": "Trot-IP",
-				"hit": ["Hit_HeadR_Heavy-IP", "Hit_ChestR_Heavy-IP", "Hit_ChestL_Heavy-IP"],
+				"hit": [
+					"Hit_HeadR_Heavy-IP",
+					"Hit_ChestR_Heavy-IP",
+					"Hit_ChestL_Heavy-IP"
+				],
 				"die": "Death_01-IP",
 				"bite": "Attack_HornR-IP",
 				"strike": "Attack_HornL-IP",
@@ -2222,7 +2267,8 @@
 					"Idle_2",
 					"Idle_3"
 				]
-			}
+			},
+			"ground_m": -0.186
 		},
 		"elephant": {
 			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
@@ -2240,7 +2286,11 @@
 				"12": "Stand_00-IP",
 				"walk": "Walk-IP",
 				"run": "Run-IP",
-				"hit": ["Hit_Head_Right-IP", "Hit_Chest_Right-IP", "Hit_Chest_Left-IP"],
+				"hit": [
+					"Hit_Head_Right-IP",
+					"Hit_Chest_Right-IP",
+					"Hit_Chest_Left-IP"
+				],
 				"die": "Death_01-IP",
 				"bite": "Attack_Head_01-IP",
 				"strike": "Attack_Head_01-IP",
@@ -2267,7 +2317,8 @@
 					"Idle_2",
 					"Idle_3"
 				]
-			}
+			},
+			"ground_m": -0.293
 		},
 		"camel": {
 			"scene": "res://assets/animals/camel/SK_Camel.fbx",
@@ -2299,7 +2350,8 @@
 					"albedo": "res://assets/animals/camel/Textures/T_Camel_Body.png"
 				}
 			],
-			"size_clip": "Idle"
+			"size_clip": "Idle",
+			"ground_m": -0.138
 		},
 		"guineafowl": {
 			"scene": "res://assets/animals/guineafowl/SK_Guineafowl.fbx",
@@ -2331,7 +2383,8 @@
 					"StandGrazingB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.095
 		},
 		"honey_badger": {
 			"scene": "res://assets/animals/honey_badger/SK_HoneyBadger.fbx",
@@ -2369,7 +2422,8 @@
 					"GrazingOnSpotA_2",
 					"GrazingOnSpotB_1"
 				]
-			}
+			},
+			"ground_m": -0.013
 		},
 		"kangaroo": {
 			"scene": "res://assets/animals/kangaroo/SK_Kangaroo.fbx",
@@ -2416,7 +2470,8 @@
 					"idle_eat_search_01",
 					"idle_eat_look_around_01"
 				]
-			}
+			},
+			"ground_m": -0.069
 		},
 		"mammoth": {
 			"scene": "res://assets/animals/mammoth/SK_Mammoth.fbx",
@@ -2455,7 +2510,8 @@
 					"match": "",
 					"albedo": "res://assets/animals/mammoth/Textures/Mammoth_Body.png"
 				}
-			]
+			],
+			"ground_m": -0.326
 		},
 		"tiger": {
 			"scene": "res://assets/animals/tiger/SK_Tiger.fbx",
@@ -2491,7 +2547,11 @@
 					"albedo": "res://assets/animals/tiger/Textures/T_Tiger_Body.png"
 				}
 			],
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.135,
+			"ground_clips": {
+				"Idle_2": 0.04
+			}
 		},
 		"alligator": {
 			"scene": "res://assets/animals/alligator/SK_AmericanAligator.fbx",

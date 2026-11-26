@@ -31,6 +31,7 @@ extends Node
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const WaterAreas := preload("res://src/shared/water_areas.gd")
 const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
+const RowParts := preload("res://src/shared/row_parts.gd")   # unreliable rows in parts that each fit one packet (protocol 171)
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # a blow reaches an animal's body, not its middle (hit_animal)
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
@@ -413,6 +414,7 @@ func _ready() -> void:
 	if flora_pack.chunks() > 0 or flora_pack.stale > 0:
 		print("server flora: prebuilt plants for %d chunks in %d tiles%s" % [flora_pack.chunks(), flora_pack.tiles, ("; %d tile files were made from other tiles, data or placer code and are not used (build them again)" % flora_pack.stale) if flora_pack.stale > 0 else ""])
 	items = ItemsScript.new()
+	items.park_quiet_players = true   # a game not heard from for 15 s of real time leaves the world (server_items.gd ABSENT_MS)
 	@warning_ignore("confusable_local_declaration")
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
 	@warning_ignore("confusable_local_declaration")
@@ -3564,7 +3566,9 @@ func _send_npcs(delta: float) -> void:
 		# "spyglass"; a spyglass item: its tier in data/items/spyglass.json), and the watched animal's readout (admin, or a tier with one).
 		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
 		var reach: Array = items.spyglass_reach(peer, animals.cfg.get("spyglass", {}))
-		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at)
+		# Big game past send_radius_m (out to 200 m, R-ANIMAL-SEEN-FAR) standing still goes in every other batch to this player (one on the
+		# move in every batch, rows_near): each player is looked at every fifth round, so round % 10 below 5 turns over once a visit.
+		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at, -1.0, -1, _send_round % 10 < 5)
 		var sig: int = hash(beasts)
 
 		if spy == -1:
@@ -3576,7 +3580,11 @@ func _send_npcs(delta: float) -> void:
 		if not _animal_sent.has(peer) or int(_animal_sent[peer]) != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
-			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
+			var parts: Array = RowParts.split(beasts)   # each part fits one packet (protocol 171): over the MTU, a lost fragment lost the whole batch
+			var sent_ms: int = Time.get_ticks_msec()   # with the server clock the row times are on (protocol 147), the same for every part
+
+			for i in parts.size():
+				net.animals.rpc_id(peer, parts[i], sent_ms, i, parts.size())
 
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])

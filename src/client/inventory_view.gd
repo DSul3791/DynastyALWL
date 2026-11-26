@@ -224,6 +224,7 @@ var _path_cells: Dictionary = {}        # Vector2i (1 m ground cell) -> how many
 var strain: float = 0.0
 var strain_state: int = 0
 var strain_fade: float = 0.0
+var passing_out: bool = false                # the server's strain stance bit 16: past the faint threshold, falling (body_out)
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
@@ -311,9 +312,13 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_root = world_root
 	_player_position = player_position
 	_ground_below = ground_below
+	var ts_table: int = FrameProbe.start()
 	table = ItemTableScript.load_default()
+	FrameProbe.stop("items setup: item table", ts_table)
+	var ts_recipes: int = FrameProbe.start()
 	inventory = InventoryScript.pack(table)
 	recipes = RecipeTableScript.load_default(table)
+	FrameProbe.stop("items setup: inventory and recipe table", ts_recipes)
 	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
 	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
 	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
@@ -357,6 +362,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		if _weight_label != null:
 			_refresh_weight())
 	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
+	var ts_goals: int = FrameProbe.start()
 	_setup_goals()
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
@@ -373,11 +379,17 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
+	FrameProbe.stop("items setup: goals and rule files", ts_goals)
+	var ts_inter: int = FrameProbe.start()
 	_register_builtin_interactables()
+	FrameProbe.stop("items setup: interactables", ts_inter)
+	var ts_warm: int = FrameProbe.start()
 	if DisplayServer.get_name() == "headless":
 		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
 	else:
 		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
+	FrameProbe.stop("items setup: loose mesh prewarm start", ts_warm)
+	var ts_labels: int = FrameProbe.start()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
 	_auto_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -448,6 +460,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_thought_label.add_theme_color_override("font_color", Color(0.78, 0.86, 1.0))
 	_thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_thought_label)
+	FrameProbe.stop("items setup: labels", ts_labels)
 	net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())   # a stamped server refuses another build (protocol 133)
 	var me: Dictionary = CharacterStore.active()
 	net.my_look.rpc_id(1, str(me.get("name", "")), str(me.get("body", "")), str(me.get("code", "")))   # protocol 151: how the other players see this character
@@ -1467,6 +1480,10 @@ func release_e() -> void:
 	if _e_active.is_empty():
 		return
 
+	if body_out():
+		_e_active = {}   # passing out, fainted or waking: an E begun before does not go off (QA #19)
+		return
+
 	var found: Dictionary = _e_active
 	_e_active = {}
 	found["tap"].call()
@@ -1474,6 +1491,10 @@ func release_e() -> void:
 
 func _hold_e_check() -> void:
 	if _e_active.is_empty() or not KeyBindings.held("interact"):
+		return
+
+	if body_out():
+		_e_active = {}   # passing out: a hold E begun before does not finish (QA #19)
 		return
 
 	if Time.get_ticks_msec() - _e_start_msec < int(HOLD_E_S * 1000.0):
@@ -1691,7 +1712,7 @@ func _process_body(_delta: float) -> void:
 		_site_list.visible = _site_list.text != ""
 	FrameProbe.stop("inventory: prompt", t)
 
-	if _prompt.text == "" and stance_confirmed == 3 and not asleep and strain_state < 2:
+	if _prompt.text == "" and stance_confirmed == 3 and not asleep and not body_out():
 		_prompt.text = KeyBindings.localize("Hold Z to sleep")
 
 
@@ -2235,6 +2256,7 @@ const DISPOSABLE_BREAK_WEAR := 10   # one heavy use: rock wear 5 (drops.json too
 
 func _on_slots(bytes: PackedByteArray) -> void:
 	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
+	var t: int = FrameProbe.start()
 	var insts: Dictionary = InventoryScript.inst_from_bytes(bytes, 1 + n * 9)
 
 	for k in n:
@@ -2252,6 +2274,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			inventory.inst[slot] = insts.get(slot, {}) if inventory.numbers[slot] != 0 else {}
 			_tool_cue(slot, was_number, was_wear, was_broken, was_most)
 
+	FrameProbe.stop("inventory: slots and their sounds", t)   # Lane A r4: one slot message took 134 ms with no chest open; named to find which step
 	_after_slots()
 
 
@@ -2270,15 +2293,16 @@ func _tool_cue(slot: int, was_number: int, was_wear: int, was_broken: bool, was_
 		tool_event.call("broke")
 
 
+# Lag fix (26 Nov 2026, Lane A Low route): opening a chest sent three slot messages in one poll and each redrew the chest screen, the
+# storage window and the hotbar on the spot (185, 98 and 109 ms). They now wait with the window for the end of the frame and redraw once.
 func _after_slots() -> void:
+	_slots_dirty = true
 	_queue_refresh()
-	_container_part.refresh()
-	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
-	refresh_hotbar()
 
 
 # Slot updates that arrive together (a pickup, a craft, a sale send several) rebuild the window once, at the end of the frame.
 var _refresh_queued: bool = false
+var _slots_dirty: bool = false   # a slot message came: the chest screen, the storage window and the hotbar redraw too
 
 
 func _queue_refresh() -> void:
@@ -2291,7 +2315,23 @@ func _queue_refresh() -> void:
 
 func _flush_refresh() -> void:
 	_refresh_queued = false
+	var t: int = FrameProbe.start()
 	_refresh()
+	FrameProbe.stop("inventory: window after slots", t)
+
+	if not _slots_dirty:
+		return
+
+	_slots_dirty = false
+	t = FrameProbe.start()
+	_container_part.refresh()
+	FrameProbe.stop("inventory: chest screen after slots", t)
+	t = FrameProbe.start()
+	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
+	FrameProbe.stop("inventory: storage window after slots", t)
+	t = FrameProbe.start()
+	refresh_hotbar()
+	FrameProbe.stop("inventory: hotbar after slots", t)
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
@@ -2595,6 +2635,7 @@ func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:
 	stance_confirmed = stance & 3
 	asleep = (stance & 4) != 0
 	forced_sleep = (stance & 8) != 0
+	passing_out = (stance & 16) != 0
 	_update_panel_bars()
 
 	if _character != null:
@@ -2617,9 +2658,15 @@ func request_sleep(want: int) -> void:
 	net.inventory_action.rpc_id(1, Net.ACT_SLEEP, want, 0, 0, Vector3.ZERO)
 
 
-# Movement the over-exertion allows: -1 none (fainted or waking), else a speed cap in m/s (0 = no cap).
+# The body is out of the player's hands: passing out, fainted or waking (Dave 25 Nov 2026, QA #19: "they must stop the second the
+# game determines its time to pass out"). No movement, no tool, no E, no stance key until the faint is over.
+func body_out() -> bool:
+	return strain_state >= 2 or passing_out
+
+
+# Movement the over-exertion allows: -1 none (passing out, fainted or waking), else a speed cap in m/s (0 = no cap).
 func move_cap() -> float:
-	if strain_state >= 2 or forced_sleep:
+	if body_out() or forced_sleep:
 		return -1.0
 
 	# Over-exerted is only a slow-down (over_speed_factor, see over_pace_factor); running on is allowed until the blackout.
@@ -3822,7 +3869,8 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
 	_root.add_child(body)
-	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5))}
+	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
+		"ore": str(extra.get("ore", ""))}   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
 	_boulders[id] = entry
 	_size_boulder(entry)
 
@@ -5534,6 +5582,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 # the one freeze left at the join. In a window they are built a few each frame instead (WARM_BUDGET_USEC), in the order below, while the ground
 # is still loading (2 s or more after the welcome). A mesh wanted before its turn is built on the spot by _mesh_for, as before any prewarm.
 const WARM_BUDGET_USEC := 6000
+const SLOW_WARM_MS := 50.0         # a single loose mesh slower than this is named in the log
 var _warm_queue: Array = []        # item numbers still to build
 var _warm_usec: int = 0            # time spent building them so far
 var _warm_frames: int = 0
@@ -5548,34 +5597,77 @@ func _loose_prewarm_numbers() -> Array:
 		if item == "stone" or item == "flint" or item == "stick" or item == "firewood" or item == "plant_fibre" or item == "driftwood" or item == "log" or item.begins_with("log_"):
 			out.append(table.number_of(item))
 
-	for drop in _trunk_drop_ids():
+	for drop in _trunk_drop_ids() + _rock_drop_ids():
 		if table.number_of(drop) > 0 and not out.has(table.number_of(drop)):
 			out.append(table.number_of(drop))
 
 	return out
 
 
+# What lies loose by the rivers or comes off a broken rock (boulders.json ore items, finds and rocks: copper, tin and iron ore, iron chunks,
+# coal, salt, limestone, the pocket finds). Lane A r4 Low route (26 Nov 2026): the first copper ore, iron ore and iron chunk seen in play
+# each took 57 to 64 ms to build, inside a world items message.
+func _rock_drop_ids() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
+	var ore: Variant = (parsed as Dictionary).get("ore", {}) if parsed is Dictionary else {}
+	var out: Array = []
+
+	if not ore is Dictionary:
+		return out
+
+	for part in ["items", "finds", "rocks"]:
+		var names: Variant = (ore as Dictionary).get(part, {})
+
+		if names is Dictionary:
+			for item in (names as Dictionary).values():
+				if not out.has(str(item)):
+					out.append(str(item))
+
+	return out
+
+
 func _start_loose_prewarm() -> void:
+	var tq_rocks: int = FrameProbe.start()
 	_queue_rock_hulls()
+	FrameProbe.stop("loose prewarm start: rock shapes", tq_rocks)
 	var t0: int = Time.get_ticks_usec()
+
+	var tq_pick: int = FrameProbe.start()
 
 	for group in PICKUP_FILES:
 		_pickup_group(group)
 
+	FrameProbe.stop("loose prewarm start: pickup models", tq_pick)
+	var tq_nums: int = FrameProbe.start()
 	_warm_queue = _loose_prewarm_numbers()
+	FrameProbe.stop("loose prewarm start: item list", tq_nums)
+	var tq_models: int = FrameProbe.start()
 	BasicLook.warm_models()   # the handsaw models' files, on a loader thread
+	FrameProbe.stop("loose prewarm start: model loads asked", tq_models)
 	_warm_usec = Time.get_ticks_usec() - t0
 	_warm_frames = 0
+	var tq_piece: int = FrameProbe.start()
 	PieceLook.prewarm()
+	FrameProbe.stop("loose prewarm start: piece pictures", tq_piece)
+	var tq_felled: int = FrameProbe.start()
 	_prewarm_felled()
+	FrameProbe.stop("loose prewarm start: stump", tq_felled)
+	var tq_fires: int = FrameProbe.start()
 	_prewarm_fires()
+	FrameProbe.stop("loose prewarm start: fires", tq_fires)
 
 
 func _warm_step() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	while not _warm_queue.is_empty() and Time.get_ticks_usec() - t0 < WARM_BUDGET_USEC:
-		_mesh_for(int(_warm_queue.pop_front()))
+		var number: int = int(_warm_queue.pop_front())
+		var t_one: int = Time.get_ticks_usec()
+		_mesh_for(number)
+		var one_ms: float = float(Time.get_ticks_usec() - t_one) / 1000.0
+
+		if one_ms > SLOW_WARM_MS:   # Lane A 25 Nov 2026: one warm-up step held the main thread 896 ms; this names the item
+			FreezeWatchScript.printer.line("client prewarm: loose mesh %s took %.0f ms" % [table.id_of(number), one_ms])
 
 	_warm_usec += Time.get_ticks_usec() - t0
 	_warm_frames += 1
@@ -5604,7 +5696,7 @@ func _prewarm_loose_meshes() -> void:
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
-	for item_key in _trunk_drop_ids():
+	for item_key in _trunk_drop_ids() + _rock_drop_ids():
 		if table.number_of(item_key) > 0:
 			_mesh_for(table.number_of(item_key))
 

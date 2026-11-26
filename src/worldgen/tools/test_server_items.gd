@@ -2090,6 +2090,36 @@ func _init() -> void:
 	vt2.peer_connected_hello(1, "abcdef123456")
 	check(absf(float(vt2.vitals_of(1)["weight"]) - float(vt.vitals_of(1)["weight"])) < 0.001, "weight survives a restart")
 
+	# Why park_quiet_players is off outside the game's server (Lane A, 4 jobs, 26 Nov 2026): this test reports a position once and then
+	# drives the clock by hand, and on a loaded machine more than ABSENT_MS of real time went by; the player was parked out of the world and
+	# the thirst checks below failed ("no water within reach"). The control: on, the server's setting, the same quiet player is parked by
+	# tick and cannot drink.
+	var park_dir: String = "user://test_server_items_park"
+	DirAccess.make_dir_recursive_absolute(park_dir)
+
+	for file in DirAccess.get_files_at(park_dir):
+		DirAccess.remove_absolute(park_dir + "/" + file)
+
+	var park_items = make(park_dir)
+	park_items.water_near = func(_pos, _reach): return true
+	park_items.peer_connected_hello(1, "parkkey000001")
+	park_items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	park_items._vitals_cfg["thirst"]["drink_pace_ms"] = 0
+	park_items.vitals_of(1)["wet"] = 0.0
+	park_items._heard_ms[1] = Time.get_ticks_msec() - ItemsScript.ABSENT_MS - 5000
+	park_items._park_check_ms = 0
+	park_items.tick(0.05)
+	check(not park_items.is_absent(1), "off (the default): tick parks no player, whatever the real time since its report")
+	park_items.park_quiet_players = true
+	park_items._park_check_ms = 0
+	park_items.tick(0.05)
+	check(park_items.is_absent(1), "on (the game's setting): a player not heard from for ABSENT_MS of real time is parked by tick")
+	park_items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(float(park_items.vitals_of(1)["wet"]) == 0.0, "and a parked player cannot drink: what failed the thirst checks below on a slow run")
+	park_items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	park_items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(not park_items.is_absent(1) and float(park_items.vitals_of(1)["wet"]) > 0.0, "its next report puts it back and the same drink goes down (control)")
+
 	# Thirst (job 67): one drink a game day, water at the edge, no regeneration when parched.
 	var td: String = "user://test_server_items_thirst"
 	DirAccess.make_dir_recursive_absolute(td)
@@ -2227,6 +2257,21 @@ func _init() -> void:
 		seen[int(sx.strain_of(1).get("state", 0))] = true
 
 	check(seen.has(1) and seen.has(2) and seen.has(3), "running without rest goes over-exerted, faints and wakes: %s" % str(seen.keys()))
+	# Dave 25 Nov 2026 (QA #19): the client is told the moment passing out starts (stance bit 16), and a faint wakes calm (not over-exerted).
+	var going_sent: bool = false
+	var after_wake: int = -1
+	var last_state: int = 0
+
+	for row in strains:
+		going_sent = going_sent or ((int(row[3]) & 16) != 0 and int(row[1]) <= 1 and (int(row[3]) & 3) == 3)
+
+		if last_state == 3 and int(row[1]) <= 1 and after_wake < 0:
+			after_wake = int(row[1])
+
+		last_state = int(row[1])
+
+	check(going_sent, "passing out is sent to the client, already lying, before the faint itself (stance bit 16)")
+	check(after_wake == 0, "a faint wakes calm, not over-exerted (wake_strain under over_off; woke to state %d)" % after_wake)
 	sx._exertion[1] = 0.5
 	var st_walk: float = float(sx.strain_of(1).get("s", 0.0))
 	var sw = make(ed)
@@ -2689,7 +2734,7 @@ func _init() -> void:
 
 	check(dropped_fill == 500, "a dropped bucket keeps its water (%d)" % dropped_fill)
 
-	# Blackout is smooth and depends on the overshoot: right at the threshold it takes about slow_s, a long way over it about fast_s.
+	# Blackout is smooth and depends on the overshoot: right at the threshold it takes fall_s (2.5 s), a long way over it about fast_s.
 	var seconds_to_black: Array = []
 	var smooth: bool = true
 
@@ -2710,13 +2755,33 @@ func _init() -> void:
 
 		seconds_to_black.append(waited)
 
-	check(seconds_to_black[0] > 11.0 and seconds_to_black[0] < 17.0, "right at the threshold the blackout takes about 14 s (%.1f)" % seconds_to_black[0])
-	check(seconds_to_black[0] > seconds_to_black[1] and seconds_to_black[1] > seconds_to_black[2] and seconds_to_black[2] > seconds_to_black[3], "the further over the threshold the faster it comes on (%s s)" % str(seconds_to_black))
-	check(seconds_to_black[3] < 2.5, "a long way over it blacks out in about 1.5 s (%.2f)" % seconds_to_black[3])
+	# Dave 25 Nov 2026 (QA #19): once passing out starts it is quick and cannot be run off: at most blackout.fall_s (2.5 s), faster far over.
+	check(seconds_to_black[0] >= 2.0 and seconds_to_black[0] <= 3.0, "right at the threshold the blackout takes about fall_s, 2.5 s (%.1f)" % seconds_to_black[0])
+	check(seconds_to_black[0] >= seconds_to_black[1] and seconds_to_black[1] >= seconds_to_black[2] and seconds_to_black[2] > seconds_to_black[3], "the further over the threshold the faster it comes on, never slower than fall_s (%s s)" % str(seconds_to_black))
+	check(seconds_to_black[3] < 2.0, "a long way over it blacks out in about 1.5 s (%.2f)" % seconds_to_black[3])
 	check(smooth, "the blackout level only climbs and never jumps")
 	check(int(sa.strain_of(1)["state"]) == 2 and sa.stance_of(1) == 3, "fainting forces lying")
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 	check(sa.stance_of(1) == 3, "a fainted player cannot choose a stance")
+
+	# The moment the threshold is crossed the body is not the player's: lying at once, no stance choice, no effort, and resting
+	# (strain falling back under the threshold) does not call it off; the black climbs on to the faint.
+	sa._strain[1] = {"s": 1.45, "state": 1, "t": 0.0}
+	sa._stance[1] = 0
+	sa._exertion[1] = 1.0
+	sa._strain_tick(1, 0.25)
+	check(sa.strain_going(1) and sa.stance_of(1) == 3, "crossing the faint threshold drops the player to lying at once")
+	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
+	check(sa.stance_of(1) == 3, "a player passing out cannot stand up")
+	check(sa.exertion_of(1) == 0.0, "a player passing out makes no effort")
+	var went_out: bool = false
+
+	for n in 20:
+		sa._strain[1]["s"] = 0.5
+		sa._strain_tick(1, 0.25)
+		went_out = went_out or int(sa.strain_of(1)["state"]) == 2
+
+	check(went_out and not sa.strain_going(1), "resting under the threshold does not call off passing out: it ends in the faint")
 
 	# Tools batch 1: the hand saw turns a log into lumber by the balance row and wears; the hammer and adze recipes use live items.
 	var hs_dir: String = "user://test_server_items_handsaw"

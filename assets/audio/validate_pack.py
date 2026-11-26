@@ -143,7 +143,10 @@ def main():
         elif row["licence"].startswith("CC-BY") and row["attribution"].strip().lower() in ("", "none", "todo"):
             errors.append("LICENCE %s: %s needs an attribution text" % (row["pattern"], row["licence"]))
 
-        if not any(fnmatch.fnmatch(path, row["pattern"]) for path in recorded):
+        if row["pattern"].startswith(mc.BESIDE_RECORDED):
+            if not any(fnmatch.fnmatch(n, row["pattern"].split("/", 1)[1]) for n in os.listdir(os.path.join(HERE, row["pattern"].split("/")[0]))):
+                warnings.append("CREDITS row %s matches no file" % row["pattern"])
+        elif not any(fnmatch.fnmatch(path, row["pattern"]) for path in recorded):
             warnings.append("CREDITS row %s matches no file in recorded/" % row["pattern"])
 
     credits_md = os.path.join(HERE, "CREDITS.md")

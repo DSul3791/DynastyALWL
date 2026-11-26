@@ -16,6 +16,9 @@
 	"hz_mid": 3.0,
 	"hz_far": 0.5,
 	"send_radius_m": 120.0,
+	"big_game_send_m": 200.0,
+	"big_game": ["deer", "elk", "moose", "bear", "black_bear", "boar", "pronghorn", "horse"],
+	"big_game_note": "Dave 26 Nov 2026 (R-ANIMAL-SEEN-FAR), asked whether big game should be sent out to 250 m: \"Let's try 200 m.\" These kinds are sent to players out to big_game_send_m (server_animals rows_near); every other kind to send_radius_m. Players saw almost no animals (QA #12): the animals were kept out to 250 m but only those within 120 m were sent.",
 	"tick_budget_ms": 1.0,
 	"spawn_min_m": 150.0,
 	"spawn_max_m": 250.0,
@@ -974,7 +977,7 @@
 				"fish_share": 0.5,
 				"berry_share": 0.8
 			},
-			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
+			"defend": {"close_fight_m": 3.0, "close_fight_note": "Dave 26 Nov 2026 (asked about a black bear walked up on to 2 m): \"that close it should turn rear on its hind legs growl and fight\" and \"if its a baby it should run\". Within close_fight_m a bear fights whatever its temperament, with no bluff; its cubs run (young.close_run_m).", "trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is walked up on within close_fight_m (Dave 26 Nov 2026), trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true,
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 12.0,
@@ -1060,7 +1063,7 @@
 					"spook_x": 1.2
 				}
 			},
-			"young": {
+			"young": {"close_run_m": 3.0, "run_till_m": 20.0,
 				"share": 0.3,
 				"count": [
 					1,
@@ -1396,7 +1399,7 @@
 			"health": 90.0,
 			"protective_share": 0.0,
 			"feeds": {"range_m": 80.0, "fish_share": 0.3, "berry_share": 0.8, "note": "Dave 25 Nov 2026: bears spend most of their time eating berries and go to the streams and rivers to fish. A black bear has no den: it feeds round its home (server_animals _den_target)."},
-			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
+			"defend": {"close_fight_m": 3.0, "close_fight_note": "Dave 26 Nov 2026 (asked about a black bear walked up on to 2 m): \"that close it should turn rear on its hind legs growl and fight\" and \"if its a baby it should run\". Within close_fight_m a bear fights whatever its temperament, with no bluff; its cubs run (young.close_run_m).", "trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is walked up on within close_fight_m (Dave 26 Nov 2026), trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true,
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 10.0,
@@ -1480,7 +1483,7 @@
 					"spook_x": 1.2
 				}
 			},
-			"young": {"bluff_share": 0.8, 
+			"young": {"close_run_m": 3.0, "run_till_m": 20.0, "bluff_share": 0.8,
 				"share": 0.3,
 				"count": [
 					1,
@@ -2295,7 +2298,8 @@
 				8
 			],
 			"herd_pull_m": 4.0,
-			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version. Swims (water row, 8 Nov 2026): floats high, body mostly above the water; grazes lakeside meadows by its own habitat rules.",
+			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger. Flight (Dave 25 Nov 2026, live server: \"two large ducks or geese waddling around and they are refusing to fly away\"): the wary kind in server_flight.gd: it stares and honks first (the usual startle), takes off when it bolts, flies 150 to 400 m, and comes down on the water where it lands on water. Swims (water row, 8 Nov 2026): floats high, body mostly above the water; grazes lakeside meadows by its own habitat rules.",
+			"flight": {"kind": "wary", "burst_s": 2.0, "climb_m": [8.0, 15.0], "fly_m": [150.0, 400.0], "fly_mps": 16.0, "glide_share": 0.35},
 			"water": {
 				"swim": true,
 				"surface_sink_m": 0.1,
@@ -2909,12 +2913,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"temperate_grassland": 1.0,
-				"heath": 0.8,
-				"savanna": 0.6,
-				"alpine_meadow": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\"): kept to its own climate, the North American prairie and sagebrush (temperate grassland, dry scrub, heath); no savanna or alpine rows", "biomes": {"temperate_grassland": 1.0, "dry_scrub": 0.8, "heath": 0.5},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.7,
@@ -3024,10 +3023,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.3},
 			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.4,
@@ -3099,10 +3095,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.5},
 			"active": {
 				"day": 0.2,
 				"dusk": 1.0,
@@ -3181,10 +3174,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.6,
@@ -3275,10 +3265,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.4},
 			"active": {"midday": 0.1, 
 				"day": 0.4,
 				"dusk": 1.0,
@@ -3351,11 +3338,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_forest": 0.4,
-				"mixed_forest": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "tropical_forest": 0.6, "dry_scrub": 0.4},
 			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
@@ -3548,10 +3531,7 @@
 				"threat_m": 8.0,
 				"threat_warn_s": 0.8
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.2
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "tropical_forest": 0.4},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.8,
@@ -3638,11 +3618,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 0.8,
-				"bare_rock": 0.4,
-				"heath": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"hot_desert": 1.0, "dry_scrub": 0.6},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.4,
@@ -3719,10 +3695,7 @@
 				"above_player_m": 250.0,
 				"water_edge_m": 3.0
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.5},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.6,
@@ -3778,10 +3751,7 @@
 				"run_m": 70.0,
 				"again_s": 20.0
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"heath": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.5},
 			"active": {
 				"day": 0.3,
 				"dusk": 0.9,
@@ -3852,10 +3822,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 0.8,
-				"temperate_grassland": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"dry_scrub": 1.0, "savanna": 0.8},
 			"active": {
 				"day": 0.4,
 				"dusk": 1.0,
@@ -4041,12 +4008,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"biomes": {
-				"temperate_forest": 1.0,
-				"mixed_forest": 0.8,
-				"marsh": 0.5,
-				"boreal_forest": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"tropical_forest": 1.0, "mangrove": 0.8},
 			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
@@ -4146,10 +4108,7 @@
 				],
 				"lair": "den"
 			},
-			"biomes": {
-				"marsh": 1.0,
-				"temperate_forest": 0.2
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"mangrove": 1.0},
 			"active": {
 				"day": 0.7,
 				"dusk": 1.0,

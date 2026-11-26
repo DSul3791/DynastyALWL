@@ -16,9 +16,11 @@ const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, wa
 const P := "mixamorig_"
 static var _loaded_here: Dictionary = {}   # path -> Resource: the files warm() read on the main thread (headless only)
 const WornLook := preload("res://src/client/worn_look.gd")
+const WornShell := preload("res://src/client/worn_shell.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
+const LegTurn := preload("res://src/client/character/dynasty_leg_turn.gd")
 const HairModels := preload("res://src/client/character/hair_models.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
@@ -60,7 +62,8 @@ const CLIP_MAP := {
 	# retimed 1.4 its planted hand moves at about the crawl's 0.4 m/s (stance.gd CRAWL_MPS; avatar_driver.gd speed_scale follows the real pace); backwards is the same stride
 	# played backwards (REVERSED_CLIPS). Lying still ("prone") is the last frame of Dead: flat on the belly, head toward the facing, arms and legs on the ground. Lane A's
 	# picture of the first prone (Crawl_Backward's first frame, 25 Nov 2026) floated, arms raised; Dead's last frame also sits 12 cm up (its lowest joint, a foot), so its
-	# hips are lowered PRONE_DROP_CM to put that joint 3 cm up, as the standing Idle's toes are.
+	# hips are lowered PRONE_DROP_CM to put that joint 3 cm up, as the standing Idle's toes are. Dave, 26 Nov 2026, told there is no low or belly crawl in his files:
+	# "use those". The crawl stride also floats (its wrists never below 12 cm), so it is lowered CRAWL_DROP_CM; its feet still move 10 to 28 cm while low.
 	"crawl": ["Crawl_and_Look_Back", 0.833, 1.633, true, 1.4],
 	"crawl_back": ["Crawl_and_Look_Back", 0.833, 1.633, true, 1.4],
 	"prone": ["Dead", 2.95, -1.0, true, 1.0],
@@ -89,12 +92,16 @@ const CLIP_MAP := {
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],
 }
 
+const CRAWL_DROP_CM := 8.0   # the crawl stride lowered so the planted wrists sit about 4 cm up (CLIP_MAP "crawl"; Dave's body: wrists 12 cm at their lowest, toes 14.5)
 const PRONE_DROP_CM := 9.4   # Dead's last frame lowered to the ground (CLIP_MAP "prone"; both glbs: lowest joint 12.4 cm up, the standing Idle's 3 cm)
 const REVERSED_CLIPS := ["crawl_back"]   # game clips made by playing their source backwards (crawling backwards: the forward stride reversed)
 
 static var _scenes: Dictionary = {}            # model id -> its PackedScene, once available() found it usable
 static var _checked: Dictionary = {}           # model id -> false (the glb cannot be used) or true; missing: not tried yet
 static var force_unavailable: bool = false     # tests: pretend the glb is not imported
+static var clips_on_worker: bool = false       # the game client in a window turns it on (terrain_client.gd): the clips are made on a worker; headless runs, tools and menus make them at once
+static var _failed: Dictionary = {}            # model id -> true: its clip worker made nothing this run
+static var _library_jobs: Dictionary = {}      # model id -> {job, out, rests, since}: its clips being made on a worker (_build_animations)
 static var _libraries: Dictionary = {}         # model id -> AnimationLibrary of the game's names and the file's own names, built once per run and shared by that model's bodies
 
 var model: String = BodyModels.DEFAULT        # body_models.gd id this body wears
@@ -115,6 +122,7 @@ var _log_two: MeshInstance3D   # the second log, beside it
 var _model: Node3D
 var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
 var breath: SkeletonModifier3D               # dynasty_breath.gd, made with the body
+var leg_turn: SkeletonModifier3D             # dynasty_leg_turn.gd, made with the body
 var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
@@ -229,14 +237,22 @@ func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
 	Shapes.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)      # the width and face shapes, on a worker thread, ready before an NPC or a slider needs them (dynasty_shapes.gd)
+	WornShell.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)   # and the sleeved garments' fitted layers, ready before the first one is worn (worn_shell.gd)
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
+	set_meta("worn_shell", true)                 # and a sleeved garment adds a fitted layer skinned like body_mesh (worn_shell.gd, QA #15)
 	_build_animations()
 	var b := Breath.new()       # breathing on the still sit frame (dynasty_breath.gd)
 	b.name = "Breath"
 	b.player = animation_player
 	skeleton.add_child(b)
 	breath = b
+	var legs := LegTurn.new()   # the legs turned toward the travel, the chest kept on the look (dynasty_leg_turn.gd)
+	legs.name = "LegTurn"
+	legs.player = animation_player
+	legs.body = self
+	skeleton.add_child(legs)
+	leg_turn = legs
 
 
 # A mount on a bone, in the bone's rest frame turned so that its -Z points out along the bone (the fingers) and its +Y points to the front of the body, the same grip the old
@@ -345,71 +361,158 @@ func _rest_origin(bone: String) -> Vector3:
 
 
 # The game's names and the file's own names, shared by every body of this model. Hips travel is taken out of every clip (the game moves the body), see _clip.
+# They are made once per model per run (CLIP_MAP with the torch, bow and shield copies). In a window the
+# first body hands the making to a worker thread (Lane A Low route 26 Nov 2026: 143 clips took 276 ms on the main thread in the join's first-body
+# frame); that body and any made meanwhile wear the clips a frame or a few later, in _process (_clips_later). Headless runs, the picture tools
+# and the menus (clips_on_worker off) make them here, as before.
 func _build_animations() -> void:
-	if not _libraries.has(model):
-		var t0: int = Time.get_ticks_msec()
-		var library: AnimationLibrary = AnimationLibrary.new()
+	if not _libraries.has(model) and not _library_jobs.has(model) and not (clips_on_worker and _failed.has(model)):
 		var own_library: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
 		var own: Dictionary = {}       # clip name -> its source Animation, on this rig
 
 		for clip in own_library.get_animation_list():
 			own[String(clip)] = own_library.get_animation(clip)
 
-		for clip in own:
-			library.add_animation(clip, _clip(own[clip], 0.0, -1.0, true, 1.0))
+		if not clips_on_worker:
+			var t0: int = Time.get_ticks_msec()
+			_libraries[model] = _make_library(own, skeleton)
+			FreezeWatchScript.printer.line("dynasty body: %s clips for %s made in %d ms" % [_libraries[model].get_animation_list().size(), model, Time.get_ticks_msec() - t0])
+		else:
+			_start_library(model, own, _rest_copy(skeleton))   # the worker reads only bone rests, from its own copy: the body's skeleton is animated on the main thread meanwhile
 
-		for game_name in CLIP_MAP:
-			var row: Array = CLIP_MAP[game_name]
+	if clips_on_worker and _failed.has(model):
+		return   # its worker made nothing (the error was printed once): the file's own clips stay on
 
-			if not own.has(str(row[0])):
-				continue        # a model whose file lacks the clip: the game's name is left out, play() skips it
+	if not _libraries.has(model):
+		animation_player.stop()   # nothing of the file's own plays meanwhile (its clips travel the hips)
+		_clips_later = true
+		set_process(true)
+		return
 
-			var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
+	_wear_library()
 
-			if game_name in REVERSED_CLIPS:
-				made = _reversed(made)
-			elif game_name == "prone":
-				_hold_first(made)
-				_lower_hips(made, PRONE_DROP_CM)
 
-			if game_name == "sit":
-				_hold_first(made)
-				_ground_sit(made, own.get("Idle", made), skeleton)
-			elif game_name == "sit_chair":
-				_hold_first(made)
-			elif game_name == "fall" or game_name == "idle" or game_name == "carry_idle":
-				_hold_first(made, false)   # held whole, head too: the air pose; Idle's first frame (QA #15)
+# Started from a static function, so the worker's Callable holds no body (one freed meanwhile is no matter).
+static func _start_library(model_id: String, own: Dictionary, rests: Skeleton3D) -> void:
+	var out: Array = []
+	var job: int = WorkerThreadPool.add_task(_fill_library.bind(own, rests, out), true, "dynasty body clips")   # high priority: every body of this model waits on it, and the join's ground work fills the pool
+	_library_jobs[model_id] = {"job": job, "out": out, "rests": rests, "since": Time.get_ticks_msec()}
 
-			library.add_animation(game_name, made)
 
-			# Carrying a torch in the left hand (Dave's infographic, 6 Nov 2026): the same gait with the left arm held up in the carry pose; the legs, the body and the
-			# right arm keep the clip, so the right arm still swings opposite the legs.
-			if game_name in TORCH_CARRY_CLIPS:
-				var carry: Animation = made.duplicate(true)
-				_torch_carry(carry, skeleton)
-				library.add_animation(game_name + "_torch", carry)
+# On the worker: the library, handed back in `out` (read on the main thread only after the task has finished).
+static func _fill_library(own: Dictionary, rests: Skeleton3D, out: Array) -> void:
+	out.append(_make_library(own, rests))
 
-			# The bow raised and drawn (protocol 162, other players' archers looked idle): the same gait, both arms held in the aim.
-			if game_name in BOW_AIM_CLIPS:
-				for pose in ["bow_raised", "bow_drawn"]:
-					var aim: Animation = made.duplicate(true)
-					_bow_aim(aim, skeleton, pose == "bow_drawn")
-					library.add_animation(game_name + "_" + pose, aim)
 
-			# The shield raised (B held, the more byte's shield flag): the same gait, the left forearm across before the chest (Lane A S3, 23 Nov 2026: it hung at the hip).
-			if game_name in SHIELD_UP_CLIPS:
-				var guard: Animation = made.duplicate(true)
-				_shield_up(guard, skeleton)
-				library.add_animation(game_name + "_shield_up", guard)
+# Waits for any clip worker still running and takes its clips (the game's exit, terrain_client.gd _exit_tree): no task outlives the program and no bone
+# copy is left over.
+static func finish_clips() -> void:
+	for model_id in _library_jobs.keys():
+		_finish_library(model_id)
 
-		_libraries[model] = library
-		FreezeWatchScript.printer.line("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
+
+# True once the clips of `model_id` are made: no worker is making them (made, or never started).
+static func clips_ready(model_id: String) -> bool:
+	return not _library_jobs.has(model_id) or WorkerThreadPool.is_task_completed(int(_library_jobs[model_id]["job"]))
+
+
+# Takes the worker's finished clips into _libraries (waiting only if it has not finished).
+static func _finish_library(model_id: String) -> void:
+	if not _library_jobs.has(model_id):
+		return
+
+	var row: Dictionary = _library_jobs[model_id]
+	WorkerThreadPool.wait_for_task_completion(int(row["job"]))
+	_library_jobs.erase(model_id)
+	(row["rests"] as Skeleton3D).free()
+	var out: Array = row["out"]
+
+	if out.is_empty() or out[0] == null:
+		push_error("dynasty body: the clip worker for %s made nothing" % model_id)
+		_failed[model_id] = true   # no retry for every later body of this model
+		return
+
+	_libraries[model_id] = out[0]
+	FreezeWatchScript.printer.line("dynasty body: %s clips for %s made on a worker, in %d ms" % [(out[0] as AnimationLibrary).get_animation_list().size(), model_id, Time.get_ticks_msec() - int(row["since"])])
+
+
+func _wear_library() -> void:
+	_clips_later = false
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
 
 	animation_player.add_animation_library("", _libraries[model])
 	animation_player.play("idle")
+
+
+# A bare skeleton with `skel`'s bone names and rests, for a worker thread to read (_make_library reads only find_bone and get_bone_rest).
+static func _rest_copy(skel: Skeleton3D) -> Skeleton3D:
+	var copy: Skeleton3D = Skeleton3D.new()
+
+	for i in range(skel.get_bone_count()):
+		copy.add_bone(skel.get_bone_name(i))
+		copy.set_bone_rest(i, skel.get_bone_rest(i))
+
+	return copy
+
+
+# The game's library from the file's own clips (`own`: clip name -> Animation, only read) and `skel`'s bone rests. Static and touching no node in the
+# tree, so it runs on a worker thread.
+static func _make_library(own: Dictionary, skel: Skeleton3D) -> AnimationLibrary:
+	var library: AnimationLibrary = AnimationLibrary.new()
+
+	for clip in own:
+		library.add_animation(clip, _clip(own[clip], 0.0, -1.0, true, 1.0))
+
+	for game_name in CLIP_MAP:
+		var row: Array = CLIP_MAP[game_name]
+
+		if not own.has(str(row[0])):
+			continue        # a model whose file lacks the clip: the game's name is left out, play() skips it
+
+		var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
+
+		if game_name == "crawl" or game_name == "crawl_back":
+			_lower_hips(made, CRAWL_DROP_CM)
+
+		if game_name in REVERSED_CLIPS:
+			made = _reversed(made)
+		elif game_name == "prone":
+			_hold_first(made)
+			_lower_hips(made, PRONE_DROP_CM)
+
+		if game_name == "sit":
+			_hold_first(made)
+			_ground_sit(made, own.get("Idle", made), skel)
+		elif game_name == "sit_chair":
+			_hold_first(made)
+		elif game_name == "fall" or game_name == "idle" or game_name == "carry_idle":
+			_hold_first(made, false)   # held whole, head too: the air pose; Idle's first frame (QA #15)
+
+		library.add_animation(game_name, made)
+
+		# Carrying a torch in the left hand (Dave's infographic, 6 Nov 2026): the same gait with the left arm held up in the carry pose; the legs, the body and the
+		# right arm keep the clip, so the right arm still swings opposite the legs.
+		if game_name in TORCH_CARRY_CLIPS:
+			var carry: Animation = made.duplicate(true)
+			_torch_carry(carry, skel)
+			library.add_animation(game_name + "_torch", carry)
+
+		# The bow raised and drawn (protocol 162, other players' archers looked idle): the same gait, both arms held in the aim.
+		if game_name in BOW_AIM_CLIPS:
+			for pose in ["bow_raised", "bow_drawn"]:
+				var aim: Animation = made.duplicate(true)
+				_bow_aim(aim, skel, pose == "bow_drawn")
+				library.add_animation(game_name + "_" + pose, aim)
+
+		# The shield raised (B held, the more byte's shield flag): the same gait, the left forearm across before the chest (Lane A S3, 23 Nov 2026: it hung at the hip).
+		if game_name in SHIELD_UP_CLIPS:
+			var guard: Animation = made.duplicate(true)
+			_shield_up(guard, skel)
+			library.add_animation(game_name + "_shield_up", guard)
+
+	return library
 
 
 # A copy of `src` between `from` and `to` seconds, its time multiplied by `retime`, looping or not. The hips travel on the ground is replaced by its deviation from a straight line, so
@@ -793,6 +896,7 @@ static func _bow_aim(anim: Animation, skel: Skeleton3D, drawn: bool) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		Shapes.wait()          # the prewarm task (started by the first body) never outlives the bodies
+		WornShell.wait()       # nor the fitted clothing layers' (worn_shell.gd)
 
 
 func _make_empty() -> void:
@@ -840,6 +944,9 @@ func set_proportions(g: Dictionary) -> void:
 		if breath != null:
 			skeleton.move_child(breath, -1)      # breathing after the reshape
 
+		if leg_turn != null:
+			skeleton.move_child(leg_turn, -1)    # and the legs' turn last
+
 	proportions.set_genome(g)
 	_set_widths(g)
 	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
@@ -860,19 +967,38 @@ func set_proportions(g: Dictionary) -> void:
 
 
 var _widths_later: bool = false     # the widths wait for the shapes worker (dynasty_shapes.gd ready)
+var _clips_later: bool = false      # the clips wait for their worker (_build_animations)
+var _shells_later: bool = false     # a worn garment's fitted layer waits for its worker (worn_shell.gd)
 
 
 func _ready() -> void:
-	set_process(_widths_later)      # the engine turns _process on at the ready; only a body still waiting for its shapes needs it
+	set_process(_widths_later or _shells_later or _clips_later)      # the engine turns _process on at the ready; only a body still waiting for its shapes or layers needs it
+
+
+# worn_shell.gd hang: a layer was hung before its worker finished; it is filled in here, a frame or a few later.
+func wait_for_shells() -> void:
+	_shells_later = true
+	set_process(true)
 
 
 func _process(_delta: float) -> void:
-	if not _widths_later or not Shapes.ready():
-		return
+	if _clips_later and clips_ready(model):
+		_finish_library(model)
 
-	set_process(false)
-	_set_widths(genome)
-	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+		if _libraries.has(model):
+			_wear_library()
+		else:
+			_clips_later = false   # the worker failed (its error is printed): this body keeps the file's own clips
+
+	if _shells_later:
+		_shells_later = WornShell.refresh(self)
+
+	if _widths_later and Shapes.ready():
+		_set_widths(genome)
+		dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+
+	if not _widths_later and not _shells_later and not _clips_later:
+		set_process(false)
 
 
 # The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
@@ -899,6 +1025,7 @@ func _set_widths(g: Dictionary) -> void:
 
 	if body_mesh.mesh != shaped:
 		body_mesh.mesh = shaped
+		WornShell.prewarm(shaped, body_mesh.skin, skeleton)      # the fitted clothing layers over the shaped mesh, on a worker, once for every body that shares it
 		_skin_material = null          # a new mesh drops the override: dress makes it again
 
 	for key in Shapes.NAMES:
@@ -906,6 +1033,9 @@ func _set_widths(g: Dictionary) -> void:
 
 		if i >= 0:
 			body_mesh.set_blend_shape_value(i, Shapes.shape_weight(g, key))
+
+	if WornShell.refresh(self):      # a worn garment's fitted layer takes the new mesh (made on a worker: until then it keeps the old one) and widths
+		wait_for_shells()
 
 
 # Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour

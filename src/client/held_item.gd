@@ -32,6 +32,7 @@ const BOW_IDLE_LEAN_DEG := 30.0     # lowered at the side: the upper limb leans 
 const BOW_DRAW_MAX_M := 0.7         # the nock point comes back at most this far from the braced string (a 28 inch draw)
 const BOW_NOCK_ABOVE_M := 0.03      # the arrow sits on the bow hand, this far above the middle of the grip; the string's nock point is level with it
 const BOW_ARROW_SIDE_M := 0.006     # the shaft lies along the stave's left side, this far from the bow's plane, straight ahead (Dave 10 Nov 2026: the arrow lines up with the crosshair)
+const BOW_SIGHT_RIGHT_M := 0.06     # first person, the bow in hand: the arms (and so the bow, the string hand and the arrow) sit this far right of the eye, so the upper limb passes about 8.5 degrees right of the crosshair and the target stays in sight (Dave 26 Nov 2026, BugsList 180: "the bow should be slightly to the right of the crosshairs so the player can actually see the target"); the nocked arrow stays parallel to the view, about 5 cm right of the eye line, so on screen it runs in toward the crosshair; a loosed arrow flies from the eye along the crosshair as before
 const ARROW_NOCK_M := 0.355         # the arrow mesh's nock end lies this far back from its origin (basic_look.gd "arrow")
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
@@ -833,7 +834,7 @@ func _right_held() -> bool:
 
 
 func _update_bow(delta: float) -> void:
-	if _draw_t >= 0.0 and (not _is_bow() or not _right_held()):
+	if _draw_t >= 0.0 and (not _is_bow() or not _right_held() or _body_out()):   # passing out lowers it too (QA #19)
 		_draw_t = -1.0   # the bow put away, or right let go outside the game window
 
 	if rig_drawing and _draw_t < 0.0 and _is_bow() and holding and has_arrow() and _camera != null:
@@ -849,8 +850,14 @@ func _update_bow(delta: float) -> void:
 		_hud_layer.add_child(_reticle)
 
 	if _reticle != null:
-		_reticle.visible = _draw_t >= 0.0 or (holding and _is_spear() and _model != null and _model.visible)   # a spear in hand shows the cross by itself, for the throw and jab (Dave 22 Nov 2026); put away, it goes
+		_reticle.visible = aim_cross_shown()
 		_reticle.point = _reticle.global_position + _reticle.size * 0.5   # always the middle of the screen: the view moves, not the cross
+
+
+# Whether the bow or spear cross is up: a drawn bow, or a spear in hand shows it by itself, for the throw and jab (Dave 22 Nov 2026); put away,
+# it goes. The inspection + reads this too and hides while it is true (inspect_reticle.gd), worked out here so both agree in the same frame.
+func aim_cross_shown() -> bool:
+	return _draw_t >= 0.0 or (holding and _is_spear() and _model != null and _model.visible)
 
 
 func _is_spear() -> bool:
@@ -1108,8 +1115,17 @@ func tool_busy() -> bool:
 	return _swing_t >= 0.0 or _pause_t > 0.0 or _stop_t > 0.0
 
 
+# Passing out, fainted or waking (inventory_view.body_out): the hands are not the player's (Dave 25 Nov 2026, QA #19). A test's stand-in
+# view without it is never out.
+func _body_out() -> bool:
+	return _inv != null and _inv.has_method("body_out") and _inv.body_out()
+
+
 # One chop of an axe or pick. Holding the left button chains them (see _process): the next starts as the last one ends.
 func _start_swing() -> void:
+	if _body_out():
+		return   # passing out, fainted or waking: no swing (Dave 25 Nov 2026, QA #19)
+
 	_swing_t = 0.0
 	_swing_hit = false
 	_pause_t = 0.0
@@ -1740,6 +1756,13 @@ func _process_body(delta: float) -> void:
 		if _stop_t <= 0.0 and _arms != null:
 			_arms.animation_player.speed_scale = 1.0
 
+	if _swing_t >= 0.0 and _body_out():
+		_swing_t = -1.0   # a swing under way when the player passes out never lands (Dave 25 Nov 2026, QA #19: "they must stop the second ...")
+		_stop_t = 0.0
+
+		if _arms != null:
+			_arms.animation_player.speed_scale = 1.0
+
 	if _swing_t >= 0.0 and _stop_t <= 0.0:
 		_swing_t += delta
 
@@ -1900,6 +1923,9 @@ func _place_arms(delta: float) -> void:
 	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _bow_up or _arms.is_one_shot_playing()
 	_arm_up = ArmsView.next_arm_up(_arm_up, working, ARMS_FOLLOW_K, delta)
 	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE)
+
+	if _bow_up:
+		_arms.transform.origin += Vector3(BOW_SIGHT_RIGHT_M * _arm_up, 0.0, 0.0)   # the bow off the line of sight, to the right (BugsList 180); _pose_bow places the bow at this hand
 
 
 # The bow in the hands (Dave 10 Nov 2026: "have art department fix how its held because it isnt right"). A right-handed archer: the LEFT hand holds the grip, the right
@@ -2504,7 +2530,7 @@ func _hoe_repeat(delta: float) -> void:
 			_hoe_menu_t = 0.0
 			_hoe_menu_refresh()
 
-	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or hoe_mode != "smooth":
+	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or hoe_mode != "smooth" or _body_out():   # passing out stops the levelling (QA #19)
 		_hoe_t = 0.0
 		return
 

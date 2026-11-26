@@ -24,7 +24,7 @@ A reference for the models Dave makes in Meshy (eagle, raven, owl, bat, a mink a
 | Rest pose not standing | crow (wings spread), puma, lion, warthog, guineafowl (crouched or mid-run) | `size_clip` |
 | Feathers far past the bones | crow | `length_m` set as the bone length |
 | Clip names that lie | wolf `Idle` is a howl; bighorn `Idle_Breathing` lies down; raccoon `dead run` | row names the clip; role words skip death, hit, attack, start, end, stop, interact |
-| No looping walk or run, only start clips | mink | `clip_loop` (a window of a start clip, ends eased) and a hand-made `gait` fallback |
+| No looping walk or run, only start clips | mink | `clip_loop` (a window of a start clip, ends eased) for the walk; the start-sprint window was a leap, so the run is the hand-made `gait` (BugsList 179) |
 | No swim clip | beaver, moose | walk stands in; hand-made swim `gait_fallback` |
 | No jaw-pop clip | black bear | `state_poses` (a pose built from bones) |
 | Hunched pose held by every clip | crow | `bone_offsets` |

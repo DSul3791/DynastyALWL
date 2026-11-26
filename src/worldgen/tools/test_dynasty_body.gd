@@ -24,6 +24,13 @@ func _still(anim: Animation) -> bool:
 	return true
 
 
+# How far the hips are turned from the shoulders about the vertical, in degrees (+ the hips to the body's left), from the skeleton's posed joints: the line from
+# the right hip joint to the left against the line from the right shoulder to the left (skeleton space, up +Y).
+func _twist(s: Skeleton3D) -> float:
+	var hip: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_LeftUpLeg")).origin - s.get_bone_global_pose(s.find_bone("mixamorig_RightUpLeg")).origin
+	var top: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_LeftArm")).origin - s.get_bone_global_pose(s.find_bone("mixamorig_RightArm")).origin
+	return rad_to_deg(wrapf(atan2(-hip.z, hip.x) - atan2(-top.z, top.x), -PI, PI))
+
 func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
@@ -57,7 +64,8 @@ func _init() -> void:
 	_check(absf(body.animation_player.get_animation("pick_overhead").length - 1.0) < 0.02, "pick clip is the 1.0 s swing (%.3f)" % body.animation_player.get_animation("pick_overhead").length)
 	_check(AvatarDriverScript.crouch_walk_clip(Vector2(0.0, -1.0)) == "crouch_walk" and AvatarDriverScript.crouch_walk_clip(Vector2(0.0, 1.0)) == "crouch_walk_back" and AvatarDriverScript.crouch_walk_clip(Vector2(1.0, 0.0)) == "crouch_walk_right", "crouch clip by direction")
 	_check(body.hand_mount_r != null and body.hand_mount_l != null and body.head_mount != null, "mounts")
-	_check(absf(body.hand_mount_r.global_transform.basis.get_scale().x - 1.0) < 0.01, "right mount is metre scale")
+	await process_frame      # in the tree first: in _init a global transform is not ready (the engine said "!is_inside_tree()" and gave the identity, Lane A pr1961)
+	_check(body.hand_mount_r.is_inside_tree() and absf(body.hand_mount_r.global_transform.basis.get_scale().x - 1.0) < 0.01, "right mount is metre scale")
 	var s: Skeleton3D = body.skeleton
 
 	for spec in [["lie", 0.5], ["sit", 0.5]]:
@@ -180,6 +188,12 @@ func _init() -> void:
 
 		var dt: float = anim.length / float(samples)
 		var speeds: Array = []
+		var wrist_low: float = INF
+
+		for r in rows:
+			wrist_low = minf(wrist_low, minf((r[0] as Vector3).y, (r[1] as Vector3).y))
+
+		_check(wrist_low > 0.0 and wrist_low < 0.08, "%s: the hands come down to the ground, not floating (wrist joint %.2f m at its lowest)" % [spec[0], wrist_low])
 
 		for side in 2:
 			var low: float = INF
@@ -200,6 +214,133 @@ func _init() -> void:
 			mean += float(v) / float(speeds.size())
 
 		_check(speeds.size() >= 4 and signf(mean) == float(spec[1]) and absf(mean) > 0.2 and absf(mean) < 0.7, "%s: a planted hand moves %s under the body at about the crawl's pace (%.2f m/s over %d steps)" % [spec[0], "back" if spec[1] < 0.0 else "forward", mean, speeds.size()])
+
+	# Foot slide (26 Nov 2026, Dave's basics: no sliding): walking sideways or on a diagonal the legs turn toward the travel, the chest stays on the look
+	# (avatar_driver.gd leg_turn, dynasty_leg_turn.gd; offline the forward clip's feet slid 62 cm a step sideways, 43 on a diagonal).
+	var d: Vector2 = Vector2(-1.0, -1.0).normalized() * 3.2
+	_check(is_equal_approx(AvatarDriverScript.leg_turn("jog", Vector2(3.2, 0.0), false), -AvatarDriverScript.LEG_TURN_MAX), "walking right: the legs turn right, at most 80 degrees")
+	_check(absf(AvatarDriverScript.leg_turn("jog_torch", d, false) - PI * 0.25) < 0.01, "walking forward and left: the legs turn 45 degrees left (with a torch too)")
+	_check(absf(AvatarDriverScript.leg_turn("jog", Vector2(d.x, -d.y), true) + PI * 0.25) < 0.01, "walking back and left, the gait in reverse: the legs turn 45 degrees right")
+	_check(absf(AvatarDriverScript.leg_turn("jog", Vector2(0.0, -3.2), false)) < 0.001 and absf(AvatarDriverScript.leg_turn("jog", Vector2(0.0, 3.2), true)) < 0.001, "straight ahead or straight back: no turn")
+	_check(AvatarDriverScript.leg_turn("jog", Vector2(0.3, 0.0), false) == 0.0 and AvatarDriverScript.leg_turn("swing", Vector2(3.2, 0.0), false) == 0.0 and AvatarDriverScript.leg_turn("carry_walk", Vector2(1.0, 0.0), false) == 0.0, "standing still, swinging or carrying: no turn")
+	var c: Vector2 = Vector2(-sin(PI / 3.0), -cos(PI / 3.0)) * 0.64
+	_check(AvatarDriverScript.crouch_walk_clip(c) == "crouch_walk_left" and absf(AvatarDriverScript.leg_turn("crouch_walk_left", c, false) + PI / 6.0) < 0.01, "crouched 60 degrees left: the left crouch walk, its legs turned 30 degrees back toward ahead")
+	_check(absf(AvatarDriverScript.leg_turn("crouch_walk_torch", d * 0.2, false) - PI * 0.25) < 0.01, "crouched forward and left: the forward crouch walk, its legs turned 45 degrees left")
+
+	# The drawn pose, as the game draws it (Lane A pr1961: the modifier passed a direct call while the drawn legs did not turn): the jog playing, the skeleton's final
+	# pose read when it is handed to the skin (skeleton_updated, after every modifier), the hip line against the shoulder line seen from above.
+	body.set_meta("backward", false)
+	var twists: Array = []
+
+	for local in [Vector2.ZERO, Vector2(3.2, 0.0)]:
+		body.set_meta("leg_local", local)
+		body.play("jog", 1.0, 0.0)
+
+		for i in range(3000):
+			await process_frame
+
+			if absf(float(body.leg_turn.angle) - AvatarDriverScript.leg_turn("jog", local, false)) < 0.001:
+				break
+
+		# Both read at the same point of the jog (the hips and shoulders counter-turn through the stride), paused there; the pose is read once, when the skeleton
+		# hands it to the skin, and the wait is bounded.
+		body.animation_player.seek(0.2, true)
+		body.animation_player.pause()
+		var seen: Array = []
+		s.skeleton_updated.connect(func() -> void: seen.append(_twist(s)), CONNECT_ONE_SHOT)
+
+		for i in range(30):
+			await process_frame
+
+			if not seen.is_empty():
+				break
+
+		twists.append(float(seen[0]) if not seen.is_empty() else INF)
+
+	_check(absf(float(twists[0])) < 20.0, "the jog straight ahead as drawn: hips and shoulders in line (%.1f degrees)" % float(twists[0]))
+	_check(float(twists[1]) - float(twists[0]) < -65.0 and float(twists[1]) - float(twists[0]) > -95.0, "walking right as drawn: the hips turned right of the shoulders by %.1f degrees (80 asked)" % (float(twists[0]) - float(twists[1])))
+	_check(is_equal_approx(body.leg_turn.step_angle(0.0, 1.4, 0.1), 0.5), "the turn eases in at 5 radians a second, no snap")
+	body.set_meta("leg_local", Vector2.ZERO)
+	body.leg_turn.angle = 0.0
+	body.play("idle", 1.0, 0.0)
+
+	# Turning on the spot (dynasty_leg_turn.gd _plant): standing still the feet stay planted while the body turns a little, then step round, each foot lifted.
+	for i in range(3000):
+		await process_frame
+
+		if absf(float(body.leg_turn.angle)) < 0.001 and absf(float(body.leg_turn.twist)) < 0.001 and not body.leg_turn.stepping:
+			break
+
+	# Each drawn pose (skeleton space, centimetres): [twist degrees, left foot height, right foot height, left knee ahead, right knee ahead].
+	var poses: Array = []
+	var bone_at: Callable = func(bone: String) -> Vector3: return s.get_bone_global_pose(s.find_bone("mixamorig_" + bone)).origin
+	var knee_ahead: Callable = func(leg_side: String) -> float:   # the knee ahead of its hip joint, along the hips' own front (the hip line crossed with up)
+		var hip_line: Vector3 = (bone_at.call("LeftUpLeg") as Vector3) - (bone_at.call("RightUpLeg") as Vector3)
+		return ((bone_at.call(leg_side + "Leg") as Vector3) - (bone_at.call(leg_side + "UpLeg") as Vector3)).dot(hip_line.cross(Vector3.UP).normalized())
+	var watch: Callable = func() -> void: poses.append([_twist(s), (bone_at.call("LeftFoot") as Vector3).y, (bone_at.call("RightFoot") as Vector3).y, float(knee_ahead.call("Left")), float(knee_ahead.call("Right"))])
+	s.skeleton_updated.connect(watch)
+
+	for i in range(60):
+		await process_frame
+
+		if poses.size() >= 2:
+			break
+
+	var rest: Array = poses[poses.size() - 1] if not poses.is_empty() else [0.0, 0.0, 0.0, 0.0, 0.0]
+	body.rotation.y += 0.4   # 23 degrees to the left: under STEP_FROM, the feet stay put
+	poses.clear()
+
+	for i in range(60):
+		await process_frame
+
+		if poses.size() >= 3:
+			break
+
+	var small: Array = poses[poses.size() - 1] if not poses.is_empty() else [INF, 0.0, 0.0, 0.0, 0.0]
+	_check(not body.leg_turn.stepping and float(small[0]) - float(rest[0]) < -18.0 and float(small[0]) - float(rest[0]) > -28.0, "a 23 degree turn standing still: the hips stay on the planted feet, %.1f degrees right of the shoulders" % (float(rest[0]) - float(small[0])))
+	body.rotation.y += 1.0   # on to 80 degrees: the feet step round
+	poses.clear()
+	var stepped: bool = false
+
+	for i in range(1200):
+		await process_frame
+		stepped = stepped or body.leg_turn.stepping
+
+		if stepped and not body.leg_turn.stepping:
+			break
+
+	await process_frame
+	await process_frame
+	s.skeleton_updated.disconnect(watch)
+	var up: Array = [0.0, 0.0]       # each foot's highest rise, cm
+	var knee_fwd: Array = [0.0, 0.0]     # each knee's furthest forward, cm
+	var first_up: Array = [-1, -1]   # the pose each foot first rose 2 cm
+
+	for k in range(poses.size()):
+		for f in range(2):
+			var rise: float = float(poses[k][1 + f]) - float(rest[1 + f])
+			up[f] = maxf(float(up[f]), rise)
+			knee_fwd[f] = maxf(float(knee_fwd[f]), float(poses[k][3 + f]) - float(rest[3 + f]))
+
+			if rise > 2.0 and int(first_up[f]) < 0:
+				first_up[f] = k
+
+	var end: Array = poses[poses.size() - 1] if not poses.is_empty() else [INF, 0.0, 0.0, 0.0, 0.0]
+	_check(stepped and not body.leg_turn.stepping, "an 80 degree turn standing still: the feet step round and stop (in 1200 frames)")
+	_check(float(up[0]) > 4.0 and float(up[1]) > 4.0, "both feet lift as they step (%.1f and %.1f cm)" % [float(up[0]), float(up[1])])
+	_check(float(knee_fwd[0]) > 5.0 and float(knee_fwd[1]) > 5.0, "each stepping knee comes forward, not back (%.1f and %.1f cm)" % [float(knee_fwd[0]), float(knee_fwd[1])])
+	_check(int(first_up[0]) >= 0 and int(first_up[0]) < int(first_up[1]), "turning left the left foot steps first (poses %d and %d)" % [int(first_up[0]), int(first_up[1])])
+	_check(absf(float(end[0]) - float(rest[0])) < 3.0, "after the steps the hips are under the shoulders again (%.1f degrees)" % (float(end[0]) - float(rest[0])))
+	_check(absf(float(end[1]) - float(rest[1])) < 1.0 and absf(float(end[2]) - float(rest[2])) < 1.0, "and both feet are down")
+
+	# A yaw jump (a respawn, a wake at a camp) re-plants the feet where he now stands: no steps.
+	body.rotation.y += PI * 0.9
+
+	for i in range(3):
+		await process_frame
+
+	_check(not body.leg_turn.stepping and absf(float(body.leg_turn.twist)) < 0.001, "a 162 degree jump in one frame re-plants the feet, no steps")
+	body.rotation.y = 0.0
 
 	print("dynasty body tests: %d failures" % _fails)
 	quit()

@@ -2,7 +2,9 @@
 """Dave's rulings as plain-number checks on the game's data (docs/RULINGS.md). No Godot: runs in merge_check.
 
 Each check names its R- key. GODOT lists the Godot tests that guard rulings these checks cannot read from data;
-the check fails if one of those test files is gone. A check on a ruling marked unverified only warns. A failing check is a found bug: fix the game, or replace the
+the check fails if one of those test files is gone. A check on a ruling marked unverified only warns; a check on a suggestion only
+prints a NOTE (Dave 26 Nov 2026, R-CORE-RULES-VS-SUGGESTIONS: only his explicit rules block; play-testing may show a suggestion wrong,
+then the game follows play-testing and the line is changed by its procedure). Rule and unclear lines block. A failing check is a found bug: fix the game, or replace the
 ruling by its procedure. Never loosen a check to make it pass. KNOWN_OPEN holds found bugs not fixed yet: they print
 as OPEN and do not fail the merge; take a key out once its fix is in.
     python3 tools/check_dave_rules.py
@@ -17,14 +19,19 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CORE-NO-DEATH": ["test_death"],
     "R-CORE-COLD": ["test_cold_pass_out"],
     "R-HUD-STATUS": ["test_status_strip"],
+    "R-HUD-INSPECT-PLUS": ["test_inspect_reticle"],
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
+    "R-CRAFT-SMALL-BY-HAND": ["test_campfire_both"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
     "R-PLAYER-CRAWL": ["test_crawl", "test_crawl_server", "test_animal_senses", "test_remote_players"],
     "R-HUNT-DEAD-NAME": ["test_carcass_look", "test_trap_collect_prompt"],
+    "R-ANIMAL-SEEN-FAR": ["test_animals"],
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
+    "R-SOUND-MENU-MUSIC": ["test_title_music"],
+    "R-MOVE-RUN-FEET": ["test_run_speed"],
 }
 
 results = []   # (key, ok, what)
@@ -66,6 +73,47 @@ def tracking():
     signs = data("data/look/trail_signs.json")
     check("R-HUNT-GLOW", int(signs["halo_from"]) == 25, f"sign glow starts at Tracking 25 (halo_from {signs['halo_from']})")
     check("R-HUNT-TRAILS-MAP", int(data("data/map.json")["trails_tracking"]) == 10, "game trails go on the map at Tracking 10")
+
+
+def sign_sound():
+    """R-HUNT-SIGN-SOUND: the sign spot sound is much quieter and plays only with a hunting weapon, snare or trap in hand."""
+    signs = data("data/look/trail_signs.json")
+    slots = data("data/sound/batch3_slots.json")
+    slot = slots.get("slots", slots)["sign_spot"]
+    items = set()
+    todo = [data("data/items/items.json")]
+    while todo:   # every item row, at any depth (weapons sit in their own section)
+        node = todo.pop()
+        for k, v in node.items():
+            if isinstance(v, dict):
+                if "name" in v:
+                    items.add(k)
+                todo.append(v)
+    gear = signs["sound_with"]
+    check("R-HUNT-SIGN-SOUND", float(slot.get("play_db", 0.0)) <= -10.0, f"the sign sound plays at least 10 dB under its file (play_db {slot.get('play_db')})")
+    check("R-HUNT-SIGN-SOUND", all(g in items for g in gear) and {"wooden_spear", "wooden_bow", "snare"} <= set(gear), f"sound_with names real hunting weapons, snares and traps ({len(gear)})")
+    check("R-HUNT-SIGN-SOUND", not any(g in gear for g in ("fishing_spear", "fish_trap", "stone_axe", "torch")), "a fishing spear, fish trap, axe or torch does not sound signs")
+    client = (ROOT / "scenes/terrain_client/terrain_client.gd").read_text(encoding="utf-8")
+    on_spot = client[client.index("trail_signs.on_spot = func"):][:600]
+    check("R-HUNT-SIGN-SOUND", "TrailSignsScript.sounds_with(trail_signs.cfg" in on_spot and on_spot.index("sounds_with") < on_spot.index('play("sign_spot"'), "the spot sound asks what is in hand first")
+
+
+def pass_out():
+    """R-CORE-PASS-OUT: passing out takes the body at once; a faint wakes calm."""
+    ex = data("data/items/exertion.json")
+    check("R-CORE-PASS-OUT", float(ex["blackout"]["fall_s"]) <= 3.0, f"passing out reaches full black within 3 s ({ex['blackout']['fall_s']} s)")
+    check("R-CORE-PASS-OUT", float(ex["wake_strain"]) < float(ex["over_off"]), f"a faint wakes calm, not over-exerted (wake_strain {ex['wake_strain']} under over_off {ex['over_off']})")
+    check("R-CORE-PASS-OUT", float(ex["faint_bpm"]["wake"]) <= 100, f"the heart is calm on waking ({ex['faint_bpm']['wake']} bpm)")
+    inv = (ROOT / "src/client/inventory_view.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", "return strain_state >= 2 or passing_out" in inv and "if body_out() or forced_sleep:" in inv, "the client takes movement away while passing out, fainted or waking")
+    client = (ROOT / "scenes/terrain_client/terrain_client.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", "items.body_out() and not (event is InputEventMouseMotion) and event.is_pressed()" in client, "no key or button reaches the world while passing out")
+    check("R-CORE-PASS-OUT", "moving = false   # passing out" in client, "no footsteps while passing out, fainted or waking")
+    held = (ROOT / "src/client/held_item.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", all(t in held for t in ("_right_held() or _body_out()", "func _start_swing() -> void:\n\tif _body_out():", "_swing_t >= 0.0 and _body_out()", 'hoe_mode != "smooth" or _body_out()')),
+          "no swing, strike, drawn bow or hoe levelling while passing out")
+    server = (ROOT / "src/stream/server_items.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", '(16 if strain_going(peer) else 0)' in server and "and not strain_going(peer):" in server, "the server tells the client and refuses a stance while passing out")
 
 
 def seeds():
@@ -144,6 +192,16 @@ def witness_glow():
     check("R-FLORA-WITNESS-GLOW", "set_shader_parameter(\"glow_energy\", lerpf(WITNESS_GLOW_NIGHT, WITNESS_GLOW_DAY" in src, "the vein glow follows the daylight")
     check("R-FLORA-WITNESS-GLOW", re.search(r"^\s*float vein_mask = texture\(veins, UV\)\.r;", foliage, re.M) and "uniform sampler2D veins : hint_default_black" in foliage,
           "the mask is the painted vein texture, black (no glow) where none is set")
+    # 26 Nov 2026 "witness tree looks great" on the pass 5 picture: keep that look (colours and the vein mask's lit share).
+    for want in ('set_shader_parameter("glow", Color(0.6, 0.04, 1.0))', 'set_shader_parameter("glow_core", Color(0.92, 0.78, 1.0))', 'set_shader_parameter("core_boost", 1.6)'):
+        check("R-FLORA-WITNESS-GLOW", want in src, f"the approved witness night look is kept ({want})")
+    try:
+        from PIL import Image
+        px = Image.open(ROOT / "assets/trees/leaf_witness_veins.png").convert("L").tobytes()
+        lit = sum(1 for v in px if v >= 120) / len(px)
+        check("R-FLORA-WITNESS-GLOW", 0.05 <= lit <= 0.075, f"the vein mask's lit share stays near the approved 0.063 ({lit:.3f})")
+    except ImportError:
+        pass
     for f in ("leaf_witness_veins.png", "leaf_witness_veins.png.import"):
         check("R-FLORA-WITNESS-GLOW", (ROOT / "assets/trees" / f).is_file() and (ROOT / "assets/trees" / f).stat().st_size > 1000 if f.endswith(".png") else (ROOT / "assets/trees" / f).is_file(), f"the witness leaf's vein mask is there ({f})")
 
@@ -169,6 +227,49 @@ def dead_names():
     check("R-HUNT-DEAD-NAME", len(species) >= 40, f"the species were read ({len(species)})")
 
 
+def seen_far():
+    """R-ANIMAL-SEEN-FAR: big game (deer, elk, moose, bears, boar, pronghorn, horses) is sent out to 200 m, every other kind to 120 m."""
+    cfg = data("data/animals/animals.json")
+    check("R-ANIMAL-SEEN-FAR", float(cfg["big_game_send_m"]) == 200.0, f"big game is sent out to {cfg['big_game_send_m']} m (\"Let's try 200 m.\")")
+    check("R-ANIMAL-SEEN-FAR", float(cfg["send_radius_m"]) == 120.0, f"every other kind to {cfg['send_radius_m']} m")
+    want = {"deer", "elk", "moose", "bear", "black_bear", "boar", "pronghorn", "horse"}
+    check("R-ANIMAL-SEEN-FAR", set(cfg["big_game"]) == want, f"the big game kinds are {sorted(cfg['big_game'])}")
+    check("R-ANIMAL-SEEN-FAR", all(k in cfg["species"] for k in cfg["big_game"]), "every big game kind is a species")
+
+
+def run_feet():
+    """R-MOVE-RUN-FEET: the run clip plays faster past its 6 m/s, and the footsteps take the clip's own 1.7 m step."""
+    drv = (ROOT / "src/client/character/avatar_driver.gd").read_text(encoding="utf-8")
+    check("R-MOVE-RUN-FEET", "return clampf(pace / RUN_CLIP_PACE, 0.8, 1.6)" in drv, "the run clip plays at pace / 6 m/s, up to 1.6x (1.5x at the 9 m/s run)")
+    for rel in ("scenes/terrain_client/terrain_client.gd", "src/client/player_view.gd"):
+        m = re.search(r"^const STEP_M := \[([0-9.]+), ([0-9.]+)\]", (ROOT / rel).read_text(encoding="utf-8"), re.M)
+        check("R-MOVE-RUN-FEET", m is not None and abs(float(m.group(2)) - 1.7) < 0.05, f"{rel} run footstep is the clip's 1.7 m step ({m.group(2) if m else 'missing'})")
+
+
+def campfire_both():
+    recipes = data("data/items/recipes.json")["recipes"]
+    bps = data("data/items/blueprints.json")["blueprints"]
+    items = data("data/items/items.json")["items"]
+    by_hand = [rid for rid, r in recipes.items() if not r.get("retired") and r.get("gives", [None])[0] == "campfire_kit" and not r.get("station")]
+    check("R-CRAFT-MAKING", by_hand, "the Campfire is crafted by hand in the pack (a live recipe with no station gives it)")
+    hammer = [b for b in bps.values() if not b.get("retired") and b.get("known", True) and b.get("lays") == "campfire_kit"]
+    check("R-CRAFT-MAKING", len(hammer) == 1 and int(hammer[0].get("hammer", 1)) == 1, "the Campfire is also a known hammer blueprint any hammer builds")
+    check("R-CRAFT-MAKING", "kit" not in items["campfire_kit"]["name"].lower(), "the Campfire's name never says kit")
+
+
+def lane_on_c():
+    """R-TEAM-LANE-C-DRIVE: test tools default to C:\\DynastyLane and its own Godot, never to E: or the shared editor in GodotInstaller
+    (Dave 26 Nov 2026: "only test from there"). Scans tools/ (top level) and art/playthrough/ (.sh .ps1 .py .gd .cmd, no extension).
+    nightly_backup.py (its E: destination and its Godot default) is backup, not testing, and is left alone."""
+    hits = []
+    for f in sorted(list((ROOT / "tools").glob("*")) + list((ROOT / "art/playthrough").rglob("*"))):
+        if not f.is_file() or f.suffix not in {".sh", ".ps1", ".py", ".gd", ".cmd", ""} or f.name in {"nightly_backup.py", "check_dave_rules.py"}:
+            continue
+        text = f.read_text(encoding="utf-8", errors="ignore")
+        hits += [f"{f.relative_to(ROOT)}:{n}" for n, line in enumerate(text.splitlines(), 1) if re.search(r"\b[Ee]:[/\\]|(?<![\w.])/[Ee]/|GodotInstaller", line)]
+    check("R-TEAM-LANE-C-DRIVE", not hits, "no test tool points at E: " + (str(hits[:5]) if hits else "(C:\\DynastyLane)"))
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -181,7 +282,8 @@ def ruling_lines():
 def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
-             "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names}
+             "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
+             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c}
     for key, step in steps.items():
         try:
             step()
@@ -198,7 +300,10 @@ def main():
     for key, ok, what in results:
         if ok:
             continue
-        if "unverified" in rulings.get(key, ""):
+        kind = re.match(r"^- \*\*R-[A-Z0-9-]+\*\* · [^·]+ · (rule|suggestion|unclear) · ", rulings.get(key, ""))
+        if kind and kind.group(1) == "suggestion":
+            print(f"NOTE {key}: {what} [a suggestion: if play-testing showed better, change the line and tell the coordinator; does not block]")
+        elif "unverified" in rulings.get(key, ""):
             print(f"WARN {key}: {what} [the ruling is marked unverified: tell the coordinator, do not block]")
         elif key in KNOWN_OPEN:
             print(f"OPEN {key}: {what} [{KNOWN_OPEN[key]}]")
@@ -206,7 +311,7 @@ def main():
             failed += 1
             print(f"FAIL {key}: {what}")
     passed = sum(1 for _, ok, _ in results if ok)
-    print(f"dave rules: {passed} pass, {failed} fail, {sum(1 for k, ok, _ in results if not ok and k in KNOWN_OPEN)} open (FAIL blocks a merge; OPEN and WARN do not)")
+    print(f"dave rules: {passed} pass, {failed} fail, {sum(1 for k, ok, _ in results if not ok and k in KNOWN_OPEN)} open (FAIL blocks a merge; OPEN, WARN and NOTE do not)")
     for key in KNOWN_OPEN:
         if all(ok for k, ok, _ in results if k == key):
             failed += 1

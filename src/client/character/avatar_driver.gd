@@ -13,7 +13,7 @@ const JOG_FROM := 2.2                   # walk to jog (m/s); 1.8 when already jo
 const JOG_HOLD := 1.8
 const RUN_FROM := 5.0                   # jog to run; 4.4 when already running
 const RUN_HOLD := 4.4
-const RUN_CLIP_PACE := 6.0              # the pace the run clip was retimed for; running faster (9 m/s) does not play it faster
+const RUN_CLIP_PACE := 6.0              # the pace the run clip was retimed for (dynasty_body.gd CLIP_MAP); faster it plays faster, so the feet keep up at 9 m/s (R-MOVE-RUN-FEET)
 const JUMP_UP := 1.0                    # vertical speed (m/s) above which the airborne clip is the jump (rising); below it the fall
 const AIR_DELAY := 0.15                 # seconds without a floor before the body counts as in the air
 const LAND_AFTER := 0.4                 # a fall at least this long ends in the land clip
@@ -77,6 +77,11 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	# The Dynasty body (dynasty_body.gd) has crouched walking clips and the air clips (jump, fall, land) but not the sideways and backward ones (the generated body's set): crouched and moving it
 	# walks bent, in the direction of the velocity.
 	var dynasty: bool = player != null and player.has_animation("crouch_walk_back")
+
+	# Its legs turn toward the travel (dynasty_leg_turn.gd reads this): the horizontal velocity in the body's own frame (x right, y the world z, so forward is -y).
+	if dynasty:
+		var leg_local: Vector3 = basis.inverse() * velocity
+		avatar.set_meta("leg_local", Vector2(leg_local.x, leg_local.z))
 
 	if dynasty and stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
 		var crouch_local: Vector3 = basis.inverse() * velocity
@@ -194,6 +199,30 @@ static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> Str
 	return held if left > 0.0 else ""
 
 
+# How far Dave's body turns its legs toward the travel (dynasty_leg_turn.gd; foot slide, 26 Nov 2026): the angle in radians, + to the body's left, between the
+# playing clip's own direction (forward; backward when the gait plays in reverse, `backward`; each crouched walk its own way) and the velocity in the body's frame
+# (`velocity_local`, as crouch_walk_clip), at most LEG_TURN_MAX standing and LEG_TURN_CROUCH_MAX crouched. 0 standing still and in every other clip.
+const LEG_TURN_MAX := deg_to_rad(80.0)          # sideways: further would twist the waist past 80 degrees (offline: 17 cm of slide left a step at 80, 62 at none)
+const LEG_TURN_CROUCH_MAX := deg_to_rad(60.0)   # a crouched walk is never more than 60 degrees off its clip (crouch_walk_clip)
+const LEG_CLIP_WAY := {"crouch_walk": 0.0, "crouch_walk_left": PI * 0.5, "crouch_walk_right": -PI * 0.5, "crouch_walk_back": PI}
+
+
+static func leg_turn(clip: String, velocity_local: Vector2, backward: bool) -> float:
+	if velocity_local.length() <= WALK_MIN_PACE:
+		return 0.0
+
+	var way: float = atan2(-velocity_local.x, -velocity_local.y)      # the travel, + to the left of forward
+	var gait: String = gait_of(clip).trim_suffix("_torch")
+
+	if gait in ["walk", "jog", "run"]:
+		return clampf(wrapf(way - (PI if backward else 0.0), -PI, PI), -LEG_TURN_MAX, LEG_TURN_MAX)
+
+	if LEG_CLIP_WAY.has(gait):
+		return clampf(wrapf(way - float(LEG_CLIP_WAY[gait]), -PI, PI), -LEG_TURN_CROUCH_MAX, LEG_TURN_CROUCH_MAX)
+
+	return 0.0
+
+
 # Which crouched walking clip for a velocity in the body's own frame (x right, y the world z, so forward is -y): back, sideways or forward.
 static func crouch_walk_clip(velocity_local: Vector2) -> String:
 	var pace: float = velocity_local.length()
@@ -283,7 +312,7 @@ static func speed_scale(clip: String, pace: float) -> float:
 		return clampf(pace / 3.2, 0.8, 1.6)
 
 	if clip == "run":
-		return clampf(minf(pace, RUN_CLIP_PACE) / RUN_CLIP_PACE, 0.8, 1.0)   # BUG-011: running is faster than the clip, the cadence is not
+		return clampf(pace / RUN_CLIP_PACE, 0.8, 1.6)   # 1.5x at the 9 m/s run: about 5.3 steps a second of 1.7 m, the planted foot stays put (Dave 26 Nov 2026)
 
 	return 1.0
 

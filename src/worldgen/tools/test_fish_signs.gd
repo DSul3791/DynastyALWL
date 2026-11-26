@@ -217,6 +217,51 @@ func _init() -> void:
 	print("fish signs: 20 players, average pass %d us (once a second)" % int(total_usec / 60.0))
 	check(total_usec / 60.0 < 5000.0, "20 players cost under 5 ms a second on average (%d us)" % int(total_usec / 60.0))
 
+	var steady_usec: int = 0
+
+	for k in range(760, 770):
+		clock[0] = k * 1000
+		signs.tick()
+		steady_usec += signs.last_tick_usec
+
+	print("fish signs: 20 players, steady pass %d us (every cell worked out; the average above includes working them out)" % int(steady_usec / 10.0))
+
+	# A new game day (every real hour) or a crowd in new water: every cell's schools are new at once. A pass works them out for at most
+	# new_cells_usec (at least one cell), the rest in the next passes, so no pass is long (Lane A 26 Nov 2026: 22 ms for 4 players' first).
+	var fresh_fish = Fish.new(items.water_kind_at, func(_s: String) -> bool: return true)
+	items.fish = fresh_fish
+	var budget_was: Variant = signs.cfg.get("new_cells_usec", 4000)
+	signs.cfg["new_cells_usec"] = 0
+	var deferred_before: int = signs.cells_deferred
+	clock[0] = 770 * 1000
+	signs.tick()
+	check(fresh_fish._cache.size() == 1 and signs.cells_deferred > deferred_before, "with no time to spare a pass works out one new cell and leaves the rest (%d cells, %d left)" % [fresh_fish._cache.size(), signs.cells_deferred - deferred_before])
+	var k_day: int = 771
+
+	while signs.cells_deferred > deferred_before and k_day < 1200:
+		deferred_before = signs.cells_deferred
+		clock[0] = k_day * 1000
+		signs.tick()
+		k_day += 1
+
+	check(k_day < 1200 and fresh_fish._cache.size() > 20, "the rest come one a pass until every cell is in (%d cells in %d passes)" % [fresh_fish._cache.size(), k_day - 770])
+	signs.cfg["new_cells_usec"] = budget_was
+	var all_at_once = Fish.new(items.water_kind_at, func(_s: String) -> bool: return true)   # the same cells worked out with no budget
+	var same_schools: bool = true
+
+	for key in fresh_fish._cache:
+		if all_at_once.placements(key[0], int(key[1]), str(key[2])) != fresh_fish._cache[key]:
+			same_schools = false
+
+	check(same_schools, "spread over passes, every cell's schools are the ones worked out all at once")
+	var tiny = Fish.new(items.water_kind_at, func(_s: String) -> bool: return true)
+	tiny.cfg["cache_max"] = 3
+	tiny.placements(Vector2i(0, 0), 1, "summer")
+	tiny.placements(Vector2i(1, 0), 2, "summer")
+	tiny.placements(Vector2i(2, 0), 2, "summer")
+	tiny.placements(Vector2i(3, 0), 2, "summer")   # full: the other day's entry goes, today's stay
+	check(tiny._cache.size() == 3 and not tiny._cache.has([Vector2i(0, 0), 1, "summer"]) and tiny._cache.has([Vector2i(1, 0), 2, "summer"]), "a full cache drops other days' cells first, never today's while others are there")
+
 	# The client view: a jump draws a pooled splash with rings and a fish, then clears; the pool stays within its cap; shadows drawn by day,
 	# hidden at night, in rain and at Low.
 	var view = View.new()

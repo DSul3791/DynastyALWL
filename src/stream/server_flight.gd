@@ -4,7 +4,9 @@ extends RefCounted
 # A species row with a "flight" block flies instead of running when it bolts:
 #   flush (pheasant, grouse, guineafowl): sits tight to flush_m, bursts straight up climb_m, flies away (bending to cover), glides the last
 #     glide_share down, lands and runs run_m into cover;
-#   perch (crow): flies to a spot under tree crowns fly_m off and sits perch_up_m up; comes down after perch_s once nobody is near.
+#   perch (crow): flies to a spot under tree crowns fly_m off and sits perch_up_m up; comes down after perch_s once nobody is near;
+#   wary (goose; Dave 25 Nov 2026: geese "refusing to fly away"): stares first like a ground animal (ServerAnimals._startle), then flies
+#     as a flush does, without the sit-tight distance; a swimmer comes down on the water where it lands on water.
 # Flight is a list of straight segments followed by elapsed time, so a far bird ticked at 0.5 Hz is where it would be at 10 Hz. Every
 # segment is kept clear_m over the ground (sampled every 5 m) except where it lands. Wire: 15 flying (flapping), 17 gliding, 0 on the
 # ground or perched (the position carries the height).
@@ -28,6 +30,18 @@ func handles(a: Dictionary) -> bool:
 
 func _ground(x: float, z: float) -> float:
 	return float(host.ground_height.call(x, z)) if host.ground_height.is_valid() else 0.0
+
+
+# What a flight keeps clear of: the ground, or the water surface over water (a bird never flies under a lake's surface).
+func _floor(x: float, z: float) -> float:
+	var level: float = float(host.water_level.call(x, z)) if host.water_level.is_valid() else NAN
+	return _ground(x, z) if is_nan(level) else maxf(_ground(x, z), level)
+
+
+# Where a landing bird stands: a swimmer (the goose) on the water surface where it comes down on water, any other on the ground.
+func _rest(a: Dictionary, x: float, z: float) -> float:
+	var def: Dictionary = host.species_def(a["sp"])
+	return float(host.swim_height(def, x, z)) if host.swims(def) else _ground(x, z)
 
 
 func _clear_m() -> float:
@@ -76,7 +90,7 @@ func _path(from: Vector3, to: Vector3, speed: float, state: int, land_m: float =
 		if land_m > 0.0 and to_end < land_m:
 			lift *= to_end / land_m   # coming in to land: the clearance ramps down to the touch-down point
 
-		p.y = maxf(p.y, _ground(p.x, p.z) + lift)
+		p.y = maxf(p.y, _floor(p.x, p.z) + lift)
 
 		pts.append(p)
 
@@ -105,7 +119,7 @@ func take_off(a: Dictionary, from: Vector3) -> void:
 	var p1: Vector3 = p0 + Vector3(dir.x * 2.0, up, dir.y * 2.0)
 	var segs: Array = [[p0, p1, float(row.get("burst_s", 1.5)), FLY]]   # the burst: straight up, the one part allowed near the ground
 	var end: Vector3 = p0 + Vector3(dir.x, 0.0, dir.y) * dist
-	end.y = _ground(end.x, end.z)
+	end.y = _rest(a, end.x, end.z)
 
 	if kind == "perch" and host.canopy.is_valid() and bool(host.canopy.call(end)):
 		var perch: Vector3 = Vector3(end.x, end.y + float(row.get("perch_up_m", 8.0)), end.z)
@@ -116,7 +130,7 @@ func take_off(a: Dictionary, from: Vector3) -> void:
 		a["fly"] = {"segs": segs, "k": 0, "t": 0.0, "perch": true}
 	else:
 		var glide_from: Vector3 = p0 + Vector3(dir.x, 0.0, dir.y) * dist * (1.0 - glide)
-		glide_from.y = _ground(glide_from.x, glide_from.z) + up
+		glide_from.y = _floor(glide_from.x, glide_from.z) + up
 		segs.append_array(_path(p1, glide_from, speed, FLY))
 		segs.append_array(_path(segs.back()[1], end, speed * 0.8, GLIDE, 10.0))
 		a["fly"] = {"segs": segs, "k": 0, "t": 0.0, "perch": false}
@@ -193,7 +207,7 @@ func _land(a: Dictionary, at: Vector3, perch: bool) -> void:
 		a["timer"] = host.rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how long a crow sits
 		return
 
-	a["pos"] = Vector3(at.x, _ground(at.x, at.z), at.z)
+	a["pos"] = Vector3(at.x, _rest(a, at.x, at.z), at.z)
 	a["home"] = a["pos"]
 	var run: float = float(row.get("run_m", 0.0))
 

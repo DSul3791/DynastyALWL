@@ -3,6 +3,17 @@
 	"retired": [
 		{"phrase": "eye almost at the ground, no movement", "replaced_by": "R-PLAYER-CRAWL", "since": "2026-11-25"},
 		{"phrase": "no movement while sitting or lying", "replaced_by": "R-PLAYER-CRAWL", "since": "2026-11-25"},
+		{"phrase": "stride rate stay", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "old 3 steps a second", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "old 6 m/s cadence", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "does not play it faster", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "the cadence is not", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "the campfire (a fire entity; code pending)", "replaced_by": "R-CRAFT-MAKING", "since": "2026-11-26"},
+		{"phrase": "no background music for now", "replaced_by": "R-SOUND-MENU-MUSIC", "since": "2026-11-25"},
+		{"phrase": "no music for now", "replaced_by": "R-SOUND-MENU-MUSIC", "since": "2026-11-25"},
+		{"phrase": "brisk 140", "replaced_by": "R-CORE-PASS-OUT", "since": "2026-11-25"},
+		{"phrase": "while the heart still races", "replaced_by": "R-CORE-PASS-OUT", "since": "2026-11-25"},
+		{"phrase": "takes slow_s seconds right at the threshold", "replaced_by": "R-CORE-PASS-OUT", "since": "2026-11-25"},
 		{"phrase": "a faint purple light sits in each mature crown", "replaced_by": "R-FLORA-WITNESS-GLOW", "since": "2026-11-25"},
 		{"phrase": "once 3 flagged changes are in the branch", "replaced_by": "R-TEAM-WARN-TO-BLOCK", "since": "2026-11-25"},
 		{"phrase": "flagged more than 3 times", "replaced_by": "R-TEAM-WARN-TO-BLOCK", "since": "2026-11-25"},
@@ -17,6 +28,8 @@
 		{"phrase": "fire still does not help", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "kept tool must be in hand", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
 		{"phrase": "a tool a recipe keeps must be in hand", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
-		{"phrase": "we should have to equip the saw", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"}
+		{"phrase": "we should have to equip the saw", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
+		{"phrase": "your character is kept on the server", "replaced_by": "R-RELEASE-CLEAN", "since": "2026-11-25"},
+		{"phrase": "character and world are kept on the server", "replaced_by": "R-RELEASE-CLEAN", "since": "2026-11-25"}
 	]
 }

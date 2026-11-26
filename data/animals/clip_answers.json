@@ -1,0 +1,970 @@
+{
+	"about": "Each animal model's clip height shares and skin answers, measured by tools/clip_answers.gd. absent: kind|scene drawn with the code-built body (no file or no mesh here).",
+	"absent": [
+		"alligator|res://assets/animals/alligator/SK_AmericanAligator.fbx"
+	],
+	"models": {
+		"bear|res://assets/animals/bear/SK_Bear.fbx": {
+			"shares": {
+				"RigRoot|Attack_IdleAngry_01_High": 0.8882977987702299,
+				"RigRoot|Attack_IdleAngry_01_Low": 0.8882921830963433,
+				"RigRoot|Attack_IdleAngry_02_High": 0.8882977987702299,
+				"RigRoot|Attack_Run_01_AttackF": 0.9441266446774903,
+				"RigRoot|Death_Idle_R01": 0.9999861688032052,
+				"RigRoot|Hit_Idle_F01": 0.9999952162778003,
+				"RigRoot|Idle": 0.9999995840241566,
+				"RigRoot|IdleHind_Idle_01": 1.8468241752264962,
+				"RigRoot|Idle_1": 1.000001559909413,
+				"RigRoot|Idle_2": 0.9999993760362348,
+				"RigRoot|Idle_Breathing_01": 0.9999993760362348,
+				"RigRoot|Lying_Breathing_01": 0.3292962531079895,
+				"RigRoot|Run": 0.9456086626137447,
+				"RigRoot|Sprint": 1.0986815333659943,
+				"RigRoot|Trot": 0.8783991336055132,
+				"RigRoot|Walk": 0.9125074888651066
+			},
+			"skins": {
+				"sm_3_0_0": false
+			}
+		},
+		"beaver|res://assets/animals/beaver/SK_Beaver.fbx": {
+			"shares": {
+				"Mesh_Beaver|Attack": 0.9999994943246475,
+				"Mesh_Beaver|Death": 1.0000193420822332,
+				"Mesh_Beaver|Hit_Front": 1.0000132739780032,
+				"Mesh_Beaver|Idle": 1.0000128315120698,
+				"Mesh_Beaver|Idle_2": 1.8355988747964893,
+				"Mesh_Beaver|Run_F_IP": 0.9879354078116855,
+				"Mesh_Beaver|Walk_F_IP": 1.0063218268381757
+			},
+			"skins": {
+				"Mesh_Beaver_001": false
+			}
+		},
+		"bighorn|res://assets/animals/bighorn/SK_BighornSheep.fbx": {
+			"shares": {
+				"Bighorn Sheep|GrazingOnSpotA_1": 0.8457723358049881,
+				"Bighorn Sheep|GrazingOnSpotA_2": 0.8457732847247431,
+				"Bighorn Sheep|GrazingOnSpotB_1": 0.8416428479021862,
+				"Bighorn Sheep|HitLegFL2RunFast_F": 1.1170943781881726,
+				"Bighorn Sheep|Idle": 1.1170815150537157,
+				"Bighorn Sheep|Idle_Breathing": 0.6929314651141777,
+				"Bighorn Sheep|RunFast_F": 0.8831606176371076,
+				"Bighorn Sheep|Sitting_Breathing": 0.29501503985093946,
+				"Bighorn Sheep|Stomping_1": 1.1171069250160446,
+				"Bighorn Sheep|TrotFast_F": 0.9219433370492328,
+				"Bighorn Sheep|WalkMedium_F": 1.0897806719596004,
+				"Bighorn Sheep|bleat": 1.1171019695462128
+			},
+			"skins": {
+				"Bighorn Sheep_001": false
+			}
+		},
+		"black_bear|res://assets/animals/bear/SK_Bear.fbx": {
+			"shares": {
+				"RigRoot|Attack_IdleAngry_01_High": 0.8882976527036438,
+				"RigRoot|Attack_IdleAngry_01_Low": 0.8882920247958278,
+				"RigRoot|Attack_IdleAngry_02_High": 0.8882976527036438,
+				"RigRoot|Attack_Run_01_AttackF": 0.9441264370663797,
+				"RigRoot|Death_Idle_R01": 0.9999860525762818,
+				"RigRoot|Hit_Idle_F01": 0.9999952896858496,
+				"RigRoot|Idle": 0.9999995106167117,
+				"RigRoot|IdleHind_Idle_01": 1.846824009511164,
+				"RigRoot|Idle_1": 1.0000015293227762,
+				"RigRoot|Idle_2": 0.9999993882708895,
+				"RigRoot|Idle_Breathing_01": 0.9999993882708895,
+				"RigRoot|Lying_Breathing_01": 0.3292961964824964,
+				"RigRoot|Run": 0.9456085955280766,
+				"RigRoot|Sprint": 1.0986815096618026,
+				"RigRoot|Trot": 0.8783990192758901,
+				"RigRoot|Walk": 0.9125073216327907
+			},
+			"skins": {
+				"sm_3_0_0": false
+			}
+		},
+		"boar|res://assets/animals/boar/SK_WildBoar.fbx": {
+			"shares": {
+				"wild_boar_walk_fwd_bank_rgt_001|Idle": 0.9878496552370274,
+				"wild_boar_walk_fwd_bank_rgt_001|attack_02": 1.000000226668621,
+				"wild_boar_walk_fwd_bank_rgt_001|hit_hip_lft_01": 0.9878548686153116,
+				"wild_boar_walk_fwd_bank_rgt_001|idle_alerted_bark_01": 1.0941601852033747,
+				"wild_boar_walk_fwd_bank_rgt_001|idle_bark_01": 0.9878699798567152,
+				"wild_boar_walk_fwd_bank_rgt_001|idle_eat_grazing_01": 0.9240235493586033,
+				"wild_boar_walk_fwd_bank_rgt_001|idle_eat_look_around_01": 0.9240235493586033,
+				"wild_boar_walk_fwd_bank_rgt_001|idle_eat_look_up_short": 0.9240236249148104,
+				"wild_boar_walk_fwd_bank_rgt_001|run_fwd_01": 1.0000009066744842,
+				"wild_boar_walk_fwd_bank_rgt_001|trot_fwd_01": 0.9641900601276295,
+				"wild_boar_walk_fwd_bank_rgt_001|walk_fwd_01": 0.9277948618756979
+			},
+			"skins": {
+				"wild_boar body": false
+			}
+		},
+		"buffalo|res://assets/animals/buffalo/SK_Buffalo.fbx": {
+			"shares": {
+				"Buffalo|GrazingOnSpotA_1": 0.9999447959896677,
+				"Buffalo|GrazingOnSpotA_2": 0.9999364646757725,
+				"Buffalo|GrazingOnSpotB_1": 1.0271918147376595,
+				"Buffalo|GrazingOnspotA2IdleThreat": 0.9999877565908843,
+				"Buffalo|HitInRunHead_F": 1.10950447156106,
+				"Buffalo|Idle": 1.1599137020772863,
+				"Buffalo|RunFast_F": 1.0458517120306707,
+				"Buffalo|Sitting_Breathing": 0.7439441671565842,
+				"Buffalo|Standstraight_Breathing": 1.1599505047508412,
+				"Buffalo|TrotFast_F": 1.1147752229622603,
+				"Buffalo|WalkMedium_F": 1.0999027409660485
+			},
+			"skins": {
+				"Buffalo_001": false
+			}
+		},
+		"camel|res://assets/animals/camel/SK_Camel.fbx": {
+			"shares": {
+				"SK_M_Camel|Death_RootMotion": 1.0000001408146861,
+				"SK_M_Camel|Eating_RootMotion": 0.9285468966414571,
+				"SK_M_Camel|HitLeft_RootMotion": 0.9999851440506077,
+				"SK_M_Camel|Idle": 1.2260574197229555,
+				"SK_M_Camel|Run_RootMotion": 1.0307873005430377,
+				"SK_M_Camel|Walk_RootMotion": 1.1438482569676516
+			},
+			"skins": {
+				"SK_M_Camel_001": false
+			}
+		},
+		"cat|res://assets/animals/cat/SK_Cat.fbx": {
+			"shares": {
+				"SKM_Cat|Death": 1.0001439022092913,
+				"SKM_Cat|Idle": 0.9999996152347345,
+				"SKM_Cat|Idle02": 1.0000610237711058,
+				"SKM_Cat|Idle03": 1.000170527965663,
+				"SKM_Cat|Idle_2": 1.0001343600307073,
+				"SKM_Cat|Run": 0.700197215284477,
+				"SKM_Cat|Sit": 1.0316542536261817,
+				"SKM_Cat|Trot": 0.767358915811513,
+				"SKM_Cat|Walk": 0.8930855834919079
+			},
+			"skins": {
+				"SKM_Cat_001": false
+			}
+		},
+		"chamois|res://assets/animals/chamois/SK_ChamoisMale.fbx": {
+			"shares": {
+				"SKM_ChamoisMale|Alert": 0.9999994854450411,
+				"SKM_ChamoisMale|Damage": 1.0000198746852853,
+				"SKM_ChamoisMale|Death": 0.9999844990318648,
+				"SKM_ChamoisMale|Idle": 0.999999549764411,
+				"SKM_ChamoisMale|Idle_2": 1.0000126709158614,
+				"SKM_ChamoisMale|Idle_3": 1.0000201319627648,
+				"SKM_ChamoisMale|Run": 0.9826933941948939,
+				"SKM_ChamoisMale|Sleeping": 0.37231399095515294,
+				"SKM_ChamoisMale|Trot": 0.9207284348730361,
+				"SKM_ChamoisMale|Walk": 0.9781198367625848
+			},
+			"skins": {
+				"SKM_ChamoisMale_001": false
+			}
+		},
+		"chicken|res://assets/animals/chicken/SK_Chicken.fbx": {
+			"shares": {
+				"SKM_Chicken|Death": 1.000000148349332,
+				"SKM_Chicken|GetHit": 1.0000638643873485,
+				"SKM_Chicken|Idle": 1.0000410927649142,
+				"SKM_Chicken|Idle2": 1.0000706884566122,
+				"SKM_Chicken|IdleLay": 0.7121741098965916,
+				"SKM_Chicken|Run": 0.7514547877224906,
+				"SKM_Chicken|Walk": 0.9919595403900341
+			},
+			"skins": {
+				"SKM_Chicken_001": false
+			}
+		},
+		"chicken|res://assets/animals/rooster/SK_Rooster.fbx": {
+			"shares": {
+				"SKM_Chicken_M|Alert": 1.0,
+				"SKM_Chicken_M|Damage": 1.0000812373906365,
+				"SKM_Chicken_M|Death": 1.0008204049792033,
+				"SKM_Chicken_M|Idle_2": 0.9999544391060119,
+				"SKM_Chicken_M|Idle_3": 1.0,
+				"SKM_Chicken_M|Idle_4": 1.0009184767340593,
+				"SKM_Chicken_M|NeutralStand": 0.9999989188940409,
+				"SKM_Chicken_M|Oneleg01": 1.01517872766493,
+				"SKM_Chicken_M|Run": 0.9601661876080237,
+				"SKM_Chicken_M|Walk": 1.0288970356229046
+			},
+			"skins": {
+				"SKM_Chicken_M_001": false
+			}
+		},
+		"cow|res://assets/animals/calf/SK_Calf.fbx": {
+			"shares": {
+				"SKM_Calf|Alert": 0.9999997962970608,
+				"SKM_Calf|Idle": 1.000028925817365,
+				"SKM_Calf|IdleToLying": 1.0000035987519256,
+				"SKM_Calf|Idle_2": 1.0000468516760135,
+				"SKM_Calf|Idle_3": 0.9999794939041217,
+				"SKM_Calf|NeutralStand": 1.0000050925734798,
+				"SKM_Calf|Run_400": 0.8459157696494571,
+				"SKM_Calf|Walk_60": 0.90658909749277
+			},
+			"skins": {
+				"SKM_Calf_001": false
+			}
+		},
+		"cow|res://assets/animals/cow/SK_Cow.fbx": {
+			"shares": {
+				"SKM_Cow|Alert": 1.0,
+				"SKM_Cow|Damage": 1.000001550189317,
+				"SKM_Cow|Death": 1.0000014533024846,
+				"SKM_Cow|Idle": 1.0000074602860873,
+				"SKM_Cow|Idle_2": 1.0000020346234784,
+				"SKM_Cow|Idle_3": 1.0000050381152799,
+				"SKM_Cow|Lying": 0.47377418779768476,
+				"SKM_Cow|NeutralStand": 1.0000043599074537,
+				"SKM_Cow|Run_600": 0.9995525766084183,
+				"SKM_Cow|Trot_300": 0.9686210678479109,
+				"SKM_Cow|Walk_100": 0.9908164847131956
+			},
+			"skins": {
+				"SKM_Cow_001": false
+			}
+		},
+		"crow|res://assets/animals/crow/SK_Crow.fbx": {
+			"shares": {
+				"SKM_Crow|Look": 0.8094918708496897,
+				"SKM_Crow|Look2": 0.7739090294215101,
+				"SKM_Crow|Walk": 0.8337433203910177,
+				"SKM_Crow|WalkSpeed": 0.8337433203910177
+			},
+			"skins": {
+				"SKM_Crow_001": false
+			}
+		},
+		"deer|res://assets/animals/deer/SK_Deer.fbx": {
+			"shares": {
+				"Deer|GrazingOnSpotB_1": 0.849185003761906,
+				"Deer|GrazingOnSpotB_2": 0.849185003761906,
+				"Deer|GrazingOnSpotB_3": 0.849185003761906,
+				"Deer|HitInRunHead_F": 1.025562199911844,
+				"Deer|Idle": 1.0790123527375972,
+				"Deer|Idle_Breathing": 1.2230210775720904,
+				"Deer|RunFast_F": 0.8869123373183391,
+				"Deer|Sitting_Breathing": 0.6731971751490156,
+				"Deer|TrotFast_F": 1.1461296321872638,
+				"Deer|WalkMedium_F": 1.136041542304602
+			},
+			"skins": {
+				"Deer_M_001": false
+			}
+		},
+		"deer|res://assets/animals/deer_1/SK_Deer_1.fbx": {
+			"shares": {
+				"Armature|alerted": 0.9999989318847554,
+				"Armature|grazing": 0.7250113270283826,
+				"Armature|idle": 0.9312292664645125,
+				"Armature|run": 0.9776014898071431,
+				"Armature|sleeping": 0.30499149613372323,
+				"Armature|trot": 0.8617204652950331,
+				"Armature|walk": 0.8892467965054206
+			},
+			"skins": {
+				"SM_Deer_Horns_01_2": false,
+				"_000_red_deer_buck": false,
+				"_001_red_deer_buck": false
+			}
+		},
+		"deer|res://assets/animals/deer_buck/SK_Buck.fbx": {
+			"shares": {
+				"RigRoot|Death_Idle_R01": 1.0004193936580845,
+				"RigRoot|Food_Eating_01_Wolf": 0.2524956475145526,
+				"RigRoot|Hit_Idle_L01": 1.0004384391566026,
+				"RigRoot|Idle": 0.9999998036546545,
+				"RigRoot|Idle_1": 1.000436868393838,
+				"RigRoot|Idle_Breathing_01": 1.0004190991400663,
+				"RigRoot|Lying_Breathing_01": 0.31650216853616886,
+				"RigRoot|Run": 0.8911665603456621,
+				"RigRoot|Trot": 0.9718820702731772,
+				"RigRoot|Walk_2": 0.94635265940935
+			},
+			"skins": {
+				"sm_4_0_0": false
+			}
+		},
+		"deer|res://assets/animals/deer_doe/SK_Doe.fbx": {
+			"shares": {
+				"RigRoot|Death_Idle_R01": 1.0004191973859013,
+				"RigRoot|Food_Eating_01_Wolf": 0.2524959861004924,
+				"RigRoot|Hit_Idle_L01": 1.0004388319238826,
+				"RigRoot|Idle": 0.9999995636769338,
+				"RigRoot|Idle_1": 1.0004364321470183,
+				"RigRoot|Idle_Breathing_01": 1.0004184338205353,
+				"RigRoot|Lying_Breathing_01": 0.31650245284465733,
+				"RigRoot|Run": 0.8911663559137428,
+				"RigRoot|Trot": 0.971881705399247,
+				"RigRoot|Walk_2": 0.9463526609543979
+			},
+			"skins": {
+				"sm_3_0_1": false
+			}
+		},
+		"deer|res://assets/animals/deer_doe_1/SK_Doe_1.fbx": {
+			"shares": {
+				"Armature|alerted": 0.9999989615546002,
+				"Armature|grazing": 0.7250112764044214,
+				"Armature|idle": 0.9312292500992643,
+				"Armature|run": 0.9776015486484596,
+				"Armature|sleeping": 0.30499148808558213,
+				"Armature|trot": 0.8617204622179814,
+				"Armature|walk": 0.8892468311282317
+			},
+			"skins": {
+				"_002_red_deer_doe": false,
+				"_003_red_deer_doe": false
+			}
+		},
+		"deer|res://assets/animals/deer_female/SK_FemaleDeer.fbx": {
+			"shares": {
+				"SK-Deer_Female|Death_Stand_R01": 2.9833005084845623,
+				"SK-Deer_Female|Hit_Stand_L01": 2.9832999072968556,
+				"SK-Deer_Female|Idle": 2.983287582948874,
+				"SK-Deer_Female|Idle_Breathing_01": 2.983295999576764,
+				"SK-Deer_Female|Idle_Eating_01": 2.982206346858854,
+				"SK-Deer_Female|Lying_Breathing_01": 0.8686159877453898,
+				"SK-Deer_Female|Run": 2.665783521925917,
+				"SK-Deer_Female|Trot": 2.8978191314761443,
+				"SK-Deer_Female|Walk": 2.817305368485981
+			},
+			"skins": {
+				"SK-Deer_Female_001": false
+			}
+		},
+		"deer|res://assets/animals/deer_red_stag/SK_RedDeerMale.fbx": {
+			"shares": {
+				"SK-Deer|Death_Stand_R01": 2.9833011241672693,
+				"SK-Deer|Hit_Stand_L01": 2.9833011241672693,
+				"SK-Deer|Idle": 2.9833013959268,
+				"SK-Deer|Idle_2": 2.9832864491526028,
+				"SK-Deer|Idle_3": 2.9832973195338375,
+				"SK-Deer|Idle_Eating": 2.9822072920555516,
+				"SK-Deer|Lying_Breathing_01": 0.8686160204281639,
+				"SK-Deer|Run": 2.6657838105374076,
+				"SK-Deer|Trot": 2.8978216095705553,
+				"SK-Deer|Walk": 2.817306054564558
+			},
+			"skins": {
+				"SK-Deer_001": false
+			}
+		},
+		"dog|res://assets/animals/bloodhound/SK_Bloodhund.fbx": {
+			"shares": {
+				"BLODHUND|Idle": 1.0029888391718673,
+				"BLODHUND|idle shake": 1.000526809084504,
+				"BLODHUND|run fwd": 0.857193043288716,
+				"BLODHUND|trot fwd": 0.8950547433471081,
+				"BLODHUND|walk fwd": 0.8558796567528043
+			},
+			"skins": {
+				"boty": false
+			}
+		},
+		"dog|res://assets/animals/dog/SK_Labrador.fbx": {
+			"shares": {
+				"Labrador|Idle": 1.2463182376144617,
+				"Labrador|idle_bark_04_warning": 0.7978294293517703,
+				"Labrador|idle_lay_one_off_01": 0.7757450632747718,
+				"Labrador|idle_one_off_dig_01": 1.2463046223101746,
+				"Labrador|idle_shake_01": 1.2462755934538645,
+				"Labrador|idle_sniff_01": 0.9639262941068425,
+				"Labrador|run_fwd_01": 1.0874895476850344,
+				"Labrador|trot_fwd_01": 1.1292259356989425,
+				"Labrador|walk_fwd_01": 1.0998697983008272
+			},
+			"skins": {
+				"Labrador_Retriever_Whiskers_090": false
+			}
+		},
+		"donkey|res://assets/animals/donkey_2/SK_Donkey.fbx": {
+			"shares": {
+				"Armature|call": 0.9999997892959831,
+				"Armature|front leg kick": 0.9999941002875267,
+				"Armature|grazing": 1.000034976866806,
+				"Armature|idle": 1.0016300062747656,
+				"Armature|rear leg kick": 0.9999994732399577,
+				"Armature|run": 1.0344149191929024,
+				"Armature|sleep": 0.2807968151666437,
+				"Armature|trot": 1.0132073491875464,
+				"Armature|walk": 1.0056571921498425
+			},
+			"skins": {
+				"_000_SK_Donkey": false,
+				"_001_SK_Donkey": false
+			}
+		},
+		"duck|res://assets/animals/duck/SK_Duck.fbx": {
+			"shares": {
+				"Goose|FlyFlapping": 1.0000004322043887,
+				"Goose|Idle_Breathing": 1.5792573012133027,
+				"Goose|StandGrazingA": 1.0592483681660227,
+				"Goose|SwimMoveFast": 1.2631489386819903,
+				"Goose|SwimMoveMedium": 1.280730272293087,
+				"Goose|SwimSteady_1": 1.2871736988070108
+			},
+			"skins": {
+				"Goose_001": false
+			}
+		},
+		"elephant|res://assets/animals/elephant/SK_AfricanElephant.fbx": {
+			"shares": {
+				"AfricanElephant_M|Attack_Head_01-IP": 0.9999998838126372,
+				"AfricanElephant_M|Attack_LegsFront_01-IP": 1.000465330388061,
+				"AfricanElephant_M|Death_01-IP": 1.0003408937224898,
+				"AfricanElephant_M|Idle": 1.000301738581222,
+				"AfricanElephant_M|Idle_2": 1.0003424041582063,
+				"AfricanElephant_M|Idle_3": 1.0003442631560113,
+				"AfricanElephant_M|Lying_00": 0.6095189053105525,
+				"AfricanElephant_M|Run-IP": 0.9140493526737268,
+				"AfricanElephant_M|Sprint-IP": 0.9607351778619387,
+				"AfricanElephant_M|Stand_00-IP": 1.0003442631560113,
+				"AfricanElephant_M|Walk-IP": 1.0244974083246852
+			},
+			"skins": {
+				"AfricanElephant_M_001": false
+			}
+		},
+		"elk|res://assets/animals/elk/SK_Elk.fbx": {
+			"shares": {
+				"RigRoot|Death_Idle_R01": 1.0004186248032045,
+				"RigRoot|Food_Eating_01_Wolf": 0.2524959184695267,
+				"RigRoot|Hit_Idle_L01": 1.0004386683984332,
+				"RigRoot|Idle": 0.9999992637046651,
+				"RigRoot|Idle_Breathing_01": 1.0004179703184624,
+				"RigRoot|Lying_Breathing_01": 0.31650244008274,
+				"RigRoot|Run": 0.8911662230896327,
+				"RigRoot|Trot": 0.9718813720225444,
+				"RigRoot|Walk_2": 0.9463524583592264
+			},
+			"skins": {
+				"sm_2_0_1": false
+			}
+		},
+		"fox|res://assets/animals/fox_1/SK_Fox 1.fbx": {
+			"shares": {
+				"SK-Fox|Attack_Run_01_AttackF": 0.999999753862346,
+				"SK-Fox|Attack_StandAngry_01_Low": 0.7153750931707938,
+				"SK-Fox|Attack_StandAngry_02_High": 0.7153747854987262,
+				"SK-Fox|Death_Stand_L01": 1.2189482427279092,
+				"SK-Fox|Hit_Stand_R01": 1.2190156844451279,
+				"SK-Fox|Idle": 1.2150377307486664,
+				"SK-Fox|Idle_2": 1.215018778149302,
+				"SK-Fox|Idle_3": 1.2151557537537991,
+				"SK-Fox|Idle_4": 1.215006471266598,
+				"SK-Fox|Lying_Breathing_01": 0.3727967064812783,
+				"SK-Fox|Run": 0.9124140079646453,
+				"SK-Fox|Trot": 0.7981351872913715,
+				"SK-Fox|Walk": 1.0798679151506894
+			},
+			"skins": {
+				"SK-Fox_001": false
+			}
+		},
+		"goat|res://assets/animals/goat/SK_Goat.fbx": {
+			"shares": {
+				"Armature|idle": 0.9999998587305841,
+				"Armature|idle2": 0.9893980128761422,
+				"Armature|rear kick": 1.0007389096798227,
+				"Armature|run": 0.9482994905966132,
+				"Armature|sleep": 0.3373059117153738,
+				"Armature|trot": 1.0105533198100831,
+				"Armature|walk": 0.9522129359556516
+			},
+			"skins": {
+				"SK_Goat_2": false
+			}
+		},
+		"goblin|res://assets/creatures/goblin_grikka/Goblin_Grikka_Ragtooth.glb": {
+			"shares": {
+				"Collect_Object": 0.9940123927462174,
+				"Idle_9": 0.9979000076469583,
+				"Running": 0.9742166379375595,
+				"Squat_Stance": 0.9991431252222519,
+				"Walking": 1.0120535666179244
+			},
+			"skins": {
+				"char1": false
+			}
+		},
+		"goblin|res://assets/creatures/goblin_rukz/Goblin_Rukz_The_Scavenger.glb": {
+			"shares": {
+				"Alert": 0.9876851685375581,
+				"Collect_Object": 1.0021842109073504,
+				"Idle_02": 0.988356119638391,
+				"Running": 0.9771076272831861,
+				"Sleep_Normally": 0.21257234386306623,
+				"Stand_and_Drink": 1.0128617392671482,
+				"Walking": 1.0188992730812023
+			},
+			"skins": {
+				"char1": false
+			}
+		},
+		"goblin|res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb": {
+			"shares": {
+				"Alert": 0.9916895838529897,
+				"Collect_Object": 1.0037419738785176,
+				"Combat_Stance": 0.883879547238796,
+				"Idle_02": 0.9897065080724142,
+				"Running": 0.9690321696469096,
+				"Sleep_Normally": 0.23103509113046977,
+				"Stand_and_Drink": 1.0160503748176128,
+				"Walking": 1.0165628450001127
+			},
+			"skins": {
+				"char1": false
+			}
+		},
+		"goblin|res://assets/creatures/goblin_vrixa/Goblin_Vrixa_Thornfang.glb": {
+			"shares": {
+				"Collect_Object": 0.991243682321661,
+				"Idle_3": 0.9962118063837266,
+				"Running": 0.9671790346279056,
+				"Squat_Stance": 0.9975556116978715,
+				"Walking": 1.0095042714596612
+			},
+			"skins": {
+				"char1": false
+			}
+		},
+		"goose|res://assets/animals/goose/SK_Goose.fbx": {
+			"shares": {
+				"Goose|FlyFlapping": 0.9999999216074363,
+				"Goose|FlyGliding": 0.7332849808000933,
+				"Goose|Idle": 1.56510282909355,
+				"Goose|Idle_Breathing": 1.5651018883827865,
+				"Goose|RunFast": 1.1858348243598933,
+				"Goose|StandGrazingA": 0.9924221828377983,
+				"Goose|StandGrazingB": 0.9801970193265891,
+				"Goose|SwimMoveMedium": 1.3900748115913126,
+				"Goose|WalkMedium": 1.355312569965363
+			},
+			"skins": {
+				"Goose_001": false
+			}
+		},
+		"guineafowl|res://assets/animals/guineafowl/SK_Guineafowl.fbx": {
+			"shares": {
+				"Guineafowl|Idle": 1.4018416017372004,
+				"Guineafowl|Idle_Breathing": 1.4018395429105333,
+				"Guineafowl|RunFast": 0.8137909194139681,
+				"Guineafowl|StandGrazingA_1": 0.6439495576236574,
+				"Guineafowl|StandGrazingB_1": 0.6450739577330372,
+				"Guineafowl|WalkMedium": 0.8241721785511812
+			},
+			"skins": {
+				"Guineafowl_001": false
+			}
+		},
+		"honey_badger|res://assets/animals/honey_badger/SK_HoneyBadger.fbx": {
+			"shares": {
+				"HoneyBadger|GrazingOnSpotA_1": 1.0000237947469268,
+				"HoneyBadger|GrazingOnSpotA_2": 1.000000206910843,
+				"HoneyBadger|GrazingOnSpotB_1": 1.027665634974719,
+				"HoneyBadger|Idle": 1.4824381835752312,
+				"HoneyBadger|RunFast_F": 1.1571534406324686,
+				"HoneyBadger|TrotFast_F": 1.052080390242126,
+				"HoneyBadger|WalkMedium_F": 1.181476430941075
+			},
+			"skins": {
+				"Badger_001": false
+			}
+		},
+		"horse|res://assets/animals/horse/SK_Horse.fbx": {
+			"shares": {
+				"Horse|G0_Walk": 0.9999993494799458,
+				"Horse|G1_Trot": 0.9945884862991938,
+				"Horse|G3_Gallop": 1.0089224517482849,
+				"Horse|Idle": 1.1437359025189193,
+				"Horse|Idle_02": 1.143750051330098,
+				"Horse|Idle_03": 1.1437415132543867,
+				"Horse|Idle_Fidget_01": 1.1437211031876866,
+				"Horse|Idle_Fidget_02": 1.1436851619546924,
+				"Horse|Idle_Fidget_03": 1.1437618420060802,
+				"Horse|Idle_Fidget_04": 1.1436736152237306,
+				"Horse|Idle_Fidget_05": 1.143701506271054
+			},
+			"skins": {
+				"Horse_001": false
+			}
+		},
+		"hyena|res://assets/animals/hyena/SK_Hyena.fbx": {
+			"shares": {
+				"Hyena|GrazingOnSpotA_1": 0.999998596315622,
+				"Hyena|GrazingOnSpotA_2": 1.0000042748569693,
+				"Hyena|GrazingOnSpotB_1": 1.0117923524595325,
+				"Hyena|HitInRunHead_F": 0.8984032388358123,
+				"Hyena|Idle_Breathing": 1.20894716078994,
+				"Hyena|Idle_SecondaryMoveCalm_1": 1.2089516270584153,
+				"Hyena|Laughing_A": 1.2089285300700139,
+				"Hyena|RunFast_F": 0.8569805766450271,
+				"Hyena|Sitting_Breathing": 0.6649157192807342,
+				"Hyena|TrotFast_F": 0.9554867438280477,
+				"Hyena|WalkMedium_F": 0.9926740436235755
+			},
+			"skins": {
+				"Hyena_001": false
+			}
+		},
+		"kangaroo|res://assets/animals/kangaroo/SK_Kangaroo.fbx": {
+			"shares": {
+				"Kangaroo|aggressive kick fwd": 1.0000001483493428,
+				"Kangaroo|aggressive_attack_stomping_01": 0.999875534901371,
+				"Kangaroo|agressive_idle_01": 0.9997577455231692,
+				"Kangaroo|hit_chest_front_01": 0.7207014312967119,
+				"Kangaroo|idle_02": 0.721005324925486,
+				"Kangaroo|idle_alerted_look_01": 0.7998692448892354,
+				"Kangaroo|idle_drink_01": 0.34324685234218766,
+				"Kangaroo|idle_eat": 0.34175186183988343,
+				"Kangaroo|idle_eat_look_around_01": 0.3403908678814846,
+				"Kangaroo|idle_eat_search_01": 0.3424171715551113,
+				"Kangaroo|rest_idle_01": 0.25654025893339344,
+				"Kangaroo|sprint_fwd_01": 0.6077749816399145,
+				"Kangaroo|trot_fwd_01": 0.533454260300136,
+				"Kangaroo|walk_fwd_01": 0.4331278991633913
+			},
+			"skins": {
+				"Eastern_Grey_Kangaroo_Male": false
+			}
+		},
+		"leopard|res://assets/animals/leopard/SK_Leopard.fbx": {
+			"shares": {
+				"Leopard_M|Attack_Head_01-IP": 0.999999724468341,
+				"Leopard_M|Attack_Head_02-IP": 1.0000947140077816,
+				"Leopard_M|Attack_Legs_02-IP": 0.999975477682349,
+				"Leopard_M|Death_Stand_Left-IP1": 1.0001970740191004,
+				"Leopard_M|Eating_01-IP": 1.000077768810753,
+				"Leopard_M|Idle": 1.0000843126876542,
+				"Leopard_M|Idle_2": 1.0000838993901657,
+				"Leopard_M|Idle_3": 1.0000774243961792,
+				"Leopard_M|Lying_00": 0.5993948773705022,
+				"Leopard_M|Run-IP": 0.9730754595799189,
+				"Leopard_M|Sprint-IP": 1.0940023783892805,
+				"Leopard_M|Trot-IP": 1.0100578699143399,
+				"Leopard_M|Walk-IP": 0.9708699664154461
+			},
+			"skins": {
+				"Leopard_M_001": false
+			}
+		},
+		"lion|res://assets/animals/lion/SK_Lion.fbx": {
+			"shares": {
+				"lion|Idle": 1.5753940025151267,
+				"lion|aggressive_roar_01": 0.9999985673069963,
+				"lion|attack_close_lft": 1.971352689379672,
+				"lion|attack_close_rgt": 1.9713457305850826,
+				"lion|attack_fwd_01": 1.2849793531882296,
+				"lion|hit_chest_lft_01": 1.5753905913413084,
+				"lion|idle_drink_01": 0.8334677222111966,
+				"lion|idle_rest_grooming_01": 1.0362591403255257,
+				"lion|idle_shake_01": 1.575397959476756,
+				"lion|idle_smell_01": 1.5754006884158107,
+				"lion|idle_stretching_01": 1.5753963221133231,
+				"lion|run_fwd_01": 1.700807035968986,
+				"lion|sprint_fwd_01": 1.2849824914681427,
+				"lion|trot_fwd_01": 1.5764634737306527,
+				"lion|walk_fwd_01": 1.4594843628722112
+			},
+			"skins": {
+				"lion_male": false
+			}
+		},
+		"lion|res://assets/animals/lioness_1/SK_Lioness 1.fbx": {
+			"shares": {
+				"lioness|Idle": 1.5753928629827787,
+				"lioness|aggressive_roar_01": 0.9999982425656707,
+				"lioness|attack_close_lft": 1.9713498471032134,
+				"lioness|attack_close_rgt": 1.9713441927492845,
+				"lioness|attack_fwd_01": 1.2849771457127008,
+				"lioness|hit_chest_lft_01": 1.5753905706771318,
+				"lioness|idle_drink_01": 0.8334679680849926,
+				"lioness|idle_rest_grooming_01": 1.0362579332877928,
+				"lioness|idle_shake_01": 1.5753968363125666,
+				"lioness|idle_smell_01": 1.575399587079343,
+				"lioness|idle_stretching_01": 1.5753965306718136,
+				"lioness|run_fwd_01": 1.700805974665438,
+				"lioness|sprint_fwd_01": 1.2849803549406063,
+				"lioness|trot_fwd_01": 1.5764626056179827,
+				"lioness|walk_fwd_01": 1.4594838033324011
+			},
+			"skins": {
+				"lion_female": false
+			}
+		},
+		"lynx|res://assets/animals/lynx/SK_Lynx.fbx": {
+			"shares": {
+				"lynx male|Idle": 1.0571437084977224,
+				"lynx male|drinking_set_01": 1.2203311081908401,
+				"lynx male|hit_chest_lft_01": 1.0504875471253017,
+				"lynx male|idle_call_02": 1.0568363180622484,
+				"lynx male|idle_eat": 0.9266148389790152,
+				"lynx male|idle_shake_01": 1.0569405161099041,
+				"lynx male|idle_stretching_01": 1.05685762848341,
+				"lynx male|run_fwd_01": 1.0976924840560571,
+				"lynx male|trot_fwd_01": 1.089661552723128,
+				"lynx male|walk_fwd_01": 1.0313619397240932
+			},
+			"skins": {
+				"eurasian_lynx_male_001": false
+			}
+		},
+		"mammoth|res://assets/animals/mammoth/SK_Mammoth.fbx": {
+			"shares": {
+				"Mammoth|A - Mammoth-Idle": 0.9999998546137173,
+				"Mammoth|Mammoth-Attack-Foot-Stomp": 0.9999994911480108,
+				"Mammoth|Mammoth-Attack-Tusk-Jab": 0.9999994911480108,
+				"Mammoth|Mammoth-Attack-Tusk-Sweep": 0.9999994911480108,
+				"Mammoth|Mammoth-Charge-Fwd": 0.931342273038928,
+				"Mammoth|Mammoth-Graze": 0.9999994911480108,
+				"Mammoth|Mammoth-Hurt-Big-Rit": 0.9999994911480108,
+				"Mammoth|Mammoth-Move-Fwd": 1.0080751902961054,
+				"Mammoth|Mammoth_new_Call": 0.9999986915234563
+			},
+			"skins": {
+				"Mammoth_001": false
+			}
+		},
+		"mink|res://assets/animals/mink/SK_AmericanMink.fbx": {
+			"shares": {
+				"american mink rig|hit_chest_front_01": 0.987207372105217,
+				"american mink rig|idle": 0.9968038302743212,
+				"american mink rig|idle_alerted_look_01": 1.8789876943603552,
+				"american mink rig|idle_alerted_shared_bark_01": 1.8731165388228772,
+				"american mink rig|idle_eat_01": 0.5804136160534844,
+				"american mink rig|idle_shake_01": 1.0092146815783758,
+				"american mink rig|rest_idle_01": 0.4123911213058184,
+				"american mink rig|starttrot_fwd_01_loop_walk": 0.7023530666311512,
+				"gait_run": 1.1695145055606948
+			},
+			"skins": {
+				"American_Mink": false
+			}
+		},
+		"moose|res://assets/animals/moose/SK_Moose.fbx": {
+			"shares": {
+				"Moose|GrazingOnSpotA_1": 0.8682266009852216,
+				"Moose|GrazingOnSpotA_2": 0.8862149289376294,
+				"Moose|GrazingOnSpotA_3": 0.8681954517721636,
+				"Moose|GrazingOnSpotB_1": 0.8959314805858708,
+				"Moose|HitLegFL2RunFast_F": 1.0518387206538573,
+				"Moose|Idle": 1.0608943397610693,
+				"Moose|Idle_Breathing": 1.051817427452376,
+				"Moose|RunFast_F": 0.8938986123157348,
+				"Moose|Sitting_Breathing": 0.6694849764868241,
+				"Moose|TrotSlow_F": 0.9550346615371836,
+				"Moose|WalkMedium_F": 0.9098260324356597,
+				"Moose|WalkSlow_F": 0.966636293987854
+			},
+			"skins": {
+				"Moose_001": false
+			}
+		},
+		"mountain_goat|res://assets/animals/mountain_goat/SK_MountainGoat.fbx": {
+			"shares": {
+				"MountainGoat|GrazingOnSpotA_1": 0.8926680348257148,
+				"MountainGoat|GrazingOnSpotA_2": 0.8926649342691912,
+				"MountainGoat|GrazingOnSpotB_1": 0.9015194640074534,
+				"MountainGoat|HitInRunHead_F": 0.9261592568533349,
+				"MountainGoat|Idle_Breathing": 1.1514887717963351,
+				"MountainGoat|Idle_SecondaryMoveCalm_1": 1.1341965062797155,
+				"MountainGoat|RunFast_F": 0.9204693398169709,
+				"MountainGoat|Sitting_Breathing": 0.7286943774178156,
+				"MountainGoat|TrotFast_F": 0.962461957985612,
+				"MountainGoat|WalkMedium_F": 0.9943622646702337
+			},
+			"skins": {
+				"MountainGoat_001": false
+			}
+		},
+		"pheasant|res://assets/animals/pheasant/SK_Pheasant.fbx": {
+			"shares": {
+				"Pheasant|Idle": 1.7234792934980945,
+				"Pheasant|Idle_Breathing": 1.7234802751021796,
+				"Pheasant|RunFast_NoRootMotion": 1.2118593915407105,
+				"Pheasant|StandGrazingA": 1.1356484138477725,
+				"Pheasant|StandGrazingB": 1.1287483915326395,
+				"Pheasant|WalkMedium_NoRootMotion": 1.430042930999995
+			},
+			"skins": {
+				"Pheasant_001": false
+			}
+		},
+		"pronghorn|res://assets/animals/pronghorn/SK_Pronghorn.fbx": {
+			"shares": {
+				"RigRoot|Death_Idle_R01": 1.0004178770114562,
+				"RigRoot|Food_Eating_01_Wolf": 0.25249580294945884,
+				"RigRoot|Hit_Idle_L01": 1.0004376469543184,
+				"RigRoot|Idle": 0.9999991875365947,
+				"RigRoot|Idle_Breathing_01": 1.0004172676639023,
+				"RigRoot|Lying_Breathing_01": 0.31650246555561395,
+				"RigRoot|Run": 0.8911650427328669,
+				"RigRoot|Trot": 0.9718807092480543,
+				"RigRoot|Walk_2": 0.9463512810110511
+			},
+			"skins": {
+				"sm_1_0_0": false
+			}
+		},
+		"puma|res://assets/animals/puma/SK_Puma.fbx": {
+			"shares": {
+				"Puma|aggressive_roar": 1.0000004868032506,
+				"Puma|attack_close_lft": 0.9126987495971703,
+				"Puma|attack_close_rgt": 0.9126990416791207,
+				"Puma|attack_fwd": 1.5092582189426829,
+				"Puma|hit_chest_lft": 1.6357654348272677,
+				"Puma|idle pose": 1.636707885920579,
+				"Puma|idle_alerted_look": 1.8436604099467535,
+				"Puma|idle_drink": 1.3092516957791238,
+				"Puma|idle_eat": 1.3092484828776694,
+				"Puma|idle_rest_grooming": 1.1085326873778731,
+				"Puma|run_fwd": 1.4881543244193167,
+				"Puma|sprint_fwd": 1.5092565638116304,
+				"Puma|trot_fwd": 1.512160929365822,
+				"Puma|walk_fwd": 1.383570877092889
+			},
+			"skins": {
+				"Puma_Male_001": false
+			}
+		},
+		"rabbit|res://assets/animals/rabbit/SK_Rabbit.fbx": {
+			"shares": {
+				"Rabbit|GrazingOnSpot_1": 0.7405907210036035,
+				"Rabbit|HoppingSlow_F": 1.1952775112011866,
+				"Rabbit|Idle": 1.6307590184987855,
+				"Rabbit|RunFast_F": 1.2186100597139515
+			},
+			"skins": {
+				"Rabbit_001": false
+			}
+		},
+		"raccoon|res://assets/animals/raccoon/SK_Racoon.fbx": {
+			"shares": {
+				"racoon|hit chest front": 0.9624104928680842,
+				"racoon|idle 3": 0.9624221104630876,
+				"racoon|idle alerted shared bark": 1.0350441160204897,
+				"racoon|idle eat": 0.9624221104630876,
+				"racoon|idle eat 2": 0.9624221104630876,
+				"racoon|idle stretch": 0.9624221104630876,
+				"racoon|rest idle": 0.6274340882634205,
+				"racoon|sprint fwd": 0.9999985627717521,
+				"racoon|trot fwd": 0.9923789175623243
+			},
+			"skins": {
+				"Raccoon_Body": false
+			}
+		},
+		"rat|res://assets/animals/rat/SK_Rat.fbx": {
+			"shares": {
+				"SKM_Rat|Damage": 0.9999985524287085,
+				"SKM_Rat|Death": 0.9554892398597441,
+				"SKM_Rat|Idle": 0.9558658369594359,
+				"SKM_Rat|Lying01": 0.5552443869851761,
+				"SKM_Rat|NeutralStand00": 0.9559542149961834,
+				"SKM_Rat|NeutralStand01": 0.9558361998419405,
+				"SKM_Rat|Run": 1.2519324886272323,
+				"SKM_Rat|Walk": 0.8107086448119464
+			},
+			"skins": {
+				"SKM_Rat_001": false
+			}
+		},
+		"rhino|res://assets/animals/rhino/SK_Rhinoceros.fbx": {
+			"shares": {
+				"WhiteRhinoceros_M|Attack_HornL-IP": 0.9999697508020156,
+				"WhiteRhinoceros_M|Attack_HornR-IP": 0.9999697508020156,
+				"WhiteRhinoceros_M|Death_01-IP": 0.9999237031367669,
+				"WhiteRhinoceros_M|Hit_HeadR_Heavy-IP": 0.9999517809814308,
+				"WhiteRhinoceros_M|Idle": 0.9999489357598381,
+				"WhiteRhinoceros_M|Idle_2": 0.9999489357598381,
+				"WhiteRhinoceros_M|Idle_3": 0.9999491603825954,
+				"WhiteRhinoceros_M|Lying_01": 0.582613592102743,
+				"WhiteRhinoceros_M|Run-IP": 1.0258296703601137,
+				"WhiteRhinoceros_M|Trot-IP": 1.0019888847674772,
+				"WhiteRhinoceros_M|Walk-IP": 0.9736271918127102
+			},
+			"skins": {
+				"WhiteRhinoceros_M_001": false
+			}
+		},
+		"tiger|res://assets/animals/tiger/SK_Tiger.fbx": {
+			"shares": {
+				"Tiger_M|Attack_Bite_01-IP": 0.9999999160812988,
+				"Tiger_M|Attack_Paw_01-IP": 0.9999984055446764,
+				"Tiger_M|Attack_Paw_02-IP": 0.999997566357664,
+				"Tiger_M|Death_L-IP": 0.9999999160812988,
+				"Tiger_M|Eating_01-IP": 0.9999995804064938,
+				"Tiger_M|Idle": 0.9999985733820789,
+				"Tiger_M|Idle_2": 0.9999989929755851,
+				"Tiger_M|Idle_3": 1.0000242525046585,
+				"Tiger_M|Lying_00": 0.5667968105858406,
+				"Tiger_M|Run-IP": 1.1052158409975583,
+				"Tiger_M|Sprint-IP": 0.866273619442956,
+				"Tiger_M|Trot-IP": 0.9041949699969664,
+				"Tiger_M|Walk-IP": 0.8946853866910814
+			},
+			"skins": {
+				"Tiger_M_001": false
+			}
+		},
+		"warthog|res://assets/animals/warthog/SK_Warthog.fbx": {
+			"shares": {
+				"Warthog|GrazingOnSpotA_1": 1.1430846496482565,
+				"Warthog|GrazingOnSpotA_2": 1.1430807536329062,
+				"Warthog|GrazingOnSpotB_1": 1.1220316079624302,
+				"Warthog|HitLegFL2RunFast_F": 1.3174896742777378,
+				"Warthog|Idle": 1.3175334531870688,
+				"Warthog|Idle_Breathing": 1.3175367340421005,
+				"Warthog|RunFast_F": 1.3175431932254444,
+				"Warthog|Sitting_Breathing": 0.40141035755680876,
+				"Warthog|TrotFast_F": 1.3175336582405082,
+				"Warthog|WalkMedium_F": 1.219558919798986
+			},
+			"skins": {
+				"Warthog_001": false
+			}
+		},
+		"wildebeest|res://assets/animals/wildebeest/SK_Wildebeest.fbx": {
+			"shares": {
+				"Gnou|GrazingOnSpotA": 0.9999997685845505,
+				"Gnou|GrazingOnSpotA_1": 1.0000510656758588,
+				"Gnou|GrazingOnSpotA_3": 0.9999996914460674,
+				"Gnou|GrazingOnSpotB_1": 0.9869792554562749,
+				"Gnou|HitInRunHead_F": 1.206975895303948,
+				"Gnou|Idle_Breathing": 1.1114591685181188,
+				"Gnou|Idle_SecondaryMovesCalm_1": 1.111518102319261,
+				"Gnou|RunFast_F": 0.9868329237537006,
+				"Gnou|Sitting_Breathing": 0.5575176157297093,
+				"Gnou|TrotFast_F": 0.9414828238053679,
+				"Gnou|WalkMedium_F": 1.0629022675474236
+			},
+			"skins": {
+				"Gnou_001": false
+			}
+		},
+		"wolf|res://assets/animals/wolf_1/SK_Wolf 1.fbx": {
+			"shares": {
+				"SK-Wolf|Attack_BiteForward": 0.9999997234106345,
+				"SK-Wolf|Death_Stand_L01": 1.0001106357461884,
+				"SK-Wolf|Hit_Stand_L01": 1.0001289828407645,
+				"SK-Wolf|Idle": 1.0000116167533497,
+				"SK-Wolf|Idle_2": 1.0000084820738744,
+				"SK-Wolf|Idle_3": 1.0000138294682734,
+				"SK-Wolf|Idle_Eating": 1.0000555022660045,
+				"SK-Wolf|Lying_Breathing_01": 0.3187014332123347,
+				"SK-Wolf|Run": 0.7620690691587737,
+				"SK-Wolf|Trot": 0.7866516865866328,
+				"SK-Wolf|Walk": 0.9058910215772896
+			},
+			"skins": {
+				"SK-Wolf_001": false
+			}
+		}
+	}
+}

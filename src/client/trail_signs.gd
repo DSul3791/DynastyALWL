@@ -51,8 +51,9 @@ var _retry_msec: int = 0           # when unplaced > 0: rebuild again at this ti
 var _retries: int = 0              # such tries since the player last moved (at most ground_retries, so a spot with no ground costs nothing for long)
 var _ground_cache: Dictionary = {}  # Vector2i (spot in eighths of a metre) -> ground height, cleared at each rebuild (_heap_ground)
 # Spotting (Dave 23 Nov 2026: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"):
-# a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene plays the
-# slight sound there and tells the server, which trains Tracking once per sign). One a look, so a cluster comes one by one.
+# a shown sign the player first comes within spot_m of glows softly for a moment (glow_s) and on_spot is called (the scene tells the
+# server, which trains Tracking once per sign, and plays the sound there only with hunting gear in hand, sounds_with: Dave 25 Nov 2026,
+# R-HUNT-SIGN-SOUND). One a look, so a cluster comes one by one.
 var on_spot: Callable              # (kind: String, spot: Vector3) when a sign is spotted
 # A place of interest found (Dave wants what a player finds on the map): a warren or a deer's bedding place, the first time one of its
 # signs is spotted this session. The map listens; its own record keeps it. [kind "warren" or "bed", Vector3 on the ground].
@@ -62,9 +63,25 @@ var found_places: Array = []       # the same, in the order found this session
 var spotted: int = 0               # signs spotted this session (a lane reads it from the log)
 var _spotted: Dictionary = {}      # Vector2i (the spot in half metres) -> true: the signs this session has spotted
 var _glow_texture: Texture2D = null
+var _warm: Node3D = null           # the join-time drawings of each sign look (_warm_looks), freed WARM_S after the world loads
+var _warm_until_msec: int = 0
+const WARM_S := 3.0
+const WARM_DEPTH_M := 40.0         # the warm drawings lie this far under the player, behind the loading screen and under the ground
 var last_spot: Vector3 = Vector3.INF   # the last sign spotted, on the ground (the look rig aims its views there)
 var glow_keep: bool = false        # the look rig (--skill tracking:N): the glow stays lit for the pictures instead of fading
 var _spot_msec: int = 0            # the next spot not before this: one sign every spot_gap_s, the server's practice cooldown (skills.json cooldown_s 2 s)
+
+
+# Whether the spot sound plays with these items in hand (Dave 25 Nov 2026, QA #20: "it shouldn't always sound. maybe only when we have a
+# hunting weapon in our hand or a snare or trap"): true when either hand holds one of cfg sound_with. The glow and the XP do not ask.
+static func sounds_with(config: Dictionary, in_hands: Array) -> bool:
+	var gear: Array = config.get("sound_with", [])
+
+	for id in in_hands:
+		if str(id) != "" and gear.has(str(id)):
+			return true
+
+	return false
 
 
 func _init() -> void:
@@ -91,6 +108,14 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 	if loading and not _told_loading:
 		_told_loading = true
 		FreezeWatchScript.printer.line("trail signs: waiting for the world to load before any sign is worked out")
+		_warm_looks(player)
+
+	if _warm != null and not loading:
+		if _warm_until_msec == 0:
+			_warm_until_msec = Time.get_ticks_msec() + int(WARM_S * 1000.0)
+		elif Time.get_ticks_msec() >= _warm_until_msec:
+			_warm.queue_free()
+			_warm = null
 
 	if loading or Time.get_ticks_msec() < _next_msec:
 		return
@@ -804,8 +829,39 @@ func _spot(player: Vector3, level: int) -> void:
 		return
 
 
-# A soft pale patch on the ground round a spotted sign, swelling and fading over glow_s: the eye catching it, not a marker.
-func _glow(at: Vector3, size: float) -> void:
+# Lane A r4 Low route (26 Nov 2026): the first spotted scrape and the first latrine each came with a 137 to 255 ms frame and "pipelines built:
+# surface 1, specialization 1", the renderer building the glow's look the first time it was drawn. Every sign look (each layer's mesh, the
+# glow and the halo, drawn one by one and as a MultiMesh) is drawn once while the loading screen is up, under the ground, so that build is
+# done at join. Freed WARM_S after the world loads.
+func _warm_looks(player: Vector3) -> void:
+	if _warm != null:
+		return
+
+	_warm = Node3D.new()
+	_warm.name = "TrailSignsWarm"
+	_warm.position = player - Vector3(0.0, WARM_DEPTH_M, 0.0)   # the signs node sits at the world's origin (terrain_client adds it to the root)
+	add_child(_warm)
+
+	for layer in ["latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "mound", "halo"]:
+		var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		var multi: MultiMesh = MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = _mesh(layer)
+		multi.instance_count = 1
+		multi.set_instance_transform(0, Transform3D.IDENTITY)
+		node.multimesh = multi
+		_warm.add_child(node)
+
+	var glow: MeshInstance3D = MeshInstance3D.new()
+	glow.mesh = _glow_mesh(1.0)
+	glow.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_warm.add_child(glow)
+
+
+# The glow's plane and its look: see-through, faintly lit, invisible until its tween raises the alpha. The light is set before the plane is
+# drawn, so the renderer builds one look for it (set after, it built a second).
+func _glow_mesh(size: float) -> PlaneMesh:
 	var plane: PlaneMesh = PlaneMesh.new()
 	plane.size = Vector2(size, size)
 	var material: StandardMaterial3D = StandardMaterial3D.new()
@@ -814,7 +870,17 @@ func _glow(at: Vector3, size: float) -> void:
 	material.albedo_texture = _glow_tex()
 	var tint: Array = cfg.get("glow_color", [0.95, 0.9, 0.72])
 	material.albedo_color = Color(float(tint[0]), float(tint[1]), float(tint[2]), 0.0)
+	material.emission_enabled = true   # a little light of its own so it shows on pale litter and in shade (Lane A 23 Nov: no glow seen)
+	material.emission = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	material.emission_energy_multiplier = float(cfg.get("glow_emit", 0.5))
 	plane.material = material
+	return plane
+
+
+# A soft pale patch on the ground round a spotted sign, swelling and fading over glow_s: the eye catching it, not a marker.
+func _glow(at: Vector3, size: float) -> void:
+	var plane: PlaneMesh = _glow_mesh(size)
+	var material: StandardMaterial3D = plane.material as StandardMaterial3D
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.name = "TrailSignGlow"
 	node.mesh = plane
@@ -824,9 +890,6 @@ func _glow(at: Vector3, size: float) -> void:
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
 	var peak: float = float(cfg.get("glow_alpha", 0.6))
 	var tween: Tween = node.create_tween()
-	material.emission_enabled = true   # a little light of its own so it shows on pale litter and in shade (Lane A 23 Nov: no glow seen)
-	material.emission = Color(float(tint[0]), float(tint[1]), float(tint[2]))
-	material.emission_energy_multiplier = float(cfg.get("glow_emit", 0.5))
 	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.15)
 
 	if glow_keep:

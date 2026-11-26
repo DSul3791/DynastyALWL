@@ -422,12 +422,33 @@ func may_attack(a: Dictionary, forced: bool = false) -> bool:
 
 
 # A young animal keeps to its mother: walks where she walks (at its own spot beside her), runs when she runs.
-func _step_young(a: Dictionary, dt: float) -> void:
+func _step_young(a: Dictionary, dt: float, near_d: float = INF, near_p: Vector3 = Vector3.INF) -> void:
 	var m: Dictionary = animals[a["mother"]]
 	var def: Dictionary = species_def(a["sp"])
 	a["target"] = m["pos"] + a["off"]
 	var far: float = Vector2(a["pos"].x - a["target"].x, a["pos"].z - a["target"].z).length()
 	var running: bool = int(m["state"]) == FLEE or int(m["state"]) == WARN + 1   # charging
+
+	# A cub a player comes right up to runs (Dave 26 Nov 2026: "if its a baby it should run"), and so does one whose mother is warning or
+	# fighting a player near it: away from the player, until they are young.run_till_m off; then it goes back to her.
+	var close_m: float = float(def.get("young", {}).get("close_run_m", 0.0))
+
+	if close_m > 0.0 and near_p != Vector3.INF:
+		var fighting: bool = int(m["state"]) in [WARN, big_game.WARN_POP, WARN + 1, big_game.STRIKE]
+		var till: float = float(def["young"].get("run_till_m", 20.0))
+
+		if near_d <= close_m or (fighting and near_d <= till):
+			a["cub_run"] = true
+		elif near_d > till:
+			a.erase("cub_run")
+
+		if a.has("cub_run"):
+			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z)
+			away = away.normalized() if away.length() > 0.01 else Vector2.RIGHT
+			a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * 8.0
+			running = true
+	else:
+		a.erase("cub_run")
 
 	# A hider's young (deer, elk, pronghorn: young.hides; ANIMAL_SCENARIOS gap 12) does not run with her: it drops where it is and lies
 	# still (drawn lying) until she is calm again, then goes back to her. A follower's young (moose, horse, wildebeest) runs at her side.
@@ -608,7 +629,7 @@ func _nest_in_cell(kind: String, cx: int, cz: int, cell: float, ncfg: Dictionary
 	return Vector3(x, y, z)
 
 
-# The blood trail within send_radius_m of a point (nearest first, at most max_sent), dropping what has dried.
+# The blood trail within send_radius_m (or big_game_send_m, the wider) of a point (nearest first, at most max_sent), dropping what has dried.
 func blood_near(point: Vector3) -> PackedVector3Array:
 	var life_ms: int = int(float(cfg.get("blood", {}).get("life_s", 240.0)) * 1000.0)
 	var now: int = Time.get_ticks_msec()
@@ -616,7 +637,7 @@ func blood_near(point: Vector3) -> PackedVector3Array:
 	while not blood.is_empty() and now - int(blood[0][1]) > life_ms:
 		blood.pop_front()
 
-	var radius: float = float(cfg.get("send_radius_m", 120.0))
+	var radius: float = maxf(float(cfg.get("send_radius_m", 120.0)), float(cfg.get("big_game_send_m", 0.0)))   # as far as a wounded deer is sent (R-ANIMAL-SEEN-FAR)
 	var found: Array = []
 
 	for drop in blood:
@@ -1280,6 +1301,8 @@ func tick(delta: float) -> void:
 	var active_r: float = float(cfg.get("active_radius_m", 200.0))
 	var near_m: float = float(cfg.get("near_m", 60.0))
 	var mid_m: float = float(cfg.get("mid_m", 120.0))
+	var big_far: float = float(cfg.get("big_game_send_m", 0.0))   # big game in sight out to here ticks at least hz_mid (R-ANIMAL-SEEN-FAR)
+	var big_kinds: Array = cfg.get("big_game", [])
 	var despawn_m: float = float(cfg.get("despawn_m", 300.0))
 	var budget_us: int = int(float(cfg.get("tick_budget_ms", 1.0)) * 1000.0)
 	var started: int = Time.get_ticks_usec()
@@ -1378,6 +1401,8 @@ func tick(delta: float) -> void:
 
 		if watched.has(id):
 			hz = maxf(hz, float(cfg.get("hz_mid", 3.0)))   # watched through the spyglass: smooth enough to follow
+		elif near_d <= big_far and big_kinds.has(a["sp"]):
+			hz = maxf(hz, float(cfg.get("hz_mid", 3.0)))   # big game is sent out to 200 m (R-ANIMAL-SEEN-FAR): no half-speed 2 s jumps in view
 
 		if a["acc"] < 1.0 / hz:
 			continue
@@ -1569,7 +1594,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if a.has("mother"):
 		if animals.has(a["mother"]):
-			_step_young(a, dt)
+			_step_young(a, dt, near_d, near_p)
 			return
 
 		a.erase("mother")   # orphaned: from now on an ordinary (passive) animal
@@ -1612,6 +1637,17 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	# A player's dog (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md): prey flee it from farther than from a walking player, big game stands to it.
 	if def.has("dog") and _dog_react(a, def, seen_d):   # at its den too: a bear stands to a dog there
 		return
+
+	# Right up close (defend.close_fight_m; Dave 26 Nov 2026, a black bear walked up on to 2 m: "that close it should turn rear on its hind
+	# legs growl and fight"): a grown one fights whatever its temperament, and presses home (no bluff). The warning is the turn, the rear-up
+	# (state 10's clip) and the growl (creature_sounds "warn"), then the charge and its blow. Only one surprised, grazing or walking (bedded and
+	# drinking are grazing here) when the player is first that close: one already staring at them (ALERT, the startle stare _stares sets as
+	# they come, then the bolt) or running from them (FLEE; a chase that runs it down is trapped_fights' corner rule) has seen them coming and
+	# is not. Not into a fire's light. A cub, with its mother
+	# or orphaned (its number stays species + YOUNG_NUM), runs instead ("if its a baby it should run"; _step_young, the passive flight below).
+	if def.has("defend") and int(a["state"]) in [GRAZE, HOP] and seen_p != Vector3.INF and int(a.get("num", 0)) < YOUNG_NUM and seen_d <= float(def["defend"].get("close_fight_m", 0.0)) and _fire_guard(seen_p) == Vector3.INF:
+		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8)), true):
+			return
 
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
@@ -1895,8 +1931,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 # comes within its flee distance of stops, lifts its head and stares at them (ALERT, the head turned to them; the client plays its alert look
 # and call), then bolts. The stare is reactions.startle_s [short, long]: long for a player noticed at its flee distance, shrinking toward short
 # as they are nearer, and short for one running at it (coordinator 23 Nov 2026: long enough to read, about 1.5 to 2 s at a distance). One
-# that was already watching them (it stared as they came) bolts at once, as does one hurt, one whose temperament never watches, a bird, a
-# goblin or bandit (give_way player), or one a player comes within startle_close_m of. True while it stares (the caller does nothing more this step).
+# that was already watching them (it stared as they came) bolts at once, as does one hurt, one whose temperament never watches, a flush or
+# perch bird (a wary one, the goose, stares like the rest: server_flight.gd), a goblin or bandit (give_way player), or one a player comes within startle_close_m of. True while it stares (the caller does nothing more this step).
 func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt: float) -> bool:
 	var r: Dictionary = cfg.get("reactions", {})
 	var close: bool = seen_d <= float(r.get("startle_close_m", 3.0))
@@ -1920,7 +1956,7 @@ func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt:
 
 	var startle_s: float = lerpf(float(span[0]), float(span[1]), near_x)
 
-	if startle_s <= 0.0 or close or not int(a["state"]) in [GRAZE, HOP] or a.get("wound", false) or not bool(_temper_row(a).get("alert", true)) or def.has("flight") \
+	if startle_s <= 0.0 or close or not int(a["state"]) in [GRAZE, HOP] or a.get("wound", false) or not bool(_temper_row(a).get("alert", true)) or (def.has("flight") and str(def["flight"].get("kind", "flush")) != "wary") \
 			or str(def.get("defend", {}).get("give_way", "")) == "player":   # goblins and bandits: people, who run or fight at once
 		return false
 
@@ -2803,18 +2839,31 @@ func _pass_ids_near(point: Vector3, radius: float) -> Array:
 # An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
 # the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
 # radius_m and cap above 0 replace send_radius_m and per_player_cap (an admin looking through the spyglass: "spyglass" in animals.json).
-func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
+# Big game is sent further (Dave 26 Nov 2026, R-ANIMAL-SEEN-FAR: "Let's try 200 m."): a kind in animals.json "big_game" is sent out to
+# big_game_send_m, every other kind to send_radius_m (120 m), so a hunter sees a herd across a field. A spyglass radius replaces
+# send_radius_m and, where it is wider, big_game_send_m too. far_too false leaves out the big game past `radius` that is standing still
+# (no plan: not moving, not just stopped): the server sends those every other time (terrain_server), and the client keeps a far body a
+# batch left out (animal_view FAR_KEEP_MS). One on the move, or that has just stopped, is in every batch: at a row each 0.5 s a bolting
+# deer was drawn over 1 m off in a third of the frames (test_animal_draw_replay on Lane B, 26 Nov 2026). The Lane B load test the same
+# day measured +25% traffic a player at 16 bots with every far row in every batch; most far big game is grazing or lying.
+func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1, far_too: bool = true) -> Array:
 	var radius: float = radius_m if radius_m > 0.0 else float(cfg.get("send_radius_m", 120.0))
+	var far: float = maxf(radius, float(cfg.get("big_game_send_m", radius)))   # never less through a spyglass (tier 1 looks to 150 m)
+	var now_ms: int = Time.get_ticks_msec()
+	var big: Array = cfg.get("big_game", [])   # eight kinds: a short list
 	var found: Array = []
 
-	for id in (_pass_ids_near(point, radius) if _in_pass else animals.keys()):
+	for id in (_pass_ids_near(point, far) if _in_pass else animals.keys()):
 		if not animals.has(id):
 			continue   # gone since the pass filed it
 
 		var a: Dictionary = animals[id]
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
-		if d <= radius and a["state"] != HIDDEN:
+		if d <= (far if big.has(a["sp"]) else radius) and a["state"] != HIDDEN:
+			if not far_too and d > radius and row_plan(a, now_ms) == null:
+				continue   # far and standing: in the next batch (terrain_server sends far big game every other time)
+
 			if _in_pass and _pass_rows.has(id):
 				found.append([d, _pass_rows[id]])   # built once this send pass, for the first player near it (the same row for all)
 				continue
@@ -4300,8 +4349,14 @@ func _place_spawn(sp: String, def: Dictionary, p: Vector3, players: Array, room:
 		for q in players:
 			clear = clear and Vector2(q.x - spot.x, q.z - spot.y).length() >= never
 
-		# Out of sight as a rule (spawn_min_m), now and then nearer (near_share), as the random spots do.
-		if clear and Vector2(p.x - spot.x, p.z - spot.y).length() < float(cfg.get("spawn_min_m", 150.0)) and rng.randf() >= float(cfg.get("near_share", 0.0)):   # luck-exempt: where wildlife appears, no outcome for the player
+		# Out of sight as a rule (spawn_min_m), now and then nearer (near_share), as the random spots do. A rabbit group at home in its
+		# warren (kind 0, its clock not out) comes up out of the ground there, so a warren near the player is used like any other (coordinator
+		# 26 Nov 2026, option A of the starting camp study: rabbits were never within 150 m by day; still outside never_within_m).
+		# One made this near starts down its hole (HIDDEN) and comes up when its hide_s is over, as after any dash to its burrow.
+		var in_burrow: bool = int(place.get("kind", -1)) == 0 and spot == route[0] and route.size() > 1
+		var near_spot: bool = Vector2(p.x - spot.x, p.z - spot.y).length() < float(cfg.get("spawn_min_m", 150.0))
+
+		if clear and not in_burrow and near_spot and rng.randf() >= float(cfg.get("near_share", 0.0)):   # luck-exempt: where wildlife appears, no outcome for the player
 			continue
 
 		if not clear:
@@ -4342,6 +4397,12 @@ func _place_spawn(sp: String, def: Dictionary, p: Vector3, players: Array, room:
 				var bz: float = warren.y + rng.randf_range(-2.0, 2.0)   # luck-exempt: as above
 				var by: float = float(ground_height.call(bx, bz)) if ground_height.is_valid() else animals[id]["pos"].y
 				animals[id]["burrow"] = Vector3(bx, animals[id]["pos"].y if is_nan(by) else by, bz)
+
+				if in_burrow and near_spot:   # it comes up out of its hole after a while, not stand there in the open as the player looks
+					var hide: Array = def.get("hide_s", [20.0, 40.0])
+					animals[id]["state"] = HIDDEN
+					animals[id]["pos"] = animals[id]["burrow"]
+					animals[id]["timer"] = rng.randf_range(float(hide[0]), float(hide[1]))   # luck-exempt: how long it stays down
 
 			if hid != 0:
 				animals[id]["herd"] = hid

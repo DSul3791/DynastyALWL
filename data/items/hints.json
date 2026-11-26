@@ -104,7 +104,7 @@
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Make a bed: a Thatch - Bed from your pack (10 thatch, 4 sticks, 2 twine) or a Straw - Bed with the hammer. Place it inside your lean-to.",
+			"text": "Make a bed: a Thatch - Bed from your pack (10 thatch, 4 sticks, 2 twine) or a Straw - Bed from the hammer's build list (hold the hammer, press R and type straw in the search box). Place it inside your lean-to.",
 			"goal": "bed"
 		},
 		{

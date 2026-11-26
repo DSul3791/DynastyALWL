@@ -60,7 +60,7 @@ Key for each entry: **Source** D = Dave's decision (do not change without him), 
 - **BP-C52 Never name a key you did not check in CONTROLS.md** (example: probe table is Ctrl+Shift+G, not F8). Source D. Owner: all.
 
 ### A7. Audio
-- **BP-C60 Sounds ahead of development are on HOLD (present-day systems such as dig, tunnel, building and fire are allowed);** only fix sounds Dave hears wrong. When built: layered stage, own performance budget (ARCHITECTURE_BUDGET s9). No music. Source D. Owner: Kathleen_ArtisticDirector.
+- **BP-C60 Sounds ahead of development are on HOLD (present-day systems such as dig, tunnel, building and fire are allowed);** only fix sounds Dave hears wrong. When built: layered stage, own performance budget (ARCHITECTURE_BUDGET s9). Music only as R-SOUND-MENU-MUSIC says (docs/RULINGS.md). Source D. Owner: Kathleen_ArtisticDirector.
 - **BP-C61 Sound approvals via sound/LISTEN_CHECKLIST.md.** Source T. Owner: Kathleen_ArtisticDirector. (ffmpeg only on a machine that has it; missing on Dave's PC.)
 
 ### A8. Art and performance

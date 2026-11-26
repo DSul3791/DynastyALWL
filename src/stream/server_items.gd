@@ -55,6 +55,8 @@ const FAR_OVERLAP_M := 10.0              # far_fires starts this much inside NEA
 const PICKUP_M := 3.0
 const DROP_REACH_M := 6.0                # a drop lands at most this far from where the server last saw the player
 const SYNC_EVERY_S := 1.0
+const FINE_M := 20.0                     # the full sync's own cells (_sync_world_items): a fifth of NEAR_M
+const SYNC_LOOSE := Vector2i(1 << 30, 1 << 30)   # _sync_seen's cell for ids found by a road's quick sync or a bog row: looked at by each full sync
 const SAVE_EVERY_S := 30.0
 const DROPS_PATH := "res://data/items/drops.json"
 const PICKUP_BATCH_PATH := "res://data/items/pickup_batch.json"   # sticks and leaves come up in batches (Dave 10 Nov 2026)
@@ -245,7 +247,21 @@ var _peer_pos: Dictionary = {}      # peer -> Vector3 last reported
 var _peer_move: Dictionary = {}     # peer -> [velocity reported with it, server ms it came]: a blow is judged from where the striker is now (strike_origin)
 var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, left float}
 var _next_id: int = 1
-var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
+var _known: Dictionary = {}         # peer -> {id: signature} world items the peer was told about
+var _sync_seen: Dictionary = {}     # peer -> what the full sync last found for them, cell by cell (_seen_of): the cells it may skip whole
+# The still records (natural scatter: rocks, boulders, loose stones laid out from the seed) stay filed between syncs, so the full sync files
+# only the others again (step 2 of the sync by change, 26 Nov 2026). Moved by _refile where a dig settles a boulder (and where other
+# records are moved, in case those ever include scatter), and checked
+# STILL_CHECK at a time each sync in case one was moved anywhere else.
+var _still_fine: Dictionary = {}    # FINE_M cell -> {id: true}
+var _still_near: Dictionary = {}    # NEAR_M cell -> {id: true}
+var _still_at: Dictionary = {}      # id -> [FINE_M cell, NEAR_M cell]
+var _rest: Dictionary = {}          # id -> true: every other record, filed again each full sync
+var _still_next: int = 0            # ids below this have been filed (still or rest)
+var _still_valid: bool = false      # false: file everything again at the next full sync (a load, a reset)
+var _still_queue: Array = []        # the still ids left to check this round
+var _still_moved: int = 0           # still records found in the wrong cell by the check (none expected: _refile moves them)
+const STILL_CHECK := 1024           # still records checked each full sync: every one about every 15 s at 15,000
 var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
 var _wide_piles: Dictionary = {}    # id -> true: cone piles wider than WIDE_PILE_M, which a drop can join from beyond the sync grid's near cells (PR #1322)
 var _wide_piles_built: bool = false # false until the first drop files the piles a load or reset brought in
@@ -524,6 +540,8 @@ var _taken: Dictionary = {}         # scatter key int -> true: loose items alrea
 var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
+var part_profile: bool = false        # a soak adds up each part's time in part_ms (off in a game: one dictionary add a part)
+var part_ms: Dictionary = {}          # part name -> ms in all, while part_profile is on
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
 var _save_parts: Array = []           # this tick's save files over 10 ms to stringify, as "name ms (KB)" (the slow-tick line)
 var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
@@ -1055,6 +1073,12 @@ const ABSENT_MS := 15000
 var _heard_ms: Dictionary = {}       # peer -> msec of its last position report
 var _parked: Dictionary = {}         # peer -> where it was when it went quiet (out of _peer_pos)
 var _park_check_ms: int = 0
+# Whether tick parks a player not heard from for ABSENT_MS of real time. The game's server turns it on (terrain_server.gd, where the
+# players report their spot several times a second). Off for everything else: the tests drive the clock by hand (tick(10.0) in a loop)
+# after one position report, and on a loaded machine (Lane A, 4 jobs, 26 Nov 2026) one ran past ABSENT_MS of real time, its player was
+# parked, and its drinks, crafts and builds were refused (the checks failed) though nothing was wrong. The absence tests call
+# _park_quiet themselves.
+var park_quiet_players: bool = false
 
 
 func is_absent(peer: int) -> bool:
@@ -1903,7 +1927,9 @@ func spyglass_reach(peer: int, admin_cfg: Dictionary) -> Array:
 
 func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
-	_park_quiet(Time.get_ticks_msec())
+
+	if park_quiet_players:
+		_park_quiet(Time.get_ticks_msec())
 	_slow_parts = []
 	_slow_prev_usec = t0
 	_throttle_mark = -1   # set by this tick's first scatter cell when a CPU quota holds the server (the slow lines)
@@ -1982,6 +2008,10 @@ func _slow_mark(part: String, _since_usec: int) -> void:
 	var now: int = Time.get_ticks_usec()
 	var ms: float = float(now - _slow_prev_usec) / 1000.0
 	_slow_prev_usec = now
+
+	if part_profile:
+		var key: String = part.get_slice(" ", 0)
+		part_ms[key] = float(part_ms.get(key, 0.0)) + ms   # the soak's ranking of the tick's parts (soak_server.gd --players)
 
 	if ms > SLOW_PART_LOG_MS:
 		_slow_parts.append("%s %.0f" % [part, ms])
@@ -3475,6 +3505,7 @@ func reset_world() -> int:
 	_lit_valid = false
 	_bed_cache.clear()
 	_sync_grid = {}
+	_still_valid = false   # every record filed again at the next full sync
 	_wide_piles.clear()
 	_wide_piles_built = false
 
@@ -3627,6 +3658,7 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 
 				if rest != it["pos"]:
 					it["pos"] = rest
+					_refile(id)
 					_dirty = true
 
 			continue
@@ -3648,6 +3680,7 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 
 	for id in loose:
 		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near, fill)
+		_refile(id)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
 
@@ -3830,6 +3863,7 @@ func _resettle_on(at: Vector3, reach: float) -> void:
 
 		if rest != it["pos"]:
 			it["pos"] = rest
+			_refile(id)
 			_wake_log(id)
 			_dirty = true
 
@@ -6929,7 +6963,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		if not _can_blueprint(peer, inv, blueprint):
 			return   # _can_blueprint says why
 
-		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
+		kit_id = _kit_of_blueprint(blueprint)
+		number = table.number_of(kit_id) if blueprint.has("lays") else 0
 	else:
 		if slot < 0:
 			_say(peer, "That blueprint is not in this game's list. Open the hammer or knife menu (right click) and pick it again.")   # an unknown blueprint number reaches here with no kit
@@ -7088,6 +7123,9 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			break
 
 	for id in _items:
+		if _is_fire_site(_items[id]) and _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+			chunk_fires += 1   # a campfire blueprint site is a fire to come; its gap is the structures' gap below
+
 		if _items[id].has("fire"):
 			if _items[id]["pos"].distance_to(spot) < _fire_gap_m:
 				_say(peer, "Too close to another fire.")
@@ -7103,7 +7141,18 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "Too many fires here.")
 		return
 
-	inv.take_from_slot(slot, 1)
+	if not blueprint.is_empty() and not free_build:   # with the hammer: a site that one or more players fill with hammer hits (_gather_site)
+		_place_fire_site(peer, spot, blueprint)
+		return
+
+	if blueprint.is_empty():
+		inv.take_from_slot(slot, 1)
+
+	_lay_fire(peer, number, spot)
+
+
+# A laid fire (state 9) at `spot`, as a Campfire set down from the pack leaves it or a finished campfire blueprint becomes it (number: the Campfire).
+func _lay_fire(peer: int, number: int, spot: Vector3) -> void:
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
 	_zone_add(_next_id)
@@ -7112,7 +7161,23 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	_fire_store(laid_fire).add(table.number_of("stick"), start_sticks)
 	_fire_apply_store(laid_fire, _fire_store(laid_fire))
 	_next_id += 1
+	_dirty = true
 	_goal_event(peer, "placed", "campfire")   # the fire hint and goals count a laid fire
+
+
+# A campfire blueprint site (structures.json "fire_site"): drawn as a blue cold fire, filled by hammer hits, never a fire until it is finished.
+func _is_fire_site(it: Dictionary) -> bool:
+	return it.has("struct") and bool(_structures.get(str(it["struct"]["kind"]), {}).get("fire_site", false))
+
+
+func _place_fire_site(peer: int, spot: Vector3, row: Dictionary) -> void:
+	var entry: Dictionary = {"number": table.number_of(_kit_of_blueprint(row)), "count": 1, "pos": spot, "left": 1.0e9,
+		"struct": {"kind": str(row["structure"]), "yaw": 0.0, "owner": str(_peer_key.get(peer, "")), "site": {"bp": int(row["number"]), "have": {}}}}
+	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
+	_next_id += 1
+	_say(peer, "Blueprint down. Hit it with a hammer to add the materials.")
+	_dirty = true
 
 
 # Placement rules of a station that stands on a tall foundation over running water (the sawmill, Dave 2026-10-22): it needs a foundation under it
@@ -8462,160 +8527,245 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 # so one road no longer runs the whole world's sync four times a second (audit 18 Nov 2026 finding 4). A quick sync files nothing in the grid
 # (the road's ids came after the full sync, and _ids_near adds every such id); it drops a record from a player's list only when it is gone from
 # the world, and bog rows and everything else wait for the full sync.
+#
+# The full sync by change (SERVER_SCALE.md item 4, 26 Nov 2026). The rocks thread measured it growing with the world's records: 21 ms a sync
+# at 2,098 records and 32 players, 167 ms at 15,334, 297 ms at 28,184 (/mnt/project-files/rock_measure.txt), because each player looked at
+# every record in the nine NEAR_M cells round them, each second. Now the records are also filed in FINE_M cells, and each cell's records are
+# summed into one number (the ids and their signatures, the same for every player). A cell wholly within a player's NEAR_M and the same as
+# the last time that player looked is skipped whole: nothing in it changed and all of it is near. Only the cells on the edge of a player's
+# NEAR_M, the cells that changed, and the cells with something that is different for each player (a building site's list, a smelter's
+# bellows) are looked at record by record, as before. What is sent is the same as before, row for row.
 func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
-	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
-	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
+	if not fresh.is_empty():
+		_sync_quick(fresh, near_to)
+		return
+
+	# The records are filed into a NEAR_M grid once (other lookups read it: _ids_near) and a FINE_M grid (this sync's cells).
 	var t_grid: int = Time.get_ticks_usec()
 	var send_usec: int = 0
 	var bog_usec: int = 0
 	_bog_build_usec = 0
 	_bog_built = 0
 	var sent: int = 0
-	var quick: bool = not fresh.is_empty()
+	var looked: int = 0     # records looked at one by one, for all players
+	var skipped: int = 0    # cells skipped whole, for all players
 	var grid: Dictionary = {}
+	var fine: Dictionary = {}
 	var lit: Array = []
 	_site_memo = {}   # each player's on-hand counts for the sites' lists, worked out once this sync (_site_view)
 	var rec_memo: Dictionary = {}   # world id -> _sync_record, worked out once this sync for every player near it
-	_file_site_cells(quick)
+	var infos: Dictionary = {}      # fine cell -> [sum, every record the same for every player, lowest y, highest y], once this sync
+	var cell_ids: Dictionary = {}   # fine cell -> its ids, still and rest, once this sync
+	_site_cells_due = true   # filed at the first building site a player sees this sync (_site_memo_of), not every sync: a walk of every record
 
-	for id in ([] if quick else _items.keys()):   # a quick sync files nothing: the road's ids came since the full sync, and _ids_near adds those
-		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
+	_still_file()
 
-		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
-			lit.append([_items[id]["pos"], fire_tier_of(int(_items[id]["fire"]["state"]))])
+	for id in _rest.keys():
+		if not _items.has(id):
+			_rest.erase(id)   # gone
+			continue
+
+		var it: Dictionary = _items[id]
+		var at: Vector3 = it["pos"]
+		var cell: Vector2i = Vector2i(int(floor(at.x / NEAR_M)), int(floor(at.z / NEAR_M)))
+		var fc: Vector2i = Vector2i(int(floor(at.x / FINE_M)), int(floor(at.z / FINE_M)))
+
+		if it.has("fire") and fire_is_lit(int(it["fire"]["state"])):
+			lit.append([at, fire_tier_of(int(it["fire"]["state"]))])
 
 		if not grid.has(cell):
-			grid[cell] = []
+			grid[cell] = [id]
+		else:
+			grid[cell].append(id)
 
-		grid[cell].append(id)
+		if not fine.has(fc):
+			fine[fc] = [id]
+		else:
+			fine[fc].append(id)
+
+	for cell in _still_near:   # the still records, filed already: their ids first in each cell
+		grid[cell] = (_still_near[cell] as Dictionary).keys() + grid[cell] if grid.has(cell) else (_still_near[cell] as Dictionary).keys()
 
 	var t_scan: int = Time.get_ticks_usec()
+	_sync_grid = grid
+	_sync_grid_next = _next_id
+	_far_fire_spots = lit
+	var reach2: float = NEAR_M * NEAR_M
 
-	if not quick:
-		_sync_grid = grid
-		_sync_grid_next = _next_id
-		_far_fire_spots = lit
+	for peer in _sync_seen.keys():
+		if not _known.has(peer):
+			_sync_seen.erase(peer)   # gone
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
 			continue
 
-		if quick and not near_to.any(func(at): return Vector2((at as Vector3).x - _peer_pos[peer].x, (at as Vector3).z - _peer_pos[peer].z).length() <= NEAR_M * 1.5):
-			continue   # nowhere near the road: the full sync looks after them
-
 		var here: Vector3 = _peer_pos[peer]
 		var known: Dictionary = _known[peer]
+		var seen: Dictionary = _seen_of(peer)
+		var cells_seen: Dictionary = seen["cells"]
+		var where: Dictionary = seen["where"]
+		var held: Dictionary = seen["in"]
 		var added: Array = []
 		var removed: PackedInt32Array = PackedInt32Array()
 		var near: Dictionary = {}
-		var home: Vector2i = Vector2i(int(floor(here.x / NEAR_M)), int(floor(here.z / NEAR_M)))
-		var candidates: Array = fresh if quick else []   # a quick sync: only the road's new records; nothing else is added or dropped
+		var whole: Dictionary = {}   # cells skipped whole this time: all of their records stay near and known
+		var x0: int = int(floor((here.x - NEAR_M) / FINE_M))
+		var x1: int = int(floor((here.x + NEAR_M) / FINE_M))
+		var z0: int = int(floor((here.z - NEAR_M) / FINE_M))
+		var z1: int = int(floor((here.z + NEAR_M) / FINE_M))
 
-		if not quick:
-			for dx in range(-1, 2):
-				for dz in range(-1, 2):
-					candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+		for cx in range(x0, x1 + 1):
+			var west: float = float(cx) * FINE_M - here.x
+			var east: float = west + FINE_M
+			var gap_x: float = maxf(maxf(west, -east), 0.0)
+			var far_x: float = maxf(absf(west), absf(east))
 
-		for id in candidates:
-			if not _items.has(id):
-				continue   # a road's id gone again before its quick sync
+			for cz in range(z0, z1 + 1):
+				var fc: Vector2i = Vector2i(cx, cz)
+				var ids: Array = cell_ids.get(fc, [])
 
-			var it: Dictionary = _items[id]
+				if not cell_ids.has(fc):
+					ids = (_still_fine[fc] as Dictionary).keys() if _still_fine.has(fc) else []
 
-			if it["pos"].distance_to(here) <= NEAR_M:
-				near[id] = true
+					if fine.has(fc):
+						ids.append_array(fine[fc])
 
-				var rec: Array = rec_memo.get(id, [])
+					cell_ids[fc] = ids
 
-				if rec.is_empty():
-					rec = _sync_record(int(id), it)
-					rec_memo[id] = rec
+				if ids.is_empty():
+					continue
 
-				var state: int = int(rec[0])
-				var signature: int = int(rec[1])
-				var bin_def: Dictionary = rec[2]
-				var bin_box = rec[3]
-				var fill: int = int(rec[4])
-				var bellows_by: int = int(rec[5])
-				var crop_extra: Dictionary = rec[6]
-				var smithy_look: int = int(rec[7])
+				var south: float = float(cz) * FINE_M - here.z
+				var north: float = south + FINE_M
+				var gap_z: float = maxf(maxf(south, -north), 0.0)
 
-				if bellows_by >= 0:
-					signature += 523 * (2 if bellows_by == peer else 1)   # someone starts or stops working a smelter's bellows: sent again
+				if gap_x * gap_x + gap_z * gap_z > reach2:
+					continue   # no part of the cell is within NEAR_M
 
-				var site_view: Array = []
+				var far_z: float = maxf(absf(south), absf(north))
+				var inside: bool = false
+				var info: Array = []
 
-				if it.has("struct") and it["struct"].has("site"):
-					site_view = _site_view(peer, it)   # this player's own list: what is still needed and what they have to put in (Dave 5 Nov 2026)
-					signature += 37
+				if far_x * far_x + far_z * far_z <= reach2:
+					info = infos.get(fc, [])
 
-					for line in site_view:
-						signature += 101 * int(line[1]) + 7 * mini(int(line[2]), int(line[1]) + 1)   # a deposit, or having enough on hand, sends it again
+					if info.is_empty():
+						info = _cell_info(ids, rec_memo)
+						infos[fc] = info
 
-				if not known.has(id) or known[id] != signature:
-					added.append([id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else (_struct_extra(it) if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") or it.has("fall") or it.has("pitch") else {}))))])
-					if not site_view.is_empty():
-						(added[added.size() - 1][5] as Dictionary)["site"] = site_view
+					var dy: float = maxf(absf(float(info[2]) - here.y), absf(float(info[3]) - here.y))
+					inside = bool(info[1]) and far_x * far_x + far_z * far_z + dy * dy <= reach2
 
-					if it.has("struct") and bool(it["struct"].get("road", false)):
-						(added[added.size() - 1][5] as Dictionary)["road"] = true   # a surveyed road's patch (the client keeps the grass off 2 m either side)
+				if inside and cells_seen.get(fc, -1) == info[0]:
+					whole[fc] = true
+					skipped += 1
+					continue   # the same as the last time this player looked, and all of it near
 
-					if it.has("struct") and it["struct"].has("len"):
-						(added[added.size() - 1][5] as Dictionary)["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 138)
-						(added[added.size() - 1][5] as Dictionary)["len"] = float(it["struct"]["len"])
+				if inside:
+					cells_seen[fc] = info[0]
+				else:
+					cells_seen.erase(fc)
 
-					if it.has("struct") and _water.pieces.get(id, {}).has("level_port"):
-						(added[added.size() - 1][5] as Dictionary)["water_l"] = int(floor(_barrel_water_l(id)))   # a barrel's water (E drinks from it instead of opening it)
+				var got: Dictionary = held.get(fc, {})
 
-					if it.has("struct") and it["struct"].has("on"):
-						(added[added.size() - 1][5] as Dictionary)["on"] = true   # a crate riding on a cart (the client offers to set it down)
+				if got.is_empty():
+					held[fc] = got
 
-					if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid"):
-						var plate = _chests.get(int(it["struct"]["uid"]))
+				for id in ids:
+					if not _items.has(id):
+						continue   # a still record taken since it was filed (the check drops it from its cell)
 
-						if plate != null and plate.numbers[0] != 0:
-							(added[added.size() - 1][5] as Dictionary)["board"] = int(plate.numbers[0])   # a Serving Platter: its board and portions left
-							(added[added.size() - 1][5] as Dictionary)["portions"] = int(plate.counts[0])
+					var it: Dictionary = _items[id]
+					looked += 1
 
-					if it.has("struct") and not it["struct"].has("site"):
-						var wheel: int = wheel_percent(it)
+					if not inside and it["pos"].distance_to(here) > NEAR_M:
+						continue
 
-						if wheel >= 0:
-							(added[added.size() - 1][5] as Dictionary)["wheel"] = wheel   # a sawmill: its water wheel's share, for the look-at line
+					near[id] = true
 
-						if fill >= 0:
-							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+					if not where.has(id) or where[id] != fc:
+						if where.has(id):
+							(held[where[id]] as Dictionary).erase(id)
 
-						if smithy_look >= 0:
-							(added[added.size() - 1][5] as Dictionary)["forge"] = smithy_look   # a smithy's fire: 0 cold, 1 red coals, 2 the flare
+						where[id] = fc
+						got[id] = true
 
-						if bellows_by >= 0:
-							(added[added.size() - 1][5] as Dictionary)["bellows"] = 2 if bellows_by == peer else 1   # its bellows worked: 2 by this player, 1 by another
+					if not it.has("struct") and not it.has("fire") and not it.has("tree"):
+						var plain: int = _plain_sig(it)   # loose things and rocks: the same signature, without _sync_record
 
-						if not crop_extra.is_empty():
-							(added[added.size() - 1][5] as Dictionary).merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
+						if not known.has(id) or known[id] != plain:
+							var loose_rec: Array = rec_memo.get(id, [])
 
-						if bin_box != null:   # a resource bin: what it holds (0 none, -1 mixed from before R6) and its fill in per mille, for the resource surface (no version change: row extras)
-							(added[added.size() - 1][5] as Dictionary)["res"] = BinRules.assigned(bin_box)
-							(added[added.size() - 1][5] as Dictionary)["fill_pm"] = int(round(BinRules.fill_share(bin_def, bin_box) * 1000.0))
-					known[id] = signature
+							if loose_rec.is_empty():
+								loose_rec = _sync_record(int(id), it)
+								rec_memo[id] = loose_rec
+
+							added.append(_sync_row(peer, int(id), it, loose_rec, []))
+							known[id] = plain
+
+						continue
+
+					var rec: Array = rec_memo.get(id, [])
+
+					if rec.is_empty():
+						rec = _sync_record(int(id), it)
+						rec_memo[id] = rec
+
+					var signature: int = int(rec[1])
+					var bellows_by: int = int(rec[5])
+					var site_view: Array = []
+
+					if bellows_by >= 0:
+						signature += 523 * (2 if bellows_by == peer else 1)   # someone starts or stops working a smelter's bellows: sent again
+
+					if it.has("struct") and it["struct"].has("site"):
+						site_view = _site_view(peer, it)   # this player's own list: what is still needed and what they have to put in (Dave 5 Nov 2026)
+						signature += 37
+
+						for line in site_view:
+							signature += 101 * int(line[1]) + 7 * mini(int(line[2]), int(line[1]) + 1)   # a deposit, or having enough on hand, sends it again
+
+					if not known.has(id) or known[id] != signature:
+						added.append(_sync_row(peer, int(id), it, rec, site_view))
+						known[id] = signature
 
 		var bog_started: int = Time.get_ticks_usec()
-		var bog_rows: Array = [] if quick else _bog_rows_near(peer, here)
+		var bog_rows: Array = _bog_rows_near(peer, here)
 		bog_usec += Time.get_ticks_usec() - bog_started
 
 		for bog in bog_rows:
-			near[int(bog[0])] = true
+			var bid: int = int(bog[0])
+			near[bid] = true
 			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE
 
-			if not known.has(int(bog[0])) or known[int(bog[0])] != bog_signature:
+			if not known.has(bid) or known[bid] != bog_signature:
 				added.append(bog)
-				known[int(bog[0])] = bog_signature
+				known[bid] = bog_signature
 
-		for id in (fresh if quick else known.keys()):
-			if known.has(id) and not near.has(id) and (not quick or not _items.has(id)):
-				removed.append(id)
-				known.erase(id)
+			if not where.has(bid) or where[bid] != SYNC_LOOSE:
+				_seen_hold(seen, bid, SYNC_LOOSE)
+
+		# What this player knew that is no longer near: only the cells not skipped whole can hold any.
+		for fc in held.keys():
+			if whole.has(fc):
+				continue
+
+			var got: Dictionary = held[fc]
+
+			for id in got.keys():
+				if not near.has(id):
+					got.erase(id)
+					where.erase(id)
+
+					if known.has(id):
+						removed.append(id)
+						known.erase(id)
+						cells_seen.erase(fc)
+
+			if got.is_empty():
+				held.erase(fc)
+				cells_seen.erase(fc)
 
 		if not added.is_empty() or not removed.is_empty():
 			var t_send: int = Time.get_ticks_usec()
@@ -8626,11 +8776,322 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
 	_site_memo = null
 	_site_cells = {}
+	_site_cells_due = false
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
 	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
-	_sync_detail = "(%d records: grid %.0f, scan %.0f, bog %.1f (built %d fields in %.1f), send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0,
-		total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0 - float(bog_usec) / 1000.0, float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0,
-		float(send_usec) / 1000.0, sent]
+	_sync_detail = "(%d records, %d still: grid %.0f, scan %.0f (%d looked at, %d cells skipped), bog %.1f (built %d fields in %.1f), send %.0f for %d items; %d still moved unseen)" % [_items.size(), _still_at.size(),
+		float(t_scan - t_grid) / 1000.0, total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0 - float(bog_usec) / 1000.0, looked, skipped,
+		float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0, float(send_usec) / 1000.0, sent, _still_moved]
+
+
+# Files the records made since the last full sync (all of them after a load or a reset): the still ones in their cells for good, the
+# others in _rest. A record put in by hand with any other id is found by the count below and everything is filed again. Then checks STILL_CHECK still records: one gone is dropped, one moved without _refile is moved (and counted).
+func _still_file() -> void:
+	if _still_valid and _next_id >= _still_next:
+		for id in range(_still_next, _next_id):
+			if _items.has(id):
+				_file_one(id)
+
+	# More records than are filed: one was put in without an id from _next_id (a test or a tool building a world by hand; gate review
+	# 26 Nov 2026: test_far_smoke's fires). Taken records only make the filed side bigger, so this never fires for them.
+	if not _still_valid or _next_id < _still_next or _items.size() > _still_at.size() + _rest.size():
+		_still_fine = {}
+		_still_near = {}
+		_still_at = {}
+		_rest = {}
+		_still_queue = []
+
+		for id in _items:
+			_file_one(int(id))
+
+		_still_valid = true
+
+	_still_next = _next_id
+
+	if _still_queue.is_empty():
+		_still_queue = _still_at.keys()
+
+	for k in mini(STILL_CHECK, _still_queue.size()):
+		var id: int = int(_still_queue.pop_back())
+
+		if not _still_at.has(id):
+			continue
+
+		if not _items.has(id) or not _items[id].has("scatter"):
+			_still_out(id)
+
+			if _items.has(id):
+				_rest[id] = true   # no longer still (not expected: a record keeps its kind)
+
+			continue
+
+		var was: Array = _still_at[id]
+		_still_put(id)
+
+		if _still_at[id] != was:
+			_still_moved += 1
+
+
+func _file_one(id: int) -> void:
+	if _items[id].has("scatter"):
+		_still_put(id)
+	else:
+		_rest[id] = true
+
+
+# Where a record's position is set: a still record moves to its new cell at once (the others are filed again each full sync).
+func _refile(id: int) -> void:
+	if _still_at.has(id) and _items.has(id):
+		_still_put(id)
+
+
+func _still_put(id: int) -> void:
+	var at: Vector3 = _items[id]["pos"]
+	var fc: Vector2i = Vector2i(int(floor(at.x / FINE_M)), int(floor(at.z / FINE_M)))
+	var cell: Vector2i = Vector2i(int(floor(at.x / NEAR_M)), int(floor(at.z / NEAR_M)))
+
+	if _still_at.has(id):
+		if _still_at[id][0] == fc and _still_at[id][1] == cell:
+			return
+
+		_still_out(id)
+
+	if not _still_fine.has(fc):
+		_still_fine[fc] = {}
+
+	if not _still_near.has(cell):
+		_still_near[cell] = {}
+
+	_still_fine[fc][id] = true
+	_still_near[cell][id] = true
+	_still_at[id] = [fc, cell]
+
+
+func _still_out(id: int) -> void:
+	var was: Array = _still_at[id]
+	(_still_fine[was[0]] as Dictionary).erase(id)
+	(_still_near[was[1]] as Dictionary).erase(id)
+
+	if (_still_fine[was[0]] as Dictionary).is_empty():
+		_still_fine.erase(was[0])
+
+	if (_still_near[was[1]] as Dictionary).is_empty():
+		_still_near.erase(was[1])
+
+	_still_at.erase(id)
+
+
+# A road's quick sync (see _sync_world_items): only the records in `fresh`, for the players near a spot in `near_to`.
+func _sync_quick(fresh: Array, near_to: Array) -> void:
+	_site_memo = {}
+	var rec_memo: Dictionary = {}
+	_file_site_cells(true)
+
+	for peer in _known:
+		if not _peer_pos.has(peer):
+			continue
+
+		if not near_to.any(func(at): return Vector2((at as Vector3).x - _peer_pos[peer].x, (at as Vector3).z - _peer_pos[peer].z).length() <= NEAR_M * 1.5):
+			continue   # nowhere near the road: the full sync looks after them
+
+		var here: Vector3 = _peer_pos[peer]
+		var known: Dictionary = _known[peer]
+		var seen: Dictionary = _seen_of(peer)
+		var added: Array = []
+		var removed: PackedInt32Array = PackedInt32Array()
+
+		for id in fresh:
+			if not _items.has(id):
+				if known.has(id):   # a road's id gone again: dropped only when gone from the world
+					removed.append(id)
+					known.erase(id)
+					_seen_drop(seen, id)
+
+				continue
+
+			var it: Dictionary = _items[id]
+
+			if it["pos"].distance_to(here) > NEAR_M:
+				continue
+
+			var rec: Array = rec_memo.get(id, [])
+
+			if rec.is_empty():
+				rec = _sync_record(int(id), it)
+				rec_memo[id] = rec
+
+			var signature: int = int(rec[1])
+			var bellows_by: int = int(rec[5])
+			var site_view: Array = []
+
+			if bellows_by >= 0:
+				signature += 523 * (2 if bellows_by == peer else 1)
+
+			if it.has("struct") and it["struct"].has("site"):
+				site_view = _site_view(peer, it)
+				signature += 37
+
+				for line in site_view:
+					signature += 101 * int(line[1]) + 7 * mini(int(line[2]), int(line[1]) + 1)
+
+			if not known.has(id) or known[id] != signature:
+				added.append(_sync_row(peer, int(id), it, rec, site_view))
+				known[id] = signature
+				_seen_hold(seen, id, SYNC_LOOSE)   # the next full sync looks at it again and files it in its cell (its old cell is not skipped)
+
+		if not added.is_empty() or not removed.is_empty():
+			send_world_items.call(peer, added, removed)
+
+	_site_memo = null
+	_site_cells = {}
+
+
+# A player's record of what the full sync last found for them (_sync_world_items): "cells" fine cell -> the cell's sum when it was wholly
+# near and looked at in full; "where" id -> the cell it was found near in; "in" cell -> {id: true} the other way round. Started again when
+# the player's _known list is new (a join, a fresh start), and made to match it when they differ in size (a safety net: never seen).
+func _seen_of(peer: int) -> Dictionary:
+	var seen: Dictionary = _sync_seen.get(peer, {})
+	var known: Dictionary = _known[peer]
+
+	if seen.is_empty() or not is_same(seen["known"], known):
+		seen = {"known": known, "cells": {}, "where": {}, "in": {}}
+		_sync_seen[peer] = seen
+
+	if (seen["where"] as Dictionary).size() != known.size():
+		for id in (seen["where"] as Dictionary).keys():
+			if not known.has(id):
+				_seen_drop(seen, id)
+
+		for id in known:
+			if not (seen["where"] as Dictionary).has(id):
+				_seen_hold(seen, id, SYNC_LOOSE)   # looked at again by the next full sync
+
+	return seen
+
+
+func _seen_hold(seen: Dictionary, id: int, fc: Vector2i) -> void:
+	_seen_drop(seen, id)
+	seen["where"][id] = fc
+
+	if not (seen["in"] as Dictionary).has(fc):
+		seen["in"][fc] = {}
+
+	seen["in"][fc][id] = true
+	(seen["cells"] as Dictionary).erase(fc)
+
+
+func _seen_drop(seen: Dictionary, id: int) -> void:
+	if (seen["where"] as Dictionary).has(id):
+		var fc: Vector2i = seen["where"][id]
+		(seen["in"][fc] as Dictionary).erase(id)
+		(seen["cells"] as Dictionary).erase(fc)
+		(seen["where"] as Dictionary).erase(id)
+
+
+# One fine cell's [sum, every record the same for every player, lowest y, highest y]. The sum is of every id in it and its signature, in
+# their order, so a record that comes, goes, moves in or out, or changes how it is sent changes the sum. Two 31-bit sums, no overflow.
+func _cell_info(ids: Array, rec_memo: Dictionary) -> Array:
+	var a: int = 17
+	var b: int = 29
+	var same: bool = true
+	var low: float = INF
+	var high: float = -INF
+
+	for id in ids:
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+		var sig: int = 0
+
+		if not it.has("struct") and not it.has("fire") and not it.has("tree"):
+			sig = _plain_sig(it)   # a rock, a stone, anything loose: no _sync_record needed
+		else:
+			var rec: Array = rec_memo.get(id, [])
+
+			if rec.is_empty():
+				rec = _sync_record(int(id), it)
+				rec_memo[id] = rec
+
+			sig = int(rec[1])
+
+			if int(rec[5]) >= 0 or (it.has("struct") and it["struct"].has("site")):
+				same = false   # a smelter's bellows or a site's list: different for each player
+
+		var x: int = posmod(int(id) * 131 + sig, 2147483647)
+		a = (a * 31 + x) % 2147483647
+		b = (b * 37 + x + 1) % 2147483629
+		low = minf(low, it["pos"].y)
+		high = maxf(high, it["pos"].y)
+
+	return [a * 2147483648 + b, same, low, high]
+
+
+# _sync_record's signature for a record with no struct, fire or tree (a rock, a boulder, a stone, anything loose), worked out without it:
+# the full sync looks at thousands of these each second (sync by change step 3, 26 Nov 2026). test_sync_by_change holds them equal.
+func _plain_sig(it: Dictionary) -> int:
+	return int(it["count"]) + 1000 * (BOULDER_STATE if it.has("boulder") else 0) + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))
+
+
+# A record's row for send_world_items: [id, number, count, position, state, extras]. `rec` is its _sync_record, `site_view` this player's
+# list for a building site.
+func _sync_row(peer: int, id: int, it: Dictionary, rec: Array, site_view: Array) -> Array:
+	var state: int = int(rec[0])
+	var bin_def: Dictionary = rec[2]
+	var bin_box = rec[3]
+	var fill: int = int(rec[4])
+	var bellows_by: int = int(rec[5])
+	var crop_extra: Dictionary = rec[6]
+	var smithy_look: int = int(rec[7])
+	var row: Array = [id, int(it["number"]), int(it["count"]), it["pos"], state, it["tree"] if it.has("tree") else (_struct_extra(it) if it.has("struct") else (it["boulder"] if it.has("boulder") else (_fire_extra(it) if it.has("fire") else (_loose_extra(it) if it.has("rot_y") or it.has("girth") or it.has("tilt") or it.has("fall") or it.has("pitch") else {}))))]
+	var extra: Dictionary = row[5]
+
+	if not site_view.is_empty():
+		extra["site"] = site_view
+
+	if it.has("struct") and bool(it["struct"].get("road", false)):
+		extra["road"] = true   # a surveyed road's patch (the client keeps the grass off 2 m either side)
+
+	if it.has("struct") and it["struct"].has("len"):
+		extra["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 138)
+		extra["len"] = float(it["struct"]["len"])
+
+	if it.has("struct") and _water.pieces.get(id, {}).has("level_port"):
+		extra["water_l"] = int(floor(_barrel_water_l(id)))   # a barrel's water (E drinks from it instead of opening it)
+
+	if it.has("struct") and it["struct"].has("on"):
+		extra["on"] = true   # a crate riding on a cart (the client offers to set it down)
+
+	if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid"):
+		var plate = _chests.get(int(it["struct"]["uid"]))
+
+		if plate != null and plate.numbers[0] != 0:
+			extra["board"] = int(plate.numbers[0])   # a Serving Platter: its board and portions left
+			extra["portions"] = int(plate.counts[0])
+
+	if it.has("struct") and not it["struct"].has("site"):
+		var wheel: int = wheel_percent(it)
+
+		if wheel >= 0:
+			extra["wheel"] = wheel   # a sawmill: its water wheel's share, for the look-at line
+
+		if fill >= 0:
+			extra["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+
+		if smithy_look >= 0:
+			extra["forge"] = smithy_look   # a smithy's fire: 0 cold, 1 red coals, 2 the flare
+
+		if bellows_by >= 0:
+			extra["bellows"] = 2 if bellows_by == peer else 1   # its bellows worked: 2 by this player, 1 by another
+
+		if not crop_extra.is_empty():
+			extra.merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
+
+		if bin_box != null:   # a resource bin: what it holds (0 none, -1 mixed from before R6) and its fill in per mille, for the resource surface (no version change: row extras)
+			extra["res"] = BinRules.assigned(bin_box)
+			extra["fill_pm"] = int(round(BinRules.fill_share(bin_def, bin_box) * 1000.0))
+
+	return row
 
 
 # The part of a record's sync signature and row extras that is the same for every player (_sync_world_items): [state, signature, structure row,
@@ -8890,6 +9351,7 @@ func _lift_out_of_slabs() -> void:
 
 		if not is_nan(best):
 			it["pos"] = Vector3(it["pos"].x, best, it["pos"].z)
+			_refile(id)
 			_load_changed[id] = true
 			_dirty = true
 			lifted_at_load += 1
@@ -8940,6 +9402,7 @@ func _load_world_items() -> void:
 		parsed["by_rows"] = all_by
 
 	_next_id = int(parsed.get("next_id", 1))
+	_still_valid = false   # the loaded records are filed at the next full sync
 
 	_picked = parsed.get("picked", {})
 	_stripped = {}
@@ -11486,6 +11949,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 					if not is_nan(ground):
 						_items[id]["pos"] = Vector3(at.x, ground, at.z)
+						_refile(id)
 
 	var hinge: Vector3 = fall["hinge"]
 	var tip: Vector3 = hinge + (fall["along"] as Vector3) * float(fall["length"])
@@ -11513,6 +11977,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 	for id in logs:
 		_items[id]["pos"] += along * clear
+		_refile(id)
 		_wake_log(id)
 
 	if bool(fall.get("undermined", false)) or (_items.has(stump_id) and _stump_undermined(_items[stump_id])):
@@ -13733,7 +14198,13 @@ func _load_blueprints() -> void:
 
 		row["id"] = id
 		_blueprints[int(row["number"])] = row
-		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
+		_blueprint_of_kit[_kit_of_blueprint(row)] = int(row["number"])
+
+
+# The item a blueprint places as: its structure's kit, or for the campfire blueprint (blueprints.json "lays") the hand-made Campfire, whose ghost
+# and placing rules it uses (Dave 26 Nov 2026, "campfire both").
+func _kit_of_blueprint(row: Dictionary) -> String:
+	return str(row["lays"]) if row.has("lays") else str(_structures.get(str(row["structure"]), {}).get("kit", ""))
 
 
 # Whether this blueprint can go down now: a hammer of enough tier on the hotbar (a knife for a "tool": "knife" row), the station near when it needs one. Materials are not checked:
@@ -14425,6 +14896,7 @@ const BUILD_STOCK_M := 4.0
 var _site_memo = null   # null outside a sync; peer -> {"reach", "boxes", "ground": [[item number, count], ...], "hand": {item number: on hand}}
 const SITE_CELL_M := 16.0   # the full sync also files every record in cells this size, so a player's containers and ground stock are found without a walk over the world
 var _site_cells: Dictionary = {}   # cell -> [world id, ...], filled by the full sync, empty outside one
+var _site_cells_due: bool = false  # a full sync is on and has not filed _site_cells yet: the first site's list files them
 
 
 # Files every record in its SITE_CELL_M cell for a full sync's site lists (a quick sync files none: its few sites take the full walks).
@@ -14444,6 +14916,10 @@ func _file_site_cells(quick: bool) -> void:
 # reach (the same records _craft_boxes and _ground_count would find by walking every one); the full walks when the sync filed no cells (a quick sync).
 func _site_memo_of(peer: int) -> Dictionary:
 	var reach_x: float = _hammer_x(peer)
+
+	if _site_cells_due:
+		_site_cells_due = false
+		_file_site_cells(false)   # the first site's list this full sync (lag: the sync walked every record for this each second, sites or not)
 
 	if _site_cells.is_empty():
 		return {"reach": reach_x, "boxes": _craft_boxes(peer, reach_x), "ground": null, "hand": {}}
@@ -14613,9 +15089,22 @@ func _item_name_lower(item_id: String) -> String:
 	return table.cost_sentence(number) if number > 0 else table.in_sentence(item_id)
 
 
-# Every material is in: the site becomes the real piece.
+# Every material is in: the site becomes the real piece (a campfire site becomes a laid fire, as a Campfire set down from the pack).
 func _finish_site(peer: int, id: int) -> void:
 	var it: Dictionary = _items[id]
+
+	if _is_fire_site(it):
+		_items.erase(id)
+		_lay_fire(peer, int(it["number"]), it["pos"])
+
+		for owner_peer in _peer_key:
+			if int(owner_peer) != peer and str(_peer_key[owner_peer]) == str(it["struct"].get("owner", "")):
+				_goal_event(int(owner_peer), "placed", "campfire")   # a friend's last hammer blow: the one who laid the blueprint gets the goal too
+				break
+
+		_dirty = true
+		save_soon([_next_id - 1])
+		return
 
 	if not (it["struct"]["site"] as Dictionary).get("kinds", {}).is_empty():
 		it["struct"]["kinds"] = it["struct"]["site"]["kinds"]   # a take-down gives back what was put in (_refund_blueprint)
@@ -16356,7 +16845,7 @@ func _fit(peer: int, inv, number: int, count: int, item_inst: Dictionary = {}) -
 		return count
 
 	var body: float = _carry_body(peer)
-	var carried: float = CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
+	var carried: float = _pack_kg(inv) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
 	return CarryRules.fit_count(table.id_of(number), count, carried, body, _carry_cfg)
 
 
@@ -16382,12 +16871,43 @@ func carried_kg_of(peer: int) -> float:
 		return float(_kg_cache[peer])
 
 	var inv = inventory_of(peer)
-	var kg: float = (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+	var kg: float = (_pack_kg(inv) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
 
 	if _in_vitals:
 		_kg_cache[peer] = kg   # the carry notice and the load ratio both weigh the pack each tick (load test 23 Nov: 15 ms a second at 32 players)
 
 	return kg
+
+
+# CarryRules.carried_kg with each item number's weight looked up once (weight_of walks the by_suffix list for most items): the same sum in the
+# same order. test_vitals_tick_cost compares the two.
+func _pack_kg(inv) -> float:
+	if not is_same(_unit_kg_cfg, _carry_cfg) or not is_same(_unit_kg_table, table):
+		_unit_kg.clear()
+		_unit_kg_cfg = _carry_cfg
+		_unit_kg_table = table
+
+	var total: float = 0.0
+
+	for slot in range(inv.usable):
+		var number: int = inv.numbers[slot]
+
+		if number == 0:
+			continue
+
+		if not _unit_kg.has(number):
+			var id: String = table.id_of(number)
+			_unit_kg[number] = [CarryRules.weight_of(id, _carry_cfg), int(table.entry(id).get("capacity_ml", 0)) > 0]
+
+		var unit: Array = _unit_kg[number]
+		var kg: float = float(unit[0]) * float(inv.counts[slot])
+
+		if bool(unit[1]):
+			kg += float(inv.wear[slot]) / 1000.0
+
+		total += kg + CarryRules.bag_kg(inv.inst[slot], table, _carry_cfg)
+
+	return total
 
 
 func _worn_bags_kg(peer: int) -> float:
@@ -16456,7 +16976,7 @@ func _new_vitals() -> Dictionary:
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
 func exertion_of(peer: int) -> float:
-	if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+	if int(_strain.get(peer, {}).get("state", 0)) >= 2 or strain_going(peer):
 		return 0.0
 
 	return minf(effort_of(peer), 1.0)
@@ -16499,6 +17019,33 @@ var _load_cache: Dictionary = {}     # peer -> load ratio, valid only during one
 var _in_vitals: bool = false
 var _kg_cache: Dictionary = {}       # peer -> carried kg, valid only during one _vitals_tick
 var _cover_cache: Dictionary = {}    # position -> cover_at, valid only during one _vitals_tick (warmth and soak asked three times per player)
+# Also kept for one _vitals_tick only (soak at 64 players, 26 Nov 2026: vitals 123 ms a second, the largest server part; each look asked
+# these five to eight times a player): the worn numbers, the armour kilograms and the Rested row. Nothing inside the tick changes what is
+# worn, and the comfort meter's write drops that player's Rested row. A death inside the tick runs outside them (_vitals_tick).
+var _worn_cache: Dictionary = {}     # peer -> worn_of
+var _armour_cache: Dictionary = {}   # peer -> _armour_kg
+var _rested_cache: Dictionary = {}   # peer -> rested_tier
+var vitals_memo: bool = true         # false: those three worked out live each time (test_vitals_tick_cost compares the two)
+var _unit_kg: Dictionary = {}        # item number -> [kilograms of one, holds water]: weight_of walks the suffix list; weights.json does not change
+var _unit_kg_cfg: Dictionary = {}    # the _carry_cfg and table _unit_kg was worked out from (a test may swap either)
+var _unit_kg_table = null
+
+
+func _vitals_caches_clear() -> void:
+	_load_cache.clear()
+	_kg_cache.clear()
+	_cover_cache.clear()
+	_worn_cache.clear()
+	_armour_cache.clear()
+	_rested_cache.clear()
+
+
+func _vitals_forget(peer: int) -> void:
+	_load_cache.erase(peer)
+	_kg_cache.erase(peer)
+	_worn_cache.erase(peer)
+	_armour_cache.erase(peer)
+	_rested_cache.erase(peer)
 
 
 # cover_at at `pos`, worked out once per position during a _vitals_tick. Nothing that changes cover (building, felling) runs inside it.
@@ -16537,7 +17084,7 @@ func _set_stance(peer: int, wanted: int) -> void:
 	if wanted < 0 or wanted > 3 or not _peer_key.has(peer) or _forced_sleep(peer):
 		return
 
-	if int(_strain.get(peer, {}).get("state", 0)) < 2:
+	if int(_strain.get(peer, {}).get("state", 0)) < 2 and not strain_going(peer):
 		_stance[peer] = wanted
 
 		if wanted != 3:
@@ -17563,11 +18110,17 @@ func _armour_kg(peer: int) -> float:
 	if _carry_cfg.is_empty():
 		return total
 
+	if _in_vitals and vitals_memo and _armour_cache.has(peer):
+		return float(_armour_cache[peer])
+
 	for number in worn_of(peer):
 		var entry: Dictionary = table.entry(table.id_of(number)) if number > 0 else {}
 
 		if entry.has("protect") and int(entry.get("durability", 0)) > 0:
 			total += CarryRules.weight_of(table.id_of(number), _carry_cfg)
+
+	if _in_vitals:
+		_armour_cache[peer] = total
 
 	return total
 
@@ -18355,9 +18908,7 @@ func _vitals_tick(spent: float, only: Array = [], spent_of: Dictionary = {}, lit
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var base_spent: float = spent
 	var game_s: float = spent * GAME_RATE
-	_load_cache.clear()
-	_kg_cache.clear()
-	_cover_cache.clear()
+	_vitals_caches_clear()
 
 	if lit_fresh:
 		_lit_valid = false
@@ -18425,8 +18976,14 @@ func _vitals_tick(spent: float, only: Array = [], spent_of: Dictionary = {}, lit
 		_comfort_meter_tick(peer, v, spent)
 		_breath_tick(peer, v, spent)
 
-		if float(v["health"]) <= 0.0 and kill(peer, str(_death_cause.get(peer, "drowning"))):
-			continue
+		if float(v["health"]) <= 0.0:
+			_in_vitals = false   # a death empties the pack and the comfort meter: kill reads everything live, and this player's kept readings go
+			var died: bool = kill(peer, str(_death_cause.get(peer, "drowning")))
+			_in_vitals = true
+			_vitals_forget(peer)
+
+			if died:
+				continue
 
 		_limp_tick(peer, v, spent)
 		_sync_vitals(peer, false)
@@ -18623,6 +19180,9 @@ func _covers(number: int, place: int) -> Array:
 # The item numbers a character wears, one per worn position; old saves have none. Read straight off the record (slot arrays, or an old bare
 # number): it runs on every position report, carry and warmth check, so it builds no slot arrays.
 func worn_of(peer: int) -> Array:
+	if _in_vitals and vitals_memo and _worn_cache.has(peer):
+		return (_worn_cache[peer] as Array).duplicate()   # a copy, as a fresh list always was: no caller can change the kept one
+
 	var list: Array = _characters.get(_peer_key.get(peer, ""), {}).get("worn", [])
 	var out: Array = []
 
@@ -18630,6 +19190,9 @@ func worn_of(peer: int) -> Array:
 		var raw: Variant = list[i] if i < list.size() else 0
 		var head: Variant = raw[0] if typeof(raw) == TYPE_ARRAY and not (raw as Array).is_empty() else raw
 		out.append(maxi(int(head), 0) if typeof(head) == TYPE_INT or typeof(head) == TYPE_FLOAT else 0)
+
+	if _in_vitals:
+		_worn_cache[peer] = out.duplicate()
 
 	return out
 
@@ -19048,6 +19611,9 @@ func fire_protect_m(at: Vector3) -> float:
 
 
 var _lit_valid: bool = false
+var lit_scans: int = 0         # walks of every record for the lit fires (_lit_rows), for the tests
+var _lit_scope: bool = false   # the goals tick keeps one fire list for all its players, as the vitals pass does (soak 26 Nov 2026: the night walk and the hints
+                               # walked every record once a player for the lit fires, 165 ms a second at 64 players)
 var _rain_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -19056,10 +19622,11 @@ var _lit_cache_rows: Array = []
 
 
 func _lit_rows() -> Array:
-	if _in_vitals and _lit_valid:
+	if (_in_vitals or _lit_scope) and _lit_valid:
 		return _lit_cache_rows
 
 	var found: Array = []
+	lit_scans += 1
 	_coal_cache_rows = []
 	_guard_cache_rows = []
 	_heat_cache_rows = []
@@ -19080,7 +19647,7 @@ func _lit_rows() -> Array:
 			if lit_def.has("heat_tier"):   # a lit Fireplace or brazier warms as a campfire of that size (structures.json note_fire_lights)
 				_heat_cache_rows.append([it["pos"], str(lit_def["heat_tier"])])
 
-	if _in_vitals:
+	if _in_vitals or _lit_scope:
 		_lit_cache_rows = found
 		_lit_valid = true
 
@@ -19109,14 +19676,14 @@ func _heat_rows() -> Array:
 
 
 func _guard_rows() -> Array:
-	if not (_in_vitals and _lit_valid):
+	if not ((_in_vitals or _lit_scope) and _lit_valid):
 		_lit_rows()
 
 	return _guard_cache_rows
 
 
 func _coal_rows() -> Array:
-	if not (_in_vitals and _lit_valid):
+	if not ((_in_vitals or _lit_scope) and _lit_valid):
 		_lit_rows()
 
 	return _coal_cache_rows
@@ -19318,6 +19885,13 @@ func passed_out(peer: int) -> bool:
 # Fainted from strain, or passed out from cold or in water, and not yet up again (strain state 2 fainted, 3 waking): the others see the body lying.
 func fainted_of(peer: int) -> bool:
 	return int(_strain.get(peer, {}).get("state", 0)) >= 2
+
+
+# Passing out from strain: past the faint threshold, before the black is full (state 2). The body is already out of the player's hands
+# (Dave 25 Nov 2026, QA #19): lying, no stance choice, no effort; the client locks movement and actions (strain stance bit 16).
+func strain_going(peer: int) -> bool:
+	var st: Dictionary = _strain.get(peer, {})
+	return bool(st.get("going", false)) and int(st.get("state", 0)) <= 1
 
 
 # The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points
@@ -20241,7 +20815,7 @@ func _fall(peer: int, centimetres: int) -> void:
 		_asleep.erase(peer)
 
 	if drop >= float(cfg.get("faint_m", 12.0)) * jump and not _exertion_cfg.is_empty():
-		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
+		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0, "going": true}   # going: out on the next tick, whatever the body's faint threshold
 
 	_sync_vitals(peer, true)
 
@@ -20843,7 +21417,7 @@ func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3
 		var kind: String = _water_kind_near(near, reach)
 
 		if kind != "" and _fish_schools().has_method("species_for"):   # a test's stand-in school module may not have it
-			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt: the fate stream picks the fish species by the water (luck applies to the catch roll)
 
 			if by_water != "":
 				return by_water
@@ -22429,7 +23003,7 @@ func _toggle_pump(peer: int, id: int) -> void:
 		_stop_pump(peer, "You stop.")
 		return
 
-	if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+	if fainted_of(peer) or strain_going(peer):
 		_say(peer, "You are too worn out to work it.")
 		return
 
@@ -22514,7 +23088,7 @@ func _pump_tick(spent: float) -> void:
 			_stop_pump(peer, "You stop working it.")
 			continue
 
-		if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+		if fainted_of(peer) or strain_going(peer):   # passing out stops the work at once (R-CORE-PASS-OUT)
 			_stop_pump(peer, "You are too worn out to go on.")
 			continue
 
@@ -22915,6 +23489,7 @@ func _pipe_unsplit(undo: Array) -> void:
 		if _items.has(id):
 			_items[id]["struct"] = (row[1][0] as Dictionary).duplicate()
 			_items[id]["pos"] = row[1][1]
+			_refile(id)
 			_water.remove(id)
 			_water_kind.erase(id)
 			_water_add(id)
@@ -24951,6 +25526,7 @@ func _comfort_meter_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 	var before: int = comfort_level(peer)
 	row["comfort"] = m
+	_rested_cache.erase(peer)   # the Rested row follows the meter
 
 	if comfort_level(peer) != before:
 		_dirty = true   # saved when the whole level changes; the fraction rides along with the next write
@@ -24958,16 +25534,21 @@ func _comfort_meter_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 # The old Rested hooks read the meter: {} at level 0, else the full_bonus multipliers scaled by the level.
 func rested_tier(peer: int) -> Dictionary:
+	if _in_vitals and vitals_memo and _rested_cache.has(peer):
+		return _rested_cache[peer]   # callers only read it
+
 	var level: int = comfort_level(peer)
 	var full: Dictionary = _meter_cfg().get("full_bonus", {})
+	var out: Dictionary = {}
 
-	if level <= 0 or full.is_empty():
-		return {}
+	if level > 0 and not full.is_empty():
+		out = {"name": "Comfort %d" % level, "level": level}
 
-	var out: Dictionary = {"name": "Comfort %d" % level, "level": level}
+		for what in full:
+			out[what] = comfort_bonus(peer, str(what))
 
-	for what in full:
-		out[what] = comfort_bonus(peer, str(what))
+	if _in_vitals:
+		_rested_cache[peer] = out
 
 	return out
 
@@ -26003,6 +26584,8 @@ func _goals_tick(with_goals: bool = true) -> void:
 		return
 
 	var t0: int = Time.get_ticks_usec()
+	_lit_valid = false   # this tick's own fire list, worked out at its first look
+	_lit_scope = true
 	_night_walk_tick()
 	var t1: int = Time.get_ticks_usec()
 	_slowest_hint_usec = 0
@@ -26038,6 +26621,7 @@ func _goals_tick(with_goals: bool = true) -> void:
 	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split). Goals: the spread looks since the last slow tick.
 	_goals_detail = "(night walk %.0f, goals %.0f spread, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
 		float(Time.get_ticks_usec() - th) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
+	_lit_scope = false
 
 
 # The goal list as the client gets it, in the authored order: [id, title, how-to, reward copper, reward item id ("" none), reward item count, after ids
@@ -28458,6 +29042,9 @@ func _strain_tick(peer: int, spent: float) -> void:
 	var strain: float = float(st["s"])
 	st["t"] = float(st["t"]) + spent
 
+	if state >= 2:
+		st.erase("going")   # out (a strain faint, the cold or water): passing out is over, so waking hands the body back
+
 	# Sleep ends on its own: fainting, standing up, rain on an open sleeper, or rested for rested_s seconds.
 	var sleep_quality: float = 0.0
 
@@ -28494,7 +29081,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			st["t"] = 0.0
 			st["after_faint"] = true
 			st["black"] = 0.0
-			strain = float(cfg.get("wake_strain", 1.1))
+			strain = float(cfg.get("wake_strain", 0.6))
 	elif state == 3:
 		strain = maxf(strain - float(cfg.get("rest_effort", 0.52)) * float(cfg.get("fall_per_s", 0.05)) * float(cfg.get("wake_fall_mult", 0.4)) * spent, 0.0)
 
@@ -28536,15 +29123,24 @@ func _strain_tick(peer: int, spent: float) -> void:
 			state = 0
 			st["after_faint"] = false
 
-		# Blacking out is a smooth build-up, not a step (Dave 2026-10-21): past the faint threshold "black" climbs, slowly right
-		# at the threshold and faster the further strain overshoots it (a straight line in the overshoot, no steps); under the
-		# threshold it drains away. When it reaches 1 the character lies down unconscious.
+		# Blacking out is a smooth build-up, not a step (Dave 2026-10-21): past the faint threshold "black" climbs, faster the
+		# further strain overshoots it (a straight line in the overshoot, no steps), and never slower than over blackout.fall_s.
+		# Passing out takes the body at once (Dave 25 Nov 2026, QA #19: "they must stop the second the game determines its time to
+		# pass out"): from the moment the threshold is crossed ("going") the player has no control, drops to lying and cannot get up,
+		# and the black climbs on to 1 whatever strain does. Only a blackout that was not passing out (out of air) drains away.
+		# When black reaches 1 the character is unconscious (state 2).
 		var threshold: float = float(cfg.get("faint_at", 1.4)) * scale
 		var black: float = float(st.get("black", 0.0))
 		var blackout: Dictionary = cfg.get("blackout", {})
 
-		if strain >= threshold and state <= 1:
-			black = minf(black + _blackout_rate(strain / threshold - 1.0, blackout) * spent, 1.0)
+		if strain >= threshold and state <= 1 and not bool(st.get("going", false)):
+			st["going"] = true
+			_stance[peer] = 3
+			_end_sleep(peer)
+
+		if bool(st.get("going", false)) and state <= 1:
+			var black_rate: float = maxf(_blackout_rate(maxf(strain / threshold - 1.0, 0.0), blackout), 1.0 / maxf(float(blackout.get("fall_s", 2.5)), 0.1))
+			black = minf(black + black_rate * spent, 1.0)
 		else:
 			black = maxf(black - spent / maxf(float(blackout.get("recover_s", 6.0)), 0.1), 0.0)
 
@@ -28556,6 +29152,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 		if black >= 1.0 and state <= 1:
 			state = 2
 			st["t"] = 0.0
+			st.erase("going")
 			_stance[peer] = 3
 
 	st["s"] = strain
@@ -28582,7 +29179,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			_waking.erase(peer)
 
 	_sync_body(peer, state, st)
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 200.0) * 5, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0)]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 200.0) * 5, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0) | (16 if strain_going(peer) else 0)]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points
@@ -28590,13 +29187,13 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 
 # The heart in the ears, the expected wake time and the phase (protocol 59): 0 awake, 1 falling asleep, 2 out (asleep or fainted),
-# 3 waking. Fainted: a fast, high heart (exertion.json faint_bpm.out), dropping to a brisk 140 for the waking stage. Asleep: slows
+# 3 waking. Fainted: a fast, high heart (exertion.json faint_bpm.out), dropping to a calm faint_bpm.wake (90) for the waking stage (R-CORE-PASS-OUT). Asleep: slows
 # from bpm.start to bpm.end over bpm.slow_s. Sent on change, whole bpm, ETA in steps of 5 s.
 func _sync_body(peer: int, state: int, st: Dictionary) -> void:
 	if not send_body.is_valid():
 		return
 
-	var fb: Dictionary = _exertion_cfg.get("faint_bpm", {"out": 172, "wake": 140})
+	var fb: Dictionary = _exertion_cfg.get("faint_bpm", {"out": 172, "wake": 90})
 	var bpm: float = 0.0
 	var eta: float = 0.0
 	var phase: int = 0
@@ -28612,7 +29209,7 @@ func _sync_body(peer: int, state: int, st: Dictionary) -> void:
 		eta = maxf(float(_exertion_cfg.get("faint_s", 8.0)) - float(st["t"]), 0.0) + float(_exertion_cfg.get("wake_s", 12.0))
 	elif state == 3:
 		phase = 3
-		bpm = float(fb.get("wake", 140))
+		bpm = float(fb.get("wake", 90))
 		eta = maxf(float(_exertion_cfg.get("wake_s", 12.0)) - float(st["t"]), 0.0)
 	elif _asleep.has(peer):
 		var cfg: Dictionary = _sleep_cfg.get("bpm", {})

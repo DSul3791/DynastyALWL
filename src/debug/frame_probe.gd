@@ -22,6 +22,7 @@ static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
 const FREEZE_MS := 500.0
+const JOIN_SLOW_MS := 250.0   # a join frame this long prints its pieces (the first 30 frames; FREEZE and HITCH lines start after them)
 const PHYSICS_SLOW_MS := 30.0           # a physics step this long prints a PHYSICS slow line (at most one every 5 s)
 static var _physics_next_msec: int = 0
 const HITCH_MS := 100.0                  # a frame this long prints a HITCH line at once (rate-limited)
@@ -104,17 +105,29 @@ static func _top_text(count: int) -> String:
 	return ", ".join(text)
 
 
-# Call at the start of each frame with the previous frame's length (seconds).
+# Call at the start of each frame with the previous frame's length (seconds), before any piece of the new frame is timed: the pieces in
+# _this_frame then all belong to the frame just ended. window_engine's "timed pieces" sum nested pieces twice ("grass: ..." inside "grass").
 static func frame(delta: float) -> void:
 	_frames += 1
 	_win_frames += 1
 	_win_process_ms += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
-	var ms: float = delta * 1000.0
+	# The main thread's own clock for the frame that just ended when it drew (freeze_watch.gd beat, called just before): Godot's delta is
+	# not the frame's wall time (Lane A 26 Nov 2026: HITCH 116 ms frames whose wall parts added up to 13 ms).
+	var ms: float = FreezeWatch.wall_ms if FreezeWatch.wall_ms > 0.0 else delta * 1000.0
 
 	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
 	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
 	# script time means the wait was in the engine or the graphics driver, not in our scripts.
+	# The join's own long frames (Lane A r4 Low, 26 Nov 2026: a 1.9 s welcome, 1.1 s stuck after "weather: state", 0.6 s at the first draws)
+	# were never broken down: the lines below skip the first 30 frames. One line each names their timed pieces.
+	# Lane A r4 at 35dcde90: the 3.5 s welcome frame printed no line (no draw since the beat before it, so no wall time, and Godot's delta is
+	# not the stall): the beat-to-beat gap is used too.
+	var join_ms: float = maxf(ms, float(FreezeWatch.gap_ms))
+
+	if join_ms > JOIN_SLOW_MS and _frames <= 30:
+		FreezeWatch.printer.line("JOIN slow frame %.0f ms (frame %d): %s; wall: %s" % [join_ms, _frames, _top_text(8) if not _this_frame.is_empty() else "nothing timed", FreezeWatch.split])
+
 	if ms > FREEZE_MS and _frames > 30 and _freeze_prints < 40:
 		_freeze_prints += 1
 		var named: PackedStringArray = PackedStringArray()
@@ -131,7 +144,7 @@ static func frame(delta: float) -> void:
 			str(context.call()) if context.is_valid() else "", _shown_text()
 		])
 
-	# BugsList 108: single physics steps of 44-51 ms on Dave's PC, with nothing of ours in them (no script runs in the client's physics step). One
+	# BugsList 108: single physics steps of 44-51 ms on Dave's PC, with nothing of ours in them (only terrain_client's one-line _physics_process stamp runs in the client's physics step). One
 	# line at most every 5 s names the physics server's load and what this frame did, so a play log says whether new colliders (flora trunks,
 	# ground) or many moving bodies are the cause.
 	var physics_ms: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
@@ -161,9 +174,11 @@ static func frame(delta: float) -> void:
 		if ms >= HITCH_MS and now_msec >= _hitch_next_msec:
 			_hitch_next_msec = now_msec + 2000
 			var top: String = _top_text(5)
-			FreezeWatch.printer.line("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
-				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
+			# "process max" and "physics max" are Godot's monitors: the LONGEST step in the last second, not this frame. "wall" is this frame's own
+			# clock split (freeze_watch.gd): where the time went when the timed pieces are small.
+			FreezeWatch.printer.line("HITCH %.0f ms: %s; wall: %s; process max %.0f ms, physics max %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
+				FreezeWatch.split, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), FreezeWatch.built_last + _shown_text()])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 

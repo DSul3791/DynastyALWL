@@ -53,6 +53,21 @@ func _initialize() -> void:
 	check(v._bodies.has(2) and not bool((v._bodies[2]["node"] as Node3D).get_meta("model", false)), "a wolf with no model file is drawn from the code-built body")
 	check(ResourceLoader.load_threaded_get_status(SCENE) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, "headless, nothing is asked of a worker")
 
+	# The box of a clip is kept per model file, model transform and clip: a second body of the file gets the first one's box.
+	var rig_a: Node3D = ((v._bodies[1]["node"] as Node3D).get_node("Rig") as Node3D)
+	v._clip_box(null, null, rig_a)   # the imported pose (no clip; the test model has no skeleton)
+	var memo_key: String = v._box_key(null, rig_a)
+	check(memo_key != "" and v._box_memo.has(memo_key), "a clip's box is kept under its model file and transform")
+	v._box_memo[memo_key] = AABB(Vector3.ONE, Vector3.ONE)   # marked: a box worked out again would not be this one
+	check(v._clip_box(null, null, rig_a) == AABB(Vector3.ONE, Vector3.ONE), "the kept box is given again, not worked out again")
+	(rig_a.get_child(0) as Node3D).scale *= 2.0
+	check(v._box_key(null, rig_a) != memo_key, "a model drawn at another size keeps its own box")
+	(rig_a.get_child(0) as Node3D).scale /= 2.0
+	v._box_memo.clear()
+	var bare_rig: Node3D = Node3D.new()
+	check(v._box_key(null, bare_rig) == "", "a rig with no model file keeps no box")
+	bare_rig.free()
+
 	# A colour texture's alpha test runs on a worker (_alpha_ready): false until the answer is in, then the answer _has_alpha would give.
 	var see_through: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	see_through.fill(Color(1.0, 1.0, 1.0, 0.0))
@@ -95,7 +110,7 @@ func _initialize() -> void:
 	v.files_ready = func(_number: int) -> bool: return bool(loaded[0])
 	v._wait_since.clear()
 	clock[0] = 100000
-	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1000]], 1000)
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1000]], 1100)   # a batch after the first one's (1000)
 	check(not v._bodies.has(31), "a deer whose files are loading is held undrawn")
 	clock[0] = 100000 + v.SCENE_WAIT_MS
 	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1250]], 1250)
@@ -105,6 +120,69 @@ func _initialize() -> void:
 	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1500], [33, 2, Vector3(4.0, 0.0, 2.0), 0.0, 0, 1500]], 1500)   # an odd id: the variant with the test model (an even one takes the doe file that does not exist)
 	check(v._bodies.has(33) and bool((v._bodies[33]["node"] as Node3D).get_meta("model", false)), "with its files in, the next deer is drawn from its model")
 	v.files_ready = Callable()
+
+	# Feet on the ground (Lane A 26 Nov 2026: 44 of 57 looks floated): a look's "ground_m" moves its body down by that much, and a clip in
+	# "ground_clips" is moved by its own amount, found by its name after the armature.
+	v._models["deer"].erase("variants")
+	v._models["deer"].erase("ground_m")
+	var plain: Node3D = v._make_model(2, 1)
+	v._models["deer"]["ground_m"] = -0.25
+	var grounded: Node3D = v._make_model(2, 1)
+	var drop: float = ((grounded.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
+	check(absf(drop + 0.25) < 0.0001, "a look's ground_m moves its body down that much (%.3f m)" % drop)
+	var young_row: Dictionary = (v._models["deer"] as Dictionary).duplicate(true)
+	young_row.erase("ground_m")
+	v._models["deer"]["young_model"] = young_row
+	var young: Node3D = v._make_model(2, 1, true)
+	var young_drop: float = ((young.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
+	check(absf(young_drop) < 0.0001, "a young model without its own ground_m is not moved by the adult's (%.3f m)" % young_drop)
+	young_row["ground_m"] = -0.1
+	var young_own: Node3D = v._make_model(2, 1, true)
+	var own_drop: float = ((young_own.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
+	check(absf(own_drop + 0.1) < 0.0001, "a young model's own ground_m moves it (%.3f m)" % own_drop)
+	v._models["deer"].erase("young_model")
+	young.free()
+	young_own.free()
+	plain.free()
+	grounded.free()
+	check(is_equal_approx(AnimalViewScript.ground_lift({"WalkMedium_F": 0.049}, "Armature|WalkMedium_F"), 0.049) and AnimalViewScript.ground_lift({"WalkMedium_F": 0.049}, "Armature|Idle") == 0.0, "a clip's own ground move is found by its name after the armature, 0 for any other")
+	var rows: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/models.json")) as Dictionary).get("species", {})   # the real rows, not this test's
+	var missing: Array = []
+
+	for kind in rows:
+		var row: Dictionary = rows[kind]
+
+		if row.has("height_m") or row.has("flock_of") or not ResourceLoader.exists(str(row.get("scene", ""))):
+			continue   # sized by a rolled height (goblins: within 3 cm), a flock, or a model this machine lacks (the alligator's file)
+
+		for look in (row.get("variants", []) as Array) if row.has("variants") else [row]:
+			if bool((look as Dictionary).get("wild", true)) and not (look as Dictionary).has("ground_m"):
+				missing.append(kind)
+
+	check(missing.is_empty(), "every model look has its measured ground_m (missing: %s): run tools/ground_check.gd and tools/ground_offsets.py for a new model" % str(missing))
+
+	# A bedded-down animal is not drawn dead (BugsList 178, picture sweep 26 Nov 2026): in a file that has WalkSlowWounded2Lying, the
+	# LyingBreathing (Lying_Breathing, Lying) clip the lie role found by its name is where that wounded lie ends, flat on its side.
+	# Every such look names its lie (role 19), and never one of those.
+	var clip_lists: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/model_clips.json"))
+	var dead_lies: Array = []
+
+	for kind in rows:
+		var row: Dictionary = rows[kind]
+
+		for look in [row] + ((row.get("variants", []) as Array)):
+			var scene: String = str((look as Dictionary).get("scene", row.get("scene", "")))
+			var names: Array = (clip_lists.get(scene, []) as Array).map(func(c: Variant) -> String: return str((c as Array)[0]))
+
+			if not names.has("WalkSlowWounded2Lying"):
+				continue
+
+			var lie: String = str(((look as Dictionary).get("clips", row.get("clips", {})) as Dictionary).get("19", ""))
+
+			if lie == "" or lie.to_lower().contains("lying") or not names.has(lie):
+				dead_lies.append("%s %s: %s" % [kind, scene.get_file(), lie if lie != "" else "none"])
+
+	check(dead_lies.is_empty(), "every look of the wounded-lie pack names a healthy lie (%s)" % str(dead_lies))
 
 	# The animals line for the log (QA #12): it runs with bodies drawn and with none, and starts its counts again.
 	v._report_batches = 3

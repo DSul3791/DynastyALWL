@@ -4,7 +4,7 @@ extends SceneTree
 # while every server system ticks together: items (fires, spoilage, warmth, vitals, crafting, trunks, carcasses), animals (rabbits
 # and deer with senses, burrows, blood), NPCs, and the per-player sends (animal, NPC and blood rows). Prints per-system average and
 # worst ms, the whole tick's average, p99 and worst, and names the worst offender. Fails only on a script error or a mean tick over
-# 12 ms (a quarter of the 50 ms tick).
+# 12 ms (a quarter of the 50 ms tick). It also times the animal rows' split into packet-sized parts (protocol 171, RowParts.split).
 #   godot --headless --path . --script res://src/worldgen/tools/soak_server.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -12,13 +12,17 @@ const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const RowParts := preload("res://src/shared/row_parts.gd")   # the animal rows go in parts that fit one packet (protocol 171)
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const TICK_S := 0.05
 const SPAN_S := 60.0
-const PLAYERS := 20
+const PLAYERS_DEFAULT := 20   # --players=N after -- on the command line: 32 and 64 to rank the server's costs (26 Nov 2026)
 
 var counts: Dictionary = {}
+var split_us: int = 0      # RowParts.split time over the soak's animal sends
+var split_calls: int = 0
+var split_many: int = 0    # batches over one packet, sent in parts
 var failures: int = 0
 
 
@@ -66,13 +70,20 @@ func _init() -> void:
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
 
+	var players: int = PLAYERS_DEFAULT
+
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--players="):
+			players = maxi(int(arg.get_slice("=", 1)), 1)
+
 	var items = make(dir)
+	items.part_profile = true
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 5
 	var pos: Array = []
 	var memory0: int = OS.get_static_memory_usage()
 
-	for p in range(1, PLAYERS + 1):
+	for p in range(1, players + 1):
 		items.peer_connected_hello(p, "soakkey%05d" % p)
 		pos.append(Vector3(53301.0 + rng.randf_range(-200.0, 200.0), 10.0, 68427.0 + rng.randf_range(-200.0, 200.0)))
 		items.report_position(p, pos[p - 1])
@@ -115,12 +126,12 @@ func _init() -> void:
 
 	for step in int(SPAN_S / TICK_S):
 		if step % 5 == 0:
-			for p in range(1, PLAYERS + 1):
+			for p in range(1, players + 1):
 				pos[p - 1] += Vector3(rng.randf_range(-4.0, 4.0), 0.0, rng.randf_range(-4.0, 4.0))
 				items.report_position(p, pos[p - 1])
 
 		if step % 40 == 0:
-			for p in range(1, PLAYERS + 1):
+			for p in range(1, players + 1):
 				var kind: int = rng.randi_range(0, 9)
 
 				if kind == 0:
@@ -155,8 +166,14 @@ func _init() -> void:
 		var d_npcs: float = float(Time.get_ticks_usec() - t0) / 1000.0
 		t0 = Time.get_ticks_usec()
 
-		for n in range(step % 5, PLAYERS, 5):   # each player's rows about four times a second
-			count("animals", var_to_bytes(animals.rows_near(pos[n])).size())
+		for n in range(step % 5, players, 5):   # each player's rows about four times a second
+			var beasts: Array = animals.rows_near(pos[n])
+			var t_split: int = Time.get_ticks_usec()
+			var parts: Array = RowParts.split(beasts)   # as terrain_server _send_npcs
+			split_us += Time.get_ticks_usec() - t_split
+			split_calls += 1
+			split_many += 1 if parts.size() > 1 else 0
+			count("animals", var_to_bytes(beasts).size())
 			count("npcs", var_to_bytes(npcs.rows_near(pos[n])).size())
 			count("blood", var_to_bytes(animals.blood_near(pos[n])).size())
 
@@ -168,6 +185,23 @@ func _init() -> void:
 			worsts[pair[0]] = maxf(worsts[pair[0]], pair[1])
 
 	print("soak: items ticks over 8 ms: ", ", ".join(spikes.slice(0, 24)), " (", spikes.size(), " in all)")
+	print("soak: animal rows split (protocol 171): %d sends, %d over one packet, %.1f us a send on average" % [split_calls, split_many, float(split_us) / maxf(split_calls, 1)])
+
+	# The split on full batches, as a crowded hunting ground or the spyglass sends them: what each send pays at hundreds of players.
+	for n_rows in [8, 15, 30, 60]:
+		var rows: Array = []
+
+		for i in n_rows:
+			rows.append([1000 + i, 2 + i % 9, Vector3(56538.9 + i, 28.6, 71702.7 - i), snappedf(0.37 * i, 0.01), i % 4, 123456 + i * 50, Vector2(56540.0 + i, 71700.0 - i)])
+
+		var t_full: int = Time.get_ticks_usec()
+
+		for k in 1000:
+			RowParts.split(rows)
+
+		var us: float = float(Time.get_ticks_usec() - t_full) / 1000.0
+		print("soak: split of %d rows (%d bytes, %d parts): %.1f us a send" % [n_rows, var_to_bytes(rows).size(), RowParts.split(rows).size(), us])
+
 	for fname in ["_rot", "_fires", "_vitals_tick", "_craft_tick", "_remains_tick", "_spoil_tick", "_fly", "_carcass_tick"]:
 		if not items.has_method(fname):
 			continue
@@ -179,6 +213,12 @@ func _init() -> void:
 
 		print("soak: profile %s: %.3f ms per call" % [fname, float(Time.get_ticks_usec() - t1) / 20000.0])
 
+	# The per-player readings as the vitals tick makes them: its caches on (lit fires, cover, loads), filled by the first pass. Without them
+	# each call walked every record for the lit fires, and the soak once showed warmth_target at 13.5 ms a pass, far above the tick's cost.
+	items._vitals_caches_clear()
+	items._lit_valid = false
+	items._in_vitals = true
+
 	for fname in ["_load_ratio", "warmth_target", "effort_of", "exertion_of", "_sleep_quality"]:
 		var t4: int = Time.get_ticks_usec()
 
@@ -186,7 +226,7 @@ func _init() -> void:
 			for peer in items._peer_key:
 				items.call(fname, peer)
 
-		print("soak: profile %s: %.3f ms per pass over %d players" % [fname, float(Time.get_ticks_usec() - t4) / 10000.0, items._peer_key.size()])
+		print("soak: profile %s: %.3f ms per pass over %d players (vitals caches on)" % [fname, float(Time.get_ticks_usec() - t4) / 10000.0, items._peer_key.size()])
 
 	for fname in ["_warmth_tick", "_sick_tick", "_energy_tick", "_breath_tick", "_strain_tick", "_sync_vitals"]:
 		var t3: int = Time.get_ticks_usec()
@@ -207,7 +247,74 @@ func _init() -> void:
 				else:
 					items.call(fname, peer, false)
 
-		print("soak: profile %s: %.3f ms per pass over %d players" % [fname, float(Time.get_ticks_usec() - t3) / 10000.0, items._peer_key.size()])
+		print("soak: profile %s: %.3f ms per pass over %d players (vitals caches on)" % [fname, float(Time.get_ticks_usec() - t3) / 10000.0, items._peer_key.size()])
+
+	# Vitals, piece by piece (26 Nov 2026: 123.5 ms a second at 64 players, the largest part). Each line is one pass over every player,
+	# caches on as inside the tick; "cold" lines clear the per-tick caches before each pass, as each real vitals tick starts.
+	var leaf_peer: Array = ["worn_of", "_armour_kg", "_carry_body", "insulation_worn", "heat_load", "rested_tier", "on_good_bed", "_drain_mult",
+			"_has_bedroll", "comfort_points", "comfort_target", "strain_going", "cold_stage", "_bed_of", "_carry_notice", "rain_shed", "_load_ratio", "carried_kg_of"]
+
+	for fname in leaf_peer:
+		if not items.has_method(fname):
+			continue
+
+		var tleaf: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				items.call(fname, peer)
+
+		print("soak: vitals leaf %-22s %.3f ms per pass over %d players" % [fname, float(Time.get_ticks_usec() - tleaf) / 10000.0, items._peer_key.size()])
+
+	for field in ["hunger_thirst_mult", "exhaustion_mult", "regen_mult"]:
+		var tfood: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				items.food_mult(peer, field)
+
+		print("soak: vitals leaf food_mult %-14s %.3f ms per pass" % [field, float(Time.get_ticks_usec() - tfood) / 10000.0])
+
+	for fname in ["_weather_here", "_rain_here", "_vitals_cover"]:
+		var tspot: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				items.call(fname, items._peer_pos.get(peer, Vector3.ZERO))
+
+		print("soak: vitals leaf %-22s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tspot) / 10000.0])
+
+	for fname in ["_update_soak", "_sick_due_tick", "_comfort_meter_tick", "_limp_tick"]:
+		var tbody: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				var v: Dictionary = items._vitals.get(items._peer_key[peer], {})
+
+				if v.is_empty():
+					continue
+
+				if fname == "_update_soak":
+					items.call(fname, peer, 6.0)
+				elif fname == "_sick_due_tick":
+					items.call(fname, peer, v, 6.0)
+				else:
+					items.call(fname, peer, v, 0.25)
+
+		print("soak: vitals leaf %-22s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tbody) / 10000.0])
+
+	for fname in ["warmth_target", "carried_kg_of", "_load_ratio", "effort_of", "worn_of", "_armour_kg", "rested_tier"]:
+		var tcold: int = Time.get_ticks_usec()
+
+		for n in 10:
+			items._vitals_caches_clear()
+
+			for peer in items._peer_key:
+				items.call(fname, peer)
+
+		print("soak: vitals leaf cold %-17s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tcold) / 10000.0])
+
+	items._in_vitals = false
 
 	for fname in ["_save_trees", "_save_chests", "_save_vitals", "_save_characters", "_save_craft_queues"]:
 		var t5: int = Time.get_ticks_usec()
@@ -248,9 +355,15 @@ func _init() -> void:
 		if sums[n] > sums[worst_name]:
 			worst_name = n
 
-	print("soak: %d players, %d animals, %d NPCs, %d world records after %.0f s: tick avg %.2f ms, p99 %.2f ms, worst %.2f ms; heaviest on average: %s; memory +%.1f MB" % [PLAYERS, animals.animals.size(), npcs.npcs.size(), items.world_item_count(), SPAN_S, mean, float(settled[int(settled.size() * 0.99)]), float(settled[settled.size() - 1]), worst_name, float(OS.get_static_memory_usage() - memory0) / 1048576.0])
+	print("soak: %d players, %d animals, %d NPCs, %d world records after %.0f s: tick avg %.2f ms, p99 %.2f ms, worst %.2f ms; heaviest on average: %s; memory +%.1f MB" % [players, animals.animals.size(), npcs.npcs.size(), items.world_item_count(), SPAN_S, mean, float(settled[int(settled.size() * 0.99)]), float(settled[settled.size() - 1]), worst_name, float(OS.get_static_memory_usage() - memory0) / 1048576.0])
 
-	if mean > 12.0:
+	var ranked: Array = items.part_ms.keys()   # not "parts": the animal sends above keep a loop-local parts (Godot's confusable-local warning)
+	ranked.sort_custom(func(a, b): return float(items.part_ms[a]) > float(items.part_ms[b]))
+
+	for part in ranked.slice(0, 16):
+		print("soak: items part %-28s %.2f ms a second" % [part, float(items.part_ms[part]) / SPAN_S])
+
+	if mean > 12.0 and players == PLAYERS_DEFAULT:   # the limit is for the default 20; a bigger soak measures, it does not fail
 		failures += 1
 		print("FAIL mean tick %.2f ms over 12 ms" % mean)
 

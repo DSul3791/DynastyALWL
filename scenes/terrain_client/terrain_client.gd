@@ -52,6 +52,8 @@ const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const ProcessEndMarkScript := preload("res://src/debug/process_end_mark.gd")
+const NetPollScript := preload("res://src/debug/net_poll.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
@@ -142,6 +144,7 @@ const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
+const InspectReticleScript := preload("res://src/client/inspect_reticle.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
@@ -223,13 +226,13 @@ const STILL_MSEC := 3000              # flying: ground loads again after staying
 const SPACE_WAKE_S := 1.0               # hold Space this long to wake from sleep early
 const WALK_SPEED := 3.2               # the old jog speed (the old walk was 1.4)
 const FAST := 3.0                     # flying: Shift multiplier
-const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run animation and stride rate stay at the old 6 m/s cadence: STEP_M[2] and avatar_driver RUN_CLIP_PACE
+const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run clip plays faster to keep up (R-MOVE-RUN-FEET, avatar_driver RUN_CLIP_PACE) and the footsteps follow its feet: STEP_M[1]
 # Walking camera (all tuning is here; each list is [walk, run], the walk taking the old jog's numbers). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [1.2, 3.0]               # metres per step: about 2.7 and 3.0 steps a second at the natural speeds (the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
+const STEP_M := [1.2, 1.7]               # metres per step, the clips' own: the walk about 2.7 steps a second at 3.2 m/s; the run clip's step is 1.7 m, so at 9 m/s about 5.3 steps a second (R-MOVE-RUN-FEET)
 const BOB_M := [0.052, 0.064]            # how far the camera dips at a footfall
 const SWAY_M := [0.016, 0.020]           # sideways shift at a footfall
 const SWAY_DEG := [0.13, 0.16]           # roll toward the stepping side at a footfall
@@ -299,6 +302,7 @@ var _water_label: Label             # the water flow rate readout, shown for 3 s
 var _water_label_until_msec: int = 0
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
+var _inspect_plus: Control = null     # the red + at the middle while inspection is on (inspect_reticle.gd)
 var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
 var _test_clear_done: bool = false
 var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (tests)
@@ -547,6 +551,7 @@ var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
 var quitting: bool = false            # the game is closing, not changing scene (death screen, Retry): _ends_at_exit_tree
 var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
+var _flow_jobs: Array = []            # [task id, job] of the live water windows being unpacked on a worker, in arrival order (_on_water_flow)
 var _in_mutex: Mutex = Mutex.new()
 var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
 var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.at at the player, once a second)
@@ -579,9 +584,12 @@ var _remote: bool = false                 # a client-only build joining someone'
 
 
 func _ready() -> void:
+	load("res://src/client/title_music.gd").stop(get_tree())   # the menu music fades out: it never plays over the world
 	var my_model: String = MyCharacter.body_model()
 	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
 	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+	DynastyBodyScript.clips_on_worker = not DynastyBodyScript.headless()   # in a window the first body's 143 clips are made on a worker thread, not in the join's first-body frame (276 ms, Lane A Low route 26 Nov 2026)
+	OceanMesh.start()   # the sea's 148 thousand vertex grid, on a worker while the client connects (about 400 ms of the welcome's frame on Lane A Low)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
@@ -602,6 +610,9 @@ func _ready() -> void:
 			_previous_run_note_until_msec = Time.get_ticks_msec() + 90000
 
 	net = $TerrainNet
+	process_physics_priority = 1000   # _physics_process notes the start of the physics engine's step
+	add_child(ProcessEndMarkScript.new())   # stamps the end of every frame's scripts (diagnostics: HITCH lines' "scripts" and "deferred and engine")
+	add_child(NetPollScript.new(net))   # polls the network itself from process_frame, timed as "net poll" (diagnostics: what a slow poll held)
 	display.load_saved()
 	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
 		_telemetry.event("EXIT: %s" % why)
@@ -1396,6 +1407,12 @@ func _on_welcome(info: Dictionary) -> void:
 	var tw: int = Probe.start()
 	_welcome_body(info)
 	Probe.stop("welcome", tw)
+	var welcome_ms: float = float(Time.get_ticks_usec() - tw) / 1000.0
+
+	# Lane A r4 Low at 35dcde90: a 3.5 s welcome with its steps never printed (the freeze watch starts part way through it, so the frame's
+	# own lines miss the start). Its named steps, once, at the join.
+	if welcome_ms > Probe.JOIN_SLOW_MS:
+		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(32)])
 
 
 func _welcome_body(info: Dictionary) -> void:
@@ -1445,6 +1462,7 @@ func _welcome_body(info: Dictionary) -> void:
 		# One folder per terrain version and set of tile files, so older blocks are never mixed in.
 		cache_dir = "user://terrain_cache/%s/v%d_%s" % [str(info["world_name"]).validate_filename(), int(info.get("terrain_version", 1)), str(info.get("tiles_stamp", ""))]
 
+	var tw_cache: int = Probe.start()
 	cache = CacheScript.new()
 	if cache_mb <= 0:
 		cache_mb = QUALITY_CACHE_MB[quality]
@@ -1470,6 +1488,8 @@ func _welcome_body(info: Dictionary) -> void:
 		cache.set_revisions(info["revisions"])
 		FreezeWatchScript.printer.line("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 
+	Probe.stop("welcome: ground cache and starter ground", tw_cache)
+	var tw_line: int = Probe.start()
 	_ask_catch_up()
 	stream = StreamScript.new()
 	stream.cache = cache
@@ -1480,6 +1500,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var block_port: int = _block_port_override if _block_port_override > 0 else int(info.get("block_port", 0))   # --block-port: a test relay's port (tools/lossy_link.py)
 	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else block_port, multiplayer.get_unique_id())
 	stream.link = link
+	Probe.stop("welcome: catch-up ask and block line", tw_line)
 	var root: Node3D = Node3D.new()
 	root.name = "World"
 	add_child(root)
@@ -1487,6 +1508,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_tables = TableSetScript.new()
 	_tables.load_directory()
 	Probe.stop("welcome: tables", t1)
+	var tw_ground: int = Probe.start()
 	terrain = VoxelLodTerrain.new()
 	terrain.format = Layout.make_format()
 	terrain.stream = stream
@@ -1506,11 +1528,14 @@ func _welcome_body(info: Dictionary) -> void:
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
 	# player first, but makes no collision until every coarser level is loaded too, so the
 	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
+	Probe.stop("welcome: ground node", tw_ground)
 	var t2: int = Probe.start()
 	terrain.material = GroundMaterialScript.make(_tables, quality)
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
+	var tw_ground_add: int = Probe.start()
 	root.add_child(terrain)
+	Probe.stop("welcome: ground added", tw_ground_add)
 	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
 
@@ -1522,28 +1547,41 @@ func _welcome_body(info: Dictionary) -> void:
 	var t3: int = Probe.start()
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	Probe.stop("welcome: flora setup", t3)
+	var tw_flora_add: int = Probe.start()
 	root.add_child(flora)
 	flora.ground_ready = func(x: float, z: float) -> bool: return stream != null and stream.column_loaded(x, z)
 	_freeze_watch.start()
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
+	Probe.stop("welcome: flora added", tw_flora_add)
+	var tw_ice: int = Probe.start()
+	var tq_sub0_oceanice: int = Probe.start()
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
 	ocean_ice.ground_below = _ground_below
 	root.add_child(ocean_ice)
+	Probe.stop("welcome: ocean ice", tq_sub0_oceanice)
+	var tq_sub1_shoreprops: int = Probe.start()
 	shore_props = ShoreProps.new()
 	shore_props.name = "ShoreProps"
 	root.add_child(shore_props)
+	Probe.stop("welcome: shore props", tq_sub1_shoreprops)
+	var tq_sub2_fallmist: int = Probe.start()
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
 	root.add_child(fall_mist)
+	Probe.stop("welcome: fall mist", tq_sub2_fallmist)
+	var tq_sub3_fallgrowth: int = Probe.start()
 	fall_growth = FallGrowthScript.new()
 	fall_growth.name = "FallGrowth"
 	fall_growth.setup(terrain, flora, quality)
 	root.add_child(fall_growth)
+	Probe.stop("welcome: fall growth", tq_sub3_fallgrowth)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
+	Probe.stop("welcome: ice, shore, mist and fall growth", tw_ice)
+	var tw_grass: int = Probe.start()
 	grass = GrassViewScript.new()
 	grass.third_person = third_person
 	grass.name = "Grass"
@@ -1553,14 +1591,16 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	grass.brook_spots = _brook_spots
+	Probe.stop("welcome: grass and critters", tw_grass)
+	var tw_signs: int = Probe.start()
 	trail_signs = TrailSignsScript.new()   # signs along the trails (stage 2d): latrines, scrapes, deer prints, droppings, beds and rubbed trees, for everyone
 	trail_signs.name = "TrailSigns"
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
 	trail_signs.trunks_near = func(point: Vector3, radius: float) -> Array: return _trunks_round(point, radius) if flora != null else []   # rubbed trees by deer trails
 	trail_signs.patches_changed.connect(grass.set_sign_patches)   # the grass short round latrines, droppings and warrens (Lane A 23 Nov: unseen in tall grass)
-	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
-		if sound != null:
+	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the server trains Tracking; the sound only with hunting gear in hand (QA #20)
+		if sound != null and held != null and TrailSignsScript.sounds_with(trail_signs.cfg, [held.held_id(), held.off_id()]):
 			sound.slots.play("sign_spot", at)
 
 		if net != null and multiplayer.has_multiplayer_peer():
@@ -1570,6 +1610,8 @@ func _welcome_body(info: Dictionary) -> void:
 	fresh_tracks.name = "FreshTracks"
 	fresh_tracks.player_at = func() -> Vector3: return body.global_position if body != null else Vector3.INF
 	root.add_child(fresh_tracks)
+	Probe.stop("welcome: trail signs and fresh tracks", tw_signs)
+	var tw_probes: int = Probe.start()
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
@@ -1579,10 +1621,14 @@ func _welcome_body(info: Dictionary) -> void:
 	_gpu_probe = GpuProbeScript.new()
 	add_child(_gpu_probe)
 	_gpu_probe.setup(self)
+	Probe.stop("welcome: jitter, machine and gpu probes", tw_probes)
+	var tw_weather: int = Probe.start()
 	weather_look = WeatherLookScript.new()
 	add_child(weather_look)
 	weather_look.setup(self)
 	weather_look.set_quality(quality)
+	Probe.stop("welcome: weather look", tw_weather)
+	var tw_sound_add: int = Probe.start()
 	sound = SoundStageScript.new()
 	sound.name = "Sound"
 	root.add_child(sound)
@@ -1590,6 +1636,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.under_land = _under_land   # no sea under the island: a deep tunnel has dry steps (Dave 20 Nov 2026)
 	sound.floor_under = _floor_under
 	sound.loading = true   # the world's sounds stay silent until it is ready, then fade in (Dave 24 Nov 2026, the static at load)
+	Probe.stop("welcome: sound added", tw_sound_add)
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
@@ -1626,12 +1673,17 @@ func _welcome_body(info: Dictionary) -> void:
 		return "tier %s: ground view %d, flora view trees %.0f shrubs %.0f plants %.0f m, impostors from %.0f m, shadows %.0f m, grass %d m density %.2f" % [
 			QUALITY_NAMES[quality], terrain.view_distance, flora.view_m[0], flora.view_m[1], flora.view_m[2], flora.impostor_m,
 			float(QUALITY_SHADOW_M[quality]), int(grass.radius_m), grass.density])
+	var tw_env: int = Probe.start()
 	_make_environment(root)
+	Probe.stop("welcome: environment made", tw_env)
+	var tw_quality: int = Probe.start()
 	_apply_quality()
+	Probe.stop("welcome: quality applied", tw_quality)
 
 	if OS.get_cmdline_user_args().has("--print-tier"):
 		FreezeWatchScript.printer.line("Terrain client: " + str(debug_hud.text()))
 	Probe.stop("welcome: environment", t5)
+	var tw_layers: int = Probe.start()
 	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -1685,6 +1737,8 @@ func _welcome_body(info: Dictionary) -> void:
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_inspect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_inspect_label)
+	_inspect_plus = InspectReticleScript.new()
+	layer.add_child(_inspect_plus)
 	_water_label = Label.new()
 	_water_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_water_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -1697,6 +1751,7 @@ func _welcome_body(info: Dictionary) -> void:
 	layer.add_child(_water_label)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
+	Probe.stop("welcome: hud layers, labels and tests", tw_layers)
 	var tq_menu: int = Probe.start()
 	_build_menu()
 	Probe.stop("welcome: menu", tq_menu)
@@ -1813,8 +1868,13 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(items)   # its _ready prewarms the loose item meshes
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
+	var tw_items_setup: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	Probe.stop("welcome: items setup", tw_items_setup)
+	var tw_strip: int = Probe.start()
 	_setup_status_strip(layer)   # after items.setup: its reads use the vitals data the view loads there
+	Probe.stop("welcome: status strip", tw_strip)
+	var tw_players: int = Probe.start()
 	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
 	_player_view.name = "Players"
 	_player_view.table = items.table
@@ -1840,6 +1900,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view.landed.connect(func(at: Vector3, drop_m: float) -> void:
 		if sound != null and sound.landing != null:
 			sound.landing.land_at(at, drop_m))   # and their landing from a fall, where their feet came down
+	Probe.stop("welcome: player view", tw_players)
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -1860,6 +1921,7 @@ func _welcome_body(info: Dictionary) -> void:
 	game_menu.refresh()
 	Probe.stop("welcome: game menu", tq_gmenu)
 
+	var tw_hooks: int = Probe.start()
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
 
@@ -1986,6 +2048,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
+	Probe.stop("welcome: item hooks, harvest and interactables", tw_hooks)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.trunks_round = _trunks_round
@@ -2844,7 +2907,8 @@ func _offer_welcome() -> void:
 		return
 
 	_welcome_offered = true
-	_welcome().offer(CharacterStoreScript.active_id())
+	var build: int = int(world.get("server_build", 0)) if bool(world.get("server_stamped", false)) else 0   # a release server: a new build is a new world (QA #13)
+	_welcome().offer(CharacterStoreScript.active_id(), str(world.get("world_name", "")), build)
 
 
 func _welcome():
@@ -3117,6 +3181,11 @@ func _drain_incoming() -> void:
 			WorkerThreadPool.wait_for_task_completion(job["task"])
 
 	_in_queue.clear()
+
+	for entry in _flow_jobs:
+		WorkerThreadPool.wait_for_task_completion(int(entry[0]))
+
+	_flow_jobs.clear()
 
 
 func _apply_incoming() -> void:
@@ -3672,18 +3741,52 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)
 
 
+# Lane A 26 Nov 2026 (r4 route at Low on 4 cores, PR #1953's NET slow lines): this message took 41-47 ms of the main thread 25 times in a
+# 10-minute run, almost all of it tuck_dry_edges, a GDScript pass over the window's 128 x 128 texels. The unpacking and the tuck now run on
+# a worker; _apply_flow shows the newest finished window the next frame (twice a second, a newer window replaces any older one waiting).
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
+	if flora == null or flora.water_material() == null:
+		return
+
+	# Every key is set before the task starts, the worker writes only "image", and the main thread reads the job only once the task is done.
+	var job: Dictionary = {"origin": origin, "w": w, "h": h, "cell_m": cell_m, "raw_size": raw_size, "bytes": bytes, "image": null}
+	_flow_jobs.append([WorkerThreadPool.add_task(_unpack_flow.bind(job)), job])
+
+
+func _unpack_flow(job: Dictionary) -> void:
+	var im: Image = FlowTexture.unpack(int(job["w"]), int(job["h"]), int(job["raw_size"]), job["bytes"])
+
+	if im != null:
+		FlowTexture.tuck_dry_edges(im)   # the sheet runs flat into the bank instead of up it (water_flow_texture.gd)
+
+	job["image"] = im
+
+
+# Each frame: the finished windows in arrival order are taken off (their tasks waited on, which returns at once), the newest one is shown.
+func _apply_flow() -> void:
+	var newest: Dictionary = {}
+
+	while not _flow_jobs.is_empty() and WorkerThreadPool.is_task_completed(int(_flow_jobs[0][0])):
+		var entry: Array = _flow_jobs.pop_front()
+		WorkerThreadPool.wait_for_task_completion(int(entry[0]))
+		newest = entry[1]
+
+	if newest.is_empty() or newest["image"] == null:
+		return
+
+	var t: int = Probe.start()
+	_show_flow(newest["image"], newest["origin"], float(newest["cell_m"]))
+	Probe.stop("water flow in", t)
+
+
+func _show_flow(im: Image, origin: Vector2, cell_m: float) -> void:
 	var material: Material = flora.water_material() if flora != null else null
 
 	if material == null:
 		return
 
-	var im: Image = FlowTexture.unpack(w, h, raw_size, bytes)
-
-	if im == null:
-		return
-
-	FlowTexture.tuck_dry_edges(im)   # the sheet runs flat into the bank instead of up it (water_flow_texture.gd)
+	var w: int = im.get_width()
+	var h: int = im.get_height()
 
 	# Protocol 85: the liquid sheet draws the live window (src/water2/liquid_surface.gd), the grid look steps aside there.
 	if _liquid == null:
@@ -5054,7 +5157,9 @@ func _make_environment(root: Node3D) -> void:
 	root.add_child(sun)
 	var environment: Environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
+	var te_sky: int = Probe.start()
 	environment.sky = SkyClouds.make_sky(quality)
+	Probe.stop("environment: sky", te_sky)
 	environment.fog_enabled = true
 	environment.fog_density = 0.0004
 	# The fog used to paint the whole sky grey (owner, 2026-10-19: "the sky has nothing");
@@ -5065,10 +5170,14 @@ func _make_environment(root: Node3D) -> void:
 	var world_environment: WorldEnvironment = WorldEnvironment.new()
 	world_environment.environment = environment
 	root.add_child(world_environment)
+	var te_sea: int = Probe.start()
 	sea = MeshInstance3D.new()
-	sea.mesh = OceanMesh.make()   # 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
+	sea.mesh = OceanMesh.take()   # its arrays were made on a worker since _ready (OceanMesh.start); 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
+	Probe.stop("environment: sea mesh", te_sea)
+	var te_water: int = Probe.start()
 	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
+	Probe.stop("environment: sea material", te_water)
 
 
 
@@ -5619,6 +5728,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		return
 
+	# Passing out, fainted or waking: the body is not the player's (Dave 25 Nov 2026, QA #19: "they must stop the second the game determines
+	# its time to pass out"). No tool, E, stance or other key press reaches the world; looking round, the menu and screens above, and key
+	# and button releases (so nothing stays held) still do.
+	if items != null and items.body_out() and not (event is InputEventMouseMotion) and event.is_pressed():
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock and photo.active:
 		photo.orbit(event.relative.x * display.mouse_look, event.relative.y * display.mouse_look)   # the camera swings round the character; the character does not turn
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
@@ -6111,7 +6226,7 @@ func _move_player(delta: float) -> void:
 		_space_wake_s = 0.0
 
 	# A crawler who reaches deep water stands up to swim (review of PR #1939: a lying swimmer crept along at the crawl's pace).
-	if (input != Vector3.ZERO and (not crawling() or swimming)) or (_move_held("jump") and not sleeping_now):
+	if ((input != Vector3.ZERO and (not crawling() or swimming)) or (_move_held("jump") and not sleeping_now)) and not (items != null and items.body_out()):   # no stand-up asks while passing out (QA #19)
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -6585,8 +6700,11 @@ func _update_bob(delta: float) -> void:
 	var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 	var moving: bool = body.is_on_floor() and pace > 1.0
 	_bob_amount = move_toward(_bob_amount, 1.0 if moving else 0.0, delta * 6.0)
-	var stride: int = 1 if running else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG
+	var stride: int = 1 if pace > AvatarDriver.RUN_FROM else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG: by the clip the pace plays (run above 5 m/s), so the steps follow the feet even when a runner is slowed
 	var gait: int = _gait()                  # the footstep tier
+
+	if moving and items != null and items.body_out():
+		moving = false   # passing out, fainted or waking: no footsteps, whatever the body is doing (Dave 25 Nov 2026, QA #19)
 
 	if moving:
 		# One full turn of the phase is one step (a footfall at 0, then at TAU).
@@ -6687,8 +6805,17 @@ func send_position_now() -> void:
 	_aim_msec = now
 	_aim_pos = here
 
+# Runs last among the physics callbacks (process_physics_priority, set in _ready): a FREEZE gap after this note was in the physics engine's own
+# step (colliders added or moved); one after "drawn" was in the window's present (Lane A 25 Nov 2026: a 1.1 s gap after "drawn" running into new ground).
+func _physics_process(_delta: float) -> void:
+	FreezeWatchScript.physics_mark()
+
+
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
+	# Right after the beat, so the frame just ended is judged with its own timed pieces (they were all stopped since the last call), its wall
+	# time and its monitors; called later in this function it saw the next frame's first pieces instead (PR #1952 review).
+	Probe.frame(delta)
 	_note_after_welcome(delta)
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
@@ -6777,7 +6904,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not _screen_up())   # no harvest under any screen (the Journal, Tab), not only the inventory
+		harvest.update(delta, KeyBindings.held("interact") and not _screen_up() and not (items != null and items.body_out()))   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
@@ -6803,7 +6930,6 @@ func _process(delta: float) -> void:
 		_water_label.text = ""
 
 	_frame_ms.append(delta * 1000.0)
-	Probe.frame(delta)
 
 	var tq_arms: int = Probe.start()
 	DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here
@@ -6927,6 +7053,7 @@ func _process(delta: float) -> void:
 	var ti: int = Probe.start()
 	_send_water_request(now)
 	_apply_incoming()
+	_apply_flow()
 	Probe.stop("incoming", ti)
 
 	if now >= _flora_check_msec:
@@ -7935,6 +8062,9 @@ func _process(delta: float) -> void:
 	if inspecting:
 		_update_inspect()
 
+	if _inspect_plus != null:
+		_inspect_plus.show_if(InspectReticleScript.shown(inspecting, held != null and held.aim_cross_shown(), not photo.active and not spyglass.active and (shot_lock or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)))
+
 	if waiting_for_ground and not flying:
 		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
 	if Time.get_ticks_msec() < _bake_alert_until:
@@ -8760,8 +8890,11 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	OceanMesh.finish()   # a sea grid worker still running at a quit before the welcome
+	DynastyBodyScript.finish_clips()   # the body's clip worker still running at a quick quit (dynasty_body.gd), before the drain so its line is logged
 	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
+	DynastyBodyScript.clips_on_worker = false   # the menus after the game (death screen, launcher) make a body's clips at once again
 
 	if crash_report != null:
 		crash_report.mark_clean()

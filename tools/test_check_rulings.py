@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Self-test for tools/check_rulings.py: a clean repo passes; a second line on a subject, a struck-through
-line and a replaced phrase back in a doc each fail.   python3 -I tools/test_check_rulings.py"""
+line and a replaced phrase back in a doc each fail; a frozen checkpoint (docs/retirements.json) is skipped.   python3 -I tools/test_check_rulings.py"""
 import json, pathlib, subprocess, sys, tempfile
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -9,7 +9,7 @@ import check_rulings
 fails = 0
 
 
-def case(name, rulings, doc, expect):
+def case(name, rulings, doc, expect, frozen=False, notes=0):
     global fails
     with tempfile.TemporaryDirectory() as d:
         root = pathlib.Path(d)
@@ -17,21 +17,33 @@ def case(name, rulings, doc, expect):
         (root / "docs/RULINGS.md").write_text(rulings, encoding="utf-8")
         (root / "docs/design.md").write_text(doc, encoding="utf-8")
         (root / "docs/retired_rules.json").write_text(json.dumps({"retired": [{"phrase": "torch or not", "replaced_by": "R-A"}]}), encoding="utf-8")
+        if frozen:   # docs/design.md is a frozen history checkpoint (docs/retirements.json): never edited, so never flagged
+            (root / "docs/retirements.json").write_text(json.dumps({"batches": [{"entries": [{"retired": "docs/design.md"}]}]}), encoding="utf-8")
         subprocess.run(["git", "init", "-q"], cwd=root)
         subprocess.run(["git", "add", "."], cwd=root)
         got = len(check_rulings.problems(root))
-        if got != expect:
+        if got != expect or len(check_rulings.NOTES) != notes:
             fails += 1
-            print(f"FAIL {name}: {got} problems, expected {expect}")
+            print(f"FAIL {name}: {got} problems and {len(check_rulings.NOTES)} notes, expected {expect} and {notes}")
 
 
-ok = "- **R-A** · 25 Nov 2026 · fire keeps everything away.\n"
+ok = "- **R-A** · 25 Nov 2026 · rule · fire keeps everything away.\n"
 case("clean", ok, "Fire holds every animal.", 0)
-case("second line", ok + "- **R-A** · 26 Nov 2026 · again.\n", "", 1)
+case("second line", ok + "- **R-A** · 26 Nov 2026 · rule · again.\n", "", 1)
 case("struck through", ok + "~~old~~\n", "", 1)
 case("old rule in a doc", ok, "The pack rushes, Torch or not.", 1)
 case("undated line", "- **R-A** fire.\n", "", 2)
 case("date without a day", "- **R-A** · Nov 2026 · fire.\n", "", 2)
-case("mixed-case phrase", ok, "Torch Or Not", 1)   # bad line, and R-A then missing for the retired phrase
+case("mixed-case phrase", ok, "Torch Or Not", 1)
+case("no rule, suggestion or unclear mark", "- **R-A** · 25 Nov 2026 · fire.\n", "", 2)
+case("an old phrase against a suggestion only notes", ok.replace("· rule ·", "· suggestion ·"), "Torch or not.", 0, notes=1)
+case("an old phrase against an unclear line blocks", ok.replace("· rule ·", "· unclear ·"), "Torch or not.", 1)   # unclear counts as a rule until the coordinator settles it
+case("old rule in a frozen checkpoint", ok, "The pack rushes, Torch or not.", 0, frozen=True)
+for name, new, expect in [("a rule softened on the same date", ok.replace("· rule ·", "· suggestion ·"), 1),
+                          ("a rule replaced by a new dated suggestion", ok.replace("25 Nov 2026 · rule", "26 Nov 2026 · suggestion"), 0),
+                          ("an unchanged rule", ok, 0)]:
+    if len(check_rulings.softened(ok, new)) != expect:
+        fails += 1
+        print(f"FAIL {name}: expected {expect} softened")
 print("test_check_rulings: %s" % ("FAIL" if fails else "PASS"))
 sys.exit(1 if fails else 0)

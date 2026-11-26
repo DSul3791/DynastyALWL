@@ -1,11 +1,11 @@
 {
-	"note": "Fish schools (plan C, design/FISH_AND_FISHING_PLAN.md section 2 and 4): computed from a hash of (cell, slot, game day), never saved, never an entity. count_weights = chance of 0, 1, 2, 3 schools in a 128 m cell that has water. A school is placed on a point whose water kind (server_fish_water.gd) suits its species, up to place_tries tries, else it does not exist. Radius 3 to 8 m. The centre drifts drift_m metres around its base over drift_period_game_s and is held at the base when the drift would leave suitable water. factor: 1.0 inside the radius, 0.5 within 2x, far (0.03) outside (balance plan 5b: 0.15 gave about 19 fish an hour at midday to a net hauler standing outside every school; the aim is 1 to 8). species_by_kind: species names must exist as items; one that does not (salmon until the fish items land) is left out. only_in: species -> seasons it appears in.",
+	"note": "Fish schools (plan C, design/FISH_AND_FISHING_PLAN.md section 2 and 4): computed from a hash of (cell, slot, game day), never saved, never an entity. count_weights = chance of 0, 1, 2, 3 schools in a 128 m cell that has water. A school is placed on a point whose water kind (server_fish_water.gd) suits its species, up to place_tries tries, else it does not exist. Radius 3 to 8 m. The centre drifts drift_m metres around its base over drift_period_game_s and is held at the base when the drift would leave suitable water. factor: 1.0 inside the radius, 0.5 within 2x, far (0.03) outside (balance plan 5b: 0.15 gave about 19 fish an hour at midday to a net hauler standing outside every school; the aim is 1 to 8). species_by_kind: species names must exist as items; one that does not (salmon until the fish items land) is left out. only_in: species -> seasons it appears in. cache_max: placements kept for cells, days and seasons; 20000 covers about 2,000 players spread apart (9 cells each) for a day and its season changes (gate review 26 Nov 2026: 2000 thrashed past about 220).",
 	"count_weights": [0.25, 0.35, 0.25, 0.15],
 	"place_tries": 6,
 	"radius_m": [3.0, 8.0],
 	"drift_m": 12.0,
 	"drift_period_game_s": 21600.0,
-	"cache_max": 2000,
+	"cache_max": 20000,
 	"factor": {"inside": 1.0, "near": 0.5, "far": 0.03, "near_radii": 2.0},
 	"species_by_kind": {
 		"brook": [["trout", 1.0]],
@@ -15,7 +15,7 @@
 		"sea_shallow": [["herring", 0.3], ["mackerel", 0.25], ["smelt", 0.2], ["cod", 0.25]]
 	},
 	"signs": {
-		"note": "Fish you can see (plan D, server_fish_signs.gd; Dave 24 Nov 2026: never saw a fish pool). Once tick_ms the server rolls each school within reach_m of a player for a jump: jump_per_s for a school of big_size fish, scaled by its size, hour_mult [from, to, x] (else night_mult from 21:00 to 05:00, 1.0 by day) and the weather (rain_mult, storm_mult, cold_mult under cold_c): one jump every 10 to 30 s near a big school (plan 3.1). A player gets at most one jump per player_gap_ms. Size class: size_mid and size_big fish; big_species jump bigger. Every shadow_every_ms a player is sent the schools within shadow_m in water no deeper than shadow_depth_max_m, nearest first, at most shadow_max (plan 6.4), only when the list changed. The catch odds are unchanged.",
+		"note": "Fish you can see (plan D, server_fish_signs.gd; Dave 24 Nov 2026: never saw a fish pool). Once tick_ms the server rolls each school within reach_m of a player for a jump: jump_per_s for a school of big_size fish, scaled by its size, hour_mult [from, to, x] (else night_mult from 21:00 to 05:00, 1.0 by day) and the weather (rain_mult, storm_mult, cold_mult under cold_c): one jump every 10 to 30 s near a big school (plan 3.1). A player gets at most one jump per player_gap_ms. Size class: size_mid and size_big fish; big_species jump bigger. Every shadow_every_ms a player is sent the schools within shadow_m in water no deeper than shadow_depth_max_m, nearest first, at most shadow_max (plan 6.4), only when the list changed. The catch odds are unchanged. new_cells_usec: a pass spends at most this long working out cells whose schools are new for the day (at least one a pass); the rest wait for the next passes, so a new game day or a crowd in new water never makes one long pass.",
 		"tick_ms": 1000,
 		"reach_m": 100.0,
 		"player_gap_ms": 3000,
@@ -33,7 +33,8 @@
 		"shadow_m": 40.0,
 		"shadow_every_ms": 2000,
 		"shadow_max": 6,
-		"shadow_depth_max_m": 2.0
+		"shadow_depth_max_m": 2.0,
+		"new_cells_usec": 4000
 	},
 	"only_in": {"salmon": ["autumn"], "mackerel": ["summer"], "herring": ["spring", "autumn", "winter"], "smelt": ["spring", "winter"], "eel": ["summer", "autumn"]}
 }

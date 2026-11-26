@@ -5,7 +5,7 @@ extends SceneTree
 # player standing or walking north, holding an item, and a camera round that body takes one PNG per angle. For Lane A's confirmation pictures
 # (23 Nov 2026: a two-window session cannot be run unattended). Not the game's lighting, terrain or grass.
 #
-#   godot --path . --script res://tools/shot_remote.gd -- --item=wooden_spear --out=E:/Software/godotDev/DynastyALWL_Evidence/shots
+#   godot --path . --script res://tools/shot_remote.gd -- --item=wooden_spear --out=C:/DynastyLane/logs/<job>/shots
 #   options: --item=ID       the item in the other player's hand (omit for an empty hand)
 #            --body=body_1   the body model (body_1 = Body A, body_2 = Body B)
 #            --walk=M_PER_S  walks north (-Z) at this speed (0 = standing, 1.6 = walk, 4 = jog, 6 = run); the camera keeps pace

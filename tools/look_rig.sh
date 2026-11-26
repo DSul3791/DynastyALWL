@@ -13,7 +13,7 @@
 #            shot's --hour: season tints, bare winter trees and the sun's path for that day
 #   --pieces-yaw N  turn the whole --pieces row N degrees (see the back of a wall)
 #   --piece-extra K:V[,K:V]  draw the --pieces / --piece-views pieces as placed with those row extras, light on, instead of the cold ghost:
-#            forge:1 a smithy's red coals (fuel in, idle), forge:2 its flare (working), lit:1 a lit kiln or smelter, or any lit light (torches, torch posts, lanterns, lamp posts, braziers, fireplace: its flame and light as in the game). Best at night (--hour 22)
+#            forge:1 a smithy's red coals (fuel in, idle), forge:2 its flare (working), site:1 a blueprint site in the game's see-through blue (e.g. --pieces campfire --piece-extra site:1), lit:1 a lit kiln or smelter, or any lit light (torches, torch posts, lanterns, lamp posts, braziers, fireplace: its flame and light as in the game). Best at night (--hour 22)
 #   --ground ID:N  drop N of an item on the ground 2.2 m ahead of --at (stone:20 = a pile); --gy ground height of the pile (default 31.25 = 0.08 m over the visible spawn ground 31.17, so flat things (saw blade, kindling) are not buried; set it if you use --at elsewhere)
 #   --ground-close ID[:N]  the same pile (default 1) seen close: camera 0.35 m above the ground 0.9 m from it, looking 45 degrees down, ground in view (held shots at 1.5 m hide the item behind the body). Numbers are flags: --close-height M --close-dist M --close-pitch DEG; --agl/--drop-dist/--look-down after it override. Example: tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground
 #   --flora-scale N  draw the --flora row N times its size (diagnosis: is a small plant only hard to see?)
@@ -48,14 +48,14 @@
 #   Subject shots (--pieces, --look(s), --showroom, held items) hide the plant layer (trees, reeds, bushes) as well as the grass, so a reed bed cannot hide the subject.
 #   Every shot (but aerial, over 40 m, and absolute-height ones, which start at their own height) starts 1 m above the real ground at its spot (the server's ground height there), held until the ground under it loads, then goes to --agl (Dave 20 Nov 2026: never from high in the air).
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
-# display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
+# display settings are never read or written. PNGs go to --out (default C:/DynastyLane/logs/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
 cd "$(dirname "$0")/.." || exit 2
 SECONDS=0
 # Windows (Git bash) keeps the old behaviour; Linux (the server box) draws on the NVIDIA GPU under Xvfb, like tools/docker/shot.sh.
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1;; *) WIN="";; esac
 if [ -n "$WIN" ]; then
-  GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; PY=python; DEFOUT="E:/Software/godotDev/DynastyALWL_Evidence/shots"
+  GODOT="${GODOT_EXE:-C:/DynastyLane/godot/godot_lane_a.exe}"; PY=python; DEFOUT="C:/DynastyLane/logs/shots"
 else
   GODOT="${GODOT_EXE:-/opt/godot/godot}"; GFX="${GODOT_GFX_EXE:-/opt/godot/godot-gfx}"; PY=python3; DEFOUT=/out/shots
 fi
@@ -87,7 +87,7 @@ echo "rig defaults: --gy $GY (was 28.0 until 24 Oct; the spawn ground is 31.17 i
 #   --look NAME  one look straight from look_table.gd (plank_wall, crude_door_open, ...), four views like --piece-views; --looks a,b,c  a row of looks. Both need no structure.
 # --pieces: refuse a name that is not a structures.json key before the scene starts (a typo costs seconds, not a launch).
 if [ -n "$PIECES" ]; then
-  KEYS=$(grep -oE '^		"[a-z_0-9]+": \{' data/items/structures.json | sed -E 's/^\s*"([a-z_0-9]+)".*/\1/' | grep -vE '^(campfire)$' | tr '\n' ' ')
+  KEYS=$(grep -oE '^		"[a-z_0-9]+": \{' data/items/structures.json | sed -E 's/^\s*"([a-z_0-9]+)".*/\1/' | tr '\n' ' ')
   IFS=',' read -ra WANT <<< "$PIECES"
   for P in "${WANT[@]}"; do
     case " $KEYS " in *" $P "*) ;; *) echo "no such piece: $P"; echo "valid pieces: $KEYS"; exit 2;; esac

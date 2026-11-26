@@ -56,6 +56,10 @@ with tempfile.TemporaryDirectory(prefix='document-retirement-') as folder:
     check('executable reader inside docs also blocks expiry',data,False,[original],contains='still referenced')
     git('reset','--','docs/tools/reader.py');reader.unlink()
     (root/original).write_text('Changed content.\n');check('changed retired blob rejected',data,False);(root/original).write_text('Historical result.\n')
+    (root/'.gitattributes').write_text('* text=auto\n');(root/original).write_bytes(b'Historical result.\r\n')
+    check('a Windows checkout (CRLF) of the same file is unchanged',data)
+    (root/original).write_bytes(b'Changed content.\r\n');check('a changed file is still rejected on a CRLF checkout',data,False,contains='retired content changed')
+    (root/original).write_text('Historical result.\n');(root/'.gitattributes').unlink()
     check('license source cannot be scheduled here',data,False,mutate=lambda d:d['batches'][0]['entries'][0].update(original='docs/archive/LICENSE.md'))
     check('path traversal rejected',data,False,mutate=lambda d:d['batches'][0]['entries'][0].update(retired='../old.md'))
     check('missing preservation target rejected',data,False,mutate=lambda d:d['batches'][0]['entries'][0].update(target='docs/missing.md'))
@@ -116,4 +120,20 @@ with tempfile.TemporaryDirectory(prefix='document-retirement-') as folder:
     git('sparse-checkout','init','--cone');git('sparse-checkout','set','docs')
     assert not (root/'tools/reader.py').exists()
     check('sparse checkout cannot hide a tracked executable reader',data,False,[original],contains='still referenced')
+with tempfile.TemporaryDirectory() as tmp:
+    # The batched git helpers: order, exact bytes (binary, newlines), a missing spec mid-batch, spaces in paths.
+    r=Path(tmp)
+    def g(*a):return subprocess.check_output(['git',*a],cwd=r).decode().strip()
+    g('init','-q');g('config','user.email','t@t');g('config','user.name','t')
+    files={'a b.bin':b'\x00\xff\n\r\n','two.txt':b'one\ntwo\n','empty.txt':b''}
+    for n,d in files.items():(r/n).write_bytes(d)
+    g('add','-A');g('commit','-qm','x')
+    got=dr.git_objects(r,['HEAD:a b.bin','HEAD:nope.txt','HEAD:two.txt','HEAD:empty.txt','HEAD:'])
+    assert list(got)==['HEAD:a b.bin','HEAD:nope.txt','HEAD:two.txt','HEAD:empty.txt','HEAD:'],got
+    assert got['HEAD:a b.bin']==files['a b.bin'] and got['HEAD:two.txt']==files['two.txt'] and got['HEAD:empty.txt']==b''
+    assert got['HEAD:nope.txt'] is None and got['HEAD:'] is None
+    hashes=dr.worktree_blobs(r,['two.txt','a b.bin','gone.txt','empty.txt'])
+    assert hashes=={n:dr.blob(files[n]) for n in ('two.txt','a b.bin','empty.txt')},hashes
+    assert not dr.safe_path('a\nb') and not dr.safe_path('"q.md')
+    print('PASS: batched git helpers keep order and exact bytes, report missing specs, refuse newline and quoted paths')
 print('Document retirement regression checks passed; no live network or project files modified.')

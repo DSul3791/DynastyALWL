@@ -4,7 +4,7 @@
 Checks: conflict markers, unique item numbers, next_number above the highest, unique ACT_ action ids, unique protocol/build
 numbers, JSON files parse (no key twice in an object), build NUMBER not lower than before, no NEW crash reports or telemetry logs tracked, .uid for new scripts.
 It does not run Godot (warning count and headless loads stay with tools/local_check.sh on a machine with Godot)."""
-import json, os, re, subprocess, sys
+import json, os, pathlib, re, subprocess, sys
 
 # What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
 # Locally (no MERGE_CHECK_BASE) it compares against origin/dev, where PRs merge, as the CI does for a PR to dev (origin/<base>); against
@@ -219,6 +219,22 @@ if clips.returncode != 0:
     if "FAIL " not in clips.stdout:
         bad("animal clip check crashed: " + clips.stderr[-200:])
 
+alpha = subprocess.run([sys.executable, "tools/check_texture_alpha.py"], capture_output=True, text=True)      # every animal texture's see-through answer is kept (no read back in the frame)
+if alpha.returncode != 0:
+    for line in alpha.stdout.splitlines():
+        if line.startswith("FAIL "):
+            bad("animal texture: " + line[5:])
+    if "FAIL " not in alpha.stdout:
+        bad("texture alpha check crashed: " + alpha.stderr[-200:])
+
+answers = subprocess.run([sys.executable, "tools/check_clip_answers.py"], capture_output=True, text=True)      # every animal model's clip answers are kept (no measuring in the frame)
+if answers.returncode != 0:
+    for line in answers.stdout.splitlines():
+        if line.startswith("FAIL "):
+            bad("animal clip answers: " + line[5:])
+    if "FAIL " not in answers.stdout:
+        bad("clip answers check crashed: " + answers.stderr[-200:])
+
 text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_output=True, text=True)
 if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
     for line in text.stdout.splitlines()[:-1]:
@@ -270,16 +286,27 @@ if export.returncode != 0:   # a release build would lack a file it loads or car
     bad("export_check: " + " | ".join([l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")] + export.stderr.strip().splitlines()[-3:]))
 
 rulings = subprocess.run([sys.executable, "tools/check_rulings.py"], capture_output=True, text=True)
+dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
+for line in (rulings.stdout + dave.stdout).splitlines():   # a suggestion's NOTE never blocks, but it is shown (Dave 26 Nov 2026, R-CORE-PLAYTEST-WINS)
+    if line.startswith("NOTE"):
+        print(line)
 if rulings.returncode != 0:   # one live line per ruling, replaced rules removed (CONSTITUTION.md, "Rulings")
     for line in rulings.stdout.splitlines():
-        bad("rulings: " + line)
-dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
+        if not line.startswith("NOTE"):
+            bad("rulings: " + line)
+    if not rulings.stdout.strip():
+        bad("check_rulings crashed: " + rulings.stderr[-200:])
 if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (docs/RULINGS.md)
     for line in dave.stdout.splitlines():
         if line.startswith("FAIL"):
             bad("dave rule: " + line[5:])
     if "FAIL" not in dave.stdout:
         bad("check_dave_rules crashed: " + dave.stderr[-200:])
+
+import check_rulings   # tools/ is on sys.path (above)
+for _line in check_rulings.softened(subprocess.run(["git", "show", f"{BASE}:docs/RULINGS.md"], capture_output=True, text=True).stdout,
+                                    pathlib.Path("docs/RULINGS.md").read_text(encoding="utf-8") if pathlib.Path("docs/RULINGS.md").exists() else ""):
+    bad("rulings: " + _line)   # a rule's mark softened on the same date (check_rulings.softened)
 rulings_self = subprocess.run([sys.executable, "-I", "tools/test_check_rulings.py"], capture_output=True, text=True)
 if rulings_self.returncode != 0:
     bad("rulings check self-test: " + rulings_self.stdout.strip()[-200:])

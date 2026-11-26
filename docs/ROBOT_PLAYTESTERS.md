@@ -13,6 +13,7 @@ tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot 
 tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
 tools/robots.sh 2 wolves           # the same, and the second robot comes in 3 s into the rush
 ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, along it and off it; the server prints each one's trail share
+ROBOT_BODIES=deer,goose ROBOT_S=120 tools/robots.sh 1 bodies   # a dead body of each kind placed ahead and looked at with inspection on: each must be named "Dead <animal>" (pictures: the client on a real renderer with --robot-admin --robot-plan=bodies)
 ROBOT_S=300 tools/robots.sh 3 bear # an admin bear 20 m from the spawn, every robot hunts it with a spear (inside and jump checks); about 4 min
 ROBOT_S=200 tools/robots.sh 3 bear_group   # the hunters stand in a tight group (pairs about 1 m apart) and jab a bear set 2 m off
 ROBOT_S=200 tools/robots.sh 1 fight_goblin   # (or fight_bandit) every warning, charge and landed blow as the robot drew it; AUDIT enemy_hit on the server
@@ -84,8 +85,16 @@ about 45 minutes; `src/client/robot_goals.gd`): a fresh character with no gifts 
 (body yaw and camera pitch) and presses E to gather and drink, left-clicks the axe at trees, bushes and rocks, crafts through the craft queue, places
 blueprints and hammers them, lights a campfire, treads a path with the hoe and sells to Hob (closing his shop window after). Each goal prints
 `GOAL <id> try|done|stuck`, with GATHER, MADE, FELL, ROCK, BUSHES, BUILT, PATH, SOLD and DROPPED lines on the way, and a WEIGHT line (each item's
-real kg, heaviest first) after a goal where the game said "Too heavy". A goal it cannot play yet says "robot cannot" (fish, hunt, snare, order, clay,
-story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
+real kg, heaviest first) after a goal where the game said "Too heavy". It hunts with a spear (a rabbit, then a deer; before each chase it stands and looks for up to 45 s and walks, not runs, to within
+40 m, a deer seen to 200 m: STALK lines; with none by the camp it walks
+out up to four 300 m legs and chases again) and works the carcass with the knife (HUNT, HUNTWALK, CARCASS lines). When gathering or sweeping up it never presses E on a "talk" prompt, and shuts a talk that opens anyway. For copper it walks up any river its own map shows, else widening loops round the camp, for up to 15 minutes
+(EXPLORE lines). It digs clay with the Wooden - Shovel: one dig 1.8 m ahead, a step 1.8 m sideways, so the holes lie side by side;
+a row starts 12 m out from the camp and the next one another way and 25 m further after 8 digs with no clay; a click that brings
+nothing in is aimed again closer and steeper (CLAY lines). For charcoal it keeps firewood or a log burning in its camp fire, takes the charcoal out of the fire's store and
+comes back when the rest should have burned (one about every 400 s; a log leaves 27, a firewood 3; CHARCOAL lines). A
+visit that ends waiting is not one of the goal's two tries (at most 5 visits). Four charcoal from a cold fire take about 27 minutes,
+so the goal passes only when the fire was lit early enough in the run. It fishes with the Fishing spear: still at the water's edge, a jab every 2 s, 15 jabs a spot, then 12 m along the shore
+(FISH lines). For the story it heads back to camp from game hour 17.5, waits for 7 o'clock, walks up to Edda and presses E on her talk prompt, then shuts the talk (STORY lines); before that hour the goal waits, and a wait is not a try. It hunts as a player can with the first spear: it walks up to 45 m and creeps on crouched to throwing range, throws, waits up to 3 s to hear whether the spear struck, picks the spear up again once it has landed and follows a hurt animal at a walk until it bleeds out (HUNTTHROW lines). A hunt that finds nothing by day goes out once more at dusk, when rabbits feed. The story comes first whenever the clock is in its evening, and a goal whose wait is over comes before the rest. It lights its fire 14 m out from the camp fire, makes what a campfire makes there (the clay pot, cooking), waiting for wood on the coals to catch, hangs the campfire pot over it (lit again if it has burned down) and takes charcoal from it. A deer is thrown at from 30 m, a rabbit from 14 m, aimed ahead of a walking animal. Finding copper comes as soon as it opens (20 goals wait on it). Clay digs never stand twice on one spot or dig from inside a hollow, and the robot jumps out of a hollow it is in (the 26 Nov run slid 5 m down its own hole). A goal still waiting on the clock when the run ends is not a FAIL. When ten or more stones are wanted it strikes boulders first. A goal it cannot play yet says "robot cannot" (snare, order, night walk and fur for winter); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
 Between goals it drops what a player would leave behind (logs, seed stacks, spare food over 10, straw and reeds over 20, sticks over 40).
 
 Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30

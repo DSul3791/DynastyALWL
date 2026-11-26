@@ -39,7 +39,7 @@
 		{
 			"id": "axe",
 			"title": "Make a Stone - Axe",
-			"hint": "1 stone, 1 stick and 2 twine make a Stone - Axe. Put it on the hotbar to use it.",
+			"hint": "1 stone, 1 stick and 2 twine make a Stone - Axe. Stones lie loose on the ground (most on slopes) and sticks under the trees: press E to pick them up. Put the axe on the hotbar to use it.",
 			"after": [
 				"twine"
 			],
@@ -152,7 +152,7 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Make a bed and place it in your lean-to: a Thatch - Bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine), or a Straw - Bed with the hammer. Any bed counts.",
+			"hint": "Make a bed and place it in your lean-to: a Thatch - Bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine), or a Straw - Bed from the hammer's build list (hold the hammer, press R and type straw in the search box: 12 straw, 6 sticks, 2 twine). Any bed counts.",
 			"after": [
 				"shelter"
 			],
@@ -260,7 +260,7 @@
 		{
 			"id": "hunt",
 			"title": "Hunt an animal and work the body",
-			"hint": "Strike an animal with your spear (a rabbit is the easiest), then hold your knife and work the body: meat, hide and bone. You need them for jerky, warm clothes and a fishing hook; bigger animals such as deer, boar and badger also give fat for candles.",
+			"hint": "Crouch (C) to creep close to an animal (a rabbit is the easiest), then throw your spear: hold right click to aim, left click to throw. A wounded deer bleeds; follow its blood trail until it falls. Then hold your knife and work the body: meat, hide and bone. You need them for jerky, warm clothes and a fishing hook; bigger animals such as deer, boar and badger also give fat for candles.",
 			"after": [
 				"spear",
 				"knife"
