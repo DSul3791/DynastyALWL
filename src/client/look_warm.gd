@@ -24,7 +24,7 @@ static func start(tree: SceneTree) -> void:
 	if DisplayServer.get_name() == "headless" or tree == null or is_instance_valid(_runner) or _done.size() >= STEPS.size():
 		return
 
-	var runner: Node = new()
+	var runner: Node = load("res://src/client/look_warm.gd").new()   # its own script, by path: static code has no self to call new() on
 	runner.name = "LookWarm"
 	_runner = runner
 	tree.root.add_child.call_deferred(runner)   # the root outlives the menu scenes, so the made looks wait across scene changes
