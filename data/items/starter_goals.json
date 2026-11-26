@@ -39,7 +39,7 @@
 		{
 			"id": "axe",
 			"title": "Make a Stone - Axe",
-			"hint": "1 stone, 1 stick and 2 twine make a Stone - Axe. Put it on the hotbar to use it.",
+			"hint": "1 stone, 1 stick and 2 twine make a Stone - Axe. Stones lie loose on the ground (most on slopes) and sticks under the trees: press E to pick them up. Put the axe on the hotbar to use it.",
 			"after": [
 				"twine"
 			],

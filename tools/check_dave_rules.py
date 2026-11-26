@@ -67,6 +67,47 @@ def tracking():
     check("R-HUNT-TRAILS-MAP", int(data("data/map.json")["trails_tracking"]) == 10, "game trails go on the map at Tracking 10")
 
 
+def sign_sound():
+    """R-HUNT-SIGN-SOUND: the sign spot sound is much quieter and plays only with a hunting weapon, snare or trap in hand."""
+    signs = data("data/look/trail_signs.json")
+    slots = data("data/sound/batch3_slots.json")
+    slot = slots.get("slots", slots)["sign_spot"]
+    items = set()
+    todo = [data("data/items/items.json")]
+    while todo:   # every item row, at any depth (weapons sit in their own section)
+        node = todo.pop()
+        for k, v in node.items():
+            if isinstance(v, dict):
+                if "name" in v:
+                    items.add(k)
+                todo.append(v)
+    gear = signs["sound_with"]
+    check("R-HUNT-SIGN-SOUND", float(slot.get("play_db", 0.0)) <= -10.0, f"the sign sound plays at least 10 dB under its file (play_db {slot.get('play_db')})")
+    check("R-HUNT-SIGN-SOUND", all(g in items for g in gear) and {"wooden_spear", "wooden_bow", "snare"} <= set(gear), f"sound_with names real hunting weapons, snares and traps ({len(gear)})")
+    check("R-HUNT-SIGN-SOUND", not any(g in gear for g in ("fishing_spear", "fish_trap", "stone_axe", "torch")), "a fishing spear, fish trap, axe or torch does not sound signs")
+    client = (ROOT / "scenes/terrain_client/terrain_client.gd").read_text(encoding="utf-8")
+    on_spot = client[client.index("trail_signs.on_spot = func"):][:600]
+    check("R-HUNT-SIGN-SOUND", "TrailSignsScript.sounds_with(trail_signs.cfg" in on_spot and on_spot.index("sounds_with") < on_spot.index('play("sign_spot"'), "the spot sound asks what is in hand first")
+
+
+def pass_out():
+    """R-CORE-PASS-OUT: passing out takes the body at once; a faint wakes calm."""
+    ex = data("data/items/exertion.json")
+    check("R-CORE-PASS-OUT", float(ex["blackout"]["fall_s"]) <= 3.0, f"passing out reaches full black within 3 s ({ex['blackout']['fall_s']} s)")
+    check("R-CORE-PASS-OUT", float(ex["wake_strain"]) < float(ex["over_off"]), f"a faint wakes calm, not over-exerted (wake_strain {ex['wake_strain']} under over_off {ex['over_off']})")
+    check("R-CORE-PASS-OUT", float(ex["faint_bpm"]["wake"]) <= 100, f"the heart is calm on waking ({ex['faint_bpm']['wake']} bpm)")
+    inv = (ROOT / "src/client/inventory_view.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", "return strain_state >= 2 or passing_out" in inv and "if body_out() or forced_sleep:" in inv, "the client takes movement away while passing out, fainted or waking")
+    client = (ROOT / "scenes/terrain_client/terrain_client.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", "items.body_out() and not (event is InputEventMouseMotion) and event.is_pressed()" in client, "no key or button reaches the world while passing out")
+    check("R-CORE-PASS-OUT", "moving = false   # passing out" in client, "no footsteps while passing out, fainted or waking")
+    held = (ROOT / "src/client/held_item.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", all(t in held for t in ("_right_held() or _body_out()", "func _start_swing() -> void:\n\tif _body_out():", "_swing_t >= 0.0 and _body_out()", 'hoe_mode != "smooth" or _body_out()')),
+          "no swing, strike, drawn bow or hoe levelling while passing out")
+    server = (ROOT / "src/stream/server_items.gd").read_text(encoding="utf-8")
+    check("R-CORE-PASS-OUT", '(16 if strain_going(peer) else 0)' in server and "and not strain_going(peer):" in server, "the server tells the client and refuses a stance while passing out")
+
+
 def seeds():
     items = data("data/items/items.json")["items"]
     by_id = data("data/items/weights.json")["by_id"]
@@ -170,7 +211,7 @@ def ruling_lines():
 def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
-             "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names}
+             "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out}
     for key, step in steps.items():
         try:
             step()
