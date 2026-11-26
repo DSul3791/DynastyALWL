@@ -253,12 +253,14 @@ func _init() -> void:
 		var cub: Dictionary = a.animals[kids[0]]
 		var p: Vector3 = cub["pos"] + Vector3(2.0, 0.0, 0.0)
 		var start: float = 2.0
+		var fled: bool = true
 
-		for _n in 20:
+		for _n in 10:   # 1 s: it runs at flee_mps and stays inside run_till_m (20 m), then turns back to its mother
 			a._step_young(cub, 0.1, Vector2(cub["pos"].x - p.x, cub["pos"].z - p.z).length(), p)
+			fled = fled and int(cub["state"]) == a.FLEE
 
 		var gap: float = Vector2(cub["pos"].x - p.x, cub["pos"].z - p.z).length()
-		check(int(cub["state"]) == a.FLEE and gap > start + 3.0, "a cub a player comes within 2 m of runs away (%.1f m off after 2 s, state %d)" % [gap, int(cub["state"])])
+		check(fled and gap > start + 3.0, "a cub a player comes within 2 m of runs away (%.1f m off after 1 s, state %d)" % [gap, int(cub["state"])])
 		a._step_young(cub, 0.1, 60.0, cub["pos"] + Vector3(60.0, 0.0, 0.0))
 		check(not cub.has("cub_run"), "and goes back to its mother once the player is far off")
 		a.animals[mid]["state"] = a.big_game.WARN
