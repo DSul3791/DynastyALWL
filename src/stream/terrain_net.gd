@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 170  # 170 (24 Nov 2026, Dave: skip the night when everyone sleeps): game_time(game_seconds) tells every client the clock after a night skip, and their copy jumps to it (sky, sun, weather). Client and server must be updated together.
+const PROTOCOL_VERSION := 171  # 171 (26 Nov 2026, the lane servers' "above the MTU" warnings): animals(rows, server_ms, part, parts): a batch over one packet is sent in parts that each fit (src/shared/row_parts.gd), so a lost fragment no longer loses the whole batch; the client takes a body away only once every part of its batch came. Client and server must be updated together.
+# 170 (24 Nov 2026, Dave: skip the night when everyone sleeps): game_time(game_seconds) tells every client the clock after a night skip, and their copy jumps to it (sky, sun, weather). Client and server must be updated together.
 # 169 (24 Nov 2026, Dave: "are fish pools actually a thing in the rivers yet because I have never seen any"): fish_jump(at, kind, seed), server to client, unreliable: a fish of a school jumped there (kind = size class * 4 + group); fish_shadows(rows), server to client, reliable: the schools within 40 m in shallow water, [x, y, z, radius, size class] per school (src/server/server_fish_signs.gd). Client and server must be updated together.
 # 168 (24 Nov 2026, Dave: "give as much control to the client as it takes to make them feel natural"): a moving animal's row carries its plan, a Vector2 (x, z) of where it is walking to, after the six fixed fields and a dog foe, before the health share (server_animals plan, rows_near); the client draws every animal on the ground at the present, carried on along its way but never past its plan, and the server judges blows on all of them at present_ms (docs/design/ANIMAL_NETCODE.md "Plans"). Client and server must be updated together.
 # 167 (23 Nov 2026, Dave: "not all animals charge they actually have actions built in to them"): animal rows may carry states 25 (STRIKE, a blow up close) and 26 (KICK, a kick behind) from server_big_game, each wound up where it stands; the client plays the model's own attack clip timed to land with the server's blow. Client and server must be updated together.
@@ -161,7 +162,7 @@ signal fish_shadows_received(rows: PackedFloat32Array)
 signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array, left: PackedInt32Array, more: PackedByteArray, cast: PackedInt32Array)
 signal flight_seen_received(number: int, from: Vector3, velocity: Vector3, fire: bool)
 signal ground_taken_received(kind: int, points: PackedVector3Array, days: PackedInt32Array)
-signal animals_received(rows: Array, server_ms: int)
+signal animals_received(rows: Array, server_ms: int, part: int, parts: int)
 signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
 signal burrows_received(points: PackedVector3Array)
@@ -774,10 +775,11 @@ func npcs(rows: Array) -> void:
 
 # Animals (protocol 48, data/animals/animals.json): the animals within 120 m as [[id, species number, position, heading radians,
 # state 0 graze / 1 hop / 2 flee / 3 alert, server ms it reached that position (protocol 147)], ...], nearest 30, about four times a second
-# when something near changed; server_ms is the server's clock as it sends them.
+# when something near changed; server_ms is the server's clock as it sends them. A batch over one packet comes in parts (protocol 171,
+# src/shared/row_parts.gd): part 0 to parts - 1, each with the same server_ms.
 @rpc("authority", "call_remote", "unreliable")
-func animals(rows: Array, server_ms: int) -> void:
-	animals_received.emit(rows, server_ms)
+func animals(rows: Array, server_ms: int, part: int, parts: int) -> void:
+	animals_received.emit(rows, server_ms, part, parts)
 
 
 # The admin spyglass (protocol 102, docs/design/spyglass_design.md): the watched animal's {name, young, level, hp, hp_max, state, temper, group,
