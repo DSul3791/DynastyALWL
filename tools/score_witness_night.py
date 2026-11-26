@@ -22,7 +22,7 @@ Method (same for every picture, so the numbers compare):
   - Stroke width: for each lit run along rows and columns, the shorter of the two
     runs through a pixel; the median over lit pixels.
   - Leaves: 8-connected groups of lit pixels (one leaf's vein feather joins at its
-    midrib). Groups under 12 px are noise. Leaf length = median longer side of a
+    midrib). Groups under 40 px are noise. Leaf length = median longer side of a
     group's box; leaves across = crown width / median group box width. When leaves
     overlap, groups merge and the count of groups per crown width drops: that is
     reported too (groups). Where leaf cards overlap in layers the groups break into
@@ -201,7 +201,7 @@ def table(results):
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("items", nargs="*", help="pictures, each optionally preceded by --box")
-    args, rest = ap.parse_known_args(argv)
+    ap.parse_known_args(argv)   # for --help; the pictures and their --box are read in order below
     todo = []
     box = None
     tokens = list(argv)

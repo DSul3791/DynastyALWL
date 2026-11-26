@@ -376,7 +376,7 @@ def twig_birch(name, size, seed):
 def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng, mid=0.06, side_w=0.04, pairs=4):
     # Witness tree (owner, 2026-10-18; Dave's picture 25 Nov 2026, art/references/witness_tree_dave_2026-11-25.jpg):
     # an oval, finely toothed leaf whose veins are barely seen by day and glow at night as a clear feather: one
-    # midrib and five pairs of thin side veins on a big dark blade (numbers from tools/score_witness_night.py). The albedo vein is only a
+    # midrib and four pairs of thin side veins on a big dark blade (numbers from tools/score_witness_night.py). The albedo vein is only a
     # shade paler than the blade; md (leaf_witness_veins.png) is the glow: 255 on a thin core at the centre of a
     # vein line, 150 over the rest of the line (violet, not white), and a faint 5 over the blade inside a dark rim, so at
     # night each leaf still reads as a broad dark shape round its veins, not only a skeleton (Lane A, 25 Nov 2026).
