@@ -69,9 +69,26 @@ try {
 		$t0 = Get-Date
 		$joined = $false
 
+		$threadLog = "$Out\${n}_threads.txt"
+
 		while (-not $c.HasExited) {
 			Start-Sleep 5
 			$age = ((Get-Date) - $t0).TotalSeconds
+
+			# Every 5 s, from outside the client: each of its threads' state, wait reason and CPU time, and the log's size. A whole-client stall
+			# (Lane A 26 Nov 2026, 98617e37: every thread silent 216 s, nothing in the Windows logs) then shows whether the threads were
+			# suspended (WaitReason Suspended), all waiting (no CPU growing) or one busy (its CPU time growing, e.g. the main thread in the driver).
+			try {
+				$c.Refresh()
+				$size = if (Test-Path $log) { (Get-Item $log).Length } else { 0 }
+				$rows = @("{0:HH:mm:ss} cpu {1:F1} s, log {2} bytes, threads {3}" -f (Get-Date), $c.TotalProcessorTime.TotalSeconds, $size, $c.Threads.Count)
+
+				foreach ($th in $c.Threads) {
+					try { $rows += "  {0} {1} {2} cpu {3:F2} s" -f $th.Id, $th.ThreadState, $(if ($th.ThreadState -eq 'Wait') { $th.WaitReason } else { '-' }), $th.TotalProcessorTime.TotalSeconds } catch { }
+				}
+
+				Add-Content -LiteralPath $threadLog -Value $rows
+			} catch { }
 
 			if (-not $joined -and (Test-Path $log) -and (Select-String -Path $log -Pattern "step joined" -Quiet)) { $joined = $true }
 
