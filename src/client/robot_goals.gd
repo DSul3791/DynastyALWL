@@ -215,6 +215,23 @@ func _close_windows() -> void:
 		c.items.dialogue_close.call()
 
 
+# A player out looking for a rock: legs of a widening loop round the camp until a rock of `item` is drawn within 400 m or `limit_s` is used;
+# the farthest it got from camp.
+func _explore_for(item: String, limit_s: float) -> float:
+	var until: int = mini(Time.get_ticks_msec() + int(limit_s * 1000.0), _end_ms)
+	var leg: int = 0
+	var farthest: float = 0.0
+
+	while Time.get_ticks_msec() < until and _nearest_boulder(item) == 0:
+		leg += 1
+		var target: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (250.0 + 150.0 * float(leg))
+		await r._go_to(target, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
+		farthest = maxf(farthest, _flat(_home))
+		_line("EXPLORE for %s: leg %d, %.0f m from camp, rock found %s" % [item, leg, _flat(_home), str(_nearest_boulder(item) != 0)])
+
+	return farthest
+
+
 # Back to the starter camp in 60 s legs; the seconds walked.
 func _walk_home(limit_s: float) -> float:
 	var leg_s: float = 0.0
@@ -253,7 +270,10 @@ func _play_goal(g: Dictionary) -> String:
 			return await _eat_wild()
 		"copper_ore":
 			if _nearest_boulder("copper_ore") == 0:
-				return "robot cannot find copper yet: no copper rock is drawn within 400 m (a player explores along the rivers; the server's resources line gives the nearest by route)"
+				var far: float = await _explore_for("copper_ore", 600.0)
+
+				if _nearest_boulder("copper_ore") == 0:
+					return "robot cannot find copper yet: no copper rock drawn after exploring up to %.0f m from camp (a player explores along the rivers; the server's resources line gives the nearest by route)" % far
 
 			return await _gather("copper_ore", int(check.get("count", 1)))
 		"path":
@@ -291,6 +311,12 @@ func _play_goal(g: Dictionary) -> String:
 
 	if str(check.get("event", "")) == "placed":
 		var what: String = str(check.get("what", ((check.get("what_any", [""]) as Array)[0])))
+
+		for any in check.get("what_any", []):   # the first one that has a hand blueprint (the Thatch - Bed's is retired: the Straw - Bed is built)
+			if _blueprints.has(str(any)):
+				what = str(any)
+				break
+
 		return await _build(what)
 
 	return "robot cannot play goal %s yet (check %s)" % [id, JSON.stringify(check)]
@@ -368,6 +394,12 @@ func _have(item: String, n: int, make: bool) -> String:
 	if why != "":
 		return "for %s: %s" % [item, why]
 
+	if station == "campfire":
+		why = await _fire_going()
+
+		if why != "":
+			return "for %s, the campfire: %s" % [item, why]
+
 	if station != "":   # a player walks to the station they built and makes it there
 		var site: int = int(_sites.get(station, -1))
 		await _walk_home(240.0)
@@ -395,7 +427,7 @@ func _station_recipe_for(item: String) -> Dictionary:
 		var row: Dictionary = r._recipes[key]
 		var station: String = str(row.get("station", ""))
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))):
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and (station == "campfire" or c.items._world.has(int(_sites.get(station, -1)))):   # a campfire is laid again if need be
 			return row
 
 	return {}
@@ -899,7 +931,25 @@ func _fire() -> String:
 
 	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
 	await r._wait(3.0)
+	_sites["campfire"] = fire   # the station for campfire recipes (charcoal from firewood)
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
+	return ""
+
+
+# The robot's campfire burning for a campfire recipe: laid again if it is gone, else sticks on and lit (it burns down in the hours since).
+func _fire_going() -> String:
+	if not c.items._world.has(int(_sites.get("campfire", -1))):
+		return await _fire()
+
+	var fire: int = int(_sites["campfire"])
+	await r._go_to(c.items._world[fire]["pos"], 60.0, 2.0)
+
+	for n in range(4):
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
+		await r._wait(0.5)
+
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
+	await r._wait(3.0)
 	return ""
 
 
