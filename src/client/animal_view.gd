@@ -12,6 +12,7 @@ const FAR_KEEP_MS := 1200       # far off that a batch left out is kept this lon
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const RowParts := preload("res://src/shared/row_parts.gd")   # a batch over one packet comes in parts (protocol 171)
 const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
@@ -83,6 +84,7 @@ const REPORT_MS := 30000         # how often the log gets the animals line (_rep
 var _report_ms: int = 0           # clock_ms of the last animals line
 var _report_rows: int = 0         # rows in the newest batch
 var _report_batches: int = 0      # batches since the last line
+var _batch: Dictionary = {}       # the newest batch's parts and ids so far (RowParts.note)
 var _report_held: int = 0         # rows held undrawn for model files since the last line
 const SCENE_WAIT_MS := 8000      # the longest a kind is held undrawn while its model files load on a worker (_waited_out; QA #12)
 var _wait_since: Dictionary = {}  # species number -> clock_ms when it was first held undrawn for its files (_waited_out)
@@ -647,19 +649,27 @@ func seen_server_ms() -> Array:
 	return [int(round((now_s - MotionBuffer.clock_delay(_clock) - off) * 1000.0)), int(round((now_s - float(_clock["late"]) - off) * 1000.0))]
 
 
-func on_rows(rows: Array, server_ms: int) -> void:
-	var seen: Dictionary = {}
-	_report_rows = rows.size()
-	_report_batches += 1
+# One part of a batch (protocol 171: a batch over one packet comes in parts with the same server_ms; one part, 0 of 1, nearly always).
+func on_rows(rows: Array, server_ms: int, part: int = 0, parts: int = 1) -> void:
+	var step: Dictionary = RowParts.note(_batch, server_ms, part, parts, rows)
+
+	if bool(step["stale"]):
+		return   # a late part of an older batch: newer rows are drawn already
+
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
-	MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)
+
+	if bool(step["new"]):
+		_report_rows = 0
+		_report_batches += 1
+		_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
+		MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)   # once a batch: its parts share the server ms
+
+	_report_rows += rows.size()
 
 	var now_ms: int = Time.get_ticks_msec()
 
 	for row in rows:
 		var id: int = int(row[0])
-		seen[id] = true
 
 		# A young animal (calf, cub, fawn, piglet, foal: Dave 6 Nov 2026) comes as its species number + 100 (ServerAnimals.YOUNG_NUM);
 		# it is drawn as its species, smaller.
@@ -736,6 +746,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		_bodies[id]["state"] = int(row[4])
 		FrameProbe.stop("animals: rows to plans", t_move)
 
+	if not bool(step["done"]):
+		return   # bodies missing from the rows are taken away once every part of this batch came (a lost part: by the next batch)
+
+	var seen: Dictionary = _batch["seen"]
 	var t_gone: int = FrameProbe.start()
 	var now: int = now_ms
 	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF

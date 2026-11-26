@@ -31,6 +31,7 @@ extends Node
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const WaterAreas := preload("res://src/shared/water_areas.gd")
 const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
+const RowParts := preload("res://src/shared/row_parts.gd")   # unreliable rows in parts that each fit one packet (protocol 171)
 const AnimalContact := preload("res://src/shared/animal_contact.gd")   # a blow reaches an animal's body, not its middle (hit_animal)
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
@@ -3578,7 +3579,11 @@ func _send_npcs(delta: float) -> void:
 		if not _animal_sent.has(peer) or int(_animal_sent[peer]) != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
-			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
+			var parts: Array = RowParts.split(beasts)   # each part fits one packet (protocol 171): over the MTU, a lost fragment lost the whole batch
+			var sent_ms: int = Time.get_ticks_msec()   # with the server clock the row times are on (protocol 147), the same for every part
+
+			for i in parts.size():
+				net.animals.rpc_id(peer, parts[i], sent_ms, i, parts.size())
 
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])
