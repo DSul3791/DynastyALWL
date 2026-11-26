@@ -2295,7 +2295,8 @@
 				8
 			],
 			"herd_pull_m": 4.0,
-			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger; it does not fly in this version. Swims (water row, 8 Nov 2026): floats high, body mostly above the water; grazes lakeside meadows by its own habitat rules.",
+			"note": "Dave 7 Nov 2026, batch 2. Geese graze marsh, lake shores and grassland in flocks by day, honk and walk off from a player, and hiss at one who corners them. Grouse numbers, bigger. Flight (Dave 25 Nov 2026, live server: \"two large ducks or geese waddling around and they are refusing to fly away\"): the wary kind in server_flight.gd: it stares and honks first (the usual startle), takes off when it bolts, flies 150 to 400 m, and comes down on the water where it lands on water. Swims (water row, 8 Nov 2026): floats high, body mostly above the water; grazes lakeside meadows by its own habitat rules.",
+			"flight": {"kind": "wary", "burst_s": 2.0, "climb_m": [8.0, 15.0], "fly_m": [150.0, 400.0], "fly_mps": 16.0, "glide_share": 0.35},
 			"water": {
 				"swim": true,
 				"surface_sink_m": 0.1,
