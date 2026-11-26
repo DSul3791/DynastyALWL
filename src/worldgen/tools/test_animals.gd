@@ -215,6 +215,33 @@ func _init() -> void:
 	check(not twice[0].is_empty() and is_same(twice[0][0], twice[1][0]), "and each animal's row is built once per pass")
 	check(not a._in_pass and a._pass_rows.is_empty(), "the pass ends clean")
 
+	# Big game is sent further (Dave 26 Nov 2026, R-ANIMAL-SEEN-FAR: "Let's try 200 m."): a deer 180 m off is sent, a rabbit 180 m off
+	# is not (120 m for every other kind), a deer 215 m off is not; the same in a send pass.
+	var far_at: Vector3 = Vector3(-3000.0, 10.0, -3000.0)
+	var far_deer: int = a.spawn("deer", far_at.x + 180.0, far_at.z, true)
+	var far_rabbit: int = a.spawn("rabbit", far_at.x, far_at.z + 180.0, true)
+	var too_far_deer: int = a.spawn("deer", far_at.x - 215.0, far_at.z, true)
+	var near_rabbit: int = a.spawn("rabbit", far_at.x, far_at.z - 100.0, true)
+	var far_ids: Array = ids_of.call(a.rows_near(far_at))
+	check(far_ids.has(far_deer) and far_ids.has(near_rabbit), "a deer 180 m off and a rabbit 100 m off are sent (%s)" % str(far_ids))
+	check(not far_ids.has(far_rabbit) and not far_ids.has(too_far_deer), "a rabbit 180 m off and a deer 215 m off are not (%s)" % str(far_ids))
+	var glass_ids: Array = ids_of.call(a.rows_near(far_at, 150.0, 60))
+	check(glass_ids.has(far_deer) and not glass_ids.has(far_rabbit), "a 150 m spyglass never shows less big game than the plain view (%s)" % str(glass_ids))
+	var near_only: Array = ids_of.call(a.rows_near(far_at, -1.0, -1, false))
+	check(not near_only.has(far_deer) and near_only.has(near_rabbit), "the batch that leaves far big game out (every other one) still has the near ones (%s)" % str(near_only))
+	a.begin_send_pass()
+	var far_pass: Array = ids_of.call(a.rows_near(far_at))
+	a.end_send_pass()
+	far_ids.sort()
+	far_pass.sort()
+	check(far_pass == far_ids, "the send pass finds the same far big game (%s against %s)" % [str(far_pass), str(far_ids)])
+
+	for id in [far_deer, far_rabbit, too_far_deer, near_rabbit]:
+		a.animals.erase(id)   # taken out again: the rest of this test counts animals
+	a.blood.append([far_at + Vector3(180.0, 0.0, 0.0), Time.get_ticks_msec()])   # a wounded deer's drop as far as the deer is sent
+	check(a.blood_near(far_at).has(far_at + Vector3(180.0, 0.0, 0.0)), "blood is sent as far as big game: a deer bleeding out 180 m off falls on its trail")
+	a.blood.pop_back()
+
 	# Far away: frozen, then dropped.
 	players[0] = Vector3(260.0, 10.0, 0.0)
 	var probe: Vector3 = a.animals[one]["pos"]

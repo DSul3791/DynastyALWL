@@ -3564,7 +3564,9 @@ func _send_npcs(delta: float) -> void:
 		# "spyglass"; a spyglass item: its tier in data/items/spyglass.json), and the watched animal's readout (admin, or a tier with one).
 		var spy: int = int(items.spyglass.get(peer, 0)) if items.spyglass.has(peer) else -2
 		var reach: Array = items.spyglass_reach(peer, animals.cfg.get("spyglass", {}))
-		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at)
+		# Big game past send_radius_m (out to 200 m, R-ANIMAL-SEEN-FAR) standing still goes in every other batch to this player (one on the
+		# move in every batch, rows_near): each player is looked at every fifth round, so round % 10 below 5 turns over once a visit.
+		var beasts: Array = animals.rows_near(at, float(reach[0]), int(reach[1])) if spy >= 0 else animals.rows_near(at, -1.0, -1, _send_round % 10 < 5)
 		var sig: int = hash(beasts)
 
 		if spy == -1:

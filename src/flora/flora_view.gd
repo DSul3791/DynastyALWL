@@ -559,6 +559,7 @@ const SHAPES_PER_BODY := 64  # trunk colliders per body
 const IMPOSTOR_M := [100.0, 150.0, 180.0, 210.0]
 const IMPOSTOR_TILE_PX := [Vector2i(64, 128), Vector2i(128, 256), Vector2i(128, 256), Vector2i(128, 256)]   # one view; the atlas holds two
 const MAX_DROPS_PER_UPDATE := 2
+const SLOW_FREE_MS := 50.0   # one old drawing slower than this to free is named in the log
 # Load speed (Dave, 2 Nov 2026: flying back to spawn took far too long to load). At most this many chunk plans run on the worker pool at once,
 # nearest chunk first, so the pool also serves the ground meshing and the chunk under the player is not queued behind the far forest.
 const MAX_PLAN_TASKS := 6
@@ -3098,11 +3099,19 @@ func _free_trash(budget_usec: int) -> void:
 
 		if not is_instance_valid(node):
 			_trash.pop_front()
-		elif node.get_child_count() > 0:
-			node.get_child(node.get_child_count() - 1).free()
 		else:
-			node.free()
-			_trash.pop_front()
+			var last: bool = node.get_child_count() == 0
+			var gone: Node = node if last else node.get_child(node.get_child_count() - 1)
+			var what: String = "%s %s" % [gone.get_class(), gone.name]
+			var t_one: int = Time.get_ticks_usec()
+			gone.free()
+			var one_ms: float = float(Time.get_ticks_usec() - t_one) / 1000.0
+
+			if last:
+				_trash.pop_front()
+
+			if one_ms > SLOW_FREE_MS:   # Lane A 25 Nov 2026: one free held the main thread 101 ms; this names what it was
+				_log_off_main("flora: freeing %s took %.0f ms" % [what, one_ms])
 
 
 func _exit_tree() -> void:

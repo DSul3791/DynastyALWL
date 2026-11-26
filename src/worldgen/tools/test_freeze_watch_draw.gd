@@ -29,6 +29,40 @@ func _initialize() -> void:
 	check(FreezeWatchScript._last_piece == FreezeWatchScript.DRAW_START, "at the draw's start the last piece is the draw start (%s)" % FreezeWatchScript._last_piece)
 	watch._on_post_draw()
 	check(FreezeWatchScript._last_piece == FreezeWatchScript.DRAWN, "after the draw the last piece is drawn (%s)" % FreezeWatchScript._last_piece)
+	# The wall split of a frame (PR #1935): stamps set by hand, beat() reads them.
+	FreezeWatchScript.physics_mark()
+	check(FreezeWatchScript._last_piece == FreezeWatchScript.PHYSICS_STEP, "the last physics callback names the physics step (%s)" % FreezeWatchScript._last_piece)
+	var now: int = Time.get_ticks_usec()
+	FreezeWatchScript._beat_usec = now - 100000
+	FreezeWatchScript._pre_usec = now - 90000
+	FreezeWatchScript._post_usec = now - 60000
+	FreezeWatchScript._phys_usec = now - 20000
+	FreezeWatchScript.beat()
+	check(FreezeWatchScript.split.begins_with("process 10, draw 30, present 40, physics step and poll 2"), "a drawn frame splits into its parts (%s)" % FreezeWatchScript.split)
+	FreezeWatchScript._pre_usec = FreezeWatchScript._beat_usec - 5000   # no draw since that beat
+	FreezeWatchScript.beat()
+	check(FreezeWatchScript.split == "no draw", "a frame with no draw says so, not the last frame's split (%s)" % FreezeWatchScript.split)
+	now = Time.get_ticks_usec()
+	FreezeWatchScript._beat_usec = now - 50000
+	FreezeWatchScript._pre_usec = now - 40000
+	FreezeWatchScript._post_usec = now - 30000
+	FreezeWatchScript._phys_usec = now - 70000   # no physics step in this frame: the whole rest is the present
+	FreezeWatchScript.beat()
+	check(FreezeWatchScript.split.ends_with("physics step and poll 0") and FreezeWatchScript.split.contains("present 3"), "a frame without a physics step puts the rest in the present (%s)" % FreezeWatchScript.split)
+	check(FreezeWatchScript.wall_ms >= 50.0 and FreezeWatchScript.wall_ms < 60.0, "the frame's wall time is beat to beat (%.1f ms)" % FreezeWatchScript.wall_ms)
+	# With the end of the scripts stamped (process_end_mark.gd), the process part splits into scripts and what follows them.
+	now = Time.get_ticks_usec()
+	FreezeWatchScript._beat_usec = now - 100000
+	FreezeWatchScript._end_usec = now - 96000
+	FreezeWatchScript._pre_usec = now - 90000
+	FreezeWatchScript._post_usec = now - 60000
+	FreezeWatchScript._phys_usec = now - 20000
+	FreezeWatchScript.beat()
+	check(FreezeWatchScript.split.begins_with("scripts 4, deferred and engine 6, draw 30, present 40"), "the scripts and the deferred work are told apart (%s)" % FreezeWatchScript.split)
+	FreezeWatchScript._pre_usec = FreezeWatchScript._beat_usec - 5000
+	FreezeWatchScript.beat()
+	check(FreezeWatchScript.wall_ms == 0.0, "a frame with no draw gives no wall time (the engine's delta is used)")
+	FreezeWatchScript._end_usec = 0
 	watch.stop()
 	check(not RenderingServer.frame_pre_draw.is_connected(watch._on_pre_draw) and not RenderingServer.frame_post_draw.is_connected(watch._on_post_draw), "a stopped watch lets go of the renderer's signals")
 	watch.start()
