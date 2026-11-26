@@ -13,6 +13,10 @@ should have made short work of me. but also It should have run away unless it wa
 to trap them"; "the bear roaring constantly in the woods is unrealistic. look up how real bears behave. these are typical black bears
 according to the model look."
 
+26 Nov 2026, asked about a black bear that a robot tester walked up on to 2 m: "that close it should turn rear on its hind legs growl
+and fight" and "if its a baby it should run" (`docs/RULINGS.md` R-ANIMAL-BEAR; animals.json defend.close_fight_m, young.close_run_m). Within close_fight_m a grown bear
+always presses home, a black bear mother too (her young.bluff_share is for a player farther off); a cub, orphaned or not, runs This is for a bear surprised that close, grazing, walking or bedded when it first knows the player is there (coordinator's reading, 26 Nov 2026). One that saw the player coming and is staring at them, or is already running, bolts as before ("the bear really should be able to out run me"; "It should have run away unless it was starving or trapped"); run down or hurt close by, it still fights (trapped_fights).
+
 **Dave's words win.** Where real animals and Dave's words differ, the "in our game" line follows Dave and says so. Real numbers are given
 so the fix threads can tune from them.
 
@@ -100,8 +104,8 @@ Each animal section answers these, in this order. Short names are used in the ta
 Our game has two bear species. Both are North American forest bears.
 - **Black bear** (`black_bear`, species 18): model `assets/animals/black_bear/SK_BlackBear.fbx` (WildMesh BlackBear). Real species:
   American black bear, *Ursus americanus*. Health 90.
-- **Brown bear** (`bear`, species 14): three looks, two on `SK_Bear.fbx` (WildMesh BrownBear) and one on `bear_2/SK_Bear.fbx` (WildMesh
-  "Bear", the darker one). Real species: brown bear or grizzly, *Ursus arctos*. Health 120. Has a den near rivers.
+- **Brown bear** (`bear`, species 14): one look, `SK_Bear.fbx` (WildMesh BrownBear). The darker `bear_2/SK_Bear.fbx` (WildMesh "Bear") look is no
+  longer drawn: it cannot rear on its hind legs (coordinator 26 Nov 2026, Lane A pictures at 96ec6be0). Real species: brown bear or grizzly, *Ursus arctos*. Health 120. Has a den near rivers.
 
 Dave says the bears he met look like typical black bears. Both species roam the same forests (temperate, mixed, boreal) at about the same
 share, so the one he chased may have been either; the darker brown bear look reads as a black bear too. **Recommendation: in our world
@@ -209,7 +213,7 @@ or four blows (about 5 s). Then the core rule: at 1 health it stops, and a defen
 | Bite | **none** | `Attack_Run_01_AttackF`; `bear_2`: `Attack_BiteForward` |
 | Hit, death | `A_Hit*2Frighten_F`, `WalkSlowWounded2Lying`; wounded walks and runs | `Hit_*`, `Death_*` |
 
-The black bear model cannot swipe or bite with its own moves. Options for the fix thread: (a) draw black bears with the darker brown bear
+(Done since: the black bear is drawn from the brown bear model `bear/SK_Bear.fbx`, and the `bear_2` look was dropped on 26 Nov 2026 because it cannot rear on its hind legs. The options below are kept as history.) The black bear model cannot swipe or bite with its own moves. Options for the fix thread: (a) draw black bears with the darker brown bear
 look (`bear_2`, which has a bite, two strikes and an angry stand) and keep the black bear file for calm moves only; (b) retarget the
 brown bear's attack clips onto the black bear rig if the bones match; (c) a new model. (a) is the quickest and keeps "each model uses its
 own attack moves".
