@@ -1510,9 +1510,11 @@
 				"12": "Idle",
 				"walk": "WalkMedium",
 				"run": "RunFast",
-				"swim": "SwimMoveMedium"
+				"swim": "SwimMoveMedium",
+				"15": "FlyFlapping",
+				"17": "FlyGliding"
 			},
-			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx). Swim clip (8 Nov 2026): SwimMoveMedium from its own swim clips.",
+			"note": "WildMesh Goose (Realistic Animals/Goose/SK_Goose.fbx). Swim clip (8 Nov 2026): SwimMoveMedium from its own swim clips. Flight clips (25 Nov 2026, geese fly when startled): its own FlyFlapping (15, flying) and FlyGliding (17, gliding).",
 			"length_m": 0.9,
 			"materials": [
 				{

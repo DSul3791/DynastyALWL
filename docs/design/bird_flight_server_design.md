@@ -63,6 +63,14 @@ The row is `"flight": {"kind": "perch", "perch": "tree", "fly_m": [40, 150], "fl
 - **Coming down:** after a while, or once the player is past `safe_m`, it comes down to the ground to feed again.
 - **No tree in reach:** it flies `fly_m` and lands on open ground, like a flusher.
 
+## 6b. Wary fliers: goose (25 Nov 2026)
+
+Dave on the live server, 25 Nov 2026: "two large ducks or geese waddling around and they are refusing to fly away." The row is `"flight": {"kind": "wary", "burst_s": 2.0, "climb_m": [8, 15], "fly_m": [150, 400], "fly_mps": 16, "glide_share": 0.35}`.
+
+- **Spooked:** unlike a flusher it does not sit tight. At its flee distance (`spook_m`) it stares and honks first, like any startled animal (R-ANIMAL-FEEL; `ServerAnimals._stares`). Then it flies as a flusher does: burst up, fly away, and glide the last share down. It does not run into cover after.
+- **Water:** it is a swimmer, so where it comes down on water it lands riding the surface (`swim_height`). Every flight keeps `clear_m` over the water surface as well as the ground.
+- **Client:** it uses the goose model's own clips, FlyFlapping (15) and FlyGliding (17), and its wings are heard as it rises.
+
 ## 7. Soarers: eagle, raven (step 2, when the models arrive)
 
 The row is `"flight": {"kind": "soar", "perch": "cliff"|"tree", "soar_m": [120, 400], "fly_mps": 14, "thermal_r_m": [40, 80], "climb_mps": 1.8, "ridge_climb_mps": 1.0, "play": false}`. The raven has `play: true`.

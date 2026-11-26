@@ -53,7 +53,7 @@ const AHEAD_STATES := [10, 11, 12, 16, 25, 26]
 const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
 const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
-const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
+const AIR_STATES := [15, 17]                  # in the air (a flock or a bird flying, a bird gliding): its own clip where the model row has one, never walk or run
 # Drawn a delay behind, on the row clock: a bird in the air (FLY, GLIDE). Every other animal is drawn at the present (protocol 168, Dave 24 Nov
 # 2026: "give as much control to the client as it takes to make them feel natural"; docs/design/ANIMAL_NETCODE.md "Plans"): a moving one carried
 # on along its way past its newest point, never past where its row's plan says it stops (MotionBuffer.at_plan). server_animals AIR_DRAWN.
