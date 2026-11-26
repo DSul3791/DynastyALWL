@@ -227,6 +227,14 @@ if alpha.returncode != 0:
     if "FAIL " not in alpha.stdout:
         bad("texture alpha check crashed: " + alpha.stderr[-200:])
 
+answers = subprocess.run([sys.executable, "tools/check_clip_answers.py"], capture_output=True, text=True)      # every animal model's clip answers are kept (no measuring in the frame)
+if answers.returncode != 0:
+    for line in answers.stdout.splitlines():
+        if line.startswith("FAIL "):
+            bad("animal clip answers: " + line[5:])
+    if "FAIL " not in answers.stdout:
+        bad("clip answers check crashed: " + answers.stderr[-200:])
+
 text = subprocess.run([sys.executable, "tools/text_vs_recipe.py"], capture_output=True, text=True)
 if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) must match the recipes and blueprints
     for line in text.stdout.splitlines()[:-1]:
