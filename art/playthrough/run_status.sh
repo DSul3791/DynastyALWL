@@ -1,7 +1,7 @@
 #!/bin/bash
 # Re-run everything that decides FIXED / STILL BROKEN (about 6 minutes, headless): audit, probes, spawn survey, then the status table.
 cd "$(dirname "$0")/../.."
-G="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"
+G="${GODOT_EXE:-C:/DynastyLane/godot/godot_lane_a.exe}"
 python art/playthrough/audit_playthrough.py
 "$G" --headless --path . --script res://art/playthrough/probe_playthrough.gd > art/playthrough/probe_output.txt 2>&1
 "$G" --headless --path . --script res://art/playthrough/probe_structures.gd > art/playthrough/probe_structures_output.txt 2>&1

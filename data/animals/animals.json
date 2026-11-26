@@ -2913,12 +2913,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"temperate_grassland": 1.0,
-				"heath": 0.8,
-				"savanna": 0.6,
-				"alpine_meadow": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\"): kept to its own climate, the North American prairie and sagebrush (temperate grassland, dry scrub, heath); no savanna or alpine rows", "biomes": {"temperate_grassland": 1.0, "dry_scrub": 0.8, "heath": 0.5},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.7,
@@ -3028,10 +3023,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.3},
 			"active": {"midday": 0.3, 
 				"day": 1.0,
 				"dusk": 0.4,
@@ -3103,10 +3095,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.5},
 			"active": {
 				"day": 0.2,
 				"dusk": 1.0,
@@ -3185,10 +3174,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.6,
@@ -3279,10 +3265,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.4},
 			"active": {"midday": 0.1, 
 				"day": 0.4,
 				"dusk": 1.0,
@@ -3355,11 +3338,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_forest": 0.4,
-				"mixed_forest": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "tropical_forest": 0.6, "dry_scrub": 0.4},
 			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
@@ -3552,10 +3531,7 @@
 				"threat_m": 8.0,
 				"threat_warn_s": 0.8
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.2
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "tropical_forest": 0.4},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.8,
@@ -3642,11 +3618,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 0.8,
-				"bare_rock": 0.4,
-				"heath": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"hot_desert": 1.0, "dry_scrub": 0.6},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.4,
@@ -3723,10 +3695,7 @@
 				"above_player_m": 250.0,
 				"water_edge_m": 3.0
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"temperate_grassland": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.5},
 			"active": {
 				"day": 1.0,
 				"dusk": 0.6,
@@ -3782,10 +3751,7 @@
 				"run_m": 70.0,
 				"again_s": 20.0
 			},
-			"biomes": {
-				"savanna": 1.0,
-				"heath": 0.3
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"savanna": 1.0, "dry_scrub": 0.5},
 			"active": {
 				"day": 0.3,
 				"dusk": 0.9,
@@ -3856,10 +3822,7 @@
 				"water_edge_m": 3.0,
 				"forest": false
 			},
-			"biomes": {
-				"savanna": 0.8,
-				"temperate_grassland": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"dry_scrub": 1.0, "savanna": 0.8},
 			"active": {
 				"day": 0.4,
 				"dusk": 1.0,
@@ -4045,12 +4008,7 @@
 				"water_edge_m": 3.0,
 				"forest": true
 			},
-			"biomes": {
-				"temperate_forest": 1.0,
-				"mixed_forest": 0.8,
-				"marsh": 0.5,
-				"boreal_forest": 0.4
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"tropical_forest": 1.0, "mangrove": 0.8},
 			"active": {"midday": 0.1, 
 				"day": 0.15,
 				"dusk": 1.0,
@@ -4150,10 +4108,7 @@
 				],
 				"lair": "den"
 			},
-			"biomes": {
-				"marsh": 1.0,
-				"temperate_forest": 0.2
-			},
+			"biomes_note": "Coordinator 26 Nov 2026 (Dave: only his explicit rules are rules; \"behave like the real animal\" over \"add every animal we own\"): kept to its own climate, no temperate rows. The kind stays in the game.", "biomes": {"mangrove": 1.0},
 			"active": {
 				"day": 0.7,
 				"dusk": 1.0,

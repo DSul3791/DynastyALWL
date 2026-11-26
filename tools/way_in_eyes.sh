@@ -11,7 +11,7 @@
 # Prints one "ok" or "FAIL" line per check and "way_in_eyes: ok|FAIL"; exit 0 all ok, 1 a check failed, 2 the run broke.
 cd "$(dirname "$0")/.." || exit 2
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1;; *) WIN="";; esac
-if [ -n "$WIN" ]; then GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; OUT="E:/Software/godotDev/DynastyALWL_Evidence/way_in"; else GODOT="${GODOT_EXE:-godot}"; OUT=/out/way_in; fi
+if [ -n "$WIN" ]; then GODOT="${GODOT_EXE:-C:/DynastyLane/godot/godot_lane_a.exe}"; OUT="C:/DynastyLane/logs/way_in"; else GODOT="${GODOT_EXE:-godot}"; OUT=/out/way_in; fi
 [ "${1:-}" = "--out" ] && OUT="$2"
 mkdir -p "$OUT" || { echo "FAIL: cannot make $OUT"; exit 2; }
 RIG=$(mktemp -d); FAIL=0; PIDS=""

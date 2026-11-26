@@ -364,6 +364,37 @@ func _init() -> void:
 		places[str(m["place"]["id"])] = true
 
 	check(places.size() == 2, "a second group goes to another warren (one group a place)")
+	# By day a group at home in its warren comes up there, a warren 60 to 150 m off too (out-of-sight skip never taken: near_share 0).
+	var c = AnimalsScript.new()
+	c.ground_height = func(x, z): return ground(x, z)
+	c.blocked = func(x, z): return wet(x, z)
+	c.hour_now = func(): return hour
+	c.weather_ahead = func(_h): return {}
+	c.setup()
+	c.traits = false
+	c.rng.seed = 11
+	c.ranges = r1
+	c.cfg["near_share"] = 0.0
+	hour = 12.0
+	var any_warren: Array = r1.places_near("rabbit", player, 250.0)
+	var at_home: Vector2 = (any_warren[0]["routes"][0] as PackedVector2Array)[0] if not any_warren.is_empty() else Vector2.ZERO
+	var inward: Vector2 = (Vector2(128.0, 128.0) - at_home).normalized() if at_home.distance_to(Vector2(128.0, 128.0)) > 1.0 else Vector2.RIGHT
+	var by_it: Vector3 = Vector3(at_home.x + inward.x * 100.0, 10.0, at_home.y + inward.y * 100.0)   # a player 100 m from that warren's mouth, toward the worked-out middle
+	check(r1.is_ready(r1.block_of(by_it.x, by_it.z)), "the ground round that player is worked out")
+	var near_made: int = 0
+	var near_down: int = 0
+	check(c._place_spawn("rabbit", c.species_def("rabbit"), by_it, [by_it], 30), "a group is made at a warren")
+
+	for _round in 11:
+		c._place_spawn("rabbit", c.species_def("rabbit"), by_it, [by_it], 30)
+
+	for m in c.animals.values():
+		if Vector2(m["pos"].x, m["pos"].z).distance_to(Vector2(by_it.x, by_it.z)) < 150.0:
+			near_made += 1
+			near_down += 1 if int(m["state"]) == c.HIDDEN and (m["pos"] as Vector3).is_equal_approx(m["burrow"]) else 0
+
+	check(not any_warren.is_empty() and near_made > 0 and near_down == near_made, "by day a rabbit group is made at its warren within 150 m of a player, down its holes to come up later (%d under 150 m, %d down)" % [near_made, near_down])
+	hour = 23.0
 	var bare = AnimalsScript.new()
 	bare.setup()
 	check(not bare._place_spawn("rabbit", bare.species_def("rabbit"), player, [player], 30), "with no places the old spawn does")

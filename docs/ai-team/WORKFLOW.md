@@ -25,20 +25,20 @@ Stop starting risky changes near nightly integration. Integrate reviewed ready w
 
 No unresolved finding may be hidden, dropped or archived as if fixed. Record owner, reproduction/evidence, severity and disposition in current task state. Unresolved blockers and missing required checks stop dependent integration/release until resolved and verified. Known noncritical baseline defects require explicit reviewer disposition under `TEST_GATES.md`; no new blanket waiver is created here. Unaffected work can continue.
 
-Dave playtests dev in Godot, or the installed build, at his pace. Every bug, from any source, goes in `BugsList_Current.md` (the one bug list; its header says how). Log observed/expected behavior, reproduction, scene/screenshot, severity and build SHA. Workers investigate immediately on isolated branches. Do not replace his checkout, change his tested revision, launch heavy jobs during his session or kill Godot blindly. Remote `dev` may advance without changing his running build. Defer PC runs until a guarded slot is available.
+Dave playtests dev in Godot, or the installed build, at his pace. Every bug, from any source, goes in `BugsList_Current.md` (the one bug list; its header says how). When play-testing shows a suggestion in `docs/RULINGS.md` is not right, make the game correct, change that line by its procedure and tell the coordinator; a rule is never changed this way (CONSTITUTION, "Rules and suggestions"). Log observed/expected behavior, reproduction, scene/screenshot, severity and build SHA. Workers investigate immediately on isolated branches. Do not replace his checkout, change his tested revision, launch heavy jobs during his session or kill Godot blindly. Remote `dev` may advance without changing his running build. Defer PC runs until a guarded slot is available.
 
 Messages to Dave are short and use Atlantic time. Prefer `Dev ready: <SHA>. Changes: <sentence>. Known issues: <sentence>. Pull dev and play.` Or `Dev not ready: <reason>; play <last-known-good SHA>.` Test summary: counts, one line per failure; anything Dave must do uses numbered steps. Detailed evidence stays in the task record, using `HANDOFF_TEMPLATE.md`.
 
 ## Commands and machine protection
-Verify current paths/builds and access before running. Godot 4.7.2 with Voxel Tools is required for world tests and gameplay; the standard executable is for data/compatible server tests. Typical authorized Windows paths:
-- Voxel build: `C:\GodotInstaller\godot.windows.editor.x86_64.exe` (default of `tools/godot`).
-- Standard build: `C:\GodotInstaller\Godot_v4.7.2-stable_win64_console.exe`.
+Verify current paths/builds and access before running. Godot 4.7.2 with Voxel Tools is required for world tests and gameplay; on Dave's PC the lane's voxel build runs every test, data and server tests included. Typical authorized Windows paths:
+- Tests run only from `C:\DynastyLane` (R-TEAM-LANE-C-DRIVE, `TEST_GATES.md`): the lane's voxel build `C:\DynastyLane\godot\godot_lane_a.exe` is the default of `tools/godot`, `tools/godot.cmd` and the test tools.
+- `C:\GodotInstaller` holds Dave's editor and the standard build; the lane copies its Godot from there and never tests with them.
 - Dave's protected checkout: `C:\GodotProjects\DynastyALWL`.
 
 ```bash
 python3 tools/tests_for_diff.py <base_sha> <head_sha> > /tmp/plan.json
-GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json
-GODOT_EXE=/c/GodotInstaller/Godot_v4.7.2-stable_win64_console.exe tools/run_one_test.sh <test> 300 /tmp/o_<test>
+GODOT_EXE=/c/DynastyLane/godot/godot_lane_a.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json
+GODOT_EXE=/c/DynastyLane/godot/godot_lane_a.exe tools/run_one_test.sh <test> 300 /tmp/o_<test>
 godot --path . -- --role=play
 ```
 
