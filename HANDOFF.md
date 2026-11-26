@@ -44,7 +44,7 @@ Baked tiles for the inner starters and their neighbors (36 files) are in `/mnt/p
 
 ## Setup a new session needs
 - *(stale: cloud tests and bakes are banned since 5 Nov 2026.)* (Cloud sessions only, October; local PC sessions skip these two lines.) Cloud engine: unpack `/mnt/project-files/engine/godot-4.7.2-voxel1.7-linux-headless.xz` with `xz -dc file > godot && chmod +x godot`.
-- Dave's PC: editor `C:\GodotInstaller\godot.windows.editor.x86_64.exe`, project `C:\GodotProjects\DynastyALWL`; headless via `--script` only (a bare launch starts the game server). Ffmpeg is missing there (sound tools only).
+- Dave's PC: editor `C:\GodotInstaller\godot.windows.editor.x86_64.exe` (his; tests use `C:\DynastyLane\godot\godot_lane_a.exe`, R-TEAM-LANE-C-DRIVE), project `C:\GodotProjects\DynastyALWL`; headless via `--script` only (a bare launch starts the game server). Ffmpeg is missing there (sound tools only).
 - *(stale)* Baked tiles (cloud copy): `/mnt/project-files/tiles/base_world/` into `worlds/base_world/tiles/`. Git ignores tiles except `tile_3_4.tile`. (Now all nine starter-area tiles are tracked in git.)
 - Python 3 for the check tools. No GitHub CLI in the cloud: use the GitHub tools.
 

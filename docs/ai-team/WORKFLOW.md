@@ -31,14 +31,14 @@ Messages to Dave are short and use Atlantic time. Prefer `Dev ready: <SHA>. Chan
 
 ## Commands and machine protection
 Verify current paths/builds and access before running. Godot 4.7.2 with Voxel Tools is required for world tests and gameplay; the standard executable is for data/compatible server tests. Typical authorized Windows paths:
-- Voxel build: `C:\GodotInstaller\godot.windows.editor.x86_64.exe` (default of `tools/godot`).
-- Standard build: `C:\GodotInstaller\Godot_v4.7.2-stable_win64_console.exe`.
+- Tests run only from `C:\DynastyLane` (R-TEAM-LANE-C-DRIVE, `TEST_GATES.md`): the lane's voxel build `C:\DynastyLane\godot\godot_lane_a.exe` is the default of `tools/godot`, `tools/godot.cmd` and the test tools.
+- `C:\GodotInstaller` holds Dave's editor and the standard build; the lane copies its Godot from there and never tests with them.
 - Dave's protected checkout: `C:\GodotProjects\DynastyALWL`.
 
 ```bash
 python3 tools/tests_for_diff.py <base_sha> <head_sha> > /tmp/plan.json
-GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json
-GODOT_EXE=/c/GodotInstaller/Godot_v4.7.2-stable_win64_console.exe tools/run_one_test.sh <test> 300 /tmp/o_<test>
+GODOT_EXE=/c/DynastyLane/godot/godot_lane_a.exe tools/run_tests.sh --jobs 3 --out /tmp/run --plan /tmp/plan.json
+GODOT_EXE=/c/DynastyLane/godot/godot_lane_a.exe tools/run_one_test.sh <test> 300 /tmp/o_<test>
 godot --path . -- --role=play
 ```
 

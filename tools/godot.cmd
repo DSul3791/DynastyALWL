@@ -1,3 +1,3 @@
 @echo off
 rem Same shim for cmd/PowerShell: tools\godot.cmd --headless --path . --script ...
-"C:\DynastyLane\godot\godot_lane_a.exe" %*
+if defined GODOT_EXE ("%GODOT_EXE%" %*) else ("C:\DynastyLane\godot\godot_lane_a.exe" %*)

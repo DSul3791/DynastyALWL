@@ -226,7 +226,7 @@ def seen_far():
 def lane_on_c():
     """R-TEAM-LANE-C-DRIVE: test tools default to C:\\DynastyLane and its own Godot, never to E: or the shared editor in GodotInstaller
     (Dave 26 Nov 2026: "only test from there"). Scans tools/ (top level) and art/playthrough/ (.sh .ps1 .py .gd .cmd, no extension).
-    The nightly backup is data, not testing, and is left alone."""
+    nightly_backup.py (its E: destination and its Godot default) is backup, not testing, and is left alone."""
     hits = []
     for f in sorted(list((ROOT / "tools").glob("*")) + list((ROOT / "art/playthrough").rglob("*"))):
         if not f.is_file() or f.suffix not in {".sh", ".ps1", ".py", ".gd", ".cmd", ""} or f.name in {"nightly_backup.py", "check_dave_rules.py"}:
