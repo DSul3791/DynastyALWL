@@ -97,6 +97,7 @@ var _spread: float = 0.0
 var _fight: bool = false
 var _build: bool = false
 var _animals: Array = []             # the server's last animal rows near the bot
+var _animals_ms: int = -1            # their batch's server ms: its parts are put together (protocol 171)
 var _prey: Array = []                # [id, position] chased now
 var _next_strike_msec: int = 0
 var _next_build_msec: int = 0
@@ -162,8 +163,13 @@ func _ready() -> void:
 		_net.inventory_slots_received.connect(_on_slots)
 		_net.surface_received.connect(_on_surface)
 		_net.flora_received.connect(_on_flora)
-		_net.animals_received.connect(func(rows: Array, _server_ms: int) -> void:
-			_animals = rows
+		_net.animals_received.connect(func(rows: Array, server_ms: int, _part: int, _parts: int) -> void:
+			if server_ms == _animals_ms:
+				_animals.append_array(rows)   # another part of the same batch, in whatever order the parts came (protocol 171)
+				return
+
+			_animals = rows.duplicate()
+			_animals_ms = server_ms
 			_animals_heard += 1)
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	# Every server runs the join handshake (server_auth.gd); --password= answers a server that has one, once.
