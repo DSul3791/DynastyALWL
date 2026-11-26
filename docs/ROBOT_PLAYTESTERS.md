@@ -89,7 +89,9 @@ real kg, heaviest first) after a goal where the game said "Too heavy". It hunts 
 out up to four 300 m legs and chases again) and works the carcass with the knife (HUNT, HUNTWALK, CARCASS lines). When gathering or sweeping up it never presses E on a "talk" prompt, and shuts a talk that opens anyway. For copper it walks up any river its own map shows, else widening loops round the camp, for up to 15 minutes
 (EXPLORE lines). It digs clay with the Wooden - Shovel: one dig 1.8 m ahead, a step 1.8 m sideways, so the holes lie side by side;
 a row starts 12 m out from the camp and the next one another way and 25 m further when the ground gives no clay (CLAY lines). For charcoal it keeps firewood or a log burning in its camp fire, takes the charcoal out of the fire's store and
-comes back when the rest should have burned (one about every 400 s; CHARCOAL lines). A goal it cannot play yet says "robot cannot" (fish, snare, order, story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
+comes back when the rest should have burned (one about every 400 s; a log leaves 27, a firewood 3; CHARCOAL lines). A
+visit that ends waiting is not one of the goal's two tries (at most 5 visits). Four charcoal from a cold fire take about 27 minutes,
+so the goal passes only when the fire was lit early enough in the run. A goal it cannot play yet says "robot cannot" (fish, snare, order, story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
 Between goals it drops what a player would leave behind (logs, seed stacks, spare food over 10, straw and reeds over 20, sticks over 40).
 
 Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30

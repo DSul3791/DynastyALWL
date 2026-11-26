@@ -22,6 +22,7 @@ const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed 
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
 const CHARCOAL_EACH_S := 400.0             # real seconds of wood burning a fire takes to leave one Charcoal (9600 game s at 24 game s a second)
+const WAIT_VISITS := 5                     # a goal that waits on time (charcoal) is visited at most this often
 const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
@@ -34,6 +35,7 @@ var _gives: Dictionary = {}   # flora species name -> [item ids a pick gives] (d
 var _blueprints: Dictionary = {}   # structure -> blueprint row
 var _tries: Dictionary = {}   # goal id -> tries
 var _why: Dictionary = {}     # goal id -> last reason
+var _visits: Dictionary = {}       # goal id -> visits that ended waiting on time
 var _not_before: Dictionary = {}   # goal id -> ticks ms: a goal that waits on time (charcoal burning out of the fire) comes back no sooner
 var _t0: int = 0
 var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not aimed at again
@@ -129,6 +131,13 @@ func play(limit_s: float) -> void:
 		await _lighten()
 		var heard: int = r._notices.size()
 		var why: String = await _play_goal(g)
+
+		# A goal that waits on time (charcoal burning) set a time to come back: that visit is not one of its two tries, up to WAIT_VISITS visits.
+		if Time.get_ticks_msec() < int(_not_before.get(id, 0)):
+			_visits[id] = int(_visits.get(id, 0)) + 1
+
+			if int(_visits[id]) < WAIT_VISITS:
+				_tries[id] = int(_tries[id]) - 1
 		await r._wait(2.0)   # the server's goal_progress after the last step
 		_weigh_if_heavy(heard)
 
@@ -185,7 +194,7 @@ func _waiting_until() -> int:
 	for id in _not_before:
 		var at: int = int(_not_before[id])
 
-		if at > Time.get_ticks_msec() and int(_tries.get(id, 0)) < 2 and (soonest < 0 or at < soonest):
+		if at > Time.get_ticks_msec() and int(_tries.get(id, 0)) < 2 and not bool(c.items.goal_book.row(str(id)).get("done", false)) and (soonest < 0 or at < soonest):
 			soonest = at
 
 	return soonest
@@ -1282,11 +1291,12 @@ func _charcoal(want: int) -> String:
 	var fed: String = "none"
 
 	if wood == 0:
-		for item in ["firewood", "log"]:
+		for item in ["log", "firewood"]:   # a log leaves 27 Charcoal, a Firewood 3 (cooking.json fuel: 259200 and 28800 game s)
 			var slot: int = r._slot_of(item) if item != "log" else _log_slot()
 
 			if slot >= 0:
-				c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, slot, fire, 1, Vector3.ZERO)
+				var pieces: int = 1 if item == "log" else mini(ceili(float(want - _count("charcoal")) / 3.0), int(c.items.inventory.counts[slot]))
+				c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, slot, fire, pieces, Vector3.ZERO)
 				await r._wait(1.0)
 				fed = c.items.table.id_of(int(c.items.inventory.numbers[slot])) if int(c.items.inventory.numbers[slot]) > 0 else item
 				break
@@ -1294,10 +1304,13 @@ func _charcoal(want: int) -> String:
 		if fed == "none":
 			c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, fire, 0, 0, Vector3.ZERO)
 			c.net.chest_received.disconnect(store[1])
-			var why: String = await _have("firewood", 1, false)
+			var why: String = "" if _log_slot() >= 0 else await _have("log", 1, false)
 
 			if why != "" and _log_slot() < 0:
-				why = await _have("log", 1, false)
+				why = await _have("firewood", 1, false)
+
+			if _log_slot() >= 0 or r._slot_of("firewood") >= 0:
+				why = ""
 
 			if why != "":
 				return "no firewood or log to burn for charcoal: %s" % why
@@ -1308,8 +1321,8 @@ func _charcoal(want: int) -> String:
 			if store[0] == null:
 				return "opened the fire's store again: no contents came%s" % _said(said)
 
-			var slot2: int = r._slot_of("firewood")
-			slot2 = slot2 if slot2 >= 0 else _log_slot()
+			var slot2: int = _log_slot()
+			slot2 = slot2 if slot2 >= 0 else r._slot_of("firewood")
 			c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, slot2, fire, 1, Vector3.ZERO)
 			await r._wait(1.0)
 			fed = "firewood or log"
@@ -1323,10 +1336,12 @@ func _charcoal(want: int) -> String:
 		took, wood, fed, have, want, _said(said)])
 
 	if have >= want or bool(c.items.goal_book.row("charcoal").get("done", false)):
+		_not_before.erase("charcoal")
 		return ""
 
 	# The fire makes one about every CHARCOAL_EACH_S: the robot plays other goals and comes back when the rest should be there.
-	_not_before["charcoal"] = Time.get_ticks_msec() + int(float(want - have) * CHARCOAL_EACH_S * 1000.0) + 30000
+	# Damp wood burns slower (cooking.json wet_burn_x): a visit that finds too few just waits again; a wait is not a try (see the main loop).
+	_not_before["charcoal"] = Time.get_ticks_msec() + int(float(want - have) * CHARCOAL_EACH_S * 1000.0) + 60000
 	return "waiting for the fire: %d of %d charcoal so far, back in about %.0f s" % [have, want, float(want - have) * CHARCOAL_EACH_S + 30.0]
 
 
