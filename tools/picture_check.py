@@ -11,7 +11,7 @@ Godot is not involved: the pictures come from the lane's in-game tools (look_rig
       --out DIR           where the report goes (default: the first folder): picture_check.md (the list) and picture_check.json
       --dry-run           count the pictures and the most they could cost; sends nothing, needs no key
       --max-requests N    send at most N requests this run (one request = all the views of one subject, the pictures of one folder)
-      --time-limit S      stop starting new pictures after S seconds (default 3600)
+      --time-limit T      send no new request after T, with its unit: 90s, 20m, 2h (default 1h)
       --cap USD           the spending cap, kept in the ledger (default 150; only lowered or raised by passing it)
       --recheck           ask again about pictures already checked (default: reuse the stored answer, no cost)
 
@@ -380,6 +380,17 @@ def make_groups(pictures, about):
 	return groups
 
 
+def duration(text):
+	"""A time with its unit (90s, 20m, 2h), the same as tools/picture_sweep.py; a bare number is refused."""
+	units = {"s": 1, "m": 60, "h": 3600}
+	try:
+		if text[-1:] in units and float(text[:-1]) > 0:
+			return float(text[:-1]) * units[text[-1]]
+	except ValueError:
+		pass
+	raise argparse.ArgumentTypeError("give a time with its unit, like 90s, 20m or 2h (got %r)" % text)
+
+
 def main(argv):
 	ap = argparse.ArgumentParser(description="Send in-game pictures to the Claude API and list what looks wrong.")
 	ap.add_argument("paths", nargs="+")
@@ -387,7 +398,7 @@ def main(argv):
 	ap.add_argument("--out", default="")
 	ap.add_argument("--dry-run", action="store_true")
 	ap.add_argument("--max-requests", type=int, default=0)
-	ap.add_argument("--time-limit", type=float, default=3600.0)
+	ap.add_argument("--time-limit", type=duration, default=3600.0)
 	ap.add_argument("--cap", type=float, default=None)
 	ap.add_argument("--recheck", action="store_true")
 	args = ap.parse_args(argv)

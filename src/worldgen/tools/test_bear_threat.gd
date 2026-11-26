@@ -145,14 +145,15 @@ func _init() -> void:
 	# 8. Dave 25 Nov 2026 play test: a bear kept running, he chased it on foot and stabbed it ("the bear really should be able to out run me";
 	# "it should have run away unless it was starving or trapped"; "a threatened bear should turn and fight back"). A shy (passive) bear of
 	# each kind, put to flight by a player 6 m off who then chases it at a run (terrain_client RUN_SPEED 9 m/s) for 20 s, gets away: the gap
-	# grows and never closes to within a spear's reach.
+	# grows and never closes to within a spear's reach. Its short startle stare as the player runs in is not a surprise up close (Dave 26 Nov
+	# 2026, "that close it should turn rear on its hind legs growl and fight", is for a bear that had not seen them coming): it bolts.
 	for kind in ["black_bear", "bear"]:
 		a = make()
 		players = [at(-6.0)]
 		var fid: int = a.spawn(kind, 0.0, 0.0)
 		var f: Dictionary = a.animals[fid]
 		f["temper"] = "passive"
-		a.damage(fid, 0.0, -1, "noise")   # a scare with no hunter near: it bolts (damage with nobody close runs)
+		a.damage(fid, 0.0, -1, "noise")   # no effect (damage of 0 is refused): the player running in from 6 m is the scare; it stares, then bolts
 		var closest: float = INF
 		var gap: float = 0.0
 
@@ -214,6 +215,70 @@ func _init() -> void:
 	check(sounds.mood_for("black_bear", 11) == "warn", "a black bear never roars, even charging (gap 4)")
 	check(sounds.mood_for("deer", 2) == "" and sounds.mood_for("deer", 3) == "alert" and sounds.mood_for("deer", 11) == "threat", "a deer runs in silence, snorts on a look, snorts in a fight")
 	sounds.free()
+
+	# 13. Walked up on to 2 m (Dave 26 Nov 2026: "that close it should turn rear on its hind legs growl and fight"): a passive bear and a
+	# defensive one that always bluffs turn to the player and warn (standing up), and the charge is real, not a bluff.
+	for pick in [["black_bear", "passive"], ["bear", "passive"], ["black_bear", "defensive"], ["bear", "defensive"]]:
+		var kind: String = pick[0]
+		a = make()
+		a.species_def(kind)["defend"]["bluff_share"] = 1.0
+		players = [at(2.0)]
+		var cid: int = a.spawn(kind, 0.0, 0.0)
+		var c: Dictionary = a.animals[cid]
+		c["temper"] = pick[1]
+		c["heading"] = PI   # facing away from the player
+		var warned: bool = false
+
+		for _n in 10:
+			a.tick(0.05)
+			warned = warned or int(c["state"]) == a.big_game.WARN
+
+			if warned:
+				break
+
+		check(warned and bool(c.get("no_bluff", false)) and absf(angle_difference(float(c["heading"]), 0.0)) < 0.3, "a %s %s walked up on to 2 m turns, warns and presses home (state %d, heading %.2f)" % [pick[1], kind, int(c["state"]), float(c["heading"])])
+		var voice = CreatureSounds.new()
+		check(voice.mood_for(kind, a.big_game.WARN) == "warn", "and its warning is the growl")
+		voice.free()
+
+	# 14. "if its a baby it should run": a cub a player comes up to runs away from them, and goes back to its mother once they are far off;
+	# a cub runs from a player 15 m off while its mother warns them; an orphaned cub walked up on does not fight.
+	a = make()
+	players = [at(30.0)]
+	var mid: int = a.spawn("black_bear", 0.0, 0.0)
+	a._spawn_young(mid)
+	var kids: Array = a.animals[mid].get("young", [])
+	check(not kids.is_empty(), "a black bear with a cub")
+
+	if not kids.is_empty():
+		var cub: Dictionary = a.animals[kids[0]]
+		var p: Vector3 = cub["pos"] + Vector3(2.0, 0.0, 0.0)
+		var start: float = 2.0
+		var fled: bool = true
+
+		for _n in 10:   # 1 s: it runs at flee_mps and stays inside run_till_m (20 m), then turns back to its mother
+			a._step_young(cub, 0.1, Vector2(cub["pos"].x - p.x, cub["pos"].z - p.z).length(), p)
+			fled = fled and int(cub["state"]) == a.FLEE
+
+		var gap: float = Vector2(cub["pos"].x - p.x, cub["pos"].z - p.z).length()
+		check(fled and gap > start + 3.0, "a cub a player comes within 2 m of runs away (%.1f m off after 1 s, state %d)" % [gap, int(cub["state"])])
+		a._step_young(cub, 0.1, 60.0, cub["pos"] + Vector3(60.0, 0.0, 0.0))
+		check(not cub.has("cub_run"), "and goes back to its mother once the player is far off")
+		a.animals[mid]["state"] = a.big_game.WARN
+		a._step_young(cub, 0.1, 15.0, cub["pos"] + Vector3(15.0, 0.0, 0.0))
+		check(cub.has("cub_run") and int(cub["state"]) == a.FLEE, "a cub runs from a player 15 m off while its mother warns them")
+		a.animals.erase(mid)   # the mother is gone: an orphan
+		players = [at(0.0)]
+		players[0]["pos"] = cub["pos"] + Vector3(2.0, 0.0, 0.0)
+		cub.erase("cub_run")
+		cub["state"] = 0
+		var orphan_warned: bool = false
+
+		for _n in 10:
+			a.tick(0.05)
+			orphan_warned = orphan_warned or (a.animals.has(kids[0]) and int(cub["state"]) == a.big_game.WARN)
+
+		check(not orphan_warned, "an orphaned cub walked up on to 2 m does not fight")
 
 	print("test_bear_threat: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
