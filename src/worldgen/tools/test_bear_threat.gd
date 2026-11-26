@@ -215,5 +215,49 @@ func _init() -> void:
 	check(sounds.mood_for("deer", 2) == "" and sounds.mood_for("deer", 3) == "alert" and sounds.mood_for("deer", 11) == "threat", "a deer runs in silence, snorts on a look, snorts in a fight")
 	sounds.free()
 
+	# 10. Walked up on to 2 m (Dave 26 Nov 2026: "that close it should turn rear on its hind legs growl and fight"): even a passive bear
+	# turns to the player and warns (standing up), and its charge is real, not a bluff.
+	for kind in ["black_bear", "bear"]:
+		a = make()
+		players = [at(2.0)]
+		var cid: int = a.spawn(kind, 0.0, 0.0)
+		var c: Dictionary = a.animals[cid]
+		c["temper"] = "passive"
+		c["heading"] = PI   # facing away from the player
+		var warned: bool = false
+
+		for _n in 10:
+			a.tick(0.05)
+			warned = warned or int(c["state"]) == a.big_game.WARN
+
+			if warned:
+				break
+
+		check(warned and bool(c.get("no_bluff", false)) and absf(angle_difference(float(c["heading"]), 0.0)) < 0.3, "a passive %s walked up on to 2 m turns, warns and presses home (state %d, heading %.2f)" % [kind, int(c["state"]), float(c["heading"])])
+		var voice = CreatureSounds.new()
+		check(voice.mood_for(kind, a.big_game.WARN) == "warn", "and its warning is the growl")
+		voice.free()
+
+	# 11. "if its a baby it should run": a cub a player comes up to runs away from them, and goes back to its mother once they are far off.
+	a = make()
+	players = [at(30.0)]
+	var mid: int = a.spawn("black_bear", 0.0, 0.0)
+	a._spawn_young(mid)
+	var kids: Array = a.animals[mid].get("young", [])
+	check(not kids.is_empty(), "a black bear with a cub")
+
+	if not kids.is_empty():
+		var cub: Dictionary = a.animals[kids[0]]
+		var p: Vector3 = cub["pos"] + Vector3(2.0, 0.0, 0.0)
+		var start: float = 2.0
+
+		for _n in 20:
+			a._step_young(cub, 0.1, Vector2(cub["pos"].x - p.x, cub["pos"].z - p.z).length(), p)
+
+		var gap: float = Vector2(cub["pos"].x - p.x, cub["pos"].z - p.z).length()
+		check(int(cub["state"]) == a.FLEE and gap > start + 3.0, "a cub a player comes within 2 m of runs away (%.1f m off after 2 s, state %d)" % [gap, int(cub["state"])])
+		a._step_young(cub, 0.1, 60.0, cub["pos"] + Vector3(60.0, 0.0, 0.0))
+		check(not cub.has("cub_run"), "and goes back to its mother once the player is far off")
+
 	print("test_bear_threat: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
