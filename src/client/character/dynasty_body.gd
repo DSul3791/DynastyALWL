@@ -306,6 +306,9 @@ func _build_mounts() -> void:
 			var grip_bone: int = skeleton.get_bone_count()
 			skeleton.add_bone(P + side + GRIP_BONE)
 			skeleton.set_bone_parent(grip_bone, skeleton.find_bone(P + side + "Hand"))
+			skeleton.set_bone_rest(grip_bone, Transform3D.IDENTITY)
+
+	skeleton.force_update_all_bone_transforms()   # the new bones' global rests are read at once (_mount)
 
 	hand_mount_r = _mount("Right" + GRIP_BONE, "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
 	hand_mount_l = _mount("Left" + GRIP_BONE, "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
