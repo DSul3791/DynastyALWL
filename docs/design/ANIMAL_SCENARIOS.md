@@ -104,8 +104,8 @@ Each animal section answers these, in this order. Short names are used in the ta
 Our game has two bear species. Both are North American forest bears.
 - **Black bear** (`black_bear`, species 18): model `assets/animals/black_bear/SK_BlackBear.fbx` (WildMesh BlackBear). Real species:
   American black bear, *Ursus americanus*. Health 90.
-- **Brown bear** (`bear`, species 14): three looks, two on `SK_Bear.fbx` (WildMesh BrownBear) and one on `bear_2/SK_Bear.fbx` (WildMesh
-  "Bear", the darker one). Real species: brown bear or grizzly, *Ursus arctos*. Health 120. Has a den near rivers.
+- **Brown bear** (`bear`, species 14): one look, `SK_Bear.fbx` (WildMesh BrownBear). The darker `bear_2/SK_Bear.fbx` (WildMesh "Bear") look is no
+  longer drawn: it cannot rear on its hind legs (coordinator 26 Nov 2026, Lane A pictures at 96ec6be0). Real species: brown bear or grizzly, *Ursus arctos*. Health 120. Has a den near rivers.
 
 Dave says the bears he met look like typical black bears. Both species roam the same forests (temperate, mixed, boreal) at about the same
 share, so the one he chased may have been either; the darker brown bear look reads as a black bear too. **Recommendation: in our world
