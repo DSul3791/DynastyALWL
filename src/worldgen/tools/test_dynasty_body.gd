@@ -24,7 +24,6 @@ func _still(anim: Animation) -> bool:
 	return true
 
 
-
 # How far the hips are turned from the shoulders about the vertical, in degrees (+ the hips to the body's left), from the skeleton's posed joints: the line from
 # the right hip joint to the left against the line from the right shoulder to the left (skeleton space, up +Y).
 func _twist(s: Skeleton3D) -> float:
@@ -174,8 +173,20 @@ func _init() -> void:
 			if absf(float(body.leg_turn.angle) - AvatarDriverScript.leg_turn("jog", local, false)) < 0.001:
 				break
 
-		await s.skeleton_updated
-		twists.append(_twist(s))
+		# Both read at the same point of the jog (the hips and shoulders counter-turn through the stride), paused there; the pose is read once, when the skeleton
+		# hands it to the skin, and the wait is bounded.
+		body.animation_player.seek(0.2, true)
+		body.animation_player.pause()
+		var seen: Array = []
+		s.skeleton_updated.connect(func() -> void: seen.append(_twist(s)), CONNECT_ONE_SHOT)
+
+		for i in range(30):
+			await process_frame
+
+			if not seen.is_empty():
+				break
+
+		twists.append(float(seen[0]) if not seen.is_empty() else INF)
 
 	_check(absf(float(twists[0])) < 20.0, "the jog straight ahead as drawn: hips and shoulders in line (%.1f degrees)" % float(twists[0]))
 	_check(float(twists[1]) - float(twists[0]) < -65.0 and float(twists[1]) - float(twists[0]) > -95.0, "walking right as drawn: the hips turned right of the shoulders by %.1f degrees (80 asked)" % (float(twists[0]) - float(twists[1])))
