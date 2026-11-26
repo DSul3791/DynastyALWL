@@ -15,10 +15,15 @@ const NetScript := preload("res://src/stream/terrain_net.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
+const InventoryScript := preload("res://src/shared/inventory.gd")
+const StructureLook := preload("res://src/shared/structure_look.gd")
 
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
+const CHARCOAL_EACH_S := 400.0             # real seconds of wood burning a fire takes to leave one Charcoal (9600 game s at 24 game s a second)
+const STALK_S := 45.0                      # how long a hunter stands, looks and walks up before the chase
+const WAIT_VISITS := 5                     # a goal that waits on time (charcoal) is visited at most this often
 const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
@@ -31,6 +36,8 @@ var _gives: Dictionary = {}   # flora species name -> [item ids a pick gives] (d
 var _blueprints: Dictionary = {}   # structure -> blueprint row
 var _tries: Dictionary = {}   # goal id -> tries
 var _why: Dictionary = {}     # goal id -> last reason
+var _visits: Dictionary = {}       # goal id -> visits that ended waiting on time
+var _not_before: Dictionary = {}   # goal id -> ticks ms: a goal that waits on time (charcoal burning out of the fire) comes back no sooner
 var _t0: int = 0
 var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not aimed at again
 var _depth: int = 0
@@ -108,7 +115,13 @@ func play(limit_s: float) -> void:
 		var g: Dictionary = _next(book)
 
 		if g.is_empty():
-			break
+			var back: int = _waiting_until()   # only goals that wait on time are left: a player stays by the fire for them
+
+			if back < 0 or float(back - Time.get_ticks_msec()) / 1000.0 > limit_s - GOAL_S - _s():
+				break
+
+			await r._wait(float(back - Time.get_ticks_msec()) / 1000.0 + 0.5)
+			continue
 
 		var id: String = str(g["id"])
 		_tries[id] = int(_tries.get(id, 0)) + 1
@@ -119,6 +132,13 @@ func play(limit_s: float) -> void:
 		await _lighten()
 		var heard: int = r._notices.size()
 		var why: String = await _play_goal(g)
+
+		# A goal that waits on time (charcoal burning) set a time to come back: that visit is not one of its two tries, up to WAIT_VISITS visits.
+		if Time.get_ticks_msec() < int(_not_before.get(id, 0)):
+			_visits[id] = int(_visits.get(id, 0)) + 1
+
+			if int(_visits[id]) < WAIT_VISITS:
+				_tries[id] = int(_tries[id]) - 1
 		await r._wait(2.0)   # the server's goal_progress after the last step
 		_weigh_if_heavy(heard)
 
@@ -153,6 +173,9 @@ func _next(book) -> Dictionary:
 		if str(_why.get(str(row["id"]), "")).begins_with("robot cannot"):
 			continue
 
+		if Time.get_ticks_msec() < int(_not_before.get(str(row["id"]), 0)):
+			continue
+
 		var open: bool = true
 
 		for before in row.get("after", []):
@@ -163,6 +186,19 @@ func _next(book) -> Dictionary:
 			return row
 
 	return {}
+
+
+# The soonest a waiting goal comes back (ticks ms), -1 when none waits.
+func _waiting_until() -> int:
+	var soonest: int = -1
+
+	for id in _not_before:
+		var at: int = int(_not_before[id])
+
+		if at > Time.get_ticks_msec() and int(_tries.get(id, 0)) < 2 and not bool(c.items.goal_book.row(str(id)).get("done", false)) and (soonest < 0 or at < soonest):
+			soonest = at
+
+	return soonest
 
 
 # A player drops what weighs them down and no goal ahead needs: loose logs and seed stacks (the pack said "Too heavy").
@@ -310,6 +346,7 @@ func _chase_game(known: Dictionary) -> int:
 		if Time.get_ticks_msec() > _end_ms - 60000:
 			break
 
+		await _stalk(sp)
 		var _chased: bool = await r._hunt(sp, 90.0)
 		r._release_all()
 		var body: int = _new_carcass(known)
@@ -318,6 +355,45 @@ func _chase_game(known: Dictionary) -> int:
 			return body
 
 	return -1
+
+
+# A hunter stands still and looks (a running player sends rabbits into their burrows and deer off: the 26 Nov run saw game within 150 m on
+# the server and none drawn near the robot), then walks up quietly until the chase can start (robot_play.gd _hunt takes an animal drawn
+# within 120 m). Big game is drawn out to 200 m (#1949), so a deer is seen further off. Up to STALK_S.
+func _stalk(sp: int) -> void:
+	var until: int = mini(Time.get_ticks_msec() + int(STALK_S * 1000.0), _end_ms - 60000)
+	var seen_m: float = 200.0 if sp == 2 else 120.0
+	var seen: float = -1.0   # the nearest it saw, -1 none
+	var close: bool = false
+	r._release_all()
+
+	while Time.get_ticks_msec() < until:
+		var me: Vector3 = c.body.global_position
+		var near: Vector3 = Vector3.INF
+
+		for row in c._animal_view_node.drawn_positions():
+			if int(r._species.get(int(row[0]), 0)) == sp and (row[1] as Vector3).distance_to(me) < minf(seen_m, near.distance_to(me)):
+				near = row[1]
+
+		if near == Vector3.INF:
+			c.body.rotation.y += 0.8   # stand and turn the head round, as a player looks about
+			await r._wait(2.0)
+			continue
+
+		var d: float = Vector2(near.x - me.x, near.z - me.z).length()
+		seen = d if seen < 0.0 else minf(seen, d)
+
+		if d < 40.0:
+			close = true
+			break
+
+		r._face(Vector3(near.x - me.x, 0.0, near.z - me.z).normalized())   # walk up, no running
+		r._key("move_forward", true)
+		r._key("run", false)
+		await r._wait(1.0)
+
+	r._release_all()
+	_line("STALK %s: %s" % [str(r.SPECIES_NAME.get(sp, sp)), "within 40 m" if close else ("none seen in %.0f s" % STALK_S if seen < 0.0 else "nearest seen %.0f m, not reached" % seen)])
 
 
 # A player out looking for a rock: copper and tin lie along the rivers, bigger toward the mountains (boulders.json ore_rocks), so once its
@@ -440,7 +516,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _hunt_goal()
 		"dig_clay":
 			return await _dig_clay(int(check.get("count", 12)))
-		"fish", "snare", "order", "story", "night_walk", "fur_for_winter", "charcoal":
+		"charcoal":
+			return await _charcoal(int(check.get("count", 4)))
+		"fish", "snare", "order", "story", "night_walk", "fur_for_winter":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -1224,6 +1302,164 @@ func _path(strokes: int) -> String:
 
 	_line("PATH %d hoe strokes toward the water, %d out of reach, %d turns, goal has %s%s" % [sent, missed, turns, str(c.items.goal_book.row("path").get("have", "?")), _said(said)])
 	return ""
+
+
+# --- charcoal, the game's way (cooking.json charcoal_left): wood burning in a fire leaves one Charcoal for every 9600 game seconds of
+# burning, about 400 real seconds at 24 game seconds a second, in the fire's own store. A player keeps a log or firewood burning in the
+# camp fire, takes the charcoal out of its store (the fire's window: ACT_CHEST_OPEN on the fire, as F beside it) and comes back for more.
+func _charcoal(want: int) -> String:
+	var said: int = r._notices.size()
+
+	if _count("charcoal") >= want:
+		return ""
+
+	await _walk_home(240.0)
+	var fire: int = _camp_fire()
+
+	if fire < 0:
+		return "no campfire of its own within 40 m of the camp%s" % _said(said)
+
+	await r._go_to(c.items._world[fire]["pos"], 30.0, 1.6)
+	var store: Array = await _open_store(fire)
+
+	if store[0] == null:
+		return "opened the fire's store (world item %d): no contents came%s" % [fire, _said(said)]
+
+	var took: int = await _take_all(fire, store, "charcoal")
+	var wood: int = _store_count(store[0], ["log", "firewood"])
+
+	# Nothing burning that leaves charcoal (sticks and kindling leave none): a piece of firewood or a log goes in, and the fire is lit.
+	var fed: String = "none"
+
+	if wood == 0:
+		for item in ["log", "firewood"]:   # a log leaves 27 Charcoal, a Firewood 3 (cooking.json fuel: 259200 and 28800 game s)
+			var slot: int = r._slot_of(item) if item != "log" else _log_slot()
+
+			if slot >= 0:
+				var pieces: int = 1 if item == "log" else mini(ceili(float(want - _count("charcoal")) / 3.0), int(c.items.inventory.counts[slot]))
+				c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, slot, fire, pieces, Vector3.ZERO)
+				await r._wait(1.0)
+				fed = c.items.table.id_of(int(c.items.inventory.numbers[slot])) if int(c.items.inventory.numbers[slot]) > 0 else item
+				break
+
+		if fed == "none":
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, fire, 0, 0, Vector3.ZERO)
+			c.net.chest_received.disconnect(store[1])
+			var why: String = "" if _log_slot() >= 0 else await _have("log", 1, false)
+
+			if why != "" and _log_slot() < 0:
+				why = await _have("firewood", 1, false)
+
+			if _log_slot() >= 0 or r._slot_of("firewood") >= 0:
+				why = ""
+
+			if why != "":
+				return "no firewood or log to burn for charcoal: %s" % why
+
+			await r._go_to(c.items._world[fire]["pos"], 60.0, 1.6)
+			store = await _open_store(fire)
+
+			if store[0] == null:
+				return "opened the fire's store again: no contents came%s" % _said(said)
+
+			var slot2: int = _log_slot()
+			slot2 = slot2 if slot2 >= 0 else r._slot_of("firewood")
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_PUT, slot2, fire, 1, Vector3.ZERO)
+			await r._wait(1.0)
+			fed = "firewood or log"
+
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_CLOSE, fire, 0, 0, Vector3.ZERO)
+	c.net.chest_received.disconnect(store[1])
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)   # a cold fire is lit again (a lit one ignores it)
+	await r._wait(1.0)
+	var have: int = _count("charcoal")
+	_line("CHARCOAL fire %d (state %d): took %d, %d log or firewood burning, fed %s, pack has %d of %d%s" % [fire, int(c.items._world.get(fire, {}).get("state", -1)),
+		took, wood, fed, have, want, _said(said)])
+
+	if have >= want or bool(c.items.goal_book.row("charcoal").get("done", false)):
+		_not_before.erase("charcoal")
+		return ""
+
+	# The fire makes one about every CHARCOAL_EACH_S: the robot plays other goals and comes back when the rest should be there.
+	# Damp wood burns slower (cooking.json wet_burn_x): a visit that finds too few just waits again; a wait is not a try (see the main loop).
+	_not_before["charcoal"] = Time.get_ticks_msec() + int(float(want - have) * CHARCOAL_EACH_S * 1000.0) + 60000
+	return "waiting for the fire: %d of %d charcoal so far, back in about %.0f s" % [have, want, float(want - have) * CHARCOAL_EACH_S + 60.0]
+
+
+# This character's own fire nearest the camp (not Edda and Hob's: their fire is marked camp), -1 when none is within 40 m.
+func _camp_fire() -> int:
+	var best: int = -1
+	var best_d: float = 40.0
+
+	for id in c.items._world:
+		var w: Dictionary = c.items._world[id]
+
+		if int(w["state"]) in StructureLook.CAMPFIRE_STATES and not w.get("camp", false) and (w["pos"] as Vector3).distance_to(_home) < best_d:
+			best_d = (w["pos"] as Vector3).distance_to(_home)
+			best = int(id)
+
+	return best
+
+
+# Opens a store (a fire's, a chest's) as its window does; [the contents (null when none came), the handler to disconnect].
+func _open_store(id: int) -> Array:
+	var out: Array = [null, null]
+	var got := func(box: int, bytes: PackedByteArray) -> void:
+		if box == id:
+			var inv = InventoryScript.new(c.items.table)
+			inv.from_bytes(bytes)
+			out[0] = inv
+	out[1] = got
+	c.net.chest_received.connect(got)
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	await r._wait(1.5)
+
+	if out[0] == null:
+		c.net.chest_received.disconnect(got)
+
+	return out
+
+
+# Takes every stack of `item` out of an open store; how many came into the pack.
+func _take_all(id: int, store: Array, item: String) -> int:
+	var before: int = _count(item)
+	var number: int = c.items.table.number_of(item)
+
+	for n in range(4):
+		var slot: int = store[0].numbers.find(number)
+
+		if slot < 0:
+			break
+
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_CHEST_TAKE, slot, id, int(store[0].counts[slot]), Vector3.ZERO)
+		await r._wait(1.0)
+
+	return _count(item) - before
+
+
+func _store_count(inv, items: Array) -> int:
+	var n: int = 0
+
+	for slot in range(inv.numbers.size()):
+		var id: String = c.items.table.id_of(int(inv.numbers[slot])) if int(inv.numbers[slot]) > 0 else ""
+
+		if id in items or id.begins_with("log_"):
+			n += int(inv.counts[slot])
+
+	return n
+
+
+# The pack slot of any log (log or log_<species>), -1 when none.
+func _log_slot() -> int:
+	var inv = c.items.inventory
+
+	for slot in range(inv.numbers.size()):
+		var id: String = c.items.table.id_of(int(inv.numbers[slot])) if int(inv.numbers[slot]) > 0 else ""
+
+		if id == "log" or id.begins_with("log_"):
+			return slot
+
+	return -1
 
 
 # --- clay, as the goal's hint says: the Wooden - Shovel in Dig mode, left clicks at the ground. Loam, forest humus, silt and alluvium
