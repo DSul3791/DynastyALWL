@@ -13,7 +13,7 @@ const JOG_FROM := 2.2                   # walk to jog (m/s); 1.8 when already jo
 const JOG_HOLD := 1.8
 const RUN_FROM := 5.0                   # jog to run; 4.4 when already running
 const RUN_HOLD := 4.4
-const RUN_CLIP_PACE := 6.0              # the pace the run clip was retimed for; running faster (9 m/s) does not play it faster
+const RUN_CLIP_PACE := 6.0              # the pace the run clip was retimed for (dynasty_body.gd CLIP_MAP); faster it plays faster, so the feet keep up at 9 m/s (R-MOVE-RUN-FEET)
 const JUMP_UP := 1.0                    # vertical speed (m/s) above which the airborne clip is the jump (rising); below it the fall
 const AIR_DELAY := 0.15                 # seconds without a floor before the body counts as in the air
 const LAND_AFTER := 0.4                 # a fall at least this long ends in the land clip
@@ -277,7 +277,7 @@ static func speed_scale(clip: String, pace: float) -> float:
 		return clampf(pace / 3.2, 0.8, 1.6)
 
 	if clip == "run":
-		return clampf(minf(pace, RUN_CLIP_PACE) / RUN_CLIP_PACE, 0.8, 1.0)   # BUG-011: running is faster than the clip, the cadence is not
+		return clampf(pace / RUN_CLIP_PACE, 0.8, 1.6)   # 1.5x at the 9 m/s run: about 5.3 steps a second of 1.7 m, the planted foot stays put (Dave 26 Nov 2026)
 
 	return 1.0
 
