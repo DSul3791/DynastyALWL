@@ -10908,6 +10908,10 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		var spot: Vector3 = Vector3(x, y, z)
 		var rise: float = _ground_fall(ground, x, z, 1.0)
+
+		if kind == "crag" and rise <= float(cfg.get("steepest", 1.0)):
+			kind = "scree"   # a crag's satellite on ground gentle enough to hold it is a broken-off rock lying at the crag's foot, not a crag
+
 		var steepest: float = float(crag.get("steepest", 2.5)) if kind == "crag" else float(cfg.get("steepest", 1.0)) * (0.3 if kind == "erratic" else 1.0)
 
 		if not (rise <= steepest):

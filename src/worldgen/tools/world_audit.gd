@@ -1053,7 +1053,7 @@ func _check_scatter(m: Dictionary, cell: Vector2i, trees: Array) -> void:
 					lo = minf(lo, g)
 
 			# A boulder's model is centred on its spot sunk into the ground; it floats when the ground under its body falls away by more than its radius.
-			if not is_nan(lo) and p.y - lo > r:
+			if not is_nan(lo) and p.y - lo > r and not (it["boulder"] as Dictionary).has("tilt"):   # a crag leans with its steep face (rock_fields): it lies along the slope, not over it
 				_fault("boulder_floats", p.y - lo - r, p, "%s r %.2f, ground falls %.2f m under it" % [name, r, p.y - lo])
 
 			continue

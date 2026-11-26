@@ -98,17 +98,19 @@ func _init() -> void:
 			far_out += 1 if p.x < -40.0 else 0
 			continue
 
-		# A crag: on the face, leaning with it (the face falls 1.5 a metre toward -x), set into it by crag.sink_share of its radius, no apron.
+		# A crag: only where the ground is steeper than a loose rock lies on (its satellites on gentler ground are scree), leaning with the face
+		# (it falls 1.5 a metre toward -x), set into it by crag.sink_share of its radius, no apron.
 		crags += 1
 		crag_off_face += 0 if p.x > -1.0 and p.x < 61.0 else 1
 		var r_c: float = float(it["boulder"]["radius"])
-		crag_bad += 0 if absf(float(tilt[0]) - 1.5) < 0.02 and absf(float(tilt[1])) < 0.02 and not (it["boulder"] as Dictionary).has("skirt") and absf(p.y - (float(cliff.call(p.x, p.z)) - crag_share * r_c)) < 0.02 else 1
+		var fall_here: float = (float(cliff.call(p.x + 1.0, p.z)) - float(cliff.call(p.x - 1.0, p.z))) * 0.5   # 1.5 on the face, less within a metre of its edges
+		crag_bad += 0 if fall_here > 1.0 and absf(float(tilt[0]) - fall_here) < 0.011 and absf(float(tilt[1])) < 0.02 and not (it["boulder"] as Dictionary).has("skirt") and absf(p.y - (float(cliff.call(p.x, p.z)) - crag_share * r_c)) < 0.02 else 1
 
 	print("rock_fields: cliff: %d rocks at its foot, %d loose rocks and %d crags on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, crags, far_out, per_cell_ms])
 	check(foot >= 20, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
 	check(face == 0, "no loose rock sits on the cliff face (%d)" % face)
 	check(crags >= 20 and crag_off_face == 0, "crags stand out of the face, and only there (%d, %d off it)" % [crags, crag_off_face])
-	check(crag_bad == 0, "each crag leans with the face, is set into it by %.1f of its radius and has no apron (%d not)" % [crag_share, crag_bad])
+	check(crag_bad == 0, "each crag stands on ground steeper than 1 a metre, leans with it, is set into it by %.1f of its radius and has no apron (%d not)" % [crag_share, crag_bad])
 	check(far_out * 10 <= foot, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
 	check(per_cell_ms < CELL_BUDGET_MS, "a cell under a cliff lays out in under %.0f ms on average (%.2f)" % [CELL_BUDGET_MS, per_cell_ms])
 	var big_foot: float = 0.0

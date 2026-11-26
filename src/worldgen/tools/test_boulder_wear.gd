@@ -98,6 +98,15 @@ func _init() -> void:
 		view._boulders.erase(4242)
 		holder.get_child(0).free()
 
+	# A crag (rocky ground on a steep face, PR #1988) leans with the face: its up is the ground's normal from the fall it is sent.
+	view._show_boulder(4244, [4244, 0, total, Vector3(30.0, 5.0, 20.0), view.BOULDER_STATE, {"radius": 1.0, "yaw": 40.0, "total": total, "tilt": [1.5, 0.0]}])
+
+	if check_has(view._boulders.has(4244), "a crag row is drawn"):
+		var up: Vector3 = (view._boulders[4244]["node"] as Node3D).basis.y.normalized()   # the holder is not turned: its own basis is the world's
+		check(up.distance_to(Vector3(-1.5, 1.0, 0.0).normalized()) < 0.01, "a crag on ground rising 1.5 a metre toward +x leans its up away from the rise (%s)" % str(up))
+		(view._boulders[4244]["node"] as Node).free()
+		view._boulders.erase(4244)
+
 	view._show_boulder(4243, [4243, 0, total, Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])
 	view._show_boulder(4243, [4243, 0, int(total / 8.0), Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])   # worked down to an eighth
 
