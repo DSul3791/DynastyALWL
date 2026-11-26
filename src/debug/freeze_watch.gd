@@ -72,7 +72,7 @@ static func beat() -> void:
 	_last_piece = "frame start"
 	var frame: int = _frame
 	_mutex.unlock()
-	gap_ms = gap
+	gap_ms = gap if frame > 1 else 0   # the first beat's "gap" is the time since the engine started
 
 	# The real time between two frames, from the main thread itself (not the watch thread, which can be held up when every core is busy):
 	# Dave's 3 Nov log had watch lines of 0.7-0.9 s while no frame was over 142 ms, so the watch alone is not proof of a stall.
