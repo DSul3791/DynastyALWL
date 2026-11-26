@@ -843,7 +843,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		await process_frame
 		var frame_s: float = float(Time.get_ticks_usec() - frame_t) / 1.0e6
 		frame_t = Time.get_ticks_usec()
-		var off_by: float = absf(view.frame_steps.x - view.frame_steps.y)
+		var off_by: float = absf(view.frame_dts.x - view.frame_dts.y)
 
 		if off_by > 0.005:
 			deltas[0] = int(deltas[0]) + 1
@@ -865,7 +865,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 				if moved_f / allowed > worst_frame / worst_frame_allowed:
 					worst_frame = moved_f
 					worst_frame_allowed = allowed
-					worst_frame_steps = Vector3(frame_s, view.frame_steps.x, view.frame_steps.y)
+					worst_frame_steps = Vector3(frame_s, view.frame_dts.x, view.frame_dts.y)
 
 			frame_p[peer] = fp
 
