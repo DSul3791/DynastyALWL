@@ -1579,7 +1579,7 @@ func _dig_clay(want: int) -> String:
 
 			# A click that brought nothing in (the ray met a bush or grass, or the ground fell away out of the 3 m reach) is aimed again
 			# closer and steeper, once; the pack is watched up to 2 s for the server's answer.
-			for ahead in [1.8, 1.2]:
+			for ahead in [1.8, 1.4]:   # 1.4 keeps the rim of the bowl 0.5 m off the robot
 				var ground: Vector3 = c.body.global_position + dir * ahead
 				var y: float = float(c.items._ground_below.call(ground))
 				ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
