@@ -187,6 +187,16 @@ def witness_glow():
     check("R-FLORA-WITNESS-GLOW", "set_shader_parameter(\"glow_energy\", lerpf(WITNESS_GLOW_NIGHT, WITNESS_GLOW_DAY" in src, "the vein glow follows the daylight")
     check("R-FLORA-WITNESS-GLOW", re.search(r"^\s*float vein_mask = texture\(veins, UV\)\.r;", foliage, re.M) and "uniform sampler2D veins : hint_default_black" in foliage,
           "the mask is the painted vein texture, black (no glow) where none is set")
+    # 26 Nov 2026 "witness tree looks great" on the pass 5 picture: keep that look (colours and the vein mask's lit share).
+    for want in ('set_shader_parameter("glow", Color(0.6, 0.04, 1.0))', 'set_shader_parameter("glow_core", Color(0.92, 0.78, 1.0))', 'set_shader_parameter("core_boost", 1.6)'):
+        check("R-FLORA-WITNESS-GLOW", want in src, f"the approved witness night look is kept ({want})")
+    try:
+        from PIL import Image
+        px = Image.open(ROOT / "assets/trees/leaf_witness_veins.png").convert("L").tobytes()
+        lit = sum(1 for v in px if v >= 120) / len(px)
+        check("R-FLORA-WITNESS-GLOW", 0.05 <= lit <= 0.075, f"the vein mask's lit share stays near the approved 0.063 ({lit:.3f})")
+    except ImportError:
+        pass
     for f in ("leaf_witness_veins.png", "leaf_witness_veins.png.import"):
         check("R-FLORA-WITNESS-GLOW", (ROOT / "assets/trees" / f).is_file() and (ROOT / "assets/trees" / f).stat().st_size > 1000 if f.endswith(".png") else (ROOT / "assets/trees" / f).is_file(), f"the witness leaf's vein mask is there ({f})")
 
