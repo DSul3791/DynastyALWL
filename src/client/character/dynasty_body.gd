@@ -16,6 +16,7 @@ const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, wa
 const P := "mixamorig_"
 static var _loaded_here: Dictionary = {}   # path -> Resource: the files warm() read on the main thread (headless only)
 const WornLook := preload("res://src/client/worn_look.gd")
+const WornShell := preload("res://src/client/worn_shell.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
@@ -218,6 +219,7 @@ func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	Shapes.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)      # the width and face shapes, on a worker thread, ready before an NPC or a slider needs them (dynasty_shapes.gd)
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
+	set_meta("worn_shell", true)                 # and a sleeved garment adds a fitted layer skinned like body_mesh (worn_shell.gd, QA #15)
 	_build_animations()
 	var b := Breath.new()       # breathing on the still sit frame (dynasty_breath.gd)
 	b.name = "Breath"
@@ -278,7 +280,6 @@ const WORN_BONES := {
 	"hips": ["Hips", "upright", "", 0.0], "chest": ["Spine1", "upright", "", 0.0], "head": ["Head", "upright", "", 0.0],
 	"arm_r": ["RightArm", "limb", "RightForeArm", 0.29], "forearm_r": ["RightForeArm", "limb", "RightHand", 0.26], "hand_r": ["RightHand", "after", "RightForeArm", 0.0],
 	"arm_l": ["LeftArm", "limb", "LeftForeArm", 0.29], "forearm_l": ["LeftForeArm", "limb", "LeftHand", 0.26], "hand_l": ["LeftHand", "after", "LeftForeArm", 0.0],
-	"shoulder_r": ["RightShoulder", "limb", "RightArm", 0.15], "shoulder_l": ["LeftShoulder", "limb", "LeftArm", 0.15],   # the collarbones, for a sleeve's yoke (worn_look.gd joint_caps, QA #15)
 	"thigh_r": ["RightUpLeg", "limb", "RightLeg", 0.45], "shin_r": ["RightLeg", "limb", "RightFoot", 0.4], "foot_r": ["RightFoot", "upright", "", 0.0],
 	"thigh_l": ["LeftUpLeg", "limb", "LeftLeg", 0.45], "shin_l": ["LeftLeg", "limb", "LeftFoot", 0.4], "foot_l": ["LeftFoot", "upright", "", 0.0],
 }
@@ -855,6 +856,8 @@ func _set_widths(g: Dictionary) -> void:
 
 		if i >= 0:
 			body_mesh.set_blend_shape_value(i, Shapes.shape_weight(g, key))
+
+	WornShell.refresh(self)      # a worn garment's fitted layer takes the new mesh and widths
 
 
 # Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour

@@ -1,10 +1,12 @@
 extends RefCounted
 
-# Worn clothing (Kathleen, goal 1f). `attach(rig, item_ids, far)` hangs one mesh set per item on the named bones of a RagdollBody (hips, chest, head, hand_*, thigh_*, shin_*, foot_*;
-# shoulder_* only on a body whose worn_frames name the collarbones),
+# Worn clothing (Kathleen, goal 1f). `attach(rig, item_ids, far)` hangs one mesh set per item on the named bones of a RagdollBody (hips, chest, head, hand_*, thigh_*, shin_*, foot_*),
 # replacing whatever was attached before, so Steve's sync code calls it once with the ids the server sends. Items come from data/items/worn.json (builder, colour, layer).
 # Parts are simple spheres, boxes and cylinders in the bone's own space (limbs run down -Y, the front of the body is -Z, right is +X). Meshes and materials are shared and cached.
 # A layer stands LAYER_M further out (1.5 cm) so a cloak over leggings does not z-fight. Far bodies (beyond about 30 m) skip the detail parts (mittens' thumbs, straps, fringe).
+# On a body that is one skinned mesh (rig meta "worn_shell", Dave's body) a sleeved body garment also hangs a fitted layer that bends with the skin (worn_shell.gd).
+
+const WornShell := preload("res://src/client/worn_shell.gd")
 
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
@@ -78,9 +80,6 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 			var bone: String = str(part["bone"])
 
-			if bone in YOKE_BONES and not frames.has(bone):
-				continue
-
 			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
 			# when the skeleton has no bone of the old name. The old body is untouched by this.
 			if frames.has(bone):
@@ -119,6 +118,12 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
+
+		# A sleeved body garment on a body that is one skinned mesh (Dave's) also gets its fitted layer, which bends with the skin (worn_shell.gd, QA #15). Far bodies skip it:
+		# beyond about 30 m a gap between the pieces is a few pixels.
+		if not far and rig.has_meta("worn_shell") and WornShell.covers(str(row["builder"])):
+			if WornShell.hang(rig, skeleton, str(row["builder"]), _material(Color.html(str(row["color"])), stuff_of(str(item_id)), true)) != null:
+				count += 1
 
 	return count
 
@@ -232,6 +237,7 @@ uniform float rough = 0.95;
 uniform float spec = 0.15;
 uniform float metal = 0.0;
 uniform float woven = 0.7;      // 1 all threads, 0 all grain (hide, metal)
+uniform bool rest_custom = false;   // a fitted layer (worn_shell.gd): the weave from the skin's rest place in CUSTOM0, so it stays on the cloth as the body bends
 
 varying vec3 lp;
 
@@ -251,7 +257,7 @@ float vnoise(vec3 p) {
 
 void vertex() {
 	vec3 s = vec3(length(MODEL_MATRIX[0].xyz), length(MODEL_MATRIX[1].xyz), length(MODEL_MATRIX[2].xyz));
-	lp = VERTEX * s;          // metres, so a glove and a cloak share one weave size
+	lp = rest_custom ? CUSTOM0.rgb : VERTEX * s;          // metres, so a glove and a cloak share one weave size
 }
 
 void fragment() {
@@ -277,8 +283,8 @@ static func stuff_of(item_id: String) -> String:
 	return "wool"
 
 
-static func _material(color: Color, stuff: String = "wool") -> Material:
-	var key: String = color.to_html() + stuff
+static func _material(color: Color, stuff: String = "wool", fitted: bool = false) -> Material:
+	var key: String = color.to_html() + stuff + ("|fitted" if fitted else "")
 
 	if not _materials.has(key):
 		if _cloth_shader == null:
@@ -295,6 +301,7 @@ static func _material(color: Color, stuff: String = "wool") -> Material:
 		m.set_shader_parameter("spec", float(look[3]))
 		m.set_shader_parameter("metal", float(look[4]))
 		m.set_shader_parameter("woven", float(look[5]))
+		m.set_shader_parameter("rest_custom", fitted)
 		_materials[key] = m
 
 	return _materials[key]
@@ -479,8 +486,6 @@ const JOINTS := [
 	["thigh_r", "shin_r", -0.45, 1.05], ["thigh_l", "shin_l", -0.45, 1.05], ["shin_r", "foot_r", -0.4, 1.05], ["shin_l", "foot_l", -0.4, 1.05],
 ]
 const JOINT_REACH_M := 0.06      # a piece whose end comes this near a joint covers it
-const YOKE_LEN_M := 0.15         # the collarbone's length the yoke is written for (dynasty_body.gd WORN_BONES stretches it to the body's own)
-const YOKE_BONES := ["shoulder_r", "shoulder_l"]   # hung only on a body whose worn_frames name them (Dave's body); others have no frame for the collarbone
 
 
 # QA #15 (25 Nov 2026, a tester: "log chopping animation limbs not attached"; Lane A stills of the chop: the sleeve and body pieces are rigid per bone, so at a bent elbow the
@@ -511,13 +516,5 @@ static func joint_caps(parts: Array) -> Array:
 		if parent_covered and width > 0.0 and not has_ball:
 			var d: float = width * float(joint[3])
 			caps.append(_p(str(joint[1]), "sph", Vector3.ZERO, Vector3(d, d, d)))
-
-			# The shoulder: a body with collarbones (Dave's: the arm hangs 15 cm out from the breastbone on the collarbone, which lifts and swings the arm far from where the
-			# chest piece is) also gets a long ball along the collarbone, from the root by the neck to past the shoulder joint, so the sleeve stays joined to the body when
-			# the arm is raised or swung (Lane A stills, 26 Nov 2026: the gambeson's sleeves left the body with neck, chest and shoulder bare). Hung only where the body
-			# gives the collarbone a frame (attach), so a body without one keeps the plain shoulder ball. Smooth (16 sides): it is 25 cm long.
-			if str(joint[0]) == "chest":
-				var yoke: String = "shoulder_" + str(joint[1]).right(1)
-				caps.append(_p(yoke, "sphs", Vector3(0.0, -YOKE_LEN_M * 0.5, 0.0), Vector3(width, YOKE_LEN_M + width * 0.6, width)))
 
 	return caps
