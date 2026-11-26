@@ -35,6 +35,7 @@ const FLAT_OK := {
 	"src/client/inner_voice_sounds.gd": "the inner voice",
 	"src/client/ui_sounds.gd": "menu clicks",
 	"src/client/ui/goals/goal_placard.gd": "goal card",
+	"src/client/title_music.gd": "menu music on the pages before a world (R-SOUND-MENU-MUSIC); gone once the world opens",
 	"src/client/ambient_life.gd": "ambient beds (the calls are positional)",
 	"src/client/ambience_slots.gd": "biome beds",
 	"src/client/insect_bed.gd": "insect bed",
