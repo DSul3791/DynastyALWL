@@ -273,6 +273,8 @@ func _init() -> void:
 		within += 1 if SignsScript.shows(str(sg[0]), 80, c) and (sg[1] as Vector2).distance_to(target) <= float(c["spot_m"]) else 0
 
 	check(found.size() == 1 and view.get_children().any(func(n): return str(n.name).begins_with("TrailSignGlow")), "standing on a sign it is spotted and glows (%d of %d within spot_m)" % [found.size(), within])
+	var spot_glow: Array = view.get_children().filter(func(n): return str(n.name).begins_with("TrailSignGlow"))
+	check(not spot_glow.is_empty() and (spot_glow[0].mesh.material as StandardMaterial3D).emission_enabled, "the spotted glow has its light from the moment it is drawn (switched on later it built a second look)")
 	check(view.last_spot.distance_to(found[0][1]) < 0.01 if not found.is_empty() else false, "the spotted sign is kept (last_spot, the rig aims there)")
 
 	# The look (Lane A Job S, 23 Nov 2026: the first tiny pellets under the litter did not show): a latrine is 30 to 50 pellets on one bare

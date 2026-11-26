@@ -849,6 +849,7 @@ func _warm_looks(player: Vector3) -> void:
 		multi.transform_format = MultiMesh.TRANSFORM_3D
 		multi.mesh = _mesh(layer)
 		multi.instance_count = 1
+		multi.set_instance_transform(0, Transform3D.IDENTITY)
 		node.multimesh = multi
 		_warm.add_child(node)
 
@@ -879,7 +880,7 @@ func _glow_mesh(size: float) -> PlaneMesh:
 # A soft pale patch on the ground round a spotted sign, swelling and fading over glow_s: the eye catching it, not a marker.
 func _glow(at: Vector3, size: float) -> void:
 	var plane: PlaneMesh = _glow_mesh(size)
-	var material: StandardMaterial3D = plane.material
+	var material: StandardMaterial3D = plane.material as StandardMaterial3D
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.name = "TrailSignGlow"
 	node.mesh = plane
