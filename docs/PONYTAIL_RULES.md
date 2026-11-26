@@ -49,6 +49,12 @@ Server-side validation of anything a client sends; error handling that prevents 
 ## 6. Topic notes
 - Water (Sonny, 31 Oct 2026): reuse baked tiles, `TileFile`/`TerrainTile`, the water shader, `ShoreRules` and the existing test helpers; new water code lives under `src/water2/`; no copy-paste of the old live sim.
 
+## 7. Spend few tokens
+Dave, 26 Nov 2026: "we now have to be very selective with tokens. Agents need to stop being so loose with tokens" (R-TEAM-TOKENS). The same smallest-complete rule applies to the work itself:
+- Read only what the task needs: `git grep`, line ranges and `git diff`, not whole large files, logs or listings. Do not re-read what is already in context or re-derive what the handoff or mission state says.
+- No subagents, workflows, wide searches or research unless the task, the coordinator or a rulebook asks for them. One independent review round where the gate allows, briefed with the diff, not the whole history.
+- Run the tests `tools/tests_for_diff.py` picks; after a failure re-run only what failed. A run that passed with nothing changed since is not run again.
+- Short posts: the result, what it depends on, the PR link. Detail goes once into GitHub or task state, never repeated in chat.
 
 ## Project engineering contracts
 Use typed GDScript with zero new warnings; justify any `@warning_ignore`. Shared code belongs in `src/shared`; server/client communication uses `src/stream/terrain_net.gd`. Input changes update `../CONTROLS.md` and pass `python3 tools/check_controls.py`. Validate touched scripts on the authorized PC using `tools/local_check.sh` where applicable.
