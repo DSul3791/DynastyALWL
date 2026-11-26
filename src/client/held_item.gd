@@ -64,6 +64,19 @@ const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handl
 const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
 const THIRD_FULL_GRIP := ["saw"]   # held right on the grip point, no choke: a saw's handle is its last third or less, so the choke put the hand on the blade (Dave 17 Nov 2026: "it is stabbed right through his hand")
+# Third person, how a one-handed tool hangs from the hand at the side (picture checker, 26 Nov 2026, BugsList 181: axes, hammers, picks, swords,
+# knives and sickles all lay level at the hip pointing forward, through the thigh). Mount frame: +Y forward, +Z up, +X to the body's right
+# (outward for the right hand). An axe, hammer, pick, adze or mace hangs head-down along the outside of the leg, THIRD_HANG_FWD_DEG forward of
+# straight down and THIRD_OUT_DEG out from the thigh, as a carried axe is held by the haft. A long one tips further forward so its head comes
+# no more than THIRD_HANG_DROP_M below the hand (clear of the ground and the knee), at most to the old forward lean (a great axe, a maul).
+# A blade (knife, chisel, sword, sickle) keeps the forward and slightly down lean (Dave 25 Oct 2026: "all held items point only slightly
+# down") turned THIRD_OUT_DEG outward, clear of the thigh.
+const THIRD_HANG_FWD_DEG := 15.0
+const THIRD_OUT_DEG := 10.0
+const THIRD_HANG_DROP_M := 0.5
+const THIRD_HANG_CARRIES := ["axe", "hammer", "pick", "adze", "mace"]
+const THIRD_EDGE_CARRIES := ["knife", "chisel", "sword", "sickle"]
+const THIRD_SHAPE_CARRY := {"axe": "axe", "hammer": "hammer", "pick": "pick", "mace": "mace", "club": "mace", "bone": "mace", "sword": "sword", "knife": "knife", "sickle": "sickle"}
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a shovel facing up.
@@ -3697,6 +3710,25 @@ func _mount_model() -> void:
 	_model.position = tilt * grip / ARMS_SCALE
 
 
+# Head-down along the outside of the leg: the model's +Y (handle to head) points down, THIRD_HANG_FWD_DEG forward (more for a head reach metres
+# from the hand longer than THIRD_HANG_DROP_M, never past the forward lean, 90 + THIRD_LEAN_DEG) and THIRD_OUT_DEG out (+X).
+static func third_hang_turn(reach: float) -> Basis:
+	var forward: float = THIRD_HANG_FWD_DEG
+
+	if reach > THIRD_HANG_DROP_M:
+		forward = clampf(rad_to_deg(acos(THIRD_HANG_DROP_M / reach)), THIRD_HANG_FWD_DEG, 90.0 + THIRD_LEAN_DEG)
+
+	return Basis(Vector3.UP, deg_to_rad(-THIRD_OUT_DEG)) * Basis(Vector3.RIGHT, deg_to_rad(forward - 90.0))
+
+
+# The carry class third_hold reads: the item's tool_class, or for a weapon without one, its look's shape (a sword, mace or war hammer).
+static func third_carry(item_id: String, tool_class: String) -> String:
+	if tool_class != "":
+		return tool_class
+
+	return str(THIRD_SHAPE_CARRY.get(str(BasicLook.entry(item_id).get("shape", "")), ""))
+
+
 # The share of the grip distance (middle to grip point) the third-person hand takes on a tool of this tool_class.
 static func third_choke(tool_class: String) -> float:
 	return 1.0 if tool_class in THIRD_FULL_GRIP else THIRD_CHOKE
@@ -3710,7 +3742,7 @@ func _mount_model_third(kind: String) -> void:
 		_aim_spear()
 		return
 
-	third_hold(_model, kind, str(_inv.table.entry(held_id()).get("tool_class", "")))
+	third_hold(_model, kind, third_carry(held_id(), str(_inv.table.entry(held_id()).get("tool_class", ""))))
 
 	if kind != "kit":
 		_third_fist().visible = true
@@ -3721,6 +3753,12 @@ func _mount_model_third(kind: String) -> void:
 static func third_hold(model: Node3D, kind: String, carried: String) -> void:
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
 	var grip: Vector3 = Vector3(0.0, float(model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
+	var reach: float = grip.y + float(model.get_meta("head_m", 0.0))   # hand to the head's far end
+
+	if carried in THIRD_HANG_CARRIES and model.has_meta("head_m"):
+		turn = third_hang_turn(reach)
+	elif carried in THIRD_HANG_CARRIES or carried in THIRD_EDGE_CARRIES:
+		turn = Basis(Vector3.BACK, deg_to_rad(-THIRD_OUT_DEG)) * turn   # about the mount's up axis: the head turns out to +X
 
 	if carried == "shovel":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
@@ -4170,6 +4208,7 @@ static func look_tool_node(item_id: String) -> Node3D:
 	mesh.basis = (HELD_LOOK_TURN.get(shape, PLAIN_HELD_TURN) as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
 	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
+	node.set_meta("head_m", maxf(held.get_aabb().end.x, 0.0) * held_scale)   # model origin to the head's far end along the hand (third_hold: how low a hanging head comes)
 	return node
 
 

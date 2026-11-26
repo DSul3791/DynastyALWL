@@ -4,6 +4,7 @@ extends SceneTree
 
 const BasicLook := preload("res://src/client/basic_look.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
+const ItemTable := preload("res://src/shared/item_table.gd")
 
 const HAND_HALF_M := 0.03   # from the middle of a closed hand to its front edge along the handle
 
@@ -361,6 +362,31 @@ func _init() -> void:
 			n += (BasicLook.mesh_for(id).surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
 
 		_check(n < plain_n, "%s has no flint teeth (%d vertices, the plain sickle %d)" % [id, n, plain_n])
+
+	# Third-person carry (BugsList 181): an axe, hammer, pick or mace hangs head-down outside the leg, its head no more than THIRD_HANG_DROP_M
+	# below the hand; a blade points forward and a little down; all turn out to +X (the body's right, away from the thigh).
+	var items: Variant = ItemTable.load_default()
+
+	for row in [["stone_axe", "axe"], ["iron_axe", "axe"], ["stone_hammer", "hammer"], ["iron_pickaxe", "pick"], ["stone_mace", "mace"], ["iron_warhammer", "hammer"], ["steel_greataxe", "axe"], ["iron_shortsword", "sword"], ["iron_knife", "knife"], ["iron_sickle", "sickle"]]:
+		var id: String = str(row[0])
+		var carry: String = HeldItem.third_carry(id, str(items.entry(id).get("tool_class", "")))
+		var node: Node3D = HeldItem.look_tool_node(id)
+		HeldItem.third_hold(node, "", carry)
+		var head_dir: Vector3 = node.basis * Vector3.UP
+		var reach: float = node.position.length() + float(node.get_meta("head_m", 0.0))
+		var head_end: Vector3 = node.basis * Vector3(0.0, reach, 0.0)
+		print("%s carry %s: head %s, end %.2f m below the hand, %.2f out" % [id, carry, head_dir, -head_end.z, head_end.x])
+		_check(carry == str(row[1]), "%s carries as %s (%s)" % [id, row[1], carry])
+		_check(head_dir.x > 0.04 and head_dir.y > 0.2, "%s: the head points forward and out from the thigh (%s)" % [id, head_dir])
+
+		if carry in HeldItem.THIRD_HANG_CARRIES:
+			_check(-head_end.z <= HeldItem.THIRD_HANG_DROP_M + 0.01 and head_dir.z < -0.25, "%s hangs head-down, the head %.2f m below the hand (at most %.2f)" % [id, -head_end.z, HeldItem.THIRD_HANG_DROP_M])
+		else:
+			_check(head_dir.z < 0.0 and head_dir.z > -0.4, "%s points forward and only slightly down (%.2f)" % [id, head_dir.z])
+
+		node.free()
+
+	_check(HeldItem.third_hang_turn(0.3) * Vector3.UP == HeldItem.third_hang_turn(0.5) * Vector3.UP and (HeldItem.third_hang_turn(0.3) * Vector3.UP).z < -0.9, "a short tool hangs %.0f degrees forward of straight down" % HeldItem.THIRD_HANG_FWD_DEG)
 
 	print("tool looks: %d failures" % failures)
 
