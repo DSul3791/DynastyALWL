@@ -28,8 +28,8 @@ const NECK_BAND_M := {"padded": 0.09}
 # The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's back corner
 # was 2 cm inside his shoulder blades), so the layer showed his back's muscles through it as cloth-coloured lumps (Lane A qa15e, 26 Nov 2026). On his body a sleeved
 # garment's chest tubes are turned a sixth of a turn so a flat face lies across the back and the chest (CylinderMesh puts a corner at the back), made deeper and set back,
-# and a little narrower, since the turn puts a corner at each side. Its flat chest details (the gambeson's quilting) are laid on the tube's front faces, and the pieces
-# round the tube's middle (the shirt's shoulder seams) go back and deeper with it. No mantle over the shoulders: a round one read as a hump from the back and the side
+# and a little narrower, since the turn puts a corner at each side. Its flat chest details (the gambeson's quilting, the shirt's lacing) are laid on the tube's front
+# faces; the three garments have no other chest pieces. No mantle over the shoulders: a round one read as a hump from the back and the side
 # (Lane A qa15f). Measured offline against his skinned mesh at idle (tools: the garment's surface against the body, by 5 cm of height): the garment stands at most 7.5 cm
 # off his back and 8 cm past his sides (the mantle stood 10.6 cm off his back), and the layer's points outside the pieces over his shoulder blades fell from 245 (gambeson)
 # and 308 (shirt) to 40 and 75; the shoulder tops above the tube stay the layer's, the garment's own shoulders.
@@ -83,13 +83,8 @@ static func fit_parts(builder: String, parts: Array) -> Array:
 			piece["rot"] = (piece.get("rot", Vector3.ZERO) as Vector3) + Vector3(0.0, CHEST_TURN, 0.0)
 			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER + CHEST_BACK_M)
 			piece["size"] = Vector3(size.x * CHEST_NARROWER, size.y, size.z * CHEST_DEEPER)
-		elif absf(at.z) < 0.01:
-			piece["at"] = Vector3(at.x, at.y, center_z)
-			piece["size"] = Vector3(size.x, size.y, size.z * CHEST_DEEPER)
 		elif str(piece["shape"]) == "box" and at.z < 0.0:
 			piece = _on_front(piece, center_z, half_x, face)
-		else:
-			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER * cos(CHEST_TURN) + CHEST_BACK_M)
 
 		out.append(piece)
 
