@@ -12,7 +12,7 @@
 # reports are printed, not a FAIL here (tools/items_check.py --only screenaudit is the gate for them).
 cd "$(dirname "$0")/.." || exit 2
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1;; *) WIN="";; esac
-if [ -n "$WIN" ]; then GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; DEFOUT="E:/Software/godotDev/DynastyALWL_Evidence/screens"; else GODOT="${GODOT_EXE:-godot}"; DEFOUT=/out/screens; fi
+if [ -n "$WIN" ]; then GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; DEFOUT="C:/DynastyLane/logs/screens"; else GODOT="${GODOT_EXE:-godot}"; DEFOUT=/out/screens; fi
 SIZE=3; FULL=false; OUT="$DEFOUT"
 while [ $# -gt 0 ]; do
   case "$1" in

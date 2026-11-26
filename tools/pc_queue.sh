@@ -30,7 +30,7 @@ done
 GATE="${PC_QUEUE_GATE:-tools/gate_pc.sh}"
 export GODOT_EXE="${GODOT_EXE:-/c/GodotInstaller/godot.windows.editor.x86_64.exe}"
 export PYTHON="${PYTHON:-python}"
-GATE_ROOT="${GATE_ROOT:-/e/Software/godotDev/gate_pc}"
+GATE_ROOT="${GATE_ROOT:-/c/DynastyLane/logs/gate_pc}"
 SLOT="${PC_QUEUE_SLOT:-$GATE_ROOT/wt_slot1}"
 GH="${PC_QUEUE_GH:-gh}"; REPO_SLUG="${REPO:-DSul3791/DynastyALWL}"
 STAMP=$(date -u +%Y%m%d_%H%M)

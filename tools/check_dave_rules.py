@@ -213,6 +213,18 @@ def seen_far():
     check("R-ANIMAL-SEEN-FAR", all(k in cfg["species"] for k in cfg["big_game"]), "every big game kind is a species")
 
 
+def lane_on_c():
+    """R-TEAM-LANE-C-DRIVE: test tools default to C:\\DynastyLane, never to E: (Dave 26 Nov 2026: "only test from there").
+    The nightly backup on E: is data, not testing, and is left alone."""
+    hits = []
+    for f in sorted(list((ROOT / "tools").glob("*")) + list((ROOT / "art/playthrough").rglob("*"))):
+        if not f.is_file() or f.suffix not in {".sh", ".ps1", ".py", ".gd", ""} or f.name in {"nightly_backup.py", "check_dave_rules.py"}:
+            continue
+        text = f.read_text(encoding="utf-8", errors="ignore")
+        hits += [f"{f.relative_to(ROOT)}:{n}" for n, line in enumerate(text.splitlines(), 1) if re.search(r"\b[Ee]:[/\\]|/e/Software", line)]
+    check("R-TEAM-LANE-C-DRIVE", not hits, "no test tool points at E: " + (str(hits[:5]) if hits else "(C:\\DynastyLane)"))
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -226,7 +238,7 @@ def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
-             "R-ANIMAL-SEEN-FAR": seen_far}
+             "R-ANIMAL-SEEN-FAR": seen_far, "R-TEAM-LANE-C-DRIVE": lane_on_c}
     for key, step in steps.items():
         try:
             step()

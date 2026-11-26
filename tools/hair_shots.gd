@@ -2,7 +2,7 @@ extends SceneTree
 
 # Pictures of every hair style (hair_models.gd) on every body model, close on the head, in the idle pose: front, three-quarter, side and back. For checking the fit by eye
 # (Dave 20 Nov 2026: hair styles in the character creator). No world, no server. Needs a real renderer (a window on the PC).
-#   godot --path . --script res://tools/hair_shots.gd -- --out=E:/somewhere/hair_shots [--colour=0.7,0.55,0.25]
+#   godot --path . --script res://tools/hair_shots.gd -- --out=C:/DynastyLane/logs/<job>/shots/hair_shots [--colour=0.7,0.55,0.25]
 # Writes <out>/hair_<body>_<style>_<view>.png at the window's size (the project's window settings win over root.size: 1920 x 1080 on the PC). --colour gives the hair colour (the creator's default leaves the hair as painted).
 
 const Body := preload("res://src/client/character/dynasty_body.gd")
