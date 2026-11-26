@@ -14,6 +14,7 @@ extends RefCounted
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const MapCodec := preload("res://src/shared/map_codec.gd")
 
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
@@ -300,21 +301,72 @@ func _new_carcass(known: Dictionary) -> int:
 	return body
 
 
-# A player out looking for a rock: legs of a widening loop round the camp until a rock of `item` is drawn within 400 m or `limit_s` is used;
-# the farthest it got from camp.
+# A player out looking for a rock: copper and tin lie along the rivers, bigger toward the mountains (boulders.json ore_rocks), so once its
+# own map shows a river the robot walks up it (the highest river cell it has drawn ahead of it); until then, or where the river ends, legs
+# of a widening loop round the camp. Stops when a rock of `item` is drawn within 400 m or `limit_s` is used; the farthest it got from camp.
 func _explore_for(item: String, limit_s: float) -> float:
 	var until: int = mini(Time.get_ticks_msec() + int(limit_s * 1000.0), _end_ms)
 	var leg: int = 0
 	var farthest: float = 0.0
+	var been: Array = []   # river cells walked to: never chosen again
 
 	while Time.get_ticks_msec() < until and _nearest_boulder(item) == 0:
-		leg += 1
-		var target: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (250.0 + 150.0 * float(leg))
-		await r._go_to(target, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
+		var up: Vector3 = _river_upstream(been)
+		var how: String = "up the river"
+
+		if is_nan(up.x):
+			leg += 1
+			up = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (250.0 + 150.0 * float(leg))
+			how = "loop leg %d" % leg
+		else:
+			been.append(up)
+
+		var from: Vector3 = c.body.global_position
+		await r._go_to(up, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
 		farthest = maxf(farthest, _flat(_home))
-		_line("EXPLORE for %s: leg %d, %.0f m from camp, rock found %s" % [item, leg, _flat(_home), str(_nearest_boulder(item) != 0)])
+		_line("EXPLORE for %s: %s, moved %.0f m, %.0f m from camp, rock found %s" % [item, how, _flat(from), _flat(_home),
+			str(_nearest_boulder(item) != 0)])
+
+		if _flat(from) < 1.0:
+			await _stuck_note("exploring for %s" % item)
 
 	return farthest
+
+
+# On this character's own map (what it has surveyed, map_knowledge.gd): the highest river cell within 200 m that is at least 30 m off and
+# not near one already walked to; NAN when the map shows none.
+func _river_upstream(been: Array) -> Vector3:
+	var map = c.map_knowledge
+	var cell_m: float = float(map.cell_m)
+	var here: Vector3 = c.body.global_position
+	var at: Vector2i = Vector2i(int(floor(here.x / cell_m)), int(floor(here.z / cell_m)))
+	var reach: int = int(200.0 / cell_m)
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_h: float = -INF
+
+	for j in range(-reach, reach + 1):
+		for i in range(-reach, reach + 1):
+			var cell: Array = map.cell_at(at + Vector2i(i, j))
+
+			if cell.size() < 3 or int(cell[2]) != MapCodec.WATER_RIVER:
+				continue
+
+			var spot: Vector3 = Vector3((float(at.x + i) + 0.5) * cell_m, float(cell[1]), (float(at.y + j) + 0.5) * cell_m)
+			var d: float = Vector2(spot.x - here.x, spot.z - here.z).length()
+
+			if d < 30.0 or d > 200.0 or float(cell[1]) <= best_h:
+				continue
+
+			var walked: bool = false
+
+			for b in been:
+				walked = walked or Vector2(spot.x - b.x, spot.z - b.z).length() < 40.0
+
+			if not walked:
+				best_h = float(cell[1])
+				best = spot
+
+	return best
 
 
 # Back to the starter camp in 60 s legs; the seconds walked.
@@ -355,10 +407,10 @@ func _play_goal(g: Dictionary) -> String:
 			return await _eat_wild()
 		"copper_ore":
 			if _nearest_boulder("copper_ore") == 0:
-				var far: float = await _explore_for("copper_ore", 600.0)
+				var far: float = await _explore_for("copper_ore", 900.0)   # 20 goals wait on copper: worth a long walk
 
 				if _nearest_boulder("copper_ore") == 0:
-					return "robot cannot find copper yet: no copper rock drawn after exploring up to %.0f m from camp (a player explores along the rivers; the server's resources line gives the nearest by route)" % far
+					return "robot cannot find copper yet: no copper rock drawn after exploring up to %.0f m from camp (it walks up any river its map shows; the server's resources line gives the nearest by route)" % far
 
 			return await _gather("copper_ore", int(check.get("count", 1)))
 		"path":
