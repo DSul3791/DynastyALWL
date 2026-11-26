@@ -4,7 +4,7 @@
 
 ## How the clip's own speed is found
 1. **Clips that travel (root motion).** Already done (#538): the travel on the root or `RigRoot` is taken out and kept as the clip's `travel_mps` (bear walk 0.8, run 6.1, sprint 10.4 m/s).
-2. **In-place clips (new).** In an in-place walk the body stays still and a planted foot slides backward at exactly the ground speed. `_measure_stride` samples every bone 40 times over the clip in the rig's space (metres: the model's size scale is in it), takes the lowest point the clip reaches as the ground, treats a bone within 3% of the standing height of that as planted, and keeps the middle horizontal speed of planted bones between neighbouring samples. That is the clip's `travel_mps`.
+2. **In-place clips (new).** In an in-place walk the body stays still and a planted foot slides backward at exactly the ground speed. `_measure_stride` samples every bone 40 times over the clip in the rig's space (metres: the model's size scale is in it), takes the lowest point the clip reaches as the ground, treats a bone within 3% of the standing height of that as planted, and keeps the middle horizontal speed of planted bones between neighbouring samples. That is the clip's `travel_mps`. In the game the samples are taken on a worker from a copy of the rig's pose (`_stride_later`, 26 Nov 2026), so the speed lands a frame or two after a kind's first body is drawn; until then the clip plays at speed / the row's speed.
 3. Neither works (a hop with no planted frames, a broken clip): the row's `walk_mps` / `run_mps` stay as before.
 
 ## How it is used
