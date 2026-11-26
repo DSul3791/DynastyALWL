@@ -89,9 +89,12 @@ apart) and a sun brighter than the game.
 shows it, so never judge it (a bird with its wings spread, a body in a stride or a tucked leg there is normal). A role \
 labelled "(none)" also shows that bind pose. Judge the other panels.
 - Things in the air on purpose: a run, trot or gallop still in its flight phase (all feet off the ground for a moment, \
-the body no higher than about a third of the leg length over the ground), a bound or a leap, and every fly, glide, \
+the body no higher than about a third of the leg length over the ground; the same for a bound or leap), and every fly, glide, \
 take-off or landing panel. Swim panels sit into the ground plane (the water line), which is right too. Call a running \
 animal floating only when the body hangs clearly higher than a stride could lift it.
+- A "lie" panel should show a healthy animal resting: chest down with the legs folded under, or curled up. One flat on \
+its side with the legs stuck out, or on its back, looks dead or hurt: that is pose_wrong. A lying body's feet need not \
+touch the ground, only the body.
 - Text in the corners and coloured name tags over items are the tester's labels. The HUD is hidden. Night or rain is \
 dark when the description says so. The game's colours are realistic and muted.
 
