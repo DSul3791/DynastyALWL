@@ -67,6 +67,7 @@ uniform sampler2D veins : hint_default_black, filter_linear_mipmap, repeat_disab
 uniform vec3 glow : source_color = vec3(0.0);
 uniform vec3 glow_core : source_color = vec3(0.0);
 uniform float glow_energy = 0.0;
+uniform float core_boost = 1.0;     // how much brighter the line centres glow than the violet round them
 // Snow lying on the crown (art_weather_light.md 8.2.2), 0 none .. 1 full: the ground's snow memory (weather_look.gd, set_snow).
 uniform float snow = 0.0;
 varying vec3 tint;
@@ -120,7 +121,7 @@ void fragment() {
 		// with flecks (Lane A 25 Nov 2026: at 60 m a purple speckled mass).
 		float texels_per_px = max(length(dFdx(UV)), length(dFdy(UV))) * 256.0;
 		float far_fade = 1.0 - 0.65 * smoothstep(1.5, 6.0, texels_per_px);
-		EMISSION = mix(glow, glow_core, smoothstep(0.9, 1.0, vein_mask)) * vein_mask * glow_energy * glow_amount * far_fade;
+		EMISSION = mix(glow, glow_core * core_boost, smoothstep(0.9, 1.0, vein_mask)) * vein_mask * glow_energy * glow_amount * far_fade;
 	}
 }
 """
@@ -1417,8 +1418,9 @@ func _make_tree_materials() -> void:
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
 	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
 	_tree_materials["witness"].set_shader_parameter("veins", _load_texture("res://assets/trees/leaf_witness_veins.png"))
-	_tree_materials["witness"].set_shader_parameter("glow", Color(0.5, 0.06, 1.0))         # strong violet vein lines (0.55, 0.18 read pale, Lane A 25 Nov 2026)
-	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.82, 0.55, 1.0))   # paler only at the very centre
+	_tree_materials["witness"].set_shader_parameter("glow", Color(0.72, 0.05, 1.0))        # violet vein lines: 0.5, 0.06 measured 254 degrees on screen (blue lavender), Dave's picture 269 (tools/score_witness_night.py)
+	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.92, 0.78, 1.0))   # near white at the very centre: Dave's line cores measure saturation 0.24, brightness 0.93
+	_tree_materials["witness"].set_shader_parameter("core_boost", 1.6)                     # ours measured 0.65 with no boost
 	_tree_materials["witness"].set_shader_parameter("glow_energy", WITNESS_GLOW_NIGHT)   # set_day_sky turns it down by day
 
 

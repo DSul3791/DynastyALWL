@@ -373,10 +373,10 @@ def twig_birch(name, size, seed):
     finish(rgb, alpha, name, size)
 
 
-def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
+def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng, mid=0.06, side_w=0.04, pairs=4):
     # Witness tree (owner, 2026-10-18; Dave's picture 25 Nov 2026, art/references/witness_tree_dave_2026-11-25.jpg):
     # an oval, finely toothed leaf whose veins are barely seen by day and glow at night as a clear feather: one
-    # midrib and three pairs of side veins, bold enough to read as lines on each leaf. The albedo vein is only a
+    # midrib and five pairs of thin side veins on a big dark blade (numbers from tools/score_witness_night.py). The albedo vein is only a
     # shade paler than the blade; md (leaf_witness_veins.png) is the glow: 255 on a thin core at the centre of a
     # vein line, 150 over the rest of the line (violet, not white), and a faint 5 over the blade inside a dark rim, so at
     # night each leaf still reads as a broad dark shape round its veins, not only a skeleton (Lane A, 25 Nov 2026).
@@ -398,12 +398,13 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
     ad.polygon(pts, fill=255)
     md.polygon(pts, fill=5, outline=0, width=max(1, int(width * 0.05)))   # a dark rim parts it from the leaves behind
     vein = (int(min(255, shade * 1.06)), int(min(255, shade * 1.02)), int(min(255, shade * 1.08)))   # a shade paler: barely seen by day
-    lines = [(at(length * 0.04, 0), at(length * 0.88, 0), 0.1)]
-    for k in range(1, 4):   # three pairs of bold side veins, swept toward the tip (four thin pairs read as a busy frond, Lane A 25 Nov 2026)
-        x = length * (0.08 + 0.2 * k)
+    lines = [(at(length * 0.04, 0), at(length * 0.88, 0), mid)]
+    step = 0.68 / pairs
+    for k in range(1, pairs + 1):   # side veins swept toward the tip, thin lines on a big dark blade (scored against Dave's picture)
+        x = length * (0.06 + step * k)
         w = math.sin(min(0.95, x / length + 0.12) * math.pi) ** 0.7 * width * 0.38
         for side in (-1, 1):
-            lines.append((at(x - length * 0.02, 0), at(x + length * 0.2, side * w), 0.075))
+            lines.append((at(x - length * 0.02, 0), at(x + length * 0.18, side * w), side_w))
     for a, b, frac in lines:
         rd.line([a, b], fill=vein, width=max(1, int(width * frac)))
     for a, b, frac in lines:   # the glow: the violet line, then a thin bright core
@@ -412,22 +413,25 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng):
         md.line([a, b], fill=255, width=max(1, int(width * frac * 0.35)))
 
 
-def witness(name, size, seed):
+def witness(name, size, seed, leaves=4, span=(0.52, 0.58), mid=0.05, side_w=0.036, pairs=5):
+    # A spray of a few big leaves fanning out from the card's centre, with dark gaps between them (scored against
+    # Dave's picture by tools/score_witness_night.py, 26 Nov 2026: 48 small leaves per card made the crown one
+    # lit mesh, about twice as many leaves across the crown and twice the lit share of the picture).
     rng = random.Random(seed)
     w, h = size[0] * SS, size[1] * SS
     rgb = Image.new("RGB", (w, h), grey(150))
     alpha = Image.new("L", (w, h), 0)
     mask = Image.new("L", (w, h), 0)
     rd, ad, md = ImageDraw.Draw(rgb), ImageDraw.Draw(alpha), ImageDraw.Draw(mask)
-    for n in range(48):   # 48 big leaves (170 small ones until 25 Nov 2026 read as a fine fern mesh at night)
-        r = rng.random() ** 0.55 * 0.4
-        a = rng.uniform(0, math.tau)
-        cx, cy = w * (0.5 + r * math.cos(a)), h * (0.5 + r * math.sin(a))
-        length = w * rng.uniform(0.28, 0.38)
-        width = length * rng.uniform(0.52, 0.62)
-        angle = rng.uniform(0, math.tau)
-        shade = rng.uniform(150, 240) * (1.0 - 0.25 * r)
-        witness_leaf(rd, ad, md, cx - math.cos(angle) * length / 2, cy - math.sin(angle) * length / 2, length, width, angle, shade, rng)
+    turn = math.pi / 4   # toward the corners, where a long leaf has room
+    for n in range(leaves):
+        angle = turn + math.tau * n / leaves + rng.uniform(-0.15, 0.15)
+        start = w * rng.uniform(0.02, 0.06)
+        cx, cy = w * 0.5 + math.cos(angle) * start, h * 0.5 + math.sin(angle) * start
+        length = w * rng.uniform(*span)
+        width = length * rng.uniform(0.5, 0.58)
+        shade = rng.uniform(150, 240)
+        witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng, mid, side_w, pairs)
     finish(rgb, alpha, name, size)
     mask.resize(size, Image.LANCZOS).save(os.path.join(HERE, name.replace(".png", "_veins.png")))
 
