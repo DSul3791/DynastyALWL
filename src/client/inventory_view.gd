@@ -5137,9 +5137,6 @@ func _make_chest() -> Node3D:
 	return BuildingLook.chest()
 
 
-# Remains (protocol 34, placeholder look until Art draws it): a low dark body and its pack, greying to bone over the seven days.
-# `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
-# A dead animal lying on its side: a brown ellipsoid sized by species (rabbit 0.45 m).
 # The animal's own model lying dead (animal_view dead_body: the body that fell there, or its look drawn in its last pose; Dave 26 Nov 2026,
 # the hand-built body "look terrible"); the hand-built body (carcass_look.gd) only where no model file is there. `at`: where the row lies.
 var dead_body: Callable            # (kind, look, num, at) -> Node3D or null (terrain_client: animal_view.dead_body)
@@ -5150,6 +5147,8 @@ func _make_carcass(extra: Dictionary) -> Node3D:
 	return body if body != null else CarcassLook.build(species)
 
 
+# Remains (protocol 34, placeholder look until Art draws it): a low dark body and its pack, greying to bone over the seven days.
+# `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
 func _make_remains(age: float) -> Node3D:
 	return BuildingLook.remains(age)
 

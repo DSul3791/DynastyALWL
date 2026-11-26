@@ -639,7 +639,7 @@ func dead_body(kind: String, look: int, num: int, at: Vector3) -> Node3D:
 		model.scale = Vector3.ONE * YOUNG_SCALE
 
 	root.add_child(model)
-	root.tree_entered.connect(func() -> void: _lie_dead(model, root), CONNECT_ONE_SHOT)
+	model.ready.connect(_lie_dead.bind(model, root), CONNECT_ONE_SHOT)   # once its skeleton and player are in the tree too
 	return root
 
 
@@ -699,25 +699,33 @@ func _take_fallen(kind: String, at: Vector3) -> Node3D:
 			return f["node"]
 
 	var now: int = Time.get_ticks_msec()
+	var best: Variant = null
+	var best_m: float = DEAD_TAKE_M
 
-	for id in _bodies.keys():
+	for id in _bodies.keys():   # the nearest one only: a herd mate beside the kill is not the one that died
 		var b: Dictionary = _bodies[id]
 
 		if str(b["kind"]) != kind or not is_instance_valid(b["node"]) or not (b["node"] as Node3D).is_inside_tree():
 			continue
 
 		var p: Vector3 = (b["node"] as Node3D).global_position
+		var d: float = Vector2(p.x - at.x, p.z - at.z).length()
 
-		if Vector2(p.x - at.x, p.z - at.z).length() <= DEAD_TAKE_M and killed_by_hit(p, _hits, now):
-			_bodies.erase(id)
-			fell.emit(kind, p, kind in SMALL_FALL_KINDS)
+		if d <= best_m and killed_by_hit(p, _hits, now):
+			best_m = d
+			best = id
 
-			if _die(b):
-				return _fallen.pop_back()["node"]
+	if best == null:
+		return null
 
-			(b["node"] as Node3D).queue_free()
-			return null
+	var shot: Dictionary = _bodies[best]
+	_bodies.erase(best)
+	fell.emit(kind, (shot["node"] as Node3D).global_position, kind in SMALL_FALL_KINDS)
 
+	if _die(shot):
+		return _fallen.pop_back()["node"]
+
+	(shot["node"] as Node3D).queue_free()
 	return null
 
 
