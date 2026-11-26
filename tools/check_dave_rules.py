@@ -19,6 +19,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CORE-NO-DEATH": ["test_death"],
     "R-CORE-COLD": ["test_cold_pass_out"],
     "R-HUD-STATUS": ["test_status_strip"],
+    "R-HUD-INSPECT-PLUS": ["test_inspect_reticle"],
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
