@@ -10,7 +10,7 @@ The heartbeat already has one controller, `src/client/breath_sounds.gd` (`sound.
 
 The rate already comes from the authoritative systems:
 - **Awake.** The server's strain (`items.strain`, data/items/exertion.json: over-exerted at 1.0, faint at 1.4), fed by `set_body` each frame.
-- **Asleep, fainted or waking.** The server's own heart rate (protocol 59, `body(bpm, eta, phase)`: 44 asleep, 172 in a faint, 140 waking).
+- **Asleep, fainted or waking.** The server's own heart rate (protocol 59, `body(bpm, eta, phase)`: 44 asleep, 172 in a faint, 90 waking (Dave 25 Nov 2026, R-CORE-PASS-OUT: a faint wakes calm)).
 
 The heart rate is eased toward its target at 40 bpm per second, so it never jumps. The character screen's heart reads the same `bpm_now`.
 

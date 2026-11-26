@@ -241,7 +241,7 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 
 	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", CREATURE_STEP_UNIT_M if creature else 6.0, CREATURE_STEP_REACH_M if creature else 30.0)
 	player.stream = list[pick]
-	player.volume_db = linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0)
+	player.volume_db = linear_to_db(clampf(0.3 + 0.7 * strength, 0.05, 1.0)) + _rng.randf_range(-1.0, 1.0) + float(_slots[slot].get("play_db", 0.0))   # play_db: a slot played under its file's level (sign_spot, QA #20)
 	player.pitch_scale = 1.0 + _rng.randf_range(-PITCH_SPREAD, PITCH_SPREAD)
 	player.finished.connect(player.queue_free)
 	player.global_position = at

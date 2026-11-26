@@ -1560,8 +1560,8 @@ func _welcome_body(info: Dictionary) -> void:
 	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
 	trail_signs.trunks_near = func(point: Vector3, radius: float) -> Array: return _trunks_round(point, radius) if flora != null else []   # rubbed trees by deer trails
 	trail_signs.patches_changed.connect(grass.set_sign_patches)   # the grass short round latrines, droppings and warrens (Lane A 23 Nov: unseen in tall grass)
-	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the slight sound there, and the server trains Tracking
-		if sound != null:
+	trail_signs.on_spot = func(_kind: String, at: Vector3) -> void:   # a sign spotted (153): the server trains Tracking; the sound only with hunting gear in hand (QA #20)
+		if sound != null and held != null and TrailSignsScript.sounds_with(trail_signs.cfg, [held.held_id(), held.off_id()]):
 			sound.slots.play("sign_spot", at)
 
 		if net != null and multiplayer.has_multiplayer_peer():
@@ -5618,6 +5618,12 @@ func _unhandled_input(event: InputEvent) -> void:
 
 		return
 
+	# Passing out, fainted or waking: the body is not the player's (Dave 25 Nov 2026, QA #19: "they must stop the second the game determines
+	# its time to pass out"). No tool, E, stance or other key press reaches the world; looking round, the menu and screens above, and key
+	# and button releases (so nothing stays held) still do.
+	if items != null and items.body_out() and not (event is InputEventMouseMotion) and event.is_pressed():
+		return
+
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not shot_lock and photo.active:
 		photo.orbit(event.relative.x * display.mouse_look, event.relative.y * display.mouse_look)   # the camera swings round the character; the character does not turn
 	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and photo.active and (event.button_index == MOUSE_BUTTON_WHEEL_UP or event.button_index == MOUSE_BUTTON_WHEEL_DOWN):
@@ -6096,7 +6102,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (_move_held("jump") and not sleeping_now):
+	if (input != Vector3.ZERO or (_move_held("jump") and not sleeping_now)) and not (items != null and items.body_out()):   # no stand-up asks while passing out (QA #19)
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -6573,6 +6579,9 @@ func _update_bob(delta: float) -> void:
 	var stride: int = 1 if running else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG
 	var gait: int = _gait()                  # the footstep tier
 
+	if moving and items != null and items.body_out():
+		moving = false   # passing out, fainted or waking: no footsteps, whatever the body is doing (Dave 25 Nov 2026, QA #19)
+
 	if moving:
 		# One full turn of the phase is one step (a footfall at 0, then at TAU).
 		var before: float = _bob_phase
@@ -6762,7 +6771,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not _screen_up())   # no harvest under any screen (the Journal, Tab), not only the inventory
+		harvest.update(delta, KeyBindings.held("interact") and not _screen_up() and not (items != null and items.body_out()))   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
