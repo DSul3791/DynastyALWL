@@ -215,9 +215,7 @@ func _init() -> void:
 
 	# The per-player readings as the vitals tick makes them: its caches on (lit fires, cover, loads), filled by the first pass. Without them
 	# each call walked every record for the lit fires, and the soak once showed warmth_target at 13.5 ms a pass, far above the tick's cost.
-	items._load_cache.clear()
-	items._kg_cache.clear()
-	items._cover_cache.clear()
+	items._vitals_caches_clear()
 	items._lit_valid = false
 	items._in_vitals = true
 
@@ -250,6 +248,71 @@ func _init() -> void:
 					items.call(fname, peer, false)
 
 		print("soak: profile %s: %.3f ms per pass over %d players (vitals caches on)" % [fname, float(Time.get_ticks_usec() - t3) / 10000.0, items._peer_key.size()])
+
+	# Vitals, piece by piece (26 Nov 2026: 123.5 ms a second at 64 players, the largest part). Each line is one pass over every player,
+	# caches on as inside the tick; "cold" lines clear the per-tick caches before each pass, as each real vitals tick starts.
+	var leaf_peer: Array = ["worn_of", "_armour_kg", "_carry_body", "insulation_worn", "heat_load", "rested_tier", "on_good_bed", "_drain_mult",
+			"_has_bedroll", "comfort_points", "comfort_target", "strain_going", "cold_stage", "_bed_of", "_carry_notice", "rain_shed", "_load_ratio", "carried_kg_of"]
+
+	for fname in leaf_peer:
+		if not items.has_method(fname):
+			continue
+
+		var tleaf: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				items.call(fname, peer)
+
+		print("soak: vitals leaf %-22s %.3f ms per pass over %d players" % [fname, float(Time.get_ticks_usec() - tleaf) / 10000.0, items._peer_key.size()])
+
+	for field in ["hunger_thirst_mult", "exhaustion_mult", "regen_mult"]:
+		var tfood: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				items.food_mult(peer, field)
+
+		print("soak: vitals leaf food_mult %-14s %.3f ms per pass" % [field, float(Time.get_ticks_usec() - tfood) / 10000.0])
+
+	for fname in ["_weather_here", "_rain_here", "_vitals_cover"]:
+		var tspot: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				items.call(fname, items._peer_pos.get(peer, Vector3.ZERO))
+
+		print("soak: vitals leaf %-22s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tspot) / 10000.0])
+
+	for fname in ["_update_soak", "_sick_due_tick", "_comfort_meter_tick", "_limp_tick"]:
+		var tbody: int = Time.get_ticks_usec()
+
+		for n in 10:
+			for peer in items._peer_key:
+				var v: Dictionary = items._vitals.get(items._peer_key[peer], {})
+
+				if v.is_empty():
+					continue
+
+				if fname == "_update_soak":
+					items.call(fname, peer, 6.0)
+				elif fname == "_sick_due_tick":
+					items.call(fname, peer, v, 6.0)
+				else:
+					items.call(fname, peer, v, 0.25)
+
+		print("soak: vitals leaf %-22s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tbody) / 10000.0])
+
+	for fname in ["warmth_target", "carried_kg_of", "_load_ratio", "effort_of", "worn_of", "_armour_kg", "rested_tier"]:
+		var tcold: int = Time.get_ticks_usec()
+
+		for n in 10:
+			items._vitals_caches_clear()
+
+			for peer in items._peer_key:
+				items.call(fname, peer)
+
+		print("soak: vitals leaf cold %-17s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tcold) / 10000.0])
 
 	items._in_vitals = false
 
