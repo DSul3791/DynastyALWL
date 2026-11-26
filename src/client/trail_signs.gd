@@ -834,13 +834,13 @@ func _spot(player: Vector3, level: int) -> void:
 # glow and the halo, drawn one by one and as a MultiMesh) is drawn once while the loading screen is up, under the ground, so that build is
 # done at join. Freed WARM_S after the world loads.
 func _warm_looks(player: Vector3) -> void:
-	if _warm != null or not is_inside_tree():
+	if _warm != null:
 		return
 
 	_warm = Node3D.new()
 	_warm.name = "TrailSignsWarm"
+	_warm.position = player - Vector3(0.0, WARM_DEPTH_M, 0.0)   # the signs node sits at the world's origin (terrain_client adds it to the root)
 	add_child(_warm)
-	_warm.global_position = player - Vector3(0.0, WARM_DEPTH_M, 0.0)
 
 	for layer in ["latrine_bed", "pellet", "deer_pellet", "scrape", "print", "hop", "rub", "mound", "halo"]:
 		var node: MultiMeshInstance3D = MultiMeshInstance3D.new()
