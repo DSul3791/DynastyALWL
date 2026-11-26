@@ -31,6 +31,7 @@ const CLAY_S := 480.0                      # the most time the clay goal spends 
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
 const STORY_FROM_H := 17.5                 # the game hour a player heads back to camp for Edda's evening story (it counts from 19 to 23)
+const FIRST_GOALS := ["copper_ore"]       # played as soon as they open, before the list order: 20 goals wait on copper (the runs kept ending first)
 const GATHER_S := 300.0                    # one gather's time at most
 
 var r                       # the robot (robot_play.gd)
@@ -172,13 +173,13 @@ func play(limit_s: float) -> void:
 
 # The first goal not done whose `after` goals are all done, tried at most twice. A goal that only wants the time of day comes first when
 # the clock is right (the story in the evening, whatever its place in the list: the 26 Nov run reached it at 9 in the morning and ended
-# before evening), and so does a goal whose wait is over.
+# before evening), and so do a goal whose wait is over and FIRST_GOALS.
 func _next(book) -> Dictionary:
 	var hour: float = _game_hour()
 
 	for row in book.rows:
 		var id: String = str(row["id"])
-		var timed: bool = (id == "story" and hour >= STORY_FROM_H and hour < 22.5) or (_not_before.has(id) and Time.get_ticks_msec() >= int(_not_before[id]))
+		var timed: bool = (id == "story" and hour >= STORY_FROM_H and hour < 22.5) or (_not_before.has(id) and Time.get_ticks_msec() >= int(_not_before[id])) or id in FIRST_GOALS
 
 		if timed and _open(book, row):
 			return row
@@ -370,7 +371,9 @@ func _new_carcass(known: Dictionary) -> int:
 # rabbit's 5 health and a deer's 20, and a wound bleeds out, blood.note_wounded), picks the spear up again and follows a hurt animal at a walk
 # until it falls. The new carcass, or -1. Prints HUNTTHROW lines (not "HUNT": robot_check.py reads HUNT lines as jab fights).
 func _throw_hunt(sp: int, known: Dictionary) -> int:
-	var throw_m: float = 11.0 if sp == 1 else 17.0
+	# A thrown spear carries far (24 m/s): a deer is thrown at from 30 m, as a player would rather than creep the last 10 m at 0.64 m/s while
+	# the herd grazes on away from them (change 14 run: 150 s crouched, the deer stayed 34 to 60 m off); a rabbit, small, from 14 m.
+	var throw_m: float = 14.0 if sp == 1 else 30.0
 	var seen_m: float = 120.0 if sp == 1 else 200.0
 	var until: int = mini(Time.get_ticks_msec() + 150000, _end_ms - 60000)
 	var target: int = -1
@@ -435,7 +438,9 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 		_aim_throw(at)
 		c.held.mouse_button(MOUSE_BUTTON_RIGHT, true)   # the throw is aimed
 		await r._wait(0.35)
-		_aim_throw(_drawn_at(target, at))
+		var now_at: Vector3 = _drawn_at(target, at)
+		var lead_s: float = Vector2(now_at.x - me.x, now_at.z - me.z).length() / 24.0   # a player throws ahead of a walking animal
+		_aim_throw(now_at + (now_at - at) / 0.35 * Vector3(1.0, 0.0, 1.0) * lead_s)
 		await r._wait(0.1)   # the pitch reaches the camera on the next frame (terrain_client _update_view)
 		var hits: int = int(r._hits.get(target, 0))
 		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
@@ -800,7 +805,10 @@ func _have(item: String, n: int, make: bool) -> String:
 	if why != "":
 		return "for %s: %s" % [item, why]
 
-	if station != "":   # a player walks to the station they built and makes it there
+	if station == "campfire":   # a clay pot is fired at a lit campfire: its own (the camp's fire is Edda and Hob's), lit again if it burned out
+		if await _light_own_fire() < 0:
+			return "for %s: no fire of its own to make it at (lit at %s)" % [item, str(_fire_at.round())]
+	elif station != "":   # a player walks to the station they built and makes it there
 		var site: int = int(_sites.get(station, -1))
 		await _walk_home(240.0)
 
@@ -808,6 +816,29 @@ func _have(item: String, n: int, make: bool) -> String:
 			await r._go_to(c.items._world[site]["pos"], 30.0, 1.8)
 
 	return await _craft(recipe, runs)
+
+
+# At its own fire, with sticks put on and lit again in case it has burned down (a campfire station must be burning: server_items.gd
+# nearest station, "a lit fire"); the fire's world id, or -1.
+func _light_own_fire() -> int:
+	if not _fire_at.is_finite() or await _have("stick", 4, false) != "":
+		return -1
+
+	await r._go_to(_fire_at, 60.0 + _flat(_fire_at) / 2.5, 2.0)
+	var fire: int = _camp_fire()
+
+	if fire < 0:
+		return -1
+
+	await r._go_to(c.items._world[fire]["pos"], 20.0, 1.6)
+
+	for n in range(2):
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
+		await r._wait(0.5)
+
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
+	await r._wait(2.0)
+	return fire
 
 
 # A hand recipe (no station) that gives `item`, the first in recipes.json order that is known.
@@ -827,7 +858,9 @@ func _station_recipe_for(item: String) -> Dictionary:
 		var row: Dictionary = r._recipes[key]
 		var station: String = str(row.get("station", ""))
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))) and not bool(row.get("retired", false)):
+		var built: bool = c.items._world.has(int(_sites.get(station, -1))) or (station == "campfire" and _fire_at.is_finite())   # its own fire is a campfire station
+
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and built and not bool(row.get("retired", false)):
 			return row
 
 	return {}
@@ -1330,6 +1363,20 @@ func _fire() -> String:
 	if why != "":
 		return "tinder: " + why
 
+	# A player lights their fire by the camp (the 26 Nov runs lit it 280 m out, where the stones were): clay pots and charcoal are made at it.
+	# Not within keep_m (8 m) of the camp tree (data/npcs/camp.json; the camp's own fire burns 2 m from it): 14 m out, on the spawn's side.
+	await _walk_home(240.0)
+	var tree: Vector3 = _home
+
+	for w in c.items._world:
+		if c.items._world[w].get("camp", false):
+			tree = c.items._world[w]["pos"]
+
+	var away: Vector3 = (_home - tree) * Vector3(1.0, 0.0, 1.0)
+	away = away.normalized() if away.length() > 0.5 else Vector3.FORWARD
+	await r._go_to(tree + away * 14.0, 30.0, 1.0)
+	r._face(away)
+	await r._wait(0.3)
 	var slot: int = r._slot_of("campfire_kit")
 	var at: Vector3 = c.body.global_position - c.body.global_transform.basis.z * 2.5
 	var ground: float = float(c.items._ground_below.call(at))
