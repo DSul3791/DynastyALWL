@@ -207,12 +207,22 @@ func _init() -> void:
 	get_root().add_child(view)
 	view.set_routes(0, 0, routes)
 	view.update(Vector3(120.0, 5.0, 110.0), 80, true)
-	check(view.shown == 0 and view.get_child_count() == 0, "nothing is made while the world loads round the player")
+	check(view.shown == 0 and view.get_child_count() == 1 and view._warm != null and view._warm.get_parent() == view, "while the world loads no sign is made, only the warm drawings")
+	# Lane A r4 (26 Nov 2026): the first glow built its look in play (137 to 255 ms frames). Each sign look is drawn once behind the loading screen.
+	var warm_glow: Array = view._warm.get_children().filter(func(n): return n is MeshInstance3D)
+	check(view._warm.get_child_count() == 10 and warm_glow.size() == 1, "the warm drawings: nine layers and the glow (%d)" % view._warm.get_child_count())
+	check(warm_glow.size() == 1 and (warm_glow[0].mesh.material as StandardMaterial3D).emission_enabled and is_zero_approx((warm_glow[0].mesh.material as StandardMaterial3D).albedo_color.a), "the warm glow has its light from the start and cannot be seen")
+	check(view._warm.global_position.y < 5.0 - 30.0, "the warm drawings lie under the ground")
+	var warm_node: Node3D = view._warm
 	var found: Array = []
 	view.on_spot = func(kind: String, spot: Vector3) -> void: found.append([kind, spot])
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown > 20 and view.get_child_count() >= 2, "once loaded the signs near the player are drawn (%d pieces)" % view.shown)
+	check(view._warm == warm_node and view._warm_until_msec > 0, "the warm drawings stay a moment after the world loads")
+	view._warm_until_msec = 1
+	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
+	check(view._warm == null and warm_node.is_queued_for_deletion(), "then they are freed")
 	var drawn: int = view.shown
 
 	# Lane A 23 Nov: standing still where the far ground had no collision yet, no sign was ever drawn. Signs with no ground are counted and
