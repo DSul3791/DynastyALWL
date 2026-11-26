@@ -1,6 +1,7 @@
 extends RefCounted
 
-# Worn clothing (Kathleen, goal 1f). `attach(rig, item_ids, far)` hangs one mesh set per item on the named bones of a RagdollBody (hips, chest, head, hand_*, thigh_*, shin_*, foot_*),
+# Worn clothing (Kathleen, goal 1f). `attach(rig, item_ids, far)` hangs one mesh set per item on the named bones of a RagdollBody (hips, chest, head, hand_*, thigh_*, shin_*, foot_*;
+# shoulder_* only on a body whose worn_frames name the collarbones),
 # replacing whatever was attached before, so Steve's sync code calls it once with the ids the server sends. Items come from data/items/worn.json (builder, colour, layer).
 # Parts are simple spheres, boxes and cylinders in the bone's own space (limbs run down -Y, the front of the body is -Z, right is +X). Meshes and materials are shared and cached.
 # A layer stands LAYER_M further out (1.5 cm) so a cloak over leggings does not z-fight. Far bodies (beyond about 30 m) skip the detail parts (mittens' thumbs, straps, fringe).
@@ -514,9 +515,9 @@ static func joint_caps(parts: Array) -> Array:
 			# The shoulder: a body with collarbones (Dave's: the arm hangs 15 cm out from the breastbone on the collarbone, which lifts and swings the arm far from where the
 			# chest piece is) also gets a long ball along the collarbone, from the root by the neck to past the shoulder joint, so the sleeve stays joined to the body when
 			# the arm is raised or swung (Lane A stills, 26 Nov 2026: the gambeson's sleeves left the body with neck, chest and shoulder bare). Hung only where the body
-			# gives the collarbone a frame (attach), so a body without one keeps the plain shoulder ball.
+			# gives the collarbone a frame (attach), so a body without one keeps the plain shoulder ball. Smooth (16 sides): it is 25 cm long.
 			if str(joint[0]) == "chest":
 				var yoke: String = "shoulder_" + str(joint[1]).right(1)
-				caps.append(_p(yoke, "sph", Vector3(0.0, -YOKE_LEN_M * 0.5, 0.0), Vector3(width, YOKE_LEN_M + width * 0.6, width)))
+				caps.append(_p(yoke, "sphs", Vector3(0.0, -YOKE_LEN_M * 0.5, 0.0), Vector3(width, YOKE_LEN_M + width * 0.6, width)))
 
 	return caps

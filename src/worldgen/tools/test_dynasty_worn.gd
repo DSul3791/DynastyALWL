@@ -141,14 +141,20 @@ func _init() -> void:
 
 	# The collarbone's yoke (Lane A stills 26 Nov 2026: the gambeson's sleeves left the body when the arm swung up on the collarbone): along Dave's right collarbone,
 	# its middle halfway from the root by the neck to the shoulder joint; a body with no collarbone frame (the old ragdoll) hangs none and keeps the shoulder ball.
-	var clavicle: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightShoulder"))).origin
-	var shoulder: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_RightArm"))).origin
-	var yoke_off: float = INF
+	for side in [["shoulder_r", "Right"], ["shoulder_l", "Left"]]:
+		var clavicle: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_%sShoulder" % side[1]))).origin
+		var shoulder: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_%sArm" % side[1]))).origin
+		var yoke_off: float = INF
+		var along: float = 0.0
 
-	for node in pieces.get("shoulder_r", []):
-		yoke_off = minf(yoke_off, (node as Node3D).global_position.distance_to(clavicle.lerp(shoulder, 0.5)))
+		for node in pieces.get(str(side[0]), []):
+			var off: float = (node as Node3D).global_position.distance_to(clavicle.lerp(shoulder, 0.5))
 
-	_check(yoke_off < 0.03, "a yoke along Dave's right collarbone (%.3f m from its middle)" % yoke_off)
+			if off < yoke_off:
+				yoke_off = off
+				along = absf((node as Node3D).global_transform.basis.y.normalized().dot((shoulder - clavicle).normalized()))
+
+		_check(yoke_off < 0.03 and along > 0.9, "a yoke along Dave's %s collarbone (%.3f m from its middle, its long axis %.2f along the bone)" % [str(side[1]).to_lower(), yoke_off, along])
 	var old_body: Node3D = Ragdoll.new()
 	root.add_child(old_body)
 	var old_hung: int = WornLook.attach(old_body, ["gambeson"], false)
