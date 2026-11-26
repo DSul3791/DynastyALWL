@@ -35,9 +35,15 @@ func _initialize() -> void:
 	await process_frame
 	var steps: Array = [0]
 	view.stepped.connect(func(_kind: String, _at: Vector3) -> void: steps[0] = int(steps[0]) + 1)
-	var frames_ms: Array = [2, 2, 30, 8, 2, 16]   # uneven real frames; each is handed DELTA as its delta
+	# The body is made first, standing, before the timed walk: a slow first model load (a loaded lane) is spent standing still on the same clock the rows use,
+	# so it reads as neither a late row nor a jump.
 	var start_ms: int = Time.get_ticks_msec()
-	var next_row: int = 0
+	view.on_rows([[ID, DEER, at, -PI * 0.5, WALK, 40000]], 40000)
+	view._process_body(DELTA)
+	check(view._bodies.has(ID), "a body is made for the deer")
+	var walk_from: int = Time.get_ticks_msec() - start_ms
+	var frames_ms: Array = [2, 2, 30, 8, 2, 16]   # uneven real frames; each is handed DELTA as its delta
+	var next_row: int = walk_from
 	var frame: int = 0
 	var first_x: float = NAN
 	var last_x: float = NAN
@@ -46,13 +52,12 @@ func _initialize() -> void:
 	var spd_high: float = 0.0
 	var was_x: float = NAN
 	var was_us: int = 0
-	var body_ms: int = -1
 
-	while Time.get_ticks_msec() - start_ms < 3000 + maxi(body_ms, 0):
+	while Time.get_ticks_msec() - start_ms < walk_from + 3000:
 		var now: int = Time.get_ticks_msec() - start_ms
 
 		if now >= next_row:   # a 3 m/s walk east, a row about every 200 ms, stamped by when it is handed over, so the draw clock never sees it late
-			view.on_rows([[ID, DEER, at + Vector3(3.0 * float(now) / 1000.0, 0.0, 0.0), -PI * 0.5, WALK, 40000 + now]], 40000 + now)
+			view.on_rows([[ID, DEER, at + Vector3(3.0 * float(now - walk_from) / 1000.0, 0.0, 0.0), -PI * 0.5, WALK, 40000 + now]], 40000 + now)
 			next_row = now + 200
 
 		var wait_ms: int = int(frames_ms[frame % frames_ms.size()])
@@ -64,13 +69,7 @@ func _initialize() -> void:
 		was_us = now_us
 		var b: Dictionary = view._bodies.get(ID, {})
 
-		if b.is_empty():
-			continue
-
-		if body_ms < 0:
-			body_ms = now   # the walk is timed from the first drawn frame, so a slow first model load does not shorten it
-
-		if now - body_ms <= 1200:
+		if b.is_empty() or now - walk_from <= 1200:
 			continue
 
 		var x: float = (b["node"] as Node3D).position.x
