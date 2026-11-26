@@ -1638,21 +1638,20 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	if def.has("dog") and _dog_react(a, def, seen_d):   # at its den too: a bear stands to a dog there
 		return
 
+	# Right up close (defend.close_fight_m; Dave 26 Nov 2026, a black bear walked up on to 2 m: "that close it should turn rear on its hind
+	# legs growl and fight"): a grown one fights whatever its temperament, and presses home (no bluff). The warning is the turn, the rear-up
+	# (state 10's clip) and the growl (creature_sounds "warn"), then the charge and its blow. Not into a fire's light. A cub, with its mother
+	# or orphaned (its number stays species + YOUNG_NUM), runs instead ("if its a baby it should run"; _step_young, the passive flight below).
+	if def.has("defend") and seen_p != Vector3.INF and int(a.get("num", 0)) < YOUNG_NUM and seen_d <= float(def["defend"].get("close_fight_m", 0.0)) and _fire_guard(seen_p) == Vector3.INF:
+		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8)), true):
+			return
+
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,
 	# then the dodgeable charge (server_big_game.gd). A player standing in a fire's or a torch's keep-off radius is left alone, at a
 	# den too (Dave 25 Nov 2026). The distance is the one the animal perceives, so a hunter who sneaks up unnoticed is not charged until it notices.
 	if def.has("defend") and seen_p != Vector3.INF and seen_d <= _threat_m(a, def) and _fire_guard(seen_p) == Vector3.INF:
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
-			return
-
-	# Right up close (defend.close_fight_m; Dave 26 Nov 2026, a black bear walked up on to 2 m: "that close it should turn rear on its hind
-	# legs growl and fight"): it fights whatever its temperament, and presses home (no bluff). The warning is the turn, the rear-up (state 10's
-	# clip) and the growl (creature_sounds "warn"), then the charge and its blow. Not into a fire's light; a cub runs instead (_step_young).
-	var close_fight: float = float(def.get("defend", {}).get("close_fight_m", 0.0))
-
-	if close_fight > 0.0 and seen_p != Vector3.INF and seen_d <= close_fight and _fire_guard(seen_p) == Vector3.INF:
-		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8)), true):
 			return
 
 	# Hunters (docs/design/ANIMAL_BEHAVIOUR.md; Dave 21 Nov 2026: "Agressive animals should be aggressive"): a predator that may attack

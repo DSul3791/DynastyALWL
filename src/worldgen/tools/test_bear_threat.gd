@@ -215,14 +215,16 @@ func _init() -> void:
 	check(sounds.mood_for("deer", 2) == "" and sounds.mood_for("deer", 3) == "alert" and sounds.mood_for("deer", 11) == "threat", "a deer runs in silence, snorts on a look, snorts in a fight")
 	sounds.free()
 
-	# 10. Walked up on to 2 m (Dave 26 Nov 2026: "that close it should turn rear on its hind legs growl and fight"): even a passive bear
-	# turns to the player and warns (standing up), and its charge is real, not a bluff.
-	for kind in ["black_bear", "bear"]:
+	# 13. Walked up on to 2 m (Dave 26 Nov 2026: "that close it should turn rear on its hind legs growl and fight"): a passive bear and a
+	# defensive one that always bluffs turn to the player and warn (standing up), and the charge is real, not a bluff.
+	for pick in [["black_bear", "passive"], ["bear", "passive"], ["black_bear", "defensive"], ["bear", "defensive"]]:
+		var kind: String = pick[0]
 		a = make()
+		a.species_def(kind)["defend"]["bluff_share"] = 1.0
 		players = [at(2.0)]
 		var cid: int = a.spawn(kind, 0.0, 0.0)
 		var c: Dictionary = a.animals[cid]
-		c["temper"] = "passive"
+		c["temper"] = pick[1]
 		c["heading"] = PI   # facing away from the player
 		var warned: bool = false
 
@@ -233,12 +235,13 @@ func _init() -> void:
 			if warned:
 				break
 
-		check(warned and bool(c.get("no_bluff", false)) and absf(angle_difference(float(c["heading"]), 0.0)) < 0.3, "a passive %s walked up on to 2 m turns, warns and presses home (state %d, heading %.2f)" % [kind, int(c["state"]), float(c["heading"])])
+		check(warned and bool(c.get("no_bluff", false)) and absf(angle_difference(float(c["heading"]), 0.0)) < 0.3, "a %s %s walked up on to 2 m turns, warns and presses home (state %d, heading %.2f)" % [pick[1], kind, int(c["state"]), float(c["heading"])])
 		var voice = CreatureSounds.new()
 		check(voice.mood_for(kind, a.big_game.WARN) == "warn", "and its warning is the growl")
 		voice.free()
 
-	# 11. "if its a baby it should run": a cub a player comes up to runs away from them, and goes back to its mother once they are far off.
+	# 14. "if its a baby it should run": a cub a player comes up to runs away from them, and goes back to its mother once they are far off;
+	# a cub runs from a player 15 m off while its mother warns them; an orphaned cub walked up on does not fight.
 	a = make()
 	players = [at(30.0)]
 	var mid: int = a.spawn("black_bear", 0.0, 0.0)
@@ -258,6 +261,21 @@ func _init() -> void:
 		check(int(cub["state"]) == a.FLEE and gap > start + 3.0, "a cub a player comes within 2 m of runs away (%.1f m off after 2 s, state %d)" % [gap, int(cub["state"])])
 		a._step_young(cub, 0.1, 60.0, cub["pos"] + Vector3(60.0, 0.0, 0.0))
 		check(not cub.has("cub_run"), "and goes back to its mother once the player is far off")
+		a.animals[mid]["state"] = a.big_game.WARN
+		a._step_young(cub, 0.1, 15.0, cub["pos"] + Vector3(15.0, 0.0, 0.0))
+		check(cub.has("cub_run") and int(cub["state"]) == a.FLEE, "a cub runs from a player 15 m off while its mother warns them")
+		a.animals.erase(mid)   # the mother is gone: an orphan
+		players = [at(0.0)]
+		players[0]["pos"] = cub["pos"] + Vector3(2.0, 0.0, 0.0)
+		cub.erase("cub_run")
+		cub["state"] = 0
+		var orphan_warned: bool = false
+
+		for _n in 10:
+			a.tick(0.05)
+			orphan_warned = orphan_warned or (a.animals.has(kids[0]) and int(cub["state"]) == a.big_game.WARN)
+
+		check(not orphan_warned, "an orphaned cub walked up on to 2 m does not fight")
 
 	print("test_bear_threat: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)

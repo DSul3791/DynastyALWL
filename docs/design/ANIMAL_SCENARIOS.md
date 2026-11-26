@@ -14,7 +14,8 @@ to trap them"; "the bear roaring constantly in the woods is unrealistic. look up
 according to the model look."
 
 26 Nov 2026, asked about a black bear that a robot tester walked up on to 2 m: "that close it should turn rear on its hind legs growl
-and fight" and "if its a baby it should run" (`docs/RULINGS.md` R-ANIMAL-BEAR; animals.json defend.close_fight_m, young.close_run_m).
+and fight" and "if its a baby it should run" (`docs/RULINGS.md` R-ANIMAL-BEAR; animals.json defend.close_fight_m, young.close_run_m). Within close_fight_m a grown bear
+always presses home, a black bear mother too (her young.bluff_share is for a player farther off); a cub, orphaned or not, runs.
 
 **Dave's words win.** Where real animals and Dave's words differ, the "in our game" line follows Dave and says so. Real numbers are given
 so the fix threads can tune from them.
