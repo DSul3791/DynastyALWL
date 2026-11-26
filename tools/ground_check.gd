@@ -83,6 +83,9 @@ func _init() -> void:
 
 
 func _summary(kind: String, look: int, length: float, worst: Dictionary) -> String:
+	if not worst.has("0") and not worst.has("rest"):
+		return "SUMMARY %-14s look %d  length %.2f m  graze n/a (not measured: --roles)  %s" % [kind, look, length, "  ".join(worst.keys().map(func(r: Variant) -> String: return "%s lowest %+.3f m" % [str(r), float(worst[r])]))]
+
 	var graze: float = float(worst.get("0", worst.get("rest", 0.0)))
 	return "SUMMARY %-14s look %d  length %.2f m  graze lowest %+.3f m  rest lowest %+.3f m  %s" % [kind, look, length, graze, float(worst.get("rest", 0.0)),
 		"FLOATS" if graze > 0.03 else ("SINKS" if graze < -0.05 else "ok")]

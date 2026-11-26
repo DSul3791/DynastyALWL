@@ -431,7 +431,7 @@
 				}
 			],
 			"trot_mps": 4.0,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"moose": {
 			"scene": "res://assets/animals/moose/SK_Moose.fbx",
@@ -548,7 +548,7 @@
 				]
 			},
 			"ground_m": -0.18,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -967,7 +967,7 @@
 				"trot": "TrotFast_F",
 				"hit": "HitLegFL2RunFast_F",
 				"strike": "Stomping_1",
-				"19": "Sitting_1"
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Bighorn Sheep (Realistic Animals/BighornSheep/SK_BighornSheep.fbx). 114 clips; units are centimetres. Idle_Breathing lies down, so alert and recover stand in Idle (creature check, 7 Nov 2026).",
 			"length_m": 1.6,
@@ -992,7 +992,7 @@
 				]
 			},
 			"ground_m": -0.082,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_1 (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -1010,7 +1010,7 @@
 				"10": "Idle_Breathing",
 				"trot": "TrotFast_F",
 				"hit": "HitInRunHead_F",
-				"19": "Sitting_1"
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Mountain Goat (Realistic Animals/MountainGoat/SK_MountainGoat.fbx). 116 clips; units are centimetres. Horn surface is called MountainGoat_Antle.",
 			"length_m": 1.4,
@@ -1035,7 +1035,7 @@
 				]
 			},
 			"ground_m": -0.07,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_1 (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -1209,7 +1209,7 @@
 				"19": "rest_idle_01",
 				"hit": "hit_chest_front_01"
 			},
-			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs. clip_loop (8 Nov 2026, Dave: give it a walk): its walk loops starttrot_fwd_01 from 0.133 to 0.600 s and its run startsprint_fwd_01 from 0.183 to 0.483 s, the windows tools/find_loop.gd found with the closest ends (7 and 12 degrees per bone), eased together over the last 0.12 and 0.1 s. gait_fallback: a hand-made walk (four-beat) and run (bound) from its own bones, kept ready; rename it to gait to use it in place of the clip_loop walk and run (the axes are a first guess until a creature check).",
+			"note": "WildMesh American Mink (Realistic Animals/AmericanMink/SK_AmericanMink.fbx). Checked 7 Nov 2026: the file has no looping walk or run, only start clips; starttrot_fwd_01 and startsprint_fwd_01 loop as walk and run. Alert stands up on its hind legs. clip_loop (8 Nov 2026, Dave: give it a walk): its walk loops starttrot_fwd_01 from 0.133 to 0.600 s (its run once looped startsprint_fwd_01 from 0.183 to 0.483 s: see gait_note), the windows tools/find_loop.gd found with the closest ends (7 and 12 degrees per bone), eased together over the last 0.12 and 0.1 s. gait_fallback: a hand-made walk (four-beat) from its own bones, kept ready; its hand-made run (bound) is now the gait run (the axes are a first guess until a creature check).",
 			"length_m": 0.6,
 			"materials": [
 				{
@@ -1812,7 +1812,7 @@
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
 				"hit": "HitInRunHead_F",
-				"19": "Sitting_1"
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Wild ox (Realistic Animals/Buffalo/SK_Buffalo.fbx).",
 			"length_m": 3.0,
@@ -1835,7 +1835,7 @@
 				]
 			},
 			"ground_m": -0.137,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_1 (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1966,7 +1966,7 @@
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
 				"hit": "HitLegFL2RunFast_F",
-				"19": "Sitting_1"
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Warthog (Realistic Animals/Warthog/SK_Warthog.fbx). Imported mid-run: sized by its Idle (size_clip). GrazingOnSpotA2IdleThreat drops onto its haunches, so warn stands in Idle_Breathing. Checked 7 Nov 2026.",
 			"length_m": 1.4,
@@ -1990,7 +1990,7 @@
 				]
 			},
 			"ground_m": -0.07,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_1 (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"hyena": {
 			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
@@ -2013,7 +2013,7 @@
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
 				"hit": "HitInRunHead_F",
-				"19": "Sitting_1"
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Hyena (Realistic Animals/Hyena/SK_Hyena.fbx). Laughs when it warns. Checked 7 Nov 2026.",
 			"length_m": 1.5,
@@ -2032,7 +2032,7 @@
 				]
 			},
 			"ground_m": -0.068,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_1 (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -2055,7 +2055,7 @@
 				"run": "RunFast_F",
 				"trot": "TrotFast_F",
 				"hit": "HitInRunHead_F",
-				"19": "Sitting_1"
+				"19": "Sitting_Breathing"
 			},
 			"note": "WildMesh Wildebeest (Realistic Animals/Wildebeest/SK_Wildebeest.fbx). Checked 7 Nov 2026.",
 			"length_m": 2.3,
@@ -2078,7 +2078,7 @@
 				]
 			},
 			"ground_m": -0.111,
-			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_1 (picture sweep, 26 Nov 2026)."
+			"lie_note": "Lie (role 19, BugsList 178): this pack's LyingBreathing/Lying_Breathing/Lying is where WalkSlowWounded2Lying ends, the wounded lie (flat on its side, head down or legs up, like a dead animal; the warthog's stands walking); a healthy animal beds down in Sitting_Breathing (the bedded breathing loop every look of this pack has; Sitting_1 to _3 are its idles) (picture sweep, 26 Nov 2026)."
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
