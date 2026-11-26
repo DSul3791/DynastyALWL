@@ -116,11 +116,7 @@ void fragment() {
 	ROUGHNESS = 1.0;
 	if (glow_energy > 0.0) {
 		float vein_mask = texture(veins, UV).r;
-		// Far off, a pixel covers many texels and the thin lines blur into an even violet: fade toward a third so the crown stays dark
-		// with flecks (Lane A 25 Nov 2026: at 60 m a purple speckled mass).
-		float texels_per_px = max(length(dFdx(UV)), length(dFdy(UV))) * 256.0;
-		float far_fade = 1.0 - 0.65 * smoothstep(1.5, 6.0, texels_per_px);
-		EMISSION = mix(glow, glow_core, smoothstep(0.9, 1.0, vein_mask)) * vein_mask * glow_energy * glow_amount * far_fade;
+		EMISSION = mix(glow, glow_core, smoothstep(0.85, 1.0, vein_mask)) * vein_mask * glow_energy * glow_amount;
 	}
 }
 """
@@ -1417,8 +1413,8 @@ func _make_tree_materials() -> void:
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
 	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
 	_tree_materials["witness"].set_shader_parameter("veins", _load_texture("res://assets/trees/leaf_witness_veins.png"))
-	_tree_materials["witness"].set_shader_parameter("glow", Color(0.5, 0.06, 1.0))         # strong violet vein lines (0.55, 0.18 read pale, Lane A 25 Nov 2026)
-	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.82, 0.55, 1.0))   # paler only at the very centre
+	_tree_materials["witness"].set_shader_parameter("glow", Color(0.55, 0.18, 1.0))        # saturated violet vein lines
+	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.9, 0.7, 1.0))     # paler only at the very centre
 	_tree_materials["witness"].set_shader_parameter("glow_energy", WITNESS_GLOW_NIGHT)   # set_day_sky turns it down by day
 
 
