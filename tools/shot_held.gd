@@ -10,6 +10,7 @@ extends SceneTree
 #                                          under 2 m it aims at the held item, else at the chest (default right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6)
 #            --name=NAME   file prefix (default the item id): NAME_<angle>.png
 #            --clip=idle   the body's clip (any clip of the body: walk, run, crouch ...)
+#            --fist=ball   the old ball fist round the grip instead of the body's own hand closed on it (dynasty_grip.gd, BugsList 177: before pictures)
 # Needs a window and a GPU like tools/shot_node.gd (a window flashes up for a few seconds); under --headless nothing is drawn and it exits 4.
 # Prints one "shot held: saved PATH" line per picture and "shot held: N picture(s) in T s"; exit 4 when a picture was not saved, 2 on a bad item.
 
@@ -17,6 +18,7 @@ const HeldItem := preload("res://src/client/held_item.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const GripScript := preload("res://src/client/character/dynasty_grip.gd")
 
 const SIZE := Vector2i(1280, 720)
 const FOV := 75.0          # the game's FOV_BASE
@@ -42,6 +44,8 @@ func _init() -> void:
 			clip = a.trim_prefix("--clip=")
 		elif a.begins_with("--angles="):
 			angles_text = a.trim_prefix("--angles=")
+		elif a == "--fist=ball":
+			GripScript.closes = false   # the old ball fist round the grip, for a before picture (BugsList 177)
 
 	var shape: String = str(BasicLook.entry(item).get("shape", ""))
 
