@@ -452,7 +452,7 @@
 		},
 		"duck": {
 			"number": 6,
-			"name": "Ducks",
+			"name": "Ducks", "one": "Duck",
 			"target_per_player": 1,
 			"spawn_share": 0.5,
 			"health": 3.0,

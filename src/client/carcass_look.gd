@@ -11,6 +11,8 @@ static var _rows: Dictionary = {}
 static var _loaded: bool = false
 static var _meshes: Dictionary = {}
 static var _materials: Dictionary = {}
+static var _names: Dictionary = {}   # species -> its name in animals.json ("one" where "name" is a flock's, as the duck's "Ducks")
+const ANIMALS_PATH := "res://data/animals/animals.json"
 
 
 static func row(species: String) -> Dictionary:
@@ -22,6 +24,22 @@ static func row(species: String) -> Dictionary:
 			_rows = parsed.get("species", {})
 
 	return _rows.get(species, _rows.get("deer", {}))
+
+
+# What a dead animal's body is called wherever the player sees it (Dave 25 Nov 2026, R-HUNT-DEAD-NAME: "it just say Carcass it should say
+# Dead WhateverAnimalItwas"): "Dead deer", "Dead black bear". A kind animals.json does not name reads its id ("Dead hare"); none at all is a "Dead animal"; never a bare "Carcass".
+static func dead_name(species: String) -> String:
+	if _names.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ANIMALS_PATH))
+
+		if parsed is Dictionary:
+			for sp in (parsed as Dictionary).get("species", {}):
+				var r: Variant = parsed["species"][sp]
+
+				if r is Dictionary and str(r.get("one", r.get("name", ""))) != "":
+					_names[sp] = str(r.get("one", r.get("name", "")))
+
+	return "Dead " + str(_names.get(species, species.replace("_", " ") if species != "" else "animal")).to_lower()   # a carcass.json-only kind (admin_place): "Dead hare"
 
 
 static func _mesh(shape: String) -> Mesh:

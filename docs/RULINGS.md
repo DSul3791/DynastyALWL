@@ -29,6 +29,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-HUNT-RUNS-SEEN** · 25 Nov 2026 · "when a players skill at tracking goes up they should get easier to see."
 - **R-HUNT-SNARE-XP** · 23 Nov 2026 · "you should get xp for placing snares on trails."
 - **R-HUNT-SNARE-CATCH** · 25 Nov 2026 · "they should lay in the snare and if you press E on the snare with an animal in it you collect the animal and reset the snare." Snares have no count limit; on a trail they catch by chance, off a trail never. *(unverified: coordinator's note, the second sentence)*
+- **R-HUNT-DEAD-NAME** · 25 Nov 2026 · "I just ran something down and killed it but it just say Carcass it should say Dead WhateverAnimalItwas". A killed animal's body is named for the animal everywhere the player sees it ("Dead deer", "Dead black bear"), in the look name and the E prompts, snared ones too; never a bare "Carcass".
 
 ## Player, HUD and controls
 - **R-HUD-LOW** · 23 Nov 2026 · "the goal is to try and keep all the hud down low and mostly minimalist."
