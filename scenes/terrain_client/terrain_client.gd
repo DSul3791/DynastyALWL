@@ -1410,7 +1410,7 @@ func _on_welcome(info: Dictionary) -> void:
 	# Lane A r4 Low at 35dcde90: a 3.5 s welcome with its steps never printed (the freeze watch starts part way through it, so the frame's
 	# own lines miss the start). Its named steps, once, at the join.
 	if welcome_ms > Probe.JOIN_SLOW_MS:
-		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(10)])
+		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(24)])
 
 
 func _welcome_body(info: Dictionary) -> void:
@@ -1460,6 +1460,7 @@ func _welcome_body(info: Dictionary) -> void:
 		# One folder per terrain version and set of tile files, so older blocks are never mixed in.
 		cache_dir = "user://terrain_cache/%s/v%d_%s" % [str(info["world_name"]).validate_filename(), int(info.get("terrain_version", 1)), str(info.get("tiles_stamp", ""))]
 
+	var tw_cache: int = Probe.start()
 	cache = CacheScript.new()
 	if cache_mb <= 0:
 		cache_mb = QUALITY_CACHE_MB[quality]
@@ -1485,6 +1486,8 @@ func _welcome_body(info: Dictionary) -> void:
 		cache.set_revisions(info["revisions"])
 		FreezeWatchScript.printer.line("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
 
+	Probe.stop("welcome: ground cache and starter ground", tw_cache)
+	var tw_line: int = Probe.start()
 	_ask_catch_up()
 	stream = StreamScript.new()
 	stream.cache = cache
@@ -1495,6 +1498,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var block_port: int = _block_port_override if _block_port_override > 0 else int(info.get("block_port", 0))   # --block-port: a test relay's port (tools/lossy_link.py)
 	link.open(_host, 0 if OS.get_cmdline_user_args().has("--no-block-line") else block_port, multiplayer.get_unique_id())
 	stream.link = link
+	Probe.stop("welcome: catch-up ask and block line", tw_line)
 	var root: Node3D = Node3D.new()
 	root.name = "World"
 	add_child(root)
@@ -1502,6 +1506,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_tables = TableSetScript.new()
 	_tables.load_directory()
 	Probe.stop("welcome: tables", t1)
+	var tw_ground: int = Probe.start()
 	terrain = VoxelLodTerrain.new()
 	terrain.format = Layout.make_format()
 	terrain.stream = stream
@@ -1521,11 +1526,14 @@ func _welcome_body(info: Dictionary) -> void:
 	# Not the clipbox streaming system (tried in build 61): it loads the fine ground under the
 	# player first, but makes no collision until every coarser level is loaded too, so the
 	# player had no ground to stand on for most of a minute (owner, 2026-10-20).
+	Probe.stop("welcome: ground node", tw_ground)
 	var t2: int = Probe.start()
 	terrain.material = GroundMaterialScript.make(_tables, quality)
 	Probe.stop("welcome: ground material", t2)
 	_ground_quality = quality
+	var tw_ground_add: int = Probe.start()
 	root.add_child(terrain)
+	Probe.stop("welcome: ground added", tw_ground_add)
 	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
 
@@ -1537,10 +1545,13 @@ func _welcome_body(info: Dictionary) -> void:
 	var t3: int = Probe.start()
 	flora.setup(_tables, TileHeightScript.load_rules("res://worlds/base_world/plan/tile_rules.json", []))
 	Probe.stop("welcome: flora setup", t3)
+	var tw_flora_add: int = Probe.start()
 	root.add_child(flora)
 	flora.ground_ready = func(x: float, z: float) -> bool: return stream != null and stream.column_loaded(x, z)
 	_freeze_watch.start()
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
+	Probe.stop("welcome: flora added", tw_flora_add)
+	var tw_ice: int = Probe.start()
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
@@ -1559,6 +1570,8 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(fall_growth)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
+	Probe.stop("welcome: ice, shore, mist and fall growth", tw_ice)
+	var tw_grass: int = Probe.start()
 	grass = GrassViewScript.new()
 	grass.third_person = third_person
 	grass.name = "Grass"
@@ -1568,6 +1581,8 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	grass.brook_spots = _brook_spots
+	Probe.stop("welcome: grass and critters", tw_grass)
+	var tw_signs: int = Probe.start()
 	trail_signs = TrailSignsScript.new()   # signs along the trails (stage 2d): latrines, scrapes, deer prints, droppings, beds and rubbed trees, for everyone
 	trail_signs.name = "TrailSigns"
 	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
@@ -1585,6 +1600,8 @@ func _welcome_body(info: Dictionary) -> void:
 	fresh_tracks.name = "FreshTracks"
 	fresh_tracks.player_at = func() -> Vector3: return body.global_position if body != null else Vector3.INF
 	root.add_child(fresh_tracks)
+	Probe.stop("welcome: trail signs and fresh tracks", tw_signs)
+	var tw_probes: int = Probe.start()
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
@@ -1594,10 +1611,14 @@ func _welcome_body(info: Dictionary) -> void:
 	_gpu_probe = GpuProbeScript.new()
 	add_child(_gpu_probe)
 	_gpu_probe.setup(self)
+	Probe.stop("welcome: jitter, machine and gpu probes", tw_probes)
+	var tw_weather: int = Probe.start()
 	weather_look = WeatherLookScript.new()
 	add_child(weather_look)
 	weather_look.setup(self)
 	weather_look.set_quality(quality)
+	Probe.stop("welcome: weather look", tw_weather)
+	var tw_sound_add: int = Probe.start()
 	sound = SoundStageScript.new()
 	sound.name = "Sound"
 	root.add_child(sound)
@@ -1605,6 +1626,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.under_land = _under_land   # no sea under the island: a deep tunnel has dry steps (Dave 20 Nov 2026)
 	sound.floor_under = _floor_under
 	sound.loading = true   # the world's sounds stay silent until it is ready, then fade in (Dave 24 Nov 2026, the static at load)
+	Probe.stop("welcome: sound added", tw_sound_add)
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
 	sound.puddles = weather_look.puddles          # steps splash where a puddle is drawn (puddles.gd)
@@ -1641,12 +1663,17 @@ func _welcome_body(info: Dictionary) -> void:
 		return "tier %s: ground view %d, flora view trees %.0f shrubs %.0f plants %.0f m, impostors from %.0f m, shadows %.0f m, grass %d m density %.2f" % [
 			QUALITY_NAMES[quality], terrain.view_distance, flora.view_m[0], flora.view_m[1], flora.view_m[2], flora.impostor_m,
 			float(QUALITY_SHADOW_M[quality]), int(grass.radius_m), grass.density])
+	var tw_env: int = Probe.start()
 	_make_environment(root)
+	Probe.stop("welcome: environment made", tw_env)
+	var tw_quality: int = Probe.start()
 	_apply_quality()
+	Probe.stop("welcome: quality applied", tw_quality)
 
 	if OS.get_cmdline_user_args().has("--print-tier"):
 		FreezeWatchScript.printer.line("Terrain client: " + str(debug_hud.text()))
 	Probe.stop("welcome: environment", t5)
+	var tw_layers: int = Probe.start()
 	get_window().size_changed.connect(_apply_render_scale)
 	RenderingServer.viewport_set_measure_render_time(get_viewport().get_viewport_rid(), true)
 	var layer: CanvasLayer = CanvasLayer.new()
@@ -1714,6 +1741,7 @@ func _welcome_body(info: Dictionary) -> void:
 	layer.add_child(_water_label)
 	sound_tests.setup(self)
 	ground_debug.setup(self)
+	Probe.stop("welcome: hud layers, labels and tests", tw_layers)
 	var tq_menu: int = Probe.start()
 	_build_menu()
 	Probe.stop("welcome: menu", tq_menu)
@@ -1830,8 +1858,13 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(items)   # its _ready prewarms the loose item meshes
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
+	var tw_items_setup: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	Probe.stop("welcome: items setup", tw_items_setup)
+	var tw_strip: int = Probe.start()
 	_setup_status_strip(layer)   # after items.setup: its reads use the vitals data the view loads there
+	Probe.stop("welcome: status strip", tw_strip)
+	var tw_players: int = Probe.start()
 	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
 	_player_view.name = "Players"
 	_player_view.table = items.table
@@ -1856,6 +1889,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view.landed.connect(func(at: Vector3, drop_m: float) -> void:
 		if sound != null and sound.landing != null:
 			sound.landing.land_at(at, drop_m))   # and their landing from a fall, where their feet came down
+	Probe.stop("welcome: player view", tw_players)
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -1876,6 +1910,7 @@ func _welcome_body(info: Dictionary) -> void:
 	game_menu.refresh()
 	Probe.stop("welcome: game menu", tq_gmenu)
 
+	var tw_hooks: int = Probe.start()
 	dialogue_view.voice_line = func(voice_id: String, text: String):
 		var talker: Dictionary = npc_view.nearest(body.global_position, npc_voice.hear_m)
 
@@ -2002,6 +2037,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held = HeldItemScript.new()
 	held.name = "Held"
 	add_child(held)
+	Probe.stop("welcome: item hooks, harvest and interactables", tw_hooks)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
 	held.trunks_round = _trunks_round
