@@ -1364,17 +1364,21 @@ func _fire() -> String:
 		return "tinder: " + why
 
 	# A player lights their fire by the camp (the 26 Nov runs lit it 280 m out, where the stones were): clay pots and charcoal are made at it.
-	# Not within keep_m (8 m) of the camp tree (data/npcs/camp.json; the camp's own fire burns 2 m from it): 14 m out, on the spawn's side.
+	# Not within keep_m (8 m) of the camp tree (data/npcs/camp.json; the camp's own fire burns 2 m from it): 14 m out from that fire, on the spawn's side.
 	await _walk_home(240.0)
-	var tree: Vector3 = _home
+	var camp_fire: Vector3 = _home   # Edda and Hob's fire, the "camp" row nearest the spawn within 60 m (goblin and bandit camps carry the flag too)
+	var camp_d: float = 60.0
 
 	for w in c.items._world:
-		if c.items._world[w].get("camp", false):
-			tree = c.items._world[w]["pos"]
+		var row: Dictionary = c.items._world[w]
 
-	var away: Vector3 = (_home - tree) * Vector3(1.0, 0.0, 1.0)
+		if row.get("camp", false) and not row.get("bandits", false) and (row["pos"] as Vector3).distance_to(_home) < camp_d:
+			camp_d = (row["pos"] as Vector3).distance_to(_home)
+			camp_fire = row["pos"]
+
+	var away: Vector3 = (_home - camp_fire) * Vector3(1.0, 0.0, 1.0)
 	away = away.normalized() if away.length() > 0.5 else Vector3.FORWARD
-	await r._go_to(tree + away * 14.0, 30.0, 1.0)
+	await r._go_to(camp_fire + away * 14.0, 30.0, 1.0)
 	r._face(away)
 	await r._wait(0.3)
 	var slot: int = r._slot_of("campfire_kit")
