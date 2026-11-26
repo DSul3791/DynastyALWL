@@ -307,7 +307,7 @@ func _take_offs(world: Node3D) -> void:
 	creatures._stage = stage
 	var at: Vector3 = Vector3(12.0, 0.4, -7.0)
 
-	for c in [["grouse", "flush", "medium"], ["pheasant", "flush", "medium"], ["guineafowl", "flush", "medium"], ["crow", "alarm", ""]]:
+	for c in [["grouse", "flush", "medium"], ["pheasant", "flush", "medium"], ["guineafowl", "flush", "medium"], ["goose", "flush", "medium"], ["crow", "alarm", ""]]:
 		stage.ambient.heard.clear()
 		var played: bool = creatures.took_off(str(c[0]), at)
 		var h: Array = stage.ambient.heard[0] if stage.ambient.heard.size() == 1 else []

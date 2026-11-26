@@ -13,6 +13,7 @@ const TitleArt := preload("res://scenes/title/title_art.gd")
 const TitleSettings := preload("res://scenes/title/title_settings.gd")
 const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
+const TitleMusic := preload("res://src/client/title_music.gd")
 
 const CREATOR_SCENE := "res://scenes/creator_proto/creator_proto.tscn"
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
@@ -30,6 +31,7 @@ var build_label: Label                    # bottom right: the build this copy ru
 func _ready() -> void:
 	Engine.set_meta("title_done", true)
 	_apply_saved_display()
+	TitleMusic.start(get_tree())   # Dave's song on the pages before a world (title_music.gd)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 
 	if painting < 0:

@@ -579,6 +579,7 @@ var _remote: bool = false                 # a client-only build joining someone'
 
 
 func _ready() -> void:
+	load("res://src/client/title_music.gd").stop(get_tree())   # the menu music fades out: it never plays over the world
 	var my_model: String = MyCharacter.body_model()
 	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
 	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)

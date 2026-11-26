@@ -14,6 +14,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 LICENCES = ["CC0", "CC-BY-4.0", "CC-BY-3.0", "public-domain", "own", "Pixabay-Content-License", "own-made", "Apache-2.0", "TODO"]
 
 
+BESIDE_RECORDED = ("music/",)   # folders beside recorded/ whose rows name the file from assets/audio (the menu music, title_music.gd)
+
+
 def rows():
     with open(os.path.join(HERE, "CREDITS.csv"), newline="", encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -28,7 +31,8 @@ def main():
            "Supplied recordings:", "", "| Sounds | Author | Source | Licence | Attribution |", "|---|---|---|---|---|"]
 
     for row in rows():
-        out.append("| %s (`recorded/%s`) | %s | %s | %s | %s |" % (row["what"], row["pattern"], row["author"], row["source"], row["licence"], row["attribution"]))
+        where = row["pattern"] if row["pattern"].startswith(BESIDE_RECORDED) else "recorded/" + row["pattern"]
+        out.append("| %s (`%s`) | %s | %s | %s | %s |" % (row["what"], where, row["author"], row["source"], row["licence"], row["attribution"]))
 
     with open(os.path.join(HERE, "CREDITS.md"), "w", encoding="utf-8") as f:
         f.write("\n".join(out) + "\n")

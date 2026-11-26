@@ -9,7 +9,6 @@
 - 2026-10-20 (Tech): Basic world sounds nature ambience layer (client only): Approved, build 93.
 - 2026-10-20 (Dave): weather = zone + season + town-spirit modifier (placeholder constant until town spirit exists). Server decides, clients render. Recorded in DESIGN_IDEAS 4.2.
 - 2026-10-20 (Dave): character style is slightly stylised (heroic, hint of cartoon), while the world follows the realistic reference picture.
-- 2026-10-20 (Dave): no music for now (long-term full sound stage unchanged).
 - 2026-10-20 (Dave): forest floor objects: fallen branches and leaf litter first; reeds, driftwood, pebbles later.
 - 2026-10-20 (Tech): Water and terrain flow speed in water chunk message (+2 bytes per wet cell, version byte): Approved with changes (bump protocol number, tolerant decode, tell Art), build 101.
 - 2026-10-20 (Tech): game clock built (build 105): server-owned counter, 24:1, 365 days, 4 seasons, in welcome (no protocol bump, extra key), saved to game_clock.json every 30 s; clients advance their copy. Owner of the clock: Technical direction.

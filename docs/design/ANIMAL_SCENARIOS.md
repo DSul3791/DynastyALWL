@@ -437,7 +437,10 @@ people are rare; running can start a chase; most people who fight back drive it 
 - **Duck (mallard):** flush 20 to 100 m, take off straight up from water; only hens quack (alarm on take-off); hens do the broken-wing act
   for ducklings; flightless 3 to 4 weeks in late summer.
 - **Goose:** pairs for life; at the nest the gander hisses, spreads wings, runs or flies at a person and hits with wings and bill;
-  honks in flight and on alarm. In game: a nesting goose charges and pecks lightly (small damage), never follows far.
+  honks in flight and on alarm. Wild geese walk off from a person first and take off when pressed, flying a few hundred metres, often
+  to open water. In game (Dave 25 Nov 2026, geese "refusing to fly away"): a goose stares and honks like any startled animal, then flies
+  150 to 400 m (animals.json goose flight row, the wary kind in server_flight.gd) with its own fly and glide clips, landing on the water
+  where it comes down on water. A nesting goose charges and pecks lightly (small damage), never follows far (not built yet).
 - **Gull:** bold scavenger at shores and camps; dive-bombs near nests with a "kek-kek" alarm.
 - **Guineafowl:** runs rather than flies; loud "kek-kek-kaaa" alarm at the first sign of anything, which other animals heed (a sentinel:
   today's alarm group fits).

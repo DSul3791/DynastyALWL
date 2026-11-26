@@ -2,7 +2,8 @@ extends SceneTree
 
 # Single birds in flight, step 1 (docs/design/bird_flight_server_design.md): a pheasant sits tight until a player is within 9 m, bursts up
 # 10 to 15 m, flies 120 to 300 m, glides the last part (state 17) and lands; its flight is the same ticked at 10 Hz or 0.5 Hz; over a hill
-# it stays 3 m or more over the ground; a crow flies to the trees and sits 8 m up, stays there through a storm, and comes down after.
+# it stays 3 m or more over the ground; a goose (Dave 25 Nov 2026: geese "refusing to fly away") takes off from a player, flies 150 to 400 m
+# with its own fly and glide clips, and comes down on a lake's surface, never under it; a crow flies to the trees and sits 8 m up, stays there through a storm, and comes down after.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bird_flight.gd
 
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
@@ -11,6 +12,7 @@ const GROUND := 10.0
 
 var failures: int = 0
 var hill: bool = false
+var lake: bool = false   # a lake beyond x 100: its surface at GROUND, its bed 3 m below
 
 
 func check(ok: bool, what: String) -> void:
@@ -23,6 +25,9 @@ func ground(x: float, _z: float) -> float:
 	if hill and x > 60.0 and x < 140.0:
 		return GROUND + 40.0 * sin((x - 60.0) / 80.0 * PI)   # a 40 m hill across the way it flies
 
+	if lake and x > 100.0:
+		return GROUND - 3.0
+
 	return GROUND
 
 
@@ -30,6 +35,7 @@ func make():
 	var a = AnimalsScript.new()
 	a.ground_height = func(x, z): return ground(x, z)
 	a.blocked = func(_x, _z): return false
+	a.water_level = func(x, _z): return GROUND if lake and x > 100.0 else NAN
 	a.setup()
 	a.traits = false
 	a.rng.seed = 21
@@ -105,6 +111,39 @@ func _init() -> void:
 	var over: Dictionary = fly_until_down(h, hp, 0.1, 60.0)
 	check(int(over["low"]) == 0, "over a hill it keeps 3 m over the ground (%d low samples)" % int(over["low"]))
 	hill = false
+
+	# 5b. A goose (wary kind) flies off from a player instead of waddling away, 150 to 400 m, and lands on the lake's surface.
+	lake = true
+	var g = make()
+	var goose: Dictionary = g.animals[g.spawn("goose", 0.0, 0.0)]
+	check(g.species_def("goose").has("flight"), "the goose has a flight row")
+	var g_up: bool = false
+	var g_ran: bool = false
+
+	for _k in 100:   # up to 10 s: a stare first is allowed, a run on the ground is not
+		g._step(goose, 0.1, 8.0, p8, 8.0, p8)
+
+		if goose.has("fly"):
+			g_up = true
+			break
+
+		g_ran = g_ran or int(goose["state"]) == AnimalsScript.FLEE
+
+	check(g_up and not g_ran, "a goose takes off from a player 8 m off, not running on the ground (state %d)" % int(goose["state"]))
+	var g_under: int = 0
+	var g_t: float = 0.0
+
+	while goose.has("fly") and g_t < 60.0:
+		g._step(goose, 0.1, INF, Vector3.INF, INF, Vector3.INF)
+		g_t += 0.1
+		g_under += 1 if goose.has("fly") and goose["pos"].x > 100.0 and goose["pos"].y < GROUND - 0.11 else 0
+
+	check(not goose.has("fly") and flat(goose["pos"], Vector3.ZERO) >= 149.0 and flat(goose["pos"], Vector3.ZERO) <= 401.0, "it flies 150 to 400 m (%.0f m)" % flat(goose["pos"], Vector3.ZERO))
+	check(g_under == 0, "it never flies under the lake's surface (%d samples under)" % g_under)
+	check(absf(goose["pos"].y - (GROUND - 0.1)) < 0.02, "it comes down on the water, riding the surface (%.2f m from it)" % (goose["pos"].y - GROUND))
+	var clips: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/models.json")) as Dictionary)["species"]["goose"]["clips"]
+	check(str(clips.get("15", "")) == "FlyFlapping" and str(clips.get("17", "")) == "FlyGliding", "it flies and glides with its own model's clips (%s)" % str(clips))
+	lake = false
 
 	# 6. A crow flies to the trees and sits 8 m up.
 	var c = make()
