@@ -9733,12 +9733,18 @@ func _scatter_around_players() -> void:
 	# Take away the cells far from every player, with what was laid out in them (they come back from the seed when someone returns). By cell, not by
 	# item: with rocky ground (PR #1988) a world holds tens of thousands of scatter rows, and a look at each row for each player took 71 ms a second
 	# for 32 players (Lane A measure, 26 Nov 2026).
+	var drop_sq: float = SCATTER_DROP_M * SCATTER_DROP_M
+
 	for cell in _scatter_cells.keys():
-		var centre: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
+		var cx: float = (float(cell.x) + 0.5) * cell_m
+		var cz: float = (float(cell.y) + 0.5) * cell_m
 		var far: bool = true
 
 		for peer in _peer_pos:
-			if Vector2(_peer_pos[peer].x - centre.x, _peer_pos[peer].z - centre.z).length() < SCATTER_DROP_M:
+			var off_x: float = _peer_pos[peer].x - cx
+			var off_z: float = _peer_pos[peer].z - cz
+
+			if off_x * off_x + off_z * off_z < drop_sq:
 				far = false
 				break
 
@@ -10579,7 +10585,7 @@ func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Diction
 			built.append(it["pos"])
 
 	for peer in _peer_pos:
-		if Vector2(_peer_pos[peer].x - mid.x, _peer_pos[peer].z - mid.y).length() <= reach:
+		if Vector2(_peer_pos[peer].x - mid.x, _peer_pos[peer].z - mid.y).length() <= reach and absf(_peer_pos[peer].y - h0) < reach:   # not one down a mine below
 			built.append(_peer_pos[peer])
 
 	for id in range(_cell_first_id, _next_id):

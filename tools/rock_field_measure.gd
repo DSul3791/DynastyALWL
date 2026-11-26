@@ -10,7 +10,7 @@ extends SceneTree
 # adding one rock (what walking into a new rocky cell costs). Also 1,000 worked rocks (the crack overlay on every rock, as every rock had
 # before this change) to show what the second pass costs.
 # Server: 32 players 300 m apart on rocky ground above the treeline (the worst case: every cell rocky), at rock_fields density_scale 0, 1
-# and 2: the rows laid, the slowest scatter tick while the cells are laid out, then the steady scatter tick (its walk of every loose row
+# and 2: the rows laid, the slowest scatter tick while the cells are laid out, then the steady scatter tick (its look at every laid cell
 # against every player) and the world sync.
 #
 # Run on Lane A only, from the lane clone, with a real renderer (not --headless), Dave's Godot and game closed:
