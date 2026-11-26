@@ -26,6 +26,7 @@ func _init() -> void:
 			hi = float(a.trim_prefix("--max="))
 
 	var view: Node3D = AnimalView.new()
+	view.set("_measure_all", true)   # a model check measures its clips itself, never trusting the kept answers (data/animals/clip_answers.json)
 	var number: int = int(AnimalView.KIND_OF_SPECIES.find_key(kind))
 	var model: Node3D = view._make_model(number, 0)
 

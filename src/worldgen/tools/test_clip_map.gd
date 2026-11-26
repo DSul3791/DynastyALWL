@@ -160,6 +160,33 @@ func _initialize() -> void:
 	check(v._clip_bones(player, anim, rig, 1.0)[BONES - 1].distance_to(v._clip_bones(player, anim, rig, 0.0)[BONES - 1]) > 0.01, "the clip moves the bones (the test is not comparing rest poses)")
 	check(v._clip_bones(player, anim, Node3D.new(), 0.0).is_empty(), "a rig with no skeleton has no bones")
 
+	# A second clip on the same rig names the same tracks: their nodes and bones come from the lookups kept since the first (_track_nodes,
+	# _track_bones), and give the same bones as the old sampler.
+	var second: Animation = anim.duplicate() as Animation
+
+	for t in second.get_track_count():
+		if second.track_get_type(t) == Animation.TYPE_POSITION_3D:
+			second.track_set_key_value(t, 1, (second.track_get_key_value(t, 1) as Vector3) + Vector3(0.05, 0.0, 0.0))
+
+	check(not v._track_nodes.is_empty() and not v._track_bones.is_empty(), "the first clip's lookups are kept")
+	var second_same: bool = true
+
+	for i in 11:
+		if not same(v._clip_bones(player, second, rig, float(i) / 10.0), old_clip_bones(player, second, rig, float(i) / 10.0)):
+			second_same = false
+
+	check(second_same, "a second clip on the same rig, from the kept lookups: the same bones as the old sampler")
+	var base: Node = player.get_node(player.root_node)
+	var sk: Skeleton3D = rig.find_children("*", "Skeleton3D", true, false)[0]
+	check(v._track_node(base, NodePath("RigRoot/Skeleton3D:b3")) == sk and v._track_bone(sk, NodePath("RigRoot/Skeleton3D:b3")) == 3, "a kept lookup gives the skeleton and bone 3")
+	check(v._track_node(base, NodePath("RigRoot/NoSuchNode")) == null and v._track_bone(sk, NodePath("RigRoot/Skeleton3D:no_bone")) == -1, "a path to nothing gives nothing, as get_node_or_null and find_bone do")
+	var brief: Node3D = Node3D.new()
+	brief.name = "Brief"
+	base.add_child(brief)
+	check(v._track_node(base, NodePath("Brief")) == brief, "a node is found and kept")
+	brief.free()
+	check(v._track_node(base, NodePath("Brief")) == null, "a kept node freed since gives null, as the lookup would")
+
 	var t0: int = Time.get_ticks_usec()
 
 	for i in 123:
@@ -257,6 +284,39 @@ func _initialize() -> void:
 	root.remove_child(game_view)
 	game_view.free()
 	tool_view.free()
+
+	# A kept answer (data/animals/clip_answers.json, _height_share) is taken instead of measuring: a walk kept as a hundredth of the standing
+	# height is refused as laying the body flat, though its first frame stands; measured with nothing kept, it is the walk.
+	var kept_view = AnimalViewScript.new()
+	kept_view._models = {"deer": {"scene": paths[0], "length_m": 1.0}}
+	kept_view._kept_answers = {"deer|%s" % paths[0]: {"shares": {"Walk": 0.01}, "skins": {}}}
+	var kept_body: Node3D = kept_view._make_model(2, 1)
+	check(kept_body != null and walk_of(kept_body) == null, "a kept answer is taken: the walk kept as flat is refused")
+	kept_view._measure_all = true
+	kept_view._recording = {}
+	var measured_body: Node3D = kept_view._make_model(2, 1)
+	var measured: Dictionary = ((kept_view._recording as Dictionary).get("deer|%s" % paths[0], {}) as Dictionary).get("shares", {})
+	check(walk_of(measured_body) != null and absf(float(measured.get("Walk", -1.0)) - 1.0) < 0.01, "measured with nothing kept, it is the walk, recorded at its standing height (%s)" % str(measured))
+
+	# The share does not change with the body's size (the premise of keeping one per model): the walker drawn three times as long has
+	# the same walk share. A model whose answers are all kept never measures its standing height.
+	kept_view._models = {"deer": {"scene": paths[0], "length_m": 3.0}}
+	kept_view._recording = {}
+	var long_body: Node3D = kept_view._make_model(2, 1)
+	var long_shares: Dictionary = ((kept_view._recording as Dictionary).get("deer|%s" % paths[0], {}) as Dictionary).get("shares", {})
+	check(long_shares.has("Walk") and absf(float(long_shares["Walk"]) - float(measured.get("Walk", -1.0))) < 0.000001, "three times the size, the same share (%s)" % str(long_shares))
+	kept_view._measure_all = false
+	kept_view._kept_answers = {"deer|%s" % paths[0]: {"shares": {"Walk": 1.0}, "skins": {}}}
+	var rest: Array = []
+	var walker_anim: Animation = walk_of(measured_body)
+	var walker_rig: Node3D = measured_body.get_node_or_null("Rig") if measured_body != null else null
+	check(walker_anim != null and walker_rig != null and absf(kept_view._height_share(measured_body.get_meta("player") if measured_body != null else null, walker_anim, walker_rig, "deer|%s" % paths[0], "Walk", rest) - 1.0) < 0.000001 and rest.is_empty(), "a kept share is given without measuring the standing height")
+
+	for node in [kept_body, measured_body, long_body]:
+		if node != null:
+			(node as Node).free()
+
+	kept_view.free()
 
 	for path in paths:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
