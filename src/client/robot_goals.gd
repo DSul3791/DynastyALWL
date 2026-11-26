@@ -228,6 +228,56 @@ func _close_windows() -> void:
 		c.items.dialogue_close.call()
 
 
+# The hunt goal as its hint says: strike an animal with the spear (a rabbit is easiest), then hold the knife and work the body where it lies.
+# The chase is the robot's own (robot_play.gd _hunt_all: spear in slot 0, rabbit, deer, then the nearest wild ground animal).
+func _hunt_goal() -> String:
+	var why: String = await _have("spear", 1, false)
+
+	if why != "":
+		return "spear: " + why
+
+	why = await _tool("knife")
+
+	if why != "":
+		return "knife: " + why
+
+	var said: int = r._notices.size()
+	var known: Dictionary = c.items._world.duplicate()
+	await r._hunt_all(90.0)
+	r._release_all()
+	var body: int = -1
+	var best_d: float = 60.0
+
+	for w in c.items._world:   # a kill leaves a carcass where it fell (server make_carcass)
+		var d: float = _flat(c.items._world[w]["pos"])
+
+		if not known.has(w) and int(c.items._world[w]["state"]) == int(c.items.CARCASS_STATE) and d < best_d:
+			best_d = d
+			body = int(w)
+
+	if body < 0:
+		return "the chase left no carcass within 60 m%s" % _said(said)
+
+	var at: Vector3 = c.items._world[body]["pos"]
+	await r._go_to(at, 30.0, 1.2)
+
+	if _hold("knife") < 0:
+		return "no knife to hold"
+
+	var cuts: int = 0
+
+	while cuts < 20 and c.items._world.has(body) and not bool(c.items.goal_book.row("hunt").get("done", false)):
+		_look_at(at + Vector3(0.0, 0.2, 0.0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		cuts += 1
+		await r._wait(1.2)
+
+	_line("CARCASS %d at %s: %d knife cuts, %s, pack %s%s" % [body, str(at.round()), cuts, "worked" if not c.items._world.has(body) else "still there", _pack(), _said(said)])
+	return ""
+
+
 # A player out looking for a rock: legs of a widening loop round the camp until a rock of `item` is drawn within 400 m or `limit_s` is used;
 # the farthest it got from camp.
 func _explore_for(item: String, limit_s: float) -> float:
@@ -293,7 +343,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _path(int(check.get("count", 15)))
 		"sell":
 			return await _sell()
-		"fish", "hunt", "snare", "order", "story", "night_walk", "fur_for_winter", "dig_clay", "charcoal":
+		"hunt":
+			return await _hunt_goal()
+		"fish", "snare", "order", "story", "night_walk", "fur_for_winter", "dig_clay", "charcoal":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
