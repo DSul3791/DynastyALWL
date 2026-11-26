@@ -120,7 +120,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	# An older row out of order (dropped by push_row) leaves the newer plan on the body (protocol 168).
 	var walker: Dictionary = body(v, 10, {"0": ["Idle", 4.0]})
 	v.on_rows([[10, 2, Vector3.ZERO, 0.0, 0, 2000, Vector2(5.0, 5.0)]], 2000)
-	v.on_rows([[10, 2, Vector3.ZERO, 0.0, 0, 1900, Vector2(1.0, 1.0)]], 1900)
+	v.on_rows([[10, 2, Vector3.ZERO, 0.0, 0, 1900, Vector2(1.0, 1.0)]], 2100)   # a newer batch (2100) with an older row time: drawn, the row dropped
 	check(walker.get("plan", null) == Vector2(5.0, 5.0), "an older row out of order leaves the newer plan (%s)" % str(walker.get("plan", null)))
 
 	v.queue_free()
