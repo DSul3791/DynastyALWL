@@ -85,8 +85,9 @@ about 45 minutes; `src/client/robot_goals.gd`): a fresh character with no gifts 
 (body yaw and camera pitch) and presses E to gather and drink, left-clicks the axe at trees, bushes and rocks, crafts through the craft queue, places
 blueprints and hammers them, lights a campfire, treads a path with the hoe and sells to Hob (closing his shop window after). Each goal prints
 `GOAL <id> try|done|stuck`, with GATHER, MADE, FELL, ROCK, BUSHES, BUILT, PATH, SOLD and DROPPED lines on the way, and a WEIGHT line (each item's
-real kg, heaviest first) after a goal where the game said "Too heavy". A goal it cannot play yet says "robot cannot" (fish, hunt, snare, order, clay,
-story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
+real kg, heaviest first) after a goal where the game said "Too heavy". It hunts with a spear (a rabbit, then a deer) and works the carcass with
+the knife (HUNT, CARCASS lines). For copper it walks up any river its own map shows, else widening loops round the camp, for up to 15 minutes
+(EXPLORE lines). A goal it cannot play yet says "robot cannot" (fish, snare, order, clay, story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
 Between goals it drops what a player would leave behind (logs, seed stacks, spare food over 10, straw and reeds over 20, sticks over 40).
 
 Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30
