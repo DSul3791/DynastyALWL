@@ -5607,19 +5607,34 @@ func _rock_drop_ids() -> Array:
 
 
 func _start_loose_prewarm() -> void:
+	var tq_rocks: int = FrameProbe.start()
 	_queue_rock_hulls()
+	FrameProbe.stop("loose prewarm start: rock shapes", tq_rocks)
 	var t0: int = Time.get_ticks_usec()
+
+	var tq_pick: int = FrameProbe.start()
 
 	for group in PICKUP_FILES:
 		_pickup_group(group)
 
+	FrameProbe.stop("loose prewarm start: pickup models", tq_pick)
+	var tq_nums: int = FrameProbe.start()
 	_warm_queue = _loose_prewarm_numbers()
+	FrameProbe.stop("loose prewarm start: item list", tq_nums)
+	var tq_models: int = FrameProbe.start()
 	BasicLook.warm_models()   # the handsaw models' files, on a loader thread
+	FrameProbe.stop("loose prewarm start: model loads asked", tq_models)
 	_warm_usec = Time.get_ticks_usec() - t0
 	_warm_frames = 0
+	var tq_piece: int = FrameProbe.start()
 	PieceLook.prewarm()
+	FrameProbe.stop("loose prewarm start: piece pictures", tq_piece)
+	var tq_felled: int = FrameProbe.start()
 	_prewarm_felled()
+	FrameProbe.stop("loose prewarm start: stump", tq_felled)
+	var tq_fires: int = FrameProbe.start()
 	_prewarm_fires()
+	FrameProbe.stop("loose prewarm start: fires", tq_fires)
 
 
 func _warm_step() -> void:
