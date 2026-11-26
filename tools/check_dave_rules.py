@@ -22,6 +22,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-HUD-INSPECT-PLUS": ["test_inspect_reticle"],
     "R-CTRL-E-CLOSEST": ["test_e_priority"],
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
+    "R-CRAFT-SMALL-BY-HAND": ["test_campfire_both"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
     "R-HUNT-DEAD-NAME": ["test_carcass_look", "test_trap_collect_prompt"],
     "R-ANIMAL-SEEN-FAR": ["test_animals"],
@@ -234,6 +235,17 @@ def run_feet():
         check("R-MOVE-RUN-FEET", m is not None and abs(float(m.group(2)) - 1.7) < 0.05, f"{rel} run footstep is the clip's 1.7 m step ({m.group(2) if m else 'missing'})")
 
 
+def campfire_both():
+    recipes = data("data/items/recipes.json")["recipes"]
+    bps = data("data/items/blueprints.json")["blueprints"]
+    items = data("data/items/items.json")["items"]
+    by_hand = [rid for rid, r in recipes.items() if not r.get("retired") and r.get("gives", [None])[0] == "campfire_kit" and not r.get("station")]
+    check("R-CRAFT-MAKING", by_hand, "the Campfire is crafted by hand in the pack (a live recipe with no station gives it)")
+    hammer = [b for b in bps.values() if not b.get("retired") and b.get("known", True) and b.get("lays") == "campfire_kit"]
+    check("R-CRAFT-MAKING", len(hammer) == 1 and int(hammer[0].get("hammer", 1)) == 1, "the Campfire is also a known hammer blueprint any hammer builds")
+    check("R-CRAFT-MAKING", "kit" not in items["campfire_kit"]["name"].lower(), "the Campfire's name never says kit")
+
+
 def lane_on_c():
     """R-TEAM-LANE-C-DRIVE: test tools default to C:\\DynastyLane and its own Godot, never to E: or the shared editor in GodotInstaller
     (Dave 26 Nov 2026: "only test from there"). Scans tools/ (top level) and art/playthrough/ (.sh .ps1 .py .gd .cmd, no extension).
@@ -260,7 +272,7 @@ def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
-             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-TEAM-LANE-C-DRIVE": lane_on_c}
+             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c}
     for key, step in steps.items():
         try:
             step()
