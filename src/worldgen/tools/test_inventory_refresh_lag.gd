@@ -32,9 +32,40 @@ func _init() -> void:
 	view._queue_refresh()
 	view._queue_refresh()
 	check(view._refresh_queued, "two slot updates in a frame queue ONE refresh")
+	_slot_checks()
 	_station_checks()
 	print("test_inventory_refresh_lag: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)
+
+
+# The chest step (26 Nov 2026, Lane A Low route, 437 ms): three slot messages in one poll each redrew the chest screen, the storage window and
+# the hotbar on the spot. They wait for the end of the frame now and redraw once.
+class CountingStrip:
+	var redraws: int = 0
+
+	func refresh() -> void:
+		redraws += 1
+
+
+func _slot_checks() -> void:
+	var view = InventoryViewScript.new()
+	view.table = ItemTableScript.load_default()
+	view.inventory = InventoryScript.new(view.table)
+	var strip := CountingStrip.new()
+	view.hotbar_strip = strip
+	var three := PackedByteArray([0])   # a slot message that changes no slot
+	view._on_slots(three)
+	view._on_slots(three)
+	view._on_slots(three)
+	check(strip.redraws == 0, "three slot messages in a frame: nothing is redrawn on the spot (%d)" % strip.redraws)
+	check(view._refresh_queued and view._slots_dirty, "they wait for the end of the frame")
+	view._flush_refresh()
+	check(strip.redraws == 1, "the end of the frame redraws the hotbar once (%d)" % strip.redraws)
+	check(not view._refresh_queued and not view._slots_dirty, "and nothing is left waiting")
+	view._queue_refresh()
+	view._flush_refresh()
+	check(strip.redraws == 1, "a window refresh with no slot message leaves the hotbar alone (%d)" % strip.redraws)
+	view.free()
 
 
 # The craft list stall (Dave 10 Nov 2026: opening the crafting menu, a click or D took 2 to 3 s): station_near and nearby_logs walked every world
