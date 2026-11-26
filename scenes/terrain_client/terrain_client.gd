@@ -226,13 +226,13 @@ const STILL_MSEC := 3000              # flying: ground loads again after staying
 const SPACE_WAKE_S := 1.0               # hold Space this long to wake from sleep early
 const WALK_SPEED := 3.2               # the old jog speed (the old walk was 1.4)
 const FAST := 3.0                     # flying: Shift multiplier
-const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run animation and stride rate stay at the old 6 m/s cadence: STEP_M[2] and avatar_driver RUN_CLIP_PACE
+const RUN_SPEED := 9.0                # BUG-011 (Dave 2026-11-04): +50 percent over 6.0. The run clip plays faster to keep up (R-MOVE-RUN-FEET, avatar_driver RUN_CLIP_PACE) and the footsteps follow its feet: STEP_M[1]
 # Walking camera (all tuning is here; each list is [walk, run], the walk taking the old jog's numbers). A footfall
 # is the lowest point of the bob and the far end of the sway: left foot, camera
 # down and leaning left; midway it rises back to the middle; right foot, down
 # and leaning right. The bob therefore repeats every step and the sway every
 # two steps.
-const STEP_M := [1.2, 3.0]               # metres per step: about 2.7 and 3.0 steps a second at the natural speeds (the run stride was 2.0 m at 6 m/s, now 3.0 m at 9 m/s, same cadence)
+const STEP_M := [1.2, 1.7]               # metres per step, the clips' own: the walk about 2.7 steps a second at 3.2 m/s; the run clip's step is 1.7 m, so at 9 m/s about 5.3 steps a second (R-MOVE-RUN-FEET)
 const BOB_M := [0.052, 0.064]            # how far the camera dips at a footfall
 const SWAY_M := [0.016, 0.020]           # sideways shift at a footfall
 const SWAY_DEG := [0.13, 0.16]           # roll toward the stepping side at a footfall
@@ -6626,7 +6626,7 @@ func _update_bob(delta: float) -> void:
 	var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 	var moving: bool = body.is_on_floor() and pace > 1.0
 	_bob_amount = move_toward(_bob_amount, 1.0 if moving else 0.0, delta * 6.0)
-	var stride: int = 1 if running else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG
+	var stride: int = 1 if pace > AvatarDriver.RUN_FROM else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG: by the clip the pace plays (run above 5 m/s), so the steps follow the feet even when a runner is slowed
 	var gait: int = _gait()                  # the footstep tier
 
 	if moving and items != null and items.body_out():

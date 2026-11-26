@@ -1,6 +1,11 @@
 {
 	"note": "Old rules Dave replaced. Each phrase must not appear in an active file (tools/check_rulings.py): when a ruling in docs/RULINGS.md replaces an older one, add the older rule's telltale phrase here and remove it from every active file in the same PR. Lower case; matched without case.",
 	"retired": [
+		{"phrase": "stride rate stay", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "old 3 steps a second", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "old 6 m/s cadence", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "does not play it faster", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
+		{"phrase": "the cadence is not", "replaced_by": "R-MOVE-RUN-FEET", "since": "2026-11-26"},
 		{"phrase": "the campfire (a fire entity; code pending)", "replaced_by": "R-CRAFT-MAKING", "since": "2026-11-26"},
 		{"phrase": "no background music for now", "replaced_by": "R-SOUND-MENU-MUSIC", "since": "2026-11-25"},
 		{"phrase": "no music for now", "replaced_by": "R-SOUND-MENU-MUSIC", "since": "2026-11-25"},
