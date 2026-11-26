@@ -15,6 +15,17 @@ LINE = re.compile(r"^- \*\*(R-[A-Z0-9-]+)\*\* · (\d{1,2} (Jan|Feb|Mar|Apr|May|J
 NOTES = []   # what check() found on suggestions: printed, never blocking
 
 
+def softened(old_text: str, new_text: str) -> list:
+    """A rule turned suggestion or unclear with the same date: a mark flipped to get past a check. A rule changes only by a new dated
+    line in Dave's words (docs/RULINGS.md), so a new date is not caught here, nor is a deleted line; unclear to suggestion is the
+    coordinator settling a line, also not caught."""
+    def marks(text):
+        return {m.group(1): (m.group(2), m.group(4)) for m in map(LINE.match, text.splitlines()) if m}
+    was = marks(old_text)
+    return [f"{key} went from rule to {kind} with the same date: a rule changes only by a new dated line in Dave's words"
+            for key, (date, kind) in marks(new_text).items() if was.get(key) == (date, "rule") and kind != "rule"]
+
+
 def frozen_files(root: pathlib.Path) -> set:
     try:
         manifest = json.loads((root / "docs/retirements.json").read_text(encoding="utf-8"))

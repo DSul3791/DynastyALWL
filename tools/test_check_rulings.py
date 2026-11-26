@@ -35,9 +35,15 @@ case("old rule in a doc", ok, "The pack rushes, Torch or not.", 1)
 case("undated line", "- **R-A** fire.\n", "", 2)
 case("date without a day", "- **R-A** · Nov 2026 · fire.\n", "", 2)
 case("mixed-case phrase", ok, "Torch Or Not", 1)
-case("no rule or suggestion mark", "- **R-A** · 25 Nov 2026 · fire.\n", "", 2)
+case("no rule, suggestion or unclear mark", "- **R-A** · 25 Nov 2026 · fire.\n", "", 2)
 case("an old phrase against a suggestion only notes", ok.replace("· rule ·", "· suggestion ·"), "Torch or not.", 0, notes=1)
 case("an old phrase against an unclear line blocks", ok.replace("· rule ·", "· unclear ·"), "Torch or not.", 1)   # unclear counts as a rule until the coordinator settles it
 case("old rule in a frozen checkpoint", ok, "The pack rushes, Torch or not.", 0, frozen=True)
+for name, new, expect in [("a rule softened on the same date", ok.replace("· rule ·", "· suggestion ·"), 1),
+                          ("a rule replaced by a new dated suggestion", ok.replace("25 Nov 2026 · rule", "26 Nov 2026 · suggestion"), 0),
+                          ("an unchanged rule", ok, 0)]:
+    if len(check_rulings.softened(ok, new)) != expect:
+        fails += 1
+        print(f"FAIL {name}: expected {expect} softened")
 print("test_check_rulings: %s" % ("FAIL" if fails else "PASS"))
 sys.exit(1 if fails else 0)
