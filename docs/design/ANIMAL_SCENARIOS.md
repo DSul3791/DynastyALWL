@@ -236,8 +236,8 @@ F friendly). The player runs 9.0 m/s for about 35 s before strain slows them to 
 | lynx | Eurasian lynx (WildMesh Lynx) | boreal, mixed | 30 | 12 m/s 6 s, then 6.6 | P .9 N .1 |
 | bear, black_bear | brown bear, American black bear | forest | 120, 90 | 9 m/s 6 s, then 4.5 | see Bears |
 | puma | cougar (WildMesh Puma) | mountains, forest | 60 | 13 m/s 6 s, then 7.2 | P .6 D .3 A .1, hunter |
-| tiger, leopard | tiger, leopard | forest, marsh; savanna | 120, 55 | 13 m/s 6 s, then 7.2 | P .4 D .4 A .2; P .6 D .3 A .1 |
-| lion, hyena | lion (two looks), spotted hyena | savanna, grassland | 110, 45 | 12 and 11 m/s 6 s | P .3 D .5 A .2; P .5 D .4 A .1 |
+| tiger, leopard | tiger, leopard | tropical forest, mangrove; savanna (26 Nov 2026: warm climates only) | 120, 55 | 13 m/s 6 s, then 7.2 | P .4 D .4 A .2; P .6 D .3 A .1 |
+| lion, hyena | lion (two looks), spotted hyena | savanna, dry scrub | 110, 45 | 12 and 11 m/s 6 s | P .3 D .5 A .2; P .5 D .4 A .1 |
 | beaver | North American beaver | water in forest, marsh | 14 | 4 m/s (swims) | runs to water |
 | mink | American mink | marsh, banks | 6 | 5.2 m/s | P .85 D .15 |
 | raccoon | raccoon | forest, marsh | 10 | 7 m/s | P .6 N .25 F .15 |
