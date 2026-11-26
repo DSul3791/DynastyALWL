@@ -539,6 +539,8 @@ var _taken: Dictionary = {}         # scatter key int -> true: loose items alrea
 var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
+var part_profile: bool = false        # a soak adds up each part's time in part_ms (off in a game: one dictionary add a part)
+var part_ms: Dictionary = {}          # part name -> ms in all, while part_profile is on
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
 var _save_parts: Array = []           # this tick's save files over 10 ms to stringify, as "name ms (KB)" (the slow-tick line)
 var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
@@ -2004,6 +2006,10 @@ func _slow_mark(part: String, _since_usec: int) -> void:
 	var now: int = Time.get_ticks_usec()
 	var ms: float = float(now - _slow_prev_usec) / 1000.0
 	_slow_prev_usec = now
+
+	if part_profile:
+		var key: String = part.get_slice(" ", 0)
+		part_ms[key] = float(part_ms.get(key, 0.0)) + ms   # the soak's ranking of the tick's parts (soak_server.gd --players)
 
 	if ms > SLOW_PART_LOG_MS:
 		_slow_parts.append("%s %.0f" % [part, ms])
