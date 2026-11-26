@@ -100,9 +100,9 @@ static func _make(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D, region: Arra
 			covered[v] = in_region[best] if best >= 0 and best < in_region.size() else 0
 
 		var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(verts.size()))
-		var remap: PackedInt32Array = PackedInt32Array()
-		remap.resize(verts.size())
-		remap.fill(-1)
+		var new_of: PackedInt32Array = PackedInt32Array()      # source vertex -> new vertex, or -1 (not "remap": that is a global function, and the name warned)
+		new_of.resize(verts.size())
+		new_of.fill(-1)
 		var kept: PackedInt32Array = PackedInt32Array()       # new vertex -> source vertex
 		var new_index: PackedInt32Array = PackedInt32Array()
 
@@ -114,11 +114,11 @@ static func _make(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D, region: Arra
 			for c in range(3):
 				var v: int = indices[t + c]
 
-				if remap[v] < 0:
-					remap[v] = kept.size()
+				if new_of[v] < 0:
+					new_of[v] = kept.size()
 					kept.append(v)
 
-				new_index.append(remap[v])
+				new_index.append(new_of[v])
 
 		if kept.is_empty():
 			continue
