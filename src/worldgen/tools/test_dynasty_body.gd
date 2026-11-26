@@ -24,6 +24,14 @@ func _still(anim: Animation) -> bool:
 	return true
 
 
+
+# How far the hips are turned from the shoulders about the vertical, in degrees (+ the hips to the body's left), from the skeleton's posed joints: the line from
+# the right hip joint to the left against the line from the right shoulder to the left (skeleton space, up +Y).
+func _twist(s: Skeleton3D) -> float:
+	var hip: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_LeftUpLeg")).origin - s.get_bone_global_pose(s.find_bone("mixamorig_RightUpLeg")).origin
+	var top: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_LeftArm")).origin - s.get_bone_global_pose(s.find_bone("mixamorig_RightArm")).origin
+	return rad_to_deg(wrapf(atan2(-hip.z, hip.x) - atan2(-top.z, top.x), -PI, PI))
+
 func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
@@ -151,24 +159,30 @@ func _init() -> void:
 	_check(AvatarDriverScript.crouch_walk_clip(c) == "crouch_walk_left" and absf(AvatarDriverScript.leg_turn("crouch_walk_left", c, false) + PI / 6.0) < 0.01, "crouched 60 degrees left: the left crouch walk, its legs turned 30 degrees back toward ahead")
 	_check(absf(AvatarDriverScript.leg_turn("crouch_walk_torch", d * 0.2, false) - PI * 0.25) < 0.01, "crouched forward and left: the forward crouch walk, its legs turned 45 degrees left")
 
-	var hips_i: int = s.find_bone("mixamorig_Hips")
-	var chest_i: int = s.find_bone("mixamorig_Spine2")
-	# The modifier on the drawn pose (called here as the skeleton calls it, as test_head_look.gd does): the clip's pose, then the same pose with the legs turned.
-	body.set_meta("leg_local", Vector2(3.2, 0.0))
+	# The drawn pose, as the game draws it (Lane A pr1961: the modifier passed a direct call while the drawn legs did not turn): the jog playing, the skeleton's final
+	# pose read when it is handed to the skin (skeleton_updated, after every modifier), the hip line against the shoulder line seen from above.
 	body.set_meta("backward", false)
-	body.play("jog", 1.0, 0.0)
-	body.animation_player.seek(0.2, true)
-	var poses: Array = [[s.get_bone_global_pose(hips_i).basis.get_rotation_quaternion(), s.get_bone_global_pose(chest_i).basis.get_rotation_quaternion()]]
-	body.leg_turn.angle = AvatarDriverScript.leg_turn("jog", Vector2(3.2, 0.0), false)
-	body.leg_turn._process_modification_with_delta(0.0)
-	poses.append([s.get_bone_global_pose(hips_i).basis.get_rotation_quaternion(), s.get_bone_global_pose(chest_i).basis.get_rotation_quaternion(), float(body.leg_turn.angle)])
-	var hips_turn: Quaternion = (poses[1][0] as Quaternion) * (poses[0][0] as Quaternion).inverse()
-	var chest_turn: Quaternion = (poses[1][1] as Quaternion) * (poses[0][1] as Quaternion).inverse()
-	_check(absf(rad_to_deg(hips_turn.get_angle()) - 80.0) < 1.0 and hips_turn.get_axis().y < -0.99, "walking right: the hips turn %.1f degrees about the vertical, to the right (the legs' angle %.1f)" % [rad_to_deg(hips_turn.get_angle()), rad_to_deg(float(poses[1][2]))])
-	_check(rad_to_deg(chest_turn.get_angle()) < 1.0, "and the chest stays on the look (%.2f degrees)" % rad_to_deg(chest_turn.get_angle()))
+	var twists: Array = []
+
+	for local in [Vector2.ZERO, Vector2(3.2, 0.0)]:
+		body.set_meta("leg_local", local)
+		body.play("jog", 1.0, 0.0)
+
+		for i in range(3000):
+			await process_frame
+
+			if absf(float(body.leg_turn.angle) - AvatarDriverScript.leg_turn("jog", local, false)) < 0.001:
+				break
+
+		await s.skeleton_updated
+		twists.append(_twist(s))
+
+	_check(absf(float(twists[0])) < 20.0, "the jog straight ahead as drawn: hips and shoulders in line (%.1f degrees)" % float(twists[0]))
+	_check(float(twists[1]) - float(twists[0]) < -65.0 and float(twists[1]) - float(twists[0]) > -95.0, "walking right as drawn: the hips turned right of the shoulders by %.1f degrees (80 asked)" % (float(twists[0]) - float(twists[1])))
 	_check(is_equal_approx(body.leg_turn.step_angle(0.0, 1.4, 0.1), 0.5), "the turn eases in at 5 radians a second, no snap")
 	body.set_meta("leg_local", Vector2.ZERO)
 	body.leg_turn.angle = 0.0
+	body.play("idle", 1.0, 0.0)
 
 	print("dynasty body tests: %d failures" % _fails)
 	quit()

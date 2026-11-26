@@ -34,7 +34,9 @@ func _process_modification_with_delta(delta: float) -> void:
 	if s == null or body == null or not is_instance_valid(body):
 		return
 
-	var clip: String = String(player.current_animation) if player != null else ""
+	# The clip it holds: `assigned_animation`, which a paused player keeps (current_animation is empty while paused, so a still of a paused pose got no turn;
+	# Lane A pr1961 stills, 26 Nov 2026). Playing, the two are the same.
+	var clip: String = String(player.assigned_animation) if player != null else ""
 	var local: Vector2 = body.get_meta("leg_local", Vector2.ZERO)
 	var target: float = AvatarDriverScript.leg_turn(clip, local, bool(body.get_meta("backward", false)))
 	angle = step_angle(angle, target, delta)
