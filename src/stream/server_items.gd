@@ -889,7 +889,6 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
-	_dress.erase(peer)
 	if _parked.has(peer):
 		_peer_pos[peer] = _parked[peer]   # its spot as it went quiet: the resume spot is written from it below
 
@@ -977,6 +976,7 @@ func peer_left(peer: int) -> void:
 	_breath_sent.erase(peer)
 	_speed3.erase(peer)
 	_peer_key.erase(peer)
+	_dress.erase(peer)
 	_peer_pos.erase(peer)
 	_peer_move.erase(peer)
 	_known.erase(peer)
@@ -18127,7 +18127,7 @@ func _armour_kg_of(worn: Array) -> float:
 # What follows from the worn pieces alone, worked out again only when what is worn changes (vitals cut 2, 26 Nov 2026: insulation, heat
 # load, rain shed, armour, the carry bonus and the comfort meter's dressed points were each walked over every worn piece several times a
 # look, about 7 ms a pass at 64 players). The insulation keeps each slot's [warmth, wet_keep] in worn order, since the soak changes it.
-var _dress: Dictionary = {}          # peer -> {"worn", "armour", "heat", "shed", "bonus", "dressed", "fine", "slots"}
+var _dress: Dictionary = {}          # peer -> {"worn", "armour", "heat" (slot -> values), "shed", "bonus", "dressed", "fine", "slots"}
 var _dress_from: Array = []          # [_warmth_cfg, _carry_cfg, table] the kept rows were worked out with (a test may swap one)
 
 
@@ -18170,12 +18170,7 @@ func _dress_of(peer: int) -> Dictionary:
 			covered[slot] = true
 			fine = fine and str(entry.get("fabric", "")) != "plant"
 
-	var heat: float = 0.0
-
-	for place in heat_by_slot:
-		heat += _layered(heat_by_slot[place])
-
-	kept = {"worn": worn, "armour": _armour_kg_of(worn) if not _carry_cfg.is_empty() else 0.0, "heat": minf(heat, float(_warmth_cfg.get("max_insulation", 0.85))),
+	kept = {"worn": worn, "armour": _armour_kg_of(worn) if not _carry_cfg.is_empty() else 0.0, "heat": heat_by_slot,
 			"shed": clampf(shed, 0.0, 1.0), "bonus": CarryRules.carry_bonus_kg(worn, table), "dressed": covered.size() == 3, "fine": fine, "slots": slots}
 	_dress[peer] = kept
 	return kept
@@ -19375,8 +19370,14 @@ func insulation_worn(peer: int) -> float:
 
 # How much heat the worn pieces trap in warm air, 0..max_insulation: their warmth times (1 - breath), layered the same way (fur hot, linen cool).
 func heat_load(peer: int) -> float:
-	if vitals_memo:
-		return float(_dress_of(peer)["heat"])
+	if vitals_memo:   # the kept per-slot values, layered and capped live (layer_keep and max_insulation read now, as without the row)
+		var by_slot: Dictionary = _dress_of(peer)["heat"]
+		var total: float = 0.0
+
+		for slot in by_slot:
+			total += _layered((by_slot[slot] as Array).duplicate())
+
+		return minf(total, float(_warmth_cfg.get("max_insulation", 0.85)))
 
 	var trapped: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * (1.0 - float(_fabric(entry).get("breath", 1.0)))
 	return minf(_layered_worn(peer, trapped), float(_warmth_cfg.get("max_insulation", 0.85)))

@@ -1,7 +1,7 @@
 extends SceneTree
 
-# The vitals tick keeps a player's worn numbers, armour kilograms and Rested row for one tick, and each item number's weight for good
-# (server_items vitals_memo, _pack_kg): the soak at 64 players (26 Nov 2026) showed vitals at 123 ms a second, the largest part of the server,
+# The vitals tick keeps a player's worn numbers and Rested row for one tick, what follows from the worn pieces until they change (_dress_of:
+# insulation, heat load, rain shed, armour, carry bonus, dressed points) and each item number's weight for good (server_items vitals_memo, _pack_kg): the soak at 64 players (26 Nov 2026) showed vitals at 123 ms a second, the largest part of the server,
 # with those read five to eight times a player each look. Here two servers alike, one with the kept readings and one without, must end
 # every player's vitals the same, through a comfort level crossed inside the tick and a death inside it.
 #   godot --headless --path . --script res://src/worldgen/tools/test_vitals_tick_cost.gd
@@ -142,6 +142,18 @@ func _initialize() -> void:
 
 		a._vitals_tick(0.25)
 		b._vitals_tick(0.25)
+
+	# A swapped config clears the kept rows: no carry config, no armour kilograms (as without the rows), and back again with it.
+	var carry: Dictionary = a._carry_cfg
+	a._carry_cfg = {}
+	b._carry_cfg = {}
+	check(a._armour_kg(2) == 0.0 and b._armour_kg(2) == 0.0, "no carry config: no armour kilograms with or without the kept rows")
+	a._carry_cfg = carry
+	b._carry_cfg = carry
+	a._warmth_cfg = a._warmth_cfg.duplicate(true)
+	a._warmth_cfg["max_insulation"] = 0.01
+	check(a.insulation_worn(2) <= 0.01 and a.heat_load(2) <= 0.01 and a._armour_kg(2) == b._armour_kg(2), "a changed warmth config is read at once (%.3f, %.3f)" % [a.insulation_worn(2), a.heat_load(2)])
+	a._warmth_cfg = b._warmth_cfg
 
 	check(a._armour_kg(1) < 12.0 and a.comfort_target(4) < 5.0, "the change of clothes reached the kept rows (armour %.2f kg, comfort target %.1f undressed)" % [a._armour_kg(1), a.comfort_target(4)])
 
