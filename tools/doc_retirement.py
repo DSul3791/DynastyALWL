@@ -22,6 +22,12 @@ def git(root, *args):
     return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.DEVNULL)
 
 
+def worktree_blob(root, p):
+    """The blob git would store for this checked-out file: hash-object applies the eol attributes, so a Windows checkout (CRLF) hashes
+    the same as the LF blob in git (Dave's PC lane, 26 Nov 2026: raw bytes said "retired content changed" for an untouched file)."""
+    return git(root, 'hash-object', '--', p).decode().strip()
+
+
 def safe_path(p):
     return isinstance(p, str) and '\\' not in p and ':' not in p and not PurePosixPath(p).is_absolute() and all(x not in ('', '..', '.') for x in p.split('/')) and bool(p)
 
@@ -131,7 +137,7 @@ def validate(root, data, deleted=(), now=None, previous=None, protected=(), inte
                 if target and (not safe_path(target) or not (root/target).is_file() or target in current):
                     raise ValueError('missing or retired preservation target: '+str(target))
                 f = root/p
-                if f.exists() and blob(f.read_bytes()) != identity:
+                if f.exists() and worktree_blob(root, p) != identity:
                     raise ValueError('retired content changed: '+p)
                 if not f.exists() and p not in deleted:
                     # Already deleted in an earlier validated integration is recoverable from receipt.

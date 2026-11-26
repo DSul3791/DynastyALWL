@@ -849,8 +849,14 @@ func _update_bow(delta: float) -> void:
 		_hud_layer.add_child(_reticle)
 
 	if _reticle != null:
-		_reticle.visible = _draw_t >= 0.0 or (holding and _is_spear() and _model != null and _model.visible)   # a spear in hand shows the cross by itself, for the throw and jab (Dave 22 Nov 2026); put away, it goes
+		_reticle.visible = aim_cross_shown()
 		_reticle.point = _reticle.global_position + _reticle.size * 0.5   # always the middle of the screen: the view moves, not the cross
+
+
+# Whether the bow or spear cross is up: a drawn bow, or a spear in hand shows it by itself, for the throw and jab (Dave 22 Nov 2026); put away,
+# it goes. The inspection + reads this too and hides while it is true (inspect_reticle.gd), worked out here so both agree in the same frame.
+func aim_cross_shown() -> bool:
+	return _draw_t >= 0.0 or (holding and _is_spear() and _model != null and _model.visible)
 
 
 func _is_spear() -> bool:
