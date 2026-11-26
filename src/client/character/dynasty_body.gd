@@ -25,7 +25,7 @@ const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
 const CLIP_MAP := {
-	"idle": ["Idle", 0.0, -1.0, true, 1.0],
+	"idle": ["Idle", 0.0, -1.0, true, 1.0],   # QA #15 (25 Nov 2026, "character still looking around too much"): Dave's Idle looks back over each shoulder in turn every 4 s (the head turns 56 degrees on the neck, the hips 55); it is now held on its first frame, still, and breathes (dynasty_breath.gd). Its hands are the pose every held tool was fitted to; Idle_02 (upright, calm) hangs a bow 38 cm lower, Idle_10 is a low wide stance. Coordinator's call, Dave may ask for the old idle back
 	"walk": ["Walking", 0.0, -1.0, true, 0.82],         # 1.15 m/s in place, 1.4 wanted
 	"jog": ["Running", 0.0, -1.0, true, 1.22],           # 3.9 m/s in place, 3.2 wanted
 	"run": ["RunFast", 0.0, -1.0, true, 1.22],           # 7.3 m/s in place, 6.0 wanted
@@ -41,10 +41,14 @@ const CLIP_MAP := {
 	"crouch_walk_right_torch": ["Crouch_Walk_Right_with_Torch", 0.0, -1.0, true, 1.23],
 	# Jumping (bug 10, 2 Nov 2026): Dave's only jump is Jump_Run (2.03 s; hips 0.0-0.3 s the take-off squat, 0.3-0.5 s the spring, 0.5-0.8 s in the air, then a run). Cut into the game's three air clips:
 	# jump = the spring and the top (played once when the body is rising), fall = the air pose held as a short loop, land = the squat and recovery (played after a fall of 0.4 s or more).
-	# Cut points read from the hips height in the glb; not yet seen in the game, rate by picture.
-	"jump": ["Jump_Run", 0.3, 0.7, false, 1.0],
-	"fall": ["Jump_Run", 0.55, 0.8, true, 1.0],
-	"land": ["Jump_Run", 0.1, 0.5, false, 1.0],
+	# QA #15 (25 Nov 2026, "jumping animation odd"): read again from the hips and both feet in the glb (cm, model space): 0.0 s standing (hips 99.5), 0.05-0.25 s down
+	# into the squat (hips 64 at 0.2 s, both feet on the ground), 0.3-0.5 s the spring, 0.5-0.6 s the only time both feet are off the ground (hips 96.7, the
+	# feet 32-43 cm up), then from 0.65 s a run. The old cuts put the squat's rise in the air (the body bent low mid-jump), looped 0.55-0.8 s (the legs ran in
+	# the air four times a second) and landed with 0.1-0.5 s (down into the squat and up into a second spring). Now: jump = the feet leaving the ground,
+	# fall = the air pose held still (_hold_first), land = down into the squat and back up, feet on the ground.
+	"jump": ["Jump_Run", 0.4, 0.55, false, 1.0],
+	"fall": ["Jump_Run", 0.55, 0.6, true, 1.0],
+	"land": ["Jump_Run", 0.0, 0.35, false, 1.0],
 	"sit": ["Chair_Sit_Idle_M", 0.0, -1.0, true, 1.0],   # post-processed into cross-legged ground sitting by _ground_sit (BUG-020: there is no floor-sit clip)
 	# Sitting ON a seat (E on a chair, stool, log seat or bench; Dave 5 Nov 2026 "we need a sitting on a chair action"): the same chair clip held on its first frame
 	# (_hold_first), not turned into the ground sit. Its hips are 0.51 m up, about 0.28 m behind the feet, hands on the thighs: the seats are all 0.45 m high (piece_look.gd).
@@ -370,6 +374,8 @@ func _build_animations() -> void:
 				_ground_sit(made, own.get("Idle", made), skeleton)
 			elif game_name == "sit_chair":
 				_hold_first(made)
+			elif game_name == "fall" or game_name == "idle" or game_name == "carry_idle":
+				_hold_first(made, false)   # held whole, head too: the air pose; Idle's first frame (QA #15)
 
 			library.add_animation(game_name, made)
 
@@ -514,14 +520,14 @@ const SIT_SPINE_BACK_DEG := 0.3       # each of Spine, Spine1 and Spine2 leans b
 const SIT_LOOK_KEEP := 0.5
 
 
-static func _hold_first(anim: Animation) -> void:
+static func _hold_first(anim: Animation, keep_look: bool = true) -> void:
 	for t in range(anim.get_track_count()):
 		if anim.track_get_key_count(t) < 2:
 			continue
 
 		var bone: String = String(anim.track_get_path(t)).get_slice(":", 1)
 		var first: Variant = anim.track_get_key_value(t, 0)
-		var look: bool = anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and (bone == P + "Neck" or bone == P + "Head")
+		var look: bool = keep_look and anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and (bone == P + "Neck" or bone == P + "Head")
 
 		for k in range(1, anim.track_get_key_count(t)):
 			var v: Variant = (first as Quaternion).slerp(anim.track_get_key_value(t, k) as Quaternion, SIT_LOOK_KEEP) if look else first

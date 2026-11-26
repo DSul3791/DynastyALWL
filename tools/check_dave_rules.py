@@ -21,6 +21,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
     "R-PLAYER-CRAWL": ["test_crawl", "test_crawl_server", "test_animal_senses", "test_remote_players"],
+    "R-HUNT-DEAD-NAME": ["test_carcass_look", "test_trap_collect_prompt"],
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
@@ -157,6 +158,17 @@ def stealth():
     check("R-PLAYER-CRAWL", re.search(r"^const SPEED := \[1\.0, [0-9.]+, 0\.0, CRAWL_MPS / 3\.2\]", stance, re.M), "lying off a bed moves (the crawl), sitting does not")
 
 
+def dead_names():
+    """R-HUNT-DEAD-NAME: every animal kind has a name for its body ("Dead " + name, carcass_look.gd dead_name), so none falls back to "Dead animal"
+    or a bare "Carcass"; the duck's flock name ("Ducks") has its one-animal name."""
+    species = data("data/animals/animals.json")["species"]
+    for sid, row in species.items():
+        one = str(row.get("one", row.get("name", "")))
+        check("R-HUNT-DEAD-NAME", one != "" and "carcass" not in one.lower(), f"{sid} has a name for its body ({one!r})")
+    check("R-HUNT-DEAD-NAME", species["duck"].get("one") == "Duck", "a dead duck is one duck, not \"Dead ducks\"")
+    check("R-HUNT-DEAD-NAME", len(species) >= 40, f"the species were read ({len(species)})")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -169,7 +181,7 @@ def ruling_lines():
 def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
-             "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth}
+             "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names}
     for key, step in steps.items():
         try:
             step()
