@@ -6,13 +6,16 @@ extends SceneTree
 # and its skinned mesh is posed on the CPU (each vertex by its bones and the skin's binds, as the GPU does) in the rest pose and at four
 # moments of its graze (role 0), alert (3) and walk clips. Only the vertices of the lowest bones are posed (the hooves and paws), so a
 # model takes a second or two. A gap above 0 is the body floating, below 0 sunk into the ground.
-#   godot --path . --script res://tools/ground_check.gd -- [--kinds=donkey,cow] [--out=C:/DynastyLane/logs/<job>/ground_check.txt]
+#   godot --path . --script res://tools/ground_check.gd -- [--kinds=donkey,cow] [--out=C:/DynastyLane/logs/<job>/ground_check.txt] [--roles=rest,0,3,walk] [--moments=4]
+# --roles also takes 19 (the lie) and run (the looped run, measured at --moments even moments through its loop).
 # Needs a window (the mesh arrays): run without --headless. It opens one small window and quits by itself.
 # One line a model and role: "GROUND <kind> look <n> <role> lowest <m> m (min over the clip) bone_low <m> m"; then a summary per model.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
 const ROLES := ["rest", "0", "3", "walk"]
 const MOMENTS := [0.0, 0.25, 0.5, 0.75]
+var roles_wanted: Array = ROLES        # --roles=rest,0,19,run: which roles to measure (19 the lie; run the looped run, whose least over --moments is its lowest foot)
+var moments: Array = MOMENTS           # --moments=N: N even moments through each clip (a run's foot touches only part of its stride)
 const LOW_SHARE := 0.2   # bones whose posed height is in the lowest fifth of the skeleton's height: their vertices are posed
 
 
@@ -25,6 +28,13 @@ func _init() -> void:
 			kinds = a.trim_prefix("--kinds=").split(",", false)
 		elif a.begins_with("--out="):
 			out = a.trim_prefix("--out=")
+		elif a.begins_with("--roles="):
+			roles_wanted = Array(a.trim_prefix("--roles=").split(",", false))
+		elif a.begins_with("--moments="):
+			moments = []
+
+			for n in maxi(int(a.trim_prefix("--moments=")), 1):
+				moments.append(float(n) / float(maxi(int(a.trim_prefix("--moments=")), 1)))
 
 	var view: Node3D = AnimalView.new()
 	root.add_child(view)
@@ -99,7 +109,7 @@ func _check(view: Node3D, kind: String, number: int, look: int, lines: PackedStr
 	var player: AnimationPlayer = model.get_meta("player") if model.has_meta("player") else null
 	var roles: Dictionary = player.get_meta("roles", {}) if player != null else {}
 
-	for role in ROLES:
+	for role in roles_wanted:
 		var clip: String = str(roles.get(role, "")) if role != "rest" else ""
 
 		if role != "rest" and clip == "":
@@ -108,7 +118,7 @@ func _check(view: Node3D, kind: String, number: int, look: int, lines: PackedStr
 		var lowest: float = INF
 		var bone_low: float = INF
 
-		for moment in (MOMENTS if role != "rest" else [0.0]):
+		for moment in (moments if role != "rest" else [0.0]):
 			if role == "rest":
 				pass   # the pose as built, before any clip: the one the game grounds it by (_model_bounds)
 			else:
