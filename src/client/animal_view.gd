@@ -975,6 +975,20 @@ func _process_body(delta: float) -> void:
 # data/animals/models.json with a scene that exists is drawn from that scene (a rigged, animated mesh) instead of the code-built
 # body; a missing file falls back to the code body, so a model can be added one species at a time. The row gives the scene, its
 # scale and yaw (to face -Z), the clip for each protocol state, and the ground speed its walk and run clips were made at.
+const ALPHA_PATH := "res://data/animals/texture_alpha.json"
+var _alpha_known: Variant = null   # texture path -> see-through, from ALPHA_PATH (read once)
+
+func _alpha_table() -> Dictionary:
+	if _alpha_known == null:
+		_alpha_known = {}
+
+		if FileAccess.file_exists(ALPHA_PATH):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ALPHA_PATH))
+			_alpha_known = (parsed as Dictionary).get("textures", {}) if parsed is Dictionary else {}
+
+	return _alpha_known
+
+
 func _model_rows() -> Dictionary:
 	if _models == null:
 		_models = {}
@@ -1121,6 +1135,12 @@ func _alpha_ready(path: String, source: Variant) -> bool:
 	if _alpha_of.has(path):
 		return true
 
+	# The answer kept with the models (tools/texture_alpha.gd): reading a texture back from the graphics card held the frame 23 ms on
+	# average and up to 170 ms (Lane A r4 at Low, 26 Nov 2026, 38 times on the route). A texture not in the table is read back as before.
+	if _alpha_table().has(path):
+		_alpha_of[path] = bool(_alpha_table()[path])
+		return true
+
 	if not _alpha_tasks.has(path):
 		var t_back: int = FrameProbe.start()
 		var img: Image = source as Image if source is Image else (source as Texture2D).get_image()
@@ -1163,6 +1183,8 @@ func _exit_tree() -> void:
 
 func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
 	_clip_maps.clear()      # the last model's rig is drawn now, or freed: its maps are not wanted
+	_track_nodes.clear()
+	_track_bones.clear()
 
 	if _code_body_only:
 		return null      # its files are still loading past SCENE_WAIT_MS: no load() on the main thread, the code-built body instead
@@ -1614,6 +1636,9 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 func _has_alpha(tex: Texture2D) -> bool:
 	var key: String = tex.resource_path
 
+	if not _alpha_of.has(key) and _alpha_table().has(key):
+		_alpha_of[key] = bool(_alpha_table()[key])   # kept with the models (tools/texture_alpha.gd): no read back
+
 	if not _alpha_of.has(key):
 		var img: Image = tex.get_image()
 
@@ -1868,6 +1893,8 @@ func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Diction
 
 	if _clip_maps.size() >= 64:
 		_clip_maps.clear()      # one model's clips at a time are all that is wanted; an old rig's nodes may be freed
+		_track_nodes.clear()
+		_track_bones.clear()
 
 	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
 	var map: Dictionary = {}
@@ -1887,10 +1914,10 @@ func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Diction
 
 				var path: NodePath = anim.track_get_path(t)
 
-				if base == null or base.get_node_or_null(NodePath(str(path.get_concatenated_names()))) != sk:
+				if base == null or _track_node(base, path) != sk:
 					continue
 
-				var bone: int = sk.find_bone(str(path.get_concatenated_subnames()))
+				var bone: int = _track_bone(sk, path)
 
 				if bone < 0 or anim.track_get_key_count(t) == 0:
 					continue
@@ -1907,7 +1934,7 @@ func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Diction
 					for t in anim.get_track_count():
 						var tp: NodePath = anim.track_get_path(t)
 
-						if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base == null or base.get_node_or_null(NodePath(str(tp.get_concatenated_names()))) != up:
+						if tp.get_subname_count() > 0 or anim.track_get_key_count(t) == 0 or base == null or _track_node(base, tp) != up:
 							continue
 
 						var kind: int = anim.track_get_type(t)
@@ -1923,6 +1950,30 @@ func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Diction
 
 	_clip_maps[key] = map
 	return map
+
+
+# A track's node and bone, looked up once per rig (_track_nodes, cleared with _clip_maps): a file's clips name the same few hundred paths, and
+# a kind's first body resolved each path again for every clip it measured (Lane A r4 at 2fd16cff, 26 Nov 2026: "clips: heights" 20-39 ms).
+var _track_nodes: Dictionary = {}   # base instance id -> {track path: its node}
+var _track_bones: Dictionary = {}   # skeleton instance id -> {track path: its bone}
+
+func _track_node(base: Node, path: NodePath) -> Node:
+	var known: Dictionary = _track_nodes.get_or_add(base.get_instance_id(), {})
+
+	if not known.has(path):
+		known[path] = base.get_node_or_null(NodePath(str(path.get_concatenated_names())))
+
+	var node: Variant = known[path]
+	return node as Node if is_instance_valid(node) else null
+
+
+func _track_bone(sk: Skeleton3D, path: NodePath) -> int:
+	var known: Dictionary = _track_bones.get_or_add(sk.get_instance_id(), {})
+
+	if not known.has(path):
+		known[path] = sk.find_bone(str(path.get_concatenated_subnames()))
+
+	return int(known[path])
 
 
 # The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
