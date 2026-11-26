@@ -1250,8 +1250,10 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		inst.free()
 		return null
 
+	var skin_answers: String = "%s|%s" % [kind, str(row["scene"])]
+
 	for m in meshes:
-		_fit_skin(m as MeshInstance3D, inst, kind)
+		_fit_skin(m as MeshInstance3D, inst, kind, skin_answers)
 
 	FrameProbe.stop("animal body: fit skin", t_part)
 	t_part = FrameProbe.start()
@@ -1364,7 +1366,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		FrameProbe.stop("clips: hand-made gaits", t_step)
 		# A refused clip (it lays the model flat) does not leave the role empty: the next clip that names the role is tried (the elk's
 		# file has two clips called Walk, one of them shrinking the rig to a hundredth; MikeW, 7 Nov 2026).
-		var rest_h: float = _clip_height(player, null, rig)
+		var answers: String = "%s|%s" % [kind, str(row["scene"])]   # this model's kept clip answers (_height_share)
+		var rest: Array = []   # the standing height, measured only when a clip's answer is not kept
 
 		for key in _ROLE_WORDS.keys() + (row.get("clips", {}) as Dictionary).keys():
 			var refused: Dictionary = {}
@@ -1409,19 +1412,19 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
 				t_step = FrameProbe.start()
-				var clip_h: float = _clip_height(player, anim, rig)
+				var clip_share: float = _height_share(player, anim, rig, answers, anim_name, rest)
 				FrameProbe.stop("clips: heights", t_step)
 
 				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
-				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
-					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
+				if clip_share >= 0.0 and clip_share < (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
+					_model_note(kind, "clip %s lays the model flat (%.2f of its standing height): not used" % [anim_name, clip_share])
 					refused[refuse_as] = true
 					continue
 
 				# A clip that throws the model far taller than it stands (the elephant's Hit_Head_Right-IP stood 4 times its height and
 				# drew nothing on screen: Lane A one-shot check, 23 Nov 2026) is broken the other way: the next clip for the role is tried.
-				if rest_h > 0.0001 and clip_h > rest_h * TALL_SHARE:
-					_model_note(kind, "clip %s throws the model up (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
+				if clip_share >= 0.0 and clip_share > TALL_SHARE:
+					_model_note(kind, "clip %s throws the model up (%.2f times its standing height): not used" % [anim_name, clip_share])
 					refused[refuse_as] = true
 					continue
 
@@ -1489,9 +1492,9 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				if not _fit_clip_units(player, idle_anim, kind, idle_full):
 					continue
 
-				var idle_h: float = _clip_height(player, idle_anim, rig)
+				var idle_share: float = _height_share(player, idle_anim, rig, answers, idle_full, rest)
 
-				if rest_h > 0.0001 and (idle_h < rest_h * float(row.get("flat_share", 0.5)) or idle_h > rest_h * TALL_SHARE):
+				if idle_share >= 0.0 and (idle_share < float(row.get("flat_share", 0.5)) or idle_share > TALL_SHARE):
 					_model_note(kind, "idle clip %s lays the model flat or throws it up: not used" % idle_full)
 					continue
 
@@ -1762,8 +1765,15 @@ static func names_word(name_text: String, word: String) -> bool:
 # spread of rest * bind across bones is measured at the mesh's own box corners against that box's size under C (unitless,
 # so a file's scale never triggers it). Over 5%, every bind is rebuilt as inverse(rest) * C on a copy of the skin, C being
 # the transform most binds agree with, and a log line says so.
-func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
+func _fit_skin(mi: MeshInstance3D, top: Node, kind: String, answers: String = "") -> void:
 	if mi.skin == null or mi.mesh == null or mi.skin.get_bind_count() < 2:
+		return
+
+	# Kept with the models (CLIP_ANSWERS_PATH, _height_share): a skin whose binds agree needs no measuring (16-23 ms for a kind's first
+	# body, Lane A r4 at Low, 26 Nov 2026). One that is rebuilt is measured, as the rebuild needs the binds' shared map.
+	var skins: Variant = _answers_for(answers).get("skins", {}) if answers != "" else {}
+
+	if skins is Dictionary and (skins as Dictionary).has(str(mi.name)) and not bool(skins[str(mi.name)]):
 		return
 
 	var sk: Skeleton3D = mi.get_node_or_null(mi.skeleton) as Skeleton3D
@@ -1789,6 +1799,7 @@ func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
 			maps.append([b, sk.get_bone_global_rest(bone) * mi.skin.get_bind_pose(b)])
 
 	if maps.size() < 2:
+		_record(answers, "skins", str(mi.name), false)
 		return
 
 	# C: the map most binds agree with (the one nearest the rest, over an even sample of at most 24, so big rigs stay cheap).
@@ -1813,7 +1824,10 @@ func _fit_skin(mi: MeshInstance3D, top: Node, kind: String) -> void:
 		worst = maxf(worst, _map_gap(m[1], shared, probes))
 
 	if scale_ref <= 0.0 or worst <= scale_ref * 0.05:
+		_record(answers, "skins", str(mi.name), false)
 		return
+
+	_record(answers, "skins", str(mi.name), true)
 
 	var skin: Skin = mi.skin.duplicate() as Skin
 
@@ -1837,6 +1851,57 @@ func _map_gap(x: Transform3D, y: Transform3D, probes: Array) -> float:
 
 # How tall the skeleton stands in the rig's space (the height of its bones' box) in a clip's first frame, or in its imported pose with no clip.
 # Worked out from the clip's own tracks and the bone rests, so it needs no running player.
+# A clip's height in its first frame as a share of the model's standing height (its imported pose), -1 when the model has no standing
+# height (nothing is refused then). The answer is the same for every body of a kind and file (the share does not change with the body's
+# size), so it is kept in CLIP_ANSWERS_PATH, made by tools/clip_answers.gd: measuring it was the largest step of a kind's first body
+# (Lane A r4 at Low, 26 Nov 2026: "clips: heights" 25-38 ms, idle variants up to 41). A clip with no kept answer is measured, as before;
+# `rest` holds the standing height once measured. _recording (the tool and its test) collects every answer measured.
+const CLIP_ANSWERS_PATH := "res://data/animals/clip_answers.json"
+var _kept_answers: Variant = null   # "kind|scene" -> {"shares": {clip: share}, "skins": {mesh: rebuilt}}, read once
+var _recording: Variant = null      # the same shape, filled with the answers measured here (tools/clip_answers.gd); null in the game
+var _measure_all: bool = false      # the tool and its test: kept answers are not used
+var _conflicts: PackedStringArray = PackedStringArray()   # shares recorded twice with different values (_record)
+
+func _answers_for(answers: String) -> Dictionary:
+	if _kept_answers == null:
+		_kept_answers = {}
+
+		if FileAccess.file_exists(CLIP_ANSWERS_PATH):
+			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(CLIP_ANSWERS_PATH))
+			var models: Variant = (parsed as Dictionary).get("models", {}) if parsed is Dictionary else {}
+			_kept_answers = models if models is Dictionary else {}
+
+	var found: Variant = (_kept_answers as Dictionary).get(answers, {}) if not _measure_all else {}
+	return found if found is Dictionary else {}
+
+
+func _record(answers: String, part: String, name_text: String, value: Variant) -> void:
+	if _recording is Dictionary:
+		var model: Dictionary = (_recording as Dictionary).get_or_add(answers, {"shares": {}, "skins": {}})
+		var known: Dictionary = model[part]
+
+		# Two meshes of one name: a skin is kept as fine only when both are (else it is measured every time, as before). Two different
+		# shares for one clip of one model (two looks with their own clip_loop or gait) cannot be kept under one name: listed in _conflicts.
+		if part == "shares" and known.has(name_text) and absf(float(known[name_text]) - float(value)) > 0.000001:
+			_conflicts.append("%s %s: %.6f and %.6f" % [answers, name_text, float(known[name_text]), float(value)])
+
+		known[name_text] = (bool(known[name_text]) or bool(value)) if part == "skins" and known.has(name_text) else value
+
+
+func _height_share(player: AnimationPlayer, anim: Animation, rig: Node3D, answers: String, clip_name: String, rest: Array) -> float:
+	var shares: Variant = _answers_for(answers).get("shares", {})
+
+	if shares is Dictionary and (shares as Dictionary).has(clip_name):
+		return float(shares[clip_name])
+
+	if rest.is_empty():
+		rest.append(_clip_height(player, null, rig))
+
+	var share: float = _clip_height(player, anim, rig) / float(rest[0]) if float(rest[0]) > 0.0001 else -1.0
+	_record(answers, "shares", clip_name, share)
+	return share
+
+
 func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
 	return _clip_box(player, anim, rig).size.y
 
