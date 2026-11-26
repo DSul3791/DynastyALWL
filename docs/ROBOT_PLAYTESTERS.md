@@ -13,6 +13,7 @@ tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot 
 tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
 tools/robots.sh 2 wolves           # the same, and the second robot comes in 3 s into the rush
 ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, along it and off it; the server prints each one's trail share
+ROBOT_BODIES=deer,goose ROBOT_S=120 tools/robots.sh 1 bodies   # a dead body of each kind placed ahead and looked at with inspection on: each must be named "Dead <animal>" (pictures: the client on a real renderer with --robot-admin --robot-plan=bodies)
 ROBOT_S=300 tools/robots.sh 3 bear # an admin bear 20 m from the spawn, every robot hunts it with a spear (inside and jump checks); about 4 min
 ROBOT_S=200 tools/robots.sh 3 bear_group   # the hunters stand in a tight group (pairs about 1 m apart) and jab a bear set 2 m off
 ROBOT_S=200 tools/robots.sh 1 fight_goblin   # (or fight_bandit) every warning, charge and landed blow as the robot drew it; AUDIT enemy_hit on the server

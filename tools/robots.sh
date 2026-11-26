@@ -14,6 +14,7 @@
 #   ROBOT_S=200 tools/robots.sh 1 fight_goblin|fight_bandit [link]   a charging foe: shield at the warning, side-steps, jabs
 #   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
 #   ROBOT_S=260 tools/robots.sh 2 kind_moose [link]   two robots hunt one animal kind; tools/robot_kinds.py <run folder> prints the measures
+#   ROBOT_S=120 tools/robots.sh 1 bodies    one dead body of each kind placed ahead, looked at with inspection on: checks the "Dead <animal>" names (headless here; for pictures run the client on a real renderer with --robot-admin --robot-plan=bodies; ROBOT_BODIES=deer,goose for a list)
 #   tools/robots.sh 1 trail [link]          crouched along a game trail under trees (stops compared with standing)
 #   tools/robots.sh 2 seen [link]           Robot 2 raises and draws a bow, then fishes: Robot 1 checks the bow flags, clips and the float
 #   tools/robots.sh 2 wiggle [link]         Robot 1 runs back and forth across a spot: Robot 2 measures how far off its path it is drawn

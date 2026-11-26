@@ -18,7 +18,7 @@ extends Node
 # screen a tester opens, every lit Craft button pressed through the screen, split and drop, quit with a screen open; then rejoin), rejoin (join, check
 # the pack against the one saved at quit, look around, quit), light (the live server: walk, stances, watch animals and players; changes
 # nothing in the world), together (two robots on one basket, stack, crate site and door at once, a 20 s hold, one watching the other pass
-# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), seen (one robot raises and draws a bow, then fishes; the other checks what it draws), wiggle (one robot runs back and forth across a spot; the other measures how far off its path it draws it), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count), pack_fuzz (two robots at random in the pack and one
+# out; docs/ROBOT_PLAYTESTERS.md), trail (crouched along a game trail under trees), bodies (one dead body of each kind placed ahead and looked at with inspection on: checks the "Dead <animal>" look name; pictures need a client on a real renderer), seen (one robot raises and draws a bow, then fishes; the other checks what it draws), wiggle (one robot runs back and forth across a spot; the other measures how far off its path it draws it), cold, fights, kind_<species>, roam (an hour from place to place, standing at each, for the server's stuck-animal count), pack_fuzz (two robots at random in the pack and one
 # shared basket: src/client/robot_pack_fuzz.gd), measure (the Measure this machine table, src/debug/machine_probe.gd). --robot-admin lets it ask for starting materials (the server needs --open-admin; never on a live server).
 # Testing only: nothing here runs unless --robot= is given.
 
@@ -634,6 +634,8 @@ func run() -> void:
 		await _wiggle()
 	elif plan.begins_with("kind_"):
 		await _kind(plan.trim_prefix("kind_"))
+	elif plan == "bodies":
+		await _bodies()
 	elif plan == "route":
 		await _route()
 	elif plan == "measure":
@@ -4193,6 +4195,44 @@ static func _wiggle_at(pts: Array, ms: int) -> Vector2:
 	var span: float = float(int(pts[hi][0]) - int(pts[lo][0]))
 	var t: float = 0.0 if span <= 0.0 else float(ms - int(pts[lo][0])) / span
 	return Vector2(float(pts[lo][1]), float(pts[lo][2])).lerp(Vector2(float(pts[hi][1]), float(pts[hi][2])), t)
+
+
+# --- plan bodies (26 Nov 2026, the dead-animal looks and names; pictures only from a client on a real renderer, not tools/robots.sh): with --robot-admin, one dead body of each kind in BODIES_KINDS
+# (or the comma list in ROBOT_BODIES) is placed BODIES_M ahead (admin_place "carcass", server_items make_carcass, as a kill leaves it), the
+# view pitched down onto it with inspection on, and held BODIES_HOLD_S for the lane's picture. Each prints
+# ROBOT n step bodies: <kind> named '<the look name>' (Dave 25 Nov 2026, R-HUNT-DEAD-NAME: "Dead deer", never "Carcass"). Turns BODIES_TURN
+# between kinds so the bodies lie apart.
+const BODIES_KINDS := ["deer", "black_bear", "rabbit", "fox", "elk", "goose", "pheasant", "boar"]
+const BODIES_M := 3.5
+const BODIES_PITCH := -0.43   # radians: atan(1.6 / 3.5), from eye height (about 1.6 m) straight onto a body lying 3.5 m ahead
+const BODIES_HOLD_S := 4.0
+const BODIES_TURN := 0.8
+
+func _bodies() -> void:
+	_step = "bodies"
+
+	if not admin:
+		_fail("bodies", "admin", "placing a body needs --robot-admin (and the server --open-admin): nothing placed")
+		return
+
+	var kinds: Array = Array(OS.get_environment("ROBOT_BODIES").split(",", false)) if OS.get_environment("ROBOT_BODIES") != "" else BODIES_KINDS
+	client.inspecting = true
+
+	for kind in kinds:
+		var ahead: Vector3 = -client.body.global_transform.basis.z
+		client.net.admin_place.rpc_id(1, "carcass", client.body.global_position + Vector3(ahead.x, 0.0, ahead.z).normalized() * BODIES_M, str(kind))
+		client.pitch = BODIES_PITCH
+		await _wait(BODIES_HOLD_S)
+		var named: String = str(client._inspect_label.text) if client._inspect_label != null else ""
+		FreezeWatchScript.printer.line("ROBOT %s step bodies: %s named '%s'" % [robot_name, str(kind), named])
+
+		if not named.begins_with("Dead "):
+			_fail("bodies", str(kind), "the body is named '%s', not Dead ..." % named)
+
+		client.body.rotation.y += BODIES_TURN
+
+	client.pitch = 0.0
+	client.inspecting = false
 
 
 # --- plan kind_<species> (animal thread, 23 Nov 2026): every animal kind in a fight, drawn by two robots over the lossy link ---------------
