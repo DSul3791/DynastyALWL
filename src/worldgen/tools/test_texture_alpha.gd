@@ -24,17 +24,26 @@ func _initialize() -> void:
 	var table: Dictionary = v._alpha_table()
 	check(not table.is_empty(), "the table is there (%d textures)" % table.size())
 	var named: PackedStringArray = TextureAlphaTool.albedo_paths(JSON.parse_string(FileAccess.get_file_as_string(v.MODELS_PATH)))
+	var alpha_file: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(v.ALPHA_PATH))
+	var absent: Array = alpha_file.get("absent", [])
 	var unlisted: PackedStringArray = PackedStringArray()
+	var come: PackedStringArray = PackedStringArray()
 	var wrong: PackedStringArray = PackedStringArray()
 	var compared: int = 0
 
 	for path in named:
-		if not FileAccess.file_exists(path):
-			continue      # a texture the pack does not have here: models.json names it, the game leaves it out
-
-		if not table.has(path):
-			unlisted.append(path)
+		if not table.has(path) and not absent.has(path):
+			unlisted.append(path)      # the merge check (tools/check_texture_alpha.py) catches this without the pack
 			continue
+
+		if absent.has(path):
+			if FileAccess.file_exists(path):
+				come.append(path)      # listed as having no source image, but it is here now: its answer is wanted
+
+			continue
+
+		if not FileAccess.file_exists(path):
+			continue      # the pack is not on this machine (the cloud, Lane B): nothing to compare
 
 		var img: Image = Image.load_from_file(ProjectSettings.globalize_path(path))
 
@@ -50,6 +59,7 @@ func _initialize() -> void:
 			wrong.append(path)
 
 	check(unlisted.is_empty(), "every colour texture of models.json has an answer; run tools/texture_alpha.gd for: %s" % ", ".join(unlisted))
+	check(come.is_empty(), "no texture listed as absent is here now; run tools/texture_alpha.gd for: %s" % ", ".join(come))
 	check(wrong.is_empty(), "each answer matches its source image (%d compared): %s" % [compared, ", ".join(wrong)])
 
 	if not table.is_empty():
