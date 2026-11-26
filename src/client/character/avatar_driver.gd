@@ -208,7 +208,7 @@ static func crouch_walk_clip(velocity_local: Vector2) -> String:
 	return "crouch_walk"
 
 
-# The crawl for a velocity in the body's own frame (x right, y the world z, so forward is -y): still ("prone", the crawl's first frame held), backward
+# The crawl for a velocity in the body's own frame (x right, y the world z, so forward is -y): still ("prone", flat on the belly: dynasty_body.gd CLIP_MAP), backward
 # ("crawl_back", more back than forward) or forward ("crawl", also sideways: the rig has no sideways crawl).
 const CRAWL_MIN_PACE := 0.1            # below this the crawler lies still (the crawl is 0.4 m/s, stance.gd CRAWL_MPS)
 

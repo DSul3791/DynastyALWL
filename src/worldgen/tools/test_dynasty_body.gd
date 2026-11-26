@@ -139,10 +139,13 @@ func _init() -> void:
 	var crouch_hips: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin
 	_check(crouch_hips.y > 0.35 and crouch_hips.y < 0.6, "crouch: hips low")
 
-	# The stealthy crawl (Dave QA #10, 25 Nov 2026): lying still holds the low crawl's first frame; crawling forward is Crawl_Backward played backwards. No sliding (Dave):
+	# The stealthy crawl (Dave QA #10, 25 Nov 2026): lying still is flat on the belly on the ground (Dead's last frame lowered, dynasty_body.gd PRONE_DROP_CM; Lane A's
+	# picture of the first prone floated with the arms raised). Crawling is one stride of Crawl_and_Look_Back. No sliding (Dave):
 	# while a hand is down on the ground it moves back under the body (the rig's forward is +Z; the model node is turned to face the game's -Z) at about the crawl's 0.4 m/s at speed scale 1 (avatar_driver.gd speed_scale),
 	# and backwards it moves forward; the body is drawn in place (the game moves it).
 	var prone_at: Array = []
+	var prone_low: float = INF
+	var prone_high: float = -INF
 
 	for at in [0.0, 0.6]:
 		body.play("prone", 1.0, 0.0)
@@ -151,7 +154,16 @@ func _init() -> void:
 		await process_frame
 		prone_at.append((s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin)
 
-	_check((prone_at[0] as Vector3).y < 0.5, "prone: hips low (%.2f m)" % (prone_at[0] as Vector3).y)
+		for bone in s.get_bone_count():
+			var y: float = (s.global_transform * s.get_bone_global_pose(bone)).origin.y
+			prone_low = minf(prone_low, y)
+			prone_high = maxf(prone_high, y)
+
+	var prone_chest: float = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Spine2"))).origin.y
+	_check((prone_at[0] as Vector3).y < 0.28, "prone: hips on the ground (%.2f m)" % (prone_at[0] as Vector3).y)
+	_check(prone_chest < 0.3, "prone: chest on the ground, belly down (%.2f m)" % prone_chest)
+	_check(prone_low > -0.01 and prone_low < 0.06, "prone: the lowest joint touches the ground, not under it or floating (%.2f m)" % prone_low)
+	_check(prone_high < 0.45, "prone: nothing raised, the whole body flat (highest joint %.2f m)" % prone_high)
 	_check((prone_at[1] as Vector3).distance_to(prone_at[0]) < 0.03, "prone: holds still")
 
 	for spec in [["crawl", -1.0], ["crawl_back", 1.0]]:
