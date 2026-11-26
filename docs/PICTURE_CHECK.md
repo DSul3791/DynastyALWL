@@ -30,8 +30,8 @@ a bug here or a price change could not pass it.
 
 ## Spending
 - Cap: $150 by default (below the $158 Dave has), kept in `C:\DynastyLane\picture_check\spent.json`; `--cap USD` changes it.
-- Before each request the checker reserves its worst case (all input as a cache write, the whole 4000-token answer as output, about
-  $0.10); the answer's real usage replaces the reservation. A request whose worst case would pass the cap is not sent. A run cut off
+- Before each request the checker reserves its worst case (all input as a cache write, the whole 8000-token answer as output, about
+  $0.23 to $0.35 for 4 to 8 views); the answer's real usage replaces the reservation. A request whose worst case would pass the cap is not sent. A run cut off
   mid-request keeps its reservation counted, so the total can only read high, never low.
 - One check runs at a time: a second one refuses to start while `C:\DynastyLane\picture_check\lock` exists (delete it by hand only
   after a cut-off run, when no check runs). If `spent.json` is lost while answers are stored, the checker refuses to run until
@@ -45,6 +45,8 @@ a bug here or a price change could not pass it.
 - Expected cost: a 1920x1080 picture is about 2,800 input tokens. One subject with four views is about 11,000 input tokens and one
   answer, roughly 6 cents (the first one-picture run cost $0.028). The whole sweep (about 280 subjects) is roughly $15 to $25.
   `--dry-run` prints the count and the worst case without sending anything.
+- Check a folder only after its sweep jobs are done: a subject's answer is stored by its pictures, so a subject checked with
+  half its views is paid for again once the rest arrive.
 
 ## Commands (lane, Git bash, from `C:/DynastyLane/clone`)
 ```bash
@@ -67,7 +69,7 @@ back "unsure"; check one strip's answer before the whole group.
 ## What it reports, and what not
 A subject is called wrong only when the bug shows in more than one view, or is unmistakable in one; a doubt one view alone
 shows is listed as unsure, for a person to look at. The checker is told what the tester does on purpose: stills freeze a pose
-mid-clip, a long item pointing at the camera looks short, the game cuts the grass short within 1.4 m of the player so the feet
+mid-clip, a long item pointing at the camera looks short, in third person the game cuts the grass short within 1.4 m of the player so the feet
 show (`src/client/grass_view.gd` `PLAYER_CLEAR_M`: the flat patch round the feet in world pictures is the game, not the rig),
 and the offline tools' plain sky, grid floor and bright sun.
 

@@ -69,13 +69,18 @@ class Fake(http.server.BaseHTTPRequestHandler):
 			self.end_headers()
 			self.wfile.write(b"{}")
 			return
-		if "bad" in label:
+		if "pair" in label:
+			subjects = [{"subject": "fox", "shows": "a fox", "verdict": "ok", "confidence": "high", "problems": []},
+				{"subject": "wolf", "shows": "a wolf", "verdict": "problem", "confidence": "medium", "problems": [{"kind": "sunk",
+				"views": ["pair_wolf.png"], "where": "hind legs", "what": "the hind legs are in the ground", "severity": "high", "confidence": "high"}]}]
+			subject = None
+		elif "bad" in label:
 			subject = {"subject": "deer_bad", "shows": "a deer", "verdict": "problem", "confidence": "high", "problems": [{"kind": "floating",
 				"views": ["deer_bad_front.png", "deer_bad_side.png"], "where": "front hooves", "what": "the deer hovers 10 cm above the grass",
 				"severity": "high", "confidence": "high"}]}
 		else:
 			subject = {"subject": "deer", "shows": "a deer", "verdict": "ok", "confidence": "high", "problems": []}
-		reply = {"stop_reason": "end_turn", "content": [{"type": "text", "text": json.dumps({"subjects": [subject]})}],
+		reply = {"stop_reason": "end_turn", "content": [{"type": "text", "text": json.dumps({"subjects": subjects if subject is None else [subject]})}],
 			"usage": {"input_tokens": 1000, "output_tokens": 500, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}
 		data = json.dumps(reply).encode()
 		self.send_response(200)
@@ -199,6 +204,27 @@ def main():
 	code, out = run(env, shots, "--recheck")
 	check(code == 2 and "another check is running" in out and len(seen) == before, "a second check refuses to start while the lock is there")
 	os.remove(os.path.join(home, "lock"))
+
+	before = len(seen)
+	code, out = run(env, many)
+	check([images_of(x["body"]) for x in seen[before:]] == [5, 5], "ten views go as two even requests of 5 (%s)" % [images_of(x["body"]) for x in seen[before:]])
+	odd = subject(os.path.join(tmp, "odd"), "stone", ["front", "side"], 30)
+	open(os.path.join(odd, "stone_top.png"), "wb").write(b"not a png")
+	before = len(seen)
+	code, out = run(env, odd)
+	check(code == 3 and len(seen) == before and "not a PNG: stone_top.png" in open(os.path.join(odd, "picture_check.md")).read(),
+		"a group with a file that is not a PNG is listed not checked and nothing is sent")
+	pair = os.path.join(tmp, "pair")
+	os.makedirs(pair)
+	png(os.path.join(pair, "pair_fox.png"), 40, 20)
+	png(os.path.join(pair, "pair_wolf.png"), 40, 22)
+	code, out = run(env, pair)
+	report = open(os.path.join(pair, "picture_check.md")).read()
+	check(code == 1 and "**wolf**" in report and "sunk" in report and "1 look wrong, 0 unsure, 1 ok" in report, "two subjects in one folder are reported each on its own")
+	os.rename(os.path.join(pair, "pair_wolf.png"), os.path.join(pair, "pair_wolf2.png"))
+	before = len(seen)
+	code, out = run(env, pair, "--dry-run")
+	check("1 requests to send" in out, "a renamed view is a new question (the answer names views by file name)")
 
 	fake = os.path.join(tmp, "fake_godot.py")
 	with open(fake, "w") as f:

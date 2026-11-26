@@ -22,7 +22,8 @@ One check runs at a time (a lock file in that folder). The ledger and the stored
 live in C:/DynastyLane/picture_check (outside the clone; PICTURE_CHECK_HOME overrides).
 Key: read only from C:/DynastyLane/picture_check_key.txt (PICTURE_CHECK_KEY_FILE overrides); never printed, logged or stored.
 Stops between pictures when C:/DynastyLane/logs/queue/CANCEL exists (the lane's cancel file).
-Exit: 0 every picture checked, 1 some pictures look wrong, 2 bad use or no key, 3 stopped early (cap, time, cancel, API errors).
+Exit: 0 every picture checked, 1 some subjects look wrong, 2 bad use or no key, 3 something not checked (stopped early by the
+cap, time, cancel or API errors, or a group holding a picture that is not a PNG or is over 5 MB).
 """
 import argparse
 import base64
@@ -80,8 +81,8 @@ apart or one foot ahead; walk and run stills are mid-stride. Only an impossible 
 - The file name ends with the view: front, side, left, right, hand (a close view of the hand), wide, close, or a camera \
 direction. A long item (spear, staff, tool handle) pointing toward the camera looks short or hidden: judge its length \
 and grip from the side views, not the view that looks along it.
-- In the game world, the game itself cuts the grass short within about 1.4 m of the player so the feet show: a lower, \
-flatter, plainer patch of ground round the player's feet is normal.
+- In third-person views in the game world, the game itself cuts the grass short within about 1.4 m of the player so the \
+feet show: a lower, flatter, plainer patch of ground round the player's feet is normal.
 - Offline tools draw no world: a plain colour sky, a small flat green or grey ground plane with grid lines (0.5 m or 1 m \
 apart) and a sun brighter than the game.
 - Text in the corners and coloured name tags over items are the tester's labels. The HUD is hidden. Night or rain is \
@@ -144,9 +145,9 @@ def image_tokens(width, height):
 	return int(width * scale * height * scale / 750.0) + 100
 
 
-def worst_case(sizes):
+def worst_case(sizes, about=""):
 	"""The most one request with pictures of these sizes could cost: every input token as a cache write, all max_tokens out."""
-	tokens = sum(image_tokens(w, h) for w, h in sizes) + len(SYSTEM) // 3 + 600
+	tokens = sum(image_tokens(w, h) for w, h in sizes) + (len(SYSTEM) + len(about)) // 3 + 600
 	return tokens * PRICE["cache_write"] / 1e6 + MAX_TOKENS * PRICE["output"] / 1e6
 
 
@@ -321,7 +322,7 @@ def write_report(out_dir, rows, ledger, stopped):
 		lines += ["", "Stopped early: " + stopped]
 
 	def problem_lines(sub):
-		return ["  - %s (%s, sure: %s) in %s: %s. Where: %s." % (p["kind"], p["severity"], p["confidence"], ", ".join(p["views"]) or "?",
+		return ["  - %s (%s, sure: %s) in %s: %s. Where: %s." % (p["kind"], p["severity"], p["confidence"], ", ".join(map(str, p["views"])) or "?",
 			str(p["what"]).rstrip("."), str(p["where"]).rstrip(".")) for p in sub["problems"]]
 
 	lines += ["", "## What looks wrong (most serious first)", ""]
@@ -340,33 +341,42 @@ def write_report(out_dir, rows, ledger, stopped):
 
 
 def make_groups(pictures, about):
-	"""The pictures of one folder are the views of one subject: one request each, at most MAX_GROUP_PICTURES pictures and
-	MAX_GROUP_BYTES. Returns (folder, [(path, data, size)], about text, digest, why not sendable or "")."""
+	"""The pictures of one folder are the views of one subject: one request each, at most MAX_GROUP_PICTURES pictures (a bigger
+	folder is split evenly, 9 views as 5 + 4) and MAX_GROUP_BYTES. The bytes are read here for the digest and dropped (read
+	again just before sending, so a sweep's thousand pictures are never all in memory).
+	Returns (folder, [(path, bytes on disk, (w, h) or None)], about text, digest, why not sendable or "")."""
 	by_folder = {}
 	for path in pictures:
 		by_folder.setdefault(os.path.dirname(path), []).append(path)
 	groups = []
 	for folder in sorted(by_folder):
+		paths = sorted(by_folder[folder])
+		per = -(-len(paths) // -(-len(paths) // MAX_GROUP_PICTURES))   # even shares of at most MAX_GROUP_PICTURES
+		text = about_for(paths[0], about)
 		chunk, chunk_bytes, chunks = [], 0, []
-		for path in sorted(by_folder[folder]):
+		for path in paths:
 			with open(path, "rb") as f:
-				data = f.read()
-			if chunk and (len(chunk) >= MAX_GROUP_PICTURES or chunk_bytes + len(data) > MAX_GROUP_BYTES):
+				head = f.read(24)
+			size_on_disk = os.path.getsize(path)
+			if chunk and (len(chunk) >= per or chunk_bytes + size_on_disk > MAX_GROUP_BYTES):
 				chunks.append(chunk)
 				chunk, chunk_bytes = [], 0
-			chunk.append((path, data, png_size(data)))
-			chunk_bytes += len(data)
+			chunk.append((path, size_on_disk, png_size(head)))
+			chunk_bytes += size_on_disk
 		if chunk:
 			chunks.append(chunk)
-		text = about_for(chunks[0][0][0], about)
 		for chunk in chunks:
-			digest = hashlib.sha256(b"".join(d for _p, d, _s in chunk) + text.encode("utf-8")).hexdigest() + ":" + PROMPT_VERSION
+			h = hashlib.sha256(text.encode("utf-8"))
+			for path, _n, _s in chunk:
+				h.update(os.path.basename(path).encode("utf-8") + b"\0")   # the answer names its views by file name
+				with open(path, "rb") as f:
+					h.update(f.read())
 			why = ""
-			if any(not s for _p, _d, s in chunk):
-				why = "not a PNG: " + ", ".join(os.path.basename(p) for p, _d, s in chunk if not s)
-			elif any(len(d) > MAX_IMAGE_BYTES for _p, d, _s in chunk):
-				why = "larger than 5 MB, the API's limit: " + ", ".join(os.path.basename(p) for p, d, _s in chunk if len(d) > MAX_IMAGE_BYTES)
-			groups.append((folder.replace("\\", "/"), chunk, text, digest, why))
+			if any(not s for _p, _n, s in chunk):
+				why = "not a PNG: " + ", ".join(os.path.basename(p) for p, _n, s in chunk if not s)
+			elif any(n > MAX_IMAGE_BYTES for _p, n, _s in chunk):
+				why = "larger than 5 MB, the API's limit: " + ", ".join(os.path.basename(p) for p, n, _s in chunk if n > MAX_IMAGE_BYTES)
+			groups.append((folder.replace("\\", "/"), chunk, text, h.hexdigest() + ":" + PROMPT_VERSION, why))
 	return groups
 
 
@@ -381,6 +391,9 @@ def main(argv):
 	ap.add_argument("--cap", type=float, default=None)
 	ap.add_argument("--recheck", action="store_true")
 	args = ap.parse_args(argv)
+	if args.max_requests < 0:
+		print("picture check: --max-requests must be 0 (no limit) or more")
+		return 2
 	if args.cap is not None and not (math.isfinite(args.cap) and args.cap >= 0):
 		print("picture check: --cap must be a dollar amount")
 		return 2
@@ -403,7 +416,7 @@ def main(argv):
 	groups = make_groups(pictures, args.about)
 	new = [g for g in groups if (args.recheck or g[3] not in answers) and not g[4]]
 	new = new[:args.max_requests or None]
-	most = sum(worst_case([s for _p, _d, s in g[1]]) for g in new)
+	most = sum(worst_case([s for _p, _n, s in g[1]], g[2]) for g in new)
 	print("picture check: %d pictures in %d subject groups, %d groups already checked, %d requests to send (%d pictures), at most $%.2f (worst case)"
 		% (len(pictures), len(groups), sum(1 for g in groups if g[3] in answers and not args.recheck), len(new), sum(len(g[1]) for g in new), most))
 	if args.dry_run:
@@ -440,7 +453,7 @@ def run(args, groups, key, answers, answers_path, out_dir, started):
 
 	rows, stopped, sent, errors_in_row = [], "", 0, 0
 	for folder, chunk, about, digest, why in groups:
-		row = {"folder": folder, "pictures": [p.replace("\\", "/") for p, _d, _s in chunk]}
+		row = {"folder": folder, "pictures": [p.replace("\\", "/") for p, _n, _s in chunk]}
 		if about:
 			row["about"] = about
 		if not args.recheck and digest in answers:
@@ -453,7 +466,7 @@ def run(args, groups, key, answers, answers_path, out_dir, started):
 			row["error"] = why
 		else:
 			reason = ""
-			worst = worst_case([s for _p, _d, s in chunk])
+			worst = worst_case([s for _p, _n, s in chunk], about)
 			if os.path.exists(CANCEL):
 				reason = "the lane's CANCEL file is there"
 			elif time.time() - started > args.time_limit:
@@ -467,7 +480,12 @@ def run(args, groups, key, answers, answers_path, out_dir, started):
 				row["error"] = "not sent: " + reason
 			else:
 				ledger.reserve(worst)
-				answer, usage, error, unseen = ask(key, [(os.path.basename(p), d) for p, d, _s in chunk], about)
+				views = []
+				for p, _n, _s in chunk:
+					with open(p, "rb") as f:
+						views.append((os.path.basename(p), f.read()))
+				answer, usage, error, unseen = ask(key, views, about)
+				del views
 				usd = cost_of(usage) + unseen * worst
 				ledger.settle(worst, usd, bool(usage))
 				sent += 1
