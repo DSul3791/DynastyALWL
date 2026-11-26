@@ -25,6 +25,8 @@ const STEP_RAD_S := 3.5                 # how fast the feet come round while ste
 const STEP_HALF_S := 0.22               # one foot's step, lifted and set down; the other foot follows
 const TWIST_MOST := 1.3                 # a faster spin than the feet can step drags them beyond this
 const LIFT_RAD := 0.4                   # the stepping thigh swings this far forward and the knee bends twice as far: the foot rises about 7 cm
+const CROUCH_LIFT_RAD := 0.2            # crouched the thighs are already forward: a smaller lift
+const REPLANT_FROM := 2.0               # radians: a yaw jump this big in one frame (a respawn, a wake at a camp, a body not drawn for a while) re-plants, no steps
 
 var player: AnimationPlayer
 var body: Node3D
@@ -57,10 +59,11 @@ func _process_modification_with_delta(delta: float) -> void:
 	var local: Vector2 = body.get_meta("leg_local", Vector2.ZERO)
 	var target: float = AvatarDriverScript.leg_turn(clip, local, bool(body.get_meta("backward", false)))
 	angle = step_angle(angle, target, delta)
-	var lift: Array = _plant(AvatarDriverScript.gait_of(clip) in STILL_CLIPS, _yaw_of(body), delta)
+	var gait: String = AvatarDriverScript.gait_of(clip)
+	var lift: Vector2 = _plant(gait in STILL_CLIPS, _yaw_of(body), delta)   # x the foot stepping (0 left, 1 right), y its lift 0..1
 	var total: float = angle + twist
 
-	if absf(total) < 0.001 and float(lift[1]) <= 0.0:
+	if absf(total) < 0.001 and lift.y <= 0.0:
 		return
 
 	if _hips == -2:
@@ -85,9 +88,9 @@ func _process_modification_with_delta(delta: float) -> void:
 	_turn_bone(s, _hips, turn, parent)
 	parent = turn * before
 
-	if float(lift[1]) > 0.0:
-		var leg: int = int(lift[0]) * 3
-		_lift_leg(s, _legs[leg], _legs[leg + 1], _legs[leg + 2], parent, turn * Vector3.RIGHT, float(lift[1]) * LIFT_RAD)
+	if lift.y > 0.0:
+		var leg: int = int(lift.x) * 3
+		_lift_leg(s, _legs[leg], _legs[leg + 1], _legs[leg + 2], parent, turn * Vector3.RIGHT, lift.y * (CROUCH_LIFT_RAD if gait == "crouch" else LIFT_RAD))
 
 	for i in _spine:
 		before = parent * s.get_bone_pose_rotation(i)
@@ -95,13 +98,17 @@ func _process_modification_with_delta(delta: float) -> void:
 		parent = back * before
 
 
-# The feet's plant for this frame: sets `twist` (clamped, eased while stepping or moving) and returns [the foot stepping (0 left, 1 right), its lift 0..1].
-func _plant(still: bool, yaw: float, delta: float) -> Array:
+# The feet's plant for this frame: sets `twist` (clamped, eased while stepping or moving) and returns (the foot stepping: 0 left, 1 right; its lift 0..1).
+func _plant(still: bool, yaw: float, delta: float) -> Vector2:
 	if is_nan(_plant_yaw):
 		_plant_yaw = yaw
 
 	var off: float = wrapf(_plant_yaw - yaw, -PI, PI)
-	var out: Array = [0, 0.0]
+	var out: Vector2 = Vector2.ZERO
+
+	if absf(off) > REPLANT_FROM:
+		off = 0.0
+		stepping = false
 
 	if not still:
 		stepping = false
@@ -124,7 +131,7 @@ func _plant(still: bool, yaw: float, delta: float) -> Array:
 			if _step_end >= 0 and half > _step_end:
 				stepping = false
 			else:
-				out = [(_first + half) % 2, sin(PI * fmod(_step_t, STEP_HALF_S) / STEP_HALF_S)]
+				out = Vector2((_first + half) % 2, sin(PI * fmod(_step_t, STEP_HALF_S) / STEP_HALF_S))
 
 	twist = clampf(off, -TWIST_MOST, TWIST_MOST)
 	_plant_yaw = yaw + twist

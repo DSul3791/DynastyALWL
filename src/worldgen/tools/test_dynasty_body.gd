@@ -203,8 +203,13 @@ func _init() -> void:
 		if absf(float(body.leg_turn.angle)) < 0.001 and absf(float(body.leg_turn.twist)) < 0.001 and not body.leg_turn.stepping:
 			break
 
-	var poses: Array = []    # [twist degrees, left foot height, right foot height] of each drawn pose
-	var watch: Callable = func() -> void: poses.append([_twist(s), s.get_bone_global_pose(s.find_bone("mixamorig_LeftFoot")).origin.y, s.get_bone_global_pose(s.find_bone("mixamorig_RightFoot")).origin.y])
+	# Each drawn pose (skeleton space, centimetres): [twist degrees, left foot height, right foot height, left knee ahead, right knee ahead].
+	var poses: Array = []
+	var bone_at: Callable = func(bone: String) -> Vector3: return s.get_bone_global_pose(s.find_bone("mixamorig_" + bone)).origin
+	var knee_ahead: Callable = func(side: String) -> float:   # the knee ahead of its hip joint, along the hips' own front (the hip line crossed with up)
+		var hip_line: Vector3 = (bone_at.call("LeftUpLeg") as Vector3) - (bone_at.call("RightUpLeg") as Vector3)
+		return ((bone_at.call(side + "Leg") as Vector3) - (bone_at.call(side + "UpLeg") as Vector3)).dot(hip_line.cross(Vector3.UP).normalized())
+	var watch: Callable = func() -> void: poses.append([_twist(s), (bone_at.call("LeftFoot") as Vector3).y, (bone_at.call("RightFoot") as Vector3).y, float(knee_ahead.call("Left")), float(knee_ahead.call("Right"))])
 	s.skeleton_updated.connect(watch)
 
 	for i in range(60):
@@ -213,7 +218,7 @@ func _init() -> void:
 		if poses.size() >= 2:
 			break
 
-	var rest: Array = poses[poses.size() - 1] if not poses.is_empty() else [0.0, 0.0, 0.0]
+	var rest: Array = poses[poses.size() - 1] if not poses.is_empty() else [0.0, 0.0, 0.0, 0.0, 0.0]
 	body.rotation.y += 0.4   # 23 degrees to the left: under STEP_FROM, the feet stay put
 	poses.clear()
 
@@ -223,13 +228,13 @@ func _init() -> void:
 		if poses.size() >= 3:
 			break
 
-	var small: Array = poses[poses.size() - 1] if not poses.is_empty() else [INF, 0.0, 0.0]
+	var small: Array = poses[poses.size() - 1] if not poses.is_empty() else [INF, 0.0, 0.0, 0.0, 0.0]
 	_check(not body.leg_turn.stepping and float(small[0]) - float(rest[0]) < -18.0 and float(small[0]) - float(rest[0]) > -28.0, "a 23 degree turn standing still: the hips stay on the planted feet, %.1f degrees right of the shoulders" % (float(rest[0]) - float(small[0])))
 	body.rotation.y += 1.0   # on to 80 degrees: the feet step round
 	poses.clear()
 	var stepped: bool = false
 
-	for i in range(20000):
+	for i in range(1200):
 		await process_frame
 		stepped = stepped or body.leg_turn.stepping
 
@@ -239,17 +244,34 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	s.skeleton_updated.disconnect(watch)
-	var up: Array = [0.0, 0.0]
+	var up: Array = [0.0, 0.0]       # each foot's highest rise, cm
+	var knee: Array = [0.0, 0.0]     # each knee's furthest forward, cm
+	var first_up: Array = [-1, -1]   # the pose each foot first rose 2 cm
 
-	for pose in poses:
-		up[0] = maxf(up[0], float(pose[1]) - float(rest[1]))
-		up[1] = maxf(up[1], float(pose[2]) - float(rest[2]))
+	for k in range(poses.size()):
+		for f in range(2):
+			var rise: float = float(poses[k][1 + f]) - float(rest[1 + f])
+			up[f] = maxf(float(up[f]), rise)
+			knee[f] = maxf(float(knee[f]), float(poses[k][3 + f]) - float(rest[3 + f]))
 
-	var end: Array = poses[poses.size() - 1] if not poses.is_empty() else [INF, 0.0, 0.0]
-	_check(stepped and not body.leg_turn.stepping, "an 80 degree turn standing still: the feet step round and stop")
-	_check(float(up[0]) > 0.04 and float(up[1]) > 0.04, "both feet lift as they step (%.1f and %.1f cm)" % [100.0 * float(up[0]), 100.0 * float(up[1])])
+			if rise > 2.0 and int(first_up[f]) < 0:
+				first_up[f] = k
+
+	var end: Array = poses[poses.size() - 1] if not poses.is_empty() else [INF, 0.0, 0.0, 0.0, 0.0]
+	_check(stepped and not body.leg_turn.stepping, "an 80 degree turn standing still: the feet step round and stop (in 1200 frames)")
+	_check(float(up[0]) > 4.0 and float(up[1]) > 4.0, "both feet lift as they step (%.1f and %.1f cm)" % [float(up[0]), float(up[1])])
+	_check(float(knee[0]) > 5.0 and float(knee[1]) > 5.0, "each stepping knee comes forward, not back (%.1f and %.1f cm)" % [float(knee[0]), float(knee[1])])
+	_check(int(first_up[0]) >= 0 and int(first_up[0]) < int(first_up[1]), "turning left the left foot steps first (poses %d and %d)" % [int(first_up[0]), int(first_up[1])])
 	_check(absf(float(end[0]) - float(rest[0])) < 3.0, "after the steps the hips are under the shoulders again (%.1f degrees)" % (float(end[0]) - float(rest[0])))
-	_check(absf(float(end[1]) - float(rest[1])) < 0.01 and absf(float(end[2]) - float(rest[2])) < 0.01, "and both feet are down")
+	_check(absf(float(end[1]) - float(rest[1])) < 1.0 and absf(float(end[2]) - float(rest[2])) < 1.0, "and both feet are down")
+
+	# A yaw jump (a respawn, a wake at a camp) re-plants the feet where he now stands: no steps.
+	body.rotation.y += PI * 0.9
+
+	for i in range(3):
+		await process_frame
+
+	_check(not body.leg_turn.stepping and absf(float(body.leg_turn.twist)) < 0.001, "a 162 degree jump in one frame re-plants the feet, no steps")
 	body.rotation.y = 0.0
 
 	print("dynasty body tests: %d failures" % _fails)
