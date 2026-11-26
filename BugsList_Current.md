@@ -1712,7 +1712,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 162. A short freeze the first time a sleeved garment is worn
 
-**Found by:** test, Lane A pictures of PR #1951 (QA #15 follow-up), 26 Nov 2026: "worn shell: padded made in 36 ms", up to 49 ms; tunic 36 to 37 ms, on the main thread the first time each garment's fitted cloth layer was made. **Status: Fix in PR, awaiting merge.** The layers (`src/client/worn_shell.gd`) are now made on a worker thread, for all three sleeved garments at once, started as soon as the first body is made (`dynasty_body.gd` setup) and again when a body takes its width shapes. A garment worn before its worker is done hangs its layer at once without a mesh, and the body puts the mesh on a frame or a few later. Guarded by `test_dynasty_worn`. Not yet played.
+**Found by:** test, Lane A pictures of PR #1951 (QA #15 follow-up), 26 Nov 2026: "worn shell: padded made in 36 ms", up to 49 ms; tunic 36 to 37 ms, on the main thread the first time each garment's fitted cloth layer was made. **Status: Fix in PR, awaiting merge.** The layers (`src/client/worn_shell.gd`) are now made on a worker thread, for all three sleeved garments at once, started as soon as the first body is made (`dynasty_body.gd` setup) and again when a body first wears the shared shaped mesh of the width sliders; each garment's mesh is then built the first time it is worn. A garment worn before its worker is done hangs its layer at once without a mesh, and the body puts the mesh on a frame or a few later. Guarded by `test_dynasty_worn`. Not yet played.
 
 ## Rewrite interpretation
 

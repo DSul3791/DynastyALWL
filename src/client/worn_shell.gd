@@ -28,6 +28,8 @@ const OUT_M := {"tunic": 0.01, "padded": 0.018, "mailshirt": 0.024}
 static var _cache: Dictionary = {}      # "<mesh id>|<builder>" -> ArrayMesh (or null: a mesh that is not one skinned body)
 static var _keep: Array = []            # the source meshes, so a cached id is never reused by a new mesh
 static var _jobs: Dictionary = {}       # mesh id -> {"task": worker task id, "data": what it works on}
+static var _done: Dictionary = {}       # mesh id -> a finished job's data, its garments' meshes built when first asked for (_built)
+static var _seen: Dictionary = {}       # mesh id -> true once prewarmed
 
 
 static func covers(builder: String) -> bool:
@@ -51,9 +53,10 @@ static func prewarm(source: Mesh, skin: Skin, skeleton: Skeleton3D) -> void:
 
 	var id: int = source.get_instance_id()
 
-	if _jobs.has(id) or _cache.has(_key(source, str(REGIONS.keys()[0]))):
+	if _seen.has(id):
 		return
 
+	_seen[id] = true
 	_keep.append(source)
 	var data: Dictionary = _gather(source as ArrayMesh, skin, skeleton)
 	data["started"] = Time.get_ticks_msec()
@@ -61,7 +64,7 @@ static func prewarm(source: Mesh, skin: Skin, skeleton: Skeleton3D) -> void:
 	_jobs[id] = {"task": WorkerThreadPool.add_task(_compute.bind(data), false, "worn shell"), "data": data}
 
 
-# Build the meshes of a finished job (or wait for it when `block`). False when it is still running.
+# Join a finished job (or wait for it when `block`); its meshes are built later, one garment at a time, when asked for. False when it is still running.
 static func _collect(id: int, block: bool) -> bool:
 	if not _jobs.has(id):
 		return true
@@ -74,13 +77,29 @@ static func _collect(id: int, block: bool) -> bool:
 	WorkerThreadPool.wait_for_task_completion(task)
 	var data: Dictionary = _jobs[id]["data"]
 	_jobs.erase(id)
-	var t0: int = Time.get_ticks_msec()
-
-	for builder in REGIONS:
-		_cache[_key(data["mesh"], str(builder))] = _finish(data, str(builder))
-
-	FreezeWatchScript.printer.line("worn shell: made on a worker in %d ms, finished in %d ms" % [t0 - int(data["started"]), Time.get_ticks_msec() - t0])
+	_done[id] = data
+	FreezeWatchScript.printer.line("worn shell: made on a worker in %d ms" % (Time.get_ticks_msec() - int(data["started"])))
 	return true
+
+
+# The garment's mesh over `source` from its joined job, built on first ask (only the garments actually worn are built); the job's data goes once all are.
+static func _built(source: Mesh, builder: String) -> ArrayMesh:
+	var key: String = _key(source, builder)
+	var id: int = source.get_instance_id()
+
+	if not _cache.has(key) and _done.has(id):
+		var t0: int = Time.get_ticks_msec()
+		_cache[key] = _finish(_done[id], builder)
+		FreezeWatchScript.printer.line("worn shell: %s finished in %d ms" % [builder, Time.get_ticks_msec() - t0])
+		var all: bool = true
+
+		for other in REGIONS:
+			all = all and _cache.has(_key(source, str(other)))
+
+		if all:
+			_done.erase(id)
+
+	return _cache.get(key, null)
 
 
 # The layer's mesh, or null while its worker is still making it (or when it cannot be made: see making()).
@@ -92,7 +111,7 @@ static func ready_mesh(source: Mesh, skin: Skin, skeleton: Skeleton3D, builder: 
 		prewarm(source, skin, skeleton)
 		_collect(source.get_instance_id(), false)
 
-	return _cache.get(_key(source, builder), null)
+	return _built(source, builder)
 
 
 # True while the layers over `source` are being made.
@@ -107,10 +126,11 @@ static func shell_mesh(source: Mesh, skin: Skin, skeleton: Skeleton3D, builder: 
 
 	prewarm(source, skin, skeleton)
 	_collect(source.get_instance_id(), true)
-	return _cache.get(_key(source, builder), null)
+	return _built(source, builder)
 
 
-# Finish every running job, so no task outlives the bodies (dynasty_body.gd frees its last body this way) and a test sees every layer made.
+# Join every running job, so no task outlives the bodies (dynasty_body.gd frees its last body this way) and a test sees every layer ready. Builds no mesh: a body freed
+# before it was dressed pays only the join.
 static func wait() -> void:
 	for id in _jobs.keys():
 		_collect(int(id), true)

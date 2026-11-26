@@ -275,7 +275,8 @@ func _init() -> void:
 		await process_frame
 		frames_waited += 1
 
-	_check(late != null and late.mesh != null, "a new mesh's layer is made on a worker and put on by the body (%s, %d frames; the attach took %d ms)" % ["it waited" if was_waiting else "ready at once", frames_waited, hang_ms])
+	_check(was_waiting and late.mesh != null and late.mesh.get_blend_shape_count() == body.body_mesh.mesh.get_blend_shape_count(),
+		"a new mesh's layer is made on a worker (the attach did not wait: %s, %d ms) and put on by the body %d frames later" % ["yes" if was_waiting else "NO", hang_ms, frames_waited])
 	body.body_mesh.mesh = plain
 	# The width sliders (dynasty_shapes.gd): a shaped body's layer is made from the shaped mesh, carries the same shapes and takes the body's weights.
 	var g: Dictionary = Generator.make_genome()

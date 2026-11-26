@@ -861,6 +861,7 @@ func _set_widths(g: Dictionary) -> void:
 
 	if body_mesh.mesh != shaped:
 		body_mesh.mesh = shaped
+		WornShell.prewarm(shaped, body_mesh.skin, skeleton)      # the fitted clothing layers over the shaped mesh, on a worker, once for every body that shares it
 		_skin_material = null          # a new mesh drops the override: dress makes it again
 
 	for key in Shapes.NAMES:
