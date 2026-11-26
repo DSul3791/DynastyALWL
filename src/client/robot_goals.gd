@@ -255,7 +255,7 @@ func _hunt_goal() -> String:
 		if Time.get_ticks_msec() > _end_ms - 60000:
 			break
 
-		await r._hunt(sp, 90.0)
+		var _chased: bool = await r._hunt(sp, 90.0)
 		r._release_all()
 		body = _new_carcass(known)
 
