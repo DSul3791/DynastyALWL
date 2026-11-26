@@ -64,7 +64,8 @@ func _init() -> void:
 	_check(absf(body.animation_player.get_animation("pick_overhead").length - 1.0) < 0.02, "pick clip is the 1.0 s swing (%.3f)" % body.animation_player.get_animation("pick_overhead").length)
 	_check(AvatarDriverScript.crouch_walk_clip(Vector2(0.0, -1.0)) == "crouch_walk" and AvatarDriverScript.crouch_walk_clip(Vector2(0.0, 1.0)) == "crouch_walk_back" and AvatarDriverScript.crouch_walk_clip(Vector2(1.0, 0.0)) == "crouch_walk_right", "crouch clip by direction")
 	_check(body.hand_mount_r != null and body.hand_mount_l != null and body.head_mount != null, "mounts")
-	_check(absf(body.hand_mount_r.global_transform.basis.get_scale().x - 1.0) < 0.01, "right mount is metre scale")
+	await process_frame      # in the tree first: in _init a global transform is not ready (the engine said "!is_inside_tree()" and gave the identity, Lane A pr1961)
+	_check(body.hand_mount_r.is_inside_tree() and absf(body.hand_mount_r.global_transform.basis.get_scale().x - 1.0) < 0.01, "right mount is metre scale")
 	var s: Skeleton3D = body.skeleton
 
 	for spec in [["lie", 0.5], ["sit", 0.5]]:
