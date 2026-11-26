@@ -164,7 +164,7 @@ func _init() -> void:
 	poses.append([s.get_bone_global_pose(hips_i).basis.get_rotation_quaternion(), s.get_bone_global_pose(chest_i).basis.get_rotation_quaternion(), float(body.leg_turn.angle)])
 	var hips_turn: Quaternion = (poses[1][0] as Quaternion) * (poses[0][0] as Quaternion).inverse()
 	var chest_turn: Quaternion = (poses[1][1] as Quaternion) * (poses[0][1] as Quaternion).inverse()
-	_check(absf(rad_to_deg(hips_turn.get_angle()) - 80.0) < 1.0 and absf(hips_turn.get_axis().y) > 0.99, "walking right: the hips turn %.1f degrees about the vertical (the legs' angle %.1f)" % [rad_to_deg(hips_turn.get_angle()), rad_to_deg(float(poses[1][2]))])
+	_check(absf(rad_to_deg(hips_turn.get_angle()) - 80.0) < 1.0 and hips_turn.get_axis().y < -0.99, "walking right: the hips turn %.1f degrees about the vertical, to the right (the legs' angle %.1f)" % [rad_to_deg(hips_turn.get_angle()), rad_to_deg(float(poses[1][2]))])
 	_check(rad_to_deg(chest_turn.get_angle()) < 1.0, "and the chest stays on the look (%.2f degrees)" % rad_to_deg(chest_turn.get_angle()))
 	_check(is_equal_approx(body.leg_turn.step_angle(0.0, 1.4, 0.1), 0.5), "the turn eases in at 5 radians a second, no snap")
 	body.set_meta("leg_local", Vector2.ZERO)
