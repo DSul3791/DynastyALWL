@@ -249,6 +249,18 @@ var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, lef
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: signature} world items the peer was told about
 var _sync_seen: Dictionary = {}     # peer -> what the full sync last found for them, cell by cell (_seen_of): the cells it may skip whole
+# The still records (natural scatter: rocks, boulders, loose stones laid out from the seed) stay filed between syncs, so the full sync files
+# only the others again (step 2 of the sync by change, 26 Nov 2026). Moved by _refile where a record's position is set, and checked
+# STILL_CHECK at a time each sync in case one was moved anywhere else.
+var _still_fine: Dictionary = {}    # FINE_M cell -> {id: true}
+var _still_near: Dictionary = {}    # NEAR_M cell -> {id: true}
+var _still_at: Dictionary = {}      # id -> [FINE_M cell, NEAR_M cell]
+var _rest: Dictionary = {}          # id -> true: every other record, filed again each full sync
+var _still_next: int = 0            # ids below this have been filed (still or rest)
+var _still_valid: bool = false      # false: file everything again at the next full sync (a load, a reset)
+var _still_queue: Array = []        # the still ids left to check this round
+var _still_moved: int = 0           # still records found in the wrong cell by the check (none expected: _refile moves them)
+const STILL_CHECK := 1024           # still records checked each full sync: every one about every 15 s at 15,000
 var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
 var _wide_piles: Dictionary = {}    # id -> true: cone piles wider than WIDE_PILE_M, which a drop can join from beyond the sync grid's near cells (PR #1322)
 var _wide_piles_built: bool = false # false until the first drop files the piles a load or reset brought in
@@ -3484,6 +3496,7 @@ func reset_world() -> int:
 	_lit_valid = false
 	_bed_cache.clear()
 	_sync_grid = {}
+	_still_valid = false   # every record filed again at the next full sync
 	_wide_piles.clear()
 	_wide_piles_built = false
 
@@ -3636,6 +3649,7 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 
 				if rest != it["pos"]:
 					it["pos"] = rest
+					_refile(id)
 					_dirty = true
 
 			continue
@@ -3657,6 +3671,7 @@ func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> vo
 
 	for id in loose:
 		_items[id]["pos"] = _edit_rest(_items[id]["pos"], centre, radius, near, fill)
+		_refile(id)
 		_wake_log(id)   # a log on ground that was dug or filled under it may roll
 		_dirty = true
 
@@ -3839,6 +3854,7 @@ func _resettle_on(at: Vector3, reach: float) -> void:
 
 		if rest != it["pos"]:
 			it["pos"] = rest
+			_refile(id)
 			_wake_log(id)
 			_dirty = true
 
@@ -8530,9 +8546,16 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	_site_memo = {}   # each player's on-hand counts for the sites' lists, worked out once this sync (_site_view)
 	var rec_memo: Dictionary = {}   # world id -> _sync_record, worked out once this sync for every player near it
 	var infos: Dictionary = {}      # fine cell -> [sum, every record the same for every player, lowest y, highest y], once this sync
+	var cell_ids: Dictionary = {}   # fine cell -> its ids, still and rest, once this sync
 	_file_site_cells(false)
 
-	for id in _items:
+	_still_file()
+
+	for id in _rest.keys():
+		if not _items.has(id):
+			_rest.erase(id)   # gone
+			continue
+
 		var it: Dictionary = _items[id]
 		var at: Vector3 = it["pos"]
 		var cell: Vector2i = Vector2i(int(floor(at.x / NEAR_M)), int(floor(at.z / NEAR_M)))
@@ -8550,6 +8573,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 			fine[fc] = [id]
 		else:
 			fine[fc].append(id)
+
+	for cell in _still_near:   # the still records, filed already: their ids first in each cell
+		grid[cell] = (_still_near[cell] as Dictionary).keys() + grid[cell] if grid.has(cell) else (_still_near[cell] as Dictionary).keys()
 
 	var t_scan: int = Time.get_ticks_usec()
 	_sync_grid = grid
@@ -8588,8 +8614,17 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 			for cz in range(z0, z1 + 1):
 				var fc: Vector2i = Vector2i(cx, cz)
+				var ids: Array = cell_ids.get(fc, [])
 
-				if not fine.has(fc):
+				if not cell_ids.has(fc):
+					ids = (_still_fine[fc] as Dictionary).keys() if _still_fine.has(fc) else []
+
+					if fine.has(fc):
+						ids.append_array(fine[fc])
+
+					cell_ids[fc] = ids
+
+				if ids.is_empty():
 					continue
 
 				var south: float = float(cz) * FINE_M - here.z
@@ -8607,7 +8642,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 					info = infos.get(fc, [])
 
 					if info.is_empty():
-						info = _cell_info(fine[fc], rec_memo)
+						info = _cell_info(ids, rec_memo)
 						infos[fc] = info
 
 					var dy: float = maxf(absf(float(info[2]) - here.y), absf(float(info[3]) - here.y))
@@ -8628,7 +8663,10 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				if got.is_empty():
 					held[fc] = got
 
-				for id in fine[fc]:
+				for id in ids:
+					if not _items.has(id):
+						continue   # a still record taken since it was filed (the check drops it from its cell)
+
 					var it: Dictionary = _items[id]
 					looked += 1
 
@@ -8716,9 +8754,103 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	_site_cells = {}
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
 	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
-	_sync_detail = "(%d records: grid %.0f, scan %.0f (%d looked at, %d cells skipped), bog %.1f (built %d fields in %.1f), send %.0f for %d items)" % [_items.size(),
+	_sync_detail = "(%d records, %d still: grid %.0f, scan %.0f (%d looked at, %d cells skipped), bog %.1f (built %d fields in %.1f), send %.0f for %d items; %d still moved unseen)" % [_items.size(), _still_at.size(),
 		float(t_scan - t_grid) / 1000.0, total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0 - float(bog_usec) / 1000.0, looked, skipped,
-		float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0, float(send_usec) / 1000.0, sent]
+		float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0, float(send_usec) / 1000.0, sent, _still_moved]
+
+
+# Files the records made since the last full sync (all of them after a load or a reset): the still ones in their cells for good, the
+# others in _rest. Then checks STILL_CHECK still records: one gone is dropped, one moved without _refile is moved (and counted).
+func _still_file() -> void:
+	if not _still_valid or _next_id < _still_next:
+		_still_fine = {}
+		_still_near = {}
+		_still_at = {}
+		_rest = {}
+		_still_queue = []
+
+		for id in _items:
+			_file_one(int(id))
+
+		_still_valid = true
+	else:
+		for id in range(_still_next, _next_id):
+			if _items.has(id):
+				_file_one(id)
+
+	_still_next = _next_id
+
+	if _still_queue.is_empty():
+		_still_queue = _still_at.keys()
+
+	for k in mini(STILL_CHECK, _still_queue.size()):
+		var id: int = int(_still_queue.pop_back())
+
+		if not _still_at.has(id):
+			continue
+
+		if not _items.has(id) or not _items[id].has("scatter"):
+			_still_out(id)
+
+			if _items.has(id):
+				_rest[id] = true   # no longer still (not expected: a record keeps its kind)
+
+			continue
+
+		var was: Array = _still_at[id]
+		_still_put(id)
+
+		if _still_at[id] != was:
+			_still_moved += 1
+
+
+func _file_one(id: int) -> void:
+	if _items[id].has("scatter"):
+		_still_put(id)
+	else:
+		_rest[id] = true
+
+
+# Where a record's position is set: a still record moves to its new cell at once (the others are filed again each full sync).
+func _refile(id: int) -> void:
+	if _still_at.has(id) and _items.has(id):
+		_still_put(id)
+
+
+func _still_put(id: int) -> void:
+	var at: Vector3 = _items[id]["pos"]
+	var fc: Vector2i = Vector2i(int(floor(at.x / FINE_M)), int(floor(at.z / FINE_M)))
+	var cell: Vector2i = Vector2i(int(floor(at.x / NEAR_M)), int(floor(at.z / NEAR_M)))
+
+	if _still_at.has(id):
+		if _still_at[id][0] == fc and _still_at[id][1] == cell:
+			return
+
+		_still_out(id)
+
+	if not _still_fine.has(fc):
+		_still_fine[fc] = {}
+
+	if not _still_near.has(cell):
+		_still_near[cell] = {}
+
+	_still_fine[fc][id] = true
+	_still_near[cell][id] = true
+	_still_at[id] = [fc, cell]
+
+
+func _still_out(id: int) -> void:
+	var was: Array = _still_at[id]
+	(_still_fine[was[0]] as Dictionary).erase(id)
+	(_still_near[was[1]] as Dictionary).erase(id)
+
+	if (_still_fine[was[0]] as Dictionary).is_empty():
+		_still_fine.erase(was[0])
+
+	if (_still_near[was[1]] as Dictionary).is_empty():
+		_still_near.erase(was[1])
+
+	_still_at.erase(id)
 
 
 # A road's quick sync (see _sync_world_items): only the records in `fresh`, for the players near a spot in `near_to`.
@@ -8838,6 +8970,9 @@ func _cell_info(ids: Array, rec_memo: Dictionary) -> Array:
 	var high: float = -INF
 
 	for id in ids:
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 		var rec: Array = rec_memo.get(id, [])
 
@@ -9175,6 +9310,7 @@ func _lift_out_of_slabs() -> void:
 
 		if not is_nan(best):
 			it["pos"] = Vector3(it["pos"].x, best, it["pos"].z)
+			_refile(id)
 			_load_changed[id] = true
 			_dirty = true
 			lifted_at_load += 1
@@ -9225,6 +9361,7 @@ func _load_world_items() -> void:
 		parsed["by_rows"] = all_by
 
 	_next_id = int(parsed.get("next_id", 1))
+	_still_valid = false   # the loaded records are filed at the next full sync
 
 	_picked = parsed.get("picked", {})
 	_stripped = {}
@@ -11771,6 +11908,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 					if not is_nan(ground):
 						_items[id]["pos"] = Vector3(at.x, ground, at.z)
+						_refile(id)
 
 	var hinge: Vector3 = fall["hinge"]
 	var tip: Vector3 = hinge + (fall["along"] as Vector3) * float(fall["length"])
@@ -11798,6 +11936,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 	for id in logs:
 		_items[id]["pos"] += along * clear
+		_refile(id)
 		_wake_log(id)
 
 	if bool(fall.get("undermined", false)) or (_items.has(stump_id) and _stump_undermined(_items[stump_id])):
@@ -23212,6 +23351,7 @@ func _pipe_unsplit(undo: Array) -> void:
 		if _items.has(id):
 			_items[id]["struct"] = (row[1][0] as Dictionary).duplicate()
 			_items[id]["pos"] = row[1][1]
+			_refile(id)
 			_water.remove(id)
 			_water_kind.erase(id)
 			_water_add(id)
