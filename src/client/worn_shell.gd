@@ -77,6 +77,8 @@ static func _collect(id: int, block: bool) -> bool:
 	WorkerThreadPool.wait_for_task_completion(task)
 	var data: Dictionary = _jobs[id]["data"]
 	_jobs.erase(id)
+	data.erase("surfaces")       # the body's arrays (several MB with the width shapes): the build needs only the worked garments
+	data.erase("in_region")
 	_done[id] = data
 	FreezeWatchScript.printer.line("worn shell: made on a worker in %d ms" % (Time.get_ticks_msec() - int(data["started"])))
 	return true
@@ -90,6 +92,7 @@ static func _built(source: Mesh, builder: String) -> ArrayMesh:
 	if not _cache.has(key) and _done.has(id):
 		var t0: int = Time.get_ticks_msec()
 		_cache[key] = _finish(_done[id], builder)
+		(_done[id]["made"] as Dictionary).erase(builder)      # built: its arrays are the mesh's now
 		FreezeWatchScript.printer.line("worn shell: %s finished in %d ms" % [builder, Time.get_ticks_msec() - t0])
 		var all: bool = true
 
