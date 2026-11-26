@@ -161,6 +161,29 @@ func _initialize() -> void:
 
 	check(missing.is_empty(), "every model look has its measured ground_m (missing: %s): run tools/ground_check.gd and tools/ground_offsets.py for a new model" % str(missing))
 
+	# A bedded-down animal is not drawn dead (BugsList 178, picture sweep 26 Nov 2026): in a file that has WalkSlowWounded2Lying, the
+	# LyingBreathing (Lying_Breathing, Lying) clip the lie role found by its name is where that wounded lie ends, flat on its side.
+	# Every such look names its lie (role 19), and never one of those.
+	var clip_lists: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/model_clips.json"))
+	var dead_lies: Array = []
+
+	for kind in rows:
+		var row: Dictionary = rows[kind]
+
+		for look in [row] + ((row.get("variants", []) as Array)):
+			var scene: String = str((look as Dictionary).get("scene", row.get("scene", "")))
+			var names: Array = (clip_lists.get(scene, []) as Array).map(func(c: Variant) -> String: return str((c as Array)[0]))
+
+			if not names.has("WalkSlowWounded2Lying"):
+				continue
+
+			var lie: String = str(((look as Dictionary).get("clips", row.get("clips", {})) as Dictionary).get("19", ""))
+
+			if lie == "" or lie.to_lower().contains("lying") or not names.has(lie):
+				dead_lies.append("%s %s: %s" % [kind, scene.get_file(), lie if lie != "" else "none"])
+
+	check(dead_lies.is_empty(), "every look of the wounded-lie pack names a healthy lie (%s)" % str(dead_lies))
+
 	# The animals line for the log (QA #12): it runs with bodies drawn and with none, and starts its counts again.
 	v._report_batches = 3
 	v._report_held = 2
