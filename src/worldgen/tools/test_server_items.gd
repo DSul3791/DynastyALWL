@@ -2094,31 +2094,31 @@ func _init() -> void:
 	# drives the clock by hand, and on a loaded machine more than ABSENT_MS of real time went by; the player was parked out of the world and
 	# the thirst checks below failed ("no water within reach"). The control: on, the server's setting, the same quiet player is parked by
 	# tick and cannot drink.
-	var pd: String = "user://test_server_items_park"
-	DirAccess.make_dir_recursive_absolute(pd)
+	var park_dir: String = "user://test_server_items_park"
+	DirAccess.make_dir_recursive_absolute(park_dir)
 
-	for file in DirAccess.get_files_at(pd):
-		DirAccess.remove_absolute(pd + "/" + file)
+	for file in DirAccess.get_files_at(park_dir):
+		DirAccess.remove_absolute(park_dir + "/" + file)
 
-	var pk = make(pd)
-	pk.water_near = func(_pos, _reach): return true
-	pk.peer_connected_hello(1, "parkkey000001")
-	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
-	pk._vitals_cfg["thirst"]["drink_pace_ms"] = 0
-	pk.vitals_of(1)["wet"] = 0.0
-	pk._heard_ms[1] = Time.get_ticks_msec() - ItemsScript.ABSENT_MS - 5000
-	pk._park_check_ms = 0
-	pk.tick(0.05)
-	check(not pk.is_absent(1), "off (the default): tick parks no player, whatever the real time since its report")
-	pk.park_quiet_players = true
-	pk._park_check_ms = 0
-	pk.tick(0.05)
-	check(pk.is_absent(1), "on (the game's setting): a player not heard from for ABSENT_MS of real time is parked by tick")
-	pk.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
-	check(float(pk.vitals_of(1)["wet"]) == 0.0, "and a parked player cannot drink: what failed the thirst checks below on a slow run")
-	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
-	pk.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
-	check(not pk.is_absent(1) and float(pk.vitals_of(1)["wet"]) > 0.0, "its next report puts it back and the same drink goes down (control)")
+	var park_items = make(park_dir)
+	park_items.water_near = func(_pos, _reach): return true
+	park_items.peer_connected_hello(1, "parkkey000001")
+	park_items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	park_items._vitals_cfg["thirst"]["drink_pace_ms"] = 0
+	park_items.vitals_of(1)["wet"] = 0.0
+	park_items._heard_ms[1] = Time.get_ticks_msec() - ItemsScript.ABSENT_MS - 5000
+	park_items._park_check_ms = 0
+	park_items.tick(0.05)
+	check(not park_items.is_absent(1), "off (the default): tick parks no player, whatever the real time since its report")
+	park_items.park_quiet_players = true
+	park_items._park_check_ms = 0
+	park_items.tick(0.05)
+	check(park_items.is_absent(1), "on (the game's setting): a player not heard from for ABSENT_MS of real time is parked by tick")
+	park_items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(float(park_items.vitals_of(1)["wet"]) == 0.0, "and a parked player cannot drink: what failed the thirst checks below on a slow run")
+	park_items.report_position(1, Vector3(0.0, 10.0, 0.0))
+	park_items.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(not park_items.is_absent(1) and float(park_items.vitals_of(1)["wet"]) > 0.0, "its next report puts it back and the same drink goes down (control)")
 
 	# Thirst (job 67): one drink a game day, water at the edge, no regeneration when parched.
 	var td: String = "user://test_server_items_thirst"
