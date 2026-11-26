@@ -101,6 +101,19 @@ def images_of(body):
 	return sum(1 for c in body["messages"][0]["content"] if c.get("type") == "image")
 
 
+def alive_pid(pid):
+	if os.name == "nt":
+		return str(pid) in subprocess.run(["tasklist", "/FI", "PID eq %d" % pid], capture_output=True, text=True).stdout
+	try:
+		os.kill(pid, 0)
+	except OSError:
+		return False
+	try:
+		return open("/proc/%d/stat" % pid).read().rsplit(")", 1)[1].split()[0] != "Z"
+	except OSError:
+		return True
+
+
 def run(env, *args):
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_check.py")] + list(args), env=env,
 		capture_output=True, text=True)
@@ -240,6 +253,11 @@ def main():
 			"    child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'])\n"
 			"    open(os.environ['FAKE_SLEEP'], 'w').write(str(child.pid))\n"
 			"    time.sleep(120)\n"
+			"if os.environ.get('FAKE_ESCAPE'):\n"
+			"    kw = {'creationflags': 0x00000008 | 0x00000200} if os.name == 'nt' else {'start_new_session': True}\n"
+			"    child = subprocess.Popen([sys.executable, '-c', 'import time, sys; time.sleep(120)', '--store=' + os.environ['TMP'] + '/rig/store'],\n"
+			"        stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **kw)\n"
+			"    open(os.environ['FAKE_ESCAPE'], 'w').write(str(child.pid))\n"
 			"rig = 'tools/look_rig.sh' in sys.argv\n"
 			"if os.environ.get('FAKE_REFUSE') and not rig:\n"
 			"    sys.exit(2)\n"
@@ -272,7 +290,7 @@ def main():
 	check(os.path.isfile(rig_mark) and " ok (exit 0" in r.stdout, "an item shot_held refuses (exit 2) is taken by look_rig.sh instead: " + r.stdout.strip().splitlines()[-2])
 	pid_file = os.path.join(tmp, "grandchild.pid")
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--max-jobs", "1",
-		"--job-limit", "3"], env=dict(senv, FAKE_SLEEP=pid_file), cwd=os.path.dirname(HERE), capture_output=True, text=True, timeout=90)
+		"--job-limit", "3s"], env=dict(senv, FAKE_SLEEP=pid_file), cwd=os.path.dirname(HERE), capture_output=True, text=True, timeout=90)
 	alive = True
 	if os.path.isfile(pid_file):
 		pid = int(open(pid_file).read())
@@ -285,6 +303,18 @@ def main():
 			except OSError:
 				alive = False
 	check("timeout 3 s" in r.stdout and not alive, "a job past --job-limit is stopped with its grandchild (%s)" % r.stdout.strip().splitlines()[-2:])
+	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--job-limit", "5"],
+		env=senv, cwd=os.path.dirname(HERE), capture_output=True, text=True)
+	check(r.returncode == 2 and "unit" in r.stderr, "a job limit without its unit is refused (5 was read as seconds)")
+	code, out = run(env, pair, "--dry-run", "--time-limit", "3600")
+	check(code == 2 and "unit" in out, "the checker refuses a time limit without its unit too")
+	esc = os.path.join(tmp, "escaped.pid")
+	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--max-jobs", "1"],
+		env=dict(senv, FAKE_ESCAPE=esc), cwd=os.path.dirname(HERE), capture_output=True, text=True, timeout=120)
+	gone = False
+	if os.path.isfile(esc):
+		gone = not alive_pid(int(open(esc).read()))
+	check(" ok (exit 0" in r.stdout and gone, "a background server that left the job's process tree is found by the job's tag and stopped (%s)" % r.stdout.strip().splitlines()[-2:])
 
 	server.shutdown()
 	print("%d failure(s)" % len(failures))
