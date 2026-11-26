@@ -53,6 +53,21 @@ func _initialize() -> void:
 	check(v._bodies.has(2) and not bool((v._bodies[2]["node"] as Node3D).get_meta("model", false)), "a wolf with no model file is drawn from the code-built body")
 	check(ResourceLoader.load_threaded_get_status(SCENE) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, "headless, nothing is asked of a worker")
 
+	# The box of a clip is kept per model file, model transform and clip: a second body of the file gets the first one's box.
+	var rig_a: Node3D = ((v._bodies[1]["node"] as Node3D).get_node("Rig") as Node3D)
+	v._clip_box(null, null, rig_a)   # the imported pose (no clip; the test model has no skeleton)
+	var memo_key: String = v._box_key(null, rig_a)
+	check(memo_key != "" and v._box_memo.has(memo_key), "a clip's box is kept under its model file and transform")
+	v._box_memo[memo_key] = AABB(Vector3.ONE, Vector3.ONE)   # marked: a box worked out again would not be this one
+	check(v._clip_box(null, null, rig_a) == AABB(Vector3.ONE, Vector3.ONE), "the kept box is given again, not worked out again")
+	(rig_a.get_child(0) as Node3D).scale *= 2.0
+	check(v._box_key(null, rig_a) != memo_key, "a model drawn at another size keeps its own box")
+	(rig_a.get_child(0) as Node3D).scale /= 2.0
+	v._box_memo.clear()
+	var bare_rig: Node3D = Node3D.new()
+	check(v._box_key(null, bare_rig) == "", "a rig with no model file keeps no box")
+	bare_rig.free()
+
 	# A colour texture's alpha test runs on a worker (_alpha_ready): false until the answer is in, then the answer _has_alpha would give.
 	var see_through: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)
 	see_through.fill(Color(1.0, 1.0, 1.0, 0.0))
