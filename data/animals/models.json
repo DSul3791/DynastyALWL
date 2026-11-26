@@ -798,7 +798,7 @@
 				"strike": "front leg kick",
 				"kick": "rear leg kick"
 			},
-			"note": "WildMesh Donkey (Realistic Animals/Donkey/SK_Donkey.fbx, textures in its Textures folder): the dark donkey with its own clips, the only donkey look since 23 Nov 2026 (Dave: \"make sure to use models that have the actions we need\"): a front leg kick in front (strike) and a rear leg kick behind (kick). The Donkey_1 look had no attack and is no longer drawn.",
+			"note": "WildMesh Donkey (Realistic Animals/Donkey/SK_Donkey.fbx, textures in its Textures folder): the dark donkey with its own clips, the only donkey look since 23 Nov 2026 (Dave: \"make sure to use models that have the actions we need\"): a front leg kick in front (strike) and a rear leg kick behind (kick). The Donkey_1 look had no attack and is no longer drawn. T_Donkey_1_Body.png's alpha is not a cut-out (no pixel fully opaque, 98% in between: a gloss map, measured 26 Nov 2026), so the body is drawn opaque; cut out, it showed white specks on its back (Lane A, pr1959_donkey_cow.png). Its Hair texture is a real cut-out.",
 			"length_m": 2.0,
 			"materials": [
 				{
@@ -807,7 +807,8 @@
 				},
 				{
 					"match": "",
-					"albedo": "res://assets/animals/donkey_2/Textures/T_Donkey_1_Body.png"
+					"albedo": "res://assets/animals/donkey_2/Textures/T_Donkey_1_Body.png",
+					"opaque": true
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Donkey",
