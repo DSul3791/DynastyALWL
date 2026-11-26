@@ -2244,6 +2244,7 @@ const DISPOSABLE_BREAK_WEAR := 10   # one heavy use: rock wear 5 (drops.json too
 
 func _on_slots(bytes: PackedByteArray) -> void:
 	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
+	var t: int = FrameProbe.start()
 	var insts: Dictionary = InventoryScript.inst_from_bytes(bytes, 1 + n * 9)
 
 	for k in n:
@@ -2261,6 +2262,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			inventory.inst[slot] = insts.get(slot, {}) if inventory.numbers[slot] != 0 else {}
 			_tool_cue(slot, was_number, was_wear, was_broken, was_most)
 
+	FrameProbe.stop("inventory: slots and their sounds", t)   # Lane A r4: one slot message took 134 ms with no chest open; named to find which step
 	_after_slots()
 
 
@@ -2279,15 +2281,16 @@ func _tool_cue(slot: int, was_number: int, was_wear: int, was_broken: bool, was_
 		tool_event.call("broke")
 
 
+# Lag fix (26 Nov 2026, Lane A Low route): opening a chest sent three slot messages in one poll and each redrew the chest screen, the
+# storage window and the hotbar on the spot (185, 98 and 109 ms). They now wait with the window for the end of the frame and redraw once.
 func _after_slots() -> void:
+	_slots_dirty = true
 	_queue_refresh()
-	_container_part.refresh()
-	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
-	refresh_hotbar()
 
 
 # Slot updates that arrive together (a pickup, a craft, a sale send several) rebuild the window once, at the end of the frame.
 var _refresh_queued: bool = false
+var _slots_dirty: bool = false   # a slot message came: the chest screen, the storage window and the hotbar redraw too
 
 
 func _queue_refresh() -> void:
@@ -2300,7 +2303,23 @@ func _queue_refresh() -> void:
 
 func _flush_refresh() -> void:
 	_refresh_queued = false
+	var t: int = FrameProbe.start()
 	_refresh()
+	FrameProbe.stop("inventory: window after slots", t)
+
+	if not _slots_dirty:
+		return
+
+	_slots_dirty = false
+	t = FrameProbe.start()
+	_container_part.refresh()
+	FrameProbe.stop("inventory: chest screen after slots", t)
+	t = FrameProbe.start()
+	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
+	FrameProbe.stop("inventory: storage window after slots", t)
+	t = FrameProbe.start()
+	refresh_hotbar()
+	FrameProbe.stop("inventory: hotbar after slots", t)
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
