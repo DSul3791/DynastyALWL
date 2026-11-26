@@ -3838,7 +3838,8 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
 	_root.add_child(body)
-	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5))}
+	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
+		"ore": str(extra.get("ore", ""))}   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
 	_boulders[id] = entry
 	_size_boulder(entry)
 

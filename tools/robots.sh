@@ -9,7 +9,7 @@
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 #   tools/robots.sh 1 drops               the link dies mid-action (6 twine queued, a basket open, asleep, in a wolf rush) and the robot comes
 #                                         straight back; a 10 s freeze; two clients as one character (about 15 min)
-#   ROBOT_S=2700 ROBOT_GOALS_S=2400 tools/robots.sh 1 goals   one new player through the goal list, no gifts (src/client/robot_goals.gd)
+#   ROBOT_S=2700 ROBOT_GOALS_S=2450 tools/robots.sh 1 goals   one new player through the goal list, no gifts (src/client/robot_goals.gd)
 #   ROBOT_S=400 tools/robots.sh 1 cold    a hard frost to 1 health, pass out, wake at a rescue spot; then goblin blows at health 1 (one robot only)
 #   ROBOT_S=200 tools/robots.sh 1 fight_goblin|fight_bandit [link]   a charging foe: shield at the warning, side-steps, jabs
 #   ROBOT_S=300 tools/robots.sh 3 bear | 3 bear_group | 2 wolves | 1 snares   (docs/ROBOT_PLAYTESTERS.md)
