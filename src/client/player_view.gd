@@ -929,7 +929,7 @@ static func held_model(number: int, item_table) -> Node3D:
 	var id: String = item_table.id_of(number)
 	var shape: String = str(HeldItem.BasicLook.entry(id).get("shape", ""))
 
-	if id == "" or not HeldItem.BasicLook.has_look(id) or not HeldItem.HELD_LOOK_TURN.has(shape):
+	if id == "" or not HeldItem.BasicLook.has_look(id) or not (HeldItem.HELD_LOOK_TURN.has(shape) or HeldItem.holds_plain_look(id, str(item_table.entry(id).get("kind", "")))):
 		return null
 
 	var node: Node3D = HeldItem.look_tool_node(id)

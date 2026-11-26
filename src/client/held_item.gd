@@ -4139,6 +4139,19 @@ static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float
 	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
 
 
+# A tool, weapon or container whose look has no hand pose of its own (HELD_LOOK_TURN: a crossbow, a sling, a whetstone, a griddle, a needle,
+# a bone club) is held as its own ground look, length along the hand's +Y like an axe's haft, near its -x end. Before, it got the grey box on a
+# stick (_make_other_model's last resort), which read as a hammer: the picture checker's held sweep, 26 Nov 2026 (10 items). A grey placeholder
+# look (BasicLook._is_placeholder) keeps the old stick: it is no better.
+const PLAIN_HELD_TURN := Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1))
+const PLAIN_HELD_KINDS := ["tool", "weapon", "container"]
+
+
+static func holds_plain_look(item_id: String, kind: String) -> bool:
+	var def: Dictionary = BasicLook.entry(item_id)
+	return kind in PLAIN_HELD_KINDS and not def.is_empty() and not HELD_LOOK_TURN.has(str(def.get("shape", ""))) and not BasicLook._is_placeholder(def)
+
+
 # A held look tool's model: its ground mesh turned and sized for the hand, the grip distance in the "grip_y" meta (see _mount_model). Static so
 # tools/shot_held.gd builds the same model; the bow and the net add their own parts in _make_look_tool_model.
 static func look_tool_node(item_id: String) -> Node3D:
@@ -4150,7 +4163,7 @@ static func look_tool_node(item_id: String) -> Node3D:
 	var node: Node3D = Node3D.new()
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.mesh = held
-	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
+	mesh.basis = (HELD_LOOK_TURN.get(shape, PLAIN_HELD_TURN) as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
 	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
 	return node
@@ -4219,6 +4232,9 @@ func _make_other_model() -> Node3D:
 
 	if look != null:
 		return look
+
+	if holds_plain_look(held_id(), str(_inv.table.entry(held_id()).get("kind", ""))):
+		return look_tool_node(held_id())
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
 	var node: Node3D = Node3D.new()
