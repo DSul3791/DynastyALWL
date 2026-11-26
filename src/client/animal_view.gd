@@ -857,6 +857,7 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_t += delta
+	_take_strides()
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall: rows read now came late because nobody read them
 	var settle: bool = now_s <= _settle_until
@@ -1136,12 +1137,14 @@ func _alpha_job(img: Image, path: String) -> void:
 	_alpha_mutex.unlock()
 
 
-# Alpha tests still running on a worker are waited for: their bound calls hold this view.
+# Alpha tests and foot measurements still running on a worker are waited for: their bound calls hold this view.
 func _exit_tree() -> void:
 	for path in _alpha_tasks:
 		WorkerThreadPool.wait_for_task_completion(int(_alpha_tasks[path]))
 
 	_alpha_tasks.clear()
+
+	_take_strides(true)   # the feet still being measured on a worker (_stride_later)
 
 
 func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
@@ -1395,17 +1398,14 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				# An in-place walk, trot or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
 				if (str(key) == "walk" or str(key) == "trot" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
 					anim.set_meta("stride_measured", true)
-					var stride_mps: float = _measure_stride(player, anim, rig)
-
 					var typed_mps: float = float(row.get(str(key) + "_mps", 0.0))   # walk_mps, trot_mps or run_mps: the speed the row says this clip was made at
 
-					if stride_mps >= 0.2 and stride_mps <= 25.0 and AnimalGait.stride_ok(stride_mps, typed_mps):
-						anim.set_meta("travel_mps", stride_mps)
-						_model_note(kind, "clip %s: feet move %.2f m/s on the ground, played at speed / %.2f" % [anim_name, stride_mps, stride_mps])
-					elif stride_mps > 0.0:
-						# The lynx walk measured 0.26 m/s and the guineafowl run 0.20 (Dave's log, 21 Nov 2026): played at a fifth of the ground
-						# speed their legs hardly moved. A measurement that far off the row's speed is a failed one.
-						_model_note(kind, "clip %s: feet measured %.2f m/s, too far from the row's %.2f: played at speed / %.2f" % [anim_name, stride_mps, typed_mps, typed_mps])
+					# In the game the feet are measured on a worker (_stride_later: 41 samples of every bone were most of a kind's first
+					# body); a tool's view, out of the tree, has no frames to collect it in and measures here.
+					if is_inside_tree():
+						_stride_later(_clip_pose(player, anim, rig), anim, kind, anim_name, typed_mps)
+					else:
+						_take_stride(anim, kind, anim_name, typed_mps, _measure_stride(player, anim, rig))
 				roles[str(key)] = anim_name
 				break
 
@@ -1543,7 +1543,10 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] hidden" % [surface, str(mi.name), name_text.strip_edges()])
 						break
 
+					# The two named pieces (Lane A 26 Nov 2026: a kind's first materials took 15-29 ms now and then) say which step that is.
+					var t_tex: int = FrameProbe.start()
 					var tex: Texture2D = load(str(entry.get("albedo", ""))) as Texture2D if ResourceLoader.exists(str(entry.get("albedo", ""))) else null
+					FrameProbe.stop("animal body: materials: load texture", t_tex)
 
 					if tex != null:
 						var mat: StandardMaterial3D = StandardMaterial3D.new()
@@ -1557,7 +1560,11 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						# Fur cards (the ruff round a bear's neck, lashes, lips) are cut out by the texture's alpha: drawn solid,
 						# their cut-away parts show as black bands. Cut them, and draw both sides of the cards.
 						# "opaque": a texture whose alpha holds something else (the goat's is nearly all zero) is drawn solid.
-						if (_has_alpha(tex) or bool(entry.get("alpha", false))) and not bool(entry.get("opaque", false)):
+						t_tex = FrameProbe.start()
+						var see_through: bool = _has_alpha(tex)
+						FrameProbe.stop("animal body: materials: alpha test", t_tex)
+
+						if (see_through or bool(entry.get("alpha", false))) and not bool(entry.get("opaque", false)):
 							mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 							mat.alpha_scissor_threshold = float(entry.get("alpha_cut", 0.5))
 							mat.cull_mode = BaseMaterial3D.CULL_DISABLED
@@ -1887,19 +1894,44 @@ func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Diction
 # The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
 # and the bone rests: no running player needed.
 func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: float = 0.0) -> PackedVector3Array:
+	return _pose_bones(_clip_pose(player, anim, rig), anim, time)
+
+
+# What _pose_bones needs of a rig, read from its nodes once: the bones' parents and imported poses, the clip's bone tracks and the nodes
+# between the skeleton and the rig (their transforms and their tracks). Plain values, so a worker can sample the clip from it while the
+# rig is drawn (_stride_later). Empty with no skeleton.
+func _clip_pose(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Dictionary:
 	var map: Dictionary = _clip_map(player, anim, rig)
 
 	if map.is_empty():
-		return PackedVector3Array()
+		return {}
 
 	var sk: Skeleton3D = map["sk"]
+	var parents: PackedInt32Array = PackedInt32Array()
 	var local: Array = []
 
 	for i in sk.get_bone_count():
+		parents.append(sk.get_bone_parent(i))
 		local.append(sk.get_bone_pose(i))      # the pose as imported (the bear stands in it on the animal sheet)
 
+	var chain: Array = []
+
+	for link in (map["chain"] as Array):      # [node, [[track, track type]]], from the skeleton up to the rig
+		chain.append([(link[0] as Node3D).transform, link[1], link[0] == sk])
+
+	return {"parents": parents, "local": local, "bones": map["bones"], "chain": chain}
+
+
+# The bones in the rig's space at `time` into a clip, from a _clip_pose. Touches no node: it is also run on a worker (_stride_job).
+static func _pose_bones(pose: Dictionary, anim: Animation, time: float) -> PackedVector3Array:
+	if pose.is_empty():
+		return PackedVector3Array()
+
+	var parents: PackedInt32Array = pose["parents"]
+	var local: Array = (pose["local"] as Array).duplicate()
+
 	if anim != null:
-		for entry in (map["bones"] as Array):      # [track, bone, track type]
+		for entry in (pose["bones"] as Array):      # [track, bone, track type]
 			var t: int = entry[0]
 			var bone: int = entry[1]
 			var kind: int = entry[2]
@@ -1918,11 +1950,10 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 	# shrinks it to a hundredth).
 	var to_rig: Transform3D = Transform3D.IDENTITY
 
-	for link in (map["chain"] as Array):      # [node, [[track, track type]]], from the skeleton up to the rig
-		var up: Node3D = link[0]
-		var xf: Transform3D = up.transform
+	for link in (pose["chain"] as Array):      # [node transform, [[track, track type]], is the skeleton], from the skeleton up to the rig
+		var xf: Transform3D = link[0]
 
-		if anim != null and up != sk:
+		if anim != null and not bool(link[2]):
 			var origin: Vector3 = xf.origin
 			var turn: Quaternion = xf.basis.get_rotation_quaternion()
 			var size: Vector3 = xf.basis.get_scale()
@@ -1940,21 +1971,22 @@ func _clip_bones(player: AnimationPlayer, anim: Animation, rig: Node3D, time: fl
 
 		to_rig = xf * to_rig
 
+	var count: int = parents.size()
 	var world: Array = []
-	world.resize(sk.get_bone_count())
+	world.resize(count)
 	var out: PackedVector3Array = PackedVector3Array()
-	out.resize(sk.get_bone_count())
+	out.resize(count)
 
-	for i in sk.get_bone_count():
+	for i in count:
 		var chain: Array = []
 		var b: int = i
 
 		while b >= 0 and world[b] == null:
 			chain.push_front(b)
-			b = sk.get_bone_parent(b)
+			b = parents[b]
 
 		for c in chain:
-			var parent: int = sk.get_bone_parent(c)
+			var parent: int = parents[c]
 			world[c] = (world[parent] as Transform3D) * (local[c] as Transform3D) if parent >= 0 else local[c]
 
 		out[i] = to_rig * (world[i] as Transform3D).origin
@@ -2195,7 +2227,12 @@ func _track_at(anim: Animation, t: int, kind: int, time: float) -> Variant:
 # ground, call a bone planted while it is within 3% of the standing height of that ground, and return the middle horizontal speed
 # of planted bones between neighbouring samples. 0 when nothing is planted long enough to tell.
 func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> float:
-	if anim.length <= 0.0:
+	return _stride_from(_clip_pose(player, anim, rig), anim)
+
+
+# _measure_stride from a _clip_pose: touches no node, so it also runs on a worker (_stride_later).
+static func _stride_from(pose: Dictionary, anim: Animation) -> float:
+	if anim.length <= 0.0 or pose.is_empty():
 		return 0.0
 
 	var samples: int = 40
@@ -2204,7 +2241,7 @@ func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> f
 	var high: float = -INF
 
 	for i in samples + 1:
-		var bones: PackedVector3Array = _clip_bones(player, anim, rig, anim.length * float(i) / float(samples))
+		var bones: PackedVector3Array = _pose_bones(pose, anim, anim.length * float(i) / float(samples))
 		frames.append(bones)
 
 		for p in bones:
@@ -2245,6 +2282,42 @@ func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> f
 
 	speeds.sort()
 	return float(speeds[int(speeds.size() / 2.0)])
+
+
+# A walk, trot or run's measured foot speed taken as its playing speed (travel_mps), or refused when it is far off the row's.
+func _take_stride(anim: Animation, kind: String, anim_name: String, typed_mps: float, stride_mps: float) -> void:
+	if stride_mps >= 0.2 and stride_mps <= 25.0 and AnimalGait.stride_ok(stride_mps, typed_mps):
+		anim.set_meta("travel_mps", stride_mps)
+		_model_note(kind, "clip %s: feet move %.2f m/s on the ground, played at speed / %.2f" % [anim_name, stride_mps, stride_mps])
+	elif stride_mps > 0.0:
+		# The lynx walk measured 0.26 m/s and the guineafowl run 0.20 (Dave's log, 21 Nov 2026): played at a fifth of the ground
+		# speed their legs hardly moved. A measurement that far off the row's speed is a failed one.
+		_model_note(kind, "clip %s: feet measured %.2f m/s, too far from the row's %.2f: played at speed / %.2f" % [anim_name, stride_mps, typed_mps, typed_mps])
+
+
+# The feet of a kind's first walk, trot and run are measured on a worker (Lane A r4 route at Low, 26 Nov 2026: a kind's first body took
+# 50-73 ms, 40-57 of it in its clips, most of that in sampling each gait 41 times). The pose is plain values read from the rig now, and the
+# clip is only read (its units and drift were fitted before). Until the answer is in (_take_strides, a frame or two), the clip plays at
+# speed / the row's speed, as it does when a measurement fails.
+var _stride_jobs: Array = []   # [task id, job {pose, anim, kind, name, typed, mps}]
+
+func _stride_later(pose: Dictionary, anim: Animation, kind: String, anim_name: String, typed_mps: float) -> void:
+	var job: Dictionary = {"pose": pose, "anim": anim, "kind": kind, "name": anim_name, "typed": typed_mps, "mps": 0.0}
+	_stride_jobs.append([WorkerThreadPool.add_task(_stride_job.bind(job), false, "animal clip stride"), job])
+
+
+# On a worker: only this job's own "mps" key is written (it is there already, so the dictionary does not grow).
+func _stride_job(job: Dictionary) -> void:
+	job["mps"] = _stride_from(job["pose"], job["anim"])
+
+
+# Each frame (_process): the measurements done are taken, in the order they were started; every one, waited for, when the view leaves.
+func _take_strides(every: bool = false) -> void:
+	while not _stride_jobs.is_empty() and (every or WorkerThreadPool.is_task_completed(int(_stride_jobs[0][0]))):
+		var entry: Array = _stride_jobs.pop_front()
+		WorkerThreadPool.wait_for_task_completion(int(entry[0]))
+		var job: Dictionary = entry[1]
+		_take_stride(job["anim"], str(job["kind"]), str(job["name"]), float(job["typed"]), float(job["mps"]))
 
 
 # How far a bird of a model flock sits into the surface: "sink_share" of its height in its graze clip (its swim pose: the legs
