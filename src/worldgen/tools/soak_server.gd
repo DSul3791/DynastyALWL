@@ -294,10 +294,10 @@ func _init() -> void:
 
 	print("soak: %d players, %d animals, %d NPCs, %d world records after %.0f s: tick avg %.2f ms, p99 %.2f ms, worst %.2f ms; heaviest on average: %s; memory +%.1f MB" % [players, animals.animals.size(), npcs.npcs.size(), items.world_item_count(), SPAN_S, mean, float(settled[int(settled.size() * 0.99)]), float(settled[settled.size() - 1]), worst_name, float(OS.get_static_memory_usage() - memory0) / 1048576.0])
 
-	var parts: Array = items.part_ms.keys()
-	parts.sort_custom(func(a, b): return float(items.part_ms[a]) > float(items.part_ms[b]))
+	var ranked: Array = items.part_ms.keys()   # not "parts": the animal sends above keep a loop-local parts (Godot's confusable-local warning)
+	ranked.sort_custom(func(a, b): return float(items.part_ms[a]) > float(items.part_ms[b]))
 
-	for part in parts.slice(0, 16):
+	for part in ranked.slice(0, 16):
 		print("soak: items part %-28s %.2f ms a second" % [part, float(items.part_ms[part]) / SPAN_S])
 
 	if mean > 12.0 and players == PLAYERS_DEFAULT:   # the limit is for the default 20; a bigger soak measures, it does not fail
