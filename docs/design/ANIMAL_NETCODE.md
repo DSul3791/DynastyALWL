@@ -93,7 +93,7 @@ changed. The play-test write-ups for Dave are in the project files (animal-motio
   is still running a delay behind (gate review). A charge's carry is at most two legs' time and 15 m/s (`CARRY_MPS`); the client stops a carried
   charge on the near side of the player (`AnimalContact.stop_toward`), never flipping it through.
 - Cost: no new CPU of note (one distance per player for each animal that moved; one clock read a row). Bandwidth: standing rows now change
-  every send, so the server's "unchanged rows only every 2 s" skip no longer holds while any animal is within 120 m: about 30 rows x 40 B x 4 a
+  every send, so the server's "unchanged rows only every 2 s" skip no longer holds while any animal is within 120 m (big game 200 m, R-ANIMAL-SEEN-FAR): about 30 rows x 40 B x 4 a
   second, roughly 5 KB/s a player at the 30-row cap (the probe measures it). Moving animals already made every batch differ.
 - Tests: test_animal_motion_buffer.gd (the row clock, smooth, the whole path at 0 to 50% loss: no frame jump over 0.5 m; the old path
   jumps); test_animal_contact.gd (charges at 20 and 2 steps a second never enter the player; keep_off; standing rows stamped).
