@@ -66,8 +66,15 @@ func _initialize() -> void:
 
 	# The box of a clip is kept per model file, model transform and clip: a second body of the file gets the first one's box.
 	var rig_a: Node3D = ((v._bodies[1]["node"] as Node3D).get_node("Rig") as Node3D)
-	var first_box: AABB = v._clip_box(null, null, rig_a)   # the imported pose (no clip; the test model has no skeleton)
-	check(v._box_memo.has(v._box_key(null, rig_a)) and v._clip_box(null, null, rig_a) == first_box, "a clip's box is kept and given again")
+	v._clip_box(null, null, rig_a)   # the imported pose (no clip; the test model has no skeleton)
+	var memo_key: String = v._box_key(null, rig_a)
+	check(memo_key != "" and v._box_memo.has(memo_key), "a clip's box is kept under its model file and transform")
+	v._box_memo[memo_key] = AABB(Vector3.ONE, Vector3.ONE)   # marked: a box worked out again would not be this one
+	check(v._clip_box(null, null, rig_a) == AABB(Vector3.ONE, Vector3.ONE), "the kept box is given again, not worked out again")
+	(rig_a.get_child(0) as Node3D).scale *= 2.0
+	check(v._box_key(null, rig_a) != memo_key, "a model drawn at another size keeps its own box")
+	(rig_a.get_child(0) as Node3D).scale /= 2.0
+	v._box_memo.clear()
 	var bare_rig: Node3D = Node3D.new()
 	check(v._box_key(null, bare_rig) == "", "a rig with no model file keeps no box")
 	bare_rig.free()
