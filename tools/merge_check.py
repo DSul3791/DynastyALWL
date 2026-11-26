@@ -4,7 +4,7 @@
 Checks: conflict markers, unique item numbers, next_number above the highest, unique ACT_ action ids, unique protocol/build
 numbers, JSON files parse (no key twice in an object), build NUMBER not lower than before, no NEW crash reports or telemetry logs tracked, .uid for new scripts.
 It does not run Godot (warning count and headless loads stay with tools/local_check.sh on a machine with Godot)."""
-import json, os, re, subprocess, sys
+import json, os, pathlib, re, subprocess, sys
 
 # What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
 # Locally (no MERGE_CHECK_BASE) it compares against origin/dev, where PRs merge, as the CI does for a PR to dev (origin/<base>); against
@@ -286,17 +286,35 @@ if export.returncode != 0:   # a release build would lack a file it loads or car
     bad("export_check: " + " | ".join([l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")] + export.stderr.strip().splitlines()[-3:]))
 
 rulings = subprocess.run([sys.executable, "tools/check_rulings.py"], capture_output=True, text=True)
+dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
+for line in (rulings.stdout + dave.stdout).splitlines():   # a suggestion's NOTE never blocks, but it is shown (Dave 26 Nov 2026, R-CORE-PLAYTEST-WINS)
+    if line.startswith("NOTE"):
+        print(line)
 if rulings.returncode != 0:   # one live line per ruling, replaced rules removed (CONSTITUTION.md, "Rulings")
     for line in rulings.stdout.splitlines():
-        if not line.startswith("NOTE"):   # a suggestion's note never blocks
+        if not line.startswith("NOTE"):
             bad("rulings: " + line)
-dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
+    if not rulings.stdout.strip():
+        bad("check_rulings crashed: " + rulings.stderr[-200:])
 if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (docs/RULINGS.md)
     for line in dave.stdout.splitlines():
         if line.startswith("FAIL"):
             bad("dave rule: " + line[5:])
     if "FAIL" not in dave.stdout:
         bad("check_dave_rules crashed: " + dave.stderr[-200:])
+
+
+def _marks(text):   # {R-KEY: (date, rule|suggestion|unclear)} from a RULINGS.md text
+    return {m.group(1): (m.group(2), m.group(3)) for m in re.finditer(r"^- \*\*(R-[A-Z0-9-]+)\*\* · ([^·]+?) · (rule|suggestion|unclear) · ", text, re.M)}
+
+
+# A rule loosened to a suggestion or unclear needs a new dated line in Dave's words (docs/RULINGS.md); the same date with a softer mark
+# is a mark flipped to get past a check. Lines from before the marks existed have no mark and are not compared.
+_was = _marks(subprocess.run(["git", "show", f"{BASE}:docs/RULINGS.md"], capture_output=True, text=True).stdout)
+_now = _marks(pathlib.Path("docs/RULINGS.md").read_text(encoding="utf-8")) if pathlib.Path("docs/RULINGS.md").exists() else {}
+for _key, (_date, _kind) in _now.items():
+    if _was.get(_key, (None, None))[1] == "rule" and _kind != "rule" and _was[_key][0] == _date:
+        bad(f"rulings: {_key} went from rule to {_kind} with the same date: a rule changes only by a new dated line in Dave's words")
 rulings_self = subprocess.run([sys.executable, "-I", "tools/test_check_rulings.py"], capture_output=True, text=True)
 if rulings_self.returncode != 0:
     bad("rulings check self-test: " + rulings_self.stdout.strip()[-200:])

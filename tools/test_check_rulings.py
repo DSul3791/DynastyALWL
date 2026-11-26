@@ -37,7 +37,7 @@ case("date without a day", "- **R-A** · Nov 2026 · fire.\n", "", 2)
 case("mixed-case phrase", ok, "Torch Or Not", 1)
 case("no rule or suggestion mark", "- **R-A** · 25 Nov 2026 · fire.\n", "", 2)
 case("an old phrase against a suggestion only notes", ok.replace("· rule ·", "· suggestion ·"), "Torch or not.", 0, notes=1)
-case("an old phrase against an unclear line blocks", ok.replace("· rule ·", "· unclear ·"), "Torch or not.", 1)   # bad line, and R-A then missing for the retired phrase
+case("an old phrase against an unclear line blocks", ok.replace("· rule ·", "· unclear ·"), "Torch or not.", 1)   # unclear counts as a rule until the coordinator settles it
 case("old rule in a frozen checkpoint", ok, "The pack rushes, Torch or not.", 0, frozen=True)
 print("test_check_rulings: %s" % ("FAIL" if fails else "PASS"))
 sys.exit(1 if fails else 0)

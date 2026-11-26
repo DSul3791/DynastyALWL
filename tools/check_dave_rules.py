@@ -243,7 +243,8 @@ def main():
     for key, ok, what in results:
         if ok:
             continue
-        if " · suggestion · " in rulings.get(key, ""):
+        kind = re.match(r"^- \*\*R-[A-Z0-9-]+\*\* · [^·]+ · (rule|suggestion|unclear) · ", rulings.get(key, ""))
+        if kind and kind.group(1) == "suggestion":
             print(f"NOTE {key}: {what} [a suggestion: if play-testing showed better, change the line and tell the coordinator; does not block]")
         elif "unverified" in rulings.get(key, ""):
             print(f"WARN {key}: {what} [the ruling is marked unverified: tell the coordinator, do not block]")
