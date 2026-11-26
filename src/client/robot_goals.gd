@@ -1259,7 +1259,8 @@ func _fish_goal() -> String:
 	if bool(c.items.goal_book.row("fish").get("done", false)):
 		return ""
 
-	return "%d jabs at %d spots along the shore (%d stood swimming, no jab) and no fish; the game said %s" % [jabs, spots, swam, str(told) if not told.is_empty() else "nothing"]
+	return "%d jabs at %d spots along the shore (%d stood swimming, no jab) and no fish; at the shore the game said %s%s" % [jabs, spots, swam,
+		str(told) if not told.is_empty() else "nothing", _said(said)]
 
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
