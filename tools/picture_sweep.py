@@ -6,7 +6,7 @@ Run from the lane clone (C:/DynastyLane/clone), in the foreground. Every job is 
 with a time limit; this script waits for it and stops its whole process tree (taskkill /T on Windows) when the limit passes,
 when the lane's CANCEL file appears, or on Ctrl-C. Nothing it started is left running.
 A job whose pictures are already there is skipped, so the sweep can run in slices between bug-fix tests and pick up where it
-stopped (delete a job's folder to take its pictures again). Stops starting jobs after --time-limit.
+stopped (delete a job's folder to take its pictures again; a job cut off part way is taken again). Stops starting jobs after --time-limit.
 
     python tools/picture_sweep.py --out C:/DynastyLane/logs/sweep [--groups animals,young,held,worn,pieces,tiers]
                                   [--max-jobs N] [--time-limit S] [--list]
@@ -184,7 +184,7 @@ def main(argv):
 	record_path = os.path.join(args.out, "sweep_jobs.json")
 	record = load(record_path) if os.path.isfile(record_path) else {}
 	# done: recorded ok, or pictures there from before the record; a job cut off part way is taken again
-	left = [j for j in todo if not (record.get(j[0], {}).get("ok") or (j[0] not in record and done(j[4])))]
+	left = [j for j in todo if not ((record.get(j[0], {}).get("ok") or j[0] not in record) and done(j[4]))]
 	print("picture sweep: %d jobs in %s, %d done, %d to run" % (len(todo), ",".join(wanted), len(todo) - len(left), len(left)))
 	if args.list:
 		for j in left:
@@ -217,13 +217,15 @@ def main(argv):
 			stopped = "the lane's CANCEL file is there (job %s stopped)" % name
 		ok = code == 0 and done(must)
 		record[name] = {"ok": ok, "exit": code, "seconds": round(time.time() - t0, 1)}
-		with open(record_path, "w", encoding="utf-8") as f:
+		with open(record_path + ".tmp", "w", encoding="utf-8") as f:
 			json.dump(record, f, indent=1)
+		os.replace(record_path + ".tmp", record_path)
 		ran += 1
 		print("picture sweep: %s %s (exit %s, %.0f s)" % (name, "ok" if ok else "FAIL", code, time.time() - t0))
 		if stopped:
 			break
-	failed = [n for n, r in record.items() if not r["ok"]]
+	names = {j[0] for j in todo}
+	failed = [n for n, r in record.items() if n in names and not r["ok"]]
 	print("picture sweep: ran %d, %d failed so far%s" % (ran, len(failed), "; stopped: " + stopped if stopped else ""))
 	if stopped:
 		return 3

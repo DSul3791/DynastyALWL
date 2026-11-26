@@ -56,8 +56,8 @@ Groups: `animals` and `young` (every species, every role, 46 strips each), `held
 `shot_held.gd` in seconds, the rest, which it refuses (bows, spears, nets, shields, torches, lanterns...), by `look_rig.sh --item`
 in the world, minutes each), `worn` (79 worn items, idle front and side, walk and run), `pieces` (every structure in the world, 8 a
 run), `tiers` (the spawn on Low and High, four directions). Each picture folder has an `about.txt` saying what it should show; the
-checker passes it on. A job recorded ok in `sweep_jobs.json` is skipped (a job cut off part way is taken again): delete its folder and its line there to
-take its pictures again (after a look change).
+checker passes it on. A job that finished with its pictures is skipped (one cut off part way is taken again): delete its folder to take its pictures
+again (after a look change).
 The animal strips hold up to a dozen poses side by side and reach the API scaled to 2576 px wide, so small gaps under feet may come
 back "unsure"; check one strip's answer before the whole group.
 
