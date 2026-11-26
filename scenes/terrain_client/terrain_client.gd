@@ -589,6 +589,7 @@ func _ready() -> void:
 	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
 	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
 	DynastyBodyScript.clips_on_worker = not DynastyBodyScript.headless()   # in a window the first body's 143 clips are made on a worker thread, not in the join's first-body frame (276 ms, Lane A Low route 26 Nov 2026)
+	OceanMesh.start()   # the sea's 148 thousand vertex grid, on a worker while the client connects (about 400 ms of the welcome's frame on Lane A Low)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
@@ -1411,7 +1412,7 @@ func _on_welcome(info: Dictionary) -> void:
 	# Lane A r4 Low at 35dcde90: a 3.5 s welcome with its steps never printed (the freeze watch starts part way through it, so the frame's
 	# own lines miss the start). Its named steps, once, at the join.
 	if welcome_ms > Probe.JOIN_SLOW_MS:
-		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(24)])
+		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(32)])
 
 
 func _welcome_body(info: Dictionary) -> void:
@@ -1553,22 +1554,30 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	Probe.stop("welcome: flora added", tw_flora_add)
 	var tw_ice: int = Probe.start()
+	var tq_sub0_oceanice: int = Probe.start()
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
 	ocean_ice.ground_below = _ground_below
 	root.add_child(ocean_ice)
+	Probe.stop("welcome: ocean ice", tq_sub0_oceanice)
+	var tq_sub1_shoreprops: int = Probe.start()
 	shore_props = ShoreProps.new()
 	shore_props.name = "ShoreProps"
 	root.add_child(shore_props)
+	Probe.stop("welcome: shore props", tq_sub1_shoreprops)
+	var tq_sub2_fallmist: int = Probe.start()
 	fall_mist = FallMistScript.new()
 	fall_mist.name = "FallMist"
 	fall_mist.setup(quality)
 	root.add_child(fall_mist)
+	Probe.stop("welcome: fall mist", tq_sub2_fallmist)
+	var tq_sub3_fallgrowth: int = Probe.start()
 	fall_growth = FallGrowthScript.new()
 	fall_growth.name = "FallGrowth"
 	fall_growth.setup(terrain, flora, quality)
 	root.add_child(fall_growth)
+	Probe.stop("welcome: fall growth", tq_sub3_fallgrowth)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
 	Probe.stop("welcome: ice, shore, mist and fall growth", tw_ice)
@@ -5147,7 +5156,9 @@ func _make_environment(root: Node3D) -> void:
 	root.add_child(sun)
 	var environment: Environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
+	var te_sky: int = Probe.start()
 	environment.sky = SkyClouds.make_sky(quality)
+	Probe.stop("environment: sky", te_sky)
 	environment.fog_enabled = true
 	environment.fog_density = 0.0004
 	# The fog used to paint the whole sky grey (owner, 2026-10-19: "the sky has nothing");
@@ -5158,10 +5169,14 @@ func _make_environment(root: Node3D) -> void:
 	var world_environment: WorldEnvironment = WorldEnvironment.new()
 	world_environment.environment = environment
 	root.add_child(world_environment)
+	var te_sea: int = Probe.start()
 	sea = MeshInstance3D.new()
-	sea.mesh = OceanMesh.make()   # 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
+	sea.mesh = OceanMesh.take()   # its arrays were made on a worker since _ready (OceanMesh.start); 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
+	Probe.stop("environment: sea mesh", te_sea)
+	var te_water: int = Probe.start()
 	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
+	Probe.stop("environment: sea material", te_water)
 
 
 
@@ -8859,6 +8874,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	OceanMesh.finish()   # a sea grid worker still running at a quit before the welcome
 	DynastyBodyScript.finish_clips()   # the body's clip worker still running at a quick quit (dynasty_body.gd), before the drain so its line is logged
 	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
