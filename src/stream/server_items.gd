@@ -16843,7 +16843,7 @@ func _fit(peer: int, inv, number: int, count: int, item_inst: Dictionary = {}) -
 		return count
 
 	var body: float = _carry_body(peer)
-	var carried: float = CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
+	var carried: float = _pack_kg(inv) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
 	return CarryRules.fit_count(table.id_of(number), count, carried, body, _carry_cfg)
 
 
@@ -18961,7 +18961,7 @@ func _vitals_tick(spent: float, only: Array = [], spent_of: Dictionary = {}, lit
 		_breath_tick(peer, v, spent)
 
 		if float(v["health"]) <= 0.0:
-			_in_vitals = false   # a death changes the pack and the worn pieces: kill reads them live, and this player's kept readings go
+			_in_vitals = false   # a death empties the pack and the comfort meter: kill reads everything live, and this player's kept readings go
 			var died: bool = kill(peer, str(_death_cause.get(peer, "drowning")))
 			_in_vitals = true
 			_vitals_forget(peer)

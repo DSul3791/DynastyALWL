@@ -36,7 +36,7 @@ func make(dir: String, memo: bool):
 	items.vitals_memo = memo
 	var t = items.table
 	var places: Array = items._worn_places()
-	var dress: Dictionary = {"head:base": "hide_hood", "body:base": "hide_tunic", "legs:base": "hide_leggings", "feet:footwear": "hide_boots", "hands:base": "hide_mittens", "body:outer": "hide_cloak", "head:rigid": "iron_helm", "body:mail": "mail_shirt"}
+	var dress: Dictionary = {"head:base": "hide_hood", "body:base": "hide_tunic", "legs:base": "hide_trousers", "feet:footwear": "hide_boots", "hands:base": "hide_mittens", "body:outer": "hide_cloak", "head:rigid": "iron_helm", "body:mail": "mail_shirt"}
 
 	for p in range(1, PLAYERS + 1):
 		var key: String = "vitcost%05d" % p
@@ -53,6 +53,7 @@ func make(dir: String, memo: bool):
 		items._characters[key]["comfort"] = 4.999 if p % 2 == 0 else float(p % 10)   # the even ones cross into level 5 inside the first tick
 		items._stance[p] = 2 if p % 4 == 0 else 0
 		items._exertion[p] = 0.1 * float(p % 10)
+		items._moving[p] = 1.0   # on the move: the armour's kilograms count in the effort (protection.json effort_per_kg)
 
 	return items
 
@@ -73,7 +74,7 @@ func _initialize() -> void:
 	for tick in 8:
 		if tick == 4:
 			for s in [a, b]:
-				s._vitals[s._peer_key[5]]["health"] = 0.0   # dies inside the next tick: kill runs outside the kept readings
+				s._vitals[s._peer_key[5]]["health"] = -1.0   # dies inside the next tick (the tick's regen clamps it to 0): kill runs outside the kept readings
 				s._death_cause[5] = "cold"
 
 		var t0: int = Time.get_ticks_usec()
@@ -83,18 +84,38 @@ func _initialize() -> void:
 		b._vitals_tick(0.25)
 		ms_b += float(Time.get_ticks_usec() - t0) / 1000.0
 
-		for p in range(1, PLAYERS + 1):
-			if p == 5 and tick >= 4:
-				continue   # a death's respawn is checked below, not number for number
+		if tick == 4:
+			for s in [a, b]:
+				var remains: int = 0
 
+				for id in s._items:
+					if s._items[id].has("struct") and str(s._items[id]["struct"].get("kind", "")) == "remains":
+						remains += 1
+
+				check(remains == 1, "player 5 died inside the tick: one remains (%d)" % remains)
+				check(s.inventory_of(5).numbers.count(0) == s.inventory_of(5).numbers.size(), "and the pack went with them")
+				check(not s._worn_cache.has(5) and not s._armour_cache.has(5) and not s._rested_cache.has(5) and not s._kg_cache.has(5), "and that player's kept readings went too")
+
+		for p in range(1, PLAYERS + 1):
 			var key: String = a._peer_key[p]
 			check(str(a._vitals.get(key, {})) == str(b._vitals.get(key, {})), "tick %d player %d: the same vitals with and without the kept readings\n  %s\n  %s" % [tick, p, str(a._vitals.get(key, {})), str(b._vitals.get(key, {}))])
 			check(str(a._characters[key].get("comfort")) == str(b._characters[key].get("comfort")), "tick %d player %d: the same comfort" % [tick, p])
 			check(str(a._strain.get(p, {})) == str(b._strain.get(p, {})), "tick %d player %d: the same strain" % [tick, p])
 
 	check(a.comfort_level(2) == 5, "an even player crossed into comfort 5 inside the ticks (%d)" % a.comfort_level(2))
-	check((a._worn_cache[5] if a._worn_cache.has(5) else a.worn_of(5)) == a.worn_of(5), "after a death in the tick no kept worn list differs from the live one")
 	check(a._armour_kg(1) > 0.0, "the dressed players wear something that counts as armour (%.2f kg)" % a._armour_kg(1))
+
+	# 3. The Rested row follows a comfort level crossed inside the tick: kept at level 4, then the meter climbs to 5 and the row with it.
+	for s in [a, b]:
+		var v: Dictionary = s._vitals[s._peer_key[4]]
+		s._characters[s._peer_key[4]]["comfort"] = 4.999
+		s._vitals_caches_clear()
+		s._in_vitals = true
+		var before: int = int(s.rested_tier(4).get("level", 0))
+		s._comfort_meter_tick(4, v, 60.0)
+		var after: int = int(s.rested_tier(4).get("level", 0))
+		s._in_vitals = false
+		check(before == 4 and after == 5 and after == int(s.rested_tier(4).get("level", 0)), "memo %s: the Rested row read inside the tick follows the meter from 4 to 5 (%d then %d)" % [str(s.vitals_memo), before, after])
 	check(a.worn_of(1) == b.worn_of(1) and a.rested_tier(2) == b.rested_tier(2), "outside the tick the live readings agree")
 	print("vitals tick, %d players, 8 ticks: %.2f ms with the kept readings, %.2f ms without" % [PLAYERS, ms_a, ms_b])
 

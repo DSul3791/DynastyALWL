@@ -303,7 +303,7 @@ func _init() -> void:
 
 		print("soak: vitals leaf %-22s %.3f ms per pass" % [fname, float(Time.get_ticks_usec() - tbody) / 10000.0])
 
-	for fname in ["warmth_target", "carried_kg_of", "_load_ratio", "effort_of"]:
+	for fname in ["warmth_target", "carried_kg_of", "_load_ratio", "effort_of", "worn_of", "_armour_kg", "rested_tier"]:
 		var tcold: int = Time.get_ticks_usec()
 
 		for n in 10:
