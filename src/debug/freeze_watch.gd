@@ -35,6 +35,7 @@ static var _post_usec: int = 0
 static var _phys_usec: int = 0
 static var _end_usec: int = 0             # the last _process of the frame (process_end_mark.gd): scripts before it, deferred calls and engine work after
 static var wall_ms: float = 0.0           # the frame that just ended, beat to beat on the main thread's clock (0: no draw, use the engine's delta)
+static var gap_ms: int = 0              # beat to beat on the main thread's clock, drawn or not (a join frame with no draw has no wall_ms)
 static var built_last: String = ""        # the renderer's pipeline builds in that frame (", pipelines built: ..." or "")
 static var split: String = ""            # "process N, draw N, present N, physics step and poll N" for the frame that just ended (ms); "present" runs
                                           # from the draw's end to the last physics callback, "physics step and poll" from there to the next frame's
@@ -71,6 +72,7 @@ static func beat() -> void:
 	_last_piece = "frame start"
 	var frame: int = _frame
 	_mutex.unlock()
+	gap_ms = gap
 
 	# The real time between two frames, from the main thread itself (not the watch thread, which can be held up when every core is busy):
 	# Dave's 3 Nov log had watch lines of 0.7-0.9 s while no frame was over 142 ms, so the watch alone is not proof of a stall.
