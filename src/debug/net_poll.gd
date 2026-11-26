@@ -5,8 +5,8 @@ extends Node
 # any _process, and every message's unpacking, its RPC and the handlers its signal runs happen inside it, unnamed). Godot's own poll is
 # turned off and this node polls instead from the process_frame signal, connected before any await of it (Godot polls just before emitting
 # it, so the poll still comes before resumed awaits, the deferred calls and every _process), as the piece "net poll". It listens last on
-# every signal of the terrain messages node (TerrainNet), so each mark falls when a message's handlers are done: a message's share runs from the mark before it (or the poll's start) to its own mark, and "after" is the rest (ENet,
-# messages that raise no signal). A poll over NET_SLOW_MS prints a NET slow line with the longest shares (only there: as frame pieces they
+# every signal of the terrain messages node (TerrainNet), so each mark falls when a message's handlers are done: a message's share runs from
+# the mark before it (or the poll's start) to its own mark, and "after" is the rest (ENet, messages that raise no signal). A poll over NET_SLOW_MS prints a NET slow line with the longest shares (only there: as frame pieces they
 # would sit nested in "net poll" and crowd the HITCH lines). The signal also comes while the game is paused (the lost-connection notice).
 # Diagnostics: the messages handled and their order are the same.
 
