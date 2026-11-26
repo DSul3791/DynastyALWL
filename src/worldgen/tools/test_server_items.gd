@@ -3154,7 +3154,7 @@ func _init() -> void:
 
 	for bid in sc._items:
 		var row: Dictionary = sc._items[bid]
-		ore_rocks += 1 if row.has("scatter") and ((int(row["scatter"]) & sc.ORE_KEY) != 0 or str(row.get("boulder", {}).get("ore", "")) != "") else 0
+		ore_rocks += 1 if row.has("scatter") and ((int(row["scatter"]) & (sc.ORE_KEY | sc.FIELD_KEY)) != 0 or str(row.get("boulder", {}).get("ore", "")) != "") else 0   # and the rocky ground's rounded river rocks (rock_fields), not bank stones either
 
 	check(sc.world_item_count() - bank_before - ore_rocks <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
 

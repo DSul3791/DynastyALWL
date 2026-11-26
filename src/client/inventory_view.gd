@@ -3852,8 +3852,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
 	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or OreRockLook.shape_of(ang) == 2 else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
-	lump.material_overlay = _crack_material()
-	body.add_child(lump)
+	body.add_child(lump)   # the crack overlay comes with the first blow (_size_boulder): a whole rock is one draw, not two (rocky ground, 26 Nov 2026)
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
 	_root.add_child(body)
@@ -3977,7 +3976,9 @@ func _size_boulder(entry: Dictionary) -> void:
 				entry["shape"].position = Vector3.ZERO
 
 			convex.points = points
-	lump_node.set_instance_shader_parameter("crack", BoulderWear.crack(int(entry["left"]), int(entry["total"])))   # cracks from the first blow, more and wider as the rock is used up
+	var crack: float = BoulderWear.crack(int(entry["left"]), int(entry["total"]))
+	lump_node.material_overlay = _crack_material() if crack >= 0.01 else null   # the overlay draws nothing under 0.01 (CRACK_SHADER discards): a whole rock skips that second pass
+	lump_node.set_instance_shader_parameter("crack", crack)   # cracks from the first blow, more and wider as the rock is used up
 	lump_node.set_instance_shader_parameter("crack_scale", 1.0 / unit)
 
 
@@ -4046,8 +4047,12 @@ func _crumble_boulder(entry: Dictionary) -> void:
 		tween.chain().tween_callback(bit.queue_free)
 
 
-# The boulder a strike at this point landed on (0 when none): within its radius and a little.
+# The boulder a strike at this point landed on (0 when none): within its radius and a little; of rocks lying together (scree, rocky ground)
+# the one whose edge is nearest the point, so a blow lands on the rock struck, not on a neighbour listed first.
 func boulder_near(point: Vector3) -> int:
+	var best: int = 0
+	var best_gap: float = INF
+
 	for id in _boulders:
 		var entry: Dictionary = _boulders[id]
 		var flat: float = Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length()
@@ -4055,10 +4060,11 @@ func boulder_near(point: Vector3) -> int:
 		var now: float = float(entry.get("now", entry["radius"]))
 
 		# A small copper rock gets a small margin, so a blow at a trunk or the ground beside it is not taken as a blow on the rock.
-		if flat <= now + minf(0.7, 0.2 + now * 2.0) and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
-			return id
+		if flat <= now + minf(0.7, 0.2 + now * 2.0) and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]) and flat - now < best_gap:
+			best = id
+			best_gap = flat - now
 
-	return 0
+	return best
 
 
 # Loose items roll a little when walked over (Dave 2026-10-23, keep-item-roll): a few times a second the loose singles within ROLL_TRIGGER_M of a
