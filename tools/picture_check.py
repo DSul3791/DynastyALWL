@@ -85,6 +85,13 @@ and grip from the side views, not the view that looks along it.
 feet show: a lower, flatter, plainer patch of ground round the player's feet is normal.
 - Offline tools draw no world: a plain colour sky, a small flat green or grey ground plane with grid lines (0.5 m or 1 m \
 apart) and a sun brighter than the game.
+- Animal strips: the first panel, labelled "rest pose", is the model's bind pose with no clip playing. The game never \
+shows it, so never judge it (a bird with its wings spread, a body in a stride or a tucked leg there is normal). A role \
+labelled "(none)" also shows that bind pose. Judge the other panels.
+- Things in the air on purpose: a run, trot or gallop still in its flight phase (all feet off the ground for a moment, \
+the body no higher than about a third of the leg length over the ground), a bound or a leap, and every fly, glide, \
+take-off or landing panel. Swim panels sit into the ground plane (the water line), which is right too. Call a running \
+animal floating only when the body hangs clearly higher than a stride could lift it.
 - Text in the corners and coloured name tags over items are the tester's labels. The HUD is hidden. Night or rain is \
 dark when the description says so. The game's colours are realistic and muted.
 
