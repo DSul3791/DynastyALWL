@@ -1405,6 +1405,12 @@ func _on_welcome(info: Dictionary) -> void:
 	var tw: int = Probe.start()
 	_welcome_body(info)
 	Probe.stop("welcome", tw)
+	var welcome_ms: float = float(Time.get_ticks_usec() - tw) / 1000.0
+
+	# Lane A r4 Low at 35dcde90: a 3.5 s welcome with its steps never printed (the freeze watch starts part way through it, so the frame's
+	# own lines miss the start). Its named steps, once, at the join.
+	if welcome_ms > Probe.JOIN_SLOW_MS:
+		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(10)])
 
 
 func _welcome_body(info: Dictionary) -> void:
