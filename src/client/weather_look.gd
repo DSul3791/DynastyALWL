@@ -286,6 +286,7 @@ static func visibility_of_density(density: float) -> float:
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const LookWarm := preload("res://src/client/look_warm.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const FogLook := preload("res://src/client/fog_look.gd")
@@ -321,8 +322,20 @@ func setup(client) -> void:
 	_rng.seed = 5150
 	canopy = CanopyMapScript.new()
 	var tq_sub0_rainandsno: int = FrameProbe.start()
-	_rain = _make_rain()
-	_snow = _make_snow()
+	_rain = LookWarm.take("rain") as GPUParticles3D       # made in the menus when there were any (look_warm.gd)
+	_snow = LookWarm.take("snow") as GPUParticles3D
+
+	if _rain != null:
+		_rain_material = (_rain.draw_pass_1 as ArrayMesh).surface_get_material(0) as ShaderMaterial
+		_rain_material.set_shader_parameter("canopy", canopy.texture)   # this look's own canopy map
+	else:
+		_rain = _make_rain()
+
+	if _snow != null:
+		_snow_material = (_snow.draw_pass_1 as QuadMesh).material as StandardMaterial3D
+	else:
+		_snow = _make_snow()
+
 	add_child(_rain)
 	add_child(_snow)
 	FrameProbe.stop("weather setup: rain and snow", tq_sub0_rainandsno)
@@ -406,6 +419,15 @@ func set_quality(quality: int) -> void:
 
 	if wind_cue != null:
 		wind_cue.set_quality(_quality)
+
+
+# The rain or the snow made by look_warm.gd ahead of the welcome, on a WeatherLook that is never set up: the same _make_rain and _make_snow
+# as setup's, with this node's default quality (setup's too: set_quality follows it).
+func make_particles(step: String) -> GPUParticles3D:
+	if canopy == null:
+		canopy = CanopyMapScript.new()
+
+	return _make_rain() if step == "rain" else _make_snow()
 
 
 func _make_rain() -> GPUParticles3D:

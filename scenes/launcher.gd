@@ -4,6 +4,7 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 const PlayServer := preload("res://src/shared/play_server.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
 const InstanceLock := preload("res://src/client/instance_lock.gd")
+const LookWarm := preload("res://src/client/look_warm.gd")
 const RUN_NOTE := "user://server_run.json"
 const STOP_NOTE := "user://server_stop.json"   # asks the server Play started to close (terrain_server._stop_if_asked)
 const STOP_WAIT_MSEC := 60000                   # how long Play waits for that server to save and let go of the port
@@ -11,6 +12,9 @@ const STOP_WAIT_MSEC := 60000                   # how long Play waits for that s
 
 func _ready() -> void:
 	var role := AppConfig.get_command_line_value("role", "play")
+
+	if role == "play":
+		LookWarm.start(get_tree())   # the waterfall mist, rain and snow looks are made during the menus, one a frame (look_warm.gd)
 
 	print("Launcher role: ", role)
 
