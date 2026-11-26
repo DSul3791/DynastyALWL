@@ -3868,6 +3868,12 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	body.add_child(lump)   # the crack overlay comes with the first blow (_size_boulder): a whole rock is one draw, not two (rocky ground, 26 Nov 2026)
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
+	var tilt: Array = extra.get("tilt", [])
+
+	if tilt.size() >= 2:   # a crag on a steep mountainside leans with the face (PR #1988): its up is the ground's normal, from its fall per metre along x and z
+		var normal: Vector3 = Vector3(-float(tilt[0]), 1.0, -float(tilt[1])).normalized()
+		body.basis = Basis(Quaternion(Vector3.UP, normal)) * Basis(Vector3.UP, deg_to_rad(float(extra.get("yaw", 0.0))))
+
 	_root.add_child(body)
 	var skirt: Array = extra.get("skirt", [])
 

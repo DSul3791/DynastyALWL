@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Rocky ground (boulders.json rock_fields, server_items _lay_out_rock_fields; Dave 26 Nov 2026: "rocks and boulders on and around mountains
-# where they should be"). On made-up ground: scree at the foot of a cliff and none on its face, rocky ground above the treeline and none on
+# where they should be"). On made-up ground: scree at the foot of a cliff and on its face only crags, tilted to it, rocky ground above the treeline and none on
 # the lowland, outcrops on hilltops, rounded rocks in shallow water and on banks and none in deep water, now and then a lone giant on the flat;
 # keys of their own that never move the older boulders, worked rocks stay worked, nothing laid beside a build, a fire or a player, loose
 # stones never on a face, nothing on the low coastal flats; far from every player a cell is taken up whole and comes back the same.
@@ -78,21 +78,43 @@ func _init() -> void:
 	var face: int = 0
 	var far_out: int = 0
 
-	for r in rocks_of(rows):
-		var x: float = (r[1] as Vector3).x
-		foot += 1 if x >= -24.0 and x < 0.0 else 0
-		face += 1 if x > 1.0 and x < 59.0 else 0
-		far_out += 1 if x < -40.0 else 0
+	var crags: int = 0
+	var crag_bad: int = 0
+	var crag_off_face: int = 0
+	var crag_share: float = float(at_cliff._boulder_cfg["rock_fields"]["crag"].get("sink_share", 0.3))
 
-	print("rock_fields: cliff: %d rocks at its foot, %d on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, far_out, per_cell_ms])
+	for id in at_cliff._items:
+		var it: Dictionary = at_cliff._items[id]
+
+		if not it.has("boulder") or (int(it["scatter"]) & at_cliff.FIELD_KEY) == 0:
+			continue
+
+		var p: Vector3 = it["pos"]
+		var tilt: Array = (it["boulder"] as Dictionary).get("tilt", [])
+
+		if tilt.is_empty():
+			foot += 1 if p.x >= -24.0 and p.x < 0.0 else 0
+			face += 1 if p.x > 1.0 and p.x < 59.0 else 0
+			far_out += 1 if p.x < -40.0 else 0
+			continue
+
+		# A crag: on the face, leaning with it (the face falls 1.5 a metre toward -x), set into it by crag.sink_share of its radius, no apron.
+		crags += 1
+		crag_off_face += 0 if p.x > -1.0 and p.x < 61.0 else 1
+		var r_c: float = float(it["boulder"]["radius"])
+		crag_bad += 0 if absf(float(tilt[0]) - 1.5) < 0.02 and absf(float(tilt[1])) < 0.02 and not (it["boulder"] as Dictionary).has("skirt") and absf(p.y - (float(cliff.call(p.x, p.z)) - crag_share * r_c)) < 0.02 else 1
+
+	print("rock_fields: cliff: %d rocks at its foot, %d loose rocks and %d crags on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, crags, far_out, per_cell_ms])
 	check(foot >= 20, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
-	check(face == 0, "no rock sits on the cliff face (%d)" % face)
+	check(face == 0, "no loose rock sits on the cliff face (%d)" % face)
+	check(crags >= 20 and crag_off_face == 0, "crags stand out of the face, and only there (%d, %d off it)" % [crags, crag_off_face])
+	check(crag_bad == 0, "each crag leans with the face, is set into it by %.1f of its radius and has no apron (%d not)" % [crag_share, crag_bad])
 	check(far_out * 10 <= foot, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
 	check(per_cell_ms < CELL_BUDGET_MS, "a cell under a cliff lays out in under %.0f ms on average (%.2f)" % [CELL_BUDGET_MS, per_cell_ms])
 	var big_foot: float = 0.0
 
 	for r in rocks_of(rows):
-		if (int(r[0]) & 0xff) != at_cliff.FIELD_ERRATIC_SLOT:   # not a lone giant
+		if (int(r[0]) & 0xff) != at_cliff.FIELD_ERRATIC_SLOT and (r[1] as Vector3).x < 0.0:   # not a lone giant, nor a crag
 			big_foot = maxf(big_foot, float(r[2]))
 
 	check(big_foot > 1.5 and big_foot <= 2.6 * 1.0001, "scree cores come up to 5.2 m across (largest radius %.2f)" % big_foot)
@@ -121,11 +143,11 @@ func _init() -> void:
 		var rock_r: float = float(it["boulder"]["radius"])
 		biggest = maxf(biggest, rock_r)
 		satellites += 1 if slot < at_cliff.FIELD_WATER_FIRST and slot % at_cliff.FIELD_CLUSTER_SLOTS != 0 else 0
-		var wants_skirt: bool = slot < at_cliff.FIELD_WATER_FIRST and rock_r >= 0.8
+		var wants_skirt: bool = slot < at_cliff.FIELD_WATER_FIRST and rock_r >= 0.8 and not (it["boulder"] as Dictionary).has("tilt")
 		skirt_ok = skirt_ok and ((it["boulder"] as Dictionary).has("skirt") == wants_skirt)
 
 	check(satellites > 0, "the cliff foot's rocks come in clusters: smaller rocks round a core (%d)" % satellites)
-	check(skirt_ok, "every mountain rock of 0.8 m or more, and only those, carries its gravel apron")
+	check(skirt_ok, "every mountain rock of 0.8 m or more that is not a crag, and only those, carries its gravel apron")
 	var cfg_radius: Dictionary = at_cliff._boulder_cfg["rock_fields"]["radius"]
 	var cfg_most: float = 0.0
 

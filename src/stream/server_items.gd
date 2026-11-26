@@ -3589,6 +3589,7 @@ func _floor_top_below(at: Vector3, near: Array = [], rocks: bool = true) -> floa
 			continue
 
 		if it.has("boulder"):   # a boulder's drawn top (inventory_view _size_boulder: its hull rises BOULDER_TOP_SHARE x its radius over its spot), rounded off to its edge
+			# shortcut: a crag (rock_fields, "tilt") is taken upright here though the client leans it with its steep face; a stack dropped on one may rest a little off its drawn top
 			var r: float = BoulderWear.radius_now(float(it["boulder"].get("radius", 0.0)), int(it["count"]), int(it["boulder"].get("total", it["count"])))
 			var d: float = Vector2(at.x - it["pos"].x, at.z - it["pos"].z).length()
 
@@ -10823,6 +10824,7 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 # - scree and boulder fields on the gentler ground at the foot of cliffs and steep slopes (the ground rises more than scree_rise_m within
 #   relief_reach_m), denser and bigger the higher the wall;
 # - rocky ground above the treeline (the tiles' land types: alpine meadow and bare rock from treeline_m);
+# - crags standing out of the steep mountainsides (most of the ground above the treeline is steeper than a loose rock lies on), tilted to the face;
 # - outcrops on hilltops (the cell's middle stands over all four sides at relief_reach_m by top_drop_m);
 # - rounded rocks in shallow river and lake beds and on their banks, more and bigger up toward the headwaters (the journey);
 # - now and then a lone giant boulder on an open valley floor;
@@ -10849,9 +10851,11 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 	var reach: float = minf(float(cfg.get("relief_reach_m", 24.0)), SCATTER_PAD_M - 4.0)
 	var rise_most: float = 0.0
 	var drop_least: float = INF
+	var across: Array = []   # the ground east, west, south and north of the middle (how steep the cell is, for the crags)
 
 	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
 		var h: float = float(ground.call(mid.x + d.x, mid.y + d.y))
+		across.append(h)
 
 		if not is_nan(h):
 			rise_most = maxf(rise_most, h - h0)
@@ -10867,7 +10871,19 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 	var high: float = smoothstep(treeline - float(cfg.get("treeline_fade_m", 60.0)), treeline + float(cfg.get("treeline_full_m", 40.0)), h0)
 	var high_n: float = high * float(cfg.get("high_clusters", 1.6)) * lerpf(float(cfg.get("high_patch_floor", 0.4)), 1.0, patch) * density
 	var top_n: float = (float(cfg.get("top_clusters", 1.0)) * density) if drop_least != INF and drop_least >= float(cfg.get("top_drop_m", 8.0)) else 0.0
-	var most: float = maxf(maxf(scree_full if scree_near else 0.0, high_n), top_n)   # the most clusters any spot of the cell can have
+	# Crags: on ground steeper than `steepest` (the mountainsides; the tiles draw it bare rock from 48 degrees) rocks stand out of the face,
+	# tilted to it, by how steep the cell is across relief_reach_m (the four reads above).
+	var crag: Dictionary = cfg.get("crag", {})
+	var crag_n: float = 0.0
+
+	if not crag.is_empty() and h0 >= float(crag.get("min_height_m", 0.0)):
+		var steep: float = Vector2(float(across[0]) - float(across[1]), float(across[2]) - float(across[3])).length() / (2.0 * reach)
+		var fade: Array = crag.get("from", [0.8, 1.1])
+
+		if not is_nan(steep):
+			crag_n = smoothstep(float(fade[0]), float(fade[1]), steep) * float(crag.get("clusters", 1.5)) * lerpf(float(crag.get("patch_floor", 0.6)), 1.0, patch) * density
+
+	var most: float = maxf(maxf(maxf(scree_full if scree_near else 0.0, high_n), top_n), crag_n)   # the most clusters any spot of the cell can have
 	var rng: RandomNumberGenerator = _layout_rng(cell, "rock fields")
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var journey_mid: float = float(resource_context.call("journey_at", mid.x, mid.y)) if resource_context != null else -1.0
@@ -10892,9 +10908,10 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		var spot: Vector3 = Vector3(x, y, z)
 		var rise: float = _ground_fall(ground, x, z, 1.0)
+		var steepest: float = float(crag.get("steepest", 2.5)) if kind == "crag" else float(cfg.get("steepest", 1.0)) * (0.3 if kind == "erratic" else 1.0)
 
-		if not (rise <= float(cfg.get("steepest", 1.0)) * (0.3 if kind == "erratic" else 1.0)):
-			return false   # nothing sits on a cliff face; a giant lies on gentle ground
+		if not (rise <= steepest):
+			return false   # a loose rock does not sit on a cliff face (a crag stands out of it, up to its own steepest); a giant lies on gentle ground
 
 		if kind != "water" and depth_at.is_valid() and float(depth_at.call(spot)) > float(cfg.get("water_bed_m", 0.6)):
 			return false
@@ -10913,12 +10930,17 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		var row: Dictionary = {"radius": radius, "yaw": yaw}
 		var sink: float = rise * radius * float(cfg.get("sink_share", 0.6))   # its low side meets the ground instead of hanging over it
 
-		if kind in ["scree", "high", "top"] and radius >= float(cfg.get("apron_from_m", 0.8)):
+		if kind == "crag":
+			# A crag leans with the face (the client tilts it to the ground's normal from its fall per metre along x and z), set into it by
+			# crag.sink_share of its radius; it has no apron (nothing loose stays on a face that steep).
+			row["tilt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01)]
+			sink = radius * float(crag.get("sink_share", 0.3))
+		elif kind in ["scree", "high", "top"] and radius >= float(cfg.get("apron_from_m", 0.8)):
 			# The client lays an apron of broken stones round a big mountain rock (look only, inventory_view _skirt_mesh): the ground's fall per
 			# metre along x and z, and how deep the rock is set (the apron lies on the ground, not at the rock's sunk middle).
 			row["skirt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01), snappedf(sink, 0.01)]
 
-		row["ang"] = _rock_shape(journey_mid if journey_mid >= 0.0 else 1.0, kind == "water", key) if kind != "scree" else _rock_shape(1.0, false, key)   # scree is freshly broken
+		row["ang"] = _rock_shape(journey_mid if journey_mid >= 0.0 else 1.0, kind == "water", key) if kind not in ["scree", "crag"] else _rock_shape(1.0, false, key)   # scree and crags are freshly broken
 		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop where the geology has an ore near, limestone over limestone
 		var left: int = _boulder_left_of(key, row)
 		taken.append([x, z, radius])   # a mined-out rock keeps its ground too, so no other try takes its place when the cell is laid again
@@ -10962,11 +10984,15 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			scree = clampf((_relief(Vector3(x, y, z), reach, ground) - rise_m) / rise_m, 0.0, 1.0)   # 0 at scree_rise_m within relief_reach_m, 1 at twice it
 
 		var scree_n: float = scree * scree_full
-
-		if draw >= maxf(maxf(scree_n, high_n), top_n):
-			continue
-
 		var kind: String = "scree" if scree_n >= high_n and scree_n >= top_n else ("high" if high_n >= top_n else "top")
+		var chance: float = maxf(maxf(scree_n, high_n), top_n)
+
+		if rise > float(cfg.get("steepest", 1.0)):
+			kind = "crag"   # too steep for a loose rock: only a crag stands here
+			chance = crag_n
+
+		if draw >= chance:
+			continue
 
 		if kind == "top" and y < h0 - float(cfg.get("top_near_m", 2.0)):
 			continue   # a hilltop's outcrop lies on its crown, not down its sides
