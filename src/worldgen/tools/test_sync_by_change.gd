@@ -197,6 +197,21 @@ func _initialize() -> void:
 	check(all_ok, "60 seconds of walking, jumping, counting down, carrying, taking and dropping: every copy right after every sync")
 	check(bad_removes == 0, "nothing is taken away that a player was never sent (%d)" % bad_removes)
 	check(not items._sync_seen.has(12), "a player who left is forgotten")
+	var sig_wrong: int = 0
+	var sig_seen: int = 0
+	items._items[items._next_id] = {"number": stone, "count": 7, "pos": Vector3(10.0, -3.27, 10.0), "left": 1.0e9, "rot_y": 1.2, "girth": 0.3}   # below sea level, turned
+	items._next_id += 1
+
+	for id in items._items:
+		var it: Dictionary = items._items[id]
+
+		if not it.has("struct") and not it.has("fire") and not it.has("tree"):
+			sig_seen += 1
+
+			if items._plain_sig(it) != int(items._sync_record(int(id), it)[1]):
+				sig_wrong += 1
+
+	check(sig_seen > 1000 and sig_wrong == 0, "the loose and rock records' quick signature is _sync_record's, for all %d (%d differ)" % [sig_seen, sig_wrong])
 	check(items._still_moved > 0, "still records moved without _refile are found by the check and filed where they are (%d)" % items._still_moved)
 	var filed_ok: bool = true
 

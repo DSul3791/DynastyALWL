@@ -20,23 +20,13 @@ static func split(rows: Array, budget: int = BUDGET) -> Array:
 	if rows.size() * ROW_MAX + 8 <= budget or var_to_bytes(rows).size() <= budget:
 		return [rows]   # nearly always: no size check for a few rows, one for the whole batch
 
+	# Too big: parts of as many rows as always fit (9 at the 1200-byte budget), so no row is measured (the soak on Lane B, 26 Nov 2026:
+	# measuring each row cost 17 us for 15 rows, 25 us for 30). A part or so more than packing them tight, a few dozen bytes each.
+	var per: int = maxi(int(float(budget - 8) / float(ROW_MAX)), 1)
 	var parts: Array = []
-	var part: Array = []
-	var size: int = 8   # the array's own header: type and count
 
-	for row in rows:
-		var n: int = var_to_bytes(row).size()
-
-		if not part.is_empty() and size + n > budget:
-			parts.append(part)
-			part = []
-			size = 8
-
-		part.append(row)
-		size += n
-
-	if not part.is_empty():
-		parts.append(part)
+	for at in range(0, rows.size(), per):
+		parts.append(rows.slice(at, at + per))
 
 	return parts
 

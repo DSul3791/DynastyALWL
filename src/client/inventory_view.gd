@@ -313,9 +313,13 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_root = world_root
 	_player_position = player_position
 	_ground_below = ground_below
+	var ts_table: int = FrameProbe.start()
 	table = ItemTableScript.load_default()
+	FrameProbe.stop("items setup: item table", ts_table)
+	var ts_recipes: int = FrameProbe.start()
 	inventory = InventoryScript.pack(table)
 	recipes = RecipeTableScript.load_default(table)
+	FrameProbe.stop("items setup: inventory and recipe table", ts_recipes)
 	net.inventory_full_received.connect(func(...args): _timed("_on_full", _on_full, args))
 	net.inventory_slots_received.connect(func(...args): _timed("_on_slots", _on_slots, args))
 	net.world_items_received.connect(func(...args): _timed("_queue_world_items", _queue_world_items, args))
@@ -359,6 +363,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 		if _weight_label != null:
 			_refresh_weight())
 	net.reputation_received.connect(func(_ids, names, points): rep_names = names; rep_points = points)
+	var ts_goals: int = FrameProbe.start()
 	_setup_goals()
 	var coins_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/coins.json"))
 	_coins_cfg = coins_parsed if typeof(coins_parsed) == TYPE_DICTIONARY else {}
@@ -375,11 +380,17 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_path_cfg = path_parsed if typeof(path_parsed) == TYPE_DICTIONARY else {}
 	_vitals_cfg = VitalsRules.load_config()
 	_carry_cfg = CarryRules.load_config()
+	FrameProbe.stop("items setup: goals and rule files", ts_goals)
+	var ts_inter: int = FrameProbe.start()
 	_register_builtin_interactables()
+	FrameProbe.stop("items setup: interactables", ts_inter)
+	var ts_warm: int = FrameProbe.start()
 	if DisplayServer.get_name() == "headless":
 		_prewarm_loose_meshes()   # tests and headless runs: all at once, as before
 	else:
 		_start_loose_prewarm()    # a window: a few meshes each frame while the ground loads
+	FrameProbe.stop("items setup: loose mesh prewarm start", ts_warm)
+	var ts_labels: int = FrameProbe.start()
 	auto_pickup = AutoPickupScript.new()
 	_auto_label = Label.new()
 	_auto_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -450,6 +461,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_thought_label.add_theme_color_override("font_color", Color(0.78, 0.86, 1.0))
 	_thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_thought_label)
+	FrameProbe.stop("items setup: labels", ts_labels)
 	net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())   # a stamped server refuses another build (protocol 133)
 	var me: Dictionary = CharacterStore.active()
 	net.my_look.rpc_id(1, str(me.get("name", "")), str(me.get("body", "")), str(me.get("code", "")))   # protocol 151: how the other players see this character

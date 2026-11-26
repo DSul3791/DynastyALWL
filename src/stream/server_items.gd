@@ -8695,6 +8695,21 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 						where[id] = fc
 						got[id] = true
 
+					if not it.has("struct") and not it.has("fire") and not it.has("tree"):
+						var plain: int = _plain_sig(it)   # loose things and rocks: the same signature, without _sync_record
+
+						if not known.has(id) or known[id] != plain:
+							var loose_rec: Array = rec_memo.get(id, [])
+
+							if loose_rec.is_empty():
+								loose_rec = _sync_record(int(id), it)
+								rec_memo[id] = loose_rec
+
+							added.append(_sync_row(peer, int(id), it, loose_rec, []))
+							known[id] = plain
+
+						continue
+
 					var rec: Array = rec_memo.get(id, [])
 
 					if rec.is_empty():
@@ -8991,22 +9006,35 @@ func _cell_info(ids: Array, rec_memo: Dictionary) -> Array:
 			continue
 
 		var it: Dictionary = _items[id]
-		var rec: Array = rec_memo.get(id, [])
+		var sig: int = 0
 
-		if rec.is_empty():
-			rec = _sync_record(int(id), it)
-			rec_memo[id] = rec
+		if not it.has("struct") and not it.has("fire") and not it.has("tree"):
+			sig = _plain_sig(it)   # a rock, a stone, anything loose: no _sync_record needed
+		else:
+			var rec: Array = rec_memo.get(id, [])
 
-		if int(rec[5]) >= 0 or (it.has("struct") and it["struct"].has("site")):
-			same = false   # a smelter's bellows or a site's list: different for each player
+			if rec.is_empty():
+				rec = _sync_record(int(id), it)
+				rec_memo[id] = rec
 
-		var x: int = posmod(int(id) * 131 + int(rec[1]), 2147483647)
+			sig = int(rec[1])
+
+			if int(rec[5]) >= 0 or (it.has("struct") and it["struct"].has("site")):
+				same = false   # a smelter's bellows or a site's list: different for each player
+
+		var x: int = posmod(int(id) * 131 + sig, 2147483647)
 		a = (a * 31 + x) % 2147483647
 		b = (b * 37 + x + 1) % 2147483629
 		low = minf(low, it["pos"].y)
 		high = maxf(high, it["pos"].y)
 
 	return [a * 2147483648 + b, same, low, high]
+
+
+# _sync_record's signature for a record with no struct, fire or tree (a rock, a boulder, a stone, anything loose), worked out without it:
+# the full sync looks at thousands of these each second (sync by change step 3, 26 Nov 2026). test_sync_by_change holds them equal.
+func _plain_sig(it: Dictionary) -> int:
+	return int(it["count"]) + 1000 * (BOULDER_STATE if it.has("boulder") else 0) + 100000 * int(it["number"]) + 1000000000 * int(round(it["pos"].y * 10.0))
 
 
 # A record's row for send_world_items: [id, number, count, position, state, extras]. `rec` is its _sync_record, `site_view` this player's

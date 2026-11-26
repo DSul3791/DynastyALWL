@@ -79,6 +79,22 @@ func _initialize() -> void:
 	check(s["new"] and s["done"] and int(b["ms"]) == 200, "a clock far back is a restarted server, not a stale part")
 	check(RowParts.split(batch_of(8)) == [batch_of(8)], "8 rows or fewer always fit: no size check at all")
 
+	# The biggest row server_animals builds (rows_near): every field at its largest, so ROW_MAX is a measure, not a guess.
+	var worst: Array = [2147483647 * 4, 255, Vector3(-123456.7, 2345.6, -765432.1), snappedf(-3.14159, 0.01), 12, 9007199254740 * 100,
+		Vector3(-123456.7, 2345.6, -765432.1), Vector2(-123456.7, -765432.1), 0.7]   # id, species, pos, heading, state, row ms, dog foe, plan, health
+	check(var_to_bytes(worst).size() <= RowParts.ROW_MAX, "the biggest animal row is %d bytes, within ROW_MAX %d" % [var_to_bytes(worst).size(), RowParts.ROW_MAX])
+	var worsts: Array = []
+
+	for i in 40:
+		worsts.append(worst.duplicate())
+
+	var worst_ok: bool = true
+
+	for p in RowParts.split(worsts):
+		worst_ok = worst_ok and var_to_bytes(p).size() <= RowParts.BUDGET
+
+	check(worst_ok, "40 of the biggest rows split into parts each within the budget")
+
 	# Through animal_view: a body missing from a part stays until its batch is complete.
 	var view = AnimalView.new()
 	root.add_child(view)

@@ -1201,7 +1201,7 @@ func _hunt(sp: int, s: float) -> bool:
 		if d > 1.6:
 			_face(to.normalized())
 			_key("move_forward", true)
-			_key("run", d > 6.0)
+			_key("run", d > 6.0 and int(client.items.strain_state) == 0)   # over-exerted (the heartbeat): a player stops running before they faint (26 Nov run: fainted mid-chase)
 			await _wait(0.25)
 			continue
 
