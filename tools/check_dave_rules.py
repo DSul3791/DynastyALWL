@@ -2,7 +2,9 @@
 """Dave's rulings as plain-number checks on the game's data (docs/RULINGS.md). No Godot: runs in merge_check.
 
 Each check names its R- key. GODOT lists the Godot tests that guard rulings these checks cannot read from data;
-the check fails if one of those test files is gone. A check on a ruling marked unverified only warns. A failing check is a found bug: fix the game, or replace the
+the check fails if one of those test files is gone. A check on a ruling marked unverified only warns; a check on a suggestion only
+prints a NOTE (Dave 26 Nov 2026, R-CORE-RULES-VS-SUGGESTIONS: only his explicit rules block; play-testing may show a suggestion wrong,
+then the game follows play-testing and the line is changed by its procedure). Rule and unclear lines block. A failing check is a found bug: fix the game, or replace the
 ruling by its procedure. Never loosen a check to make it pass. KNOWN_OPEN holds found bugs not fixed yet: they print
 as OPEN and do not fail the merge; take a key out once its fix is in.
     python3 tools/check_dave_rules.py
@@ -241,7 +243,9 @@ def main():
     for key, ok, what in results:
         if ok:
             continue
-        if "unverified" in rulings.get(key, ""):
+        if " · suggestion · " in rulings.get(key, ""):
+            print(f"NOTE {key}: {what} [a suggestion: if play-testing showed better, change the line and tell the coordinator; does not block]")
+        elif "unverified" in rulings.get(key, ""):
             print(f"WARN {key}: {what} [the ruling is marked unverified: tell the coordinator, do not block]")
         elif key in KNOWN_OPEN:
             print(f"OPEN {key}: {what} [{KNOWN_OPEN[key]}]")
@@ -249,7 +253,7 @@ def main():
             failed += 1
             print(f"FAIL {key}: {what}")
     passed = sum(1 for _, ok, _ in results if ok)
-    print(f"dave rules: {passed} pass, {failed} fail, {sum(1 for k, ok, _ in results if not ok and k in KNOWN_OPEN)} open (FAIL blocks a merge; OPEN and WARN do not)")
+    print(f"dave rules: {passed} pass, {failed} fail, {sum(1 for k, ok, _ in results if not ok and k in KNOWN_OPEN)} open (FAIL blocks a merge; OPEN, WARN and NOTE do not)")
     for key in KNOWN_OPEN:
         if all(ok for k, ok, _ in results if k == key):
             failed += 1

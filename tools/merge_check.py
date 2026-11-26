@@ -288,7 +288,8 @@ if export.returncode != 0:   # a release build would lack a file it loads or car
 rulings = subprocess.run([sys.executable, "tools/check_rulings.py"], capture_output=True, text=True)
 if rulings.returncode != 0:   # one live line per ruling, replaced rules removed (CONSTITUTION.md, "Rulings")
     for line in rulings.stdout.splitlines():
-        bad("rulings: " + line)
+        if not line.startswith("NOTE"):   # a suggestion's note never blocks
+            bad("rulings: " + line)
 dave = subprocess.run([sys.executable, "tools/check_dave_rules.py"], capture_output=True, text=True)
 if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (docs/RULINGS.md)
     for line in dave.stdout.splitlines():

@@ -9,7 +9,7 @@ import check_rulings
 fails = 0
 
 
-def case(name, rulings, doc, expect, frozen=False):
+def case(name, rulings, doc, expect, frozen=False, notes=0):
     global fails
     with tempfile.TemporaryDirectory() as d:
         root = pathlib.Path(d)
@@ -22,19 +22,22 @@ def case(name, rulings, doc, expect, frozen=False):
         subprocess.run(["git", "init", "-q"], cwd=root)
         subprocess.run(["git", "add", "."], cwd=root)
         got = len(check_rulings.problems(root))
-        if got != expect:
+        if got != expect or len(check_rulings.NOTES) != notes:
             fails += 1
-            print(f"FAIL {name}: {got} problems, expected {expect}")
+            print(f"FAIL {name}: {got} problems and {len(check_rulings.NOTES)} notes, expected {expect} and {notes}")
 
 
-ok = "- **R-A** · 25 Nov 2026 · fire keeps everything away.\n"
+ok = "- **R-A** · 25 Nov 2026 · rule · fire keeps everything away.\n"
 case("clean", ok, "Fire holds every animal.", 0)
-case("second line", ok + "- **R-A** · 26 Nov 2026 · again.\n", "", 1)
+case("second line", ok + "- **R-A** · 26 Nov 2026 · rule · again.\n", "", 1)
 case("struck through", ok + "~~old~~\n", "", 1)
 case("old rule in a doc", ok, "The pack rushes, Torch or not.", 1)
 case("undated line", "- **R-A** fire.\n", "", 2)
 case("date without a day", "- **R-A** · Nov 2026 · fire.\n", "", 2)
-case("mixed-case phrase", ok, "Torch Or Not", 1)   # bad line, and R-A then missing for the retired phrase
+case("mixed-case phrase", ok, "Torch Or Not", 1)
+case("no rule or suggestion mark", "- **R-A** · 25 Nov 2026 · fire.\n", "", 2)
+case("an old phrase against a suggestion only notes", ok.replace("· rule ·", "· suggestion ·"), "Torch or not.", 0, notes=1)
+case("an old phrase against an unclear line blocks", ok.replace("· rule ·", "· unclear ·"), "Torch or not.", 1)   # bad line, and R-A then missing for the retired phrase
 case("old rule in a frozen checkpoint", ok, "The pack rushes, Torch or not.", 0, frozen=True)
 print("test_check_rulings: %s" % ("FAIL" if fails else "PASS"))
 sys.exit(1 if fails else 0)
