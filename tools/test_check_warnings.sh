@@ -13,7 +13,7 @@ ERR=$(mktemp)
 printf '      2 src/a.gd\n' > "$STUB/baseline.txt"   # the stand-in runs' baseline (WARNING_BASELINE in run)
 trap 'rm -rf "$STUB" "$ERR"' EXIT
 REAL_GODOT=$(command -v godot)
-if [ -z "$REAL_GODOT" ] && [ -e "${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}" ]; then
+if [ -z "$REAL_GODOT" ] && [ -e "${GODOT_EXE:-C:/DynastyLane/godot/godot_lane_a.exe}" ]; then
 	export PATH="$PWD/tools:$PATH"   # the shim local_check.sh uses on Dave's PC
 	REAL_GODOT=$PWD/tools/godot
 fi

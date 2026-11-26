@@ -37,7 +37,7 @@ The run started 18:29 never got a Godot slot (two slots held by hung headless sc
 ### Plan to run when the slots are free (Dave clears the hung scripts first; do not kill Godot processes unless sure)
 Voxel build, one tracked job, from the daily's latest commit (a96dae1f or later):
 ```
-export GODOT_EXE="C:/GodotInstaller/godot.windows.editor.x86_64.exe"
+export GODOT_EXE="C:/DynastyLane/godot/godot_lane_a.exe"   # tests only from C:\DynastyLane (R-TEAM-LANE-C-DRIVE)
 python3 tools/tests_for_diff.py a5f011a1 HEAD --full > plan.json     # a5f011a1 = my last green full pass (166 pass; the 2 test fixes are in 4046d8df)
 bash tools/run_tests.sh --jobs 3 --out DIR --plan plan.json            # about 11 min; GODOT_SLOTS=4 if the queue is full
 ```
