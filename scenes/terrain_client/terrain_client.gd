@@ -8861,6 +8861,8 @@ func _exit_tree() -> void:
 	_freeze_watch.stop()
 	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
+	DynastyBodyScript.finish_clips()   # and the body's clip worker (dynasty_body.gd)
+	DynastyBodyScript.clips_on_worker = false   # the menus after the game (death screen, launcher) make a body's clips at once again
 
 	if crash_report != null:
 		crash_report.mark_clean()

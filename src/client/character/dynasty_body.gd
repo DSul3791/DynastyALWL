@@ -85,6 +85,7 @@ static var _scenes: Dictionary = {}            # model id -> its PackedScene, on
 static var _checked: Dictionary = {}           # model id -> false (the glb cannot be used) or true; missing: not tried yet
 static var force_unavailable: bool = false     # tests: pretend the glb is not imported
 static var clips_on_worker: bool = false       # the game client in a window turns it on (terrain_client.gd): the clips are made on a worker; headless runs, tools and menus make them at once
+static var _failed: Dictionary = {}            # model id -> true: its clip worker made nothing this run
 static var _library_jobs: Dictionary = {}      # model id -> {job, out, rests, since}: its clips being made on a worker (_build_animations)
 static var _libraries: Dictionary = {}         # model id -> AnimationLibrary of the game's names and the file's own names, built once per run and shared by that model's bodies
 
@@ -350,7 +351,7 @@ func _rest_origin(bone: String) -> Vector3:
 # frame); that body and any made meanwhile wear the clips a frame or a few later, in _process (_clips_later). Headless runs, the picture tools
 # and the menus (clips_on_worker off) make them here, as before.
 func _build_animations() -> void:
-	if not _libraries.has(model) and not _library_jobs.has(model):
+	if not _libraries.has(model) and not _library_jobs.has(model) and not _failed.has(model):
 		var own_library: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
 		var own: Dictionary = {}       # clip name -> its source Animation, on this rig
 
@@ -364,6 +365,9 @@ func _build_animations() -> void:
 		else:
 			_start_library(model, own, _rest_copy(skeleton))   # the worker reads only bone rests, from its own copy: the body's skeleton is animated on the main thread meanwhile
 
+	if _failed.has(model):
+		return   # its worker made nothing (the error was printed once): the file's own clips stay on
+
 	if not _libraries.has(model):
 		animation_player.stop()   # nothing of the file's own plays meanwhile (its clips travel the hips)
 		_clips_later = true
@@ -376,13 +380,20 @@ func _build_animations() -> void:
 # Started from a static function, so the worker's Callable holds no body (one freed meanwhile is no matter).
 static func _start_library(model_id: String, own: Dictionary, rests: Skeleton3D) -> void:
 	var out: Array = []
-	var job: int = WorkerThreadPool.add_task(_fill_library.bind(own, rests, out), false, "dynasty body clips")
+	var job: int = WorkerThreadPool.add_task(_fill_library.bind(own, rests, out), true, "dynasty body clips")   # high priority: every body of this model waits on it, and the join's ground work fills the pool
 	_library_jobs[model_id] = {"job": job, "out": out, "rests": rests, "since": Time.get_ticks_msec()}
 
 
 # On the worker: the library, handed back in `out` (read on the main thread only after the task has finished).
 static func _fill_library(own: Dictionary, rests: Skeleton3D, out: Array) -> void:
 	out.append(_make_library(own, rests))
+
+
+# Waits for any clip worker still running and takes its clips (the game's exit, terrain_client.gd _exit_tree): no task outlives the program and no bone
+# copy is left over.
+static func finish_clips() -> void:
+	for model_id in _library_jobs.keys():
+		_finish_library(model_id)
 
 
 # True once the clips of `model_id` are made: no worker is making them (made, or never started).
@@ -403,6 +414,7 @@ static func _finish_library(model_id: String) -> void:
 
 	if out.is_empty() or out[0] == null:
 		push_error("dynasty body: the clip worker for %s made nothing" % model_id)
+		_failed[model_id] = true   # no retry for every later body of this model
 		return
 
 	_libraries[model_id] = out[0]

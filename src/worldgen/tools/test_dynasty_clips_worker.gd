@@ -45,8 +45,8 @@ func _init() -> void:
 	# loaders keep the pool busy).
 	var sleepers: Array = []
 
-	for i in range(OS.get_processor_count() * 2):
-		sleepers.append(WorkerThreadPool.add_task(func() -> void: OS.delay_msec(800), false, "test sleeper"))
+	for i in range(OS.get_processor_count()):
+		sleepers.append(WorkerThreadPool.add_task(func() -> void: OS.delay_msec(800), true, "test sleeper"))   # high priority, as the clip worker is: they hold the threads it would take
 
 	Body.clips_on_worker = true
 	var t0: int = Time.get_ticks_msec()
@@ -65,8 +65,9 @@ func _init() -> void:
 		WorkerThreadPool.wait_for_task_completion(task)
 
 	var waited: int = 0
+	var deadline: int = Time.get_ticks_msec() + 20000   # a time limit, not a frame count: a loaded lane machine runs fewer frames
 
-	while waited < 600 and (first.get("_clips_later") or second.get("_clips_later")):
+	while Time.get_ticks_msec() < deadline and (first.get("_clips_later") or second.get("_clips_later")):
 		await process_frame
 		waited += 1
 
