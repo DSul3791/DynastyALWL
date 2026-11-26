@@ -31,7 +31,9 @@ func _initialize() -> void:
 	check(not Grip.holds(mount), "an empty hand holds nothing")
 	var thing: Node3D = Node3D.new()
 	mount.add_child(thing)
-	check(Grip.holds(mount), "a hand with a tool on it holds it")
+	check(not Grip.holds(mount), "a thing carried in the palm (no grip fist on it, a kit) is not gripped")
+	HeldItem.third_fist_on(thing, Color.WHITE)
+	check(Grip.holds(mount), "a tool with its grip fist on it is gripped")
 	thing.visible = false
 	check(not Grip.holds(mount), "a hidden tool is not held")
 	mount.queue_free()
@@ -53,11 +55,22 @@ func _initialize() -> void:
 
 	var avatar: Node3D = MyCharacter.make_avatar()
 	root.add_child(avatar)
-	await process_frame
+
+	for _i in 3:
+		await process_frame   # the first skeleton updates have run: the open hand is drawn
 	var hand_mount: Marker3D = avatar.get("hand_mount_r")
 	var wrist: Node3D = hand_mount.get_parent() as Node3D   # the BoneAttachment3D on the hand bone: it sits at the wrist and follows the drawn (modified) pose
 	var grip: Node = avatar.get("grip")
 	check(grip != null, "the body has its Grip modifier")
+
+	if grip == null:
+		_done()
+		return
+
+	check(int(grip._axes[0]) >= 0 and int(grip._thick[0]) >= 0 and int(grip._thick[0]) != int(grip._axes[0]), "the hand's length and palm axes are two different axes (%d, %d)" % [int(grip._axes[0]), int(grip._thick[0])])
+	var left_mount: Marker3D = avatar.get("hand_mount_l")
+	var left_wrist: Node3D = left_mount.get_parent() as Node3D
+	var left_open: float = left_mount.global_position.distance_to(left_wrist.global_position)
 	var open_scale: float = hand_mount.global_basis.get_scale().x
 	var open_grip: float = hand_mount.global_position.distance_to(wrist.global_position)
 	var tool: Node3D = HeldItem.look_tool_node("stone_knife")
@@ -72,9 +85,25 @@ func _initialize() -> void:
 
 	var closed_grip: float = hand_mount.global_position.distance_to(wrist.global_position)
 	check(closed_grip < open_grip * 0.7 and closed_grip > open_grip * 0.4, "holding a knife the hand is drawn shorter: the grip %.3f m from the wrist, open %.3f m" % [closed_grip, open_grip])
-	var held_scale: Vector3 = hand_mount.global_basis.get_scale()
-	check(absf(held_scale.x - open_scale) < 0.02 and absf(held_scale.y - open_scale) < 0.02 and absf(held_scale.z - open_scale) < 0.02, "and the knife keeps its size: the mount's scale %s, open %.3f" % [str(held_scale), open_scale])
+	var held_scale: Vector3 = tool.global_basis.get_scale()
+	check(absf(held_scale.x - open_scale) < 0.02 and absf(held_scale.y - open_scale) < 0.02 and absf(held_scale.z - open_scale) < 0.02, "and the knife keeps its size: its scale %s, open %.3f" % [str(held_scale), open_scale])
+	# Read before the frame's modifiers ran (player_view.gd follow_hand moves the attachment to the clip's pose at once): the mount carries no hand scale there either.
+	(hand_mount.get_parent() as BoneAttachment3D).on_skeleton_update()
+	var early_scale: Vector3 = hand_mount.global_basis.get_scale()
+	check(absf(early_scale.x - open_scale) < 0.02 and absf(early_scale.y - open_scale) < 0.02 and absf(early_scale.z - open_scale) < 0.02, "read before the modifiers, the mount's scale is still %.3f (%s): a spear placed then is not squashed" % [open_scale, str(early_scale)])
 	tool.queue_free()
+
+	# The left hand closes on a torch's grip the same way.
+	var torch: Node3D = Node3D.new()
+	left_mount.add_child(torch)
+	HeldItem.third_fist_on(torch, Color.WHITE)
+
+	for _i in 30:
+		await process_frame
+
+	var left_closed: float = left_mount.global_position.distance_to(left_wrist.global_position)
+	check(left_closed < left_open * 0.7, "the left hand closes too: its grip %.3f m from the wrist, open %.3f m" % [left_closed, left_open])
+	torch.queue_free()
 
 	for _i in 30:
 		await process_frame
