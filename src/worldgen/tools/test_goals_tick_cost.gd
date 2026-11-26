@@ -50,19 +50,21 @@ func _initialize() -> void:
 	items._goals_tick(false)
 	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	print("goals tick: 32 players walking at night, 400 records: %.2f ms, %d walks for the lit fires" % [ms, items.lit_scans - before])
-	check(items.lit_scans - before <= 1, "one walk for the lit fires for all 32 players, not one each (%d)" % (items.lit_scans - before))
+	check(items.lit_scans - before == 1, "one walk for the lit fires for all 32 players, not one each and not none (%d)" % (items.lit_scans - before))
 	check(not items._lit_scope, "the goals tick's fire list is its own: off after it")
 
-	# A fire lit between two goals ticks is seen by the next.
+	# A fire lit between two goals ticks is seen by the next: the tick drops the list it kept, so player 1 walking past
+	# the new fire counts lit walking. Without the reset at the tick's start the list kept from the tick before would hide it.
+	var walked: float = float(items._goal_state_of(1)["goal_counts"].get("moved_lit_night", 0.0))
+	check(walked == 0.0, "no lit walking before any fire (%.1f)" % walked)
 	var fire: int = items._next_id
-	items._items[fire] = {"number": items.table.number_of("stone"), "count": 1, "pos": Vector3(5.0, 5.0, 10.0), "left": 1.0e9, "fire": {"state": 1}}
+	items._items[fire] = {"number": stone, "count": 1, "pos": Vector3(5.0, 5.0, 10.0), "left": 1.0e9, "fire": {"state": 1}}
 	items._next_id += 1
+	items.report_position(1, Vector3(7.0, 5.0, 10.0))   # 2 m on, 2 m from the new fire
 	items._goals_tick(false)
-	check(items._lit_fire_within(Vector3(5.0, 5.0, 10.0), 4.0), "outside the goals tick a fire lit since is found")
-	items._lit_scope = true
-	items._lit_valid = false
-	check(items._lit_fire_within(Vector3(5.0, 5.0, 10.0), 4.0), "and inside it, with a fresh list")
-	items._lit_scope = false
+	walked = float(items._goal_state_of(1)["goal_counts"].get("moved_lit_night", 0.0))
+	check(walked > 0.0, "the next goals tick sees the fire lit since and counts the walk by it (%.1f)" % walked)
+	check(items._lit_fire_within(Vector3(5.0, 5.0, 10.0), 4.0), "outside the goals tick the fire is found too")
 
 	print("test_goals_tick_cost: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
