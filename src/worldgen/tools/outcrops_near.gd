@@ -51,6 +51,8 @@ func _init() -> void:
 		elif argument == "--fields":
 			fields = true
 
+	_tag = "%d" % int(at.x)
+
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world + "/world.json", errors)
 	var rules: Dictionary = TileHeightScript.load_rules(world + "/plan/tile_rules.json", errors)
@@ -104,6 +106,7 @@ func _init() -> void:
 	quit(0)
 
 
+var _tag: String = ""      # the --at spot's x, in the picture names
 var _last_items = null   # the last _boulders layout's ServerItems, wired to the world: its ground and water answer the camera spots
 
 
@@ -129,11 +132,12 @@ func _print_fields(laid: Dictionary, top: int) -> void:
 		var cells: Dictionary = by_cell[kind]
 
 		if not cells.has(cell):
-			cells[cell] = [0, 0.0, 0.0]
+			cells[cell] = [0, 0.0, 0.0, []]
 
 		cells[cell][0] = int(cells[cell][0]) + 1
 		cells[cell][1] = maxf(float(cells[cell][1]), float(laid[key]["radius"]))
 		cells[cell][2] = p.y
+		(cells[cell][3] as Array).append("(%.0f, %.0f) r %.1f" % [p.x, p.z, float(laid[key]["radius"])])
 
 	print("rock fields: %s" % str(kinds))
 
@@ -149,7 +153,8 @@ func _print_fields(laid: Dictionary, top: int) -> void:
 			print("  cell middle (%.0f, %.0f) about %.0f m up: %d rocks, largest radius %.2f m" % [mid.x, mid.y, float(cells[c][2]), int(cells[c][0]), float(cells[c][1])])
 
 			if n < 3:
-				var name: String = "rocks_%s_%d" % [kind.split(" ")[0], n + 1]
+				print("    its rocks: %s" % ", ".join(PackedStringArray(cells[c][3])))
+				var name: String = "rocks_%s_%s_%d" % [_tag, kind.split(" ")[0], n + 1]   # the spot's x in the name: two runs never share a picture name
 				print("    %s" % _camera_line(mid, 20.0, 1.7, name))
 				print("    %s" % _camera_line(mid, 45.0, 6.0, name + "_wide"))
 

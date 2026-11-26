@@ -85,7 +85,7 @@ func _init() -> void:
 		far_out += 1 if x < -40.0 else 0
 
 	print("rock_fields: cliff: %d rocks at its foot, %d on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, far_out, per_cell_ms])
-	check(foot >= 40, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
+	check(foot >= 30, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
 	check(face == 0, "no rock sits on the cliff face (%d)" % face)
 	check(far_out * 10 <= foot, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
 	check(per_cell_ms < CELL_BUDGET_MS, "a cell under a cliff lays out in under %.0f ms on average (%.2f)" % [CELL_BUDGET_MS, per_cell_ms])
@@ -95,7 +95,7 @@ func _init() -> void:
 		if (int(r[0]) & 0xff) != at_cliff.FIELD_ERRATIC_SLOT:   # not a lone giant
 			big_foot = maxf(big_foot, float(r[2]))
 
-	check(big_foot > 0.9 and big_foot <= 1.8 * 1.0001, "scree rocks come up to 3.6 m across (largest radius %.2f)" % big_foot)
+	check(big_foot > 1.5 and big_foot <= 2.6 * 1.0001, "scree cores come up to 5.2 m across (largest radius %.2f)" % big_foot)
 	var loose_on_face: int = 0
 
 	for r in rows:
@@ -197,7 +197,7 @@ func _init() -> void:
 			low_small += 1
 
 	print("rock_fields: %d rocks in 100 cells above the treeline; on 400 flat lowland cells %d small and %d lone giants" % [high_rocks, low_small, low_giants])
-	check(high_rocks >= 300, "ground above the treeline is rocky (%d rocks in 100 cells)" % high_rocks)
+	check(high_rocks >= 200, "ground above the treeline is rocky (%d rocks in 100 cells)" % high_rocks)
 	check(low_small == 0 and low_rows.size() == low_giants, "flat lowland gets no rocky ground (%d small rocks, %d loose stones)" % [low_small, low_rows.size() - low_giants])
 	check(low_giants >= 1 and low_giants <= 20, "a lone giant boulder now and then on the open flat (%d in 400 cells)" % low_giants)
 

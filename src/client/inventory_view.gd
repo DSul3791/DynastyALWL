@@ -138,6 +138,7 @@ const BOG_LUMPS := 4                      # ore lumps on a full patch
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
+var _skirt_meshes: Array = []        # the rocky ground's gravel aprons (_skirt_mesh), SKIRT_VARIANTS of them, made once
 var _boulder_rock: ShaderMaterial
 var _boulder_cracks: ShaderMaterial   # the cracks drawn over a worked boulder (BugsList entry 3), one material, its depth per boulder (instance uniforms)
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
@@ -3856,10 +3857,49 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
 	_root.add_child(body)
+	var skirt: Array = extra.get("skirt", [])
+
+	# The rocky ground's big rocks lie in an apron of their own broken stones (look only: no collision, nothing to pick up, no world rows;
+	# PR #1988), laid on the slope under the rock and as big as the rock was laid. One shared mesh a variant, so the engine draws them together.
+	if skirt.size() >= 3:
+		var gravel: MeshInstance3D = MeshInstance3D.new()
+		gravel.mesh = _skirt_mesh(int(absi(id)) % SKIRT_VARIANTS)
+		gravel.material_override = _boulder_rock
+		gravel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		body.add_child(gravel)
+		var up: Vector3 = Vector3(-float(skirt[0]), 1.0, -float(skirt[1])).normalized()   # the ground's normal from its fall per metre
+		gravel.global_basis = Basis(Quaternion(Vector3.UP, up)) * Basis.from_scale(Vector3.ONE * float(extra.get("radius", 0.5)))
+		gravel.global_position = body.position + Vector3(0.0, float(skirt[2]), 0.0)   # the ground under the rock's middle (it is set into the slope)
 	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
 		"ore": str(extra.get("ore", ""))}   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
 	_boulders[id] = entry
 	_size_boulder(entry)
+
+
+const SKIRT_VARIANTS := 3
+const SKIRT_STONES := 16   # stones in an apron, from SKIRT_NEAR to SKIRT_FAR radii out, SKIRT_SIZE radii across
+
+
+# A gravel apron round a rock of radius 1: SKIRT_STONES flattened lumps (grass_view's pebble) in a ring on the ground plane (y 0), denser
+# near the rock, each set a quarter into the ground. Seeded by `variant`, so every apron of a variant is the same mesh.
+func _skirt_mesh(variant: int) -> ArrayMesh:
+	while _skirt_meshes.size() < SKIRT_VARIANTS:
+		var pebble: ArrayMesh = load("res://src/client/grass_view.gd")._make_pebble()
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = 9100 + _skirt_meshes.size()
+		var tool: SurfaceTool = SurfaceTool.new()
+		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+
+		for n in range(SKIRT_STONES):
+			var angle: float = rng.randf() * TAU
+			var out: float = lerpf(1.05, 2.3, pow(rng.randf(), 1.6))
+			var size: float = lerpf(0.08, 0.26, rng.randf()) * (1.2 - 0.3 * (out - 1.05))
+			var place: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(cos(angle) * out, -0.25 * size, sin(angle) * out))
+			tool.append_from(pebble, 0, place)
+
+		_skirt_meshes.append(tool.commit())
+
+	return _skirt_meshes[variant]
 
 
 # The boulder material for a row's "ore": the plain granite for "" (or an ore with no OUTCROP_LOOK), else that ore's own copy, made once.
