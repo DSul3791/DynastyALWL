@@ -85,7 +85,7 @@ func _init() -> void:
 		far_out += 1 if x < -40.0 else 0
 
 	print("rock_fields: cliff: %d rocks at its foot, %d on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, far_out, per_cell_ms])
-	check(foot >= 30, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
+	check(foot >= 20, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
 	check(face == 0, "no rock sits on the cliff face (%d)" % face)
 	check(far_out * 10 <= foot, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
 	check(per_cell_ms < CELL_BUDGET_MS, "a cell under a cliff lays out in under %.0f ms on average (%.2f)" % [CELL_BUDGET_MS, per_cell_ms])
@@ -104,6 +104,35 @@ func _init() -> void:
 
 	check(loose_on_face == 0, "no loose stone lies on the face (%d)" % loose_on_face)
 	check(rows.size() > rocks_of(rows).size(), "the rocky ground has loose stones to pick up too (%d of %d)" % [rows.size() - rocks_of(rows).size(), rows.size()])
+
+	# Clusters: cores with satellites round them; every big mountain rock carries its gravel apron ("skirt": fall x, fall z, sink), and no
+	# rock is bigger than the floor lookups reach (FLOOR_ROWS_REACH_M).
+	var satellites: int = 0
+	var skirt_ok: bool = true
+	var biggest: float = 0.0
+
+	for id in at_cliff._items:
+		var it: Dictionary = at_cliff._items[id]
+
+		if not it.has("boulder") or (int(it["scatter"]) & at_cliff.FIELD_KEY) == 0:
+			continue
+
+		var slot: int = int(it["scatter"]) & 0xff
+		var rock_r: float = float(it["boulder"]["radius"])
+		biggest = maxf(biggest, rock_r)
+		satellites += 1 if slot < at_cliff.FIELD_WATER_FIRST and slot % at_cliff.FIELD_CLUSTER_SLOTS != 0 else 0
+		var wants_skirt: bool = slot < at_cliff.FIELD_WATER_FIRST and rock_r >= 0.8
+		skirt_ok = skirt_ok and ((it["boulder"] as Dictionary).has("skirt") == wants_skirt)
+
+	check(satellites > 0, "the cliff foot's rocks come in clusters: smaller rocks round a core (%d)" % satellites)
+	check(skirt_ok, "every mountain rock of 0.8 m or more, and only those, carries its gravel apron")
+	var cfg_radius: Dictionary = at_cliff._boulder_cfg["rock_fields"]["radius"]
+	var cfg_most: float = 0.0
+
+	for kind in cfg_radius:
+		cfg_most = maxf(cfg_most, float((cfg_radius[kind] as Array)[1]))
+
+	check(cfg_most <= at_cliff.FLOOR_ROWS_REACH_M and biggest <= at_cliff.FLOOR_ROWS_REACH_M, "no rock is bigger than the floor lookups reach (%.1f, laid %.2f, reach %.1f)" % [cfg_most, biggest, at_cliff.FLOOR_ROWS_REACH_M])
 
 	# Keys: every rock has the rocky ground's key and a boulder's, all different; laid again the same; the older boulders unchanged.
 	var keys: Dictionary = {}

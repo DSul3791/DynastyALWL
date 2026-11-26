@@ -444,6 +444,7 @@ const BOG_OPEN_STEP_M := 1.0       # the silting fill is sampled on this grid be
 const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
 const FIELD_KEY := 1 << 48      # rocky ground (_lay_out_rock_fields): rocks FIELD_KEY | BOULDER_KEY | cell x << 28 | cell y << 8 | slot 0..127, their loose stones FIELD_KEY | the same cell bits | slot 128..255; bit 48 is in no other key
 const FIELD_CLUSTER_TRIES := 8  # a cell's mountain cluster tries (foot of steep ground, above the treeline, hilltops)
+const FIELD_SATELLITE_REACH_M := 9.0  # how far past its core's cell a cluster's satellite can lie (core + satellite + spread x core: 8.7 m at 2.8 m)
 const FIELD_CLUSTER_SLOTS := 12 # each try's slots: its core rock, then up to 11 smaller ones round it (slots 0..95)
 const FIELD_WATER_FIRST := 96   # slots 96..119: rounded rocks in river and lake beds and on their banks
 const FIELD_WATER_TRIES := 24
@@ -3568,7 +3569,7 @@ func _settled_loose(position: Vector3, near: Array = []) -> Vector3:
 	return Vector3(position.x, top, position.z) if not is_nan(top) and top > rest.y and top < position.y + 0.05 else rest
 
 
-const FLOOR_ROWS_REACH_M := 3.0   # a foundation's or floor's middle is at most this far from a point over it (4 m footprints: half the diagonal 2.83 m; boulders 2 m at most)
+const FLOOR_ROWS_REACH_M := 3.0   # a foundation's or floor's middle is at most this far from a point over it (4 m footprints: half the diagonal 2.83 m; boulders 3 m at most: rock_fields cores and lone giants, test_rock_fields checks)
 const BOULDER_TOP_SHARE := 0.7   # a boulder's drawn top over its spot, as a share of its radius (world_audit --walk measured the hull)
 
 
@@ -3644,7 +3645,7 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> void:
 	var loose: Array = []
 
-	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 2 m), never a walk of every record
+	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 3 m), never a walk of every record
 		if not _items.has(id):
 			continue
 
@@ -10185,8 +10186,8 @@ func _scatter_around_players() -> void:
 			if _items.has(id) and _items[id].has("scatter"):
 				_items.erase(id)
 
-			if _still_at.has(id):
-				_still_out(id)   # out of the still grids now, not left for the sync's check round
+				if _still_at.has(id):
+					_still_out(id)   # out of the still grids now, not left for the sync's check round
 
 		_scatter_cells.erase(cell)
 		_cells_done.erase(cell)
@@ -10798,7 +10799,7 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 # - rounded rocks in shallow river and lake beds and on their banks, more and bigger up toward the headwaters (the journey);
 # - now and then a lone giant boulder on an open valley floor;
 # - loose stones to pick up on the same rocky ground.
-# A seeded patch noise (patch_m across) makes the mountain kinds come in patches, not an even sprinkle. Every try takes the same five draws
+# A seeded patch noise (patch_m across) makes the mountain kinds come in patches, not an even sprinkle. Every try takes the same draws
 # from the cell's own "rock fields" stream whatever happens to it and its key is its slot, so a rock never moves to another's key; the keys
 # are new (FIELD_KEY), so the cell's older boulders and every worked rock stay as they were. No rock is laid on or beside anything built
 # (any structure: buildings, stations, tilled beds, trodden paths and roads), nor in Edda and Hob's camp or a goblin camp (NpcCamp keep);
@@ -10960,7 +10961,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		for k in range(mini(many, FIELD_CLUSTER_SLOTS - 1)):
 			var a: Array = around[k]
 			var small: float = core * lerpf(float(share[0]), float(share[1]), pow(float(a[2]), power))
-			var out: float = core + small + float(a[1]) * core * spread
+			var out: float = minf(core + small + float(a[1]) * core * spread, FIELD_SATELLITE_REACH_M - small)   # within the neighbour lookup's reach
 			var sx: float = x + cos(float(a[0])) * out
 			var sz: float = z + sin(float(a[0])) * out
 
@@ -11059,7 +11060,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 # (nothing is laid on or beside a camp, a station, a fire or a player); into `taken` the cell's own boulders as [x, z, radius], read from the ids
 # this cell was given (a rock across the border in the next cell is not looked at: which cell is laid first changes with where players walk).
 func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Dictionary, built: Array, taken: Array) -> void:
-	var reach: float = cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0
+	var reach: float = cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0 + FIELD_SATELLITE_REACH_M   # a satellite lies up to that far past its cell
 
 	for id in _ids_near(Vector3(mid.x, h0, mid.y), reach):   # the last world sync's grid (every second, after the scatter), so a few cells' ids
 		var it: Dictionary = _items.get(id, {})

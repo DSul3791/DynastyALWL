@@ -3869,7 +3869,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 		body.add_child(gravel)
 		var up: Vector3 = Vector3(-float(skirt[0]), 1.0, -float(skirt[1])).normalized()   # the ground's normal from its fall per metre
 		gravel.global_basis = Basis(Quaternion(Vector3.UP, up)) * Basis.from_scale(Vector3.ONE * float(extra.get("radius", 0.5)))
-		gravel.global_position = body.position + Vector3(0.0, float(skirt[2]), 0.0)   # the ground under the rock's middle (it is set into the slope)
+		gravel.global_position = body.global_position + Vector3(0.0, float(skirt[2]), 0.0)   # the ground under the rock's middle (it is set into the slope)
 	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
 		"ore": str(extra.get("ore", ""))}   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
 	_boulders[id] = entry
