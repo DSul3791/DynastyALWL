@@ -10800,8 +10800,9 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		var radius: float = lerpf(float(sizes[0]), float(sizes[1]), size)
 
-		if kind != "scree" and rise * radius > float(cfg.get("settle_drop_m", 0.5)):
-			continue   # a big rock on a slope would hang over the ground on its low side
+		# On a slope a rock is set into the ground by a share of the drop across it, so its low side meets the ground instead of hanging over
+		# it (rocks lie bedded in a mountainside); a lone giant stays on gentle ground (steepest above).
+		var sink: float = rise * radius * float(cfg.get("sink_share", 0.6))
 
 		if NpcCamp.within_keep(spot):
 			continue
@@ -10823,7 +10824,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		if left <= 0:
 			continue
 
-		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}
+		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot) - Vector3(0.0, sink, 0.0), "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
 
 	# Loose stones on the same rocky ground (drops.json ground_scatter gives every cell a few; a rocky one many more).

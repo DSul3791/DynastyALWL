@@ -95,7 +95,7 @@ func _init() -> void:
 		if (int(r[0]) & 0xff) != at_cliff.FIELD_ERRATIC_SLOT:   # not a lone giant
 			big_foot = maxf(big_foot, float(r[2]))
 
-	check(big_foot > 0.9 and big_foot <= 1.5 * 1.0001, "scree rocks come up to 3 m across (largest radius %.2f)" % big_foot)
+	check(big_foot > 0.9 and big_foot <= 1.8 * 1.0001, "scree rocks come up to 3.6 m across (largest radius %.2f)" % big_foot)
 	var loose_on_face: int = 0
 
 	for r in rows:

@@ -10,8 +10,8 @@ extends SceneTree
 # and as covered, and says "exact" when both give the same boulders, or warns when they differ.
 #   godot --headless --path . --script res://src/worldgen/tools/outcrops_near.gd -- [--at=53296,68080] [--radius=400] [--ores=tin,copper] [--top=20]
 #        [--world=res://worlds/base_world] [--fields]
-# --fields: also the rocky ground's rocks (boulders.json rock_fields, FIELD_KEY): how many of each kind, and the rockiest cells (where to take
-# its pictures and frame times), with their middle and ground height.
+# --fields: also the rocky ground's rocks (boulders.json rock_fields, FIELD_KEY): how many of each kind, and the rockiest cells of each kind
+# (where to take its pictures and frame times), with their middle and ground height and look_rig lines for a camera on dry ground.
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -104,36 +104,85 @@ func _init() -> void:
 	quit(0)
 
 
+var _last_items = null   # the last _boulders layout's ServerItems, wired to the world: its ground and water answer the camera spots
+
+
 # The rocky ground's rocks among `laid` (scatter key -> row): a count by kind (the key's slot: 0..95 mountain, 96..119 water, 127 a lone
-# giant) and the `top` cells with the most rocks.
+# giant; mountain rocks split at the 620 m treeline into high ground and cliff feet or hilltops), and for each kind the `top` cells with the
+# most rocks, each with ready look_rig lines: a camera on dry ground 20 m off at eye height facing the cell, and a wide one 45 m off and 6 m up.
 func _print_fields(laid: Dictionary, top: int) -> void:
-	var kinds: Dictionary = {"mountain": 0, "water": 0, "lone giant": 0}
-	var by_cell: Dictionary = {}
+	var kinds: Dictionary = {"high ground": 0, "cliff foot or hilltop": 0, "water": 0, "lone giant": 0}
+	var by_cell: Dictionary = {}   # kind -> {cell: [rocks, largest radius, a rock's height]}
+
+	for kind in kinds:
+		by_cell[kind] = {}
 
 	for key in laid:
 		if (int(key) & ItemsScript.FIELD_KEY) == 0:
 			continue
 
 		var slot: int = int(key) & 0xff
-		var kind: String = "lone giant" if slot == ItemsScript.FIELD_ERRATIC_SLOT else ("water" if slot >= ItemsScript.FIELD_WATER_FIRST else "mountain")
-		kinds[kind] = int(kinds[kind]) + 1
 		var p: Vector3 = laid[key]["pos"]
+		var kind: String = "lone giant" if slot == ItemsScript.FIELD_ERRATIC_SLOT else ("water" if slot >= ItemsScript.FIELD_WATER_FIRST else ("high ground" if p.y >= 620.0 else "cliff foot or hilltop"))
+		kinds[kind] = int(kinds[kind]) + 1
 		var cell: Vector2i = Vector2i(int(floor(p.x / 32.0)), int(floor(p.z / 32.0)))
+		var cells: Dictionary = by_cell[kind]
 
-		if not by_cell.has(cell):
-			by_cell[cell] = [0, 0.0, 0.0]
+		if not cells.has(cell):
+			cells[cell] = [0, 0.0, 0.0]
 
-		by_cell[cell][0] = int(by_cell[cell][0]) + 1
-		by_cell[cell][1] = maxf(float(by_cell[cell][1]), float(laid[key]["radius"]))
-		by_cell[cell][2] = p.y
+		cells[cell][0] = int(cells[cell][0]) + 1
+		cells[cell][1] = maxf(float(cells[cell][1]), float(laid[key]["radius"]))
+		cells[cell][2] = p.y
 
 	print("rock fields: %s" % str(kinds))
-	var cells: Array = by_cell.keys()
-	cells.sort_custom(func(a, b): return int(by_cell[a][0]) > int(by_cell[b][0]))
 
-	for n in range(mini(cells.size(), top)):
-		var c: Vector2i = cells[n]
-		print("  cell middle (%.0f, %.0f) about %.0f m up: %d rocks, largest radius %.2f m" % [(float(c.x) + 0.5) * 32.0, (float(c.y) + 0.5) * 32.0, float(by_cell[c][2]), int(by_cell[c][0]), float(by_cell[c][1])])
+	for kind in kinds:
+		var cells: Dictionary = by_cell[kind]
+		var order: Array = cells.keys()
+		order.sort_custom(func(a, b): return int(cells[a][0]) > int(cells[b][0]))
+		print("rock fields: %s, the rockiest cells:" % kind)
+
+		for n in range(mini(order.size(), top)):
+			var c: Vector2i = order[n]
+			var mid: Vector2 = (Vector2(c) + Vector2(0.5, 0.5)) * 32.0
+			print("  cell middle (%.0f, %.0f) about %.0f m up: %d rocks, largest radius %.2f m" % [mid.x, mid.y, float(cells[c][2]), int(cells[c][0]), float(cells[c][1])])
+
+			if n < 3:
+				var name: String = "rocks_%s_%d" % [kind.split(" ")[0], n + 1]
+				print("    %s" % _camera_line(mid, 20.0, 1.7, name))
+				print("    %s" % _camera_line(mid, 45.0, 6.0, name + "_wide"))
+
+
+# A look_rig line for a camera `dist` m from `mid` on dry ground (no water within 4 m; the first of eight directions, lowest ground first
+# so it looks up at a slope), `agl` m above the ground, facing the cell's middle.
+func _camera_line(mid: Vector2, dist: float, agl: float, name: String) -> String:
+	if _last_items == null:
+		return "(no camera: nothing laid)"
+
+	var target: float = float(_last_items.ground_height.call(mid.x, mid.y))
+	var spots: Array = []
+
+	for k in range(8):
+		var angle: float = TAU * float(k) / 8.0
+		var at: Vector2 = mid + Vector2(cos(angle), sin(angle)) * dist
+		var h: float = float(_last_items.ground_height.call(at.x, at.y))
+
+		if is_nan(h) or bool(_last_items.water_near.call(Vector3(at.x, h, at.y), 4.0)):
+			continue
+
+		spots.append([h, at])
+
+	if spots.is_empty():
+		return "(no dry camera spot %.0f m from (%.0f, %.0f))" % [dist, mid.x, mid.y]
+
+	spots.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	var h_cam: float = float(spots[0][0])
+	var cam: Vector2 = spots[0][1]
+	var look: Vector2 = mid - cam
+	var yaw: float = rad_to_deg(atan2(-look.x, -look.y))   # look_rig --yaw: 0 faces north (-Z), 90 west
+	var pitch: float = rad_to_deg(atan2(target - (h_cam + agl), look.length()))
+	return "tools/look_rig.sh --at %.0f,%.0f --agl %.1f --yaw %.0f --pitch %.0f --hour 12 --weather clear --name %s" % [cam.x, cam.y, agl, yaw, pitch, name]
 
 
 # The island resource landscape as the server builds it at start (server_items.start_resources, here on this thread; no known dangers, so
@@ -160,6 +209,7 @@ func _landscape(world: String, settings) -> RefCounted:
 func _boulders(generator, settings, at: Vector2, radius: float, cover: float, context: RefCounted) -> Dictionary:
 	DirAccess.make_dir_recursive_absolute(STORE)
 	var items = ItemsScript.new()
+	_last_items = items
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
