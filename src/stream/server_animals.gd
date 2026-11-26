@@ -2809,12 +2809,15 @@ func _pass_ids_near(point: Vector3, radius: float) -> Array:
 # radius_m and cap above 0 replace send_radius_m and per_player_cap (an admin looking through the spyglass: "spyglass" in animals.json).
 # Big game is sent further (Dave 26 Nov 2026, R-ANIMAL-SEEN-FAR: "Let's try 200 m."): a kind in animals.json "big_game" is sent out to
 # big_game_send_m, every other kind to send_radius_m (120 m), so a hunter sees a herd across a field. A spyglass radius replaces
-# send_radius_m and, where it is wider, big_game_send_m too. far_too false leaves out the big game past `radius`: the server sends those
-# every other time (terrain_server), and the client keeps a far body a missing batch left out (animal_view FAR_KEEP_MS). The Lane B load
-# test on 26 Nov 2026 measured +25% traffic a player at 16 bots with every far row in every batch.
+# send_radius_m and, where it is wider, big_game_send_m too. far_too false leaves out the big game past `radius` that is standing still
+# (no plan: not moving, not just stopped): the server sends those every other time (terrain_server), and the client keeps a far body a
+# batch left out (animal_view FAR_KEEP_MS). One on the move, or that has just stopped, is in every batch: at a row each 0.5 s a bolting
+# deer was drawn over 1 m off in a third of the frames (test_animal_draw_replay on Lane B, 26 Nov 2026). The Lane B load test the same
+# day measured +25% traffic a player at 16 bots with every far row in every batch; most far big game is grazing or lying.
 func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1, far_too: bool = true) -> Array:
 	var radius: float = radius_m if radius_m > 0.0 else float(cfg.get("send_radius_m", 120.0))
-	var far: float = maxf(radius, float(cfg.get("big_game_send_m", radius))) if far_too else radius   # never less through a spyglass (tier 1 looks to 150 m)
+	var far: float = maxf(radius, float(cfg.get("big_game_send_m", radius)))   # never less through a spyglass (tier 1 looks to 150 m)
+	var now_ms: int = Time.get_ticks_msec()
 	var big: Array = cfg.get("big_game", [])   # eight kinds: a short list
 	var found: Array = []
 
@@ -2826,6 +2829,9 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1, far_too: b
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= (far if big.has(a["sp"]) else radius) and a["state"] != HIDDEN:
+			if not far_too and d > radius and row_plan(a, now_ms) == null:
+				continue   # far and standing: in the next batch (terrain_server sends far big game every other time)
+
 			if _in_pass and _pass_rows.has(id):
 				found.append([d, _pass_rows[id]])   # built once this send pass, for the first player near it (the same row for all)
 				continue
