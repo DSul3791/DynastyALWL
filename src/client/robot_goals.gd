@@ -865,12 +865,16 @@ func _light_own_fire() -> int:
 	# nothing on coals): a player waits by it (change 15 run: the pot was queued 2 s after the sticks went on, "The fire is out").
 	var waited: float = 0.0
 
-	while waited < 200.0 and c.items._world.has(fire) and not _fire_lit(int(c.items._world[fire]["state"])):
+	while waited < 200.0 and Time.get_ticks_msec() < _end_ms - 60000 and c.items._world.has(fire) and not _fire_lit(int(c.items._world[fire]["state"])):
 		await r._wait(2.0)
 		waited += 2.0
 
 		if int(waited) % 20 == 0:
-			c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)   # cold ash laid with sticks lights at once
+			if int(c.items._world[fire]["state"]) == 8:   # gone to cold ash (rain): sticks on again, which lays it
+				c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
+				await r._wait(0.5)
+
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)   # a laid fire or warm ash lights at once
 
 	return fire if c.items._world.has(fire) and _fire_lit(int(c.items._world[fire]["state"])) else -1
 
@@ -2048,6 +2052,9 @@ func _build(structure: String) -> String:
 		await r._go_to(_fire_at, 60.0 + _flat(_fire_at) / 2.5, 2.0)
 		fire = _camp_fire()
 
+	if site < 0 and structure == "campfire_pot" and _fire_at.is_finite() and fire < 0:
+		return "no fire of its own within 40 m of where it lit it (%s) to hang the pot over%s" % [str(_fire_at.round()), _said(said)]
+
 	if site >= 0:
 		at = c.items._world[site]["pos"]
 	elif fire >= 0:
@@ -2087,7 +2094,7 @@ func _build(structure: String) -> String:
 		_sites[structure] = site
 
 	if site < 0:
-		return "placed the %s blueprint on open ground round the robot; no site came%s" % [structure, _said(said)]
+		return ("placed the campfire pot blueprint on its own fire; no site came%s" if fire >= 0 else "placed the %s blueprint on open ground round the robot; no site came%s") % ([_said(said)] if fire >= 0 else [structure, _said(said)])
 
 	await r._go_to(at, 10.0, 1.5)
 
