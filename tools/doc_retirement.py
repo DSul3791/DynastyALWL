@@ -22,14 +22,43 @@ def git(root, *args):
     return subprocess.check_output(['git', *args], cwd=root, stderr=subprocess.DEVNULL)
 
 
-def worktree_blob(root, p):
-    """The blob git would store for this checked-out file: hash-object applies the eol attributes, so a Windows checkout (CRLF) hashes
-    the same as the LF blob in git (Dave's PC lane, 26 Nov 2026: raw bytes said "retired content changed" for an untouched file)."""
-    return git(root, 'hash-object', '--', p).decode().strip()
+def worktree_blobs(root, paths):
+    """The blob git would store for each checked-out file, {path: blob}: hash-object applies the eol attributes, so a Windows checkout
+    (CRLF) hashes the same as the LF blob in git (Dave's PC lane, 26 Nov 2026: raw bytes said "retired content changed" for an untouched
+    file). One git call for all of them: one call per file (560) made merge_check take 152 s on Dave's PC."""
+    paths = [p for p in dict.fromkeys(paths) if safe_path(p) and (Path(root)/p).is_file()]
+    if not paths:
+        return {}
+    out = subprocess.run(['git', 'hash-object', '--stdin-paths'], cwd=root, input=('\n'.join(paths)+'\n').encode(), capture_output=True, check=True).stdout.decode().split()
+    if len(out) != len(paths):
+        raise ValueError('git hash-object gave %d hashes for %d files' % (len(out), len(paths)))
+    return dict(zip(paths, out))
+
+
+def git_objects(root, specs):
+    """{"rev:path": bytes or None when missing} for many specs in one `git cat-file --batch` (one `git show` each was most of merge_check's
+    time on Dave's PC). The bytes are the stored blob, as `git show rev:path` prints it."""
+    specs = list(dict.fromkeys(specs))
+    if not specs:
+        return {}
+    out = subprocess.run(['git', 'cat-file', '--batch'], cwd=root, input=('\n'.join(specs)+'\n').encode(), capture_output=True, check=True).stdout
+    found, at = {}, 0
+    for spec in specs:
+        end = out.index(b'\n', at)
+        header = out[at:end].decode(errors='replace')
+        at = end+1
+        if header.endswith(' missing') or header.endswith(' ambiguous'):
+            found[spec] = None
+            continue
+        size = int(header.split()[2])
+        found[spec] = out[at:at+size] if header.split()[1] == 'blob' else None
+        at += size+1
+    return found
 
 
 def safe_path(p):
-    return isinstance(p, str) and '\\' not in p and ':' not in p and not PurePosixPath(p).is_absolute() and all(x not in ('', '..', '.') for x in p.split('/')) and bool(p)
+    # No newline or leading quote: the batched git calls read one path per line and hash-object unquotes a leading ".
+    return isinstance(p, str) and '\\' not in p and ':' not in p and '\n' not in p and '\r' not in p and not p.startswith('"') and not PurePosixPath(p).is_absolute() and all(x not in ('', '..', '.') for x in p.split('/')) and bool(p)
 
 
 def notice(p):
@@ -67,6 +96,7 @@ def validate(root, data, deleted=(), now=None, previous=None, protected=(), inte
             raise ValueError('unsupported manifest schema')
         old = entry_map(previous) if previous else {}
         current = entry_map(data)
+        hashes = worktree_blobs(root, list(current))
         for path, (batch, entry) in old.items():
             if path not in current or current[path][1] != entry:
                 errors.append(f'immutable recovery receipt changed or removed: {path}')
@@ -115,6 +145,8 @@ def validate(root, data, deleted=(), now=None, previous=None, protected=(), inte
                 if retired > now or expiry != retired+timedelta(hours=168):
                     raise ValueError('invalid integration time or 168-hour expiry')
                 expired = now >= expiry
+            objects = git_objects(root, [source+':'+e['original'] for e in b['entries'] if safe_path(e.get('original'))]
+                                  + ([fields[0]+':'+e['retired'] for e in b['entries'] if safe_path(e.get('retired'))] if all(fields) else []))
             for e in b['entries']:
                 p, original, identity = e['retired'], e['original'], e['blob']
                 if not safe_path(p) or not safe_path(original) or not p.startswith(HISTORY_DIRS) or not p.lower().endswith(TEXT_EXT) or not original.lower().endswith(TEXT_EXT):
@@ -124,12 +156,14 @@ def validate(root, data, deleted=(), now=None, previous=None, protected=(), inte
                 if p in seen:
                     raise ValueError('duplicate retired path: '+p)
                 seen.add(p)
-                source_bytes=git(root, 'show', source+':'+original)
+                source_bytes=objects.get(source+':'+original)
+                if source_bytes is None:
+                    raise ValueError('unrecoverable source blob: '+original)
                 if re.search(rb'SPDX-License-Identifier|Permission is hereby granted|Copyright\s*(?:\(c\)|[0-9]{4})',source_bytes,re.I):
                     raise ValueError('embedded license/notice needs explicit retention: '+original)
                 if not SHA.fullmatch(identity) or blob(source_bytes) != identity:
                     raise ValueError('unrecoverable source blob: '+original)
-                if all(fields) and blob(git(root, 'show', fields[0]+':'+p)) != identity:
+                if all(fields) and (objects.get(fields[0]+':'+p) is None or blob(objects[fields[0]+':'+p]) != identity):
                     raise ValueError('retirement integration did not preserve this exact file: '+p)
                 if not e.get('reason') or not e.get('disposition'):
                     raise ValueError('missing preservation disposition: '+p)
@@ -137,7 +171,7 @@ def validate(root, data, deleted=(), now=None, previous=None, protected=(), inte
                 if target and (not safe_path(target) or not (root/target).is_file() or target in current):
                     raise ValueError('missing or retired preservation target: '+str(target))
                 f = root/p
-                if f.exists() and worktree_blob(root, p) != identity:
+                if f.exists() and hashes.get(p) != identity:
                     raise ValueError('retired content changed: '+p)
                 if not f.exists() and p not in deleted:
                     # Already deleted in an earlier validated integration is recoverable from receipt.
