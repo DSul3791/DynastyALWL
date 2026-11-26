@@ -351,7 +351,7 @@ func _rest_origin(bone: String) -> Vector3:
 # frame); that body and any made meanwhile wear the clips a frame or a few later, in _process (_clips_later). Headless runs, the picture tools
 # and the menus (clips_on_worker off) make them here, as before.
 func _build_animations() -> void:
-	if not _libraries.has(model) and not _library_jobs.has(model) and not _failed.has(model):
+	if not _libraries.has(model) and not _library_jobs.has(model) and not (clips_on_worker and _failed.has(model)):
 		var own_library: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
 		var own: Dictionary = {}       # clip name -> its source Animation, on this rig
 
@@ -365,7 +365,7 @@ func _build_animations() -> void:
 		else:
 			_start_library(model, own, _rest_copy(skeleton))   # the worker reads only bone rests, from its own copy: the body's skeleton is animated on the main thread meanwhile
 
-	if _failed.has(model):
+	if clips_on_worker and _failed.has(model):
 		return   # its worker made nothing (the error was printed once): the file's own clips stay on
 
 	if not _libraries.has(model):

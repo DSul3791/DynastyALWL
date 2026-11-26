@@ -8859,9 +8859,9 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	DynastyBodyScript.finish_clips()   # the body's clip worker still running at a quick quit (dynasty_body.gd), before the drain so its line is logged
 	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
-	DynastyBodyScript.finish_clips()   # and the body's clip worker (dynasty_body.gd)
 	DynastyBodyScript.clips_on_worker = false   # the menus after the game (death screen, launcher) make a body's clips at once again
 
 	if crash_report != null:
