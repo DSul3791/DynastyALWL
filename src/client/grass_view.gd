@@ -1466,6 +1466,10 @@ func _make_group_node(layer: int, span: float) -> MultiMeshInstance3D:
 	node.multimesh = multi
 	node.material_override = _materials[layer]
 	node.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var seen_key: String = "grass layer %d" % layer
+
+	if Probe.is_new(seen_key):
+		Probe.first_shown(seen_key, seen_key)   # Lane A r4 Low: grass builds came with "pipelines built" in play; names which layer (BugsList 108)
 
 	if layer >= GRASS_LAYERS:
 		# Measured from the group's middle: the cards fade out in their shader at the litter or shore range, this only culls.
