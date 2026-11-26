@@ -9,7 +9,9 @@ extends SceneTree
 # before Steve's own-stream fix the boulders shared that random stream. So the tool lays the area out twice, with the cover read as bare
 # and as covered, and says "exact" when both give the same boulders, or warns when they differ.
 #   godot --headless --path . --script res://src/worldgen/tools/outcrops_near.gd -- [--at=53296,68080] [--radius=400] [--ores=tin,copper] [--top=20]
-#        [--world=res://worlds/base_world]
+#        [--world=res://worlds/base_world] [--fields]
+# --fields: also the rocky ground's rocks (boulders.json rock_fields, FIELD_KEY): how many of each kind, and the rockiest cells (where to take
+# its pictures and frame times), with their middle and ground height.
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -31,6 +33,7 @@ func _init() -> void:
 	var radius: float = 400.0
 	var wanted: Dictionary = {}
 	var top: int = 20
+	var fields: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--world="):
@@ -45,6 +48,8 @@ func _init() -> void:
 				wanted[name] = true
 		elif argument.begins_with("--top="):
 			top = int(argument.trim_prefix("--top="))
+		elif argument == "--fields":
+			fields = true
 
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world + "/world.json", errors)
@@ -93,7 +98,42 @@ func _init() -> void:
 		print("  %-9s at (%.1f, %.1f, %.1f)  %4.0f m  radius %.2f m%s%s" % [str(r["ore"]), p.x, p.y, p.z, float(r["dist"]), float(r["radius"]), "  (cave floor)" if bool(r["cave"]) else "",
 			"  (%s)" % str(r["from"]) if str(r["from"]) != "" else ""])
 
+	if fields:
+		_print_fields(bare, top)
+
 	quit(0)
+
+
+# The rocky ground's rocks among `laid` (scatter key -> row): a count by kind (the key's slot: 0..95 mountain, 96..119 water, 127 a lone
+# giant) and the `top` cells with the most rocks.
+func _print_fields(laid: Dictionary, top: int) -> void:
+	var kinds: Dictionary = {"mountain": 0, "water": 0, "lone giant": 0}
+	var by_cell: Dictionary = {}
+
+	for key in laid:
+		if (int(key) & ItemsScript.FIELD_KEY) == 0:
+			continue
+
+		var slot: int = int(key) & 0xff
+		var kind: String = "lone giant" if slot == ItemsScript.FIELD_ERRATIC_SLOT else ("water" if slot >= ItemsScript.FIELD_WATER_FIRST else "mountain")
+		kinds[kind] = int(kinds[kind]) + 1
+		var p: Vector3 = laid[key]["pos"]
+		var cell: Vector2i = Vector2i(int(floor(p.x / 32.0)), int(floor(p.z / 32.0)))
+
+		if not by_cell.has(cell):
+			by_cell[cell] = [0, 0.0, 0.0]
+
+		by_cell[cell][0] = int(by_cell[cell][0]) + 1
+		by_cell[cell][1] = maxf(float(by_cell[cell][1]), float(laid[key]["radius"]))
+		by_cell[cell][2] = p.y
+
+	print("rock fields: %s" % str(kinds))
+	var cells: Array = by_cell.keys()
+	cells.sort_custom(func(a, b): return int(by_cell[a][0]) > int(by_cell[b][0]))
+
+	for n in range(mini(cells.size(), top)):
+		var c: Vector2i = cells[n]
+		print("  cell middle (%.0f, %.0f) about %.0f m up: %d rocks, largest radius %.2f m" % [(float(c.x) + 0.5) * 32.0, (float(c.y) + 0.5) * 32.0, float(by_cell[c][2]), int(by_cell[c][0]), float(by_cell[c][1])])
 
 
 # The island resource landscape as the server builds it at start (server_items.start_resources, here on this thread; no known dangers, so
