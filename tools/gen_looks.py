@@ -59,7 +59,7 @@ SPECIAL = {
     "spear": ("shaft", "#b8bcc4", 1.0), "wooden_spear": ("shaft", "#d8b070", 1.0),
 }
 TOOLS = {
-    "stone_axe": ("axe", "#7d7a74", 1.6), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
+    "stone_axe": ("axe", "#7d7a74", 1.1), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
     "wooden_shovel": ("shovel", "#8a6a3a", 1.0), "stone_shovel": ("shovel", "#7d7a74", 1.0), "iron_shovel": ("shovel", "#6c6f75", 1.0),
     "steel_shovel": ("shovel", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
     # Medium and large shovels: the same shape, a longer shaft and a wider blade (size 1.25 and 1.5 of the small one).
