@@ -8,6 +8,7 @@ extends SceneTree
 
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BONES := 60
+const WALKER_SCENE := "user://test_clip_map_walker_%d.tscn"
 
 var failures: int = 0
 
@@ -110,6 +111,16 @@ func make_walker() -> Array:
 	return [rig, player, anim]
 
 
+# The walk clip a body made by _make_model plays (its player's role "walk"), or null.
+func walk_of(body: Node3D) -> Animation:
+	if body == null or not body.has_meta("player"):
+		return null
+
+	var player: AnimationPlayer = body.get_meta("player")
+	var walk_name: String = str((player.get_meta("roles", {}) as Dictionary).get("walk", ""))
+	return player.get_animation(walk_name) if walk_name != "" and player.has_animation(walk_name) else null
+
+
 func same(a: PackedVector3Array, b: PackedVector3Array) -> bool:
 	if a.size() != b.size():
 		return false
@@ -178,6 +189,7 @@ func _initialize() -> void:
 		waited += 1
 
 	check(v._stride_jobs.is_empty(), "the worker's answer is taken by a frame (%d frames)" % waited)
+	v._take_strides(true)   # a stuck worker fails the checks below instead of leaving a task running
 	check(is_equal_approx(float(walk_anim.get_meta("travel_mps", -1.0)), here), "the clip plays at the worker's speed, the same as the main thread's (%.3f)" % float(walk_anim.get_meta("travel_mps", -1.0)))
 	var fast: Animation = walk_anim.duplicate() as Animation
 	fast.remove_meta("travel_mps")
@@ -185,6 +197,63 @@ func _initialize() -> void:
 	v._take_strides(true)
 	check(v._stride_jobs.is_empty() and fast.has_meta("travel_mps"), "leaving waits for a measurement still running and takes it")
 	walk_rig.free()
+
+	# Through _make_model, from two copies of a walker model file (each its own clip): a view out of the tree (a tool) has the speed at
+	# once; the game's view, in the tree, starts a worker and has it a frame or two later, the same speed.
+	var paths: Array = [WALKER_SCENE % 0, WALKER_SCENE % 1]
+
+	for path in paths:
+		var made_walker: Array = make_walker()
+		var top: Node3D = (made_walker[0] as Node3D).get_child(0)
+		(made_walker[0] as Node3D).remove_child(top)
+		(made_walker[0] as Node3D).free()
+		var body: MeshInstance3D = MeshInstance3D.new()
+		body.mesh = BoxMesh.new()
+		top.add_child(body)
+
+		for child in top.find_children("*", "", true, false):
+			child.owner = top
+
+		var packed: PackedScene = PackedScene.new()
+		packed.pack(top)
+		top.free()
+		check(ResourceSaver.save(packed, path) == OK, "the walker model is saved as %s" % path)
+
+	var tool_view = AnimalViewScript.new()
+	tool_view._models = {"deer": {"scene": paths[0], "length_m": 1.0}}
+	var tool_body: Node3D = tool_view._make_model(2, 1)
+	var tool_walk: Animation = walk_of(tool_body)
+	check(tool_walk != null and tool_walk.has_meta("travel_mps") and tool_view._stride_jobs.is_empty(), "a tool's view (out of the tree) has the walk's speed at once")
+	var game_view = AnimalViewScript.new()
+	root.add_child(game_view)
+	await process_frame
+	game_view.set_process(false)
+	game_view._models = {"deer": {"scene": paths[1], "length_m": 1.0}}
+	var game_body: Node3D = game_view._make_model(2, 1)
+	var game_walk: Animation = walk_of(game_body)
+	check(game_walk != null and game_walk != tool_walk and not game_walk.has_meta("travel_mps") and game_view._stride_jobs.size() == 1, "the game's view starts the walk's measurement on a worker")
+	waited = 0
+
+	while not game_view._stride_jobs.is_empty() and waited < 300:
+		game_view._take_strides()
+		await process_frame
+		waited += 1
+
+	game_view._take_strides(true)   # a stuck worker fails the checks below instead of hanging the test
+	var tool_mps: float = float(tool_walk.get_meta("travel_mps", -1.0)) if tool_walk != null else -1.0
+	var game_mps: float = float(game_walk.get_meta("travel_mps", -2.0)) if game_walk != null else -2.0
+	check(is_equal_approx(game_mps, tool_mps), "then it has the same speed as the tool's (%.3f and %.3f)" % [game_mps, tool_mps])
+
+	for node in [tool_body, game_body]:
+		if node != null:
+			(node as Node).free()
+
+	root.remove_child(game_view)
+	game_view.free()
+	tool_view.free()
+
+	for path in paths:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("test_clip_map: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

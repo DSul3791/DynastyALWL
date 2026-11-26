@@ -1919,6 +1919,7 @@ func _clip_pose(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Dictio
 	for link in (map["chain"] as Array):      # [node, [[track, track type]]], from the skeleton up to the rig
 		chain.append([(link[0] as Node3D).transform, link[1], link[0] == sk])
 
+	# "bones" and each link's track list are _clip_maps' own arrays: built once and never changed, so a worker may read them.
 	return {"parents": parents, "local": local, "bones": map["bones"], "chain": chain}
 
 
@@ -2302,6 +2303,9 @@ func _take_stride(anim: Animation, kind: String, anim_name: String, typed_mps: f
 var _stride_jobs: Array = []   # [task id, job {pose, anim, kind, name, typed, mps}]
 
 func _stride_later(pose: Dictionary, anim: Animation, kind: String, anim_name: String, typed_mps: float) -> void:
+	if pose.is_empty():
+		return      # no skeleton: nothing to measure, as _measure_stride's 0
+
 	var job: Dictionary = {"pose": pose, "anim": anim, "kind": kind, "name": anim_name, "typed": typed_mps, "mps": 0.0}
 	_stride_jobs.append([WorkerThreadPool.add_task(_stride_job.bind(job), false, "animal clip stride"), job])
 
