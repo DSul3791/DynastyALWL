@@ -21327,7 +21327,7 @@ func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3
 		var kind: String = _water_kind_near(near, reach)
 
 		if kind != "" and _fish_schools().has_method("species_for"):   # a test's stand-in school module may not have it
-			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt: the fate stream picks the fish species by the water (luck applies to the catch roll)
 
 			if by_water != "":
 				return by_water
