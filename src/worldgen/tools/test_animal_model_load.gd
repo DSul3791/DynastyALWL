@@ -110,7 +110,7 @@ func _initialize() -> void:
 	v.files_ready = func(_number: int) -> bool: return bool(loaded[0])
 	v._wait_since.clear()
 	clock[0] = 100000
-	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1000]], 1000)
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1000]], 1100)   # a batch after the first one's (1000)
 	check(not v._bodies.has(31), "a deer whose files are loading is held undrawn")
 	clock[0] = 100000 + v.SCENE_WAIT_MS
 	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1250]], 1250)

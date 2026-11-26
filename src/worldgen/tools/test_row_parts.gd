@@ -74,8 +74,10 @@ func _initialize() -> void:
 	check(s["stale"], "a part of an older batch is stale")
 	s = RowParts.note(b, 1500, 0, 1, [[1]])
 	check(s["new"] and s["done"], "a one-part batch is done at once")
+	s = RowParts.note(b, 1000 + RowParts.RESTART_MS * 5, 0, 1, [[1]])
 	s = RowParts.note(b, 200, 0, 1, [[1]])
 	check(s["new"] and s["done"] and int(b["ms"]) == 200, "a clock far back is a restarted server, not a stale part")
+	check(RowParts.split(batch_of(8)) == [batch_of(8)], "8 rows or fewer always fit: no size check at all")
 
 	# Through animal_view: a body missing from a part stays until its batch is complete.
 	var view = AnimalView.new()

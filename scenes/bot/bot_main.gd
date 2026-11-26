@@ -163,9 +163,9 @@ func _ready() -> void:
 		_net.inventory_slots_received.connect(_on_slots)
 		_net.surface_received.connect(_on_surface)
 		_net.flora_received.connect(_on_flora)
-		_net.animals_received.connect(func(rows: Array, server_ms: int, part: int, _parts: int) -> void:
-			if part > 0 and server_ms == _animals_ms:
-				_animals.append_array(rows)   # a later part of the same batch (protocol 171)
+		_net.animals_received.connect(func(rows: Array, server_ms: int, _part: int, _parts: int) -> void:
+			if server_ms == _animals_ms:
+				_animals.append_array(rows)   # another part of the same batch, in whatever order the parts came (protocol 171)
 				return
 
 			_animals = rows.duplicate()

@@ -13,11 +13,12 @@ extends RefCounted
 
 const BUDGET := 1200          # bytes of rows in one part: under ENet's 1392 with the RPC's own bytes (method, server ms, part, parts) on top
 const RESTART_MS := 10000     # a batch this far older than the newest is a restarted server's clock, not a late part
+const ROW_MAX := 132          # bytes of the biggest animal row today (six fields, a dog foe, a plan, a health share): up to 9 always fit
 
 
 static func split(rows: Array, budget: int = BUDGET) -> Array:
-	if rows.size() <= 1 or var_to_bytes(rows).size() <= budget:
-		return [rows]   # nearly always: one size check for the whole batch
+	if rows.size() * ROW_MAX + 8 <= budget or var_to_bytes(rows).size() <= budget:
+		return [rows]   # nearly always: no size check for a few rows, one for the whole batch
 
 	var parts: Array = []
 	var part: Array = []
