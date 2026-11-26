@@ -60,10 +60,10 @@ func _initialize() -> void:
 	# The node takes the poll over and gives it back.
 	root.add_child(poll)
 	check(not multiplayer_poll, "the SceneTree stops its own poll while the node is in")
-	check(poll.process_mode == Node.PROCESS_MODE_ALWAYS, "it polls while the game is paused")
-	poll._process(0.016)   # an offline peer: polls without error
+	check(process_frame.is_connected(poll._poll), "it polls from the process_frame signal (it comes while paused too)")
+	poll._poll()   # an offline peer: polls without error
 	root.remove_child(poll)
-	check(multiplayer_poll, "the SceneTree polls again once the node leaves")
+	check(multiplayer_poll and not process_frame.is_connected(poll._poll), "the SceneTree polls again once the node leaves")
 	poll.free()
 	messages.free()
 	print("test_net_poll: %d failures" % failures)

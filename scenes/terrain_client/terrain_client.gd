@@ -607,7 +607,7 @@ func _ready() -> void:
 	net = $TerrainNet
 	process_physics_priority = 1000   # _physics_process notes the start of the physics engine's step
 	add_child(ProcessEndMarkScript.new())   # stamps the end of every frame's scripts (diagnostics: HITCH lines' "scripts" and "deferred and engine")
-	add_child(NetPollScript.new(net))   # polls the network itself, first of every _process, timed as "net poll" (diagnostics: what a slow poll held)
+	add_child(NetPollScript.new(net))   # polls the network itself from process_frame, timed as "net poll" (diagnostics: what a slow poll held)
 	display.load_saved()
 	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
 		_telemetry.event("EXIT: %s" % why)
