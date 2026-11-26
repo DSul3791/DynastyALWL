@@ -1195,9 +1195,8 @@ func _fire() -> String:
 	return ""
 
 
-
 # --- a fish with the Fishing spear, as the goal's hint says: stand still at the water's edge, the spear in hand, and jab (left click) at
-# water ankle to waist deep (fishing.json fish_spear: reach 3 m, standing still, a 0.2 chance a jab, only where fish are). The jab lands
+# water ankle to waist deep (fishing.json fish_spear: reach 2.5 m, standing still, a 0.2 chance a jab, only where fish are). The jab lands
 # 2.5 m ahead of the eye and 1.2 m down (held_item.gd). Where the game says no fish or the wrong depth, a player moves along the shore.
 func _fish_goal() -> String:
 	var why: String = await _have("fishing_spear", 1, false)
@@ -1213,6 +1212,7 @@ func _fish_goal() -> String:
 	var jabs: int = 0
 	var spots: int = 0
 	var told: PackedStringArray = PackedStringArray()
+	var swam: int = 0
 
 	while Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)) and spots < 6:
 		spots += 1
@@ -1221,12 +1221,19 @@ func _fish_goal() -> String:
 		if is_nan(water.x):
 			return "no water in any loaded chunk"
 
-		# The edge: about 1.5 m short of the wet corner, on the land side.
+		# The edge: 0.5 to 2.5 m short of the wet corner, on the land side (the jab lands 2.4 m ahead, inside the 2.5 m reach).
 		var back: Vector3 = Vector3(c.body.global_position.x - water.x, 0.0, c.body.global_position.z - water.z).normalized()
 		await r._go_to(water + back * 1.5, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
 		r._release_all()
 		var heard: int = r._notices.size()
 		var here: int = 0
+
+		if c.swimming:   # the server takes no jab from a swimmer: back out onto the land and try the next stretch
+			swam += 1
+			await r._go_to(c.body.global_position + back * 4.0, minf(8.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
+			continue
+
+		await r._wait(1.5)   # still long enough for the server (fish_spear still_below)
 
 		while here < 15 and Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)):
 			_look_at(water)
@@ -1246,12 +1253,13 @@ func _fish_goal() -> String:
 		_line("FISH spot %d at %s: %d jabs, goal %s" % [spots, str(c.body.global_position.round()), here, str(c.items.goal_book.row("fish").get("have", "?"))])
 
 		# Another stretch of shore: 12 m along it, round the water's edge.
-		await r._go_to(c.body.global_position + back.rotated(Vector3.UP, PI * 0.5) * 12.0, 8.0, 1.0)
+		if spots < 6 and Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)):
+			await r._go_to(c.body.global_position + back.rotated(Vector3.UP, PI * 0.5) * 12.0, minf(8.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
 
 	if bool(c.items.goal_book.row("fish").get("done", false)):
 		return ""
 
-	return "%d jabs at %d spots along the shore and no fish; the game said %s" % [jabs, spots, str(told) if not told.is_empty() else "nothing"]
+	return "%d jabs at %d spots along the shore (%d stood swimming, no jab) and no fish; the game said %s" % [jabs, spots, swam, str(told) if not told.is_empty() else "nothing"]
 
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
