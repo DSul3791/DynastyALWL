@@ -82,7 +82,7 @@ func make_rig() -> Array:
 	return [rig, player, anim]
 
 
-# A walker: Rig > Model > Skeleton3D with a hip bone 1 m up that stays and a foot bone on the ground sliding 1 m forward in the 1 s clip.
+# A walker: Rig > Model > Skeleton3D (root > hip 1 m up, standing still > foot on the ground, sliding 1 m forward in the 1 s clip).
 func make_walker() -> Array:
 	var rig: Node3D = Node3D.new()
 	var model: Node3D = Node3D.new()
@@ -91,11 +91,17 @@ func make_walker() -> Array:
 	var sk: Skeleton3D = Skeleton3D.new()
 	sk.name = "Skeleton3D"
 	model.add_child(sk)
+	# root > hip > foot: the foot is not the root bone or its child, so _strip_root_drift (which takes travel out of those and sets the
+	# speed itself) leaves it to the stride measurement.
+	sk.add_bone("root")
 	sk.add_bone("hip")
-	sk.set_bone_rest(0, Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0)))
-	sk.set_bone_pose_position(0, Vector3(0.0, 1.0, 0.0))
+	sk.set_bone_parent(1, 0)
+	sk.set_bone_rest(1, Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0)))
+	sk.set_bone_pose_position(1, Vector3(0.0, 1.0, 0.0))
 	sk.add_bone("foot")
-	sk.set_bone_rest(1, Transform3D.IDENTITY)
+	sk.set_bone_parent(2, 1)
+	sk.set_bone_rest(2, Transform3D(Basis.IDENTITY, Vector3(0.0, -1.0, 0.0)))
+	sk.set_bone_pose_position(2, Vector3(0.0, -1.0, 0.0))
 	var player: AnimationPlayer = AnimationPlayer.new()
 	model.add_child(player)
 	player.root_node = NodePath("..")
@@ -103,8 +109,8 @@ func make_walker() -> Array:
 	anim.length = 1.0
 	var t: int = anim.add_track(Animation.TYPE_POSITION_3D)
 	anim.track_set_path(t, NodePath("Skeleton3D:foot"))
-	anim.position_track_insert_key(t, 0.0, Vector3.ZERO)
-	anim.position_track_insert_key(t, 1.0, Vector3(0.0, 0.0, 1.0))
+	anim.position_track_insert_key(t, 0.0, Vector3(0.0, -1.0, 0.0))      # local to the hip: the foot on the ground, 1 m forward in the clip
+	anim.position_track_insert_key(t, 1.0, Vector3(0.0, -1.0, 1.0))
 	var lib: AnimationLibrary = AnimationLibrary.new()
 	lib.add_animation("Walk", anim)
 	player.add_animation_library("", lib)
@@ -242,7 +248,7 @@ func _initialize() -> void:
 	game_view._take_strides(true)   # a stuck worker fails the checks below instead of hanging the test
 	var tool_mps: float = float(tool_walk.get_meta("travel_mps", -1.0)) if tool_walk != null else -1.0
 	var game_mps: float = float(game_walk.get_meta("travel_mps", -2.0)) if game_walk != null else -2.0
-	check(is_equal_approx(game_mps, tool_mps), "then it has the same speed as the tool's (%.3f and %.3f)" % [game_mps, tool_mps])
+	check(is_equal_approx(game_mps, tool_mps) and tool_mps > 0.5 and tool_mps < 1.0, "then it has the same speed as the tool's, 1 m/s at the drawn size (%.3f and %.3f)" % [game_mps, tool_mps])
 
 	for node in [tool_body, game_body]:
 		if node != null:
