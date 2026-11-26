@@ -6692,6 +6692,9 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
+	# Right after the beat, so the frame just ended is judged with its own timed pieces (they were all stopped since the last call), its wall
+	# time and its monitors; called later in this function it saw the next frame's first pieces instead (PR #1952 review).
+	Probe.frame(delta)
 	_note_after_welcome(delta)
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
@@ -6806,7 +6809,6 @@ func _process(delta: float) -> void:
 		_water_label.text = ""
 
 	_frame_ms.append(delta * 1000.0)
-	Probe.frame(delta)
 
 	var tq_arms: int = Probe.start()
 	DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here

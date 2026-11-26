@@ -104,7 +104,8 @@ static func _top_text(count: int) -> String:
 	return ", ".join(text)
 
 
-# Call at the start of each frame with the previous frame's length (seconds).
+# Call at the start of each frame with the previous frame's length (seconds), before any piece of the new frame is timed: the pieces in
+# _this_frame then all belong to the frame just ended. window_engine's "timed pieces" sum nested pieces twice ("grass: ..." inside "grass").
 static func frame(delta: float) -> void:
 	_frames += 1
 	_win_frames += 1
