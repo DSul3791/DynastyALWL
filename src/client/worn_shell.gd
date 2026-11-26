@@ -22,18 +22,21 @@ const REGIONS := {
 	"padded": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
 	"mailshirt": TORSO + ["RightArm", "LeftArm"],
 }
-# A high collar: the gambeson's layer also covers the foot of the neck, this far up from the neck joint (Lane A qa15d, 26 Nov 2026: with the arm raised in the chop, neck
-# and collarbone skin showed at its collar). The neck's skin above it stays bare.
-const NECK_BAND_M := {"padded": 0.05}
-# The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's flat back
-# face was 2 cm inside his shoulder blades), so the layer showed his back's muscles through it as cloth-coloured lumps (Lane A qa15e, 26 Nov 2026). The chest pieces of
-# a sleeved garment are made deeper and set back on his body, and a smooth round mantle covers the tops of the shoulders and the foot of the neck behind, where his
-# trapezius stood over the chest tube (the mantle is a chest piece too, so it is made deeper and set back with them). Measured offline against his skinned mesh at idle
-# (the six-sided tube with a corner at the back, as CylinderMesh draws it): the layer's torso points outside the pieces fell from 819 (gambeson) and 992 (shirt) to 1 and 4.
+# A high collar: the gambeson's layer also covers the neck, this far up from the neck joint (Lane A qa15d and qa15f, 26 Nov 2026: with the arm raised in the chop, neck
+# and throat skin showed under the chin at its collar; 5 cm was too low). The neck's skin above it stays bare.
+const NECK_BAND_M := {"padded": 0.09}
+# The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's back corner
+# was 2 cm inside his shoulder blades), so the layer showed his back's muscles through it as cloth-coloured lumps (Lane A qa15e, 26 Nov 2026). On his body a sleeved
+# garment's chest tubes are turned a sixth of a turn so a flat face lies across the back and the chest (CylinderMesh puts a corner at the back), made deeper and set back,
+# and a little narrower, since the turn puts a corner at each side. Its flat chest details (the gambeson's quilting) are laid on the tube's front faces, and the pieces
+# round the tube's middle (the shirt's shoulder seams) go back and deeper with it. No mantle over the shoulders: a round one read as a hump from the back and the side
+# (Lane A qa15f). Measured offline against his skinned mesh at idle (tools: the garment's surface against the body, by 5 cm of height): the garment stands at most 7.5 cm
+# off his back and 8 cm past his sides (the mantle stood 10.6 cm off his back), and the layer's points outside the pieces over his shoulder blades fell from 245 (gambeson)
+# and 308 (shirt) to 40 and 75; the shoulder tops above the tube stay the layer's, the garment's own shoulders.
+const CHEST_TURN := PI / 6.0
 const CHEST_DEEPER := 1.2
-const CHEST_BACK_M := 0.02
-const MANTLE_AT := Vector3(0.0, 0.2, 0.02)
-const MANTLE_SIZE := Vector3(0.5, 0.26, 0.36)
+const CHEST_BACK_M := 0.01
+const CHEST_NARROWER := 0.9
 # How far out from the skin, in metres: inside the garment's pieces (a layer-2 garment's pieces stand 3 cm out), and a shirt under a gambeson under mail in that order.
 const OUT_M := {"tunic": 0.01, "padded": 0.018, "mailshirt": 0.024}
 
@@ -48,27 +51,68 @@ static func covers(builder: String) -> bool:
 	return REGIONS.has(builder)
 
 
-# `builder`'s pieces (worn_look.gd parts_of) as they hang on a body with this layer: a sleeved garment's chest pieces deeper and set back, and a mantle over the shoulders
-# (see CHEST_DEEPER). Other garments' pieces are returned as they are.
+# `builder`'s pieces (worn_look.gd parts_of) as they hang on a body with this layer (see CHEST_TURN). Other garments' pieces, and pieces on other bones, are returned as
+# they are.
 static func fit_parts(builder: String, parts: Array) -> Array:
 	if not covers(builder):
 		return parts
 
+	var tube: Dictionary = {}
+
+	for part in parts:
+		if str(part["bone"]) == "chest" and str(part["shape"]) == "cyl" and not bool(part.get("detail", false)):
+			tube = part
+			break
+
+	if tube.is_empty():
+		return parts
+
+	var center_z: float = float((tube["at"] as Vector3).z) * CHEST_DEEPER + CHEST_BACK_M
+	var half_x: float = float((tube["size"] as Vector3).x) * CHEST_NARROWER * 0.5
+	var face: float = float((tube["size"] as Vector3).z) * CHEST_DEEPER * 0.5 * cos(CHEST_TURN)    # the front face's distance from the tube's middle
 	var out: Array = []
-	var mantle: Dictionary = {"bone": "chest", "shape": "sphs", "at": MANTLE_AT, "size": MANTLE_SIZE, "rot": Vector3.ZERO, "detail": false, "dark": 0.0}
 
-	for part in parts + [mantle]:
+	for part in parts:
 		var piece: Dictionary = (part as Dictionary).duplicate()
+		var at: Vector3 = piece["at"]
+		var size: Vector3 = piece["size"]
 
-		if str(piece["bone"]) == "chest":
-			var at: Vector3 = piece["at"]
-			var size: Vector3 = piece["size"]
+		if str(piece["bone"]) != "chest":
+			pass
+		elif str(piece["shape"]) == "cyl":
+			piece["rot"] = (piece.get("rot", Vector3.ZERO) as Vector3) + Vector3(0.0, CHEST_TURN, 0.0)
 			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER + CHEST_BACK_M)
+			piece["size"] = Vector3(size.x * CHEST_NARROWER, size.y, size.z * CHEST_DEEPER)
+		elif absf(at.z) < 0.01:
+			piece["at"] = Vector3(at.x, at.y, center_z)
 			piece["size"] = Vector3(size.x, size.y, size.z * CHEST_DEEPER)
+		elif str(piece["shape"]) == "box" and at.z < 0.0:
+			piece = _on_front(piece, center_z, half_x, face)
+		else:
+			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER * cos(CHEST_TURN) + CHEST_BACK_M)
 
 		out.append(piece)
 
 	return out
+
+
+# A flat chest detail laid on the turned tube's front (front is -Z): on the flat face across the chest, or turned onto the slanted face beside it, its back sunk 2 mm in.
+static func _on_front(piece: Dictionary, center_z: float, half_x: float, face: float) -> Dictionary:
+	var at: Vector3 = piece["at"]
+	var sink: float = float((piece["size"] as Vector3).z) * 0.5 - 0.002
+	var surface_z: float = center_z - face
+	var normal: Vector2 = Vector2(0.0, -1.0)      # (x, z), outward
+	var turn: float = 0.0
+
+	if absf(at.x) > half_x * 0.5:
+		var slope: float = 2.0 * face / half_x
+		surface_z = center_z - face * 2.0 * (1.0 - minf(absf(at.x), half_x) / half_x)
+		normal = Vector2(signf(at.x) * slope, -1.0).normalized()
+		turn = -signf(at.x) * atan(slope)
+
+	piece["at"] = Vector3(at.x + normal.x * sink, at.y, surface_z + normal.y * sink)
+	piece["rot"] = (piece.get("rot", Vector3.ZERO) as Vector3) + Vector3(0.0, turn, 0.0)
+	return piece
 
 
 # The bone's short name: "mixamorig_RightArm" (and "mixamorig:RightArm") -> "RightArm".

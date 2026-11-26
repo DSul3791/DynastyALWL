@@ -130,7 +130,8 @@ func _inside(node: MeshInstance3D, p: Vector3) -> bool:
 
 
 # The fitted layer's torso points (over the strongest bones in WornShell.TORSO) that stand outside every piece of the garment at the current pose: where the layer, not the
-# garment's shape, is what shows (Lane A qa15e, 26 Nov 2026: Dave's back muscles showed through as cloth-coloured lumps). [outside, torso points].
+# garment's shape, is what shows (Lane A qa15e, 26 Nov 2026: Dave's back muscles showed through as cloth-coloured lumps). [outside, torso points, outside over the
+# shoulder blades: behind the chest frame's middle, 5 to 20 cm up it].
 func _showing(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D) -> Array:
 	var skin: Skin = body_mesh.skin
 	var mats: Array = []
@@ -160,6 +161,9 @@ func _showing(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D) -
 	var per: int = int(float(c_bones.size()) / float(cloth.size()))
 	var outside: int = 0
 	var torso: int = 0
+	var blades: int = 0
+	var chest: Node3D = s.get_node_or_null("Worn_chest/Frame") as Node3D
+	var to_chest: Transform3D = chest.global_transform.affine_inverse() if chest != null else Transform3D.IDENTITY
 
 	for i in range(cloth.size()):
 		var v: int = under[i]
@@ -188,9 +192,167 @@ func _showing(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D) -
 				hidden = true
 				break
 
-		outside += 0 if hidden else 1
+		if not hidden:
+			outside += 1
+			var c: Vector3 = to_chest * p
+			blades += 1 if chest != null and c.z > 0.0 and c.y > 0.05 and c.y < 0.2 else 0
 
-	return [outside, torso]
+	return [outside, torso, blades]
+
+
+# Points on a piece's surface in its own unit space (WornLook._mesh shapes), for _standoff.
+func _surface(node: MeshInstance3D) -> PackedVector3Array:
+	var out: PackedVector3Array = PackedVector3Array()
+
+	if node.mesh == WornLook._mesh("box"):
+		for a in range(5):
+			for b in range(5):
+				for c in [-0.5, 0.5]:
+					var u: float = -0.5 + 0.25 * float(a)
+					var v: float = -0.5 + 0.25 * float(b)
+					out.append(Vector3(u, v, c))
+					out.append(Vector3(u, c, v))
+					out.append(Vector3(c, u, v))
+		return out
+
+	for shape in [["cyl", 6], ["cyls", 16], ["frus", 16]]:
+		if node.mesh == WornLook._mesh(str(shape[0])):
+			for ring in range(9):
+				for k in range(int(shape[1])):
+					var a0: float = TAU * float(k) / float(shape[1])
+					var a1: float = TAU * float(k + 1) / float(shape[1])
+					for t in range(5):
+						var e: Vector2 = Vector2(sin(a0), cos(a0)).lerp(Vector2(sin(a1), cos(a1)), float(t) / 4.0) * 0.5     # CylinderMesh: x = sin, z = cos
+						out.append(Vector3(e.x, -0.5 + 0.125 * float(ring), e.y))
+			return out
+
+	var r: float = 0.5 if node.mesh == WornLook._mesh("sphs") else 0.45
+	for i in range(13):
+		for j in range(24):
+			var th: float = PI * float(i) / 12.0
+			var ph: float = TAU * float(j) / 24.0
+			out.append(Vector3(sin(th) * cos(ph), cos(th), sin(th) * sin(ph)) * r)
+	return out
+
+
+# How far the garment's chest pieces stand off Dave's body at the current pose, in the chest frame (+Z the back): by 5 cm of height, the garment's furthest back point
+# past the body's (within 12 cm of the middle), and its furthest side point past the body's; the most of each [back, side] (Lane A qa15f, 26 Nov 2026: a round
+# shoulder mantle read as a hump from the back and the side; an offline count of uncovered points did not see it).
+func _standoff(body_mesh: MeshInstance3D, s: Skeleton3D) -> Array:
+	var chest: Node3D = s.get_node_or_null("Worn_chest/Frame") as Node3D
+
+	if chest == null:
+		return [INF, INF]
+
+	var to_chest: Transform3D = chest.global_transform.affine_inverse()
+	var skin: Skin = body_mesh.skin
+	var mats: Array = []
+
+	for i in range(skin.get_bind_count()):
+		var bone: int = skin.get_bind_bone(i)
+
+		if bone < 0:
+			bone = s.find_bone(skin.get_bind_name(i))
+
+		mats.append(s.get_bone_global_pose(bone) * skin.get_bind_pose(i) if bone >= 0 else Transform3D.IDENTITY)
+
+	var src: Array = (body_mesh.mesh as ArrayMesh).surface_get_arrays(0)
+	var verts: PackedVector3Array = src[Mesh.ARRAY_VERTEX]
+	var bones: PackedInt32Array = src[Mesh.ARRAY_BONES]
+	var weights: PackedFloat32Array = src[Mesh.ARRAY_WEIGHTS]
+	var per: int = int(float(bones.size()) / float(verts.size()))
+	var body: Dictionary = {}      # band -> [back, side, middle back seen]
+	var cloth: Dictionary = {}
+
+	for v in range(verts.size()):
+		var best: int = -1
+		var best_w: float = 0.0
+		var q: Vector3 = Vector3.ZERO
+
+		for k in range(per):
+			var w: float = weights[v * per + k]
+			q += ((mats[bones[v * per + k]] as Transform3D) * verts[v]) * w
+
+			if w > best_w:
+				best_w = w
+				best = bones[v * per + k]
+
+		if best < 0 or not (WornShell.short_name(String(skin.get_bind_name(best))) in WornShell.TORSO + ["Neck"]):
+			continue
+
+		_band(body, to_chest * (s.global_transform * q))
+
+	for node in chest.get_children():
+		if node is MeshInstance3D:
+			var m: Transform3D = to_chest * (node as MeshInstance3D).global_transform
+			for p in _surface(node as MeshInstance3D):
+				_band(cloth, m * p)
+
+	var back: float = -INF
+	var side: float = -INF
+
+	for band in cloth.keys():
+		if not body.has(band):
+			continue
+
+		var g: Array = cloth[band]
+		var b: Array = body[band]
+		side = maxf(side, float(g[1]) - float(b[1]))
+
+		if float(g[0]) > -INF and float(b[0]) > -INF:
+			back = maxf(back, float(g[0]) - float(b[0]))
+
+	return [back, side]
+
+
+# A point into its 5 cm height band: [furthest back within 12 cm of the middle, furthest out to either side].
+func _band(bands: Dictionary, c: Vector3) -> void:
+	if c.y < -0.3 or c.y >= 0.35:
+		return
+
+	var band: int = floori(c.y / 0.05)
+	var row: Array = bands.get(band, [-INF, -INF])
+
+	if absf(c.x) < 0.12:
+		row[0] = maxf(float(row[0]), c.z)
+
+	row[1] = maxf(float(row[1]), absf(c.x))
+	bands[band] = row
+
+
+# The gambeson's quilting strips lie on its chest (Lane A qa15f, 26 Nov 2026: they stood out in front of it): each strip's back face, at its top, middle and foot, is
+# inside the chest tube. [strips, strips with their back face inside].
+func _quilting(s: Skeleton3D) -> Array:
+	var chest: Node3D = s.get_node_or_null("Worn_chest/Frame") as Node3D
+	var tube: MeshInstance3D = null
+	var strips: Array = []
+
+	if chest == null:
+		return [0, 0]
+
+	for node in chest.get_children():
+		if not (node is MeshInstance3D):
+			continue
+
+		var mi: MeshInstance3D = node as MeshInstance3D
+		var scale: Vector3 = mi.transform.basis.get_scale()
+
+		if mi.mesh == WornLook._mesh("cyl") and tube == null and scale.y > 0.3:
+			tube = mi
+		elif mi.mesh == WornLook._mesh("box") and scale.y > 0.3 and scale.x < 0.03:
+			strips.append(mi)
+
+	var lying: int = 0
+
+	for strip in strips:
+		var ok: bool = tube != null
+
+		for y in [-0.45, 0.0, 0.45]:
+			ok = ok and _inside(tube, (strip as MeshInstance3D).global_transform * Vector3(0.0, y, 0.5))
+
+		lying += 1 if ok else 0
+
+	return [strips.size(), lying]
 
 
 # The layer's points over the Neck bone (by their body vertex's strongest bone), in the mesh's rest: [count, the highest one's height, the neck joint's height].
@@ -372,12 +534,22 @@ func _init() -> void:
 		if shell == null:
 			continue
 
-		# At idle the garment's own shape shows, not the layer under it: from the back too (the shoulder blades and the trapezius stood out through it before the chest
-		# pieces were fitted to Dave's body, worn_shell.gd CHEST_DEEPER; offline: gambeson 1 and shirt 4 of about 5000 torso points left out).
+		# At idle the garment's own shape shows over his shoulder blades, not the layer under it (the blades stood out through it before the chest pieces were fitted to
+		# Dave's body, worn_shell.gd CHEST_TURN; offline: 245 gambeson and 308 shirt of about 3600 torso points, fitted 40 and 75). The tops of the shoulders above the
+		# chest tube are the layer's: the garment's own shoulders.
 		if str(garment[1]) != "mailshirt":
 			var showing: Array = _showing(body.body_mesh, shell, s)
-			_check(int(showing[1]) > 2000 and int(showing[0]) * 100 <= int(showing[1]),
-				"%s at idle: the layer shows outside the garment's pieces at %d of %d torso points (at most 1%%)" % [str(garment[0]), int(showing[0]), int(showing[1])])
+			_check(int(showing[1]) > 2000 and int(showing[2]) * 100 <= int(showing[1]) * 3,
+				"%s at idle: the layer shows over the shoulder blades at %d of %d torso points (at most 3%%; outside the pieces anywhere %d)" % [str(garment[0]), int(showing[2]), int(showing[1]), int(showing[0])])
+
+		# The garment does not stand off his body: no hump at the back or side (offline at idle: at most 7.5 cm off the back and 8 cm past the sides; the mantle stood 10.6).
+		var standoff: Array = _standoff(body.body_mesh, s)
+		_check(float(standoff[0]) <= 0.085 and float(standoff[1]) <= 0.085,
+			"%s at idle stands off the body at most %.3f m at the back and %.3f m at the sides (at most 0.085)" % [str(garment[0]), float(standoff[0]), float(standoff[1])])
+
+		if str(garment[1]) == "padded":
+			var quilting: Array = _quilting(s)
+			_check(int(quilting[0]) == 5 and int(quilting[1]) == 5, "the gambeson's %d quilting strips lie on its chest: %d" % [int(quilting[0]), int(quilting[1])])
 
 		# The gambeson's high collar (worn_shell.gd NECK_BAND_M; Lane A qa15d: neck skin at its collar with the arm raised): its layer covers the foot of the neck,
 		# and only the foot, up to the band's top over the neck joint; the shirt's layer stops at the neck.

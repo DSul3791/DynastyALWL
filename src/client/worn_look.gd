@@ -77,7 +77,7 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		var parts: Array = parts_of(str(row["builder"]), out, bool(row.get("fringe", false)))
 
 		if rig.has_meta("worn_shell"):
-			parts = WornShell.fit_parts(str(row["builder"]), parts)      # fitted to Dave's body, over the layer (worn_shell.gd CHEST_DEEPER)
+			parts = WornShell.fit_parts(str(row["builder"]), parts)      # fitted to Dave's body, over the layer (worn_shell.gd CHEST_TURN)
 
 		for part in parts:
 			if far and bool(part.get("detail", false)):
