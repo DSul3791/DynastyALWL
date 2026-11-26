@@ -19521,6 +19521,9 @@ func fire_protect_m(at: Vector3) -> float:
 
 
 var _lit_valid: bool = false
+var lit_scans: int = 0         # walks of every record for the lit fires (_lit_rows), for the tests
+var _lit_scope: bool = false   # the goals tick keeps one fire list for all its players, as the vitals pass does (soak 26 Nov 2026: the night walk and the hints
+                               # walked every record once a player for the lit fires, 165 ms a second at 64 players)
 var _rain_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -19529,10 +19532,11 @@ var _lit_cache_rows: Array = []
 
 
 func _lit_rows() -> Array:
-	if _in_vitals and _lit_valid:
+	if (_in_vitals or _lit_scope) and _lit_valid:
 		return _lit_cache_rows
 
 	var found: Array = []
+	lit_scans += 1
 	_coal_cache_rows = []
 	_guard_cache_rows = []
 	_heat_cache_rows = []
@@ -19553,7 +19557,7 @@ func _lit_rows() -> Array:
 			if lit_def.has("heat_tier"):   # a lit Fireplace or brazier warms as a campfire of that size (structures.json note_fire_lights)
 				_heat_cache_rows.append([it["pos"], str(lit_def["heat_tier"])])
 
-	if _in_vitals:
+	if _in_vitals or _lit_scope:
 		_lit_cache_rows = found
 		_lit_valid = true
 
@@ -19582,14 +19586,14 @@ func _heat_rows() -> Array:
 
 
 func _guard_rows() -> Array:
-	if not (_in_vitals and _lit_valid):
+	if not ((_in_vitals or _lit_scope) and _lit_valid):
 		_lit_rows()
 
 	return _guard_cache_rows
 
 
 func _coal_rows() -> Array:
-	if not (_in_vitals and _lit_valid):
+	if not ((_in_vitals or _lit_scope) and _lit_valid):
 		_lit_rows()
 
 	return _coal_cache_rows
@@ -26478,6 +26482,8 @@ func _goals_tick(with_goals: bool = true) -> void:
 		return
 
 	var t0: int = Time.get_ticks_usec()
+	_lit_valid = false   # this tick's own fire list, worked out at its first look
+	_lit_scope = true
 	_night_walk_tick()
 	var t1: int = Time.get_ticks_usec()
 	_slowest_hint_usec = 0
@@ -26513,6 +26519,7 @@ func _goals_tick(with_goals: bool = true) -> void:
 	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split). Goals: the spread looks since the last slow tick.
 	_goals_detail = "(night walk %.0f, goals %.0f spread, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
 		float(Time.get_ticks_usec() - th) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
+	_lit_scope = false
 
 
 # The goal list as the client gets it, in the authored order: [id, title, how-to, reward copper, reward item id ("" none), reward item count, after ids
