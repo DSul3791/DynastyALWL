@@ -72,7 +72,10 @@ def jobs(out):
 	pieces = list(load("data/items/structures.json")["structures"])
 	strip = ("one picture strip per animal model, side view on a ground plane with a 1 m grid: the rest pose first, then each "
 		"role the model has (graze, alert, wind-up, warn, charge, recover, lie, drink, walk, trot, run), each paused 40%% into "
-		"its clip, a label under each. Every panel's feet, hooves or paws should touch the ground plane. Species: %s.")
+		"its clip, a label under each. The first panel (rest pose) and any role marked (none) is the bind pose, never shown in "
+		"the game: do not judge it. Fly panels and the flight phase of a run are off the ground on purpose; swim panels sit "
+		"into the ground plane (the water line). A lie panel should show the animal resting chest down or curled, its body on "
+		"the ground. Every other panel's feet, hooves or paws should touch the ground plane. Species: %s.")
 	out_jobs = []
 	for i, group in enumerate(chunks(species, 6)):
 		folder = join(out, "animals", "%02d" % i)
