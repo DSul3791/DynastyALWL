@@ -74,10 +74,19 @@ func agrees(items, what: String) -> bool:
 				print("  %s: player %d lacks record %d" % [what, peer, id])
 				break
 
+			if absf((copy[id][3] as Vector3).y - (items._items[id]["pos"] as Vector3).y) > 0.06:
+				ok = false
+				print("  %s: player %d has record %d at height %.2f, it is %.2f" % [what, peer, id, (copy[id][3] as Vector3).y, (items._items[id]["pos"] as Vector3).y])
+				break
+
 			if int(copy[id][2]) != int(items._items[id]["count"]):
 				ok = false
 				print("  %s: player %d has record %d at count %d, it is %d" % [what, peer, id, int(copy[id][2]), int(items._items[id]["count"])])
 				break
+
+		if (items._known[peer] as Dictionary).size() != copy.size():
+			ok = false
+			print("  %s: player %d: the server thinks they hold %d records, they hold %d" % [what, peer, (items._known[peer] as Dictionary).size(), copy.size()])
 
 		for id in copy:
 			if not want.has(id):
@@ -195,6 +204,26 @@ func _initialize() -> void:
 	check(not (copies[10] as Dictionary).has(road), "a quick sync takes away a record gone from the world")
 	items._sync_world_items()
 	check(agrees(items, "after the quick removal") and bad_removes == 0, "and the full sync after that neither sends it nor takes it away twice (%d)" % bad_removes)
+
+	# A quick sync of a record already sent, then the record back as it was before the next full sync: its cell is looked at again, not
+	# skipped on its old sum (early review 26 Nov: the player would keep the quick sync's row).
+	var heap: int = -1
+
+	for id in items._items:
+		if (items._items[id]["pos"] as Vector3).distance_to(here) < 40.0 and int(items._items[id]["number"]) == stone:
+			heap = int(id)
+			break
+
+	check(heap >= 0, "a stone heap near player 10")
+
+	if heap >= 0:
+		var was: int = int(items._items[heap]["count"])
+		items._items[heap]["count"] = was + 1
+		items._sync_world_items([heap], [here])
+		check(int(copies[10][heap][2]) == was + 1, "the quick sync sends the heap's new count")
+		items._items[heap]["count"] = was
+		items._sync_world_items()
+		check(agrees(items, "after the revert") and int(copies[10][heap][2]) == was, "back as it was before the full sync: the full sync sends the old count again")
 
 	# The cost at the rocks thread's size: 15,334 records over 928 ground cells (about 2 km square), 32 players.
 	var big = make("user://test_sync_by_change_big")

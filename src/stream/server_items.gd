@@ -8777,9 +8777,7 @@ func _sync_quick(fresh: Array, near_to: Array) -> void:
 			if not known.has(id) or known[id] != signature:
 				added.append(_sync_row(peer, int(id), it, rec, site_view))
 				known[id] = signature
-
-				if not seen["where"].has(id):
-					_seen_hold(seen, id, SYNC_LOOSE)   # the next full sync files it in its cell
+				_seen_hold(seen, id, SYNC_LOOSE)   # the next full sync looks at it again and files it in its cell (its old cell is not skipped)
 
 		if not added.is_empty() or not removed.is_empty():
 			send_world_items.call(peer, added, removed)
