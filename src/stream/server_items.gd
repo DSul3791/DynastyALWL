@@ -10185,6 +10185,9 @@ func _scatter_around_players() -> void:
 			if _items.has(id) and _items[id].has("scatter"):
 				_items.erase(id)
 
+			if _still_at.has(id):
+				_still_out(id)   # out of the still grids now, not left for the sync's check round
+
 		_scatter_cells.erase(cell)
 		_cells_done.erase(cell)
 
