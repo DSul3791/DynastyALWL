@@ -215,6 +215,23 @@ func _close_windows() -> void:
 		c.items.dialogue_close.call()
 
 
+# A player out looking for a rock: legs of a widening loop round the camp until a rock of `item` is drawn within 400 m or `limit_s` is used;
+# the farthest it got from camp.
+func _explore_for(item: String, limit_s: float) -> float:
+	var until: int = mini(Time.get_ticks_msec() + int(limit_s * 1000.0), _end_ms)
+	var leg: int = 0
+	var farthest: float = 0.0
+
+	while Time.get_ticks_msec() < until and _nearest_boulder(item) == 0:
+		leg += 1
+		var target: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (250.0 + 150.0 * float(leg))
+		await r._go_to(target, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
+		farthest = maxf(farthest, _flat(_home))
+		_line("EXPLORE for %s: leg %d, %.0f m from camp, rock found %s" % [item, leg, _flat(_home), str(_nearest_boulder(item) != 0)])
+
+	return farthest
+
+
 # Back to the starter camp in 60 s legs; the seconds walked.
 func _walk_home(limit_s: float) -> float:
 	var leg_s: float = 0.0
@@ -253,7 +270,10 @@ func _play_goal(g: Dictionary) -> String:
 			return await _eat_wild()
 		"copper_ore":
 			if _nearest_boulder("copper_ore") == 0:
-				return "robot cannot find copper yet: no copper rock is drawn within 400 m (a player explores along the rivers; the server's resources line gives the nearest by route)"
+				var far: float = await _explore_for("copper_ore", 600.0)
+
+				if _nearest_boulder("copper_ore") == 0:
+					return "robot cannot find copper yet: no copper rock drawn after exploring up to %.0f m from camp (a player explores along the rivers; the server's resources line gives the nearest by route)" % far
 
 			return await _gather("copper_ore", int(check.get("count", 1)))
 		"path":
@@ -291,6 +311,12 @@ func _play_goal(g: Dictionary) -> String:
 
 	if str(check.get("event", "")) == "placed":
 		var what: String = str(check.get("what", ((check.get("what_any", [""]) as Array)[0])))
+
+		for any in check.get("what_any", []):   # the first one that has a hand blueprint (the Thatch - Bed's is retired: the Straw - Bed is built)
+			if _blueprints.has(str(any)):
+				what = str(any)
+				break
+
 		return await _build(what)
 
 	return "robot cannot play goal %s yet (check %s)" % [id, JSON.stringify(check)]
@@ -383,7 +409,7 @@ func _recipe_for(item: String) -> Dictionary:
 	for key in r._recipes:
 		var row: Dictionary = r._recipes[key]
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station"):
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station") and not bool(row.get("retired", false)):   # the server drops retired rows (recipe_table.gd)
 			return row
 
 	return {}
@@ -395,7 +421,7 @@ func _station_recipe_for(item: String) -> Dictionary:
 		var row: Dictionary = r._recipes[key]
 		var station: String = str(row.get("station", ""))
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))):
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))) and not bool(row.get("retired", false)):
 			return row
 
 	return {}
@@ -509,6 +535,7 @@ func _gather(item: String, n: int) -> String:
 	var presses: int = 0
 	var unreached: int = 0
 	var in_row: int = 0
+	var heavy_from: int = said
 
 	while _count(item) < n and Time.get_ticks_msec() < until:
 		var spot: Dictionary = _nearest_source(item)
@@ -549,6 +576,10 @@ func _gather(item: String, n: int) -> String:
 
 		while _count(item) == had and Time.get_ticks_msec() < wait_until:
 			await r._wait(0.2)
+
+		if str(r._notices.slice(maxi(heavy_from, r._notices.size() - 3))).contains("Too heavy"):   # a player stops and drops the straw and thatch a pick brought with it
+			await _lighten()
+			heavy_from = r._notices.size()   # one notice, one lightening
 
 	var got: int = _count(item) - start
 	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks, %d out of reach%s" % [item, got, _count(item), n, presses, walks, unreached, _said(said)])
@@ -901,6 +932,7 @@ func _fire() -> String:
 	await r._wait(3.0)
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
 	return ""
+
 
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
