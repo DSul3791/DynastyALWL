@@ -7,6 +7,7 @@ extends SceneTree
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 
 func _init() -> void:
