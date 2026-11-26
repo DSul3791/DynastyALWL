@@ -57,7 +57,8 @@ def git_objects(root, specs):
 
 
 def safe_path(p):
-    return isinstance(p, str) and '\\' not in p and ':' not in p and not PurePosixPath(p).is_absolute() and all(x not in ('', '..', '.') for x in p.split('/')) and bool(p)
+    # No newline or leading quote: the batched git calls read one path per line and hash-object unquotes a leading ".
+    return isinstance(p, str) and '\\' not in p and ':' not in p and '\n' not in p and '\r' not in p and not p.startswith('"') and not PurePosixPath(p).is_absolute() and all(x not in ('', '..', '.') for x in p.split('/')) and bool(p)
 
 
 def notice(p):
