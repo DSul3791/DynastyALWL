@@ -23,8 +23,9 @@ const SEARCH_M := 70.0                     # how far the robot looks round for a
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
 const CHARCOAL_EACH_S := 400.0             # real seconds of wood burning a fire takes to leave one Charcoal (9600 game s at 24 game s a second)
 const STALK_S := 45.0                      # how long a hunter stands, looks and walks up before the chase
+const FISH_S := 240.0                      # the most time the fish goal spends at the water
 const WAIT_VISITS := 5                     # a goal that waits on time (charcoal) is visited at most this often
-const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
+const CLAY_S := 480.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
 const GATHER_S := 300.0                    # one gather's time at most
@@ -518,7 +519,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _dig_clay(int(check.get("count", 12)))
 		"charcoal":
 			return await _charcoal(int(check.get("count", 4)))
-		"fish", "snare", "order", "story", "night_walk", "fur_for_winter":
+		"fish":
+			return await _fish_goal()
+		"snare", "order", "story", "night_walk", "fur_for_winter":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -1192,6 +1195,73 @@ func _fire() -> String:
 	return ""
 
 
+# --- a fish with the Fishing spear, as the goal's hint says: stand still at the water's edge, the spear in hand, and jab (left click) at
+# water ankle to waist deep (fishing.json fish_spear: reach 2.5 m, standing still, a 0.2 chance a jab, only where fish are). The jab lands
+# 2.5 m ahead of the eye and 1.2 m down (held_item.gd). Where the game says no fish or the wrong depth, a player moves along the shore.
+func _fish_goal() -> String:
+	var why: String = await _have("fishing_spear", 1, false)
+
+	if why != "":
+		return "fishing spear: " + why
+
+	if _hold("fishing_spear") < 0:
+		return "no fishing spear to hold"
+
+	var said: int = r._notices.size()
+	var until: int = mini(Time.get_ticks_msec() + int(FISH_S * 1000.0), _end_ms)
+	var jabs: int = 0
+	var spots: int = 0
+	var told: PackedStringArray = PackedStringArray()
+	var swam: int = 0
+
+	while Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)) and spots < 6:
+		spots += 1
+		var water: Vector3 = await r._find_water()
+
+		if is_nan(water.x):
+			return "no water in any loaded chunk"
+
+		# The edge: 0.5 to 2.5 m short of the wet corner, on the land side (the jab lands 2.4 m ahead, inside the 2.5 m reach).
+		var back: Vector3 = Vector3(c.body.global_position.x - water.x, 0.0, c.body.global_position.z - water.z).normalized()
+		await r._go_to(water + back * 1.5, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
+		r._release_all()
+		var heard: int = r._notices.size()
+		var here: int = 0
+
+		if c.swimming:   # the server takes no jab from a swimmer: back out onto the land and try the next stretch
+			swam += 1
+			await r._go_to(c.body.global_position + back * 4.0, minf(8.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
+			continue
+
+		await r._wait(1.5)   # still long enough for the server (fish_spear still_below)
+
+		while here < 15 and Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)):
+			_look_at(water)
+			c.pitch = -0.25
+			await r._wait(0.8)   # standing still (fish_spear still_below)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+			await r._wait(0.1)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+			await r._wait(1.2)   # the jab's cooldown is 1.2 s
+			here += 1
+			jabs += 1
+
+		for n in range(heard, r._notices.size()):
+			if not told.has(str(r._notices[n])):
+				told.append(str(r._notices[n]))
+
+		_line("FISH spot %d at %s: %d jabs, goal %s" % [spots, str(c.body.global_position.round()), here, str(c.items.goal_book.row("fish").get("have", "?"))])
+
+		# Another stretch of shore: 12 m along it, round the water's edge.
+		if spots < 6 and Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)):
+			await r._go_to(c.body.global_position + back.rotated(Vector3.UP, PI * 0.5) * 12.0, minf(8.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
+
+	if bool(c.items.goal_book.row("fish").get("done", false)):
+		return ""
+
+	return "%d jabs at %d spots along the shore (%d stood swimming, no jab) and no fish; at the shore the game said %s%s" % [jabs, spots, swam,
+		str(told) if not told.is_empty() else "nothing", _said(said)]
+
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
 func _drink() -> String:
@@ -1506,26 +1576,41 @@ func _dig_clay(want: int) -> String:
 			if tries > 0:
 				await r._go_to(c.body.global_position + side * 1.8, 4.0, 0.4)
 
-			var ground: Vector3 = c.body.global_position + dir * 1.8
-			var y: float = float(c.items._ground_below.call(ground))
-			ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 			var had: int = _dug_count()
-			_look_at(ground)
-			await r._wait(0.3)
-			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
-			await r._wait(0.1)
-			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
-			await r._wait(0.9)   # the server's dig pace is 0.7 s
+
+			# A click that brought nothing in (the ray met a bush or grass, or the ground fell away out of the 3 m reach) is aimed again
+			# closer and steeper, once; the pack is watched up to 2 s for the server's answer.
+			for ahead in [1.8, 1.4]:   # 1.4 keeps the rim of the bowl 0.5 m off the robot
+				var ground: Vector3 = c.body.global_position + dir * ahead
+				var y: float = float(c.items._ground_below.call(ground))
+				ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+				_look_at(ground)
+				await r._wait(0.3)
+				c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+				await r._wait(0.1)
+				c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+				clicks += 1
+				var waited: float = 0.0
+
+				while waited < 2.0 and _dug_count() <= had:
+					await r._wait(0.25)
+					waited += 0.25
+
+				if _dug_count() > had:
+					break
+
+				await r._wait(maxf(0.0, 0.8 - waited))   # the server's dig pace is 0.7 s
+
 			tries += 1
-			clicks += 1
 			dug_here += 1 if _dug_count() > had else 0
 
-			# Sand, gravel or rock under the spade four digs running and no clay: this ground has none, try another way out.
-			if dug_here >= 4 and _count("clay") == got_here:
+			# Sand, gravel or rock under the spade eight digs running and no clay: this ground has none, try another way out (on loam, with
+			# a 35% chance a dig, four dry digs in a row happen one time in five; eight, one time in thirty).
+			if dug_here >= 8 and _count("clay") == got_here:
 				break
 
 		dug += dug_here
-		_line("CLAY line %d at %s, %.0f m from camp: %d clicks, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
+		_line("CLAY line %d at %s, %.0f m from camp: %d digs tried, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
 			tries, dug_here, _count("clay") - got_here])
 
 	var got: int = _count("clay") - start_clay
