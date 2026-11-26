@@ -303,8 +303,7 @@ if dave.returncode != 0:   # Dave's rulings as plain-number checks on the data (
     if "FAIL" not in dave.stdout:
         bad("check_dave_rules crashed: " + dave.stderr[-200:])
 
-sys.path.insert(0, "tools")
-import check_rulings
+import check_rulings   # tools/ is on sys.path (above)
 for _line in check_rulings.softened(subprocess.run(["git", "show", f"{BASE}:docs/RULINGS.md"], capture_output=True, text=True).stdout,
                                     pathlib.Path("docs/RULINGS.md").read_text(encoding="utf-8") if pathlib.Path("docs/RULINGS.md").exists() else ""):
     bad("rulings: " + _line)   # a rule's mark softened on the same date (check_rulings.softened)
