@@ -1418,8 +1418,8 @@ func _make_tree_materials() -> void:
 	_tree_materials["grass"].set_shader_parameter("backlight", 0.3)
 	_tree_materials["twig"].set_shader_parameter("backlight", 0.0)   # bare twigs are solid wood
 	_tree_materials["witness"].set_shader_parameter("veins", _load_texture("res://assets/trees/leaf_witness_veins.png"))
-	_tree_materials["witness"].set_shader_parameter("glow", Color(0.6, 0.04, 1.0))         # violet vein lines: on screen 0.5, 0.06 measured 254 degrees and 0.72, 0.05 measured 276; Dave's picture 269 (tools/score_witness_night.py)
-	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.92, 0.78, 1.0))   # near white at the very centre: Dave's line cores measure saturation 0.24, brightness 0.93
+	_tree_materials["witness"].set_shader_parameter("glow", Color(0.66, 0.04, 1.0))        # violet vein lines: on screen 0.5 measured 254 degrees, 0.6 measured 263, 0.72 measured 276; Dave's picture 269 (tools/score_witness_night.py)
+	_tree_materials["witness"].set_shader_parameter("glow_core", Color(0.86, 0.68, 1.0))   # near white at the very centre, still violet: Dave's line cores measure saturation 0.24 (0.92, 0.78 measured 0.19, read violet-white)
 	_tree_materials["witness"].set_shader_parameter("core_boost", 1.6)                     # line centres measured 0.65 to 0.69 bright against Dave's 0.93 (the mask's core was under a texel wide until 26 Nov)
 	_tree_materials["witness"].set_shader_parameter("glow_energy", WITNESS_GLOW_NIGHT)   # set_day_sky turns it down by day
 
