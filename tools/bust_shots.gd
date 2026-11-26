@@ -3,7 +3,7 @@ extends SceneTree
 # Pictures of the Bust slider (dynasty_shapes.gd "bust") on every body model, close on the chest, in the idle pose: front, three-quarter and side, at slider values
 # -0.6 (the Even frame: as modelled), 0, 0.5 and 1. For checking the shape by eye (Dave 21 Nov 2026: "if you increase the breasts they get pointy they should get
 # big, round and voluptuous"). No world, no server. Needs a real renderer (a window on the PC).
-#   godot --path . --script res://tools/bust_shots.gd -- --out=C:/DynastyLane/logs/<job>/shots/bust_shots [--values=-0.6,0,0.5,1]
+#   godot --path . --script res://tools/bust_shots.gd -- --out=E:/somewhere/bust_shots [--values=-0.6,0,0.5,1]
 # Writes <out>/bust_<body>_<value>_<view>.png at the window's size. A picture is taken only once the body wears its shaped mesh at that weight; "bust_shots: FAIL"
 # when a body never does; the exit code is then 1.
 

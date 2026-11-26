@@ -14,7 +14,7 @@ for A in "$@"; do
 		*) echo "unknown argument $A"; exit 2;;
 	esac
 done
-OUT="${OUT:-C:/DynastyLane/logs/settle_$(date +%Y%m%d_%H%M%S)}"
+OUT="${OUT:-E:/Software/godotDev/DynastyALWL_Evidence/settle_$(date +%Y%m%d_%H%M%S)}"
 mkdir -p "$OUT"
 T="res://src/worldgen/tools"
 for Z in $(seq "${FROM#*,}" "${TO#*,}"); do

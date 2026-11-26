@@ -1,9 +1,9 @@
 #!/bin/bash
 # Run the nightly backup on Dave's PC without fighting a running gate (Mike, 25 Oct 2026).
 #   tools/pause_for_backup.sh [extra args for nightly_backup.py]
-# Sets the pause flag (C:/DynastyLane/GATE_PAUSE: gate_pc.sh starts no new test while it exists), waits until no Godot is running
+# Sets the pause flag (E:/Software/godotDev/GATE_PAUSE: gate_pc.sh starts no new test while it exists), waits until no Godot is running
 # (the backup refuses otherwise; it never kills anything), runs the backup (cull dry-run unless you pass --cull-live), removes the flag.
-FLAG="${GATE_PAUSE:-C:/DynastyLane/GATE_PAUSE}"
+FLAG="${GATE_PAUSE:-E:/Software/godotDev/GATE_PAUSE}"
 PYTHON="${PYTHON:-python}"
 REPO="${GATE_MAIN_CLONE:-/c/GodotProjects/DynastyALWL}"
 echo "paused at $(date +%H:%M:%S)" > "$FLAG"

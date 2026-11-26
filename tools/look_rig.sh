@@ -48,14 +48,14 @@
 #   Subject shots (--pieces, --look(s), --showroom, held items) hide the plant layer (trees, reeds, bushes) as well as the grass, so a reed bed cannot hide the subject.
 #   Every shot (but aerial, over 40 m, and absolute-height ones, which start at their own height) starts 1 m above the real ground at its spot (the server's ground height there), held until the ground under it loads, then goes to --agl (Dave 20 Nov 2026: never from high in the air).
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
-# display settings are never read or written. PNGs go to --out (default C:/DynastyLane/logs/shots).
+# display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
 cd "$(dirname "$0")/.." || exit 2
 SECONDS=0
 # Windows (Git bash) keeps the old behaviour; Linux (the server box) draws on the NVIDIA GPU under Xvfb, like tools/docker/shot.sh.
 case "$(uname -s)" in MINGW*|MSYS*|CYGWIN*) WIN=1;; *) WIN="";; esac
 if [ -n "$WIN" ]; then
-  GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; PY=python; DEFOUT="C:/DynastyLane/logs/shots"
+  GODOT="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"; PY=python; DEFOUT="E:/Software/godotDev/DynastyALWL_Evidence/shots"
 else
   GODOT="${GODOT_EXE:-/opt/godot/godot}"; GFX="${GODOT_GFX_EXE:-/opt/godot/godot-gfx}"; PY=python3; DEFOUT=/out/shots
 fi

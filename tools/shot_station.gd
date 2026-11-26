@@ -4,7 +4,7 @@ extends SceneTree
 # terrain), in a 1920x1080 picture, once per text size. Two windows: the Primitive smithy's (its one store grown past 20 slots beside its recipe
 # list, Dave 17 Nov 2026) and your own inventory's Craft screen with every category tab. For the layout, not the game's look of the world.
 #
-#   godot --path . --script res://tools/shot_station.gd -- --out=C:/DynastyLane/logs/<job>/shots
+#   godot --path . --script res://tools/shot_station.gd -- --out=E:/Software/godotDev/DynastyALWL_Evidence/shots
 #   options: --scales=0.85,1.0,1.2   text sizes (Esc > Settings, display_settings.gd TEXT_SCALES; 1.2 is the largest)
 #            --windows=smithy,craft  which windows
 #            --store=27              filled slots in the smithy's store (20 is its start; more makes it grow)

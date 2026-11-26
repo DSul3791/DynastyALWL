@@ -6,7 +6,7 @@
 # warm worktree "slot" so the Godot import cache survives: a new worktree reimports everything because the files get new modification times, 3.5 min), imports with the warm Godot cache, runs parse_scan, merge_check, local_check, then the wide plan of
 # tools/tests_for_diff.py --wide (against main: every test that reaches the change) through tools/run_tests.sh (parallel, serial and retry lanes, per-job data dir and log). Failures are compared BY NAME
 # with tech/TEST_BASELINE_PC.md (block between "known failures" markers). Prints per-step seconds and `Test done: N pass, M fail`.
-# Environment: GODOT_EXE, PYTHON, GATE_JOBS, GATE_ROOT (default C:/DynastyLane/logs/gate_pc), GATE_PAUSE (flag file; while it exists no new test starts).
+# Environment: GODOT_EXE, PYTHON, GATE_JOBS, GATE_ROOT (default E:/Software/godotDev/gate_pc), GATE_PAUSE (flag file; while it exists no new test starts).
 # Exit: 0 = no new failure, 1 = new failure or a check failed, 2 = could not build the candidate (conflict, bad hash).
 HASH="$1"; shift
 LANE=fast; JOBS="${GATE_JOBS:-4}"; FRESH=0
@@ -21,8 +21,8 @@ done
 case "$HASH" in [0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f][0-9a-f]*) ;; *) echo "usage: tools/gate_pc.sh <hash> [--lane fast|slow|full]"; exit 2;; esac
 export GODOT_EXE="${GODOT_EXE:-/c/GodotInstaller/godot.windows.editor.x86_64.exe}"
 export PYTHON="${PYTHON:-python}"
-export GATE_PAUSE="${GATE_PAUSE:-C:/DynastyLane/GATE_PAUSE}"
-GATE_ROOT="${GATE_ROOT:-/c/DynastyLane/logs/gate_pc}"
+export GATE_PAUSE="${GATE_PAUSE:-E:/Software/godotDev/GATE_PAUSE}"
+GATE_ROOT="${GATE_ROOT:-/e/Software/godotDev/gate_pc}"
 TOOLS_SRC="$(cd "$(dirname "$0")" && pwd)"
 REPO="${GATE_REPO:-$(cd "$TOOLS_SRC/.." && pwd)}"
 BASE_REF=origin/main

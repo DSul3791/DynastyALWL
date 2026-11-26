@@ -2,11 +2,11 @@
 # running 10,9,8,7,6,5,4 copies and timing stuff all while I watch a tv show"). Each step builds a fresh throwaway folder, announces its
 # start and end with the clock time, and adds a line to sweep.log; the folder is deleted after its step. Unattended; no window opens.
 #
-#   powershell -ExecutionPolicy Bypass -File tools\prebuild_sweep.ps1 -Godot <godot.exe> -Project <clone> [-Out C:\DynastyLane\logs\prebuild_sweep] [-Counts 10,9,8,7,6,5,4] [-Size 3072]
+#   powershell -ExecutionPolicy Bypass -File tools\prebuild_sweep.ps1 -Godot <godot.exe> -Project <clone> [-Out E:\Software\godotDev\prebuild_sweep] [-Counts 10,9,8,7,6,5,4] [-Size 3072]
 param(
 	[Parameter(Mandatory = $true)][string]$Godot,
 	[Parameter(Mandatory = $true)][string]$Project,
-	[string]$Out = "C:\DynastyLane\logs\prebuild_sweep",
+	[string]$Out = "E:\Software\godotDev\prebuild_sweep",
 	[int[]]$Counts = @(10, 9, 8, 7, 6, 5, 4),
 	[int]$Size = 3072
 )

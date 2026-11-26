@@ -5,7 +5,7 @@ extends SceneTree
 # No server, no world, no streaming: for the hold itself (Dave 17 Nov 2026: the look rig sat 2 to 5 minutes per shot). Not the game's lighting,
 # terrain or grass; use tools/look_rig.sh for the item in the world.
 #
-#   godot --path . --script res://tools/shot_held.gd -- --item=copper_saw --out=C:/DynastyLane/logs/<job>/shots
+#   godot --path . --script res://tools/shot_held.gd -- --item=copper_saw --out=E:/Software/godotDev/DynastyALWL_Evidence/shots
 #   options: --angles="name:deg:dist;..."  camera deg round the body from its front (0 front, 90 its left, -90 its right, 180 behind), dist m away;
 #                                          under 2 m it aims at the held item, else at the chest (default right:-90:1.6;left:90:1.6;hand:-90:0.7;front:0:1.6)
 #            --name=NAME   file prefix (default the item id): NAME_<angle>.png
