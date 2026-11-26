@@ -390,6 +390,9 @@ def hunts(robot_logs):
 			print("robot_check: hunt %s found no %s within 120 m" % (who, p[0]))
 			continue
 
+		if len(p) < 9 or not p[1].isdigit():   # another HUNT line (the goals robot's walks out): only fight lines are added up
+			continue
+
 		f = fights[(p[0], int(p[1]))]
 		f["robots"].append("%s (health %s->%s)" % (who, p[6], p[7]))
 		f["strikes"] += int(p[2])
