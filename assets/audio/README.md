@@ -305,7 +305,7 @@ Standing by a lake played river rushing. Now: a still-water square (current unde
 
 The chain normal, over_exerted, fainting, fainted, waking was run end to end with the real state names (`--faint`, `sound_check.py --only faint`). Findings and fixes:
 - Fainting and fainted: no breathing is heard while fainted (checked: 0 breaths), the heart keeps racing at no less than 1.2 and fades 3 s after the vision is gone.
-- Waking: the world's sound used to return on a fixed 4 s ramp; it now follows the blackness still left (`strain_fade` through `faint_state()`), so the world comes back with Art's vision (checked: mute 0.49 halfway through the wake). The heart and heaves follow the real strain as it settles (`wake_strain` 1.1 on).
+- Waking: the world's sound used to return on a fixed 4 s ramp; it now follows the blackness still left (`strain_fade` through `faint_state()`), so the world comes back with Art's vision (checked: mute 0.49 halfway through the wake). The heart and breath follow the real strain as it settles; a faint wakes calm (`wake_strain` 0.6, under over-exertion, and the heart at 90: Dave 25 Nov 2026, R-CORE-PASS-OUT).
 - Sitting and lying: the server drains strain faster, and the breathing and heart ease with the value, so nothing extra is needed; they stop under `QUIET` 0.25 (breath) and `HEART_FROM` 0.55 (heart).
 - Open, to tune by ear: the old stand-in scale (jog 0.62, run climbing on) was written before the real strain existed; the thresholds `QUIET` 0.25, `HEART_FROM` 0.55 and `OVER` 1.0 follow `data/items/exertion.json` (over_on 1.0, faint_at 1.4) and may need nudging once Dave runs with the real values.
 

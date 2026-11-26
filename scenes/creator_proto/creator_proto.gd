@@ -79,6 +79,7 @@ var _watched: Node3D
 
 
 func _ready() -> void:
+	load("res://src/client/title_music.gd").start(get_tree())   # keeps the menu music going (title_music.gd)
 	logic.apply_frame(_frame)       # the even frame to start with; not an undo step
 	logic.clear_history()
 	_build_ui()

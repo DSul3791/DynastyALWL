@@ -5,8 +5,20 @@ extends SceneTree
 # replaces the first. Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_worn.gd
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const WornLook := preload("res://src/client/worn_look.gd")
+const Ragdoll := preload("res://src/client/ragdoll_body.gd")
 
 var _fails: int = 0
+
+
+# The balls on `bone` centred on its joint (worn_look.gd joint_caps, or a builder's own).
+func _caps(parts: Array, bone: String) -> int:
+	var n: int = 0
+
+	for part in parts:
+		if str(part["bone"]) == bone and str(part["shape"]).begins_with("sph") and (part["at"] as Vector3).length() < 0.03:
+			n += 1
+
+	return n
 
 
 func _check(ok: bool, what: String) -> void:
@@ -80,7 +92,7 @@ func _init() -> void:
 
 	for node in pieces.get("arm_r", []):
 		var at: Vector3 = (node as Node3D).global_position
-		_check(at.x > 0.12 and at.y > 1.0 and at.y < 1.4, "right sleeve on the right upper arm (%.2f, %.2f)" % [at.x, at.y])
+		_check(at.x > 0.12 and at.y > 1.0 and at.y < 1.5, "right sleeve on the right upper arm (%.2f, %.2f)" % [at.x, at.y])   # up to 1.5: the shoulder's joint ball (QA #15) sits on the joint
 
 	for side in ["r", "l"]:
 		var hand: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_" + ("RightHand" if side == "r" else "LeftHand")))).origin
@@ -95,6 +107,42 @@ func _init() -> void:
 		widest = maxf(widest, (node as Node3D).global_transform.basis.get_scale().x)
 
 	_check(widest > 0.12 and widest < 0.3, "pieces are metre-sized (shin %.3f)" % widest)
+	# QA #15 (25 Nov 2026, "limbs not attached"): a garment that covers both sides of a joint puts a ball of its colour on it (worn_look.gd joint_caps), on the child
+	# bone at the joint, so a bent elbow or a raised arm never opens a gap between rigid pieces.
+	var tunic: Array = WornLook.parts_of("tunic", 0.03)
+	_check(_caps(tunic, "arm_r") == 1 and _caps(tunic, "forearm_r") == 1 and _caps(tunic, "arm_l") == 1 and _caps(tunic, "forearm_l") == 1, "a sleeved tunic has a ball at each shoulder and elbow")
+	_check(_caps(WornLook.parts_of("padded", 0.03), "forearm_l") == 1 and _caps(WornLook.parts_of("trousers", 0.0), "thigh_r") == 1 and _caps(WornLook.parts_of("gloves", 0.0), "hand_r") == 1, "the gambeson's elbow, the trousers' hip and the gloves' wrist are joined")
+	var mail: Array = WornLook.parts_of("mailshirt", 0.03)
+	_check(_caps(mail, "arm_r") == 1 and _caps(mail, "forearm_r") == 0, "a short mail sleeve joins at the shoulder only (it does not reach the elbow)")
+	_check(_caps(WornLook.parts_of("leggings", 0.0), "shin_r") == 1, "the leggings' own knee ball is not doubled")
+	_check(WornLook.joint_caps(WornLook.parts_of("hood", 0.0)).is_empty() and WornLook.joint_caps(WornLook.parts_of("cloak", 0.0)).is_empty(), "no balls where a garment bends at no joint")
+
+	# The joint heights are ragdoll_body.gd's bone offsets, and on Dave's body the ball sits on his own joint.
+	var bones: Dictionary = {}
+
+	for row in Ragdoll.BONES:
+		bones[str(row[0])] = row
+
+	var heights_match: bool = true
+
+	for joint in WornLook.JOINTS:
+		heights_match = heights_match and str(bones[joint[1]][1]) == str(joint[0]) and is_equal_approx((bones[joint[1]][2] as Vector3).y, float(joint[2]))
+
+	_check(heights_match, "the worn joints are the rig's joints (ragdoll_body.gd BONES)")
+
+	for bone_pair in [["arm_r", "mixamorig_RightArm"], ["forearm_l", "mixamorig_LeftForeArm"]]:
+		var joint_at: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone(str(bone_pair[1])))).origin
+		var nearest: float = INF
+
+		for node in pieces.get(str(bone_pair[0]), []):
+			nearest = minf(nearest, (node as Node3D).global_position.distance_to(joint_at))
+
+		_check(nearest < 0.03, "a ball on the %s joint of Dave's body (%.3f m off)" % [str(bone_pair[0]), nearest])
+
+	for part in tunic:
+		if str(part["bone"]) == "arm_r" and str(part["shape"]) == "sph":
+			_check(float((part["size"] as Vector3).x) >= 0.15, "the shoulder ball is wider than the sleeve (%.3f m)" % float((part["size"] as Vector3).x))
+
 	WornLook.attach(body, ["hide_hood"], false)
 	await process_frame
 	var after: Dictionary = _pieces(s)

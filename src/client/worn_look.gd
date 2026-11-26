@@ -464,4 +464,46 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 			for side in [-1.0, 1.0]:
 				out.append(_p("chest", "box", Vector3(0.12 * side, 0.12, 0.0), Vector3(0.05, 0.4, 0.26 + o * 2.0), Vector3.ZERO, true, 0.25))
 
-	return out
+	return out + joint_caps(out)
+
+
+# The joints a garment bends at: [parent bone, child bone, the joint's height on the parent bone (ragdoll_body.gd BONES), the cap's size over the child piece's width].
+# Shoulders get a larger ball, to close the corner between the body tube and the sleeve (a tunic's shoulder ball is 21 cm across).
+const JOINTS := [
+	["chest", "arm_r", 0.2, 1.15], ["chest", "arm_l", 0.2, 1.15], ["arm_r", "forearm_r", -0.29, 1.05], ["arm_l", "forearm_l", -0.29, 1.05],
+	["forearm_r", "hand_r", -0.26, 1.05], ["forearm_l", "hand_l", -0.26, 1.05], ["hips", "thigh_r", -0.05, 1.05], ["hips", "thigh_l", -0.05, 1.05],
+	["thigh_r", "shin_r", -0.45, 1.05], ["thigh_l", "shin_l", -0.45, 1.05], ["shin_r", "foot_r", -0.4, 1.05], ["shin_l", "foot_l", -0.4, 1.05],
+]
+const JOINT_REACH_M := 0.06      # a piece whose end comes this near a joint covers it
+
+
+# QA #15 (25 Nov 2026, a tester: "log chopping animation limbs not attached"; Lane A stills of the chop: the sleeve and body pieces are rigid per bone, so at a bent elbow the
+# upper and lower sleeve parted with skin between, and at a raised arm the sleeve left the body with the shoulder and armpit bare). Wherever one garment covers both sides of a
+# joint, a ball of its colour sits on the joint, on the child bone, as wide as the child's piece there: it turns with the limb and fills the gap in every pose. A garment that
+# covers only one side (a mail shirt's short sleeve, a cuff) gets none, and a joint that already has a ball (the leggings' knee) gets no second one.
+static func joint_caps(parts: Array) -> Array:
+	var caps: Array = []
+
+	for joint in JOINTS:
+		var parent_covered: bool = false
+		var width: float = 0.0
+		var has_ball: bool = false
+
+		for part in parts:
+			if bool(part["detail"]):
+				continue
+
+			var at: Vector3 = part["at"]
+			var size: Vector3 = part["size"]
+
+			if str(part["bone"]) == str(joint[0]) and at.y - size.y * 0.5 <= float(joint[2]) + JOINT_REACH_M and at.y + size.y * 0.5 >= float(joint[2]) - JOINT_REACH_M:
+				parent_covered = true
+			elif str(part["bone"]) == str(joint[1]) and at.y + size.y * 0.5 >= -JOINT_REACH_M and at.y - size.y * 0.5 <= JOINT_REACH_M:
+				width = maxf(width, maxf(size.x, size.z))
+				has_ball = has_ball or (str(part["shape"]).begins_with("sph") and at.length() < 0.03)
+
+		if parent_covered and width > 0.0 and not has_ball:
+			var d: float = width * float(joint[3])
+			caps.append(_p(str(joint[1]), "sph", Vector3.ZERO, Vector3(d, d, d)))
+
+	return caps

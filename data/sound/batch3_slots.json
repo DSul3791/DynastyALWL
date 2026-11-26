@@ -167,8 +167,9 @@
    ],
    "loop": false,
    "peak_db": -16,
+   "play_db": -12.0,
    "status": "filled",
-   "note": "an animal sign spotted (Dave 23 Nov 2026: 'make a slight sound'): a soft intake of breath with a faint hum, at the sign (assets/audio/make_sign.py)"
+   "note": "an animal sign spotted: a soft intake of breath with a faint hum, at the sign (assets/audio/make_sign.py). Dave 25 Nov 2026 (QA #20): 'much more subtle', and only with a hunting weapon, snare or trap in hand (trail_signs.json sound_with); play_db lowers every play 12 dB"
   },
   "hoof_mud": {
    "group": "creature step",

@@ -154,7 +154,7 @@ Large systems; each needs a plan thread before code. Nothing for aging, estate d
 - 11d Death and rescue: compare the approved record with what is built and list the gaps.
 
 ### Piece 12. Smaller gaps from the old queues
-- Sound: the loudness limit holds (`assets/audio/loudness_report.py --check`, 23 Nov 2026: 622 slots, 0 over; the goblin calls were the last, 1e6add07; no file clips in itself, the loudest peak is rain_light at -0.1 dBFS; Dave's rule: creatures near -14 peak). **Decided, D-TODO-6:** no background music for now; later only as an option that is off by default.
+- Sound: the loudness limit holds (`assets/audio/loudness_report.py --check`, 23 Nov 2026: 622 slots, 0 over; the goblin calls were the last, 1e6add07; no file clips in itself, the loudest peak is rain_light at -0.1 dBFS; Dave's rule: creatures near -14 peak). Menu music: Dave's own song on the pages before a world (R-SOUND-MENU-MUSIC); none in the world.
 - Fauna data gaps: passed to the animal thread on 21 Nov. Rabbits now keep loose groups (#1471); animals rest, follow the sun and keep their ranges (#1467, #1504).
 - **Decided, D-TODO-7:** fig, olive and pomegranate stay as possible warm-coast trees (models still needed); mango, orange and lemon are hidden, keeping their numbers (#1474). Fruit by month: **held** (coordinator, 23 Nov): it would shorten every fruit's picking window to its real months, against Dave's 23 Nov "we are not gate keeping by limiting resources"; put to Dave as a question.
 

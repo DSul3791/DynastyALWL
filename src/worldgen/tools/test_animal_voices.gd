@@ -44,7 +44,7 @@ func _initialize() -> void:
 			check(s.mood_for(kind, state) == "warn", "a %s never roars (state %d)" % [kind, state])
 
 	var snarl: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
-	check(snarl.contains('call_at(str(who["kind"]), who["at"], sound.creatures.mood_for(str(who["kind"]), 11))'), "the snarl when a blow lands takes its mood from mood_for (a black bear never roars there either)")
+	check(snarl.contains('call_at(str(who["kind"]), who["at"], sound.creatures.mood_for(str(who["kind"]), 11)'), "the snarl when a blow lands takes its mood from mood_for (a black bear never roars there either)")
 
 	for kind in ["lion", "bear", "moose", "boar"]:
 		check(s.mood_for(kind, 11) == "threat", "a %s still gives its threat call charging" % kind)
@@ -66,7 +66,7 @@ func _initialize() -> void:
 	root.add_child(view)
 	view.set_process(false)   # the test feeds rows itself; its frame loop would draw the hand-made body
 	var heard: Array = []
-	view.state_changed.connect(func(kind, state, _at): heard.append([kind, state]))
+	view.state_changed.connect(func(kind, state, _at, _body): heard.append([kind, state]))
 	var node: Node3D = Node3D.new()
 	view.add_child(node)
 	view._bodies[5] = {"node": node, "state": 0, "spd": 0.0, "id": 5, "target": Vector3.ZERO, "kind": "rabbit", "samples": [], "heading": 0.0, "phase": 0.0, "step_count": -1, "contact_m": 0.3, "turn_rad_s": 6.0}

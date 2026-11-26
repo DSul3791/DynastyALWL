@@ -170,7 +170,7 @@ func _init() -> void:
 	check(same, "every player works out the same signs in the same places")
 	check(not ranges_cfg["fox"].has("kind"), "the fox keeps no trail of its own, so no trail signs (TR-9)")
 
-	# The highlight and the slight sound: spotting is set up with its glow and its sound slot (real files).
+	# The highlight and the sound: spotting is set up with its glow and its sound slot (real files).
 	check(float(signs_cfg.get("glow_s", 0.0)) > 0.0 and float(signs_cfg.get("glow_alpha", 0.0)) > 0.0, "a spotted sign glows")
 	var slots: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/sound/batch3_slots.json"))
 	var files: Array = (slots.get("slots", slots) as Dictionary).get("sign_spot", {}).get("files", [])
@@ -180,6 +180,18 @@ func _init() -> void:
 		heard = heard and FileAccess.file_exists(str(f))
 
 	check(heard, "the slight sound sign_spot has its files (%s)" % str(files))
+	# Dave 25 Nov 2026 (QA #20): much more subtle, and only with a hunting weapon, snare or trap in hand.
+	check(float((slots.get("slots", slots) as Dictionary).get("sign_spot", {}).get("play_db", 0.0)) <= -10.0, "the sign sound plays at least 10 dB under its file")
+	var gear_ok: bool = TrailSignsScript.sounds_with(signs_cfg, ["", "wooden_spear"]) and TrailSignsScript.sounds_with(signs_cfg, ["snare", ""]) and TrailSignsScript.sounds_with(signs_cfg, ["wooden_bow", "torch"])
+	var bare_quiet: bool = not TrailSignsScript.sounds_with(signs_cfg, ["", ""]) and not TrailSignsScript.sounds_with(signs_cfg, ["stone_axe", "torch"]) and not TrailSignsScript.sounds_with(signs_cfg, ["fishing_spear", ""])
+	check(gear_ok and bare_quiet, "the sign sound plays with a spear, bow or snare in hand, not empty-handed, with an axe or a fishing spear")
+	var table = ItemTableScript.load_default()
+	var known: bool = true
+
+	for id in signs_cfg.get("sound_with", []):
+		known = known and not table.entry(str(id)).is_empty()
+
+	check(known, "every sound_with item is in the item table")
 
 	# 6. Across the equator: an animal's hours go by its own row's sun. In the starter's midsummer (it is south: long days) a rabbit on the
 	#    starter row is still in its day at 17:30, while one on a row as far north of the equator (its midwinter) is at dusk, going out.

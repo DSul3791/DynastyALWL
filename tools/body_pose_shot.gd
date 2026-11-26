@@ -2,10 +2,12 @@ extends SceneTree
 
 # A still of the Dynasty body holding one clip, offline (no world, no server): for checking poses like the ground sit (BUG-020) without the PC.
 # Needs a real renderer: in the cloud, Xvfb plus software Vulkan (project memory "cloud-rendering").
-#   godot --path . --rendering-driver vulkan --script res://tools/body_pose_shot.gd -- --clip=sit --out=/tmp/sit.png [--yaw=90] [--t=0.5]
+#   godot --path . --rendering-driver vulkan --script res://tools/body_pose_shot.gd -- --clip=sit --out=/tmp/sit.png [--yaw=90] [--t=0.5] [--worn=hide_tunic,gambeson,hide_gloves]
+# --worn= dresses him in those worn items (data/items/worn.json ids, worn_look.gd), as another player sees them (QA #15, 25 Nov 2026: the chop's sleeves).
 # yaw 180 looks at his front, 0 at his back, 90 at his side. Grid lines on the ground are 0.5 m apart.
 
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const WornLookScript := preload("res://src/client/worn_look.gd")
 
 var clip: String = "sit"
 var out: String = "user://pose.png"
@@ -14,6 +16,7 @@ var at_s: float = 0.5
 var frames: int = 0
 var dist: float = 1.8
 var body: Node3D
+var worn: Array = []
 
 
 func _init() -> void:
@@ -26,6 +29,8 @@ func _init() -> void:
 			yaw_deg = float(a.trim_prefix("--yaw="))
 		elif a.begins_with("--t="):
 			at_s = float(a.trim_prefix("--t="))
+		elif a.begins_with("--worn="):
+			worn = Array(a.trim_prefix("--worn=").split(",", false))
 
 	root.size = Vector2i(900, 900)
 	var env := WorldEnvironment.new()
@@ -59,6 +64,9 @@ func _init() -> void:
 
 	body = DynastyBodyScript.new()
 	root.add_child(body)
+
+	if not worn.is_empty():
+		print("worn pieces: ", WornLookScript.attach(body, worn))
 	var cam := Camera3D.new()
 	var yaw: float = deg_to_rad(yaw_deg)
 	root.add_child(cam)
