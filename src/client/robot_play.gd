@@ -3448,10 +3448,30 @@ func _quit_at_once() -> void:
 # turning; the table goes to the log and user://machine_run.txt. For lane runs that stand in for a slower machine (cores capped).
 func _measure() -> void:
 	_step = "measure"
+	# VSync off for the run (not saved): with it on, a 60 Hz screen holds every frame between 17 and 33 ms at exactly 30 fps, so the
+	# tiers cannot be told apart (Lane A, 25 Nov 2026: Low, Medium and High all 30.0 fps).
+	var vsync_was: int = DisplayServer.window_get_vsync_mode()
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	client._machine_probe.toggle()
 
 	while client._machine_probe.running():
 		await get_tree().process_frame
+
+	# Then the GPU breakdown (src/debug/gpu_probe.gd) at Low: what each piece of the picture costs there (user://gpu_probe.txt).
+	var quality_was: int = client.quality
+	client.quality = 0
+	client._apply_quality()
+	await _wait(8.0)
+	client._gpu_probe.toggle()
+	await get_tree().process_frame
+
+	while client._gpu_probe._at >= 0:
+		await get_tree().process_frame
+
+	client.quality = quality_was
+	client._apply_quality()
+	client.hud.visible = true   # the GPU table hides the HUD while it is up
+	DisplayServer.window_set_vsync_mode(vsync_was)
 
 	FreezeWatchScript.printer.line("ROBOT %s step measure: done" % robot_name)
 

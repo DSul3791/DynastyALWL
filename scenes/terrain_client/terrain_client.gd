@@ -603,6 +603,7 @@ func _ready() -> void:
 			_previous_run_note_until_msec = Time.get_ticks_msec() + 90000
 
 	net = $TerrainNet
+	process_physics_priority = 1000   # _physics_process notes the start of the physics engine's step
 	display.load_saved()
 	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
 		_telemetry.event("EXIT: %s" % why)
@@ -6680,6 +6681,12 @@ func send_position_now() -> void:
 
 	_aim_msec = now
 	_aim_pos = here
+
+# Runs last among the physics callbacks (process_physics_priority, set in _ready): a FREEZE gap after this note was in the physics engine's own
+# step (colliders added or moved); one after "drawn" was in the window's present (Lane A 25 Nov 2026: a 1.1 s gap after "drawn" running into new ground).
+func _physics_process(_delta: float) -> void:
+	FreezeWatchScript.physics_mark()
+
 
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()

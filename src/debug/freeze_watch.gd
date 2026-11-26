@@ -15,7 +15,8 @@ const STALL_MS := 600
 const GAP_MS := 500                     # a main-thread frame gap this long prints a FREEZE gap line (the one to trust)
 const LATE_MS := 250                    # the watch woke this late: its stuck reading is not trusted (the thread was starved)
 const DRAW_START := "draw start (every _process and deferred call done)"     # a stall after it is in the draw
-const DRAWN := "drawn (the draw done; next the physics step, then frame start)"   # a stall after it: the window's present, or physics
+const DRAWN := "drawn (the draw done; next the physics step, then frame start)"   # a stall after it: the window's present, or physics callbacks
+const PHYSICS_STEP := "physics callbacks done (next the physics engine's step, the network poll, then frame start)"   # terrain_client _physics_process
 
 const PrintQueueScript := preload("res://src/shared/print_queue.gd")
 static var printer = PrintQueueScript.new()   # the client's diagnostic lines, printed on a worker (D-LAG-1): a print on the main thread flushed the log 0.4-1.6 s
@@ -23,6 +24,15 @@ static var _mutex: Mutex = Mutex.new()
 static var _beat_msec: int = 0
 static var _last_piece: String = "start"
 static var _frame: int = 0
+# Wall clock of the last frame's parts (main thread, usec), so a HITCH line can say where a slow frame went when its timed pieces are small
+# (Lane A 25 Nov 2026: 100-145 ms frames whose named pieces added up to about 10 ms).
+static var _beat_usec: int = 0
+static var _pre_usec: int = 0
+static var _post_usec: int = 0
+static var _phys_usec: int = 0
+static var split: String = ""            # "process N, draw N, present N, physics step and poll N" for the frame that just ended (ms); "present" runs
+                                          # from the draw's end to the last physics callback, "physics step and poll" from there to the next frame's
+                                          # start (the physics engine's step, the network poll, any _process before the client's)
 
 var _thread: Thread
 var _running: bool = false
@@ -30,6 +40,17 @@ var _running: bool = false
 
 static func beat() -> void:
 	var now: int = Time.get_ticks_msec()
+	var now_usec: int = Time.get_ticks_usec()
+
+	if _beat_usec > 0 and _pre_usec > _beat_usec and _post_usec >= _pre_usec:
+		var after: int = (_phys_usec if _phys_usec > _post_usec else now_usec) - _post_usec
+		var engine: int = now_usec - _phys_usec if _phys_usec > _post_usec else 0
+		split = "process %.0f, draw %.0f, present %.0f, physics step and poll %.0f" % [float(_pre_usec - _beat_usec) / 1000.0, float(_post_usec - _pre_usec) / 1000.0,
+			float(after) / 1000.0, float(engine) / 1000.0]
+	else:
+		split = "no draw"   # no frame drawn since the last beat (minimised, headless): no split for it
+
+	_beat_usec = now_usec
 	_mutex.lock()
 	var gap: int = now - _beat_msec
 	var piece: String = _last_piece
@@ -44,7 +65,9 @@ static func beat() -> void:
 	var built: String = _pipelines_built()
 
 	if gap > GAP_MS and frame > 30:
-		printer.line("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"%s" % [gap, frame - 1, frame, piece, built])
+		printer.line("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"%s; physics bodies active %d, pairs %d, video mem %d MB" % [gap, frame - 1, frame, piece, built,
+			int(Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS)), int(Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS)),
+			int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0)])
 
 
 # The renderer's pipeline builds since the last beat (Godot's PIPELINE_COMPILATIONS monitors, counted since start), as ", pipelines built:
@@ -107,11 +130,19 @@ func stop() -> void:
 
 
 func _on_pre_draw() -> void:
+	_pre_usec = Time.get_ticks_usec()
 	note(DRAW_START)
 
 
 func _on_post_draw() -> void:
+	_post_usec = Time.get_ticks_usec()
 	note(DRAWN)
+
+
+# The last physics callback of the frame (terrain_client _physics_process): what follows is the physics engine's own step.
+static func physics_mark() -> void:
+	_phys_usec = Time.get_ticks_usec()
+	note(PHYSICS_STEP)
 
 
 func _watch() -> void:
