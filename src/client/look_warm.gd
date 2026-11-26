@@ -1,7 +1,7 @@
 extends Node
 
 # Looks made ahead of the welcome (coordinator 26 Nov 2026, option (a) of the join lag): on Lane A's Low route the welcome's one frame spent
-# 1011 ms making the waterfall mist and 450 ms the rain and snow (their particle and shader materials, made for the GPU the first time;
+# 1011 ms making the waterfall mist and 450 ms the rain and snow (98617e37: then 1307 ms the rain's splash) (their particle and shader materials, made for the GPU the first time;
 # headless the same costs a few ms). This runner makes them during the title and character menus, one look a frame, and keeps them; the
 # welcome takes the made one (fall_mist.gd, weather_look.gd) instead of making its own. A player who skips the menus gets them made in the
 # frames while the client waits for the welcome (terrain_client.gd _ready starts it too); a look not made in time is made at the welcome,
@@ -10,7 +10,7 @@ extends Node
 
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
-const STEPS := ["fall_mist", "rain", "snow"]
+const STEPS := ["fall_mist", "rain", "snow", "splash"]
 
 static var _runner: Node = null
 static var _made: Dictionary = {}   # step -> its made node, until taken
@@ -83,6 +83,11 @@ static func _make(step: String) -> Node:
 			var made: Node = weather.make_particles(step)
 			weather.free()
 			return made
+		"splash":
+			var weather: Node = load("res://src/client/weather_look.gd").new()
+			var parts: Node = weather.make_splash_parts()
+			weather.free()
+			return parts
 
 	return null
 

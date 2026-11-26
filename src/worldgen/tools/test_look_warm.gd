@@ -41,10 +41,16 @@ func _init() -> void:
 		mist.set_quality(2)
 		_check((mist.get_child(0) as GPUParticles3D).amount == FallMist.CARDS[2], "set_quality gives the made mist the game's cards per fall")
 
+	var splash: Node3D = LookWarm._make("splash") as Node3D
+	var drops: GPUParticles3D = splash.get_node_or_null("RainSplash") as GPUParticles3D if splash != null else null
+	var field: Node = splash.get_node_or_null("SplashField") if splash != null else null
+	_check(drops != null and drops.draw_pass_1 is QuadMesh and drops.process_material is ParticleProcessMaterial and not drops.visible, "the made splash holds its drops, hidden until rain meets the ground")
+	_check(field is GPUParticlesCollisionHeightField3D and not (field as Node3D).visible, "and its height field, hidden until set_quality shows it")
+
 	LookWarm._made["rain"] = rain
 	_check(LookWarm.take("rain") == rain and LookWarm.take("rain") == null, "a made look is handed out once")
 
-	for node in [rain, snow, mist]:
+	for node in [rain, snow, mist, splash]:
 		if node != null:
 			node.free()
 
