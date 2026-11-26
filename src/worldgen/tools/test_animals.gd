@@ -227,6 +227,8 @@ func _init() -> void:
 	check(not far_ids.has(far_rabbit) and not far_ids.has(too_far_deer), "a rabbit 180 m off and a deer 215 m off are not (%s)" % str(far_ids))
 	var glass_ids: Array = ids_of.call(a.rows_near(far_at, 150.0, 60))
 	check(glass_ids.has(far_deer) and not glass_ids.has(far_rabbit), "a 150 m spyglass never shows less big game than the plain view (%s)" % str(glass_ids))
+	var near_only: Array = ids_of.call(a.rows_near(far_at, -1.0, -1, false))
+	check(not near_only.has(far_deer) and near_only.has(near_rabbit), "the batch that leaves far big game out (every other one) still has the near ones (%s)" % str(near_only))
 	a.begin_send_pass()
 	var far_pass: Array = ids_of.call(a.rows_near(far_at))
 	a.end_send_pass()

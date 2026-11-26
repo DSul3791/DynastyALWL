@@ -7,6 +7,8 @@ const FrameProbe := preload("res://src/debug/frame_probe.gd")
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30: within 120 m, big game within 200 m).
 
 const MAX_DRAWN := 30
+const FAR_KEEP_M := 110.0       # big game past the 120 m send radius comes in every other batch (R-ANIMAL-SEEN-FAR, terrain_server): a body this
+const FAR_KEEP_MS := 1200       # far off that a batch left out is kept this long since its last row, not freed and drawn again
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
@@ -362,6 +364,12 @@ func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
 	return null   # a species number with no model is not drawn (it used to be drawn as a rabbit)
 
 
+# Whether a body missing from a batch is kept: far off (past FAR_KEEP_M from the player, whose rows carry far big game every other time)
+# and its last row within FAR_KEEP_MS. One that really left (past 200 m, gone, dead) goes within FAR_KEEP_MS.
+static func far_kept(at: Vector3, me: Vector3, row_at_ms: int, now_ms: int) -> bool:
+	return me != Vector3.INF and Vector2(at.x - me.x, at.z - me.z).length() > FAR_KEEP_M and now_ms - row_at_ms <= FAR_KEEP_MS
+
+
 # Whether a body that left the rows at `at` was standing on its blood trail: a wounded animal that bleeds out dies where it is,
 # at the end of its trail, with no hit near. Bodies leave the rows only past send_radius_m (120 m; big game 200 m, animals.json big_game), far beyond the 30 m a
 # one-shot is played at, so a wounded animal running out of range is never heard falling.
@@ -647,6 +655,8 @@ func on_rows(rows: Array, server_ms: int) -> void:
 	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, get_process_delta_time(), STALL_S)
 	MotionBuffer.clock_note(_clock, now_s, server_ms, now_s <= _settle_until)
 
+	var now_ms: int = Time.get_ticks_msec()
+
 	for row in rows:
 		var id: int = int(row[0])
 		seen[id] = true
@@ -703,6 +713,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
+		_bodies[id]["row_at_ms"] = now_ms
 
 		# When the server moved it, on this clock; a repeat is skipped. No pause guess (gap INF): since protocol 154 a standing animal's
 		# row carries the send time, so every leg between two points is one the animal really made.
@@ -712,9 +723,13 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			_bodies[id]["plan"] = plan_of(row)   # an older row out of order (dropped by push_row) leaves the newer plan
 		_bodies[id]["state"] = int(row[4])
 
-	var now: int = Time.get_ticks_msec()
+	var now: int = now_ms
+	var me: Vector3 = player_at.call() if player_at.is_valid() else Vector3.INF
 
 	for id in _bodies.keys():
+		if not seen.has(id) and far_kept(_bodies[id]["target"], me, int(_bodies[id].get("row_at_ms", now)), now):
+			continue   # far big game left out of this batch: it comes in the next one
+
 		if not seen.has(id):
 			var killed: bool = killed_by_hit(_bodies[id]["target"], _hits, now) or (str(_bodies[id]["kind"]) not in BURROW_KINDS and near_blood(_bodies[id]["target"], _blood_points))
 
