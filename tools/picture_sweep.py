@@ -181,15 +181,16 @@ def main(argv):
 		return 2
 	args.out = os.path.abspath(args.out).replace("\\", "/")
 	todo = [j for j in jobs(args.out) if j[0].split("_")[0] in wanted]
-	left = [j for j in todo if not done(j[4])]
+	record_path = os.path.join(args.out, "sweep_jobs.json")
+	record = load(record_path) if os.path.isfile(record_path) else {}
+	# done: recorded ok, or pictures there from before the record; a job cut off part way is taken again
+	left = [j for j in todo if not (record.get(j[0], {}).get("ok") or (j[0] not in record and done(j[4])))]
 	print("picture sweep: %d jobs in %s, %d done, %d to run" % (len(todo), ",".join(wanted), len(todo) - len(left), len(left)))
 	if args.list:
 		for j in left:
 			print("  " + j[0])
 		return 0
 	started = time.time()
-	record_path = os.path.join(args.out, "sweep_jobs.json")
-	record = load(record_path) if os.path.isfile(record_path) else {}
 	stopped, ran = "", 0
 	for name, folder, commands, limit, must, about in left:
 		if os.path.exists(CANCEL):
@@ -214,7 +215,7 @@ def main(argv):
 					break
 		if code == "cancelled":
 			stopped = "the lane's CANCEL file is there (job %s stopped)" % name
-		ok = done(must)
+		ok = code == 0 and done(must)
 		record[name] = {"ok": ok, "exit": code, "seconds": round(time.time() - t0, 1)}
 		with open(record_path, "w", encoding="utf-8") as f:
 			json.dump(record, f, indent=1)

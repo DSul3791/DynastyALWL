@@ -3,6 +3,7 @@
 
     python3 tools/test_picture_check.py
 
+0. The first run ever sends one picture only (to compare its cost with the Console before more).
 1. Two pictures, one answered "ok" and one "problem": exit 1, the report lists the problem, the ledger holds the real cost
    of both answers (from the fake usage) and no reservation is left.
 2. The same run again: both answers are reused, nothing is sent, the ledger does not move, exit 1.
@@ -10,10 +11,10 @@
 4. A reservation left by a cut-off run counts as spent on the next start.
 5. The key never appears in the report, the ledger or the stored answers.
 6. --dry-run needs no key and sends nothing.
-7. A request whose connection drops with no answer is counted at its worst case and not retried; a second check while one
+7. A 429 is retried and answered; a 504 is counted and not retried. A request whose connection drops with no answer is counted at its worst case and not retried; a second check while one
    runs (its lock file there) refuses to start.
 8. picture_sweep.py with a stand-in Godot (a script that writes the pictures): --max-jobs 2 runs two held-item jobs, writes their
-   about.txt, and a second --list counts them done (a resumed sweep skips them). A job that runs past --job-limit is stopped with
+   about.txt, and a second --list counts them done (a resumed sweep skips them). An item shot_held.gd refuses goes to look_rig.sh. A job that runs past --job-limit is stopped with
    everything it started (a grandchild process too).
 """
 import http.server
@@ -54,6 +55,19 @@ class Fake(http.server.BaseHTTPRequestHandler):
 		label = body["messages"][0]["content"][1]["text"]
 		if "drop" in label:
 			self.close_connection = True
+			return
+		if "busy" in label and not any("busy" in x["body"]["messages"][0]["content"][1]["text"] for x in seen[:-1]):
+			self.send_response(429)
+			self.send_header("retry-after", "0")
+			self.send_header("content-length", "2")
+			self.end_headers()
+			self.wfile.write(b"{}")
+			return
+		if "gate" in label:
+			self.send_response(504)
+			self.send_header("content-length", "2")
+			self.end_headers()
+			self.wfile.write(b"{}")
 			return
 		if "bad" in label:
 			answer = {"shows": "a deer", "verdict": "problem", "problems": [{"kind": "floating", "where": "front hooves",
@@ -103,6 +117,8 @@ def main():
 	check(code == 0 and not seen, "dry run exits 0 and sends nothing")
 
 	code, out = run(env, shots)
+	check(code == 3 and len(seen) == 1 and "first run ever" in out, "the first run ever sends one picture only (exit %d, %d sent)" % (code, len(seen)))
+	code, out = run(env, shots)
 	ledger = json.load(open(os.path.join(home, "spent.json")))
 	report = open(os.path.join(shots, "picture_check.md")).read()
 	check(code == 1, "a picture that looks wrong gives exit 1 (got %d)" % code)
@@ -151,9 +167,18 @@ def main():
 	led = json.load(open(os.path.join(home, "spent.json")))
 	check(code == 3 and len(seen) == before + 1, "a dropped connection is sent once, not retried (exit %d, %d sent)" % (code, len(seen) - before))
 	check(led["spent_usd"] - spent_before > 0.05 and led["reserved_usd"] == 0.0, "and is counted at its worst case ($%.3f)" % (led["spent_usd"] - spent_before))
+	busy = os.path.join(tmp, "busy")
+	os.makedirs(busy)
+	png(os.path.join(busy, "deer_busy.png"), 30, 22)
+	png(os.path.join(busy, "deer_gate.png"), 30, 24)
+	before = len(seen)
+	code, out = run(env, busy)
+	check(len(seen) == before + 3, "a 429 is retried once and answered, a 504 is sent once (%d sent)" % (len(seen) - before))
+	check("deer_busy.png ok" in out and "HTTP 504" in out, "the retried picture is checked, the 504 one is listed not checked")
+	before = len(seen)
 	open(os.path.join(home, "lock"), "w").close()
 	code, out = run(env, shots, "--recheck")
-	check(code == 2 and "another check is running" in out and len(seen) == before + 1, "a second check refuses to start while the lock is there")
+	check(code == 2 and "another check is running" in out and len(seen) == before, "a second check refuses to start while the lock is there")
 	os.remove(os.path.join(home, "lock"))
 
 	fake = os.path.join(tmp, "fake_godot.py")
@@ -163,7 +188,13 @@ def main():
 			"    child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'])\n"
 			"    open(os.environ['FAKE_SLEEP'], 'w').write(str(child.pid))\n"
 			"    time.sleep(120)\n"
+			"rig = 'tools/look_rig.sh' in sys.argv\n"
+			"if os.environ.get('FAKE_REFUSE') and not rig:\n"
+			"    sys.exit(2)\n"
 			"args = dict(a[2:].split('=', 1) for a in sys.argv if a.startswith('--') and '=' in a)\n"
+			"if rig:\n"
+			"    args = dict(zip([a[2:] for a in sys.argv[2::2]], sys.argv[3::2]))\n"
+			"    open(os.environ['FAKE_REFUSE'], 'w').write('look_rig ran')\n"
 			"os.makedirs(args['out'], exist_ok=True)\n"
 			"[open(os.path.join(args['out'], '%s_%s.png' % (args['name'], n)), 'wb').write(b'x') for n in ('right', 'left', 'hand', 'front')]\n")
 	if os.name == "nt":
@@ -174,7 +205,7 @@ def main():
 		open(godot, "w").write('#!/bin/sh\nexec "%s" "%s" "$@"\n' % (sys.executable, fake))
 		os.chmod(godot, 0o755)
 	sweep = os.path.join(tmp, "sweep")
-	senv = dict(env, GODOT_EXE=godot)
+	senv = dict(env, GODOT_EXE=godot, BASH_EXE=godot)
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--max-jobs", "2"],
 		env=senv, cwd=os.path.dirname(HERE), capture_output=True, text=True)
 	made = [d for d in os.listdir(os.path.join(sweep, "held"))] if os.path.isdir(os.path.join(sweep, "held")) else []
@@ -183,6 +214,10 @@ def main():
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--list"],
 		env=senv, cwd=os.path.dirname(HERE), capture_output=True, text=True)
 	check(", 2 done," in r.stdout, "a second look counts those two jobs done: " + r.stdout.splitlines()[0])
+	rig_mark = os.path.join(tmp, "rig_ran")
+	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--max-jobs", "1"],
+		env=dict(senv, FAKE_REFUSE=rig_mark), cwd=os.path.dirname(HERE), capture_output=True, text=True)
+	check(os.path.isfile(rig_mark) and " ok (exit 0" in r.stdout, "an item shot_held refuses (exit 2) is taken by look_rig.sh instead: " + r.stdout.strip().splitlines()[-2])
 	pid_file = os.path.join(tmp, "grandchild.pid")
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--max-jobs", "1",
 		"--job-limit", "3"], env=dict(senv, FAKE_SLEEP=pid_file), cwd=os.path.dirname(HERE), capture_output=True, text=True, timeout=90)

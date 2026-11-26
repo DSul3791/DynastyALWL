@@ -34,6 +34,7 @@ import struct
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 
 MODEL = "claude-opus-5-5"
@@ -231,9 +232,12 @@ def ask(key, data, label, about):
 			return None, usage, "answer cut off (max_tokens)", unseen
 		out = "".join(b.get("text", "") for b in reply.get("content", []) if b.get("type") == "text")
 		try:
-			return json.loads(out), usage, "", unseen
+			answer = json.loads(out)
 		except ValueError:
 			return None, usage, "answer was not JSON", unseen
+		if not (isinstance(answer, dict) and answer.get("verdict") in ("ok", "problem", "unsure") and isinstance(answer.get("problems"), list)):
+			return None, usage, "answer had the wrong shape", unseen
+		return answer, usage, "", unseen
 	return None, {}, error, unseen
 
 
@@ -305,7 +309,8 @@ def main(argv):
 	if args.cap is not None and not (math.isfinite(args.cap) and args.cap >= 0):
 		print("picture check: --cap must be a dollar amount")
 		return 2
-	if not (API_URL.startswith("https://") or API_URL.startswith("http://127.0.0.1:")):
+	url = urllib.parse.urlsplit(API_URL)
+	if not (url.scheme == "https" or (url.scheme == "http" and url.hostname == "127.0.0.1" and not url.username)):
 		print("picture check: the API address must be https (the key goes in its header)")
 		return 2
 	started = time.time()
@@ -352,7 +357,13 @@ def main(argv):
 
 
 def run(args, plan, key, answers, answers_path, out_dir, started):
+	if os.path.exists(answers_path):   # read again inside the lock: a run that finished meanwhile may have added answers
+		with open(answers_path, encoding="utf-8") as f:
+			answers = json.load(f)
 	ledger = Ledger(os.path.join(HOME, "spent.json"), args.cap)
+	if ledger.data["requests"] == 0 and args.max_pictures != 1:
+		args.max_pictures = 1
+		print("picture check: first run ever: one picture only. Compare its cost with the Claude Console's usage, then run again.")
 	print("picture check: spent so far $%.2f of the $%.2f cap" % (ledger.total(), ledger.data["cap_usd"]))
 	if any(args.recheck or p[3] not in answers for p in plan) and not key:
 		print("picture check: no API key in %s (the one-time command is in docs/PICTURE_CHECK.md)" % KEY_FILE)
