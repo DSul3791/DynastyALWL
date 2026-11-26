@@ -1056,6 +1056,65 @@ func _check_far_pose() -> void:
 	camera.queue_free()
 
 
+# Bug 169 (Dave 23 Nov 2026 on 9257: "Slayers spear looked like it was just floating in the air almost sticking out of his chest"): a body past
+# QUARTER_M is not animated, so its spear was not aimed again when the hand went to the resting pose (walking off past QUARTER_M, a body first
+# drawn far off, or lying down and sitting far off): the spear kept its place on the old hand and turned with it.
+func _check_far_spear() -> void:
+	if not DynastyBodyScript.available():
+		return
+
+	var view: Node3D = PlayerViewScript.new()
+	view.table = ItemTableScript.load_default()
+	get_root().add_child(view)
+	var spear: int = view.table.number_of("wooden_spear")
+	var at: Vector3 = Vector3(2000.0, 30.0, 2000.0)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = at + Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	view.on_look(11, "Spear", "body_1", "", PackedInt32Array())
+	var ms: int = 50000
+	var spot: Vector3 = at
+
+	for i in range(24):   # running near by, so the hand is mid-stride when the camera leaves
+		ms += 125
+		spot += Vector3(1.0, 0.0, 0.0)
+		view.on_rows(PackedInt32Array([11]), PackedVector3Array([spot]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([spear]), PackedInt32Array([ms]))
+		camera.position = spot + Vector3(0.0, 1.6, 6.0)
+		await process_frame
+
+	var worst: Array = []
+
+	for step in [[0, "standing, just past the quarter-rate distance"], [3 | PlayerViewScript.ASLEEP, "lying down far off"], [2, "sitting far off"], [0, "up again far off"]]:
+		camera.position = spot + Vector3(0.0, 1.6, PlayerViewScript.QUARTER_M + 30.0)
+
+		for i in range(12):
+			ms += 125
+			view.on_rows(PackedInt32Array([11]), PackedVector3Array([spot]), PackedFloat32Array([0.0]), PackedByteArray([int(step[0])]), PackedInt32Array([spear]), PackedInt32Array([ms]))
+			await process_frame
+
+		var b: Dictionary = view._bodies.get(11, {})
+		var model: Node3D = b.get("held_node", null) as Node3D if not b.is_empty() else null
+
+		if model == null or str(b.get("held_kind", "")) != "spear":
+			worst.append("%s: no spear" % step[1])
+			continue
+
+		var rig: Node3D = b["rig"]
+		var front: Vector3 = rig.global_basis * Vector3.FORWARD
+		front.y = 0.0
+		var point: Vector3 = -model.global_basis.z.normalized()
+		var mount: Node3D = model.get_parent() as Node3D
+		var grip: float = model.global_position.distance_to(mount.global_position + point * HeldItemScript.SPEAR_GRIP_Z)
+
+		if point.dot(front.normalized()) < 0.95 or grip > 0.02:
+			worst.append("%s: points %.2f along the facing, grip %.2f m off" % [step[1], point.dot(front.normalized()), grip])
+
+	check(worst.is_empty(), "a far player's spear stays in the hand pointing ahead as the hand rests, lies and sits (%s)" % "; ".join(worst))
+	view.queue_free()
+	camera.queue_free()
+
+
 # Robots 23 Nov 2026: another player's spear read 0.33 m off the running hand. The hand mount is on a BoneAttachment3D, which follows the
 # bones only at the skeleton's deferred update, so straight after a step of the clip it still held the last step's hand (and aim_spear
 # turned the spear by that). player_view.gd follow_hand moves it to this step's hand first.
@@ -1105,6 +1164,7 @@ func _init() -> void:
 	await _check_holds()
 	await _check_hand_follows()
 	await _check_far_pose()
+	await _check_far_spear()
 	await _check_tool_poses()
 	_check_catch_up()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
