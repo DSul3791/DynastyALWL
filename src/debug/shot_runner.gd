@@ -20,7 +20,8 @@ extends Node
 #   --shot-skill=SKILL:VALUE  an admin skill set 6 s after connecting (look rig --skill): e.g. tracking:5 to see the trail signs (data/look/trail_signs.json)
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
-#   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert), and logs which clip each played
+#   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert; 10 the warn, 16 the jaw-pop;
+#                       walk, trot or run: the gait clip a moving or fleeing animal plays), and logs which clip each played. The row hides grass and plants
 #   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
 #                       first person keeps the arms on and ten stone arrows are given too (the nocked arrow shows only with arrows in the pack);
 #                       look rig --cam left|right shows the body with the bow at its side
@@ -136,6 +137,7 @@ var _spin_i: int = 0
 var _spin_next_msec: int = 0
 var _selected: bool = false
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
+const AnimalGait := preload("res://src/client/animal_gait.gd")
 var animal_names: PackedStringArray = PackedStringArray()   # --shot-animals=bear,deer: one animal of each in a row (_show_animals)
 var animal_role: String = "0"     # --shot-animal-role=R: the row plays that role's clip (21 the drink), falling back to role 0 as the game does
 var _animals_t: int = 0
@@ -290,6 +292,8 @@ func setup(owner_client, args: Array) -> void:
 				views = [{"name": "wide", "dist": 9.0, "pitch": -8.0, "above": 1.5}, {"name": "close", "dist": 4.0, "pitch": -10.0, "above": 1.2}]
 		elif argument.begins_with("--shot-animals="):
 			animal_names = argument.trim_prefix("--shot-animals=").split(",", false)
+			no_grass = true      # a subject shot: grass and plants hidden so the row is not lost in tall grass (Lane A, #1990 bear pictures)
+			no_plants = true
 		elif argument.begins_with("--shot-animal-role="):
 			animal_role = argument.trim_prefix("--shot-animal-role=")
 		elif argument.begins_with("--shot-flora="):
@@ -1147,12 +1151,14 @@ func _show_animals(now: int) -> void:
 		if node.has_meta("player"):
 			var player: AnimationPlayer = node.get_meta("player")
 			var roles: Dictionary = player.get_meta("roles", {})
-			var clip: String = str(roles.get(animal_role, roles.get("0", "")))     # the role the animal view resolved (graze unless --shot-animal-role)
+			# The role the animal view resolved (graze unless --shot-animal-role). A moving state (1 walk, 2 flee, 11 charge) has no role of its
+			# own: the game picks its gait clip by pace (AnimalGait.moving_clip), so pass the gait (walk, trot or run) for those.
+			var clip: String = AnimalGait.moving_clip(roles, animal_role) if animal_role in ["walk", "trot", "run"] else str(roles.get(animal_role, roles.get("0", "")))
 
 			if clip != "" and player.has_animation(clip):
 				player.play(clip)
 
-			drawn.append("%s model, role %s plays %s%s" % [name_text, animal_role if roles.has(animal_role) else "0", clip, " (voxel ground)" if voxel else ""])
+			drawn.append("%s model, role %s plays %s%s" % [name_text, animal_role if roles.has(animal_role) or animal_role in ["walk", "trot", "run"] else "0 (no role %s)" % animal_role, clip, " (voxel ground)" if voxel else ""])
 		else:
 			drawn.append("%s %s%s" % [name_text, "model" if node.has_meta("model") else "code", " (voxel ground)" if voxel else ""])
 		middle += node.position
