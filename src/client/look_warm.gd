@@ -24,14 +24,17 @@ static func start(tree: SceneTree) -> void:
 	if DisplayServer.get_name() == "headless" or tree == null or is_instance_valid(_runner) or _done.size() >= STEPS.size():
 		return
 
-	var runner: Node = load("res://src/client/look_warm.gd").new()
+	var runner: Node = new()
 	runner.name = "LookWarm"
 	_runner = runner
 	tree.root.add_child.call_deferred(runner)   # the root outlives the menu scenes, so the made looks wait across scene changes
 
 
-# The made look of `step`, taken out of the runner (the caller adds it where it belongs), or null when it was not made yet.
+# The made look of `step`, taken out of the runner (the caller adds it where it belongs), or null when it was not made yet. Either way the step
+# is done: the welcome made its own, so the runner never makes it later, in play.
 static func take(step: String) -> Node:
+	_done[step] = true
+
 	if not _made.has(step):
 		return null
 
@@ -76,7 +79,7 @@ static func _make(step: String) -> Node:
 			mist.setup(0)   # the cards per fall follow the game's quality at the welcome (set_quality)
 			return mist
 		"rain", "snow":
-			var weather: Node = load("res://src/client/weather_look.gd").new()
+			var weather: Node = load("res://src/client/weather_look.gd").new()   # load, not preload: weather_look.gd preloads this script
 			var made: Node = weather.make_particles(step)
 			weather.free()
 			return made

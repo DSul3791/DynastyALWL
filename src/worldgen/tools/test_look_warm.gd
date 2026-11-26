@@ -20,6 +20,8 @@ func _init() -> void:
 	LookWarm.start(self)
 	_check(LookWarm._runner == null, "headless: no runner is started")
 	_check(LookWarm.take("rain") == null, "nothing made: take gives null (the welcome makes its own)")
+	_check(LookWarm._done.has("rain"), "a take of a look not made yet marks it done, so the runner never makes it later in play")
+	LookWarm._done.clear()
 
 	var rain: GPUParticles3D = LookWarm._make("rain") as GPUParticles3D
 	_check(rain != null and rain.draw_pass_1 is ArrayMesh, "the made rain is a particle look with its streak mesh")
