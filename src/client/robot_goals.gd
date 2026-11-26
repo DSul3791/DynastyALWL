@@ -23,6 +23,7 @@ const SEARCH_M := 70.0                     # how far the robot looks round for a
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
 const CHARCOAL_EACH_S := 400.0             # real seconds of wood burning a fire takes to leave one Charcoal (9600 game s at 24 game s a second)
 const STALK_S := 45.0                      # how long a hunter stands, looks and walks up before the chase
+const FISH_S := 240.0                      # the most time the fish goal spends at the water
 const WAIT_VISITS := 5                     # a goal that waits on time (charcoal) is visited at most this often
 const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
@@ -518,7 +519,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _dig_clay(int(check.get("count", 12)))
 		"charcoal":
 			return await _charcoal(int(check.get("count", 4)))
-		"fish", "snare", "order", "story", "night_walk", "fur_for_winter":
+		"fish":
+			return await _fish_goal()
+		"snare", "order", "story", "night_walk", "fur_for_winter":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -1191,6 +1194,64 @@ func _fire() -> String:
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
 	return ""
 
+
+
+# --- a fish with the Fishing spear, as the goal's hint says: stand still at the water's edge, the spear in hand, and jab (left click) at
+# water ankle to waist deep (fishing.json fish_spear: reach 3 m, standing still, a 0.2 chance a jab, only where fish are). The jab lands
+# 2.5 m ahead of the eye and 1.2 m down (held_item.gd). Where the game says no fish or the wrong depth, a player moves along the shore.
+func _fish_goal() -> String:
+	var why: String = await _have("fishing_spear", 1, false)
+
+	if why != "":
+		return "fishing spear: " + why
+
+	if _hold("fishing_spear") < 0:
+		return "no fishing spear to hold"
+
+	var said: int = r._notices.size()
+	var until: int = mini(Time.get_ticks_msec() + int(FISH_S * 1000.0), _end_ms)
+	var jabs: int = 0
+	var spots: int = 0
+	var told: PackedStringArray = PackedStringArray()
+
+	while Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)) and spots < 6:
+		spots += 1
+		var water: Vector3 = await r._find_water()
+
+		if is_nan(water.x):
+			return "no water in any loaded chunk"
+
+		# The edge: about 1.5 m short of the wet corner, on the land side.
+		var back: Vector3 = Vector3(c.body.global_position.x - water.x, 0.0, c.body.global_position.z - water.z).normalized()
+		await r._go_to(water + back * 1.5, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 1.0)
+		r._release_all()
+		var heard: int = r._notices.size()
+		var here: int = 0
+
+		while here < 15 and Time.get_ticks_msec() < until and not bool(c.items.goal_book.row("fish").get("done", false)):
+			_look_at(water)
+			c.pitch = -0.25
+			await r._wait(0.8)   # standing still (fish_spear still_below)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+			await r._wait(0.1)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+			await r._wait(1.2)   # the jab's cooldown is 1.2 s
+			here += 1
+			jabs += 1
+
+		for n in range(heard, r._notices.size()):
+			if not told.has(str(r._notices[n])):
+				told.append(str(r._notices[n]))
+
+		_line("FISH spot %d at %s: %d jabs, goal %s" % [spots, str(c.body.global_position.round()), here, str(c.items.goal_book.row("fish").get("have", "?"))])
+
+		# Another stretch of shore: 12 m along it, round the water's edge.
+		await r._go_to(c.body.global_position + back.rotated(Vector3.UP, PI * 0.5) * 12.0, 8.0, 1.0)
+
+	if bool(c.items.goal_book.row("fish").get("done", false)):
+		return ""
+
+	return "%d jabs at %d spots along the shore and no fish; the game said %s" % [jabs, spots, str(told) if not told.is_empty() else "nothing"]
 
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
