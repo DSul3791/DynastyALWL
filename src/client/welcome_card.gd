@@ -74,7 +74,7 @@ func offer(character_id: String, server: String = "", build: int = 0) -> bool:
 	file.load(seen_path)   # a missing file starts empty
 	var first: bool = not SettingsRead.flag(file, "seen", character_id, false)
 	var where: String = "%s_%s" % [character_id, server.md5_text().substr(0, 12)]   # a server name may hold spaces and quotes: never a raw config key
-	var last: int = int(file.get_value("build", where, 0))
+	var last: int = SettingsRead.whole(file, "build", where, 0)
 	file.set_value("seen", character_id, true)   # once: a quit with the card up does not bring it back
 
 	if build > 0:
