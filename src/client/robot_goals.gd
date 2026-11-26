@@ -394,12 +394,6 @@ func _have(item: String, n: int, make: bool) -> String:
 	if why != "":
 		return "for %s: %s" % [item, why]
 
-	if station == "campfire":
-		why = await _fire_going()
-
-		if why != "":
-			return "for %s, the campfire: %s" % [item, why]
-
 	if station != "":   # a player walks to the station they built and makes it there
 		var site: int = int(_sites.get(station, -1))
 		await _walk_home(240.0)
@@ -415,7 +409,7 @@ func _recipe_for(item: String) -> Dictionary:
 	for key in r._recipes:
 		var row: Dictionary = r._recipes[key]
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station"):
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station") and not bool(row.get("retired", false)):   # the server drops retired rows (recipe_table.gd)
 			return row
 
 	return {}
@@ -427,7 +421,7 @@ func _station_recipe_for(item: String) -> Dictionary:
 		var row: Dictionary = r._recipes[key]
 		var station: String = str(row.get("station", ""))
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and (station == "campfire" or c.items._world.has(int(_sites.get(station, -1)))):   # a campfire is laid again if need be
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))) and not bool(row.get("retired", false)):
 			return row
 
 	return {}
@@ -541,6 +535,7 @@ func _gather(item: String, n: int) -> String:
 	var presses: int = 0
 	var unreached: int = 0
 	var in_row: int = 0
+	var heavy_from: int = said
 
 	while _count(item) < n and Time.get_ticks_msec() < until:
 		var spot: Dictionary = _nearest_source(item)
@@ -582,8 +577,9 @@ func _gather(item: String, n: int) -> String:
 		while _count(item) == had and Time.get_ticks_msec() < wait_until:
 			await r._wait(0.2)
 
-		if str(r._notices.slice(maxi(said, r._notices.size() - 3))).contains("Too heavy"):   # a player stops and drops the straw and thatch a pick brought with it
+		if str(r._notices.slice(maxi(heavy_from, r._notices.size() - 3))).contains("Too heavy"):   # a player stops and drops the straw and thatch a pick brought with it
 			await _lighten()
+			heavy_from = r._notices.size()   # one notice, one lightening
 
 	var got: int = _count(item) - start
 	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks, %d out of reach%s" % [item, got, _count(item), n, presses, walks, unreached, _said(said)])
@@ -934,26 +930,9 @@ func _fire() -> String:
 
 	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
 	await r._wait(3.0)
-	_sites["campfire"] = fire   # the station for campfire recipes (charcoal from firewood)
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
 	return ""
 
-
-# The robot's campfire burning for a campfire recipe: laid again if it is gone, else sticks on and lit (it burns down in the hours since).
-func _fire_going() -> String:
-	if not c.items._world.has(int(_sites.get("campfire", -1))):
-		return await _fire()
-
-	var fire: int = int(_sites["campfire"])
-	await r._go_to(c.items._world[fire]["pos"], 60.0, 2.0)
-
-	for n in range(4):
-		c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
-		await r._wait(0.5)
-
-	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
-	await r._wait(3.0)
-	return ""
 
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
