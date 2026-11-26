@@ -65,7 +65,7 @@ func _check_clips() -> void:
 
 
 func _old_scale(clip: String, pace: float) -> float:
-	return clampf(pace / 1.1, 0.6, 1.5) if clip == "carry_walk" else clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(minf(pace, 6.0) / 6.0, 0.8, 1.0) if clip == "run" else 1.0))   # run: BUG-011 cadence (avatar_driver.gd RUN_CLIP_PACE)
+	return clampf(pace / 1.1, 0.6, 1.5) if clip == "carry_walk" else clampf(pace / 1.4, 0.5, 1.7) if clip == "walk" else (clampf(pace / 3.2, 0.8, 1.6) if clip == "jog" else (clampf(pace / 6.0, 0.8, 1.6) if clip == "run" else 1.0))   # run: faster than 6 m/s plays faster, the feet keep up (R-MOVE-RUN-FEET)
 
 
 func _check_speed_scale() -> void:
