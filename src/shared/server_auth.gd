@@ -209,7 +209,7 @@ func _stamped(message: Dictionary) -> Dictionary:
 # What a player whose game speaks `client` reads on a server that speaks `server` (both sides of the 161 handshake use it).
 static func outdated_text(client: int, server: int) -> String:
 	if client < server:
-		return "This game is older than the server (game version %d, server version %d).\nInstall the new version of the game, then join again. Your character and world are kept on the server." % [client, server]
+		return "This game is older than the server (game version %d, server version %d).\nInstall the new version of the game, then join again. A new version is a new world: everyone starts again with an empty pack." % [client, server]
 
 	return "This game is newer than the server (game version %d, server version %d).\nThe server has not been updated yet: try again once it has, or ask whoever runs it." % [client, server]
 
