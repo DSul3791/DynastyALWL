@@ -1804,7 +1804,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 183. Metal sickle blades show a row of white specks
 
-**Found by:** the picture checker's held-item sweep, 26 Nov 2026 (bronze, copper and iron sickle): "regular white specks along the blade". **Status: Fix in PR, awaiting merge.** Cause: `basic_look.gd` "sickle" drew the plain sickle's pale flint teeth on every tier, so a cast or forged blade carried a row of pale boxes. The teeth are now drawn on the plain sickle only. Guarded by `test_tool_looks` (each metal sickle has fewer vertices than the plain one). Not yet played. Not visually checked.
+**Found by:** the picture checker's held-item sweep, 26 Nov 2026 (bronze, copper and iron sickle): "regular white specks along the blade". **Status: Fix in PR, awaiting merge.** Cause: `basic_look.gd` "sickle" drew a row of small pale "flint teeth" boxes along the inside of every sickle's blade; on the steel-grey blade they read as white specks, on the plain sickle as much as the metal ones (laptop pictures, 26 Nov). The teeth are gone: every sickle has one plain edge. Guarded by `test_tool_looks` (each metal sickle has the plain sickle's vertex count). Not yet played. Not visually checked.
 
 ## Rewrite interpretation
 
