@@ -6,6 +6,8 @@ extends SceneTree
 # --worn= dresses him in those worn items (data/items/worn.json ids, worn_look.gd), as another player sees them (QA #15, 25 Nov 2026: the chop's sleeves).
 # --move=x,z gives him a velocity in his own frame (m/s, x right, z back: --move=3.2,0 walks right), so his legs turn toward it as in the game (dynasty_leg_turn.gd,
 # foot slide 26 Nov 2026); --hold=<item id> puts that item in his hand as another player sees it (player_view.gd hold_in).
+# --turn=deg turns him on the spot after the pose (+ to his left): under 40 degrees the feet stay planted, more and they step round (the still, 7 frames
+# later, catches the step at whatever point it has reached).
 # yaw 180 looks at his front, 0 at his back, 90 at his side. Grid lines on the ground are 0.5 m apart.
 
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -24,6 +26,8 @@ var body: Node3D
 var worn: Array = []
 var move: Vector2 = Vector2.ZERO
 var hold: String = ""
+var held: Array = []        # [model, kind] from hold_in
+var turn_deg: float = 0.0
 
 
 func _init() -> void:
@@ -43,6 +47,8 @@ func _init() -> void:
 			move = Vector2(xz[0], xz[1]) if xz.size() == 2 else Vector2.ZERO
 		elif a.begins_with("--hold="):
 			hold = a.trim_prefix("--hold=")
+		elif a.begins_with("--turn="):
+			turn_deg = float(a.trim_prefix("--turn="))
 
 	root.size = Vector2i(900, 900)
 	var env := WorldEnvironment.new()
@@ -82,7 +88,8 @@ func _init() -> void:
 
 	if hold != "":
 		var table = ItemTableScript.load_default()
-		print("held: ", hold, " ", PlayerViewScript.hold_in(body, table.number_of(hold), table).size() == 2)
+		held = PlayerViewScript.hold_in(body, table.number_of(hold), table)
+		print("held: ", hold, " ", held)
 	var cam := Camera3D.new()
 	var yaw: float = deg_to_rad(yaw_deg)
 	root.add_child(cam)
@@ -102,6 +109,16 @@ func _process(_delta: float) -> bool:
 		body.set_meta("backward", backward)
 		body.leg_turn.angle = AvatarDriverScript.leg_turn(clip, move, backward)
 		print("legs turned %.1f degrees" % rad_to_deg(float(body.leg_turn.angle)))
+
+	# --turn=deg turns him on the spot after the pose (+ to his left), as the mouse does standing still: under 40 degrees the feet stay planted and the hips
+	# with them, the chest turns to the new facing (dynasty_leg_turn.gd _plant); more, and the feet step round over the next frames.
+	if frames == 5 and turn_deg != 0.0:
+		body.rotation.y += deg_to_rad(turn_deg)
+
+	# A spear is aimed through the fist along the facing every frame after the pose, as player_view.gd does for another player (BugsList 164: placed once here,
+	# before the body was in the tree, it was never aimed and lay along the fingers across the forearm in the stills).
+	if frames >= 3 and held.size() == 2 and str(held[1]) == "spear":
+		PlayerViewScript.aim_spear(held[0] as Node3D, body)
 
 	if frames == 12:
 		root.get_texture().get_image().save_png(out)

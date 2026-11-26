@@ -201,6 +201,7 @@ func _init() -> void:
 	var last6: Dictionary = items._characters[KEY].get("last", {})
 	check(not last6.is_empty() and Vector3(float(last6["pos"][0]), float(last6["pos"][1]), float(last6["pos"][2])).distance_to(HERE + Vector3(1.0, 0.0, 0.0)) < 0.1, "a line that times out while absent still writes the spot it went quiet at")
 	check(not items._parked.has(6) and not items._heard_ms.has(6), "and nothing is kept for the gone connection")
+	check(server_code.contains("items = ItemsScript.new()\n\titems.park_quiet_players = true") and not ItemsScript.new().park_quiet_players, "the game's server parks quiet players as it ticks (terrain_server.gd); tests and tools do not by default")
 	check(server_code.contains("animals.player_positions = npcs.player_positions") and server_code.contains("npcs.player_positions = func(): return items.peer_positions()") and server_code.contains("animals.wolves.player_info = func(): return items.wolf_info()") and server_code.contains("animals.big_game.player_info = func(): return items.wolf_info()") and server_code.contains("bandits.camp_tick(delta, items.peer_positions())") and server_code.contains("for peer in items._peer_pos:\n\t\t\trows.append({\"peer\": peer"), "every attacker reads the players from the list an absent body leaves (terrain_server.gd wiring)")
 
 	# A server that goes quiet (restarting, or a long spike): the player is told under the signal bars within SAY_SILENT_MSEC, not left

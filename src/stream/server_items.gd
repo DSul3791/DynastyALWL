@@ -1062,6 +1062,12 @@ const ABSENT_MS := 15000
 var _heard_ms: Dictionary = {}       # peer -> msec of its last position report
 var _parked: Dictionary = {}         # peer -> where it was when it went quiet (out of _peer_pos)
 var _park_check_ms: int = 0
+# Whether tick parks a player not heard from for ABSENT_MS of real time. The game's server turns it on (terrain_server.gd, where the
+# players report their spot several times a second). Off for everything else: the tests drive the clock by hand (tick(10.0) in a loop)
+# after one position report, and on a loaded machine (Lane A, 4 jobs, 26 Nov 2026) one ran past ABSENT_MS of real time, its player was
+# parked, and its drinks, crafts and builds were refused (the checks failed) though nothing was wrong. The absence tests call
+# _park_quiet themselves.
+var park_quiet_players: bool = false
 
 
 func is_absent(peer: int) -> bool:
@@ -1910,7 +1916,9 @@ func spyglass_reach(peer: int, admin_cfg: Dictionary) -> Array:
 
 func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
-	_park_quiet(Time.get_ticks_msec())
+
+	if park_quiet_players:
+		_park_quiet(Time.get_ticks_msec())
 	_slow_parts = []
 	_slow_prev_usec = t0
 	_throttle_mark = -1   # set by this tick's first scatter cell when a CPU quota holds the server (the slow lines)
@@ -6937,7 +6945,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		if not _can_blueprint(peer, inv, blueprint):
 			return   # _can_blueprint says why
 
-		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
+		kit_id = _kit_of_blueprint(blueprint)
+		number = table.number_of(kit_id) if blueprint.has("lays") else 0
 	else:
 		if slot < 0:
 			_say(peer, "That blueprint is not in this game's list. Open the hammer or knife menu (right click) and pick it again.")   # an unknown blueprint number reaches here with no kit
@@ -7096,6 +7105,9 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			break
 
 	for id in _items:
+		if _is_fire_site(_items[id]) and _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
+			chunk_fires += 1   # a campfire blueprint site is a fire to come; its gap is the structures' gap below
+
 		if _items[id].has("fire"):
 			if _items[id]["pos"].distance_to(spot) < _fire_gap_m:
 				_say(peer, "Too close to another fire.")
@@ -7111,7 +7123,18 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "Too many fires here.")
 		return
 
-	inv.take_from_slot(slot, 1)
+	if not blueprint.is_empty() and not free_build:   # with the hammer: a site that one or more players fill with hammer hits (_gather_site)
+		_place_fire_site(peer, spot, blueprint)
+		return
+
+	if blueprint.is_empty():
+		inv.take_from_slot(slot, 1)
+
+	_lay_fire(peer, number, spot)
+
+
+# A laid fire (state 9) at `spot`, as a Campfire set down from the pack leaves it or a finished campfire blueprint becomes it (number: the Campfire).
+func _lay_fire(peer: int, number: int, spot: Vector3) -> void:
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
 	_zone_add(_next_id)
@@ -7120,7 +7143,23 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	_fire_store(laid_fire).add(table.number_of("stick"), start_sticks)
 	_fire_apply_store(laid_fire, _fire_store(laid_fire))
 	_next_id += 1
+	_dirty = true
 	_goal_event(peer, "placed", "campfire")   # the fire hint and goals count a laid fire
+
+
+# A campfire blueprint site (structures.json "fire_site"): drawn as a blue cold fire, filled by hammer hits, never a fire until it is finished.
+func _is_fire_site(it: Dictionary) -> bool:
+	return it.has("struct") and bool(_structures.get(str(it["struct"]["kind"]), {}).get("fire_site", false))
+
+
+func _place_fire_site(peer: int, spot: Vector3, row: Dictionary) -> void:
+	var entry: Dictionary = {"number": table.number_of(_kit_of_blueprint(row)), "count": 1, "pos": spot, "left": 1.0e9,
+		"struct": {"kind": str(row["structure"]), "yaw": 0.0, "owner": str(_peer_key.get(peer, "")), "site": {"bp": int(row["number"]), "have": {}}}}
+	_items[_next_id] = entry
+	_grid_add(_next_id, entry)
+	_next_id += 1
+	_say(peer, "Blueprint down. Hit it with a hammer to add the materials.")
+	_dirty = true
 
 
 # Placement rules of a station that stands on a tall foundation over running water (the sawmill, Dave 2026-10-22): it needs a foundation under it
@@ -14031,7 +14070,13 @@ func _load_blueprints() -> void:
 
 		row["id"] = id
 		_blueprints[int(row["number"])] = row
-		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
+		_blueprint_of_kit[_kit_of_blueprint(row)] = int(row["number"])
+
+
+# The item a blueprint places as: its structure's kit, or for the campfire blueprint (blueprints.json "lays") the hand-made Campfire, whose ghost
+# and placing rules it uses (Dave 26 Nov 2026, "campfire both").
+func _kit_of_blueprint(row: Dictionary) -> String:
+	return str(row["lays"]) if row.has("lays") else str(_structures.get(str(row["structure"]), {}).get("kit", ""))
 
 
 # Whether this blueprint can go down now: a hammer of enough tier on the hotbar (a knife for a "tool": "knife" row), the station near when it needs one. Materials are not checked:
@@ -14911,9 +14956,22 @@ func _item_name_lower(item_id: String) -> String:
 	return table.cost_sentence(number) if number > 0 else table.in_sentence(item_id)
 
 
-# Every material is in: the site becomes the real piece.
+# Every material is in: the site becomes the real piece (a campfire site becomes a laid fire, as a Campfire set down from the pack).
 func _finish_site(peer: int, id: int) -> void:
 	var it: Dictionary = _items[id]
+
+	if _is_fire_site(it):
+		_items.erase(id)
+		_lay_fire(peer, int(it["number"]), it["pos"])
+
+		for owner_peer in _peer_key:
+			if int(owner_peer) != peer and str(_peer_key[owner_peer]) == str(it["struct"].get("owner", "")):
+				_goal_event(int(owner_peer), "placed", "campfire")   # a friend's last hammer blow: the one who laid the blueprint gets the goal too
+				break
+
+		_dirty = true
+		save_soon([_next_id - 1])
+		return
 
 	if not (it["struct"]["site"] as Dictionary).get("kinds", {}).is_empty():
 		it["struct"]["kinds"] = it["struct"]["site"]["kinds"]   # a take-down gives back what was put in (_refund_blueprint)

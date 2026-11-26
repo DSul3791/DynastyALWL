@@ -5571,9 +5571,31 @@ func _loose_prewarm_numbers() -> Array:
 		if item == "stone" or item == "flint" or item == "stick" or item == "firewood" or item == "plant_fibre" or item == "driftwood" or item == "log" or item.begins_with("log_"):
 			out.append(table.number_of(item))
 
-	for drop in _trunk_drop_ids():
+	for drop in _trunk_drop_ids() + _rock_drop_ids():
 		if table.number_of(drop) > 0 and not out.has(table.number_of(drop)):
 			out.append(table.number_of(drop))
+
+	return out
+
+
+# What lies loose by the rivers or comes off a broken rock (boulders.json ore items, finds and rocks: copper, tin and iron ore, iron chunks,
+# coal, salt, limestone, the pocket finds). Lane A r4 Low route (26 Nov 2026): the first copper ore, iron ore and iron chunk seen in play
+# each took 57 to 64 ms to build, inside a world items message.
+func _rock_drop_ids() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
+	var ore: Variant = (parsed as Dictionary).get("ore", {}) if parsed is Dictionary else {}
+	var out: Array = []
+
+	if not ore is Dictionary:
+		return out
+
+	for part in ["items", "finds", "rocks"]:
+		var names: Variant = (ore as Dictionary).get(part, {})
+
+		if names is Dictionary:
+			for item in (names as Dictionary).values():
+				if not out.has(str(item)):
+					out.append(str(item))
 
 	return out
 
@@ -5633,7 +5655,7 @@ func _prewarm_loose_meshes() -> void:
 
 	# What a felled trunk breaks into besides its logs (drops.json "trunk": branch sticks and leaves, small-blow kindling, bark, thatch, seeds, roots,
 	# each species' own). Built on the first split otherwise, a pause of about a second as the trunk came apart (Dave 2 Nov: "it paused for about 1 second").
-	for item_key in _trunk_drop_ids():
+	for item_key in _trunk_drop_ids() + _rock_drop_ids():
 		if table.number_of(item_key) > 0:
 			_mesh_for(table.number_of(item_key))
 
