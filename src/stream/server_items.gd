@@ -8548,7 +8548,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	var rec_memo: Dictionary = {}   # world id -> _sync_record, worked out once this sync for every player near it
 	var infos: Dictionary = {}      # fine cell -> [sum, every record the same for every player, lowest y, highest y], once this sync
 	var cell_ids: Dictionary = {}   # fine cell -> its ids, still and rest, once this sync
-	_file_site_cells(false)
+	_site_cells_due = true   # filed at the first building site a player sees this sync (_site_memo_of), not every sync: a walk of every record
 
 	_still_file()
 
@@ -8753,6 +8753,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
 	_site_memo = null
 	_site_cells = {}
+	_site_cells_due = false
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
 	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
 	_sync_detail = "(%d records, %d still: grid %.0f, scan %.0f (%d looked at, %d cells skipped), bog %.1f (built %d fields in %.1f), send %.0f for %d items; %d still moved unseen)" % [_items.size(), _still_at.size(),
@@ -14859,6 +14860,7 @@ const BUILD_STOCK_M := 4.0
 var _site_memo = null   # null outside a sync; peer -> {"reach", "boxes", "ground": [[item number, count], ...], "hand": {item number: on hand}}
 const SITE_CELL_M := 16.0   # the full sync also files every record in cells this size, so a player's containers and ground stock are found without a walk over the world
 var _site_cells: Dictionary = {}   # cell -> [world id, ...], filled by the full sync, empty outside one
+var _site_cells_due: bool = false  # a full sync is on and has not filed _site_cells yet: the first site's list files them
 
 
 # Files every record in its SITE_CELL_M cell for a full sync's site lists (a quick sync files none: its few sites take the full walks).
@@ -14878,6 +14880,10 @@ func _file_site_cells(quick: bool) -> void:
 # reach (the same records _craft_boxes and _ground_count would find by walking every one); the full walks when the sync filed no cells (a quick sync).
 func _site_memo_of(peer: int) -> Dictionary:
 	var reach_x: float = _hammer_x(peer)
+
+	if _site_cells_due:
+		_site_cells_due = false
+		_file_site_cells(false)   # the first site's list this full sync (lag: the sync walked every record for this each second, sites or not)
 
 	if _site_cells.is_empty():
 		return {"reach": reach_x, "boxes": _craft_boxes(peer, reach_x), "ground": null, "hand": {}}
