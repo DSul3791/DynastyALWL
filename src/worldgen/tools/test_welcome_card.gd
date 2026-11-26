@@ -1,6 +1,7 @@
 extends SceneTree
 
-# The welcome card (Dave 25 Nov 2026): once per character on this computer, the player's own keys in its words, Enter or Esc closes it.
+# The welcome card (Dave 25 Nov 2026): once per character on this computer, the player's own keys in its words, Enter or Esc closes it;
+# and once per new release build, a returning character is told the world is new (QA #13).
 #   godot --headless --path . --script res://src/worldgen/tools/test_welcome_card.gd      Prints "Test done: N pass, N fail".
 
 const Card := preload("res://src/client/welcome_card.gd")
@@ -55,6 +56,26 @@ func _initialize() -> void:
 	check(card.take_key(_key(KEY_ESCAPE)) and not card.showing, "Esc closes it too")
 	check(not card.take_key(_key(KEY_ESCAPE)), "with it closed Esc is the menu's again")
 	check(not card.offer(""), "no character: no card")
+
+	# QA #13: a new release build is a new world; a returning character is told so once per build, never on a test server (build 0).
+	var world: String = "Hannibal's House"
+	check(card.offer("character_c", world, 10587) and card.showing and card._text.text.begins_with("Welcome to Dynasty."), "a new character on a release server gets the welcome, not the new-world card")
+	card.close()
+	check(not card.offer("character_c", world, 10587), "the same build again: nothing")
+	check(card.offer("character_c", world, 10700) and card._text.text.begins_with("Build 10700 is a new world.") and card._text.text.contains("what you carried, built and stored before is gone"), "the next build: told the world is new and the pack is gone")
+	check(card.take_key(_key(KEY_ENTER)) and not card.showing, "Enter closes the new-world card")
+	check(not card.offer("character_c", world, 10700), "and only once for that build")
+	check(card.offer("character_a", world, 10700) and card._text.text.begins_with("Build 10700"), "a character that played before this card existed is told on its first release join")
+	card.close()
+	check(not card.offer("character_a", world, 0) and not card.offer("character_a", "", 0), "a test server (no stamped build) never shows it")
+	check(not card.offer("character_a", world, 10700), "and it leaves the record alone")
+	check(card.offer("character_a", "Another Server", 10700), "another server's world is its own: a first release join there tells the player too")
+	card.close()
+	var again = Card.new()
+	again.seen_path = SEEN
+	root.add_child(again)
+	check(not again.offer("character_c", world, 10700), "the record lives in the file: a new game start does not show it again")
+	again.free()
 
 	card.free()
 	DirAccess.remove_absolute(KEYS)

@@ -1,5 +1,8 @@
 extends SceneTree
 
+const WORLD_BIOMES := ["ocean", "beach", "hot_desert", "dry_scrub", "savanna", "tropical_forest", "mangrove", "temperate_grassland", "temperate_forest",
+	"mixed_forest", "marsh", "heath", "boreal_forest", "tundra", "alpine_meadow", "bare_rock", "snowfield", "glacier"]   # the names src/worldgen/tile/tile_climate.gd makes
+
 # Animal spawn wiring (flora session, 2026-10-31): biome weights, time-of-day activity, the near-spawn mix and the starter island level.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_spawn_wiring.gd
 
@@ -139,6 +142,19 @@ func _init() -> void:
 	boar_near.biome_at = func(_x, _z): return "temperate_forest"
 	run(boar_near, 40.0)
 	check(count(boar_near, "boar") > 0, "boar live by the starter town too (%d)" % count(boar_near, "boar"))
+	# Kept to their own climate (coordinator 26 Nov 2026, "behave like the real animal"): no lion, tiger, wildebeest or alligator near a
+	# temperate camp. Each kind is still in the game, in savanna, dry scrub, desert, tropical forest or mangrove.
+	var real_rows: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json")) as Dictionary)["species"]
+	var cool: Array = ["temperate_grassland", "temperate_forest", "mixed_forest", "boreal_forest", "marsh", "heath", "alpine_meadow", "tundra"]
+	var strays: Array = []
+
+	for sp in ["tiger", "leopard", "lion", "wildebeest", "hyena", "warthog", "elephant", "rhino", "camel", "guineafowl", "honey_badger", "kangaroo", "alligator"]:
+		var bio: Dictionary = (real_rows[sp] as Dictionary).get("biomes", {})
+		strays.append_array(cool.filter(func(b: String) -> bool: return float(bio.get(b, 0.0)) > 0.0).map(func(b: String) -> String: return sp + ":" + b))
+		strays.append_array([] if not bio.is_empty() else [sp + ": no biome at all"])
+		strays.append_array(bio.keys().filter(func(b: Variant) -> bool: return not str(b) in WORLD_BIOMES).map(func(b: Variant) -> String: return sp + ": " + str(b) + " is no biome the world makes"))
+
+	check(strays.is_empty(), "warm-climate kinds keep to their own climate and every one still has one (%s)" % str(strays))
 	# The newer species (boar 8, songbirds 9, frog 10): spawn in their own biome and time only, have a model and a carcass row; the ones waiting for models never spawn.
 	var carcass: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/carcass.json"))["species"]
 	var view = AnimalViewScript.new()

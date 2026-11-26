@@ -336,8 +336,10 @@ func _init() -> void:
 	hm["timer"] = 2.0
 	run(hf, 0.3)
 	check(hf.animals.has(hid) and int(hf.animals[hid]["state"]) == 10 and absf(angle_difference(float(hf.animals[hid]["heading"]), PI * 0.5)) < 0.2, "once player 1 is past calm_m it turns to player 2 (state %d, heading %.2f)" % [int(hf.animals[hid]["state"]) if hf.animals.has(hid) else -1, float(hf.animals[hid]["heading"]) if hf.animals.has(hid) else 0.0])
+	hf.animals[hid]["target"] = (hf.animals[hid]["pos"] as Vector3) + Vector3(8.0, 0.0, 0.0)   # a way the warning left (the charge's line)
 	hf.big_game._calm(hf.animals[hid], hf.species_def("moose")["defend"])
 	check(not hf.animals[hid].has("foe_peer"), "and calming forgets its foe")
+	check(int(hf.animals[hid]["state"]) == 0 and (hf.animals[hid]["target"] as Vector3).is_equal_approx(hf.animals[hid]["pos"]), "and it grazes where it stands, with no way left over from the warning")
 	players[1]["pos"] = Vector3(0.0, 10.0, 20.0)
 	hf.animals[hid]["cool"] = 0.0
 	hf.big_game.chase(hf.animals[hid], players[1]["pos"], 30.0)
