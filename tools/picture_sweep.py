@@ -154,7 +154,12 @@ def tagged(tag):
 	if WIN:
 		ps = ("Get-CimInstance Win32_Process | Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like '*%s*' } | "
 			"ForEach-Object { $_.ProcessId }" % tag)
-		r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], capture_output=True, text=True, timeout=60)
+		try:
+			r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps], capture_output=True, text=True, timeout=60)
+		except (OSError, subprocess.TimeoutExpired) as e:
+			raise RuntimeError("could not list processes: %s" % type(e).__name__)
+		if r.returncode != 0:
+			raise RuntimeError("could not list processes: powershell exit %d %s" % (r.returncode, r.stderr.strip()[:200]))
 		return [int(x) for x in r.stdout.split() if x.isdigit()]
 	found = []
 	for pid in os.listdir("/proc"):
@@ -172,7 +177,15 @@ def tagged(tag):
 
 
 def stop_tagged(tag):
-	"""Stop every process of this job by its tag; the ids still running after three tries (none, normally)."""
+	"""Stop every process of this job by its tag; the ids still running after three tries (none, normally), or a text when the
+	processes could not be listed (unknown counts as left running: the sweep stops)."""
+	try:
+		return stop_tagged_or_raise(tag)
+	except RuntimeError as e:
+		return str(e)
+
+
+def stop_tagged_or_raise(tag):
 	left = []
 	for _ in range(3):
 		left = tagged(tag)
@@ -286,9 +299,9 @@ def main(argv):
 						break
 			finally:
 				survivors = stop_tagged(tag)
-		shutil.rmtree(tmp, ignore_errors=True)
+				shutil.rmtree(tmp, ignore_errors=True)
 		if survivors:
-			stopped = "job %s left processes running that would not stop: %s" % (name, survivors)
+			stopped = "job %s: processes it started may still run (%s); look on the PC before the next run" % (name, survivors)
 			code = "left running %s" % survivors
 		if code == "cancelled":
 			stopped = "the lane's CANCEL file is there (job %s stopped)" % name
