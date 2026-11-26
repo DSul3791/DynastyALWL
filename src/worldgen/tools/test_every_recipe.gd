@@ -275,7 +275,18 @@ func build_one(number: int, bp: Dictionary) -> void:
 
 	var stands: bool = false
 
-	if site >= 0:
+	if site >= 0 and bool(items._structures.get(kind, {}).get("fire_site", false)):   # a campfire site becomes a laid fire, not a piece (Dave 26 Nov 2026, "campfire both")
+		var spot: Vector3 = items._items[site]["pos"]
+
+		for hit in range(6):
+			HeldTool.hit_site(items, site, peer)
+
+			if not items._items.has(site):
+				break
+
+		for id in items._items:
+			stands = stands or (items._items[id].has("fire") and (items._items[id]["pos"] as Vector3).distance_to(spot) < 0.1)
+	elif site >= 0:
 		for hit in range(6):
 			if HeldTool.hit_site(items, site, peer):
 				stands = true

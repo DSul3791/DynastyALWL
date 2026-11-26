@@ -159,7 +159,7 @@ var _pieces_regrounded: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var shadow_bias: Vector2 = Vector2(-1.0, -1.0)   # --shot-shadow-bias=B,N: the sun's shadow bias and normal bias for the piece pictures (outdoors 0.3 and 3.0 pull a thin thing's shadow off it)
-var piece_extra: Dictionary = {}   # --shot-piece-extra=forge:2,lit:1: the pieces drawn as placed with these row extras (a smithy's coals or flare, a lit kiln), not as the cold ghost
+var piece_extra: Dictionary = {}   # --shot-piece-extra=forge:2,lit:1,site:1: the pieces drawn as placed with these row extras (a smithy's coals or flare, a lit kiln, a blue blueprint site), not as the cold ghost
 var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
 var showroom_cam_height: float = -1.0    # --shot-showroom-height=M: the --showroom camera stands M m above the ground (default 1.6 + 0.25 x row length)
@@ -1305,6 +1305,9 @@ func _show_pieces(now: int) -> void:
 
 			if lamp is OmniLight3D and float(def.get("light_m", 0.0)) > 0.0:
 				(lamp as OmniLight3D).omni_range = float(def["light_m"])
+
+		if int(piece_extra.get("site", 0)) >= 1:
+			client.items._make_site_look(model)   # a blueprint site waiting for materials, drawn as the game draws one (inventory_view world rows)
 
 		client.add_child(model)
 		model.set_meta("piece_name", str(piece_name))
