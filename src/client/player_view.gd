@@ -77,6 +77,7 @@ const STALL_S := 0.25                    # animal_view.gd STALL_S: a frame this 
 
 var table                            # the client's item table (id_of, entry), for worn and held items
 var _frame_s: float = -1.0           # when _process last drew the bodies (s, the ticks clock)
+var frame_steps: Vector2 = Vector2.ZERO   # the last _process: (the engine's delta, the ticks clock's step it drew by), for test_remote_players
 var _settle_until: float = -1.0      # after this computer's own stall: until then bodies are drawn where their points are (as animal_view, #1765)
 var _looks: Dictionary = {}          # peer -> {"name", "body", "code", "worn"}
 var _bodies: Dictionary = {}         # peer -> {"node", "rig", "samples", "row_ms", "state", "held", "path_p", "sm_err", ...}
@@ -249,6 +250,12 @@ func _process(delta: float) -> void:
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall (#1765, as animal_view)
 	var settle: bool = now_s <= _settle_until
+	# The drawn path is sampled on the ticks clock (drawn_at), so its steps, its speed, the easing and the footsteps use the same clock's step, not
+	# the engine's delta: on uneven frames (Lane A on Dave's PC, a slow machine) or delta smoothing the two differ, and a body eased by a delta
+	# longer than its real frame jumped (0.2 to 0.47 m in one 60 fps frame) and rushed (up to 9.9 m/s for a 3 m/s walk); with --fixed-fps, a
+	# delta longer than the real frame read a walk as standing and played idle (test_remote_players, 26 Nov 2026).
+	var step: float = clampf(now_s - _frame_s, 0.0, STALL_S) if _frame_s >= 0.0 else delta
+	frame_steps = Vector2(delta, step)
 	_frame_s = now_s
 	var drawn_at: float = now_s - draw_delay(_clock)
 	_light_pass()
@@ -266,21 +273,21 @@ func _process(delta: float) -> void:
 			var at: Array = MotionBuffer.at(b["samples"], drawn_at, carry_for(b["samples"]))   # through a hole of lost batches a player walks on (two legs at most), then the easing takes the rest
 			b["path_p"] = at[0]
 			# A late batch or a lost one never jumps the body: the step beyond a normal one is eased in (MotionBuffer.smooth, as the animals).
-			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), delta, SMOOTH_ROOM_X, SMOOTH_CATCH_X, SMOOTH_CATCH_MIN_MPS)
+			node.position = MotionBuffer.smooth(b, at[0], MotionBuffer.speed_at(b["samples"], drawn_at), step, SMOOTH_ROOM_X, SMOOTH_CATCH_X, SMOOTH_CATCH_MIN_MPS)
 			node.rotation.y = lerp_angle(node.rotation.y, float(at[1]), clampf(delta * 12.0, 0.0, 1.0))
 
 		# The legs follow the path's own speed, not the easing (a correction slid in is not a step).
-		var path_v: Vector3 = ((b.get("path_p", node.position) as Vector3) - before) / maxf(delta, 0.001)   # the drawn path's own speed, uncapped
-		var path_dt: float = drawn_at - float(b.get("fall_t", drawn_at - delta))   # how far the drawn moment moved on (a late batch steps it back)
+		var path_v: Vector3 = ((b.get("path_p", node.position) as Vector3) - before) / maxf(step, 0.001)   # the drawn path's own speed, uncapped
+		var path_dt: float = drawn_at - float(b.get("fall_t", drawn_at - step))   # how far the drawn moment moved on (a late batch steps it back)
 		b["fall_t"] = drawn_at
 		var moved: Vector3 = path_v.limit_length(MotionBuffer.CARRY_MPS)   # a carried-on point taken back is not a sprint
-		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(delta * 8.0, 0.0, 1.0))
+		var velocity: Vector3 = (b.get("velocity", Vector3.ZERO) as Vector3).lerp(moved, clampf(step * 8.0, 0.0, 1.0))
 		b["velocity"] = velocity
 		var distance: float = eye.distance_to(node.global_position)
-		_count_steps(b, velocity, delta, distance)
+		_count_steps(b, velocity, step, distance)
 		var samples: Array = b["samples"]
-		var carried: bool = fall_carried(samples, drawn_at, path_dt, delta) or settle
-		_count_fall(b, path_v * delta / maxf(path_dt, 0.001), carried, delta, distance)   # the fall by the drawn moment's own steps
+		var carried: bool = fall_carried(samples, drawn_at, path_dt, step) or settle
+		_count_fall(b, path_v * step / maxf(path_dt, 0.001), carried, step, distance)   # the fall by the drawn moment's own steps
 		_far_check(b, distance, delta)
 		_show_held(b)
 		_show_left(b, distance)
