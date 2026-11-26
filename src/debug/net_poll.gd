@@ -1,14 +1,14 @@
 extends Node
 
-# The client's network poll, timed (Lane A 26 Nov 2026, r4 route at Low on 4 cores: 10 of 14 hitches were 69-118 ms of "physics step and poll"
-# with "physics max 0 ms" and no PHYSICS slow line, so the time is in the multiplayer poll: Godot's SceneTree polls the multiplayer before
-# any _process, and every message's unpacking, its RPC and the handlers its signal runs happen inside it, unnamed). Godot's own poll is
-# turned off and this node polls instead from the process_frame signal, connected before any await of it (Godot polls just before emitting
-# it, so the poll still comes before resumed awaits, the deferred calls and every _process), as the piece "net poll". It listens last on
-# every signal of the terrain messages node (TerrainNet), so each mark falls when a message's handlers are done: a message's share runs from
-# the mark before it (or the poll's start) to its own mark, and "after" is the rest (ENet, messages that raise no signal). A poll over NET_SLOW_MS prints a NET slow line with the longest shares (only there: as frame pieces they
-# would sit nested in "net poll" and crowd the HITCH lines). The signal also comes while the game is paused (the lost-connection notice).
-# Diagnostics: the messages handled and their order are the same.
+# The client's network poll, timed (Lane A 26 Nov 2026, r4 route at Low on 4 cores: 10 of 14 hitches were 69-118 ms of "physics step and poll" with
+# "physics max 0 ms" and no PHYSICS slow line, so the time is in the multiplayer poll: Godot's SceneTree polls the multiplayer before any _process,
+# and every message's unpacking, its RPC and the handlers its signal runs happen inside it, unnamed). Godot's own poll is turned off and this node
+# polls instead from the process_frame signal, connected before any await of it (Godot polls just before emitting it, so the poll still comes before
+# resumed awaits, the deferred calls and every _process), as the piece "net poll". It listens last on every signal of the terrain messages node
+# (TerrainNet), so each mark falls when a message's handlers are done: a message's share runs from the mark before it (or the poll's start) to its
+# own mark, and "after" is the rest (ENet, messages that raise no signal). A poll over NET_SLOW_MS prints a NET slow line with the longest shares
+# (only there: as frame pieces they would sit nested in "net poll" and crowd the HITCH lines). The signal also comes while the game is paused (the
+# lost-connection notice). Diagnostics: the messages handled and their order are the same.
 
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
