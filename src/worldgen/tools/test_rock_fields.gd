@@ -292,6 +292,25 @@ func _init() -> void:
 	check(in_deep == 0 and off_bank == 0, "none in deep water (%d) or away from the water (%d)" % [in_deep, off_bank])
 	check(river_big <= 0.7001, "river rocks stay small to medium (largest radius %.2f)" % river_big)
 
+	# On a slope a rock is set into the ground by sink_share of the drop across it; on flat ground it lies on the ground.
+	var slope_fn: Callable = func(x: float, _z: float) -> float: return 700.0 + 0.5 * x
+	var sloped = make("user://test_rock_fields_slope", slope_fn)
+	var share: float = float(sloped._boulder_cfg["rock_fields"].get("sink_share", 0.6))
+	var sink_bad: int = 0
+	var sloped_rocks: Array = rocks_of(lay(sloped, 0, 4, 0, 4))
+
+	for r in sloped_rocks:
+		var p: Vector3 = r[1]
+		sink_bad += 0 if absf(p.y - (float(slope_fn.call(p.x, p.z)) - 0.5 * float(r[2]) * share)) < 0.02 else 1
+
+	check(sloped_rocks.size() > 0 and sink_bad == 0, "rocks on a 0.5 slope are set into it by %.1f of the drop across them (%d of %d not)" % [share, sink_bad, sloped_rocks.size()])
+	var flat_bad: int = 0
+
+	for r in rocks_of(field_rows(high)):
+		flat_bad += 0 if absf((r[1] as Vector3).y - 700.0) < 0.02 else 1
+
+	check(flat_bad == 0, "on flat ground a rock lies on the ground (%d not)" % flat_bad)
+
 	# density_scale 0: nothing (the measure job's off switch).
 	var off = make("user://test_rock_fields_off", cliff)
 	off._boulder_cfg["rock_fields"]["density_scale"] = 0.0
