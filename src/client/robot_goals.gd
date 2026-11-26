@@ -19,6 +19,7 @@ const MapCodec := preload("res://src/shared/map_codec.gd")
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
+const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
 const GATHER_S := 300.0                    # one gather's time at most
@@ -262,7 +263,7 @@ func _hunt_goal() -> String:
 		leg += 1
 		var out: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * PI * 0.5 + 0.4) * HUNT_LEG_M
 		await r._go_to(out, minf(120.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
-		_line("HUNT walked out %d: %.0f m from camp" % [leg, _flat(_home)])
+		_line("HUNTWALK %d: %.0f m from camp" % [leg, _flat(_home)])   # not "HUNT": robot_check.py adds HUNT lines up as fights
 		body = await _chase_game(known)
 
 	if body < 0:
@@ -437,7 +438,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _sell()
 		"hunt":
 			return await _hunt_goal()
-		"fish", "snare", "order", "story", "night_walk", "fur_for_winter", "dig_clay", "charcoal":
+		"dig_clay":
+			return await _dig_clay(int(check.get("count", 12)))
+		"fish", "snare", "order", "story", "night_walk", "fur_for_winter", "charcoal":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -1221,6 +1224,88 @@ func _path(strokes: int) -> String:
 
 	_line("PATH %d hoe strokes toward the water, %d out of reach, %d turns, goal has %s%s" % [sent, missed, turns, str(c.items.goal_book.row("path").get("have", "?")), _said(said)])
 	return ""
+
+
+# --- clay, as the goal's hint says: the Wooden - Shovel in Dig mode, left clicks at the ground. Loam, forest humus, silt and alluvium
+# lie on clay (digging.json under: a 35 to 50% chance a dig), clay ground gives it every dig, sand and rock never. A dig is a bowl
+# about 1.7 m across and 1.15 m deep (server_items.gd DIG_RADIUS_M, DIG_DEPTH_M) and the shovel reaches 3 m from the eye (held_item.gd
+# REACH_M), so a player digs once where they stand, 1.8 m ahead, then steps 1.8 m sideways: the holes lie side by side and the robot
+# never stands in one. Lines go out from the camp a different way each time, further out, when the ground gives no clay.
+func _dig_clay(want: int) -> String:
+	var why: String = await _tool("wooden_shovel")
+
+	if why != "":
+		return why
+
+	if _hold("wooden_shovel") < 0:
+		return "no shovel to hold"
+
+	await r._wait(0.6)
+
+	if c.held.raise_mode:   # right click switches Raise and Dig (held_item.gd); the robot wants Dig
+		c.held.mouse_button(MOUSE_BUTTON_RIGHT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_RIGHT, false)
+		await r._wait(0.4)
+
+	var said: int = r._notices.size()
+	var start_clay: int = _count("clay")
+	var start_ground: int = _dug_count()
+	var clicks: int = 0
+	var dug: int = 0
+	var line: int = 0
+	var until: int = mini(Time.get_ticks_msec() + int(CLAY_S * 1000.0), _end_ms)
+
+	while _count("clay") - start_clay < want and Time.get_ticks_msec() < until and line < 8:
+		line += 1
+		var dir: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, float(line) * 2.3)
+		var side: Vector3 = dir.rotated(Vector3.UP, PI * 0.5)
+		var from: Vector3 = _home + dir * (12.0 + 25.0 * float(line - 1))
+		await r._go_to(from, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 2.0)
+		var got_here: int = _count("clay")
+		var tries: int = 0
+		var dug_here: int = 0
+
+		while tries < 10 and _count("clay") - start_clay < want and Time.get_ticks_msec() < until:
+			if tries > 0:
+				await r._go_to(c.body.global_position + side * 1.8, 4.0, 0.4)
+
+			var ground: Vector3 = c.body.global_position + dir * 1.8
+			var y: float = float(c.items._ground_below.call(ground))
+			ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+			var had: int = _dug_count()
+			_look_at(ground)
+			await r._wait(0.3)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+			await r._wait(0.1)
+			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+			await r._wait(0.9)   # the server's dig pace is 0.7 s
+			tries += 1
+			clicks += 1
+			dug_here += 1 if _dug_count() > had else 0
+
+			# Sand, gravel or rock under the spade four digs running and no clay: this ground has none, try another way out.
+			if dug_here >= 4 and _count("clay") == got_here:
+				break
+
+		dug += dug_here
+		_line("CLAY line %d at %s, %.0f m from camp: %d clicks, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
+			tries, dug_here, _count("clay") - got_here])
+
+	var got: int = _count("clay") - start_clay
+	_line("CLAY %d clicks on %d lines, %d gave ground: +%d clay (wanted %d), +%d ground items in all, goal has %s%s" % [clicks, line, dug, got, want,
+		_dug_count() - start_ground, str(c.items.goal_book.row("dig_clay").get("have", "?")), _said(said)])
+	return "" if got >= want or bool(c.items.goal_book.row("dig_clay").get("done", false)) else "%d shovel clicks on %d lines, %d gave ground: %d of %d clay%s" % [clicks, line, dug, got, want, _said(said)]
+
+
+# What a dig gives (digging.json yield and under), summed: a click that raised it dug.
+func _dug_count() -> int:
+	var n: int = 0
+
+	for item in ["soil", "sand", "gravel", "clay", "stone", "sea_salt", "crystal_lens"]:
+		n += _count(item)
+
+	return n
 
 
 # --- a blueprint with the hammer: placed on open ground ahead, then hammered until it stands --------------------------------------

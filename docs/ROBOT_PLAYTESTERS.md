@@ -86,8 +86,9 @@ about 45 minutes; `src/client/robot_goals.gd`): a fresh character with no gifts 
 blueprints and hammers them, lights a campfire, treads a path with the hoe and sells to Hob (closing his shop window after). Each goal prints
 `GOAL <id> try|done|stuck`, with GATHER, MADE, FELL, ROCK, BUSHES, BUILT, PATH, SOLD and DROPPED lines on the way, and a WEIGHT line (each item's
 real kg, heaviest first) after a goal where the game said "Too heavy". It hunts with a spear (a rabbit, then a deer; with none by the camp it walks
-out up to four 300 m legs and chases again) and works the carcass with the knife (HUNT, CARCASS lines). When gathering or sweeping up it never presses E on a "talk" prompt, and shuts a talk that opens anyway. For copper it walks up any river its own map shows, else widening loops round the camp, for up to 15 minutes
-(EXPLORE lines). A goal it cannot play yet says "robot cannot" (fish, snare, order, clay, story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
+out up to four 300 m legs and chases again) and works the carcass with the knife (HUNT, HUNTWALK, CARCASS lines). When gathering or sweeping up it never presses E on a "talk" prompt, and shuts a talk that opens anyway. For copper it walks up any river its own map shows, else widening loops round the camp, for up to 15 minutes
+(EXPLORE lines). It digs clay with the Wooden - Shovel: one dig 1.8 m ahead, a step 1.8 m sideways, so the holes lie side by side;
+a row starts 12 m out from the camp and the next one another way and 25 m further when the ground gives no clay (CLAY lines). A goal it cannot play yet says "robot cannot" (fish, snare, order, story and others); any other stuck goal is a FAIL line to read: game fault or robot gap, checked against the real numbers before it goes on the bug list.
 Between goals it drops what a player would leave behind (logs, seed stacks, spare food over 10, straw and reeds over 20, sticks over 40).
 
 Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30

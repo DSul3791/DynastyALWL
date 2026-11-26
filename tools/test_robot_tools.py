@@ -307,6 +307,15 @@ def test_check():
 	with tempfile.TemporaryDirectory() as d:
 		good_logs(d)
 
+		with open(os.path.join(d, "robot1_play.log"), "a") as f:
+			f.write("ROBOT Robot 1 HUNT walked out 1: 292 m from camp\n")
+
+		r = run_check(d)
+		check(r.returncode == 0, "robot_check passes a goals robot's HUNT walked out line (lane B 26 Nov: it crashed on it)")
+
+	with tempfile.TemporaryDirectory() as d:
+		good_logs(d)
+
 		with open(os.path.join(d, "server.log"), "a") as f:
 			f.write("ERROR: 5 resources still in use at exit (run with --verbose for details).\n")
 
