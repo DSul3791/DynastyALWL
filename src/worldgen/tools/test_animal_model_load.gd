@@ -1,6 +1,6 @@
 extends SceneTree
 
-# The first animal of a kind waits, undrawn, while its model loads on a worker (Lane A route plays, 23 Nov 2026: the first moose,
+# The first animal of a kind waits, undrawn, while its model loads on a worker, at most SCENE_WAIT_MS (QA #12) (Lane A route plays, 23 Nov 2026: the first moose,
 # black bear, horse or wildebeest drawn was a 0.6 to 1.4 s freeze, load() reading the model on the main thread). The files it waits
 # for are the scenes of its row, variants and young model and their colour textures. A headless client (robots, tests) loads as
 # before, on the main thread, because the dummy renderer's stores are not thread safe (test_worker_resources); the worker load itself
@@ -69,6 +69,52 @@ func _initialize() -> void:
 	check(v._alpha_of.get("res://solid.png", true) == false, "a solid texture is found solid")
 	check(v._alpha_tasks.is_empty() and v._alpha_done.is_empty(), "no worker task or answer is left over")
 	check(v._alpha_ready("res://solid.png", null), "an answer in hand is not asked again (no texture needed)")
+
+	# QA #12 (a tester on a slow PC saw no animals): a kind held for its files is drawn anyway after SCENE_WAIT_MS, with the code-built body.
+	var clock: Array = [5000]
+	v.clock_ms = func() -> int: return int(clock[0])
+	check(not v._waited_out(2), "the first hold starts the wait")
+	clock[0] = 5000 + v.SCENE_WAIT_MS - 1
+	check(not v._waited_out(2), "still held just short of the limit")
+	clock[0] = 5000 + v.SCENE_WAIT_MS
+	check(v._waited_out(2), "drawn anyway at the limit")
+	check(v._model_notes.keys().any(func(k): return str(k).contains("still loading after")), "the log says so once for the kind")
+	v._wait_since.erase(2)
+	check(not v._waited_out(2), "a kind whose files came in starts a fresh wait the next time it is held")
+	v._code_body_only = true
+	var stand_in: Node3D = v._make_for_species(2, 9)
+	v._code_body_only = false
+	check(stand_in != null and not bool(stand_in.get_meta("model", false)), "past the limit the deer is the code-built body, with no model load")
+	if stand_in != null:
+		stand_in.free()
+	check(v._scenes_ready(2), "headless, a kind's files count as in, so the wait never starts there")
+
+	# Through on_rows (files_ready stands in for _scenes_ready, which headless always answers yes): a deer held while its files load,
+	# drawn with the code-built body once SCENE_WAIT_MS has passed, and the next deer drawn from its model once the files are in.
+	var loaded: Array = [false]
+	v.files_ready = func(_number: int) -> bool: return bool(loaded[0])
+	v._wait_since.clear()
+	clock[0] = 100000
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1000]], 1000)
+	check(not v._bodies.has(31), "a deer whose files are loading is held undrawn")
+	clock[0] = 100000 + v.SCENE_WAIT_MS
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1250]], 1250)
+	check(v._bodies.has(31) and not bool((v._bodies[31]["node"] as Node3D).get_meta("model", false)), "past the limit it is drawn, with the code-built body")
+	check(not v._code_body_only, "the code-built flag is down again after the body is made")
+	loaded[0] = true
+	v.on_rows([[31, 2, Vector3(2.0, 0.0, 2.0), 0.0, 0, 1500], [33, 2, Vector3(4.0, 0.0, 2.0), 0.0, 0, 1500]], 1500)   # an odd id: the variant with the test model (an even one takes the doe file that does not exist)
+	check(v._bodies.has(33) and bool((v._bodies[33]["node"] as Node3D).get_meta("model", false)), "with its files in, the next deer is drawn from its model")
+	v.files_ready = Callable()
+
+	# The animals line for the log (QA #12): it runs with bodies drawn and with none, and starts its counts again.
+	v._report_batches = 3
+	v._report_held = 2
+	v._report(Vector3(1.0, 0.0, 1.0))
+	check(v._report_batches == 0 and v._report_held == 0, "the animals line starts its counts again")
+	var empty = AnimalViewScript.new()
+	empty._report(Vector3.INF)
+	empty.free()
+	check(true, "the animals line with no bodies and no player does not stop the game")
 
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(SCENE))
 	print("test_animal_model_load: %d failures" % failures)

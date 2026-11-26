@@ -139,7 +139,10 @@ func kinds_in(zone: String) -> Array:
 
 # One call by `kind` at `at` in `mood`. False when nothing played (unknown kind, no sound,
 # too far to be heard, or the voice budget is full and the call is not a threat).
-func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
+# `follow`: the animal's drawn body. The call then moves with it for its whole length (_process; Dave 25 Nov 2026, the live server: a
+# running bear's growl stayed where it started, "I ran right past the growling while I could see the bear way out infront of me").
+# Without one (an idle call somewhere round the player) it stays where it was made.
+func call_at(kind: String, at: Vector3, mood: String = "idle", follow: Node3D = null) -> bool:
 	var listener: Vector3 = get_viewport().get_camera_3d().global_position if get_viewport().get_camera_3d() != null else Vector3.ZERO
 
 	if kind == "bird":
@@ -196,6 +199,11 @@ func call_at(kind: String, at: Vector3, mood: String = "idle") -> bool:
 		player.set_meta("keep", true)                            # a danger cue: never shed
 
 	player.global_position = at
+
+	if follow != null and is_instance_valid(follow) and follow.is_inside_tree():
+		player.global_position = follow.global_position
+		player.set_meta("follow", follow.get_instance_id())
+
 	player.finished.connect(player.queue_free)
 	player.play()
 	_voices.append(player)
@@ -243,6 +251,21 @@ func call_nearby(kind: String, mood: String = "idle", distance_m: float = -1.0) 
 	at.y = float(hit["position"].y) + 1.0 if not hit.is_empty() else origin.y
 
 	return call_at(kind, at, mood)
+
+
+# Each frame a call that follows an animal is put where its body is drawn now. A body gone (out of range, killed) leaves the call where
+# it was last, to finish there.
+func _process(_delta: float) -> void:
+	for voice in _voices:
+		if not is_instance_valid(voice) or not voice.has_meta("follow"):
+			continue
+
+		var body: Object = instance_from_id(int(voice.get_meta("follow")))
+
+		if body is Node3D and is_instance_valid(body) and (body as Node3D).is_inside_tree():
+			voice.global_position = (body as Node3D).global_position
+		else:
+			voice.remove_meta("follow")
 
 
 func voices_playing() -> int:

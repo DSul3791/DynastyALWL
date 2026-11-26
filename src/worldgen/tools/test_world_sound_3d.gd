@@ -414,4 +414,35 @@ func _animal_checks(world: Node3D) -> void:
 	var who: Dictionary = view.attacker_near(Vector3.ZERO, 5.0)
 	check(str(who.get("kind", "")) == "wolf" and (who["at"] as Vector3).is_equal_approx(wolf.global_position), "the biting wolf is found, not the nearer fleeing deer (%s)" % str(who))
 	check(view.attacker_near(Vector3(20.0, 0.0, 0.0), 5.0).is_empty(), "no attacker past 5 m")
+	check(who.get("node", null) == wolf, "the attacker comes with its body, so its snarl can follow it")
+
+	# A call made for an animal follows its body for the whole call (Dave 25 Nov 2026, the live server: "I ran right past the growling
+	# while I could see the bear way out infront of me"); with the body gone it stays where it was last.
+	for child in creatures.get_children():
+		child.free()
+
+	creatures._voices.clear()
+	creatures._threat_until.clear()
+	var bear: Node3D = Node3D.new()
+	world.add_child(bear)
+	bear.global_position = Vector3(0.0, 0.0, -8.0)
+	var before_follow: int = creatures.get_child_count()
+	check(creatures.call_at("bear", bear.global_position, "threat", bear), "the bear's warning plays")
+	var growl: Array = _made(creatures, before_follow)
+	check(growl.size() == 1, "one voice for the warning")
+
+	if growl.size() == 1:
+		bear.global_position = Vector3(30.0, 0.0, -40.0)   # it runs on while it growls
+		creatures._process(0.016)
+		check((growl[0] as Node3D).global_position.is_equal_approx(bear.global_position), "the growl moves with the running bear (%s)" % str((growl[0] as Node3D).global_position))
+		var last: Vector3 = bear.global_position
+		bear.free()
+		creatures._process(0.016)
+		check((growl[0] as Node3D).global_position.is_equal_approx(last) and not (growl[0] as Node).has_meta("follow"), "a body gone leaves the call where it was last")
+
+	creatures._threat_until.clear()
+	var still: int = creatures.get_child_count()
+	creatures.call_at("deer", Vector3(3.0, 0.0, -3.0), "alert")
+	var fixed: Array = _made(creatures, still)
+	check(fixed.size() == 1 and not (fixed[0] as Node).has_meta("follow"), "a call with no body stays where it was made")
 	view._bodies = {}
