@@ -8,7 +8,10 @@ The credits are his: the checker never spends past its cap, and it keeps a runni
 - Pictures: only on Dave's PC lane, from `C:\DynastyLane\clone`, with the in-game picture tools (`creature_check.gd`, `shot_held.gd`,
   `body_pose_shot.gd`, `look_rig.sh`). Godot never runs in the cloud. `tools/picture_sweep.py` runs them one at a time in the
   foreground, each with a time limit, and stops the whole process tree it started (`taskkill /F /T`: look_rig's server and client
-  too) when the limit passes, when the CANCEL file appears, or on Ctrl-C. It runs look_rig with Git bash, never WSL's bash.
+  too) when the limit passes, when the CANCEL file appears, or on Ctrl-C. Each job gets its own temp folder with a tag in its name;
+  look_rig makes its throwaway server's store there, so after every job the sweep also stops whatever still runs with that tag
+  (the server runs in Git bash's background, outside the process tree taskkill /T sees), and stops itself if one would not stop.
+  Times take their unit (`90s`, `20m`, `2h`): a bare number is refused. look_rig jobs need minutes (`--job-limit 5m` or more). It runs look_rig with Git bash, never WSL's bash.
 - Looking: `tools/picture_check.py` sends the pictures to the Claude API (model `claude-opus-5-5`, low effort). The pictures of one
   folder are the views of one subject and go in one request (at most 8 a request), so it judges a subject across its views
   and writes `picture_check.md` (the list, most serious first) and `picture_check.json`. Python standard library only: nothing to
@@ -51,10 +54,10 @@ a bug here or a price change could not pass it.
 ## Commands (lane, Git bash, from `C:/DynastyLane/clone`)
 ```bash
 python tools/picture_sweep.py --out C:/DynastyLane/logs/sweep --list                      # jobs left
-python tools/picture_sweep.py --out C:/DynastyLane/logs/sweep --groups animals,young --time-limit 3600
+python tools/picture_sweep.py --out C:/DynastyLane/logs/sweep --groups animals,young --time-limit 60m
 python tools/picture_check.py C:/DynastyLane/logs/sweep --out C:/DynastyLane/logs/sweep --dry-run
 python tools/picture_check.py C:/DynastyLane/logs/sweep --out C:/DynastyLane/logs/sweep --max-requests 1   # first ever: compare with the Console
-python tools/picture_check.py C:/DynastyLane/logs/sweep --out C:/DynastyLane/logs/sweep --time-limit 3600
+python tools/picture_check.py C:/DynastyLane/logs/sweep --out C:/DynastyLane/logs/sweep --time-limit 60m
 python tools/picture_check.py C:/DynastyLane/logs/<job>/shots --about "a deer walking on grass"   # any test's pictures
 ```
 Groups: `animals` and `young` (every species, every role, 46 strips each), `held` (128 tools and weapons, 4 angles: about 85 by

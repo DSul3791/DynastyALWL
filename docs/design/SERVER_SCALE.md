@@ -59,7 +59,10 @@ frame each quarter second even when the average is fine.
 3. **Spread the quarter-second work.** Vitals and goals run for a share of the players each frame instead of all at once. Same
    total, no 100-400 ms frames.
 4. **World item sync by change.** A player is sent what changed near them, not a fresh look at every record near them each
-   second. The biggest single cost when players crowd one town.
+   second. The biggest single cost when players crowd one town. First step (26 Nov 2026, test_sync_by_change): the records are
+   filed in 20 m cells and each cell summed once a sync; a cell wholly near a player and unchanged since they last looked is skipped
+   whole, so only edge cells and changed cells are looked at record by record. Still left: the filing and the sums touch every record
+   each sync (the next step is marking records changed where they change, so nothing unchanged is touched).
 5. **Lighter telemetry and logs at high counts** (the per-peer line grows with players).
 
 Together these should put about 100 to 150 clustered players on one main thread. That is a guess until measured.

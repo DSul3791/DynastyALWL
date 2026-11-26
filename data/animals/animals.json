@@ -977,7 +977,7 @@
 				"fish_share": 0.5,
 				"berry_share": 0.8
 			},
-			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true, 
+			"defend": {"close_fight_m": 3.0, "close_fight_note": "Dave 26 Nov 2026 (asked about a black bear walked up on to 2 m): \"that close it should turn rear on its hind legs growl and fight\" and \"if its a baby it should run\". Within close_fight_m a bear fights whatever its temperament, with no bluff; its cubs run (young.close_run_m).", "trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is walked up on within close_fight_m (Dave 26 Nov 2026), trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "strike": {"start_m": 1.0, "reach_m": 1.2, "windup_s": 0.7, "damage_x": 0.8, "arc_deg": 60, "recover_s": 1.5}, "fair_dodge": true,
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 12.0,
@@ -1063,7 +1063,7 @@
 					"spook_x": 1.2
 				}
 			},
-			"young": {
+			"young": {"close_run_m": 3.0, "run_till_m": 20.0,
 				"share": 0.3,
 				"count": [
 					1,
@@ -1399,7 +1399,7 @@
 			"health": 90.0,
 			"protective_share": 0.0,
 			"feeds": {"range_m": 80.0, "fish_share": 0.3, "berry_share": 0.8, "note": "Dave 25 Nov 2026: bears spend most of their time eating berries and go to the streams and rivers to fish. A black bear has no den: it feeds round its home (server_animals _den_target)."},
-			"defend": {"trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true, 
+			"defend": {"close_fight_m": 3.0, "close_fight_note": "Dave 26 Nov 2026 (asked about a black bear walked up on to 2 m): \"that close it should turn rear on its hind legs growl and fight\" and \"if its a baby it should run\". Within close_fight_m a bear fights whatever its temperament, with no bluff; its cubs run (young.close_run_m).", "trapped_fights": true, "trapped_fights_note": "Dave 25 Nov 2026: a bear runs from a player unless it is walked up on within close_fight_m (Dave 26 Nov 2026), trapped (cornered, at bay with the player within corner_m) or threatened (chased down and hurt within provoked_m): then it fights whatever its temperament, a shy one too (server_animals.gd damage, _flee_target; server_big_game provoke). Starving: the hunger rows (gap 10). Run down by a chase (a player within run_down.corner_m for corner_s) counts as trapped too (gap 11). A later trapping step: a bear held in a trap is trapped, so it fights anyone who comes within corner_m.", "fair_dodge": true,
 				"warn_m": 0.0,
 				"warn_s": 1.5,
 				"charge_mps": 10.0,
@@ -1483,7 +1483,7 @@
 					"spook_x": 1.2
 				}
 			},
-			"young": {"bluff_share": 0.8, 
+			"young": {"close_run_m": 3.0, "run_till_m": 20.0, "bluff_share": 0.8,
 				"share": 0.3,
 				"count": [
 					1,

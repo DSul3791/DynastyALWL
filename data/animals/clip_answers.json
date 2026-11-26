@@ -7,6 +7,7 @@
 		"bear|res://assets/animals/bear/SK_Bear.fbx": {
 			"shares": {
 				"RigRoot|Attack_IdleAngry_01_High": 0.888297810386583,
+				"RigRoot|Attack_IdleAngry_01_Low": 0.8882919636229167,
 				"RigRoot|Attack_IdleAngry_02_High": 0.888297810386583,
 				"RigRoot|Attack_Run_01_AttackF": 0.9441265464940312,
 				"RigRoot|Death_Idle_R01": 0.9999860648106935,
@@ -24,28 +25,6 @@
 			},
 			"skins": {
 				"sm_3_0_0": false
-			}
-		},
-		"bear|res://assets/animals/bear_2/SK_Bear.fbx": {
-			"shares": {
-				"SK-Bear|Attack_BiteForward": 0.999999791015353,
-				"SK-Bear|Attack_MeleeLeft": 0.9999913271371476,
-				"SK-Bear|Attack_StandAngry_01_Low": 0.8882627012247859,
-				"SK-Bear|Attack_SwingForward": 0.9999959247993826,
-				"SK-Bear|Death_Stand_R01": 0.9999204813417985,
-				"SK-Bear|Hit_Stand_F01": 1.000006792001029,
-				"SK-Bear|Idle": 1.0000038662159705,
-				"SK-Bear|Idle_02": 1.0000042841852645,
-				"SK-Bear|Idle_Breathing_01": 1.0000042841852645,
-				"SK-Bear|Idle_Eating_01": 0.9999794150122658,
-				"SK-Bear|Lying_Breathing_01": 0.34830434037078684,
-				"SK-Bear|Run": 0.9456737095537645,
-				"SK-Bear|Sprint": 1.0988254958343613,
-				"SK-Bear|Trot": 0.8784815927890266,
-				"SK-Bear|Walk": 0.9124993821891372
-			},
-			"skins": {
-				"SK-Bear_001": false
 			}
 		},
 		"beaver|res://assets/animals/beaver/SK_Beaver.fbx": {

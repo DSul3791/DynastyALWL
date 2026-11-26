@@ -121,8 +121,12 @@ static func frame(delta: float) -> void:
 	# script time means the wait was in the engine or the graphics driver, not in our scripts.
 	# The join's own long frames (Lane A r4 Low, 26 Nov 2026: a 1.9 s welcome, 1.1 s stuck after "weather: state", 0.6 s at the first draws)
 	# were never broken down: the lines below skip the first 30 frames. One line each names their timed pieces.
-	if ms > JOIN_SLOW_MS and _frames <= 30:
-		FreezeWatch.printer.line("JOIN slow frame %.0f ms (frame %d): %s; wall: %s" % [ms, _frames, _top_text(8) if not _this_frame.is_empty() else "nothing timed", FreezeWatch.split])
+	# Lane A r4 at 35dcde90: the 3.5 s welcome frame printed no line (no draw since the beat before it, so no wall time, and Godot's delta is
+	# not the stall): the beat-to-beat gap is used too.
+	var join_ms: float = maxf(ms, float(FreezeWatch.gap_ms))
+
+	if join_ms > JOIN_SLOW_MS and _frames <= 30:
+		FreezeWatch.printer.line("JOIN slow frame %.0f ms (frame %d): %s; wall: %s" % [join_ms, _frames, _top_text(8) if not _this_frame.is_empty() else "nothing timed", FreezeWatch.split])
 
 	if ms > FREEZE_MS and _frames > 30 and _freeze_prints < 40:
 		_freeze_prints += 1
