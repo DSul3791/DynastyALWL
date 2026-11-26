@@ -582,6 +582,9 @@ func _gather(item: String, n: int) -> String:
 		while _count(item) == had and Time.get_ticks_msec() < wait_until:
 			await r._wait(0.2)
 
+		if str(r._notices.slice(maxi(said, r._notices.size() - 3))).contains("Too heavy"):   # a player stops and drops the straw and thatch a pick brought with it
+			await _lighten()
+
 	var got: int = _count(item) - start
 	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks, %d out of reach%s" % [item, got, _count(item), n, presses, walks, unreached, _said(said)])
 
