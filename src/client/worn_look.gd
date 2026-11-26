@@ -468,10 +468,10 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 
 
 # The joints a garment bends at: [parent bone, child bone, the joint's height on the parent bone (ragdoll_body.gd BONES), the cap's size over the child piece's width].
-# Shoulders and hips get a larger ball, to close the corner between the body tube and the sleeve or leg (a tunic's shoulder ball is 21 cm across).
+# Shoulders get a larger ball, to close the corner between the body tube and the sleeve (a tunic's shoulder ball is 21 cm across).
 const JOINTS := [
 	["chest", "arm_r", 0.2, 1.15], ["chest", "arm_l", 0.2, 1.15], ["arm_r", "forearm_r", -0.29, 1.05], ["arm_l", "forearm_l", -0.29, 1.05],
-	["forearm_r", "hand_r", -0.26, 1.05], ["forearm_l", "hand_l", -0.26, 1.05], ["hips", "thigh_r", -0.05, 1.15], ["hips", "thigh_l", -0.05, 1.15],
+	["forearm_r", "hand_r", -0.26, 1.05], ["forearm_l", "hand_l", -0.26, 1.05], ["hips", "thigh_r", -0.05, 1.05], ["hips", "thigh_l", -0.05, 1.05],
 	["thigh_r", "shin_r", -0.45, 1.05], ["thigh_l", "shin_l", -0.45, 1.05], ["shin_r", "foot_r", -0.4, 1.05], ["shin_l", "foot_l", -0.4, 1.05],
 ]
 const JOINT_REACH_M := 0.06      # a piece whose end comes this near a joint covers it
