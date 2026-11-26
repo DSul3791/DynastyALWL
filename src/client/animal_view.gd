@@ -666,7 +666,9 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it. Never longer than
 			# SCENE_WAIT_MS (QA #12, 25 Nov 2026: a tester on a slow 2-core PC saw no animals at all): past it, the animal is drawn with
 			# its code-built body, and later ones of its kind get the model once it is in.
+			var t_files: int = FrameProbe.start()
 			var files_in: bool = bool(files_ready.call(int(row[1]))) if files_ready.is_valid() else _scenes_ready(int(row[1]))
+			FrameProbe.stop("animals: files ready", t_files)
 
 			if not files_in and not _waited_out(int(row[1])):
 				_report_held += 1
@@ -691,6 +693,9 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			FrameProbe.stop("animals: add a body to the scene", t_add)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": [], "contact_m": AnimalContact.contact_m(str(KIND_OF_SPECIES.get(int(row[1]), ""))), "turn_rad_s": AnimalContact.draw_turn_rad_s(str(KIND_OF_SPECIES.get(int(row[1]), "")))}
 
+		# Lane A r4 at 2578469a (26 Nov 2026): polls of 83-116 ms with only 10-15 ms of bodies in them; these pieces name the rest.
+		var t_said: int = FrameProbe.start()
+
 		if int(row[4]) == 3 and int(row[4]) != int(_bodies[id]["state"]) and bool(_bodies[id].get("alarmed", false)):
 			pass   # one alarm call: an animal gives it the first time it looks up, not each look (ANIMAL_SCENARIOS gap 4)
 		elif int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
@@ -705,6 +710,9 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		elif int(row[4]) in CLOSE_STATES and int(row[4]) != int(_bodies[id]["state"]):
 			_close_blow(_bodies[id], int(row[4]))
 
+		FrameProbe.stop("animals: calls, bites and blows", t_said)
+		var t_move: int = FrameProbe.start()
+
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
@@ -715,7 +723,9 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		if int(_bodies[id].get("row_ms", -1)) == int(row[5]):
 			_bodies[id]["plan"] = plan_of(row)   # an older row out of order (dropped by push_row) leaves the newer plan
 		_bodies[id]["state"] = int(row[4])
+		FrameProbe.stop("animals: rows to plans", t_move)
 
+	var t_gone: int = FrameProbe.start()
 	var now: int = Time.get_ticks_msec()
 
 	for id in _bodies.keys():
@@ -729,6 +739,8 @@ func on_rows(rows: Array, server_ms: int) -> void:
 				_bodies[id]["node"].queue_free()
 
 			_bodies.erase(id)
+
+	FrameProbe.stop("animals: gone bodies", t_gone)
 
 
 # The blood trail (protocol 55): dark red flat spots on the ground where a wounded animal ran, a pooled MeshInstance3D each,
@@ -1110,7 +1122,9 @@ func _alpha_ready(path: String, source: Variant) -> bool:
 		return true
 
 	if not _alpha_tasks.has(path):
+		var t_back: int = FrameProbe.start()
 		var img: Image = source as Image if source is Image else (source as Texture2D).get_image()
+		FrameProbe.stop("animals: texture read back", t_back)
 		_alpha_tasks[path] = WorkerThreadPool.add_task(_alpha_job.bind(img, path), false, "animal texture alpha")
 		return false
 
@@ -1303,6 +1317,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		# names first, then a clip whose name says the role), and those clips loop. A clip whose bone positions are in other
 		# units than the skeleton (the bear lay flat as a legless tube, 7 Nov 2026) is rescaled to it (_fit_clip_units).
 		var roles: Dictionary = {}
+		var t_step: int = FrameProbe.start()   # the clip steps are named pieces ("clips: ..."; Lane A r4 at 2578469a: 49-58 ms left in a first body's clips)
 
 		# Hand-made gait clips (gait {role: spec}): a model with no usable clip for a role gets one built from its own bones
 		# (_gait_clip). They are added under the name "gait_<role>" and the row's clips point at it.
@@ -1322,6 +1337,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 			(row["clips"] as Dictionary)[str(gait_role)] = gait_name
 
+		FrameProbe.stop("clips: hand-made gaits", t_step)
 		# A refused clip (it lays the model flat) does not leave the role empty: the next clip that names the role is tried (the elk's
 		# file has two clips called Walk, one of them shrinking the rig to a hundredth; MikeW, 7 Nov 2026).
 		var rest_h: float = _clip_height(player, null, rig)
@@ -1330,7 +1346,9 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 			var refused: Dictionary = {}
 
 			for attempt in 6:
+				t_step = FrameProbe.start()
 				var anim_name: String = _role_clip(player, row, str(key), refused)
+				FrameProbe.stop("clips: pick by name", t_step)
 
 				if anim_name == "":
 					if (row.get("clips", {}) as Dictionary).has(key) and refused.is_empty():
@@ -1356,13 +1374,19 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					anim = player.get_animation(anim_name)
 					_model_note(kind, "role %s loops %s from %.3f to %.3f s" % [str(key), anim_name, float(loop_spec[0]), float(loop_spec[1])])
 
-				if not _fit_clip_units(player, anim, kind, anim_name):
+				t_step = FrameProbe.start()
+				var units_ok: bool = _fit_clip_units(player, anim, kind, anim_name)
+				FrameProbe.stop("clips: fit units", t_step)
+
+				if not units_ok:
 					refused[refuse_as] = true
 					continue
 
 				# A clip that lays the animal flat (the bear drew as a legless tube on the ground, 7 Nov 2026) is not used: its pose is
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
+				t_step = FrameProbe.start()
 				var clip_h: float = _clip_height(player, anim, rig)
+				FrameProbe.stop("clips: heights", t_step)
 
 				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
 				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" or str(key) == "die" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
@@ -1382,10 +1406,12 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					var once_name: String = anim_name.get_slice("|", anim_name.count("|")) + "_once"
 
 					if player.has_animation_library("") and not player.has_animation(once_name):
+						t_step = FrameProbe.start()
 						var once: Animation = anim.duplicate() as Animation
 						once.loop_mode = Animation.LOOP_NONE
 						_strip_root_drift(player, once, rig, kind, once_name)
 						player.get_animation_library("").add_animation(once_name, once)
+						FrameProbe.stop("clips: copies played once", t_step)
 
 					if player.has_animation(once_name):
 						roles[str(key)] = once_name
@@ -1393,7 +1419,9 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					break
 
 				anim.loop_mode = Animation.LOOP_LINEAR
+				t_step = FrameProbe.start()
 				_strip_root_drift(player, anim, rig, kind, anim_name)
+				FrameProbe.stop("clips: take out travel", t_step)
 
 				# An in-place walk, trot or run (no travel in the clip) gets its speed from its feet: docs/design/FOOT_SLIDING.md.
 				if (str(key) == "walk" or str(key) == "trot" or str(key) == "run") and not anim.has_meta("travel_mps") and not anim.has_meta("stride_measured"):
@@ -1402,10 +1430,14 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 					# In the game the feet are measured on a worker (_stride_later: 41 samples of every bone were most of a kind's first
 					# body); a tool's view, out of the tree, has no frames to collect it in and measures here.
+					t_step = FrameProbe.start()
+
 					if is_inside_tree():
 						_stride_later(_clip_pose(player, anim, rig), anim, kind, anim_name, typed_mps)
 					else:
 						_take_stride(anim, kind, anim_name, typed_mps, _measure_stride(player, anim, rig))
+
+					FrameProbe.stop("clips: feet measure started", t_step)
 				roles[str(key)] = anim_name
 				break
 
@@ -1415,6 +1447,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		# Idle life: the row's idle_variants {role: [clip...]} are the other idle or graze clips of the file, each played once now and then
 		# between spells of the role's own clip (_idle_life). Checked like a role clip: one that lays the model flat is left out.
 		var idle: Dictionary = {}
+		t_step = FrameProbe.start()
 
 		for idle_key in (row.get("idle_variants", {}) as Dictionary):
 			if not roles.has(str(idle_key)):
@@ -1446,6 +1479,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				idle[str(idle_key)] = idle_list
 
 		player.set_meta("idle", idle)
+		FrameProbe.stop("clips: idle variants", t_step)
 		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0); the file's clips: %s" % _clip_names(player)))
 
 	FrameProbe.stop("animal body: clips", t_part)
