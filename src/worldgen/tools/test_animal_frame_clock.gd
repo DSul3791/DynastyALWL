@@ -2,7 +2,8 @@ extends SceneTree
 
 # Animals on uneven frames (BugsList 174): animal_view draws each animal on the ticks clock, so its feet, easing, drawn speed and gait must step
 # by that clock's own step, not the engine's delta, which differs from it when frames come unevenly (Lane A saw up to 132 ms on Dave's PC).
-# One deer walks east at 3 m/s with a row every 200 ms on time; the view is stepped by hand with a 1/60 s delta on real frames of 2 to 30 ms.
+# One deer walks east at 3 m/s with a row about every 200 ms, stamped when it is handed over (never late); the view is stepped by hand with a
+# 0.05 s delta (under STALL_S) on real frames of 2 to 30 ms, so the old delta-stepped draw reads the walk at a third of its pace on any lane.
 # The drawn deer must walk about 3 m/s, its legs must read that speed (b["spd"]), no frame may jump, and a model's footsteps must follow it.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_frame_clock.gd
 
@@ -10,6 +11,7 @@ const AnimalView := preload("res://src/client/animal_view.gd")
 const DEER := 2
 const WALK := 1
 const ID := 7
+const DELTA := 0.05   # the engine delta handed to every frame: not the real frame time, and under STALL_S (0.25 s)
 
 var failures: int = 0
 
@@ -33,7 +35,7 @@ func _initialize() -> void:
 	await process_frame
 	var steps: Array = [0]
 	view.stepped.connect(func(_kind: String, _at: Vector3) -> void: steps[0] = int(steps[0]) + 1)
-	var frames_ms: Array = [2, 2, 30, 8, 2, 16]   # uneven real frames; each is handed 1/60 s as its delta
+	var frames_ms: Array = [2, 2, 30, 8, 2, 16]   # uneven real frames; each is handed DELTA as its delta
 	var start_ms: int = Time.get_ticks_msec()
 	var next_row: int = 0
 	var frame: int = 0
@@ -44,24 +46,31 @@ func _initialize() -> void:
 	var spd_high: float = 0.0
 	var was_x: float = NAN
 	var was_us: int = 0
+	var body_ms: int = -1
 
-	while Time.get_ticks_msec() - start_ms < 3000:
+	while Time.get_ticks_msec() - start_ms < 3000 + maxi(body_ms, 0):
 		var now: int = Time.get_ticks_msec() - start_ms
 
-		if now >= next_row:   # a 3 m/s walk east, a row every 200 ms on time
-			view.on_rows([[ID, DEER, at + Vector3(3.0 * float(next_row) / 1000.0, 0.0, 0.0), -PI * 0.5, WALK, 40000 + next_row]], 40000 + next_row)
-			next_row += 200
+		if now >= next_row:   # a 3 m/s walk east, a row about every 200 ms, stamped by when it is handed over, so the draw clock never sees it late
+			view.on_rows([[ID, DEER, at + Vector3(3.0 * float(now) / 1000.0, 0.0, 0.0), -PI * 0.5, WALK, 40000 + now]], 40000 + now)
+			next_row = now + 200
 
 		var wait_ms: int = int(frames_ms[frame % frames_ms.size()])
 		frame += 1
 		OS.delay_usec(wait_ms * 1000)
-		view._process_body(1.0 / 60.0)
+		view._process_body(DELTA)
 		var now_us: int = Time.get_ticks_usec()
 		var real_s: float = float(now_us - was_us) / 1.0e6
 		was_us = now_us
 		var b: Dictionary = view._bodies.get(ID, {})
 
-		if b.is_empty() or now <= 1200:
+		if b.is_empty():
+			continue
+
+		if body_ms < 0:
+			body_ms = now   # the walk is timed from the first drawn frame, so a slow first model load does not shorten it
+
+		if now - body_ms <= 1200:
 			continue
 
 		var x: float = (b["node"] as Node3D).position.x
@@ -82,7 +91,7 @@ func _initialize() -> void:
 		var walked: float = last_x - first_x
 		print("deer (%s): walked %.2f m in the last 1.8 s, legs read %.2f-%.2f m/s, fastest frame %.1f m/s, %d footsteps" % ["model" if bool(body["model"]) else "code body", walked, spd_low, spd_high, worst_frame, int(steps[0])])
 		check(walked > 4.0 and walked < 7.0, "the drawn deer walked %.2f m in the last 1.8 s (5.4 m at 3 m/s), not standing or rushing" % walked)
-		check(spd_low > 2.0 and spd_high < 4.0, "its legs read the walk, %.2f-%.2f m/s (3 m/s), on frames handed a 1/60 s delta" % [spd_low, spd_high])
+		check(spd_low > 2.0 and spd_high < 4.0, "its legs read the walk, %.2f-%.2f m/s (3 m/s), on frames handed a %.2f s delta" % [spd_low, spd_high, DELTA])
 		check(worst_frame < 6.0, "no frame jumps: the fastest frame moved %.1f m/s (3 m/s walk)" % worst_frame)
 
 		if bool(body["model"]) or bool(body["quad"]):
