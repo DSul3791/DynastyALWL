@@ -340,9 +340,12 @@ func _init() -> void:
 		var node: Node3D = HeldItem.look_tool_node(id)
 		var held_mesh: MeshInstance3D = node.get_child(0) as MeshInstance3D
 		var long_axis: Vector3 = held_mesh.basis * Vector3(held_mesh.mesh.get_aabb().size.x, 0.0, 0.0)
+		var box: Vector3 = held_mesh.mesh.get_aabb().size
+		_check(box.x >= 0.8 * maxf(box.y, box.z), "%s: its mesh is longest along x, the axis laid along the hand (%s)" % [id, box])
 		_check(node.has_meta("grip_y") and long_axis.length() <= HeldItem.HELD_LOOK_MAX_M + 0.001 and absf(long_axis.normalized().y) > 0.99, "%s lies along the hand's +Y, at most %.1f m (%.2f m)" % [id, HeldItem.HELD_LOOK_MAX_M, long_axis.length()])
 		node.free()
 
+	_check(not HeldItem.holds_plain_look("bucket", "container") and not HeldItem.holds_plain_look("clay_pot", "container"), "a bucket or pot is not laid along the hand (it stands up along its mesh +Y)")
 	_check(not HeldItem.holds_plain_look("iron_axe", "tool") and not HeldItem.holds_plain_look("stone", "material"), "an axe keeps its own hand pose; a stone in hand is not a held tool look")
 
 	# Metal sickles: no pale flint teeth (they read as white specks); the plain sickle keeps them.

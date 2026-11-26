@@ -4143,12 +4143,12 @@ static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float
 	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
 
 
-# A tool, weapon or container whose look has no hand pose of its own (HELD_LOOK_TURN: a crossbow, a sling, a whetstone, a griddle, a needle,
+# A tool or weapon whose look has no hand pose of its own (HELD_LOOK_TURN: a crossbow, a sling, a whetstone, a griddle, a needle,
 # a bone club) is held as its own ground look, length along the hand's +Y like an axe's haft, near its -x end. Before, it got the grey box on a
 # stick (_make_other_model's last resort), which read as a hammer: the picture checker's held sweep, 26 Nov 2026 (10 items). A grey placeholder
 # look (BasicLook._is_placeholder) keeps the old stick: it is no better.
 const PLAIN_HELD_TURN := Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1))
-const PLAIN_HELD_KINDS := ["tool", "weapon", "container"]
+const PLAIN_HELD_KINDS := ["tool", "weapon"]   # not containers: a pot, bucket or skin stands up along its mesh +Y, and the own hand draws them as _make_container_model
 
 
 static func holds_plain_look(item_id: String, kind: String) -> bool:
