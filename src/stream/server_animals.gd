@@ -422,12 +422,33 @@ func may_attack(a: Dictionary, forced: bool = false) -> bool:
 
 
 # A young animal keeps to its mother: walks where she walks (at its own spot beside her), runs when she runs.
-func _step_young(a: Dictionary, dt: float) -> void:
+func _step_young(a: Dictionary, dt: float, near_d: float = INF, near_p: Vector3 = Vector3.INF) -> void:
 	var m: Dictionary = animals[a["mother"]]
 	var def: Dictionary = species_def(a["sp"])
 	a["target"] = m["pos"] + a["off"]
 	var far: float = Vector2(a["pos"].x - a["target"].x, a["pos"].z - a["target"].z).length()
 	var running: bool = int(m["state"]) == FLEE or int(m["state"]) == WARN + 1   # charging
+
+	# A cub a player comes right up to runs (Dave 26 Nov 2026: "if its a baby it should run"), and so does one whose mother is warning or
+	# fighting a player near it: away from the player, until they are young.run_till_m off; then it goes back to her.
+	var close_m: float = float(def.get("young", {}).get("close_run_m", 0.0))
+
+	if close_m > 0.0 and near_p != Vector3.INF:
+		var fighting: bool = int(m["state"]) in [WARN, big_game.WARN_POP, WARN + 1, big_game.STRIKE]
+		var till: float = float(def["young"].get("run_till_m", 20.0))
+
+		if near_d <= close_m or (fighting and near_d <= till):
+			a["cub_run"] = true
+		elif near_d > till:
+			a.erase("cub_run")
+
+		if a.has("cub_run"):
+			var away: Vector2 = Vector2(a["pos"].x - near_p.x, a["pos"].z - near_p.z)
+			away = away.normalized() if away.length() > 0.01 else Vector2.RIGHT
+			a["target"] = a["pos"] + Vector3(away.x, 0.0, away.y) * 8.0
+			running = true
+	else:
+		a.erase("cub_run")
 
 	# A hider's young (deer, elk, pronghorn: young.hides; ANIMAL_SCENARIOS gap 12) does not run with her: it drops where it is and lies
 	# still (drawn lying) until she is calm again, then goes back to her. A follower's young (moose, horse, wildebeest) runs at her side.
@@ -1573,7 +1594,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	if a.has("mother"):
 		if animals.has(a["mother"]):
-			_step_young(a, dt)
+			_step_young(a, dt, near_d, near_p)
 			return
 
 		a.erase("mother")   # orphaned: from now on an ordinary (passive) animal
@@ -1616,6 +1637,17 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 	# A player's dog (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md): prey flee it from farther than from a walking player, big game stands to it.
 	if def.has("dog") and _dog_react(a, def, seen_d):   # at its den too: a bear stands to a dog there
 		return
+
+	# Right up close (defend.close_fight_m; Dave 26 Nov 2026, a black bear walked up on to 2 m: "that close it should turn rear on its hind
+	# legs growl and fight"): a grown one fights whatever its temperament, and presses home (no bluff). The warning is the turn, the rear-up
+	# (state 10's clip) and the growl (creature_sounds "warn"), then the charge and its blow. Only one surprised, grazing or walking (bedded and
+	# drinking are grazing here) when the player is first that close: one already staring at them (ALERT, the startle stare _stares sets as
+	# they come, then the bolt) or running from them (FLEE; a chase that runs it down is trapped_fights' corner rule) has seen them coming and
+	# is not. Not into a fire's light. A cub, with its mother
+	# or orphaned (its number stays species + YOUNG_NUM), runs instead ("if its a baby it should run"; _step_young, the passive flight below).
+	if def.has("defend") and int(a["state"]) in [GRAZE, HOP] and seen_p != Vector3.INF and int(a.get("num", 0)) < YOUNG_NUM and seen_d <= float(def["defend"].get("close_fight_m", 0.0)) and _fire_guard(seen_p) == Vector3.INF:
+		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8)), true):
+			return
 
 	# Threat range (Dave 6 Nov 2026, for most animals): a player inside spook_m makes an animal want to run; a player who gets inside its
 	# threat_m (a surprise up close, a chase that catches it, a walk into its den) makes it feel threatened, and it attacks: a short warning,

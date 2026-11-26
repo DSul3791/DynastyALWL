@@ -11,7 +11,7 @@ Godot is not involved: the pictures come from the lane's in-game tools (look_rig
       --out DIR           where the report goes (default: the first folder): picture_check.md (the list) and picture_check.json
       --dry-run           count the pictures and the most they could cost; sends nothing, needs no key
       --max-requests N    send at most N requests this run (one request = all the views of one subject, the pictures of one folder)
-      --time-limit S      stop starting new pictures after S seconds (default 3600)
+      --time-limit T      send no new request after T, with its unit: 90s, 20m, 2h (default 1h)
       --cap USD           the spending cap, kept in the ledger (default 150; only lowered or raised by passing it)
       --recheck           ask again about pictures already checked (default: reuse the stored answer, no cost)
 
@@ -85,6 +85,16 @@ and grip from the side views, not the view that looks along it.
 feet show: a lower, flatter, plainer patch of ground round the player's feet is normal.
 - Offline tools draw no world: a plain colour sky, a small flat green or grey ground plane with grid lines (0.5 m or 1 m \
 apart) and a sun brighter than the game.
+- Animal strips: the first panel, labelled "rest pose", is the model's bind pose with no clip playing. The game never \
+shows it, so never judge it (a bird with its wings spread, a body in a stride or a tucked leg there is normal). A role \
+labelled "(none)" also shows that bind pose. Judge the other panels.
+- Things in the air on purpose: a run, trot or gallop still in its flight phase (all feet off the ground for a moment, \
+the body no higher than about a third of the leg length over the ground; the same for a bound or leap), and every fly, glide, \
+take-off or landing panel. Swim panels sit into the ground plane (the water line), which is right too. Call a running \
+animal floating only when the body hangs clearly higher than a stride could lift it.
+- A "lie" panel should show a healthy animal resting: chest down with the legs folded under, or curled up. One flat on \
+its side with the legs stuck out, or on its back, looks dead or hurt: that is pose_wrong. A lying body's feet need not \
+touch the ground, only the body.
 - Text in the corners and coloured name tags over items are the tester's labels. The HUD is hidden. Night or rain is \
 dark when the description says so. The game's colours are realistic and muted.
 
@@ -380,6 +390,17 @@ def make_groups(pictures, about):
 	return groups
 
 
+def duration(text):
+	"""A time with its unit (90s, 20m, 2h), the same as tools/picture_sweep.py; a bare number is refused."""
+	units = {"s": 1, "m": 60, "h": 3600}
+	try:
+		if text[-1:] in units and float(text[:-1]) > 0:
+			return float(text[:-1]) * units[text[-1]]
+	except ValueError:
+		pass
+	raise argparse.ArgumentTypeError("give a time with its unit, like 90s, 20m or 2h (got %r)" % text)
+
+
 def main(argv):
 	ap = argparse.ArgumentParser(description="Send in-game pictures to the Claude API and list what looks wrong.")
 	ap.add_argument("paths", nargs="+")
@@ -387,7 +408,7 @@ def main(argv):
 	ap.add_argument("--out", default="")
 	ap.add_argument("--dry-run", action="store_true")
 	ap.add_argument("--max-requests", type=int, default=0)
-	ap.add_argument("--time-limit", type=float, default=3600.0)
+	ap.add_argument("--time-limit", type=duration, default=3600.0)
 	ap.add_argument("--cap", type=float, default=None)
 	ap.add_argument("--recheck", action="store_true")
 	args = ap.parse_args(argv)

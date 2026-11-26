@@ -159,7 +159,15 @@ func _init() -> void:
 			scenes.append(str((look as Dictionary).get("scene", "")))
 
 	check(not scenes.any(func(s: String) -> bool: return s.contains("/wolf/") or s.contains("/fox/") or s.contains("/donkey/") or s.contains("/lioness/") or s.contains("/boar_2/")), "the wolf, fox, donkey, lioness and second boar looks with no attack are gone (%s)" % str(scenes))
-	check(str(models["bear"]["variants"][0]["scene"]).contains("/bear_2/"), "the bear with the melee attacks is the first bear look")
+	# Up close a bear turns, rears on its hind legs, growls and fights (Dave 26 Nov 2026): every look of both bears rears (role 10, the hind
+	# stand) and jaw-pops (16). A look's clips replace the row's, so a look that leaves a role out plays its graze there (Lane A, 96ec6be0).
+	for sp in ["bear", "black_bear"]:
+		var looks: Array = [models[sp]]
+		looks.append_array(models[sp].get("variants", []))
+
+		for look in looks:
+			var clips: Dictionary = (look as Dictionary).get("clips", models[sp].get("clips", {}))
+			check(str(clips.get("10", "")).begins_with("IdleHind") and clips.has("16"), "every %s look rears on its hind legs and jaw-pops (%s: 10 %s, 16 %s)" % [sp, str((look as Dictionary).get("scene", "")), str(clips.get("10", "")), str(clips.get("16", ""))])
 
 	print("test_animal_close_blows: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)

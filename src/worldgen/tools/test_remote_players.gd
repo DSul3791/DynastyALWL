@@ -685,6 +685,66 @@ const LOSSY_FPS := 60
 const LOSSY_FRAME_MPS := 3.0 * PlayerViewScript.SMOOTH_ROOM_X + PlayerViewScript.SMOOTH_CATCH_MIN_MPS
 
 
+# The drawn path runs on the ticks clock, so the easing, the legs and the steps take that clock's step, not the engine's delta (26 Nov 2026: on
+# Lane A, Dave's PC, uneven frames made other players jump and rush; with --fixed-fps 60 a walk played idle). Here the view is stepped by hand
+# with a 60 fps delta while its real frames are about 2 ms apart: the walk must still read as a walk, and its footsteps count the real metres.
+func _check_frame_clock() -> void:
+	var table = ItemTableScript.load_default()
+	var view: Node3D = PlayerViewScript.new()
+	view.table = table
+	get_root().add_child(view)
+	view.set_process(false)
+	var at: Vector3 = Vector3(2000.0, 30.0, 2000.0)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = at + Vector3(0.0, 1.6, 6.0)
+	camera.make_current()
+	view.on_look(12, "Clock", "body_1", "", PackedInt32Array())
+
+	for i in range(200):
+		if PlayerViewScript._can_make({"body": "body_1", "code": ""}):
+			break
+
+		await process_frame
+
+	var steps: Array = [0]
+	view.stepped.connect(func(_at: Vector3, _gait: int, _crouched: bool) -> void: steps[0] = int(steps[0]) + 1)
+	var start_ms: int = Time.get_ticks_msec()
+	var next_row: int = 0
+	var first_x: float = NAN
+	var last_x: float = NAN
+
+	while Time.get_ticks_msec() - start_ms < 2400:
+		var now: int = Time.get_ticks_msec() - start_ms
+
+		if now >= next_row:   # a 3 m/s walk east, a report every 200 ms on time
+			view.on_rows(PackedInt32Array([12]), PackedVector3Array([at + Vector3(3.0 * float(next_row) / 1000.0, 0.0, 0.0)]), PackedFloat32Array([-PI * 0.5]), PackedByteArray([0]), PackedInt32Array([0]), PackedInt32Array([30000 + next_row]))
+			next_row += 200
+
+		OS.delay_usec(2000)
+		view._process(1.0 / 60.0)
+		var b: Dictionary = view._bodies.get(12, {})
+
+		if not b.is_empty() and now > 1000:
+			var x: float = (b["node"] as Node3D).position.x
+			first_x = x if is_nan(first_x) else first_x
+			last_x = x
+
+	var body: Dictionary = view._bodies.get(12, {})
+	check(not body.is_empty(), "a body is drawn for the walker")
+
+	if not body.is_empty():
+		var pace: float = Vector2((body["velocity"] as Vector3).x, (body["velocity"] as Vector3).z).length()
+		check(pace > 2.0 and pace < 4.0, "a 3 m/s walk on 2 ms frames given a 16.7 ms delta reads %.1f m/s, not standing" % pace)
+		var clip: String = str(body["rig"].current()) if DynastyBodyScript.available() else "walk"
+		check(clip in ["walk", "jog", "walk_torch", "jog_torch"], "and plays a gait clip (%s)" % clip)
+		var walked: float = last_x - first_x
+		check(walked > 2.5 and walked < 5.0, "the drawn body walked %.2f m in the last 1.4 s (4.2 m at 3 m/s)" % walked)
+		check(int(steps[0]) >= 4 and int(steps[0]) <= 9, "its footsteps follow the metres walked, 1.2 m a step (%d over the whole walk)" % int(steps[0]))
+
+	view.queue_free()
+	camera.queue_free()
+
 func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var fps_was: int = Engine.max_fps
 	Engine.max_fps = LOSSY_FPS
@@ -770,6 +830,8 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var frame_p: Dictionary = {}
 	var worst_frame: float = 0.0   # the most any body moved in one frame (m)
 	var worst_frame_allowed: float = 1.0   # that frame's own bound (m)
+	var worst_frame_steps: Vector3 = Vector3.ZERO   # that frame: the test's own frame time, the view's delta, the view's clock step (s)
+	var deltas: Array = [0, 0.0]   # frames whose engine delta and real frame time differ by over 5 ms; the largest difference (s)
 
 	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + tail_ms:
 		var now: int = Time.get_ticks_msec() - start_ms
@@ -781,6 +843,11 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		await process_frame
 		var frame_s: float = float(Time.get_ticks_usec() - frame_t) / 1.0e6
 		frame_t = Time.get_ticks_usec()
+		var off_by: float = absf(view.frame_dts.x - view.frame_dts.y)
+
+		if off_by > 0.005:
+			deltas[0] = int(deltas[0]) + 1
+			deltas[1] = maxf(float(deltas[1]), off_by)
 
 		for peer in peers:
 			var fb: Dictionary = view._bodies.get(peer, {})
@@ -798,6 +865,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 				if moved_f / allowed > worst_frame / worst_frame_allowed:
 					worst_frame = moved_f
 					worst_frame_allowed = allowed
+					worst_frame_steps = Vector3(frame_s, view.frame_dts.x, view.frame_dts.y)
 
 			frame_p[peer] = fp
 
@@ -832,7 +900,8 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		rest_ok = rest_ok and view._bodies.has(peer) and absf(float((view._bodies[peer]["node"] as Node3D).position.x) - at.x - 9.0) < 0.15
 
 	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
-	check(worst_frame <= worst_frame_allowed, "no jump on a lossy, late link: the most drawn in one frame %.3f m (%.3f m allowed at 60 fps)" % [worst_frame, worst_frame_allowed])
+	check(worst_frame <= worst_frame_allowed, "no jump on a lossy, late link: the most drawn in one frame %.3f m (%.3f m allowed at 60 fps; that frame %.1f ms, the view's delta %.1f ms and clock step %.1f ms)" % [worst_frame, worst_frame_allowed, 1000.0 * worst_frame_steps.x, 1000.0 * worst_frame_steps.y, 1000.0 * worst_frame_steps.z])
+	print("lossy link frames: %d frames' engine delta off the real frame by over 5 ms, at most %.1f ms" % [int(deltas[0]), 1000.0 * float(deltas[1])])
 	check(worst_step < 3.0 * 1.5, "no rush on a lossy, late link: the fastest drawn speed %.1f m/s over 50 ms for a 3 m/s walk" % worst_step)
 	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
 	check(rest_ok, "each comes to rest at its last point (burst at %d ms)" % burst_ms)
@@ -1159,6 +1228,7 @@ func _init() -> void:
 	_server()
 	await _client()
 	await _check_wiggle()
+	await _check_frame_clock()
 	await _check_lossy(1750, 800)    # a burst of lost batches mid-walk
 	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
 	await _check_holds()
