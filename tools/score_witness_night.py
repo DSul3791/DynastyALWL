@@ -25,7 +25,9 @@ Method (same for every picture, so the numbers compare):
     midrib). Groups under 12 px are noise. Leaf length = median longer side of a
     group's box; leaves across = crown width / median group box width. When leaves
     overlap, groups merge and the count of groups per crown width drops: that is
-    reported too (groups).
+    reported too (groups). Where leaf cards overlap in layers the groups break into
+    vein stubs, so leaf length and leaves across read low: trust them only when
+    separate leaves is high; count leaves by eye otherwise.
 
 Usage:
   python3 tools/score_witness_night.py                      # Dave's target only

@@ -410,10 +410,10 @@ def witness_leaf(rd, ad, md, cx, cy, length, width, angle, shade, rng, mid=0.06,
     for a, b, frac in lines:   # the glow: the violet line, then a thin bright core
         md.line([a, b], fill=150, width=max(1, int(width * frac * 1.4)))
     for a, b, frac in lines:
-        md.line([a, b], fill=255, width=max(1, int(width * frac * 0.35)))
+        md.line([a, b], fill=255, width=max(SS, int(width * frac * 0.5)))   # wide enough to stay near white after the shrink to 256
 
 
-def witness(name, size, seed, leaves=4, span=(0.52, 0.58), mid=0.05, side_w=0.036, pairs=5):
+def witness(name, size, seed, leaves=4, span=(0.52, 0.58), mid=0.05, side_w=0.022, pairs=4):
     # A spray of a few big leaves fanning out from the card's centre, with dark gaps between them (scored against
     # Dave's picture by tools/score_witness_night.py, 26 Nov 2026: 48 small leaves per card made the crown one
     # lit mesh, about twice as many leaves across the crown and twice the lit share of the picture).
