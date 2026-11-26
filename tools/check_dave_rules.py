@@ -26,6 +26,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
     "R-SOUND-MENU-MUSIC": ["test_title_music"],
+    "R-MOVE-RUN-FEET": ["test_run_speed"],
 }
 
 results = []   # (key, ok, what)
@@ -211,6 +212,15 @@ def seen_far():
     check("R-ANIMAL-SEEN-FAR", all(k in cfg["species"] for k in cfg["big_game"]), "every big game kind is a species")
 
 
+def run_feet():
+    """R-MOVE-RUN-FEET: the run clip plays faster past its 6 m/s, and the footsteps take the clip's own 1.7 m step."""
+    drv = (ROOT / "src/client/character/avatar_driver.gd").read_text(encoding="utf-8")
+    check("R-MOVE-RUN-FEET", "return clampf(pace / RUN_CLIP_PACE, 0.8, 1.6)" in drv, "the run clip plays at pace / 6 m/s, up to 1.6x (1.5x at the 9 m/s run)")
+    for rel in ("scenes/terrain_client/terrain_client.gd", "src/client/player_view.gd"):
+        m = re.search(r"^const STEP_M := \[([0-9.]+), ([0-9.]+)\]", (ROOT / rel).read_text(encoding="utf-8"), re.M)
+        check("R-MOVE-RUN-FEET", m is not None and abs(float(m.group(2)) - 1.7) < 0.05, f"{rel} run footstep is the clip's 1.7 m step ({m.group(2) if m else 'missing'})")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -224,7 +234,7 @@ def main():
     steps = {"R-ANIMAL-BEAR": lambda: bears(player_run_mps()), "R-HUD-STATUS": status_strip, "R-HUNT-TRAILS-MAP": tracking, "R-ITEM-WEIGHTS": seeds,
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
-             "R-ANIMAL-SEEN-FAR": seen_far}
+             "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet}
     for key, step in steps.items():
         try:
             step()

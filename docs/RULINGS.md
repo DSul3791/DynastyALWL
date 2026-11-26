@@ -13,6 +13,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-CORE-NO-GATEKEEPING** · 23 Nov 2026 · "we are not gate keeping by limiting resources."
 - **R-CORE-NOT-SPAWN** · 23 Nov 2026 · Nothing in the world is based on where the spawn is (river rise after rain follows the rain, not the starter area). *(unverified: coordinator's note)*
 - **R-CORE-NEWER-WINS** · 23 Nov 2026 · "newer rules override older ideas." 25 Nov: "we need a system that removes old contradictory rules when new rules are established" (the procedure above).
+- **R-CORE-PLAYTEST-WINS** · 26 Nov 2026 · "make it correct according to playtesting not according my old rules. its ok if playtesting finds that my rules were not right." What play-testing finds may replace an older ruling of his; the new line here replaces the old one by the procedure above.
 - **R-CORE-FOCUS** · 23 Nov 2026 · "I want all of your focus on making the game incredibly smooth and comfortable." Basics first: movement, weights and fighting animals before extras like snow.
 - **R-CORE-NIGHT** · 25 Nov 2026 · "I do not agree with a shorter night. I think that’s because they’re spoiled with old video games. I think the night is big part of this game they just haven’t caught on yet."
 
@@ -36,6 +37,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 
 ## Player, HUD and controls
 - **R-SOUND-MENU-MUSIC** · 25 Nov 2026 · "here add this as the background music for the first game screen where ever music should go." "Im the composer its my song." His song, "Feast in the Great Hall" (composed by David Sullivan), is the menu music (`src/client/title_music.gd`; which pages, the soft start and the slider are the thread's reading, not his words).
+- **R-MOVE-RUN-FEET** · 26 Nov 2026 · Asked "at 9 m/s the feet slide 45 cm a step because your 4 Nov rule keeps the 6 m/s stride. May the feet step faster to keep up?", Dave: "yes make it correct according to playtesting not according my old rules." The run stays 9 m/s (BUG-011, 4 Nov); its feet step faster to keep up and the footsteps follow the feet.
 - **R-HUD-LOW** · 23 Nov 2026 · "the goal is to try and keep all the hud down low and mostly minimalist."
 - **R-HUD-STATUS** · 24 Nov 2026 · Status symbols in a row left of the hotbar: "I don't want any borders around it I just want the symbols in a row" (23 Nov). "food and water shouldn't show up until they are below 10%." Comfort is always shown: "we should always have some sort of a comfort meter" (23 Nov).
 - **R-HUD-PROMPTS** · 25 Nov 2026 · E and F prompts show only in inspect mode (a rebindable toggle). "if you look at a fruit tree or bush or anything in the game that has the ability to be used by pressing e it should say Press E to ... if you have inspect mode on." New characters get a welcome card: "there should be a pop up for first time players or new characters that says the basics like welcome to Dynasty. Press ? to enter inspect mode. if you like a cleaner hud you can keep it off. Pressing E to interact or F to open items. other keys can be found in the Settings under ...."
