@@ -2279,15 +2279,16 @@ func _tool_cue(slot: int, was_number: int, was_wear: int, was_broken: bool, was_
 		tool_event.call("broke")
 
 
+# Lag fix (26 Nov 2026, Lane A Low route): opening a chest sent three slot messages in one poll and each redrew the chest screen, the
+# storage window and the hotbar on the spot (185, 98 and 109 ms). They now wait with the window for the end of the frame and redraw once.
 func _after_slots() -> void:
+	_slots_dirty = true
 	_queue_refresh()
-	_container_part.refresh()
-	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
-	refresh_hotbar()
 
 
 # Slot updates that arrive together (a pickup, a craft, a sale send several) rebuild the window once, at the end of the frame.
 var _refresh_queued: bool = false
+var _slots_dirty: bool = false   # a slot message came: the chest screen, the storage window and the hotbar redraw too
 
 
 func _queue_refresh() -> void:
@@ -2300,7 +2301,23 @@ func _queue_refresh() -> void:
 
 func _flush_refresh() -> void:
 	_refresh_queued = false
+	var t: int = FrameProbe.start()
 	_refresh()
+	FrameProbe.stop("inventory: window after slots", t)
+
+	if not _slots_dirty:
+		return
+
+	_slots_dirty = false
+	t = FrameProbe.start()
+	_container_part.refresh()
+	FrameProbe.stop("inventory: chest screen after slots", t)
+	t = FrameProbe.start()
+	_storage_ui.refresh_view()   # the storage window's pack list follows the pack
+	FrameProbe.stop("inventory: storage window after slots", t)
+	t = FrameProbe.start()
+	refresh_hotbar()
+	FrameProbe.stop("inventory: hotbar after slots", t)
 
 
 # --- The chest screen: the chest on the left, the pack on the right; a click moves a whole stack ---
