@@ -309,7 +309,7 @@ func _process(delta: float) -> void:
 					player.advance(0.0)
 
 				if str(b.get("held_kind", "")) == "spear":
-					aim_spear(b["held_node"] as Node3D, rig)   # the hand is in the resting pose now: a spear aimed at the last stride (or at the bind pose of a body just drawn) would stick out of the body (bug 168)
+					aim_spear(b["held_node"] as Node3D, rig)   # the hand is in the resting pose now: a spear aimed at the last stride (or at the bind pose of a body just drawn) would stick out of the body (bug 169)
 
 			continue
 

@@ -1056,7 +1056,7 @@ func _check_far_pose() -> void:
 	camera.queue_free()
 
 
-# Bug 168 (Dave 23 Nov 2026 on 9257: "Slayers spear looked like it was just floating in the air almost sticking out of his chest"): a body past
+# Bug 169 (Dave 23 Nov 2026 on 9257: "Slayers spear looked like it was just floating in the air almost sticking out of his chest"): a body past
 # QUARTER_M is not animated, so its spear was not aimed again when the hand went to the resting pose (walking off past QUARTER_M, a body first
 # drawn far off, or lying down and sitting far off): the spear kept its place on the old hand and turned with it.
 func _check_far_spear() -> void:

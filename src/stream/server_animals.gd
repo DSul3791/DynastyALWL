@@ -4312,8 +4312,14 @@ func _place_spawn(sp: String, def: Dictionary, p: Vector3, players: Array, room:
 		for q in players:
 			clear = clear and Vector2(q.x - spot.x, q.z - spot.y).length() >= never
 
-		# Out of sight as a rule (spawn_min_m), now and then nearer (near_share), as the random spots do.
-		if clear and Vector2(p.x - spot.x, p.z - spot.y).length() < float(cfg.get("spawn_min_m", 150.0)) and rng.randf() >= float(cfg.get("near_share", 0.0)):   # luck-exempt: where wildlife appears, no outcome for the player
+		# Out of sight as a rule (spawn_min_m), now and then nearer (near_share), as the random spots do. A rabbit group at home in its
+		# warren (kind 0, its clock not out) comes up out of the ground there, so a warren near the player is used like any other (coordinator
+		# 26 Nov 2026, option A of the starting camp study: rabbits were never within 150 m by day; still outside never_within_m).
+		# One made this near starts down its hole (HIDDEN) and comes up when its hide_s is over, as after any dash to its burrow.
+		var in_burrow: bool = int(place.get("kind", -1)) == 0 and spot == route[0] and route.size() > 1
+		var near_spot: bool = Vector2(p.x - spot.x, p.z - spot.y).length() < float(cfg.get("spawn_min_m", 150.0))
+
+		if clear and not in_burrow and near_spot and rng.randf() >= float(cfg.get("near_share", 0.0)):   # luck-exempt: where wildlife appears, no outcome for the player
 			continue
 
 		if not clear:
@@ -4354,6 +4360,12 @@ func _place_spawn(sp: String, def: Dictionary, p: Vector3, players: Array, room:
 				var bz: float = warren.y + rng.randf_range(-2.0, 2.0)   # luck-exempt: as above
 				var by: float = float(ground_height.call(bx, bz)) if ground_height.is_valid() else animals[id]["pos"].y
 				animals[id]["burrow"] = Vector3(bx, animals[id]["pos"].y if is_nan(by) else by, bz)
+
+				if in_burrow and near_spot:   # it comes up out of its hole after a while, not stand there in the open as the player looks
+					var hide: Array = def.get("hide_s", [20.0, 40.0])
+					animals[id]["state"] = HIDDEN
+					animals[id]["pos"] = animals[id]["burrow"]
+					animals[id]["timer"] = rng.randf_range(float(hide[0]), float(hide[1]))   # luck-exempt: how long it stays down
 
 			if hid != 0:
 				animals[id]["herd"] = hid
