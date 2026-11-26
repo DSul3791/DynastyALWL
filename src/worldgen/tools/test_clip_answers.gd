@@ -3,7 +3,7 @@ extends SceneTree
 # The clip answers kept with the animal models (data/animals/clip_answers.json, made by tools/clip_answers.gd; Lane A r4 at Low, 26 Nov
 # 2026: a kind's first body measured its clips and skins in the frame, 76-106 ms) are the answers the game would measure now, model by model:
 # the same models, the same clip height shares, the same skin answers and the same models absent. Needs the model pack (Lane A); without
-# it, it says NOT COMPARED.
+# it, it says NOT COMPARED, and with part of it (Lane B) it compares the models there and says PARTLY COMPARED.
 #   godot --headless --path . --script res://src/worldgen/tools/test_clip_answers.gd
 
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
@@ -37,14 +37,19 @@ func _initialize() -> void:
 		quit(1 if failures > 0 else 0)
 		return
 
-	var keys_now: Array = now.keys()
-	var keys_kept: Array = kept.keys()
-	keys_now.sort()
-	keys_kept.sort()
-	check(keys_now == keys_kept, "the same models as measured now (%d kept, %d now): only kept %s, only now %s" % [keys_kept.size(), keys_now.size(), str(keys_kept.filter(func(k): return not now.has(k))), str(keys_now.filter(func(k): return not kept.has(k)))])
-	absent.sort()
-	kept_absent.sort()
-	check(absent == kept_absent, "the same models absent (%s now, %s kept)" % [str(absent), str(kept_absent)])
+	# A machine with part of the pack (Lane B: tools/skip_models.sh leaves the bought models out) compares the models it has; a kept model
+	# that is absent here is left out, not failed. A model drawn here must be kept, and one kept as absent must be absent here too.
+	var left_out: Array = kept.keys().filter(func(k): return not now.has(k) and absent.has(k))
+	var only_now: Array = now.keys().filter(func(k): return not kept.has(k))
+	var only_kept: Array = kept.keys().filter(func(k): return not now.has(k) and not absent.has(k))
+	only_now.sort()
+	only_kept.sort()
+	check(only_now.is_empty() and only_kept.is_empty(), "the same models as measured now (%d kept, %d now, %d left out here): only kept %s, only now %s" % [kept.size(), now.size(), left_out.size(), str(only_kept), str(only_now)])
+	check(kept_absent.all(func(k): return absent.has(k)), "the models kept as absent are absent here too (%s kept, %s here)" % [str(kept_absent), str(absent)])
+
+	if not left_out.is_empty():
+		print("PARTLY COMPARED: %d kept models are not in this copy of the pack" % left_out.size())
+
 	var off: PackedStringArray = PackedStringArray()
 
 	for key in now:
