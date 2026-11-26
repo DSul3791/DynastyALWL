@@ -31,6 +31,7 @@ var cfg: Dictionary = {}
 var jumps_sent: int = 0            # fish_jump messages sent (one per receiver), for checks
 var shadows_sent: int = 0          # fish_shadows messages sent, for checks
 var last_tick_usec: int = 0        # how long the last pass took, for the cost check
+var cells_deferred: int = 0        # cells left to a later pass because new_cells_usec was spent (a new game day, a player in new water)
 
 var _rng: RandomNumberGenerator = RandomNumberGenerator.new()
 var _next_ms: int = 0
@@ -168,14 +169,23 @@ func tick() -> void:
 	last_tick_usec = Time.get_ticks_usec() - started
 
 
-# The schools of the 128 m cells round every player (3 x 3 cells each, each cell once).
+# The schools of the 128 m cells round every player (3 x 3 cells each, each cell once), the players' own cells first.
+# A cell whose schools are not worked out for the day costs up to 18 water reads (place_tries per slot); once new_cells_usec of a pass is
+# spent on them, the rest wait for the next passes (at least one a pass), so a new game day (every real hour) or a crowd walking into new
+# water never stops the server for one long pass (Lane A 26 Nov 2026: 22 ms for 4 players' first pass; hundreds of players would be 100 times that).
 func _schools_near(peers: Dictionary) -> Array:
+	var started: int = Time.get_ticks_usec()
+	var budget: int = int(cfg.get("new_cells_usec", 4000))
 	var fish = items._fish_schools()
 	var cell_m: float = float(fish.cell_m)
 	var day: int = int(floor(items._now_game_s() / 86400.0))
 	var cells: Dictionary = {}
 	var reach: float = float(cfg.get("reach_m", 100.0))
 	var span: int = int(ceil(reach / cell_m))
+
+	for peer in peers:
+		var p: Vector2 = peers[peer]
+		cells[Vector2i(int(floor(p.x / cell_m)), int(floor(p.y / cell_m)))] = true
 
 	for peer in peers:
 		var p: Vector2 = peers[peer]
@@ -186,13 +196,23 @@ func _schools_near(peers: Dictionary) -> Array:
 				cells[home + Vector2i(dx, dz)] = true
 
 	var out: Array = []
+	var fresh: int = 0
 
 	for cell in cells:
 		if not _cell_ready(cell, cell_m):
 			continue   # its tile is being read: no schools there this pass (never an empty placement cached for the day)
 
 		var middle: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
-		out.append_array(fish.schools(cell, day, items._season_of(middle), int(items.fish_stock(cell)), items._now_game_s()))
+		var season: String = items._season_of(middle)
+
+		if not fish.has_placements(cell, day, season):
+			if fresh > 0 and Time.get_ticks_usec() - started > budget:
+				cells_deferred += 1
+				continue   # worked out in a later pass: its schools are missing for a second or two
+
+			fresh += 1
+
+		out.append_array(fish.schools(cell, day, season, int(items.fish_stock(cell)), items._now_game_s()))
 
 	return out
 

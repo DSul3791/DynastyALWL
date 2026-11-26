@@ -77,6 +77,11 @@ func _kind_at(x: float, z: float) -> String:
 	return str((kind_fn.call(x, z) as Dictionary).get("kind", "")) if kind_fn.is_valid() else ""
 
 
+# Whether the cell's schools for that day and season are worked out already (placements() then costs a lookup, not up to 18 water reads).
+func has_placements(cell: Vector2i, day: int, season: String) -> bool:
+	return _cache.has([cell, day, season])
+
+
 # Where the cell's schools sit today: [{species, weight, base: Vector2, radius, phase}] (sizes and drift are added by schools()).
 func placements(cell: Vector2i, day: int, season: String) -> Array:
 	var key: Array = [cell, day, season]
@@ -85,7 +90,12 @@ func placements(cell: Vector2i, day: int, season: String) -> Array:
 		return _cache[key]
 
 	if _cache.size() >= int(cfg.get("cache_max", 2000)):
-		_cache.clear()
+		for old in _cache.keys():
+			if int(old[1]) != day:
+				_cache.erase(old)   # other days first: clearing it all made every cell near every player work its schools out again at once
+
+		if _cache.size() >= int(cfg.get("cache_max", 2000)):
+			_cache.clear()
 
 	var out: Array = []
 
