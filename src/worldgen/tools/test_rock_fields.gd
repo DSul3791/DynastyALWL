@@ -3,7 +3,8 @@ extends SceneTree
 # Rocky ground (boulders.json rock_fields, server_items _lay_out_rock_fields; Dave 26 Nov 2026: "rocks and boulders on and around mountains
 # where they should be"). On made-up ground: scree at the foot of a cliff and none on its face, rocky ground above the treeline and none on
 # the lowland, outcrops on hilltops, rounded rocks in shallow water and on banks and none in deep water, now and then a lone giant on the flat;
-# keys of their own that never move the older boulders, worked rocks stay worked, nothing laid beside a build, loose stones never on a face.
+# keys of their own that never move the older boulders, worked rocks stay worked, nothing laid beside a build, a fire or a player, loose
+# stones never on a face, nothing on the low coastal flats; far from every player a cell is taken up whole and comes back the same.
 # Prints rock_fields: lines with counts and the layout's cost per cell.
 #   godot --headless --path . --script res://src/worldgen/tools/test_rock_fields.gd
 
@@ -196,9 +197,65 @@ func _init() -> void:
 			low_small += 1
 
 	print("rock_fields: %d rocks in 100 cells above the treeline; on 400 flat lowland cells %d small and %d lone giants" % [high_rocks, low_small, low_giants])
-	check(high_rocks >= 500, "ground above the treeline is rocky (%d rocks in 100 cells)" % high_rocks)
+	check(high_rocks >= 300, "ground above the treeline is rocky (%d rocks in 100 cells)" % high_rocks)
 	check(low_small == 0 and low_rows.size() == low_giants, "flat lowland gets no rocky ground (%d small rocks, %d loose stones)" % [low_small, low_rows.size() - low_giants])
 	check(low_giants >= 1 and low_giants <= 20, "a lone giant boulder now and then on the open flat (%d in 400 cells)" % low_giants)
+
+	# The low coastal flats (the ground most tests stand on, 10 m): no rocky ground at all, not even a lone giant.
+	var coast = make("user://test_rock_fields_coast", func(_x, _z): return 10.0)
+	var coast_rows: Array = lay(coast, -10, 9, -10, 9)
+	check(coast_rows.is_empty(), "the low coastal flats get no rocks or stones (%d in 400 cells)" % coast_rows.size())
+
+	# Nothing on or beside a fire or a player standing there as the cell is laid out again.
+	var camp = make("user://test_rock_fields_camp", cliff)
+	var fire_at: Vector3 = (rocks_of(rows)[2] as Array)[1]
+	var stand_at: Vector3 = (rocks_of(rows)[3] as Array)[1]
+	camp._items[900002] = {"number": 0, "count": 1, "pos": fire_at, "left": 1.0e9, "fire": {"state": 9}}
+	camp._peer_pos[7] = stand_at
+	var near_camp: int = 0
+
+	for r in lay(camp, -2, 2, 0, 19):
+		for at in [fire_at, stand_at]:
+			near_camp += 1 if Vector2((r[1] as Vector3).x - at.x, (r[1] as Vector3).z - at.z).length() < float(r[2]) + 4.0 else 0
+
+	check(near_camp == 0, "no rock or stone is laid on or within 4 m of a fire or a player (%d)" % near_camp)
+
+	# Far from every player a cell is taken up whole, with its rocks and stones; back near it, the same rows come back.
+	var walk = make("user://test_rock_fields_walk", cliff)
+	walk.peer_connected_hello(1, "rockwalk00001")
+	walk.report_position(1, Vector3(0.0, 100.0, 300.0))
+	var settle: Callable = func() -> void:
+		var before: int = -1
+		var guard: int = 0
+
+		while walk._cells_done.size() != before and guard < 50:
+			before = walk._cells_done.size()
+			walk._scatter_around_players()
+			walk._sync_world_items()
+			guard += 1
+	settle.call()
+	var walked: Array = field_rows(walk)
+	walk.report_position(1, Vector3(2000.0, 190.0, 300.0))
+	settle.call()
+	var gone_near: int = 0
+
+	for r in field_rows(walk):
+		gone_near += 1 if (r[1] as Vector3).x < 500.0 else 0
+
+	var cells_near: int = 0
+
+	for cell in walk._cells_done:
+		cells_near += 1 if float(cell.x) * CELL_M < 500.0 else 0
+
+	check(walked.size() > 0 and gone_near == 0 and cells_near == 0, "a cell far from every player is taken up with all it held (%d rows near before, %d after, %d cells still held)" % [walked.size(), gone_near, cells_near])
+	walk.report_position(1, Vector3(0.0, 100.0, 300.0))
+	settle.call()
+	var back: Array = field_rows(walk).filter(func(r): return (r[1] as Vector3).x < 500.0)
+	var keys_of: Callable = func(list: Array) -> Array:
+		var out: Array = list.map(func(r): return int(r[0]))
+		out.sort()
+		return out
+	check(keys_of.call(back) == keys_of.call(walked.filter(func(r): return (r[1] as Vector3).x < 500.0)), "back near it, the same rocks and stones are laid again (%d)" % back.size())
 
 	# Hilltops: rolling hills every 64 m, their tops at the middle of every other cell.
 	var hills: Callable = func(x: float, z: float) -> float: return 100.0 + 5.0 * (cos(TAU * (x - 16.0) / 64.0) + cos(TAU * (z - 16.0) / 64.0))

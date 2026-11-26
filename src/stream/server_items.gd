@@ -548,6 +548,8 @@ var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading
 var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
+var _scatter_cells: Dictionary = {} # Vector2i scatter cell -> Array of the world ids laid out in it (taken away together when every player is far)
+var _cell_first_id: int = 0         # the first world id of the scatter cell being laid out (its own rocks are the ids from here)
 
 
 func setup(item_table, store_dir: String) -> void:
@@ -3447,6 +3449,7 @@ func reset_world() -> int:
 
 	_taken.clear()
 	_cells_done.clear()
+	_scatter_cells.clear()
 	_boulder_left.clear()
 	_boulder_pending.clear()
 	_bog_left.clear()
@@ -9708,7 +9711,9 @@ func _scatter_around_players() -> void:
 						_throttle_mark = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path)) if _throttle_path != "" else -1
 
 					var cell_usec: int = Time.get_ticks_usec()
+					var first_id: int = _next_id
 					_lay_out_cell(cell, cell_m, cfg)
+					_scatter_cells[cell] = range(first_id, _next_id)   # ids are given out in order: the cell's items are this run
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
@@ -9725,23 +9730,27 @@ func _scatter_around_players() -> void:
 
 					budget -= 1
 
-	# Take away loose things far from every player (they come back when someone returns).
-	for id in _items.keys():
-		var it: Dictionary = _items[id]
-
-		if not it.has("scatter"):
-			continue
-
+	# Take away the cells far from every player, with what was laid out in them (they come back from the seed when someone returns). By cell, not by
+	# item: with rocky ground (PR #1988) a world holds tens of thousands of scatter rows, and a look at each row for each player took 71 ms a second
+	# for 32 players (Lane A measure, 26 Nov 2026).
+	for cell in _scatter_cells.keys():
+		var centre: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
 		var far: bool = true
 
 		for peer in _peer_pos:
-			if _peer_pos[peer].distance_to(it["pos"]) < SCATTER_DROP_M:
+			if Vector2(_peer_pos[peer].x - centre.x, _peer_pos[peer].z - centre.z).length() < SCATTER_DROP_M:
 				far = false
 				break
 
-		if far:
-			_cells_done.erase(Vector2i(int(floor(it["pos"].x / cell_m)), int(floor(it["pos"].z / cell_m))))
-			_items.erase(id)
+		if not far:
+			continue
+
+		for id in _scatter_cells[cell]:
+			if _items.has(id) and _items[id].has("scatter"):
+				_items.erase(id)
+
+		_scatter_cells.erase(cell)
+		_cells_done.erase(cell)
 
 
 
@@ -9843,6 +9852,7 @@ static func boosted(base: int, add: int, cap: int) -> int:
 
 
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
+	_cell_first_id = _next_id
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
 	var part_usec: int = Time.get_ticks_usec()
@@ -10432,7 +10442,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 	# A lone giant (an erratic): open, gentle ground below the treeline, away from steep ground and water.
 	var lone: Dictionary = cfg.get("erratic", {})
 
-	if not lone.is_empty() and not scree_near and high <= 0.0:
+	if not lone.is_empty() and not scree_near and high <= 0.0 and h0 >= float(lone.get("min_height_m", 0.0)):
 		var lone_draw: float = float(hash([cell.x, cell.y, world_seed, "erratic"]) % 100000) / 100000.0
 
 		if lone_draw < float(lone.get("chance", 0.0)) * density:
@@ -10556,15 +10566,26 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		_next_id += 1
 
 
-# What lies near a rocky-ground cell, looked up once for it: the positions of structures into `built`, the cell's own boulders as [x, z, radius] into `taken`
-# (a rock across the border in the next cell is not looked at: which cell is laid first changes with where players walk).
+# What lies near a rocky-ground cell, looked up once for it: into `built` the positions of structures, fires and the players standing there now
+# (nothing is laid on or beside a camp, a station, a fire or a player); into `taken` the cell's own boulders as [x, z, radius], read from the ids
+# this cell was given (a rock across the border in the next cell is not looked at: which cell is laid first changes with where players walk).
 func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Dictionary, built: Array, taken: Array) -> void:
-	for id in _ids_near(Vector3(mid.x, h0, mid.y), cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0):
+	var reach: float = cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0
+
+	for id in _ids_near(Vector3(mid.x, h0, mid.y), reach):   # the last world sync's grid (every second, after the scatter), so a few cells' ids
 		var it: Dictionary = _items.get(id, {})
 
-		if it.has("struct"):
+		if it.has("struct") or it.has("fire"):
 			built.append(it["pos"])
-		elif it.has("boulder") and (int(it.get("scatter", 0)) & CAVE_KEY) == 0 and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:   # the cell's own (laid with it, so the same every run, whichever cell came first)
+
+	for peer in _peer_pos:
+		if Vector2(_peer_pos[peer].x - mid.x, _peer_pos[peer].z - mid.y).length() <= reach:
+			built.append(_peer_pos[peer])
+
+	for id in range(_cell_first_id, _next_id):
+		var it: Dictionary = _items.get(id, {})
+
+		if it.has("boulder") and (int(it.get("scatter", 0)) & CAVE_KEY) == 0 and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:
 			taken.append([float(it["pos"].x), float(it["pos"].z), float((it["boulder"] as Dictionary).get("radius", 0.5))])
 
 
@@ -10978,9 +10999,14 @@ func _open_pockets(peer: int, at: Vector3, radius: float) -> void:
 			_say(peer, str(cfg.get("say", "You dig into a pocket of %s.")) % table.name_of(item))
 
 		var cell_m: float = float(_drops.get("ground_scatter", {}).get("cell_m", 32.0))
+		var cell: Vector2i = Vector2i(int(floor(spot.x / cell_m)), int(floor(spot.z / cell_m)))
 
-		if _cells_done.has(Vector2i(int(floor(spot.x / cell_m)), int(floor(spot.z / cell_m)))):
+		if _cells_done.has(cell):
+			var rock_id: int = _next_id
 			_place_pocket(id, p)
+
+			if _next_id > rock_id and _scatter_cells.has(cell):
+				(_scatter_cells[cell] as Array).append(rock_id)   # taken away with its cell
 
 
 # The opened pockets whose rock lies in this cell.

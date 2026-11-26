@@ -279,6 +279,7 @@ func measure_server() -> bool:
 			var usec: int = Time.get_ticks_usec()
 			items._scatter_around_players()
 			worst_ms = maxf(worst_ms, float(Time.get_ticks_usec() - usec) / 1000.0)
+			items._sync_world_items()   # as the server does after each scatter (its grid is what a cell's keep-clear lookup reads)
 			ticks += 1
 
 			if over_time():
