@@ -24,6 +24,7 @@ var body: Node3D
 var worn: Array = []
 var move: Vector2 = Vector2.ZERO
 var hold: String = ""
+var held: Array = []        # [model, kind] from hold_in
 
 
 func _init() -> void:
@@ -82,7 +83,8 @@ func _init() -> void:
 
 	if hold != "":
 		var table = ItemTableScript.load_default()
-		print("held: ", hold, " ", PlayerViewScript.hold_in(body, table.number_of(hold), table).size() == 2)
+		held = PlayerViewScript.hold_in(body, table.number_of(hold), table)
+		print("held: ", hold, " ", held)
 	var cam := Camera3D.new()
 	var yaw: float = deg_to_rad(yaw_deg)
 	root.add_child(cam)
@@ -102,6 +104,11 @@ func _process(_delta: float) -> bool:
 		body.set_meta("backward", backward)
 		body.leg_turn.angle = AvatarDriverScript.leg_turn(clip, move, backward)
 		print("legs turned %.1f degrees" % rad_to_deg(float(body.leg_turn.angle)))
+
+	# A spear is aimed through the fist along the facing every frame after the pose, as player_view.gd does for another player (BugsList 164: placed once here,
+	# before the body was in the tree, it was never aimed and lay along the fingers across the forearm in the stills).
+	if frames >= 3 and held.size() == 2 and str(held[1]) == "spear":
+		PlayerViewScript.aim_spear(held[0] as Node3D, body)
 
 	if frames == 12:
 		root.get_texture().get_image().save_png(out)
