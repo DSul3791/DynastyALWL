@@ -62,10 +62,31 @@ func _initialize() -> void:
 	check(come.is_empty(), "no texture listed as absent is here now; run tools/texture_alpha.gd for: %s" % ", ".join(come))
 	check(wrong.is_empty(), "each answer matches its source image (%d compared): %s" % [compared, ", ".join(wrong)])
 
+	if compared == 0:
+		print("NOT COMPARED: no source image of the model pack loads here (the cloud, Lane B or LFS pointers): the answers were not checked")
+
 	if not table.is_empty():
 		var path: String = str(table.keys()[0])
 		check(v._alpha_ready(path, null) and v._alpha_tasks.is_empty(), "the view takes a kept answer at once: no read back, no worker")
 		check(bool(v._alpha_of[path]) == bool(table[path]), "with the kept answer")
+
+	# _has_alpha (a model drawn where _scenes_ready did not test first: headless, tools) takes the kept answer too, not the pixels: a solid
+	# 1 x 1 texture under a path the table calls see-through is see-through.
+	var see_through_path: String = ""
+
+	for p in table:
+		if bool(table[p]):
+			see_through_path = str(p)
+			break
+
+	if see_through_path != "":
+		var solid: Image = Image.create(1, 1, false, Image.FORMAT_RGBA8)
+		solid.fill(Color(0.5, 0.4, 0.3, 1.0))
+		var tex: ImageTexture = ImageTexture.create_from_image(solid)
+		tex.resource_path = see_through_path
+		var w = AnimalViewScript.new()
+		check(w._has_alpha(tex), "_has_alpha gives the kept answer, not the texture's own pixels")
+		w.free()
 
 	v.free()
 	print("test_texture_alpha: %d failures" % failures)

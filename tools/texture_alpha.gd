@@ -37,6 +37,12 @@ func _init() -> void:
 
 	var out: Dictionary = {"about": "Whether each animal colour texture has see-through pixels; made by tools/texture_alpha.gd from models.json. absent: textures models.json names that have no source image in the pack (the game tests those itself).", "textures": sorted, "absent": absent}
 	var f: FileAccess = FileAccess.open(OUT_PATH, FileAccess.WRITE)
+
+	if f == null:
+		print("texture_alpha: cannot write %s (%s)" % [OUT_PATH, error_string(FileAccess.get_open_error())])
+		quit(1)
+		return
+
 	f.store_string(JSON.stringify(out, "\t") + "\n")
 	f.close()
 	print("texture_alpha: %d textures written to %s (%d see-through), %d without a source image" % [sorted.size(), OUT_PATH, sorted.values().count(true), absent.size()])

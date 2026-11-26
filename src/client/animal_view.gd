@@ -984,7 +984,8 @@ func _alpha_table() -> Dictionary:
 
 		if FileAccess.file_exists(ALPHA_PATH):
 			var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ALPHA_PATH))
-			_alpha_known = (parsed as Dictionary).get("textures", {}) if parsed is Dictionary else {}
+			var textures: Variant = (parsed as Dictionary).get("textures", {}) if parsed is Dictionary else {}
+			_alpha_known = textures if textures is Dictionary else {}
 
 	return _alpha_known
 
@@ -1127,7 +1128,8 @@ func _waited_out(number: int) -> bool:
 	return true
 
 
-# A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them. The unpacking of a 4096 texture is the slow
+# A colour texture's see-through test (_has_alpha) reads its pixels back and unpacks them, for a texture whose answer is not kept with the
+# models (data/animals/texture_alpha.json, taken first). The unpacking of a 4096 texture is the slow
 # part: it is done on a worker, before the animal is drawn (_scenes_ready). The read back stays here, on the main thread, so the worker
 # only touches its own Image (no renderer call to wait on, so _exit_tree can wait for it). `source` is the Texture2D, or its Image
 # (tests). False until the answer is in _alpha_of; the first call starts the worker.
@@ -1954,26 +1956,38 @@ func _clip_map(player: AnimationPlayer, anim: Animation, rig: Node3D) -> Diction
 
 # A track's node and bone, looked up once per rig (_track_nodes, cleared with _clip_maps): a file's clips name the same few hundred paths, and
 # a kind's first body resolved each path again for every clip it measured (Lane A r4 at 2fd16cff, 26 Nov 2026: "clips: heights" 20-39 ms).
-var _track_nodes: Dictionary = {}   # base instance id -> {track path: its node}
-var _track_bones: Dictionary = {}   # skeleton instance id -> {track path: its bone}
+var _track_nodes: Dictionary = {}   # base instance id -> {a track's node path: its node}
+var _track_bones: Dictionary = {}   # skeleton instance id -> {a track's bone name: its bone}
 
 func _track_node(base: Node, path: NodePath) -> Node:
-	var known: Dictionary = _track_nodes.get_or_add(base.get_instance_id(), {})
+	var names: String = str(path.get_concatenated_names())
+	var id: int = base.get_instance_id()
 
-	if not known.has(path):
-		known[path] = base.get_node_or_null(NodePath(str(path.get_concatenated_names())))
+	if not _track_nodes.has(id):
+		_track_nodes[id] = {}
 
-	var node: Variant = known[path]
+	var known: Dictionary = _track_nodes[id]
+
+	if not known.has(names):
+		known[names] = base.get_node_or_null(NodePath(names))
+
+	var node: Variant = known[names]
 	return node as Node if is_instance_valid(node) else null
 
 
 func _track_bone(sk: Skeleton3D, path: NodePath) -> int:
-	var known: Dictionary = _track_bones.get_or_add(sk.get_instance_id(), {})
+	var bone_name: String = str(path.get_concatenated_subnames())
+	var id: int = sk.get_instance_id()
 
-	if not known.has(path):
-		known[path] = sk.find_bone(str(path.get_concatenated_subnames()))
+	if not _track_bones.has(id):
+		_track_bones[id] = {}
 
-	return int(known[path])
+	var known: Dictionary = _track_bones[id]
+
+	if not known.has(bone_name):
+		known[bone_name] = sk.find_bone(bone_name)
+
+	return int(known[bone_name])
 
 
 # The bones of the skeleton in the rig's space at `time` into a clip (or the imported pose with no clip), from the clip's own tracks
