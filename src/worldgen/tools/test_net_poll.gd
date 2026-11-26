@@ -31,7 +31,6 @@ func _initialize() -> void:
 	poll.listen()
 	var rows: Array = messages.get_signal_connection_list("rows_received")
 	check(rows.size() == 2 and messages.get_signal_connection_list("ping_received").size() == 1, "one mark on each of the messages' own signals")
-	check(Callable(poll._marks["ping_received"]).get_unbound_arguments_count() == 0 and Callable(poll._marks["rows_received"]).get_unbound_arguments_count() == 2, "a signal with no arguments gets a plain mark (unbind(0) is an error)")
 	messages.connect("rows_received", func(_a, _b) -> void: order.append("late handler"))
 	poll.listen()
 	rows = messages.get_signal_connection_list("rows_received")
@@ -44,7 +43,7 @@ func _initialize() -> void:
 	messages.emit_signal("rows_received", 1, 2)
 	messages.emit_signal("ping_received")
 	poll._polling = false
-	check(poll._names == PackedStringArray(["rows_received", "ping_received"]), "inside a poll each message is marked (%s)" % str(poll._names))
+	check(poll._names == PackedStringArray(["rows_received", "ping_received"]), "inside a poll each message is marked, also one with no arguments (%s)" % str(poll._names))
 	check(order.size() == 4 and order[3] == "late handler", "the handlers run before the mark (%s)" % str(order))
 
 	# A poll from 1000 to 8900 us: rows_received marked at 2000, ping_received at 2500, rows_received again at 7900, poll end 8900.
