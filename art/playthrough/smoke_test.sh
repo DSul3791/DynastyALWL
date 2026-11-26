@@ -2,7 +2,7 @@
 # Smoke test of the checked-out build (run it in a worktree of the branch you want to test). One slot of tools/godot_slot.sh for the whole run.
 #   bash art/playthrough/smoke_test.sh        (about 30 minutes)  ->  art/playthrough/smoke/logs/*.log, then:  python art/playthrough/smoke_report.py
 cd "$(dirname "$0")/../.."
-G="${GODOT_EXE:-C:/GodotInstaller/godot.windows.editor.x86_64.exe}"
+G="${GODOT_EXE:-C:/DynastyLane/godot/godot_lane_a.exe}"
 L=art/playthrough/smoke/logs; mkdir -p "$L" art/playthrough/smoke
 # 1. the character select page and the creator in a real window (Sonny's picture script, own character folder)
 "$G" --path . --resolution 1920x1080 --script res://tools/proto_select_view.gd -- --out=res://art/playthrough/smoke > "$L/screens_select.log" 2>&1

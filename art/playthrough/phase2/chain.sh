@@ -1,6 +1,6 @@
 #!/bin/bash
 cd "$(dirname "$0")/../../.."
-G=C:/GodotInstaller/godot.windows.editor.x86_64.exe; O=art/playthrough/phase2; R="bash art/playthrough/rig.sh"
+G=C:/DynastyLane/godot/godot_lane_a.exe; O=art/playthrough/phase2; R="bash art/playthrough/rig.sh"
 tools/godot_slot.sh $G --path . --resolution 1920x1080 --script res://tools/proto_creator_view.gd -- --out=res://art/playthrough/phase2 > $O/creator.log 2>&1
 tools/godot_slot.sh $R --pieces lean_to,rough_bed --views "wide:7:-15:2.5;close:4:-25:2.0" --at 53316,68476 --wait 60 --settle 60 --out $O --name leanto_bed > $O/rig_leanto.log 2>&1
 tools/godot_slot.sh $R --pieces lean_to,rough_bed --client-arg --shot-stance=lie --cam left --walk 0 --at 53316,68476 --wait 60 --settle 60 --out $O --name lying > $O/rig_lying.log 2>&1

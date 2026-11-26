@@ -6,7 +6,7 @@ extends SceneTree
 # and its skinned mesh is posed on the CPU (each vertex by its bones and the skin's binds, as the GPU does) in the rest pose and at four
 # moments of its graze (role 0), alert (3) and walk clips. Only the vertices of the lowest bones are posed (the hooves and paws), so a
 # model takes a second or two. A gap above 0 is the body floating, below 0 sunk into the ground.
-#   godot --path . --script res://tools/ground_check.gd -- [--kinds=donkey,cow] [--out=E:/Software/godotDev/ground_check.txt]
+#   godot --path . --script res://tools/ground_check.gd -- [--kinds=donkey,cow] [--out=C:/DynastyLane/logs/<job>/ground_check.txt]
 # Needs a window (the mesh arrays): run without --headless. It opens one small window and quits by itself.
 # One line a model and role: "GROUND <kind> look <n> <role> lowest <m> m (min over the clip) bone_low <m> m"; then a summary per model.
 
