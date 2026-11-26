@@ -229,7 +229,7 @@ func _close_windows() -> void:
 
 
 # The hunt goal as its hint says: strike an animal with the spear (a rabbit is easiest), then hold the knife and work the body where it lies.
-# The chase is the robot's own (robot_play.gd _hunt_all: spear in slot 0, rabbit, deer, then the nearest wild ground animal).
+# The chase is the robot's own (robot_play.gd _hunt: run up and strike with slot 0), a rabbit and then a deer, stopping at the first kill.
 func _hunt_goal() -> String:
 	var why: String = await _have("spear", 1, false)
 
@@ -243,20 +243,27 @@ func _hunt_goal() -> String:
 
 	var said: int = r._notices.size()
 	var known: Dictionary = c.items._world.duplicate()
-	await r._hunt_all(90.0)
-	r._release_all()
+	var spear: int = r._slot_of("spear")
+
+	if spear > 0:   # robot_play.gd _hunt strikes with slot 0: the spear goes there, as a player puts it on key 1
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
+		await r._wait(1.0)
+
 	var body: int = -1
-	var best_d: float = 60.0
 
-	for w in c.items._world:   # a kill leaves a carcass where it fell (server make_carcass)
-		var d: float = _flat(c.items._world[w]["pos"])
+	for sp in [1, 2]:   # rabbit, then deer (a new character leaves the wolves alone); stop at the first kill
+		if Time.get_ticks_msec() > _end_ms - 60000:
+			break
 
-		if not known.has(w) and int(c.items._world[w]["state"]) == int(c.items.CARCASS_STATE) and d < best_d:
-			best_d = d
-			body = int(w)
+		await r._hunt(sp, 90.0)
+		r._release_all()
+		body = _new_carcass(known)
+
+		if body >= 0:
+			break
 
 	if body < 0:
-		return "the chase left no carcass within 60 m%s" % _said(said)
+		return "robot cannot hunt here yet: no rabbit or deer brought down in its chases, no carcass within 120 m%s" % _said(said)
 
 	var at: Vector3 = c.items._world[body]["pos"]
 	await r._go_to(at, 30.0, 1.2)
@@ -276,6 +283,21 @@ func _hunt_goal() -> String:
 
 	_line("CARCASS %d at %s: %d knife cuts, %s, pack %s%s" % [body, str(at.round()), cuts, "worked" if not c.items._world.has(body) else "still there", _pack(), _said(said)])
 	return ""
+
+
+# The nearest carcass not in `known`, within 120 m (a kill leaves its body where it fell, server make_carcass); -1 when none.
+func _new_carcass(known: Dictionary) -> int:
+	var body: int = -1
+	var best_d: float = 120.0
+
+	for w in c.items._world:
+		var d: float = _flat(c.items._world[w]["pos"])
+
+		if not known.has(w) and int(c.items._world[w]["state"]) == int(c.items.CARCASS_STATE) and d < best_d:
+			best_d = d
+			body = int(w)
+
+	return body
 
 
 # A player out looking for a rock: legs of a widening loop round the camp until a rock of `item` is drawn within 400 m or `limit_s` is used;
