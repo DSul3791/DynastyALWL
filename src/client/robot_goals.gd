@@ -17,6 +17,7 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const GameClockScript := preload("res://src/shared/game_clock.gd")
 
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
@@ -28,6 +29,7 @@ const WAIT_VISITS := 5                     # a goal that waits on time (charcoal
 const CLAY_S := 480.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
+const STORY_FROM_H := 17.5                 # the game hour a player heads back to camp for Edda's evening story (it counts from 19 to 23)
 const GATHER_S := 300.0                    # one gather's time at most
 
 var r                       # the robot (robot_play.gd)
@@ -521,7 +523,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _charcoal(int(check.get("count", 4)))
 		"fish":
 			return await _fish_goal()
-		"snare", "order", "story", "night_walk", "fur_for_winter":
+		"story":
+			return await _story()
+		"snare", "order", "night_walk", "fur_for_winter":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -1193,6 +1197,68 @@ func _fire() -> String:
 	await r._wait(3.0)
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
 	return ""
+
+
+# --- Edda's story: talk with her at the camp in the evening (camp_goals.json "story": talked, npc edda, hour_between 19 and 23) ------------
+# A player comes back to camp late in the afternoon, waits for 7 o'clock, walks up to Edda and presses E on "Press E to talk to Edda".
+# Before that hour the goal waits (a wait is not a try); the talk screen is shut again once it opens.
+func _story() -> String:
+	var hour: float = _game_hour()
+
+	if hour < STORY_FROM_H or hour >= 22.5:
+		var game_h: float = fposmod(STORY_FROM_H - hour, 24.0)
+		_not_before["story"] = Time.get_ticks_msec() + int(game_h * 3600.0 / GameClockScript.RATIO * 1000.0)
+		return "waits for the evening: the game hour is %.1f and the story counts from 19 to 23 (back in %.0f real s)" % [hour, game_h * 3600.0 / GameClockScript.RATIO]
+
+	_not_before.erase("story")
+	var leg_s: float = await _walk_home(480.0)
+
+	while _game_hour() < 19.0 and _game_hour() >= STORY_FROM_H - 0.5:
+		await r._wait(5.0)   # by the fire until 7 o'clock
+
+	if _game_hour() >= 23.0 or _game_hour() < 19.0:
+		return "back at camp after %.0f s of walking, the game hour is %.1f: the evening was over" % [leg_s, _game_hour()]
+
+	var said: int = r._notices.size()
+
+	for attempt in range(4):
+		var edda: Dictionary = _edda()
+
+		if edda.is_empty():
+			return "Edda is not drawn anywhere near the camp at game hour %.1f (people drawn: %s)" % [_game_hour(), str((c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []).map(func(n): return str(n["name"])))]
+
+		await r._go_to(edda["pos"], 60.0, 1.8)
+		_look_at(_edda().get("pos", edda["pos"]) + Vector3(0.0, 1.2, 0.0))   # dialogue_view.gd CHEST: a person is aimed at by the chest
+		await r._wait(0.45)
+		var prompt: String = str(c.items.current_interaction().get("prompt", ""))
+
+		if str(c.items.current_interaction().get("kind", "")) != "npc" or not prompt.contains("Edda"):
+			_line("STORY try %d: %.1f m from Edda, the prompt is \"%s\"" % [attempt + 1, c.body.global_position.distance_to(edda["pos"]), prompt])
+			continue
+
+		await r._tap("interact")
+		await r._wait(2.0)
+		var opened: bool = c.items.dialogue_open
+		_close_windows()
+		await r._wait(2.0)   # the server's goal_progress
+		_line("STORY talked to Edda at game hour %.1f (talk screen opened %s, closed)%s" % [_game_hour(), str(opened), _said(said)])
+
+		if bool(c.items.goal_book.row("story").get("done", false)):
+			return ""
+
+	return "4 tries to talk to Edda at game hour %.1f did not count%s" % [_game_hour(), _said(said)]
+
+
+func _edda() -> Dictionary:
+	for npc in (c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []):
+		if str(npc["id"]) == "edda" or str(npc["name"]).to_lower() == "edda":
+			return npc
+
+	return {}
+
+
+func _game_hour() -> float:
+	return fposmod(float(c.game_clock.seconds), 86400.0) / 3600.0
 
 
 # --- a fish with the Fishing spear, as the goal's hint says: stand still at the water's edge, the spear in hand, and jab (left click) at
