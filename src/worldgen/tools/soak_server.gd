@@ -4,7 +4,7 @@ extends SceneTree
 # while every server system ticks together: items (fires, spoilage, warmth, vitals, crafting, trunks, carcasses), animals (rabbits
 # and deer with senses, burrows, blood), NPCs, and the per-player sends (animal, NPC and blood rows). Prints per-system average and
 # worst ms, the whole tick's average, p99 and worst, and names the worst offender. Fails only on a script error or a mean tick over
-# 12 ms (a quarter of the 50 ms tick).
+# 12 ms (a quarter of the 50 ms tick). It also times the animal rows' split into packet-sized parts (protocol 171, RowParts.split).
 #   godot --headless --path . --script res://src/worldgen/tools/soak_server.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -192,7 +192,9 @@ func _init() -> void:
 		for k in 1000:
 			RowParts.split(rows)
 
-		print("soak: split of %d rows (%d bytes, %d parts): %.1f us a send" % [n_rows, var_to_bytes(rows).size(), RowParts.split(rows).size(), float(Time.get_ticks_usec() - t_full) / 1000.0])
+		var us: float = float(Time.get_ticks_usec() - t_full) / 1000.0
+		print("soak: split of %d rows (%d bytes, %d parts): %.1f us a send" % [n_rows, var_to_bytes(rows).size(), RowParts.split(rows).size(), us])
+
 	for fname in ["_rot", "_fires", "_vitals_tick", "_craft_tick", "_remains_tick", "_spoil_tick", "_fly", "_carcass_tick"]:
 		if not items.has_method(fname):
 			continue
