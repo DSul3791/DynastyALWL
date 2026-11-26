@@ -89,12 +89,12 @@ func placements(cell: Vector2i, day: int, season: String) -> Array:
 	if _cache.has(key):
 		return _cache[key]
 
-	if _cache.size() >= int(cfg.get("cache_max", 2000)):
+	if _cache.size() >= int(cfg.get("cache_max", 20000)):
 		for old in _cache.keys():
 			if int(old[1]) != day:
 				_cache.erase(old)   # other days first: clearing it all made every cell near every player work its schools out again at once
 
-		if _cache.size() >= int(cfg.get("cache_max", 2000)):
+		if _cache.size() >= int(cfg.get("cache_max", 20000)):
 			_cache.clear()
 
 	var out: Array = []

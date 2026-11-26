@@ -246,6 +246,21 @@ func _init() -> void:
 
 	check(k_day < 1200 and fresh_fish._cache.size() > 20, "the rest come one a pass until every cell is in (%d cells in %d passes)" % [fresh_fish._cache.size(), k_day - 770])
 	signs.cfg["new_cells_usec"] = budget_was
+	var all_at_once = Fish.new(items.water_kind_at, func(_s: String) -> bool: return true)   # the same cells worked out with no budget
+	var same_schools: bool = true
+
+	for key in fresh_fish._cache:
+		if all_at_once.placements(key[0], int(key[1]), str(key[2])) != fresh_fish._cache[key]:
+			same_schools = false
+
+	check(same_schools, "spread over passes, every cell's schools are the ones worked out all at once")
+	var tiny = Fish.new(items.water_kind_at, func(_s: String) -> bool: return true)
+	tiny.cfg["cache_max"] = 3
+	tiny.placements(Vector2i(0, 0), 1, "summer")
+	tiny.placements(Vector2i(1, 0), 2, "summer")
+	tiny.placements(Vector2i(2, 0), 2, "summer")
+	tiny.placements(Vector2i(3, 0), 2, "summer")   # full: the other day's entry goes, today's stay
+	check(tiny._cache.size() == 3 and not tiny._cache.has([Vector2i(0, 0), 1, "summer"]) and tiny._cache.has([Vector2i(1, 0), 2, "summer"]), "a full cache drops other days' cells first, never today's while others are there")
 
 	# The client view: a jump draws a pooled splash with rings and a fish, then clears; the pool stays within its cap; shadows drawn by day,
 	# hidden at night, in rain and at Low.

@@ -174,7 +174,6 @@ func tick() -> void:
 # spent on them, the rest wait for the next passes (at least one a pass), so a new game day (every real hour) or a crowd walking into new
 # water never stops the server for one long pass (Lane A 26 Nov 2026: 22 ms for 4 players' first pass; hundreds of players would be 100 times that).
 func _schools_near(peers: Dictionary) -> Array:
-	var started: int = Time.get_ticks_usec()
 	var budget: int = int(cfg.get("new_cells_usec", 4000))
 	var fish = items._fish_schools()
 	var cell_m: float = float(fish.cell_m)
@@ -197,6 +196,7 @@ func _schools_near(peers: Dictionary) -> Array:
 
 	var out: Array = []
 	var fresh: int = 0
+	var fresh_usec: int = 0
 
 	for cell in cells:
 		if not _cell_ready(cell, cell_m):
@@ -205,14 +205,20 @@ func _schools_near(peers: Dictionary) -> Array:
 		var middle: Vector3 = Vector3((float(cell.x) + 0.5) * cell_m, 0.0, (float(cell.y) + 0.5) * cell_m)
 		var season: String = items._season_of(middle)
 
-		if not fish.has_placements(cell, day, season):
-			if fresh > 0 and Time.get_ticks_usec() - started > budget:
+		var is_fresh: bool = not fish.has_placements(cell, day, season)
+
+		if is_fresh:
+			if fresh > 0 and fresh_usec > budget:
 				cells_deferred += 1
 				continue   # worked out in a later pass: its schools are missing for a second or two
 
 			fresh += 1
 
+		var cell_started: int = Time.get_ticks_usec()
 		out.append_array(fish.schools(cell, day, season, int(items.fish_stock(cell)), items._now_game_s()))
+
+		if is_fresh:
+			fresh_usec += Time.get_ticks_usec() - cell_started   # only new cells' work counts: a busy steady pass never starves them (gate review)
 
 	return out
 
