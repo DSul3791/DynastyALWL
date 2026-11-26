@@ -10515,13 +10515,13 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		row["ang"] = _rock_shape(journey_mid if journey_mid >= 0.0 else 1.0, kind == "water", key) if kind != "scree" else _rock_shape(1.0, false, key)   # scree is freshly broken
 		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop where the geology has an ore near, limestone over limestone
 		var left: int = _boulder_left_of(key, row)
+		taken.append([x, z, radius])   # a mined-out rock keeps its ground too, so no other try takes its place when the cell is laid again
 
 		if left <= 0:
 			continue
 
 		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
-		taken.append([x, z, radius])
 
 	# Loose stones on the same rocky ground (drops.json ground_scatter gives every cell a few; a rocky one many more).
 	var loose: int = mini(int(round(maxf(mountain, 0.0) * float(cfg.get("loose_per_rock", 0.5)))), FIELD_LOOSE_MAX)
@@ -10564,7 +10564,7 @@ func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Diction
 
 		if it.has("struct"):
 			built.append(it["pos"])
-		elif it.has("boulder") and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:   # the cell's own (laid with it, so the same every run, whichever cell came first)
+		elif it.has("boulder") and (int(it.get("scatter", 0)) & CAVE_KEY) == 0 and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:   # the cell's own (laid with it, so the same every run, whichever cell came first)
 			taken.append([float(it["pos"].x), float(it["pos"].z), float((it["boulder"] as Dictionary).get("radius", 0.5))])
 
 
