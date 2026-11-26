@@ -30,6 +30,9 @@ static var _beat_usec: int = 0
 static var _pre_usec: int = 0
 static var _post_usec: int = 0
 static var _phys_usec: int = 0
+static var _end_usec: int = 0             # the last _process of the frame (process_end_mark.gd): scripts before it, deferred calls and engine work after
+static var wall_ms: float = 0.0           # the frame that just ended, beat to beat on the main thread's clock (0: no draw, use the engine's delta)
+static var built_last: String = ""        # the renderer's pipeline builds in that frame (", pipelines built: ..." or "")
 static var split: String = ""            # "process N, draw N, present N, physics step and poll N" for the frame that just ended (ms); "present" runs
                                           # from the draw's end to the last physics callback, "physics step and poll" from there to the next frame's
                                           # start (the physics engine's step, the network poll, any _process before the client's)
@@ -45,10 +48,16 @@ static func beat() -> void:
 	if _beat_usec > 0 and _pre_usec > _beat_usec and _post_usec >= _pre_usec:
 		var after: int = (_phys_usec if _phys_usec > _post_usec else now_usec) - _post_usec
 		var engine: int = now_usec - _phys_usec if _phys_usec > _post_usec else 0
-		split = "process %.0f, draw %.0f, present %.0f, physics step and poll %.0f" % [float(_pre_usec - _beat_usec) / 1000.0, float(_post_usec - _pre_usec) / 1000.0,
-			float(after) / 1000.0, float(engine) / 1000.0]
+		var process_part: String = "process %.0f" % (float(_pre_usec - _beat_usec) / 1000.0)
+
+		if _end_usec > _beat_usec and _end_usec <= _pre_usec:
+			process_part = "scripts %.0f, deferred and engine %.0f" % [float(_end_usec - _beat_usec) / 1000.0, float(_pre_usec - _end_usec) / 1000.0]
+
+		split = "%s, draw %.0f, present %.0f, physics step and poll %.0f" % [process_part, float(_post_usec - _pre_usec) / 1000.0, float(after) / 1000.0, float(engine) / 1000.0]
+		wall_ms = float(now_usec - _beat_usec) / 1000.0
 	else:
 		split = "no draw"   # no frame drawn since the last beat (minimised, headless): no split for it
+		wall_ms = 0.0
 
 	_beat_usec = now_usec
 	_mutex.lock()
@@ -63,6 +72,7 @@ static func beat() -> void:
 	# The real time between two frames, from the main thread itself (not the watch thread, which can be held up when every core is busy):
 	# Dave's 3 Nov log had watch lines of 0.7-0.9 s while no frame was over 142 ms, so the watch alone is not proof of a stall.
 	var built: String = _pipelines_built()
+	built_last = built
 
 	if gap > GAP_MS and frame > 30:
 		printer.line("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"%s; physics bodies active %d, pairs %d, video mem %d MB" % [gap, frame - 1, frame, piece, built,
@@ -137,6 +147,12 @@ func _on_pre_draw() -> void:
 func _on_post_draw() -> void:
 	_post_usec = Time.get_ticks_usec()
 	note(DRAWN)
+
+
+# The last _process of the frame (src/debug/process_end_mark.gd, lowest process priority): what follows before the draw is the deferred calls and
+# the engine's own end-of-process work.
+static func process_end_mark() -> void:
+	_end_usec = Time.get_ticks_usec()
 
 
 # The last physics callback of the frame (terrain_client _physics_process): what follows is the physics engine's own step.

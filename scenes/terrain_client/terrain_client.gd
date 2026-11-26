@@ -52,6 +52,7 @@ const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const ProcessEndMarkScript := preload("res://src/debug/process_end_mark.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
@@ -604,6 +605,7 @@ func _ready() -> void:
 
 	net = $TerrainNet
 	process_physics_priority = 1000   # _physics_process notes the start of the physics engine's step
+	add_child(ProcessEndMarkScript.new())   # stamps the end of every frame's scripts (diagnostics: HITCH lines' "scripts" and "deferred and engine")
 	display.load_saved()
 	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
 		_telemetry.event("EXIT: %s" % why)
@@ -6690,6 +6692,9 @@ func _physics_process(_delta: float) -> void:
 
 func _process(delta: float) -> void:
 	FreezeWatchScript.beat()
+	# Right after the beat, so the frame just ended is judged with its own timed pieces (they were all stopped since the last call), its wall
+	# time and its monitors; called later in this function it saw the next frame's first pieces instead (PR #1952 review).
+	Probe.frame(delta)
 	_note_after_welcome(delta)
 	_log_frame(delta)
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
@@ -6804,7 +6809,6 @@ func _process(delta: float) -> void:
 		_water_label.text = ""
 
 	_frame_ms.append(delta * 1000.0)
-	Probe.frame(delta)
 
 	var tq_arms: int = Probe.start()
 	DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here

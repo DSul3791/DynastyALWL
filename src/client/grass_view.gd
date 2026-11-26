@@ -1818,14 +1818,23 @@ func update(from_position: Vector3) -> void:
 	_check_ground(now)
 	Probe.stop("grass: check ground", t_part)
 	t_part = Probe.start()
+	# Each piece timed apart (Lane A 26 Nov 2026: "trample and trunks" 9-12 ms in slow frames, not said which).
+	var t_one: int = Probe.start()
 	_trample.flush()
+	Probe.stop("grass trample: flush", t_one)
+	t_one = Probe.start()
 	_push_player(from_position)
 	_rebuild_trails(from_position)   # the worn grid (it was kept but never laid into its map until 22 Nov 2026)
+	Probe.stop("grass trample: player and trails", t_one)
+	t_one = Probe.start()
 	_rebuild_runs(from_position)
+	Probe.stop("grass trample: game runs", t_one)
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500
+		t_one = Probe.start()
 		_push_trunks(from_position)
+		Probe.stop("grass trample: nearest trunks", t_one)
 
 	Probe.stop("grass: trample and trunks", t_part)
 

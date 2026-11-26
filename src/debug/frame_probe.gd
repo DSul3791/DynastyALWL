@@ -104,13 +104,16 @@ static func _top_text(count: int) -> String:
 	return ", ".join(text)
 
 
-# Call at the start of each frame with the previous frame's length (seconds).
+# Call at the start of each frame with the previous frame's length (seconds), before any piece of the new frame is timed: the pieces in
+# _this_frame then all belong to the frame just ended. window_engine's "timed pieces" sum nested pieces twice ("grass: ..." inside "grass").
 static func frame(delta: float) -> void:
 	_frames += 1
 	_win_frames += 1
 	_win_process_ms += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
-	var ms: float = delta * 1000.0
+	# The main thread's own clock for the frame that just ended when it drew (freeze_watch.gd beat, called just before): Godot's delta is
+	# not the frame's wall time (Lane A 26 Nov 2026: HITCH 116 ms frames whose wall parts added up to 13 ms).
+	var ms: float = FreezeWatch.wall_ms if FreezeWatch.wall_ms > 0.0 else delta * 1000.0
 
 	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
 	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
@@ -165,7 +168,7 @@ static func frame(delta: float) -> void:
 			# clock split (freeze_watch.gd): where the time went when the timed pieces are small.
 			FreezeWatch.printer.line("HITCH %.0f ms: %s; wall: %s; process max %.0f ms, physics max %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
 				FreezeWatch.split, Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), FreezeWatch.built_last + _shown_text()])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 
