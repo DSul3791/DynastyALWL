@@ -22,6 +22,7 @@ const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed 
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
 const CHARCOAL_EACH_S := 400.0             # real seconds of wood burning a fire takes to leave one Charcoal (9600 game s at 24 game s a second)
+const STALK_S := 45.0                      # how long a hunter stands, looks and walks up before the chase
 const WAIT_VISITS := 5                     # a goal that waits on time (charcoal) is visited at most this often
 const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
@@ -345,6 +346,7 @@ func _chase_game(known: Dictionary) -> int:
 		if Time.get_ticks_msec() > _end_ms - 60000:
 			break
 
+		await _stalk(sp)
 		var _chased: bool = await r._hunt(sp, 90.0)
 		r._release_all()
 		var body: int = _new_carcass(known)
@@ -353,6 +355,45 @@ func _chase_game(known: Dictionary) -> int:
 			return body
 
 	return -1
+
+
+# A hunter stands still and looks (a running player sends rabbits into their burrows and deer off: the 26 Nov run saw game within 150 m on
+# the server and none drawn near the robot), then walks up quietly until the chase can start (robot_play.gd _hunt takes an animal drawn
+# within 120 m). Big game is drawn out to 200 m (#1949), so a deer is seen further off. Up to STALK_S.
+func _stalk(sp: int) -> void:
+	var until: int = mini(Time.get_ticks_msec() + int(STALK_S * 1000.0), _end_ms - 60000)
+	var seen_m: float = 200.0 if sp == 2 else 120.0
+	var seen: float = -1.0   # the nearest it saw, -1 none
+	var close: bool = false
+	r._release_all()
+
+	while Time.get_ticks_msec() < until:
+		var me: Vector3 = c.body.global_position
+		var near: Vector3 = Vector3.INF
+
+		for row in c._animal_view_node.drawn_positions():
+			if int(r._species.get(int(row[0]), 0)) == sp and (row[1] as Vector3).distance_to(me) < minf(seen_m, near.distance_to(me)):
+				near = row[1]
+
+		if near == Vector3.INF:
+			c.body.rotation.y += 0.8   # stand and turn the head round, as a player looks about
+			await r._wait(2.0)
+			continue
+
+		var d: float = Vector2(near.x - me.x, near.z - me.z).length()
+		seen = d if seen < 0.0 else minf(seen, d)
+
+		if d < 40.0:
+			close = true
+			break
+
+		r._face(Vector3(near.x - me.x, 0.0, near.z - me.z).normalized())   # walk up, no running
+		r._key("move_forward", true)
+		r._key("run", false)
+		await r._wait(1.0)
+
+	r._release_all()
+	_line("STALK %s: %s" % [str(r.SPECIES_NAME.get(sp, sp)), "within 40 m" if close else ("none seen in %.0f s" % STALK_S if seen < 0.0 else "nearest seen %.0f m, not reached" % seen)])
 
 
 # A player out looking for a rock: copper and tin lie along the rivers, bigger toward the mountains (boulders.json ore_rocks), so once its
@@ -1342,7 +1383,7 @@ func _charcoal(want: int) -> String:
 	# The fire makes one about every CHARCOAL_EACH_S: the robot plays other goals and comes back when the rest should be there.
 	# Damp wood burns slower (cooking.json wet_burn_x): a visit that finds too few just waits again; a wait is not a try (see the main loop).
 	_not_before["charcoal"] = Time.get_ticks_msec() + int(float(want - have) * CHARCOAL_EACH_S * 1000.0) + 60000
-	return "waiting for the fire: %d of %d charcoal so far, back in about %.0f s" % [have, want, float(want - have) * CHARCOAL_EACH_S + 30.0]
+	return "waiting for the fire: %d of %d charcoal so far, back in about %.0f s" % [have, want, float(want - have) * CHARCOAL_EACH_S + 60.0]
 
 
 # This character's own fire nearest the camp (not Edda and Hob's: their fire is marked camp), -1 when none is within 40 m.
