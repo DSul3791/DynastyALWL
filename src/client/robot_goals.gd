@@ -263,7 +263,7 @@ func _hunt_goal() -> String:
 		leg += 1
 		var out: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * PI * 0.5 + 0.4) * HUNT_LEG_M
 		await r._go_to(out, minf(120.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
-		_line("HUNT walked out %d: %.0f m from camp" % [leg, _flat(_home)])
+		_line("HUNTWALK %d: %.0f m from camp" % [leg, _flat(_home)])   # not "HUNT": robot_check.py adds HUNT lines up as fights
 		body = await _chase_game(known)
 
 	if body < 0:
