@@ -15,7 +15,7 @@ according to the model look."
 
 26 Nov 2026, asked about a black bear that a robot tester walked up on to 2 m: "that close it should turn rear on its hind legs growl
 and fight" and "if its a baby it should run" (`docs/RULINGS.md` R-ANIMAL-BEAR; animals.json defend.close_fight_m, young.close_run_m). Within close_fight_m a grown bear
-always presses home, a black bear mother too (her young.bluff_share is for a player farther off); a cub, orphaned or not, runs.
+always presses home, a black bear mother too (her young.bluff_share is for a player farther off); a cub, orphaned or not, runs This is for a bear surprised that close, grazing, walking or bedded when it first knows the player is there (coordinator's reading, 26 Nov 2026). One that saw the player coming and is staring at them, or is already running, bolts as before ("the bear really should be able to out run me"; "It should have run away unless it was starving or trapped"); run down or hurt close by, it still fights (trapped_fights).
 
 **Dave's words win.** Where real animals and Dave's words differ, the "in our game" line follows Dave and says so. Real numbers are given
 so the fix threads can tune from them.
