@@ -889,6 +889,7 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	_dress.erase(peer)
 	if _parked.has(peer):
 		_peer_pos[peer] = _parked[peer]   # its spot as it went quiet: the resume spot is written from it below
 
@@ -17018,12 +17019,11 @@ var _in_vitals: bool = false
 var _kg_cache: Dictionary = {}       # peer -> carried kg, valid only during one _vitals_tick
 var _cover_cache: Dictionary = {}    # position -> cover_at, valid only during one _vitals_tick (warmth and soak asked three times per player)
 # Also kept for one _vitals_tick only (soak at 64 players, 26 Nov 2026: vitals 123 ms a second, the largest server part; each look asked
-# these five to eight times a player): the worn numbers, the armour kilograms and the Rested row. Nothing inside the tick changes what is
+# these five to eight times a player): the worn numbers and the Rested row (the armour now follows _dress_of). Nothing inside the tick changes what is
 # worn, and the comfort meter's write drops that player's Rested row. A death inside the tick runs outside them (_vitals_tick).
 var _worn_cache: Dictionary = {}     # peer -> worn_of
-var _armour_cache: Dictionary = {}   # peer -> _armour_kg
 var _rested_cache: Dictionary = {}   # peer -> rested_tier
-var vitals_memo: bool = true         # false: those three worked out live each time (test_vitals_tick_cost compares the two)
+var vitals_memo: bool = true         # false: the kept readings (these and _dress_of) worked out live each time (test_vitals_tick_cost compares the two)
 var _unit_kg: Dictionary = {}        # item number -> [kilograms of one, holds water]: weight_of walks the suffix list; weights.json does not change
 var _unit_kg_cfg: Dictionary = {}    # the _carry_cfg and table _unit_kg was worked out from (a test may swap either)
 var _unit_kg_table = null
@@ -17034,7 +17034,6 @@ func _vitals_caches_clear() -> void:
 	_kg_cache.clear()
 	_cover_cache.clear()
 	_worn_cache.clear()
-	_armour_cache.clear()
 	_rested_cache.clear()
 
 
@@ -17042,7 +17041,6 @@ func _vitals_forget(peer: int) -> void:
 	_load_cache.erase(peer)
 	_kg_cache.erase(peer)
 	_worn_cache.erase(peer)
-	_armour_cache.erase(peer)
 	_rested_cache.erase(peer)
 
 
@@ -18108,19 +18106,79 @@ func _armour_kg(peer: int) -> float:
 	if _carry_cfg.is_empty():
 		return total
 
-	if _in_vitals and vitals_memo and _armour_cache.has(peer):
-		return float(_armour_cache[peer])
+	if vitals_memo:
+		return float(_dress_of(peer)["armour"])
 
-	for number in worn_of(peer):
+	return _armour_kg_of(worn_of(peer))
+
+
+func _armour_kg_of(worn: Array) -> float:
+	var total: float = 0.0
+
+	for number in worn:
 		var entry: Dictionary = table.entry(table.id_of(number)) if number > 0 else {}
 
 		if entry.has("protect") and int(entry.get("durability", 0)) > 0:
 			total += CarryRules.weight_of(table.id_of(number), _carry_cfg)
 
-	if _in_vitals:
-		_armour_cache[peer] = total
-
 	return total
+
+
+# What follows from the worn pieces alone, worked out again only when what is worn changes (vitals cut 2, 26 Nov 2026: insulation, heat
+# load, rain shed, armour, the carry bonus and the comfort meter's dressed points were each walked over every worn piece several times a
+# look, about 7 ms a pass at 64 players). The insulation keeps each slot's [warmth, wet_keep] in worn order, since the soak changes it.
+var _dress: Dictionary = {}          # peer -> {"worn", "armour", "heat", "shed", "bonus", "dressed", "fine", "slots"}
+var _dress_from: Array = []          # [_warmth_cfg, _carry_cfg, table] the kept rows were worked out with (a test may swap one)
+
+
+func _dress_of(peer: int) -> Dictionary:
+	if _dress_from.size() != 3 or not is_same(_dress_from[0], _warmth_cfg) or not is_same(_dress_from[1], _carry_cfg) or not is_same(_dress_from[2], table):
+		_dress.clear()
+		_dress_from = [_warmth_cfg, _carry_cfg, table]
+
+	var worn: Array = worn_of(peer)
+	var kept: Dictionary = _dress.get(peer, {})
+
+	if not kept.is_empty() and kept["worn"] == worn:
+		return kept
+
+	var slots: Dictionary = {}       # slot -> [[warmth, wet_keep], ...] in worn order, slots in first-worn order (as _layered_worn)
+	var heat_by_slot: Dictionary = {}
+	var covered: Dictionary = {}
+	var fine: bool = true
+	var shed: float = 0.0
+
+	for number in worn:
+		if number <= 0:
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(number))
+		var slot: String = str(entry.get("slot", ""))
+		var fabric: Dictionary = _fabric(entry)
+
+		if not slots.has(slot):
+			slots[slot] = []
+			heat_by_slot[slot] = []
+
+		slots[slot].append([float(entry.get("warmth", 0.0)), float(fabric.get("wet_keep", 1.0))])
+		heat_by_slot[slot].append(float(entry.get("warmth", 0.0)) * (1.0 - float(fabric.get("breath", 1.0))))
+
+		if slot == "body":
+			shed = maxf(shed, float(fabric.get("rain_shed", 0.0)))
+
+		if slot in ["body", "legs", "feet"]:
+			covered[slot] = true
+			fine = fine and str(entry.get("fabric", "")) != "plant"
+
+	var heat: float = 0.0
+
+	for place in heat_by_slot:
+		heat += _layered(heat_by_slot[place])
+
+	kept = {"worn": worn, "armour": _armour_kg_of(worn) if not _carry_cfg.is_empty() else 0.0, "heat": minf(heat, float(_warmth_cfg.get("max_insulation", 0.85))),
+			"shed": clampf(shed, 0.0, 1.0), "bonus": CarryRules.carry_bonus_kg(worn, table), "dressed": covered.size() == 3, "fine": fine, "slots": slots}
+	_dress[peer] = kept
+	return kept
 
 
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
@@ -19296,18 +19354,39 @@ func _layered_worn(peer: int, value_of: Callable) -> float:
 # wet_keep as the body is soaked. The `insulation_of` hook, when set, takes over.
 func insulation_worn(peer: int) -> float:
 	var soak: float = clampf(float(_soak.get(peer, 0.0)), 0.0, 1.0)
+
+	if vitals_memo:
+		var slots: Dictionary = _dress_of(peer)["slots"]
+		var total: float = 0.0
+
+		for slot in slots:
+			var values: Array = []
+
+			for piece in slots[slot]:
+				values.append(float(piece[0]) * lerpf(1.0, float(piece[1]), soak))
+
+			total += _layered(values)
+
+		return minf(total, float(_warmth_cfg.get("max_insulation", 0.85)))
+
 	var kept: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * lerpf(1.0, float(_fabric(entry).get("wet_keep", 1.0)), soak)
 	return minf(_layered_worn(peer, kept), float(_warmth_cfg.get("max_insulation", 0.85)))
 
 
 # How much heat the worn pieces trap in warm air, 0..max_insulation: their warmth times (1 - breath), layered the same way (fur hot, linen cool).
 func heat_load(peer: int) -> float:
+	if vitals_memo:
+		return float(_dress_of(peer)["heat"])
+
 	var trapped: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * (1.0 - float(_fabric(entry).get("breath", 1.0)))
 	return minf(_layered_worn(peer, trapped), float(_warmth_cfg.get("max_insulation", 0.85)))
 
 
 # The share of falling rain the worn body pieces keep off: the best shedder's rain_shed (an Oilcloth - Cloak), 0 with none.
 func rain_shed(peer: int) -> float:
+	if vitals_memo:
+		return float(_dress_of(peer)["shed"])
+
 	var best: float = 0.0
 
 	for number in worn_of(peer):
@@ -19324,6 +19403,9 @@ func rain_shed(peer: int) -> float:
 # (items.json carry_bonus_kg on the four back packs: Simple 5, Improved 15, Quality 30, Advanced 50 kg; Dave 15 Nov 2026). No back pack has slots of its own (Dave 13 Nov 2026), and
 # the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
+	if vitals_memo:   # CarryRules.carry_body_kg with the carry bonus kept
+		return float(vitals_of(peer).get("weight", 75.0)) + float(_dress_of(peer)["bonus"]) / maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
+
 	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)
 
 
@@ -25420,21 +25502,28 @@ func comfort_points(peer: int) -> Array:
 	var sheltered: bool = _vitals_cover(_peer_pos[peer]) > 0.0
 	var food: float = float(v.get("fed", 0.0)) / maxf(float(_vitals_cfg.get("stomach_cap_kcal", 2400)), 1.0)
 	var water: float = float(v.get("wet", 0.0)) / maxf(float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), 1.0)
-	var covered: Dictionary = {}   # body, legs, feet -> true when worn; -> "plant" when only fibre
+	var dressed: bool = false
 	var fine: bool = true
 
-	for number in worn_of(peer):
-		if number <= 0:
-			continue
+	if vitals_memo:
+		var dress: Dictionary = _dress_of(peer)
+		dressed = bool(dress["dressed"])
+		fine = bool(dress["fine"])
+	else:
+		var covered: Dictionary = {}   # body, legs, feet -> true when worn
 
-		var entry: Dictionary = table.entry(table.id_of(number))
-		var slot: String = str(entry.get("slot", ""))
+		for number in worn_of(peer):
+			if number <= 0:
+				continue
 
-		if slot in ["body", "legs", "feet"]:
-			covered[slot] = true
-			fine = fine and str(entry.get("fabric", "")) != "plant"
+			var entry: Dictionary = table.entry(table.id_of(number))
+			var slot: String = str(entry.get("slot", ""))
 
-	var dressed: bool = covered.size() == 3
+			if slot in ["body", "legs", "feet"]:
+				covered[slot] = true
+				fine = fine and str(entry.get("fabric", "")) != "plant"
+
+		dressed = covered.size() == 3
 	var furniture: int = 0
 	var names: PackedStringArray = PackedStringArray()
 
