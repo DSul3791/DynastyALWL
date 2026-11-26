@@ -250,7 +250,8 @@ var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: signature} world items the peer was told about
 var _sync_seen: Dictionary = {}     # peer -> what the full sync last found for them, cell by cell (_seen_of): the cells it may skip whole
 # The still records (natural scatter: rocks, boulders, loose stones laid out from the seed) stay filed between syncs, so the full sync files
-# only the others again (step 2 of the sync by change, 26 Nov 2026). Moved by _refile where a record's position is set, and checked
+# only the others again (step 2 of the sync by change, 26 Nov 2026). Moved by _refile where a dig settles a boulder (and where other
+# records are moved, in case those ever include scatter), and checked
 # STILL_CHECK at a time each sync in case one was moved anywhere else.
 var _still_fine: Dictionary = {}    # FINE_M cell -> {id: true}
 var _still_near: Dictionary = {}    # NEAR_M cell -> {id: true}
@@ -8760,7 +8761,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 
 # Files the records made since the last full sync (all of them after a load or a reset): the still ones in their cells for good, the
-# others in _rest. Then checks STILL_CHECK still records: one gone is dropped, one moved without _refile is moved (and counted).
+# others in _rest. A record put in by hand needs an id from _next_id (as every record made here has), or _still_valid = false after. Then checks STILL_CHECK still records: one gone is dropped, one moved without _refile is moved (and counted).
 func _still_file() -> void:
 	if not _still_valid or _next_id < _still_next:
 		_still_fine = {}

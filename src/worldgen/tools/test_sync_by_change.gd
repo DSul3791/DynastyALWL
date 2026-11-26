@@ -284,6 +284,50 @@ func _initialize() -> void:
 	check(agrees(big, "big walking"), "the big world agrees after five seconds of walking")
 	check(looked * 3 < old_looked, "a walking world's sync looks at under a third of the records the old one did: %d of %d" % [looked, old_looked])
 	times.sort()
+
+	# At this size the still check takes about 14 syncs to go round. 50 rocks taken and 50 moved without _refile: a taken rock is never sent
+	# again, and once the check has been round, every copy is right again.
+	var rocks: Array = big._still_at.keys()
+	var taken: Dictionary = {}
+
+	for k in 50:
+		taken[int(rocks[k])] = true
+		big._items.erase(int(rocks[k]))
+
+	for k in range(50, 100):
+		var p: Vector3 = big._items[int(rocks[k])]["pos"] + Vector3(35.0, 0.0, -35.0)
+		p.y = ground_y(p.x, p.z)
+		big._items[int(rocks[k])]["pos"] = p   # no _refile
+
+	var resent: int = 0
+	var rounds: int = int(ceil(float(big._still_at.size()) / float(big.STILL_CHECK))) + 1
+
+	for k in rounds:
+		big._sync_world_items()
+
+		for peer in copies:
+			for id in taken:
+				if (copies[peer] as Dictionary).has(id):
+					resent += 1
+
+	check(resent == 0, "a taken rock is never held by a player after the sync that follows (%d)" % resent)
+	check(agrees(big, "big after the check went round"), "after %d syncs the still check has filed every moved rock where it is" % rounds)
+	var stale: int = 0
+
+	for id in big._still_at:
+		if not big._items.has(id):
+			stale += 1
+
+	check(stale == 0, "and nothing taken is still filed (%d)" % stale)
+
+	# A load or a reset files everything again: records put in with any ids (a load's own), then the next full sync.
+	var old_id: int = int(rocks[0])   # an id taken above: a load can bring back any id below _next_id
+	big._items[old_id] = {"number": stone, "count": 2, "pos": big._peer_pos[100] + Vector3(2.0, 0.0, 2.0), "left": 1.0e9, "scatter": "stones"}
+	big._still_valid = false   # as _load_world_items and reset_world do
+	big._sync_world_items()
+	check(big._still_at.has(old_id) and agrees(big, "after a load"), "a record loaded under an old id is filed and sent after the load")
+	var code: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")
+	check(code.contains("	_sync_grid = {}\n	_still_valid = false") and code.contains("_next_id = int(parsed.get(\"next_id\", 1))\n	_still_valid = false"), "reset_world and the world load both file everything again")
 	print("sync by change: 15334 records, 32 players: first sync %.1f ms; walking %.1f ms median, %.1f worst; looked at %d records one by one (the old sync %d); %s" % [first_ms, times[2], times[4], looked, old_looked, detail])
 
 	print("test_sync_by_change: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
