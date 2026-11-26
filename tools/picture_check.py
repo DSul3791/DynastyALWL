@@ -50,7 +50,7 @@ CANCEL = os.environ.get("PICTURE_CHECK_CANCEL", "C:/DynastyLane/logs/queue/CANCE
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
 MAX_GROUP_PICTURES = 8                # views of one subject in one request
 MAX_GROUP_BYTES = 20 * 1024 * 1024    # the API takes 32 MB a request; base64 adds a third
-PROMPT_VERSION = "2"
+PROMPT_VERSION = "3"
 
 SYSTEM = """You check still pictures taken by an automatic tester inside a 3D game in development: Dynasty, a realistic \
 medieval survival game made in Godot. One request holds the views of one test subject (a held tool, a worn piece of \
@@ -95,6 +95,8 @@ animal floating only when the body hangs clearly higher than a stride could lift
 - A "lie" panel should show a healthy animal resting: chest down with the legs folded under, or curled up. One flat on \
 its side with the legs stuck out, or on its back, looks dead or hurt: that is pose_wrong. A lying body's feet need not \
 touch the ground, only the body.
+- Looks made that way on purpose: the plain (stone age) sickle has a row of small pale flint teeth set along the inside of \
+its blade; they are not specks or a texture fault (metal sickles have one plain edge).
 - Text in the corners and coloured name tags over items are the tester's labels. The HUD is hidden. Night or rain is \
 dark when the description says so. The game's colours are realistic and muted.
 

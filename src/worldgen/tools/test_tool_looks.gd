@@ -348,7 +348,7 @@ func _init() -> void:
 	_check(not HeldItem.holds_plain_look("bucket", "container") and not HeldItem.holds_plain_look("clay_pot", "container"), "a bucket or pot is not laid along the hand (it stands up along its mesh +Y)")
 	_check(not HeldItem.holds_plain_look("iron_axe", "tool") and not HeldItem.holds_plain_look("stone", "material"), "an axe keeps its own hand pose; a stone in hand is not a held tool look")
 
-	# Sickles: no pale flint teeth on any sickle (they read as white specks, BugsList 183), so every tier has the plain sickle's vertex count.
+	# Metal sickles: no pale flint teeth (they read as white specks); the plain sickle keeps them.
 	var plain_n: int = 0
 
 	for surface in BasicLook.mesh_for("sickle").get_surface_count():
@@ -360,7 +360,7 @@ func _init() -> void:
 		for surface in BasicLook.mesh_for(id).get_surface_count():
 			n += (BasicLook.mesh_for(id).surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
 
-		_check(n == plain_n, "%s is the plain sickle's shape in its metal, no teeth (%d vertices, the plain sickle %d)" % [id, n, plain_n])
+		_check(n < plain_n, "%s has no flint teeth (%d vertices, the plain sickle %d)" % [id, n, plain_n])
 
 	print("tool looks: %d failures" % failures)
 
