@@ -86,7 +86,7 @@ func _init() -> void:
 	print("rock_fields: cliff: %d rocks at its foot, %d on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, far_out, per_cell_ms])
 	check(foot >= 40, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
 	check(face == 0, "no rock sits on the cliff face (%d)" % face)
-	check(far_out <= foot / 10, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
+	check(far_out * 10 <= foot, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
 	check(per_cell_ms < CELL_BUDGET_MS, "a cell under a cliff lays out in under %.0f ms on average (%.2f)" % [CELL_BUDGET_MS, per_cell_ms])
 	var big_foot: float = 0.0
 
@@ -152,16 +152,34 @@ func _init() -> void:
 
 	check(worked_count == 5 and not broken_there, "a worked rock comes back as worked (%d left) and a broken one stays gone" % worked_count)
 
-	# Nothing beside a build: a foundation at the foot of the cliff keeps its ground clear.
+	# Nothing beside a build: a foundation on the spot of a rock from the first layout clears it and the ground round it, loose stones too.
 	var built = make("user://test_rock_fields_built", cliff)
-	var house: Vector3 = Vector3(-12.0, 100.0, 80.0)
+	var house: Vector3 = (rocks_of(rows)[0] as Array)[1]
+	var house_key: int = int((rocks_of(rows)[0] as Array)[0])
 	built._items[900001] = {"number": 0, "count": 1, "pos": house, "left": 1.0e9, "struct": {"kind": "foundation"}}
 	var near_house: int = 0
+	var rebuilt: Array = lay(built, -2, 2, 0, 19)
 
-	for r in rocks_of(lay(built, -2, 2, 0, 19)):
-		near_house += 1 if Vector2((r[1] as Vector3).x - house.x, (r[1] as Vector3).z - house.z).length() < float(r[2]) + 2.0 else 0
+	for r in rebuilt:
+		near_house += 1 if Vector2((r[1] as Vector3).x - house.x, (r[1] as Vector3).z - house.z).length() < float(r[2]) + 4.0 else 0
 
-	check(near_house == 0, "no rock is laid within 2 m of anything built (%d)" % near_house)
+	check(not rebuilt.any(func(r): return int(r[0]) == house_key), "the rock that lay where the foundation now stands is not laid")
+	check(near_house == 0, "no rock or stone is laid within 4 m of anything built (%d)" % near_house)
+
+	# No two rocks of one cell overlap.
+	var overlaps: int = 0
+	var all_rocks: Array = rocks_of(rows)
+
+	for i in range(all_rocks.size()):
+		for j in range(i + 1, all_rocks.size()):
+			var a: Vector3 = all_rocks[i][1]
+			var b: Vector3 = all_rocks[j][1]
+			if (int(all_rocks[i][0]) >> 8) != (int(all_rocks[j][0]) >> 8):
+				continue   # other cells' rocks are not looked at (the layout order would change them)
+
+			overlaps += 1 if Vector2(a.x - b.x, a.z - b.z).length() < float(all_rocks[i][2]) + float(all_rocks[j][2]) - 0.001 else 0
+
+	check(overlaps == 0, "no two rocks of a cell overlap (%d pairs)" % overlaps)
 
 	# Above the treeline: rocky ground; the lowland below it: none of the mountain kinds.
 	var high = make("user://test_rock_fields_high", func(_x, _z): return 700.0)
@@ -190,9 +208,9 @@ func _init() -> void:
 
 	for r in hill_rows:
 		var p: Vector3 = r[1]
-		on_top += 1 if Vector2(fposmod(p.x - 16.0 + 32.0, 64.0) - 32.0, fposmod(p.z - 16.0 + 32.0, 64.0) - 32.0).length() <= 23.0 else 0   # within a top's own cell
+		on_top += 1 if Vector2(fposmod(p.x - 16.0 + 32.0, 64.0) - 32.0, fposmod(p.z - 16.0 + 32.0, 64.0) - 32.0).length() <= 12.0 else 0   # on a crown, not down its sides
 
-	check(on_top >= 6 and on_top * 2 >= hill_rows.size(), "outcrops lie on the hilltops (%d of %d rocks near a top)" % [on_top, hill_rows.size()])
+	check(on_top >= 6 and on_top * 2 >= hill_rows.size(), "outcrops lie on the hilltops' crowns (%d of %d rocks within 12 m of a top)" % [on_top, hill_rows.size()])
 
 	# Water: a river 6 m wide at x 100..106, shallow in its edges (0.3 m) and deep in its middle (2 m).
 	var river = make("user://test_rock_fields_river", func(_x, _z): return 50.0)

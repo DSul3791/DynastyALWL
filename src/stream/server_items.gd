@@ -10394,7 +10394,8 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 	var rng: RandomNumberGenerator = _layout_rng(cell, "rock fields")
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var journey_mid: float = float(resource_context.call("journey_at", mid.x, mid.y)) if resource_context != null else -1.0
-	var built: Array = []   # what stands near the cell (looked up once, and only when it lays a rock)
+	var built: Array = []   # positions of what stands near the cell (looked up once, and only when it lays something)
+	var taken: Array = []   # [x, z, radius] of the rocks lying near the cell: older boulders and those laid here, so no two overlap
 	var looked: bool = false
 	var wet: Callable = reads["water_near"]
 	var depth_at: Callable = reads["water_depth_at"]
@@ -10468,6 +10469,9 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 			kind = "scree" if scree_n >= high_n and scree_n >= top_n else ("high" if high_n >= top_n else "top")
 
+			if kind == "top" and y < h0 - float(cfg.get("top_near_m", 2.0)):
+				continue   # a hilltop's outcrop lies on its crown, not down its sides
+
 		var depth: float = 0.0
 
 		if kind == "water":
@@ -10493,24 +10497,17 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		var radius: float = lerpf(float(sizes[0]), float(sizes[1]), size)
 
+		if kind != "scree" and rise * radius > float(cfg.get("settle_drop_m", 0.5)):
+			continue   # a big rock on a slope would hang over the ground on its low side
+
 		if NpcCamp.within_keep(spot):
 			continue
 
 		if not looked:
 			looked = true
+			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken)
 
-			for id in _ids_near(Vector3(mid.x, h0, mid.y), cell_m * 0.75 + float(cfg.get("keep_clear_m", 2.0)) + 3.0):
-				if _items.has(id) and _items[id].has("struct"):
-					built.append(_items[id]["pos"])
-
-		var clear: bool = true
-
-		for at in built:
-			if Vector2((at as Vector3).x - x, (at as Vector3).z - z).length() < radius + float(cfg.get("keep_clear_m", 2.0)):
-				clear = false
-				break
-
-		if not clear:
+		if not _rock_field_clear(x, z, radius, float(cfg.get("keep_clear_m", 4.0)), built, taken):
 			continue
 
 		var key: int = FIELD_KEY | BOULDER_KEY | cell_bits | slot
@@ -10524,6 +10521,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
+		taken.append([x, z, radius])
 
 	# Loose stones on the same rocky ground (drops.json ground_scatter gives every cell a few; a rocky one many more).
 	var loose: int = mini(int(round(maxf(mountain, 0.0) * float(cfg.get("loose_per_rock", 0.5)))), FIELD_LOOSE_MAX)
@@ -10547,8 +10545,40 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		if is_nan(y) or y < 1.0 or not (_ground_fall(ground, x, z, SCATTER_SLOPE_M) < 1.0) or (depth_at.is_valid() and float(depth_at.call(Vector3(x, y, z))) > 0.05) or NpcCamp.within_keep(Vector3(x, y, z)):
 			continue   # not on a face steeper than a player stands on (as _scatter_spot), nor in water or a camp
 
+		if not looked:
+			looked = true
+			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken)
+
+		if not _rock_field_clear(x, z, 0.05, float(cfg.get("keep_clear_m", 4.0)), built, taken):
+			continue   # nor on or beside anything built, nor inside a rock
+
 		_items[_next_id] = {"number": stone, "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
 		_next_id += 1
+
+
+# What lies near a rocky-ground cell, looked up once for it: the positions of structures into `built`, the cell's own boulders as [x, z, radius] into `taken`
+# (a rock across the border in the next cell is not looked at: which cell is laid first changes with where players walk).
+func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Dictionary, built: Array, taken: Array) -> void:
+	for id in _ids_near(Vector3(mid.x, h0, mid.y), cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0):
+		var it: Dictionary = _items.get(id, {})
+
+		if it.has("struct"):
+			built.append(it["pos"])
+		elif it.has("boulder") and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:   # the cell's own (laid with it, so the same every run, whichever cell came first)
+			taken.append([float(it["pos"].x), float(it["pos"].z), float((it["boulder"] as Dictionary).get("radius", 0.5))])
+
+
+# Whether a rock of `radius` at (x, z) keeps `keep_m` from everything built and does not overlap a rock in `taken`.
+func _rock_field_clear(x: float, z: float, radius: float, keep_m: float, built: Array, taken: Array) -> bool:
+	for at in built:
+		if Vector2((at as Vector3).x - x, (at as Vector3).z - z).length() < radius + keep_m:
+			return false
+
+	for rock in taken:
+		if Vector2(float(rock[0]) - x, float(rock[1]) - z).length() < radius + float(rock[2]):
+			return false
+
+	return true
 
 
 # How steep the ground is at (x, z): rise per metre across `half` metres each way (NAN where the ground is unknown).
