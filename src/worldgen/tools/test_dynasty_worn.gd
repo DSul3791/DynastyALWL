@@ -320,8 +320,8 @@ func _band(bands: Dictionary, c: Vector3) -> void:
 	bands[band] = row
 
 
-# The gambeson's quilting strips lie on its chest (Lane A qa15f, 26 Nov 2026: they stood out in front of it): each strip's back face, at its top, middle and foot, is
-# inside the chest tube. [strips, strips with their back face inside].
+# The chest's flat front details lie on it (Lane A qa15f and qa15g, 26 Nov 2026: the gambeson's quilting stood out in front of it, the shirt's lacing stood proud above it):
+# each one's back face, at its top, middle and foot, is inside the chest tube. [details, details with their back face inside].
 func _quilting(s: Skeleton3D) -> Array:
 	var chest: Node3D = s.get_node_or_null("Worn_chest/Frame") as Node3D
 	var tube: MeshInstance3D = null
@@ -339,7 +339,7 @@ func _quilting(s: Skeleton3D) -> Array:
 
 		if mi.mesh == WornLook._mesh("cyl") and tube == null and scale.y > 0.3:
 			tube = mi
-		elif mi.mesh == WornLook._mesh("box") and scale.y > 0.3 and scale.x < 0.03:
+		elif mi.mesh == WornLook._mesh("box") and scale.x < 0.03:
 			strips.append(mi)
 
 	var lying: int = 0
@@ -547,19 +547,13 @@ func _init() -> void:
 		_check(float(standoff[0]) <= 0.085 and float(standoff[1]) <= 0.085,
 			"%s at idle stands off the body at most %.3f m at the back and %.3f m at the sides (at most 0.085)" % [str(garment[0]), float(standoff[0]), float(standoff[1])])
 
-		if str(garment[1]) == "padded":
-			var quilting: Array = _quilting(s)
-			_check(int(quilting[0]) == 5 and int(quilting[1]) == 5, "the gambeson's %d quilting strips lie on its chest: %d" % [int(quilting[0]), int(quilting[1])])
+		var details: Array = _quilting(s)
+		var want: int = {"padded": 5, "tunic": 1}.get(str(garment[1]), 0)
+		_check(int(details[0]) == want and int(details[1]) == want, "%s's %d flat chest details (of %d) lie on its chest: %d" % [str(garment[0]), int(details[0]), want, int(details[1])])
 
-		# The gambeson's high collar (worn_shell.gd NECK_BAND_M; Lane A qa15d: neck skin at its collar with the arm raised): its layer covers the foot of the neck,
-		# and only the foot, up to the band's top over the neck joint; the shirt's layer stops at the neck.
+		# Each garment's layer stops at the neck (a 9 cm band up the gambeson's neck read as a neck brace and left the throat bare with the arm raised, Lane A qa15g).
 		var neck_band: Array = _neck_band(body.body_mesh, shell)
-		var band_top: float = float(neck_band[2]) + float(WornShell.NECK_BAND_M.get(str(garment[1]), 0.0))
-
-		if WornShell.NECK_BAND_M.has(str(garment[1])):
-			_check(int(neck_band[0]) > 20 and float(neck_band[1]) <= band_top + 0.001, "%s's layer covers the foot of the neck: %d neck points, the highest %.3f m (band top %.3f)" % [str(garment[0]), int(neck_band[0]), float(neck_band[1]), band_top])
-		else:
-			_check(int(neck_band[0]) == 0, "%s's layer leaves the neck bare (%d neck points)" % [str(garment[0]), int(neck_band[0])])
+		_check(int(neck_band[0]) == 0, "%s's layer leaves the neck bare (%d neck points)" % [str(garment[0]), int(neck_band[0])])
 
 		for pose in [["idle", 0.0], ["chop", 0.1], ["chop", 0.3], ["chop", 0.5], ["chop", 0.7]]:
 			body.play(str(pose[0]), 1.0, 0.0)

@@ -22,9 +22,6 @@ const REGIONS := {
 	"padded": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
 	"mailshirt": TORSO + ["RightArm", "LeftArm"],
 }
-# A high collar: the gambeson's layer also covers the neck, this far up from the neck joint (Lane A qa15d and qa15f, 26 Nov 2026: with the arm raised in the chop, neck
-# and throat skin showed under the chin at its collar; 5 cm was too low). The neck's skin above it stays bare.
-const NECK_BAND_M := {"padded": 0.09}
 # The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's back corner
 # was 2 cm inside his shoulder blades), so the layer showed his back's muscles through it as cloth-coloured lumps (Lane A qa15e, 26 Nov 2026). On his body a sleeved
 # garment's chest tubes are turned a sixth of a turn so a flat face lies across the back and the chest (CylinderMesh puts a corner at the back), made deeper and set back,
@@ -84,17 +81,27 @@ static func fit_parts(builder: String, parts: Array) -> Array:
 			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER + CHEST_BACK_M)
 			piece["size"] = Vector3(size.x * CHEST_NARROWER, size.y, size.z * CHEST_DEEPER)
 		elif str(piece["shape"]) == "box" and at.z < 0.0:
-			piece = _on_front(piece, center_z, half_x, face)
+			piece = _on_front(piece, center_z, half_x, face, tube)
 
 		out.append(piece)
 
 	return out
 
 
-# A flat chest detail laid on the turned tube's front (front is -Z): on the flat face across the chest, or turned onto the slanted face beside it, its back sunk 2 mm in.
-static func _on_front(piece: Dictionary, center_z: float, half_x: float, face: float) -> Dictionary:
+# A flat chest detail laid on the turned tube's front (front is -Z): on the flat face across the chest, or turned onto the slanted face beside it, its back sunk 2 mm in,
+# and cut to the tube's height (Lane A qa15g, 26 Nov 2026: the shirt's lacing ran 4 cm above the tube and stood proud at the collar from the side).
+static func _on_front(piece: Dictionary, center_z: float, half_x: float, face: float, tube: Dictionary) -> Dictionary:
 	var at: Vector3 = piece["at"]
-	var sink: float = float((piece["size"] as Vector3).z) * 0.5 - 0.002
+	var size: Vector3 = piece["size"]
+	var sink: float = size.z * 0.5 - 0.002
+	var tube_y: float = float((tube["at"] as Vector3).y)
+	var tube_half: float = float((tube["size"] as Vector3).y) * 0.5 - 0.005
+	var low: float = maxf(at.y - size.y * 0.5, tube_y - tube_half)
+	var high: float = minf(at.y + size.y * 0.5, tube_y + tube_half)
+
+	if high > low:
+		at.y = (low + high) * 0.5
+		piece["size"] = Vector3(size.x, high - low, size.z)
 	var surface_z: float = center_z - face
 	var normal: Vector2 = Vector2(0.0, -1.0)      # (x, z), outward
 	var turn: float = 0.0
@@ -217,25 +224,16 @@ static func wait() -> void:
 static func _gather(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
 	var in_region: Dictionary = {}       # builder -> PackedByteArray: skin bind index -> 1 when its bone is covered
 
-	var bind_names: Array = []      # skin bind index -> the bone's short name
-	var neck_y: float = INF         # the neck joint's height in the mesh (the bind pose undone), for NECK_BAND_M; none: no band
-
-	for i in range(skin.get_bind_count()):
-		var bone_name: String = String(skin.get_bind_name(i))
-
-		if bone_name == "" and skin.get_bind_bone(i) >= 0:
-			bone_name = skeleton.get_bone_name(skin.get_bind_bone(i))
-
-		bind_names.append(short_name(bone_name))
-
-		if short_name(bone_name) == "Neck":
-			neck_y = skin.get_bind_pose(i).affine_inverse().origin.y
-
 	for builder in REGIONS:
 		var flags: PackedByteArray = PackedByteArray()
 
-		for plain in bind_names:
-			flags.append(1 if plain in REGIONS[builder] else (2 if plain == "Neck" and NECK_BAND_M.has(builder) and neck_y < INF else 0))   # 2: covered below the band's top
+		for i in range(skin.get_bind_count()):
+			var bone_name: String = String(skin.get_bind_name(i))
+
+			if bone_name == "" and skin.get_bind_bone(i) >= 0:
+				bone_name = skeleton.get_bone_name(skin.get_bind_bone(i))
+
+			flags.append(1 if short_name(bone_name) in REGIONS[builder] else 0)
 
 		in_region[builder] = flags
 
@@ -250,7 +248,7 @@ static func _gather(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D) -> Diction
 		if src.surface_get_primitive_type(s) == Mesh.PRIMITIVE_TRIANGLES:
 			surfaces.append({"surface": s, "arrays": src.surface_get_arrays(s), "blends": src.surface_get_blend_shape_arrays(s)})
 
-	return {"in_region": in_region, "neck_y": neck_y, "names": names, "mode": src.blend_shape_mode, "surfaces": surfaces, "made": {}}
+	return {"in_region": in_region, "names": names, "mode": src.blend_shape_mode, "surfaces": surfaces, "made": {}}
 
 
 # Any thread: pure arithmetic on the copied arrays, writing data["made"][builder] = one entry per surface.
@@ -259,8 +257,7 @@ static func _compute(data: Dictionary) -> void:
 		var made_surfaces: Array = []
 
 		for surface in data["surfaces"]:
-			var neck_top: float = float(data["neck_y"]) + float(NECK_BAND_M.get(builder, 0.0))
-			var one_surface: Dictionary = _surface(surface, data["in_region"][builder], float(OUT_M[builder]), neck_top)
+			var one_surface: Dictionary = _surface(surface, data["in_region"][builder], float(OUT_M[builder]))
 
 			if not one_surface.is_empty():
 				made_surfaces.append(one_surface)
@@ -268,7 +265,7 @@ static func _compute(data: Dictionary) -> void:
 		data["made"][builder] = made_surfaces
 
 
-static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: float, neck_top: float) -> Dictionary:
+static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: float) -> Dictionary:
 	var arrays: Array = surface["arrays"]
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL] if arrays[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
@@ -291,8 +288,7 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 				best_w = weights[v * per + k]
 				best = bones[v * per + k]
 
-		var flag: int = in_region[best] if best >= 0 and best < in_region.size() else 0
-		covered[v] = 1 if flag == 1 or (flag == 2 and verts[v].y < neck_top) else 0
+		covered[v] = in_region[best] if best >= 0 and best < in_region.size() else 0
 
 	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(verts.size()))
 	var new_of: PackedInt32Array = PackedInt32Array()      # source vertex -> new vertex, or -1 (not "remap": that is a global function, and the name warned)
