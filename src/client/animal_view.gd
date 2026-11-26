@@ -82,7 +82,13 @@ var _report_ms: int = 0           # clock_ms of the last animals line
 var _report_rows: int = 0         # rows in the newest batch
 var _report_batches: int = 0      # batches since the last line
 var _report_held: int = 0         # rows held undrawn for model files since the last line
+var _report_spread: int = 0       # new bodies left to a later batch (NEW_BODIES_USEC) since the last line
 const SCENE_WAIT_MS := 8000      # the longest a kind is held undrawn while its model files load on a worker (_waited_out; QA #12)
+# Lane A 26 Nov 2026 (r4 route at Low on 4 cores, PR #1953's NET slow lines): a batch of rows took 41-165 ms of the main thread 15 times in a
+# 10-minute run, at the first of a kind and as new animals came into range, all of it in making their bodies. After the first new body of a
+# batch, more are made only while the batch has used less than this; the rest are made from the next batches (four a second).
+const NEW_BODIES_USEC := 8000
+var new_bodies_usec: int = NEW_BODIES_USEC   # tests set it
 var _wait_since: Dictionary = {}  # species number -> clock_ms when it was first held undrawn for its files (_waited_out)
 var _code_body_only: bool = false # set while an animal past SCENE_WAIT_MS is made: _make_model gives null, so the code-built body is drawn
 var clock_ms: Callable = func() -> int: return Time.get_ticks_msec()   # the clock for the wait (tests set it)
@@ -641,6 +647,8 @@ func seen_server_ms() -> Array:
 
 func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
+	var batch_start: int = Time.get_ticks_usec()
+	var made: int = 0
 	_report_rows = rows.size()
 	_report_batches += 1
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
@@ -663,6 +671,10 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			if _bodies.size() >= max_drawn:
 				continue
 
+			if made > 0 and Time.get_ticks_usec() - batch_start > new_bodies_usec:
+				_report_spread += 1
+				continue   # made from the next batch (NEW_BODIES_USEC)
+
 			# The first of a kind waits, undrawn, while its model files load on a worker; its next rows draw it. Never longer than
 			# SCENE_WAIT_MS (QA #12, 25 Nov 2026: a tester on a slow 2-core PC saw no animals at all): past it, the animal is drawn with
 			# its code-built body, and later ones of its kind get the model once it is in.
@@ -673,8 +685,11 @@ func on_rows(rows: Array, server_ms: int) -> void:
 				continue
 
 			_code_body_only = not files_in
+			var t_make: int = FrameProbe.start()
 			var node: Node3D = _make_for_species(int(row[1]), id, young)
+			FrameProbe.stop("animals: make a body", t_make)
 			_code_body_only = false
+			made += 1
 
 			if node == null:
 				continue
@@ -1060,7 +1075,8 @@ func _report(me: Vector3) -> void:
 		var sent_y: float = float((_bodies[near_id]["target"] as Vector3).y)
 		nearest = "%s %.0f m off, drawn at y %.1f, sent at y %.1f, first hit below it %s, %s" % [str(_bodies[near_id]["kind"]), near_d, at.y, sent_y, "%.1f" % ground if not is_nan(ground) else "none", "shown" if node.is_visible_in_tree() else "hidden"]
 
-	FreezeWatchScript.printer.line("Animals: %d rows in the last batch, %d batches in %.0f s, %d drawn, %d held for model files; nearest drawn %s; player at %s" % [_report_rows, _report_batches, REPORT_MS / 1000.0, _bodies.size(), _report_held, nearest, "%.0f %.0f" % [me.x, me.z] if me != Vector3.INF else "unknown"])
+	FreezeWatchScript.printer.line("Animals: %d rows in the last batch, %d batches in %.0f s, %d drawn, %d held for model files, %d new bodies left to a later batch; nearest drawn %s; player at %s" % [_report_rows, _report_batches, REPORT_MS / 1000.0, _bodies.size(), _report_held, _report_spread, nearest, "%.0f %.0f" % [me.x, me.z] if me != Vector3.INF else "unknown"])
+	_report_spread = 0
 	_report_batches = 0
 	_report_held = 0
 
@@ -1212,6 +1228,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		root.set_meta("young_model", true)
 	var rig: Node3D = Node3D.new()
 	rig.name = "Rig"
+	rig.set_meta("scene", str(row["scene"]))   # the key of its clip boxes (_box_key)
 	root.add_child(rig)
 	rig.add_child(inst)
 	var body: Node3D = inst as Node3D
@@ -1755,14 +1772,43 @@ func _clip_height(player: AnimationPlayer, anim: Animation, rig: Node3D) -> floa
 
 
 # The box of the skeleton's bones in the rig's space in a clip's first frame (or the imported pose with no clip).
+# Kept per model file, model transform and clip (_box_memo): every body of a kind measured each of its role clips again, resolving the clip's
+# tracks for its new rig (_clip_map) each time, at every animal coming into range (Lane A r4 route, 26 Nov 2026).
 func _clip_box(player: AnimationPlayer, anim: Animation, rig: Node3D) -> AABB:
+	var memo_key: String = _box_key(anim, rig)
+
+	if memo_key != "" and _box_memo.has(memo_key):
+		return _box_memo[memo_key]
+
 	var bones: PackedVector3Array = _clip_bones(player, anim, rig, 0.0)
 	var box: AABB = AABB()
 
 	for i in bones.size():
 		box = AABB(bones[i], Vector3.ZERO) if i == 0 else box.expand(bones[i])
 
+	if memo_key != "":
+		if _box_memo.size() >= BOX_MEMO_MAX:
+			_box_memo.clear()
+
+		_box_memo[memo_key] = box
+
 	return box
+
+
+# The memo key of a clip's box: the model file (the rig's "scene" meta, set by _make_model), the model's transform in the rig (its turn,
+# size and lift), the clip (its resource, shared by every body of the file; 0 for the imported pose) and how far the clip's own keys have
+# been fitted. "" when the rig has no file.
+const BOX_MEMO_MAX := 4096
+var _box_memo: Dictionary = {}
+
+func _box_key(anim: Animation, rig: Node3D) -> String:
+	if rig == null or not rig.has_meta("scene") or rig.get_child_count() == 0 or not (rig.get_child(0) is Node3D):
+		return ""
+
+	# A clip's keys change once each when its units are fitted and its drift is taken out (_fit_clip_units, _strip_root_drift): each state
+	# keeps its own box, so every body gets the box it got before.
+	var stage: int = (1 if anim != null and anim.has_meta("units_fitted") else 0) + (2 if anim != null and anim.has_meta("drift_stripped") else 0)
+	return "%s|%s|%d|%d" % [str(rig.get_meta("scene")), str((rig.get_child(0) as Node3D).transform), anim.get_instance_id() if anim != null else 0, stage]
 
 
 # Which of a clip's tracks move which bone of the rig's skeleton, and which move the nodes between the skeleton and the rig, worked out

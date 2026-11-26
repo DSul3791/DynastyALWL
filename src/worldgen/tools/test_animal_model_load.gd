@@ -48,10 +48,29 @@ func _initialize() -> void:
 	check(v._species_scenes(2) == PackedStringArray([SCENE]), "variants, young model and their textures are looked at, each file once")
 
 	# Headless: no worker load; the deer is drawn from its model at once, and the wolf from the code-built body.
+	v.new_bodies_usec = 1 << 40   # both in this batch, however long the deer's model takes here (the spread is checked below)
 	v.on_rows([[1, 2, Vector3.ZERO, 0.0, 0, 1000], [2, 3, Vector3(5.0, 0.0, 0.0), 0.0, 0, 1000]], 1000)
 	check(v._bodies.has(1) and bool((v._bodies[1]["node"] as Node3D).get_meta("model", false)), "headless, the first deer is drawn from its model at once")
 	check(v._bodies.has(2) and not bool((v._bodies[2]["node"] as Node3D).get_meta("model", false)), "a wolf with no model file is drawn from the code-built body")
 	check(ResourceLoader.load_threaded_get_status(SCENE) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE, "headless, nothing is asked of a worker")
+
+	# New bodies past the batch's allowance are made from the next batches (Lane A 26 Nov 2026: up to 165 ms in one batch).
+	v.new_bodies_usec = -1
+	v.on_rows([[1, 2, Vector3.ZERO, 0.0, 0, 1100], [2, 3, Vector3(5.0, 0.0, 0.0), 0.0, 0, 1100], [41, 3, Vector3(9.0, 0.0, 0.0), 0.0, 0, 1100], [43, 3, Vector3(12.0, 0.0, 0.0), 0.0, 0, 1100]], 1100)
+	check(v._bodies.has(41) and not v._bodies.has(43) and v._report_spread == 1, "past the allowance one new body is made in a batch and the next waits")
+	v.on_rows([[1, 2, Vector3.ZERO, 0.0, 0, 1200], [2, 3, Vector3(5.0, 0.0, 0.0), 0.0, 0, 1200], [41, 3, Vector3(9.0, 0.0, 0.0), 0.0, 0, 1200], [43, 3, Vector3(12.0, 0.0, 0.0), 0.0, 0, 1200]], 1200)
+	check(v._bodies.has(43), "the next batch makes it")
+	check(v._bodies.has(1) and v._bodies.has(2), "the bodies already drawn stay")
+	v.new_bodies_usec = v.NEW_BODIES_USEC
+	v._report_spread = 0
+
+	# The box of a clip is kept per model file, model transform and clip: a second body of the file gets the first one's box.
+	var rig_a: Node3D = ((v._bodies[1]["node"] as Node3D).get_node("Rig") as Node3D)
+	var first_box: AABB = v._clip_box(null, null, rig_a)   # the imported pose (no clip; the test model has no skeleton)
+	check(v._box_memo.has(v._box_key(null, rig_a)) and v._clip_box(null, null, rig_a) == first_box, "a clip's box is kept and given again")
+	var bare_rig: Node3D = Node3D.new()
+	check(v._box_key(null, bare_rig) == "", "a rig with no model file keeps no box")
+	bare_rig.free()
 
 	# A colour texture's alpha test runs on a worker (_alpha_ready): false until the answer is in, then the answer _has_alpha would give.
 	var see_through: Image = Image.create(64, 64, false, Image.FORMAT_RGBA8)

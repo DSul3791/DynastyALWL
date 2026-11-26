@@ -549,6 +549,7 @@ var _flora_check_msec: int = 0
 var link = null                       # direct block line (block_link.gd)
 var quitting: bool = false            # the game is closing, not changing scene (death screen, Retry): _ends_at_exit_tree
 var _in_queue: Array = []             # chunks from the server being unpacked, in arrival order
+var _flow_jobs: Array = []            # [task id, job] of the live water windows being unpacked on a worker, in arrival order (_on_water_flow)
 var _in_mutex: Mutex = Mutex.new()
 var _in_generation: int = 0           # raised when the plants are dropped (a bake): older chunks are ignored
 var under_cover: float = 0.0          # 1 under a tree's canopy, else 0 (Cover.at at the player, once a second)
@@ -3123,6 +3124,11 @@ func _drain_incoming() -> void:
 
 	_in_queue.clear()
 
+	for entry in _flow_jobs:
+		WorkerThreadPool.wait_for_task_completion(int(entry[0]))
+
+	_flow_jobs.clear()
+
 
 func _apply_incoming() -> void:
 	var started: int = Time.get_ticks_usec()
@@ -3677,18 +3683,52 @@ func _on_cave_streams(tile: Vector2i, streams: PackedFloat32Array) -> void:
 		sound.cavewater.set_tile(tile, streams)       # the water inside the cave makes its sound (cave_water_sounds.gd)
 
 
+# Lane A 26 Nov 2026 (r4 route at Low on 4 cores, PR #1953's NET slow lines): this message took 41-47 ms of the main thread 25 times in a
+# 10-minute run, almost all of it tuck_dry_edges, a GDScript pass over the window's 128 x 128 texels. The unpacking and the tuck now run on
+# a worker; _apply_flow shows the newest finished window the next frame (twice a second, a newer window replaces any older one waiting).
 func _on_water_flow(origin: Vector2, w: int, h: int, cell_m: float, raw_size: int, bytes: PackedByteArray) -> void:
+	if flora == null or flora.water_material() == null:
+		return
+
+	# Every key is set before the task starts, the worker writes only "image", and the main thread reads the job only once the task is done.
+	var job: Dictionary = {"origin": origin, "w": w, "h": h, "cell_m": cell_m, "raw_size": raw_size, "bytes": bytes, "image": null}
+	_flow_jobs.append([WorkerThreadPool.add_task(_unpack_flow.bind(job)), job])
+
+
+func _unpack_flow(job: Dictionary) -> void:
+	var im: Image = FlowTexture.unpack(int(job["w"]), int(job["h"]), int(job["raw_size"]), job["bytes"])
+
+	if im != null:
+		FlowTexture.tuck_dry_edges(im)   # the sheet runs flat into the bank instead of up it (water_flow_texture.gd)
+
+	job["image"] = im
+
+
+# Each frame: the finished windows in arrival order are taken off (their tasks waited on, which returns at once), the newest one is shown.
+func _apply_flow() -> void:
+	var newest: Dictionary = {}
+
+	while not _flow_jobs.is_empty() and WorkerThreadPool.is_task_completed(int(_flow_jobs[0][0])):
+		var entry: Array = _flow_jobs.pop_front()
+		WorkerThreadPool.wait_for_task_completion(int(entry[0]))
+		newest = entry[1]
+
+	if newest.is_empty() or newest["image"] == null:
+		return
+
+	var t: int = Probe.start()
+	_show_flow(newest["image"], newest["origin"], float(newest["cell_m"]))
+	Probe.stop("water flow in", t)
+
+
+func _show_flow(im: Image, origin: Vector2, cell_m: float) -> void:
 	var material: Material = flora.water_material() if flora != null else null
 
 	if material == null:
 		return
 
-	var im: Image = FlowTexture.unpack(w, h, raw_size, bytes)
-
-	if im == null:
-		return
-
-	FlowTexture.tuck_dry_edges(im)   # the sheet runs flat into the bank instead of up it (water_flow_texture.gd)
+	var w: int = im.get_width()
+	var h: int = im.get_height()
 
 	# Protocol 85: the liquid sheet draws the live window (src/water2/liquid_surface.gd), the grid look steps aside there.
 	if _liquid == null:
@@ -6934,6 +6974,7 @@ func _process(delta: float) -> void:
 	var ti: int = Probe.start()
 	_send_water_request(now)
 	_apply_incoming()
+	_apply_flow()
 	Probe.stop("incoming", ti)
 
 	if now >= _flora_check_msec:
