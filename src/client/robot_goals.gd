@@ -379,6 +379,7 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 	var target: int = -1
 	var throws: int = 0
 	var hit: bool = false
+	var crept: bool = false
 	var hp_was: float = 1.0
 	var said: String = ""
 
@@ -423,7 +424,8 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 			continue
 
 		if to.length() > throw_m:   # walked up to 45 m (a standing player sends a deer off at 35 m), crept from there (crouched, 21 m)
-			await r._stance_to(StanceScript.CROUCH if to.length() < 45.0 else StanceScript.STAND)
+			crept = to.length() < 45.0 or (crept and to.length() < 55.0)   # crouch under 45 m, stand again past 55 m (no flipping at 45 m)
+			await r._stance_to(StanceScript.CROUCH if crept else StanceScript.STAND)
 			r._face(to.normalized())
 			r._key("move_forward", true)
 			await r._wait(0.5)
@@ -1026,7 +1028,7 @@ func _gather(item: String, n: int) -> String:
 
 		# Many stones wanted (a smoker's 32): a player strikes a boulder, which gives them faster than walking to loose ones (change 16
 		# run: 22 loose stones in 300 s), as the fire goal's hint says.
-		var many: bool = item == "stone" and n - _count(item) >= 10
+		var many: bool = item == "stone" and n - _count(item) >= 10 and (_tool_slot("pick") >= 0 or _tool_slot("axe") >= 0)   # no tool: keep the boulders for later
 
 		if (spot.is_empty() or many) and item in ["stone", "flint", "copper_ore", "tin_ore", "iron_ore"]:
 			var rock: int = _nearest_boulder(item)
