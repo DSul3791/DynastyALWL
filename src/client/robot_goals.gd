@@ -163,7 +163,7 @@ func play(limit_s: float) -> void:
 		var why: String = str(_why.get(id, "not reached (its earlier goals were not done, or time ran out)"))
 		_line("GOAL %s left: %s" % [id, why])
 
-		if _why.has(id) and not why.begins_with("robot cannot"):
+		if _why.has(id) and not why.begins_with("robot cannot") and Time.get_ticks_msec() >= int(_not_before.get(id, 0)):   # a goal still waiting on the clock when the run ended is not stuck
 			r._fail("goals", id, "goal %s (%s) stuck: %s" % [id, str(row.get("title", "")), why])
 
 
@@ -304,6 +304,14 @@ func _hunt_goal() -> String:
 		await r._go_to(out, minf(120.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
 		_line("HUNTWALK %d: %.0f m from camp" % [leg, _flat(_home)])   # not "HUNT": robot_check.py adds HUNT lines up as fights
 		body = await _chase_game(known)
+
+	# Rabbits feed most at dusk (animals.json rabbit active: day 0.5, dusk 1.0): a hunter who found nothing by day goes out again then, once.
+	var hour: float = _game_hour()
+
+	if body < 0 and int(_visits.get("hunt", 0)) == 0 and (hour < 17.0 or hour >= 21.0):
+		var game_h: float = fposmod(17.0 - hour, 24.0)
+		_not_before["hunt"] = Time.get_ticks_msec() + int(game_h * 3600.0 / GameClockScript.RATIO * 1000.0)
+		return "no game brought down by day at game hour %.1f on %d walks out: it goes out again at dusk, when rabbits feed (back in %.0f real s)%s" % [hour, leg, game_h * 3600.0 / GameClockScript.RATIO, _said(said)]
 
 	if body < 0:
 		return "robot cannot hunt here yet: no rabbit or deer brought down by the camp or on %d walks out (aimed %.0f m from camp, %.0f m at the last), no carcass within 120 m%s" % [leg, HUNT_LEG_M, _flat(_home), _said(said)]
@@ -1627,13 +1635,20 @@ func _dig_clay(want: int) -> String:
 	var dug: int = 0
 	var line: int = 0
 	var until: int = mini(Time.get_ticks_msec() + int(CLAY_S * 1000.0), _end_ms)
+	var stood: Array = []   # where the robot stood for each dig: never twice on one spot (26 Nov run: the side steps failed, 28 digs went into one
+	                        # hole beside the camp and the robot slid 5 m down into it, and every goal after it was "out of reach")
 
 	while _count("clay") - start_clay < want and Time.get_ticks_msec() < until and line < 8:
 		line += 1
 		var dir: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, float(line) * 2.3)
 		var side: Vector3 = dir.rotated(Vector3.UP, PI * 0.5)
 		var from: Vector3 = _home + dir * (12.0 + 25.0 * float(line - 1))
-		await r._go_to(from, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 2.0)
+
+		if not await r._go_to(from, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 3.0):
+			await _climb_out()
+			_line("CLAY line %d: could not walk to its start %s (stood at %s), the next line" % [line, str(from.round()), str(c.body.global_position.round())])
+			continue
+
 		var got_here: int = _count("clay")
 		var tries: int = 0
 		var dug_here: int = 0
@@ -1642,6 +1657,10 @@ func _dig_clay(want: int) -> String:
 			if tries > 0:
 				await r._go_to(c.body.global_position + side * 1.8, 4.0, 0.4)
 
+			if _stood_near(stood, c.body.global_position) or _in_hole():
+				break   # the side step did not take it off the last spot, or it stands in a hollow: this line is done
+
+			stood.append(c.body.global_position)
 			var had: int = _dug_count()
 
 			# A click that brought nothing in (the ray met a bush or grass, or the ground fell away out of the 3 m reach) is aimed again
@@ -1679,10 +1698,66 @@ func _dig_clay(want: int) -> String:
 		_line("CLAY line %d at %s, %.0f m from camp: %d digs tried, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
 			tries, dug_here, _count("clay") - got_here])
 
+	await _climb_out()
 	var got: int = _count("clay") - start_clay
 	_line("CLAY %d clicks on %d lines, %d gave ground: +%d clay (wanted %d), +%d ground items in all, goal has %s%s" % [clicks, line, dug, got, want,
 		_dug_count() - start_ground, str(c.items.goal_book.row("dig_clay").get("have", "?")), _said(said)])
 	return "" if got >= want or bool(c.items.goal_book.row("dig_clay").get("done", false)) else "%d shovel clicks on %d lines, %d gave ground: %d of %d clay%s" % [clicks, line, dug, got, want, _said(said)]
+
+
+func _stood_near(stood: Array, at: Vector3) -> bool:
+	for p in stood:
+		if Vector2(p.x - at.x, p.z - at.z).length() < 1.2:
+			return true
+
+	return false
+
+
+# The ground under the feet lies more than 0.8 m below the ground 3 m round on most sides: the robot is down in a dug hollow.
+func _in_hole() -> bool:
+	var me: Vector3 = c.body.global_position
+	var feet: float = float(c.items._ground_below.call(me))
+
+	if is_nan(feet):
+		return false
+
+	var higher: int = 0
+
+	for k in range(8):
+		var y: float = float(c.items._ground_below.call(me + Vector3.FORWARD.rotated(Vector3.UP, TAU * float(k) / 8.0) * 3.0))
+		higher += 1 if not is_nan(y) and y > feet + 0.8 else 0
+
+	return higher >= 5
+
+
+# Out of a hollow as a player gets out: walk at its lowest side toward the camp and jump (a jump lifts about 2.5 m), up to 20 s.
+func _climb_out() -> void:
+	var until: int = Time.get_ticks_msec() + 20000
+
+	while _in_hole() and Time.get_ticks_msec() < until:
+		var me: Vector3 = c.body.global_position
+		var best: Vector3 = (_home - me) * Vector3(1.0, 0.0, 1.0)
+		var low: float = INF
+
+		for k in range(8):
+			var way: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, TAU * float(k) / 8.0)
+			var y: float = float(c.items._ground_below.call(me + way * 3.0))
+
+			if not is_nan(y) and y < low:
+				low = y
+				best = way
+
+		r._face(best.normalized())
+		r._key("move_forward", true)
+		r._key("jump", true)
+		await r._wait(0.6)
+		r._key("jump", false)
+		await r._wait(0.6)
+
+	r._release_all()
+
+	if _in_hole():
+		_line("CLAY still down in a hollow at %s after 20 s of climbing" % str(c.body.global_position.round()))
 
 
 # What a dig gives (digging.json yield and under), summed: a click that raised it dug.
