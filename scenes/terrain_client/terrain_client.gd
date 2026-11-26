@@ -588,6 +588,7 @@ func _ready() -> void:
 	var my_model: String = MyCharacter.body_model()
 	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
 	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+	DynastyBodyScript.clips_on_worker = not DynastyBodyScript.headless()   # in a window the first body's 143 clips are made on a worker thread, not in the join's first-body frame (276 ms, Lane A Low route 26 Nov 2026)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
