@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Picture checker: sends in-game pictures to the Claude API and lists what looks wrong (floating or sunk animals and items,
+"""Picture checker: sends in-game pictures (all the views of one subject, the PNGs of one folder, in one request) to the Claude API and lists what looks wrong (floating or sunk animals and items,
 a tool or weapon through a body, skin through clothes, feet off or in the ground, missing textures, broken meshes).
 Dave, 26 Nov 2026: "ok make it" (his API credits, a one-off sweep; thread "Build an automatic picture checker").
 
@@ -10,7 +10,7 @@ Godot is not involved: the pictures come from the lane's in-game tools (look_rig
       --about "text"      what every picture should show (also a file about.txt in a picture's folder, for that folder)
       --out DIR           where the report goes (default: the first folder): picture_check.md (the list) and picture_check.json
       --dry-run           count the pictures and the most they could cost; sends nothing, needs no key
-      --max-pictures N    check at most N new pictures this run
+      --max-requests N    send at most N requests this run (one request = all the views of one subject, the pictures of one folder)
       --time-limit S      stop starting new pictures after S seconds (default 3600)
       --cap USD           the spending cap, kept in the ledger (default 150; only lowered or raised by passing it)
       --recheck           ask again about pictures already checked (default: reuse the stored answer, no cost)
@@ -40,48 +40,62 @@ import urllib.request
 MODEL = "claude-opus-5-5"
 # US dollars per million tokens (claude-opus-5-5, 26 Nov 2026): input, output, cache write (5 min), cache read.
 PRICE = {"input": 4.00, "output": 20.00, "cache_write": 5.00, "cache_read": 0.20}
-MAX_TOKENS = 4000
+MAX_TOKENS = 8000
 API_URL = os.environ.get("PICTURE_CHECK_API_URL", "https://api.anthropic.com/v1/messages")
 WIN = os.name == "nt"
 HOME = os.environ.get("PICTURE_CHECK_HOME", "C:/DynastyLane/picture_check" if WIN else os.path.expanduser("~/.picture_check"))
 KEY_FILE = os.environ.get("PICTURE_CHECK_KEY_FILE", "C:/DynastyLane/picture_check_key.txt" if WIN else os.path.join(HOME, "key.txt"))
 CANCEL = os.environ.get("PICTURE_CHECK_CANCEL", "C:/DynastyLane/logs/queue/CANCEL" if WIN else os.path.join(HOME, "CANCEL"))
 MAX_IMAGE_BYTES = 5 * 1024 * 1024
-PROMPT_VERSION = "1"
+MAX_GROUP_PICTURES = 8                # views of one subject in one request
+MAX_GROUP_BYTES = 20 * 1024 * 1024    # the API takes 32 MB a request; base64 adds a third
+PROMPT_VERSION = "2"
 
 SYSTEM = """You check still pictures taken by an automatic tester inside a 3D game in development: Dynasty, a realistic \
-medieval survival game made in Godot. Each picture shows one test subject (an animal, the player's body, a held tool, worn \
-clothing, a building piece, a plant, an item on the ground). Your job is to find visible rendering and placement bugs, the \
-kind a player would notice and report. You are not judging the art style, the art quality, the model detail or whether \
-something looks AI-made: never report those.
+medieval survival game made in Godot. One request holds the views of one test subject (a held tool, a worn piece of \
+clothing, a row of building pieces, a scene), or one picture per subject when the description says so (an animal strip \
+each). Find visible rendering and placement bugs, the kind a player would notice and report. You are not judging the art \
+style, the art quality, the model detail or whether something looks AI-made: never report those.
 
-Report these kinds of bug:
-- floating: an animal, body, item or building piece hovers above the ground or a surface it should rest on (look for a gap \
-or a missing contact shadow under feet, hooves, paws or the item).
+Kinds of bug:
+- floating: an animal, body, item or building piece hovers above the ground or a surface it should rest on (a gap or a \
+missing contact shadow under feet, hooves, paws or the item).
 - sunk: it sits too low: feet, hooves or the lower body inside the ground, an item buried, a wall or floor half inside the terrain.
 - clipping: one thing passes through another: a tool or weapon through the body or a limb, a hand through a held item, \
-an animal's body through a tree or rock, two building pieces inside each other.
+two building pieces inside each other.
 - skin_through_clothes: bare skin or the body mesh shows through worn clothing or armour where the clothing should cover it.
-- held_wrong: a held item is not in the hand (floating beside it, at the wrong place, pointing the wrong way for how it is held).
-- pose_wrong: a broken pose: limbs bent the wrong way, twisted joints, legs crossed through each other, feet placed \
-impossibly for a standing, walking or running body, an animal in a pose no real animal makes.
+- held_wrong: a held item is not in the hand (floating beside it, at the wrong place, the wrong way round for how it is held).
+- pose_wrong: a broken pose: limbs bent the wrong way, twisted joints, legs through each other, an animal in a pose no \
+real animal makes.
 - missing_texture: magenta or pink surfaces, a checkerboard, flat white or black surfaces where a texture belongs, \
 white specks or holes in a surface.
 - broken_mesh: stretched spikes, torn or exploded polygons, faces missing so the inside shows, a model with parts missing.
-- wrong_scale: something clearly the wrong size against the things around it (a rabbit as big as a deer, a mug as big as a chest).
+- wrong_scale: something clearly the wrong size against the things around it.
 - lighting: a subject drawn fully black or burnt white when the scene around it is lit normally, or harsh flicker bands.
 - other: any other plain rendering or placement bug a player would report.
 
-Expected things that are not bugs: text in the corners and coloured name tags over items are the tester's own labels; \
-grid lines on a flat test floor; a plain sky, an empty test floor or no world behind a subject; night or rain darkness \
-when the description says night or rain; grass partly covering feet or small items (say so only if the subject itself is \
-plainly wrong); motion poses that are normal mid-stride; the game's realistic, muted colours.
+What the tester does on purpose (never a bug):
+- Every picture is a still: the body's animation is frozen at one moment. Standing (idle) bodies may stand with the feet \
+apart or one foot ahead; walk and run stills are mid-stride. Only an impossible pose is a bug.
+- The file name ends with the view: front, side, left, right, hand (a close view of the hand), wide, close, or a camera \
+direction. A long item (spear, staff, tool handle) pointing toward the camera looks short or hidden: judge its length \
+and grip from the side views, not the view that looks along it.
+- In the game world, the game itself cuts the grass short within about 1.4 m of the player so the feet show: a lower, \
+flatter, plainer patch of ground round the player's feet is normal.
+- Offline tools draw no world: a plain colour sky, a small flat green or grey ground plane with grid lines (0.5 m or 1 m \
+apart) and a sun brighter than the game.
+- Text in the corners and coloured name tags over items are the tester's labels. The HUD is hidden. Night or rain is \
+dark when the description says so. The game's colours are realistic and muted.
 
-Be specific and honest. Report only what you can actually see in this picture; if a part is too small, dark or hidden \
-to judge, say unsure rather than guess. Say where in the picture the bug is (for example "left hind hoof, lower middle"). \
-Use severity high for a bug a player would notice at once, medium for one seen on a closer look, low for a small one. \
-Use confidence to say how sure you are that it is a real bug and not the lighting, the angle or the picture's size. \
-If nothing is wrong, the verdict is ok with no problems. Keep every text field short: one sentence."""
+How to judge:
+- Look at all the views of a subject together before deciding.
+- Verdict problem only when the bug shows in more than one view, or is unmistakable in one view (then say in "what" why \
+one view is enough). A doubt seen in one view only, which another view does not confirm, makes the verdict unsure and \
+goes in the problems list with confidence low. If nothing is wrong, the verdict is ok with no problems.
+- Name the views each problem shows in (their file names) and where in the picture ("left hind hoof, lower middle").
+- Severity high: a player notices at once; medium: on a closer look; low: small. Confidence: how sure you are it is a \
+real bug and not the angle, the lighting or the picture's size.
+- Keep every text field to one short sentence."""
 
 KINDS = ["floating", "sunk", "clipping", "skin_through_clothes", "held_wrong", "pose_wrong", "missing_texture",
 	"broken_mesh", "wrong_scale", "lighting", "other"]
@@ -89,23 +103,31 @@ LEVELS = ["low", "medium", "high"]
 SCHEMA = {
 	"type": "object",
 	"additionalProperties": False,
-	"required": ["shows", "verdict", "problems"],
-	"properties": {
-		"shows": {"type": "string", "description": "what the picture shows, one sentence"},
-		"verdict": {"type": "string", "enum": ["ok", "problem", "unsure"]},
-		"problems": {"type": "array", "items": {
-			"type": "object",
-			"additionalProperties": False,
-			"required": ["kind", "where", "what", "severity", "confidence"],
-			"properties": {
-				"kind": {"type": "string", "enum": KINDS},
-				"where": {"type": "string"},
-				"what": {"type": "string"},
-				"severity": {"type": "string", "enum": LEVELS},
-				"confidence": {"type": "string", "enum": LEVELS},
-			},
-		}},
-	},
+	"required": ["subjects"],
+	"properties": {"subjects": {"type": "array", "items": {
+		"type": "object",
+		"additionalProperties": False,
+		"required": ["subject", "shows", "verdict", "confidence", "problems"],
+		"properties": {
+			"subject": {"type": "string", "description": "the subject's name, as in the description or the file name"},
+			"shows": {"type": "string", "description": "what the views show, one sentence"},
+			"verdict": {"type": "string", "enum": ["ok", "problem", "unsure"]},
+			"confidence": {"type": "string", "enum": LEVELS},
+			"problems": {"type": "array", "items": {
+				"type": "object",
+				"additionalProperties": False,
+				"required": ["kind", "views", "where", "what", "severity", "confidence"],
+				"properties": {
+					"kind": {"type": "string", "enum": KINDS},
+					"views": {"type": "array", "items": {"type": "string"}},
+					"where": {"type": "string"},
+					"what": {"type": "string"},
+					"severity": {"type": "string", "enum": LEVELS},
+					"confidence": {"type": "string", "enum": LEVELS},
+				},
+			}},
+		},
+	}}},
 }
 
 
@@ -122,8 +144,9 @@ def image_tokens(width, height):
 	return int(width * scale * height * scale / 750.0) + 100
 
 
-def worst_case(width, height):
-	tokens = image_tokens(width, height) + len(SYSTEM) // 3 + 400
+def worst_case(sizes):
+	"""The most one request with pictures of these sizes could cost: every input token as a cache write, all max_tokens out."""
+	tokens = sum(image_tokens(w, h) for w, h in sizes) + len(SYSTEM) // 3 + 600
 	return tokens * PRICE["cache_write"] / 1e6 + MAX_TOKENS * PRICE["output"] / 1e6
 
 
@@ -183,21 +206,35 @@ def read_key():
 	return key
 
 
-def ask(key, data, label, about):
-	"""One picture to the API. Returns (answer dict or None, usage dict, error text, attempts that may have been billed unseen)."""
-	text = "Picture: %s\n" % label
+def good_answer(answer):
+	if not (isinstance(answer, dict) and isinstance(answer.get("subjects"), list) and answer["subjects"]):
+		return False
+	for sub in answer["subjects"]:
+		if not (isinstance(sub, dict) and sub.get("verdict") in ("ok", "problem", "unsure") and isinstance(sub.get("problems"), list)):
+			return False
+		if not all(isinstance(p, dict) and all(k in p for k in ("kind", "views", "where", "what", "severity", "confidence")) for p in sub["problems"]):
+			return False
+	return True
+
+
+def ask(key, pictures, about):
+	"""One subject's views to the API (pictures: list of (file name, PNG bytes)).
+	Returns (answer dict or None, usage dict, error text, attempts that may have been billed unseen)."""
+	content = []
+	for label, data in pictures:
+		content.append({"type": "text", "text": "View: %s" % label})
+		content.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": base64.b64encode(data).decode("ascii")}})
+	text = "%d view(s) of one test subject (or one picture per subject if the description says so).\n" % len(pictures)
 	if about:
-		text += "It should show: %s\n" % about
-	text += "List every visible bug of the kinds above in this picture."
+		text += "They should show: %s\n" % about
+	text += "Judge each subject across all its views, by the rules above."
+	content.append({"type": "text", "text": text})
 	body = {
 		"model": MODEL,
 		"max_tokens": MAX_TOKENS,
 		"system": [{"type": "text", "text": SYSTEM, "cache_control": {"type": "ephemeral"}}],
 		"output_config": {"effort": "low", "format": {"type": "json_schema", "schema": SCHEMA}},
-		"messages": [{"role": "user", "content": [
-			{"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": base64.b64encode(data).decode("ascii")}},
-			{"type": "text", "text": text},
-		]}],
+		"messages": [{"role": "user", "content": content}],
 	}
 	payload = json.dumps(body).encode("utf-8")
 	headers = {"content-type": "application/json", "x-api-key": key, "anthropic-version": "2026-10-21"}
@@ -227,7 +264,7 @@ def ask(key, data, label, about):
 			return None, {}, "network: %s" % type(e).__name__, unseen + 1
 		usage = reply.get("usage", {})
 		if reply.get("stop_reason") == "refusal":
-			return None, usage, "the API declined this picture", unseen
+			return None, usage, "the API declined these pictures", unseen
 		if reply.get("stop_reason") == "max_tokens":
 			return None, usage, "answer cut off (max_tokens)", unseen
 		out = "".join(b.get("text", "") for b in reply.get("content", []) if b.get("type") == "text")
@@ -235,7 +272,7 @@ def ask(key, data, label, about):
 			answer = json.loads(out)
 		except ValueError:
 			return None, usage, "answer was not JSON", unseen
-		if not (isinstance(answer, dict) and answer.get("verdict") in ("ok", "problem", "unsure") and isinstance(answer.get("problems"), list)):
+		if not good_answer(answer):
 			return None, usage, "answer had the wrong shape", unseen
 		return answer, usage, "", unseen
 	return None, {}, error, unseen
@@ -265,34 +302,72 @@ def about_for(path, about):
 
 
 def write_report(out_dir, rows, ledger, stopped):
+	"""rows: one per request group: {"folder", "pictures": [...], "answer" or "error", "usd"}."""
 	os.makedirs(out_dir, exist_ok=True)
 	with open(os.path.join(out_dir, "picture_check.json"), "w", encoding="utf-8") as f:
 		json.dump({"model": MODEL, "rows": rows, "spent_usd": round(ledger.total(), 4), "cap_usd": ledger.data["cap_usd"],
 			"stopped": stopped}, f, indent=1)
 	rank = {"high": 0, "medium": 1, "low": 2}
-	found = [(r, p) for r in rows for p in (r.get("answer") or {}).get("problems", [])]
-	found.sort(key=lambda rp: (rank.get(rp[1]["severity"], 3), rank.get(rp[1]["confidence"], 3), rp[0]["picture"]))
+	subjects = [(r, s) for r in rows for s in (r.get("answer") or {}).get("subjects", [])]
+	bad = [(r, s) for r, s in subjects if s.get("verdict") == "problem"]
+	bad.sort(key=lambda rs: (min([rank.get(p.get("severity"), 3) for p in rs[1]["problems"]] or [3]), rank.get(rs[1].get("confidence"), 3), rs[0]["folder"]))
+	unsure = [(r, s) for r, s in subjects if s.get("verdict") == "unsure"]
+	missed = [r for r in rows if not r.get("answer")]
 	lines = ["# Picture check", "",
-		"%d pictures, %d look wrong, %d unsure, %d not checked. Spent so far $%.2f of the $%.2f cap. Model %s."
-		% (len(rows), sum(1 for r in rows if (r.get("answer") or {}).get("verdict") == "problem"),
-		sum(1 for r in rows if (r.get("answer") or {}).get("verdict") == "unsure"),
-		sum(1 for r in rows if not r.get("answer")), ledger.total(), ledger.data["cap_usd"], MODEL)]
+		"%d subjects in %d pictures: %d look wrong, %d unsure, %d ok; %d picture groups not checked. Spent so far $%.2f of the $%.2f cap. Model %s."
+		% (len(subjects), sum(len(r["pictures"]) for r in rows), len(bad), len(unsure), len(subjects) - len(bad) - len(unsure), len(missed),
+		ledger.total(), ledger.data["cap_usd"], MODEL)]
 	if stopped:
 		lines += ["", "Stopped early: " + stopped]
+
+	def problem_lines(sub):
+		return ["  - %s (%s, sure: %s) in %s: %s. Where: %s." % (p["kind"], p["severity"], p["confidence"], ", ".join(p["views"]) or "?",
+			str(p["what"]).rstrip("."), str(p["where"]).rstrip(".")) for p in sub["problems"]]
+
 	lines += ["", "## What looks wrong (most serious first)", ""]
-	if not found:
+	if not bad:
 		lines.append("Nothing.")
-	for r, p in found:
-		lines.append("- **%s** (%s, sure: %s) `%s`: %s. Where: %s." % (p["kind"], p["severity"], p["confidence"], r["picture"],
-			p["what"].rstrip("."), p["where"].rstrip(".")))
-	unsure = [r for r in rows if (r.get("answer") or {}).get("verdict") == "unsure"]
+	for r, sub in bad:
+		lines += ["- **%s** (sure: %s) `%s`: %s" % (sub.get("subject", "?"), sub.get("confidence", "?"), r["folder"], sub.get("shows", ""))] + problem_lines(sub)
 	if unsure:
-		lines += ["", "## Unsure (look by hand)", ""] + ["- `%s`: %s" % (r["picture"], r["answer"].get("shows", "")) for r in unsure]
-	missed = [r for r in rows if not r.get("answer")]
+		lines += ["", "## Unsure (look by hand)", ""]
+		for r, sub in unsure:
+			lines += ["- **%s** `%s`: %s" % (sub.get("subject", "?"), r["folder"], sub.get("shows", ""))] + problem_lines(sub)
 	if missed:
-		lines += ["", "## Not checked", ""] + ["- `%s`: %s" % (r["picture"], r.get("error", "")) for r in missed]
+		lines += ["", "## Not checked", ""] + ["- `%s` (%d pictures): %s" % (r["folder"], len(r["pictures"]), r.get("error", "")) for r in missed]
 	with open(os.path.join(out_dir, "picture_check.md"), "w", encoding="utf-8") as f:
 		f.write("\n".join(lines) + "\n")
+
+
+def make_groups(pictures, about):
+	"""The pictures of one folder are the views of one subject: one request each, at most MAX_GROUP_PICTURES pictures and
+	MAX_GROUP_BYTES. Returns (folder, [(path, data, size)], about text, digest, why not sendable or "")."""
+	by_folder = {}
+	for path in pictures:
+		by_folder.setdefault(os.path.dirname(path), []).append(path)
+	groups = []
+	for folder in sorted(by_folder):
+		chunk, chunk_bytes, chunks = [], 0, []
+		for path in sorted(by_folder[folder]):
+			with open(path, "rb") as f:
+				data = f.read()
+			if chunk and (len(chunk) >= MAX_GROUP_PICTURES or chunk_bytes + len(data) > MAX_GROUP_BYTES):
+				chunks.append(chunk)
+				chunk, chunk_bytes = [], 0
+			chunk.append((path, data, png_size(data)))
+			chunk_bytes += len(data)
+		if chunk:
+			chunks.append(chunk)
+		text = about_for(chunks[0][0][0], about)
+		for chunk in chunks:
+			digest = hashlib.sha256(b"".join(d for _p, d, _s in chunk) + text.encode("utf-8")).hexdigest() + ":" + PROMPT_VERSION
+			why = ""
+			if any(not s for _p, _d, s in chunk):
+				why = "not a PNG: " + ", ".join(os.path.basename(p) for p, _d, s in chunk if not s)
+			elif any(len(d) > MAX_IMAGE_BYTES for _p, d, _s in chunk):
+				why = "larger than 5 MB, the API's limit: " + ", ".join(os.path.basename(p) for p, d, _s in chunk if len(d) > MAX_IMAGE_BYTES)
+			groups.append((folder.replace("\\", "/"), chunk, text, digest, why))
+	return groups
 
 
 def main(argv):
@@ -301,7 +376,7 @@ def main(argv):
 	ap.add_argument("--about", default="")
 	ap.add_argument("--out", default="")
 	ap.add_argument("--dry-run", action="store_true")
-	ap.add_argument("--max-pictures", type=int, default=0)
+	ap.add_argument("--max-requests", type=int, default=0)
 	ap.add_argument("--time-limit", type=float, default=3600.0)
 	ap.add_argument("--cap", type=float, default=None)
 	ap.add_argument("--recheck", action="store_true")
@@ -325,18 +400,12 @@ def main(argv):
 		with open(answers_path, encoding="utf-8") as f:
 			answers = json.load(f)
 
-	plan = []
-	for path in pictures:
-		with open(path, "rb") as f:
-			data = f.read()
-		size = png_size(data)
-		digest = hashlib.sha256(data + about_for(path, args.about).encode("utf-8")).hexdigest() + ":" + PROMPT_VERSION
-		plan.append((path, data, size, digest))
-	new = [p for p in plan if args.recheck or p[3] not in answers]
-	sendable = [p for p in new if p[2] and len(p[1]) <= MAX_IMAGE_BYTES]
-	most = sum(worst_case(*p[2]) for p in sendable[:args.max_pictures or None])
-	print("picture check: %d pictures, %d already checked, %d to send, at most $%.2f (worst case)"
-		% (len(plan), len(plan) - len(new), min(len(sendable), args.max_pictures or len(sendable)), most))
+	groups = make_groups(pictures, args.about)
+	new = [g for g in groups if (args.recheck or g[3] not in answers) and not g[4]]
+	new = new[:args.max_requests or None]
+	most = sum(worst_case([s for _p, _d, s in g[1]]) for g in new)
+	print("picture check: %d pictures in %d subject groups, %d groups already checked, %d requests to send (%d pictures), at most $%.2f (worst case)"
+		% (len(pictures), len(groups), sum(1 for g in groups if g[3] in answers and not args.recheck), len(new), sum(len(g[1]) for g in new), most))
 	if args.dry_run:
 		return 0
 	key = read_key()
@@ -351,29 +420,27 @@ def main(argv):
 		print("picture check: another check is running (or one was cut off: delete %s once none runs)" % lock)
 		return 2
 	try:
-		return run(args, plan, key, answers, answers_path, out_dir, started)
+		return run(args, groups, key, answers, answers_path, out_dir, started)
 	finally:
 		os.remove(lock)
 
 
-def run(args, plan, key, answers, answers_path, out_dir, started):
+def run(args, groups, key, answers, answers_path, out_dir, started):
 	if os.path.exists(answers_path):   # read again inside the lock: a run that finished meanwhile may have added answers
 		with open(answers_path, encoding="utf-8") as f:
 			answers = json.load(f)
 	ledger = Ledger(os.path.join(HOME, "spent.json"), args.cap)
-	if ledger.data["requests"] == 0 and args.max_pictures != 1:
-		args.max_pictures = 1
-		print("picture check: first run ever: one picture only. Compare its cost with the Claude Console's usage, then run again.")
+	if ledger.data["requests"] == 0 and args.max_requests != 1:
+		args.max_requests = 1
+		print("picture check: first run ever: one request only. Compare its cost with the Claude Console's usage, then run again.")
 	print("picture check: spent so far $%.2f of the $%.2f cap" % (ledger.total(), ledger.data["cap_usd"]))
-	if any(args.recheck or p[3] not in answers for p in plan) and not key:
+	if any((args.recheck or g[3] not in answers) and not g[4] for g in groups) and not key:
 		print("picture check: no API key in %s (the one-time command is in docs/PICTURE_CHECK.md)" % KEY_FILE)
 		return 2
 
 	rows, stopped, sent, errors_in_row = [], "", 0, 0
-	for path, data, size, digest in plan:
-		label = os.path.basename(path)
-		row = {"picture": path.replace("\\", "/")}
-		about = about_for(path, args.about)
+	for folder, chunk, about, digest, why in groups:
+		row = {"folder": folder, "pictures": [p.replace("\\", "/") for p, _d, _s in chunk]}
 		if about:
 			row["about"] = about
 		if not args.recheck and digest in answers:
@@ -382,27 +449,25 @@ def run(args, plan, key, answers, answers_path, out_dir, started):
 			continue
 		if stopped:
 			row["error"] = "not sent: " + stopped
-		elif not size:
-			row["error"] = "not a PNG"
-		elif len(data) > MAX_IMAGE_BYTES:
-			row["error"] = "larger than 5 MB, the API's limit"
+		elif why:
+			row["error"] = why
 		else:
 			reason = ""
-			worst = worst_case(*size)
+			worst = worst_case([s for _p, _d, s in chunk])
 			if os.path.exists(CANCEL):
 				reason = "the lane's CANCEL file is there"
 			elif time.time() - started > args.time_limit:
 				reason = "time limit %d s" % args.time_limit
-			elif args.max_pictures and sent >= args.max_pictures:
-				reason = "--max-pictures %d reached" % args.max_pictures
+			elif args.max_requests and sent >= args.max_requests:
+				reason = "--max-requests %d reached" % args.max_requests
 			elif worst > ledger.left():
-				reason = "the cap: $%.2f spent of $%.2f, the next picture could cost $%.2f" % (ledger.total(), ledger.data["cap_usd"], worst)
+				reason = "the cap: $%.2f spent of $%.2f, the next request could cost $%.2f" % (ledger.total(), ledger.data["cap_usd"], worst)
 			if reason:
 				stopped = reason
 				row["error"] = "not sent: " + reason
 			else:
 				ledger.reserve(worst)
-				answer, usage, error, unseen = ask(key, data, label, about)
+				answer, usage, error, unseen = ask(key, [(os.path.basename(p), d) for p, d, _s in chunk], about)
 				usd = cost_of(usage) + unseen * worst
 				ledger.settle(worst, usd, bool(usage))
 				sent += 1
@@ -410,27 +475,27 @@ def run(args, plan, key, answers, answers_path, out_dir, started):
 				if answer is not None:
 					row["answer"] = answer
 					answers[digest] = answer
-					ledger.data["pictures"] += 1
+					ledger.data["pictures"] += len(chunk)
 					ledger.save()
 					tmp = answers_path + ".tmp"
 					with open(tmp, "w", encoding="utf-8") as f:
 						json.dump(answers, f)
 					os.replace(tmp, answers_path)
 					errors_in_row = 0
+					said = ", ".join("%s %s" % (s.get("subject", "?"), s.get("verdict")) for s in answer["subjects"])
 				else:
 					row["error"] = error
 					errors_in_row += 1
 					if errors_in_row >= 5:
 						stopped = "5 API errors in a row (last: %s)" % error
-				verdict = (answer or {}).get("verdict", "not checked")
-				print("picture check: %s %s ($%.3f, total $%.2f)" % (label, verdict if answer else "not checked: " + error, usd, ledger.total()))
+					said = "not checked: " + error
+				print("picture check: %s (%d pictures): %s ($%.3f, total $%.2f)" % (folder, len(chunk), said, usd, ledger.total()))
 		rows.append(row)
 
 	write_report(out_dir, rows, ledger, stopped)
-	wrong = sum(1 for r in rows if (r.get("answer") or {}).get("verdict") == "problem")
-	print("picture check: %d of %d look wrong; report %s; spent $%.2f of the $%.2f cap%s"
-		% (wrong, len(rows), os.path.join(out_dir, "picture_check.md"), ledger.total(), ledger.data["cap_usd"],
-		"; stopped: " + stopped if stopped else ""))
+	wrong = sum(1 for r in rows for s in (r.get("answer") or {}).get("subjects", []) if s.get("verdict") == "problem")
+	print("picture check: %d subjects look wrong; report %s; spent $%.2f of the $%.2f cap%s"
+		% (wrong, os.path.join(out_dir, "picture_check.md"), ledger.total(), ledger.data["cap_usd"], "; stopped: " + stopped if stopped else ""))
 	if stopped or any(not r.get("answer") for r in rows):
 		return 3
 	return 1 if wrong else 0

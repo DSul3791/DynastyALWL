@@ -3,8 +3,8 @@
 
     python3 tools/test_picture_check.py
 
-0. The first run ever sends one picture only (to compare its cost with the Console before more).
-1. Two pictures, one answered "ok" and one "problem": exit 1, the report lists the problem, the ledger holds the real cost
+0. The pictures of one folder are one subject's views: one request each (at most 8 pictures). The first run ever sends one request only (to compare its cost with the Console before more).
+1. Two subjects of two views each, one answered "ok" and one "problem": exit 1, the report lists the problem, the ledger holds the real cost
    of both answers (from the fake usage) and no reservation is left.
 2. The same run again: both answers are reused, nothing is sent, the ledger does not move, exit 1.
 3. A cap below one picture's worst case: nothing is sent, exit 3, the report says the cap stopped it.
@@ -52,11 +52,11 @@ class Fake(http.server.BaseHTTPRequestHandler):
 	def do_POST(self):
 		body = json.loads(self.rfile.read(int(self.headers["content-length"])))
 		seen.append({"key": self.headers.get("x-api-key"), "body": body})
-		label = body["messages"][0]["content"][1]["text"]
+		label = text_of(body)
 		if "drop" in label:
 			self.close_connection = True
 			return
-		if "busy" in label and not any("busy" in x["body"]["messages"][0]["content"][1]["text"] for x in seen[:-1]):
+		if "busy" in label and not any("busy" in text_of(x["body"]) for x in seen[:-1]):
 			self.send_response(429)
 			self.send_header("retry-after", "0")
 			self.send_header("content-length", "2")
@@ -70,11 +70,12 @@ class Fake(http.server.BaseHTTPRequestHandler):
 			self.wfile.write(b"{}")
 			return
 		if "bad" in label:
-			answer = {"shows": "a deer", "verdict": "problem", "problems": [{"kind": "floating", "where": "front hooves",
-				"what": "the deer hovers 10 cm above the grass", "severity": "high", "confidence": "high"}]}
+			subject = {"subject": "deer_bad", "shows": "a deer", "verdict": "problem", "confidence": "high", "problems": [{"kind": "floating",
+				"views": ["deer_bad_front.png", "deer_bad_side.png"], "where": "front hooves", "what": "the deer hovers 10 cm above the grass",
+				"severity": "high", "confidence": "high"}]}
 		else:
-			answer = {"shows": "a deer", "verdict": "ok", "problems": []}
-		reply = {"stop_reason": "end_turn", "content": [{"type": "text", "text": json.dumps(answer)}],
+			subject = {"subject": "deer", "shows": "a deer", "verdict": "ok", "confidence": "high", "problems": []}
+		reply = {"stop_reason": "end_turn", "content": [{"type": "text", "text": json.dumps({"subjects": [subject]})}],
 			"usage": {"input_tokens": 1000, "output_tokens": 500, "cache_creation_input_tokens": 0, "cache_read_input_tokens": 0}}
 		data = json.dumps(reply).encode()
 		self.send_response(200)
@@ -87,10 +88,29 @@ class Fake(http.server.BaseHTTPRequestHandler):
 		pass
 
 
+def text_of(body):
+	return " ".join(c.get("text", "") for c in body["messages"][0]["content"] if c.get("type") == "text")
+
+
+def images_of(body):
+	return sum(1 for c in body["messages"][0]["content"] if c.get("type") == "image")
+
+
 def run(env, *args):
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_check.py")] + list(args), env=env,
 		capture_output=True, text=True)
 	return r.returncode, r.stdout + r.stderr
+
+
+def subject(root, name, views, h=36, about="a red deer standing on grass"):
+	folder = os.path.join(root, name)
+	os.makedirs(folder, exist_ok=True)
+	for i, view in enumerate(views):
+		png(os.path.join(folder, "%s_%s.png" % (name, view)), 64, h + i)
+	if about:
+		with open(os.path.join(folder, "about.txt"), "w") as f:
+			f.write(about)
+	return folder
 
 
 def main():
@@ -104,34 +124,37 @@ def main():
 	key_file = os.path.join(tmp, "key.txt")
 	with open(key_file, "w") as f:
 		f.write(KEY + "\n")
-	png(os.path.join(shots, "deer_good.png"), 64, 36)
-	png(os.path.join(shots, "deer_bad.png"), 64, 38)
-	with open(os.path.join(shots, "about.txt"), "w") as f:
-		f.write("a red deer standing on grass")
+	good = subject(shots, "deer_good", ["front", "side"], 36)
+	subject(shots, "deer_bad", ["front", "side"], 40)
 	env = dict(os.environ, PICTURE_CHECK_HOME=home, PICTURE_CHECK_KEY_FILE=key_file,
 		PICTURE_CHECK_API_URL="http://127.0.0.1:%d/v1/messages" % server.server_port,
 		PICTURE_CHECK_CANCEL=os.path.join(tmp, "CANCEL"))
 	one = (1000 * 4.0 + 500 * 20.0) / 1e6
 
 	code, out = run(env, shots, "--dry-run")
-	check(code == 0 and not seen, "dry run exits 0 and sends nothing")
+	check(code == 0 and not seen and "4 pictures in 2 subject groups" in out, "dry run: two folders are two subjects, nothing sent")
+	many = subject(os.path.join(tmp, "many"), "rock", ["v%d" % i for i in range(10)], 20, "")
+	code, out = run(env, many, "--dry-run")
+	check("2 requests to send (10 pictures)" in out, "ten views of one subject go in two requests of at most 8")
 
 	code, out = run(env, shots)
-	check(code == 3 and len(seen) == 1 and "first run ever" in out, "the first run ever sends one picture only (exit %d, %d sent)" % (code, len(seen)))
+	check(code == 3 and len(seen) == 1 and "first run ever" in out, "the first run ever sends one request only (exit %d, %d sent)" % (code, len(seen)))
 	code, out = run(env, shots)
 	ledger = json.load(open(os.path.join(home, "spent.json")))
 	report = open(os.path.join(shots, "picture_check.md")).read()
-	check(code == 1, "a picture that looks wrong gives exit 1 (got %d)" % code)
+	check(code == 1, "a subject that looks wrong gives exit 1 (got %d)" % code)
 	check(len(seen) == 2 and all(s["key"] == KEY for s in seen), "two requests sent with the key in the header")
-	check(all("a red deer standing" in s["body"]["messages"][0]["content"][1]["text"] for s in seen), "about.txt reaches the request")
-	check("floating" in report and "deer_bad.png" in report, "the report lists the floating deer")
+	check(all(images_of(s["body"]) == 2 for s in seen), "each request carries both views of its subject")
+	check(all("View: deer_" in text_of(s["body"]) and "_side.png" in text_of(s["body"]) for s in seen), "each view goes with its file name")
+	check(all("a red deer standing" in text_of(s["body"]) for s in seen), "about.txt reaches the request")
+	check("floating" in report and "deer_bad_front.png, deer_bad_side.png" in report, "the report lists the floating deer and the views it shows in")
 	check(abs(ledger["spent_usd"] - 2 * one) < 1e-9 and ledger["reserved_usd"] == 0.0, "the ledger holds the real cost of two answers")
 
 	code, out = run(env, shots)
 	check(len(seen) == 2 and code == 1, "a second run reuses both answers and sends nothing")
 	check(abs(json.load(open(os.path.join(home, "spent.json")))["spent_usd"] - 2 * one) < 1e-9, "the ledger did not move")
 
-	png(os.path.join(shots, "deer_new.png"), 64, 40)
+	subject(shots, "deer_new", ["front"], 50)
 	code, out = run(env, shots, "--cap", "0.03")
 	report = open(os.path.join(shots, "picture_check.md")).read()
 	check(code == 3 and len(seen) == 2, "a cap below the worst case sends nothing and exits 3 (got %d)" % code)
@@ -141,8 +164,7 @@ def main():
 	led["reserved_usd"] = 0.5
 	led["cap_usd"] = 150.0
 	json.dump(led, open(os.path.join(home, "spent.json"), "w"))
-	code, out = run(env, shots, "--max-pictures", "0", "--dry-run")
-	code, out = run(env, os.path.join(shots, "deer_good.png"))
+	code, out = run(env, good)
 	led = json.load(open(os.path.join(home, "spent.json")))
 	check(abs(led["spent_usd"] - (2 * one + 0.5)) < 1e-9 and led["reserved_usd"] == 0.0, "a left reservation counts as spent")
 
@@ -158,9 +180,7 @@ def main():
 				leaked.append(name)
 	check(not leaked, "the key is in no file but its own (%s)" % ", ".join(leaked))
 
-	drop = os.path.join(tmp, "drop")
-	os.makedirs(drop)
-	png(os.path.join(drop, "deer_drop.png"), 30, 20)
+	drop = subject(os.path.join(tmp, "drop"), "deer_drop", ["front"], 20)
 	before = len(seen)
 	spent_before = json.load(open(os.path.join(home, "spent.json")))["spent_usd"]
 	code, out = run(env, drop)
@@ -168,13 +188,12 @@ def main():
 	check(code == 3 and len(seen) == before + 1, "a dropped connection is sent once, not retried (exit %d, %d sent)" % (code, len(seen) - before))
 	check(led["spent_usd"] - spent_before > 0.05 and led["reserved_usd"] == 0.0, "and is counted at its worst case ($%.3f)" % (led["spent_usd"] - spent_before))
 	busy = os.path.join(tmp, "busy")
-	os.makedirs(busy)
-	png(os.path.join(busy, "deer_busy.png"), 30, 22)
-	png(os.path.join(busy, "deer_gate.png"), 30, 24)
+	subject(busy, "deer_busy", ["front"], 22)
+	subject(busy, "deer_gate", ["front"], 24)
 	before = len(seen)
 	code, out = run(env, busy)
 	check(len(seen) == before + 3, "a 429 is retried once and answered, a 504 is sent once (%d sent)" % (len(seen) - before))
-	check("deer_busy.png ok" in out and "HTTP 504" in out, "the retried picture is checked, the 504 one is listed not checked")
+	check("deer_busy (1 pictures): deer ok" in out and "HTTP 504" in out, "the retried subject is checked, the 504 one is listed not checked")
 	before = len(seen)
 	open(os.path.join(home, "lock"), "w").close()
 	code, out = run(env, shots, "--recheck")
