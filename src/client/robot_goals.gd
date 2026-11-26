@@ -209,6 +209,19 @@ func _weigh_if_heavy(from: int) -> void:
 	_line("WEIGHT carried %.2f of %.2f kg: %s" % [c.items.carried_kg(), c.items.carry_limit_kg(), ", ".join(parts)])
 
 
+# The robot asked to walk and did not move: what holds it, so the report can say whether a window, sleep or the ground did it.
+func _stuck_note(doing: String) -> void:
+	var items = c.items
+	_line("STUCK %s at %s: screen_open %s (pack %s, chest %s, character %s, journal %s, talk %s), asleep %s, stance %d, strain %d, held %s" % [doing,
+		str(c.body.global_position.round()), str(items.screen_open()), str(items.open), str(items.chest_mode), str(items.character_open()),
+		str(items.journal != null and items.journal.open), str(items.dialogue_open), str(items.asleep), int(c.stance.stance),
+		int(items.strain_state), str(c.held.holding)])
+	_close_windows()
+
+	if int(items.strain_state) >= 1:   # worn out: a player stands and gets their breath back
+		await r._wait(20.0)
+
+
 # A player closes a trader's window before walking off (an open window holds the movement keys).
 func _close_windows() -> void:
 	if c.items.dialogue_open and c.items.dialogue_close.is_valid():
@@ -556,7 +569,11 @@ func _gather(item: String, n: int) -> String:
 			in_row = 0
 			walks += 1
 			_line("GATHER %s: nothing giving it within %.0f m of %s; walking on (%d)" % [item, SEARCH_M, str(c.body.global_position.round()), walks])
+			var from: Vector3 = c.body.global_position
 			await r._go_to(c.body.global_position + Vector3.FORWARD.rotated(Vector3.UP, float(walks) * 0.8) * (30.0 + 10.0 * float(walks)), 30.0, 3.0)   # a widening spiral
+
+			if _flat(from) < 1.0:
+				await _stuck_note("walking on for %s" % item)
 			continue
 
 		var at: Vector3 = spot["pos"]
