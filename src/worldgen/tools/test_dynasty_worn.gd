@@ -193,6 +193,40 @@ func _showing(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D) -
 	return [outside, torso]
 
 
+# The layer's points over the Neck bone (by their body vertex's strongest bone), in the mesh's rest: [count, the highest one's height, the neck joint's height].
+func _neck_band(body_mesh: MeshInstance3D, shell: MeshInstance3D) -> Array:
+	var skin: Skin = body_mesh.skin
+	var neck_y: float = INF
+
+	for i in range(skin.get_bind_count()):
+		if WornShell.short_name(String(skin.get_bind_name(i))) == "Neck":
+			neck_y = skin.get_bind_pose(i).affine_inverse().origin.y
+
+	var src: Array = (body_mesh.mesh as ArrayMesh).surface_get_arrays(0)
+	var verts: PackedVector3Array = src[Mesh.ARRAY_VERTEX]
+	var bones: PackedInt32Array = src[Mesh.ARRAY_BONES]
+	var weights: PackedFloat32Array = src[Mesh.ARRAY_WEIGHTS]
+	var per: int = int(float(bones.size()) / float(verts.size()))
+	var under: PackedInt32Array = ((shell.mesh.get_meta("source_vertices") as Array)[0] as Dictionary)["vertices"]
+	var count: int = 0
+	var top: float = -INF
+
+	for v in under:
+		var best: int = -1
+		var best_w: float = 0.0
+
+		for k in range(per):
+			if weights[v * per + k] > best_w:
+				best_w = weights[v * per + k]
+				best = bones[v * per + k]
+
+		if best >= 0 and WornShell.short_name(String(skin.get_bind_name(best))) == "Neck":
+			count += 1
+			top = maxf(top, verts[v].y)
+
+	return [count, top, neck_y]
+
+
 func _check(ok: bool, what: String) -> void:
 	print(("pass " if ok else "FAIL ") + what)
 	_fails += 0 if ok else 1
@@ -344,6 +378,16 @@ func _init() -> void:
 			var showing: Array = _showing(body.body_mesh, shell, s)
 			_check(int(showing[1]) > 2000 and int(showing[0]) * 100 <= int(showing[1]),
 				"%s at idle: the layer shows outside the garment's pieces at %d of %d torso points (at most 1%%)" % [str(garment[0]), int(showing[0]), int(showing[1])])
+
+		# The gambeson's high collar (worn_shell.gd NECK_BAND_M; Lane A qa15d: neck skin at its collar with the arm raised): its layer covers the foot of the neck,
+		# and only the foot, up to the band's top over the neck joint; the shirt's layer stops at the neck.
+		var neck_band: Array = _neck_band(body.body_mesh, shell)
+		var band_top: float = float(neck_band[2]) + float(WornShell.NECK_BAND_M.get(str(garment[1]), 0.0))
+
+		if WornShell.NECK_BAND_M.has(str(garment[1])):
+			_check(int(neck_band[0]) > 20 and float(neck_band[1]) <= band_top + 0.001, "%s's layer covers the foot of the neck: %d neck points, the highest %.3f m (band top %.3f)" % [str(garment[0]), int(neck_band[0]), float(neck_band[1]), band_top])
+		else:
+			_check(int(neck_band[0]) == 0, "%s's layer leaves the neck bare (%d neck points)" % [str(garment[0]), int(neck_band[0])])
 
 		for pose in [["idle", 0.0], ["chop", 0.1], ["chop", 0.3], ["chop", 0.5], ["chop", 0.7]]:
 			body.play(str(pose[0]), 1.0, 0.0)

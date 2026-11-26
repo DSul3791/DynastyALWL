@@ -178,25 +178,27 @@ static func wait() -> void:
 static func _gather(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
 	var in_region: Dictionary = {}       # builder -> PackedByteArray: skin bind index -> 1 when its bone is covered
 
+	var bind_names: Array = []      # skin bind index -> the bone's short name
+	var neck_y: float = INF         # the neck joint's height in the mesh (the bind pose undone), for NECK_BAND_M; none: no band
+
+	for i in range(skin.get_bind_count()):
+		var bone_name: String = String(skin.get_bind_name(i))
+
+		if bone_name == "" and skin.get_bind_bone(i) >= 0:
+			bone_name = skeleton.get_bone_name(skin.get_bind_bone(i))
+
+		bind_names.append(short_name(bone_name))
+
+		if short_name(bone_name) == "Neck":
+			neck_y = skin.get_bind_pose(i).affine_inverse().origin.y
+
 	for builder in REGIONS:
 		var flags: PackedByteArray = PackedByteArray()
 
-		for i in range(skin.get_bind_count()):
-			var bone_name: String = String(skin.get_bind_name(i))
-
-			if bone_name == "" and skin.get_bind_bone(i) >= 0:
-				bone_name = skeleton.get_bone_name(skin.get_bind_bone(i))
-
-			var plain: String = short_name(bone_name)
-			flags.append(1 if plain in REGIONS[builder] else (2 if plain == "Neck" and NECK_BAND_M.has(builder) else 0))   # 2: covered below the band's top
+		for plain in bind_names:
+			flags.append(1 if plain in REGIONS[builder] else (2 if plain == "Neck" and NECK_BAND_M.has(builder) and neck_y < INF else 0))   # 2: covered below the band's top
 
 		in_region[builder] = flags
-
-	var neck_y: float = INF      # the neck joint's height in the mesh (the bind pose undone), for NECK_BAND_M
-
-	for i in range(skin.get_bind_count()):
-		if short_name(String(skin.get_bind_name(i))) == "Neck":
-			neck_y = skin.get_bind_pose(i).affine_inverse().origin.y
 
 	var names: Array = []
 
