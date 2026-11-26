@@ -8761,9 +8761,16 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 
 # Files the records made since the last full sync (all of them after a load or a reset): the still ones in their cells for good, the
-# others in _rest. A record put in by hand needs an id from _next_id (as every record made here has), or _still_valid = false after. Then checks STILL_CHECK still records: one gone is dropped, one moved without _refile is moved (and counted).
+# others in _rest. A record put in by hand with any other id is found by the count below and everything is filed again. Then checks STILL_CHECK still records: one gone is dropped, one moved without _refile is moved (and counted).
 func _still_file() -> void:
-	if not _still_valid or _next_id < _still_next:
+	if _still_valid and _next_id >= _still_next:
+		for id in range(_still_next, _next_id):
+			if _items.has(id):
+				_file_one(id)
+
+	# More records than are filed: one was put in without an id from _next_id (a test or a tool building a world by hand; gate review
+	# 26 Nov 2026: test_far_smoke's fires). Taken records only make the filed side bigger, so this never fires for them.
+	if not _still_valid or _next_id < _still_next or _items.size() > _still_at.size() + _rest.size():
 		_still_fine = {}
 		_still_near = {}
 		_still_at = {}
@@ -8774,10 +8781,6 @@ func _still_file() -> void:
 			_file_one(int(id))
 
 		_still_valid = true
-	else:
-		for id in range(_still_next, _next_id):
-			if _items.has(id):
-				_file_one(id)
 
 	_still_next = _next_id
 

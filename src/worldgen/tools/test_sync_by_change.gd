@@ -291,16 +291,17 @@ func _initialize() -> void:
 	var taken: Dictionary = {}
 
 	for k in 50:
-		taken[int(rocks[k])] = true
-		big._items.erase(int(rocks[k]))
+		taken[int(rocks[rocks.size() - 1 - k])] = true   # the last filed: the check may have just passed them, the worst case
+		big._items.erase(int(rocks[rocks.size() - 1 - k]))
 
 	for k in range(50, 100):
-		var p: Vector3 = big._items[int(rocks[k])]["pos"] + Vector3(35.0, 0.0, -35.0)
+		var rock: int = int(rocks[rocks.size() - 1 - k])
+		var p: Vector3 = big._items[rock]["pos"] + Vector3(35.0, 0.0, -35.0)
 		p.y = ground_y(p.x, p.z)
-		big._items[int(rocks[k])]["pos"] = p   # no _refile
+		big._items[rock]["pos"] = p   # no _refile
 
 	var resent: int = 0
-	var rounds: int = int(ceil(float(big._still_at.size()) / float(big.STILL_CHECK))) + 1
+	var rounds: int = 2 * int(ceil(float(big._still_at.size()) / float(big.STILL_CHECK))) + 1   # at worst a whole round, then the next
 
 	for k in rounds:
 		big._sync_world_items()
@@ -321,12 +322,16 @@ func _initialize() -> void:
 	check(stale == 0, "and nothing taken is still filed (%d)" % stale)
 
 	# A load or a reset files everything again: records put in with any ids (a load's own), then the next full sync.
-	var old_id: int = int(rocks[0])   # an id taken above: a load can bring back any id below _next_id
+	var old_id: int = int(rocks[rocks.size() - 1])   # an id taken above: a load can bring back any id below _next_id
 	big._items[old_id] = {"number": stone, "count": 2, "pos": big._peer_pos[100] + Vector3(2.0, 0.0, 2.0), "left": 1.0e9, "scatter": "stones"}
 	big._still_valid = false   # as _load_world_items and reset_world do
 	big._sync_world_items()
 	check(big._still_at.has(old_id) and agrees(big, "after a load"), "a record loaded under an old id is filed and sent after the load")
 	var code: String = FileAccess.get_file_as_string("res://src/stream/server_items.gd")
+	var hand: int = big._next_id + 500   # a record put in by hand, with no id from _next_id (test_far_smoke does this)
+	big._items[hand] = {"number": stone, "count": 1, "pos": big._peer_pos[101] + Vector3(1.0, 0.0, 1.0), "left": 1.0e9}
+	big._sync_world_items()
+	check(big._rest.has(hand) and (copies[101] as Dictionary).has(hand), "a record put in by hand under any id is filed and sent at the next sync")
 	check(code.contains("	_sync_grid = {}\n	_still_valid = false") and code.contains("_next_id = int(parsed.get(\"next_id\", 1))\n	_still_valid = false"), "reset_world and the world load both file everything again")
 	print("sync by change: 15334 records, 32 players: first sync %.1f ms; walking %.1f ms median, %.1f worst; looked at %d records one by one (the old sync %d); %s" % [first_ms, times[2], times[4], looked, old_looked, detail])
 
