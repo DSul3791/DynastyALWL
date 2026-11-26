@@ -160,6 +160,33 @@ func _initialize() -> void:
 	check(v._clip_bones(player, anim, rig, 1.0)[BONES - 1].distance_to(v._clip_bones(player, anim, rig, 0.0)[BONES - 1]) > 0.01, "the clip moves the bones (the test is not comparing rest poses)")
 	check(v._clip_bones(player, anim, Node3D.new(), 0.0).is_empty(), "a rig with no skeleton has no bones")
 
+	# A second clip on the same rig names the same tracks: their nodes and bones come from the lookups kept since the first (_track_nodes,
+	# _track_bones), and give the same bones as the old sampler.
+	var second: Animation = anim.duplicate() as Animation
+
+	for t in second.get_track_count():
+		if second.track_get_type(t) == Animation.TYPE_POSITION_3D:
+			second.track_set_key_value(t, 1, (second.track_get_key_value(t, 1) as Vector3) + Vector3(0.05, 0.0, 0.0))
+
+	check(not v._track_nodes.is_empty() and not v._track_bones.is_empty(), "the first clip's lookups are kept")
+	var second_same: bool = true
+
+	for i in 11:
+		if not same(v._clip_bones(player, second, rig, float(i) / 10.0), old_clip_bones(player, second, rig, float(i) / 10.0)):
+			second_same = false
+
+	check(second_same, "a second clip on the same rig, from the kept lookups: the same bones as the old sampler")
+	var base: Node = player.get_node(player.root_node)
+	var sk: Skeleton3D = rig.find_children("*", "Skeleton3D", true, false)[0]
+	check(v._track_node(base, NodePath("RigRoot/Skeleton3D:b3")) == sk and v._track_bone(sk, NodePath("RigRoot/Skeleton3D:b3")) == 3, "a kept lookup gives the skeleton and bone 3")
+	check(v._track_node(base, NodePath("RigRoot/NoSuchNode")) == null and v._track_bone(sk, NodePath("RigRoot/Skeleton3D:no_bone")) == -1, "a path to nothing gives nothing, as get_node_or_null and find_bone do")
+	var brief: Node3D = Node3D.new()
+	brief.name = "Brief"
+	base.add_child(brief)
+	check(v._track_node(base, NodePath("Brief")) == brief, "a node is found and kept")
+	brief.free()
+	check(v._track_node(base, NodePath("Brief")) == null, "a kept node freed since gives null, as the lookup would")
+
 	var t0: int = Time.get_ticks_usec()
 
 	for i in 123:

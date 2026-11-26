@@ -22,6 +22,18 @@ const REGIONS := {
 	"padded": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
 	"mailshirt": TORSO + ["RightArm", "LeftArm"],
 }
+# The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's back corner
+# was 2 cm inside his shoulder blades), so the layer showed his back's muscles through it as cloth-coloured lumps (Lane A qa15e, 26 Nov 2026). On his body a sleeved
+# garment's chest tubes are turned a sixth of a turn so a flat face lies across the back and the chest (CylinderMesh puts a corner at the back), made deeper and set back,
+# and a little narrower, since the turn puts a corner at each side. Its flat chest details (the gambeson's quilting, the shirt's lacing) are laid on the tube's front
+# faces; the three garments have no other chest pieces. No mantle over the shoulders: a round one read as a hump from the back and the side
+# (Lane A qa15f). Measured offline against his skinned mesh at idle (tools: the garment's surface against the body, by 5 cm of height): the garment stands at most 7.5 cm
+# off his back and 8 cm past his sides (the mantle stood 10.6 cm off his back), and the layer's points outside the pieces over his shoulder blades fell from 245 (gambeson)
+# and 308 (shirt) to 40 and 75; the shoulder tops above the tube stay the layer's, the garment's own shoulders.
+const CHEST_TURN := PI / 6.0
+const CHEST_DEEPER := 1.2
+const CHEST_BACK_M := 0.01
+const CHEST_NARROWER := 0.9
 # How far out from the skin, in metres: inside the garment's pieces (a layer-2 garment's pieces stand 3 cm out), and a shirt under a gambeson under mail in that order.
 const OUT_M := {"tunic": 0.01, "padded": 0.018, "mailshirt": 0.024}
 
@@ -34,6 +46,75 @@ static var _seen: Dictionary = {}       # mesh id -> true once prewarmed
 
 static func covers(builder: String) -> bool:
 	return REGIONS.has(builder)
+
+
+# `builder`'s pieces (worn_look.gd parts_of) as they hang on a body with this layer (see CHEST_TURN). Other garments' pieces, and pieces on other bones, are returned as
+# they are.
+static func fit_parts(builder: String, parts: Array) -> Array:
+	if not covers(builder):
+		return parts
+
+	var tube: Dictionary = {}
+
+	for part in parts:
+		if str(part["bone"]) == "chest" and str(part["shape"]) == "cyl" and not bool(part.get("detail", false)):
+			tube = part
+			break
+
+	if tube.is_empty():
+		return parts
+
+	var center_z: float = float((tube["at"] as Vector3).z) * CHEST_DEEPER + CHEST_BACK_M
+	var half_x: float = float((tube["size"] as Vector3).x) * CHEST_NARROWER * 0.5
+	var face: float = float((tube["size"] as Vector3).z) * CHEST_DEEPER * 0.5 * cos(CHEST_TURN)    # the front face's distance from the tube's middle
+	var out: Array = []
+
+	for part in parts:
+		var piece: Dictionary = (part as Dictionary).duplicate()
+		var at: Vector3 = piece["at"]
+		var size: Vector3 = piece["size"]
+
+		if str(piece["bone"]) != "chest":
+			pass
+		elif str(piece["shape"]) == "cyl":
+			piece["rot"] = (piece.get("rot", Vector3.ZERO) as Vector3) + Vector3(0.0, CHEST_TURN, 0.0)
+			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER + CHEST_BACK_M)
+			piece["size"] = Vector3(size.x * CHEST_NARROWER, size.y, size.z * CHEST_DEEPER)
+		elif str(piece["shape"]) == "box" and at.z < 0.0:
+			piece = _on_front(piece, center_z, half_x, face, tube)
+
+		out.append(piece)
+
+	return out
+
+
+# A flat chest detail laid on the turned tube's front (front is -Z): on the flat face across the chest, or turned onto the slanted face beside it, its back sunk 2 mm in,
+# and cut to the tube's height (Lane A qa15g, 26 Nov 2026: the shirt's lacing ran 4 cm above the tube and stood proud at the collar from the side).
+static func _on_front(piece: Dictionary, center_z: float, half_x: float, face: float, tube: Dictionary) -> Dictionary:
+	var at: Vector3 = piece["at"]
+	var size: Vector3 = piece["size"]
+	var sink: float = size.z * 0.5 - 0.002
+	var tube_y: float = float((tube["at"] as Vector3).y)
+	var tube_half: float = float((tube["size"] as Vector3).y) * 0.5 - 0.005
+	var low: float = maxf(at.y - size.y * 0.5, tube_y - tube_half)
+	var high: float = minf(at.y + size.y * 0.5, tube_y + tube_half)
+
+	if high > low:
+		at.y = (low + high) * 0.5
+		piece["size"] = Vector3(size.x, high - low, size.z)
+	var surface_z: float = center_z - face
+	var normal: Vector2 = Vector2(0.0, -1.0)      # (x, z), outward
+	var turn: float = 0.0
+
+	if absf(at.x) > half_x * 0.5:
+		var slope: float = 2.0 * face / half_x
+		surface_z = center_z - face * 2.0 * (1.0 - minf(absf(at.x), half_x) / half_x)
+		normal = Vector2(signf(at.x) * slope, -1.0).normalized()
+		turn = -signf(at.x) * atan(slope)
+
+	piece["at"] = Vector3(at.x + normal.x * sink, at.y, surface_z + normal.y * sink)
+	piece["rot"] = (piece.get("rot", Vector3.ZERO) as Vector3) + Vector3(0.0, turn, 0.0)
+	return piece
 
 
 # The bone's short name: "mixamorig_RightArm" (and "mixamorig:RightArm") -> "RightArm".
