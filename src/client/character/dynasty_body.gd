@@ -20,6 +20,7 @@ const WornShell := preload("res://src/client/worn_shell.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
+const LegTurn := preload("res://src/client/character/dynasty_leg_turn.gd")
 const HairModels := preload("res://src/client/character/hair_models.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
@@ -103,6 +104,7 @@ var _log_two: MeshInstance3D   # the second log, beside it
 var _model: Node3D
 var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
 var breath: SkeletonModifier3D               # dynasty_breath.gd, made with the body
+var leg_turn: SkeletonModifier3D             # dynasty_leg_turn.gd, made with the body
 var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
@@ -227,6 +229,12 @@ func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	b.player = animation_player
 	skeleton.add_child(b)
 	breath = b
+	var legs := LegTurn.new()   # the legs turned toward the travel, the chest kept on the look (dynasty_leg_turn.gd)
+	legs.name = "LegTurn"
+	legs.player = animation_player
+	legs.body = self
+	skeleton.add_child(legs)
+	leg_turn = legs
 
 
 # A mount on a bone, in the bone's rest frame turned so that its -Z points out along the bone (the fingers) and its +Y points to the front of the body, the same grip the old
@@ -791,6 +799,9 @@ func set_proportions(g: Dictionary) -> void:
 
 		if breath != null:
 			skeleton.move_child(breath, -1)      # breathing after the reshape
+
+		if leg_turn != null:
+			skeleton.move_child(leg_turn, -1)    # and the legs' turn last
 
 	proportions.set_genome(g)
 	_set_widths(g)
