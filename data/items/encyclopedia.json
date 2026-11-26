@@ -2213,7 +2213,8 @@
 			"kind": "placeable",
 			"description": "Stones and sticks for a fire. Set it down, put wood on it, then press E to light it.",
 			"how_to_get": [
-				"Craft: 6 Stick, 16 Stone"
+				"Craft: 6 Stick, 16 Stone",
+				"Build with a hammer (press R): 6 Stick, 16 Stone"
 			],
 			"used_for": [
 				"Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark, tinder fungus or amadou in your pack to light it, then put wood in with F. Cooks, warms, lights."

@@ -34,7 +34,7 @@ for kind, d in structs.items():
         kit_of[d["kit"]] = kind
 
 KNOWN_OPEN = set()
-LIVE_KIT_EXCEPTIONS = {"campfire_kit", "rough_bed_kit"}   # made in the pack, not by the hammer
+LIVE_KIT_EXCEPTIONS = {"campfire_kit", "rough_bed_kit"}   # made in the pack (the campfire also by the hammer: blueprint 366 lays it)
 
 for iid, it in items.items():
     if it.get("retired"):
