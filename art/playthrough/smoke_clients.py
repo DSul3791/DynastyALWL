@@ -9,7 +9,7 @@ import tempfile
 import time
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-GODOT = os.environ.get("GODOT_EXE", "C:/GodotInstaller/godot.windows.editor.x86_64.exe")
+GODOT = os.environ.get("GODOT_EXE", "C:/DynastyLane/godot/godot_lane_a.exe")
 LOGS = os.path.join(ROOT, "art", "playthrough", "smoke", "logs")
 os.makedirs(LOGS, exist_ok=True)
 PLAN = [("arrival", ["--arrival"], 2600), ("gather", ["--gather"], 12000), ("plantpick", ["--plantpick"], 6000), ("chop", ["--chop"], 8000),

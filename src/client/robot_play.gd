@@ -193,7 +193,7 @@ func _hook() -> void:
 	client.net.notice_received.connect(func(t): _notice_msec = Time.get_ticks_msec(); _notices.append(str(t)))
 	client.net.reject_received.connect(func(r): _rejects.append([int(r), Time.get_ticks_msec(), _step]))
 	client.net.craft_queue_received.connect(func(entries, _ms): _queue_left = entries.size(); _queue_msec = Time.get_ticks_msec())
-	client.net.animals_received.connect(func(rows, _ms):
+	client.net.animals_received.connect(func(rows, _ms, _part, _parts):
 		for r in rows:
 			_species[int(r[0])] = RobotRules.species_of(int(r[1]))
 
