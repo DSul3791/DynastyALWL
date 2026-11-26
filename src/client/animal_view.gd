@@ -902,6 +902,9 @@ func _process_body(delta: float) -> void:
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 	_settle_until = MotionBuffer.stall_until(now_s, _frame_s, _settle_until, delta, STALL_S)   # this computer's own stall: rows read now came late because nobody read them
 	var settle: bool = now_s <= _settle_until
+	# The animals are drawn on the ticks clock (drawn_at, present), so their feet, easing, speed and gait step by that clock's own step, not the engine's
+	# delta, which differs from it on uneven frames (BugsList 174: other players jumped and rushed by it on Dave's PC; player_view.gd does the same).
+	var clock_step: float = clampf(now_s - _frame_s, 0.0, STALL_S) if _frame_s >= 0.0 else delta
 	_frame_s = now_s
 	var drawn_at: float = now_s - MotionBuffer.clock_delay(_clock)
 	var present: float = now_s - float(_clock["late"])   # where the newest rows say it is now: every animal on the ground is drawn there (protocol 168), a committed charge too (AHEAD_STATES)
@@ -941,24 +944,24 @@ func _process_body(delta: float) -> void:
 		var spot: Vector3 = drawn[0]
 
 		if not ahead:
-			spot = MotionBuffer.follow(b, spot, delta)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
+			spot = MotionBuffer.follow(b, spot, clock_step)   # its own feet: eased starts and stops, a curve at a corner (Dave: "more freedom client side")
 
 		if me != Vector3.INF:
 			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
 			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
-			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
+			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * clock_step * 1.05
 			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - AnimalContact.WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
 
 		if ahead:
-			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
+			MotionBuffer.follow_hold(b, spot, clock_step)   # a committed charge runs its locked line; the feet pick up from here after it
 
 		if int(b["state"]) in LUNGE_STATES:
-			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.LUNGE_MPS, delta, 1.05, 1.0)
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.LUNGE_MPS, clock_step, 1.05, 1.0)
 		else:
-			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), delta)
-		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), delta)   # turned, never snapped
+			node.position = MotionBuffer.smooth(b, spot, MotionBuffer.speed_at(b["samples"], t_drawn), clock_step)
+		node.rotation.y = MotionBuffer.face(b, node.rotation.y, float(drawn[1]), float(b["turn_rad_s"]), clock_step)   # turned, never snapped
 		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
-		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
+		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(clock_step, 0.001), clock_step)
 		b["spd"] = spd
 		if node.has_meta("bandit"):
 			BanditLook.animate(node, state, spd)
@@ -972,9 +975,9 @@ func _process_body(delta: float) -> void:
 				var birds: Array = node.get_meta("flock_birds")
 
 				for bird in birds:
-					_animate_model(bird, b, state, model_speed, delta, bird == birds[0])      # the flock's gait (footsteps) counts once, not once a bird
+					_animate_model(bird, b, state, model_speed, clock_step, bird == birds[0])      # the flock's gait (footsteps) counts once, not once a bird
 			else:
-				_animate_model(node, b, state, model_speed, delta)
+				_animate_model(node, b, state, model_speed, clock_step)
 			_emit_steps(b, node, state, model_speed)
 			continue
 
@@ -985,14 +988,14 @@ func _process_body(delta: float) -> void:
 		# Wolf idle (protocol states 8 roll in the grass, 9 play): placeholder motion until Mandy animates it.
 		var roll: float = PI * 0.5 if state == 8 else 0.0
 		# Big game (protocol states 10 warn: head down and stamping, 11 charge: gallop, 12 recover): placeholder motion until Mandy animates it.
-		rig.rotation.x = lerp_angle(rig.rotation.x, 0.28 if state == 10 or state == 13 else (0.12 if state == 11 or state == 15 else 0.0), clampf(delta * 8.0, 0.0, 1.0))
-		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(delta * 6.0, 0.0, 1.0))
+		rig.rotation.x = lerp_angle(rig.rotation.x, 0.28 if state == 10 or state == 13 else (0.12 if state == 11 or state == 15 else 0.0), clampf(clock_step * 8.0, 0.0, 1.0))
+		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(clock_step * 6.0, 0.0, 1.0))
 		if bool(b.get("wolf", false)):
-			_animate_wolf(node, b, state, spd, delta)
+			_animate_wolf(node, b, state, spd, clock_step)
 		elif bool(b.get("quad", false)):
-			_animate_quad(node, b, state, spd, delta)
+			_animate_quad(node, b, state, spd, clock_step)
 		else:
-			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
+			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(clock_step * 20.0, 0.0, 1.0))
 
 		if bool(b.get("gulls", false)):
 			_animate_gulls(rig, state == 15)
