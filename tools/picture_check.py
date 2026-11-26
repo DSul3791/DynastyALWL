@@ -17,7 +17,8 @@ Godot is not involved: the pictures come from the lane's in-game tools (look_rig
 
 Spending: every request first reserves its worst case (all input as a cache write, all max_tokens as output) in the ledger;
 the answer's real usage replaces the reservation. A request whose worst case would pass the cap is never sent. A run cut off
-mid-request leaves its reservation counted, so the total can only be over, never under. The ledger and the stored answers
+mid-request, or a request whose answer never came back, stays counted at its worst case, so the total can only read high.
+One check runs at a time (a lock file in that folder). The ledger and the stored answers
 live in C:/DynastyLane/picture_check (outside the clone; PICTURE_CHECK_HOME overrides).
 Key: read only from C:/DynastyLane/picture_check_key.txt (PICTURE_CHECK_KEY_FILE overrides); never printed, logged or stored.
 Stops between pictures when C:/DynastyLane/logs/queue/CANCEL exists (the lane's cancel file).
@@ -27,6 +28,7 @@ import argparse
 import base64
 import hashlib
 import json
+import math
 import os
 import struct
 import sys
@@ -211,18 +213,17 @@ def ask(key, data, label, about):
 			except Exception:
 				pass
 			error = "HTTP %d %s" % (e.code, detail[:200])
-			if e.code in (408, 409, 429, 500, 502, 503, 504, 529) and attempt < 3:
+			if e.code in (408, 504):   # a gateway timeout may have been billed with no answer back: counted, not retried
+				return None, {}, error, unseen + 1
+			if e.code in (409, 429, 500, 502, 503, 529) and attempt < 3:   # refused before any work: not billed, safe to retry
 				wait = e.headers.get("retry-after") if e.headers else None
 				time.sleep(min(60.0, float(wait)) if wait and wait.replace(".", "", 1).isdigit() else 5.0 * (attempt + 1))
 				continue
 			return None, {}, error, unseen
-		except (urllib.error.URLError, OSError, ValueError) as e:
-			error = "network: %s" % type(e).__name__
-			unseen += 1   # the request may have reached the API and been billed with no answer back: counted at its worst case
-			if attempt < 3:
-				time.sleep(5.0 * (attempt + 1))
-				continue
-			return None, {}, error, unseen
+		except Exception as e:   # network, cut-off reply (IncompleteRead), bad JSON
+			# The request may have reached the API and been billed with no answer back: counted at its worst case, never retried
+			# (a retry would spend past the one reservation the cap check allowed).
+			return None, {}, "network: %s" % type(e).__name__, unseen + 1
 		usage = reply.get("usage", {})
 		if reply.get("stop_reason") == "refusal":
 			return None, usage, "the API declined this picture", unseen
@@ -301,12 +302,18 @@ def main(argv):
 	ap.add_argument("--cap", type=float, default=None)
 	ap.add_argument("--recheck", action="store_true")
 	args = ap.parse_args(argv)
+	if args.cap is not None and not (math.isfinite(args.cap) and args.cap >= 0):
+		print("picture check: --cap must be a dollar amount")
+		return 2
+	if not (API_URL.startswith("https://") or API_URL.startswith("http://127.0.0.1:")):
+		print("picture check: the API address must be https (the key goes in its header)")
+		return 2
 	started = time.time()
 	pictures = find_pictures(args.paths)
 	if not pictures:
 		print("picture check: no .png pictures in %s" % " ".join(args.paths))
 		return 2
-	out_dir = args.out or (args.paths[0] if os.path.isdir(args.paths[0]) else os.path.dirname(args.paths[0]))
+	out_dir = args.out or (args.paths[0] if os.path.isdir(args.paths[0]) else os.path.dirname(args.paths[0])) or "."
 	answers_path = os.path.join(HOME, "answers.json")
 	answers = {}
 	if os.path.exists(answers_path):
@@ -318,7 +325,7 @@ def main(argv):
 		with open(path, "rb") as f:
 			data = f.read()
 		size = png_size(data)
-		digest = hashlib.sha256(data).hexdigest() + ":" + PROMPT_VERSION
+		digest = hashlib.sha256(data + about_for(path, args.about).encode("utf-8")).hexdigest() + ":" + PROMPT_VERSION
 		plan.append((path, data, size, digest))
 	new = [p for p in plan if args.recheck or p[3] not in answers]
 	sendable = [p for p in new if p[2] and len(p[1]) <= MAX_IMAGE_BYTES]
@@ -328,9 +335,26 @@ def main(argv):
 	if args.dry_run:
 		return 0
 	key = read_key()
+	if os.path.exists(answers_path) and not os.path.exists(os.path.join(HOME, "spent.json")) and args.cap is None:
+		print("picture check: answers are stored but the spending ledger %s is gone; pass --cap with what is really left" % os.path.join(HOME, "spent.json"))
+		return 2
+	lock = os.path.join(HOME, "lock")
+	os.makedirs(HOME, exist_ok=True)
+	try:
+		os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+	except FileExistsError:
+		print("picture check: another check is running (or one was cut off: delete %s once none runs)" % lock)
+		return 2
+	try:
+		return run(args, plan, key, answers, answers_path, out_dir, started)
+	finally:
+		os.remove(lock)
+
+
+def run(args, plan, key, answers, answers_path, out_dir, started):
 	ledger = Ledger(os.path.join(HOME, "spent.json"), args.cap)
 	print("picture check: spent so far $%.2f of the $%.2f cap" % (ledger.total(), ledger.data["cap_usd"]))
-	if new and not key:
+	if any(args.recheck or p[3] not in answers for p in plan) and not key:
 		print("picture check: no API key in %s (the one-time command is in docs/PICTURE_CHECK.md)" % KEY_FILE)
 		return 2
 

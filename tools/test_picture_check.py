@@ -10,8 +10,11 @@
 4. A reservation left by a cut-off run counts as spent on the next start.
 5. The key never appears in the report, the ledger or the stored answers.
 6. --dry-run needs no key and sends nothing.
-7. picture_sweep.py with a stand-in Godot (a script that writes the pictures): --max-jobs 2 runs two held-item jobs, writes their
-   about.txt, and a second --list counts them done (a resumed sweep skips them).
+7. A request whose connection drops with no answer is counted at its worst case and not retried; a second check while one
+   runs (its lock file there) refuses to start.
+8. picture_sweep.py with a stand-in Godot (a script that writes the pictures): --max-jobs 2 runs two held-item jobs, writes their
+   about.txt, and a second --list counts them done (a resumed sweep skips them). A job that runs past --job-limit is stopped with
+   everything it started (a grandchild process too).
 """
 import http.server
 import json
@@ -49,6 +52,9 @@ class Fake(http.server.BaseHTTPRequestHandler):
 		body = json.loads(self.rfile.read(int(self.headers["content-length"])))
 		seen.append({"key": self.headers.get("x-api-key"), "body": body})
 		label = body["messages"][0]["content"][1]["text"]
+		if "drop" in label:
+			self.close_connection = True
+			return
 		if "bad" in label:
 			answer = {"shows": "a deer", "verdict": "problem", "problems": [{"kind": "floating", "where": "front hooves",
 				"what": "the deer hovers 10 cm above the grass", "severity": "high", "confidence": "high"}]}
@@ -136,9 +142,28 @@ def main():
 				leaked.append(name)
 	check(not leaked, "the key is in no file but its own (%s)" % ", ".join(leaked))
 
+	drop = os.path.join(tmp, "drop")
+	os.makedirs(drop)
+	png(os.path.join(drop, "deer_drop.png"), 30, 20)
+	before = len(seen)
+	spent_before = json.load(open(os.path.join(home, "spent.json")))["spent_usd"]
+	code, out = run(env, drop)
+	led = json.load(open(os.path.join(home, "spent.json")))
+	check(code == 3 and len(seen) == before + 1, "a dropped connection is sent once, not retried (exit %d, %d sent)" % (code, len(seen) - before))
+	check(led["spent_usd"] - spent_before > 0.05 and led["reserved_usd"] == 0.0, "and is counted at its worst case ($%.3f)" % (led["spent_usd"] - spent_before))
+	open(os.path.join(home, "lock"), "w").close()
+	code, out = run(env, shots, "--recheck")
+	check(code == 2 and "another check is running" in out and len(seen) == before + 1, "a second check refuses to start while the lock is there")
+	os.remove(os.path.join(home, "lock"))
+
 	fake = os.path.join(tmp, "fake_godot.py")
 	with open(fake, "w") as f:
-		f.write("import sys, os\nargs = dict(a[2:].split('=', 1) for a in sys.argv if a.startswith('--') and '=' in a)\n"
+		f.write("import sys, os, subprocess, time\n"
+			"if os.environ.get('FAKE_SLEEP'):\n"
+			"    child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(120)'])\n"
+			"    open(os.environ['FAKE_SLEEP'], 'w').write(str(child.pid))\n"
+			"    time.sleep(120)\n"
+			"args = dict(a[2:].split('=', 1) for a in sys.argv if a.startswith('--') and '=' in a)\n"
 			"os.makedirs(args['out'], exist_ok=True)\n"
 			"[open(os.path.join(args['out'], '%s_%s.png' % (args['name'], n)), 'wb').write(b'x') for n in ('right', 'left', 'hand', 'front')]\n")
 	if os.name == "nt":
@@ -158,6 +183,21 @@ def main():
 	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--list"],
 		env=senv, cwd=os.path.dirname(HERE), capture_output=True, text=True)
 	check(", 2 done," in r.stdout, "a second look counts those two jobs done: " + r.stdout.splitlines()[0])
+	pid_file = os.path.join(tmp, "grandchild.pid")
+	r = subprocess.run([sys.executable, "-I", os.path.join(HERE, "picture_sweep.py"), "--out", sweep, "--groups", "held", "--max-jobs", "1",
+		"--job-limit", "3"], env=dict(senv, FAKE_SLEEP=pid_file), cwd=os.path.dirname(HERE), capture_output=True, text=True, timeout=90)
+	alive = True
+	if os.path.isfile(pid_file):
+		pid = int(open(pid_file).read())
+		if os.name == "nt":
+			alive = str(pid) in subprocess.run(["tasklist", "/FI", "PID eq %d" % pid], capture_output=True, text=True).stdout
+		else:
+			try:
+				os.kill(pid, 0)
+				alive = open("/proc/%d/stat" % pid).read().split()[2] != "Z" if os.path.exists("/proc/%d/stat" % pid) else True
+			except OSError:
+				alive = False
+	check("timeout 3 s" in r.stdout and not alive, "a job past --job-limit is stopped with its grandchild (%s)" % r.stdout.strip().splitlines()[-2:])
 
 	server.shutdown()
 	print("%d failure(s)" % len(failures))
