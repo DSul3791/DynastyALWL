@@ -20,7 +20,7 @@ extends Node
 #   --shot-skill=SKILL:VALUE  an admin skill set 6 s after connecting (look rig --skill): e.g. tracking:5 to see the trail signs (data/look/trail_signs.json)
 #   --shot-animals=bear,deer[,young_bear]  one animal of each in a row 4 m ahead of the player, built by the game's own animal view (a realistic
 #                       model from data/animals/models.json when its files are there, else the code body; a young_ prefix draws it at young size), standing in its graze clip
-#   --shot-animal-role=R  the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert; 10 the warn, 16 the jaw-pop;
+#   --shot-animal-role=R  (dead: each lies as its own dead body; carcass: the old hand-built body) the --shot-animals row plays role R's clip instead (21: the drink, docs/design/animals_drink_client_design.md; 3: alert; 10 the warn, 16 the jaw-pop;
 #                       walk, trot or run: the gait clip a moving or fleeing animal plays), and logs which clip each played. The row hides grass and plants
 #   --shot-bow=STATE[:DRAW]  hold a given bow in this pose: idle (ready to shoot, the string at rest), raised[:0 to 1] (the string drawn that far) or drawn (at the jaw);
 #                       first person keeps the arms on and ten stone arrows are given too (the nocked arrow shows only with arrows in the pack);
@@ -137,6 +137,7 @@ var _spin_i: int = 0
 var _spin_next_msec: int = 0
 var _selected: bool = false
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
+const CarcassLookScript := preload("res://src/client/carcass_look.gd")
 const AnimalGait := preload("res://src/client/animal_gait.gd")
 var animal_names: PackedStringArray = PackedStringArray()   # --shot-animals=bear,deer: one animal of each in a row (_show_animals)
 var animal_role: String = "0"     # --shot-animal-role=R: the row plays that role's clip (21 the drink), falling back to role 0 as the game does
@@ -1121,7 +1122,16 @@ func _show_animals(now: int) -> void:
 			drawn.append("%s unknown" % name_text)
 			continue
 
-		var node: Node3D = view._make_for_species(int(number), 900000 + i, young)
+		# Dead bodies (BugsList 184): "dead" draws the animal's own dead body as a carcass row seen later does (animal_view dead_body: the
+		# death clip's last pose, or tipped onto its side); "carcass" the old hand-built body (carcass_look.gd), for before-and-after pictures.
+		var node: Node3D
+
+		if animal_role == "dead":
+			node = view.dead_body(kind, 900000 + i, int(number) + (AnimalViewScript.YOUNG_NUM if young else 0), Vector3.INF)
+		elif animal_role == "carcass":
+			node = CarcassLookScript.build(kind)
+		else:
+			node = view._make_for_species(int(number), 900000 + i, young)
 
 		if node == null:
 			drawn.append("%s not drawn" % name_text)
@@ -1143,10 +1153,16 @@ func _show_animals(now: int) -> void:
 
 		node.position = Vector3(x, g, z)
 		node.rotation.y = PI * 0.5       # side on to the camera
-		if young and not node.has_meta("young_model"):
+		if young and not node.has_meta("young_model") and not animal_role in ["dead", "carcass"]:
 			node.scale = Vector3.ONE * AnimalViewScript.YOUNG_SCALE
 
 		view.add_child(node)
+
+		if animal_role in ["dead", "carcass"]:
+			drawn.append("%s %s" % [name_text, "dead body (own model)" if node.name == "DeadBody" else "hand-built body"])
+			middle += node.position
+			count += 1
+			continue
 
 		if node.has_meta("player"):
 			var player: AnimationPlayer = node.get_meta("player")

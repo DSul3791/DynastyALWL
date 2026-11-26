@@ -70,6 +70,7 @@ var weather_ahead: Callable        # (hours) -> the weather dictionary that many
 var weather_ahead_at: Callable     # (hours, pos) -> the weather over that spot's row that many game hours from now; set, it is used instead
 var row_of: Callable               # (pos) -> the tile row a spot is in (the storm look-ahead is kept per row)
 var died: Callable                 # (species, position, source peer) when an animal is killed
+var last_dead: Dictionary = {}     # the body of the animal `died` is told of, set just before it: {"look": its id, "num": its row number (young: + YOUNG_NUM), "heading"} (dead_body_of)
 var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
@@ -671,6 +672,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		a["birds"] = int(a.get("birds", 8)) - 1
 
 		if died.is_valid():
+			last_dead = {}   # one bird of a flock record: no one look to keep (the client draws a bird of its kind)
 			died.call(a["sp"], a["pos"], source_peer)
 
 		if int(a["birds"]) <= 0:
@@ -707,6 +709,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 			wolves.on_death(id, a["pack"])
 
 		if died.is_valid():
+			last_dead = dead_body_of(a)
 			died.call(a["sp"], a["pos"], source_peer)
 
 		return true
@@ -2045,6 +2048,13 @@ func _runs_on_hurt(a: Dictionary, def: Dictionary, speed: float, dt: float, grou
 	return true
 
 
+# Which body lay down where an animal died (Dave 26 Nov 2026: dead animals "become these strange low poly homemade models"): its id picks
+# the same model look the client drew it with (animal_view _make_model), its row number says whether it was young, and its heading which
+# way it lay. server_items.make_carcass keeps these on the dead body, so it is drawn as that animal every time it comes into view.
+static func dead_body_of(a: Dictionary) -> Dictionary:
+	return {"look": int(a.get("id", 0)), "num": int(a.get("num", 0)), "heading": float(a.get("heading", 0.0))}
+
+
 # A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail. True when it died.
 func bleed(a: Dictionary, dt: float) -> bool:
 	if not a.get("wound", false):
@@ -2065,6 +2075,7 @@ func bleed(a: Dictionary, dt: float) -> bool:
 		wolves.on_death(int(a["id"]), a["pack"])
 
 	if died.is_valid():
+		last_dead = dead_body_of(a)
 		died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
 
 	return true

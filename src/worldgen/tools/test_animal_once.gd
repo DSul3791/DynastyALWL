@@ -36,6 +36,7 @@ func body(v, id: int, roles: Dictionary) -> Dictionary:
 	player.set_meta("roles", by_role)
 	node.add_child(player)
 	node.set_meta("player", player)
+	node.set_meta("model", true)
 	node.set_meta("model_row", {"clips": {"0": by_role.get("0", "")}})
 	v.add_child(node)
 	var b: Dictionary = {"node": node, "state": 0, "spd": 0.0, "id": id, "target": Vector3.ZERO, "kind": "deer", "samples": [], "heading": 0.0, "phase": 0.0, "step_count": -1, "contact_m": 0.5, "turn_rad_s": 6.0}
@@ -80,10 +81,41 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	var biter: Dictionary = body(v, 5, {"0": ["Idle", 4.0], "bite": ["attack_02_once", 0.4]})
 	check(v._play_once(biter, "bite", AnimalViewScript.BITE_MAX_S) and absf(float(biter["once_until"]) - v._t - 0.4) < 0.001, "a 0.4 s bite plays 0.4 s")
 
-	# A death: the body stays drawn while the clip plays; with no death clip it goes at once (false).
+	# A death (Dave 26 Nov 2026: dead animals became "strange low poly homemade models"): the body stays drawn as it falls and waits on
+	# _fallen for its carcass row; with no death clip it tips onto its side about its edge instead. A code-built body goes at once.
 	var dying: Dictionary = body(v, 6, {"0": ["Idle", 4.0], "die": ["Death_Idle_R01_once", 1.5]})
+	(dying["node"] as Node3D).position = Vector3(10.0, 0.0, 0.0)
 	check(v._die(dying) and is_instance_valid(dying["node"]) and not (dying["node"] as Node3D).is_queued_for_deletion(), "a killed body with a death clip is still drawn as it falls")
-	check(not v._die(plain), "with no death clip the body goes at once")
+	check(((dying["node"] as Node3D).get_meta("player") as AnimationPlayer).assigned_animation == "Death_Idle_R01_once", "and plays its death clip")
+	plain["node"].position = Vector3(20.0, 0.0, 0.0)
+	plain["node"].rotation.y = 0.7
+	check(v._die(plain) and (plain["node"] as Node3D).get_parent().name == "Fallen", "with no death clip the body is kept, on a pivot that tips it over")
+	var pivot: Node3D = (plain["node"] as Node3D).get_parent()
+	check(absf(pivot.rotation.y - 0.7) < 0.001 and (pivot.global_position - Vector3(20.0, 0.0, 0.0)).length() < 0.25, "the pivot keeps its turn, at the edge of its feet (%s)" % str(pivot.global_position))
+	check(((plain["node"] as Node3D).global_position - Vector3(20.0, 0.0, 0.0)).length() < 0.001, "and the body has not moved yet: no jump")
+	var code_built: Node3D = Node3D.new()
+	v.add_child(code_built)
+	check(not v._die({"node": code_built, "kind": "deer"}), "a code-built body goes at once (its carcass row draws the old body)")
+	var flat: Node3D = Node3D.new()
+	v.add_child(flat)
+	var flat_pivot: Node3D = v._tip_over(flat, 0.0)
+	check(absf(flat_pivot.rotation.z + PI * 0.5) < 0.001 and absf((flat_pivot.global_transform * flat.transform * Vector3(0.0, 1.0, 0.0)).y - 0.2) < 0.001, "tipped at once: on its side, its top out sideways and its edge on the ground")
+
+	# The carcass row takes the fallen body of its kind lying near it: the same node, not a second body. Far or another kind: not taken.
+	var taken: Node3D = v.dead_body("deer", 6, 2, Vector3(10.5, 0.0, 0.3))
+	check(taken != null, "a carcass row near the fallen deer is drawn")
+	v.add_child(taken)
+	check(is_instance_valid(dying["node"]) and (dying["node"] as Node3D).get_parent() == taken and ((dying["node"] as Node3D).global_position - Vector3(10.0, 0.0, 0.0)).length() < 0.001, "with the fallen body itself, where it fell")
+	check(v._fallen.size() == 1, "and it is off the waiting list (the tipped one waits)")
+	check(v._take_fallen("wolf", Vector3(20.0, 0.0, 0.0)) == null, "a carcass of another kind does not take it")
+
+	# A fallen body no carcass row takes: kept while the player is far, gone once they are near after DEAD_WAIT_S.
+	v._t += AnimalViewScript.DEAD_WAIT_S + 0.1
+	v._clear_fallen(Vector3(500.0, 0.0, 0.0))
+	check(v._fallen.size() == 1, "kept while the player is far (no carcass rows reach there)")
+	v._clear_fallen(Vector3(25.0, 0.0, 0.0))
+	check(v._fallen.is_empty() and pivot.is_queued_for_deletion(), "gone when the player is near and no carcass came")
+	taken.queue_free()
 
 	# Through the rows: a lunge (7) ending plays the bite; a body killed by a hit leaves the rows but stays drawn while it falls.
 	var lunger: Dictionary = body(v, 7, {"0": ["Idle", 4.0], "bite": ["Attack_BiteForward_once", 2.4]})

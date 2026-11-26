@@ -1866,6 +1866,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)   # its _ready prewarms the loose item meshes
+	items.dead_body = func(kind: String, look: int, num: int, at: Vector3) -> Node3D: return _animal_view_node.dead_body(kind, look, num, at) if _animal_view_node != null else null   # a dead animal is its own model (animal_view dead_body)
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	var tw_items_setup: int = Probe.start()
