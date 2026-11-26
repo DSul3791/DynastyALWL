@@ -64,6 +64,8 @@ class Relay:
 
 class Probe:
 	const MotionBuffer := preload("res://src/client/motion_buffer.gd")
+	const RowParts := preload("res://src/shared/row_parts.gd")
+	var batch: Dictionary = {}   # the newest batch's parts (protocol 171), as animal_view keeps it
 	var old_draw: bool = false
 	var clock: Dictionary = MotionBuffer.clock_new()
 	var bodies: Dictionary = {}   # id -> {samples, row_ms, sm_p, sm_err, drawn, last_row [pos, heading, row_ms], state, moving_until}
@@ -84,27 +86,32 @@ class Probe:
 	var body_seconds: float = 0.0
 	var _acc: float = 0.0
 
-	func on_rows(rows: Array, server_ms: int) -> void:
+	func on_rows(rows: Array, server_ms: int, part: int = 0, parts: int = 1) -> void:
+		var step: Dictionary = RowParts.note(batch, server_ms, part, parts, rows)
+
+		if bool(step["stale"]):
+			return
+
 		var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
-		batches += 1
+		batches += 1 if bool(step["new"]) else 0
 
 		if last_ms >= 0 and float(server_ms - last_ms) / 1000.0 >= float(clock["interval"]) * 1.5:
 			holes += maxi(int(round(float(server_ms - last_ms) / 1000.0 / float(clock["interval"]))) - 1, 1)
 
-		if old_draw:
+		if old_draw and bool(step["new"]):
 			if rows_at >= 0.0:
 				gap = lerpf(gap, clampf(now_s - rows_at, 0.05, 0.5), 0.2)
 
 			rows_at = now_s
 			off = MotionBuffer.clock_off(off, now_s, server_ms, last_ms)
 
-		MotionBuffer.clock_note(clock, now_s, server_ms)
+		if bool(step["new"]):
+			MotionBuffer.clock_note(clock, now_s, server_ms)
+
 		last_ms = server_ms
-		var seen: Dictionary = {}
 
 		for row in rows:
 			var id: int = int(row[0])
-			seen[id] = true
 
 			if not bodies.has(id):
 				bodies[id] = {"samples": [], "state": int(row[4]), "drawn": Vector3.INF, "moving_until": 0.0}
@@ -133,8 +140,11 @@ class Probe:
 			b["last_row"] = [row[2], float(row[3]), int(row[5])]
 			MotionBuffer.push_row(b, row[2], float(row[3]), int(row[5]), off if old_draw else float(clock["off"]), gap if old_draw else INF)
 
+		if not bool(step["done"]):
+			return
+
 		for id in bodies.keys():
-			if not seen.has(id):
+			if not (batch["seen"] as Dictionary).has(id):
 				bodies.erase(id)
 
 	# Called every frame; draws 60 times a second.

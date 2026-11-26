@@ -684,6 +684,7 @@ func _calm(a: Dictionary, def: Dictionary) -> void:
 	a["alert"] = 0.0
 	a["cool"] = float(def.get("cool_s", 30.0))
 	a["home"] = a["pos"]
+	a["target"] = a["pos"]   # the charge's or the warning's way is over: it grazes here (a kept one read as stuck in the robot audit, run 7, 26 Nov 2026)
 
 
 # Called every animal tick for the cool-down after a charge.

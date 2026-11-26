@@ -2,13 +2,13 @@
 # Plays: m8 (the Measure this machine table, client on 4 cores with both threads), m4 (the table, 4 cores one thread each),
 # r4 (the robot route at Low, 4 cores one thread each). The server runs on two other cores (a tester's server is remote).
 # Run from the lane's own clone, with Dave's Godot and installed game closed:
-#   powershell -ExecutionPolicy Bypass -File tools\low_measure.ps1 -Exe E:\Software\godotDev\testlane_a_bin\godot_lane_a.exe
+#   powershell -ExecutionPolicy Bypass -File tools\low_measure.ps1 -Exe C:\DynastyLane\godot\godot_lane_a.exe
 # -Plays m8 runs only that play. A play that has not joined within -JoinLimit seconds, or runs past -PlayLimit, stops the WHOLE run at once. Every process
 # this script started is closed on exit, also on an error or Ctrl+C. Logs: $Out\<play>.log, server.log, machine_run_<play>.txt.
 
 param(
 	[Parameter(Mandatory = $true)][string]$Exe,
-	[string]$Out = "E:\Software\godotDev\lane_low",
+	[string]$Out = "C:\DynastyLane\lane_low",
 	[int]$Port = 24710,
 	[int]$JoinLimit = 240,
 	[int]$PlayLimit = 900,

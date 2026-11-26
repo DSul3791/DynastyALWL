@@ -7,7 +7,7 @@ extends SceneTree
 # The report lists, per creature: file found, drawn from the model or the code body, length, the clip picked for each role, how tall
 # the skeleton stands in each role against its rest pose, and the animal view's own notes (skin rebuilt, clip rescaled, clip refused).
 # Needs a window (pictures): run without --headless.
-#   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360] [--clips]
+#   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=C:/DynastyLane/logs/<job>/creature_check [--px=360] [--clips]
 # --young builds the young animal (its young_model when the row has one).
 # --id=N builds the animal with that id (a species with variants picks its look by id: --id=1 is the second look).
 # --every_look also counts the looks marked "wild": false (a goblin tribe member's, as make_goblin does): --every_look --id=2 is Vrixa, --id=3 Grikka.

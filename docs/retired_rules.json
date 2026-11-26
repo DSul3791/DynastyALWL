@@ -25,6 +25,8 @@
 		{"phrase": "fire still does not help", "replaced_by": "R-ANIMAL-FIRE", "since": "2026-11-25"},
 		{"phrase": "kept tool must be in hand", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
 		{"phrase": "a tool a recipe keeps must be in hand", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
-		{"phrase": "we should have to equip the saw", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"}
+		{"phrase": "we should have to equip the saw", "replaced_by": "R-CRAFT-KEPT-TOOL", "since": "2026-11-24"},
+		{"phrase": "your character is kept on the server", "replaced_by": "R-RELEASE-CLEAN", "since": "2026-11-25"},
+		{"phrase": "character and world are kept on the server", "replaced_by": "R-RELEASE-CLEAN", "since": "2026-11-25"}
 	]
 }

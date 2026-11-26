@@ -144,6 +144,7 @@ const BasicLookScript := preload("res://src/client/basic_look.gd")
 const SkyClouds := preload("res://src/client/sky_clouds.gd")
 const LookSettings := preload("res://src/client/look_settings.gd")
 const KnowledgeScript := preload("res://src/client/inspection_knowledge.gd")
+const InspectReticleScript := preload("res://src/client/inspect_reticle.gd")
 const StreamScript := preload("res://src/stream/network_voxel_stream.gd")
 const BlockLinkScript := preload("res://src/stream/block_link.gd")
 const CacheScript := preload("res://src/stream/client_block_cache.gd")
@@ -301,6 +302,7 @@ var _water_label: Label             # the water flow rate readout, shown for 3 s
 var _water_label_until_msec: int = 0
 var _inspect_label: Label            # what the player is looking at (inspection mode)
 var inspecting: bool = false
+var _inspect_plus: Control = null     # the red + at the middle while inspection is on (inspect_reticle.gd)
 var test_clear: bool = false          # --test-clear: press Clear saved ground 12 s after the welcome
 var _test_clear_done: bool = false
 var test_start: Vector3 = Vector3.INF   # --start=x,y,z: put the player there (tests)
@@ -1692,6 +1694,8 @@ func _welcome_body(info: Dictionary) -> void:
 	_inspect_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
 	_inspect_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layer.add_child(_inspect_label)
+	_inspect_plus = InspectReticleScript.new()
+	layer.add_child(_inspect_plus)
 	_water_label = Label.new()
 	_water_label.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_water_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2850,7 +2854,8 @@ func _offer_welcome() -> void:
 		return
 
 	_welcome_offered = true
-	_welcome().offer(CharacterStoreScript.active_id())
+	var build: int = int(world.get("server_build", 0)) if bool(world.get("server_stamped", false)) else 0   # a release server: a new build is a new world (QA #13)
+	_welcome().offer(CharacterStoreScript.active_id(), str(world.get("world_name", "")), build)
 
 
 func _welcome():
@@ -7982,6 +7987,9 @@ func _process(delta: float) -> void:
 
 	if inspecting:
 		_update_inspect()
+
+	if _inspect_plus != null:
+		_inspect_plus.show_if(InspectReticleScript.shown(inspecting, held != null and held.aim_cross_shown(), not photo.active and not spyglass.active and (shot_lock or Input.mouse_mode == Input.MOUSE_MODE_CAPTURED)))
 
 	if waiting_for_ground and not flying:
 		mode = (mode + " (building the ground around you, the first visit takes longer)").strip_edges()
