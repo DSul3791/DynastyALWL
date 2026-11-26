@@ -436,6 +436,7 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 		c.held.mouse_button(MOUSE_BUTTON_RIGHT, true)   # the throw is aimed
 		await r._wait(0.35)
 		_aim_throw(_drawn_at(target, at))
+		await r._wait(0.1)   # the pitch reaches the camera on the next frame (terrain_client _update_view)
 		var hits: int = int(r._hits.get(target, 0))
 		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
 		await r._wait(0.1)
@@ -462,7 +463,7 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 # The camera pitched for a thrown spear to come down on `at` (server_items.gd THROW_SPEED 24 m/s, THROW_GRAVITY 9.8; the hit sphere is
 # 0.6 m round the chest, 0.5 m up: target_on_segment), the lower of the two arcs.
 func _aim_throw(at: Vector3) -> void:
-	var eye: Vector3 = c.camera.global_position
+	var eye: Vector3 = c.body.global_position + Vector3(0.0, 1.5, 0.0)   # the server flies the spear from the reported body position + EYE_HEIGHT 1.5, whatever the stance
 	var aim: Vector3 = at + Vector3(0.0, 0.5, 0.0)
 	var flat: float = maxf(Vector2(aim.x - eye.x, aim.z - eye.z).length(), 0.5)
 	var h: float = aim.y - eye.y
