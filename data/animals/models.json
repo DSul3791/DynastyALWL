@@ -572,10 +572,7 @@
 					"Idle_Breathing"
 				]
 			},
-			"ground_m": -0.18,
-			"ground_clips": {
-				"WalkMedium_F": 0.049
-			}
+			"ground_m": -0.18
 		},
 		"boar": {
 			"scene": "res://assets/animals/boar/SK_WildBoar.fbx",
@@ -1611,7 +1608,8 @@
 						"albedo": "res://assets/animals/calf/Textures/T_Calf.png"
 					}
 				],
-				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young."
+				"note": "WildMesh Calf (Realistic Animals/Calf/SK_Calf.fbx): the cow's young.",
+				"ground_m": -0.064
 			},
 			"trot_mps": 3.0,
 			"idle_variants": {
@@ -1620,10 +1618,7 @@
 					"Idle_3"
 				]
 			},
-			"ground_m": -0.127,
-			"ground_clips": {
-				"Walk_100": 0.036
-			}
+			"ground_m": -0.127
 		},
 		"goat": {
 			"scene": "res://assets/animals/goat/SK_Goat.fbx",
@@ -2242,8 +2237,7 @@
 			"trot_mps": 3.0,
 			"ground_m": -0.069,
 			"ground_clips": {
-				"Idle_2": 0.023,
-				"Walk-IP": -0.027
+				"Idle_2": 0.023
 			}
 		},
 		"rhino": {
@@ -2338,10 +2332,7 @@
 					"Idle_3"
 				]
 			},
-			"ground_m": -0.293,
-			"ground_clips": {
-				"Walk-IP": 0.04
-			}
+			"ground_m": -0.293
 		},
 		"camel": {
 			"scene": "res://assets/animals/camel/SK_Camel.fbx",

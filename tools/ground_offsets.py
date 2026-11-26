@@ -5,9 +5,9 @@ tools/ground_check.gd (run on a PC with a window) measures how far each model lo
 draws it. Its report has one line per look and role:
     GROUND <kind> look <n> <role>[ <clip>] lowest <+m> m (min over the clip) bone_low <+m> m
 This writes, per look (the row, or its variants[n]):
-- "ground_m": minus the lowest point in the graze/stand role "0" (the rest pose if the model has no role 0), so the foot is on the ground.
-- "ground_clips": {clip: metres} for a clip whose own lowest point differs from role 0's by more than CLIP_M, so that clip is put on the
-  ground too (the moose's walk, the crow's Look2).
+- "ground_m": the look's ground_m so far (the check draws the model with it) minus the lowest point in the graze/stand role "0" (the rest pose if the model has no role 0), so the foot is on the ground.
+- "ground_clips": {clip: metres} for a standing clip (alert, not the walk) whose own lowest point differs from role 0's by more than
+  CLIP_M, so that clip is put on the ground too (the crow's Look2).
 A "<kind>_young" look (the calf) is written into that kind's "young_model".
 Rows sized by height (height_m, the goblins) are left alone: each one's size is rolled, and they stand within 3 cm.
   python3 tools/ground_offsets.py /mnt/project-files/ground_check.txt [--write]
@@ -37,8 +37,8 @@ def offsets(roles: dict) -> tuple:
     base = roles.get("0", roles.get("rest"))[1]
     clips = {}
     for role, (clip, low) in roles.items():
-        if role in ("rest", "0") or clip == "":
-            continue
+        if role in ("rest", "0", "walk") or clip == "":
+            continue   # a walk's lowest point over the stride is one hoof's toe dip: lifting the body for it floats the planted feet (Lane A pr1967_walk_a)
         if abs(low - base) > CLIP_M:
             clips[clip] = round(-(low - base), 3)
     return round(-base, 3), clips
@@ -67,6 +67,7 @@ def main() -> int:
             if not wild and look > 0:
                 continue
         g, clips = offsets(roles)
+        g = round(float(target.get("ground_m", 0.0)) + g, 3)   # the check draws each model with its ground_m already on: what it finds is left over
         target["ground_m"] = g
         if clips:
             target["ground_clips"] = clips

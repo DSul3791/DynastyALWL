@@ -145,7 +145,7 @@ func _initialize() -> void:
 	young_own.free()
 	plain.free()
 	grounded.free()
-	check(is_equal_approx(v.ground_lift({"WalkMedium_F": 0.049}, "Armature|WalkMedium_F"), 0.049) and v.ground_lift({"WalkMedium_F": 0.049}, "Armature|Idle") == 0.0, "a clip's own ground move is found by its name after the armature, 0 for any other")
+	check(is_equal_approx(AnimalViewScript.ground_lift({"WalkMedium_F": 0.049}, "Armature|WalkMedium_F"), 0.049) and AnimalViewScript.ground_lift({"WalkMedium_F": 0.049}, "Armature|Idle") == 0.0, "a clip's own ground move is found by its name after the armature, 0 for any other")
 	var rows: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/models.json")) as Dictionary).get("species", {})   # the real rows, not this test's
 	var missing: Array = []
 

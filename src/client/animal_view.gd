@@ -2670,7 +2670,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
 
-	# A clip whose lowest foot stands apart from the graze clip's (the moose's walk 5 cm lower, the crow's Look2 13 cm) is put on the
+	# A standing clip whose lowest foot stands apart from the graze clip's (the crow's Look2 13 cm; never a walk: its lowest point is one toe's dip) is put on the
 	# ground too: "ground_clips" (tools/ground_offsets.py), eased over the clip's own blend.
 	var lift: Dictionary = row.get("ground_clips", {})
 
