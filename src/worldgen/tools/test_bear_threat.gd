@@ -145,14 +145,15 @@ func _init() -> void:
 	# 8. Dave 25 Nov 2026 play test: a bear kept running, he chased it on foot and stabbed it ("the bear really should be able to out run me";
 	# "it should have run away unless it was starving or trapped"; "a threatened bear should turn and fight back"). A shy (passive) bear of
 	# each kind, put to flight by a player 6 m off who then chases it at a run (terrain_client RUN_SPEED 9 m/s) for 20 s, gets away: the gap
-	# grows and never closes to within a spear's reach.
+	# grows and never closes to within a spear's reach. Its short startle stare as the player runs in is not a surprise up close (Dave 26 Nov
+	# 2026, "that close it should turn rear on its hind legs growl and fight", is for a bear that had not seen them coming): it bolts.
 	for kind in ["black_bear", "bear"]:
 		a = make()
 		players = [at(-6.0)]
 		var fid: int = a.spawn(kind, 0.0, 0.0)
 		var f: Dictionary = a.animals[fid]
 		f["temper"] = "passive"
-		a.damage(fid, 0.0, -1, "noise")   # a scare with no hunter near: it bolts (damage with nobody close runs)
+		a.damage(fid, 0.0, -1, "noise")   # no effect (damage of 0 is refused): the player running in from 6 m is the scare; it stares, then bolts
 		var closest: float = INF
 		var gap: float = 0.0
 

@@ -1640,10 +1640,12 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	# Right up close (defend.close_fight_m; Dave 26 Nov 2026, a black bear walked up on to 2 m: "that close it should turn rear on its hind
 	# legs growl and fight"): a grown one fights whatever its temperament, and presses home (no bluff). The warning is the turn, the rear-up
-	# (state 10's clip) and the growl (creature_sounds "warn"), then the charge and its blow. Only one surprised: a bear already running from
-	# the player is not (a chase that runs it down is trapped_fights' corner rule). Not into a fire's light. A cub, with its mother
+	# (state 10's clip) and the growl (creature_sounds "warn"), then the charge and its blow. Only one surprised, grazing or walking (bedded and
+	# drinking are grazing here) when the player is first that close: one already staring at them (ALERT, the startle stare _stares sets as
+	# they come, then the bolt) or running from them (FLEE; a chase that runs it down is trapped_fights' corner rule) has seen them coming and
+	# is not. Not into a fire's light. A cub, with its mother
 	# or orphaned (its number stays species + YOUNG_NUM), runs instead ("if its a baby it should run"; _step_young, the passive flight below).
-	if def.has("defend") and a["state"] != FLEE and seen_p != Vector3.INF and int(a.get("num", 0)) < YOUNG_NUM and seen_d <= float(def["defend"].get("close_fight_m", 0.0)) and _fire_guard(seen_p) == Vector3.INF:
+	if def.has("defend") and int(a["state"]) in [GRAZE, HOP] and seen_p != Vector3.INF and int(a.get("num", 0)) < YOUNG_NUM and seen_d <= float(def["defend"].get("close_fight_m", 0.0)) and _fire_guard(seen_p) == Vector3.INF:
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8)), true):
 			return
 
