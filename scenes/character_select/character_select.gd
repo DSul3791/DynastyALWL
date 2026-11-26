@@ -30,6 +30,7 @@ var _empty_note: Label
 
 
 func _ready() -> void:
+	load("res://src/client/title_music.gd").start(get_tree())   # the menu music, also back here after a death (title_music.gd)
 	if auto_creator and Store.count() == 0:
 		call_deferred("_to_creator")
 		return

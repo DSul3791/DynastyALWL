@@ -333,7 +333,7 @@ func _main_zone() -> String:
 # (ambient_life.flush, medium wings; the big slow flaps only after a crow's alarm, Dave 3 Nov 2026), a crow caws its alarm and flaps off.
 # Birds with no flight of their own (ducks, geese, gulls, hens run) and every other animal: nothing. False when nothing played.
 # Heard within TAKE_OFF_REACH_M, while the voice budget has room, one kind at most every TAKE_OFF_EVERY_MS (a covey flushing together is one whirr).
-const TAKE_OFF := {"grouse": "medium", "pheasant": "medium", "guineafowl": "medium", "crow": "crow"}
+const TAKE_OFF := {"grouse": "medium", "pheasant": "medium", "guineafowl": "medium", "goose": "medium", "crow": "crow"}   # goose: its wings as it rises (25 Nov 2026, geese fly)
 const TAKE_OFF_REACH_M := 80.0
 const TAKE_OFF_EVERY_MS := 1500
 var _take_off_until: Dictionary = {}     # kind -> msec before which its next take-off is not heard
