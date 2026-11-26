@@ -13,6 +13,14 @@ SUFFIXES = (".md", ".json")   # .gd next, with the last two hub comments (terrai
 LINE = re.compile(r"^- \*\*(R-[A-Z0-9-]+)\*\* · (\d{1,2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}) · ")
 
 
+def frozen_files(root: pathlib.Path) -> set:
+    try:
+        manifest = json.loads((root / "docs/retirements.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    return {str(e.get("retired", "")) for b in manifest.get("batches", []) for e in b.get("entries", []) if isinstance(e, dict)}
+
+
 def problems(root: pathlib.Path) -> list:
     out = []
     keys = {}
@@ -36,8 +44,9 @@ def problems(root: pathlib.Path) -> list:
     if listed.returncode != 0:
         return out + ["git ls-files failed: run from the repository"]
     files = listed.stdout.splitlines()
+    frozen = frozen_files(root)   # history checkpoints docs/retirements.json freezes: merge_check fails any edit to them
     for rel in files:
-        if not rel.endswith(SUFFIXES) or rel.startswith(HISTORY):
+        if not rel.endswith(SUFFIXES) or rel.startswith(HISTORY) or rel in frozen:
             continue
         try:
             text = (root / rel).read_text(encoding="utf-8").lower()

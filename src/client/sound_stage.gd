@@ -184,7 +184,7 @@ var wind_strength: float = 0.0          # the wind loudness measure now (HUD)
 var exposure: float = 0.0               # -1 valley floor .. +1 ridge or hilltop (height against the ground around)
 var gust: float = 0.0                   # 0 calm .. 1 strongest gust
 var volume_index: int = 0
-var levels: Dictionary = {"master": 1.0, "effects": 1.0, "ambient": 1.0, "interface": 1.0}   # Esc > Settings sliders, 0 to 1
+var levels: Dictionary = {"master": 1.0, "effects": 1.0, "ambient": 1.0, "interface": 1.0, "music": 1.0}   # Esc > Settings sliders, 0 to 1 (music: the menu song, title_music.gd)
 var mix_level: Dictionary = {"wind": 1.0, "surf": 1.0, "nature": 1.0, "steps": 1.0}   # per group, 0 to 1 (Esc > Settings > Sound sliders)
 var tier: int = 2                       # quality index (0 Low); set_quality()
 var voice_cap: int = 96                 # preset["voices"]
@@ -1490,6 +1490,7 @@ func _apply_buses() -> void:
 		"Weather": float(levels["ambient"]) * float(mix_level["nature"]),
 		"Interface": float(levels["interface"]),
 		"Body": float(levels["effects"]) * float(mix_level["steps"]),
+		"Music": float(levels["music"]),   # the bus exists once the menu music has played (title_music.gd); skipped below when it does not
 	}
 
 	for bus_name in shares:

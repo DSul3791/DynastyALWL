@@ -53,6 +53,7 @@ var _row_nodes: Dictionary = {}      # address -> the row's PanelContainer
 
 
 func _ready() -> void:
+	load("res://src/client/title_music.gd").start(get_tree())   # keeps the menu music going (title_music.gd)
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	theme = Style.make_theme()
 	rows = ServerList.load_rows()
