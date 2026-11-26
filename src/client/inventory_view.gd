@@ -2244,6 +2244,7 @@ const DISPOSABLE_BREAK_WEAR := 10   # one heavy use: rock wear 5 (drops.json too
 
 func _on_slots(bytes: PackedByteArray) -> void:
 	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
+	var t: int = FrameProbe.start()
 	var insts: Dictionary = InventoryScript.inst_from_bytes(bytes, 1 + n * 9)
 
 	for k in n:
@@ -2261,6 +2262,7 @@ func _on_slots(bytes: PackedByteArray) -> void:
 			inventory.inst[slot] = insts.get(slot, {}) if inventory.numbers[slot] != 0 else {}
 			_tool_cue(slot, was_number, was_wear, was_broken, was_most)
 
+	FrameProbe.stop("inventory: slots and their sounds", t)   # Lane A r4: one slot message took 134 ms with no chest open; named to find which step
 	_after_slots()
 
 
