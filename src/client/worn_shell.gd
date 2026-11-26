@@ -161,7 +161,9 @@ static func _collect(id: int, block: bool) -> bool:
 	data.erase("surfaces")       # the body's arrays (several MB with the width shapes): the build needs only the worked garments
 	data.erase("in_region")
 	_done[id] = data
-	FreezeWatchScript.printer.line("worn shell: made on a worker in %d ms" % (Time.get_ticks_msec() - int(data["started"])))
+	# Worked: the arithmetic on the worker. Joined: when the main thread took it, which with nothing worn is only when the body goes (dynasty_body.gd calls wait()),
+	# so it is as long as the body lived, not a cost (Lane A pr1961: "made on a worker in" 1 to 2 s on bodies that wore nothing).
+	FreezeWatchScript.printer.line("worn shell: worked %d ms on a worker, joined after %d ms" % [int(data.get("worked_ms", -1)), Time.get_ticks_msec() - int(data["started"])])
 	return true
 
 
@@ -263,6 +265,8 @@ static func _compute(data: Dictionary) -> void:
 				made_surfaces.append(one_surface)
 
 		data["made"][builder] = made_surfaces
+
+	data["worked_ms"] = Time.get_ticks_msec() - int(data["started"])    # the worker's own time (Time is thread safe); the join can come much later
 
 
 static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: float) -> Dictionary:
