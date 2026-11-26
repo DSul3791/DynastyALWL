@@ -68,7 +68,8 @@
 						"0": [
 							"Idle_02"
 						]
-					}
+					},
+					"ground_m": -0.094
 				},
 				{
 					"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -109,7 +110,8 @@
 							"Idle_2",
 							"IdleHind_Idle_01"
 						]
-					}
+					},
+					"ground_m": -0.091
 				}
 			],
 			"trot_mps": 3.5
@@ -261,7 +263,8 @@
 							"GrazingOnSpotB_3",
 							"Idle_Breathing"
 						]
-					}
+					},
+					"ground_m": -0.1
 				},
 				{
 					"scene": "res://assets/animals/deer_buck/SK_Buck.fbx",
@@ -303,7 +306,8 @@
 						"0": [
 							"Idle_1"
 						]
-					}
+					},
+					"ground_m": 0.015
 				},
 				{
 					"scene": "res://assets/animals/deer_red_stag/SK_RedDeerMale.fbx",
@@ -326,7 +330,8 @@
 						"die": "Death_Stand_R01"
 					},
 					"size_clip": "Idle",
-					"note": "Red deer stag"
+					"note": "Red deer stag",
+					"ground_m": -0.094
 				},
 				{
 					"scene": "res://assets/animals/deer_doe/SK_Doe.fbx",
@@ -365,7 +370,8 @@
 						"0": [
 							"Idle_1"
 						]
-					}
+					},
+					"ground_m": 0.003
 				},
 				{
 					"scene": "res://assets/animals/deer_doe_1/SK_Doe_1.fbx",
@@ -391,7 +397,8 @@
 						"trot": "trot"
 					},
 					"length_m": 1.8,
-					"note": "Hind (second rig): body texture alpha is not a cut-out (opaque)"
+					"note": "Hind (second rig): body texture alpha is not a cut-out (opaque)",
+					"ground_m": -0.098
 				},
 				{
 					"scene": "res://assets/animals/deer_female/SK_FemaleDeer.fbx",
@@ -420,7 +427,8 @@
 						"0": [
 							"Idle_Breathing_01"
 						]
-					}
+					},
+					"ground_m": -0.085
 				},
 				{
 					"scene": "res://assets/animals/deer_1/SK_Deer_1.fbx",
@@ -445,7 +453,8 @@
 						"10": "alerted",
 						"trot": "trot"
 					},
-					"note": "Stag (second rig): body texture alpha is not a cut-out (opaque)"
+					"note": "Stag (second rig): body texture alpha is not a cut-out (opaque)",
+					"ground_m": -0.09
 				}
 			],
 			"trot_mps": 4.0
@@ -562,6 +571,10 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
+			},
+			"ground_m": -0.18,
+			"ground_clips": {
+				"WalkMedium_F": 0.049
 			}
 		},
 		"boar": {
@@ -623,7 +636,8 @@
 							"idle_eat_look_around_01",
 							"idle_eat_look_up_short"
 						]
-					}
+					},
+					"ground_m": -0.063
 				}
 			],
 			"trot_mps": 3.0
@@ -662,7 +676,8 @@
 					"Idle_2",
 					"Idle_3"
 				]
-			}
+			},
+			"ground_m": -0.099
 		},
 		"fox": {
 			"scene": "res://assets/animals/fox_1/SK_Fox 1.fbx",
@@ -701,7 +716,8 @@
 					"Idle_3",
 					"Idle_4"
 				]
-			}
+			},
+			"ground_m": -0.052
 		},
 		"rabbit": {
 			"scene": "res://assets/animals/rabbit/SK_Rabbit.fbx",
@@ -727,7 +743,8 @@
 					"albedo": "res://assets/animals/rabbit/Textures/T_Rabbit.png"
 				}
 			],
-			"pack": "WildMesh3D/Realistic Animals/Rabbit"
+			"pack": "WildMesh3D/Realistic Animals/Rabbit",
+			"ground_m": -0.013
 		},
 		"horse": {
 			"scene": "res://assets/animals/horse/SK_Horse.fbx",
@@ -777,7 +794,8 @@
 					"Idle_Fidget_05",
 					"Idle_03"
 				]
-			}
+			},
+			"ground_m": -0.135
 		},
 		"donkey": {
 			"scene": "res://assets/animals/donkey_2/SK_Donkey.fbx",
@@ -812,7 +830,8 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Donkey",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.104
 		},
 		"lynx": {
 			"scene": "res://assets/animals/lynx/SK_Lynx.fbx",
@@ -850,7 +869,8 @@
 					"idle_shake_01",
 					"idle_stretching_01"
 				]
-			}
+			},
+			"ground_m": -0.048
 		},
 		"black_bear": {
 			"scene": "res://assets/animals/bear/SK_Bear.fbx",
@@ -911,7 +931,8 @@
 					"Idle_1",
 					"Idle_2"
 				]
-			}
+			},
+			"ground_m": -0.077
 		},
 		"elk": {
 			"scene": "res://assets/animals/elk/SK_Elk.fbx",
@@ -952,7 +973,8 @@
 				}
 			],
 			"pack": "WildMesh3D/Realistic Animals/Elk",
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"ground_m": 0.014
 		},
 		"bighorn": {
 			"scene": "res://assets/animals/bighorn/SK_BighornSheep.fbx",
@@ -994,7 +1016,8 @@
 					"Idle_Breathing",
 					"bleat"
 				]
-			}
+			},
+			"ground_m": -0.082
 		},
 		"mountain_goat": {
 			"scene": "res://assets/animals/mountain_goat/SK_MountainGoat.fbx",
@@ -1034,7 +1057,8 @@
 					"Idle_Breathing",
 					"Idle_SecondaryMoveCalm_1"
 				]
-			}
+			},
+			"ground_m": -0.07
 		},
 		"beaver": {
 			"scene": "res://assets/animals/beaver/SK_Beaver.fbx",
@@ -1150,7 +1174,8 @@
 				"0": [
 					"Idle"
 				]
-			}
+			},
+			"ground_m": -0.04
 		},
 		"chamois": {
 			"scene": "res://assets/animals/chamois/SK_ChamoisMale.fbx",
@@ -1186,7 +1211,8 @@
 					"Idle",
 					"Idle_2"
 				]
-			}
+			},
+			"ground_m": -0.061
 		},
 		"mink": {
 			"scene": "res://assets/animals/mink/SK_AmericanMink.fbx",
@@ -1347,7 +1373,8 @@
 				"0": [
 					"idle_shake_01"
 				]
-			}
+			},
+			"ground_m": -0.029
 		},
 		"raccoon": {
 			"scene": "res://assets/animals/raccoon/SK_Racoon.fbx",
@@ -1386,7 +1413,8 @@
 					"idle eat 2",
 					"idle stretch"
 				]
-			}
+			},
+			"ground_m": -0.039
 		},
 		"rat": {
 			"scene": "res://assets/animals/rat/SK_Rat.fbx",
@@ -1413,7 +1441,8 @@
 					"match": "",
 					"albedo": "res://assets/animals/rat/Textures/T_Rat.png"
 				}
-			]
+			],
+			"ground_m": -0.025
 		},
 		"crow": {
 			"scene": "res://assets/animals/crow/SK_Crow.fbx",
@@ -1465,6 +1494,10 @@
 				"0": [
 					"Look2"
 				]
+			},
+			"ground_m": 0.005,
+			"ground_clips": {
+				"Look2": 0.127
 			}
 		},
 		"pheasant": {
@@ -1495,7 +1528,8 @@
 					"StandGrazingB",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.042
 		},
 		"goose": {
 			"scene": "res://assets/animals/goose/SK_Goose.fbx",
@@ -1529,7 +1563,8 @@
 					"StandGrazingB",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.031
 		},
 		"cow": {
 			"scene": "res://assets/animals/cow/SK_Cow.fbx",
@@ -1584,6 +1619,10 @@
 					"Idle_2",
 					"Idle_3"
 				]
+			},
+			"ground_m": -0.127,
+			"ground_clips": {
+				"Walk_100": 0.036
 			}
 		},
 		"goat": {
@@ -1619,7 +1658,8 @@
 				"0": [
 					"idle"
 				]
-			}
+			},
+			"ground_m": -0.068
 		},
 		"chicken": {
 			"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
@@ -1648,7 +1688,8 @@
 			],
 			"variants": [
 				{
-					"scene": "res://assets/animals/chicken/SK_Chicken.fbx"
+					"scene": "res://assets/animals/chicken/SK_Chicken.fbx",
+					"ground_m": -0.021
 				},
 				{
 					"scene": "res://assets/animals/rooster/SK_Rooster.fbx",
@@ -1674,7 +1715,8 @@
 							"Idle_4",
 							"Oneleg01"
 						]
-					}
+					},
+					"ground_m": -0.023
 				}
 			]
 		},
@@ -1711,7 +1753,8 @@
 					"Idle02",
 					"Idle03"
 				]
-			}
+			},
+			"ground_m": -0.03
 		},
 		"dog": {
 			"scene": "res://assets/animals/dog/SK_Labrador.fbx",
@@ -1740,7 +1783,8 @@
 			],
 			"variants": [
 				{
-					"scene": "res://assets/animals/dog/SK_Labrador.fbx"
+					"scene": "res://assets/animals/dog/SK_Labrador.fbx",
+					"ground_m": -0.065
 				},
 				{
 					"scene": "res://assets/animals/bloodhound/SK_Bloodhund.fbx",
@@ -1764,7 +1808,8 @@
 						"0": [
 							"idle shake"
 						]
-					}
+					},
+					"ground_m": -0.053
 				}
 			],
 			"trot_mps": 2.5,
@@ -1814,7 +1859,8 @@
 					"GrazingOnSpotB_1",
 					"Standstraight_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.137
 		},
 		"duck": {
 			"scene": "res://assets/animals/duck/SK_Duck.fbx",
@@ -1883,7 +1929,8 @@
 				}
 			],
 			"size_clip": "idle pose",
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.089
 		},
 		"pronghorn": {
 			"scene": "res://assets/animals/pronghorn/SK_Pronghorn.fbx",
@@ -1920,7 +1967,8 @@
 					"albedo": "res://assets/animals/pronghorn/Textures/T_Pronghorn_Body.png"
 				}
 			],
-			"trot_mps": 3.5
+			"trot_mps": 3.5,
+			"ground_m": 0.007
 		},
 		"warthog": {
 			"scene": "res://assets/animals/warthog/SK_Warthog.fbx",
@@ -1964,7 +2012,8 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.07
 		},
 		"hyena": {
 			"scene": "res://assets/animals/hyena/SK_Hyena.fbx",
@@ -2003,7 +2052,8 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.068
 		},
 		"wildebeest": {
 			"scene": "res://assets/animals/wildebeest/SK_Wildebeest.fbx",
@@ -2046,7 +2096,8 @@
 					"GrazingOnSpotB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.111
 		},
 		"lion": {
 			"scene": "res://assets/animals/lion/SK_Lion.fbx",
@@ -2109,7 +2160,8 @@
 							"idle_stretching_01",
 							"idle_smell_01"
 						]
-					}
+					},
+					"ground_m": -0.136
 				},
 				{
 					"scene": "res://assets/animals/lioness_1/SK_Lioness 1.fbx",
@@ -2150,7 +2202,8 @@
 							"idle_stretching_01",
 							"idle_smell_01"
 						]
-					}
+					},
+					"ground_m": -0.125
 				}
 			],
 			"size_clip": "Idle",
@@ -2186,7 +2239,12 @@
 					"albedo": "res://assets/animals/leopard/Textures/T_Leopard_Body.png"
 				}
 			],
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.069,
+			"ground_clips": {
+				"Idle_2": 0.023,
+				"Walk-IP": -0.027
+			}
 		},
 		"rhino": {
 			"scene": "res://assets/animals/rhino/SK_Rhinoceros.fbx",
@@ -2205,7 +2263,11 @@
 				"walk": "Walk-IP",
 				"run": "Run-IP",
 				"trot": "Trot-IP",
-				"hit": ["Hit_HeadR_Heavy-IP", "Hit_ChestR_Heavy-IP", "Hit_ChestL_Heavy-IP"],
+				"hit": [
+					"Hit_HeadR_Heavy-IP",
+					"Hit_ChestR_Heavy-IP",
+					"Hit_ChestL_Heavy-IP"
+				],
 				"die": "Death_01-IP",
 				"bite": "Attack_HornR-IP",
 				"strike": "Attack_HornL-IP",
@@ -2225,7 +2287,8 @@
 					"Idle_2",
 					"Idle_3"
 				]
-			}
+			},
+			"ground_m": -0.186
 		},
 		"elephant": {
 			"scene": "res://assets/animals/elephant/SK_AfricanElephant.fbx",
@@ -2243,7 +2306,11 @@
 				"12": "Stand_00-IP",
 				"walk": "Walk-IP",
 				"run": "Run-IP",
-				"hit": ["Hit_Head_Right-IP", "Hit_Chest_Right-IP", "Hit_Chest_Left-IP"],
+				"hit": [
+					"Hit_Head_Right-IP",
+					"Hit_Chest_Right-IP",
+					"Hit_Chest_Left-IP"
+				],
 				"die": "Death_01-IP",
 				"bite": "Attack_Head_01-IP",
 				"strike": "Attack_Head_01-IP",
@@ -2270,6 +2337,10 @@
 					"Idle_2",
 					"Idle_3"
 				]
+			},
+			"ground_m": -0.293,
+			"ground_clips": {
+				"Walk-IP": 0.04
 			}
 		},
 		"camel": {
@@ -2302,7 +2373,8 @@
 					"albedo": "res://assets/animals/camel/Textures/T_Camel_Body.png"
 				}
 			],
-			"size_clip": "Idle"
+			"size_clip": "Idle",
+			"ground_m": -0.138
 		},
 		"guineafowl": {
 			"scene": "res://assets/animals/guineafowl/SK_Guineafowl.fbx",
@@ -2334,7 +2406,8 @@
 					"StandGrazingB_1",
 					"Idle_Breathing"
 				]
-			}
+			},
+			"ground_m": -0.095
 		},
 		"honey_badger": {
 			"scene": "res://assets/animals/honey_badger/SK_HoneyBadger.fbx",
@@ -2372,7 +2445,8 @@
 					"GrazingOnSpotA_2",
 					"GrazingOnSpotB_1"
 				]
-			}
+			},
+			"ground_m": -0.013
 		},
 		"kangaroo": {
 			"scene": "res://assets/animals/kangaroo/SK_Kangaroo.fbx",
@@ -2419,7 +2493,8 @@
 					"idle_eat_search_01",
 					"idle_eat_look_around_01"
 				]
-			}
+			},
+			"ground_m": -0.069
 		},
 		"mammoth": {
 			"scene": "res://assets/animals/mammoth/SK_Mammoth.fbx",
@@ -2458,7 +2533,8 @@
 					"match": "",
 					"albedo": "res://assets/animals/mammoth/Textures/Mammoth_Body.png"
 				}
-			]
+			],
+			"ground_m": -0.326
 		},
 		"tiger": {
 			"scene": "res://assets/animals/tiger/SK_Tiger.fbx",
@@ -2494,7 +2570,11 @@
 					"albedo": "res://assets/animals/tiger/Textures/T_Tiger_Body.png"
 				}
 			],
-			"trot_mps": 3.0
+			"trot_mps": 3.0,
+			"ground_m": -0.135,
+			"ground_clips": {
+				"Idle_2": 0.04
+			}
 		},
 		"alligator": {
 			"scene": "res://assets/animals/alligator/SK_AmericanAligator.fbx",

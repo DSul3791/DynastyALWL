@@ -1320,6 +1320,11 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 	var k: float = float(row.get("length_m", longest)) / longest * float(row.get("scale", 1.0))
 	body.scale *= k
 	body.position.y -= box.position.y * k
+	# Feet on the ground (Lane A 26 Nov 2026, pr1959_donkey_cow.png: the donkey floated 10 cm, 44 of 57 looks floated, the mammoth 33 cm):
+	# the box above is grown by 6% for sizing, so its floor lies below the hooves. "ground_m" is each look's measured lowest foot in its
+	# graze or stand clip, put on the ground (tools/ground_check.gd on a PC, written by tools/ground_offsets.py). A move only: no clip,
+	# bone box or clip answer depends on it.
+	body.position.y += float(row.get("ground_m", 0.0))
 	FrameProbe.stop("animal body: size", t_part)
 	t_part = FrameProbe.start()
 	_model_materials(meshes, row)
@@ -2663,10 +2668,23 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
 
+	# A clip whose lowest foot stands apart from the graze clip's (the moose's walk 5 cm lower, the crow's Look2 13 cm) is put on the
+	# ground too: "ground_clips" (tools/ground_offsets.py), eased over the clip's own blend.
+	var lift: Dictionary = row.get("ground_clips", {})
+
+	if not lift.is_empty() and node.has_node("Rig"):
+		var rig_node: Node3D = node.get_node("Rig")
+		rig_node.position.y = lerpf(rig_node.position.y, ground_lift(lift, clip), clampf(delta * 8.0, 0.0, 1.0))
+
 	if ref > 0.0 and clip != "" and player.has_animation(clip):
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
 	player.speed_scale = AnimalGait.rate(speed, ref)
+
+
+# How far a clip is moved to stand on the ground (models.json "ground_clips", by the clip's own name after its armature): 0 for any other.
+static func ground_lift(lift: Dictionary, clip: String) -> float:
+	return float(lift.get(clip.get_slice("|", clip.count("|")), 0.0))
 
 
 # Idle life (Dave 23 Nov 2026: animals "like really bad animatronics"): a grazing or standing animal played one clip for minutes. Now it

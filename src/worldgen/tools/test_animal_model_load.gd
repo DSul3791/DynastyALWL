@@ -121,6 +121,33 @@ func _initialize() -> void:
 	check(v._bodies.has(33) and bool((v._bodies[33]["node"] as Node3D).get_meta("model", false)), "with its files in, the next deer is drawn from its model")
 	v.files_ready = Callable()
 
+	# Feet on the ground (Lane A 26 Nov 2026: 44 of 57 looks floated): a look's "ground_m" moves its body down by that much, and a clip in
+	# "ground_clips" is moved by its own amount, found by its name after the armature.
+	v._models["deer"].erase("variants")
+	v._models["deer"].erase("ground_m")
+	var plain: Node3D = v._make_model(2, 1)
+	v._models["deer"]["ground_m"] = -0.25
+	var grounded: Node3D = v._make_model(2, 1)
+	var drop: float = ((grounded.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
+	check(absf(drop + 0.25) < 0.0001, "a look's ground_m moves its body down that much (%.3f m)" % drop)
+	plain.free()
+	grounded.free()
+	check(is_equal_approx(v.ground_lift({"WalkMedium_F": 0.049}, "Armature|WalkMedium_F"), 0.049) and v.ground_lift({"WalkMedium_F": 0.049}, "Armature|Idle") == 0.0, "a clip's own ground move is found by its name after the armature, 0 for any other")
+	var rows: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/models.json")) as Dictionary).get("species", {})   # the real rows, not this test's
+	var missing: Array = []
+
+	for kind in rows:
+		var row: Dictionary = rows[kind]
+
+		if row.has("height_m") or row.has("flock_of") or not ResourceLoader.exists(str(row.get("scene", ""))):
+			continue   # sized by a rolled height (goblins: within 3 cm), a flock, or a model this machine lacks (the alligator's file)
+
+		for look in (row.get("variants", []) as Array) if row.has("variants") else [row]:
+			if bool((look as Dictionary).get("wild", true)) and not (look as Dictionary).has("ground_m"):
+				missing.append(kind)
+
+	check(missing.is_empty(), "every model look has its measured ground_m (missing: %s): run tools/ground_check.gd and tools/ground_offsets.py for a new model" % str(missing))
+
 	# The animals line for the log (QA #12): it runs with bodies drawn and with none, and starts its counts again.
 	v._report_batches = 3
 	v._report_held = 2
