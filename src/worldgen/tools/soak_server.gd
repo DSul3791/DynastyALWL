@@ -12,6 +12,7 @@ const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const RowParts := preload("res://src/shared/row_parts.gd")   # the animal rows go in parts that fit one packet (protocol 171)
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const TICK_S := 0.05
@@ -19,6 +20,9 @@ const SPAN_S := 60.0
 const PLAYERS := 20
 
 var counts: Dictionary = {}
+var split_us: int = 0      # RowParts.split time over the soak's animal sends
+var split_calls: int = 0
+var split_many: int = 0    # batches over one packet, sent in parts
 var failures: int = 0
 
 
@@ -156,7 +160,13 @@ func _init() -> void:
 		t0 = Time.get_ticks_usec()
 
 		for n in range(step % 5, PLAYERS, 5):   # each player's rows about four times a second
-			count("animals", var_to_bytes(animals.rows_near(pos[n])).size())
+			var beasts: Array = animals.rows_near(pos[n])
+			var t_split: int = Time.get_ticks_usec()
+			var parts: Array = RowParts.split(beasts)   # as terrain_server _send_npcs
+			split_us += Time.get_ticks_usec() - t_split
+			split_calls += 1
+			split_many += 1 if parts.size() > 1 else 0
+			count("animals", var_to_bytes(beasts).size())
 			count("npcs", var_to_bytes(npcs.rows_near(pos[n])).size())
 			count("blood", var_to_bytes(animals.blood_near(pos[n])).size())
 
@@ -168,6 +178,21 @@ func _init() -> void:
 			worsts[pair[0]] = maxf(worsts[pair[0]], pair[1])
 
 	print("soak: items ticks over 8 ms: ", ", ".join(spikes.slice(0, 24)), " (", spikes.size(), " in all)")
+	print("soak: animal rows split (protocol 171): %d sends, %d over one packet, %.1f us a send on average" % [split_calls, split_many, float(split_us) / maxf(split_calls, 1)])
+
+	# The split on full batches, as a crowded hunting ground or the spyglass sends them: what each send pays at hundreds of players.
+	for n_rows in [8, 15, 30, 60]:
+		var rows: Array = []
+
+		for i in n_rows:
+			rows.append([1000 + i, 2 + i % 9, Vector3(56538.9 + i, 28.6, 71702.7 - i), snappedf(0.37 * i, 0.01), i % 4, 123456 + i * 50, Vector2(56540.0 + i, 71700.0 - i)])
+
+		var t_full: int = Time.get_ticks_usec()
+
+		for k in 1000:
+			RowParts.split(rows)
+
+		print("soak: split of %d rows (%d bytes, %d parts): %.1f us a send" % [n_rows, var_to_bytes(rows).size(), RowParts.split(rows).size(), float(Time.get_ticks_usec() - t_full) / 1000.0])
 	for fname in ["_rot", "_fires", "_vitals_tick", "_craft_tick", "_remains_tick", "_spoil_tick", "_fly", "_carcass_tick"]:
 		if not items.has_method(fname):
 			continue
