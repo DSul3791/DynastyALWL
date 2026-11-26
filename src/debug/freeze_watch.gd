@@ -10,8 +10,11 @@ extends RefCounted
 # - beat() itself prints "FREEZE gap: N ms between frames" from the main thread's own clock: the line to trust for a real stop.
 
 const LOOK_MS := 100
-const STUCK_MS := 700
-const STALL_MS := 600
+# Lowered 26 Nov 2026 (Lane A r4 logs f22e098a, baae2474, 7a1e0064: 509-637 ms frames whose time was all "scripts" with nothing timed): at
+# 700/600 a half-second stop printed neither line, so nothing told a stuck script (stuck line, with the last piece finished before it) from
+# the whole game stopped by the system (this thread's own sleep running long).
+const STUCK_MS := 300
+const STALL_MS := 350
 const GAP_MS := 500                     # a main-thread frame gap this long prints a FREEZE gap line (the one to trust)
 const LATE_MS := 250                    # the watch woke this late: its stuck reading is not trusted (the thread was starved)
 const DRAW_START := "draw start (every _process and deferred call done)"     # a stall after it is in the draw
