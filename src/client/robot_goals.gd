@@ -173,7 +173,7 @@ func _lighten() -> void:
 	for n in range(inv.numbers.size() - 1, -1, -1):
 		var item: String = c.items.table.id_of(int(inv.numbers[n])) if int(inv.numbers[n]) > 0 else ""
 
-		var keep: int = 20 if item in ["thatch", "reed_stems", "bedding", "samphire", "straw", "kindling", "soil", "sand", "gravel"] else (40 if item == "stick" else 0)
+		var keep: int = 20 if item in ["thatch", "reed_stems", "bedding", "samphire", "straw", "kindling"] else (40 if item == "stick" else 0)
 		keep = 10 if item.begins_with("apple_") or item.ends_with("berries") or item in ["cherries", "fiddleheads", "foxglove_leaves"] else keep
 		var junk: bool = item.begins_with("log_") or item.ends_with("_seed") or item.ends_with("_seeds") or item == "linseed" or keep > 0
 
@@ -1227,9 +1227,10 @@ func _path(strokes: int) -> String:
 
 
 # --- clay, as the goal's hint says: the Wooden - Shovel in Dig mode, left clicks at the ground. Loam, forest humus, silt and alluvium
-# lie on clay (digging.json under: a 35 to 50% chance a dig), clay ground gives it every dig, sand and rock never. A player digs a
-# shallow line (a step on every second dig, so no pit to fall in) away from the camp, and tries another way out, further each time,
-# when the ground gives none.
+# lie on clay (digging.json under: a 35 to 50% chance a dig), clay ground gives it every dig, sand and rock never. A dig is a bowl
+# about 1.7 m across and 1.15 m deep (server_items.gd DIG_RADIUS_M, DIG_DEPTH_M) and the shovel reaches 3 m from the eye (held_item.gd
+# REACH_M), so a player digs once where they stand, 1.8 m ahead, then steps 1.8 m sideways: the holes lie side by side and the robot
+# never stands in one. Lines go out from the camp a different way each time, further out, when the ground gives no clay.
 func _dig_clay(want: int) -> String:
 	var why: String = await _tool("wooden_shovel")
 
@@ -1249,26 +1250,30 @@ func _dig_clay(want: int) -> String:
 
 	var said: int = r._notices.size()
 	var start_clay: int = _count("clay")
-	var start_soil: int = _count("soil") + _count("sand") + _count("gravel")
-	var digs: int = 0
+	var start_ground: int = _dug_count()
+	var clicks: int = 0
+	var dug: int = 0
 	var line: int = 0
 	var until: int = mini(Time.get_ticks_msec() + int(CLAY_S * 1000.0), _end_ms)
 
 	while _count("clay") - start_clay < want and Time.get_ticks_msec() < until and line < 8:
 		line += 1
 		var dir: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, float(line) * 2.3)
+		var side: Vector3 = dir.rotated(Vector3.UP, PI * 0.5)
 		var from: Vector3 = _home + dir * (12.0 + 25.0 * float(line - 1))
 		await r._go_to(from, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 2.0)
 		var got_here: int = _count("clay")
 		var tries: int = 0
+		var dug_here: int = 0
 
 		while tries < 10 and _count("clay") - start_clay < want and Time.get_ticks_msec() < until:
-			if tries > 0 and tries % 2 == 0:
-				await r._go_to(c.body.global_position + dir * 1.8, 4.0, 0.4)
+			if tries > 0:
+				await r._go_to(c.body.global_position + side * 1.8, 4.0, 0.4)
 
-			var ground: Vector3 = c.body.global_position + dir * 2.2
+			var ground: Vector3 = c.body.global_position + dir * 1.8
 			var y: float = float(c.items._ground_below.call(ground))
 			ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+			var had: int = _dug_count()
 			_look_at(ground)
 			await r._wait(0.3)
 			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
@@ -1276,18 +1281,31 @@ func _dig_clay(want: int) -> String:
 			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
 			await r._wait(0.9)   # the server's dig pace is 0.7 s
 			tries += 1
-			digs += 1
+			clicks += 1
+			dug_here += 1 if _dug_count() > had else 0
 
-			# Sand, gravel or rock under the spade a few times running and no clay: this ground has none, try another way out.
-			if tries >= 4 and _count("clay") == got_here:
+			# Sand, gravel or rock under the spade four digs running and no clay: this ground has none, try another way out.
+			if dug_here >= 4 and _count("clay") == got_here:
 				break
 
-		_line("CLAY line %d at %s, %.0f m from camp: %d digs, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home), tries, _count("clay") - got_here])
+		dug += dug_here
+		_line("CLAY line %d at %s, %.0f m from camp: %d clicks, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
+			tries, dug_here, _count("clay") - got_here])
 
 	var got: int = _count("clay") - start_clay
-	_line("CLAY %d digs on %d lines: +%d clay (wanted %d), +%d soil, sand and gravel, goal has %s%s" % [digs, line, got, want,
-		_count("soil") + _count("sand") + _count("gravel") - start_soil, str(c.items.goal_book.row("dig_clay").get("have", "?")), _said(said)])
-	return "" if got >= want or bool(c.items.goal_book.row("dig_clay").get("done", false)) else "dug %d times on %d lines: %d of %d clay%s" % [digs, line, got, want, _said(said)]
+	_line("CLAY %d clicks on %d lines, %d gave ground: +%d clay (wanted %d), +%d ground items in all, goal has %s%s" % [clicks, line, dug, got, want,
+		_dug_count() - start_ground, str(c.items.goal_book.row("dig_clay").get("have", "?")), _said(said)])
+	return "" if got >= want or bool(c.items.goal_book.row("dig_clay").get("done", false)) else "%d shovel clicks on %d lines, %d gave ground: %d of %d clay%s" % [clicks, line, dug, got, want, _said(said)]
+
+
+# What a dig gives (digging.json yield and under), summed: a click that raised it dug.
+func _dug_count() -> int:
+	var n: int = 0
+
+	for item in ["soil", "sand", "gravel", "clay", "stone", "sea_salt", "crystal_lens"]:
+		n += _count(item)
+
+	return n
 
 
 # --- a blueprint with the hammer: placed on open ground ahead, then hammered until it stands --------------------------------------
