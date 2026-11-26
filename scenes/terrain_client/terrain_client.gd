@@ -1407,6 +1407,7 @@ func _on_join_refused(text: String, title: String = "Update required") -> void:
 
 
 func _on_welcome(info: Dictionary) -> void:
+	Probe.joined()   # the JOIN slow frame lines follow the 30 frames from here
 	var tw: int = Probe.start()
 	_welcome_body(info)
 	Probe.stop("welcome", tw)

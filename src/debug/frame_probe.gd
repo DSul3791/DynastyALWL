@@ -16,6 +16,7 @@ static var _totals: Dictionary = {}       # name -> [count, total_us, worst_us]
 static var _this_frame: Dictionary = {}   # name -> us spent this frame
 static var _slow: Array = []              # [frame_ms, {name: ms}]
 static var _frames: int = 0
+static var _join_frame: int = -1000      # the frame the welcome came in (joined()): JOIN lines cover the 30 frames after it too
 static var _slow_count: int = 0
 static var _win: Dictionary = {}          # name -> us since window_reset (the GPU probe's script-cost lines)
 static var _win_frames: int = 0
@@ -90,6 +91,12 @@ static func _shown_text() -> String:
 
 
 # The frame's biggest timed pieces, "name ms", at most `count` ("" when nothing was timed).
+# The welcome came in this frame (terrain_client.gd _on_welcome): the JOIN slow frame lines cover the next 30 frames, however long the client
+# waited before it (a slow connect or a busy machine puts the welcome past the first 30 frames).
+static func joined() -> void:
+	_join_frame = _frames
+
+
 static func _top_text(count: int) -> String:
 	var named: Array = []
 
@@ -125,7 +132,7 @@ static func frame(delta: float) -> void:
 	# not the stall): the beat-to-beat gap is used too.
 	var join_ms: float = maxf(ms, float(FreezeWatch.gap_ms))
 
-	if join_ms > JOIN_SLOW_MS and _frames <= 30:
+	if join_ms > JOIN_SLOW_MS and (_frames <= 30 or _frames - _join_frame <= 30):   # Lane A 26 Nov 2026: a welcome at frame 2004 printed no JOIN line
 		FreezeWatch.printer.line("JOIN slow frame %.0f ms (frame %d): %s; wall: %s" % [join_ms, _frames, _top_text(8) if not _this_frame.is_empty() else "nothing timed", FreezeWatch.split])
 
 	if ms > FREEZE_MS and _frames > 30 and _freeze_prints < 40:
