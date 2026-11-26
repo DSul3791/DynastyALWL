@@ -7125,6 +7125,7 @@ func _lay_fire(peer: int, number: int, spot: Vector3) -> void:
 	_fire_store(laid_fire).add(table.number_of("stick"), start_sticks)
 	_fire_apply_store(laid_fire, _fire_store(laid_fire))
 	_next_id += 1
+	_dirty = true
 	_goal_event(peer, "placed", "campfire")   # the fire hint and goals count a laid fire
 
 

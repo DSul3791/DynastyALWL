@@ -3,7 +3,8 @@ extends SceneTree
 # The campfire is made both ways (Dave 26 Nov 2026, "campfire both": small things like campfires work for both because they are small; the hammer
 # is for the larger things people could not carry, and it lets several people finish a build). By hand: the Campfire from the pack is set down as a
 # laid fire. With the hammer: blueprint 366 sets down a site that takes nothing; hammer hits fill it, from more than one player; when it is full it
-# becomes the same laid fire, and both the builder and the one who finished it count the placed campfire. The fire's own spacing applies to sites.
+# becomes the same laid fire, and both the builder and the one who finished it count the placed campfire. A site is placed by the fire's own rules
+# (2 m from a fire), and a fire or another site keeps the structures' 2.5 m from a site; a site counts toward the fires in its chunk.
 #   godot --headless --path . --script res://src/worldgen/tools/test_campfire_both.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -100,14 +101,14 @@ func _init() -> void:
 	f.action(1, Net.ACT_PLACE_BLUEPRINT, 366, 0, 0, spot + Vector3(0.0, 0.0, 1.0))
 	check(HeldTool.site_of(f, "campfire") == site, "a second campfire blueprint is refused 1 m from the first")
 
-	# Two players fill it: player 2 puts in 8 stones, player 1's hit puts in the rest and finishes it.
-	f.report_position(2, spot + Vector3(0.0, 0.0, -1.5))
-	HeldTool.hit_site(f, site, 2)
-	check(f._items.has(site) and f._items[site]["struct"].has("site") and int(f._items[site]["struct"]["site"]["have"].get("stone", 0)) == 8 and have(2, "stone") == 0, "a second player's hammer hit puts their 8 stones in; the site still waits for the rest")
+	# Two players fill it: the builder's hit puts in their 6 sticks and 8 stones, a second player's hit puts in the last 8 stones and finishes it.
 	f.report_position(1, spot + Vector3(0.0, 0.0, 1.5))
 	HeldTool.hit_site(f, site, 1)
+	check(f._items.has(site) and f._items[site]["struct"].has("site") and int(f._items[site]["struct"]["site"]["have"].get("stone", 0)) == 8 and int(f._items[site]["struct"]["site"]["have"].get("stick", 0)) == 6, "the builder's hammer hit puts their 6 sticks and 8 stones in; the site still waits for 8 more stones")
+	f.report_position(2, spot + Vector3(0.0, 0.0, -1.5))
+	HeldTool.hit_site(f, site, 2)
 	var built: Array = fires_near(spot)
-	check(not f._items.has(site) and built.size() == 1, "the builder's hit puts in the rest: the site is gone and a fire lies where it was")
+	check(not f._items.has(site) and built.size() == 1 and have(2, "stone") == 0, "a second player's hit puts in the last 8 stones: the site is gone and a fire lies where it was")
 
 	if built.size() == 1:
 		var fire: Dictionary = f._items[built[0]]

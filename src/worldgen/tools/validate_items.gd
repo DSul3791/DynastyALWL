@@ -1042,7 +1042,7 @@ func _init() -> void:
 	for kind in structures:
 		var def: Dictionary = structures[kind]
 
-		if not bool(def.get("take_only", false)) and not def.has("hand_laid"):   # remains have no kit (nobody takes them down); pipes and fittings are laid from the hand (PLUMBING_DESIGN s9)
+		if not bool(def.get("take_only", false)) and not def.has("hand_laid") and not bool(def.get("fire_site", false)):   # a campfire site has no kit: it is the Campfire blueprint's site (blueprints.json lays); remains have no kit (nobody takes them down); pipes and fittings are laid from the hand (PLUMBING_DESIGN s9)
 			if String(def.get("kit", "")) != "" or not bool(def.get("walkover", false)):
 				want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
 
