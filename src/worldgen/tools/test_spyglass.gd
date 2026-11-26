@@ -68,7 +68,7 @@ func _init() -> void:
 	check(near_id > 0 and far_id > 0, "two deer, 50 m and 250 m away")
 	var ids_of = func(rows: Array) -> Array: return rows.map(func(r): return int(r[0]))
 	var normal: Array = ids_of.call(a.rows_near(players[0]))
-	check(near_id in normal and not (far_id in normal), "normally only the near one is sent (120 m)")
+	check(near_id in normal and not (far_id in normal), "normally only the near one is sent (deer: 200 m, R-ANIMAL-SEEN-FAR)")
 	var spy: Dictionary = a.cfg.get("spyglass", {})
 	check(float(spy.get("send_radius_m", 0.0)) == 300.0 and int(spy.get("cap", 0)) == 60, "animals.json spyglass: 300 m, nearest 60")
 	var wide: Array = ids_of.call(a.rows_near(players[0], float(spy["send_radius_m"]), int(spy["cap"])))

@@ -19,6 +19,8 @@ const MapCodec := preload("res://src/shared/map_codec.gd")
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
 const GOAL_S := 240.0                      # no goal starts with less than this left, so the end lines print before the client's timeout
+const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
+const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
 const GATHER_S := 300.0                    # one gather's time at most
 
 var r                       # the robot (robot_play.gd)
@@ -250,21 +252,21 @@ func _hunt_goal() -> String:
 		c.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
 		await r._wait(1.0)
 
-	var body: int = -1
+	var body: int = await _chase_game(known)
+	var leg: int = 0
+	var until: int = mini(Time.get_ticks_msec() + int(HUNT_WALK_S * 1000.0), _end_ms - 120000)
 
-	for sp in [1, 2]:   # rabbit, then deer (a new character leaves the wolves alone); stop at the first kill
-		if Time.get_ticks_msec() > _end_ms - 60000:
-			break
-
-		var _chased: bool = await r._hunt(sp, 90.0)
-		r._release_all()
-		body = _new_carcass(known)
-
-		if body >= 0:
-			break
+	# None in reach of the camp (25 Nov run: the rabbit and deer ranges lie 175 to 270 m out, the animals drawn to 120 m): a player walks out
+	# to look for game, a leg of HUNT_LEG_M a different way each time, and chases again there.
+	while body < 0 and leg < 4 and Time.get_ticks_msec() < until:
+		leg += 1
+		var out: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * PI * 0.5 + 0.4) * HUNT_LEG_M
+		await r._go_to(out, minf(120.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
+		_line("HUNT walked out %d: %.0f m from camp" % [leg, _flat(_home)])
+		body = await _chase_game(known)
 
 	if body < 0:
-		return "robot cannot hunt here yet: no rabbit or deer brought down in its chases, no carcass within 120 m%s" % _said(said)
+		return "robot cannot hunt here yet: no rabbit or deer brought down by the camp or on %d walks out (aimed %.0f m from camp, %.0f m at the last), no carcass within 120 m%s" % [leg, HUNT_LEG_M, _flat(_home), _said(said)]
 
 	var at: Vector3 = c.items._world[body]["pos"]
 	await r._go_to(at, 30.0, 1.2)
@@ -299,6 +301,22 @@ func _new_carcass(known: Dictionary) -> int:
 			body = int(w)
 
 	return body
+
+
+# Chase a rabbit, then a deer (a new character leaves the wolves alone), stopping at the first kill: the new carcass, or -1.
+func _chase_game(known: Dictionary) -> int:
+	for sp in [1, 2]:
+		if Time.get_ticks_msec() > _end_ms - 60000:
+			break
+
+		var _chased: bool = await r._hunt(sp, 90.0)
+		r._release_all()
+		var body: int = _new_carcass(known)
+
+		if body >= 0:
+			return body
+
+	return -1
 
 
 # A player out looking for a rock: copper and tin lie along the rivers, bigger toward the mountains (boulders.json ore_rocks), so once its
@@ -844,11 +862,20 @@ func _nearest_source(item: String) -> Dictionary:
 
 
 # Look at a point (the body turned, the camera pitched) and tap E as a player does.
+# E goes to what is closest to the reticle (Dave's rule), and at camp that can be Edda or Hob: a player who wanted a stick does not press
+# E on a "Press E to talk" prompt, and shuts a talk that opened anyway (a talk screen holds the movement keys: 25 Nov run, 5 minutes stood).
 func _press_e_at(point: Vector3) -> void:
 	_look_at(point)
 	await r._wait(0.45)   # the harvest prompt is judged every 0.2 s
+
+	if str(c.items.current_interaction().get("kind", "")) == "npc":
+		return
+
 	await r._tap("interact")
 	await r._wait(0.4)
+
+	if c.items.dialogue_open:
+		_close_windows()
 
 
 func _look_at(point: Vector3) -> void:
@@ -1025,7 +1052,11 @@ func _chop_shrubs(most: int) -> void:
 
 
 # Held E for `s` seconds: the sweep picks up what lies within 2 m, as a player clears up after a felling.
+# Not while E would talk (Edda or Hob nearest the reticle, as _press_e_at); a talk that opened anyway is shut.
 func _sweep_up(s: float) -> void:
+	if str(c.items.current_interaction().get("kind", "")) == "npc":
+		return
+
 	var start: Vector3 = c.body.global_position
 	r._key("interact", true)
 
@@ -1033,6 +1064,9 @@ func _sweep_up(s: float) -> void:
 		await r._go_to(start + Vector3(2.0, 0.0, 0.0).rotated(Vector3.UP, float(n) * 0.9), 1.0, 0.5)
 
 	r._key("interact", false)
+
+	if c.items.dialogue_open:
+		_close_windows()
 
 
 # --- fire: a campfire kit laid on open ground and lit (plant fibre is the tinder, cooking.json) -------------------------------------

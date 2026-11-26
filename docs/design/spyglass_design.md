@@ -16,7 +16,7 @@ The admin spyglass is built. Tier 1 of the player spyglass is built too (10 Nov 
 
 - **Lenses (settled 9 Nov 2026).** Tier 1 uses a lens of polished clear quartz, a "crystal lens". It is a rare find when breaking rock and gravel, so a player can make a spyglass early, with no developer gate. Tiers 2 and 3 use kiln glass once glass arrives (items review stage 2: sand fired in the kiln/smelter). A crystal lens is still allowed in any tier, as an alternative with its own character: a little less zoom and a faint tint, but it never cracks. That follows Dave's "no stupid developer rules".
 - **Use.** Hold the spyglass in hand. Right mouse looks through it, and the wheel zooms on tiers 2 and 3. Looking through it narrows the field of view and slows the mouse by the same factor. A dark round vignette frames the view. Each look costs one use of durability.
-- **Animal range.** Animals are only sent within 120 m of a player, and only exist out to about 300 m. While looking, the tiers raise that: tier 1 to 150 m, tier 2 to 220 m, tier 3 to 300 m.
+- **Animal range.** Animals are only sent within 120 m of a player (big game within 200 m: R-ANIMAL-SEEN-FAR), and only exist out to about 300 m. While looking, the tiers raise that: tier 1 to 150 m, tier 2 to 220 m, tier 3 to 300 m.
 - **Tier 3 readout.** It needs the server, as the admin version below does, but without the admin check.
 
 ## Tier 1, built (10 Nov 2026)
