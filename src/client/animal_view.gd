@@ -1250,8 +1250,10 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		inst.free()
 		return null
 
+	var skin_answers: String = "%s|%s" % [kind, str(row["scene"])]
+
 	for m in meshes:
-		_fit_skin(m as MeshInstance3D, inst, kind, "%s|%s" % [kind, str(row["scene"])])
+		_fit_skin(m as MeshInstance3D, inst, kind, skin_answers)
 
 	FrameProbe.stop("animal body: fit skin", t_part)
 	t_part = FrameProbe.start()
@@ -1858,6 +1860,7 @@ const CLIP_ANSWERS_PATH := "res://data/animals/clip_answers.json"
 var _kept_answers: Variant = null   # "kind|scene" -> {"shares": {clip: share}, "skins": {mesh: rebuilt}}, read once
 var _recording: Variant = null      # the same shape, filled with the answers measured here (tools/clip_answers.gd); null in the game
 var _measure_all: bool = false      # the tool and its test: kept answers are not used
+var _conflicts: PackedStringArray = PackedStringArray()   # shares recorded twice with different values (_record)
 
 func _answers_for(answers: String) -> Dictionary:
 	if _kept_answers == null:
@@ -1877,7 +1880,11 @@ func _record(answers: String, part: String, name_text: String, value: Variant) -
 		var model: Dictionary = (_recording as Dictionary).get_or_add(answers, {"shares": {}, "skins": {}})
 		var known: Dictionary = model[part]
 
-		# Two meshes of one name: a skin is kept as fine only when both are (else it is measured every time, as before).
+		# Two meshes of one name: a skin is kept as fine only when both are (else it is measured every time, as before). Two different
+		# shares for one clip of one model (two looks with their own clip_loop or gait) cannot be kept under one name: listed in _conflicts.
+		if part == "shares" and known.has(name_text) and absf(float(known[name_text]) - float(value)) > 0.000001:
+			_conflicts.append("%s %s: %.6f and %.6f" % [answers, name_text, float(known[name_text]), float(value)])
+
 		known[name_text] = (bool(known[name_text]) or bool(value)) if part == "skins" and known.has(name_text) else value
 
 

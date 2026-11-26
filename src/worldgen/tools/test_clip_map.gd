@@ -298,7 +298,21 @@ func _initialize() -> void:
 	var measured: Dictionary = ((kept_view._recording as Dictionary).get("deer|%s" % paths[0], {}) as Dictionary).get("shares", {})
 	check(walk_of(measured_body) != null and absf(float(measured.get("Walk", -1.0)) - 1.0) < 0.01, "measured with nothing kept, it is the walk, recorded at its standing height (%s)" % str(measured))
 
-	for node in [kept_body, measured_body]:
+	# The share does not change with the body's size (the premise of keeping one per model): the walker drawn three times as long has
+	# the same walk share. A model whose answers are all kept never measures its standing height.
+	kept_view._models = {"deer": {"scene": paths[0], "length_m": 3.0}}
+	kept_view._recording = {}
+	var long_body: Node3D = kept_view._make_model(2, 1)
+	var long_shares: Dictionary = ((kept_view._recording as Dictionary).get("deer|%s" % paths[0], {}) as Dictionary).get("shares", {})
+	check(long_shares.has("Walk") and absf(float(long_shares["Walk"]) - float(measured.get("Walk", -1.0))) < 0.000001, "three times the size, the same share (%s)" % str(long_shares))
+	kept_view._measure_all = false
+	kept_view._kept_answers = {"deer|%s" % paths[0]: {"shares": {"Walk": 1.0}, "skins": {}}}
+	var rest: Array = []
+	var walker_anim: Animation = walk_of(measured_body)
+	var walker_rig: Node3D = measured_body.get_node_or_null("Rig") if measured_body != null else null
+	check(walker_anim != null and walker_rig != null and absf(kept_view._height_share(measured_body.get_meta("player") if measured_body != null else null, walker_anim, walker_rig, "deer|%s" % paths[0], "Walk", rest) - 1.0) < 0.000001 and rest.is_empty(), "a kept share is given without measuring the standing height")
+
+	for node in [kept_body, measured_body, long_body]:
 		if node != null:
 			(node as Node).free()
 

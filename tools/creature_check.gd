@@ -72,6 +72,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		return lines
 
 	var view: Node3D = AnimalView.new()
+	view.set("_measure_all", true)   # a model check measures its clips itself, never trusting the kept answers (data/animals/clip_answers.json)
 	var row: Dictionary = view._model_rows().get(kind, {})
 
 	if young and row.get("young_model", null) is Dictionary:

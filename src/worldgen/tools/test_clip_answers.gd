@@ -26,6 +26,7 @@ func _initialize() -> void:
 	var kept_absent: Array = (parsed as Dictionary).get("absent", []) if parsed is Dictionary else []
 	var view = AnimalViewScript.new()
 	var now: Dictionary = ClipAnswersTool.collect(view)
+	check(view._conflicts.is_empty(), "no clip of a model measures two ways (%s)" % "; ".join(view._conflicts))
 	view.free()
 	var absent: Array = now["absent"]
 	now.erase("absent")

@@ -9,8 +9,10 @@ import json, re, sys
 
 def kinds_drawn():
     text = open("src/client/animal_view.gd", encoding="utf-8").read()
-    line = re.search(r"^const KIND_OF_SPECIES := \{(.*)\}$", text, re.M).group(1)
-    return set(re.findall(r'"([a-z_]+)"', line))
+    found = re.search(r"^const KIND_OF_SPECIES := \{(.*)\}", text, re.M)
+    if not found:
+        return None
+    return set(re.findall(r'"([a-z_]+)"', found.group(1)))
 
 
 def scene_of(row, look, young):
@@ -26,6 +28,8 @@ def scene_of(row, look, young):
 def wanted():
     species = json.load(open("data/animals/models.json", encoding="utf-8")).get("species", {})
     kinds = kinds_drawn()
+    if kinds is None:
+        return None
     out = []
     for kind, row in species.items():
         if kind not in kinds or not isinstance(row, dict):
@@ -41,9 +45,16 @@ def wanted():
 
 
 def main():
-    table = json.load(open("data/animals/clip_answers.json", encoding="utf-8"))
-    known = set(table.get("models", {})) | set(table.get("absent", []))
+    try:
+        table = json.load(open("data/animals/clip_answers.json", encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print("FAIL data/animals/clip_answers.json cannot be read (%s): run tools/clip_answers.gd on Lane A" % e)
+        return 1
     keys = wanted()
+    if keys is None:
+        print("FAIL the KIND_OF_SPECIES line of src/client/animal_view.gd was not found: tools/check_clip_answers.py reads it as one line")
+        return 1
+    known = set(table.get("models", {})) | set(table.get("absent", []))
     missing = [k for k in keys if k not in known]
     for k in missing:
         print("FAIL %s has no kept clip answers in data/animals/clip_answers.json: run tools/clip_answers.gd on Lane A" % k)

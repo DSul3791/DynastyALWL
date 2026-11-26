@@ -14,7 +14,14 @@ const OUT_PATH := "res://data/animals/clip_answers.json"
 func _init() -> void:
 	var view = AnimalViewScript.new()
 	var made: Dictionary = collect(view)
+	var conflicts: PackedStringArray = view._conflicts
 	view.free()
+
+	if not conflicts.is_empty():
+		print("clip_answers: one clip of one model measured two ways, nothing written: %s" % "; ".join(conflicts))
+		quit(1)
+		return
+
 	var absent: Array = made["absent"]
 	made.erase("absent")
 	var out: Dictionary = {"about": "Each animal model's clip height shares and skin answers, measured by tools/clip_answers.gd. absent: kind|scene drawn with the code-built body (no file or no mesh here).", "models": made, "absent": absent}
