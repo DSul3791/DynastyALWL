@@ -870,7 +870,7 @@ func _light_own_fire() -> int:
 		waited += 2.0
 
 		if int(waited) % 20 == 0:
-			if int(c.items._world[fire]["state"]) == 8:   # gone to cold ash (rain): sticks on again, which lays it
+			if int(c.items._world.get(fire, {}).get("state", -1)) == 8:   # gone to cold ash (rain): sticks on again, which lays it
 				c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
 				await r._wait(0.5)
 
