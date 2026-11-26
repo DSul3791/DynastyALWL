@@ -25,7 +25,7 @@ const CHARCOAL_EACH_S := 400.0             # real seconds of wood burning a fire
 const STALK_S := 45.0                      # how long a hunter stands, looks and walks up before the chase
 const FISH_S := 240.0                      # the most time the fish goal spends at the water
 const WAIT_VISITS := 5                     # a goal that waits on time (charcoal) is visited at most this often
-const CLAY_S := 360.0                      # the most time the clay goal spends walking and digging
+const CLAY_S := 480.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
 const GATHER_S := 300.0                    # one gather's time at most
@@ -1575,26 +1575,41 @@ func _dig_clay(want: int) -> String:
 			if tries > 0:
 				await r._go_to(c.body.global_position + side * 1.8, 4.0, 0.4)
 
-			var ground: Vector3 = c.body.global_position + dir * 1.8
-			var y: float = float(c.items._ground_below.call(ground))
-			ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
 			var had: int = _dug_count()
-			_look_at(ground)
-			await r._wait(0.3)
-			c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
-			await r._wait(0.1)
-			c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
-			await r._wait(0.9)   # the server's dig pace is 0.7 s
+
+			# A click that brought nothing in (the ray met a bush or grass, or the ground fell away out of the 3 m reach) is aimed again
+			# closer and steeper, once; the pack is watched up to 2 s for the server's answer.
+			for ahead in [1.8, 1.2]:
+				var ground: Vector3 = c.body.global_position + dir * ahead
+				var y: float = float(c.items._ground_below.call(ground))
+				ground.y = y if not is_nan(y) else c.body.global_position.y - 0.9
+				_look_at(ground)
+				await r._wait(0.3)
+				c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+				await r._wait(0.1)
+				c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+				clicks += 1
+				var waited: float = 0.0
+
+				while waited < 2.0 and _dug_count() <= had:
+					await r._wait(0.25)
+					waited += 0.25
+
+				if _dug_count() > had:
+					break
+
+				await r._wait(maxf(0.0, 0.8 - waited))   # the server's dig pace is 0.7 s
+
 			tries += 1
-			clicks += 1
 			dug_here += 1 if _dug_count() > had else 0
 
-			# Sand, gravel or rock under the spade four digs running and no clay: this ground has none, try another way out.
-			if dug_here >= 4 and _count("clay") == got_here:
+			# Sand, gravel or rock under the spade eight digs running and no clay: this ground has none, try another way out (on loam, with
+			# a 35% chance a dig, four dry digs in a row happen one time in five; eight, one time in thirty).
+			if dug_here >= 8 and _count("clay") == got_here:
 				break
 
 		dug += dug_here
-		_line("CLAY line %d at %s, %.0f m from camp: %d clicks, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
+		_line("CLAY line %d at %s, %.0f m from camp: %d digs tried, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
 			tries, dug_here, _count("clay") - got_here])
 
 	var got: int = _count("clay") - start_clay
