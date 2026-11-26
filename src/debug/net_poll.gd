@@ -62,7 +62,9 @@ func listen() -> void:
 			return
 
 		for info in source.get_script_signal_list():   # the messages' own signals, not Node's
-			_marks[String(info["name"])] = mark.bind(String(info["name"])).unbind((info["args"] as Array).size())
+			var sig: String = String(info["name"])
+			var args: int = (info["args"] as Array).size()
+			_marks[sig] = mark.bind(sig).unbind(args) if args > 0 else mark.bind(sig)   # unbind(0) is an error
 
 	for sig in _marks:
 		var connections: Array = net.get_signal_connection_list(sig)
@@ -78,7 +80,7 @@ func listen() -> void:
 
 
 func _poll() -> void:
-	if multiplayer.multiplayer_peer == null:
+	if not is_inside_tree() or multiplayer == null or multiplayer.multiplayer_peer == null:
 		return
 
 	if _frames % RELISTEN_FRAMES == 0 or (_frames < JOIN_FRAMES and _frames % JOIN_EVERY == 0):

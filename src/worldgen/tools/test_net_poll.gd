@@ -31,6 +31,7 @@ func _initialize() -> void:
 	poll.listen()
 	var rows: Array = messages.get_signal_connection_list("rows_received")
 	check(rows.size() == 2 and messages.get_signal_connection_list("ping_received").size() == 1, "one mark on each of the messages' own signals")
+	check(Callable(poll._marks["ping_received"]).get_unbound_arguments_count() == 0 and Callable(poll._marks["rows_received"]).get_unbound_arguments_count() == 2, "a signal with no arguments gets a plain mark (unbind(0) is an error)")
 	messages.connect("rows_received", func(_a, _b) -> void: order.append("late handler"))
 	poll.listen()
 	rows = messages.get_signal_connection_list("rows_received")
@@ -59,6 +60,7 @@ func _initialize() -> void:
 
 	# The node takes the poll over and gives it back.
 	root.add_child(poll)
+	await process_frame   # in _initialize the root is not in the tree yet: the node's _ready comes with the first frame
 	check(not multiplayer_poll, "the SceneTree stops its own poll while the node is in")
 	check(process_frame.is_connected(poll._poll), "it polls from the process_frame signal (it comes while paused too)")
 	poll._poll()   # an offline peer: polls without error
