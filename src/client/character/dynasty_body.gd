@@ -217,6 +217,7 @@ func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
 	Shapes.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)      # the width and face shapes, on a worker thread, ready before an NPC or a slider needs them (dynasty_shapes.gd)
+	WornShell.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)   # and the sleeved garments' fitted layers, ready before the first one is worn (worn_shell.gd)
 	_build_mounts()
 	set_meta("worn_frames", _worn_frames())      # worn clothing (worn_look.gd) hangs on these frames, so nothing is skipped any more (docs/DYNASTY_BODY.md gap 1)
 	set_meta("worn_shell", true)                 # and a sleeved garment adds a fitted layer skinned like body_mesh (worn_shell.gd, QA #15)
@@ -743,6 +744,7 @@ static func _bow_aim(anim: Animation, skel: Skeleton3D, drawn: bool) -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		Shapes.wait()          # the prewarm task (started by the first body) never outlives the bodies
+		WornShell.wait()       # nor the fitted clothing layers' (worn_shell.gd)
 
 
 func _make_empty() -> void:
@@ -810,19 +812,29 @@ func set_proportions(g: Dictionary) -> void:
 
 
 var _widths_later: bool = false     # the widths wait for the shapes worker (dynasty_shapes.gd ready)
+var _shells_later: bool = false     # a worn garment's fitted layer waits for its worker (worn_shell.gd)
 
 
 func _ready() -> void:
-	set_process(_widths_later)      # the engine turns _process on at the ready; only a body still waiting for its shapes needs it
+	set_process(_widths_later or _shells_later)      # the engine turns _process on at the ready; only a body still waiting for its shapes or layers needs it
+
+
+# worn_shell.gd hang: a layer was hung before its worker finished; it is filled in here, a frame or a few later.
+func wait_for_shells() -> void:
+	_shells_later = true
+	set_process(true)
 
 
 func _process(_delta: float) -> void:
-	if not _widths_later or not Shapes.ready():
-		return
+	if _shells_later:
+		_shells_later = WornShell.refresh(self)
 
-	set_process(false)
-	_set_widths(genome)
-	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+	if _widths_later and Shapes.ready():
+		_set_widths(genome)
+		dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+
+	if not _widths_later and not _shells_later:
+		set_process(false)
 
 
 # The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
@@ -857,7 +869,8 @@ func _set_widths(g: Dictionary) -> void:
 		if i >= 0:
 			body_mesh.set_blend_shape_value(i, Shapes.shape_weight(g, key))
 
-	WornShell.refresh(self)      # a worn garment's fitted layer takes the new mesh and widths
+	if WornShell.refresh(self):      # a worn garment's fitted layer takes the new mesh (made on a worker: until then it keeps the old one) and widths
+		wait_for_shells()
 
 
 # Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour
