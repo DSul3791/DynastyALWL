@@ -2850,7 +2850,8 @@ func _offer_welcome() -> void:
 		return
 
 	_welcome_offered = true
-	_welcome().offer(CharacterStoreScript.active_id())
+	var build: int = int(world.get("server_build", 0)) if bool(world.get("server_stamped", false)) else 0   # a release server: a new build is a new world (QA #13)
+	_welcome().offer(CharacterStoreScript.active_id(), str(world.get("world_name", "")), build)
 
 
 func _welcome():

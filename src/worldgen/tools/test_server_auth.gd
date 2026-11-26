@@ -151,7 +151,7 @@ func _initialize() -> void:
 	check(not old_server["connected"] and old_server["outdated"].contains("newer than the server") and old_server["outdated"].contains("before version 161"), "this game on a server from before 161: told the server is older")
 	var locked_old: Dictionary = await join("Hannibal", [], null, 0, p)
 	check(not locked_old["connected"] and locked_old["outdated"] != "" and locked_old["asked"].is_empty(), "and never asked for that older server's password")
-	check(ServerAuth.outdated_text(150, 161).contains("Your character and world are kept"), "the update words say nothing is lost")
+	check(ServerAuth.outdated_text(150, 161).contains("A new version is a new world") and not ServerAuth.outdated_text(150, 161).contains("kept"), "the update words say a new version is a new world (R-RELEASE-CLEAN, QA #13), never that the character is kept")
 	for path in ["res://scenes/terrain_client/terrain_client.gd", "res://scenes/bot/bot_main.gd"]:   # every client that joins says its protocol (gate review: the bots were left out)
 		var code: String = FileAccess.get_file_as_string(path)
 		check(code.contains("attach_client") and code.contains("_auth.protocol = NetScript.PROTOCOL_VERSION"), "%s says its protocol in the handshake" % path.get_file())
