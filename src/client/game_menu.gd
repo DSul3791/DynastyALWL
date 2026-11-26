@@ -357,7 +357,7 @@ func _build_sound() -> void:
 	sound.add_theme_constant_override("separation", 7)
 	_sound_scroll.add_child(sound)
 
-	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"]]:
+	for level in [["master", "Master volume"], ["effects", "Effects volume (steps, tools, items, fire)"], ["ambient", "Ambient volume (wind, nature, weather)"], ["interface", "Interface volume"], ["music", "Music volume (title screen)"]]:
 		_slider(sound, level[1], float(_c.sound.levels[level[0]]), func(value: float):
 			_c.sound.set_level(level[0], value)
 			note.text = "%s %d %%" % [level[1].get_slice(" (", 0), roundi(value * 100.0)])

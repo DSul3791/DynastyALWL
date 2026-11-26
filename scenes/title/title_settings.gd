@@ -11,6 +11,7 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
+const TitleMusic := preload("res://src/client/title_music.gd")
 
 const BUTTON_W := 300.0
 
@@ -24,6 +25,7 @@ var _fullscreen_switch
 var _vsync_switch
 var _size_button: Button
 var _key_page = null
+var music_slider: HSlider                    # Music volume (_music_slider)
 
 
 func _ready() -> void:
@@ -65,10 +67,11 @@ func _ready() -> void:
 	_vsync_switch = _switch_row(page, "VSync", func(on: bool) -> void:
 		display.vsync_index = 0 if on else 2
 		_apply("VSync %s (saved)." % ("on" if on else "off")))
+	_music_slider(page)
 	_button(page, "Controls (change keys)", func() -> void: show_page("controls"))
 	_button(page, "Back", close)
 	var more: Label = Label.new()
-	more.text = "Sound, quality and the rest: Esc > Settings in the game."
+	more.text = "Other sound, quality and the rest: Esc > Settings in the game."
 	more.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	more.add_theme_font_size_override("font_size", 18)
 	more.add_theme_color_override("font_color", DynastyTheme.CREAM_DIM)
@@ -179,3 +182,24 @@ func _switch_row(parent: VBoxContainer, text: String, changed: Callable):
 	row.add_child(toggle)
 	parent.add_child(row)
 	return toggle
+
+
+# Music volume (the menu song, title_music.gd): heard as it moves, saved in the sound settings file the Esc menu's Sound page uses.
+func _music_slider(parent: VBoxContainer) -> void:
+	var label: Label = Label.new()
+	label.add_theme_font_size_override("font_size", 20)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	parent.add_child(label)
+	music_slider = HSlider.new()
+	music_slider.min_value = 0.0
+	music_slider.max_value = 1.0
+	music_slider.step = 0.01
+	music_slider.value = float(TitleMusic.saved_levels()["music"])
+	music_slider.custom_minimum_size = Vector2(BUTTON_W, 32.0)
+	music_slider.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	label.text = "Music volume: %d %%" % roundi(music_slider.value * 100.0)
+	music_slider.value_changed.connect(func(value: float) -> void:
+		label.text = "Music volume: %d %%" % roundi(value * 100.0)
+		TitleMusic.apply_bus(value)
+		TitleMusic.save_level(value))
+	parent.add_child(music_slider)

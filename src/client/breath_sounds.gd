@@ -117,7 +117,7 @@ func set_body(value: float, new_state: String, faint_progress: float = 0.0) -> v
 
 
 # The heart the server sets in the ears (protocol 59 body(bpm, eta, phase), Dave 2026-10-21): 0 awake; in a faint a rapid beat a little
-# higher in pitch that drops to a brisk 140 as you are about to wake; asleep a slow beat that keeps slowing. phase: 0 awake, 1 falling
+# higher in pitch that drops to a calm 90 as you are about to wake (R-CORE-PASS-OUT); asleep a slow beat that keeps slowing. phase: 0 awake, 1 falling
 # asleep, 2 out, 3 waking. While out the rest of the world is muted and the heart stays heard (it does not fade away).
 func set_server_heart(bpm: float, phase: int) -> void:
 	server_bpm = bpm

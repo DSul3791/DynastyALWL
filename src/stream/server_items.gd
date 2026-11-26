@@ -16454,7 +16454,7 @@ func _new_vitals() -> Dictionary:
 
 # How hard the player is working, 0 to 1: movement speed from position reports, lifted by recent tool work.
 func exertion_of(peer: int) -> float:
-	if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+	if int(_strain.get(peer, {}).get("state", 0)) >= 2 or strain_going(peer):
 		return 0.0
 
 	return minf(effort_of(peer), 1.0)
@@ -16535,7 +16535,7 @@ func _set_stance(peer: int, wanted: int) -> void:
 	if wanted < 0 or wanted > 3 or not _peer_key.has(peer) or _forced_sleep(peer):
 		return
 
-	if int(_strain.get(peer, {}).get("state", 0)) < 2:
+	if int(_strain.get(peer, {}).get("state", 0)) < 2 and not strain_going(peer):
 		_stance[peer] = wanted
 
 		if wanted != 3:
@@ -19304,6 +19304,13 @@ func fainted_of(peer: int) -> bool:
 	return int(_strain.get(peer, {}).get("state", 0)) >= 2
 
 
+# Passing out from strain: past the faint threshold, before the black is full (state 2). The body is already out of the player's hands
+# (Dave 25 Nov 2026, QA #19): lying, no stance choice, no effort; the client locks movement and actions (strain stance bit 16).
+func strain_going(peer: int) -> bool:
+	var st: Dictionary = _strain.get(peer, {})
+	return bool(st.get("going", false)) and int(st.get("state", 0)) <= 1
+
+
 # The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points
 # about a tenth of the radius apart, never under SHORE_STEP_M), 2 m over the ground as every wake spot is set down (_rescue_ground,
 # dug_out_height); `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
@@ -20225,7 +20232,7 @@ func _fall(peer: int, centimetres: int) -> void:
 		_asleep.erase(peer)
 
 	if drop >= float(cfg.get("faint_m", 12.0)) * jump and not _exertion_cfg.is_empty():
-		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0}
+		_strain[peer] = {"s": float(_exertion_cfg.get("faint_at", 1.4)) + 0.05, "state": 1, "t": 0.0, "black": 1.0, "going": true}   # going: out on the next tick, whatever the body's faint threshold
 
 	_sync_vitals(peer, true)
 
@@ -22413,7 +22420,7 @@ func _toggle_pump(peer: int, id: int) -> void:
 		_stop_pump(peer, "You stop.")
 		return
 
-	if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+	if fainted_of(peer) or strain_going(peer):
 		_say(peer, "You are too worn out to work it.")
 		return
 
@@ -22498,7 +22505,7 @@ func _pump_tick(spent: float) -> void:
 			_stop_pump(peer, "You stop working it.")
 			continue
 
-		if int(_strain.get(peer, {}).get("state", 0)) >= 2:
+		if fainted_of(peer) or strain_going(peer):   # passing out stops the work at once (R-CORE-PASS-OUT)
 			_stop_pump(peer, "You are too worn out to go on.")
 			continue
 
@@ -28436,6 +28443,9 @@ func _strain_tick(peer: int, spent: float) -> void:
 	var strain: float = float(st["s"])
 	st["t"] = float(st["t"]) + spent
 
+	if state >= 2:
+		st.erase("going")   # out (a strain faint, the cold or water): passing out is over, so waking hands the body back
+
 	# Sleep ends on its own: fainting, standing up, rain on an open sleeper, or rested for rested_s seconds.
 	var sleep_quality: float = 0.0
 
@@ -28472,7 +28482,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			st["t"] = 0.0
 			st["after_faint"] = true
 			st["black"] = 0.0
-			strain = float(cfg.get("wake_strain", 1.1))
+			strain = float(cfg.get("wake_strain", 0.6))
 	elif state == 3:
 		strain = maxf(strain - float(cfg.get("rest_effort", 0.52)) * float(cfg.get("fall_per_s", 0.05)) * float(cfg.get("wake_fall_mult", 0.4)) * spent, 0.0)
 
@@ -28514,15 +28524,24 @@ func _strain_tick(peer: int, spent: float) -> void:
 			state = 0
 			st["after_faint"] = false
 
-		# Blacking out is a smooth build-up, not a step (Dave 2026-10-21): past the faint threshold "black" climbs, slowly right
-		# at the threshold and faster the further strain overshoots it (a straight line in the overshoot, no steps); under the
-		# threshold it drains away. When it reaches 1 the character lies down unconscious.
+		# Blacking out is a smooth build-up, not a step (Dave 2026-10-21): past the faint threshold "black" climbs, faster the
+		# further strain overshoots it (a straight line in the overshoot, no steps), and never slower than over blackout.fall_s.
+		# Passing out takes the body at once (Dave 25 Nov 2026, QA #19: "they must stop the second the game determines its time to
+		# pass out"): from the moment the threshold is crossed ("going") the player has no control, drops to lying and cannot get up,
+		# and the black climbs on to 1 whatever strain does. Only a blackout that was not passing out (out of air) drains away.
+		# When black reaches 1 the character is unconscious (state 2).
 		var threshold: float = float(cfg.get("faint_at", 1.4)) * scale
 		var black: float = float(st.get("black", 0.0))
 		var blackout: Dictionary = cfg.get("blackout", {})
 
-		if strain >= threshold and state <= 1:
-			black = minf(black + _blackout_rate(strain / threshold - 1.0, blackout) * spent, 1.0)
+		if strain >= threshold and state <= 1 and not bool(st.get("going", false)):
+			st["going"] = true
+			_stance[peer] = 3
+			_end_sleep(peer)
+
+		if bool(st.get("going", false)) and state <= 1:
+			var black_rate: float = maxf(_blackout_rate(maxf(strain / threshold - 1.0, 0.0), blackout), 1.0 / maxf(float(blackout.get("fall_s", 2.5)), 0.1))
+			black = minf(black + black_rate * spent, 1.0)
 		else:
 			black = maxf(black - spent / maxf(float(blackout.get("recover_s", 6.0)), 0.1), 0.0)
 
@@ -28534,6 +28553,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 		if black >= 1.0 and state <= 1:
 			state = 2
 			st["t"] = 0.0
+			st.erase("going")
 			_stance[peer] = 3
 
 	st["s"] = strain
@@ -28560,7 +28580,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 			_waking.erase(peer)
 
 	_sync_body(peer, state, st)
-	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 200.0) * 5, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0)]
+	var points: Array = [int(strain * 50.0) * 20, state, int(fade * 200.0) * 5, int(_stance.get(peer, 0)) | (4 if _asleep.has(peer) else 0) | (8 if _forced_sleep(peer) else 0) | (16 if strain_going(peer) else 0)]
 
 	if send_strain.is_valid() and _strain_sent.get(peer, []) != points:
 		_strain_sent[peer] = points
@@ -28568,13 +28588,13 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 
 # The heart in the ears, the expected wake time and the phase (protocol 59): 0 awake, 1 falling asleep, 2 out (asleep or fainted),
-# 3 waking. Fainted: a fast, high heart (exertion.json faint_bpm.out), dropping to a brisk 140 for the waking stage. Asleep: slows
+# 3 waking. Fainted: a fast, high heart (exertion.json faint_bpm.out), dropping to a calm faint_bpm.wake (90) for the waking stage (R-CORE-PASS-OUT). Asleep: slows
 # from bpm.start to bpm.end over bpm.slow_s. Sent on change, whole bpm, ETA in steps of 5 s.
 func _sync_body(peer: int, state: int, st: Dictionary) -> void:
 	if not send_body.is_valid():
 		return
 
-	var fb: Dictionary = _exertion_cfg.get("faint_bpm", {"out": 172, "wake": 140})
+	var fb: Dictionary = _exertion_cfg.get("faint_bpm", {"out": 172, "wake": 90})
 	var bpm: float = 0.0
 	var eta: float = 0.0
 	var phase: int = 0
@@ -28590,7 +28610,7 @@ func _sync_body(peer: int, state: int, st: Dictionary) -> void:
 		eta = maxf(float(_exertion_cfg.get("faint_s", 8.0)) - float(st["t"]), 0.0) + float(_exertion_cfg.get("wake_s", 12.0))
 	elif state == 3:
 		phase = 3
-		bpm = float(fb.get("wake", 140))
+		bpm = float(fb.get("wake", 90))
 		eta = maxf(float(_exertion_cfg.get("wake_s", 12.0)) - float(st["t"]), 0.0)
 	elif _asleep.has(peer):
 		var cfg: Dictionary = _sleep_cfg.get("bpm", {})
