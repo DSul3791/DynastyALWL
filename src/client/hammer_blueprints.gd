@@ -86,7 +86,7 @@ func setup(item_table, pack, hud_layer: CanvasLayer = null, plans_path: String =
 
 			row["id"] = id
 			row["tool"] = str(row.get("tool", "hammer"))
-			row["kit"] = str(kinds[str(row["structure"])].get("kit", ""))
+			row["kit"] = str(row["lays"]) if row.has("lays") else str(kinds[str(row["structure"])].get("kit", ""))   # the campfire blueprint places as the hand-made Campfire (its ghost and rules)
 			row["state"] = int(kinds[str(row["structure"])].get("state", 0))
 			row["twin_state"] = int(kinds.get(str(kinds[str(row["structure"])].get("slope_twin", "")), {}).get("state", -1))   # a roof corner's 65 shape (A-37)
 			row["shown_name"] = display_name(str(row["name"]))

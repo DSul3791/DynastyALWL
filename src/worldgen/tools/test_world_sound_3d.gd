@@ -295,7 +295,7 @@ func _scripts(dir_path: String, out: Array) -> void:
 		_scripts(dir_path + "/" + sub, out)
 
 
-# Steps counted from another player's drawn travel: walking 3.2 m/s for 3 s is 8 steps of 1.2 m, running 9 m/s is 9 steps of 3 m.
+# Steps counted from another player's drawn travel: walking 3.2 m/s for 3 s is 8 steps of 1.2 m, running 9 m/s is 15 steps of the run clip's 1.7 m (R-MOVE-RUN-FEET).
 func _other_steps(world: Node3D) -> void:
 	var view = PlayerView.new()
 	world.add_child(view)
@@ -304,7 +304,7 @@ func _other_steps(world: Node3D) -> void:
 	node.position = Vector3(4.0, 10.9, 0.0)
 	var heard: Array = []
 	view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void: heard.append([at, gait, crouched]))
-	var cases: Array = [[3.2, Stance.STAND, 0, 8, 0], [9.0, Stance.STAND, 0, 9, 2], [3.2, Stance.CROUCH, 0, 8, 0], [3.2, Stance.LIE, 0, 0, 0],
+	var cases: Array = [[3.2, Stance.STAND, 0, 8, 0], [9.0, Stance.STAND, 0, 15, 2], [3.2, Stance.CROUCH, 0, 8, 0], [3.2, Stance.LIE, 0, 0, 0],
 		[3.2, Stance.STAND, PlayerView.SWIM, 0, 0], [0.5, Stance.STAND, 0, 0, 0]]
 
 	for c in cases:
