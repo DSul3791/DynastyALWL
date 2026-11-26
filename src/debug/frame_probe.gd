@@ -22,6 +22,7 @@ static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
 const FREEZE_MS := 500.0
+const JOIN_SLOW_MS := 250.0   # a join frame this long prints its pieces (the first 30 frames; FREEZE and HITCH lines start after them)
 const PHYSICS_SLOW_MS := 30.0           # a physics step this long prints a PHYSICS slow line (at most one every 5 s)
 static var _physics_next_msec: int = 0
 const HITCH_MS := 100.0                  # a frame this long prints a HITCH line at once (rate-limited)
@@ -118,6 +119,11 @@ static func frame(delta: float) -> void:
 	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
 	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
 	# script time means the wait was in the engine or the graphics driver, not in our scripts.
+	# The join's own long frames (Lane A r4 Low, 26 Nov 2026: a 1.9 s welcome, 1.1 s stuck after "weather: state", 0.6 s at the first draws)
+	# were never broken down: the lines below skip the first 30 frames. One line each names their timed pieces.
+	if ms > JOIN_SLOW_MS and _frames <= 30:
+		FreezeWatch.printer.line("JOIN slow frame %.0f ms (frame %d): %s; wall: %s" % [ms, _frames, _top_text(8) if not _this_frame.is_empty() else "nothing timed", FreezeWatch.split])
+
 	if ms > FREEZE_MS and _frames > 30 and _freeze_prints < 40:
 		_freeze_prints += 1
 		var named: PackedStringArray = PackedStringArray()
