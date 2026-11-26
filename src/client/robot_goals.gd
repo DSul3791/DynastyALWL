@@ -17,6 +17,8 @@ const CarryRules := preload("res://src/shared/carry_rules.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
+const GameClockScript := preload("res://src/shared/game_clock.gd")
+const StanceScript := preload("res://src/client/stance.gd")
 
 const LOOK_UP := Vector3(0.0, 0.6, 0.0)   # harvest.gd AIM_UP: a plant is aimed at this far above its root
 const SEARCH_M := 70.0                     # how far the robot looks round for a thing it needs before it walks on
@@ -28,6 +30,8 @@ const WAIT_VISITS := 5                     # a goal that waits on time (charcoal
 const CLAY_S := 480.0                      # the most time the clay goal spends walking and digging
 const HUNT_LEG_M := 300.0                  # a walk out from camp to look for game (the 25 Nov run: game ranges 175 to 270 m out)
 const HUNT_WALK_S := 420.0                 # the window in which another walk-out leg may start (its chases count too)
+const STORY_FROM_H := 17.5                 # the game hour a player heads back to camp for Edda's evening story (it counts from 19 to 23)
+const FIRST_GOALS := ["copper_ore"]       # played as soon as they open, before the list order: 20 goals wait on copper (the runs kept ending first)
 const GATHER_S := 300.0                    # one gather's time at most
 
 var r                       # the robot (robot_play.gd)
@@ -44,6 +48,7 @@ var _taken: Dictionary = {}   # "x,z" of a plant or branch already tried: not ai
 var _depth: int = 0
 var _sites: Dictionary = {}       # structure -> its blueprint site's world id
 var _home: Vector3 = Vector3.ZERO   # where the character first stood: the starter camp
+var _fire_at: Vector3 = Vector3.INF   # where the robot lit its own fire (the fire goal): charcoal is taken from it
 var _end_ms: int = 0x7FFFFFFFFFFFFFFF   # when the play must stop (play limit_s): no gather runs past it
 var _groups: Dictionary = {}      # ingredient group id -> member item ids (wood_species.json ingredient_groups: "berries" is any sweet berry)
 
@@ -132,6 +137,7 @@ func play(limit_s: float) -> void:
 		_close_windows()
 		await _lighten()
 		var heard: int = r._notices.size()
+		_not_before.erase(id)   # a wait that is over: this visit sets a new one if it has to wait again
 		var why: String = await _play_goal(g)
 
 		# A goal that waits on time (charcoal burning) set a time to come back: that visit is not one of its two tries, up to WAIT_VISITS visits.
@@ -161,32 +167,42 @@ func play(limit_s: float) -> void:
 		var why: String = str(_why.get(id, "not reached (its earlier goals were not done, or time ran out)"))
 		_line("GOAL %s left: %s" % [id, why])
 
-		if _why.has(id) and not why.begins_with("robot cannot"):
+		if _why.has(id) and not why.begins_with("robot cannot") and Time.get_ticks_msec() >= int(_not_before.get(id, 0)):   # a goal still waiting on the clock when the run ended is not stuck
 			r._fail("goals", id, "goal %s (%s) stuck: %s" % [id, str(row.get("title", "")), why])
 
 
-# The first goal not done whose `after` goals are all done, tried at most twice.
+# The first goal not done whose `after` goals are all done, tried at most twice. A goal that only wants the time of day comes first when
+# the clock is right (the story in the evening, whatever its place in the list: the 26 Nov run reached it at 9 in the morning and ended
+# before evening), and so do a goal whose wait is over and FIRST_GOALS.
 func _next(book) -> Dictionary:
+	var hour: float = _game_hour()
+
 	for row in book.rows:
-		if bool(row.get("done", false)) or int(_tries.get(str(row["id"]), 0)) >= 2:
-			continue
+		var id: String = str(row["id"])
+		var timed: bool = (id == "story" and hour >= STORY_FROM_H and hour < 22.5) or (_not_before.has(id) and Time.get_ticks_msec() >= int(_not_before[id])) or id in FIRST_GOALS
 
-		if str(_why.get(str(row["id"]), "")).begins_with("robot cannot"):
-			continue
+		if timed and _open(book, row):
+			return row
 
-		if Time.get_ticks_msec() < int(_not_before.get(str(row["id"]), 0)):
-			continue
-
-		var open: bool = true
-
-		for before in row.get("after", []):
-			if not bool(book.row(str(before)).get("done", true)):
-				open = false
-
-		if open:
+	for row in book.rows:
+		if _open(book, row):
 			return row
 
 	return {}
+
+
+# Not done, under two tries, not given up on, not waiting, and its `after` goals done.
+func _open(book, row: Dictionary) -> bool:
+	var id: String = str(row["id"])
+
+	if bool(row.get("done", false)) or int(_tries.get(id, 0)) >= 2 or str(_why.get(id, "")).begins_with("robot cannot") or Time.get_ticks_msec() < int(_not_before.get(id, 0)):
+		return false
+
+	for before in row.get("after", []):
+		if not bool(book.row(str(before)).get("done", true)):
+			return false
+
+	return true
 
 
 # The soonest a waiting goal comes back (ticks ms), -1 when none waits.
@@ -270,7 +286,7 @@ func _close_windows() -> void:
 
 
 # The hunt goal as its hint says: strike an animal with the spear (a rabbit is easiest), then hold the knife and work the body where it lies.
-# The chase is the robot's own (robot_play.gd _hunt: run up and strike with slot 0), a rabbit and then a deer, stopping at the first kill.
+# The hunt is _chase_game: a rabbit and then a deer, seen, crept up on crouched and the spear thrown (_throw_hunt), stopping at the first kill.
 func _hunt_goal() -> String:
 	var why: String = await _have("spear", 1, false)
 
@@ -302,6 +318,14 @@ func _hunt_goal() -> String:
 		await r._go_to(out, minf(120.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
 		_line("HUNTWALK %d: %.0f m from camp" % [leg, _flat(_home)])   # not "HUNT": robot_check.py adds HUNT lines up as fights
 		body = await _chase_game(known)
+
+	# Rabbits feed most at dusk (animals.json rabbit active: day 0.5, dusk 1.0): a hunter who found nothing by day goes out again then, once.
+	var hour: float = _game_hour()
+
+	if body < 0 and int(_visits.get("hunt", 0)) == 0 and (hour < 17.0 or hour >= 21.0):
+		var game_h: float = fposmod(17.0 - hour, 24.0)
+		_not_before["hunt"] = Time.get_ticks_msec() + int(game_h * 3600.0 / GameClockScript.RATIO * 1000.0)
+		return "no game brought down by day at game hour %.1f on %d walks out: it goes out again at dusk, when rabbits feed (back in %.0f real s)%s" % [hour, leg, game_h * 3600.0 / GameClockScript.RATIO, _said(said)]
 
 	if body < 0:
 		return "robot cannot hunt here yet: no rabbit or deer brought down by the camp or on %d walks out (aimed %.0f m from camp, %.0f m at the last), no carcass within 120 m%s" % [leg, HUNT_LEG_M, _flat(_home), _said(said)]
@@ -341,16 +365,160 @@ func _new_carcass(known: Dictionary) -> int:
 	return body
 
 
-# Chase a rabbit, then a deer (a new character leaves the wolves alone), stopping at the first kill: the new carcass, or -1.
+# A hunt with the first spear the way a player can bring game down (26 Nov: three runs, six deer chases, no strike; a deer flees at 13 m/s,
+# a player runs 9): crouched (animals.json senses crouch_factor 0.6: a deer bolts at 35 m from a standing player, 21 m from a crouched one;
+# a rabbit at 14 m, 8.4 m), it creeps to throwing range and throws (right click aims, left click throws: 24 m/s, throw_damage 6 against a
+# rabbit's 5 health and a deer's 20, and a wound bleeds out, blood.note_wounded), picks the spear up again and follows a hurt animal at a walk
+# until it falls. The new carcass, or -1. Prints HUNTTHROW lines (not "HUNT": robot_check.py reads HUNT lines as jab fights).
+func _throw_hunt(sp: int, known: Dictionary) -> int:
+	# A thrown spear carries far (24 m/s): a deer is thrown at from 30 m, as a player would rather than creep the last 10 m at 0.64 m/s while
+	# the herd grazes on away from them (change 14 run: 150 s crouched, the deer stayed 34 to 60 m off); a rabbit, small, from 14 m.
+	var throw_m: float = 14.0 if sp == 1 else 30.0
+	var seen_m: float = 120.0 if sp == 1 else 200.0
+	var until: int = mini(Time.get_ticks_msec() + 150000, _end_ms - 60000)
+	var target: int = -1
+	var throws: int = 0
+	var hit: bool = false
+	var hp_was: float = 1.0
+	var said: String = ""
+
+	while Time.get_ticks_msec() < until and throws < 5:
+		var me: Vector3 = c.body.global_position
+		var drawn: Dictionary = {}
+
+		for row in c._animal_view_node.drawn_positions():
+			drawn[int(row[0])] = row[1]
+
+		if target >= 0 and not drawn.has(target):
+			said = "gone from sight"
+			break
+
+		if target < 0:
+			var best_d: float = seen_m
+
+			for id in drawn:
+				var d0: float = Vector2((drawn[id] as Vector3).x - me.x, (drawn[id] as Vector3).z - me.z).length()
+
+				if int(r._species.get(int(id), 0)) == sp and d0 < best_d:
+					best_d = d0
+					target = int(id)
+
+			if target < 0:
+				said = "none in sight"
+				break
+
+			hp_was = float(r._hp.get(target, 1.0))
+
+		var at: Vector3 = drawn[target]
+		var to: Vector3 = Vector3(at.x - me.x, 0.0, at.z - me.z)
+
+		if hit:   # hurt: it bleeds out; a player follows at a walk (wounded_speed_x 0.7) and lets it go down
+			if r._fell.has(target) or _new_carcass(known) >= 0:
+				break
+
+			await r._stance_to(StanceScript.STAND)
+			r._face(to.normalized())
+			r._key("move_forward", to.length() > 6.0)
+			await r._wait(0.5)
+			continue
+
+		if to.length() > throw_m:
+			await r._stance_to(StanceScript.CROUCH)
+			r._face(to.normalized())
+			r._key("move_forward", true)
+			await r._wait(0.5)
+			continue
+
+		r._key("move_forward", false)
+
+		if _hold("spear") < 0:
+			said = "no spear in the pack to throw"
+			break
+
+		_aim_throw(at)
+		c.held.mouse_button(MOUSE_BUTTON_RIGHT, true)   # the throw is aimed
+		await r._wait(0.35)
+		var now_at: Vector3 = _drawn_at(target, at)
+		var lead_s: float = Vector2(now_at.x - me.x, now_at.z - me.z).length() / 24.0   # a player throws ahead of a walking animal
+		_aim_throw(now_at + (now_at - at) / 0.35 * Vector3(1.0, 0.0, 1.0) * lead_s)
+		await r._wait(0.1)   # the pitch reaches the camera on the next frame (terrain_client _update_view)
+		var hits: int = int(r._hits.get(target, 0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		c.held.mouse_button(MOUSE_BUTTON_RIGHT, false)
+		throws += 1
+		await r._wait(1.0)
+		hit = int(r._hits.get(target, 0)) > hits or float(r._hp.get(target, 1.0)) < hp_was or r._fell.has(target)
+		_line("HUNTTHROW %s %d: throw %d from %.0f m, %s" % [str(r.SPECIES_NAME.get(sp, sp)), target, throws, to.length(), "hit" if hit else "missed"])
+		await _pick_up_spear()
+
+	r._release_all()
+	await r._wait(1.5)
+	var body: int = _new_carcass(known)
+	_line("HUNTTHROW %s %d: %d throws, %s, %s%s" % [str(r.SPECIES_NAME.get(sp, sp)), target, throws, "hit" if hit else "no hit", "down, carcass %d" % body if body >= 0 else "not down",
+		", " + said if said != "" else ""])
+
+	if r._slot_of("spear") < 0:
+		await _pick_up_spear()
+
+	return body
+
+
+# The camera pitched for a thrown spear to come down on `at` (server_items.gd THROW_SPEED 24 m/s, THROW_GRAVITY 9.8; the hit sphere is
+# 0.6 m round the chest, 0.5 m up: target_on_segment), the lower of the two arcs.
+func _aim_throw(at: Vector3) -> void:
+	var eye: Vector3 = c.body.global_position + Vector3(0.0, 1.5, 0.0)   # the server flies the spear from the reported body position + EYE_HEIGHT 1.5, whatever the stance
+	var aim: Vector3 = at + Vector3(0.0, 0.5, 0.0)
+	var flat: float = maxf(Vector2(aim.x - eye.x, aim.z - eye.z).length(), 0.5)
+	var h: float = aim.y - eye.y
+	var v2: float = 24.0 * 24.0
+	var root: float = v2 * v2 - 9.8 * (9.8 * flat * flat + 2.0 * h * v2)
+	r._face(Vector3(aim.x - eye.x, 0.0, aim.z - eye.z).normalized())
+	c.pitch = clampf(atan((v2 - sqrt(maxf(root, 0.0))) / (9.8 * flat)), -1.2, 1.2)
+
+
+func _drawn_at(id: int, was: Vector3) -> Vector3:
+	for row in c._animal_view_node.drawn_positions():
+		if int(row[0]) == id:
+			return row[1]
+
+	return was
+
+
+# The thrown spear lies where it came down (server_items _land_thrown): a player walks over and picks it up with E.
+func _pick_up_spear() -> void:
+	var number: int = c.items.table.number_of("spear")
+
+	for n in range(3):
+		var best: Vector3 = Vector3.INF
+
+		for w in c.items._world:
+			var row: Dictionary = c.items._world[w]
+
+			if int(row.get("number", 0)) == number and _flat(row["pos"]) < 60.0 and (best == Vector3.INF or _flat(row["pos"]) < _flat(best)):
+				best = row["pos"]
+
+		if best == Vector3.INF or r._slot_of("spear") >= 0:
+			return
+
+		await r._stance_to(StanceScript.STAND)
+		await r._go_to(best, 30.0, 1.2)
+		await _press_e_at(best)
+		await r._wait(0.8)
+
+
+# Hunt a rabbit, then a deer (a new character leaves the wolves alone): seen, crept up on and the spear thrown, stopping at the first kill:
+# the new carcass, or -1.
 func _chase_game(known: Dictionary) -> int:
 	for sp in [1, 2]:
 		if Time.get_ticks_msec() > _end_ms - 60000:
 			break
 
 		await _stalk(sp)
-		var _chased: bool = await r._hunt(sp, 90.0)
+		var body: int = await _throw_hunt(sp, known)
 		r._release_all()
-		var body: int = _new_carcass(known)
+		await r._stance_to(StanceScript.STAND)
 
 		if body >= 0:
 			return body
@@ -521,7 +689,9 @@ func _play_goal(g: Dictionary) -> String:
 			return await _charcoal(int(check.get("count", 4)))
 		"fish":
 			return await _fish_goal()
-		"snare", "order", "story", "night_walk", "fur_for_winter":
+		"story":
+			return await _story()
+		"snare", "order", "night_walk", "fur_for_winter":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -635,7 +805,10 @@ func _have(item: String, n: int, make: bool) -> String:
 	if why != "":
 		return "for %s: %s" % [item, why]
 
-	if station != "":   # a player walks to the station they built and makes it there
+	if station == "campfire":   # a clay pot is fired at a lit campfire: its own (the camp's fire is Edda and Hob's), lit again if it burned out
+		if await _light_own_fire() < 0:
+			return "for %s: no fire of its own to make it at (lit at %s)" % [item, str(_fire_at.round())]
+	elif station != "":   # a player walks to the station they built and makes it there
 		var site: int = int(_sites.get(station, -1))
 		await _walk_home(240.0)
 
@@ -643,6 +816,29 @@ func _have(item: String, n: int, make: bool) -> String:
 			await r._go_to(c.items._world[site]["pos"], 30.0, 1.8)
 
 	return await _craft(recipe, runs)
+
+
+# At its own fire, with sticks put on and lit again in case it has burned down (a campfire station must be burning: server_items.gd
+# nearest station, "a lit fire"); the fire's world id, or -1.
+func _light_own_fire() -> int:
+	if not _fire_at.is_finite() or await _have("stick", 4, false) != "":
+		return -1
+
+	await r._go_to(_fire_at, 60.0 + _flat(_fire_at) / 2.5, 2.0)
+	var fire: int = _camp_fire()
+
+	if fire < 0:
+		return -1
+
+	await r._go_to(c.items._world[fire]["pos"], 20.0, 1.6)
+
+	for n in range(2):
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
+		await r._wait(0.5)
+
+	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
+	await r._wait(2.0)
+	return fire
 
 
 # A hand recipe (no station) that gives `item`, the first in recipes.json order that is known.
@@ -662,7 +858,9 @@ func _station_recipe_for(item: String) -> Dictionary:
 		var row: Dictionary = r._recipes[key]
 		var station: String = str(row.get("station", ""))
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))) and not bool(row.get("retired", false)):
+		var built: bool = c.items._world.has(int(_sites.get(station, -1))) or (station == "campfire" and _fire_at.is_finite())   # its own fire is a campfire station
+
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and built and not bool(row.get("retired", false)):
 			return row
 
 	return {}
@@ -1165,6 +1363,24 @@ func _fire() -> String:
 	if why != "":
 		return "tinder: " + why
 
+	# A player lights their fire by the camp (the 26 Nov runs lit it 280 m out, where the stones were): clay pots and charcoal are made at it.
+	# Not within keep_m (8 m) of the camp tree (data/npcs/camp.json; the camp's own fire burns 2 m from it): 14 m out from that fire, on the spawn's side.
+	await _walk_home(240.0)
+	var camp_fire: Vector3 = _home   # Edda and Hob's fire, the "camp" row nearest the spawn within 60 m (goblin and bandit camps carry the flag too)
+	var camp_d: float = 60.0
+
+	for w in c.items._world:
+		var row: Dictionary = c.items._world[w]
+
+		if row.get("camp", false) and not row.get("bandits", false) and (row["pos"] as Vector3).distance_to(_home) < camp_d:
+			camp_d = (row["pos"] as Vector3).distance_to(_home)
+			camp_fire = row["pos"]
+
+	var away: Vector3 = (_home - camp_fire) * Vector3(1.0, 0.0, 1.0)
+	away = away.normalized() if away.length() > 0.5 else Vector3.FORWARD
+	await r._go_to(camp_fire + away * 14.0, 30.0, 1.0)
+	r._face(away)
+	await r._wait(0.3)
 	var slot: int = r._slot_of("campfire_kit")
 	var at: Vector3 = c.body.global_position - c.body.global_transform.basis.z * 2.5
 	var ground: float = float(c.items._ground_below.call(at))
@@ -1191,8 +1407,71 @@ func _fire() -> String:
 
 	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
 	await r._wait(3.0)
+	_fire_at = at
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
 	return ""
+
+
+# --- Edda's story: talk with her at the camp in the evening (camp_goals.json "story": talked, npc edda, hour_between 19 and 23) ------------
+# A player comes back to camp late in the afternoon, waits for 7 o'clock, walks up to Edda and presses E on "Press E to talk to Edda".
+# Before that hour the goal waits (a wait is not a try); the talk screen is shut again once it opens.
+func _story() -> String:
+	var hour: float = _game_hour()
+
+	if hour < STORY_FROM_H or hour >= 22.5:
+		var game_h: float = fposmod(STORY_FROM_H - hour, 24.0)
+		_not_before["story"] = Time.get_ticks_msec() + int(game_h * 3600.0 / GameClockScript.RATIO * 1000.0)
+		return "waits for the evening: the game hour is %.1f and the story counts from 19 to 23 (back in %.0f real s)" % [hour, game_h * 3600.0 / GameClockScript.RATIO]
+
+	_not_before.erase("story")
+	var leg_s: float = await _walk_home(480.0)
+
+	while _game_hour() < 19.0 and _game_hour() >= STORY_FROM_H - 0.5:
+		await r._wait(5.0)   # by the fire until 7 o'clock
+
+	if _game_hour() >= 23.0 or _game_hour() < 19.0:
+		return "back at camp after %.0f s of walking, the game hour is %.1f: the evening was over" % [leg_s, _game_hour()]
+
+	var said: int = r._notices.size()
+
+	for attempt in range(4):
+		var edda: Dictionary = _edda()
+
+		if edda.is_empty():
+			return "Edda is not drawn anywhere near the camp at game hour %.1f (people drawn: %s)" % [_game_hour(), str((c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []).map(func(n): return str(n["name"])))]
+
+		await r._go_to(edda["pos"], 60.0, 1.8)
+		_look_at(_edda().get("pos", edda["pos"]) + Vector3(0.0, 1.2, 0.0))   # dialogue_view.gd CHEST: a person is aimed at by the chest
+		await r._wait(0.45)
+		var prompt: String = str(c.items.current_interaction().get("prompt", ""))
+
+		if str(c.items.current_interaction().get("kind", "")) != "npc" or not prompt.contains("Edda"):
+			_line("STORY try %d: %.1f m from Edda, the prompt is \"%s\"" % [attempt + 1, c.body.global_position.distance_to(edda["pos"]), prompt])
+			continue
+
+		await r._tap("interact")
+		await r._wait(2.0)
+		var opened: bool = c.items.dialogue_open
+		_close_windows()
+		await r._wait(2.0)   # the server's goal_progress
+		_line("STORY talked to Edda at game hour %.1f (talk screen opened %s, closed)%s" % [_game_hour(), str(opened), _said(said)])
+
+		if bool(c.items.goal_book.row("story").get("done", false)):
+			return ""
+
+	return "4 tries to talk to Edda at game hour %.1f did not count%s" % [_game_hour(), _said(said)]
+
+
+func _edda() -> Dictionary:
+	for npc in (c._npc_view.within(c.body.global_position, 3000.0) if c._npc_view != null else []):
+		if str(npc["id"]) == "edda" or str(npc["name"]).to_lower() == "edda":
+			return npc
+
+	return {}
+
+
+func _game_hour() -> float:
+	return fposmod(float(c.game_clock.seconds), 86400.0) / 3600.0
 
 
 # --- a fish with the Fishing spear, as the goal's hint says: stand still at the water's edge, the spear in hand, and jab (left click) at
@@ -1383,11 +1662,16 @@ func _charcoal(want: int) -> String:
 	if _count("charcoal") >= want:
 		return ""
 
-	await _walk_home(240.0)
+	# Its own fire, where it lit it (the 26 Nov run lit its first fire 280 m out, where its stones were; things are drawn to 100 m).
+	if _fire_at.is_finite():
+		await r._go_to(_fire_at, 60.0 + _flat(_fire_at) / 2.5, 6.0)
+	else:
+		await _walk_home(240.0)
+
 	var fire: int = _camp_fire()
 
 	if fire < 0:
-		return "no campfire of its own within 40 m of the camp%s" % _said(said)
+		return "no campfire of its own drawn within 40 m (its fire was lit at %s, %.0f m from camp)%s" % [str(_fire_at.round()) if _fire_at.is_finite() else "no known spot", _fire_at.distance_to(_home) if _fire_at.is_finite() else 0.0, _said(said)]
 
 	await r._go_to(c.items._world[fire]["pos"], 30.0, 1.6)
 	var store: Array = await _open_store(fire)
@@ -1459,13 +1743,13 @@ func _charcoal(want: int) -> String:
 # This character's own fire nearest the camp (not Edda and Hob's: their fire is marked camp), -1 when none is within 40 m.
 func _camp_fire() -> int:
 	var best: int = -1
-	var best_d: float = 40.0
+	var best_d: float = 40.0   # the robot's own fire, the nearest to where it stands (it walked to its fire, or to camp)
 
 	for id in c.items._world:
 		var w: Dictionary = c.items._world[id]
 
-		if int(w["state"]) in StructureLook.CAMPFIRE_STATES and not w.get("camp", false) and (w["pos"] as Vector3).distance_to(_home) < best_d:
-			best_d = (w["pos"] as Vector3).distance_to(_home)
+		if int(w["state"]) in StructureLook.CAMPFIRE_STATES and not w.get("camp", false) and _flat(w["pos"]) < best_d:
+			best_d = _flat(w["pos"])
 			best = int(id)
 
 	return best
@@ -1561,21 +1845,32 @@ func _dig_clay(want: int) -> String:
 	var dug: int = 0
 	var line: int = 0
 	var until: int = mini(Time.get_ticks_msec() + int(CLAY_S * 1000.0), _end_ms)
+	var stood: Array = []   # where the robot stood for each dig: never twice on one spot (26 Nov run: the side steps failed, 28 digs went into one
+	                        # hole beside the camp and the robot slid 5 m down into it, and every goal after it was "out of reach")
 
 	while _count("clay") - start_clay < want and Time.get_ticks_msec() < until and line < 8:
 		line += 1
 		var dir: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, float(line) * 2.3)
 		var side: Vector3 = dir.rotated(Vector3.UP, PI * 0.5)
 		var from: Vector3 = _home + dir * (12.0 + 25.0 * float(line - 1))
-		await r._go_to(from, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 2.0)
+
+		if not await r._go_to(from, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 3.0):
+			await _climb_out()
+			_line("CLAY line %d: could not walk to its start %s (stood at %s), the next line" % [line, str(from.round()), str(c.body.global_position.round())])
+			continue
+
 		var got_here: int = _count("clay")
 		var tries: int = 0
 		var dug_here: int = 0
 
 		while tries < 10 and _count("clay") - start_clay < want and Time.get_ticks_msec() < until:
-			if tries > 0:
-				await r._go_to(c.body.global_position + side * 1.8, 4.0, 0.4)
+			if tries > 0:   # a short walk sideways (r._go_to walks in 1 s steps of 3.2 m and rocked about a 1.8 m step: the 26 Nov runs)
+				await r._walk_for(side, 0.7)
 
+			if _stood_near(stood, c.body.global_position) or _in_hole():
+				break   # the side step did not take it off the last spot, or it stands in a hollow: this line is done
+
+			stood.append(c.body.global_position)
 			var had: int = _dug_count()
 
 			# A click that brought nothing in (the ray met a bush or grass, or the ground fell away out of the 3 m reach) is aimed again
@@ -1613,10 +1908,66 @@ func _dig_clay(want: int) -> String:
 		_line("CLAY line %d at %s, %.0f m from camp: %d digs tried, %d gave ground, +%d clay here" % [line, str(c.body.global_position.round()), _flat(_home),
 			tries, dug_here, _count("clay") - got_here])
 
+	await _climb_out()
 	var got: int = _count("clay") - start_clay
 	_line("CLAY %d clicks on %d lines, %d gave ground: +%d clay (wanted %d), +%d ground items in all, goal has %s%s" % [clicks, line, dug, got, want,
 		_dug_count() - start_ground, str(c.items.goal_book.row("dig_clay").get("have", "?")), _said(said)])
 	return "" if got >= want or bool(c.items.goal_book.row("dig_clay").get("done", false)) else "%d shovel clicks on %d lines, %d gave ground: %d of %d clay%s" % [clicks, line, dug, got, want, _said(said)]
+
+
+func _stood_near(stood: Array, at: Vector3) -> bool:
+	for p in stood:
+		if Vector2(p.x - at.x, p.z - at.z).length() < 1.2:
+			return true
+
+	return false
+
+
+# The ground under the feet lies more than 0.8 m below the ground 3 m round on most sides: the robot is down in a dug hollow.
+func _in_hole() -> bool:
+	var me: Vector3 = c.body.global_position
+	var feet: float = float(c.items._ground_below.call(me))
+
+	if is_nan(feet):
+		return false
+
+	var higher: int = 0
+
+	for k in range(8):
+		var y: float = float(c.items._ground_below.call(me + Vector3.FORWARD.rotated(Vector3.UP, TAU * float(k) / 8.0) * 3.0))
+		higher += 1 if not is_nan(y) and y > feet + 0.8 else 0
+
+	return higher >= 5
+
+
+# Out of a hollow as a player gets out: walk at its lowest side toward the camp and jump (a jump lifts about 2.5 m), up to 20 s.
+func _climb_out() -> void:
+	var until: int = Time.get_ticks_msec() + 20000
+
+	while _in_hole() and Time.get_ticks_msec() < until:
+		var me: Vector3 = c.body.global_position
+		var best: Vector3 = (_home - me) * Vector3(1.0, 0.0, 1.0)
+		var low: float = INF
+
+		for k in range(8):
+			var way: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, TAU * float(k) / 8.0)
+			var y: float = float(c.items._ground_below.call(me + way * 3.0))
+
+			if not is_nan(y) and y < low:
+				low = y
+				best = way
+
+		r._face(best.normalized())
+		r._key("move_forward", true)
+		r._key("jump", true)
+		await r._wait(0.6)
+		r._key("jump", false)
+		await r._wait(0.6)
+
+	r._release_all()
+
+	if _in_hole():
+		_line("CLAY still down in a hollow at %s after 20 s of climbing" % str(c.body.global_position.round()))
 
 
 # What a dig gives (digging.json yield and under), summed: a click that raised it dug.
