@@ -686,7 +686,9 @@ func on_rows(rows: Array, server_ms: int) -> void:
 			if young and not node.has_meta("young_model"):
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
+			var t_add: int = FrameProbe.start()
 			add_child(node)
+			FrameProbe.stop("animals: add a body to the scene", t_add)
 			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": [], "contact_m": AnimalContact.contact_m(str(KIND_OF_SPECIES.get(int(row[1]), ""))), "turn_rad_s": AnimalContact.draw_turn_rad_s(str(KIND_OF_SPECIES.get(int(row[1]), "")))}
 
 		if int(row[4]) == 3 and int(row[4]) != int(_bodies[id]["state"]) and bool(_bodies[id].get("alarmed", false)):
@@ -1189,6 +1191,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		_model_note(kind, "no file at %s: the code-built body is drawn" % str(row.get("scene", "")))
 		return null
 
+	# Lane A 26 Nov 2026: one body cost 50-73 ms of the main thread ("animals: make a body"); its steps are named pieces below.
+	var t_part: int = FrameProbe.start()
 	var packed: PackedScene = load(str(row["scene"])) as PackedScene
 
 	if packed == null:
@@ -1197,6 +1201,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 	var inst: Node = packed.instantiate()
 	var meshes: Array = inst.find_children("*", "MeshInstance3D", true, false)
+	FrameProbe.stop("animal body: load and instance", t_part)
+	t_part = FrameProbe.start()
 
 	if not (inst is Node3D) or meshes.is_empty():
 		_model_note(kind, "%s has no mesh: the code-built body is drawn" % str(row["scene"]))
@@ -1205,6 +1211,9 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 	for m in meshes:
 		_fit_skin(m as MeshInstance3D, inst, kind)
+
+	FrameProbe.stop("animal body: fit skin", t_part)
+	t_part = FrameProbe.start()
 
 	var root: Node3D = Node3D.new()
 	root.set_meta("model", true)
@@ -1253,7 +1262,11 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 	var k: float = float(row.get("length_m", longest)) / longest * float(row.get("scale", 1.0))
 	body.scale *= k
 	body.position.y -= box.position.y * k
+	FrameProbe.stop("animal body: size", t_part)
+	t_part = FrameProbe.start()
 	_model_materials(meshes, row)
+	FrameProbe.stop("animal body: materials", t_part)
+	t_part = FrameProbe.start()
 
 	# Bone corrections laid over every clip (bone_offsets.gd: the crow stands up and folds its wings).
 	if row.has("bone_offsets"):
@@ -1275,6 +1288,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		look.setup(head_bone[0], int(head_bone[1]), root)
 		(head_bone[0] as Skeleton3D).add_child(look)
 		root.set_meta("head_look", look)
+	FrameProbe.stop("animal body: bone fixes and head look", t_part)
+	t_part = FrameProbe.start()
 	var players: Array = inst.find_children("*", "AnimationPlayer", true, false)
 
 	if not players.is_empty():
@@ -1433,6 +1448,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		player.set_meta("idle", idle)
 		_model_note(kind, "role 21 plays %s" % (str(roles["21"]) if roles.has("21") else "none (the drink falls back to role 0); the file's clips: %s" % _clip_names(player)))
 
+	FrameProbe.stop("animal body: clips", t_part)
 	_model_note(kind, "drawn from %s: %d meshes, %.2f m long (file size %.2f, scale x%.4f)" % [str(row["scene"]), meshes.size(), longest * k, longest, k])
 	return root
 
