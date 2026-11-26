@@ -285,6 +285,25 @@ func _initialize() -> void:
 	game_view.free()
 	tool_view.free()
 
+	# A kept answer (data/animals/clip_answers.json, _height_share) is taken instead of measuring: a walk kept as a hundredth of the standing
+	# height is refused as laying the body flat, though its first frame stands; measured with nothing kept, it is the walk.
+	var kept_view = AnimalViewScript.new()
+	kept_view._models = {"deer": {"scene": paths[0], "length_m": 1.0}}
+	kept_view._kept_answers = {"deer|%s" % paths[0]: {"shares": {"Walk": 0.01}, "skins": {}}}
+	var kept_body: Node3D = kept_view._make_model(2, 1)
+	check(kept_body != null and walk_of(kept_body) == null, "a kept answer is taken: the walk kept as flat is refused")
+	kept_view._measure_all = true
+	kept_view._recording = {}
+	var measured_body: Node3D = kept_view._make_model(2, 1)
+	var measured: Dictionary = ((kept_view._recording as Dictionary).get("deer|%s" % paths[0], {}) as Dictionary).get("shares", {})
+	check(walk_of(measured_body) != null and absf(float(measured.get("Walk", -1.0)) - 1.0) < 0.01, "measured with nothing kept, it is the walk, recorded at its standing height (%s)" % str(measured))
+
+	for node in [kept_body, measured_body]:
+		if node != null:
+			(node as Node).free()
+
+	kept_view.free()
+
 	for path in paths:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("test_clip_map: %d failures" % failures)
