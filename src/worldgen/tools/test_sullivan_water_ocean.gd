@@ -157,6 +157,18 @@ func _init() -> void:
 
 	_check(absf(OceanMesh.coord(mid)) < 1.0e-6 and absf(step - 1.0) < 0.05 and is_equal_approx(OceanMesh.coord(OceanMesh.N), OceanMesh.HALF_M) and rising, "the sea mesh is 1 m at the centre (%.3f m) and reaches 6 km" % step)
 
+	# The sea mesh made on a worker (OceanMesh.start, then take at the welcome) is the mesh made at once.
+	var here: ArrayMesh = OceanMesh.make()
+	OceanMesh.start()
+	var worked: ArrayMesh = OceanMesh.take()
+	var a_here: Array = here.surface_get_arrays(0)
+	var a_worked: Array = worked.surface_get_arrays(0)
+	_check(a_here[Mesh.ARRAY_VERTEX] == a_worked[Mesh.ARRAY_VERTEX] and a_here[Mesh.ARRAY_INDEX] == a_worked[Mesh.ARRAY_INDEX] and worked.custom_aabb == here.custom_aabb, "the sea mesh from the worker is the mesh made at once (%d vertices)" % (a_worked[Mesh.ARRAY_VERTEX] as PackedVector3Array).size())
+	_check(OceanMesh.take() != null, "a take with no worker started makes the mesh at once")
+	OceanMesh.start()
+	OceanMesh.finish()   # a worker never taken is waited for, as at a quit before the welcome
+	_check(OceanMesh._job < 0, "finish leaves no worker running")
+
 	# Swimmers ride the swell, but a crest does not flood the beach.
 	_check(is_equal_approx(float(Swim.water_at(-0.5, NAN, -5.0, 0.3)["surface"]), 0.3), "a swimmer over the sea floats on the swell's height")
 	_check(Swim.water_at(0.2, NAN, 0.1, 0.4).is_empty(), "a beach above 0 m stays dry under a passing crest")
