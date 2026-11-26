@@ -71,8 +71,10 @@ func track() -> Array:
 
 
 # The client's drawing of the track through the link, sends `phase_ms` after the steps' own times: returns {err: [], off: [], fastest,
-# over_rule, stand_bad (frames with over 1 m of correction while the server has it standing after a bolt)}.
-func replay(steps: Array, stop_plan: bool, phase_ms: int) -> Dictionary:
+# over_rule, stand_bad (frames with over 1 m of correction while the server has it standing after a bolt)}. every_ms above SEND_MS: the body's
+# row is in only one batch of each every_ms while it stands with no plan (far big game, R-ANIMAL-SEEN-FAR), in every batch on the move;
+# every batch still sets the clock.
+func replay(steps: Array, stop_plan: bool, phase_ms: int, every_ms: int = SEND_MS) -> Dictionary:
 	var rng: Array = [7]
 	var arrivals: Array = []   # [local s, send ms, row ms, position, plan]
 	var row_pos: Vector3 = Vector3.INF
@@ -110,7 +112,7 @@ func replay(steps: Array, stop_plan: bool, phase_ms: int) -> Dictionary:
 		var jitter: float = _lcg(rng)
 
 		if lost >= LOSS:
-			arrivals.append([100.0 + float(send_ms + LAG_MS) / 1000.0 + float(JITTER_MS) / 1000.0 * jitter, send_ms, row_ms, st[1], plan])
+			arrivals.append([100.0 + float(send_ms + LAG_MS) / 1000.0 + float(JITTER_MS) / 1000.0 * jitter, send_ms, row_ms, st[1], plan, posmod(int(float(send_ms - phase_ms) / SEND_MS), maxi(int(float(every_ms) / SEND_MS), 1)) == 0 or plan != null])   # as rows_near: a far body with a plan is in every batch
 
 	arrivals.sort_custom(func(l, r): return float(l[0]) < float(r[0]))
 	var body: Dictionary = {"samples": []}
@@ -129,7 +131,11 @@ func replay(steps: Array, stop_plan: bool, phase_ms: int) -> Dictionary:
 		while i < arrivals.size() and float(arrivals[i][0]) <= now:
 			var a: Array = arrivals[i]
 			i += 1
-			MotionBuffer.clock_note(c, float(a[0]), int(a[1]))
+			MotionBuffer.clock_note(c, float(a[0]), int(a[1]))   # every batch sets the clock: the near animals' rows come in all of them
+
+			if not bool(a[5]):
+				continue   # a far body's row is in every other batch (every_ms): this batch left it out, the view keeps it (far_kept)
+
 			MotionBuffer.push_row(body, a[3], 0.0, int(a[2]), float(c["off"]), INF)
 
 			if int(body.get("row_ms", -1)) == int(a[2]):
@@ -172,18 +178,18 @@ func pct(xs: Array, q: float) -> float:
 
 
 # The replays at every send phase, counted together.
-func replay_all(steps: Array, stop_plan: bool) -> Dictionary:
+func replay_all(steps: Array, stop_plan: bool, every_ms: int = SEND_MS) -> Dictionary:
 	var total: Dictionary = {"err": [], "off": [], "fastest": 0.0, "over_rule": 0, "stand_bad": 0, "worse": 0}
 
 	for phase in range(0, SEND_MS, 25):
-		var r: Dictionary = replay(steps, stop_plan, phase)
+		var r: Dictionary = replay(steps, stop_plan, phase, every_ms)
 		(total["err"] as Array).append_array(r["err"])
 		(total["off"] as Array).append_array(r["off"])
 		total["fastest"] = maxf(float(total["fastest"]), float(r["fastest"]))
 		total["over_rule"] = int(total["over_rule"]) + int(r["over_rule"])
 		total["stand_bad"] = int(total["stand_bad"]) + int(r["stand_bad"])
 
-		if stop_plan and pct(r["err"], 0.95) > pct(replay(steps, false, phase)["err"], 0.95) + 0.01:
+		if stop_plan and every_ms == SEND_MS and pct(r["err"], 0.95) > pct(replay(steps, false, phase)["err"], 0.95) + 0.01:
 			total["worse"] = int(total["worse"]) + 1
 
 	return total
@@ -205,5 +211,14 @@ func _init() -> void:
 	check(int(now["worse"]) == 0 and pct(now["err"], 0.95) < pct(before["err"], 0.95), "the correction left is no worse at any send phase, and less at the 95th over all (%.2f, before %.2f m)" % [pct(now["err"], 0.95), pct(before["err"], 0.95)])
 	check(pct(now["off"], 0.5) < pct(before["off"], 0.5) and pct(now["off"], 0.95) <= pct(before["off"], 0.95), "drawn nearer the server (median %.2f, before %.2f m; 95th %.2f, before %.2f m)" % [pct(now["off"], 0.5), pct(before["off"], 0.5), pct(now["off"], 0.95), pct(before["off"], 0.95)])
 	check(int(now["over_rule"]) == 0, "no frame faster than smooth's own rule allows its leg (1.35 times it: fastest %.1f m/s, %.2f times the deer's 12)" % [float(now["fastest"]), float(now["fastest"]) / RUN_MPS])
+	# Big game past 120 m standing still comes every other batch (R-ANIMAL-SEEN-FAR, rows_near, terrain_server), on the move in every one.
+	# Sending every far row only each 0.5 s (bc419b53) drew a bolting deer over 1 m off in a third of the frames (Lane B, 26 Nov 2026):
+	# a far body is held to the near one's figures, within 0.25 m at the 95th.
+	var half: Dictionary = replay_all(steps, true, SEND_MS * 2)
+	print("REPLAY " + line("far big game, standing rows each 0.5 s", half) + "; over 1 m standing after a bolt %d" % int(half["stand_bad"]))
+	check(int(half["stand_bad"]) == 0 and pct(half["err"], 0.95) <= pct(now["err"], 0.95) + 0.25 and pct(half["off"], 0.95) <= pct(now["off"], 0.95) + 0.25, "far big game is drawn as near (correction 95th %.2f against %.2f m, off 95th %.2f against %.2f m)" % [pct(half["err"], 0.95), pct(now["err"], 0.95), pct(half["off"], 0.95), pct(now["off"], 0.95)])
+	check(AnimalView.far_kept(Vector3(150.0, 0.0, 0.0), Vector3.ZERO, 1000, 1600) and not AnimalView.far_kept(Vector3(150.0, 0.0, 0.0), Vector3.ZERO, 1000, 2300), "a far body a batch left out is kept until 1.2 s after its last row, then let go")
+	check(not AnimalView.far_kept(Vector3(60.0, 0.0, 0.0), Vector3.ZERO, 1000, 1100) and not AnimalView.far_kept(Vector3(150.0, 0.0, 0.0), Vector3.INF, 1000, 1100), "a near body (or one with no player) left out goes at once, as before")
+	check(int(half["over_rule"]) == 0, "far big game at a row each 0.5 s is never drawn faster than smooth's rule (fastest %.1f m/s)" % float(half["fastest"]))
 	print("test_animal_draw_replay: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)
