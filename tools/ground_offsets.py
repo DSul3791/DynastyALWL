@@ -8,6 +8,7 @@ This writes, per look (the row, or its variants[n]):
 - "ground_m": minus the lowest point in the graze/stand role "0" (the rest pose if the model has no role 0), so the foot is on the ground.
 - "ground_clips": {clip: metres} for a clip whose own lowest point differs from role 0's by more than CLIP_M, so that clip is put on the
   ground too (the moose's walk, the crow's Look2).
+A "<kind>_young" look (the calf) is written into that kind's "young_model".
 Rows sized by height (height_m, the goblins) are left alone: each one's size is rolled, and they stand within 3 cm.
   python3 tools/ground_offsets.py /mnt/project-files/ground_check.txt [--write]
 """
@@ -52,13 +53,19 @@ def main() -> int:
     species = data["species"]
     done = 0
     for (kind, look), roles in sorted(looks.items()):
-        row = species.get(kind)
+        young = kind.endswith("_young")
+        row = species.get(kind[: -len("_young")] if young else kind)
         if not isinstance(row, dict) or "height_m" in row or not ("0" in roles or "rest" in roles):
             continue
-        wild = [v for v in row.get("variants", []) if v.get("wild", True)]
-        target = wild[look % len(wild)] if wild else row
-        if not wild and look > 0:
-            continue
+        if young:
+            if not isinstance(row.get("young_model"), dict):
+                continue
+            target = row["young_model"]
+        else:
+            wild = [v for v in row.get("variants", []) if v.get("wild", True)]
+            target = wild[look % len(wild)] if wild else row
+            if not wild and look > 0:
+                continue
         g, clips = offsets(roles)
         target["ground_m"] = g
         if clips:

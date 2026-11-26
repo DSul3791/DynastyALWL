@@ -1231,6 +1231,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		var young_row: Dictionary = row["young_model"]
 		row = row.duplicate()
 		row.erase("variants")
+		row.erase("ground_m")       # the adult's measured ground move is not the young model's: it has its own (tools/ground_check.gd), else none
+		row.erase("ground_clips")
 		row.merge(young_row, true)
 
 	if row.has("height_m"):
@@ -2620,7 +2622,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		_steer_head(node, b, state, speed, once, delta)
 
 	if once:
-		return      # a bite, hit or death clip is playing once (_play_once)
+		return      # a bite, hit or death clip is playing once (_play_once); a ground_clips lift is held through it (a few cm at most)
 
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = str(state) if roles.has(str(state)) else "0"

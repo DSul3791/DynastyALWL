@@ -130,6 +130,19 @@ func _initialize() -> void:
 	var grounded: Node3D = v._make_model(2, 1)
 	var drop: float = ((grounded.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
 	check(absf(drop + 0.25) < 0.0001, "a look's ground_m moves its body down that much (%.3f m)" % drop)
+	var young_row: Dictionary = (v._models["deer"] as Dictionary).duplicate(true)
+	young_row.erase("ground_m")
+	v._models["deer"]["young_model"] = young_row
+	var young: Node3D = v._make_model(2, 1, true)
+	var young_drop: float = ((young.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
+	check(absf(young_drop) < 0.0001, "a young model without its own ground_m is not moved by the adult's (%.3f m)" % young_drop)
+	young_row["ground_m"] = -0.1
+	var young_own: Node3D = v._make_model(2, 1, true)
+	var own_drop: float = ((young_own.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y - ((plain.get_node("Rig") as Node3D).get_child(0) as Node3D).position.y
+	check(absf(own_drop + 0.1) < 0.0001, "a young model's own ground_m moves it (%.3f m)" % own_drop)
+	v._models["deer"].erase("young_model")
+	young.free()
+	young_own.free()
 	plain.free()
 	grounded.free()
 	check(is_equal_approx(v.ground_lift({"WalkMedium_F": 0.049}, "Armature|WalkMedium_F"), 0.049) and v.ground_lift({"WalkMedium_F": 0.049}, "Armature|Idle") == 0.0, "a clip's own ground move is found by its name after the armature, 0 for any other")

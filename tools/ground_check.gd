@@ -50,8 +50,14 @@ func _init() -> void:
 			var worst: Dictionary = await _check(view, kind, int(number_of.get(kind, -1)), look, lines)
 
 			if not worst.is_empty():
-				summary.append("SUMMARY %-14s look %d  length %.2f m  graze lowest %+.3f m  rest lowest %+.3f m  %s" % [kind, look, float(row.get("length_m", 0.0)), float(worst.get("0", worst.get("rest", 0.0))), float(worst.get("rest", 0.0)),
-					"FLOATS" if float(worst.get("0", worst.get("rest", 0.0))) > 0.03 else ("SINKS" if float(worst.get("0", worst.get("rest", 0.0))) < -0.05 else "ok")])
+				summary.append(_summary(kind, look, float(row.get("length_m", 0.0)), worst))
+
+		# A young animal drawn from a model of its own (the calf: young_model) is measured too, as "<kind>_young" look 0.
+		if row.get("young_model", null) is Dictionary:
+			var young: Dictionary = await _check(view, kind, int(number_of.get(kind, -1)), 0, lines, true)
+
+			if not young.is_empty():
+				summary.append(_summary(kind + "_young", 0, float((row["young_model"] as Dictionary).get("length_m", 0.0)), young))
 
 	lines.append("")
 	lines.append_array(summary)
@@ -66,12 +72,22 @@ func _init() -> void:
 	quit()
 
 
+func _summary(kind: String, look: int, length: float, worst: Dictionary) -> String:
+	var graze: float = float(worst.get("0", worst.get("rest", 0.0)))
+	return "SUMMARY %-14s look %d  length %.2f m  graze lowest %+.3f m  rest lowest %+.3f m  %s" % [kind, look, length, graze, float(worst.get("rest", 0.0)),
+		"FLOATS" if graze > 0.03 else ("SINKS" if graze < -0.05 else "ok")]
+
+
 # One model: the lowest posed point for each role, in metres off the ground (its root at y 0). {} when it is not drawn from a model.
-func _check(view: Node3D, kind: String, number: int, look: int, lines: PackedStringArray) -> Dictionary:
+# young: the kind's own young model (young_model), reported as "<kind>_young".
+func _check(view: Node3D, kind: String, number: int, look: int, lines: PackedStringArray, young: bool = false) -> Dictionary:
 	if number < 0:
 		return {}
 
-	var model: Node3D = view._make_model(number, look)
+	var model: Node3D = view._make_model(number, look, young)
+
+	if young:
+		kind += "_young"
 
 	if model == null:
 		lines.append("GROUND %s look %d: not drawn from a model (code body)" % [kind, look])
