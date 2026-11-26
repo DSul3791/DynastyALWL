@@ -215,9 +215,7 @@ func _init() -> void:
 
 	# The per-player readings as the vitals tick makes them: its caches on (lit fires, cover, loads), filled by the first pass. Without them
 	# each call walked every record for the lit fires, and the soak once showed warmth_target at 13.5 ms a pass, far above the tick's cost.
-	items._load_cache.clear()
-	items._kg_cache.clear()
-	items._cover_cache.clear()
+	items._vitals_caches_clear()
 	items._lit_valid = false
 	items._in_vitals = true
 
@@ -309,9 +307,7 @@ func _init() -> void:
 		var tcold: int = Time.get_ticks_usec()
 
 		for n in 10:
-			items._load_cache.clear()
-			items._kg_cache.clear()
-			items._cover_cache.clear()
+			items._vitals_caches_clear()
 
 			for peer in items._peer_key:
 				items.call(fname, peer)

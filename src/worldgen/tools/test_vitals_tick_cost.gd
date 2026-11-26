@@ -1,0 +1,102 @@
+extends SceneTree
+
+# The vitals tick keeps a player's worn numbers, armour kilograms and Rested row for one tick, and each item number's weight for good
+# (server_items vitals_memo, _pack_kg): the soak at 64 players (26 Nov 2026) showed vitals at 123 ms a second, the largest part of the server,
+# with those read five to eight times a player each look. Here two servers alike, one with the kept readings and one without, must end
+# every player's vitals the same, through a comfort level crossed inside the tick and a death inside it.
+#   godot --headless --path . --script res://src/worldgen/tools/test_vitals_tick_cost.gd
+
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
+
+const PLAYERS := 32
+
+var failures: int = 0
+
+
+func check(ok: bool, what: String) -> void:
+	if not ok:
+		failures += 1
+		print("FAIL ", what)
+
+
+func make(dir: String, memo: bool):
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.setup(ItemTableScript.load_default(), dir)
+	items.game_seconds = func(): return 3.0 * 86400.0 + 22.0 * 3600.0
+	items.vitals_memo = memo
+	var t = items.table
+	var places: Array = items._worn_places()
+	var dress: Dictionary = {"head:base": "hide_hood", "body:base": "hide_tunic", "legs:base": "hide_leggings", "feet:footwear": "hide_boots", "hands:base": "hide_mittens", "body:outer": "hide_cloak", "head:rigid": "iron_helm", "body:mail": "mail_shirt"}
+
+	for p in range(1, PLAYERS + 1):
+		var key: String = "vitcost%05d" % p
+		items.peer_connected_hello(p, key)
+		items.report_position(p, Vector3(float(p) * 7.0, 5.0, 3.0))
+		items.give(p, t.number_of("stone"), 3 + p % 7)
+		items.give(p, t.number_of("bucket"), 1, {}, 200 * (p % 4))   # water in the wear field: a litre a kilogram
+		var worn: Array = []
+
+		for place in places:
+			worn.append(t.number_of(str(dress[place])) if dress.has(place) and p % 3 != 0 else 0)
+
+		items._characters[key]["worn"] = items._clean_worn(worn)
+		items._characters[key]["comfort"] = 4.999 if p % 2 == 0 else float(p % 10)   # the even ones cross into level 5 inside the first tick
+		items._stance[p] = 2 if p % 4 == 0 else 0
+		items._exertion[p] = 0.1 * float(p % 10)
+
+	return items
+
+
+func _initialize() -> void:
+	var a = make("user://test_vitals_tick_cost_a", true)
+	var b = make("user://test_vitals_tick_cost_b", false)
+
+	# 1. The pack's kilograms with each number's weight kept equal CarryRules.carried_kg, the client's sum.
+	for p in range(1, PLAYERS + 1):
+		var inv = a.inventory_of(p)
+		check(a._pack_kg(inv) == CarryRules.carried_kg(inv, a.table, a._carry_cfg), "player %d: the kept weights sum as CarryRules does (%.4f against %.4f)" % [p, a._pack_kg(inv), CarryRules.carried_kg(inv, a.table, a._carry_cfg)])
+
+	# 2. Eight ticks each: every player's vitals, comfort and strain the same on both.
+	var ms_a: float = 0.0
+	var ms_b: float = 0.0
+
+	for tick in 8:
+		if tick == 4:
+			for s in [a, b]:
+				s._vitals[s._peer_key[5]]["health"] = 0.0   # dies inside the next tick: kill runs outside the kept readings
+				s._death_cause[5] = "cold"
+
+		var t0: int = Time.get_ticks_usec()
+		a._vitals_tick(0.25)
+		ms_a += float(Time.get_ticks_usec() - t0) / 1000.0
+		t0 = Time.get_ticks_usec()
+		b._vitals_tick(0.25)
+		ms_b += float(Time.get_ticks_usec() - t0) / 1000.0
+
+		for p in range(1, PLAYERS + 1):
+			if p == 5 and tick >= 4:
+				continue   # a death's respawn is checked below, not number for number
+
+			var key: String = a._peer_key[p]
+			check(str(a._vitals.get(key, {})) == str(b._vitals.get(key, {})), "tick %d player %d: the same vitals with and without the kept readings\n  %s\n  %s" % [tick, p, str(a._vitals.get(key, {})), str(b._vitals.get(key, {}))])
+			check(str(a._characters[key].get("comfort")) == str(b._characters[key].get("comfort")), "tick %d player %d: the same comfort" % [tick, p])
+			check(str(a._strain.get(p, {})) == str(b._strain.get(p, {})), "tick %d player %d: the same strain" % [tick, p])
+
+	check(a.comfort_level(2) == 5, "an even player crossed into comfort 5 inside the ticks (%d)" % a.comfort_level(2))
+	check((a._worn_cache[5] if a._worn_cache.has(5) else a.worn_of(5)) == a.worn_of(5), "after a death in the tick no kept worn list differs from the live one")
+	check(a._armour_kg(1) > 0.0, "the dressed players wear something that counts as armour (%.2f kg)" % a._armour_kg(1))
+	check(a.worn_of(1) == b.worn_of(1) and a.rested_tier(2) == b.rested_tier(2), "outside the tick the live readings agree")
+	print("vitals tick, %d players, 8 ticks: %.2f ms with the kept readings, %.2f ms without" % [PLAYERS, ms_a, ms_b])
+
+	print("test_vitals_tick_cost: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
+	quit(1 if failures > 0 else 0)
