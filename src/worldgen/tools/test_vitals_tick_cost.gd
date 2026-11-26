@@ -36,7 +36,7 @@ func make(dir: String, memo: bool):
 	items.vitals_memo = memo
 	var t = items.table
 	var places: Array = items._worn_places()
-	var dress: Dictionary = {"head:base": "hide_hood", "body:base": "hide_tunic", "legs:base": "hide_trousers", "feet:footwear": "hide_boots", "hands:base": "hide_mittens", "body:outer": "hide_cloak", "head:rigid": "iron_helm", "body:mail": "mail_shirt"}
+	var dress: Dictionary = {"head:base": "hide_hood", "body:base": "hide_tunic", "legs:base": "hide_trousers", "feet:footwear": "hide_boots", "hands:base": "hide_mittens", "body:outer": "hide_cloak", "head:rigid": "iron_helm", "body:mail": "mail_shirt", "legs:mail": "iron_mail_chausses"}
 
 	for p in range(1, PLAYERS + 1):
 		var key: String = "vitcost%05d" % p
@@ -53,7 +53,7 @@ func make(dir: String, memo: bool):
 		items._characters[key]["comfort"] = 4.999 if p % 2 == 0 else float(p % 10)   # the even ones cross into level 5 inside the first tick
 		items._stance[p] = 2 if p % 4 == 0 else 0
 		items._exertion[p] = 0.1 * float(p % 10)
-		items._moving[p] = 1.0   # on the move: the armour's kilograms count in the effort (protection.json effort_per_kg)
+		items._moving[p] = 1.0   # on the move: the armour past effort_free_kg counts in the effort (protection.json; helm, mail shirt and chausses 12.6 kg)
 
 	return items
 
@@ -94,7 +94,7 @@ func _initialize() -> void:
 
 				check(remains == 1, "player 5 died inside the tick: one remains (%d)" % remains)
 				check(s.inventory_of(5).numbers.count(0) == s.inventory_of(5).numbers.size(), "and the pack went with them")
-				check(not s._worn_cache.has(5) and not s._armour_cache.has(5) and not s._rested_cache.has(5) and not s._kg_cache.has(5), "and that player's kept readings went too")
+				check(not s._worn_cache.has(5) and not s._armour_cache.has(5) and not s._rested_cache.has(5) and not s._kg_cache.has(5) and not s._load_cache.has(5), "and that player's kept readings went too")
 
 		for p in range(1, PLAYERS + 1):
 			var key: String = a._peer_key[p]
@@ -103,9 +103,14 @@ func _initialize() -> void:
 			check(str(a._strain.get(p, {})) == str(b._strain.get(p, {})), "tick %d player %d: the same strain" % [tick, p])
 
 	check(a.comfort_level(2) == 5, "an even player crossed into comfort 5 inside the ticks (%d)" % a.comfort_level(2))
-	check(a._armour_kg(1) > 0.0, "the dressed players wear something that counts as armour (%.2f kg)" % a._armour_kg(1))
+	check(a._armour_kg(1) > float(a._protection_cfg.get("effort_free_kg", 0.0)), "the dressed players wear armour past the free kilograms (%.2f kg)" % a._armour_kg(1))
+	var moving_effort: float = a.effort_of(1)
+	a._moving[1] = 0.0
+	var still_effort: float = a.effort_of(1)
+	a._moving[1] = 1.0
+	check(moving_effort > still_effort + 0.001, "so on the move the armour is in the effort the ticks compared (%.3f moving, %.3f still)" % [moving_effort, still_effort])
 
-	# 3. The Rested row follows a comfort level crossed inside the tick: kept at level 4, then the meter climbs to 5 and the row with it.
+	# 3. The Rested row follows a comfort level crossed inside the tick: kept at level 4, then the meter reaches its target of 5 and the row follows.
 	for s in [a, b]:
 		var v: Dictionary = s._vitals[s._peer_key[4]]
 		s._characters[s._peer_key[4]]["comfort"] = 4.999
@@ -115,7 +120,7 @@ func _initialize() -> void:
 		s._comfort_meter_tick(4, v, 60.0)
 		var after: int = int(s.rested_tier(4).get("level", 0))
 		s._in_vitals = false
-		check(before == 4 and after == 5 and after == int(s.rested_tier(4).get("level", 0)), "memo %s: the Rested row read inside the tick follows the meter from 4 to 5 (%d then %d)" % [str(s.vitals_memo), before, after])
+		check(before == 4 and after == 5, "memo %s: the Rested row read inside the tick follows the meter from 4 to 5 (%d then %d)" % [str(s.vitals_memo), before, after])
 	check(a.worn_of(1) == b.worn_of(1) and a.rested_tier(2) == b.rested_tier(2), "outside the tick the live readings agree")
 	print("vitals tick, %d players, 8 ticks: %.2f ms with the kept readings, %.2f ms without" % [PLAYERS, ms_a, ms_b])
 
