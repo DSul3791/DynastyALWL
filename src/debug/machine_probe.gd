@@ -21,7 +21,7 @@ var _ms: Array = []
 var _gpu: Array = []
 var _cpu: Array = []
 var _draws: Array = []
-var _main: Array = []             # main-thread script time per frame (process + physics), ms
+var _main: Array = []             # Godot's process and physics time, ms: each is the LONGEST step in the last second (Performance), not a per-frame mean
 var _rows: Array = []
 var _start_quality: int = 2
 var _start_yaw: float = 0.0
@@ -124,8 +124,8 @@ func _row() -> String:
 	sorted.sort()
 	var avg_ms: float = _mean(_ms)
 	var slow: float = float(sorted[mini(int(float(sorted.size()) * 0.99), sorted.size() - 1)])
-	return "%-6s %5.1f fps  1%% low %5.1f fps  worst %6.1f ms  gpu %5.1f ms  cpu %5.1f ms  script %5.1f ms  draws %5d  VRAM %5d MB  RAM %5d MB" % [
-		_client.QUALITY_NAMES[TIERS[_at]], 1000.0 / maxf(avg_ms, 0.001), 1000.0 / maxf(slow, 0.001), sorted[sorted.size() - 1],
+	return "%-6s 3D %4dx%-4d %5.1f fps  1%% low %5.1f fps  worst %6.1f ms  gpu %5.1f ms  cpu %5.1f ms  process max %5.1f ms  draws %5d  VRAM %5d MB  RAM %5d MB" % [
+		_client.QUALITY_NAMES[TIERS[_at]], int(_client.display.BASE.x * _client._render_scale), int(_client.display.BASE.y * _client._render_scale), 1000.0 / maxf(avg_ms, 0.001), 1000.0 / maxf(slow, 0.001), sorted[sorted.size() - 1],
 		_mean(_gpu), _mean(_cpu), _mean(_main), int(_mean(_draws)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
 		int(float(OS.get_static_memory_usage()) / 1048576.0)]
 
@@ -153,6 +153,31 @@ func _show(footer: String) -> void:
 	_label.text = text + footer
 
 
+# Which scripts and engine nodes run every frame (process, physics or the engine's internal process: animation players, particles),
+# most nodes first, taken at the end of the run: the main-thread work the timed pieces may not name.
+func _census() -> String:
+	var counts: Dictionary = {}
+	var stack: Array = [get_tree().root]
+
+	while not stack.is_empty():
+		var node: Node = stack.pop_back()
+		stack.append_array(node.get_children())
+
+		if node.is_processing() or node.is_physics_processing() or node.is_processing_internal() or node.is_physics_processing_internal():
+			var attached: Script = node.get_script() as Script
+			var key: String = attached.resource_path.get_file() if attached != null else node.get_class()
+			counts[key] = int(counts.get(key, 0)) + 1
+
+	var keys: Array = counts.keys()
+	keys.sort_custom(func(a, b): return int(counts[a]) > int(counts[b]))
+	var parts: PackedStringArray = []
+
+	for key in keys.slice(0, 12):
+		parts.append("%s %d" % [key, int(counts[key])])
+
+	return "running every frame: %s\n" % ", ".join(parts)
+
+
 func _finish(completed: bool) -> void:
 	_at = -1
 	set_process(false)
@@ -160,7 +185,7 @@ func _finish(completed: bool) -> void:
 	_client._apply_quality()
 	_client.body.rotation.y = _start_yaw    # position, quality and the saved settings are as they were
 	_client.hud.visible = _hud_was_visible
-	_show("\n" + ("Done. Saved to user://machine_run.txt (press Esc > Advanced > Measure again to close)" if completed else "Stopped."))
+	_show("\n" + _census() + ("Done. Saved to user://machine_run.txt (press Esc > Advanced > Measure again to close)" if completed else "Stopped."))
 
 	if completed:
 		print(_label.text)
