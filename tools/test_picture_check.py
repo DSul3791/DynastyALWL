@@ -225,6 +225,13 @@ def main():
 	before = len(seen)
 	code, out = run(env, pair, "--dry-run")
 	check("1 requests to send" in out, "a renamed view is a new question (the answer names views by file name)")
+	code, out = run(env, pair, "--max-requests", "-1")
+	check(code == 2, "a negative --max-requests is refused")
+	import re
+	cost = lambda o: float(re.search(r"at most \$([0-9.]+)", o).group(1))
+	short = cost(run(env, pair, "--dry-run", "--recheck", "--about", "x")[1])
+	long_ = cost(run(env, pair, "--dry-run", "--recheck", "--about", "x" * 100000)[1])
+	check(long_ > short + 0.1, "a long about text raises the worst case ($%.2f to $%.2f)" % (short, long_))
 
 	fake = os.path.join(tmp, "fake_godot.py")
 	with open(fake, "w") as f:

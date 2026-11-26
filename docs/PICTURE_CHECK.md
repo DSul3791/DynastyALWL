@@ -40,7 +40,7 @@ a bug here or a price change could not pass it.
 - The prices in the script are the published `claude-opus-5-5` rates of 26 Nov 2026. **The first run ever sends one request only**
   (the checker enforces it while the ledger has no request); compare the dollar figure it prints with the Console's usage before
   any bigger run.
-- Answers are stored by the pictures' content and their about text (`answers.json` there): a subject checked once is never paid for
+- Answers are stored by the pictures' content, their file names and their about text (`answers.json` there): a subject checked once is never paid for
   again (`--recheck` to ask anew).
 - Expected cost: a 1920x1080 picture is about 2,800 input tokens. One subject with four views is about 11,000 input tokens and one
   answer, roughly 6 cents (the first one-picture run cost $0.028). The whole sweep (about 280 subjects) is roughly $15 to $25.

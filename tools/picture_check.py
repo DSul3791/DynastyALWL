@@ -475,15 +475,25 @@ def run(args, groups, key, answers, answers_path, out_dir, started):
 				reason = "--max-requests %d reached" % args.max_requests
 			elif worst > ledger.left():
 				reason = "the cap: $%.2f spent of $%.2f, the next request could cost $%.2f" % (ledger.total(), ledger.data["cap_usd"], worst)
+			views = []
+			if not reason:
+				try:
+					for p, n, size in chunk:
+						with open(p, "rb") as f:
+							data = f.read()
+						if len(data) != n or png_size(data[:24]) != size:
+							raise ValueError(os.path.basename(p))
+						views.append((os.path.basename(p), data))
+				except (OSError, ValueError) as e:
+					views = []
+					row["error"] = "not sent: a picture changed or went while checking (%s); check again when the sweep is done" % e
 			if reason:
 				stopped = reason
 				row["error"] = "not sent: " + reason
+			elif not views:
+				pass
 			else:
 				ledger.reserve(worst)
-				views = []
-				for p, _n, _s in chunk:
-					with open(p, "rb") as f:
-						views.append((os.path.basename(p), f.read()))
 				answer, usage, error, unseen = ask(key, views, about)
 				del views
 				usd = cost_of(usage) + unseen * worst
