@@ -2116,6 +2116,9 @@ func _init() -> void:
 	check(pk.is_absent(1), "on (the game's setting): a player not heard from for ABSENT_MS of real time is parked by tick")
 	pk.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
 	check(float(pk.vitals_of(1)["wet"]) == 0.0, "and a parked player cannot drink: what failed the thirst checks below on a slow run")
+	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
+	pk.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(not pk.is_absent(1) and float(pk.vitals_of(1)["wet"]) > 0.0, "its next report puts it back and the same drink goes down (control)")
 
 	# Thirst (job 67): one drink a game day, water at the edge, no regeneration when parched.
 	var td: String = "user://test_server_items_thirst"
