@@ -213,7 +213,7 @@ or four blows (about 5 s). Then the core rule: at 1 health it stops, and a defen
 | Bite | **none** | `Attack_Run_01_AttackF`; `bear_2`: `Attack_BiteForward` |
 | Hit, death | `A_Hit*2Frighten_F`, `WalkSlowWounded2Lying`; wounded walks and runs | `Hit_*`, `Death_*` |
 
-The black bear model cannot swipe or bite with its own moves. Options for the fix thread: (a) draw black bears with the darker brown bear
+(Done since: the black bear is drawn from the brown bear model `bear/SK_Bear.fbx`, and the `bear_2` look was dropped on 26 Nov 2026 because it cannot rear on its hind legs. The options below are kept as history.) The black bear model cannot swipe or bite with its own moves. Options for the fix thread: (a) draw black bears with the darker brown bear
 look (`bear_2`, which has a bite, two strikes and an angry stand) and keep the black bear file for calm moves only; (b) retarget the
 brown bear's attack clips onto the black bear rig if the bones match; (c) a new model. (a) is the quickest and keeps "each model uses its
 own attack moves".
