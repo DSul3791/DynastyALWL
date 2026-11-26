@@ -832,6 +832,8 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	var worst_frame_allowed: float = 1.0   # that frame's own bound (m)
 	var worst_frame_steps: Vector3 = Vector3.ZERO   # that frame: the test's own frame time, the view's delta, the view's clock step (s)
 	var deltas: Array = [0, 0.0]   # frames whose engine delta and real frame time differ by over 5 ms; the largest difference (s)
+	var drawn_s: float = 0.0   # the view's own clock steps over this 50 ms window: the time its drawing really spanned
+	var worst_wall: float = 0.0   # the same speed over the loop's own wall time, printed beside it (the old measure)
 
 	while not queue.is_empty() or Time.get_ticks_msec() - start_ms < end_ms + tail_ms:
 		var now: int = Time.get_ticks_msec() - start_ms
@@ -844,6 +846,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		var frame_s: float = float(Time.get_ticks_usec() - frame_t) / 1.0e6
 		frame_t = Time.get_ticks_usec()
 		var off_by: float = absf(view.frame_dts.x - view.frame_dts.y)
+		drawn_s += view.frame_dts.y
 
 		if off_by > 0.005:
 			deltas[0] = int(deltas[0]) + 1
@@ -875,6 +878,11 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 			continue   # measured over 50 ms windows (headless frames are far shorter than a millisecond clock can time)
 
 		last_t = Time.get_ticks_usec()
+		# The speed is the distance over the time the view drew it in (the sum of its clock steps), not over this loop's own wall time: on Lane A's
+		# uneven frames the loop's window can be a frame off the drawing's, so a catch-up drawn near smooth's designed most (the leg's 1.05 room plus
+		# CATCH_MIN_MPS, about 4 to 4.4 m/s) read as 4.6 m/s now and then (Lane A, 26 Nov 2026). Both are printed.
+		var span: float = drawn_s if drawn_s > 0.0 else dt
+		drawn_s = 0.0
 
 		for peer in peers:
 			var b: Dictionary = view._bodies.get(peer, {})
@@ -885,7 +893,8 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 			var p: Vector3 = (b["node"] as Node3D).position
 
 			if last_p.has(peer) and now > 1200 and now < walk_ms + 100:   # while it walks (past the first second, before the stop is drawn)
-				var step: float = p.distance_to(last_p[peer]) / dt
+				var step: float = p.distance_to(last_p[peer]) / span
+				worst_wall = maxf(worst_wall, p.distance_to(last_p[peer]) / dt)
 				worst_step = maxf(worst_step, step)
 
 				if step < 0.3:
@@ -902,7 +911,8 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 	check(view.drawn_count() == 3, "three players on the lossy link are drawn (%d)" % view.drawn_count())
 	check(worst_frame <= worst_frame_allowed, "no jump on a lossy, late link: the most drawn in one frame %.3f m (%.3f m allowed at 60 fps; that frame %.1f ms, the view's delta %.1f ms and clock step %.1f ms)" % [worst_frame, worst_frame_allowed, 1000.0 * worst_frame_steps.x, 1000.0 * worst_frame_steps.y, 1000.0 * worst_frame_steps.z])
 	print("lossy link frames: %d frames' engine delta off the real frame by over 5 ms, at most %.1f ms" % [int(deltas[0]), 1000.0 * float(deltas[1])])
-	check(worst_step < 3.0 * 1.5, "no rush on a lossy, late link: the fastest drawn speed %.1f m/s over 50 ms for a 3 m/s walk" % worst_step)
+	print("lossy link speed: the fastest 50 ms %.2f m/s over the view's drawn time, %.2f m/s over the loop's wall time" % [worst_step, worst_wall])
+	check(worst_step < 3.0 * 1.5, "no rush on a lossy, late link: the fastest drawn speed %.2f m/s over 50 ms of its own drawing for a 3 m/s walk" % worst_step)
 	check(still_frames == 0, "the bodies keep walking through lost and late batches (%d still 50 ms windows)" % still_frames)
 	check(rest_ok, "each comes to rest at its last point (burst at %d ms)" % burst_ms)
 	check(past <= 3.0 * PlayerViewScript.CARRY_S + 0.3, "no body walks on more than %.1f m past its stop (%.2f m)" % [3.0 * PlayerViewScript.CARRY_S, past])
