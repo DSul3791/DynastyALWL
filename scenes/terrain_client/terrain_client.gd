@@ -53,6 +53,7 @@ const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const ProcessEndMarkScript := preload("res://src/debug/process_end_mark.gd")
+const NetPollScript := preload("res://src/debug/net_poll.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
@@ -606,6 +607,7 @@ func _ready() -> void:
 	net = $TerrainNet
 	process_physics_priority = 1000   # _physics_process notes the start of the physics engine's step
 	add_child(ProcessEndMarkScript.new())   # stamps the end of every frame's scripts (diagnostics: HITCH lines' "scripts" and "deferred and engine")
+	add_child(NetPollScript.new(net))   # polls the network itself, first of every _process, timed as "net poll" (diagnostics: what a slow poll held)
 	display.load_saved()
 	SelfTimeoutScript.install(self, OS.get_cmdline_user_args(), func(why: String):   # testing only: --timeout=S / --watch-parent=PID
 		_telemetry.event("EXIT: %s" % why)

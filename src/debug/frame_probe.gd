@@ -43,7 +43,11 @@ static func start() -> int:
 static func stop(name: String, started: int) -> void:
 	var used: int = Time.get_ticks_usec() - started
 	FreezeWatch.note(name)   # the last piece finished, for the freeze watch thread
+	add(name, used)
 
+
+# A piece measured elsewhere (net_poll.gd's share of the poll per kind of message), counted as if it had been timed with start/stop.
+static func add(name: String, used: int) -> void:
 	if used > 2500 and OS.has_environment("SPIKES"):
 		FreezeWatch.printer.line("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
 
