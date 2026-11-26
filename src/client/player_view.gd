@@ -307,11 +307,11 @@ func _process(delta: float) -> void:
 			var pose: int = int(b["state"]) & (3 | ASLEEP | SWIM)
 
 			if int(b.get("far_pose", -1)) != pose:   # far off the body is not animated, but it still lies, sits or swims when the player does (robots 23 Nov 2026: a far player lying down was drawn standing)
-				b["far_pose"] = pose
 				var far_stance: int = pose & 3
 				var far_clip: String = "swim_idle" if (pose & SWIM) != 0 else AvatarDriver.choose_clip(far_stance, 0.0, "", (int(b["state"]) & CARRY) != 0 and far_stance == StanceScript.STAND)
 
 				if rig.has_method("play") and player.has_animation(far_clip):
+					b["far_pose"] = pose   # kept only once its clip is on: a body whose clips are still being made (dynasty_body.gd _clips_later) tries again next frame
 					rig.play(far_clip, 1.0, 0.0)   # no one-shot (a wake-up would hold its first frame): the resting pose
 					player.advance(0.0)
 
