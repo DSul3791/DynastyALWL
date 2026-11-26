@@ -40,6 +40,17 @@ func _init() -> void:
 			print("FAIL trunk drop %s not prewarmed" % id)
 			failures += 1
 
+	# What lies by the rivers or comes off a rock (Lane A r4 26 Nov 2026: the first copper ore, iron ore and iron chunk in play took 57-64 ms each).
+	var queued: Array = view._loose_prewarm_numbers()
+
+	for id in ["copper_ore", "tin_ore", "iron_ore", "iron_chunk", "coal", "limestone"]:
+		if view.table.number_of(id) <= 0:
+			print("FAIL %s is not an item" % id)
+			failures += 1
+		elif not view._meshes.has(view.table.number_of(id)) or not queued.has(view.table.number_of(id)):
+			print("FAIL rock drop %s not prewarmed (built %s, queued at join %s)" % [id, view._meshes.has(view.table.number_of(id)), queued.has(view.table.number_of(id))])
+			failures += 1
+
 	var t0: int = Time.get_ticks_usec()
 
 	for k in range(300):
