@@ -1,3 +1,5 @@
 @echo off
 rem Same shim for cmd/PowerShell: tools\godot.cmd --headless --path . --script ...
-if defined GODOT_EXE ("%GODOT_EXE%" %*) else ("C:\DynastyLane\godot\godot_lane_a.exe" %*)
+setlocal
+if not defined GODOT_EXE set "GODOT_EXE=C:\DynastyLane\godot\godot_lane_a.exe"
+"%GODOT_EXE%" %*

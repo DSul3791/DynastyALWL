@@ -30,7 +30,7 @@ Dave playtests dev in Godot, or the installed build, at his pace. Every bug, fro
 Messages to Dave are short and use Atlantic time. Prefer `Dev ready: <SHA>. Changes: <sentence>. Known issues: <sentence>. Pull dev and play.` Or `Dev not ready: <reason>; play <last-known-good SHA>.` Test summary: counts, one line per failure; anything Dave must do uses numbered steps. Detailed evidence stays in the task record, using `HANDOFF_TEMPLATE.md`.
 
 ## Commands and machine protection
-Verify current paths/builds and access before running. Godot 4.7.2 with Voxel Tools is required for world tests and gameplay; the standard executable is for data/compatible server tests. Typical authorized Windows paths:
+Verify current paths/builds and access before running. Godot 4.7.2 with Voxel Tools is required for world tests and gameplay; on Dave's PC the lane's voxel build runs every test, data and server tests included. Typical authorized Windows paths:
 - Tests run only from `C:\DynastyLane` (R-TEAM-LANE-C-DRIVE, `TEST_GATES.md`): the lane's voxel build `C:\DynastyLane\godot\godot_lane_a.exe` is the default of `tools/godot`, `tools/godot.cmd` and the test tools.
 - `C:\GodotInstaller` holds Dave's editor and the standard build; the lane copies its Godot from there and never tests with them.
 - Dave's protected checkout: `C:\GodotProjects\DynastyALWL`.
