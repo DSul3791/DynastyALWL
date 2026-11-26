@@ -5,7 +5,7 @@ Read the four rulebooks for the assigned work:
 - `docs/ai-team/CONSTITUTION.md`: authority, autonomy, approvals and provenance.
 - `docs/ai-team/WORKFLOW.md`: assignments, branches, commands, checkpoints and retirement.
 - `docs/ai-team/TEST_GATES.md`: risk-based tests, independent review and evidence.
-- `docs/PONYTAIL_RULES.md`: engineering method and technical safeguards.
+- `docs/PONYTAIL_RULES.md`: engineering method, technical safeguards and token use (section 7).
 
 **Testing:** On Dave's PC all testing runs only from `C:\DynastyLane`: test Godot `C:\DynastyLane\godot\godot_lane_a.exe`, clone `C:\DynastyLane\clone` (R-TEAM-LANE-C-DRIVE in `docs/RULINGS.md`, Dave 26 Nov 2026: "make it a permanent rule make a folder for the godot on c: an only test from there"; the paths and "never from E:" are the coordinator's reading, details in `docs/ai-team/TEST_GATES.md`). Never test from E:. Every agent follows it.
 
