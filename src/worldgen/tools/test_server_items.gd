@@ -2090,6 +2090,33 @@ func _init() -> void:
 	vt2.peer_connected_hello(1, "abcdef123456")
 	check(absf(float(vt2.vitals_of(1)["weight"]) - float(vt.vitals_of(1)["weight"])) < 0.001, "weight survives a restart")
 
+	# Why park_quiet_players is off outside the game's server (Lane A, 4 jobs, 26 Nov 2026): this test reports a position once and then
+	# drives the clock by hand, and on a loaded machine more than ABSENT_MS of real time went by; the player was parked out of the world and
+	# the thirst checks below failed ("no water within reach"). The control: on, the server's setting, the same quiet player is parked by
+	# tick and cannot drink.
+	var pd: String = "user://test_server_items_park"
+	DirAccess.make_dir_recursive_absolute(pd)
+
+	for file in DirAccess.get_files_at(pd):
+		DirAccess.remove_absolute(pd + "/" + file)
+
+	var pk = make(pd)
+	pk.water_near = func(_pos, _reach): return true
+	pk.peer_connected_hello(1, "parkkey000001")
+	pk.report_position(1, Vector3(0.0, 10.0, 0.0))
+	pk._vitals_cfg["thirst"]["drink_pace_ms"] = 0
+	pk.vitals_of(1)["wet"] = 0.0
+	pk._heard_ms[1] = Time.get_ticks_msec() - ItemsScript.ABSENT_MS - 5000
+	pk._park_check_ms = 0
+	pk.tick(0.05)
+	check(not pk.is_absent(1), "off (the default): tick parks no player, whatever the real time since its report")
+	pk.park_quiet_players = true
+	pk._park_check_ms = 0
+	pk.tick(0.05)
+	check(pk.is_absent(1), "on (the game's setting): a player not heard from for ABSENT_MS of real time is parked by tick")
+	pk.action(1, Net.ACT_DRINK, 0, 0, 0, Vector3.ZERO)
+	check(float(pk.vitals_of(1)["wet"]) == 0.0, "and a parked player cannot drink: what failed the thirst checks below on a slow run")
+
 	# Thirst (job 67): one drink a game day, water at the edge, no regeneration when parched.
 	var td: String = "user://test_server_items_thirst"
 	DirAccess.make_dir_recursive_absolute(td)

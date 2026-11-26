@@ -1053,6 +1053,12 @@ const ABSENT_MS := 15000
 var _heard_ms: Dictionary = {}       # peer -> msec of its last position report
 var _parked: Dictionary = {}         # peer -> where it was when it went quiet (out of _peer_pos)
 var _park_check_ms: int = 0
+# Whether tick parks a player not heard from for ABSENT_MS of real time. The game's server turns it on (terrain_server.gd, where the
+# players report their spot several times a second). Off for everything else: the tests drive the clock by hand (tick(10.0) in a loop)
+# after one position report, and on a loaded machine (Lane A, 4 jobs, 26 Nov 2026) one ran past ABSENT_MS of real time, its player was
+# parked, and drinking, crafting and building failed ("no water within reach") though nothing was wrong. The absence tests call
+# _park_quiet themselves.
+var park_quiet_players: bool = false
 
 
 func is_absent(peer: int) -> bool:
@@ -1901,7 +1907,9 @@ func spyglass_reach(peer: int, admin_cfg: Dictionary) -> Array:
 
 func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
-	_park_quiet(Time.get_ticks_msec())
+
+	if park_quiet_players:
+		_park_quiet(Time.get_ticks_msec())
 	_slow_parts = []
 	_slow_prev_usec = t0
 	_throttle_mark = -1   # set by this tick's first scatter cell when a CPU quota holds the server (the slow lines)

@@ -414,6 +414,7 @@ func _ready() -> void:
 	if flora_pack.chunks() > 0 or flora_pack.stale > 0:
 		print("server flora: prebuilt plants for %d chunks in %d tiles%s" % [flora_pack.chunks(), flora_pack.tiles, ("; %d tile files were made from other tiles, data or placer code and are not used (build them again)" % flora_pack.stale) if flora_pack.stale > 0 else ""])
 	items = ItemsScript.new()
+	items.park_quiet_players = true   # a game not heard from for 15 s of real time leaves the world (server_items.gd ABSENT_MS)
 	@warning_ignore("confusable_local_declaration")
 	items.send_full = func(peer, bytes): net.inventory_full.rpc_id(peer, bytes)
 	@warning_ignore("confusable_local_declaration")
