@@ -1221,20 +1221,20 @@ func _probe_structure_for(id: int) -> Dictionary:
 		var held: int = catch_in(id)
 
 		if held != 0 and bool(_world[held].get("whole", false)):
-			return {"prompt": "Press E to collect the %s and reset the %s (hold E to take the %s down)" % [str(_world[held].get("sp", "catch")), trap_name, trap_name], "tap": func():
+			return {"prompt": "Press E to collect the %s and reset the %s (hold E to take the %s down)" % [CarcassLook.dead_name(str(_world[held].get("sp", ""))).to_lower(), trap_name, trap_name], "tap": func():
 				clear_prompt()
 				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 		if held != 0:
-			return {"prompt": "Finish cutting the %s with your knife (hold E to take the %s down)" % [str(_world[held].get("sp", "catch")), trap_name], "tap": func(): show_notice("Finish it with your knife"), "hold": take_down}
+			return {"prompt": "Finish cutting the %s with your knife (hold E to take the %s down)" % [CarcassLook.dead_name(str(_world[held].get("sp", ""))).to_lower(), trap_name], "tap": func(): show_notice("Finish it with your knife"), "hold": take_down}
 
 	if state == CARCASS_STATE:   # a carcass: a trap's catch put down again is taken whole; anything else is cut with a knife where it lies
 		if bool(_world[id].get("whole", false)):
-			return {"prompt": "Press E to pick up the %s" % str(_world[id].get("sp", "carcass")), "tap": func():
+			return {"prompt": "Press E to pick up the %s" % CarcassLook.dead_name(str(_world[id].get("sp", ""))).to_lower(), "tap": func():
 				clear_prompt()
 				net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)}
 
-		return {"prompt": "Cut the %s with a knife" % str(_world[id].get("sp", "carcass")), "tap": func(): show_notice("Cut it with a knife")}
+		return {"prompt": "Cut the %s with a knife" % CarcassLook.dead_name(str(_world[id].get("sp", ""))).to_lower(), "tap": func(): show_notice("Cut it with a knife")}
 
 	return {"prompt": "Hold E to take down the %s" % table.sentence_name(_world[id]["number"]), "tap": func(): show_notice("Hold E to take it down"), "hold": take_down}
 
@@ -6111,7 +6111,10 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 		if d < best and int(_world[id]["number"]) > 0:
 			best = d
 			var number: int = int(_world[id]["number"])
-			label = "Your remains" if StructureLook.look_of(int(_world[id]["state"])) == "remains" else _fire_label(_world[id], number)
+			if int(_world[id]["state"]) == CARCASS_STATE:   # named for the animal it was (Dave 25 Nov 2026: "it should say Dead WhateverAnimalItwas")
+				label = CarcassLook.dead_name(str(_world[id].get("sp", "")))
+			else:
+				label = "Your remains" if StructureLook.look_of(int(_world[id]["state"])) == "remains" else _fire_label(_world[id], number)
 
 	return label
 

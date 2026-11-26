@@ -22,7 +22,7 @@ Mount convention: grip 7 cm into the palm along the forearm, -Z along fingers, +
 
 | game clip | Dave's clip | note |
 |---|---|---|
-| idle, carry_idle | Idle | |
+| idle, carry_idle | Idle, held on its first frame | since 25 Nov 2026 (QA #15, coordinator's call): the whole clip looks back over each shoulder every 4 s (head 56 degrees on the neck, hips 55); held still, breathing by `dynasty_breath.gd` |
 | walk, carry_walk | Walking | the arm does not rise to steady a shoulder log |
 | jog | Running | |
 | run | RunFast | |

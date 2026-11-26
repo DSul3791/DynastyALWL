@@ -1678,27 +1678,31 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 **Found by:** tester, QA #12, build 10587, 25 Nov 2026 ("last build had quite a few animals ... signs of rabbits but no rabbits"); Dave on the live server, 25 Nov 2026: "I don't see any animals but I did find two large ducks or geese waddling around and they are refusing to fly away." **Status: Investigating.** Dave's game log shows bodies built for 14 kinds, so animals reached his game; why they were not seen is not known yet. A server-only run at spawn made as many animals in sending range (120 m) as build 9257 did. The client now never holds a kind undrawn for its model files longer than 8 s, and logs every 30 s what it received and drew and where the nearest one is (animal_view.gd _waited_out, _report), so the next play shows the answer. Geese in 10587 have no flight at all: a separate change.
 
-## 154. Passing out: the body keeps going, and loud footsteps play on waking
+## 154. A killed animal's body is only called "Carcass"
+
+**Found by:** Dave, his own play on the live server (build 10587), 25 Nov 2026: "I just ran something down and killed it but it just say Carcass it should say Dead WhateverAnimalItwas" (R-HUNT-DEAD-NAME). **Status: Implemented - awaiting player verification.** The look name in inspection mode came from the item row ("Carcass") and was the same for every animal; the E prompts used the raw kind id ("Cut the black_bear with a knife"). Now the body is named for the animal everywhere the player sees it: the look name "Dead deer", "Dead black bear"; the knife prompt "Cut the dead deer with a knife"; a snare's "Press E to collect the dead rabbit and reset the snare" and a whole catch on the ground "Press E to pick up the dead rabbit" (`carcass_look.gd` dead_name, from each species' name in `data/animals/animals.json`; the duck row gains "one": "Duck"). A kind with no name in animals.json reads its id ("Dead hare"), and none at all is a "Dead animal"; never a bare "Carcass". Guarded by `test_carcass_look`, `test_trap_collect_prompt` and `tools/check_dave_rules.py`. Not yet played.
+
+## 155. Passing out: the body keeps going, and loud footsteps play on waking
 
 **Found by:** Dave, [QA #19](https://github.com/DSul3791/DynastyALWL-QA/issues/19), build 10587, 25 Nov 2026: "When a person has over exerted to the point the game starts the passing out process they must stop whatever activity they are doing right then because they no longer have control of their body. they cant keep running they must stop and fall down. if they are working or fighting they must stop the second the game determines its time to pass out. also when you wake up right now it seems to have a sound buffer full of loud footsteps. this shouldn't be. no strange sounds just waking up and you can stand up when the fainting is over." (R-CORE-PASS-OUT.) **Status: Implemented - awaiting player verification.** Cause: past the faint line the blackout built over up to 14 s (server_items.gd, strain "black") while the player could still run, work and fight; control was only taken at full black. Now the moment strain crosses the line the server drops the player to lying, refuses a stance and counts no effort, and the black climbs to full in at most 2.5 s (exertion.json blackout.fall_s) whatever strain does; the client is told (strain stance bit 16) and takes away movement, jumping, tool swings (one under way never lands), a drawn bow, E and every key press until the faint is over (inventory_view body_out). Waking: no footsteps play while passing out, fainted or waking, and a faint wakes calm, strain 0.6 instead of 1.1 (no chest heaves, no over-exerted slow-down after) and the heart at 90 instead of 140; which sound Dave heard as footsteps is not certain (the racing heart and heaves are the likeliest). Walking off stands the player up, as before. Not yet played.
 
-## 155. The first goals do not say where stones come from
+## 156. The first goals do not say where stones come from
 
 **Found by:** tester, [QA #16](https://github.com/DSul3791/DynastyALWL-QA/issues/16), build 10587, 25 Nov 2026: "How to get stones? Mine pumpkin sized rock with an axe?" **Status: Implemented - awaiting player verification.** The Stone - Axe goal now says "Stones lie loose on the ground (most on slopes) and sticks under the trees: press E to pick them up." Loose stones and sticks lie on the ground everywhere (more on slopes and round the spawn), and a Stone - Hammer breaks stones off boulders, but the Stone - Axe goal, the first that needs a stone, says neither. The same report's "quest guide says straw bed, only thatch bed in queue" is already answered by the bed goal (a Thatch - Bed from the pack, or a Straw - Bed with the hammer).
 
-## 156. Floating objects and water standing in walls
+## 157. Floating objects and water standing in walls
 
 **Found by:** tester, [QA #17](https://github.com/DSul3791/DynastyALWL-QA/issues/17), build 10587, 25 Nov 2026: "floating objects / water held up by force-fields". **Status: Open.** Two screenshots are on the tester site (pictures 14-1 and 14-2); not yet looked at.
 
-## 157. Animation: the character looks around too much, chopping arms come loose, no running jump
+## 158. Animation: the character looks around too much, chopping arms come loose, no running jump
 
 **Found by:** tester, [QA #15](https://github.com/DSul3791/DynastyALWL-QA/issues/15), build 10587, 25 Nov 2026: "character still looking around too much / log chopping animation limbs not attached / jumping animation odd / no running jump". **Status: Open.** The same tester said the character looked around too much in build 9257 (QA #8, about the creator's doll).
 
-## 158. Lying down always looks like sleeping; there is no crawl
+## 159. Lying down always looks like sleeping; there is no crawl
 
 **Found by:** Dave, [QA #10](https://github.com/DSul3791/DynastyALWL-QA/issues/10), build 10587, 25 Nov 2026: "right now when you lay down its always like you are sleeping. that should only be when you are lying on a bed or when you hold Z to go to sleep. otherwise you should first drop like you are being stealthy and crawling. Crouching and Crawling should drastically reduce your visibility and sound that you make." **Status: Open.** Crouching already makes animals notice the player later (server_animals.gd reads the stance); lying flat and crawling are not built.
 
-## 159. The animal sign sound is intrusive and always plays
+## 160. The animal sign sound is intrusive and always plays
 
 **Found by:** Dave, [QA #20](https://github.com/DSul3791/DynastyALWL-QA/issues/20), build 10587, 25 Nov 2026: "I think the sounds to indicate animal signs is intrusive and needs to be much more subtle but also it shouldn't always sound. maybe only when we have a hunting weapon in our hand or a snare or trap maybe." (R-HUNT-SIGN-SOUND.) **Status: Implemented - awaiting player verification.** The sign sound is 12 dB quieter (batch3_slots.json sign_spot play_db) and plays only with a spear, javelin, bow, crossbow, sling, club, snare or bird trap in either hand (trail_signs.json sound_with; not the fishing spear or fish trap). The glow and the Tracking XP are unchanged. Not yet played.
 

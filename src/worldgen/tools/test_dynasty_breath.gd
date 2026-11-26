@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Breathing on the still sit frame (src/client/character/dynasty_breath.gd, Kathreen 5 Nov 2026). Checks the pure parts, no glb needed: the breath stays within -1 .. 1 and has no
-# jump (at the inhale-exhale turn or the wrap); the weight eases to 1 in "sit" over the fade and stays 0 in the clips that already move (idle, walk); leaving sit eases it back
+# jump (at the inhale-exhale turn or the wrap); the weight eases to 1 in "sit" over the fade and stays 0 in the clips that already move (walk; the idle breathes since it holds still, QA #15); leaving sit eases it back
 # to 0; the neck takes back the spine's whole turn, so the head stays level.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_breath.gd
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
@@ -39,7 +39,7 @@ func _init() -> void:
 	_check(absf(w - 1.0) < 0.001, "sit: weight reaches 1 after the fade (%.3f)" % w)
 	_check(Breath.step_weight(0.0, "sit", 0.016) < 0.1, "sit: the first frame eases in, no pop")
 	_check(Breath.step_weight(1.0, "walk", 0.016) > 0.9, "leaving sit eases out, no pop")
-	_check(Breath.step_weight(0.0, "idle", 1.0) == 0.0, "idle: no extra breath (Dave's clip already breathes)")
+	_check(Breath.step_weight(0.0, "idle", 1.0) > 0.0, "idle: breathes (since 25 Nov 2026, QA #15, it holds Idle's first frame still)")
 	_check(Breath.step_weight(0.0, "walk", 1.0) == 0.0, "walk: no breath")
 	_check(Breath.step_weight(0.0, "lie", 1.0) == 0.0, "lie: no breath (only the clips listed)")
 
