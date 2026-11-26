@@ -24,6 +24,13 @@ func _still(anim: Animation) -> bool:
 	return true
 
 
+# How far the hips are turned from the shoulders about the vertical, in degrees (+ the hips to the body's left), from the skeleton's posed joints: the line from
+# the right hip joint to the left against the line from the right shoulder to the left (skeleton space, up +Y).
+func _twist(s: Skeleton3D) -> float:
+	var hip: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_LeftUpLeg")).origin - s.get_bone_global_pose(s.find_bone("mixamorig_RightUpLeg")).origin
+	var top: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_LeftArm")).origin - s.get_bone_global_pose(s.find_bone("mixamorig_RightArm")).origin
+	return rad_to_deg(wrapf(atan2(-hip.z, hip.x) - atan2(-top.z, top.x), -PI, PI))
+
 func _init() -> void:
 	var body: Node3D = Body.new()
 	root.add_child(body)
@@ -138,6 +145,55 @@ func _init() -> void:
 	await process_frame
 	var crouch_hips: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Hips"))).origin
 	_check(crouch_hips.y > 0.35 and crouch_hips.y < 0.6, "crouch: hips low")
+
+	# Foot slide (26 Nov 2026, Dave's basics: no sliding): walking sideways or on a diagonal the legs turn toward the travel, the chest stays on the look
+	# (avatar_driver.gd leg_turn, dynasty_leg_turn.gd; offline the forward clip's feet slid 62 cm a step sideways, 43 on a diagonal).
+	var d: Vector2 = Vector2(-1.0, -1.0).normalized() * 3.2
+	_check(is_equal_approx(AvatarDriverScript.leg_turn("jog", Vector2(3.2, 0.0), false), -AvatarDriverScript.LEG_TURN_MAX), "walking right: the legs turn right, at most 80 degrees")
+	_check(absf(AvatarDriverScript.leg_turn("jog_torch", d, false) - PI * 0.25) < 0.01, "walking forward and left: the legs turn 45 degrees left (with a torch too)")
+	_check(absf(AvatarDriverScript.leg_turn("jog", Vector2(d.x, -d.y), true) + PI * 0.25) < 0.01, "walking back and left, the gait in reverse: the legs turn 45 degrees right")
+	_check(absf(AvatarDriverScript.leg_turn("jog", Vector2(0.0, -3.2), false)) < 0.001 and absf(AvatarDriverScript.leg_turn("jog", Vector2(0.0, 3.2), true)) < 0.001, "straight ahead or straight back: no turn")
+	_check(AvatarDriverScript.leg_turn("jog", Vector2(0.3, 0.0), false) == 0.0 and AvatarDriverScript.leg_turn("swing", Vector2(3.2, 0.0), false) == 0.0 and AvatarDriverScript.leg_turn("carry_walk", Vector2(1.0, 0.0), false) == 0.0, "standing still, swinging or carrying: no turn")
+	var c: Vector2 = Vector2(-sin(PI / 3.0), -cos(PI / 3.0)) * 0.64
+	_check(AvatarDriverScript.crouch_walk_clip(c) == "crouch_walk_left" and absf(AvatarDriverScript.leg_turn("crouch_walk_left", c, false) + PI / 6.0) < 0.01, "crouched 60 degrees left: the left crouch walk, its legs turned 30 degrees back toward ahead")
+	_check(absf(AvatarDriverScript.leg_turn("crouch_walk_torch", d * 0.2, false) - PI * 0.25) < 0.01, "crouched forward and left: the forward crouch walk, its legs turned 45 degrees left")
+
+	# The drawn pose, as the game draws it (Lane A pr1961: the modifier passed a direct call while the drawn legs did not turn): the jog playing, the skeleton's final
+	# pose read when it is handed to the skin (skeleton_updated, after every modifier), the hip line against the shoulder line seen from above.
+	body.set_meta("backward", false)
+	var twists: Array = []
+
+	for local in [Vector2.ZERO, Vector2(3.2, 0.0)]:
+		body.set_meta("leg_local", local)
+		body.play("jog", 1.0, 0.0)
+
+		for i in range(3000):
+			await process_frame
+
+			if absf(float(body.leg_turn.angle) - AvatarDriverScript.leg_turn("jog", local, false)) < 0.001:
+				break
+
+		# Both read at the same point of the jog (the hips and shoulders counter-turn through the stride), paused there; the pose is read once, when the skeleton
+		# hands it to the skin, and the wait is bounded.
+		body.animation_player.seek(0.2, true)
+		body.animation_player.pause()
+		var seen: Array = []
+		s.skeleton_updated.connect(func() -> void: seen.append(_twist(s)), CONNECT_ONE_SHOT)
+
+		for i in range(30):
+			await process_frame
+
+			if not seen.is_empty():
+				break
+
+		twists.append(float(seen[0]) if not seen.is_empty() else INF)
+
+	_check(absf(float(twists[0])) < 20.0, "the jog straight ahead as drawn: hips and shoulders in line (%.1f degrees)" % float(twists[0]))
+	_check(float(twists[1]) - float(twists[0]) < -65.0 and float(twists[1]) - float(twists[0]) > -95.0, "walking right as drawn: the hips turned right of the shoulders by %.1f degrees (80 asked)" % (float(twists[0]) - float(twists[1])))
+	_check(is_equal_approx(body.leg_turn.step_angle(0.0, 1.4, 0.1), 0.5), "the turn eases in at 5 radians a second, no snap")
+	body.set_meta("leg_local", Vector2.ZERO)
+	body.leg_turn.angle = 0.0
+	body.play("idle", 1.0, 0.0)
 
 	print("dynasty body tests: %d failures" % _fails)
 	quit()

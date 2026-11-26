@@ -78,6 +78,11 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	# walks bent, in the direction of the velocity.
 	var dynasty: bool = player != null and player.has_animation("crouch_walk_back")
 
+	# Its legs turn toward the travel (dynasty_leg_turn.gd reads this): the horizontal velocity in the body's own frame (x right, y the world z, so forward is -y).
+	if dynasty:
+		var leg_local: Vector3 = basis.inverse() * velocity
+		avatar.set_meta("leg_local", Vector2(leg_local.x, leg_local.z))
+
 	if dynasty and stance == StanceScript.CROUCH and pace > WALK_MIN_PACE:
 		var crouch_local: Vector3 = basis.inverse() * velocity
 		var crouch_clip: String = crouch_walk_clip(Vector2(crouch_local.x, crouch_local.z))
@@ -187,6 +192,30 @@ static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> Str
 	avatar.set_meta("hook_t", left)
 	avatar.set_meta("hook_clip", held if left > 0.0 else "")
 	return held if left > 0.0 else ""
+
+
+# How far Dave's body turns its legs toward the travel (dynasty_leg_turn.gd; foot slide, 26 Nov 2026): the angle in radians, + to the body's left, between the
+# playing clip's own direction (forward; backward when the gait plays in reverse, `backward`; each crouched walk its own way) and the velocity in the body's frame
+# (`velocity_local`, as crouch_walk_clip), at most LEG_TURN_MAX standing and LEG_TURN_CROUCH_MAX crouched. 0 standing still and in every other clip.
+const LEG_TURN_MAX := deg_to_rad(80.0)          # sideways: further would twist the waist past 80 degrees (offline: 17 cm of slide left a step at 80, 62 at none)
+const LEG_TURN_CROUCH_MAX := deg_to_rad(60.0)   # a crouched walk is never more than 60 degrees off its clip (crouch_walk_clip)
+const LEG_CLIP_WAY := {"crouch_walk": 0.0, "crouch_walk_left": PI * 0.5, "crouch_walk_right": -PI * 0.5, "crouch_walk_back": PI}
+
+
+static func leg_turn(clip: String, velocity_local: Vector2, backward: bool) -> float:
+	if velocity_local.length() <= WALK_MIN_PACE:
+		return 0.0
+
+	var way: float = atan2(-velocity_local.x, -velocity_local.y)      # the travel, + to the left of forward
+	var gait: String = gait_of(clip).trim_suffix("_torch")
+
+	if gait in ["walk", "jog", "run"]:
+		return clampf(wrapf(way - (PI if backward else 0.0), -PI, PI), -LEG_TURN_MAX, LEG_TURN_MAX)
+
+	if LEG_CLIP_WAY.has(gait):
+		return clampf(wrapf(way - float(LEG_CLIP_WAY[gait]), -PI, PI), -LEG_TURN_CROUCH_MAX, LEG_TURN_CROUCH_MAX)
+
+	return 0.0
 
 
 # Which crouched walking clip for a velocity in the body's own frame (x right, y the world z, so forward is -y): back, sideways or forward.
