@@ -853,6 +853,11 @@ func _update_bow(delta: float) -> void:
 		_reticle.point = _reticle.global_position + _reticle.size * 0.5   # always the middle of the screen: the view moves, not the cross
 
 
+# Whether the bow or spear cross is up (the inspection + hides while it is: inspect_reticle.gd).
+func aim_cross_shown() -> bool:
+	return _reticle != null and _reticle.visible
+
+
 func _is_spear() -> bool:
 	return str(_inv.table.entry(held_id()).get("weapon_class", "")) in ["spear", "fish_spear"]
 
