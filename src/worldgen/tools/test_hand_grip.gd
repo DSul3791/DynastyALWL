@@ -9,6 +9,7 @@ const Grip := preload("res://src/client/character/dynasty_grip.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const Generator := preload("res://src/client/character/body_generator.gd")
 
 var failures: int = 0
 
@@ -54,7 +55,11 @@ func _initialize() -> void:
 		return
 
 	var avatar: Node3D = MyCharacter.make_avatar()
+	var g: Dictionary = Generator.make_genome()
+	g["hands"] = 1.0    # big hands on short arms: the hand bone's own scale (hands / arms) differs from the grip's, so the test can tell them apart
+	g["arms"] = -1.0
 	root.add_child(avatar)
+	avatar.call("set_proportions", g)
 
 	for _i in 3:
 		await process_frame   # the first skeleton updates have run: the open hand is drawn
@@ -73,6 +78,15 @@ func _initialize() -> void:
 	var left_open: float = left_mount.global_position.distance_to(left_wrist.global_position)
 	var open_scale: float = hand_mount.global_basis.get_scale().x
 	var open_grip: float = hand_mount.global_position.distance_to(wrist.global_position)
+	var skeleton: Skeleton3D = avatar.get("skeleton")
+	var fore_at: Vector3 = (skeleton.global_transform * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_RightForeArm"))).origin
+	var along: Vector3 = (wrist.global_position - fore_at).normalized()
+	var fingers: Vector3 = -hand_mount.global_basis.z.normalized()
+	print("open hand: grip %.3f m from the wrist, the mount's fingers %.2f along the forearm, hand scale %.3f" % [open_grip, fingers.dot(along), float(avatar.call("hand_scale"))])
+	check(fingers.dot(along) > 0.9, "the open mount's -Z points down the hand from the forearm (%.2f)" % fingers.dot(along))
+	check(open_grip > 0.07 and open_grip < 0.16, "the open grip is about GRIP_FROM_WRIST_M (0.11 m, times the hand slider) from the wrist: %.3f m" % open_grip)
+	(hand_mount.get_parent() as BoneAttachment3D).on_skeleton_update()
+	var early_open: Vector3 = hand_mount.global_basis.get_scale()   # read before the modifiers, as player_view.gd follow_hand does
 	var tool: Node3D = HeldItem.look_tool_node("stone_knife")
 	hand_mount.add_child(tool)
 	HeldItem.third_hold(tool, "", "knife")
@@ -90,7 +104,7 @@ func _initialize() -> void:
 	# Read before the frame's modifiers ran (player_view.gd follow_hand moves the attachment to the clip's pose at once): the mount carries no hand scale there either.
 	(hand_mount.get_parent() as BoneAttachment3D).on_skeleton_update()
 	var early_scale: Vector3 = hand_mount.global_basis.get_scale()
-	check(absf(early_scale.x - open_scale) < 0.02 and absf(early_scale.y - open_scale) < 0.02 and absf(early_scale.z - open_scale) < 0.02, "read before the modifiers, the mount's scale is still %.3f (%s): a spear placed then is not squashed" % [open_scale, str(early_scale)])
+	check(early_scale.distance_to(early_open) < 0.02, "read before the modifiers, the closed mount's scale %s is the open one's %s: a spear placed then is not squashed" % [str(early_scale), str(early_open)])
 	tool.queue_free()
 
 	# The left hand closes on a torch's grip the same way.
