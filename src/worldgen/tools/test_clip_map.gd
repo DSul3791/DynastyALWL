@@ -3,11 +3,12 @@ extends SceneTree
 # The clip sampler (animal_view.gd _clip_bones) with its track lookups worked out once per clip (_clip_map) gives the same bones as the
 # sampler that looked every track up on every sample (kept below as it was, old_clip_bones), for bone tracks of each kind, a track on the
 # node above the skeleton and the imported pose with no clip; and is quicker. The first moose drawn held the main thread about 0.8 s in
-# these samples (Lane A route plays, 23 Nov 2026).
+# these samples (Lane A route plays, 23 Nov 2026). A gait's feet measured on a worker give the clip the same playing speed.
 #   godot --headless --path . --script res://src/worldgen/tools/test_clip_map.gd
 
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BONES := 60
+const WALKER_SCENE := "user://test_clip_map_walker_%d.tscn"
 
 var failures: int = 0
 
@@ -81,6 +82,51 @@ func make_rig() -> Array:
 	return [rig, player, anim]
 
 
+# A walker: Rig > Model > Skeleton3D (root > hip 1 m up, standing still > foot on the ground, sliding 1 m forward in the 1 s clip).
+func make_walker() -> Array:
+	var rig: Node3D = Node3D.new()
+	var model: Node3D = Node3D.new()
+	model.name = "Model"
+	rig.add_child(model)
+	var sk: Skeleton3D = Skeleton3D.new()
+	sk.name = "Skeleton3D"
+	model.add_child(sk)
+	# root > hip > foot: the foot is not the root bone or its child, so _strip_root_drift (which takes travel out of those and sets the
+	# speed itself) leaves it to the stride measurement.
+	sk.add_bone("root")
+	sk.add_bone("hip")
+	sk.set_bone_parent(1, 0)
+	sk.set_bone_rest(1, Transform3D(Basis.IDENTITY, Vector3(0.0, 1.0, 0.0)))
+	sk.set_bone_pose_position(1, Vector3(0.0, 1.0, 0.0))
+	sk.add_bone("foot")
+	sk.set_bone_parent(2, 1)
+	sk.set_bone_rest(2, Transform3D(Basis.IDENTITY, Vector3(0.0, -1.0, 0.0)))
+	sk.set_bone_pose_position(2, Vector3(0.0, -1.0, 0.0))
+	var player: AnimationPlayer = AnimationPlayer.new()
+	model.add_child(player)
+	player.root_node = NodePath("..")
+	var anim: Animation = Animation.new()
+	anim.length = 1.0
+	var t: int = anim.add_track(Animation.TYPE_POSITION_3D)
+	anim.track_set_path(t, NodePath("Skeleton3D:foot"))
+	anim.position_track_insert_key(t, 0.0, Vector3(0.0, -1.0, 0.0))      # local to the hip: the foot on the ground, 1 m forward in the clip
+	anim.position_track_insert_key(t, 1.0, Vector3(0.0, -1.0, 1.0))
+	var lib: AnimationLibrary = AnimationLibrary.new()
+	lib.add_animation("Walk", anim)
+	player.add_animation_library("", lib)
+	return [rig, player, anim]
+
+
+# The walk clip a body made by _make_model plays (its player's role "walk"), or null.
+func walk_of(body: Node3D) -> Animation:
+	if body == null or not body.has_meta("player"):
+		return null
+
+	var player: AnimationPlayer = body.get_meta("player")
+	var walk_name: String = str((player.get_meta("roles", {}) as Dictionary).get("walk", ""))
+	return player.get_animation(walk_name) if walk_name != "" and player.has_animation(walk_name) else null
+
+
 func same(a: PackedVector3Array, b: PackedVector3Array) -> bool:
 	if a.size() != b.size():
 		return false
@@ -114,6 +160,33 @@ func _initialize() -> void:
 	check(v._clip_bones(player, anim, rig, 1.0)[BONES - 1].distance_to(v._clip_bones(player, anim, rig, 0.0)[BONES - 1]) > 0.01, "the clip moves the bones (the test is not comparing rest poses)")
 	check(v._clip_bones(player, anim, Node3D.new(), 0.0).is_empty(), "a rig with no skeleton has no bones")
 
+	# A second clip on the same rig names the same tracks: their nodes and bones come from the lookups kept since the first (_track_nodes,
+	# _track_bones), and give the same bones as the old sampler.
+	var second: Animation = anim.duplicate() as Animation
+
+	for t in second.get_track_count():
+		if second.track_get_type(t) == Animation.TYPE_POSITION_3D:
+			second.track_set_key_value(t, 1, (second.track_get_key_value(t, 1) as Vector3) + Vector3(0.05, 0.0, 0.0))
+
+	check(not v._track_nodes.is_empty() and not v._track_bones.is_empty(), "the first clip's lookups are kept")
+	var second_same: bool = true
+
+	for i in 11:
+		if not same(v._clip_bones(player, second, rig, float(i) / 10.0), old_clip_bones(player, second, rig, float(i) / 10.0)):
+			second_same = false
+
+	check(second_same, "a second clip on the same rig, from the kept lookups: the same bones as the old sampler")
+	var base: Node = player.get_node(player.root_node)
+	var sk: Skeleton3D = rig.find_children("*", "Skeleton3D", true, false)[0]
+	check(v._track_node(base, NodePath("RigRoot/Skeleton3D:b3")) == sk and v._track_bone(sk, NodePath("RigRoot/Skeleton3D:b3")) == 3, "a kept lookup gives the skeleton and bone 3")
+	check(v._track_node(base, NodePath("RigRoot/NoSuchNode")) == null and v._track_bone(sk, NodePath("RigRoot/Skeleton3D:no_bone")) == -1, "a path to nothing gives nothing, as get_node_or_null and find_bone do")
+	var brief: Node3D = Node3D.new()
+	brief.name = "Brief"
+	base.add_child(brief)
+	check(v._track_node(base, NodePath("Brief")) == brief, "a node is found and kept")
+	brief.free()
+	check(v._track_node(base, NodePath("Brief")) == null, "a kept node freed since gives null, as the lookup would")
+
 	var t0: int = Time.get_ticks_usec()
 
 	for i in 123:
@@ -128,6 +201,92 @@ func _initialize() -> void:
 	var old_ms: float = float(t1 - t0) / 1000.0
 	var new_ms: float = float(t2 - t1) / 1000.0
 	check(new_ms < old_ms, "123 samples (a walk, a trot and a run): %.1f ms, was %.1f ms" % [new_ms, old_ms])
+
+	# The feet measured on a worker (_stride_later, Lane A 26 Nov 2026: a kind's first body spent most of its 50-73 ms sampling its gaits) give
+	# the clip the same playing speed as measured on the main thread, once the frame takes the answer.
+	var walk: Array = make_walker()
+	var walk_rig: Node3D = walk[0]
+	var walk_player: AnimationPlayer = walk[1]
+	var walk_anim: Animation = walk[2]
+	root.add_child(walk_rig)
+	await process_frame
+	var here: float = v._measure_stride(walk_player, walk_anim, walk_rig)
+	check(absf(here - 1.0) < 0.05, "the walker's foot measures 1 m/s on the main thread (%.3f)" % here)
+	v._stride_later(v._clip_pose(walk_player, walk_anim, walk_rig), walk_anim, "test walker", "Walk", 0.0)
+	check(not walk_anim.has_meta("travel_mps") and v._stride_jobs.size() == 1, "the measurement is started on a worker, no speed yet")
+	var waited: int = 0
+
+	while not v._stride_jobs.is_empty() and waited < 300:
+		v._take_strides()
+		await process_frame
+		waited += 1
+
+	check(v._stride_jobs.is_empty(), "the worker's answer is taken by a frame (%d frames)" % waited)
+	v._take_strides(true)   # a stuck worker fails the checks below instead of leaving a task running
+	check(is_equal_approx(float(walk_anim.get_meta("travel_mps", -1.0)), here), "the clip plays at the worker's speed, the same as the main thread's (%.3f)" % float(walk_anim.get_meta("travel_mps", -1.0)))
+	var fast: Animation = walk_anim.duplicate() as Animation
+	fast.remove_meta("travel_mps")
+	v._stride_later(v._clip_pose(walk_player, fast, walk_rig), fast, "test walker", "Walk", 0.0)
+	v._take_strides(true)
+	check(v._stride_jobs.is_empty() and fast.has_meta("travel_mps"), "leaving waits for a measurement still running and takes it")
+	walk_rig.free()
+
+	# Through _make_model, from two copies of a walker model file (each its own clip): a view out of the tree (a tool) has the speed at
+	# once; the game's view, in the tree, starts a worker and has it a frame or two later, the same speed.
+	var paths: Array = [WALKER_SCENE % 0, WALKER_SCENE % 1]
+
+	for path in paths:
+		var made_walker: Array = make_walker()
+		var top: Node3D = (made_walker[0] as Node3D).get_child(0)
+		(made_walker[0] as Node3D).remove_child(top)
+		(made_walker[0] as Node3D).free()
+		var body: MeshInstance3D = MeshInstance3D.new()
+		body.mesh = BoxMesh.new()
+		top.add_child(body)
+
+		for child in top.find_children("*", "", true, false):
+			child.owner = top
+
+		var packed: PackedScene = PackedScene.new()
+		packed.pack(top)
+		top.free()
+		check(ResourceSaver.save(packed, path) == OK, "the walker model is saved as %s" % path)
+
+	var tool_view = AnimalViewScript.new()
+	tool_view._models = {"deer": {"scene": paths[0], "length_m": 1.0}}
+	var tool_body: Node3D = tool_view._make_model(2, 1)
+	var tool_walk: Animation = walk_of(tool_body)
+	check(tool_walk != null and tool_walk.has_meta("travel_mps") and tool_view._stride_jobs.is_empty(), "a tool's view (out of the tree) has the walk's speed at once")
+	var game_view = AnimalViewScript.new()
+	root.add_child(game_view)
+	await process_frame
+	game_view.set_process(false)
+	game_view._models = {"deer": {"scene": paths[1], "length_m": 1.0}}
+	var game_body: Node3D = game_view._make_model(2, 1)
+	var game_walk: Animation = walk_of(game_body)
+	check(game_walk != null and game_walk != tool_walk and not game_walk.has_meta("travel_mps") and game_view._stride_jobs.size() == 1, "the game's view starts the walk's measurement on a worker")
+	waited = 0
+
+	while not game_view._stride_jobs.is_empty() and waited < 300:
+		game_view._take_strides()
+		await process_frame
+		waited += 1
+
+	game_view._take_strides(true)   # a stuck worker fails the checks below instead of hanging the test
+	var tool_mps: float = float(tool_walk.get_meta("travel_mps", -1.0)) if tool_walk != null else -1.0
+	var game_mps: float = float(game_walk.get_meta("travel_mps", -2.0)) if game_walk != null else -2.0
+	check(is_equal_approx(game_mps, tool_mps) and tool_mps > 0.5 and tool_mps < 1.0, "then it has the same speed as the tool's, 1 m/s at the drawn size (%.3f and %.3f)" % [game_mps, tool_mps])
+
+	for node in [tool_body, game_body]:
+		if node != null:
+			(node as Node).free()
+
+	root.remove_child(game_view)
+	game_view.free()
+	tool_view.free()
+
+	for path in paths:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	print("test_clip_map: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 

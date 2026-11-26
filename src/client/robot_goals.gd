@@ -209,10 +209,112 @@ func _weigh_if_heavy(from: int) -> void:
 	_line("WEIGHT carried %.2f of %.2f kg: %s" % [c.items.carried_kg(), c.items.carry_limit_kg(), ", ".join(parts)])
 
 
+# The robot asked to walk and did not move: what holds it, so the report can say whether a window, sleep or the ground did it.
+func _stuck_note(doing: String) -> void:
+	var items = c.items
+	_line("STUCK %s at %s: screen_open %s (pack %s, chest %s, character %s, journal %s, talk %s), asleep %s, stance %d, strain %d, held %s" % [doing,
+		str(c.body.global_position.round()), str(items.screen_open()), str(items.open), str(items.chest_mode), str(items.character_open()),
+		str(items.journal != null and items.journal.open), str(items.dialogue_open), str(items.asleep), int(c.stance.stance),
+		int(items.strain_state), str(c.held.holding)])
+	_close_windows()
+
+	if int(items.strain_state) >= 1:   # worn out: a player stands and gets their breath back
+		await r._wait(20.0)
+
+
 # A player closes a trader's window before walking off (an open window holds the movement keys).
 func _close_windows() -> void:
 	if c.items.dialogue_open and c.items.dialogue_close.is_valid():
 		c.items.dialogue_close.call()
+
+
+# The hunt goal as its hint says: strike an animal with the spear (a rabbit is easiest), then hold the knife and work the body where it lies.
+# The chase is the robot's own (robot_play.gd _hunt: run up and strike with slot 0), a rabbit and then a deer, stopping at the first kill.
+func _hunt_goal() -> String:
+	var why: String = await _have("spear", 1, false)
+
+	if why != "":
+		return "spear: " + why
+
+	why = await _tool("knife")
+
+	if why != "":
+		return "knife: " + why
+
+	var said: int = r._notices.size()
+	var known: Dictionary = c.items._world.duplicate()
+	var spear: int = r._slot_of("spear")
+
+	if spear > 0:   # robot_play.gd _hunt strikes with slot 0: the spear goes there, as a player puts it on key 1
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, spear, 0, 0, Vector3.ZERO)
+		await r._wait(1.0)
+
+	var body: int = -1
+
+	for sp in [1, 2]:   # rabbit, then deer (a new character leaves the wolves alone); stop at the first kill
+		if Time.get_ticks_msec() > _end_ms - 60000:
+			break
+
+		var _chased: bool = await r._hunt(sp, 90.0)
+		r._release_all()
+		body = _new_carcass(known)
+
+		if body >= 0:
+			break
+
+	if body < 0:
+		return "robot cannot hunt here yet: no rabbit or deer brought down in its chases, no carcass within 120 m%s" % _said(said)
+
+	var at: Vector3 = c.items._world[body]["pos"]
+	await r._go_to(at, 30.0, 1.2)
+
+	if _hold("knife") < 0:
+		return "no knife to hold"
+
+	var cuts: int = 0
+
+	while cuts < 20 and c.items._world.has(body) and not bool(c.items.goal_book.row("hunt").get("done", false)):
+		_look_at(at + Vector3(0.0, 0.2, 0.0))
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, true)
+		await r._wait(0.1)
+		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
+		cuts += 1
+		await r._wait(1.2)
+
+	_line("CARCASS %d at %s: %d knife cuts, %s, pack %s%s" % [body, str(at.round()), cuts, "worked" if not c.items._world.has(body) else "still there", _pack(), _said(said)])
+	return ""
+
+
+# The nearest carcass not in `known`, within 120 m (a kill leaves its body where it fell, server make_carcass); -1 when none.
+func _new_carcass(known: Dictionary) -> int:
+	var body: int = -1
+	var best_d: float = 120.0
+
+	for w in c.items._world:
+		var d: float = _flat(c.items._world[w]["pos"])
+
+		if not known.has(w) and int(c.items._world[w]["state"]) == int(c.items.CARCASS_STATE) and d < best_d:
+			best_d = d
+			body = int(w)
+
+	return body
+
+
+# A player out looking for a rock: legs of a widening loop round the camp until a rock of `item` is drawn within 400 m or `limit_s` is used;
+# the farthest it got from camp.
+func _explore_for(item: String, limit_s: float) -> float:
+	var until: int = mini(Time.get_ticks_msec() + int(limit_s * 1000.0), _end_ms)
+	var leg: int = 0
+	var farthest: float = 0.0
+
+	while Time.get_ticks_msec() < until and _nearest_boulder(item) == 0:
+		leg += 1
+		var target: Vector3 = _home + Vector3.FORWARD.rotated(Vector3.UP, float(leg) * 2.4) * (250.0 + 150.0 * float(leg))
+		await r._go_to(target, minf(90.0, float(until - Time.get_ticks_msec()) / 1000.0), 10.0)
+		farthest = maxf(farthest, _flat(_home))
+		_line("EXPLORE for %s: leg %d, %.0f m from camp, rock found %s" % [item, leg, _flat(_home), str(_nearest_boulder(item) != 0)])
+
+	return farthest
 
 
 # Back to the starter camp in 60 s legs; the seconds walked.
@@ -253,14 +355,19 @@ func _play_goal(g: Dictionary) -> String:
 			return await _eat_wild()
 		"copper_ore":
 			if _nearest_boulder("copper_ore") == 0:
-				return "robot cannot find copper yet: no copper rock is drawn within 400 m (a player explores along the rivers; the server's resources line gives the nearest by route)"
+				var far: float = await _explore_for("copper_ore", 600.0)
+
+				if _nearest_boulder("copper_ore") == 0:
+					return "robot cannot find copper yet: no copper rock drawn after exploring up to %.0f m from camp (a player explores along the rivers; the server's resources line gives the nearest by route)" % far
 
 			return await _gather("copper_ore", int(check.get("count", 1)))
 		"path":
 			return await _path(int(check.get("count", 15)))
 		"sell":
 			return await _sell()
-		"fish", "hunt", "snare", "order", "story", "night_walk", "fur_for_winter", "dig_clay", "charcoal":
+		"hunt":
+			return await _hunt_goal()
+		"fish", "snare", "order", "story", "night_walk", "fur_for_winter", "dig_clay", "charcoal":
 			return "robot cannot play goal %s yet" % id
 
 	if check.has("made_item"):
@@ -291,6 +398,12 @@ func _play_goal(g: Dictionary) -> String:
 
 	if str(check.get("event", "")) == "placed":
 		var what: String = str(check.get("what", ((check.get("what_any", [""]) as Array)[0])))
+
+		for any in check.get("what_any", []):   # the first one that has a hand blueprint (the Thatch - Bed's is retired: the Straw - Bed is built)
+			if _blueprints.has(str(any)):
+				what = str(any)
+				break
+
 		return await _build(what)
 
 	return "robot cannot play goal %s yet (check %s)" % [id, JSON.stringify(check)]
@@ -383,7 +496,7 @@ func _recipe_for(item: String) -> Dictionary:
 	for key in r._recipes:
 		var row: Dictionary = r._recipes[key]
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station"):
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and str(row.get("station", "")) == "" and not row.has("needs_station") and not bool(row.get("retired", false)):   # the server drops retired rows (recipe_table.gd)
 			return row
 
 	return {}
@@ -395,7 +508,7 @@ func _station_recipe_for(item: String) -> Dictionary:
 		var row: Dictionary = r._recipes[key]
 		var station: String = str(row.get("station", ""))
 
-		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))):
+		if str(row.get("gives", [""])[0]) == item and bool(row.get("known", true)) and station != "" and c.items._world.has(int(_sites.get(station, -1))) and not bool(row.get("retired", false)):
 			return row
 
 	return {}
@@ -509,6 +622,7 @@ func _gather(item: String, n: int) -> String:
 	var presses: int = 0
 	var unreached: int = 0
 	var in_row: int = 0
+	var heavy_from: int = said
 
 	while _count(item) < n and Time.get_ticks_msec() < until:
 		var spot: Dictionary = _nearest_source(item)
@@ -529,7 +643,11 @@ func _gather(item: String, n: int) -> String:
 			in_row = 0
 			walks += 1
 			_line("GATHER %s: nothing giving it within %.0f m of %s; walking on (%d)" % [item, SEARCH_M, str(c.body.global_position.round()), walks])
+			var from: Vector3 = c.body.global_position
 			await r._go_to(c.body.global_position + Vector3.FORWARD.rotated(Vector3.UP, float(walks) * 0.8) * (30.0 + 10.0 * float(walks)), 30.0, 3.0)   # a widening spiral
+
+			if _flat(from) < 1.0:
+				await _stuck_note("walking on for %s" % item)
 			continue
 
 		var at: Vector3 = spot["pos"]
@@ -549,6 +667,10 @@ func _gather(item: String, n: int) -> String:
 
 		while _count(item) == had and Time.get_ticks_msec() < wait_until:
 			await r._wait(0.2)
+
+		if str(r._notices.slice(maxi(heavy_from, r._notices.size() - 3))).contains("Too heavy"):   # a player stops and drops the straw and thatch a pick brought with it
+			await _lighten()
+			heavy_from = r._notices.size()   # one notice, one lightening
 
 	var got: int = _count(item) - start
 	_line("GATHER %s: +%d (now %d of %d) in %d presses, %d walks, %d out of reach%s" % [item, got, _count(item), n, presses, walks, unreached, _said(said)])
@@ -901,6 +1023,7 @@ func _fire() -> String:
 	await r._wait(3.0)
 	_line("FIRE %d at %s%s" % [fire, str(at.round()), _said(said)])
 	return ""
+
 
 
 # --- drink and eat --------------------------------------------------------------------------------------------------------------------
