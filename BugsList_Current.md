@@ -1698,7 +1698,7 @@ Now the grid's bottom left point sits at the crosshair (on the bed or metre cell
 
 ## 158. Animation: the character looks around too much, chopping arms come loose, no running jump
 
-**Found by:** tester, [QA #15](https://github.com/DSul3791/DynastyALWL-QA/issues/15), build 10587, 25 Nov 2026: "character still looking around too much / log chopping animation limbs not attached / jumping animation odd / no running jump". **Status: Open.** The same tester said the character looked around too much in build 9257 (QA #8, about the creator's doll).
+**Found by:** tester, [QA #15](https://github.com/DSul3791/DynastyALWL-QA/issues/15), build 10587, 25 Nov 2026: "character still looking around too much / log chopping animation limbs not attached / jumping animation odd / no running jump". **Status: Implemented - awaiting player verification.** Looking around: the idle holds Dave's Idle on its first frame with breathing (PR #1943). Jumps: the jump, fall and land come from Dave's running-jump clip, and a running landing keeps its pace (#1943). Chop: the clothes no longer come apart. Each joint a garment covers gets a ball of its colour (#1946). On Dave's body a sleeved garment also hangs a fitted cloth layer that bends with his skin (#1951), made on a worker (#1955, entry 162). The chest pieces are fitted deeper over his back with a shoulder mantle, and the gambeson's layer covers the foot of the neck (this PR). Not yet played. The same tester said the character looked around too much in build 9257 (QA #8, about the creator's doll).
 
 ## 159. Lying down always looks like sleeping; there is no crawl
 

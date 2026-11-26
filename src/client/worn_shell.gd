@@ -22,6 +22,18 @@ const REGIONS := {
 	"padded": TORSO + ["RightArm", "LeftArm", "RightForeArm", "LeftForeArm"],
 	"mailshirt": TORSO + ["RightArm", "LeftArm"],
 }
+# A high collar: the gambeson's layer also covers the foot of the neck, this far up from the neck joint (Lane A qa15d, 26 Nov 2026: with the arm raised in the chop, neck
+# and collarbone skin showed at its collar). The neck's skin above it stays bare.
+const NECK_BAND_M := {"padded": 0.05}
+# The garment's own pieces on this body (worn_look.gd attach, fit_parts): Dave's back stands further out than the pieces were written for (the chest tube's flat back
+# face was 2 cm inside his shoulder blades), so the layer showed his back's muscles through it as cloth-coloured lumps (Lane A qa15e, 26 Nov 2026). The chest pieces of
+# a sleeved garment are made deeper and set back on his body, and a smooth round mantle covers the tops of the shoulders and the foot of the neck behind, where his
+# trapezius stood over the chest tube (the mantle is a chest piece too, so it is made deeper and set back with them). Measured offline against his skinned mesh at idle
+# (the six-sided tube with a corner at the back, as CylinderMesh draws it): the layer's torso points outside the pieces fell from 819 (gambeson) and 992 (shirt) to 1 and 4.
+const CHEST_DEEPER := 1.2
+const CHEST_BACK_M := 0.02
+const MANTLE_AT := Vector3(0.0, 0.2, 0.02)
+const MANTLE_SIZE := Vector3(0.5, 0.26, 0.36)
 # How far out from the skin, in metres: inside the garment's pieces (a layer-2 garment's pieces stand 3 cm out), and a shirt under a gambeson under mail in that order.
 const OUT_M := {"tunic": 0.01, "padded": 0.018, "mailshirt": 0.024}
 
@@ -34,6 +46,29 @@ static var _seen: Dictionary = {}       # mesh id -> true once prewarmed
 
 static func covers(builder: String) -> bool:
 	return REGIONS.has(builder)
+
+
+# `builder`'s pieces (worn_look.gd parts_of) as they hang on a body with this layer: a sleeved garment's chest pieces deeper and set back, and a mantle over the shoulders
+# (see CHEST_DEEPER). Other garments' pieces are returned as they are.
+static func fit_parts(builder: String, parts: Array) -> Array:
+	if not covers(builder):
+		return parts
+
+	var out: Array = []
+	var mantle: Dictionary = {"bone": "chest", "shape": "sphs", "at": MANTLE_AT, "size": MANTLE_SIZE, "rot": Vector3.ZERO, "detail": false, "dark": 0.0}
+
+	for part in parts + [mantle]:
+		var piece: Dictionary = (part as Dictionary).duplicate()
+
+		if str(piece["bone"]) == "chest":
+			var at: Vector3 = piece["at"]
+			var size: Vector3 = piece["size"]
+			piece["at"] = Vector3(at.x, at.y, at.z * CHEST_DEEPER + CHEST_BACK_M)
+			piece["size"] = Vector3(size.x, size.y, size.z * CHEST_DEEPER)
+
+		out.append(piece)
+
+	return out
 
 
 # The bone's short name: "mixamorig_RightArm" (and "mixamorig:RightArm") -> "RightArm".
@@ -152,9 +187,16 @@ static func _gather(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D) -> Diction
 			if bone_name == "" and skin.get_bind_bone(i) >= 0:
 				bone_name = skeleton.get_bone_name(skin.get_bind_bone(i))
 
-			flags.append(1 if short_name(bone_name) in REGIONS[builder] else 0)
+			var plain: String = short_name(bone_name)
+			flags.append(1 if plain in REGIONS[builder] else (2 if plain == "Neck" and NECK_BAND_M.has(builder) else 0))   # 2: covered below the band's top
 
 		in_region[builder] = flags
+
+	var neck_y: float = INF      # the neck joint's height in the mesh (the bind pose undone), for NECK_BAND_M
+
+	for i in range(skin.get_bind_count()):
+		if short_name(String(skin.get_bind_name(i))) == "Neck":
+			neck_y = skin.get_bind_pose(i).affine_inverse().origin.y
 
 	var names: Array = []
 
@@ -167,7 +209,7 @@ static func _gather(src: ArrayMesh, skin: Skin, skeleton: Skeleton3D) -> Diction
 		if src.surface_get_primitive_type(s) == Mesh.PRIMITIVE_TRIANGLES:
 			surfaces.append({"surface": s, "arrays": src.surface_get_arrays(s), "blends": src.surface_get_blend_shape_arrays(s)})
 
-	return {"in_region": in_region, "names": names, "mode": src.blend_shape_mode, "surfaces": surfaces, "made": {}}
+	return {"in_region": in_region, "neck_y": neck_y, "names": names, "mode": src.blend_shape_mode, "surfaces": surfaces, "made": {}}
 
 
 # Any thread: pure arithmetic on the copied arrays, writing data["made"][builder] = one entry per surface.
@@ -176,7 +218,8 @@ static func _compute(data: Dictionary) -> void:
 		var made_surfaces: Array = []
 
 		for surface in data["surfaces"]:
-			var one_surface: Dictionary = _surface(surface, data["in_region"][builder], float(OUT_M[builder]))
+			var neck_top: float = float(data["neck_y"]) + float(NECK_BAND_M.get(builder, 0.0))
+			var one_surface: Dictionary = _surface(surface, data["in_region"][builder], float(OUT_M[builder]), neck_top)
 
 			if not one_surface.is_empty():
 				made_surfaces.append(one_surface)
@@ -184,7 +227,7 @@ static func _compute(data: Dictionary) -> void:
 		data["made"][builder] = made_surfaces
 
 
-static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: float) -> Dictionary:
+static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: float, neck_top: float) -> Dictionary:
 	var arrays: Array = surface["arrays"]
 	var verts: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
 	var normals: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL] if arrays[Mesh.ARRAY_NORMAL] != null else PackedVector3Array()
@@ -207,7 +250,8 @@ static func _surface(surface: Dictionary, in_region: PackedByteArray, out_m: flo
 				best_w = weights[v * per + k]
 				best = bones[v * per + k]
 
-		covered[v] = in_region[best] if best >= 0 and best < in_region.size() else 0
+		var flag: int = in_region[best] if best >= 0 and best < in_region.size() else 0
+		covered[v] = 1 if flag == 1 or (flag == 2 and verts[v].y < neck_top) else 0
 
 	var indices: PackedInt32Array = arrays[Mesh.ARRAY_INDEX] if arrays[Mesh.ARRAY_INDEX] != null else PackedInt32Array(range(verts.size()))
 	var new_of: PackedInt32Array = PackedInt32Array()      # source vertex -> new vertex, or -1 (not "remap": that is a global function, and the name warned)

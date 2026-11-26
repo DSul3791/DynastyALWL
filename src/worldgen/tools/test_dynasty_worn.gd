@@ -107,6 +107,92 @@ func _bare(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D, regi
 	return [no_cloth, thin, covered]
 
 
+# Whether `p` (world) is inside a worn piece, by the shared mesh it draws (worn_look.gd _mesh; Godot's CylinderMesh puts a corner of the six-sided tube at +Z).
+func _inside(node: MeshInstance3D, p: Vector3) -> bool:
+	var q: Vector3 = node.global_transform.affine_inverse() * p
+
+	if node.mesh == WornLook._mesh("box"):
+		return absf(q.x) <= 0.5 and absf(q.y) <= 0.5 and absf(q.z) <= 0.5
+
+	if node.mesh == WornLook._mesh("sphs"):
+		return q.length() <= 0.5
+
+	if node.mesh == WornLook._mesh("sph") or node.mesh == WornLook._mesh("sphl"):
+		return q.length() <= 0.45      # the low spheres' faces dip under the radius
+
+	for shape in [["cyl", 6], ["cyls", 16], ["frus", 16]]:
+		if node.mesh == WornLook._mesh(str(shape[0])):
+			var seg: float = TAU / float(shape[1])
+			var ang: float = fposmod(atan2(q.x, q.z), seg) - seg * 0.5
+			return absf(q.y) <= 0.5 and Vector2(q.x, q.z).length() <= 0.5 * cos(seg * 0.5) / cos(ang)
+
+	return false
+
+
+# The fitted layer's torso points (over the strongest bones in WornShell.TORSO) that stand outside every piece of the garment at the current pose: where the layer, not the
+# garment's shape, is what shows (Lane A qa15e, 26 Nov 2026: Dave's back muscles showed through as cloth-coloured lumps). [outside, torso points].
+func _showing(body_mesh: MeshInstance3D, shell: MeshInstance3D, s: Skeleton3D) -> Array:
+	var skin: Skin = body_mesh.skin
+	var mats: Array = []
+
+	for i in range(skin.get_bind_count()):
+		var bone: int = skin.get_bind_bone(i)
+
+		if bone < 0:
+			bone = s.find_bone(skin.get_bind_name(i))
+
+		mats.append(s.get_bone_global_pose(bone) * skin.get_bind_pose(i) if bone >= 0 else Transform3D.IDENTITY)
+
+	var pieces: Array = []
+
+	for holder in s.get_children():
+		if str(holder.name).begins_with("Worn_") and not holder.has_meta("shell_builder"):
+			pieces.append_array(holder.find_children("*", "MeshInstance3D", true, false))
+
+	var lay: Array = (shell.mesh as ArrayMesh).surface_get_arrays(0)
+	var under: PackedInt32Array = ((shell.mesh.get_meta("source_vertices") as Array)[0] as Dictionary)["vertices"]
+	var src: Array = (body_mesh.mesh as ArrayMesh).surface_get_arrays(0)
+	var bones: PackedInt32Array = src[Mesh.ARRAY_BONES]
+	var weights: PackedFloat32Array = src[Mesh.ARRAY_WEIGHTS]
+	var cloth: PackedVector3Array = lay[Mesh.ARRAY_VERTEX]
+	var c_bones: PackedInt32Array = lay[Mesh.ARRAY_BONES]
+	var c_weights: PackedFloat32Array = lay[Mesh.ARRAY_WEIGHTS]
+	var per: int = int(float(c_bones.size()) / float(cloth.size()))
+	var outside: int = 0
+	var torso: int = 0
+
+	for i in range(cloth.size()):
+		var v: int = under[i]
+		var best: int = -1
+		var best_w: float = 0.0
+
+		for k in range(per):
+			if weights[v * per + k] > best_w:
+				best_w = weights[v * per + k]
+				best = bones[v * per + k]
+
+		if best < 0 or not (WornShell.short_name(String(skin.get_bind_name(best))) in WornShell.TORSO):
+			continue
+
+		torso += 1
+		var q: Vector3 = Vector3.ZERO
+
+		for k in range(per):
+			q += ((mats[c_bones[i * per + k]] as Transform3D) * cloth[i]) * c_weights[i * per + k]
+
+		var p: Vector3 = s.global_transform * q
+		var hidden: bool = false
+
+		for node in pieces:
+			if _inside(node as MeshInstance3D, p):
+				hidden = true
+				break
+
+		outside += 0 if hidden else 1
+
+	return [outside, torso]
+
+
 func _check(ok: bool, what: String) -> void:
 	print(("pass " if ok else "FAIL ") + what)
 	_fails += 0 if ok else 1
@@ -251,6 +337,13 @@ func _init() -> void:
 
 		if shell == null:
 			continue
+
+		# At idle the garment's own shape shows, not the layer under it: from the back too (the shoulder blades and the trapezius stood out through it before the chest
+		# pieces were fitted to Dave's body, worn_shell.gd CHEST_DEEPER; offline: gambeson 1 and shirt 4 of about 5000 torso points left out).
+		if str(garment[1]) != "mailshirt":
+			var showing: Array = _showing(body.body_mesh, shell, s)
+			_check(int(showing[1]) > 2000 and int(showing[0]) * 100 <= int(showing[1]),
+				"%s at idle: the layer shows outside the garment's pieces at %d of %d torso points (at most 1%%)" % [str(garment[0]), int(showing[0]), int(showing[1])])
 
 		for pose in [["idle", 0.0], ["chop", 0.1], ["chop", 0.3], ["chop", 0.5], ["chop", 0.7]]:
 			body.play(str(pose[0]), 1.0, 0.0)
