@@ -231,13 +231,18 @@ func _init() -> void:
 
 	# QA #15 (26 Nov 2026, Lane A stills: skin through the back of the gambeson at the shoulder blades at idle; with the arm raised in the chop, bare neck, upper chest and
 	# armpit between the vest and the sleeve): a sleeved garment on Dave's body also hangs a fitted layer, skinned like the body (worn_shell.gd), so no skin it covers shows
-	# from any side in any pose. Counted at idle and at the chop frames the stills show (t 0.1, 0.3, 0.5, 0.7), for the shirt, the gambeson and the mail shirt.
+	# from any side in any pose. Counted at idle and at the chop frames the stills show (t 0.1, 0.3, 0.5, 0.7), for the shirt, the gambeson and the mail shirt. The layers are
+	# made on a worker (below); here each one is waited for (WornShell.wait) and put on (refresh) before it is measured.
+	WornShell.wait()
+	WornShell.refresh(body)
 	_check(_shells(s).keys() == ["tunic"], "the tunic hangs one fitted layer on Dave's body (%s)" % str(_shells(s).keys()))
 	var tunic_shell: MeshInstance3D = _shells(s).get("tunic", null)
 	_check(tunic_shell != null and tunic_shell.skin == body.body_mesh.skin and tunic_shell.get_node_or_null(tunic_shell.skeleton) == s, "the layer is skinned to Dave's skeleton with his body's skin")
 
 	for garment in [["gambeson", "padded"], ["linen_shirt", "tunic"], ["mail_shirt", "mailshirt"]]:
 		WornLook.attach(body, [str(garment[0])], false)
+		WornShell.wait()
+		WornShell.refresh(body)
 		body.play("idle", 1.0, 0.0)
 		body.animation_player.seek(0.0, true)
 		await process_frame
@@ -255,6 +260,24 @@ func _init() -> void:
 			_check(int(bare[2]) > 3000 and int(bare[0]) * 100 <= int(bare[2]) and int(bare[1]) * 1000 <= int(bare[2]),
 				"%s at %s t%.1f: skin covered %d, with no cloth %d (the region's ragged edge, at most 1%%), cloth too near the skin %d (at most 0.1%%)" % [str(garment[0]), str(pose[0]), float(pose[1]), int(bare[2]), int(bare[0]), int(bare[1])])
 
+	# Made on a worker (Lane A 26 Nov 2026: on the main thread it held the frame 36 to 49 ms the first time a garment was worn): over a body mesh it has not seen, the layer
+	# hangs at once without a mesh while its worker runs, and the body fills it in a later frame (dynasty_body.gd _process).
+	var plain: Mesh = body.body_mesh.mesh
+	body.body_mesh.mesh = plain.duplicate()
+	var t_hang: int = Time.get_ticks_msec()
+	WornLook.attach(body, ["gambeson"], false)
+	var hang_ms: int = Time.get_ticks_msec() - t_hang
+	var late: MeshInstance3D = _shells(s).get("padded", null)
+	var was_waiting: bool = late != null and late.mesh == null
+	var frames_waited: int = 0
+
+	while late != null and late.mesh == null and frames_waited < 600:
+		await process_frame
+		frames_waited += 1
+
+	_check(was_waiting and late.mesh != null and late.mesh.get_blend_shape_count() == body.body_mesh.mesh.get_blend_shape_count(),
+		"a new mesh's layer is made on a worker (the attach did not wait: %s, %d ms) and put on by the body %d frames later" % ["yes" if was_waiting else "NO", hang_ms, frames_waited])
+	body.body_mesh.mesh = plain
 	# The width sliders (dynasty_shapes.gd): a shaped body's layer is made from the shaped mesh, carries the same shapes and takes the body's weights.
 	var g: Dictionary = Generator.make_genome()
 	g["build"] = 0.6
@@ -263,6 +286,8 @@ func _init() -> void:
 	Shapes.wait()
 	body.set_proportions(g)
 	WornLook.attach(body, ["gambeson"], false)
+	WornShell.wait()
+	WornShell.refresh(body)
 	await process_frame
 	var wide: MeshInstance3D = _shells(s).get("padded", null)
 	var build_at: int = wide.find_blend_shape_by_name("build") if wide != null else -1
