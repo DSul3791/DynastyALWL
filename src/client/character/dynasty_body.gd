@@ -309,6 +309,7 @@ func _bone_dir(bone: String, child: String) -> Vector3:
 # 7 cm put the handle across the wrist, above the hanging hand, so the axe seemed to float by the hip (PC shot 5 Nov, axe_right.png). 11 cm is where the fingers meet the
 # palm; the hand has no finger bones, so it cannot close round the handle, but the handle now runs through it.
 const GRIP_FROM_WRIST_M := 0.11
+const GRIP_BONE := Grip.GRIP_BONE   # P + side + this: the bone each hand mount hangs on (dynasty_grip.gd)
 
 
 func _build_mounts() -> void:
@@ -316,8 +317,16 @@ func _build_mounts() -> void:
 	var front: Vector3 = Vector3(0.0, 0.0, 1.0)
 	var right_dir: Vector3 = _bone_dir("RightForeArm", "RightHand")
 	var left_dir: Vector3 = _bone_dir("LeftForeArm", "LeftHand")
-	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
-	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
+	# Each hand mount hangs on a bone of its own under the hand (GRIP_BONE, at the wrist, no turn of its own): dynasty_grip.gd draws the hand shorter while it
+	# holds and undoes that scale on this bone, so the mount never carries it, even when code reads the hand before the frame's modifiers ran (player_view follow_hand).
+	for side in ["Right", "Left"]:
+		if skeleton.find_bone(P + side + GRIP_BONE) < 0:
+			var grip_bone: int = skeleton.get_bone_count()
+			skeleton.add_bone(P + side + GRIP_BONE)
+			skeleton.set_bone_parent(grip_bone, skeleton.find_bone(P + side + "Hand"))
+
+	hand_mount_r = _mount("Right" + GRIP_BONE, "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
+	hand_mount_l = _mount("Left" + GRIP_BONE, "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
 	head_mount = _mount("Head", "HeadMount", Vector3(0.0, 0.1, 0.0), Vector3(0.0, -1.0, 0.0), front)
 
 	for marker in [hand_mount_r, hand_mount_l, head_mount]:   # as built, before dynasty_grip.gd or set_proportions turns them

@@ -3860,7 +3860,16 @@ static func third_fist_on(model: Node3D, skin_color: Color) -> MeshInstance3D:
 	if not fist.has_meta("ball"):
 		fist.set_meta("ball", fist.mesh)
 
-	fist.mesh = null if hand_closes(model) else fist.get_meta("ball")   # a body that closes its own hand on the grip (dynasty_grip.gd, BugsList 177) needs no ball
+	var on: Node = model.get_parent()
+
+	if on != null and int(fist.get_meta("closes_on", 0)) != on.get_instance_id():
+		fist.set_meta("closes_on", on.get_instance_id())   # looked up once per hand the model is on (the spear refits its fist every frame; a model can move from the arms to the body)
+		fist.set_meta("hand_closes", hand_closes(model))
+
+	var mesh: Mesh = null if bool(fist.get_meta("hand_closes", false)) else fist.get_meta("ball")   # a body that closes its own hand on the grip (dynasty_grip.gd, BugsList 177) needs no ball
+
+	if fist.mesh != mesh:
+		fist.mesh = mesh
 	return fist
 
 
