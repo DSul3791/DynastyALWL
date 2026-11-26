@@ -21,6 +21,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-CRAFT-KEPT-TOOL": ["test_server_items"],
     "R-HUNT-SNARE-CATCH": ["test_traps", "test_trap_collect_prompt"],
     "R-HUNT-DEAD-NAME": ["test_carcass_look", "test_trap_collect_prompt"],
+    "R-ANIMAL-SEEN-FAR": ["test_animals"],
     "R-SLEEP-NIGHT-SKIP": ["test_night_skip"],
     "R-WATER-SEA": ["test_drinking_water"],
     "R-JOIN-PASSWORD-ONCE": ["test_server_auth"],
@@ -198,6 +199,16 @@ def dead_names():
         check("R-HUNT-DEAD-NAME", one != "" and "carcass" not in one.lower(), f"{sid} has a name for its body ({one!r})")
     check("R-HUNT-DEAD-NAME", species["duck"].get("one") == "Duck", "a dead duck is one duck, not \"Dead ducks\"")
     check("R-HUNT-DEAD-NAME", len(species) >= 40, f"the species were read ({len(species)})")
+
+
+def seen_far():
+    """R-ANIMAL-SEEN-FAR: big game (deer, elk, moose, bears, boar, pronghorn, horses) is sent out to 200 m, every other kind to 120 m."""
+    cfg = data("data/animals/animals.json")
+    check("R-ANIMAL-SEEN-FAR", float(cfg["big_game_send_m"]) == 200.0, f"big game is sent out to {cfg['big_game_send_m']} m (\"Let's try 200 m.\")")
+    check("R-ANIMAL-SEEN-FAR", float(cfg["send_radius_m"]) == 120.0, f"every other kind to {cfg['send_radius_m']} m")
+    want = {"deer", "elk", "moose", "bear", "black_bear", "boar", "pronghorn", "horse"}
+    check("R-ANIMAL-SEEN-FAR", set(cfg["big_game"]) == want, f"the big game kinds are {sorted(cfg['big_game'])}")
+    check("R-ANIMAL-SEEN-FAR", all(k in cfg["species"] for k in cfg["big_game"]), "every big game kind is a species")
 
 
 def ruling_lines():

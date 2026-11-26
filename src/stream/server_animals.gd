@@ -2803,18 +2803,23 @@ func _pass_ids_near(point: Vector3, radius: float) -> Array:
 # An animal warning at, charging or recovering from a dog (states 10 to 12 with foe_dog, dog_companion_design.md 11) adds a sixth field:
 # the dog's position, so the client looks at the dog and not the player (MikeW, 8 Nov 2026). Rows without it are unchanged.
 # radius_m and cap above 0 replace send_radius_m and per_player_cap (an admin looking through the spyglass: "spyglass" in animals.json).
+# Big game is sent further (Dave 26 Nov 2026, R-ANIMAL-SEEN-FAR: "Let's try 200 m."): a kind in animals.json "big_game" is sent out to
+# big_game_send_m, every other kind to send_radius_m (120 m), so a hunter sees a herd across a field. A spyglass radius replaces
+# send_radius_m and, where it is wider, big_game_send_m too.
 func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 	var radius: float = radius_m if radius_m > 0.0 else float(cfg.get("send_radius_m", 120.0))
+	var far: float = maxf(radius, float(cfg.get("big_game_send_m", radius)))   # never less through a spyglass (tier 1 looks to 150 m)
+	var big: Array = cfg.get("big_game", [])   # eight kinds: a short list
 	var found: Array = []
 
-	for id in (_pass_ids_near(point, radius) if _in_pass else animals.keys()):
+	for id in (_pass_ids_near(point, far) if _in_pass else animals.keys()):
 		if not animals.has(id):
 			continue   # gone since the pass filed it
 
 		var a: Dictionary = animals[id]
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
-		if d <= radius and a["state"] != HIDDEN:
+		if d <= (far if big.has(a["sp"]) else radius) and a["state"] != HIDDEN:
 			if _in_pass and _pass_rows.has(id):
 				found.append([d, _pass_rows[id]])   # built once this send pass, for the first player near it (the same row for all)
 				continue

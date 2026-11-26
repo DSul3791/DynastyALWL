@@ -363,7 +363,7 @@ func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
 
 
 # Whether a body that left the rows at `at` was standing on its blood trail: a wounded animal that bleeds out dies where it is,
-# at the end of its trail, with no hit near. Bodies leave the rows only past send_radius_m (120 m), far beyond the 30 m a
+# at the end of its trail, with no hit near. Bodies leave the rows only past send_radius_m (120 m; big game 200 m, animals.json big_game), far beyond the 30 m a
 # one-shot is played at, so a wounded animal running out of range is never heard falling.
 static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
 	for p in points:
