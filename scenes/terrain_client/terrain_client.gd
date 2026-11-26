@@ -6621,7 +6621,7 @@ func _update_bob(delta: float) -> void:
 	var pace: float = Vector2(body.velocity.x, body.velocity.z).length()
 	var moving: bool = body.is_on_floor() and pace > 1.0
 	_bob_amount = move_toward(_bob_amount, 1.0 if moving else 0.0, delta * 6.0)
-	var stride: int = 1 if running else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG
+	var stride: int = 1 if pace > AvatarDriver.RUN_FROM else 0   # STEP_M, BOB_M, SWAY_M, SWAY_DEG: by the clip the pace plays (run above 5 m/s), so the steps follow the feet even when a runner is slowed
 	var gait: int = _gait()                  # the footstep tier
 
 	if moving and items != null and items.body_out():
