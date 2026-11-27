@@ -239,6 +239,7 @@ func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
 	body_mesh.layers |= 1 << 19   # no ground decals on the body (piece_look.gd NO_DECAL_LAYER)
 	animation_player = inst.find_children("*", "AnimationPlayer", true, false)[0]
+	Grip.add_finger_bones(skeleton, body_mesh)                     # a finger bone in each hand, so a held handle is closed round (dynasty_grip.gd); before the shapes read the mesh
 	Shapes.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)      # the width and face shapes, on a worker thread, ready before an NPC or a slider needs them (dynasty_shapes.gd)
 	WornShell.prewarm(body_mesh.mesh, body_mesh.skin, skeleton)   # and the sleeved garments' fitted layers, ready before the first one is worn (worn_shell.gd)
 	_build_mounts()

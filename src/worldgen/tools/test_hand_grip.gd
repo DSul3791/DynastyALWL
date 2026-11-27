@@ -98,7 +98,19 @@ func _initialize() -> void:
 		await process_frame
 
 	var closed_grip: float = hand_mount.global_position.distance_to(wrist.global_position)
-	check(closed_grip < open_grip * 0.7 and closed_grip > open_grip * 0.4, "holding a knife the hand is drawn shorter: the grip %.3f m from the wrist, open %.3f m" % [closed_grip, open_grip])
+	check(closed_grip < open_grip * (Grip.CLOSED_LENGTH + 0.03) and closed_grip > open_grip * (Grip.CLOSED_LENGTH - 0.1), "holding a knife the hand is drawn a little shorter: the grip %.3f m from the wrist, open %.3f m" % [closed_grip, open_grip])
+	# The fingers curl round the handle (27 Nov 2026): the finger bone turns CURL_DEG from the hand's line, toward the palm.
+	var finger_bone: int = skeleton.find_bone("mixamorig_Right" + Grip.FINGERS_BONE)
+	var body_mesh: MeshInstance3D = avatar.get("body_mesh")
+	var bound: bool = false
+
+	for b in range(body_mesh.skin.get_bind_count()):
+		bound = bound or String(body_mesh.skin.get_bind_name(b)) == "mixamorig_Right" + Grip.FINGERS_BONE
+
+	check(finger_bone >= 0 and bound, "each hand has a finger bone and the body's fingers are skinned to it (bone %d, bound %s)" % [finger_bone, str(bound)])
+	var curl: float = _curl_deg(skeleton, finger_bone, int(grip._axes[0]))
+	print("closed hand: the fingers turned %.0f degrees from the hand's line" % curl)
+	check(absf(curl - Grip.CURL_DEG) < 15.0, "holding a knife the fingers curl %.0f degrees (want about %.0f)" % [curl, Grip.CURL_DEG])
 	var held_scale: Vector3 = tool.global_basis.get_scale()
 	check(absf(held_scale.x - open_scale) < 0.02 and absf(held_scale.y - open_scale) < 0.02 and absf(held_scale.z - open_scale) < 0.02, "and the knife keeps its size: its scale %s, open %.3f" % [str(held_scale), open_scale])
 	# Read before the frame's modifiers ran (player_view.gd follow_hand moves the attachment to the clip's pose at once): the mount carries no hand scale there either.
@@ -116,7 +128,7 @@ func _initialize() -> void:
 		await process_frame
 
 	var left_closed: float = left_mount.global_position.distance_to(left_wrist.global_position)
-	check(left_closed < left_open * 0.7, "the left hand closes too: its grip %.3f m from the wrist, open %.3f m" % [left_closed, left_open])
+	check(left_closed < left_open * (Grip.CLOSED_LENGTH + 0.03), "the left hand closes too: its grip %.3f m from the wrist, open %.3f m" % [left_closed, left_open])
 	torch.queue_free()
 
 	for _i in 30:
@@ -124,8 +136,22 @@ func _initialize() -> void:
 
 	var again: float = hand_mount.global_position.distance_to(wrist.global_position)
 	check(absf(again - open_grip) < 0.005, "with nothing held the hand opens again: the grip %.3f m from the wrist, open %.3f m" % [again, open_grip])
+	check(_curl_deg(skeleton, finger_bone, int(grip._axes[0])) < 3.0, "and the fingers straighten again (%.1f degrees)" % _curl_deg(skeleton, finger_bone, int(grip._axes[0])))
 	avatar.queue_free()
 	_done()
+
+
+# How far the finger bone's line along the hand is turned from the hand's own (degrees).
+func _curl_deg(skeleton: Skeleton3D, finger_bone: int, axis: int) -> float:
+	if finger_bone < 0 or axis < 0:
+		return -1.0
+
+	var hand: int = skeleton.get_bone_parent(finger_bone)
+	var local: Vector3 = Vector3.ZERO
+	local[axis] = 1.0
+	var a: Vector3 = (skeleton.get_bone_global_pose(hand).basis * local).normalized()
+	var b: Vector3 = (skeleton.get_bone_global_pose(finger_bone).basis * local).normalized()
+	return rad_to_deg(a.angle_to(b))
 
 
 func _done() -> void:
