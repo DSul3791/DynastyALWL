@@ -119,6 +119,44 @@ func _init() -> void:
 
 		check(small_top < 0.8 * BoulderWear.radius_now(1.0, int(total / 8.0), total) + 0.01, "a worked rock's collider shrinks with it (%.2f)" % small_top)
 
+	# Drawn by cells, collision only near (PR #1988, boulders/PLAN_big_boulders.md): a rock far from the player is drawn in its cell's MultiMesh
+	# and has no body; it gets one when the player comes within ROCK_NEAR_M and loses it past ROCK_FAR_M; a worked rock draws itself.
+	for id in view._boulders.keys():
+		view._rock_unbody(id)
+
+	view._boulders.clear()
+	view._rock_tick()
+	var standing: Array = [Vector3(500.0, 0.0, 500.0)]
+	view._player_position = func() -> Vector3: return standing[0]
+	view._show_boulder(4250, [4250, 0, total, Vector3(100.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 10.0, "total": total, "skirt": [0.2, 0.0, -0.3]}])
+	view._show_boulder(4251, [4251, 0, total, Vector3(104.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 1.5, "yaw": 20.0, "total": total}])
+	view._rock_tick()
+	var drawn_count: int = 0
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
+			drawn_count += (child as MultiMeshInstance3D).multimesh.instance_count
+
+	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] == null, "rocks far from the player have no body")
+	check(drawn_count == 3, "two far rocks and one talus are drawn in their cell (%d instances)" % drawn_count)
+	standing[0] = Vector3(110.0, 5.0, 100.0)
+	view._rock_look_msec = -100000
+	view._rock_tick()
+	check(view._boulders[4250]["node"] != null and view._boulders[4251]["node"] != null, "a player coming within 40 m gives them bodies")
+	check(view._boulders[4250]["node"].get_child_count() > 3, "the big rock's talus chunks are solid (%d shapes)" % (view._boulders[4250]["node"].get_child_count() - 1))
+	view._show_boulder(4251, [4251, 0, total - 5, Vector3(104.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 1.5, "yaw": 20.0, "total": total}])
+	view._rock_tick()
+	check((view._boulders[4251]["lump"] as MeshInstance3D).visible, "a worked rock draws itself")
+	standing[0] = Vector3(500.0, 0.0, 500.0)
+	view._rock_look_msec = -100000
+	view._rock_tick()
+	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] != null, "past 50 m the whole rock loses its body, the worked one keeps it")
+	view._forget(4251)
+	check(not view._boulders.has(4251) and not view._rock_near.has(4251), "a rock gone from the world is forgotten")
+
+	for child in holder.get_children():
+		child.free()
+
 	holder.free()
 	view.free()
 
