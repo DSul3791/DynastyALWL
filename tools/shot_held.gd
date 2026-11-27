@@ -99,7 +99,7 @@ func _init() -> void:
 		return
 
 	mount.add_child(model)
-	HeldItem.third_hold(model, "", tool_class)
+	HeldItem.third_hold(model, "", HeldItem.third_carry(item, tool_class))
 	var tint: Color = Color.WHITE
 	var worn: Variant = avatar.get("_skin_material")
 
