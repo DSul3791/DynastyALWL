@@ -187,7 +187,7 @@ static func lods_of(raw: Dictionary) -> Dictionary:
 	if count <= 0:
 		return out
 
-	var width: int = int(raw.get("index_bytes", 0)) / count      # 2 (16-bit indices) or 4 bytes per index, the same for every LOD of the surface
+	var width: int = floori(float(raw.get("index_bytes", 0)) / float(count))      # 2 (16-bit indices) or 4 bytes per index, the same for every LOD of the surface
 
 	if width != 2 and width != 4:
 		return out
@@ -199,7 +199,7 @@ static func lods_of(raw: Dictionary) -> Dictionary:
 		if width == 4:
 			indices = bytes.to_int32_array()
 		else:
-			indices.resize(bytes.size() / 2)
+			indices.resize(bytes.size() >> 1)
 
 			for i in range(indices.size()):
 				indices[i] = bytes.decode_u16(i * 2)
