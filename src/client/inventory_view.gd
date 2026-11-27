@@ -131,6 +131,8 @@ var reach_stock: Dictionary = {}        # item number -> count a craft may use b
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
+const FIELD_KEY := 1 << 48                # server_items.FIELD_KEY: the rocks of the rocky ground (PR #1988)
+const BOULDER_KEY := 1 << 50              # server_items.BOULDER_KEY
 const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
 var bogs: Dictionary = {}                 # bog patch world id -> {"pos", "left", "total", "r", "key", "lumps", "node"}: kept apart from _world; _show_bog draws the lumps
 var bogs_rev: int = 0                     # moves on when a patch comes, goes or changes (terrain_client then hands them to the ground shader)
@@ -140,8 +142,10 @@ var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled
 var _boulder_mesh: ArrayMesh
 var _skirt_meshes: Array = []        # the rocky ground's talus skirts (_skirt_mesh), SKIRT_VARIANTS of them, made once
 var _skirt_hulls_made: Dictionary = {}   # their chunks' convex hulls by variant and size (_skirt_hulls)
-var _rock_cells: Dictionary = {}    # 32 m cell -> {"ids": {id: true}, "nodes": [MultiMeshInstance3D]}: the server rocks drawn there (_rock_refill)
-var _rock_dirty: Dictionary = {}    # cells to draw again
+var _rock_cells: Dictionary = {}    # 32 m cell -> {id: true}: the server rocks lying there
+var _rock_draws: Dictionary = {}    # drawing block (ROCK_BLOCK cells a side) -> its MultiMeshInstance3D nodes (_rock_refill)
+var _rock_dirty: Dictionary = {}    # blocks to draw again
+var _field_rock: ShaderMaterial = null
 var _rock_near: Dictionary = {}     # ids of the rocks with a body of their own (a server boulder without one has node, shape and lump null)
 var _rock_added_frame: int = 0      # bodies made this frame (ROCK_ADD_PER_FRAME)
 var _rock_look_msec: int = 0
@@ -3856,8 +3860,8 @@ func _show_boulder(id: int, row: Array) -> void:
 
 		if moved or was_worked != (left < int(known["total"])):
 			_rock_cell_dirty(id)
-			_rock_dirty.erase(_rock_cell_of(known))
-			_rock_refill(_rock_cell_of(known))   # at once: the whole rock of the MultiMesh must not hide the worked one under it
+			_rock_dirty.erase(_rock_block_of(_rock_cell_of(known)))
+			_rock_refill(_rock_block_of(_rock_cell_of(known)))   # at once: the whole rock of the MultiMesh must not hide the worked one under it
 
 		return
 
@@ -3887,10 +3891,12 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 
 	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
 	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
+	var field: bool = (id & FIELD_KEY) != 0 and not ore_rock   # a rock of the rocky ground (PR #1988): broken grey rock, as tall as wide
 	var entry: Dictionary = {"node": null, "shape": null, "lump": null, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
 		"ore": str(extra.get("ore", "")),   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
-		"mesh": OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or OreRockLook.shape_of(ang) == 2 else _boulder_mesh,
-		"material": OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", ""))),
+		"mesh": OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or field or OreRockLook.shape_of(ang) == 2 else _boulder_mesh,
+		"material": OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else (_field_rock_material() if field else _boulder_material(str(extra.get("ore", "")))),
+		"tall": FIELD_TALL if field and OreRockLook.shape_of(ang) != 0 else 1.0,
 		"yaw": float(extra.get("yaw", 0.0)), "tilt": extra.get("tilt", []), "skirt": extra.get("skirt", []), "variant": int(absi(id)) % SKIRT_VARIANTS}
 	_boulders[id] = entry
 	_rock_cell_dirty(id)
@@ -3902,8 +3908,9 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 
 
 # Big rocks the way the Godot community draws many of them (PR #1988, boulders/PLAN_big_boulders.md, Dave 27 Nov 2026 "yes"): a server boulder
-# is drawn in its 32 m cell's MultiMesh, one draw a mesh and material a cell, refilled only when a rock of the cell comes, goes, moves or is first
-# worked (ROCK_REFILL_PER_FRAME cells a frame); collision only near the player: a rock within ROCK_NEAR_M gets a StaticBody3D of its own (its hull and
+# is drawn in its ROCK_BLOCK_M block's MultiMeshes, one draw a mesh and material a block (rocks8 at 32 m cells: about 13 meshes a cell, several
+# hundred draws in range, +2.2 ms at Low), refilled only when a rock of the block comes, goes, moves or is first worked (ROCK_REFILL_PER_FRAME
+# blocks a frame); rocks are listed by 32 m cell for the near look; collision only near the player: a rock within ROCK_NEAR_M gets a StaticBody3D of its own (its hull and
 # its talus chunks' convex hulls, made before it enters the tree and never changed in it, at most ROCK_ADD_PER_FRAME a frame), freed again past
 # ROCK_FAR_M. A worked rock keeps its body and draws itself (cracks, shrinking). Drawn to ROCK_DRAW_M; past it the ground's rock texture carries
 # the mountain.
@@ -3911,6 +3918,9 @@ const ROCK_NEAR_M := 40.0
 const ROCK_FAR_M := 50.0
 const ROCK_DRAW_M := 160.0
 const ROCK_CELL_M := 32.0
+const ROCK_BLOCK := 3        # cells a side of a drawing block (96 m)
+const ROCK_SKIRT_DRAW_M := 110.0   # talus chunks are small: drawn nearer than the rocks
+const FIELD_TALL := 1.4      # a rocky-ground rock stands taller than the flat ore-rock mesh (coordinator on rocks8: "tall not flat")
 const ROCK_ADD_PER_FRAME := 24
 const ROCK_REFILL_PER_FRAME := 4
 const ROCK_LOOK_S := 0.25
@@ -3922,15 +3932,30 @@ func _rock_cell_of(entry: Dictionary) -> Vector2i:
 	return Vector2i(int(floor(p.x / ROCK_CELL_M)), int(floor(p.z / ROCK_CELL_M)))
 
 
-# Marks the cell a rock lies in to draw again, and lists the rock there (its old cell drops it at its refill).
+func _rock_block_of(cell: Vector2i) -> Vector2i:
+	return Vector2i(floori(float(cell.x) / ROCK_BLOCK), floori(float(cell.y) / ROCK_BLOCK))
+
+
+# Lists a rock in the cell it lies in and marks that cell's block to draw again (its old cell drops it at the old block's refill).
 func _rock_cell_dirty(id: int) -> void:
 	var cell: Vector2i = _rock_cell_of(_boulders[id])
 
 	if not _rock_cells.has(cell):
-		_rock_cells[cell] = {"ids": {}, "nodes": []}
+		_rock_cells[cell] = {}
 
-	_rock_cells[cell]["ids"][id] = true
-	_rock_dirty[cell] = true
+	_rock_cells[cell][id] = true
+	_rock_dirty[_rock_block_of(cell)] = true
+
+
+# The rocky ground's rock: the granite with a little moss on its tops only (rocks8: the boulder granite's moss turned every rock seen from above
+# into a dark green pad), a lighter grey.
+func _field_rock_material() -> ShaderMaterial:
+	if _field_rock == null:
+		_field_rock = _boulder_rock.duplicate() as ShaderMaterial
+		_field_rock.set_shader_parameter("stone_color", Vector3(0.40, 0.39, 0.37))
+		_field_rock.set_shader_parameter("mossiness", 0.28)
+
+	return _field_rock
 
 
 # The rock's own place and turn: at its spot, turned by its yaw, leaning with a steep face when it is a crag.
@@ -3948,7 +3973,8 @@ func _rock_basis(entry: Dictionary) -> Basis:
 func _rock_lump_xf(entry: Dictionary) -> Transform3D:
 	var box: AABB = (entry["mesh"] as Mesh).get_aabb()
 	var size_k: float = float(entry["radius"]) / maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
-	return Transform3D(Basis.from_scale(Vector3.ONE * size_k), Vector3(0.0, -(box.position.y + box.size.y * 0.2) * size_k, 0.0))
+	var tall_k: float = size_k * float(entry["tall"])
+	return Transform3D(Basis.from_scale(Vector3(size_k, tall_k, size_k)), Vector3(0.0, -(box.position.y + box.size.y * 0.2) * tall_k, 0.0))
 
 
 # The talus skirt's place: on the ground under the rock's middle, lying with the slope.
@@ -4051,7 +4077,7 @@ func _rock_tick() -> void:
 
 	for dx in range(-reach, reach + 1):
 		for dz in range(-reach, reach + 1):
-			for id in (_rock_cells.get(mid + Vector2i(dx, dz), {}) as Dictionary).get("ids", {}):
+			for id in _rock_cells.get(mid + Vector2i(dx, dz), {}):
 				var entry: Dictionary = _boulders.get(id, {})
 
 				if entry.is_empty() or entry["node"] != null or (entry["pos"] as Vector3).distance_to(at) >= ROCK_NEAR_M:
@@ -4064,36 +4090,45 @@ func _rock_tick() -> void:
 				_rock_body(id)
 
 
-# Draws a cell's whole rocks and talus skirts again: one MultiMeshInstance3D per mesh and material, the cell's old ones freed. The ids lying in the
-# cell are found from the rocks known (a moved rock leaves its old cell, which is dirty too).
-func _rock_refill(cell: Vector2i) -> void:
-	var held: Dictionary = _rock_cells.get(cell, {})
-
-	for node in held.get("nodes", []):
+# Draws a block's whole rocks and talus skirts again: one MultiMeshInstance3D per mesh and material, the block's old ones freed. A rock gone or
+# moved out of a cell of the block is dropped from that cell's list here.
+func _rock_refill(block: Vector2i) -> void:
+	for node in _rock_draws.get(block, []):
 		(node as Node).queue_free()
 
-	var ids: Dictionary = {}
-	var groups: Dictionary = {}   # [mesh, material, shadows] key -> [mesh, material, shadows, transforms]
+	var groups: Dictionary = {}   # [mesh, material, shadows, range] key -> [mesh, material, shadows, range, transforms]
 
-	for id in held.get("ids", {}):
-		if _boulders.has(id) and _rock_cell_of(_boulders[id]) == cell:   # gone or moved away: dropped
-			ids[id] = true
+	for bx in ROCK_BLOCK:
+		for bz in ROCK_BLOCK:
+			var cell: Vector2i = block * ROCK_BLOCK + Vector2i(bx, bz)
 
-	for id in ids:
-		var entry: Dictionary = _boulders[id]
+			if not _rock_cells.has(cell):
+				continue
 
-		if (entry["skirt"] as Array).size() >= 3:
-			var skirt_mesh: Mesh = _skirt_mesh(int(entry["variant"]))[0]
-			_rock_group(groups, skirt_mesh, _boulder_rock, false).append(_rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO))   # the size its collision has
+			var ids: Dictionary = _rock_cells[cell]
 
-		if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
-			_rock_group(groups, entry["mesh"], entry["material"], true).append(Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry))
+			for id in ids.keys():
+				if not _boulders.has(id) or _rock_cell_of(_boulders[id]) != cell:
+					ids.erase(id)
+					continue
+
+				var entry: Dictionary = _boulders[id]
+
+				if (entry["skirt"] as Array).size() >= 3:
+					var skirt_mesh: Mesh = _skirt_mesh(int(entry["variant"]))[0]
+					_rock_group(groups, skirt_mesh, _boulder_rock, false, ROCK_SKIRT_DRAW_M).append(_rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO))   # the size its collision has
+
+				if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
+					_rock_group(groups, entry["mesh"], entry["material"], true, ROCK_DRAW_M).append(Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry))
+
+			if ids.is_empty():
+				_rock_cells.erase(cell)
 
 	var nodes: Array = []
 
 	for key in groups:
 		var group: Array = groups[key]
-		var transforms: Array = group[3]
+		var transforms: Array = group[4]
 		var multi: MultiMesh = MultiMesh.new()
 		multi.transform_format = MultiMesh.TRANSFORM_3D
 		multi.mesh = group[0]
@@ -4106,32 +4141,33 @@ func _rock_refill(cell: Vector2i) -> void:
 		drawn.multimesh = multi
 		drawn.material_override = group[1]
 		drawn.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if bool(group[2]) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		drawn.visibility_range_end = ROCK_DRAW_M
+		drawn.visibility_range_end = float(group[3]) + ROCK_CELL_M * ROCK_BLOCK * 0.5   # measured from the block's middle
 		drawn.visibility_range_end_margin = 10.0   # hysteresis, no alpha fade (an alpha fade draws transparent: the HLOD docs' cost warning)
 		_root.add_child(drawn)
 		nodes.append(drawn)
 
-	if ids.is_empty():
-		_rock_cells.erase(cell)
+	if nodes.is_empty():
+		_rock_draws.erase(block)
 	else:
-		_rock_cells[cell] = {"ids": ids, "nodes": nodes}
+		_rock_draws[block] = nodes
 
 
-func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bool) -> Array:
+func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bool, reach: float) -> Array:
 	var key: String = "%d:%d:%s" % [mesh.get_instance_id(), material.get_instance_id(), str(shadows)]
 
 	if not groups.has(key):
-		groups[key] = [mesh, material, shadows, []]
+		groups[key] = [mesh, material, shadows, reach, []]
 
-	return groups[key][3]
+	return groups[key][4]
+
 
 
 const SKIRT_VARIANTS := 4
 const SKIRT_STONES := 16   # small broken stones in a skirt, SKIRT_NEAR to SKIRT_FAR radii out
-const SKIRT_CHUNKS := 9    # broken chunks round the rock (Dave 27 Nov 2026: "broken rocks and smaller 1-3m chunks in between and on the ground around them")
+const SKIRT_CHUNKS := 14   # broken chunks round the rock (Dave 27 Nov 2026: "broken rocks and smaller 1-3m chunks in between and on the ground around them")
 
 
-# The talus round a big mountain rock of radius 1 (PR #1988): SKIRT_CHUNKS angular chunks 0.22 to 0.6 radii in size, 1.1 to 2.6 radii out, packed
+# The talus round a big mountain rock of radius 1 (PR #1988): SKIRT_CHUNKS angular chunks 0.25 to 0.7 radii in size, 1.1 to 2.6 radii out, packed
 # against the rock and each other without overlapping, set a third into the ground, with SKIRT_STONES small broken stones between them; all on
 # the ground plane (y 0). Seeded by `variant`, so every skirt of a variant is the same mesh. [mesh, each chunk's points at unit radius (its convex
 # hull, scaled per rock by _skirt_hulls)]. Two chunks either touch or leave a gap of half a radius or more: a gap a foot could stick in is not made
@@ -4144,6 +4180,11 @@ func _skirt_mesh(variant: int) -> Array:
 		var tool: SurfaceTool = SurfaceTool.new()
 		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var hulls: Array = []
+		var low: Array = []   # three small-chunk shapes of 80 faces (rocks8: 9 chunks of 320 faces a skirt drew over a million triangles in range)
+
+		for k in 3:
+			low.append(OreRockLook.make_mesh(201 + k * 17, 8, 0.3, 0.4, 1.25, 1))
+
 		var placed: Array = [[0.0, 0.0, 1.0]]   # [x, z, size]: the rock itself, then each chunk
 
 		for n in range(SKIRT_CHUNKS * 4):   # tries: a chunk that would overlap another is left out
@@ -4151,7 +4192,7 @@ func _skirt_mesh(variant: int) -> Array:
 				break
 
 			var angle: float = rng.randf() * TAU
-			var size: float = lerpf(0.22, 0.6, pow(rng.randf(), 1.4))
+			var size: float = lerpf(0.25, 0.7, pow(rng.randf(), 1.4))
 			var out: float = lerpf(1.1, 2.6, rng.randf()) + size * 0.5
 			var at: Vector2 = Vector2(cos(angle), sin(angle)) * out
 			var clear: bool = true
@@ -4164,7 +4205,7 @@ func _skirt_mesh(variant: int) -> Array:
 				continue
 
 			placed.append([at.x, at.y, size])
-			var chunk: ArrayMesh = OreRockLook.mesh_for(rng.randf() * 360.0, 1.0)   # fresh, angular
+			var chunk: ArrayMesh = low[rng.randi() % low.size()]   # fresh, angular
 			var box: AABB = chunk.get_aabb()
 			var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
 			var place: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).rotated(Vector3(1.0, 0.0, 0.0), rng.randf_range(-0.35, 0.35)).scaled(Vector3.ONE * (size / unit)),
@@ -4281,7 +4322,8 @@ func _size_boulder(entry: Dictionary) -> void:
 	var scale: float = radius / unit
 	var was: float = float(entry.get("now", -1.0))
 	entry["now"] = radius
-	var lump_at: Vector3 = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	var sizes: Vector3 = Vector3(scale, scale * float(entry.get("tall", 1.0)), scale)
+	var lump_at: Vector3 = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * sizes.y, 0.0)
 	var lump_node: MeshInstance3D = entry["lump"]
 
 	# A blow eases the rock down to its new size over SHRINK_EASE_S (smooth motion; a small rock loses a big share a blow). The first draw sets it.
@@ -4292,11 +4334,11 @@ func _size_boulder(entry: Dictionary) -> void:
 			(entry["shrink"] as Tween).kill()   # a quick second blow starts from where the last ease had got to
 
 		var shrink: Tween = lump_node.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		shrink.tween_property(lump_node, "scale", Vector3.ONE * scale, SHRINK_EASE_S)
+		shrink.tween_property(lump_node, "scale", sizes, SHRINK_EASE_S)
 		shrink.tween_property(lump_node, "position", lump_at, SHRINK_EASE_S)
 		entry["shrink"] = shrink
 	else:
-		lump_node.scale = Vector3.ONE * scale
+		lump_node.scale = sizes
 		lump_node.position = lump_at
 
 	# The collider is the drawn rock's hull at its new size (world audit 23 Nov 2026: a sphere of 0.85 x the radius half a radius up stood 0.65 of a
@@ -4316,7 +4358,7 @@ func _size_boulder(entry: Dictionary) -> void:
 			points.resize(hull.size())
 
 			for k in hull.size():
-				points[k] = hull[k] * scale + lump_at
+				points[k] = hull[k] * sizes + lump_at
 
 			var convex: ConvexPolygonShape3D = entry["shape"].shape as ConvexPolygonShape3D
 

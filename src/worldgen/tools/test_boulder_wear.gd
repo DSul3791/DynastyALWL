@@ -162,6 +162,10 @@ func _init() -> void:
 	view._rock_look_msec = -100000
 	view._rock_tick()
 	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] != null, "past 50 m the whole rock loses its body, the worked one keeps it")
+	var field_id: int = view.FIELD_KEY | view.BOULDER_KEY | 7
+	view._show_boulder(field_id, [field_id, 0, total, Vector3(102.0, 5.0, 90.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 50.0, "total": total, "ang": 0.8}])
+	check(is_equal_approx(float(view._boulders[field_id]["tall"]), view.FIELD_TALL) and view._boulders[field_id]["material"] == view._field_rock, "a rocky-ground rock is grey broken rock standing taller than wide-and-flat")
+	view._forget(field_id)
 	view._forget(4251)
 	check(not view._boulders.has(4251) and not view._rock_near.has(4251), "a rock gone from the world is forgotten")
 
