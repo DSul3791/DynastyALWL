@@ -20,10 +20,10 @@ func check(ok: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	# The scale alone: open is the hand as drawn; closed is shorter along the hand and thicker through the palm, the third axis untouched.
+	# The scale alone: the hand is drawn as it is whether it holds or not (R-PLAYER-HELD-HAND).
 	check(Grip.closed_scale(0.0, 1, 2).is_equal_approx(Vector3.ONE), "an open hand is drawn as it is")
 	var shut: Vector3 = Grip.closed_scale(1.0, 1, 2)
-	check(is_equal_approx(shut.y, Grip.CLOSED_LENGTH) and is_equal_approx(shut.z, Grip.CLOSED_THICK) and is_equal_approx(shut.x, 1.0), "a closed hand is shorter along it and thicker through the palm (%s)" % str(shut))
+	check(is_equal_approx(shut.y, Grip.CLOSED_LENGTH) and is_equal_approx(shut.z, Grip.CLOSED_THICK) and is_equal_approx(shut.x, 1.0), "a holding hand is drawn as it is (%s)" % str(shut))
 
 	# A mount with nothing on it holds nothing; a hidden tool neither.
 	var mount: Marker3D = Marker3D.new()
@@ -97,7 +97,7 @@ func _initialize() -> void:
 		await process_frame
 
 	var closed_grip: float = hand_mount.global_position.distance_to(wrist.global_position)
-	check(closed_grip < open_grip * 0.7 and closed_grip > open_grip * 0.4, "holding a knife the hand is drawn shorter: the grip %.3f m from the wrist, open %.3f m" % [closed_grip, open_grip])
+	check(absf(closed_grip - open_grip) < 0.005, "holding a knife the grip stays where the fingers meet the palm: %.3f m from the wrist, open %.3f m" % [closed_grip, open_grip])
 	var held_scale: Vector3 = tool.global_basis.get_scale()
 	check(absf(held_scale.x - open_scale) < 0.02 and absf(held_scale.y - open_scale) < 0.02 and absf(held_scale.z - open_scale) < 0.02, "and the knife keeps its size: its scale %s, open %.3f" % [str(held_scale), open_scale])
 	# Read before the frame's modifiers ran (player_view.gd follow_hand moves the attachment to the clip's pose at once): the mount carries no hand scale there either.
@@ -115,7 +115,7 @@ func _initialize() -> void:
 		await process_frame
 
 	var left_closed: float = left_mount.global_position.distance_to(left_wrist.global_position)
-	check(left_closed < left_open * 0.7, "the left hand closes too: its grip %.3f m from the wrist, open %.3f m" % [left_closed, left_open])
+	check(absf(left_closed - left_open) < 0.005, "the left hand the same: its grip %.3f m from the wrist, open %.3f m" % [left_closed, left_open])
 	torch.queue_free()
 
 	for _i in 30:

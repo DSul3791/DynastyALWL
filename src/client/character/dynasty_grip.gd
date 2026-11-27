@@ -2,9 +2,8 @@ extends SkeletonModifier3D
 
 # A hand closed on what it holds (BugsList 177, picture checker 26 Nov 2026: "a smooth fingerless ball at the wrist with the shaft through it, and the open real
 # hand below"). Dave's body has no finger bones, so since his decision card of 5 Nov a skin-coloured ball was drawn round every third-person grip (held_item.gd
-# third_fist_on); the hand stayed open and its fingers hung below the ball. Here, while a hand mount holds something drawn, the hand bone is drawn shorter along
-# its length (CLOSED_LENGTH, about where the knuckles of a fist are) and a little thicker, so the real hand sits round the grip like a closed hand, in the body's
-# own skin, and the ball is not drawn (held_item.gd hand_closes). The mount hangs on a bone of its own under the hand (dynasty_body.gd GRIP_BONE) whose scale
+# third_fist_on); the hand stayed open and its fingers hung below the ball. Here, while a hand mount holds something drawn, the hand is scaled by CLOSED_LENGTH and
+# CLOSED_THICK (both 1.0 now: Dave's open hand, below), and the ball is not drawn (held_item.gd hand_closes). The mount hangs on a bone of its own under the hand (dynasty_body.gd GRIP_BONE) whose scale
 # undoes the hand's, so the tool keeps its size and turn even read before the modifiers ran; the grip point comes in with the shorter hand. It eases in and out over EASE_S, so changing what is held never pops. Drawing only: the hand mesh and the mounts.
 # Made by dynasty_body.gd under the skeleton, after the Proportions modifier (which writes the hand's own scale each frame); `body` is the body node.
 
