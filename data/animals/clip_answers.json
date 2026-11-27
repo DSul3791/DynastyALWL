@@ -4,14 +4,14 @@
 	"models": {
 		"alligator|res://assets/animals/alligator/Alligator_Al.glb": {
 			"shares": {
-				"Running": 2.606497862779927,
-				"cat_idle2": 3.0369456326901396,
-				"cat_shuijiao": 1.3104913740662336,
-				"cat_walk": 1.7763693375834408,
-				"fox_mon_xiaohuli_01_idle1": 2.151141997388293,
-				"leopard_dead": 1.8677579385356595,
-				"leopard_skill_feipu": 1.4881418432813425,
-				"leopard_skill_shuaiwei": 2.095964312074685
+				"Running": 2.6064976936517543,
+				"cat_idle2": 3.0369454356314454,
+				"cat_walk": 1.7763693520941932,
+				"fox_mon_xiaohuli_01_idle1": 2.1511418578068566,
+				"gait_19": 0.9927748177709764,
+				"leopard_dead": 1.8677579471164678,
+				"leopard_skill_feipu": 1.4881418764943506,
+				"leopard_skill_shuaiwei": 2.0959639165250397
 			},
 			"skins": {
 				"output_unwrapped": false
