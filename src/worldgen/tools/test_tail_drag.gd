@@ -39,8 +39,8 @@ func _initialize() -> void:
 	sk.add_child(drag)
 
 	# The clip holds the tail up 50 degrees like a cat's and swings it 30 degrees to the side.
-	sk.set_bone_pose_rotation(t0, Quaternion(Vector3.UP, deg_to_rad(30.0)) * Quaternion(Vector3.RIGHT, deg_to_rad(50.0)))
-	sk.set_bone_pose_rotation(t2, Quaternion(Vector3.RIGHT, deg_to_rad(40.0)))
+	sk.set_bone_pose_rotation(t0, Quaternion(Vector3.UP, deg_to_rad(30.0)) * Quaternion(Vector3.RIGHT, deg_to_rad(-50.0)))
+	sk.set_bone_pose_rotation(t2, Quaternion(Vector3.RIGHT, deg_to_rad(-40.0)))
 	var held: float = sk.get_bone_global_pose(t2).origin.y
 	drag._process_modification()
 	var tip: Vector3 = sk.get_bone_global_pose(t2).origin
