@@ -71,8 +71,21 @@ func _init() -> void:
 	check(float(v["health"]) >= float(cfg["wake_health"]) - 0.5, "health up to the wake value (%.1f)" % float(v["health"]))
 	check(float(v["warmth"]) >= float(items._warmth_cfg["hurt_at"]), "warm enough not to be hurt at once (%.1f)" % float(v["warmth"]))
 	check(items.inventory_of(1).count_of(stone) == 7, "the whole pack is kept")
-	check(int(items._strain[1]["state"]) == 0, "awake")
-	check(not items.fainted_of(1), "and standing again for the others")
+	check(int(items._strain[1]["state"]) == 3 and items.fainted_of(1) and int(items._stance[1]) == 3, "still lying while the sight comes back (waking, R-CORE-PASS-OUT)")
+	items._set_stance(1, 0)
+	check(int(items._stance[1]) == 3, "and cannot stand up yet")
+	var wake_hp: float = float(v["health"])
+	items.hurt_player(1, 50.0, true, "wolf")
+	check(float(v["health"]) == wake_hp, "nothing hurts them while they lie waking after the rescue (%.1f)" % float(v["health"]))
+
+	for t in int(ceil(float(items._exertion_cfg["wake_s"]))) + 1:
+		items.tick(1.0)
+
+	check(int(items._strain[1]["state"]) == 0, "awake once the sight is back (wake_s)")
+	check(not items.fainted_of(1), "and free to stand again for the others")
+	var up_hp: float = float(v["health"])
+	items.hurt_player(1, 2.0, true, "wolf")
+	check(float(v["health"]) < up_hp, "once up, blows land again (%.1f from %.1f)" % [float(v["health"]), up_hp])
 	check((items._peer_pos[1] as Vector3).is_equal_approx(Vector3(150.0, 5.0, 0.0)), "the server has them there too")
 
 	# Nearest by distance: from beyond the bandit camp the town is nearer.
@@ -168,7 +181,7 @@ func _init() -> void:
 
 	for t in 60:
 		items.tick(1.0)
-		fainted_again = fainted_again or int(items._strain.get(1, {}).get("state", 0)) >= 2
+		fainted_again = fainted_again or int(items._strain.get(1, {}).get("state", 0)) == 2   # 3 is the wake after the rescue
 
 	check(not fainted_again and int(items._strain[1]["state"]) == 0, "and they stay awake and free to move")
 
