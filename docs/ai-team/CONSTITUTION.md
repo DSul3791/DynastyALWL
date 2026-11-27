@@ -42,9 +42,9 @@ The general 11 Nov handoff freeze was lifted by Dave on 12 Nov 2026. Task-specif
 
 ## Catalog control and scoped delegation
 
-**Standing ruling, DIRECTOR-APPROVED:** Dave, 11 Nov 2026, project thread "Make Admin Mode off by default": "Freeze all discretionary additions, removals, renames, and recipe redesigns in the item catalog. ChatGPT and I are going to review and approve the definitive catalog. Claude's job afterward will be implementation, validation, and reporting problems—not independently redesigning the items."
+**Standing ruling (R-ITEM-CATALOG):** Dave, 26 Nov 2026, on the 11 Nov catalog freeze: it "is not still on but I don't want AI inventing random stuff to put in the Item Catalogue. if we find a hole where we need a new item because we can't actually play without it then that is ok and we can review it and include it but otherwise try to keep it to our strictly designed list."
 
-Default scope: items, names, IDs, recipes, ingredients, stations, blueprints and code lists naming them. Implement approved changes, validate and report unrelated catalog problems; do not independently redesign the catalog. Level B refinements are subject to this rule. Later specific approvals and delegated values are permitted within their recorded scope, not evidence that the whole freeze ended.
+Default scope: items, names, IDs, recipes, ingredients, stations, blueprints and code lists naming them. Keep to the designed list and implement approved changes. A new item is proposed only where the game cannot be played without it, and is included only after Dave reviews it through the coordinator.
 
 | Scope | Applicable authority and limits | Current record |
 |---|---|---|
