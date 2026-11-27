@@ -320,15 +320,13 @@ func _init() -> void:
 		var hills: Array = by_height["%s 310" % ore]
 		check(int(coast[0]) > 10, "%s lies along a river on the coastal plain too, with no %s body near (%d per 40 cells of river)" % [ore, ore, int(coast[0])])
 		check(int(hills[0]) * 2 > int(coast[0]) * 3, "%s is more abundant by the river under the mountains (%d against %d by the sea)" % [ore, int(hills[0]), int(coast[0])])
-		if ore == "iron":   # Dave 21 Nov 2026: "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized"
-			var sized: Array = [0, 0, 0, 0]
-
-			for k in range(4):
-				sized[k] = int(coast[5][k]) + int(hills[5][k])
-
-			var all_iron: float = maxf(float(sized[0] + sized[1] + sized[2] + sized[3]), 1.0)
-			check(int(sized[3]) == 0 and absf(float(sized[0]) / all_iron - 0.5) < 0.08 and absf(float(sized[1]) / all_iron - 0.3) < 0.08 and absf(float(sized[2]) / all_iron - 0.2) < 0.08,
-				"river iron: half loose one-ore stones, 30%% two-ore and 20%% three-ore rocks, nothing else (%s)" % str(sized))
+		if ore == "iron":   # Dave 21 Nov 2026: "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized"; 27 Nov 2026, the layered cake: small iron by the shore, bigger each layer up
+			var up_sized: Array = hills[5]
+			var all_up: float = maxf(float(int(up_sized[0]) + int(up_sized[1]) + int(up_sized[2]) + int(up_sized[3])), 1.0)
+			check(int(up_sized[3]) == 0 and absf(float(up_sized[0]) / all_up - 0.5) < 0.1 and absf(float(up_sized[1]) / all_up - 0.3) < 0.1 and absf(float(up_sized[2]) / all_up - 0.2) < 0.1,
+				"river iron under the mountains: half loose one-ore stones, 30%% two-ore and 20%% three-ore rocks, nothing else (%s)" % str(up_sized))
+			var low_sized: Array = coast[5]
+			check(int(low_sized[0]) > 0 and int(low_sized[1]) + int(low_sized[2]) + int(low_sized[3]) == 0, "river iron by the sea: only small one-ore stones (%s)" % str(low_sized))
 		else:
 			check(float(hills[1]) > float(coast[1]) + 0.1 and int(hills[2]) > int(coast[2]), "%s rocks are bigger under the mountains (mean radius %.2f against %.2f)" % [ore, float(hills[1]), float(coast[1])])
 		check(bool(coast[3]) and bool(hills[3]), "every %s rock to break has its grade in range" % ore)
