@@ -211,8 +211,10 @@ void fragment() {
 	}
 	// Slopes that lose their cover turn to loose ground first (owner, 2026-10-20): gravel, or sand
 	// and gravel where the rock is soft or the patch is dry (broad noise picks), and only the
-	// steepest faces show bare cracked rock.
-	float face = smoothstep(0.46, 0.7, slope);
+	// steepest faces show bare cracked rock: from about 42 degrees in patches and everywhere past about 50 (the tiles' own bare rock, TERRAIN
+	// 74; Dave 27 Nov 2026 on the rocky ground pictures: "we should give them a rocky texture"; it began at 58 degrees, so mountainsides
+	// drew as smooth gravel and sand). The loose ground stays on the gentler bare slopes below, where the fallen rocks lie.
+	float face = smoothstep(0.26, 0.36, slope + (cover_noise - 0.5) * 0.12);
 	float scree = rock_mask * (1.0 - face);
 	float sandy = smoothstep(0.35, 0.65, vnoise(world_pos * 0.017 + 3.0)) * (1.0 - stone * 0.6);
 	for (int k = 0; k < 5; k++) {
@@ -301,7 +303,7 @@ void fragment() {
 	float macro_b = vnoise(world_pos * vec3(0.02, 0.05, 0.02) + 11.0);
 	vec3 rock_color = mix(vec3(0.24, 0.25, 0.27), vec3(0.30, 0.25, 0.20), smoothstep(0.3, 0.7, macro_a));
 	rock_color = mix(rock_color, vec3(0.34, 0.22, 0.15), smoothstep(0.62, 0.8, macro_b) * 0.5);
-	float steep_rock = rock_mask * smoothstep(0.35, 0.6, slope);
+	float steep_rock = rock_mask * smoothstep(0.26, 0.45, slope);   // from the same 42 degrees as the face above, so far mountainsides read as rock
 	color = mix(color, rock_color * (0.8 + 0.5 * macro_b), steep_rock * 0.6);
 	float crease = clamp(length(fwidth(world_normal)) * 4.0, 0.0, 1.0);
 	color *= 1.0 - 0.3 * crease * rock_mask;
