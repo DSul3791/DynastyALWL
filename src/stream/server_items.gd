@@ -10962,7 +10962,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			return false
 
 		var key: int = FIELD_KEY | BOULDER_KEY | cell_bits | slot
-		var row: Dictionary = {"radius": radius, "yaw": yaw}
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "field": 1}   # "field": the client draws it as rocky-ground rock (world ids do not carry the key)
 		var sink: float = rise * radius * float(cfg.get("sink_share", 0.6))   # its low side meets the ground instead of hanging over it
 
 		if kind == "crag":

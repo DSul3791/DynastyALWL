@@ -188,7 +188,7 @@ func _print_fields(laid: Dictionary, top: int) -> void:
 				continue
 
 			var counts: Array = _count_round(index, cam[0], cam[1])
-			picks.append([int(counts[0]) >= TARGET_ALL and int(counts[1]) >= TARGET_BIG, counts[0], counts[1], counts[2], c, cam])
+			picks.append([int(counts[0]) >= TARGET_ALL and int(counts[1]) >= TARGET_BIG, counts[0], counts[1], counts[2], c, cam, counts])
 
 		picks.sort_custom(func(a, b): return (bool(a[0]) and not bool(b[0])) or (bool(a[0]) == bool(b[0]) and int(a[1]) > int(b[1])))
 		print("rock fields: %s, %d cells; the best to picture (a camera 15 m from the cell's biggest rock, on open ground):" % [kind, cells.size()])
@@ -199,6 +199,9 @@ func _print_fields(laid: Dictionary, top: int) -> void:
 			var name: String = "rocks_%s_%s_%d" % [_tag, kind.split(" ")[0], n + 1]   # the spot's x in the name: two runs never share a picture name
 			print("  rocks_count %s: within %.0f m of the camera %d rocks, %d of %.0f m radius or more, %d cluster cores (target %d and %d: %s); the cell's %d rocks, biggest radius %.2f m" % [name, COUNT_REACH_M,
 				int(pick[1]), int(pick[2]), COUNT_BIG_M, int(pick[3]), TARGET_ALL, TARGET_BIG, "met" if bool(pick[0]) else "NOT met", int(cells[c][0]), float(cells[c][1])])
+			var sizes: Array = pick[6]
+			print("    sizes %s: %d rocks 2 m across or more, %d of 3.5 m or more, the largest %.1f m across; height to width about %.2f above the ground (rocky-ground mesh 0.6 to 0.78 as tall as wide, drawn %.1f x taller, a fifth set in; more on a slope)" % [name,
+				int(sizes[3]), int(sizes[4]), float(sizes[5]), 0.69 * 1.4 * 0.8, 1.4])
 			print("    %s" % str((pick[5] as Array)[2]).replace("NAME", name))
 			var wide: Array = _camera_at(cells[c][2], float(cells[c][1]), 45.0, index, 6.0)   # 45 m off and 6 m up
 			print("    %s" % (str(wide[2]).replace("NAME", name + "_wide") if not wide.is_empty() else "(no wide camera)"))
@@ -276,6 +279,9 @@ func _count_round(index: Dictionary, x: float, z: float) -> Array:
 	var all_n: int = 0
 	var big_n: int = 0
 	var cores: int = 0
+	var across_2: int = 0     # 2 m across or more
+	var across_35: int = 0    # 3.5 m across or more
+	var largest: float = 0.0  # across, m
 	var c: Vector2i = Vector2i(int(floor(x / 32.0)), int(floor(z / 32.0)))
 
 	for dx in range(-2, 3):
@@ -285,8 +291,11 @@ func _count_round(index: Dictionary, x: float, z: float) -> Array:
 					all_n += 1
 					big_n += 1 if float(rock[2]) >= COUNT_BIG_M else 0
 					cores += 1 if bool(rock[3]) else 0
+					across_2 += 1 if float(rock[2]) >= 1.0 else 0
+					across_35 += 1 if float(rock[2]) >= 1.75 else 0
+					largest = maxf(largest, float(rock[2]) * 2.0)
 
-	return [all_n, big_n, cores]
+	return [all_n, big_n, cores, across_2, across_35, largest]
 
 
 # [x, z, a look_rig line named NAME] for a camera `dist` m from `rock` (of `radius`), `agl` m above open ground, facing the rock: of eight

@@ -328,31 +328,24 @@ void fragment() {
 	rock_color = mix(rock_color, vec3(0.34, 0.22, 0.15), smoothstep(0.62, 0.8, macro_b) * 0.5);
 	float steep_rock = rock_mask * smoothstep(0.26, 0.45, slope);   // from the same 42 degrees as the face above, so far mountainsides read as rock
 	color = mix(color, rock_color * (0.8 + 0.5 * macro_b), steep_rock * 0.8);   // 0.6 left the faces pale (rocks8)
-	// The rocky texture itself: blocks a few metres across, each its own shade, wider than tall like bedded rock, with dark joints between and
-	// a finer set of cracks near; laid in the face's plane (along the face and up it), so a steep side does not stretch them. The joints fade
-	// past 250 m (they would shimmer), the block shades carry on so a far mountainside still reads as broken rock, not smooth grey (rocks8).
-	if (steep_rock > 0.01) {
-		vec2 across = normalize(world_normal.xz + vec2(0.0001));
-		vec2 face_uv = vec2(world_pos.x * -across.y + world_pos.z * across.x, world_pos.y);
-		vec2 big = rock_blocks(face_uv * vec2(0.22, 0.38));
+	// The rocky texture itself (Dave 27 Nov 2026: "can we put a texture on the mountain side its just smooth gray"): blocks a few metres
+	// across, each its own shade, with dark joints between and a finer set of cracks near, on all bare mountainside from about 25 degrees (the
+	// terrain's smoothed normals put most mountain foot slopes at 30 to 40 degrees, under the 42 of steep_rock: rocks9 showed no blocks
+	// there). Laid in the slope's own plane (along the contour and down the fall line), so neither a face nor a gentle slope stretches them.
+	// The joints fade past 250 m (they would shimmer), the block shades carry on so a far mountainside still reads as broken rock.
+	float rocky = rock_mask * smoothstep(0.1, 0.2, slope);
+	if (rocky > 0.01) {
+		float tilt_len = max(length(world_normal.xz), 0.0001);
+		vec2 fall_dir = world_normal.xz / tilt_len;
+		vec2 slope_uv = vec2(world_pos.x * -fall_dir.y + world_pos.z * fall_dir.x, dot(world_pos.xz, fall_dir) * world_normal.y - world_pos.y * tilt_len);
+		vec2 big = rock_blocks(slope_uv * vec2(0.24, 0.36));
 		float joints = big.y * (1.0 - smoothstep(150.0, 250.0, dist));
 		float cracks = 0.0;
 		if (triplanar && dist < 60.0) {   // Low (no triplanar) keeps the blocks and joints only
-			cracks = rock_blocks(face_uv * vec2(0.8, 1.2) + 5.0).y * (1.0 - smoothstep(30.0, 60.0, dist));
+			cracks = rock_blocks(slope_uv * vec2(0.9, 1.3) + 5.0).y * (1.0 - smoothstep(30.0, 60.0, dist));
 		}
-		float block_shade = 0.72 + 0.5 * big.x;
-		color *= mix(1.0, block_shade * (1.0 - 0.55 * joints) * (1.0 - 0.35 * cracks), steep_rock);
-	}
-	// The loose ground below the faces (scree) is broken stone too, not smooth gravel: stones of a few metres' patches, and fist-to-head sized
-	// stones near, laid from above.
-	if (scree > 0.05) {
-		vec2 coarse = rock_blocks(world_pos.xz * 0.35 + 9.0);
-		float stony = (0.78 + 0.4 * coarse.x) * (1.0 - 0.3 * coarse.y * (1.0 - smoothstep(150.0, 250.0, dist)));
-		if (triplanar && dist < 50.0) {
-			vec2 fine = rock_blocks(world_pos.xz * 2.2);
-			stony *= mix(1.0, (0.8 + 0.35 * fine.x) * (1.0 - 0.4 * fine.y), 1.0 - smoothstep(25.0, 50.0, dist));
-		}
-		color *= mix(1.0, stony, scree * 0.85);
+		float block_shade = 0.66 + 0.6 * big.x;
+		color *= mix(1.0, block_shade * (1.0 - 0.6 * joints) * (1.0 - 0.4 * cracks), rocky);
 	}
 	float crease = clamp(length(fwidth(world_normal)) * 4.0, 0.0, 1.0);
 	color *= 1.0 - 0.3 * crease * rock_mask;

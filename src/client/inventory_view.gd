@@ -131,8 +131,6 @@ var reach_stock: Dictionary = {}        # item number -> count a craft may use b
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
-const FIELD_KEY := 1 << 48                # server_items.FIELD_KEY: the rocks of the rocky ground (PR #1988)
-const BOULDER_KEY := 1 << 50              # server_items.BOULDER_KEY
 const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
 var bogs: Dictionary = {}                 # bog patch world id -> {"pos", "left", "total", "r", "key", "lumps", "node"}: kept apart from _world; _show_bog draws the lumps
 var bogs_rev: int = 0                     # moves on when a patch comes, goes or changes (terrain_client then hands them to the ground shader)
@@ -3891,7 +3889,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 
 	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
 	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
-	var field: bool = (id & FIELD_KEY) != 0 and not ore_rock   # a rock of the rocky ground (PR #1988): broken grey rock, as tall as wide
+	var field: bool = int(extra.get("field", 0)) == 1 and not ore_rock   # a rock of the rocky ground (PR #1988): broken grey rock, as tall as wide
 	var entry: Dictionary = {"node": null, "shape": null, "lump": null, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
 		"ore": str(extra.get("ore", "")),   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
 		"mesh": OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or field or OreRockLook.shape_of(ang) == 2 else _boulder_mesh,
