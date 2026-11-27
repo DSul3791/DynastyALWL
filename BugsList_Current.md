@@ -92,10 +92,6 @@ Not yet played.
 
 **Known, left for proper garment meshes (a Dave art question; the rigid pieces cannot do these):** with the arm raised in the chop, the throat shows bare under the gambeson's collar (project files qa15g_chop_gambeson_t0.1_y90.png, qa15g_sheet_chop_gambeson.jpg); the gambeson's chest reads as a squared block from the side, the shirt a little (qa15g_idle_gambeson_y270.png, qa15g_sheet_idle_gambeson.jpg, qa15g_sheet_idle_linen_shirt.jpg). The mail shirt looks right. The same tester said the character looked around too much in build 9257 (QA #8, about the creator's doll).
 
-## 159. Lying down always looks like sleeping; there is no crawl
-
-**Found by:** Dave, [QA #10](https://github.com/DSul3791/DynastyALWL-QA/issues/10), build 10587, 25 Nov 2026: "right now when you lay down its always like you are sleeping. that should only be when you are lying on a bed or when you hold Z to go to sleep. otherwise you should first drop like you are being stealthy and crawling. Crouching and Crawling should drastically reduce your visibility and sound that you make." **Status: Open.** Crouching already makes animals notice the player later (server_animals.gd reads the stance); lying flat and crawling are not built.
-
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

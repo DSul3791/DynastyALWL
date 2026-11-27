@@ -143,12 +143,12 @@ func _init() -> void:
 	check(deer_does(70.0, 0, "") == "graze", "a quiet player standing 70 m off: the deer keeps grazing")
 	check(deer_does(70.0, 0, "blow") == "alert", "an axe blow at 70 m: the deer looks up (70 / 1.4 = 50 m)")
 	check(deer_does(95.0, 0, "blow") == "graze", "an axe blow at 95 m, past the deer's 90 m reach: nothing")
-	check(deer_does(45.0, 1, "") == "graze", "crouched and quiet at 45 m: unnoticed (45 / 0.6 = 75 m)")
+	check(deer_does(45.0, 1, "") == "graze", "crouched and quiet at 45 m: unnoticed (45 / 0.4 = 112 m)")
 	check(deer_does(45.0, 1, "blow") == "flee", "crouched and chopping at 45 m: it runs (45 / 1.4 = 32 m)")
 	check(deer_does(45.0, 0, "") == "alert", "standing at 45 m: it watches but stays")
 	check(deer_does(45.0, 0, "pick") == "alert", "a name with no distance (a pick) changes nothing")
 	check(deer_does(20.0, 1, "craft") == "flee", "craft work at 20 m, crouched: it runs (20 / 1.1 = 18 m)")
-	check(deer_does(40.0, 1, "craft") == "alert", "craft work at 40 m, crouched: it looks up but stays (40 / 1.1 = 36 m; quiet and crouched it would not notice, 40 / 0.6 = 67 m)")
+	check(deer_does(40.0, 1, "craft") == "alert", "craft work at 40 m, crouched: it looks up but stays (40 / 1.1 = 36 m; quiet and crouched it would not notice, 40 / 0.4 = 100 m)")
 
 	# A startle (a missed arrow, a tree crash: alarm_near) sends a grazing deer off, but never changes big game standing its ground, charging
 	# or recovering (the animals thread's charge code owns those states).

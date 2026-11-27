@@ -41,6 +41,9 @@
 	"stand_load_floor": 0.5,
 	"sit_fall_mult": 2.0,
 	"lie_fall_mult": 3.0,
+	"crawl_note": "The stealthy crawl (Dave, QA #10, 25 Nov 2026; numbers are the coordinator's picks for Dave): a lying player moving faster than crawl_from_mps is crawling: effort at least crawl_effort (walking's), and none of lying's rest (lie_fall_mult, the lying energy refill, comfort's resting).",
+	"crawl_from_mps": 0.15,
+	"crawl_effort": 0.4,
 	"stand_up_speed_mps": 0.8,
 	"effort_by_speed": [
 		[
