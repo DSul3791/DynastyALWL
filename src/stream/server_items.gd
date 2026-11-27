@@ -10649,7 +10649,6 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 	var span_m: float = maxf(float(cfg.get("upland_high_m", low_m + 1.0)) - low_m, 1.0)
 	var size_coast: float = float(cfg.get("size_coast", 1.0))
 	var body_m: float = float(cfg.get("body_reach_m", 0.0))
-	var water_floor: float = float(cfg.get("water_floor", 0.0))   # by water, the least share of the area's chance outside its area (copper: on every river, BugsList 186)
 	var body_p: float = 0.0
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var names: Dictionary = {ore: item}
@@ -10715,7 +10714,7 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 			_ore_usec[1] += Time.get_ticks_usec() - body_usec
 			_ore_usec[5] += 1
 
-		if not is_foot and not over_body and draw > maxf(land_p * area, lerpf(coast_p, mountain_p, upland) * maxf(maxf(area, river_clue), water_floor)):
+		if not is_foot and not over_body and draw > maxf(land_p * area, lerpf(coast_p, mountain_p, upland) * maxf(area, river_clue)):
 			continue   # past every chance this far in: no ground water read
 
 		var by_water_only: bool = not is_foot and not over_body and draw > land_p * area

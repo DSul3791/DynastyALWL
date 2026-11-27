@@ -319,29 +319,6 @@ func _init() -> void:
 
 	check(shore_tin == 0, "no tin rocks on the dry shore outside the tin area (%d)" % shore_tin)
 
-	# 7b. Copper lies along every river (Dave 27 Nov 2026, BugsList 186): on banks outside the copper area and away from any clue, copper
-	# rocks still come (copper_rocks water_floor), only by water. Every spot here is a dry bank: water within reach, none underfoot.
-	items._items.clear()
-	items.water_near = func(_pos, reach): return float(reach) > 0.0
-	var bank_copper: int = 0
-	var bank_spots: int = 0
-
-	for row in range(-20, 20):
-		for col in range(-30, 0):
-			var bank_cell: Vector2i = Vector2i(floori((CENTRE.x + RADIUS) / 32.0) + col, floori(CENTRE.y / 32.0) + row)
-			var mid: Vector2 = (Vector2(bank_cell) + Vector2(0.5, 0.5)) * 32.0
-
-			if float(context.call("field_at", 1, mid.x, mid.y)) < 0.05 and float(context.call("clue_at", 1, mid.x, mid.y)) < 0.05:
-				bank_spots += 1
-				items._lay_out_ore_rocks(bank_cell, 32.0, "copper")
-
-	for id in items._items:
-		var it: Dictionary = items._items[id]
-		bank_copper += 1 if int(it["number"]) == items.table.number_of("copper_ore") or str((it.get("boulder", {}) as Dictionary).get("ore", "")) == "copper" else 0
-
-	check(bank_spots >= 20 and bank_copper * 2 >= bank_spots, "copper on river banks outside the copper area: %d rocks in %d cells" % [bank_copper, bank_spots])
-	items.water_near = func(_pos, _reach): return false
-
 	# 8. Rock shapes: round, broken, jagged; a row without a shape keeps the photos' shape exactly.
 	check(OreRockLook.shape_of(-1.0) == 1 and OreRockLook.shape_of(0.1) == 0 and OreRockLook.shape_of(0.5) == 1 and OreRockLook.shape_of(0.9) == 2, "shapes by how worn a rock is")
 	var legacy: ArrayMesh = OreRockLook.make_mesh(101)
