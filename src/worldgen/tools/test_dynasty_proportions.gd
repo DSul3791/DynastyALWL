@@ -160,6 +160,10 @@ func _init() -> void:
 		_check(absf(wide_body.body_mesh.get_blend_shape_value(wide_body.body_mesh.find_blend_shape_by_name("belly")) + 0.5) < 0.001, "widths: belly weight -0.5")
 
 	_check(not plain_body.body_mesh.mesh.has_meta("dynasty_shapes"), "widths: the plain body keeps Dave's own mesh")
+	# PR #2030 (Lane A 27 Nov 2026): the shaped mesh keeps the source's LODs (dynasty_shapes.gd source_lods); without them a shaped body drew every triangle at any distance.
+	var own_lods: int = Shapes.source_lods(plain_body.body_mesh.mesh as ArrayMesh, 0).size()
+	var shaped_lods: int = Shapes.source_lods(shaped as ArrayMesh, 0).size() if shaped is ArrayMesh else -1
+	_check(shaped_lods == own_lods, "widths: the shaped mesh keeps the body's %d LODs (%d)" % [own_lods, shaped_lods])
 	var own_wide: Material = wide_body.body_mesh.get_active_material(0)
 	_check(own_wide is BaseMaterial3D, "widths: the shaped body still has its material")
 

@@ -166,6 +166,50 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 	return _finish(data)
 
 
+# The source mesh's own LODs (the importer's simpler index lists for a body further off), kept on a mesh rebuilt from its arrays: add_surface_from_arrays makes none, so
+# a shaped body drew all 55 thousand triangles at every distance (Lane A 27 Nov 2026: 16 clothed bodies, GPU 1.92 ms against 1.17 on dev; PR #2030). The vertices keep
+# their order in the copy, so the source's index lists stay right. Two steps: lods_raw reads the renderer's copy (main thread), lods_of decodes it (any thread).
+# source_lods does both, for any other code that rebuilds a skinned body mesh.
+static func source_lods(mesh: ArrayMesh, surface: int) -> Dictionary:
+	return lods_of(lods_raw(mesh, surface))
+
+
+static func lods_raw(mesh: ArrayMesh, surface: int) -> Dictionary:
+	var info: Dictionary = RenderingServer.mesh_get_surface(mesh.get_rid(), surface)
+	return {"lods": info.get("lods", []), "index_count": int(info.get("index_count", 0)), "index_bytes": (info.get("index_data", PackedByteArray()) as PackedByteArray).size()}
+
+
+# {edge length: PackedInt32Array of indices}, as add_surface_from_arrays takes them; {} when the source has none or its index size cannot be read.
+static func lods_of(raw: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var count: int = int(raw.get("index_count", 0))
+
+	if count <= 0:
+		return out
+
+	var width: int = int(raw.get("index_bytes", 0)) / count      # 2 (16-bit indices) or 4 bytes per index, the same for every LOD of the surface
+
+	if width != 2 and width != 4:
+		return out
+
+	for lod in raw.get("lods", []):
+		var bytes: PackedByteArray = (lod as Dictionary).get("index_data", PackedByteArray())
+		var indices: PackedInt32Array
+
+		if width == 4:
+			indices = bytes.to_int32_array()
+		else:
+			indices.resize(bytes.size() / 2)
+
+			for i in range(indices.size()):
+				indices[i] = bytes.decode_u16(i * 2)
+
+		if indices.size() >= 3:
+			out[float((lod as Dictionary).get("edge_length", 0.0))] = indices
+
+	return out
+
+
 # Three steps, so the heavy middle one can run on a worker thread: _gather reads the mesh, skin and skeleton (main thread: it calls the RenderingServer and the
 # nodes), _compute is pure arithmetic on the copied arrays (any thread), _finish builds the ArrayMesh (main thread). Empty when the mesh is not one skinned body.
 static func _gather(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
@@ -222,7 +266,8 @@ static func _gather(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
 	var surfaces: Array = []
 
 	for s in range(src.get_surface_count()):
-		surfaces.append({"arrays": src.surface_get_arrays(s), "primitive": src.surface_get_primitive_type(s), "material": src.surface_get_material(s)})
+		surfaces.append({"arrays": src.surface_get_arrays(s), "primitive": src.surface_get_primitive_type(s), "material": src.surface_get_material(s),
+			"lods_raw": lods_raw(src, s)})
 
 	return {"head_of": head_of, "tail_of": tail_of, "bind_name": bind_name, "up": up, "lateral": lateral, "front": front, "height": height, "hips": hips,
 		"navel": navel, "chest_c": chest_c, "surfaces": surfaces}
@@ -343,6 +388,7 @@ static func _compute(data: Dictionary) -> void:
 			blend_arrays.append(one)
 
 		surface["blend"] = blend_arrays
+		surface["lods"] = lods_of(surface["lods_raw"])
 		surface["flags"] = Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per == 8 else 0
 
 
@@ -459,7 +505,7 @@ static func _finish(data: Dictionary) -> ArrayMesh:
 	var s: int = 0
 
 	for surface in data["surfaces"]:
-		out.add_surface_from_arrays(surface["primitive"], surface["arrays"], surface["blend"], {}, surface["flags"])
+		out.add_surface_from_arrays(surface["primitive"], surface["arrays"], surface["blend"], surface.get("lods", {}), surface["flags"])
 		out.surface_set_material(s, surface["material"])
 		s += 1
 
