@@ -488,8 +488,11 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 			out.append(_p("chest", "box", Vector3(0.0, 0.26, 0.19 + o), Vector3(0.3, 0.1, 0.17), Vector3.ZERO, false, 0.12))
 			out.append(_p("chest", "box", Vector3(0.0, -0.02, 0.29 + o), Vector3(0.2, 0.2, 0.05), Vector3.ZERO, true, 0.2))
 
+			# Two thin shoulder straps (Dave, 27 Nov 2026: "they dont have straps they have big blocky things pretending to be straps"; BugsList 188): each a flat band
+			# 4 cm wide over the top of the shoulder, from the pack's front face to the chest, and down the front of the chest. They were 26 cm deep slabs through the body.
 			for side in [-1.0, 1.0]:
-				out.append(_p("chest", "box", Vector3(0.12 * side, 0.12, 0.0), Vector3(0.05, 0.4, 0.26 + o * 2.0), Vector3.ZERO, true, 0.25))
+				out.append(_p("chest", "box", Vector3(0.1 * side, 0.31, 0.0), Vector3(0.04, 0.012, 0.3), Vector3.ZERO, true, 0.25))
+				out.append(_p("chest", "box", Vector3(0.1 * side, 0.12, -0.105 - o), Vector3(0.04, 0.38, 0.012), Vector3.ZERO, true, 0.25))
 
 	return out + joint_caps(out)
 
