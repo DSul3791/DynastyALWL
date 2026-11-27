@@ -10943,6 +10943,10 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 
 		var spot: Vector3 = Vector3(x, y, z)
 		var rise: float = _ground_fall(ground, x, z, 1.0)
+		var foot_field: bool = kind == "foot"   # a rock of the foot band: scree, with the client's boulder field round it (its skirt's 4th value)
+
+		if foot_field:
+			kind = "scree"
 
 		if kind == "crag" and rise <= float(cfg.get("steepest", 1.0)):
 			kind = "scree"   # a crag's satellite on ground gentle enough to hold it is a broken-off rock lying at the crag's foot, not a crag
@@ -10978,6 +10982,12 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			# The client lays an apron of broken stones round a big mountain rock (look only, inventory_view _skirt_mesh): the ground's fall per
 			# metre along x and z, and how deep the rock is set (the apron lies on the ground, not at the rock's sunk middle).
 			row["skirt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01), snappedf(sink, 0.01)]
+
+			if foot_field:
+				# Dave 27 Nov 2026 on rocks13: "multiply the boulders numbers by like 30 and make them bigger the lower they go". Thirty times the
+				# rows would cost the world sync thirty times (rocks5: 38 ms at 154 rocks a player), so the boulders between are the client's: a
+				# field of big broken chunks round this rock (inventory_view _skirt_mesh foot variants: look and collision, no rows).
+				row["skirt"].append(1)
 
 		row["ang"] = _rock_shape(journey_mid if journey_mid >= 0.0 else 1.0, kind == "water", key) if kind not in ["scree", "crag"] else _rock_shape(1.0, false, key)   # scree and crags are freshly broken
 		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop where the geology has an ore near, limestone over limestone
@@ -11062,7 +11072,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			core *= lerpf(1.0, float(up_hill[2]), smoothstep(float(up_hill[0]), float(up_hill[1]), y - lowest))
 		var slot0: int = attempt * FIELD_CLUSTER_SLOTS
 
-		if not bool(lay_rock.call(slot0, x, z, core, yaw, kind)):
+		if not bool(lay_rock.call(slot0, x, z, core, yaw, "foot" if at_foot else kind)):
 			continue   # no core, no cluster
 
 		centres.append([x, z])
@@ -11079,7 +11089,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			if kind == "top" and float(ground.call(sx, sz)) < h0 - float(cfg.get("top_near_m", 2.0)):
 				continue   # a hilltop's rocks stay on its crown
 
-			lay_rock.call(slot0 + 1 + k, sx, sz, small, float(a[3]), kind)
+			lay_rock.call(slot0 + 1 + k, sx, sz, small, float(a[3]), "foot" if at_foot else kind)
 
 	# Rivers and lakes: one look whether water is near the cell at all (as the bank stones do), then rounded rocks in the shallows and on the banks.
 	var water_p: float = float(cfg.get("water_rocks", 6.0)) * density

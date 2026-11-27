@@ -178,6 +178,10 @@ func _init() -> void:
 	view._show_boulder(field_id, [field_id, 0, total, Vector3(102.0, 5.0, 90.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 50.0, "total": total, "ang": 0.8, "field": 1}])
 	check(is_equal_approx(float(view._boulders[field_id]["tall"]), view.FIELD_TALL) and view._boulders[field_id]["material"] == view._field_rock, "a rocky-ground rock is grey broken rock standing taller than wide-and-flat")
 	view._forget(field_id)
+	view._show_boulder(4253, [4253, 0, total, Vector3(98.0, 5.0, 96.0), view.BOULDER_STATE, {"radius": 2.5, "yaw": 5.0, "total": total, "ang": 0.8, "field": 1, "skirt": [0.1, 0.0, -0.2, 1]}])
+	var foot_variant: int = int(view._boulders[4253]["variant"])
+	check(foot_variant >= view.SKIRT_VARIANTS and (view._skirt_mesh(foot_variant)[1] as Array).size() > 2 * view.SKIRT_CHUNKS, "a foot band rock lies in a field of big boulders (%d chunks)" % (view._skirt_mesh(foot_variant)[1] as Array).size())
+	view._forget(4253)
 	view._forget(4251)
 	check(not view._boulders.has(4251) and not view._rock_near.has(4251), "a rock gone from the world is forgotten")
 

@@ -3896,7 +3896,8 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 		"mesh": OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or field or OreRockLook.shape_of(ang) == 2 else _boulder_mesh,
 		"material": OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else (_field_rock_material() if field else _boulder_material(str(extra.get("ore", "")))),
 		"tall": FIELD_TALL if field and OreRockLook.shape_of(ang) != 0 else 1.0,
-		"yaw": float(extra.get("yaw", 0.0)), "tilt": extra.get("tilt", []), "skirt": extra.get("skirt", []), "variant": int(absi(id)) % SKIRT_VARIANTS}
+		"yaw": float(extra.get("yaw", 0.0)), "tilt": extra.get("tilt", []), "skirt": extra.get("skirt", []),
+		"variant": int(absi(id)) % SKIRT_VARIANTS + (SKIRT_VARIANTS if (extra.get("skirt", []) as Array).size() >= 4 else 0)}   # 4 values: the foot band's boulder field
 	_boulders[id] = entry
 	_rock_cell_dirty(id)
 
@@ -4007,7 +4008,7 @@ func _rock_body(id: int) -> void:
 	if entry["node"] != null:
 		return
 
-	_rock_added_frame += 1
+	_rock_added_frame += 1 + (FOOT_CHUNKS / 12 if int(entry["variant"]) >= SKIRT_VARIANTS else 0)   # a foot rock's field is many shapes
 	var body: StaticBody3D = StaticBody3D.new()
 	body.set_meta("boulder", true)   # the look label names it (terrain_client _inspect_target: it showed the soil under it, TEST-013)
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -4130,8 +4131,14 @@ func _rock_refill(block: Vector2i) -> void:
 				var entry: Dictionary = _boulders[id]
 
 				if (entry["skirt"] as Array).size() >= 3:
-					var skirt_mesh: Mesh = _skirt_mesh(int(entry["variant"]))[0]
-					_rock_group(groups, skirt_mesh, _boulder_rock, false, ROCK_SKIRT_LOW_M if _rock_low else ROCK_SKIRT_DRAW_M).append(_rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO))   # the size its collision has
+					var skirt: Array = _skirt_mesh(int(entry["variant"]))
+					var skirt_place: Transform3D = _rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO)   # the size its collision has
+
+					if int(entry["variant"]) >= SKIRT_VARIANTS:   # a foot band's boulder field: seen as far as the rocks, light past the near blocks
+						_rock_group(groups, skirt[0], _field_rock_material(), not _rock_low, ROCK_SKIRT_LOW_M if _rock_low else ROCK_FULL_M).append(skirt_place)
+						_rock_group(groups, skirt[2], _field_rock_material(), false, ROCK_DRAW_M, ROCK_SKIRT_LOW_M if _rock_low else ROCK_FULL_M).append(skirt_place)
+					else:
+						_rock_group(groups, skirt[0], _field_rock_material(), false, ROCK_SKIRT_LOW_M if _rock_low else ROCK_SKIRT_DRAW_M).append(skirt_place)
 
 				if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
 					var place: Transform3D = Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry)
@@ -4186,7 +4193,8 @@ func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bo
 
 
 
-const SKIRT_VARIANTS := 4
+const SKIRT_VARIANTS := 4   # talus variants; the next SKIRT_VARIANTS are the foot band's boulder fields
+const FOOT_CHUNKS := 36     # big broken boulders in a foot field round a rock (Dave 27 Nov 2026: "multiply the boulders numbers by like 30 and make them bigger the lower they go")
 const SKIRT_STONES := 16   # small broken stones in a skirt, SKIRT_NEAR to SKIRT_FAR radii out
 const SKIRT_CHUNKS := 14   # broken chunks round the rock (Dave 27 Nov 2026: "broken rocks and smaller 1-3m chunks in between and on the ground around them")
 
@@ -4197,44 +4205,56 @@ const SKIRT_CHUNKS := 14   # broken chunks round the rock (Dave 27 Nov 2026: "br
 # hull, scaled per rock by _skirt_hulls)]. Two chunks either touch or leave a gap of half a radius or more: a gap a foot could stick in is not made
 # (the physics engines' advice on walking over rubble, boulders/PLAN_big_boulders.md).
 func _skirt_mesh(variant: int) -> Array:
-	while _skirt_meshes.size() < SKIRT_VARIANTS:
+	while _skirt_meshes.size() < SKIRT_VARIANTS * 2:
+		var foot: bool = _skirt_meshes.size() >= SKIRT_VARIANTS   # a foot field: FOOT_CHUNKS chunks 0.35 to 0.95 radii, out to 4.5 radii
+		var chunks: int = FOOT_CHUNKS if foot else SKIRT_CHUNKS
 		var pebble: ArrayMesh = load("res://src/client/grass_view.gd")._make_pebble()
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 		rng.seed = 9100 + _skirt_meshes.size()
 		var tool: SurfaceTool = SurfaceTool.new()
 		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var far: SurfaceTool = SurfaceTool.new()   # the same chunks of 20 faces, drawn past the near blocks
+		far.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var hulls: Array = []
 		var low: Array = []   # three small-chunk shapes of 80 faces (rocks8: 9 chunks of 320 faces a skirt drew over a million triangles in range)
 
+		var lowest: Array = []
+
 		for k in 3:
 			low.append(OreRockLook.make_mesh(201 + k * 17, 8, 0.3, 0.4, 1.25, 1))
+			lowest.append(OreRockLook.make_mesh(201 + k * 17, 8, 0.3, 0.4, 1.25, 0))
 
 		var placed: Array = [[0.0, 0.0, 1.0]]   # [x, z, size]: the rock itself, then each chunk
 
-		for n in range(SKIRT_CHUNKS * 4):   # tries: a chunk that would overlap another is left out
-			if placed.size() > SKIRT_CHUNKS:
+		for n in range(chunks * 8):   # tries: a chunk that would overlap another is left out
+			if placed.size() > chunks:
 				break
 
 			var angle: float = rng.randf() * TAU
-			var size: float = lerpf(0.25, 0.7, pow(rng.randf(), 1.4))
-			var out: float = lerpf(1.1, 2.6, rng.randf()) + size * 0.5
+			var size: float = lerpf(0.35, 0.95, pow(rng.randf(), 1.2)) if foot else lerpf(0.25, 0.7, pow(rng.randf(), 1.4))
+			var out: float = (lerpf(1.1, 4.5, sqrt(rng.randf())) if foot else lerpf(1.1, 2.6, rng.randf())) + size * 0.5
 			var at: Vector2 = Vector2(cos(angle), sin(angle)) * out
 			var clear: bool = true
 
 			for q in placed:
 				var gap: float = at.distance_to(Vector2(float(q[0]), float(q[1]))) - size - float(q[2])
-				clear = clear and gap > -(size + float(q[2])) * 0.15 and (gap < 0.0 or gap >= 0.5)   # a little into each other, or well apart
+				if foot:   # a field hard to cross: packed, touching or a gap of at least 0.2 radii (0.4 m at the smallest foot rock)
+					clear = clear and gap > -(size + float(q[2])) * 0.25 and (gap < 0.0 or gap >= 0.2)
+				else:
+					clear = clear and gap > -(size + float(q[2])) * 0.15 and (gap < 0.0 or gap >= 0.5)   # a little into each other, or well apart
 
 			if not clear:
 				continue
 
 			placed.append([at.x, at.y, size])
-			var chunk: ArrayMesh = low[rng.randi() % low.size()]   # fresh, angular
+			var pick: int = rng.randi() % low.size()
+			var chunk: ArrayMesh = low[pick]   # fresh, angular
 			var box: AABB = chunk.get_aabb()
 			var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
 			var place: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).rotated(Vector3(1.0, 0.0, 0.0), rng.randf_range(-0.35, 0.35)).scaled(Vector3.ONE * (size / unit)),
 				Vector3(at.x, -(box.position.y + box.size.y * 0.35) * (size / unit), at.y))   # a third set into the ground
 			tool.append_from(chunk, 0, place)
+			far.append_from(lowest[pick], 0, place)
 			var points: PackedVector3Array = PackedVector3Array()
 
 			for v in chunk.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
@@ -4248,7 +4268,7 @@ func _skirt_mesh(variant: int) -> Array:
 			var size: float = lerpf(0.06, 0.18, rng.randf())
 			tool.append_from(pebble, 0, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(cos(angle) * out, -0.25 * size, sin(angle) * out)))
 
-		_skirt_meshes.append([tool.commit(), hulls])
+		_skirt_meshes.append([tool.commit(), hulls, far.commit()])
 
 	return _skirt_meshes[variant]
 
