@@ -2460,7 +2460,13 @@ func _save_copy(id: int) -> Dictionary:
 		out["struct"]["state_json"] = JSON.stringify({"rolled_s": float(out["struct"]["rolled_s"])})   # a fish trap: up to when its hours are fished
 	elif out.has("struct") and _kept_transient(out["struct"]):
 		var st: Dictionary = out["struct"]
-		out["struct"]["state_json"] = JSON.stringify({"species": str(st.get("species", "")), "blows": int(st.get("blows", 0)), "parts": st.get("parts", null), "snared": bool(st.get("snared", false)), "left": float(out.get("left", CARCASS_LIFE_S))})
+		var kept: Dictionary = {"species": str(st.get("species", "")), "blows": int(st.get("blows", 0)), "parts": st.get("parts", null), "snared": bool(st.get("snared", false)), "left": float(out.get("left", CARCASS_LIFE_S))}
+
+		if st.has("look"):
+			kept["look"] = int(st["look"])   # the animal's own look (make_carcass body): the same model after a restart
+			kept["num"] = int(st.get("num", 0))
+
+		out["struct"]["state_json"] = JSON.stringify(kept)
 
 	return out
 
@@ -4036,7 +4042,9 @@ func _punch(peer: int, direction: Vector3) -> void:
 
 
 # A carcass where an animal died (and for the admin test carcass): a struct the player works with a knife. Saved over a restart (_kept_transient), rots in 2 game days.
-func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
+# body: the animal that died (server_animals dead_body_of: its look, row number and heading), kept so the client draws that animal's own
+# model lying where it fell (animal_view dead_body); {} (the admin test carcass, a trap's catch, a bird of a flock) leaves the yaw to chance.
+func make_carcass(species: String, pos: Vector3, hunter: int = -1, body: Dictionary = {}) -> int:
 	if not _carcass_cfg.get("species", {}).has(species) or not _structures.has("carcass"):
 		return 0
 
@@ -4049,6 +4057,12 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 	var id: int = _next_id
 	_next_id += 1
 	_items[id] = {"number": table.number_of("carcass"), "count": 1, "pos": spot, "left": CARCASS_LIFE_S, "struct": {"kind": "carcass", "yaw": float(hash(id) % 360), "species": species, "blows": 0, "transient": true}}
+
+	if body.has("look"):
+		_items[id]["struct"]["look"] = int(body["look"])
+		_items[id]["struct"]["num"] = int(body.get("num", 0))
+		_items[id]["struct"]["yaw"] = snappedf(fposmod(rad_to_deg(-float(body.get("heading", 0.0))) - 90.0, 360.0), 0.1)   # the way it faced (animal_view MotionBuffer.face: a node's yaw is -heading - 90 degrees)
+
 	return id
 
 
@@ -4056,6 +4070,10 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1) -> int:
 # for carcasses only.
 func _struct_extra(it: Dictionary) -> Dictionary:
 	var extra: Dictionary = {"yaw": float(it["struct"]["yaw"]), "age": _remains_age(it), "sp": str(it["struct"].get("species", "")), "lit": bool(it["struct"].get("lit", false))}
+
+	if it["struct"].has("look"):
+		extra["look"] = int(it["struct"]["look"])   # a carcass: the animal's own look and row number (make_carcass body)
+		extra["num"] = int(it["struct"].get("num", 0))
 
 	if _whole_catch(it):
 		extra["whole"] = true
@@ -9580,6 +9598,10 @@ func _load_world_items() -> void:
 
 				if bool(body.get("snared", false)):
 					entry["struct"]["snared"] = true
+
+				if body.has("look"):
+					entry["struct"]["look"] = int(body["look"])
+					entry["struct"]["num"] = int(body.get("num", 0))
 
 			_load_row_of[_next_id] = row_n
 			_items[_next_id] = entry

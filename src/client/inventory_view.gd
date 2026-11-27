@@ -3336,7 +3336,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		if state >= 5 and not StructureLook.is_unlit_fire(state) and not _lit_state(state):   # 8 is a burnt-out fire, 9 a loaded one, 76 coals, 77 warm ash: the campfire model without flames
 			var yaw: float = deg_to_rad(float(row[5].get("yaw", 0.0))) if row.size() > 5 else 0.0
 			var t_c: int = Time.get_ticks_usec()
-			node = _model_for_state(state, row[5] if row.size() > 5 else {})
+			node = _model_for_state(state, ((row[5] as Dictionary).merged({"at": row[3]}) if state == CARCASS_STATE else row[5]) if row.size() > 5 else {})   # a carcass: where it lies (animal_view dead_body)
 			prof["model"] = int(prof.get("model", 0)) + Time.get_ticks_usec() - t_c
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
@@ -5157,13 +5157,18 @@ func _make_chest() -> Node3D:
 	return BuildingLook.chest()
 
 
+# The animal's own model lying dead (animal_view dead_body: the body that fell there, or its look drawn in its last pose; Dave 26 Nov 2026,
+# the hand-built body "look terrible"); the hand-built body (carcass_look.gd) only where no model file is there. `at`: where the row lies.
+var dead_body: Callable            # (kind, look, num, at) -> Node3D or null (terrain_client: animal_view.dead_body)
+
+func _make_carcass(extra: Dictionary) -> Node3D:
+	var species: String = str(extra.get("sp", ""))
+	var body: Node3D = dead_body.call(species, int(extra.get("look", -1)), int(extra.get("num", 0)), extra.get("at", Vector3.INF)) if dead_body.is_valid() and species != "" else null
+	return body if body != null else CarcassLook.build(species)
+
+
 # Remains (protocol 34, placeholder look until Art draws it): a low dark body and its pack, greying to bone over the seven days.
 # `age` is 0 fresh to 1 gone; the server sends it when the row is first seen or changes state.
-# A dead animal lying on its side: a brown ellipsoid sized by species (rabbit 0.45 m).
-func _make_carcass(species: String) -> Node3D:
-	return CarcassLook.build(species)
-
-
 func _make_remains(age: float) -> Node3D:
 	return BuildingLook.remains(age)
 
@@ -5310,7 +5315,7 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"primitive_kiln":
 			return _make_primitive_kiln(bool(extra.get("lit", false)))
 		"carcass":
-			return _make_carcass(str(extra.get("sp", "")))
+			return _make_carcass(extra)
 
 	return _make_block()   # the chopping block (and any name nobody drew yet) is a plain block
 

@@ -958,7 +958,8 @@ func _ready() -> void:
 		if sp == "bandit" or sp == "horse":
 			bandits.fallen(sp, pos)   # a camp's bandit leaves its site's row and drops its gear; a camp horse is one fewer (docs/design/BANDIT_CAMPS.md)
 
-		items.make_carcass(sp, pos, peer)
+		items.make_carcass(sp, pos, peer, animals.last_dead)   # the animal's own look lies there (server_animals dead_body_of)
+		animals.last_dead = {}
 	@warning_ignore("confusable_local_declaration")
 	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
 	items.hit_animal_path = func(shooter, from, to, amount, lag) -> Dictionary:
