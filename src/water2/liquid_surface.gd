@@ -738,6 +738,79 @@ static func _lay_fine(coarse: Image, grid: Dictionary, count: int) -> Image:
 	return im
 
 
+# Two chunk sheets meet on a shared border, but each chunk's water is worked out on its own (lake flattening, smoothing, current, the 2 m sheet laid on
+# the ground), so the two drew that edge at different heights and lifts: a straight seam (Dave 27 Nov 2026, x 57856 z 71558: "its still enough to look
+# bad", the probe found 0.38 m of level and a 0.25 m lift between the sides). The sheet drawn later takes the neighbour's edge texels exactly, and the
+# difference fades out over STITCH_TEXELS inward so no ridge shows. `side` points from `im` to `other` (1,0 = other lies east). A coarser image is
+# first spread to the neighbour's size, so the two edges have the same vertices (no T-junction gaps). Returns the image to draw.
+const STITCH_TEXELS := 4
+
+static func stitch(im: Image, side: Vector2i, other: Image) -> Image:
+	if other == null or other.get_width() < 2:
+		return im
+
+	if im.get_width() < other.get_width():
+		im = spread(im, other.get_width())
+
+	var w: int = im.get_width()
+	var ow: int = other.get_width()
+	var blend: int = mini(STITCH_TEXELS, w >> 2)
+
+	for t in range(w):
+		var along: float = float(t) * float(ow - 1) / float(w - 1)
+		var o0: int = mini(int(floor(along)), ow - 2)
+		var f: float = along - float(o0)
+		var mine: Vector2i = _edge_texel(side, w, t, 0)
+		var theirs: Color = _edge_pixel(other, -side, o0, ow).lerp(_edge_pixel(other, -side, o0 + 1, ow), f)
+		var diff: Color = theirs - im.get_pixel(mine.x, mine.y)
+		im.set_pixel(mine.x, mine.y, theirs)
+
+		if theirs.a <= 0.0:
+			continue
+
+		for k in range(1, blend):
+			var at: Vector2i = _edge_texel(side, w, t, k)
+			var px: Color = im.get_pixel(at.x, at.y)
+
+			if px.a > 0.0:
+				var keep: float = 1.0 - float(k) / float(blend)
+				im.set_pixel(at.x, at.y, Color(px.r + diff.r * keep, px.g + diff.g * keep, px.b + diff.b * keep, px.a))
+
+	return im
+
+
+# The texel `t` along the edge of a w x w image facing `side`, `k` texels in from it.
+static func _edge_texel(side: Vector2i, w: int, t: int, k: int) -> Vector2i:
+	if side.x != 0:
+		return Vector2i(w - 1 - k if side.x > 0 else k, t)
+
+	return Vector2i(t, w - 1 - k if side.y > 0 else k)
+
+
+static func _edge_pixel(im: Image, side: Vector2i, t: int, w: int) -> Color:
+	var at: Vector2i = _edge_texel(side, w, t, 0)
+	return im.get_pixel(at.x, at.y)
+
+
+# An image spread bilinearly to side x side texels (the same span).
+static func spread(coarse: Image, side: int) -> Image:
+	var count: int = coarse.get_width()
+	var im: Image = Image.create(side, side, false, Image.FORMAT_RGBAF)
+
+	for b in range(side):
+		var y: float = float(b) * float(count - 1) / float(side - 1)
+		var j: int = mini(int(floor(y)), count - 2)
+		var v: float = y - float(j)
+
+		for a in range(side):
+			var x: float = float(a) * float(count - 1) / float(side - 1)
+			var i: int = mini(int(floor(x)), count - 2)
+			var u: float = x - float(i)
+			im.set_pixel(a, b, coarse.get_pixel(i, j).lerp(coarse.get_pixel(i + 1, j), u).lerp(coarse.get_pixel(i, j + 1).lerp(coarse.get_pixel(i + 1, j + 1), u), v))
+
+	return im
+
+
 # Where an 8 m cell laid on the ground (fine) meets one that is not, the surface stepped by up to a metre at the cell's edge, and a steep brook showed
 # square panes with straight edges (Dino's shots of #465, 6 Nov 2026, x 54101 z 69709). Two passes of a 3 x 3 mean over the wet texels round off those
 # steps into slopes a few metres long. The border texels stay as they are: the next chunk's sheet shares them.

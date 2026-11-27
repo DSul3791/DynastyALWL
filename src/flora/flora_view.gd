@@ -746,6 +746,8 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 			sheet.queue_free()
 			entry["liquid"] = null
 
+		entry.erase("liquid_image_drawn")
+
 		return
 
 	if sheet == null:
@@ -758,6 +760,13 @@ func _draw_liquid(chunk: Vector2i, entry: Dictionary, water: Dictionary) -> void
 		sheet.set_live(_liquid_live)
 		sheet.set_fine_holes(_liquid_fine_holes)
 		sheet.set_mud(maxf(_liquid_flow_mud, 0.7 * _liquid_storm))
+
+	# The shared borders take the edge of each neighbour already drawn, so the two sheets meet without a seam (LiquidSurface.stitch).
+	if im.get_width() > 1 and im.get_width() == im.get_height():
+		for side in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			im = LiquidSurface.stitch(im, side, _chunks.get(chunk + side, {}).get("liquid_image_drawn"))
+
+	entry["liquid_image_drawn"] = im
 
 	# The image may be finer than the grid (running water laid on the ground at 2 m, LiquidSurface._lay_fine): the same span, more texels.
 	var span_m: float = float(water.get("spacing", 8.0)) * float(int(water.get("count", 2)) - 1)
