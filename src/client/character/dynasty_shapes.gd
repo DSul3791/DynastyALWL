@@ -44,6 +44,13 @@ const BUST_SOFT_DOWN := 0.012
 const BUST_KEEP := 0.4         # each vertex goes only 60% of the way onto the shape, so the chest keeps 40% of its own relief: the top's folds and creases keep their order
                                 # (all the way, they met on the shape and showed through one another in Lane A's pictures of 80e0542c, 21 Nov 2026)
 const SHAPED_KEY := "dynasty_shapes"
+# Skin under worn clothes (BugsList 187; the laptop picture check of 26 Nov 2026 saw skin through 58 of 79 worn items: shins, knees, feet, hands and the midriff out
+# through the rigid worn pieces, worn_look.gd). One more shape per group of bones, "cover_<group>": every vertex whose strongest bone is in the group moves COVER_IN of
+# the body's height in toward its bone (at most COVER_MAX of its distance from it), so the skin sits inside the pieces. worn_look.gd attach sets weight 1 on the groups
+# a worn piece covers (dynasty_body.gd cover). Not the head or the neck: hats and hoods leave the face as it is.
+const COVERS := ["hips", "chest", "arm", "forearm", "hand", "thigh", "shin", "foot"]
+const COVER_IN := 0.012
+const COVER_MAX := 0.4
 
 static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
 static var _keep: Array = []             # the source meshes of _cache, held so their rids stay theirs
@@ -55,6 +62,35 @@ static var _job: int = -1                # the prewarm task on the worker pool, 
 # builds the mesh (_finish). The worker touches no node, resource or server: instancing the scene or loading the glb there hung the game headless (4 Nov).
 # dynasty_body.gd starts it with the first body and waits for it when a body is freed, so no task outlives the program.
 static var _pending: Dictionary = {}     # the prewarm's data while the worker computes it, and its source mesh
+
+
+# The cover group of a bone (Mixamo name without the prefix), or "" for bones never covered (head, neck, shoulders).
+static func cover_group(bone: String) -> String:
+	if bone == "Hips":
+		return "hips"
+
+	if bone.begins_with("Spine"):
+		return "chest"
+
+	if bone.ends_with("ForeArm"):
+		return "forearm"
+
+	if bone.ends_with("Arm"):
+		return "arm"
+
+	if bone.contains("Hand"):
+		return "hand"
+
+	if bone.ends_with("UpLeg"):
+		return "thigh"
+
+	if bone.ends_with("Leg"):
+		return "shin"
+
+	if bone.contains("Foot") or bone.contains("Toe"):
+		return "foot"
+
+	return ""
 
 
 # The blend shape weight of slider `key` in genome `g`: the slider value (-1..1), except the bust (-1 means none): 0 up to BUST_FROM, then up to 1 at +1.
@@ -130,6 +166,50 @@ static func _make(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> ArrayMesh:
 	return _finish(data)
 
 
+# The source mesh's own LODs (the importer's simpler index lists for a body further off), kept on a mesh rebuilt from its arrays: add_surface_from_arrays makes none, so
+# a shaped body drew all 55 thousand triangles at every distance (Lane A 27 Nov 2026: 16 clothed bodies, GPU 1.92 ms against 1.17 on dev; PR #2030). The vertices keep
+# their order in the copy, so the source's index lists stay right. Two steps: lods_raw reads the renderer's copy (main thread), lods_of decodes it (any thread).
+# source_lods does both, for any other code that rebuilds a skinned body mesh.
+static func source_lods(mesh: ArrayMesh, surface: int) -> Dictionary:
+	return lods_of(lods_raw(mesh, surface))
+
+
+static func lods_raw(mesh: ArrayMesh, surface: int) -> Dictionary:
+	var info: Dictionary = RenderingServer.mesh_get_surface(mesh.get_rid(), surface)
+	return {"lods": info.get("lods", []), "index_count": int(info.get("index_count", 0)), "index_bytes": (info.get("index_data", PackedByteArray()) as PackedByteArray).size()}
+
+
+# {edge length: PackedInt32Array of indices}, as add_surface_from_arrays takes them; {} when the source has none or its index size cannot be read.
+static func lods_of(raw: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
+	var count: int = int(raw.get("index_count", 0))
+
+	if count <= 0:
+		return out
+
+	var width: int = floori(float(raw.get("index_bytes", 0)) / float(count))      # 2 (16-bit indices) or 4 bytes per index, the same for every LOD of the surface
+
+	if width != 2 and width != 4:
+		return out
+
+	for lod in raw.get("lods", []):
+		var bytes: PackedByteArray = (lod as Dictionary).get("index_data", PackedByteArray())
+		var indices: PackedInt32Array
+
+		if width == 4:
+			indices = bytes.to_int32_array()
+		else:
+			indices.resize(bytes.size() >> 1)
+
+			for i in range(indices.size()):
+				indices[i] = bytes.decode_u16(i * 2)
+
+		if indices.size() >= 3:
+			out[float((lod as Dictionary).get("edge_length", 0.0))] = indices
+
+	return out
+
+
 # Three steps, so the heavy middle one can run on a worker thread: _gather reads the mesh, skin and skeleton (main thread: it calls the RenderingServer and the
 # nodes), _compute is pure arithmetic on the copied arrays (any thread), _finish builds the ArrayMesh (main thread). Empty when the mesh is not one skinned body.
 static func _gather(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
@@ -186,7 +266,8 @@ static func _gather(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> Dictionary:
 	var surfaces: Array = []
 
 	for s in range(src.get_surface_count()):
-		surfaces.append({"arrays": src.surface_get_arrays(s), "primitive": src.surface_get_primitive_type(s), "material": src.surface_get_material(s)})
+		surfaces.append({"arrays": src.surface_get_arrays(s), "primitive": src.surface_get_primitive_type(s), "material": src.surface_get_material(s),
+			"lods_raw": lods_raw(src, s)})
 
 	return {"head_of": head_of, "tail_of": tail_of, "bind_name": bind_name, "up": up, "lateral": lateral, "front": front, "height": height, "hips": hips,
 		"navel": navel, "chest_c": chest_c, "surfaces": surfaces}
@@ -218,6 +299,10 @@ static func _compute(data: Dictionary) -> void:
 		var s_chest: PackedVector3Array = verts.duplicate()
 		var bust_verts: PackedInt32Array = PackedInt32Array()
 		var head_verts: PackedInt32Array = PackedInt32Array()
+		var cover_of: PackedInt32Array = PackedInt32Array()      # each vertex's cover group (COVERS index, -1 none) and where that shape puts it
+		cover_of.resize(verts.size())
+		cover_of.fill(-1)
+		var cover_to: PackedVector3Array = verts.duplicate()
 
 		if per > 0 and weights.size() == bones.size():
 			for v in range(verts.size()):
@@ -243,6 +328,11 @@ static func _compute(data: Dictionary) -> void:
 				var ab: Vector3 = b - a
 				var t: float = clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-9), 0.0, 1.0)
 				var radial: Vector3 = p - (a + ab * t)
+				var group: int = COVERS.find(cover_group(bone))
+
+				if group >= 0 and radial.length() > 1e-6:
+					cover_of[v] = group
+					cover_to[v] = p - radial.normalized() * minf(height * COVER_IN, radial.length() * COVER_MAX)
 				# build: fuller everywhere, a little on the head, hands and feet
 				if bone.begins_with("Head") or bone == "headfront":
 					head_verts.append(v)
@@ -276,18 +366,29 @@ static func _compute(data: Dictionary) -> void:
 		var bust: Array = _bust(verts, arrays[Mesh.ARRAY_NORMAL], arrays[Mesh.ARRAY_INDEX], bust_verts, data)     # [positions, normals]
 		var face: Array = _face(verts, head_verts, head_of, up, lateral, front)     # [jaw, nose, brow, ears]
 		var blend_arrays: Array = []
+		var s_cover: Array = []
 
-		var shapes: Array = [s_build, s_muscle, s_belly, s_hips, s_chest, bust[0], face[0], face[1], face[2], face[3]]     # the order of NAMES
+		for g in range(COVERS.size()):
+			var one_cover: PackedVector3Array = verts.duplicate()
+
+			for v in range(verts.size()):
+				if cover_of[v] == g:
+					one_cover[v] = cover_to[v]
+
+			s_cover.append(one_cover)
+
+		var shapes: Array = [s_build, s_muscle, s_belly, s_hips, s_chest, bust[0], face[0], face[1], face[2], face[3]] + s_cover     # the order of NAMES, then COVERS
 
 		for n in range(shapes.size()):
 			var one: Array = []
 			one.resize(Mesh.ARRAY_MAX)
 			one[Mesh.ARRAY_VERTEX] = shapes[n]
-			one[Mesh.ARRAY_NORMAL] = bust[1] if NAMES[n] == "bust" else arrays[Mesh.ARRAY_NORMAL]     # only the bust carries its own normals
+			one[Mesh.ARRAY_NORMAL] = bust[1] if n < NAMES.size() and NAMES[n] == "bust" else arrays[Mesh.ARRAY_NORMAL]     # only the bust carries its own normals
 			one[Mesh.ARRAY_TANGENT] = arrays[Mesh.ARRAY_TANGENT]
 			blend_arrays.append(one)
 
 		surface["blend"] = blend_arrays
+		surface["lods"] = lods_of(surface["lods_raw"])
 		surface["flags"] = Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per == 8 else 0
 
 
@@ -398,10 +499,13 @@ static func _finish(data: Dictionary) -> ArrayMesh:
 	for shape_name in NAMES:
 		out.add_blend_shape(shape_name)
 
+	for group in COVERS:
+		out.add_blend_shape("cover_" + group)
+
 	var s: int = 0
 
 	for surface in data["surfaces"]:
-		out.add_surface_from_arrays(surface["primitive"], surface["arrays"], surface["blend"], {}, surface["flags"])
+		out.add_surface_from_arrays(surface["primitive"], surface["arrays"], surface["blend"], surface.get("lods", {}), surface["flags"])
 		out.surface_set_material(s, surface["material"])
 		s += 1
 

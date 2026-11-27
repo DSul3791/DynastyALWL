@@ -427,10 +427,19 @@ func _init() -> void:
 	# depend on the machine's speed (PC gate 5 Nov: the hood's cape read 1.30 m in the gate and passed alone).
 	body.animation_player.speed_scale = 0.0
 	var s: Skeleton3D = body.skeleton
+	Shapes.wait()      # the body's shapes made first, so the skin's tuck-in below is set at once and checked (dynasty_shapes.gd COVERS)
 	var hung: int = WornLook.attach(body, ["hide_boots", "hide_tunic", "hide_hood", "hide_trousers", "hide_gloves"], false)
 	await process_frame
 	await process_frame
 	_check(hung > 10, "the outfit hangs pieces (%d)" % hung)
+	# BugsList 187: the skin under the outfit tucks in (dynasty_shapes.gd COVERS); the hood leaves the head and neck as they are.
+	var covered: Array = body.get("_covered")
+
+	for group in ["foot", "shin", "thigh", "hips", "chest", "arm", "forearm", "hand"]:
+		_check(group in covered, "skin tucked in under the outfit on " + group)
+
+	var cover_i: int = body.body_mesh.find_blend_shape_by_name("cover_shin")
+	_check(cover_i >= 0 and absf(body.body_mesh.get_blend_shape_value(cover_i) - 1.0) < 0.001, "cover_shin weight 1 under boots")
 	var pieces: Dictionary = _pieces(s)
 
 	for old in ["foot_r", "foot_l", "shin_r", "thigh_r", "hips", "chest", "head", "arm_r", "forearm_l", "hand_r", "hand_l"]:

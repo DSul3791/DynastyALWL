@@ -468,5 +468,5 @@ static func _copy_shapes(body: MeshInstance3D, node: MeshInstance3D) -> void:
 	for k in range(source.get_blend_shape_count()):
 		var i: int = node.find_blend_shape_by_name(source.get_blend_shape_name(k))
 
-		if i >= 0:
+		if i >= 0 and not String(source.get_blend_shape_name(k)).begins_with("cover_"):      # the layer stays out where it is made; only the body's skin tucks in
 			node.set_blend_shape_value(i, body.get_blend_shape_value(k))

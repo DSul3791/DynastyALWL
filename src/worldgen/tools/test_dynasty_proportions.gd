@@ -7,6 +7,7 @@ extends SceneTree
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_proportions.gd
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 var _fails: int = 0
 
@@ -122,12 +123,12 @@ func _init() -> void:
 	root.add_child(wide_body)
 	wide_body.set_proportions(wide)
 	var shaped: Mesh = wide_body.body_mesh.mesh
-	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10, "widths: shaped mesh with 10 blend shapes (6 body with the bust, 4 face)")
+	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10 + Shapes.COVERS.size(), "widths: shaped mesh with 10 slider shapes (6 body with the bust, 4 face) and the cover shapes")
 
 	# The shapes hold whole positions, which only NORMALIZED reads right: RELATIVE adds them to the base, so build 0.5 drew a body half again as big (4 Nov).
 	_check(shaped is ArrayMesh and (shaped as ArrayMesh).blend_shape_mode == Mesh.BLEND_SHAPE_MODE_NORMALIZED, "widths: blend shapes hold whole positions (normalized mode)")
 
-	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10:
+	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10 + Shapes.COVERS.size():
 		var base: PackedVector3Array = (shaped as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var blends: Array = (shaped as ArrayMesh).surface_get_blend_shape_arrays(0)
 		var aabb: AABB = AABB(base[0], Vector3.ZERO)
@@ -144,11 +145,28 @@ func _init() -> void:
 
 			_check(moved > aabb.size.length() * (0.005 if n < 6 else 0.002) and moved < aabb.size.length() * 0.2, "widths: shape %d moves vertices a sensible amount (%.4f of %.4f)" % [n, moved, aabb.size.length()])
 
+		# BugsList 187: each cover shape tucks its bones' skin in, a little (about 2 cm on a 1.7 m body), never out.
+		for n in range(10, 10 + Shapes.COVERS.size()):
+			var tucked: float = 0.0
+			var shape: PackedVector3Array = blends[n][Mesh.ARRAY_VERTEX]
+
+			for v in range(base.size()):
+				tucked = maxf(tucked, shape[v].distance_to(base[v]))
+
+			_check(tucked > aabb.size.y * 0.003 and tucked <= aabb.size.y * 0.02, "cover: shape %s tucks skin in a little (%.4f of height %.4f)" % [Shapes.COVERS[n - 10], tucked, aabb.size.y])
+
 		var bi: int = wide_body.body_mesh.find_blend_shape_by_name("build")
 		_check(absf(wide_body.body_mesh.get_blend_shape_value(bi) - 1.0) < 0.001, "widths: build weight 1")
 		_check(absf(wide_body.body_mesh.get_blend_shape_value(wide_body.body_mesh.find_blend_shape_by_name("belly")) + 0.5) < 0.001, "widths: belly weight -0.5")
 
 	_check(not plain_body.body_mesh.mesh.has_meta("dynasty_shapes"), "widths: the plain body keeps Dave's own mesh")
+	# PR #2030 (Lane A 27 Nov 2026): the shaped mesh keeps the source's LODs (dynasty_shapes.gd source_lods); without them a shaped body drew every triangle at any distance.
+	var own_lods: int = Shapes.source_lods(plain_body.body_mesh.mesh as ArrayMesh, 0).size()
+	var shaped_lods: int = Shapes.source_lods(shaped as ArrayMesh, 0).size() if shaped is ArrayMesh else -1
+	if own_lods == 0:
+		print("NOT RUN widths: the shaped mesh keeps the body's LODs (this renderer gives the body no LODs to read; Lane A's GPU measure covers it)")
+	else:
+		_check(shaped_lods == own_lods, "widths: the shaped mesh keeps the body's %d LODs (%d)" % [own_lods, shaped_lods])
 	var own_wide: Material = wide_body.body_mesh.get_active_material(0)
 	_check(own_wide is BaseMaterial3D, "widths: the shaped body still has its material")
 
