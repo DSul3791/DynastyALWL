@@ -1,6 +1,6 @@
 # Ponytail rules: Dynasty engineering method
 
-**Status: DIRECTOR-APPROVED direction (Dave, project thread "Integrate Ponytail into AI team", 11 Nov 2026): apply Ponytail across the whole coding team, never overriding his approved designs, realism requirements, architecture decisions or engineering standards.** The wording below is the AI team's reviewed adaptation, not a Dave quote. This file is the single authoritative Ponytail text for Dynasty. Adapted from Ponytail v5.3.3 by Dietrich Gebert (MIT); source, install record and rollback: `docs/ai-team/PONYTAIL_INSTALL.md`.
+**Status: DIRECTOR-APPROVED direction (Dave, project thread "Integrate Ponytail into AI team", 11 Nov 2026): apply Ponytail across the whole coding team, never overriding his approved designs, realism requirements, architecture decisions or engineering standards.** The wording below is the AI team's reviewed adaptation, not a Dave quote. This file is the single authoritative Ponytail text for Dynasty. Adapted from Ponytail v5.3.3 (commit 7801d061243d7b753bad0e0b3c057cd250b11755) by Dietrich Gebert (MIT); source, install record and rollback: `docs/ai-team/PONYTAIL_INSTALL.md`.
 
 ## Where it sits
 Ponytail is **how** we build, never **what** we build. It works inside `docs/ai-team/CONSTITUTION.md` precedence and never overrides Dave's approved designs, realism requirements, architecture decisions, interface contracts (`PROTOCOL.md`, save and record formats) or the gates in `docs/ai-team/TEST_GATES.md`. Simplicity is a way to reach quality, not a reason to lower it.
