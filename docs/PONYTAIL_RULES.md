@@ -56,6 +56,9 @@ Dave, 26 Nov 2026: "we now have to be very selective with tokens. Agents need to
 - Run the tests `tools/tests_for_diff.py` picks; after a failure re-run only what failed. A run that passed with nothing changed since is not run again.
 - Short posts: the result, what it depends on, the PR link. Detail goes once into GitHub or task state, never repeated in chat.
 
+## 8. Good enough
+**Good enough is the standard** (R-CORE-GOOD-ENOUGH; Dave, 26 Nov 2026: "good enough is the new standard that stops us from being too picky"). Stop when the thing works and looks like a simple version of what was asked. Do not re-test, re-review or re-shoot pictures to chase the ideal. Reviewers raise only must-fix faults (broken, wrong, unsafe, laggy), never polish. Looks are improved only when Dave complains, and then only a little; the graphics will be reworked in later years.
+
 ## Project engineering contracts
 Use typed GDScript with zero new warnings; justify any `@warning_ignore`. Shared code belongs in `src/shared`; server/client communication uses `src/stream/terrain_net.gd`. Input changes update `../CONTROLS.md` and pass `python3 tools/check_controls.py`. Validate touched scripts on the authorized PC using `tools/local_check.sh` where applicable.
 
