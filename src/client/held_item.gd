@@ -3710,7 +3710,7 @@ func _mount_model() -> void:
 	_model.position = tilt * grip / ARMS_SCALE
 
 
-# Head-down along the outside of the leg: the model's +Y (handle to head) points down, THIRD_HANG_FWD_DEG forward (more for a head reach metres
+# Head-down along the outside of the leg (pitch about the mount's X, then roll about its forward +Y): the model's +Y (handle to head) points down, THIRD_HANG_FWD_DEG forward (more for a head reach metres
 # from the hand longer than THIRD_HANG_DROP_M, never past the forward lean, 90 + THIRD_LEAN_DEG) and THIRD_OUT_DEG out (+X).
 static func third_hang_turn(reach: float) -> Basis:
 	var forward: float = THIRD_HANG_FWD_DEG

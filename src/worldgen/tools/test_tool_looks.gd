@@ -365,21 +365,21 @@ func _init() -> void:
 
 	# Third-person carry (BugsList 181): an axe, hammer, pick or mace hangs head-down outside the leg, its head no more than THIRD_HANG_DROP_M
 	# below the hand; a blade points forward and a little down; all turn out to +X (the body's right, away from the thigh).
-	var items: Variant = ItemTable.load_default()
+	var table: Variant = ItemTable.load_default()
 
 	for row in [["stone_axe", "axe"], ["iron_axe", "axe"], ["stone_hammer", "hammer"], ["iron_pickaxe", "pick"], ["stone_mace", "mace"], ["iron_warhammer", "hammer"], ["steel_greataxe", "axe"], ["iron_shortsword", "sword"], ["iron_knife", "knife"], ["iron_sickle", "sickle"]]:
 		var id: String = str(row[0])
-		var carry: String = HeldItem.third_carry(id, str(items.entry(id).get("tool_class", "")))
+		var carry_class: String = HeldItem.third_carry(id, str(table.entry(id).get("tool_class", "")))
 		var node: Node3D = HeldItem.look_tool_node(id)
-		HeldItem.third_hold(node, "", carry)
+		HeldItem.third_hold(node, "", carry_class)
 		var head_dir: Vector3 = node.basis * Vector3.UP
 		var reach: float = node.position.length() + float(node.get_meta("head_m", 0.0))
 		var head_end: Vector3 = node.basis * Vector3(0.0, reach, 0.0)
-		print("%s carry %s: head %s, end %.2f m below the hand, %.2f out" % [id, carry, head_dir, -head_end.z, head_end.x])
-		_check(carry == str(row[1]), "%s carries as %s (%s)" % [id, row[1], carry])
+		print("%s carry_class %s: head %s, end %.2f m below the hand, %.2f out" % [id, carry_class, head_dir, -head_end.z, head_end.x])
+		_check(carry_class == str(row[1]), "%s carries as %s (%s)" % [id, row[1], carry_class])
 		_check(head_dir.x > 0.04 and head_dir.y > 0.2, "%s: the head points forward and out from the thigh (%s)" % [id, head_dir])
 
-		if carry in HeldItem.THIRD_HANG_CARRIES:
+		if carry_class in HeldItem.THIRD_HANG_CARRIES:
 			_check(-head_end.z <= HeldItem.THIRD_HANG_DROP_M + 0.01 and head_dir.z < -0.25, "%s hangs head-down, the head %.2f m below the hand (at most %.2f)" % [id, -head_end.z, HeldItem.THIRD_HANG_DROP_M])
 		else:
 			_check(head_dir.z < 0.0 and head_dir.z > -0.4, "%s points forward and only slightly down (%.2f)" % [id, head_dir.z])
