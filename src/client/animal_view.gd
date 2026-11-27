@@ -12,6 +12,8 @@ const FAR_KEEP_MS := 1200       # far off that a batch left out is kept this lon
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
+const TailDragScript := preload("res://src/client/tail_drag.gd")         # a tail laid on the ground over every clip (the alligator)
+const CrawlScript := preload("res://src/client/crawl.gd")                 # body let down level, legs bent out to the sides (the alligator)
 const RowParts := preload("res://src/shared/row_parts.gd")   # a batch over one packet comes in parts (protocol 171)
 const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
@@ -1611,6 +1613,34 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 			if not missing.is_empty():
 				_model_note(kind, "bone_offsets: no bone %s" % ", ".join(missing))
 
+	# The body let down and its legs bent out (crawl.gd, the alligator's borrowed clips stand it tall): before the tail, which lies on the
+	# ground from wherever the body ends up.
+	if row.has("crawl"):
+		var crawl_sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+		if not crawl_sks.is_empty():
+			var crawl: SkeletonModifier3D = CrawlScript.new()
+			var no_crawl: PackedStringArray = crawl.setup(crawl_sks[0], row["crawl"])
+			var crawl_players: Array = inst.find_children("*", "AnimationPlayer", true, false)
+			crawl.player = crawl_players[0] if not crawl_players.is_empty() else null
+			(crawl_sks[0] as Skeleton3D).add_child(crawl)
+
+			if not no_crawl.is_empty():
+				_model_note(kind, "crawl: no bone %s" % ", ".join(no_crawl))
+
+	# A tail dragged on the ground over every clip (tail_drag.gd: the alligator's borrowed cat, dog and fox clips hold it up).
+	if row.has("tail_drag"):
+		var tail_sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+		if not tail_sks.is_empty():
+			var drag: SkeletonModifier3D = TailDragScript.new()
+			var no_bones: PackedStringArray = drag.setup(tail_sks[0], row["tail_drag"])
+			drag.ground = root
+			(tail_sks[0] as Skeleton3D).add_child(drag)
+
+			if not no_bones.is_empty():
+				_model_note(kind, "tail_drag: no bone %s" % ", ".join(no_bones))
+
 	# The head turns to watch a player (head_look.gd); a row with "head_look": false keeps its clip's head.
 	var head_bone: Array = BreathLook.head_bone_of(inst) if bool(row.get("head_look", true)) else []
 
@@ -2812,6 +2842,18 @@ func _gait_clip(player: AnimationPlayer, rig: Node3D, spec: Dictionary, kind: St
 	var sk_path: String = str(base.get_path_to(sk))
 	var steps: int = 16
 	var missing: PackedStringArray = PackedStringArray()
+
+	# "rest_all": every bone not in "bones" is held at its rest (the alligator lies in its rest pose, belly and tail flat: its only lie
+	# clip curls it up like a sleeping cat, Lane A 27 Nov 2026).
+	if bool(spec.get("rest_all", false)):
+		for bone in sk.get_bone_count():
+			if not (spec.get("bones", {}) as Dictionary).has(sk.get_bone_name(bone)):
+				var held: int = out.add_track(Animation.TYPE_ROTATION_3D)
+				out.track_set_path(held, NodePath("%s:%s" % [sk_path, sk.get_bone_name(bone)]))
+				out.track_insert_key(held, 0.0, sk.get_bone_rest(bone).basis.get_rotation_quaternion())
+				var placed: int = out.add_track(Animation.TYPE_POSITION_3D)
+				out.track_set_path(placed, NodePath("%s:%s" % [sk_path, sk.get_bone_name(bone)]))
+				out.track_insert_key(placed, 0.0, sk.get_bone_rest(bone).origin)
 
 	for bone_name in (spec.get("bones", {}) as Dictionary):
 		var bone: int = sk.find_bone(str(bone_name))

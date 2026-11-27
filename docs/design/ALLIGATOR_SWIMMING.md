@@ -3,7 +3,25 @@
 The pack's American alligator is the last land-and-water animal not yet a species. It waits for swimming: an alligator lives in the water of marsh and slow rivers, basks on the bank and ambushes from the surface. Today a land animal stays out of water (the water edge rule in `_habitat_score`, the blocked check in movement), and only flocks sit on water (ducks: one record placed at the water level).
 
 ## What the model gives
-`Realistic Animals/AmericanAligator/SK_AmericanAligator.fbx`, textures `T_American_Alligator.png` and an eye texture. Its clips still need listing with `tools/creature_check.gd --clips`; WildMesh water animals in this pack carry swim clips (the duck and goose have `SwimSteady_*` and `SwimMove*`, the leopard and tiger `Swim-IP`), so a swim, an idle on land and a walk are expected.
+Dave's own model, `assets/animals/alligator/Alligator_Al.glb` (27 Nov 2026; the WildMesh alligator was never in the pack). About 1.9 m in the file, drawn 3.8 m (`length_m`); its own baked material and textures; one skeleton whose rest pose lies belly and tail on the ground. Its nine clips are borrowed from other animals, so the row maps each role by name (`data/animals/models.json`):
+
+| Role | Clip | Why |
+|---|---|---|
+| graze/stand 0, 12, alert 3, warn 10 (and jaw pop 16) | `fox_mon_xiaohuli_01_idle1` | a quiet idle; `cat_idle2` stands 3.04 times the flat rest height, over TALL_SHARE, so it is not used |
+| walk | `cat_walk` | Dave: "ignore the dog walk its terrible", so the dog's `Walking` is never used |
+| run, charge 11 | `Running` (dog) | the only run |
+| lie 19 | its rest pose (`gait` 19 with `rest_all`: every bone held at rest, a slow breath in neck and chest) | belly and tail flat; the cat sleep curled it into a ball (Lane A 27 Nov) |
+| bite | `leopard_skill_feipu` (pounce) | the lunge |
+| strike | `leopard_skill_shuaiwei` (tail swipe) | an alligator's tail blow |
+| die | `leopard_dead` | rolls onto its side |
+
+No swim, hit or drink clip: in water and at the bank it plays its state's clip (swimming itself is the plan below, not built for this model).
+
+**Tail.** Every clip holds the tail up like a cat's. Dave: "all the actions need to let the tail drag on the ground". `src/client/tail_drag.gd` (a `SkeletonModifier3D`, like `bone_offsets.gd`) runs after the clip each frame: each tail bone keeps the clip's sideways heading, so the sway and the tail swipe stay, and is pitched so the next joint lies at its rest height above the floor, sloping down at most 70 degrees from a raised body (35 left it arched up behind the cat-arched hips in Lane A's pictures). The floor is the animal's own ground point (its node), so a `ground_clips` lift counts. It works from the bones' local poses: Lane A's first run read every `get_bone_global_pose` as 0 in the test. Row key `"tail_drag": [base ... tip bones]`.
+
+**Legs and pace.** Dave, 27 Nov: "bend his legs more like a real alligator and slow down his walk so he crawls like a real alligator". The borrowed clips stand it tall, legs straight under it, hips high (Lane A at c817c7c3; turning the legs out alone did not read from the side). `src/client/crawl.gd` (row key `"crawl"`: hips, chest, one [upper, lower, foot] bone list per leg, and the clips it works in) runs after the clip and before the tail: the root bone pitches the back level (hips to chest as at rest, at most 25 degrees) and lets the body down until the hips are at their rest height, never up; each leg is then solved as two bones so the foot stays where the clip put it (stride unchanged, no sliding), pushed out to the rest width, with the elbow or knee bending out to the side and a little up. It works in the idle, idle variant, walk, bite and strike; the run stays a high walk, as a real alligator's does, and the body rises into it at once when it starts to run. Off when a death clip rolls the body onto its side. Checked off line on the file's skin: belly clearance over the rest pose's in the walk falls from 0.15 to 0.01 of the file's units (to under a tenth), in the idle and strike to about a third. The server walks it at 0.4 m/s (`animals.json` walk_mps, was 0.8); cat_walk's feet move 0.47 m/s (Lane A), so it plays at about 0.85 pace.
+
+**Ground.** `tools/ground_check.gd` poses the raw clips, and their cat and fox tails dip through the ground, so its lowest points for this model are the tail's. `ground_m` (-0.07) and `ground_clips` (walk -0.06, run -0.06, the rest-pose lie -0.12) come from skinning the file off line with the tail laid down and the crawl applied (feet only).
 
 ## Smallest change that works
 1. **Where it lives (server, `server_animals.gd`).** A new optional row key `"water": {"swim": true, "surface_sink_m": 0.25, "bank_m": 6.0, "bask_share": 0.4}`. A swimming species may stand on water cells: its height there is the water level minus `surface_sink_m` (the duck flock already reads `water_level`). The habitat score accepts water cells and land within `bank_m` of water; everything else is -1. `bask_share` of its graze time it spends on the bank, the rest in the water.

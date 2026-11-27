@@ -2554,37 +2554,102 @@
 			}
 		},
 		"alligator": {
-			"scene": "res://assets/animals/alligator/SK_AmericanAligator.fbx",
-			"pack": "WildMesh3D/Realistic Animals/AmericanAligator",
+			"scene": "res://assets/animals/alligator/Alligator_Al.glb",
+			"pack": "Dave's own model (Alligator_Al.glb, 27 Nov 2026)",
 			"scale": 1.0,
 			"yaw_deg": 180,
 			"walk_mps": 0.8,
+			"trot_mps": 3.0,
 			"run_mps": 6.0,
 			"swim_mps": 2.0,
 			"stride_m": 0.8,
 			"clips": {
-				"0": "Idle",
-				"3": "Low pose",
-				"10": "Idle call shared",
-				"11": "Sprint fwd",
-				"12": "Idle",
-				"walk": "Walk fwd",
-				"run": "Sprint fwd",
-				"swim": "Swim fwd surface"
+				"0": "fox_mon_xiaohuli_01_idle1",
+				"3": "fox_mon_xiaohuli_01_idle1",
+				"10": "fox_mon_xiaohuli_01_idle1",
+				"11": "Running",
+				"12": "fox_mon_xiaohuli_01_idle1",
+				"walk": "cat_walk",
+				"run": "Running",
+				"bite": "leopard_skill_feipu",
+				"strike": "leopard_skill_shuaiwei",
+				"die": "leopard_dead"
 			},
-			"note": "WildMesh American Alligator (Realistic Animals/AmericanAligator/SK_AmericanAligator.fbx). In the water it plays its swim clip (role swim, client water level). Clips checked 8 Nov 2026; it lies low, so its walk and call clips read under half its imported height: flat_share 0.3.",
-			"length_m": 3.8,
-			"materials": [
-				{
-					"match": "Eye",
-					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator_Eye.png"
-				},
-				{
-					"match": "",
-					"albedo": "res://assets/animals/alligator/Textures/T_American_Alligator.png"
-				}
+			"idle_variants": {
+				"0": [
+					"cat_idle2"
+				]
+			},
+			"tail_drag": [
+				"tail_01",
+				"tail1",
+				"tail2",
+				"tail3",
+				"tail_05",
+				"tail4",
+				"tail_07",
+				"tail_08"
 			],
-			"flat_share": 0.3
+			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead; stand, alert and warn the fox idle (cat_idle2 is 3.04 times its flat rest height, over TALL_SHARE, so only an idle variant if ever). The lie is its own rest pose, belly and tail flat (gait 19 rest_all; the cat sleep curled it into a ball, Lane A 27 Nov). No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). crawl (src/client/crawl.gd) lets the body down level to its rest height and bends the legs out to the sides with the feet where the clip put them, in the idle, walk, bite and strike (Dave 27 Nov: \"bend his legs more like a real alligator and slow down his walk so he crawls\"; the run stays a high walk); the server walks it at 0.4 m/s (animals.json), cat_walk's feet move 0.47 m/s. ground_m and ground_clips come from skinning the file off line with the tail laid down and the body let down (thread, 27 Nov): tools/ground_check.gd poses the raw clips, whose cat and fox tails dip through the ground, so its lowest points for this model are the tail's, not the feet's.",
+			"length_m": 3.8,
+			"flat_share": 0.3,
+			"ground_m": -0.07,
+			"ground_clips": {
+				"gait_19": -0.12,
+				"cat_walk": -0.06,
+				"Running": -0.06
+			},
+			"gait": {
+				"19": {
+					"period_s": 4.0,
+					"rest_all": true,
+					"bones": {
+						"neck_01": [
+							0.0,
+							1.5,
+							"x"
+						],
+						"chest": [
+							0.25,
+							0.8,
+							"x"
+						]
+					}
+				}
+			},
+			"crawl": {
+				"hips": "hips",
+				"chest": "chest",
+				"legs": [
+					[
+						"frontUpr.L",
+						"frontLwr.L",
+						"frontFoot.L"
+					],
+					[
+						"frontUpr.R",
+						"frontLwr.R",
+						"frontFoot.R"
+					],
+					[
+						"rearLeg.L_01",
+						"rearLwr.L",
+						"rearLeg.L_04"
+					],
+					[
+						"rearLeg.R_01",
+						"rearLwr.R",
+						"rearLeg.R_04"
+					]
+				],
+				"clips": [
+					"fox_mon_xiaohuli_01_idle1",
+					"cat_idle2",
+					"cat_walk",
+					"leopard_skill_feipu_once",
+					"leopard_skill_shuaiwei_once"
+				]
+			}
 		}
 	}
 }

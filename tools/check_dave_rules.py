@@ -34,6 +34,7 @@ GODOT = {   # rulings checked by behaviour, not data: the test that guards each
     "R-MOVE-RUN-FEET": ["test_run_speed"],
     "R-RES-BOULDER-PHYSICS": ["test_boulder_fall", "test_rock_fields"],
     "R-RES-BOULDER-HARM": ["test_boulder_fall"],
+    "R-ANIMAL-ALLIGATOR": ["test_tail_drag"],
 }
 
 results = []   # (key, ok, what)
@@ -290,6 +291,18 @@ def lane_on_c():
     check("R-TEAM-LANE-C-DRIVE", not hits, "no test tool points at E: " + (str(hits[:5]) if hits else "(C:\\DynastyLane)"))
 
 
+def alligator():
+    """R-ANIMAL-ALLIGATOR: Dave's alligator model never plays the dog walk ("ignore the dog walk its terrible"), drags its tail in every clip, crawls low with its legs bent out, and crawls slowly."""
+    row = data("data/animals/models.json")["species"]["alligator"]
+    clips = [c for look in [row] + row.get("variants", []) for v in look.get("clips", {}).values() for c in (v if isinstance(v, list) else [v])]
+    check("R-ANIMAL-ALLIGATOR", "Walking" not in clips, f"no role plays the dog's Walking clip ({sorted(set(clips))})")
+    check("R-ANIMAL-ALLIGATOR", len(row.get("tail_drag", [])) >= 2, f"the tail drags on the ground in every clip (tail_drag: {row.get('tail_drag')})")
+    crawl = row.get("crawl", {})
+    check("R-ANIMAL-ALLIGATOR", len(crawl.get("legs", [])) == 4 and "cat_walk" in crawl.get("clips", []), "the walk lets the body down with all four legs bent out (\"bend his legs more like a real alligator\")")
+    walk = float(data("data/animals/animals.json")["species"]["alligator"]["walk_mps"])
+    check("R-ANIMAL-ALLIGATOR", walk <= 0.5, f"it crawls at a real alligator's pace ({walk} m/s, \"slow down his walk\")")
+
+
 def ruling_lines():
     out = {}
     for line in (ROOT / "docs/RULINGS.md").read_text(encoding="utf-8").splitlines():
@@ -304,7 +317,7 @@ def main():
              "R-STORE": names_and_storage, "R-CORE-NEWER-WINS": godot_guards, "R-HUD-PROMPTS": e_prompts,
              "R-FLORA-WITNESS-GLOW": witness_glow, "R-PLAYER-CRAWL": stealth, "R-HUNT-DEAD-NAME": dead_names, "R-HUNT-SIGN-SOUND": sign_sound, "R-CORE-PASS-OUT": pass_out,
              "R-ANIMAL-SEEN-FAR": seen_far, "R-MOVE-RUN-FEET": run_feet, "R-CRAFT-MAKING": campfire_both, "R-TEAM-LANE-C-DRIVE": lane_on_c, "R-ITEM-IRON-LOOK": iron_look,
-             "R-RES-BOULDER-PHYSICS": rocks_at_rest}
+             "R-RES-BOULDER-PHYSICS": rocks_at_rest, "R-ANIMAL-ALLIGATOR": alligator}
     for key, step in steps.items():
         try:
             step()
