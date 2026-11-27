@@ -1678,9 +1678,9 @@ func _process_body(_delta: float) -> void:
 		FrameProbe.stop("inventory: rock hull prewarm", th)
 
 	if not _rock_dirty.is_empty() or not _rock_near.is_empty() or not _rock_cells.is_empty():
-		var tr: int = FrameProbe.start()
+		var t_rocks: int = FrameProbe.start()
 		_rock_tick()
-		FrameProbe.stop("inventory: rocks near and drawn", tr)
+		FrameProbe.stop("inventory: rocks near and drawn", t_rocks)
 
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
@@ -4024,12 +4024,12 @@ func _rock_body(id: int) -> void:
 	# body made late) is left open until the player is clear of it, so nobody is ever shut inside a rock or pushed down through the ground by
 	# it (rocks15: a run that began inside a boulder field fell 1.4 m under the ground). [shape, middle, reach] in entry "open".
 	var player: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.INF
-	var open: Array = []
+	var left_open: Array = []
 	var radius: float = float(entry["radius"])
 
 	if _rock_round_player((entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1, player):
 		shape.disabled = true
-		open.append([shape, (entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1])
+		left_open.append([shape, (entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1])
 
 	if (entry["skirt"] as Array).size() >= 3:
 		var skirt_xf: Transform3D = _rock_skirt_xf(entry)
@@ -4046,12 +4046,12 @@ func _rock_body(id: int) -> void:
 
 			if _rock_round_player(middle, float(spheres[n][1]) * r, player):
 				chunk.disabled = true
-				open.append([chunk, middle, float(spheres[n][1]) * r])
+				left_open.append([chunk, middle, float(spheres[n][1]) * r])
 
 			body.add_child(chunk)
 
-	if not open.is_empty():
-		entry["open"] = open
+	if not left_open.is_empty():
+		entry["open"] = left_open
 
 	entry["node"] = body
 	entry["shape"] = shape

@@ -2337,7 +2337,7 @@ func _measure_frames(delta: float) -> void:
 			RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), get_window().size.x, get_window().size.y])
 		# What the last frame drew (primitives include the shadow passes): steadier than milliseconds for comparing two builds at one camera.
 		print("shot runner: frametime draws %d calls, %d k primitives, %d objects" % [int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)),
-			int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME)) / 1000, int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME))])
+			roundi(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0), int(RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_OBJECTS_IN_FRAME))])
 
 
 func _on_surface(x: float, z: float, y: float) -> void:

@@ -119,7 +119,8 @@ func _init() -> void:
 		if (int(r[0]) & 0xff) != at_cliff.FIELD_ERRATIC_SLOT and (r[1] as Vector3).x < 0.0:   # not a lone giant, nor a crag
 			big_foot = maxf(big_foot, float(r[2]))
 
-	check(big_foot > 1.5 and big_foot <= 2.6 * 1.0001, "scree cores come up to 5.2 m across (largest radius %.2f)" % big_foot)
+	var foot_most: float = float((at_cliff._boulder_cfg["rock_fields"]["radius"]["foot"] as Array)[1])
+	check(big_foot > 1.5 and big_foot <= foot_most * 1.0001, "foot band cores come up to %.0f m across (largest radius %.2f)" % [foot_most * 2.0, big_foot])
 	var loose_on_face: int = 0
 
 	for r in rows:

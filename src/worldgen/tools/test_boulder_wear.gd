@@ -169,13 +169,12 @@ func _init() -> void:
 	for child in holder.get_children():
 		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
 			after += (child as MultiMeshInstance3D).multimesh.instance_count
-			var multi: MultiMesh = (child as MultiMeshInstance3D).multimesh
 
-			for n in multi.instance_count:   # the drawn rock stands where its body and lump are
-				if multi.mesh == view._boulders[4250]["mesh"]:
-					var body_xf: Transform3D = (view._boulders[4250]["node"] as Node3D).transform * (view._boulders[4250]["lump"] as Node3D).transform
-					check(multi.get_instance_transform(n).origin.distance_to(body_xf.origin) < 0.01 and multi.get_instance_transform(n).basis.get_scale().distance_to(body_xf.basis.get_scale()) < 0.01, "the drawn rock matches its collider's place and size")
-
+	# The drawn copy's transform is built from the same entry as the body (the dummy renderer keeps no MultiMesh transforms to read back).
+	var rock: Dictionary = view._boulders[4250]
+	var drawn_xf: Transform3D = Transform3D(view._rock_basis(rock), rock["pos"]) * view._rock_lump_xf(rock)
+	var body_xf: Transform3D = (rock["node"] as Node3D).transform * (rock["lump"] as Node3D).transform
+	check(drawn_xf.origin.distance_to(body_xf.origin) < 0.01 and drawn_xf.basis.get_scale().distance_to(body_xf.basis.get_scale()) < 0.01, "the drawn rock matches its collider's place and size")
 	check((view._boulders[4251]["lump"] as MeshInstance3D).visible and after == 3, "a worked rock draws itself and leaves its block's drawing at once (%d left)" % after)
 	standing[0] = Vector3(500.0, 0.0, 500.0)
 	view._rock_look_msec = -100000
