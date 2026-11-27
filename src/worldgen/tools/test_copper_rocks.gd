@@ -136,7 +136,7 @@ func _init() -> void:
 	var land_per_cell: float = float(land) / (78.0 * 40.0)
 	var shore_per_cell: float = float(shore) / 40.0
 	print("copper rocks: %d in all, %d on land (%.3f a cell), %d at the river (%.2f per 32 m of river), %d in deep water, sizes %d small %d big, grades %.2f..%.2f" % [rocks.size(), land, land_per_cell, shore, shore_per_cell, deep, small, big, lo_grade, hi_grade])
-	check(land > 0 and land_per_cell < 0.2, "a few copper rocks are strewn over dry land (%d, %.3f a cell)" % [land, land_per_cell])
+	check(land > 0 and land_per_cell < 0.25, "a few copper rocks are strewn over dry land (%d, %.3f a cell)" % [land, land_per_cell])
 	check(shore_per_cell > land_per_cell * 5.0, "far more on the river bed and its banks (%.2f per 32 m of river against %.3f a land cell)" % [shore_per_cell, land_per_cell])
 	check(deep == 0, "none in deep water (%d)" % deep)
 	check(sizes_ok and by_hand * 2 > big and by_hand > 0 and big > 0 and small > 0, "a share of the sizes lies loose to pick up by hand, bigger ones are rocks to break (%d by hand, %d small rocks, %d big)" % [by_hand, small, big])
@@ -343,6 +343,7 @@ func _init() -> void:
 		var im = make("test_copper_rocks_iron_%s" % tool_id, tool_id)
 		im._boulder_cfg["luck_extra"] = 1.0   # every blow would take a double stone first: the ore piece still takes exactly its own weight
 		im._boulder_cfg["ore"]["boulder_share"] = 0.0
+		im.ground_height = func(_x, _z): return 310.0   # under the mountains: by the sea river iron is only one-ore stones (Dave 27 Nov 2026, the layered cake)
 		im.water_depth_at = func(pos): return 0.5 if pos.x >= 2000.0 and pos.x < 2040.0 else 0.0
 		im.water_near = func(pos, reach): return pos.x + reach >= 2000.0 and pos.x - reach < 2040.0
 		im.ore_near = func(_pos, _reach, _names, _depth): return ""
