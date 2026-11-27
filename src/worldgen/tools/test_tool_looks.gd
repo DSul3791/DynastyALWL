@@ -330,6 +330,38 @@ func _init() -> void:
 
 	_check(BasicLook.mesh_for("iron_greaves").get_aabb().size.z > BasicLook.mesh_for("iron_sabatons").get_aabb().size.z, "greaves are longer than sabatons")
 
+	# The picture checker's held sweep (26 Nov 2026): these ten were held as the grey box on a stick (a "hammer"); each is held as its own look now,
+	# for the player and for others (held_item.gd holds_plain_look, player_view.gd held_model). A shape with its own hand pose keeps it.
+	var items: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/items.json")) as Dictionary).get("items", {})
+
+	for id in ["bone_club", "campfire_roasting_spit", "clay_griddle", "heavy_crossbow", "iron_grill_grate", "light_crossbow", "sewing_needle", "sling", "whetstone"]:   # not the retired stone wedge: its look is a flat wedge, longest across
+		var kind: String = str((items.get(id, {}) as Dictionary).get("kind", ""))
+		_check(HeldItem.holds_plain_look(id, kind), "%s (%s) is held as its own look, not the grey stick" % [id, kind])
+		var node: Node3D = HeldItem.look_tool_node(id)
+		var held_mesh: MeshInstance3D = node.get_child(0) as MeshInstance3D
+		var long_axis: Vector3 = held_mesh.basis * Vector3(held_mesh.mesh.get_aabb().size.x, 0.0, 0.0)
+		var box: Vector3 = held_mesh.mesh.get_aabb().size
+		_check(box.x >= 0.8 * maxf(box.y, box.z), "%s: its mesh is longest along x, the axis laid along the hand (%s)" % [id, box])
+		_check(node.has_meta("grip_y") and long_axis.length() <= HeldItem.HELD_LOOK_MAX_M + 0.001 and absf(long_axis.normalized().y) > 0.99, "%s lies along the hand's +Y, at most %.1f m (%.2f m)" % [id, HeldItem.HELD_LOOK_MAX_M, long_axis.length()])
+		node.free()
+
+	_check(not HeldItem.holds_plain_look("bucket", "container") and not HeldItem.holds_plain_look("clay_pot", "container"), "a bucket or pot is not laid along the hand (it stands up along its mesh +Y)")
+	_check(not HeldItem.holds_plain_look("iron_axe", "tool") and not HeldItem.holds_plain_look("stone", "material"), "an axe keeps its own hand pose; a stone in hand is not a held tool look")
+
+	# Metal sickles: no pale flint teeth (they read as white specks); the plain sickle keeps them.
+	var plain_n: int = 0
+
+	for surface in BasicLook.mesh_for("sickle").get_surface_count():
+		plain_n += (BasicLook.mesh_for("sickle").surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+
+	for id in ["copper_sickle", "bronze_sickle", "iron_sickle", "steel_sickle"]:
+		var n: int = 0
+
+		for surface in BasicLook.mesh_for(id).get_surface_count():
+			n += (BasicLook.mesh_for(id).surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array).size()
+
+		_check(n < plain_n, "%s has no flint teeth (%d vertices, the plain sickle %d)" % [id, n, plain_n])
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
