@@ -82,7 +82,9 @@ Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 a
 
 Not yet played.
 
-## 157. Floating objects and water standing in walls
+## 157. Floating objects and water standing in walls; rivers show two water levels and the bed through the water
+
+**Priority** (Dave, 26 Nov 2026: "lets put it on the priority list"; R-CORE-GROUND-WATER-FIRST). Dave, 26 Nov 2026: "rivers looking like there are two different water levels and you can see right under them like there is no water", reported several times with pictures and coordinates (x 57864 z 71571, x 52986 z 68328, x 54101 z 69709). PR #1887 (in dev) changed the shallow bank fade; whether it covers this was never seen on screen. Lane A pictures first (project files world-audit/LANE_A_RIVER_PICTURES.md), then the fix.
 
 **Found by:** tester, [QA #17](https://github.com/DSul3791/DynastyALWL-QA/issues/17), build 10587, 25 Nov 2026: "floating objects / water held up by force-fields". **Status: Open.** Two screenshots are on the tester site (pictures 14-1 and 14-2); not yet looked at.
 
