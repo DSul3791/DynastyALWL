@@ -60,6 +60,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-MAP-AUTO** · 23 Nov 2026 · suggestion · "we should create an entire settings section dedicated to automapping. it should list all the items in game you might want auto mapped and if you turn it on it will automap it for you as you run within 50m-100m of it." Not built yet.
 
 ## Items, crafting and resources
+- **R-ITEM-CATALOG** · 26 Nov 2026 · rule · The 11 Nov catalog freeze "is not still on but I don't want AI inventing random stuff to put in the Item Catalogue. if we find a hole where we need a new item because we can't actually play without it then that is ok and we can review it and include it but otherwise try to keep it to our strictly designed list." New items only to fill a hole that stops play, reviewed by Dave through the coordinator before they are included.
 - **R-ITEM-WEIGHTS** · 23 Nov 2026 · suggestion · Every item at its real-world weight ("they all seem extremely high and don't match anything in the real world"). Seeds: "typical seeds weigh 5-7mg so you really need to fix that for all seeds."
 - **R-ITEM-SEEDS** · 14 Nov 2026 · suggestion · "All herbs and plants should produce seeds." 23 Nov: "you should get plenty of seeds."
 - **R-CRAFT-KEPT-TOOL** · 24 Nov 2026 · suggestion · "we should remove that requirement if you have a knife in you inventory or on your hotbar it should count." A kept tool counts anywhere in the pack or on the hotbar.
