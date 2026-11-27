@@ -10,6 +10,8 @@ extends SceneTree
 # later, catches the step at whatever point it has reached).
 # yaw 180 looks at his front, 0 at his back, 90 at his side. Grid lines on the ground are 0.5 m apart.
 
+const WornShellScript := preload("res://src/client/worn_shell.gd")
+const ShapesScript := preload("res://src/client/character/dynasty_shapes.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
 const WornLookScript := preload("res://src/client/worn_look.gd")
 const AvatarDriverScript := preload("res://src/client/character/avatar_driver.gd")
@@ -84,7 +86,9 @@ func _init() -> void:
 	root.add_child(body)
 
 	if not worn.is_empty():
+		ShapesScript.wait()      # the body's shapes (dynasty_shapes.gd, the skin's tuck-in under clothes) made before he dresses, so the still never shows them half done
 		print("worn pieces: ", WornLookScript.attach(body, worn))
+		WornShellScript.wait()   # and the fitted layers over the shaped mesh, which the body hangs in its next frame
 
 	if hold != "":
 		var table = ItemTableScript.load_default()
