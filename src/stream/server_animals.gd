@@ -70,6 +70,7 @@ var weather_ahead: Callable        # (hours) -> the weather dictionary that many
 var weather_ahead_at: Callable     # (hours, pos) -> the weather over that spot's row that many game hours from now; set, it is used instead
 var row_of: Callable               # (pos) -> the tile row a spot is in (the storm look-ahead is kept per row)
 var died: Callable                 # (species, position, source peer) when an animal is killed
+var last_dead: Dictionary = {}     # the body of the animal `died` is told of, set just before it: {"look": its id, "num": its row number (young: + YOUNG_NUM), "heading"} (dead_body_of)
 var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
@@ -671,6 +672,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		a["birds"] = int(a.get("birds", 8)) - 1
 
 		if died.is_valid():
+			last_dead = {}   # one bird of a flock record: no one look to keep (the client draws a bird of its kind)
 			died.call(a["sp"], a["pos"], source_peer)
 
 		if int(a["birds"]) <= 0:
@@ -707,6 +709,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 			wolves.on_death(id, a["pack"])
 
 		if died.is_valid():
+			last_dead = dead_body_of(a)
 			died.call(a["sp"], a["pos"], source_peer)
 
 		return true
@@ -2045,6 +2048,13 @@ func _runs_on_hurt(a: Dictionary, def: Dictionary, speed: float, dt: float, grou
 	return true
 
 
+# Which body lay down where an animal died (Dave 26 Nov 2026: dead animals "become these strange low poly homemade models"): its id picks
+# the same model look the client drew it with (animal_view _make_model), its row number says whether it was young, and its heading which
+# way it lay. server_items.make_carcass keeps these on the dead body, so it is drawn as that animal every time it comes into view.
+static func dead_body_of(a: Dictionary) -> Dictionary:
+	return {"look": int(a.get("id", 0)), "num": int(a.get("num", 0)), "heading": float(a.get("heading", 0.0))}
+
+
 # A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail. True when it died.
 func bleed(a: Dictionary, dt: float) -> bool:
 	if not a.get("wound", false):
@@ -2065,6 +2075,7 @@ func bleed(a: Dictionary, dt: float) -> bool:
 		wolves.on_death(int(a["id"]), a["pack"])
 
 	if died.is_valid():
+		last_dead = dead_body_of(a)
 		died.call(a["sp"], a["pos"], a.get("hurt_by", -1))
 
 	return true
@@ -3192,6 +3203,8 @@ func _sample_noise(players: Array, delta: float) -> void:
 
 				if pi < stances.size() and int(stances[pi]) == 1:
 					extra *= float(sen.get("brush_crouch_share", 0.5))
+				elif pi < stances.size() and int(stances[pi]) >= 3:
+					extra *= float(sen.get("brush_crawl_share", 0.25))   # crawling (Dave, QA #10, 25 Nov 2026)
 
 				noise *= 1.0 + extra / (skill * skill)
 
@@ -3254,7 +3267,7 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 		f *= float(sen.get("sit_factor", 0.8))
 
 	if d > float(sen.get("always_notice_m", 8.0)):
-		var sight: float = _sight(a, def, p, d, stance == 1 or stance == 3)
+		var sight: float = _sight(a, def, p, d, float(sen.get("lie_eye_m", 0.6)) if stance == 3 else (float(sen.get("low_eye_m", 1.0)) if stance == 1 else STAND_EYE_M))
 
 		if sight < 1.0:
 			f *= lerpf(float(sen.get("blind_factor", 0.35)), 1.0, sight)
@@ -3264,11 +3277,11 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 # How much of the player an animal can see, 0 to 1: 0 when the ground is in the way; otherwise less the more of the line runs under
 # tree crowns (trunks and undergrowth: forest_block is the loss in a line wholly under trees). Fog cuts it by distance (animals_in_fog_server.md 4.1).
-func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, eye_m: float = STAND_EYE_M) -> float:
 	if not fog_on():
-		return _sight_clear(a, def, p, d, low)
+		return _sight_clear(a, def, p, d, eye_m)
 
-	var clear: float = _sight_clear(a, def, p, d, low)
+	var clear: float = _sight_clear(a, def, p, d, eye_m)
 	var strength: float = fog_strength_between(a["pos"], p) if clear > 0.0 else 0.0
 	var haze: float = WeatherRules.fog_haze_density(_wx)
 
@@ -3279,13 +3292,16 @@ func _sight(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> 
 	return clear * fog_sight_share(d, FogShape.depth(haze, strength), float(fc.get("sight_full_fog", 0.53)), float(fc.get("sight_gone_fog", 0.78)))
 
 
-func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, low: bool) -> float:
+const STAND_EYE_M := 1.6   # how high above the ground an animal looks for a standing player (senses low_eye_m crouching, lie_eye_m lying or crawling)
+
+
+func _sight_clear(a: Dictionary, def: Dictionary, p: Vector3, d: float, eye_m: float = STAND_EYE_M) -> float:
 	if not ground_height.is_valid():
 		return 1.0
 
 	var sen: Dictionary = cfg.get("senses", {})
 	var eye_a: float = a["pos"].y + float(def.get("eye_m", 0.5))
-	var eye_p: float = p.y + (1.0 if low else 1.6)
+	var eye_p: float = p.y + eye_m
 	var n: int = clampi(int(d / float(sen.get("los_step_m", 4.0))), 1, 24)
 	var under: int = 0
 	var looked: int = 0

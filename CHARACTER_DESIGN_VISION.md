@@ -1221,11 +1221,11 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 
 **Source:** `CONTROLS.md` lines 86-86; under heading: ## Planned / not decided
 
-> - Stances (Dave, 2026-10-20, decided, build 229 Ground thread, not built yet): C = crouch, X = sit, Z = lie down, all toggles; any movement key stands you up. No movement while sitting or lying. Admin dig moves from X to Ctrl+X (the table row for X changes when it lands).
+> - Stances (Dave, 2026-10-20, decided, build 229 Ground thread, not built yet): C = crouch, X = sit, Z = lie down, all toggles; any movement key stands you up from sitting; lying off a bed the movement keys crawl (R-PLAYER-CRAWL, 25 Nov 2026). Admin dig moves from X to Ctrl+X (the table row for X changes when it lands).
 
 **Source:** `CONTROLS.md` lines 94-94; under heading: ## Planned / not decided
 
-> - Rest (Ground adds the keys: C crouch, X sit, Z lie, all toggles; any movement key stands you up): sitting or lying brings exertion down to 0, lying fastest; standing under a heavy pack only rests it to about half. Over-exerted: about 10 percent slower (tunable over_speed_factor in exertion.json) but you can keep running and keep pushing until you black out. Past the faint threshold you black out smoothly, not in steps: right at the threshold it takes about 14 s and you lie down at the end, and the further over you push the faster it comes on (about 1.5 s a long way over). The heart beats about 175 bpm at the threshold and 200 at the peak of a blackout; there are no breathing noises. Then you wake slowly.
+> - Rest (Ground adds the keys: C crouch, X sit, Z lie, all toggles; any movement key stands you up from sitting, lying off a bed it crawls): sitting or lying still brings exertion down to 0, lying fastest (crawling is work like walking); standing under a heavy pack only rests it to about half. Over-exerted: about 10 percent slower (tunable over_speed_factor in exertion.json) but you can keep running and keep pushing until you black out. Past the faint threshold you black out smoothly, not in steps: right at the threshold it takes about 14 s and you lie down at the end, and the further over you push the faster it comes on (about 1.5 s a long way over). The heart beats about 175 bpm at the threshold and 200 at the peak of a blackout; there are no breathing noises. Then you wake slowly.
 
 **Source:** `ITEMS_DESIGN.md` lines 66-67; under heading: ### Stance and rest (protocol 21)
 

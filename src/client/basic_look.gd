@@ -3149,7 +3149,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_box_rot(parts, Vector3(0.012, 0.013, 0.085), Vector3(0.112, 0.0, 0.0), Vector3(0.0, 0.0, 0.0), flint_dark.lightened(0.3))
 			_box_rot(parts, Vector3(0.016, 0.014, 0.018), Vector3(0.1, 0.0, 0.04), Vector3(0.0, 0.5, 0.0), flint_dark.darkened(0.2))
 		"sickle":
-			# A sickle: a short grip handle and a blade that bends round in a half circle toward +z, thin steel-grey with a row of pale flint teeth along the inside edge.
+			# A sickle: a short grip handle and a blade that bends round in a half circle toward +z, thin steel-grey with a row of pale flint teeth along the inside edge
+			# (the plain sickle only; a metal tier's blade is one edge of its metal).
 			for k in range(3):
 				_cyl(parts, 0.018, 0.045, Vector3(-0.085 + 0.045 * float(k) + 0.02, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.4, 0.27, 0.14), k, 0.07))
 			_cyl(parts, 0.02, 0.012, Vector3(-0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.12, 0.06))
@@ -3161,7 +3162,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var m0: float = (a0 + a1) * 0.5
 				var pt: Vector3 = Vector3(0.07 + sc_r * sin(m0), 0.0, sc_r - sc_r * cos(m0))
 				_box_rot(parts, Vector3(0.036, 0.004, 0.02 - 0.012 * float(k) / 10.0), pt, Vector3(0.0, -m0, 0.0), sickle_blade)
-				if k % 2 == 0 and k > 1:
+				if k % 2 == 0 and k > 1 and not has_tier(bits):   # flint teeth on the plain (stone age) sickle only: on a cast or forged blade they read as white specks (picture checker, 26 Nov 2026)
 					_box_rot(parts, Vector3(0.012, 0.006, 0.01), pt + Vector3(-sin(m0 + 1.57) * 0.0, 0.0, 0.0) + Vector3(-cos(m0) * 0.012, 0.0, -sin(m0) * 0.012), Vector3(0.0, -m0, 0.0), Color(0.75, 0.7, 0.58))
 		"scythe":
 			# A scythe: a tall bent haft with two short side grips and a long thin curved iron blade swept out sideways (+z) from its top, held out at the end of the haft.

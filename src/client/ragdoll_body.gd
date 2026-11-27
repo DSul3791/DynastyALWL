@@ -55,7 +55,8 @@ const LEFT_REST_FOREARM := Vector3(0.12, 0.0, 0.0)
 # the palm toward the string side and the fingers round the front; the right hand's
 # fingers (index on top) hooked on the string at the nock point, 16 cm nearer and 3 cm higher, (-0.012, -0.070, -0.24), at draw 0 (also the ready idle) and back at the jaw,
 # (-0.012, -0.070, -0.10), at full draw, the palm toward the face, the fingers along the string, the elbow out to the right. The bow and its string are placed by the
-# hands (held_item.gd _pose_bow), so the pose sets where they go.
+# hands (held_item.gd _pose_bow), so the pose sets where they go. In play the arms sit held_item.gd BOW_SIGHT_RIGHT_M to the right of this (_place_arms, BugsList 180):
+# the bow, string and arrow move right with them, off the line of sight, so the eye is no longer in the bow's plane.
 const BOW_ARM_L := Vector3(0.123, -1.385, -0.270)
 const BOW_FOREARM_L := Vector3(0.837, 0.0, 0.0)
 const BOW_HAND_L := Vector3(0.008, 0.990, -0.910)

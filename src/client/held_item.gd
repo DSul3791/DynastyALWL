@@ -32,6 +32,7 @@ const BOW_IDLE_LEAN_DEG := 30.0     # lowered at the side: the upper limb leans 
 const BOW_DRAW_MAX_M := 0.7         # the nock point comes back at most this far from the braced string (a 28 inch draw)
 const BOW_NOCK_ABOVE_M := 0.03      # the arrow sits on the bow hand, this far above the middle of the grip; the string's nock point is level with it
 const BOW_ARROW_SIDE_M := 0.006     # the shaft lies along the stave's left side, this far from the bow's plane, straight ahead (Dave 10 Nov 2026: the arrow lines up with the crosshair)
+const BOW_SIGHT_RIGHT_M := 0.06     # first person, the bow in hand: the arms (and so the bow, the string hand and the arrow) sit this far right of the eye, so the upper limb passes about 8.5 degrees right of the crosshair and the target stays in sight (Dave 26 Nov 2026, BugsList 180: "the bow should be slightly to the right of the crosshairs so the player can actually see the target"); the nocked arrow stays parallel to the view, about 5 cm right of the eye line, so on screen it runs in toward the crosshair; a loosed arrow flies from the eye along the crosshair as before
 const ARROW_NOCK_M := 0.355         # the arrow mesh's nock end lies this far back from its origin (basic_look.gd "arrow")
 # First-person arms (Art's ragdoll rig, assets/character/README.md): rooted at the chest a little below and behind the camera,
 # pitched forward so a tool in the hand points ahead instead of hanging down. The tool goes to the hand on the viewer's right
@@ -1922,6 +1923,9 @@ func _place_arms(delta: float) -> void:
 	var working: bool = _swing_t >= 0.0 or _jab_t >= 0.0 or aiming or _bow_up or _arms.is_one_shot_playing()
 	_arm_up = ArmsView.next_arm_up(_arm_up, working, ARMS_FOLLOW_K, delta)
 	_arms.transform = ArmsView.arms_transform(_camera.global_transform, _camera.global_rotation.y, _arm_up, REST_PITCH_DEG, REST_DOWN_M, REST_BACK_M, ARMS_POS, ARMS_PITCH_DEG, ARMS_SCALE)
+
+	if _bow_up:
+		_arms.transform.origin += Vector3(BOW_SIGHT_RIGHT_M * _arm_up, 0.0, 0.0)   # the bow off the line of sight, to the right (BugsList 180); _pose_bow places the bow at this hand
 
 
 # The bow in the hands (Dave 10 Nov 2026: "have art department fix how its held because it isnt right"). A right-handed archer: the LEFT hand holds the grip, the right
@@ -4139,6 +4143,19 @@ static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float
 	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
 
 
+# A tool or weapon whose look has no hand pose of its own (HELD_LOOK_TURN: a crossbow, a sling, a whetstone, a griddle, a needle,
+# a bone club) is held as its own ground look, length along the hand's +Y like an axe's haft, near its -x end. Before, it got the grey box on a
+# stick (_make_other_model's last resort), which read as a hammer: the picture checker's held sweep, 26 Nov 2026 (10 items). A grey placeholder
+# look (BasicLook._is_placeholder) keeps the old stick: it is no better.
+const PLAIN_HELD_TURN := Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1))
+const PLAIN_HELD_KINDS := ["tool", "weapon"]   # not containers: a pot, bucket or skin stands up along its mesh +Y, and the own hand draws them as _make_container_model
+
+
+static func holds_plain_look(item_id: String, kind: String) -> bool:
+	var def: Dictionary = BasicLook.entry(item_id)
+	return kind in PLAIN_HELD_KINDS and not def.is_empty() and not HELD_LOOK_TURN.has(str(def.get("shape", ""))) and not BasicLook._is_placeholder(def)
+
+
 # A held look tool's model: its ground mesh turned and sized for the hand, the grip distance in the "grip_y" meta (see _mount_model). Static so
 # tools/shot_held.gd builds the same model; the bow and the net add their own parts in _make_look_tool_model.
 static func look_tool_node(item_id: String) -> Node3D:
@@ -4150,7 +4167,7 @@ static func look_tool_node(item_id: String) -> Node3D:
 	var node: Node3D = Node3D.new()
 	var mesh: MeshInstance3D = MeshInstance3D.new()
 	mesh.mesh = held
-	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
+	mesh.basis = (HELD_LOOK_TURN.get(shape, PLAIN_HELD_TURN) as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
 	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
 	return node
@@ -4219,6 +4236,9 @@ func _make_other_model() -> Node3D:
 
 	if look != null:
 		return look
+
+	if holds_plain_look(held_id(), str(_inv.table.entry(held_id()).get("kind", ""))):
+		return look_tool_node(held_id())
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
 	var node: Node3D = Node3D.new()

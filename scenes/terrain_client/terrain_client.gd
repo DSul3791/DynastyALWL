@@ -120,6 +120,7 @@ const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
+const LookWarm := preload("res://src/client/look_warm.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
@@ -589,6 +590,9 @@ func _ready() -> void:
 	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
 	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
 	DynastyBodyScript.clips_on_worker = not DynastyBodyScript.headless()   # in a window the first body's 143 clips are made on a worker thread, not in the join's first-body frame (276 ms, Lane A Low route 26 Nov 2026)
+	OceanMesh.start()   # the sea's 148 thousand vertex grid, on a worker while the client connects (about 400 ms of the welcome's frame on Lane A Low)
+	LookWarm.start(get_tree())   # the mist, rain and snow looks, one a frame while the client waits for the welcome, when the menus did not make them
+	InventoryViewScript.warm_pickups()   # the stone, stick and driftwood models, on loader threads while the client connects (406 ms of the welcome's frame on Lane A Low)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
@@ -1403,6 +1407,7 @@ func _on_join_refused(text: String, title: String = "Update required") -> void:
 
 
 func _on_welcome(info: Dictionary) -> void:
+	Probe.joined()   # the JOIN slow frame lines follow the 30 frames from here
 	var tw: int = Probe.start()
 	_welcome_body(info)
 	Probe.stop("welcome", tw)
@@ -1411,7 +1416,7 @@ func _on_welcome(info: Dictionary) -> void:
 	# Lane A r4 Low at 35dcde90: a 3.5 s welcome with its steps never printed (the freeze watch starts part way through it, so the frame's
 	# own lines miss the start). Its named steps, once, at the join.
 	if welcome_ms > Probe.JOIN_SLOW_MS:
-		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(24)])
+		FreezeWatchScript.printer.line("JOIN welcome %.0f ms: %s" % [welcome_ms, Probe._top_text(32)])
 
 
 func _welcome_body(info: Dictionary) -> void:
@@ -1553,22 +1558,35 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	Probe.stop("welcome: flora added", tw_flora_add)
 	var tw_ice: int = Probe.start()
+	var tq_sub0_oceanice: int = Probe.start()
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
 	ocean_ice.seed_value = int(info.get("master_seed", 0))
 	ocean_ice.ground_below = _ground_below
 	root.add_child(ocean_ice)
+	Probe.stop("welcome: ocean ice", tq_sub0_oceanice)
+	var tq_sub1_shoreprops: int = Probe.start()
 	shore_props = ShoreProps.new()
 	shore_props.name = "ShoreProps"
 	root.add_child(shore_props)
-	fall_mist = FallMistScript.new()
-	fall_mist.name = "FallMist"
-	fall_mist.setup(quality)
+	Probe.stop("welcome: shore props", tq_sub1_shoreprops)
+	var tq_sub2_fallmist: int = Probe.start()
+	fall_mist = LookWarm.take("fall_mist") as Node3D   # made in the menus or while waiting for the welcome (look_warm.gd)
+
+	if fall_mist != null:
+		fall_mist.set_quality(quality)
+	else:
+		fall_mist = FallMistScript.new()
+		fall_mist.name = "FallMist"
+		fall_mist.setup(quality)
 	root.add_child(fall_mist)
+	Probe.stop("welcome: fall mist", tq_sub2_fallmist)
+	var tq_sub3_fallgrowth: int = Probe.start()
 	fall_growth = FallGrowthScript.new()
 	fall_growth.name = "FallGrowth"
 	fall_growth.setup(terrain, flora, quality)
 	root.add_child(fall_growth)
+	Probe.stop("welcome: fall growth", tq_sub3_fallgrowth)
 	_flora_view_full = flora.view_m.duplicate()
 	_flora_near_full = flora.near_m.duplicate()
 	Probe.stop("welcome: ice, shore, mist and fall growth", tw_ice)
@@ -1857,6 +1875,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)   # its _ready prewarms the loose item meshes
+	items.dead_body = func(kind: String, look: int, num: int, at: Vector3) -> Node3D: return _animal_view_node.dead_body(kind, look, num, at) if _animal_view_node != null else null   # a dead animal is its own model (animal_view dead_body)
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	var tw_items_setup: int = Probe.start()
@@ -1869,6 +1888,7 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
 	_player_view.name = "Players"
 	_player_view.table = items.table
+	_player_view.bed_near = items.bed_near   # another player lying on a bed is drawn asleep, not crawling
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
@@ -5147,7 +5167,9 @@ func _make_environment(root: Node3D) -> void:
 	root.add_child(sun)
 	var environment: Environment = Environment.new()
 	environment.background_mode = Environment.BG_SKY
+	var te_sky: int = Probe.start()
 	environment.sky = SkyClouds.make_sky(quality)
+	Probe.stop("environment: sky", te_sky)
 	environment.fog_enabled = true
 	environment.fog_density = 0.0004
 	# The fog used to paint the whole sky grey (owner, 2026-10-19: "the sky has nothing");
@@ -5158,10 +5180,14 @@ func _make_environment(root: Node3D) -> void:
 	var world_environment: WorldEnvironment = WorldEnvironment.new()
 	world_environment.environment = environment
 	root.add_child(world_environment)
+	var te_sea: int = Probe.start()
 	sea = MeshInstance3D.new()
-	sea.mesh = OceanMesh.make()   # 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
+	sea.mesh = OceanMesh.take()   # its arrays were made on a worker since _ready (OceanMesh.start); 12 km, 1 m vertices at the centre: the swell lifts it near the camera (M5)
+	Probe.stop("environment: sea mesh", te_sea)
+	var te_water: int = Probe.start()
 	sea.material_override = WaterMaterial.make_sea()   # the rivers' shader with the sea look on (swell, depth colours, surf)
 	root.add_child(sea)
+	Probe.stop("environment: sea material", te_water)
 
 
 
@@ -5405,6 +5431,7 @@ func _update_view(delta: float) -> void:
 		var pace: float = Vector2(body.velocity.x, body.velocity.z).length() if debug_pace < 0.0 else debug_pace
 		# Clip, playback speed and slope tilt come from src/client/character/avatar_driver.gd (moved there unchanged).
 		var carrying: bool = items != null and items.shoulder_id != "" and stance.stance == StanceScript.STAND
+		_avatar.set_meta("lie_rest", lying_at_rest())   # lying: the sleep pose at rest, the crawl otherwise (avatar_driver.gd crawl_clip; a --shot-stance=lie picture shows the crawl's still pose)
 		var clip: String = AvatarDriver.clip_for(_avatar, stance.stance if shot_stance < 0 else shot_stance, body.velocity, body.global_transform.basis, body.is_on_floor(), pace, _avatar.current(), carrying, delta)
 
 		if not _seat.is_empty() and stance.stance == StanceScript.SIT and _avatar.animation_player != null and _avatar.animation_player.has_animation("sit_chair"):
@@ -6075,6 +6102,18 @@ func _lie_on_bed(bed_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
 		_bed_hold = {"at": at, "off": off, "yaw": body.rotation.y}
 
 
+# Lying at rest, drawn in the sleep pose (dynasty_body.gd "lie"): on a bed, asleep (held Z, or collapsed) or fainted. Lying any other way is the stealthy
+# crawl (Dave, QA #10, 25 Nov 2026: "right now when you lay down its always like you are sleeping. that should only be when you are lying on a bed or when
+# you hold Z to go to sleep. otherwise you should first drop like you are being stealthy and crawling").
+func lying_at_rest() -> bool:
+	return stance.stance == StanceScript.LIE and (not _bed_hold.is_empty() or (items != null and (items.asleep or items.strain_state >= 2)))
+
+
+# Lying off a bed and awake: the movement keys crawl (StanceScript.CRAWL_MPS) instead of standing the player up.
+func crawling() -> bool:
+	return stance.stance == StanceScript.LIE and not lying_at_rest()
+
+
 # Holds a player lying on a bed there (true while held: no gravity, no sliding off). A stance the server changed ends it.
 func _hold_bed() -> bool:
 	if _bed_hold.is_empty():
@@ -6182,7 +6221,8 @@ func _move_player(delta: float) -> void:
 	if photo.active and input != Vector3.ZERO:   # in the photo view the character walks facing where it goes (the mouse never turns it)
 		body.rotation.y = lerp_angle(body.rotation.y, photo.facing_for(direction, body.rotation.y), clampf(delta * 10.0, 0.0, 1.0))
 
-	# Any movement key stands the player up from sitting or lying; those stances do not move.
+	# Any movement key stands the player up from sitting, and from lying at rest (on a bed, asleep or fainted); lying off a bed the keys crawl
+	# (Dave, QA #10, 25 Nov 2026). Space stands up from a crawl too.
 	var sleeping_now: bool = items != null and items.asleep
 
 	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:   # waking works with a screen open too (Dave 2026-10-21: hold Space to wake)
@@ -6195,7 +6235,8 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if (input != Vector3.ZERO or (_move_held("jump") and not sleeping_now)) and not (items != null and items.body_out()):   # no stand-up asks while passing out (QA #19)
+	# A crawler who reaches deep water stands up to swim (review of PR #1939: a lying swimmer crept along at the crawl's pace).
+	if ((input != Vector3.ZERO and (not crawling() or swimming)) or (_move_held("jump") and not sleeping_now)) and not (items != null and items.body_out()):   # no stand-up asks while passing out (QA #19)
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -6421,7 +6462,7 @@ func _show_tunnel_buttons() -> void:
 
 # On a placed ladder (ladder_climb.gd): W climbs, S descends, Space lets go. True while holding on (that frame does no walking).
 func _climb_ladder(delta: float, strain_cap: float) -> bool:
-	if items == null or strain_cap < 0.0 or (items.ladders.is_empty() and not ladder.climbing()):
+	if items == null or strain_cap < 0.0 or (items.ladders.is_empty() and not ladder.climbing()) or (stance.stance == StanceScript.LIE and not ladder.climbing()):   # a crawler does not start up a ladder
 		ladder.let_go()
 		return false
 
@@ -8859,6 +8900,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	OceanMesh.finish()   # a sea grid worker still running at a quit before the welcome
 	DynastyBodyScript.finish_clips()   # the body's clip worker still running at a quick quit (dynasty_body.gd), before the drain so its line is logged
 	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit

@@ -304,11 +304,13 @@ func _process(delta: float) -> void:
 		if every == 0:
 			b["owed"] = 0.0
 			b["swing_due"] = false   # a blow far off is not played when the body comes near later
-			var pose: int = int(b["state"]) & (3 | ASLEEP | SWIM)
+			var rest: bool = lie_rest(b, delta)
+			rig.set_meta("lie_rest", rest)
+			var pose: int = (int(b["state"]) & (3 | ASLEEP | SWIM)) | (FAR_REST if rest else 0)
 
 			if int(b.get("far_pose", -1)) != pose:   # far off the body is not animated, but it still lies, sits or swims when the player does (robots 23 Nov 2026: a far player lying down was drawn standing)
 				var far_stance: int = pose & 3
-				var far_clip: String = "swim_idle" if (pose & SWIM) != 0 else AvatarDriver.choose_clip(far_stance, 0.0, "", (int(b["state"]) & CARRY) != 0 and far_stance == StanceScript.STAND)
+				var far_clip: String = "swim_idle" if (pose & SWIM) != 0 else AvatarDriver.far_lie_clip(rig, AvatarDriver.choose_clip(far_stance, 0.0, "", (int(b["state"]) & CARRY) != 0 and far_stance == StanceScript.STAND))
 
 				if rig.has_method("play") and player.has_animation(far_clip):
 					b["far_pose"] = pose   # kept only once its clip is on: a body whose clips are still being made (dynasty_body.gd _clips_later) tries again next frame
@@ -434,6 +436,7 @@ func _animate(b: Dictionary, velocity: Vector3, step: float) -> void:
 	var pace: float = flat.length()
 	rig.set_meta("torch_in_hand", str(b.get("held_kind", "")) == "torch")
 	rig.set_meta("torch_left", str(b.get("left_kind", "")) == "torch")
+	rig.set_meta("lie_rest", lie_rest(b, step))   # lying: asleep or on a bed the sleep pose, else the crawl (avatar_driver.gd)
 	rig.set_meta("bow_pose", arm_pose(b))   # the bow raised or drawn (162): both arms in the aim (dynasty_body.gd _bow_aim)   # the arm carries it up in front (dynasty_body.gd _torch_carry), as held_item.gd torch_in_left
 	var clip: String = AvatarDriver.clip_for(rig, stance, flat, node.global_transform.basis, true, pace, rig.current(), carrying, step)
 	var hook: String = AvatarDriver.hook_clip(rig, {"swimming": swimming, "asleep": (state & ASLEEP) != 0, "stance": stance, "drink_stamp": 1 + (int(b.get("more", 0)) >> MORE_MEAL_SHIFT)}, pace, step)
@@ -735,6 +738,31 @@ func _show_left(b: Dictionary, distance: float) -> void:
 
 
 var lit_most: Callable = func() -> int: return LIT_MOST
+var bed_near: Callable = Callable()   # (feet position) -> true when a bed is under them (terrain_client.gd: inventory_view.gd bed_near); unset: no beds known
+const BED_LOOK_S := 1.0               # how often a lying body looks for a bed under it
+const FAR_REST := 64                  # the far pose's own bit (not on the wire): lying at rest, drawn asleep
+
+
+# Another player lying at rest, drawn in the sleep pose: asleep (the state's bit), or on a bed. Lying any other way is the stealthy crawl (Dave, QA #10,
+# 25 Nov 2026). The bed is looked for once a second while the body lies, never while it stands.
+func lie_rest(b: Dictionary, delta: float) -> bool:
+	var state: int = int(b["state"])
+
+	if (state & 3) != StanceScript.LIE:
+		b.erase("bed_t")
+		b.erase("on_bed")
+		return false
+
+	if (state & ASLEEP) != 0:
+		return true
+
+	b["bed_t"] = float(b.get("bed_t", 0.0)) - delta
+
+	if float(b["bed_t"]) <= 0.0:
+		b["bed_t"] = BED_LOOK_S
+		b["on_bed"] = bed_near.is_valid() and bool(bed_near.call((b["node"] as Node3D).global_position - Vector3(0.0, FEET_M, 0.0)))
+
+	return bool(b.get("on_bed", false))
 var _maker = null   # one HeldItem, never in the tree, for its torch, lantern and shield makers (they read only _inv.table and _root)
 
 
@@ -929,7 +957,9 @@ static func held_model(number: int, item_table) -> Node3D:
 	var id: String = item_table.id_of(number)
 	var shape: String = str(HeldItem.BasicLook.entry(id).get("shape", ""))
 
-	if id == "" or not HeldItem.BasicLook.has_look(id) or not HeldItem.HELD_LOOK_TURN.has(shape):
+	var plain: bool = HeldItem.holds_plain_look(id, str(item_table.entry(id).get("kind", ""))) and held_kind(number, item_table) != "spear"   # a spear's mesh must lie point to -Z (aim_spear), not along the plain turn
+
+	if id == "" or not HeldItem.BasicLook.has_look(id) or not (HeldItem.HELD_LOOK_TURN.has(shape) or plain):
 		return null
 
 	var node: Node3D = HeldItem.look_tool_node(id)
