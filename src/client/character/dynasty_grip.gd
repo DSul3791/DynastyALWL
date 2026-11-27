@@ -9,8 +9,10 @@ extends SkeletonModifier3D
 # Made by dynasty_body.gd under the skeleton, after the Proportions modifier (which writes the hand's own scale each frame); `body` is the body node.
 
 const P := "mixamorig_"
-const CLOSED_LENGTH := 0.55   # the hand's length while closed: 19 cm to about 10.5 cm, a fist's wrist to knuckles
-const CLOSED_THICK := 1.3     # and its thickness: the curled fingers stand off the palm
+# Dave, 27 Nov 2026: "ok for now just keep the hand open but place the tools and weapons right on the hand where it should be when the hand is closed." So the hand
+# is drawn as it is (1.0); the handle sits GRIP_FROM_WRIST_M down the open hand (dynasty_body.gd), where the fingers meet the palm and would wrap it; no ball.
+const CLOSED_LENGTH := 1.0   # the hand's length while it holds (0.55 drew a squashed hand with open fingers)
+const CLOSED_THICK := 1.0
 const EASE_S := 0.12
 const GRIP_BONE := "HandGrip"   # P + side + this: the bone under each hand that its mount hangs on (dynasty_body.gd _build_mounts)
 const FIST_NAME := "ThirdFist"   # held_item.gd THIRD_FIST_NAME

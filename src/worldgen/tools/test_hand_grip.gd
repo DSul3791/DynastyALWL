@@ -1,8 +1,7 @@
 extends SceneTree
 
-# A hand closed on what it holds (BugsList 177, dynasty_grip.gd): Dave's body has no finger bones, so while a hand mount holds something drawn the hand bone
-# is drawn shorter along the hand and a little thicker, the mount is scaled back so the tool keeps its size and turn, and the old ball fist is not drawn;
-# with nothing held the hand opens again. A body without the modifier keeps the ball.
+# A held tool on the open hand (BugsList 177, R-PLAYER-HELD-HAND, dynasty_grip.gd): Dave's body has no finger bones, so while a hand mount holds something drawn the
+# hand is drawn as it is (CLOSED_LENGTH 1.0), the mount keeps the tool's size and turn, and the old ball fist is not drawn. A body without the modifier keeps the ball.
 #   godot --headless --path . --script res://src/worldgen/tools/test_hand_grip.gd
 
 const Grip := preload("res://src/client/character/dynasty_grip.gd")
