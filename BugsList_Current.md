@@ -103,6 +103,10 @@ Not yet played.
 
 **Found by:** Dave, 27 Nov 2026: "backpacks were sitting on the back but they dont have straps they have big blocky things pretending to be straps." (The picture checker's "pack on the chest" was these blocks.) **Status: Open - fix in review; moves to BugsList_Fixed.md when merged.** The pack builder (`worn_look.gd` "pack", all nine pack items) had two 26 cm deep slabs through the chest as straps; it now has two thin 4 cm bands over the shoulders and down the front of the chest, sloping over the shoulder and lying on the bare chest or on the shirt or armour worn under it. Known gap, no work planned: the bedroll and the quivers have no model of their own and draw as the same box pack as a backpack. Not yet played.
 
+## 189. Iron and mail armour draws flat black
+
+**Found by:** the picture checker's worn-item sweep on the laptop, 26 Nov 2026: the iron helm, brigandine, breastplate, mail shirt, hauberk, coif and chausses showed as flat black shapes with no shading. **Status: Open - fix in review; moves to BugsList_Fixed.md when merged.** They used the shiny metal look (85% metallic), which draws black wherever nothing bright is there to reflect. Iron and mail now have their own drab, matt grey look (R-ITEM-IRON-LOOK); steel and bronze keep the shiny one. Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

@@ -76,6 +76,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-STORE** · 18 Nov 2026 · rule · Storage in rows of 6, a row more each chest tier. No storage weight limit, never a cap on items on the ground. *(unverified: coordinator's note)*
 - **R-WATER-SEA** · 24 Nov 2026 · suggestion · Sea water is "too salty. try to find some fresh water."
 - **R-FARM-GRID** · 24 Nov 2026 · suggestion · The till and plant grid has its bottom-left corner at the crosshair, Alt+Right and Alt+Forward grow it; one dot per seed, green if you have it, red if not. Sowing follows the real seasons. *(unverified: coordinator's note)*
+- **R-ITEM-IRON-LOOK** · 27 Nov 2026 · suggestion · Iron "should be a drab gray. steel will be shiny"; "or it could be blackened by using a treatment to keep it from rusting." Iron and mail are a dark, matt drab grey with a faint sheen, never a flat black shape; steel is shiny.
 - **R-NAME-FIBRE-BACKPACK** · 24 Nov 2026 · suggestion · "call it a FiberBackpack": the item is "Fibre - Backpack".
 
 ## Goals
