@@ -247,7 +247,7 @@ static func _compute(data: Dictionary) -> void:
 				if bone.begins_with("Head") or bone == "headfront":
 					head_verts.append(v)
 
-				var thin: bool = bone.begins_with("Head") or bone.ends_with("Hand") or bone.ends_with("HandFingers") or bone.ends_with("Foot") or bone.ends_with("ToeBase") or bone == "Neck" or bone == "headfront"
+				var thin: bool = bone.begins_with("Head") or bone.ends_with("Hand") or bone.ends_with("Foot") or bone.ends_with("ToeBase") or bone == "Neck" or bone == "headfront"
 				s_build[v] = p + radial * (0.04 if thin else 0.16)
 				# muscle: limbs, shoulders and chest, most mid-segment
 				var limb: bool = bone.ends_with("Arm") or bone.ends_with("ForeArm") or bone.ends_with("UpLeg") or bone.ends_with("Leg") or bone.ends_with("Shoulder") or bone == "Spine2"
