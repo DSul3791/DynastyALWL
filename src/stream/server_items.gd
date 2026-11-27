@@ -18357,8 +18357,8 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	if v.is_empty() or _parked.has(peer):
 		return "hurt"   # an absent player (a dropped line, ABSENT_MS): a blow from an attacker that still held it as its target lands on nothing
 
-	if _cold_out.has(peer):
-		return "hurt"   # passed out from cold: nothing hurts them until they wake (warmth.json pass_out)
+	if _cold_out.has(peer) or bool(_strain.get(peer, {}).get("rescued", false)):
+		return "hurt"   # passed out from cold or water: nothing hurts them until they are up again, the wake after the rescue included (coordinator 27 Nov 2026)
 
 	var guard: float = shield_share(peer, from)   # a raised shield takes its share of a blow from the front first, and wears by it
 
@@ -20348,7 +20348,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_wet_wind_told.erase(peer)
 	# Not winded (the faint was the cold's, not exertion's), but still lying and out of their hands while the sight comes back (strain state 3,
 	# exertion.json wake_s): Dave 27 Nov 2026, R-CORE-PASS-OUT: "they should lay there. they can only get back up once their vision fully recovers."
-	_strain[peer] = {"s": 0.0, "state": 3, "t": 0.0}
+	_strain[peer] = {"s": 0.0, "state": 3, "t": 0.0, "rescued": true}
 	_stance[peer] = 3
 	_strain_sent.erase(peer)
 	_peer_pos[peer] = to
@@ -29623,6 +29623,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 		if float(st["t"]) >= float(cfg.get("wake_s", 12.0)):
 			state = 1 if strain >= float(cfg.get("over_off", 0.75)) * scale else 0
+			st.erase("rescued")   # up again: blows land as usual
 
 			if state == 0:
 				st["after_faint"] = false

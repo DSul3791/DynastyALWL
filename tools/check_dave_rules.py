@@ -114,7 +114,7 @@ def pass_out():
           "no swing, strike, drawn bow or hoe levelling while passing out")
     server = (ROOT / "src/stream/server_items.gd").read_text(encoding="utf-8")
     check("R-CORE-PASS-OUT", '(16 if strain_going(peer) else 0)' in server and "and not strain_going(peer):" in server, "the server tells the client and refuses a stance while passing out")
-    check("R-CORE-PASS-OUT", '_strain[peer] = {"s": 0.0, "state": 3, "t": 0.0}' in server and 'if cause != "cave-in" and cause != "passed out":' in inv,
+    check("R-CORE-PASS-OUT", '_strain[peer] = {"s": 0.0, "state": 3, "t": 0.0, "rescued": true}' in server and 'if cause != "cave-in" and cause != "passed out":' in inv,
           "a cold or water pass-out wakes lying until the sight is back (waking stage, no fade of its own)")
 
 

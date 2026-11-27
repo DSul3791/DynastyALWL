@@ -74,12 +74,18 @@ func _init() -> void:
 	check(int(items._strain[1]["state"]) == 3 and items.fainted_of(1) and int(items._stance[1]) == 3, "still lying while the sight comes back (waking, R-CORE-PASS-OUT)")
 	items._set_stance(1, 0)
 	check(int(items._stance[1]) == 3, "and cannot stand up yet")
+	var wake_hp: float = float(v["health"])
+	items.hurt_player(1, 50.0, true, "wolf")
+	check(float(v["health"]) == wake_hp, "nothing hurts them while they lie waking after the rescue (%.1f)" % float(v["health"]))
 
 	for t in int(ceil(float(items._exertion_cfg["wake_s"]))) + 1:
 		items.tick(1.0)
 
 	check(int(items._strain[1]["state"]) == 0, "awake once the sight is back (wake_s)")
 	check(not items.fainted_of(1), "and free to stand again for the others")
+	var up_hp: float = float(v["health"])
+	items.hurt_player(1, 2.0, true, "wolf")
+	check(float(v["health"]) < up_hp, "once up, blows land again (%.1f from %.1f)" % [float(v["health"]), up_hp])
 	check((items._peer_pos[1] as Vector3).is_equal_approx(Vector3(150.0, 5.0, 0.0)), "the server has them there too")
 
 	# Nearest by distance: from beyond the bandit camp the town is nearer.
