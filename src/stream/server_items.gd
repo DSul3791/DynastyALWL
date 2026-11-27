@@ -4060,7 +4060,7 @@ func make_carcass(species: String, pos: Vector3, hunter: int = -1, body: Diction
 	if body.has("look"):
 		_items[id]["struct"]["look"] = int(body["look"])
 		_items[id]["struct"]["num"] = int(body.get("num", 0))
-		_items[id]["struct"]["yaw"] = snappedf(fposmod(rad_to_deg(-float(body.get("heading", 0.0)) - 90.0), 360.0), 0.1)   # the way it faced (animal_view MotionBuffer.face: a node's yaw is -heading - 90 degrees)
+		_items[id]["struct"]["yaw"] = snappedf(fposmod(rad_to_deg(-float(body.get("heading", 0.0))) - 90.0, 360.0), 0.1)   # the way it faced (animal_view MotionBuffer.face: a node's yaw is -heading - 90 degrees)
 
 	return id
 
