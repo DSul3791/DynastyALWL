@@ -1,6 +1,7 @@
 extends SceneTree
 
-# The vitals tick keeps a player's worn numbers, armour kilograms and Rested row for one tick, and each item number's weight for good
+# The vitals tick keeps a player's worn numbers and Rested row for one tick, what follows from the worn pieces until they change
+# (_dress_of: insulation, heat load, rain shed, armour, carry bonus, dressed points) and each item number's weight for good
 # (server_items vitals_memo, _pack_kg): the soak at 64 players (26 Nov 2026) showed vitals at 123 ms a second, the largest part of the server,
 # with those read five to eight times a player each look. Here two servers alike, one with the kept readings and one without, must end
 # every player's vitals the same, through a comfort level crossed inside the tick and a death inside it.
@@ -94,7 +95,7 @@ func _initialize() -> void:
 
 				check(remains == 1, "player 5 died inside the tick: one remains (%d)" % remains)
 				check(s.inventory_of(5).numbers.count(0) == s.inventory_of(5).numbers.size(), "and the pack went with them")
-				check(not s._worn_cache.has(5) and not s._armour_cache.has(5) and not s._rested_cache.has(5) and not s._kg_cache.has(5) and not s._load_cache.has(5), "and that player's kept readings went too")
+				check(not s._worn_cache.has(5) and not s._rested_cache.has(5) and not s._kg_cache.has(5) and not s._load_cache.has(5), "and that player's kept readings went too")
 
 		for p in range(1, PLAYERS + 1):
 			var key: String = a._peer_key[p]
@@ -122,6 +123,47 @@ func _initialize() -> void:
 		s._in_vitals = false
 		check(before == 4 and after == 5, "memo %s: the Rested row read inside the tick follows the meter from 4 to 5 (%d then %d)" % [str(s.vitals_memo), before, after])
 	check(a.worn_of(1) == b.worn_of(1) and a.rested_tier(2) == b.rested_tier(2), "outside the tick the live readings agree")
+	# 4. What follows from the worn pieces (_dress_of) is kept until what is worn changes: the same on both servers, wet and dry, before and
+	# after a change of clothes between ticks (and the second tick after it, when the kept row is the new one).
+	for turn in 3:
+		if turn == 1:
+			for s in [a, b]:
+				for p in [1, 2, 7]:
+					var worn: Array = s._characters[s._peer_key[p]]["worn"]
+					worn[14] = [0, 0, 0, {}]   # the mail chausses off, in place, as _unwear leaves the list
+					worn[6] = [s.table.number_of("grass_cloak"), 1, 0, {}]   # a plant cloak over the hide
+
+				s._characters[s._peer_key[4]]["worn"] = s._clean_worn([])   # undressed
+				s._soak[1] = 0.6
+
+		for p in range(1, PLAYERS + 1):
+			var same: bool = a.insulation_worn(p) == b.insulation_worn(p) and a.heat_load(p) == b.heat_load(p) and a.rain_shed(p) == b.rain_shed(p)
+			same = same and a._armour_kg(p) == b._armour_kg(p) and a._carry_body(p) == b._carry_body(p) and str(a.comfort_points(p)) == str(b.comfort_points(p))
+			check(same, "turn %d player %d: insulation, heat load, rain shed, armour, carry body and comfort points the same with the kept dress (%.4f %.4f, %.2f %.2f kg)" % [turn, p, a.insulation_worn(p), b.insulation_worn(p), a._armour_kg(p), b._armour_kg(p)])
+
+		a._vitals_tick(0.25)
+		b._vitals_tick(0.25)
+
+	# A swapped config clears the kept rows (_dress_from): read the row itself, after changing what is baked into it.
+	var carry: Dictionary = a._carry_cfg
+	a._carry_cfg = {}
+	b._carry_cfg = {}
+	check(float(a._dress_of(2)["armour"]) == 0.0, "no carry config: the kept row has no armour kilograms (%.2f)" % float(a._dress_of(2)["armour"]))
+	var heavy: Dictionary = carry.duplicate(true)
+	heavy["by_id"]["mail_shirt"] = 60.0
+	a._carry_cfg = heavy
+	b._carry_cfg = heavy
+	check(a._armour_kg(2) == b._armour_kg(2) and a._armour_kg(2) > 60.0, "a heavier mail shirt in a new carry config reaches the kept row (%.2f, live %.2f)" % [a._armour_kg(2), b._armour_kg(2)])
+	a._carry_cfg = carry
+	b._carry_cfg = carry
+	check(float(a._dress_of(2)["armour"]) == b._armour_kg_of(b.worn_of(2)), "and back with the first config")
+	a._warmth_cfg = a._warmth_cfg.duplicate(true)
+	a._warmth_cfg["max_insulation"] = 0.01
+	check(a.insulation_worn(2) <= 0.01, "a changed warmth config is read at once (%.3f)" % a.insulation_worn(2))
+	a._warmth_cfg = b._warmth_cfg
+
+	check(a._armour_kg(1) < 12.0 and a.comfort_target(4) < 5.0, "the change of clothes reached the kept rows (armour %.2f kg, comfort target %.1f undressed)" % [a._armour_kg(1), a.comfort_target(4)])
+
 	print("vitals tick, %d players, 8 ticks: %.2f ms with the kept readings, %.2f ms without" % [PLAYERS, ms_a, ms_b])
 
 	print("test_vitals_tick_cost: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
