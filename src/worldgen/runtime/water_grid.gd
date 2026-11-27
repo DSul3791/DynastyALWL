@@ -306,6 +306,11 @@ const LAKE_CLASS := 2
 const LAKE_DEEP_M := 3.0
 const LAKE_MIN_CELLS := 8
 const LAKE_JOIN_M := 2.0
+# BugsList 157 (Dave 26 Nov 2026, x 57864 z 71571: "two different water levels and you can see right under them"): joining water up to
+# LAKE_JOIN_M BELOW the lake lifted the river leaving it by up to 2 m, a flat sheet standing over the river out to the chunk's edge,
+# where the next chunk drew the river at its own level. Water joins the lake only from LAKE_JOIN_BELOW_M under it (a bay, a sloshing
+# hollow); piled water above it still joins up to LAKE_JOIN_M.
+const LAKE_JOIN_BELOW_M := 0.25
 const LAKE_JOIN_CELLS := 8
 
 
@@ -381,8 +386,8 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 		for n in members:
 			levels[n] = median
 
-		# Water standing against the lake (a hole dug into the shore, a bay the sim has not smoothed) within LAKE_JOIN_M of
-		# the lake level, up to LAKE_JOIN_CELLS cells out, is part of the lake too. A river leaving it drops away and stops this.
+		# Water standing against the lake (a bay the sim has not smoothed, piled water) from LAKE_JOIN_BELOW_M under the lake level
+		# to LAKE_JOIN_M over it, up to LAKE_JOIN_CELLS cells out, is part of the lake too. A river leaving it drops away and stops this.
 		var ring: PackedInt32Array = members.duplicate()
 		var reached: Dictionary = {}
 
@@ -410,7 +415,7 @@ static func _flatten_lakes(generator, data, origin: Vector2, count: int, spacing
 
 					var m: int = jj * count + ii
 
-					if reached.has(m) or is_nan(levels[m]) or absf(levels[m] - median) > LAKE_JOIN_M:
+					if reached.has(m) or is_nan(levels[m]) or levels[m] - median > LAKE_JOIN_M or median - levels[m] > LAKE_JOIN_BELOW_M:
 						continue
 
 					reached[m] = depth + 1
