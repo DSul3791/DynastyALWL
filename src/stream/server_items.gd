@@ -10899,6 +10899,10 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 	# above the treeline and on a hilltop the cell's middle decides.
 	var scree_near: bool = rise_most >= rise_m * 0.5
 	var scree_full: float = float(cfg.get("scree_clusters", 2.5)) * lerpf(float(cfg.get("scree_patch_floor", 0.25)), 1.0, patch) * density
+	# The foot band (Dave 27 Nov 2026: "right were it starts to transition from hill to flat ground there should be much bigger boulders. the type
+	# that make the terrain hard to traverse"): scree spots on near-flat ground (foot.flat_max) take foot.clusters, foot-sized cores and more satellites.
+	var foot: Dictionary = cfg.get("foot", {})
+	var foot_full: float = float(foot.get("clusters", 0.0)) * lerpf(float(cfg.get("scree_patch_floor", 0.25)), 1.0, patch) * density
 	var high: float = smoothstep(treeline - float(cfg.get("treeline_fade_m", 60.0)), treeline + float(cfg.get("treeline_full_m", 40.0)), h0)
 	var high_n: float = high * float(cfg.get("high_clusters", 1.6)) * lerpf(float(cfg.get("high_patch_floor", 0.4)), 1.0, patch) * density
 	var top_n: float = (float(cfg.get("top_clusters", 1.0)) * density) if drop_least != INF and drop_least >= float(cfg.get("top_drop_m", 8.0)) else 0.0
@@ -10914,7 +10918,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		if not is_nan(steep):
 			crag_n = smoothstep(float(fade[0]), float(fade[1]), steep) * float(crag.get("clusters", 1.5)) * lerpf(float(crag.get("patch_floor", 0.6)), 1.0, patch) * density
 
-	var most: float = maxf(maxf(maxf(scree_full if scree_near else 0.0, high_n), top_n), crag_n)   # the most clusters any spot of the cell can have
+	var most: float = maxf(maxf(maxf(maxf(scree_full, foot_full) if scree_near else 0.0, high_n), top_n), crag_n)   # the most clusters any spot of the cell can have
 	var rng: RandomNumberGenerator = _layout_rng(cell, "rock fields")
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var journey_mid: float = float(resource_context.call("journey_at", mid.x, mid.y)) if resource_context != null else -1.0
@@ -11018,7 +11022,8 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		if scree_near and rise <= float(cfg.get("scree_flat_max", 0.6)):
 			scree = clampf((_relief(Vector3(x, y, z), reach, ground) - rise_m) / rise_m, 0.0, 1.0)   # 0 at scree_rise_m within relief_reach_m, 1 at twice it
 
-		var scree_n: float = scree * scree_full
+		var at_foot: bool = scree > 0.0 and not foot.is_empty() and rise <= float(foot.get("flat_max", 0.35))
+		var scree_n: float = scree * (foot_full if at_foot else scree_full)
 		var kind: String = "scree" if scree_n >= high_n and scree_n >= top_n else ("high" if high_n >= top_n else "top")
 		var chance: float = maxf(maxf(scree_n, high_n), top_n)
 
@@ -11032,20 +11037,37 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		if kind == "top" and y < h0 - float(cfg.get("top_near_m", 2.0)):
 			continue   # a hilltop's outcrop lies on its crown, not down its sides
 
-		var range_m: Array = sizes.get(kind, [1.0, 2.0])
+		at_foot = at_foot and kind == "scree"
+		var range_m: Array = sizes.get("foot" if at_foot else kind, [1.0, 2.0])
 		var size: float = pow(size_draw, power)
 
 		if kind == "scree":
 			size = minf(size * lerpf(1.0, float(cfg.get("scree_wall_size", 1.4)), scree), 1.0)   # bigger under a higher wall
 
 		var core: float = lerpf(float(range_m[0]), float(range_m[1]), size)
+		var up_hill: Array = cfg.get("up_hill", [])
+
+		if up_hill.size() >= 3 and not at_foot and kind in ["scree", "crag", "high"]:
+			# Smaller the higher up the hill (Dave 27 Nov 2026: "higher up on the hill they should be smaller, the lower they get the bigger they
+			# should be"): how far the ground falls below the spot within relief_reach_m, from up_hill[0] m (full size) to up_hill[1] m (up_hill[2]
+			# of it).
+			var lowest: float = y
+
+			for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+				var below_h: float = float(ground.call(x + d.x, z + d.y))
+
+				if not is_nan(below_h):
+					lowest = minf(lowest, below_h)
+
+			core *= lerpf(1.0, float(up_hill[2]), smoothstep(float(up_hill[0]), float(up_hill[1]), y - lowest))
 		var slot0: int = attempt * FIELD_CLUSTER_SLOTS
 
 		if not bool(lay_rock.call(slot0, x, z, core, yaw, kind)):
 			continue   # no core, no cluster
 
 		centres.append([x, z])
-		var many: int = int(round(lerpf(float(satellites[0]), float(satellites[1]), count_draw)))
+		var counts: Array = foot.get("satellites", satellites) if at_foot else satellites
+		var many: int = int(round(lerpf(float(counts[0]), float(counts[1]), count_draw)))
 
 		for k in range(mini(many, FIELD_CLUSTER_SLOTS - 1)):
 			var a: Array = around[k]
