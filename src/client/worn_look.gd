@@ -244,14 +244,17 @@ static func _dome() -> ArrayMesh:
 	return st.commit()
 
 # What each worn item is made of, from its id: hide and leather show a soft grain and a little sheen, wool and padded cloth a woven nap, linen a fine weave, fur strands,
-# grass and fibre plaited stems, and bronze, iron and steel are metal. The look follows Art_Direction.md: real stuff, no plastic (Kathreen, 3 Nov 2026).
+# grass and fibre plaited stems, bronze and steel are shiny metal, iron and mail a drab matt grey. The look follows Art_Direction.md: real stuff, no plastic (Kathreen, 3 Nov 2026).
 const STUFF_PREFIXES := [["hide", "hide"], ["leather", "hide"], ["quiver", "hide"], ["simple_backpack", "hide"], ["improved_backpack", "hide"], ["quality_backpack", "hide"],
 	["advanced_backpack", "hide"], ["wool", "wool"], ["gambeson", "wool"], ["linen", "linen"],
-	["fur", "fur"], ["grass", "fibre"], ["fibre", "fibre"], ["bronze", "metal"], ["iron", "metal"], ["steel", "metal"], ["mail", "metal"], ["plate", "metal"]]
+	["fur", "fur"], ["grass", "fibre"], ["fibre", "fibre"], ["bronze", "metal"], ["iron", "iron"], ["steel", "metal"], ["mail", "iron"], ["plate", "metal"]]
 # stuff -> [weave scale (per metre), weave strength, roughness, specular, metallic, woven share]
 const STUFF_LOOKS := {
 	"hide": [60.0, 0.16, 0.78, 0.3, 0.0, 0.1], "wool": [260.0, 0.22, 0.98, 0.1, 0.0, 0.7], "linen": [420.0, 0.12, 0.9, 0.18, 0.0, 0.9],
 	"fur": [380.0, 0.3, 0.95, 0.12, 0.0, 0.3], "fibre": [140.0, 0.34, 0.9, 0.2, 0.0, 0.9], "metal": [30.0, 0.1, 0.38, 0.5, 0.85, 0.0],
+	# Iron and mail (Dave, 27 Nov 2026: "it should be a drab gray. steel will be shiny"; R-ITEM-IRON-LOOK; BugsList 189): a dull, matt dark grey with a faint sheen, as
+	# forge-blackened iron. As "metal" (85% metallic) it drew flat black wherever nothing bright was there to reflect.
+	"iron": [30.0, 0.14, 0.8, 0.35, 0.2, 0.0],
 }
 const CLOTH_SHADER := """
 shader_type spatial;

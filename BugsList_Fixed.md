@@ -2,6 +2,10 @@
 
 All Fixed Bugs Go here.
 
+## 188. Backpacks, bags, the bedroll and quivers have blocks instead of straps
+
+**Found by:** Dave, 27 Nov 2026: "backpacks were sitting on the back but they dont have straps they have big blocky things pretending to be straps." (The picture checker's "pack on the chest" was these blocks.) **Status: Fixed by PR #2031, merged to dev at 91ee05c1.** The pack builder (`worn_look.gd` "pack", all nine pack items) had two 26 cm deep slabs through the chest as straps; it now has two thin 4 cm bands over the shoulders and down the front of the chest, sloping over the shoulder and lying on the bare chest or on the shirt or armour worn under it. Known gap, no work planned: the bedroll and the quivers have no model of their own and draw as the same box pack as a backpack. Not yet played.
+
 ## 187. Skin shows through worn clothes and armour
 
 **Found by:** the picture checker's worn-item sweep on the laptop, 26 Nov 2026 (58 of 79 worn items): shins, knees, feet, hands and the midriff poke out through the rigid worn pieces. **Status: Fixed by PR #2030, merged to dev at 0d37a525.** Dave's body now has one tuck-in shape per group of bones (`dynasty_shapes.gd` COVERS): wherever a worn piece sits on a bone (boots on the shins and feet, trousers on the hips, thighs and shins, gloves on the hands, a shirt on the chest and arms), that skin sits about 2 cm further in, inside the pieces. Headwear, cloaks, packs, belts and sandals leave the skin as it is. Not a garment remodel: clothes still do not bend at the joints (R-CORE-GOOD-ENOUGH). Not yet played.
