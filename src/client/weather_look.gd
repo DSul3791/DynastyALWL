@@ -286,6 +286,7 @@ static func visibility_of_density(density: float) -> float:
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const LookWarm := preload("res://src/client/look_warm.gd")
 const WindCueScript := preload("res://src/client/wind_cue.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const FogLook := preload("res://src/client/fog_look.gd")
@@ -321,14 +322,27 @@ func setup(client) -> void:
 	_rng.seed = 5150
 	canopy = CanopyMapScript.new()
 	var tq_sub0_rainandsno: int = FrameProbe.start()
-	_rain = _make_rain()
-	_snow = _make_snow()
+	_rain = LookWarm.take("rain") as GPUParticles3D       # made in the menus when there were any (look_warm.gd)
+	_snow = LookWarm.take("snow") as GPUParticles3D
+
+	if _rain != null:
+		_rain_material = (_rain.draw_pass_1 as ArrayMesh).surface_get_material(0) as ShaderMaterial
+		_rain_material.set_shader_parameter("canopy", canopy.texture)   # this look's own canopy map
+	else:
+		_rain = _make_rain()
+
+	if _snow != null:
+		_snow_material = (_snow.draw_pass_1 as QuadMesh).material as StandardMaterial3D
+	else:
+		_snow = _make_snow()
+
 	add_child(_rain)
 	add_child(_snow)
 	FrameProbe.stop("weather setup: rain and snow", tq_sub0_rainandsno)
 
 	var tq_sub1_splash: int = FrameProbe.start()
-	_make_splash()
+	var splash_parts: Node3D = LookWarm.take("splash") as Node3D   # made in the menus when there were any
+	_make_splash(splash_parts if splash_parts != null else make_splash_parts())
 	FrameProbe.stop("weather setup: splash", tq_sub1_splash)
 	var tq_sub2_drips: int = FrameProbe.start()
 	var drip_material: ShaderMaterial = ShaderMaterial.new()
@@ -408,6 +422,15 @@ func set_quality(quality: int) -> void:
 		wind_cue.set_quality(_quality)
 
 
+# The rain or the snow made by look_warm.gd ahead of the welcome, on a WeatherLook that is never set up: the same _make_rain and _make_snow
+# as setup's, with this node's default quality (setup's too: set_quality follows it).
+func make_particles(step: String) -> GPUParticles3D:
+	if canopy == null:
+		canopy = CanopyMapScript.new()
+
+	return _make_rain() if step == "rain" else _make_snow()
+
+
 func _make_rain() -> GPUParticles3D:
 	var particles: GPUParticles3D = GPUParticles3D.new()
 	particles.amount = int(RAIN_AMOUNT[_quality])
@@ -469,15 +492,19 @@ func _update_rain_look(eye: Vector3, hard: float, heading: float) -> void:
 	_rain_material.set_shader_parameter("size_scale", Vector2(lerpf(0.55, 1.7, hard), speed * RAIN_LOOK_STREAK_S / MESH_STREAK_M))
 
 
-func _make_splash() -> void:
-	_splash = GPUParticles3D.new()
-	_splash.name = "RainSplash"
-	_splash.amount = SPLASH_AMOUNT
-	_splash.lifetime = 0.25
-	_splash.local_coords = false
-	_splash.visibility_aabb = AABB(Vector3(-40.0, -40.0, -40.0), Vector3(80.0, 80.0, 80.0))
-	_splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-	_splash.visible = false
+# The splash look (drops kicked up where rain meets the ground) and its height field, in one holder node: setup's own when nothing was made
+# ahead, or look_warm.gd's "splash" step in the menus (Lane A Low route 98617e37: this took 1307 ms in the welcome's one frame).
+func make_splash_parts() -> Node3D:
+	var holder: Node3D = Node3D.new()
+	holder.name = "SplashParts"
+	var splash: GPUParticles3D = GPUParticles3D.new()
+	splash.name = "RainSplash"
+	splash.amount = SPLASH_AMOUNT
+	splash.lifetime = 0.25
+	splash.local_coords = false
+	splash.visibility_aabb = AABB(Vector3(-40.0, -40.0, -40.0), Vector3(80.0, 80.0, 80.0))
+	splash.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	splash.visible = false
 	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	process.direction = Vector3(0.0, 1.0, 0.0)
 	process.spread = 55.0
@@ -486,7 +513,7 @@ func _make_splash() -> void:
 	process.gravity = Vector3(0.0, -9.8, 0.0)
 	process.scale_min = 0.6
 	process.scale_max = 1.2
-	_splash.process_material = process
+	splash.process_material = process
 	var quad: QuadMesh = QuadMesh.new()
 	quad.size = Vector2(0.012, 0.012)
 	var drop: StandardMaterial3D = StandardMaterial3D.new()
@@ -496,15 +523,30 @@ func _make_splash() -> void:
 	drop.roughness = 1.0
 	drop.specular_mode = BaseMaterial3D.SPECULAR_DISABLED    # lit by the scene like the streaks, never self-lit
 	quad.material = drop
-	_splash_material = drop
-	_splash.draw_pass_1 = quad
-	add_child(_splash)
-	_splash_field = GPUParticlesCollisionHeightField3D.new()
-	_splash_field.size = Vector3(SPLASH_FIELD_M, 60.0, SPLASH_FIELD_M)
-	_splash_field.resolution = GPUParticlesCollisionHeightField3D.RESOLUTION_256
-	_splash_field.update_mode = GPUParticlesCollisionHeightField3D.UPDATE_MODE_WHEN_MOVED
-	_splash_field.follow_camera_enabled = true
-	add_child(_splash_field)
+	splash.draw_pass_1 = quad
+	holder.add_child(splash)
+	var field: GPUParticlesCollisionHeightField3D = GPUParticlesCollisionHeightField3D.new()
+	field.name = "SplashField"
+	field.size = Vector3(SPLASH_FIELD_M, 60.0, SPLASH_FIELD_M)
+	field.resolution = GPUParticlesCollisionHeightField3D.RESOLUTION_256
+	field.update_mode = GPUParticlesCollisionHeightField3D.UPDATE_MODE_WHEN_MOVED
+	field.follow_camera_enabled = true
+	field.visible = false   # set_quality shows it from SPLASH_FROM_QUALITY up
+	holder.add_child(field)
+	return holder
+
+
+# Moves the splash and its field from `holder` (made here or ahead) under this node and links the rain to them.
+func _make_splash(holder: Node3D) -> void:
+	_splash = holder.get_node("RainSplash") as GPUParticles3D
+	_splash_field = holder.get_node("SplashField") as GPUParticlesCollisionHeightField3D
+	_splash_material = (_splash.draw_pass_1 as QuadMesh).material as StandardMaterial3D
+
+	for part in [_splash, _splash_field]:
+		holder.remove_child(part)
+		add_child(part)
+
+	holder.free()
 	_rain.collision_base_size = 0.02
 	_rain.sub_emitter = _rain.get_path_to(_splash)
 	var rain_process: ParticleProcessMaterial = _rain.process_material as ParticleProcessMaterial
@@ -513,7 +555,6 @@ func _make_splash() -> void:
 	set_quality(_quality)
 
 
-# The splash flecks on the ground and the splash sheet's strength: how hard it rains on open ground now (none in a cave).
 func _update_splash(rain: float, open_sky: float) -> void:
 	var on_ground: float = snappedf(rain * open_sky, 0.02)
 	var material: ShaderMaterial = _client.terrain.material as ShaderMaterial
