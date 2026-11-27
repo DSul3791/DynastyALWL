@@ -45,3 +45,6 @@ Agents: `systems-engineer`, `terrain-water`, `task-investigator`, `item-data` fo
 
 ## Upgrading Ponytail later
 Clone the new tag, diff its four source skills against the hashes above, port only what fits `PONYTAIL_RULES.md`, update the commit pin in the rules, skills and checker, regenerate ZIPs, and run the same independent review.
+
+## Source of docs/PONYTAIL_RULES.md
+Source: Ponytail v5.3.3 by Dietrich Gebert, MIT, `github.com/DietrichGebert/ponytail` tag `v5.3.3` = commit `7801d061243d7b753bad0e0b3c057cd250b11755`. Adapted from its `skills/ponytail/SKILL.md`; the first version of this file (moderator, 31 Oct 2026) was written from the Ponytail README for the water build and handoffs then applied it team-wide.
