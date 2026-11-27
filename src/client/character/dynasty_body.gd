@@ -21,6 +21,7 @@ const Proportions := preload("res://src/client/character/dynasty_proportions.gd"
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
 const LegTurn := preload("res://src/client/character/dynasty_leg_turn.gd")
+const Grip := preload("res://src/client/character/dynasty_grip.gd")
 const HairModels := preload("res://src/client/character/hair_models.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 
@@ -123,6 +124,8 @@ var _model: Node3D
 var proportions: SkeletonModifier3D           # dynasty_proportions.gd, made by set_proportions
 var breath: SkeletonModifier3D               # dynasty_breath.gd, made with the body
 var leg_turn: SkeletonModifier3D             # dynasty_leg_turn.gd, made with the body
+var grip: SkeletonModifier3D                 # dynasty_grip.gd, made with the body: a hand closed on what it holds
+var _mount_base: Dictionary = {}              # Marker3D -> its transform with the creator's hand scale taken back (dynasty_grip.gd scales it on from here)
 var _mount_rest: Dictionary = {}              # Marker3D -> its transform before set_proportions scaled the body
 
 
@@ -253,6 +256,11 @@ func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	legs.body = self
 	skeleton.add_child(legs)
 	leg_turn = legs
+	var hold := Grip.new()      # a hand closed on what it holds, instead of the ball fist (dynasty_grip.gd, BugsList 177)
+	hold.name = "Grip"
+	hold.body = self
+	skeleton.add_child(hold)
+	grip = hold
 
 
 # A mount on a bone, in the bone's rest frame turned so that its -Z points out along the bone (the fingers) and its +Y points to the front of the body, the same grip the old
@@ -274,6 +282,23 @@ func _mount(bone: String, mount_name: String, offset_m: Vector3, along: Vector3,
 	return marker
 
 
+# A mount's transform before dynasty_grip.gd closes the hand: as built, or as set_proportions scaled it back.
+func mount_base(marker: Marker3D) -> Transform3D:
+	if not _mount_base.has(marker):
+		_mount_base[marker] = marker.transform
+
+	return _mount_base[marker]
+
+
+# The hand bone's own scale from the creator's sliders (dynasty_proportions.gd writes hands / arms on it), 1 with none.
+func hand_scale() -> float:
+	if proportions == null or (proportions.get("factors") as Dictionary).is_empty():
+		return 1.0
+
+	var f: Dictionary = proportions.get("factors")
+	return float(f["hands"]) / float(f["arms"])
+
+
 func _bone_dir(bone: String, child: String) -> Vector3:
 	var a: Vector3 = skeleton.get_bone_global_rest(skeleton.find_bone(P + bone)).origin
 	var b: Vector3 = skeleton.get_bone_global_rest(skeleton.find_bone(P + child)).origin
@@ -284,6 +309,7 @@ func _bone_dir(bone: String, child: String) -> Vector3:
 # 7 cm put the handle across the wrist, above the hanging hand, so the axe seemed to float by the hip (PC shot 5 Nov, axe_right.png). 11 cm is where the fingers meet the
 # palm; the hand has no finger bones, so it cannot close round the handle, but the handle now runs through it.
 const GRIP_FROM_WRIST_M := 0.11
+const GRIP_BONE := Grip.GRIP_BONE   # P + side + this: the bone each hand mount hangs on (dynasty_grip.gd)
 
 
 func _build_mounts() -> void:
@@ -291,9 +317,24 @@ func _build_mounts() -> void:
 	var front: Vector3 = Vector3(0.0, 0.0, 1.0)
 	var right_dir: Vector3 = _bone_dir("RightForeArm", "RightHand")
 	var left_dir: Vector3 = _bone_dir("LeftForeArm", "LeftHand")
-	hand_mount_r = _mount("RightHand", "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
-	hand_mount_l = _mount("LeftHand", "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
+	# Each hand mount hangs on a bone of its own under the hand (GRIP_BONE, at the wrist, no turn of its own): dynasty_grip.gd draws the hand shorter while it
+	# holds and undoes that scale on this bone, so the mount never carries it, even when code reads the hand before the frame's modifiers ran (player_view follow_hand).
+	for side in ["Right", "Left"]:
+		if skeleton.find_bone(P + side + GRIP_BONE) < 0:
+			var grip_bone: int = skeleton.get_bone_count()
+			skeleton.add_bone(P + side + GRIP_BONE)
+			skeleton.set_bone_parent(grip_bone, skeleton.find_bone(P + side + "Hand"))
+			skeleton.set_bone_rest(grip_bone, Transform3D.IDENTITY)
+
+	skeleton.force_update_all_bone_transforms()   # the new bones' global rests are read at once (_mount)
+
+	hand_mount_r = _mount("Right" + GRIP_BONE, "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
+	hand_mount_l = _mount("Left" + GRIP_BONE, "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
 	head_mount = _mount("Head", "HeadMount", Vector3(0.0, 0.1, 0.0), Vector3(0.0, -1.0, 0.0), front)
+
+	for marker in [hand_mount_r, hand_mount_l, head_mount]:   # as built, before dynasty_grip.gd or set_proportions turns them
+		_mount_rest[marker] = marker.transform
+		_mount_base[marker] = marker.transform
 
 
 # Worn clothing on Dave's body (Kathreen, 3 Nov 2026; docs/DYNASTY_BODY.md gap 1). worn_look.gd writes its pieces in the old ragdoll's bone frames: every frame upright and
@@ -947,6 +988,9 @@ func set_proportions(g: Dictionary) -> void:
 		if leg_turn != null:
 			skeleton.move_child(leg_turn, -1)    # and the legs' turn last
 
+		if grip != null:
+			skeleton.move_child(grip, -1)        # the hands after the Proportions hand scale, which grip writes again whole
+
 	proportions.set_genome(g)
 	_set_widths(g)
 	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
@@ -964,6 +1008,7 @@ func set_proportions(g: Dictionary) -> void:
 
 		var rest: Transform3D = _mount_rest[marker]
 		marker.transform = Transform3D(rest.basis * (1.0 / float(spec[1])), rest.origin)
+		_mount_base[marker] = marker.transform
 
 
 var _widths_later: bool = false     # the widths wait for the shapes worker (dynasty_shapes.gd ready)

@@ -7,6 +7,7 @@ extends Node
 # Hold right click to aim a throw; then left click throws. Letting go of right click returns to
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
+const GripScript := preload("res://src/client/character/dynasty_grip.gd")
 const FeelKicks := preload("res://src/client/feel_kicks.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
@@ -3855,7 +3856,38 @@ static func third_fist_on(model: Node3D, skin_color: Color) -> MeshInstance3D:
 		model.add_child(fist)
 
 	fist.transform = model.transform.affine_inverse() * Transform3D(Basis.from_scale(THIRD_FIST_SCALE), Vector3.ZERO)
+
+	if not fist.has_meta("ball"):
+		fist.set_meta("ball", fist.mesh)
+
+	var on: Node = model.get_parent()
+
+	if on != null and int(fist.get_meta("closes_on", 0)) != on.get_instance_id():
+		fist.set_meta("closes_on", on.get_instance_id())   # looked up once per hand the model is on (the spear refits its fist every frame; a model can move from the arms to the body)
+		fist.set_meta("hand_closes", hand_closes(model))
+
+	var mesh: Mesh = null if bool(fist.get_meta("hand_closes", false)) else fist.get_meta("ball")   # a body that closes its own hand on the grip (dynasty_grip.gd, BugsList 177) needs no ball
+
+	if fist.mesh != mesh:
+		fist.mesh = mesh
 	return fist
+
+
+# Whether the body holding `model` closes its own hand round the grip (dynasty_body.gd's Grip modifier, BugsList 177), so the ball fist is not drawn. A body
+# without one (no glb, the old bodies) keeps the ball. The model must be on its hand mount already.
+static func hand_closes(model: Node3D) -> bool:
+	if not GripScript.closes:
+		return false
+
+	var at: Node = model.get_parent()
+
+	while at != null:
+		if at.get("grip") is SkeletonModifier3D:
+			return true
+
+		at = at.get_parent()
+
+	return false
 
 
 # The third-person fist's colour (Dino's #488 look, 6 Nov 2026: the grip read as a pale blob): the body's painted skin, not the first-person arms' FIST_COLOR.
