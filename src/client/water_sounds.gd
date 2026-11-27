@@ -773,7 +773,8 @@ func _aim(slot: Dictionary, candidate: Dictionary, _from: Vector3) -> void:
 	var speed: float = float(candidate.get("speed", -1.0))
 
 	if candidate["kind"] in ["brook", "river"]:
-		db += speed_db(speed)                     # slow water is quiet, only fast water is loud (and silent under SILENT_MPS: _classify_row)
+		var heard: float = maxf(speed, LOUD_MPS) if float(candidate["drop"]) >= RAPIDS_DROP_M else speed    # a steep reach is fast water
+		db += speed_db(heard)                     # slow water is quiet, only fast water is loud (and silent under SILENT_MPS: _classify_row)
 
 		if speed >= 0.0:
 			pitch += 0.04 * clampf(log(maxf(speed, SPEED_FLOOR) / SPEED_REF) / log(2.0), -1.5, 2.0)
