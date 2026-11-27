@@ -92,6 +92,10 @@ Not yet played.
 
 **Known, left for proper garment meshes (a Dave art question; the rigid pieces cannot do these):** with the arm raised in the chop, the throat shows bare under the gambeson's collar (project files qa15g_chop_gambeson_t0.1_y90.png, qa15g_sheet_chop_gambeson.jpg); the gambeson's chest reads as a squared block from the side, the shirt a little (qa15g_idle_gambeson_y270.png, qa15g_sheet_idle_gambeson.jpg, qa15g_sheet_idle_linen_shirt.jpg). The mail shirt looks right. The same tester said the character looked around too much in build 9257 (QA #8, about the creator's doll).
 
+## 181. One-handed tools and weapons are carried level at the hip, through the thigh
+
+**Found by:** the picture checker's held-item sweep, 26 Nov 2026 (107 of 128 held items): "carried level at hip height, pointing forward, through the thigh and loincloth" (axes, hammers, picks, swords, maces, knives, chisels, sickles). **Status: Open - carry to be settled with pictures.** The third-person carry (`held_item.gd third_hold`, `THIRD_LEAN_DEG` -17) turns every tool head forward and a little down, from Dave's words of 25 Oct 2026 ("all held items point only slightly down"); only shovels, hoes, saws and rods have their own pitch. Before/after pictures go to the coordinator before any change merges. Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
