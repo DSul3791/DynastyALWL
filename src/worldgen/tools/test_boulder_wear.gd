@@ -182,6 +182,15 @@ func _init() -> void:
 	var foot_variant: int = int(view._boulders[4253]["variant"])
 	check(foot_variant >= view.SKIRT_VARIANTS and (view._skirt_mesh(foot_variant)[1] as Array).size() > 2 * view.SKIRT_CHUNKS, "a foot band rock lies in a field of big boulders (%d chunks)" % (view._skirt_mesh(foot_variant)[1] as Array).size())
 	view._forget(4253)
+	standing[0] = Vector3(300.0, 6.0, 300.0)   # a rock that turns solid round the player stays open until the player is clear of it
+	view._show_boulder(4254, [4254, 0, total, Vector3(300.0, 5.0, 300.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 0.0, "total": total, "field": 1, "skirt": [0.0, 0.0, -0.2, 1]}])
+	check(view._boulders[4254]["node"] != null and (view._boulders[4254]["shape"] as CollisionShape3D).disabled and view._boulders[4254].has("open"), "a rock made round the player does not shut the player inside it")
+	standing[0] = Vector3(300.0, 6.0, 345.0)
+	view._rock_look_msec = -100000
+	view._rock_tick()
+	check(not (view._boulders[4254]["shape"] as CollisionShape3D).disabled and not view._boulders[4254].has("open"), "and turns solid once the player is clear")
+	view._forget(4254)
+	standing[0] = Vector3(500.0, 0.0, 500.0)
 	view._forget(4251)
 	check(not view._boulders.has(4251) and not view._rock_near.has(4251), "a rock gone from the world is forgotten")
 

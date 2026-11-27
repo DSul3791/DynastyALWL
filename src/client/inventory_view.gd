@@ -4020,15 +4020,38 @@ func _rock_body(id: int) -> void:
 	lump.visible = int(entry["left"]) < int(entry["total"])   # a whole rock is drawn by its cell; a worked one draws itself
 	body.add_child(lump)   # the crack overlay comes with the first blow (_size_boulder)
 	body.transform = Transform3D(_rock_basis(entry), entry["pos"])
+	# A shape that would come into being round the player (a rock that turns solid where the player already stands: a join, a teleport, a
+	# body made late) is left open until the player is clear of it, so nobody is ever shut inside a rock or pushed down through the ground by
+	# it (rocks15: a run that began inside a boulder field fell 1.4 m under the ground). [shape, middle, reach] in entry "open".
+	var player: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.INF
+	var open: Array = []
+	var radius: float = float(entry["radius"])
+
+	if _rock_round_player((entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1, player):
+		shape.disabled = true
+		open.append([shape, (entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1])
 
 	if (entry["skirt"] as Array).size() >= 3:
-		var local: Transform3D = body.transform.affine_inverse() * _rock_skirt_xf(entry)
+		var skirt_xf: Transform3D = _rock_skirt_xf(entry)
+		var local: Transform3D = body.transform.affine_inverse() * skirt_xf
+		var r: float = snappedf(radius, 0.1)
+		var spheres: Array = _skirt_mesh(int(entry["variant"]))[3]
+		var hulls: Array = _skirt_hulls(int(entry["variant"]), radius)
 
-		for hull in _skirt_hulls(int(entry["variant"]), float(entry["radius"])):
+		for n in hulls.size():
 			var chunk: CollisionShape3D = CollisionShape3D.new()
-			chunk.shape = hull
+			chunk.shape = hulls[n]
 			chunk.transform = local
+			var middle: Vector3 = skirt_xf * ((spheres[n][0] as Vector3) * r)
+
+			if _rock_round_player(middle, float(spheres[n][1]) * r, player):
+				chunk.disabled = true
+				open.append([chunk, middle, float(spheres[n][1]) * r])
+
 			body.add_child(chunk)
+
+	if not open.is_empty():
+		entry["open"] = open
 
 	entry["node"] = body
 	entry["shape"] = shape
@@ -4037,6 +4060,11 @@ func _rock_body(id: int) -> void:
 	_size_boulder(entry)
 	_root.add_child(body)
 	_rock_near[id] = true
+
+
+# True when the player's capsule (its middle `player`, about 1 m round it) reaches into a sphere of `reach` round `middle`.
+func _rock_round_player(middle: Vector3, reach: float, player: Vector3) -> bool:
+	return player.is_finite() and player.distance_to(middle) < reach + 1.0
 
 
 func _rock_unbody(id: int) -> void:
@@ -4051,6 +4079,7 @@ func _rock_unbody(id: int) -> void:
 	entry["shape"] = null
 	entry["lump"] = null
 	entry.erase("now")
+	entry.erase("open")
 
 
 # Each frame: a few dirty cells drawn again; every ROCK_LOOK_S the rocks round the player get their bodies (at most ROCK_SHAPES_PER_FRAME shapes a frame;
@@ -4087,6 +4116,19 @@ func _rock_tick() -> void:
 			_rock_near.erase(id)
 		elif int(entry["left"]) >= int(entry["total"]) and (entry["pos"] as Vector3).distance_to(at) > ROCK_FAR_M:
 			_rock_unbody(id)
+		elif entry.has("open"):
+			var still: Array = []
+
+			for gap in entry["open"]:   # a shape left open round the player turns solid once the player is clear of it
+				if _rock_round_player(gap[1], float(gap[2]), at):
+					still.append(gap)
+				elif is_instance_valid(gap[0]):
+					(gap[0] as CollisionShape3D).disabled = false
+
+			if still.is_empty():
+				entry.erase("open")
+			else:
+				entry["open"] = still
 
 	var mid: Vector2i = Vector2i(int(floor(at.x / ROCK_CELL_M)), int(floor(at.z / ROCK_CELL_M)))
 	var reach: int = int(ceil(ROCK_NEAR_M / ROCK_CELL_M))
@@ -4216,6 +4258,7 @@ func _skirt_mesh(variant: int) -> Array:
 		var far: SurfaceTool = SurfaceTool.new()   # the same chunks of 20 faces, drawn past the near blocks
 		far.begin(Mesh.PRIMITIVE_TRIANGLES)
 		var hulls: Array = []
+		var spheres: Array = []
 		var low: Array = []   # three small-chunk shapes of 80 faces (rocks8: 9 chunks of 320 faces a skirt drew over a million triangles in range)
 
 		var lowest: Array = []
@@ -4261,6 +4304,12 @@ func _skirt_mesh(variant: int) -> Array:
 				points.append(place * v)
 
 			hulls.append(points)
+			var bounds: AABB = AABB(points[0], Vector3.ZERO)
+
+			for v in points:
+				bounds = bounds.expand(v)
+
+			spheres.append([bounds.get_center(), bounds.size.length() * 0.5])   # a sphere round the chunk (the open-round-the-player test)
 
 		for n in range(SKIRT_STONES):
 			var angle: float = rng.randf() * TAU
@@ -4268,7 +4317,7 @@ func _skirt_mesh(variant: int) -> Array:
 			var size: float = lerpf(0.06, 0.18, rng.randf())
 			tool.append_from(pebble, 0, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(cos(angle) * out, -0.25 * size, sin(angle) * out)))
 
-		_skirt_meshes.append([tool.commit(), hulls, far.commit()])
+		_skirt_meshes.append([tool.commit(), hulls, far.commit(), spheres])
 
 	return _skirt_meshes[variant]
 
