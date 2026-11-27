@@ -109,6 +109,31 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	check(v._fallen.size() == 1, "and it is off the waiting list (the tipped one waits)")
 	check(v._take_fallen("wolf", Vector3(20.0, 0.0, 0.0)) == null, "a carcass of another kind does not take it")
 
+	# A dead body drawn fresh (walked back to): one with no death clip lies tipped on its side once in the tree, one with a clip in its
+	# clip's pose; nothing is moved while its parent is adding children (Lane A at 840c6068: "Parent node is busy", the bodies stood).
+	var fresh_plain: Dictionary = body(v, 11, {"0": ["Idle", 4.0]})
+	var fresh_clip: Dictionary = body(v, 12, {"0": ["Idle", 4.0], "die": ["Death_Stand_R01_once", 1.7]})
+	var fresh_roots: Array = []
+
+	for fresh in [fresh_plain, fresh_clip]:
+		v._bodies.erase(int(fresh["id"]))
+		v.remove_child(fresh["node"])
+		((fresh["node"] as Node3D).get_meta("player") as AnimationPlayer).play("Idle")
+		var fresh_root: Node3D = Node3D.new()
+		v._lay_dead(fresh_root, fresh["node"])
+		v.add_child(fresh_root)
+		fresh_roots.append(fresh_root)
+
+	await process_frame
+	var plain_node: Node3D = fresh_plain["node"]
+	check(plain_node.get_parent() != null and plain_node.get_parent().name == "Fallen" and plain_node.get_parent().get_parent() == fresh_roots[0] and absf((plain_node.get_parent() as Node3D).rotation.z + PI * 0.5) < 0.001, "a fresh dead body with no death clip lies on its side under its row")
+	check(not (plain_node.get_meta("player") as AnimationPlayer).is_playing(), "and its clip is stopped (no grazing dead body)")
+	var clip_player: AnimationPlayer = (fresh_clip["node"] as Node3D).get_meta("player")
+	check((fresh_clip["node"] as Node3D).get_parent() == fresh_roots[1] and clip_player.assigned_animation == "Death_Stand_R01_once", "one with a death clip lies in that clip's pose (%s)" % clip_player.assigned_animation)
+
+	for fresh_root in fresh_roots:
+		(fresh_root as Node3D).queue_free()
+
 	# A fallen body no carcass row takes: kept while the player is far, gone once they are near after DEAD_WAIT_S.
 	v._t += AnimalViewScript.DEAD_WAIT_S + 0.1
 	v._clear_fallen(Vector3(500.0, 0.0, 0.0))

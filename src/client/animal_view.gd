@@ -638,9 +638,26 @@ func dead_body(kind: String, look: int, num: int, at: Vector3) -> Node3D:
 	if num >= YOUNG_NUM and not model.has_meta("young_model"):
 		model.scale = Vector3.ONE * YOUNG_SCALE
 
-	root.add_child(model)
-	model.ready.connect(_lie_dead.bind(model, root), CONNECT_ONE_SHOT)   # once its skeleton and player are in the tree too
+	_lay_dead(root, model)
 	return root
+
+
+# A fresh model put under its dead body's root, out of the tree: one with no death clip is tipped now (Lane A at 840c6068: tipping it in its
+# ready failed, "Parent node is busy adding/removing children", and it stood grazing); its pose is set once it is in the tree (_lie_dead).
+func _lay_dead(root: Node3D, model: Node3D) -> void:
+	root.add_child(model)
+
+	if not _death_clip(model):
+		_tip_over(model, 0.0)
+
+	model.request_ready()   # a body drawn before (it was in the tree once) gets its ready again
+	model.ready.connect(_lie_dead.bind(model), CONNECT_ONE_SHOT)   # once its skeleton and player are in the tree too
+
+
+# Whether a model's player has its death clip (role "die").
+static func _death_clip(model: Node3D) -> bool:
+	var player: AnimationPlayer = model.get_meta("player") if model.has_meta("player") else null
+	return player != null and str((player.get_meta("roles", {}) as Dictionary).get("die", "")) != "" and player.has_animation(str(player.get_meta("roles")["die"]))
 
 
 # The fallen body moves under its carcass row's node where it is, as it is: the row owns it from now on.
@@ -654,8 +671,9 @@ static func _take_in(root: Node3D, fallen: Node3D) -> void:
 		root.add_child(fallen)
 
 
-# A dead body drawn fresh (walked back to, a rejoin): its death clip's last pose, or its standing pose tipped onto its side.
-func _lie_dead(model: Node3D, root: Node3D) -> void:
+# A dead body drawn fresh (walked back to, a rejoin): its death clip's last pose, or its standing pose (already tipped by _lay_dead).
+# No node is moved here: its parent is still adding children.
+func _lie_dead(model: Node3D) -> void:
 	if not is_instance_valid(model):
 		return
 
@@ -677,9 +695,6 @@ func _lie_dead(model: Node3D, root: Node3D) -> void:
 
 	if player != null:
 		player.pause()
-
-	if model.get_parent() == root:
-		_tip_over(model, 0.0)
 
 
 # The fallen body of `kind` within DEAD_TAKE_M of `at`, taken off _fallen; or a live body there whose row has not yet gone although a hit
