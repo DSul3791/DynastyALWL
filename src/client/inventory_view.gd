@@ -3917,7 +3917,9 @@ const ROCK_FAR_M := 50.0
 const ROCK_DRAW_M := 160.0
 const ROCK_CELL_M := 32.0
 const ROCK_BLOCK := 3        # cells a side of a drawing block (96 m)
-const ROCK_SKIRT_DRAW_M := 110.0   # talus chunks are small: drawn nearer than the rocks
+const ROCK_SKIRT_DRAW_M := 70.0    # talus chunks are small: drawn nearer than the rocks
+const ROCK_FULL_M := 70.0          # nearer than this (block middle) whole rocks are drawn full (320 faces) with shadows; farther, 80 faces and none
+# (rocks10: +1.5 ms at Low against dev, with every rocky-ground rock at 320 faces and casting shadows to 160 m)
 const FIELD_TALL := 1.4      # a rocky-ground rock stands taller than the flat ore-rock mesh (coordinator on rocks8: "tall not flat")
 const ROCK_ADD_PER_FRAME := 24
 const ROCK_REFILL_PER_FRAME := 4
@@ -4117,7 +4119,9 @@ func _rock_refill(block: Vector2i) -> void:
 					_rock_group(groups, skirt_mesh, _boulder_rock, false, ROCK_SKIRT_DRAW_M).append(_rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO))   # the size its collision has
 
 				if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
-					_rock_group(groups, entry["mesh"], entry["material"], true, ROCK_DRAW_M).append(Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry))
+					var place: Transform3D = Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry)
+					_rock_group(groups, entry["mesh"], entry["material"], true, ROCK_FULL_M).append(place)
+					_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M, ROCK_FULL_M).append(place)
 
 			if ids.is_empty():
 				_rock_cells.erase(cell)
@@ -4140,6 +4144,10 @@ func _rock_refill(block: Vector2i) -> void:
 		drawn.material_override = group[1]
 		drawn.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if bool(group[2]) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		drawn.visibility_range_end = float(group[3]) + ROCK_CELL_M * ROCK_BLOCK * 0.5   # measured from the block's middle
+
+		if float(group[5]) > 0.0:
+			drawn.visibility_range_begin = float(group[5]) + ROCK_CELL_M * ROCK_BLOCK * 0.5   # the far copy takes over where the full one ends
+			drawn.visibility_range_begin_margin = 10.0
 		drawn.visibility_range_end_margin = 10.0   # hysteresis, no alpha fade (an alpha fade draws transparent: the HLOD docs' cost warning)
 		_root.add_child(drawn)
 		nodes.append(drawn)
@@ -4150,11 +4158,11 @@ func _rock_refill(block: Vector2i) -> void:
 		_rock_draws[block] = nodes
 
 
-func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bool, reach: float) -> Array:
-	var key: String = "%d:%d:%s" % [mesh.get_instance_id(), material.get_instance_id(), str(shadows)]
+func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bool, reach: float, from: float = 0.0) -> Array:
+	var key: String = "%d:%d:%s:%.0f" % [mesh.get_instance_id(), material.get_instance_id(), str(shadows), from]
 
 	if not groups.has(key):
-		groups[key] = [mesh, material, shadows, reach, []]
+		groups[key] = [mesh, material, shadows, reach, [], from]
 
 	return groups[key][4]
 

@@ -333,7 +333,9 @@ void fragment() {
 	// terrain's smoothed normals put most mountain foot slopes at 30 to 40 degrees, under the 42 of steep_rock: rocks9 showed no blocks
 	// there). Laid in the slope's own plane (along the contour and down the fall line), so neither a face nor a gentle slope stretches them.
 	// The joints fade past 250 m (they would shimmer), the block shades carry on so a far mountainside still reads as broken rock.
-	float rocky = rock_mask * smoothstep(0.1, 0.2, slope);
+	// Low (no triplanar) draws the blocks to 180 m only, fading from 120 m (rocks10: +1.5 ms at Low with them over the whole mountain).
+	float block_reach = triplanar ? 100000.0 : 180.0;
+	float rocky = rock_mask * smoothstep(0.1, 0.2, slope) * (1.0 - smoothstep(block_reach * 0.67, block_reach, dist));
 	if (rocky > 0.01) {
 		float tilt_len = max(length(world_normal.xz), 0.0001);
 		vec2 fall_dir = world_normal.xz / tilt_len;

@@ -138,7 +138,7 @@ func _init() -> void:
 			drawn_count += (child as MultiMeshInstance3D).multimesh.instance_count
 
 	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] == null, "rocks far from the player have no body")
-	check(drawn_count == 3, "two far rocks and one talus are drawn in their cell (%d instances)" % drawn_count)
+	check(drawn_count == 5, "two far rocks (a full copy near, a light one far) and one talus are drawn in their block (%d instances)" % drawn_count)
 	standing[0] = Vector3(110.0, 5.0, 100.0)
 	view._rock_look_msec = -100000
 	view._rock_tick()
@@ -157,7 +157,7 @@ func _init() -> void:
 					var body_xf: Transform3D = (view._boulders[4250]["node"] as Node3D).transform * (view._boulders[4250]["lump"] as Node3D).transform
 					check(multi.get_instance_transform(n).origin.distance_to(body_xf.origin) < 0.01 and multi.get_instance_transform(n).basis.get_scale().distance_to(body_xf.basis.get_scale()) < 0.01, "the drawn rock matches its collider's place and size")
 
-	check((view._boulders[4251]["lump"] as MeshInstance3D).visible and after == 2, "a worked rock draws itself and leaves its cell's drawing at once (%d left)" % after)
+	check((view._boulders[4251]["lump"] as MeshInstance3D).visible and after == 3, "a worked rock draws itself and leaves its block's drawing at once (%d left)" % after)
 	standing[0] = Vector3(500.0, 0.0, 500.0)
 	view._rock_look_msec = -100000
 	view._rock_tick()

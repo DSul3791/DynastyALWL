@@ -205,6 +205,7 @@ void fragment() {
 
 static var _meshes: Array = []   # per shape (SHAPES), VARIANTS meshes
 static var _materials: Dictionary = {}   # ore -> ShaderMaterial
+static var _low: Dictionary = {}   # a mesh of mesh_for -> its 80-face copy (low_of)
 
 
 # The mesh for a rock of this yaw and shape ("ang"; below 0, a row without one: the broken-faced middle shape, as before): one of VARIANTS
@@ -220,6 +221,25 @@ static func mesh_for(yaw: float, ang: float = -1.0) -> ArrayMesh:
 			_meshes.append(variants)
 
 	return (_meshes[shape_of(ang)] as Array)[posmod(int(yaw), VARIANTS)]
+
+
+# The same rock split once (80 faces, the same seed, so the same lumps, cuts and stretch), for rocks drawn far off (inventory_view
+# _rock_refill); a mesh not from mesh_for is its own.
+static func low_of(mesh: Mesh) -> Mesh:
+	if _low.has(mesh):
+		return _low[mesh]
+
+	for s in SHAPES.size():
+		if _meshes.size() > s:
+			var at: int = (_meshes[s] as Array).find(mesh)
+
+			if at >= 0:
+				var shape: Array = SHAPES[s]
+				_low[mesh] = make_mesh(101 + at * 17, int(shape[0]), float(shape[1]), float(shape[2]), float(shape[3]), 1)
+				return _low[mesh]
+
+	_low[mesh] = mesh
+	return mesh
 
 
 # Which of SHAPES a row's "ang" draws: 0 rounded, 1 broken (also a row without one), 2 jagged.
