@@ -10,7 +10,7 @@ extends Node
 
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
-const STEPS := ["fall_mist", "rain", "snow", "splash"]
+const STEPS := ["splash", "fall_mist", "rain", "snow"]   # largest first: a player who skips the menus gets the welcome about 4 frames in (Lane A 7bba32bd)
 
 static var _runner: Node = null
 static var _made: Dictionary = {}   # step -> its made node, until taken
