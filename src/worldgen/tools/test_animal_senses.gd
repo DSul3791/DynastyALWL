@@ -57,8 +57,13 @@ func _init() -> void:
 	check(not alerted(30.0, 0, calm, false), "calm, standing player at 30 m: not noticed")
 	check(alerted(-30.0, 0, toward_x, false), "the rabbit downwind of the player smells them at 30 m")
 	check(not alerted(30.0, 0, toward_x, false), "the rabbit upwind of the player does not notice them at 30 m")
+	# Crouching and crawling (Dave, QA #10, 25 Nov 2026: "drastically reduce your visibility"): a rabbit notices a standing player at 24 m,
+	# a crouching one (crouch_factor 0.4) at 9.6 m and a crawling or lying one (lie_factor 0.25) at 6 m.
 	check(not alerted(20.0, 1, calm, false), "a crouching player at 20 m is not noticed")
-	check(alerted(13.0, 1, calm, false), "a crouching player at 13 m is")
+	check(not alerted(13.0, 1, calm, false), "a crouching player at 13 m is not noticed either")
+	check(alerted(9.0, 1, calm, false), "a crouching player at 9 m is")
+	check(not alerted(9.0, 3, calm, false), "a crawling player at 9 m is not noticed")
+	check(alerted(5.5, 3, calm, false), "a crawling player at 5.5 m is")
 	check(not alerted(20.0, 0, calm, true), "a hill between them hides a player at 20 m")
 
 	# Burrow: the rabbit 10 m from its burrow, the player beyond it: it runs for the hole and goes to ground.
@@ -204,10 +209,21 @@ func _init() -> void:
 	var open_lying: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 3)
 	var in_room: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 5)
 	var on_bed: float = zoo4._sense_factor(rab, rdef, Vector3(-5.0, 10.0, 0.0), 5.0, 4)
-	check(absf(open_lying - 0.75) < 0.001, "lying in the open, upwind of the rabbit in a wind of 1: 1.5 x 0.5 (%.3f)" % open_lying)
+	check(absf(open_lying - 0.375) < 0.001, "lying in the open, upwind of the rabbit in a wind of 1: 1.5 x 0.25 (%.3f)" % open_lying)
 	check(absf(in_room - open_lying * 0.05) < 0.001, "lying in a closed room in the same wind is 0.05 of that (%.4f)" % in_room)
 	check(absf(on_bed - open_lying * 0.7) < 0.001, "lying on a covered bed in the same wind is 0.7 of that (%.3f)" % on_bed)
 	check(not alerted(-12.0, 5, toward_x, false), "a rabbit downwind does not notice a player lying in a closed room 12 m off")
+
+	# A crawler is looked for low (senses lie_eye_m 0.6 m, standing 1.6): a rise of 0.7 m halfway hides them, not a standing player.
+	var zoo5 = make([], [], calm, false)
+	zoo5.ground_height = func(x, _z): return 10.0 + (0.7 if absf(x - 10.0) < 2.5 else 0.0)
+	var rid5: int = zoo5.spawn("rabbit", 0.0, 0.0)
+	var rab5: Dictionary = zoo5.animals[rid5]
+	rab5["pos"] = Vector3(0.0, 10.0, 0.0)
+	var def5: Dictionary = zoo5.cfg["species"]["rabbit"]
+	var stand_sees: float = zoo5._sight_clear(rab5, def5, Vector3(20.0, 10.0, 0.0), 20.0)
+	var crawl_sees: float = zoo5._sight_clear(rab5, def5, Vector3(20.0, 10.0, 0.0), 20.0, float(zoo5.cfg["senses"]["lie_eye_m"]))
+	check(stand_sees > 0.0 and crawl_sees == 0.0, "a 0.7 m rise hides a crawler from a rabbit, not a standing player (%.2f, %.2f)" % [stand_sees, crawl_sees])
 
 	print("animal senses: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

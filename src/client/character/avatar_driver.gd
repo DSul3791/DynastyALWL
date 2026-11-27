@@ -93,6 +93,11 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 
 		return crouch_clip
 
+	# Lying off a bed and awake (meta `lie_rest` false, set by the client and player_view): the low stealthy crawl, not the sleep pose (Dave, QA #10, 25 Nov 2026).
+	if stance == StanceScript.LIE and player != null and player.has_animation("prone") and not bool(avatar.get_meta("lie_rest", false)):
+		var crawl_local: Vector3 = basis.inverse() * velocity
+		return crawl_clip(Vector2(crawl_local.x, crawl_local.z))
+
 	if player == null or not player.has_animation("jump"):
 		return choose_clip(stance, pace, current, carrying)
 
@@ -232,6 +237,33 @@ static func crouch_walk_clip(velocity_local: Vector2) -> String:
 	return "crouch_walk"
 
 
+# The crawl for a velocity in the body's own frame (x right, y the world z, so forward is -y): still ("prone", flat on the belly: dynasty_body.gd CLIP_MAP), backward
+# ("crawl_back", more back than forward) or forward ("crawl", also sideways: the rig has no sideways crawl).
+const CRAWL_MIN_PACE := 0.1            # below this the crawler lies still (the crawl is 0.4 m/s, stance.gd CRAWL_MPS)
+
+
+static func crawl_clip(velocity_local: Vector2) -> String:
+	var pace: float = velocity_local.length()
+
+	if pace <= CRAWL_MIN_PACE:
+		return "prone"
+
+	return "crawl_back" if -velocity_local.y < -0.5 * pace else "crawl"
+
+
+# The far pose of a body (player_view.gd far off: not animated, held in its stance's clip): a crawler lies prone, a sleeper or a body on a bed lies asleep.
+static func far_lie_clip(avatar, clip: String) -> String:
+	if clip != "lie" or avatar == null:
+		return clip
+
+	var player: AnimationPlayer = avatar.get("animation_player") as AnimationPlayer
+
+	if player != null and player.has_animation("prone") and not bool(avatar.get_meta("lie_rest", false)):
+		return "prone"
+
+	return clip
+
+
 # The AnimationPlayer's speed scale that keeps the stride on the ground (natural speeds 1.4, 3.2 and 6.0 m/s, see ragdoll_body.gd).
 # -1 while the avatar's gait clip is played in reverse (walking backwards on a body without a walk_back clip: clip_for sets the meta), else 1. The client
 # multiplies the clip's speed_scale by it.
@@ -266,6 +298,9 @@ static func speed_scale(clip: String, pace: float) -> float:
 
 	if clip.begins_with("crouch_walk"):   # includes the _torch variants
 		return clampf(pace / 0.9, 0.5, 1.6)
+
+	if clip == "crawl" or clip == "crawl_back":   # retimed to the crawl's pace (dynasty_body.gd CLIP_MAP), so the hands and knees stay put
+		return clampf(pace / StanceScript.CRAWL_MPS, 0.5, 1.6)
 
 	if clip == "carry_walk":
 		return clampf(pace / 1.1, 0.6, 1.5)

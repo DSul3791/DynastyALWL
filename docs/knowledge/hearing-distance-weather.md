@@ -125,7 +125,7 @@
 
 - **`server_animals.gd` `_sense_factor`:** the perceived distance is the true distance divided by a factor built from:
   - scent: `1 + scent_gain 0.5 × wind × (downwind dot)`, never under 0.5;
-  - stance: crouch 0.6, sit 0.8, lie 0.5; a covered bed 0.7, a closed room 0.05;
+  - stance: crouch 0.4, sit 0.8, lie or crawl 0.25 (R-PLAYER-CRAWL, 25 Nov 2026); a covered bed 0.7, a closed room 0.05;
   - sight: blocked sight scales toward `blind_factor` 0.35 past `always_notice_m` 8 m;
   - noise, last: `_sample_noise` gives `1 + brush_noise_per_ms 0.04 × speed ÷ skill²` while moving through undergrowth. Crouching halves the extra (`brush_crouch_share` 0.5).
 - **There is no hearing rule for weather.** Rain, wind noise, night and nearby water do not change what animals hear. Only scent uses the wind. Ground type (leaves, gravel, frozen snow) does not change the noise either.

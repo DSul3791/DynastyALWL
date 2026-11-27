@@ -775,10 +775,10 @@ func _drop_pickup() -> void:
 		FreezeWatchScript.printer.line("ROBOT %s step pickup: dropped and picked up a stick" % robot_name)
 
 
-# Every stance that walks, each way: keys held, the body must move. Crouched next to nothing while standing moves = the fault.
+# Every stance that walks, each way: keys held, the body must move (lying off a bed crawls, Dave QA #10). Crouched next to nothing while standing moves = the fault.
 func _stances() -> void:
-	for st in [StanceScript.STAND, StanceScript.CROUCH]:
-		_step = "stance %s" % ["stand", "crouch"][st]
+	for st in [StanceScript.STAND, StanceScript.CROUCH, StanceScript.LIE]:
+		_step = "stance %s" % ["stand", "crouch", "sit", "crawl"][st]
 		await _stance_to(st)
 
 		for k in range(4):
@@ -787,11 +787,14 @@ func _stances() -> void:
 			var moved: float = await _walk_for(dir, s)
 			var expected: float = client.WALK_SPEED * float(StanceScript.SPEED[st]) * s
 
-			if moved < 0.25 * expected:
+			if st == StanceScript.LIE and client.stance.stance != StanceScript.LIE:
+				_fail("stances", "crawl", "lying off a bed, W stood the player up instead of crawling")
+				await _stance_to(StanceScript.LIE)
+			elif moved < 0.25 * expected:
 				if st == StanceScript.CROUCH:
 					await _compare_crouch(dir, moved, s)
 				else:
-					_note("obstacle", "standing, W held %.0f s, moved %.2f m of about %.1f (%s)" % [s, moved, expected, last_touch])
+					_note("obstacle", "%s, W held %.0f s, moved %.2f m of about %.1f (%s)" % ["standing" if st == StanceScript.STAND else "crawling", s, moved, expected, last_touch])
 
 	await _stance_to(StanceScript.STAND)
 	FreezeWatchScript.printer.line("ROBOT %s step stances: done" % robot_name)
