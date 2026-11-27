@@ -139,6 +139,18 @@ func _init() -> void:
 
 	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] == null, "rocks far from the player have no body")
 	check(drawn_count == 5, "two far rocks (a full copy near, a light one far) and one talus are drawn in their block (%d instances)" % drawn_count)
+	view.set_rock_quality(0)
+	view._rock_tick()
+	var low_count: int = 0
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
+			low_count += (child as MultiMeshInstance3D).multimesh.instance_count
+			check((child as MultiMeshInstance3D).cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Low draws the rocks without shadows")
+
+	check(low_count == 3, "Low draws each rock once, light, and the talus (%d instances)" % low_count)
+	view.set_rock_quality(2)
+	view._rock_tick()
 	standing[0] = Vector3(110.0, 5.0, 100.0)
 	view._rock_look_msec = -100000
 	view._rock_tick()

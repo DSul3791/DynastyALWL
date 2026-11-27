@@ -1875,6 +1875,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items = InventoryViewScript.new()
 	items.name = "Items"
 	add_child(items)   # its _ready prewarms the loose item meshes
+	items.set_rock_quality(quality)   # _apply_quality ran before the view existed
 	items.dead_body = func(kind: String, look: int, num: int, at: Vector3) -> Node3D: return _animal_view_node.dead_body(kind, look, num, at) if _animal_view_node != null else null   # a dead animal is its own model (animal_view dead_body)
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
@@ -4480,6 +4481,9 @@ func _apply_quality() -> void:
 		_sun.directional_shadow_mode = DirectionalLight3D.SHADOW_PARALLEL_2_SPLITS
 		_sun.directional_shadow_split_1 = 0.3 if quality >= 3 else 0.1      # Ultra: two cascades (0 to 27 m, then to 90 m), not four (build 453)
 		RenderingServer.directional_shadow_atlas_set_size(2048 if quality <= 1 else 4096, true)
+
+	if items != null:
+		items.set_rock_quality(quality)   # Low draws the rocky ground lighter (PR #1988)
 
 	if terrain != null and quality != _ground_quality:
 		_ground_quality = quality

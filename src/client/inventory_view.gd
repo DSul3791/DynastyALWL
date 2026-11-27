@@ -144,6 +144,7 @@ var _rock_cells: Dictionary = {}    # 32 m cell -> {id: true}: the server rocks 
 var _rock_draws: Dictionary = {}    # drawing block (ROCK_BLOCK cells a side) -> its MultiMeshInstance3D nodes (_rock_refill)
 var _rock_dirty: Dictionary = {}    # blocks to draw again
 var _field_rock: ShaderMaterial = null
+var _rock_low: bool = false         # Low quality: lighter rocks (set_rock_quality)
 var _rock_near: Dictionary = {}     # ids of the rocks with a body of their own (a server boulder without one has node, shape and lump null)
 var _rock_added_frame: int = 0      # bodies made this frame (ROCK_ADD_PER_FRAME)
 var _rock_look_msec: int = 0
@@ -3918,6 +3919,8 @@ const ROCK_DRAW_M := 160.0
 const ROCK_CELL_M := 32.0
 const ROCK_BLOCK := 3        # cells a side of a drawing block (96 m)
 const ROCK_SKIRT_DRAW_M := 70.0    # talus chunks are small: drawn nearer than the rocks
+const ROCK_SKIRT_LOW_M := 30.0     # Low: talus only round the blocks nearest the player
+const ROCK_LOW_SMALL_R := 0.8      # Low: rocks smaller than this radius drawn only to ROCK_FULL_M
 const ROCK_FULL_M := 70.0          # nearer than this (block middle) whole rocks are drawn full (320 faces) with shadows; farther, 80 faces and none
 # (rocks10: +1.5 ms at Low against dev, with every rocky-ground rock at 320 faces and casting shadows to 160 m)
 const FIELD_TALL := 1.4      # a rocky-ground rock stands taller than the flat ore-rock mesh (coordinator on rocks8: "tall not flat")
@@ -3930,6 +3933,18 @@ const ROCK_LOOK_S := 0.25
 func _rock_cell_of(entry: Dictionary) -> Vector2i:
 	var p: Vector3 = entry["pos"]
 	return Vector2i(int(floor(p.x / ROCK_CELL_M)), int(floor(p.z / ROCK_CELL_M)))
+
+
+# Quality change (terrain_client _apply_quality): at Low every rock is the light 80-face copy, rocks under ROCK_LOW_SMALL_R radius are drawn
+# only near, and the talus only round the nearest blocks; the big boulders keep their full reach. Every block draws again.
+func set_rock_quality(quality: int) -> void:
+	if _rock_low == (quality == 0):
+		return
+
+	_rock_low = quality == 0
+
+	for cell in _rock_cells:
+		_rock_dirty[_rock_block_of(cell)] = true
 
 
 func _rock_block_of(cell: Vector2i) -> Vector2i:
@@ -4116,12 +4131,15 @@ func _rock_refill(block: Vector2i) -> void:
 
 				if (entry["skirt"] as Array).size() >= 3:
 					var skirt_mesh: Mesh = _skirt_mesh(int(entry["variant"]))[0]
-					_rock_group(groups, skirt_mesh, _boulder_rock, false, ROCK_SKIRT_DRAW_M).append(_rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO))   # the size its collision has
+					_rock_group(groups, skirt_mesh, _boulder_rock, false, ROCK_SKIRT_LOW_M if _rock_low else ROCK_SKIRT_DRAW_M).append(_rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO))   # the size its collision has
 
 				if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
 					var place: Transform3D = Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry)
-					_rock_group(groups, entry["mesh"], entry["material"], true, ROCK_FULL_M).append(place)
-					_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M, ROCK_FULL_M).append(place)
+					if _rock_low:   # every rock light (Low has no sun shadows anyway); the small ones only near, the big ones as far as ever
+						_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M if float(entry["radius"]) >= ROCK_LOW_SMALL_R else ROCK_FULL_M).append(place)
+					else:
+						_rock_group(groups, entry["mesh"], entry["material"], true, ROCK_FULL_M).append(place)
+						_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M, ROCK_FULL_M).append(place)
 
 			if ids.is_empty():
 				_rock_cells.erase(cell)
