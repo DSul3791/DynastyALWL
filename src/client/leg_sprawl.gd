@@ -48,7 +48,13 @@ func setup(sk: Skeleton3D, table: Array) -> PackedStringArray:
 func _process_modification() -> void:
 	var sk: Skeleton3D = get_skeleton()
 
-	if sk == null or legs.is_empty():
+	if sk != null:
+		apply(sk)
+
+
+# The legs turned out on the skeleton's current poses (called by the modifier each frame; the test calls it directly).
+func apply(sk: Skeleton3D) -> void:
+	if legs.is_empty():
 		return
 
 	if legs.size() >= 2:

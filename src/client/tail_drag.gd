@@ -58,14 +58,29 @@ func _process_modification() -> void:
 	if sk == null or chain.is_empty():
 		return
 
+	if ground != null and ground.is_inside_tree() and sk.is_inside_tree():
+		lay(sk, ground_floor(sk.global_transform, ground.global_position))
+	else:
+		lay(sk, bone_floor(sk))
+
+
+# The animal's ground in skeleton space: the height of its node (at the ground point) seen from the skeleton.
+static func ground_floor(sk_global: Transform3D, ground_at: Vector3) -> float:
+	return (sk_global.affine_inverse() * ground_at).y
+
+
+# With no ground node: the rest pose's lowest body bone, or the body's lowest bone now if the clip lowers it.
+func bone_floor(sk: Skeleton3D) -> float:
 	var floor_y: float = rest_floor
 
-	if ground != null and ground.is_inside_tree() and sk.is_inside_tree():
-		floor_y = (sk.global_transform.affine_inverse() * ground.global_position).y
-	else:
-		for b in body:
-			floor_y = minf(floor_y, global_of(sk, b).origin.y)
+	for b in body:
+		floor_y = minf(floor_y, global_of(sk, b).origin.y)
 
+	return floor_y
+
+
+# The tail laid on a floor at floor_y (skeleton space).
+func lay(sk: Skeleton3D, floor_y: float) -> void:
 	var most: float = sin(deg_to_rad(SLOPE_DEG))
 	var parent_g: Transform3D = global_of(sk, sk.get_bone_parent(chain[0])) if sk.get_bone_parent(chain[0]) >= 0 else Transform3D.IDENTITY
 
