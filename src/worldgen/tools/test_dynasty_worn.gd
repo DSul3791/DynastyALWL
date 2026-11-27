@@ -427,10 +427,19 @@ func _init() -> void:
 	# depend on the machine's speed (PC gate 5 Nov: the hood's cape read 1.30 m in the gate and passed alone).
 	body.animation_player.speed_scale = 0.0
 	var s: Skeleton3D = body.skeleton
+	Shapes.wait()      # the body's shapes made first, so the skin's tuck-in below is set at once and checked (dynasty_shapes.gd COVERS)
 	var hung: int = WornLook.attach(body, ["hide_boots", "hide_tunic", "hide_hood", "hide_trousers", "hide_gloves"], false)
 	await process_frame
 	await process_frame
 	_check(hung > 10, "the outfit hangs pieces (%d)" % hung)
+	# BugsList 187: the skin under the outfit tucks in (dynasty_shapes.gd COVERS); the hood leaves the head and neck as they are.
+	var covered: Array = body.get("_covered")
+
+	for group in ["foot", "shin", "thigh", "hips", "chest", "arm", "forearm", "hand"]:
+		_check(group in covered, "skin tucked in under the outfit on " + group)
+
+	var cover_i: int = body.body_mesh.find_blend_shape_by_name("cover_shin")
+	_check(cover_i >= 0 and absf(body.body_mesh.get_blend_shape_value(cover_i) - 1.0) < 0.001, "cover_shin weight 1 under boots")
 	var pieces: Dictionary = _pieces(s)
 
 	for old in ["foot_r", "foot_l", "shin_r", "thigh_r", "hips", "chest", "head", "arm_r", "forearm_l", "hand_r", "hand_l"]:
@@ -484,6 +493,10 @@ func _init() -> void:
 	_check(_caps(mail, "arm_r") == 1 and _caps(mail, "forearm_r") == 0, "a short mail sleeve joins at the shoulder only (it does not reach the elbow)")
 	_check(_caps(WornLook.parts_of("leggings", 0.0), "shin_r") == 1, "the leggings' own knee ball is not doubled")
 	_check(WornLook.joint_caps(WornLook.parts_of("hood", 0.0)).is_empty() and WornLook.joint_caps(WornLook.parts_of("cloak", 0.0)).is_empty(), "no balls where a garment bends at no joint")
+	# BugsList 188: a pack's chest straps lie on the bare chest, and further out over a shirt (attach `under`).
+	var bare_strap: Vector3 = (WornLook.parts_of("pack", 0.045, false, 0.0).back() as Dictionary)["at"]
+	var shirt_strap: Vector3 = (WornLook.parts_of("pack", 0.045, false, 0.045).back() as Dictionary)["at"]
+	_check(bare_strap.z > -0.12 and shirt_strap.z < bare_strap.z - 0.03, "the pack's chest strap lies on the bare chest (z %.3f) and over a shirt (z %.3f)" % [bare_strap.z, shirt_strap.z])
 
 	# The joint heights are ragdoll_body.gd's bone offsets, and on Dave's body the ball sits on his own joint.
 	var bones: Dictionary = {}
