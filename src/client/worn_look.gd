@@ -7,9 +7,12 @@ extends RefCounted
 # On a body that is one skinned mesh (rig meta "worn_shell", Dave's body) a sleeved body garment also hangs a fitted layer that bends with the skin (worn_shell.gd).
 
 const WornShell := preload("res://src/client/worn_shell.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
+# Builders whose pieces stand off the body (headwear, a cloak, a pack, a belt, sandal straps): the skin under them is not tucked in (attach, BugsList 187).
+const NO_COVER := ["cloak", "hood", "cap", "furhat", "sandals", "pack", "helm", "belt"]
 const BUILDERS := ["cloak", "hood", "cap", "furhat", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded", "belt"]
 const HUMANOID_NAMES := {
 	"hips": "Hips", "chest": "Chest", "head": "Head",
@@ -61,6 +64,7 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 	var anchors: Dictionary = {}
 	var count: int = 0
 	var frames: Dictionary = rig.get_meta("worn_frames", {}) if rig.has_meta("worn_frames") else {}
+	var covered: Array = []      # the bone groups (dynasty_shapes.gd COVERS) a worn piece sits on, whose skin a body that can tucks in under it
 
 	for item_id in item_ids:
 		var row: Dictionary = table().get(str(item_id), {})
@@ -84,6 +88,10 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 				continue
 
 			var bone: String = str(part["bone"])
+			var group: String = bone.trim_suffix("_r").trim_suffix("_l")
+
+			if not bool(part.get("detail", false)) and not str(row["builder"]) in NO_COVER and group in Shapes.COVERS and not group in covered:
+				covered.append(group)
 
 			# The generated body (src/client/character/body_generator.gd) has humanoid bone names; the parts below are written for the old names, so they are mapped
 			# when the skeleton has no bone of the old name. The old body is untouched by this.
@@ -129,6 +137,9 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 		if not far and rig.has_meta("worn_shell") and WornShell.covers(str(row["builder"])):
 			if WornShell.hang(rig, skeleton, str(row["builder"]), _material(Color.html(str(row["color"])), stuff_of(str(item_id)), true)) != null:
 				count += 1
+
+	if rig.has_method("cover"):
+		rig.call("cover", covered)      # Dave's body tucks its skin in under the pieces (dynasty_body.gd cover); the old bodies have no such shapes
 
 	return count
 

@@ -44,6 +44,13 @@ const BUST_SOFT_DOWN := 0.012
 const BUST_KEEP := 0.4         # each vertex goes only 60% of the way onto the shape, so the chest keeps 40% of its own relief: the top's folds and creases keep their order
                                 # (all the way, they met on the shape and showed through one another in Lane A's pictures of 80e0542c, 21 Nov 2026)
 const SHAPED_KEY := "dynasty_shapes"
+# Skin under worn clothes (BugsList 187; the laptop picture check of 26 Nov 2026 saw skin through 58 of 79 worn items: shins, knees, feet, hands and the midriff out
+# through the rigid worn pieces, worn_look.gd). One more shape per group of bones, "cover_<group>": every vertex whose strongest bone is in the group moves COVER_IN of
+# the body's height in toward its bone (at most COVER_MAX of its distance from it), so the skin sits inside the pieces. worn_look.gd attach sets weight 1 on the groups
+# a worn piece covers (dynasty_body.gd cover). Not the head or the neck: hats and hoods leave the face as it is.
+const COVERS := ["hips", "chest", "arm", "forearm", "hand", "thigh", "shin", "foot"]
+const COVER_IN := 0.012
+const COVER_MAX := 0.4
 
 static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
 static var _keep: Array = []             # the source meshes of _cache, held so their rids stay theirs
@@ -55,6 +62,35 @@ static var _job: int = -1                # the prewarm task on the worker pool, 
 # builds the mesh (_finish). The worker touches no node, resource or server: instancing the scene or loading the glb there hung the game headless (4 Nov).
 # dynasty_body.gd starts it with the first body and waits for it when a body is freed, so no task outlives the program.
 static var _pending: Dictionary = {}     # the prewarm's data while the worker computes it, and its source mesh
+
+
+# The cover group of a bone (Mixamo name without the prefix), or "" for bones never covered (head, neck, shoulders).
+static func cover_group(bone: String) -> String:
+	if bone == "Hips":
+		return "hips"
+
+	if bone.begins_with("Spine"):
+		return "chest"
+
+	if bone.ends_with("ForeArm"):
+		return "forearm"
+
+	if bone.ends_with("Arm"):
+		return "arm"
+
+	if bone.contains("Hand"):
+		return "hand"
+
+	if bone.ends_with("UpLeg"):
+		return "thigh"
+
+	if bone.ends_with("Leg"):
+		return "shin"
+
+	if bone.contains("Foot") or bone.contains("Toe"):
+		return "foot"
+
+	return ""
 
 
 # The blend shape weight of slider `key` in genome `g`: the slider value (-1..1), except the bust (-1 means none): 0 up to BUST_FROM, then up to 1 at +1.
@@ -218,6 +254,10 @@ static func _compute(data: Dictionary) -> void:
 		var s_chest: PackedVector3Array = verts.duplicate()
 		var bust_verts: PackedInt32Array = PackedInt32Array()
 		var head_verts: PackedInt32Array = PackedInt32Array()
+		var cover_of: PackedInt32Array = PackedInt32Array()      # each vertex's cover group (COVERS index, -1 none) and where that shape puts it
+		cover_of.resize(verts.size())
+		cover_of.fill(-1)
+		var cover_to: PackedVector3Array = verts.duplicate()
 
 		if per > 0 and weights.size() == bones.size():
 			for v in range(verts.size()):
@@ -243,6 +283,11 @@ static func _compute(data: Dictionary) -> void:
 				var ab: Vector3 = b - a
 				var t: float = clampf((p - a).dot(ab) / maxf(ab.length_squared(), 1e-9), 0.0, 1.0)
 				var radial: Vector3 = p - (a + ab * t)
+				var group: int = COVERS.find(cover_group(bone))
+
+				if group >= 0 and radial.length() > 1e-6:
+					cover_of[v] = group
+					cover_to[v] = p - radial.normalized() * minf(height * COVER_IN, radial.length() * COVER_MAX)
 				# build: fuller everywhere, a little on the head, hands and feet
 				if bone.begins_with("Head") or bone == "headfront":
 					head_verts.append(v)
@@ -276,14 +321,24 @@ static func _compute(data: Dictionary) -> void:
 		var bust: Array = _bust(verts, arrays[Mesh.ARRAY_NORMAL], arrays[Mesh.ARRAY_INDEX], bust_verts, data)     # [positions, normals]
 		var face: Array = _face(verts, head_verts, head_of, up, lateral, front)     # [jaw, nose, brow, ears]
 		var blend_arrays: Array = []
+		var s_cover: Array = []
 
-		var shapes: Array = [s_build, s_muscle, s_belly, s_hips, s_chest, bust[0], face[0], face[1], face[2], face[3]]     # the order of NAMES
+		for g in range(COVERS.size()):
+			var one_cover: PackedVector3Array = verts.duplicate()
+
+			for v in range(verts.size()):
+				if cover_of[v] == g:
+					one_cover[v] = cover_to[v]
+
+			s_cover.append(one_cover)
+
+		var shapes: Array = [s_build, s_muscle, s_belly, s_hips, s_chest, bust[0], face[0], face[1], face[2], face[3]] + s_cover     # the order of NAMES, then COVERS
 
 		for n in range(shapes.size()):
 			var one: Array = []
 			one.resize(Mesh.ARRAY_MAX)
 			one[Mesh.ARRAY_VERTEX] = shapes[n]
-			one[Mesh.ARRAY_NORMAL] = bust[1] if NAMES[n] == "bust" else arrays[Mesh.ARRAY_NORMAL]     # only the bust carries its own normals
+			one[Mesh.ARRAY_NORMAL] = bust[1] if n < NAMES.size() and NAMES[n] == "bust" else arrays[Mesh.ARRAY_NORMAL]     # only the bust carries its own normals
 			one[Mesh.ARRAY_TANGENT] = arrays[Mesh.ARRAY_TANGENT]
 			blend_arrays.append(one)
 
@@ -397,6 +452,9 @@ static func _finish(data: Dictionary) -> ArrayMesh:
 
 	for shape_name in NAMES:
 		out.add_blend_shape(shape_name)
+
+	for group in COVERS:
+		out.add_blend_shape("cover_" + group)
 
 	var s: int = 0
 

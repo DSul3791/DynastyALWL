@@ -431,6 +431,16 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	_check(hung > 10, "the outfit hangs pieces (%d)" % hung)
+	# BugsList 187: the skin under the outfit tucks in (dynasty_shapes.gd COVERS); the hood leaves the head and neck as they are.
+	var covered: Array = body.get("_covered")
+
+	for group in ["foot", "shin", "thigh", "hips", "chest", "arm", "forearm", "hand"]:
+		_check(group in covered, "skin tucked in under the outfit on " + group)
+
+	var cover_i: int = body.body_mesh.find_blend_shape_by_name("cover_shin")
+
+	if cover_i >= 0:
+		_check(absf(body.body_mesh.get_blend_shape_value(cover_i) - 1.0) < 0.001, "cover_shin weight 1 under boots")
 	var pieces: Dictionary = _pieces(s)
 
 	for old in ["foot_r", "foot_l", "shin_r", "thigh_r", "hips", "chest", "head", "arm_r", "forearm_l", "hand_r", "hand_l"]:

@@ -1122,7 +1122,7 @@ func _show_animals(now: int) -> void:
 			drawn.append("%s unknown" % name_text)
 			continue
 
-		# Dead bodies (BugsList 184): "dead" draws the animal's own dead body as a carcass row seen later does (animal_view dead_body: the
+		# Dead bodies (BugsList 187): "dead" draws the animal's own dead body as a carcass row seen later does (animal_view dead_body: the
 		# death clip's last pose, or tipped onto its side); "carcass" the old hand-built body (carcass_look.gd), for before-and-after pictures.
 		var node: Node3D
 

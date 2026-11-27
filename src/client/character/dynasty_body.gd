@@ -1001,9 +1001,29 @@ func _process(_delta: float) -> void:
 		set_process(false)
 
 
+var _covered: Array = []      # the cover groups (dynasty_shapes.gd COVERS) whose skin sits in under worn clothes
+
+
+# worn_look.gd attach: tuck the skin in under the worn pieces on these bone groups (dynasty_shapes.gd COVERS, BugsList 187); [] when nothing is worn.
+func cover(groups: Array) -> void:
+	if groups == _covered:
+		return
+
+	_covered = groups.duplicate()
+
+	if _model == null or skeleton == null or body_mesh == null or body_mesh.mesh == null:
+		return
+
+	var was: Mesh = body_mesh.mesh
+	_set_widths(genome)
+
+	if body_mesh.mesh != was:
+		dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)      # a new mesh drops the skin colour override (_set_widths); put it back
+
+
 # The width sliders (dynasty_shapes.gd): the shared shaped mesh is put on this body the first time a width is not 0, then each slider is a blend shape weight.
 func _set_widths(g: Dictionary) -> void:
-	var any: bool = false
+	var any: bool = not _covered.is_empty()
 
 	for key in Shapes.NAMES:
 		if absf(Shapes.shape_weight(g, key)) > 0.001:
@@ -1033,6 +1053,12 @@ func _set_widths(g: Dictionary) -> void:
 
 		if i >= 0:
 			body_mesh.set_blend_shape_value(i, Shapes.shape_weight(g, key))
+
+	for group in Shapes.COVERS:
+		var i: int = body_mesh.find_blend_shape_by_name("cover_" + group)
+
+		if i >= 0:
+			body_mesh.set_blend_shape_value(i, 1.0 if group in _covered else 0.0)
 
 	if WornShell.refresh(self):      # a worn garment's fitted layer takes the new mesh (made on a worker: until then it keeps the old one) and widths
 		wait_for_shells()

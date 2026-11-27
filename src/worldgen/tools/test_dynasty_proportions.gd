@@ -7,6 +7,7 @@ extends SceneTree
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_proportions.gd
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
+const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 
 var _fails: int = 0
 
@@ -122,12 +123,12 @@ func _init() -> void:
 	root.add_child(wide_body)
 	wide_body.set_proportions(wide)
 	var shaped: Mesh = wide_body.body_mesh.mesh
-	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10, "widths: shaped mesh with 10 blend shapes (6 body with the bust, 4 face)")
+	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10 + Shapes.COVERS.size(), "widths: shaped mesh with 10 slider shapes (6 body with the bust, 4 face) and the cover shapes")
 
 	# The shapes hold whole positions, which only NORMALIZED reads right: RELATIVE adds them to the base, so build 0.5 drew a body half again as big (4 Nov).
 	_check(shaped is ArrayMesh and (shaped as ArrayMesh).blend_shape_mode == Mesh.BLEND_SHAPE_MODE_NORMALIZED, "widths: blend shapes hold whole positions (normalized mode)")
 
-	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10:
+	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10 + Shapes.COVERS.size():
 		var base: PackedVector3Array = (shaped as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var blends: Array = (shaped as ArrayMesh).surface_get_blend_shape_arrays(0)
 		var aabb: AABB = AABB(base[0], Vector3.ZERO)
@@ -143,6 +144,16 @@ func _init() -> void:
 				moved = maxf(moved, shape[v].distance_to(base[v]))
 
 			_check(moved > aabb.size.length() * (0.005 if n < 6 else 0.002) and moved < aabb.size.length() * 0.2, "widths: shape %d moves vertices a sensible amount (%.4f of %.4f)" % [n, moved, aabb.size.length()])
+
+		# BugsList 187: each cover shape tucks its bones' skin in, a little (about 2 cm on a 1.7 m body), never out.
+		for n in range(10, 10 + Shapes.COVERS.size()):
+			var tucked: float = 0.0
+			var shape: PackedVector3Array = blends[n][Mesh.ARRAY_VERTEX]
+
+			for v in range(base.size()):
+				tucked = maxf(tucked, shape[v].distance_to(base[v]))
+
+			_check(tucked > aabb.size.y * 0.003 and tucked <= aabb.size.y * 0.02, "cover: shape %s tucks skin in a little (%.4f of height %.4f)" % [Shapes.COVERS[n - 10], tucked, aabb.size.y])
 
 		var bi: int = wide_body.body_mesh.find_blend_shape_by_name("build")
 		_check(absf(wide_body.body_mesh.get_blend_shape_value(bi) - 1.0) < 0.001, "widths: build weight 1")

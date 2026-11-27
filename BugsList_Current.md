@@ -99,6 +99,10 @@ Not yet played.
 
 **Found by:** the picture checker's held-item sweep, 26 Nov 2026 (107 of 128 held items): "carried level at hip height, pointing forward, through the thigh and loincloth" (axes, hammers, picks, swords, maces, knives, chisels, sickles). **Status: Open - carry to be settled with pictures.** The third-person carry (`held_item.gd third_hold`, `THIRD_LEAN_DEG` -17) turns every tool head forward and a little down, from Dave's words of 25 Oct 2026 ("all held items point only slightly down"); only shovels, hoes, saws and rods have their own pitch. Before/after pictures go to the coordinator before any change merges. Not yet played.
 
+## 187. Skin shows through worn clothes and armour
+
+**Found by:** the picture checker's worn-item sweep on the laptop, 26 Nov 2026 (58 of 79 worn items): shins, knees, feet, hands and the midriff poke out through the rigid worn pieces. **Status: Open - fix in review; moves to BugsList_Fixed.md when merged.** Dave's body now has one tuck-in shape per group of bones (`dynasty_shapes.gd` COVERS): wherever a worn piece sits on a bone (boots on the shins and feet, trousers on the hips, thighs and shins, gloves on the hands, a shirt on the chest and arms), that skin sits about 2 cm further in, inside the pieces. Headwear, cloaks, packs, belts and sandals leave the skin as it is. Not a garment remodel: clothes still do not bend at the joints (R-CORE-GOOD-ENOUGH). Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
