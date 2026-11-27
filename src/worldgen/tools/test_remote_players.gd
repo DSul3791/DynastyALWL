@@ -170,6 +170,7 @@ func _server() -> void:
 	players.tick(0.2)
 	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 5, "a strike, a hammer blow, a cast and a split are four more swings (count %d of 5)" % ((int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) if sent.size() == 1 else -1))
 	check(sent.size() == 1 and (int(sent[0][4][0]) & 3) == 3 and (int(sent[0][4][0]) & PlayersScript.SWIM) == 0, "a fainted or passed-out player is drawn lying, not swimming, even in water (state %d)" % (int(sent[0][4][0]) if sent.size() == 1 else -1))
+	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0, "a fainted or passed-out player is sent asleep, so it is drawn in the sleep pose, not crawling (Dave QA #10)")
 	fake.down = {}
 	fake.swim.erase(2)
 	# 159: the left hand, a burning torch, the hand flags and a meal are news and go with the row.
@@ -1121,16 +1122,22 @@ func _check_far_pose() -> void:
 	var ms: int = 90000
 	var clips: Array = []
 
-	for stance in [0, 3, 2, 0]:
+	# Lying asleep is the sleep pose; lying awake off a bed is the crawl's still pose (Dave QA #10, 25 Nov 2026), on a bed the sleep pose again.
+	var on_bed: Array = [false]
+	view.bed_near = func(_feet: Vector3) -> bool: return on_bed[0]
+
+	for row in [[0, 0, false], [3, PlayerViewScript.ASLEEP, false], [2, 0, false], [0, 0, false], [3, 0, false], [0, 0, false], [3, 0, true]]:
+		on_bed[0] = bool(row[2])
+
 		for i in range(12):
 			ms += 125
-			view.on_rows(PackedInt32Array([9]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([stance | (PlayerViewScript.ASLEEP if stance == 3 else 0)]), PackedInt32Array([0]), PackedInt32Array([ms]))
+			view.on_rows(PackedInt32Array([9]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([int(row[0]) | int(row[1])]), PackedInt32Array([0]), PackedInt32Array([ms]))
 			await process_frame
 
 		var b: Dictionary = view._bodies.get(9, {})
 		clips.append(str(b["rig"].call("current")) if not b.is_empty() else "")
 
-	check(clips == ["idle", "lie", "sit", "idle"], "a far player lying down, then sitting, then up, is drawn so (%s)" % ", ".join(clips))
+	check(clips == ["idle", "lie", "sit", "idle", "prone", "idle", "lie"], "a far player asleep, sitting, up, crawling, up, then lying on a bed, is drawn so (%s)" % ", ".join(clips))
 	view.queue_free()
 	camera.queue_free()
 

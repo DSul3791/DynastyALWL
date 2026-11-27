@@ -320,6 +320,7 @@ const CRAFT_QUEUE_ENTRIES := 10
 const CRAFT_QUEUE_MAX_COUNT := 20
 var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
 var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
+var _crawling: Dictionary = {}      # peer -> true while lying and moving (the stealthy crawl, Dave QA #10, 25 Nov 2026): work, not rest (crawling_of)
 var _characters: Dictionary = {}   # player key -> {luck: int 0..100, ...}, luck rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _attr_cfg: Dictionary = {}      # data/items/attributes.json: the 0 to 100 scale and the graded creation roll
@@ -1012,6 +1013,7 @@ func peer_left(peer: int) -> void:
 	_waking.erase(peer)
 	_body_sent.erase(peer)
 	_moving.erase(peer)
+	_crawling.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -17121,7 +17123,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 		e += float(rec.get("sleep", 12.5)) * hours
 	elif _asleep.has(peer):
 		e += lerpf(float(rec.get("lie", 8.3)), float(rec.get("sleep", 12.5)), clampf(_sleep_quality(peer), 0.0, 1.0)) * hours
-	elif stance == 3:
+	elif stance == 3 and not crawling_of(peer):
 		e += float(rec.get("sleep", 12.5) if on_good_bed(peer) else rec.get("lie", 8.3)) * hours
 	elif stance == 2 and e < float(_energy_cfg.get("sit_cap", 75.0)):
 		e = minf(e + float(rec.get("sit", 9.4)) * hours, float(_energy_cfg.get("sit_cap", 75.0)))
@@ -18821,13 +18823,27 @@ func _note_motion(peer: int, position: Vector3) -> void:
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
+
+		# Crawling (lying and moving, Dave QA #10, 25 Nov 2026) is work like walking (exertion.json crawl_effort), and not resting (crawling_of). A crawler's pace is
+		# read from the velocity its client sent with the position (_peer_move), not from the arrival times: two reports bunched by the network would read a 0.4 m/s
+		# crawl as twice that and stand the crawler up (review of PR #1939).
+		var told: Vector3 = _peer_move.get(peer, [Vector3.ZERO])[0]
+		var lying_pace: float = minf(speed, Vector2(told.x, told.z).length())
+		var crawl: bool = int(_stance.get(peer, 0)) == 3 and lying_pace > float(_exertion_cfg.get("crawl_from_mps", 0.15)) and not _asleep.has(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2
+
+		if crawl:
+			target = maxf(target, float(_exertion_cfg.get("crawl_effort", 0.4)))
+			_crawling[peer] = true
+		else:
+			_crawling.erase(peer)
 		_exertion[peer] = lerpf(float(_exertion.get(peer, 0.0)), target, clampf(dt * 0.25, 0.0, 1.0))
 		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
 
 		# Walking off stands a sitting or lying player up.
-		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
+		if int(_stance.get(peer, 0)) >= 2 and (lying_pace if int(_stance.get(peer, 0)) == 3 else speed) > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
 			_stance[peer] = 0
 			_asleep.erase(peer)
+			_crawling.erase(peer)
 			_strain_sent.erase(peer)
 
 	_motion[peer] = [position, now]
@@ -25468,7 +25484,13 @@ func comfort_target(peer: int) -> float:
 
 
 func _comfort_resting(peer: int) -> bool:
-	return _asleep.has(peer) or int(_stance.get(peer, 0)) >= 2
+	return _asleep.has(peer) or (int(_stance.get(peer, 0)) >= 2 and not crawling_of(peer))
+
+
+# Lying and moving: the stealthy crawl (Dave, QA #10, 25 Nov 2026), set from the position reports. A crawler is working, not resting: no lying
+# recovery of energy, strain or comfort while it lasts.
+func crawling_of(peer: int) -> bool:
+	return _crawling.has(peer)
 
 
 # The meter moves a little each slow tick: toward the target, slowly; falling faster for running, wet clothes and cold.
@@ -29081,7 +29103,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 		if diff < 0.0 and stance == 2:
 			rate *= float(cfg.get("sit_fall_mult", 2.0))
-		elif diff < 0.0 and stance == 3:
+		elif diff < 0.0 and stance == 3 and not crawling_of(peer):
 			rate *= float(cfg.get("lie_fall_mult", 3.0)) + (maxf(float(_sleep_cfg.get("strain_mult", 6.0)) - float(cfg.get("lie_fall_mult", 3.0)), 0.0) * sleep_quality if _asleep.has(peer) else 0.0)
 
 		var before: float = strain
