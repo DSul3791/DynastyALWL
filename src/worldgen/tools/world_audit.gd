@@ -1053,7 +1053,7 @@ func _check_scatter(m: Dictionary, cell: Vector2i, trees: Array) -> void:
 					lo = minf(lo, g)
 
 			# A boulder's model is centred on its spot sunk into the ground; it floats when the ground under its body falls away by more than its radius.
-			if not is_nan(lo) and p.y - lo > r:
+			if not is_nan(lo) and p.y - lo > r and not (it["boulder"] as Dictionary).has("tilt"):   # a crag leans with its steep face (rock_fields): it lies along the slope, not over it
 				_fault("boulder_floats", p.y - lo - r, p, "%s r %.2f, ground falls %.2f m under it" % [name, r, p.y - lo])
 
 			continue
@@ -2062,8 +2062,12 @@ func _audit_walk(chunk: Vector2i) -> void:
 						if i < 0 or j < 0 or i >= n or j >= n or swim[j * n + i] == 1:
 							continue
 
-						if Vector2(x0 + float(i) - q.x, z0 + float(j) - q.z).length() < r * 0.9:
-							top[j * n + i] = maxf(top[j * n + i], base[j * n + i] + r * 0.7)   # from the bare ground, so overlapping rocks do not stack
+						var gap: float = Vector2(x0 + float(i) - q.x, z0 + float(j) - q.z).length()
+
+						if gap < r * 0.9:
+							# The rock's own dome from where it lies (a rocky-ground rock is set into a slope, PR #1988), never below the bare ground;
+							# from the bare ground, not another rock's top, so overlapping rocks do not stack.
+							top[j * n + i] = maxf(top[j * n + i], maxf(base[j * n + i], q.y + r * 0.7 * sqrt(maxf(1.0 - (gap / r) * (gap / r), 0.0))))
 							ground[j * n + i] = top[j * n + i]   # the rock is the floor there
 
 	var stand: PackedByteArray = PackedByteArray()   # 1: a floor a player stands and jumps on (under 45 degrees) or water

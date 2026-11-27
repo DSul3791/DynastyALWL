@@ -205,6 +205,7 @@ void fragment() {
 
 static var _meshes: Array = []   # per shape (SHAPES), VARIANTS meshes
 static var _materials: Dictionary = {}   # ore -> ShaderMaterial
+static var _low: Dictionary = {}   # a mesh of mesh_for -> its 80-face copy (low_of)
 
 
 # The mesh for a rock of this yaw and shape ("ang"; below 0, a row without one: the broken-faced middle shape, as before): one of VARIANTS
@@ -220,6 +221,25 @@ static func mesh_for(yaw: float, ang: float = -1.0) -> ArrayMesh:
 			_meshes.append(variants)
 
 	return (_meshes[shape_of(ang)] as Array)[posmod(int(yaw), VARIANTS)]
+
+
+# The same rock split once (80 faces, the same seed, so the same lumps, cuts and stretch), for rocks drawn far off (inventory_view
+# _rock_refill); a mesh not from mesh_for is its own.
+static func low_of(mesh: Mesh) -> Mesh:
+	if _low.has(mesh):
+		return _low[mesh]
+
+	for s in SHAPES.size():
+		if _meshes.size() > s:
+			var at: int = (_meshes[s] as Array).find(mesh)
+
+			if at >= 0:
+				var shape: Array = SHAPES[s]
+				_low[mesh] = make_mesh(101 + at * 17, int(shape[0]), float(shape[1]), float(shape[2]), float(shape[3]), 1)
+				return _low[mesh]
+
+	_low[mesh] = mesh
+	return mesh
 
 
 # Which of SHAPES a row's "ang" draws: 0 rounded, 1 broken (also a row without one), 2 jagged.
@@ -246,9 +266,9 @@ static func material(ore: String) -> ShaderMaterial:
 	return _materials[ore]
 
 
-# An icosphere split twice (320 faces), each corner pushed in or out by a few broad lumps, then cut by a few random planes (the broken
+# An icosphere split twice (320 faces; `splits` 1 gives 80, for the small talus chunks of the rocky ground), each corner pushed in or out by a few broad lumps, then cut by a few random planes (the broken
 # faces of the photo), wider than tall and flat underneath; flat shaded.
-static func make_mesh(seed_value: int, cut_count: int = 5, cut_lo: float = 0.36, cut_hi: float = 0.46, lump_scale: float = 1.0) -> ArrayMesh:
+static func make_mesh(seed_value: int, cut_count: int = 5, cut_lo: float = 0.36, cut_hi: float = 0.46, lump_scale: float = 1.0, splits: int = 2) -> ArrayMesh:
 	var t: float = (1.0 + sqrt(5.0)) * 0.5
 	var points: Array = []
 
@@ -257,7 +277,7 @@ static func make_mesh(seed_value: int, cut_count: int = 5, cut_lo: float = 0.36,
 
 	var tris: Array = [0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11, 1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8, 3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9, 4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1]
 
-	for _pass in 2:
+	for _pass in splits:
 		var middles: Dictionary = {}
 		var finer: Array = []
 

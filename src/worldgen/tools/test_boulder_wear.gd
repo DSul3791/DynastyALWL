@@ -98,6 +98,15 @@ func _init() -> void:
 		view._boulders.erase(4242)
 		holder.get_child(0).free()
 
+	# A crag (rocky ground on a steep face, PR #1988) leans with the face: its up is the ground's normal from the fall it is sent.
+	view._show_boulder(4244, [4244, 0, total, Vector3(30.0, 5.0, 20.0), view.BOULDER_STATE, {"radius": 1.0, "yaw": 40.0, "total": total, "tilt": [1.5, 0.0]}])
+
+	if check_has(view._boulders.has(4244), "a crag row is drawn"):
+		var up: Vector3 = (view._boulders[4244]["node"] as Node3D).basis.y.normalized()   # the holder is not turned: its own basis is the world's
+		check(up.distance_to(Vector3(-1.5, 1.0, 0.0).normalized()) < 0.01, "a crag on ground rising 1.5 a metre toward +x leans its up away from the rise (%s)" % str(up))
+		(view._boulders[4244]["node"] as Node).free()
+		view._boulders.erase(4244)
+
 	view._show_boulder(4243, [4243, 0, total, Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])
 	view._show_boulder(4243, [4243, 0, int(total / 8.0), Vector3.ZERO, view.BOULDER_STATE, {"radius": 1.0, "yaw": 0.0, "total": total}])   # worked down to an eighth
 
@@ -109,6 +118,90 @@ func _init() -> void:
 			small_top = maxf(small_top, p.y)
 
 		check(small_top < 0.8 * BoulderWear.radius_now(1.0, int(total / 8.0), total) + 0.01, "a worked rock's collider shrinks with it (%.2f)" % small_top)
+
+	# Drawn by cells, collision only near (PR #1988, boulders/PLAN_big_boulders.md): a rock far from the player is drawn in its cell's MultiMesh
+	# and has no body; it gets one when the player comes within ROCK_NEAR_M and loses it past ROCK_FAR_M; a worked rock draws itself.
+	for id in view._boulders.keys():
+		view._rock_unbody(id)
+
+	view._boulders.clear()
+	view._rock_tick()
+	var standing: Array = [Vector3(500.0, 0.0, 500.0)]
+	view._player_position = func() -> Vector3: return standing[0]
+	view._show_boulder(4250, [4250, 0, total, Vector3(100.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 10.0, "total": total, "skirt": [0.2, 0.0, -0.3]}])
+	view._show_boulder(4251, [4251, 0, total, Vector3(104.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 1.5, "yaw": 20.0, "total": total}])
+	view._rock_tick()
+	var drawn_count: int = 0
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
+			drawn_count += (child as MultiMeshInstance3D).multimesh.instance_count
+
+	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] == null, "rocks far from the player have no body")
+	check(drawn_count == 5, "two far rocks (a full copy near, a light one far) and one talus are drawn in their block (%d instances)" % drawn_count)
+	view.set_rock_quality(0)
+	view._rock_tick()
+	var low_count: int = 0
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
+			low_count += (child as MultiMeshInstance3D).multimesh.instance_count
+			check((child as MultiMeshInstance3D).cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Low draws the rocks without shadows")
+
+	check(low_count == 3, "Low draws each rock once, light, and the talus (%d instances)" % low_count)
+	var reaches: Array = []
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion() and (child as MultiMeshInstance3D).material_override != view._field_rock:
+			reaches.append(snappedf((child as MultiMeshInstance3D).visibility_range_end, 1.0))
+
+	check(reaches.size() == 1 and is_equal_approx(float(reaches[0]), view.ROCK_DRAW_M + view.ROCK_CELL_M * view.ROCK_BLOCK * 0.5), "at Low the big rocks keep their full reach (%s)" % str(reaches))
+	view.set_rock_quality(2)
+	view._rock_tick()
+	standing[0] = Vector3(110.0, 5.0, 100.0)
+	view._rock_look_msec = -100000
+	view._rock_tick()
+	check(view._boulders[4250]["node"] != null and view._boulders[4251]["node"] != null, "a player coming within 40 m gives them bodies")
+	check(view._boulders[4250]["node"].get_child_count() > 3, "the big rock's talus chunks are solid (%d shapes)" % (view._boulders[4250]["node"].get_child_count() - 1))
+	view._show_boulder(4251, [4251, 0, total - 5, Vector3(104.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 1.5, "yaw": 20.0, "total": total}])
+	var after: int = 0
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
+			after += (child as MultiMeshInstance3D).multimesh.instance_count
+
+	# The drawn copy's transform is built from the same entry as the body (the dummy renderer keeps no MultiMesh transforms to read back).
+	var rock: Dictionary = view._boulders[4250]
+	var drawn_xf: Transform3D = Transform3D(view._rock_basis(rock), rock["pos"]) * view._rock_lump_xf(rock)
+	var body_xf: Transform3D = (rock["node"] as Node3D).transform * (rock["lump"] as Node3D).transform
+	check(drawn_xf.origin.distance_to(body_xf.origin) < 0.01 and drawn_xf.basis.get_scale().distance_to(body_xf.basis.get_scale()) < 0.01, "the drawn rock matches its collider's place and size")
+	check((view._boulders[4251]["lump"] as MeshInstance3D).visible and after == 3, "a worked rock draws itself and leaves its block's drawing at once (%d left)" % after)
+	standing[0] = Vector3(500.0, 0.0, 500.0)
+	view._rock_look_msec = -100000
+	view._rock_tick()
+	check(view._boulders[4250]["node"] == null and view._boulders[4251]["node"] != null, "past 50 m the whole rock loses its body, the worked one keeps it")
+	var field_id: int = 4252   # a world id, as the server sends it: the row's "field" marks it, not the id
+	view._show_boulder(field_id, [field_id, 0, total, Vector3(102.0, 5.0, 90.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 50.0, "total": total, "ang": 0.8, "field": 1}])
+	check(is_equal_approx(float(view._boulders[field_id]["tall"]), view.FIELD_TALL) and view._boulders[field_id]["material"] == view._field_rock, "a rocky-ground rock is grey broken rock standing taller than wide-and-flat")
+	view._forget(field_id)
+	view._show_boulder(4253, [4253, 0, total, Vector3(98.0, 5.0, 96.0), view.BOULDER_STATE, {"radius": 2.5, "yaw": 5.0, "total": total, "ang": 0.8, "field": 1, "skirt": [0.1, 0.0, -0.2, 1]}])
+	var foot_variant: int = int(view._boulders[4253]["variant"])
+	check(foot_variant >= view.SKIRT_VARIANTS and (view._skirt_mesh(foot_variant)[1] as Array).size() > 2 * view.SKIRT_CHUNKS, "a foot band rock lies in a field of big boulders (%d chunks)" % (view._skirt_mesh(foot_variant)[1] as Array).size())
+	view._forget(4253)
+	standing[0] = Vector3(300.0, 6.0, 300.0)   # a rock that turns solid round the player stays open until the player is clear of it
+	view._show_boulder(4254, [4254, 0, total, Vector3(300.0, 5.0, 300.0), view.BOULDER_STATE, {"radius": 2.0, "yaw": 0.0, "total": total, "field": 1, "skirt": [0.0, 0.0, -0.2, 1]}])
+	check(view._boulders[4254]["node"] != null and (view._boulders[4254]["shape"] as CollisionShape3D).disabled and view._boulders[4254].has("open"), "a rock made round the player does not shut the player inside it")
+	standing[0] = Vector3(300.0, 6.0, 345.0)
+	view._rock_look_msec = -100000
+	view._rock_tick()
+	check(not (view._boulders[4254]["shape"] as CollisionShape3D).disabled and not view._boulders[4254].has("open"), "and turns solid once the player is clear")
+	view._forget(4254)
+	standing[0] = Vector3(500.0, 0.0, 500.0)
+	view._forget(4251)
+	check(not view._boulders.has(4251) and not view._rock_near.has(4251), "a rock gone from the world is forgotten")
+
+	for child in holder.get_children():
+		child.free()
 
 	holder.free()
 	view.free()

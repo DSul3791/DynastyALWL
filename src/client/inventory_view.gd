@@ -138,6 +138,17 @@ const BOG_LUMPS := 4                      # ore lumps on a full patch
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
+var _skirt_meshes: Array = []        # the rocky ground's talus skirts (_skirt_mesh), SKIRT_VARIANTS of them, made once
+var _skirt_hulls_made: Dictionary = {}   # their chunks' convex hulls by variant and size (_skirt_hulls)
+var _rock_cells: Dictionary = {}    # 32 m cell -> {id: true}: the server rocks lying there
+var _rock_draws: Dictionary = {}    # drawing block (ROCK_BLOCK cells a side) -> its MultiMeshInstance3D nodes (_rock_refill)
+var _rock_dirty: Dictionary = {}    # blocks to draw again
+var _field_rock: ShaderMaterial = null
+var _rock_low: bool = false         # Low quality: lighter rocks (set_rock_quality)
+var _rock_near: Dictionary = {}     # ids of the rocks with a body of their own (a server boulder without one has node, shape and lump null)
+var _rock_added_frame: int = 0      # collision shapes made this frame (ROCK_SHAPES_PER_FRAME)
+var _rock_look_msec: int = 0
+var _rock_look_more: bool = false   # the last look ran out of its frame budget
 var _boulder_rock: ShaderMaterial
 var _boulder_cracks: ShaderMaterial   # the cracks drawn over a worked boulder (BugsList entry 3), one material, its depth per boulder (instance uniforms)
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
@@ -1665,6 +1676,11 @@ func _process_body(_delta: float) -> void:
 		var th: int = FrameProbe.start()
 		_hull_step()
 		FrameProbe.stop("inventory: rock hull prewarm", th)
+
+	if not _rock_dirty.is_empty() or not _rock_near.is_empty() or not _rock_cells.is_empty():
+		var t_rocks: int = FrameProbe.start()
+		_rock_tick()
+		FrameProbe.stop("inventory: rocks near and drawn", t_rocks)
 
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
@@ -3824,10 +3840,28 @@ func _show_boulder(id: int, row: Array) -> void:
 	var left: int = int(row[2])
 
 	if _boulders.has(id):
-		_boulders[id]["left"] = left
-		_boulders[id]["node"].position = row[3]   # a boulder dug under comes down (server settle_loose_near)
-		_boulders[id]["pos"] = row[3]
-		_size_boulder(_boulders[id])
+		var known: Dictionary = _boulders[id]
+		var was_worked: bool = int(known["left"]) < int(known["total"])
+		var moved: bool = not (known["pos"] as Vector3).is_equal_approx(row[3])
+
+		if moved:
+			_rock_cell_dirty(id)   # the cell it lay in draws again without it
+
+		known["left"] = left
+		known["pos"] = row[3]   # a boulder dug under comes down (server settle_loose_near)
+
+		if known["node"] == null and left < int(known["total"]):
+			_rock_body(id)   # first blow on a rock that was only drawn (a blow is struck from near, so this is rare)
+		elif known["node"] != null:
+			(known["node"] as Node3D).position = row[3]
+			(known["lump"] as MeshInstance3D).visible = left < int(known["total"])   # a worked rock draws itself, cracks and all
+			_size_boulder(known)
+
+		if moved or was_worked != (left < int(known["total"])):
+			_rock_cell_dirty(id)
+			_rock_dirty.erase(_rock_block_of(_rock_cell_of(known)))
+			_rock_refill(_rock_block_of(_rock_cell_of(known)))   # at once: the whole rock of the MultiMesh must not hide the worked one under it
+
 		return
 
 	if _boulder_mesh == null:
@@ -3854,25 +3888,464 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 		_boulder_rock.set_shader_parameter("fade_start", 100000.0)
 		_boulder_rock.set_shader_parameter("fade_end", 100001.0)
 
+	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
+	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
+	var field: bool = int(extra.get("field", 0)) == 1 and not ore_rock   # a rock of the rocky ground (PR #1988): broken grey rock, as tall as wide
+	var entry: Dictionary = {"node": null, "shape": null, "lump": null, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
+		"ore": str(extra.get("ore", "")),   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
+		"mesh": OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or field or OreRockLook.shape_of(ang) == 2 else _boulder_mesh,
+		"material": OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else (_field_rock_material() if field else _boulder_material(str(extra.get("ore", "")))),
+		"tall": FIELD_TALL if field and OreRockLook.shape_of(ang) != 0 else 1.0,
+		"yaw": float(extra.get("yaw", 0.0)), "tilt": extra.get("tilt", []), "skirt": extra.get("skirt", []),
+		"variant": int(absi(id)) % SKIRT_VARIANTS + (SKIRT_VARIANTS if (extra.get("skirt", []) as Array).size() >= 4 else 0)}   # 4 values: the foot band's boulder field
+	_boulders[id] = entry
+	_rock_cell_dirty(id)
+
+	# Drawn in its cell's MultiMesh (_rock_refill); a body of its own only near the player (_rock_tick) or once worked. With no player (a test
+	# scene) every rock gets its body at once, as before.
+	if not _player_position.is_valid() or left < int(entry["total"]) or ((row[3] as Vector3).distance_to(_player_position.call()) < ROCK_NEAR_M and _rock_added_frame < ROCK_SHAPES_PER_FRAME):
+		_rock_body(id)
+
+
+# Big rocks the way the Godot community draws many of them (PR #1988, boulders/PLAN_big_boulders.md, Dave 27 Nov 2026 "yes"): a server boulder
+# is drawn in its ROCK_BLOCK_M block's MultiMeshes, one draw a mesh and material a block (rocks8 at 32 m cells: about 13 meshes a cell, several
+# hundred draws in range, +2.2 ms at Low), refilled only when a rock of the block comes, goes, moves or is first worked (ROCK_REFILL_PER_FRAME
+# blocks a frame); rocks are listed by 32 m cell for the near look; collision only near the player: a rock within ROCK_NEAR_M gets a StaticBody3D of its own (its hull and
+# its talus chunks' convex hulls, made before it enters the tree and never changed in it, at most ROCK_SHAPES_PER_FRAME shapes a frame), freed again past
+# ROCK_FAR_M. A worked rock keeps its body and draws itself (cracks, shrinking). Drawn to ROCK_DRAW_M; past it the ground's rock texture carries
+# the mountain.
+const ROCK_NEAR_M := 40.0
+const ROCK_FAR_M := 50.0
+const ROCK_DRAW_M := 160.0
+const ROCK_CELL_M := 32.0
+const ROCK_BLOCK := 3        # cells a side of a drawing block (96 m)
+const ROCK_SKIRT_DRAW_M := 70.0    # talus chunks are small: drawn nearer than the rocks
+const ROCK_SKIRT_LOW_M := 30.0     # Low: talus only round the blocks nearest the player
+const ROCK_LOW_SMALL_R := 0.8      # Low: rocks smaller than this radius drawn only to ROCK_FULL_M
+const ROCK_FULL_M := 70.0          # nearer than this (block middle) whole rocks are drawn full (320 faces) with shadows; farther, 80 faces and none
+# (rocks10: +1.5 ms at Low against dev, with every rocky-ground rock at 320 faces and casting shadows to 160 m)
+const FIELD_TALL := 1.4      # a rocky-ground rock stands taller than the flat ore-rock mesh (coordinator on rocks8: "tall not flat")
+const ROCK_SHAPES_PER_FRAME := 64   # collision shapes made a frame (rocks14: a run into a foot field built up to 6 rocks of 37 shapes a frame, 7 frames over 50 ms)
+const ROCK_REFILL_PER_FRAME := 4
+const ROCK_LOOK_S := 0.25
+
+
+# The cell a rock is drawn in.
+func _rock_cell_of(entry: Dictionary) -> Vector2i:
+	var p: Vector3 = entry["pos"]
+	return Vector2i(int(floor(p.x / ROCK_CELL_M)), int(floor(p.z / ROCK_CELL_M)))
+
+
+# Quality change (terrain_client _apply_quality): at Low every rock is the light 80-face copy, rocks under ROCK_LOW_SMALL_R radius are drawn
+# only near, and the talus only round the nearest blocks; the big boulders keep their full reach. Every block draws again.
+func set_rock_quality(quality: int) -> void:
+	if _rock_low == (quality == 0):
+		return
+
+	_rock_low = quality == 0
+
+	for cell in _rock_cells:
+		_rock_dirty[_rock_block_of(cell)] = true
+
+
+func _rock_block_of(cell: Vector2i) -> Vector2i:
+	return Vector2i(floori(float(cell.x) / ROCK_BLOCK), floori(float(cell.y) / ROCK_BLOCK))
+
+
+# Lists a rock in the cell it lies in and marks that cell's block to draw again (its old cell drops it at the old block's refill).
+func _rock_cell_dirty(id: int) -> void:
+	var cell: Vector2i = _rock_cell_of(_boulders[id])
+
+	if not _rock_cells.has(cell):
+		_rock_cells[cell] = {}
+
+	_rock_cells[cell][id] = true
+	_rock_dirty[_rock_block_of(cell)] = true
+
+
+# The rocky ground's rock: the granite with a little moss on its tops only (rocks8: the boulder granite's moss turned every rock seen from above
+# into a dark green pad), a lighter grey.
+func _field_rock_material() -> ShaderMaterial:
+	if _field_rock == null:
+		_field_rock = _boulder_rock.duplicate() as ShaderMaterial
+		_field_rock.set_shader_parameter("stone_color", Vector3(0.40, 0.39, 0.37))
+		_field_rock.set_shader_parameter("mossiness", 0.28)
+
+	return _field_rock
+
+
+# The rock's own place and turn: at its spot, turned by its yaw, leaning with a steep face when it is a crag.
+func _rock_basis(entry: Dictionary) -> Basis:
+	var turn: Basis = Basis(Vector3.UP, deg_to_rad(float(entry["yaw"])))
+	var tilt: Array = entry["tilt"]
+
+	if tilt.size() >= 2:   # a crag on a steep mountainside leans with the face (PR #1988): its up is the ground's normal, from its fall per metre along x and z
+		return Basis(Quaternion(Vector3.UP, Vector3(-float(tilt[0]), 1.0, -float(tilt[1])).normalized())) * turn
+
+	return turn
+
+
+# A whole rock's drawn mesh within its place: scaled to its radius and sunk a fifth, as _size_boulder sizes the lump.
+func _rock_lump_xf(entry: Dictionary) -> Transform3D:
+	var box: AABB = (entry["mesh"] as Mesh).get_aabb()
+	var size_k: float = float(entry["radius"]) / maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
+	var tall_k: float = size_k * float(entry["tall"])
+	return Transform3D(Basis.from_scale(Vector3(size_k, tall_k, size_k)), Vector3(0.0, -(box.position.y + box.size.y * 0.2) * tall_k, 0.0))
+
+
+# The talus skirt's place: on the ground under the rock's middle, lying with the slope.
+func _rock_skirt_xf(entry: Dictionary) -> Transform3D:
+	var skirt: Array = entry["skirt"]
+	var up: Vector3 = Vector3(-float(skirt[0]), 1.0, -float(skirt[1])).normalized()   # the ground's normal from its fall per metre
+	return Transform3D(Basis(Quaternion(Vector3.UP, up)), (entry["pos"] as Vector3) + Vector3(0.0, float(skirt[2]), 0.0))
+
+
+# Gives a rock its body: its hull (sized by _size_boulder), its lump (drawn only once worked) and its talus chunks' hulls, all made before the body
+# enters the tree.
+func _rock_body(id: int) -> void:
+	var entry: Dictionary = _boulders[id]
+
+	if entry["node"] != null:
+		return
+
+	_rock_added_frame += 1 + ((_skirt_mesh(int(entry["variant"]))[1] as Array).size() if (entry["skirt"] as Array).size() >= 3 else 0)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.set_meta("boulder", true)   # the look label names it (terrain_client _inspect_target: it showed the soil under it, TEST-013)
 	var shape: CollisionShape3D = CollisionShape3D.new()
 	shape.shape = ConvexPolygonShape3D.new()   # the drawn rock's own hull (_size_boulder)
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
-	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
-	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
-	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or OreRockLook.shape_of(ang) == 2 else _boulder_mesh
-	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
-	lump.material_overlay = _crack_material()
-	body.add_child(lump)
-	body.position = row[3]
-	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
-	_root.add_child(body)
-	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
-		"ore": str(extra.get("ore", ""))}   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
-	_boulders[id] = entry
+	lump.mesh = entry["mesh"]
+	lump.material_override = entry["material"]
+	lump.visible = int(entry["left"]) < int(entry["total"])   # a whole rock is drawn by its cell; a worked one draws itself
+	body.add_child(lump)   # the crack overlay comes with the first blow (_size_boulder)
+	body.transform = Transform3D(_rock_basis(entry), entry["pos"])
+	# A shape that would come into being round the player (a rock that turns solid where the player already stands: a join, a teleport, a
+	# body made late) is left open until the player is clear of it, so nobody is ever shut inside a rock or pushed down through the ground by
+	# it (rocks15: a run that began inside a boulder field fell 1.4 m under the ground). [shape, middle, reach] in entry "open".
+	var player: Vector3 = _player_position.call() if _player_position.is_valid() else Vector3.INF
+	var left_open: Array = []
+	var radius: float = float(entry["radius"])
+
+	if _rock_round_player((entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1, player):
+		shape.disabled = true
+		left_open.append([shape, (entry["pos"] as Vector3) + Vector3(0.0, radius * 0.3, 0.0), radius * 1.1])
+
+	if (entry["skirt"] as Array).size() >= 3:
+		var skirt_xf: Transform3D = _rock_skirt_xf(entry)
+		var local: Transform3D = body.transform.affine_inverse() * skirt_xf
+		var r: float = snappedf(radius, 0.1)
+		var spheres: Array = _skirt_mesh(int(entry["variant"]))[3]
+		var hulls: Array = _skirt_hulls(int(entry["variant"]), radius)
+
+		for n in hulls.size():
+			var chunk: CollisionShape3D = CollisionShape3D.new()
+			chunk.shape = hulls[n]
+			chunk.transform = local
+			var middle: Vector3 = skirt_xf * ((spheres[n][0] as Vector3) * r)
+
+			if _rock_round_player(middle, float(spheres[n][1]) * r, player):
+				chunk.disabled = true
+				left_open.append([chunk, middle, float(spheres[n][1]) * r])
+
+			body.add_child(chunk)
+
+	if not left_open.is_empty():
+		entry["open"] = left_open
+
+	entry["node"] = body
+	entry["shape"] = shape
+	entry["lump"] = lump
+	entry.erase("now")
 	_size_boulder(entry)
+	_root.add_child(body)
+	_rock_near[id] = true
+
+
+# True when the player's capsule (its middle `player`, about 1 m round it) reaches into a sphere of `reach` round `middle`.
+func _rock_round_player(middle: Vector3, reach: float, player: Vector3) -> bool:
+	return player.is_finite() and player.distance_to(middle) < reach + 1.0
+
+
+func _rock_unbody(id: int) -> void:
+	var entry: Dictionary = _boulders[id]
+	_rock_near.erase(id)
+
+	if entry["node"] == null:
+		return
+
+	(entry["node"] as Node).queue_free()
+	entry["node"] = null
+	entry["shape"] = null
+	entry["lump"] = null
+	entry.erase("now")
+	entry.erase("open")
+
+
+# Each frame: a few dirty cells drawn again; every ROCK_LOOK_S the rocks round the player get their bodies (at most ROCK_SHAPES_PER_FRAME shapes a frame;
+# a full talus round a player arriving at a run takes three frames) and the whole ones gone past ROCK_FAR_M lose theirs. Only the cells within
+# reach of the player and the rocks with bodies are looked at, never every rock.
+func _rock_tick() -> void:
+	_rock_added_frame = 0
+	var refilled: int = 0
+
+	for cell in _rock_dirty.keys():
+		if refilled >= ROCK_REFILL_PER_FRAME:
+			break
+
+		_rock_dirty.erase(cell)
+		_rock_refill(cell)
+		refilled += 1
+
+	if not _player_position.is_valid():
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - _rock_look_msec < int(ROCK_LOOK_S * 1000.0) and not _rock_look_more:
+		return
+
+	_rock_look_msec = now
+	_rock_look_more = false
+	var at: Vector3 = _player_position.call()
+
+	for id in _rock_near.keys():
+		var entry: Dictionary = _boulders.get(id, {})
+
+		if entry.is_empty():
+			_rock_near.erase(id)
+		elif int(entry["left"]) >= int(entry["total"]) and (entry["pos"] as Vector3).distance_to(at) > ROCK_FAR_M:
+			_rock_unbody(id)
+		elif entry.has("open"):
+			var still: Array = []
+
+			for gap in entry["open"]:   # a shape left open round the player turns solid once the player is clear of it
+				if _rock_round_player(gap[1], float(gap[2]), at):
+					still.append(gap)
+				elif is_instance_valid(gap[0]):
+					(gap[0] as CollisionShape3D).disabled = false
+
+			if still.is_empty():
+				entry.erase("open")
+			else:
+				entry["open"] = still
+
+	var mid: Vector2i = Vector2i(int(floor(at.x / ROCK_CELL_M)), int(floor(at.z / ROCK_CELL_M)))
+	var reach: int = int(ceil(ROCK_NEAR_M / ROCK_CELL_M))
+
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			for id in _rock_cells.get(mid + Vector2i(dx, dz), {}):
+				var entry: Dictionary = _boulders.get(id, {})
+
+				if entry.is_empty() or entry["node"] != null or (entry["pos"] as Vector3).distance_to(at) >= ROCK_NEAR_M:
+					continue
+
+				if _rock_added_frame >= ROCK_SHAPES_PER_FRAME:
+					_rock_look_more = true   # the rest next frame
+					return
+
+				_rock_body(id)
+
+
+# Draws a block's whole rocks and talus skirts again: one MultiMeshInstance3D per mesh and material, the block's old ones freed. A rock gone or
+# moved out of a cell of the block is dropped from that cell's list here.
+func _rock_refill(block: Vector2i) -> void:
+	for node in _rock_draws.get(block, []):
+		(node as Node).queue_free()
+
+	var groups: Dictionary = {}   # [mesh, material, shadows, range] key -> [mesh, material, shadows, range, transforms]
+
+	for bx in ROCK_BLOCK:
+		for bz in ROCK_BLOCK:
+			var cell: Vector2i = block * ROCK_BLOCK + Vector2i(bx, bz)
+
+			if not _rock_cells.has(cell):
+				continue
+
+			var ids: Dictionary = _rock_cells[cell]
+
+			for id in ids.keys():
+				if not _boulders.has(id) or _rock_cell_of(_boulders[id]) != cell:
+					ids.erase(id)
+					continue
+
+				var entry: Dictionary = _boulders[id]
+
+				if (entry["skirt"] as Array).size() >= 3:
+					var skirt: Array = _skirt_mesh(int(entry["variant"]))
+					var skirt_place: Transform3D = _rock_skirt_xf(entry) * Transform3D(Basis.from_scale(Vector3.ONE * snappedf(float(entry["radius"]), 0.1)), Vector3.ZERO)   # the size its collision has
+
+					if int(entry["variant"]) >= SKIRT_VARIANTS:   # a foot band's boulder field: seen as far as the rocks, light past the near blocks
+						_rock_group(groups, skirt[0], _field_rock_material(), not _rock_low, ROCK_SKIRT_LOW_M if _rock_low else ROCK_FULL_M).append(skirt_place)
+						_rock_group(groups, skirt[2], _field_rock_material(), false, ROCK_DRAW_M, ROCK_SKIRT_LOW_M if _rock_low else ROCK_FULL_M).append(skirt_place)
+					else:
+						_rock_group(groups, skirt[0], _field_rock_material(), false, ROCK_SKIRT_LOW_M if _rock_low else ROCK_SKIRT_DRAW_M).append(skirt_place)
+
+				if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
+					var place: Transform3D = Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry)
+					if _rock_low:   # every rock light (Low has no sun shadows anyway); the small ones only near, the big ones as far as ever
+						_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M if float(entry["radius"]) >= ROCK_LOW_SMALL_R else ROCK_FULL_M).append(place)
+					else:
+						_rock_group(groups, entry["mesh"], entry["material"], true, ROCK_FULL_M).append(place)
+						_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M, ROCK_FULL_M).append(place)
+
+			if ids.is_empty():
+				_rock_cells.erase(cell)
+
+	var nodes: Array = []
+
+	for key in groups:
+		var group: Array = groups[key]
+		var transforms: Array = group[4]
+		var multi: MultiMesh = MultiMesh.new()
+		multi.transform_format = MultiMesh.TRANSFORM_3D
+		multi.mesh = group[0]
+		multi.instance_count = transforms.size()
+
+		for n in range(transforms.size()):
+			multi.set_instance_transform(n, transforms[n])
+
+		var drawn: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		drawn.multimesh = multi
+		drawn.material_override = group[1]
+		drawn.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON if bool(group[2]) else GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		drawn.visibility_range_end = float(group[3]) + ROCK_CELL_M * ROCK_BLOCK * 0.5   # measured from the block's middle
+
+		if float(group[5]) > 0.0:
+			drawn.visibility_range_begin = float(group[5]) + ROCK_CELL_M * ROCK_BLOCK * 0.5   # the far copy takes over where the full one ends
+			drawn.visibility_range_begin_margin = 10.0
+		drawn.visibility_range_end_margin = 10.0   # hysteresis, no alpha fade (an alpha fade draws transparent: the HLOD docs' cost warning)
+		_root.add_child(drawn)
+		nodes.append(drawn)
+
+	if nodes.is_empty():
+		_rock_draws.erase(block)
+	else:
+		_rock_draws[block] = nodes
+
+
+func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bool, reach: float, from: float = 0.0) -> Array:
+	var key: String = "%d:%d:%s:%.0f:%.0f" % [mesh.get_instance_id(), material.get_instance_id(), str(shadows), from, reach]   # reach too: at Low small and big rocks share a mesh but not a reach
+
+	if not groups.has(key):
+		groups[key] = [mesh, material, shadows, reach, [], from]
+
+	return groups[key][4]
+
+
+
+const SKIRT_VARIANTS := 4   # talus variants; the next SKIRT_VARIANTS are the foot band's boulder fields
+const FOOT_CHUNKS := 36     # big broken boulders in a foot field round a rock (Dave 27 Nov 2026: "multiply the boulders numbers by like 30 and make them bigger the lower they go")
+const SKIRT_STONES := 16   # small broken stones in a skirt, SKIRT_NEAR to SKIRT_FAR radii out
+const SKIRT_CHUNKS := 14   # broken chunks round the rock (Dave 27 Nov 2026: "broken rocks and smaller 1-3m chunks in between and on the ground around them")
+
+
+# The talus round a big mountain rock of radius 1 (PR #1988): SKIRT_CHUNKS angular chunks 0.25 to 0.7 radii in size, 1.1 to 2.6 radii out, packed
+# against the rock and each other without overlapping, set a third into the ground, with SKIRT_STONES small broken stones between them; all on
+# the ground plane (y 0). Seeded by `variant`, so every skirt of a variant is the same mesh. [mesh, each chunk's points at unit radius (its convex
+# hull, scaled per rock by _skirt_hulls)]. Two chunks either touch or leave a gap of half a radius or more: a gap a foot could stick in is not made
+# (the physics engines' advice on walking over rubble, boulders/PLAN_big_boulders.md).
+# shortcut: the foot fields reach up to 4.5 radii from their rock, past the server's keep_clear_m round it; a building placed later inside a field
+# keeps the chunks' collision there (only a player standing in a chunk as it is made is left clear). Revisit with step 2 (rocks the server moves).
+func _skirt_mesh(variant: int) -> Array:
+	while _skirt_meshes.size() < SKIRT_VARIANTS * 2:
+		var foot: bool = _skirt_meshes.size() >= SKIRT_VARIANTS   # a foot field: FOOT_CHUNKS chunks 0.35 to 0.95 radii, out to 4.5 radii
+		var chunks: int = FOOT_CHUNKS if foot else SKIRT_CHUNKS
+		var pebble: ArrayMesh = load("res://src/client/grass_view.gd")._make_pebble()
+		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+		rng.seed = 9100 + _skirt_meshes.size()
+		var tool: SurfaceTool = SurfaceTool.new()
+		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var far: SurfaceTool = SurfaceTool.new()   # the same chunks of 20 faces, drawn past the near blocks
+		far.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var hulls: Array = []
+		var spheres: Array = []
+		var low: Array = []   # three small-chunk shapes of 80 faces (rocks8: 9 chunks of 320 faces a skirt drew over a million triangles in range)
+
+		var lowest: Array = []
+
+		for k in 3:
+			low.append(OreRockLook.make_mesh(201 + k * 17, 8, 0.3, 0.4, 1.25, 1))
+			lowest.append(OreRockLook.make_mesh(201 + k * 17, 8, 0.3, 0.4, 1.25, 0))
+
+		var placed: Array = [[0.0, 0.0, 1.0]]   # [x, z, size]: the rock itself, then each chunk
+
+		for n in range(chunks * 8):   # tries: a chunk that would overlap another is left out
+			if placed.size() > chunks:
+				break
+
+			var angle: float = rng.randf() * TAU
+			var size: float = lerpf(0.35, 0.95, pow(rng.randf(), 1.2)) if foot else lerpf(0.25, 0.7, pow(rng.randf(), 1.4))
+			var out: float = (lerpf(1.1, 4.5, sqrt(rng.randf())) if foot else lerpf(1.1, 2.6, rng.randf())) + size * 0.5
+			var at: Vector2 = Vector2(cos(angle), sin(angle)) * out
+			var clear: bool = true
+
+			for q in placed:
+				var gap: float = at.distance_to(Vector2(float(q[0]), float(q[1]))) - size - float(q[2])
+				if foot:   # a field hard to cross: packed, touching or a gap of at least 0.2 radii (0.4 m at the smallest foot rock)
+					clear = clear and gap > -(size + float(q[2])) * 0.25 and (gap < 0.0 or gap >= 0.2)
+				else:
+					clear = clear and gap > -(size + float(q[2])) * 0.15 and (gap < 0.0 or gap >= 0.5)   # a little into each other, or well apart
+
+			if not clear:
+				continue
+
+			placed.append([at.x, at.y, size])
+			var pick: int = rng.randi() % low.size()
+			var chunk: ArrayMesh = low[pick]   # fresh, angular
+			var box: AABB = chunk.get_aabb()
+			var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
+			var place: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).rotated(Vector3(1.0, 0.0, 0.0), rng.randf_range(-0.35, 0.35)).scaled(Vector3.ONE * (size / unit)),
+				Vector3(at.x, -(box.position.y + box.size.y * 0.35) * (size / unit), at.y))   # a third set into the ground
+			tool.append_from(chunk, 0, place)
+			far.append_from(lowest[pick], 0, place)
+			var points: PackedVector3Array = PackedVector3Array()
+
+			for v in chunk.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+				points.append(place * v)
+
+			hulls.append(points)
+			var bounds: AABB = AABB(points[0], Vector3.ZERO)
+
+			for v in points:
+				bounds = bounds.expand(v)
+
+			spheres.append([bounds.get_center(), bounds.size.length() * 0.5])   # a sphere round the chunk (the open-round-the-player test)
+
+		for n in range(SKIRT_STONES):
+			var angle: float = rng.randf() * TAU
+			var out: float = lerpf(1.05, 3.0, pow(rng.randf(), 1.3))
+			var size: float = lerpf(0.06, 0.18, rng.randf())
+			tool.append_from(pebble, 0, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(cos(angle) * out, -0.25 * size, sin(angle) * out)))
+
+		_skirt_meshes.append([tool.commit(), hulls, far.commit(), spheres])
+
+	return _skirt_meshes[variant]
+
+
+# The collision of a skirt's chunks at `radius` (a talus field to climb over, not walk through): a convex hull a chunk (cheaper than one concave
+# mesh for Jolt), one set a variant and size, shared by every rock of that size (to 0.1 m).
+func _skirt_hulls(variant: int, radius: float) -> Array:
+	var r: float = snappedf(radius, 0.1)
+	var key: String = "%d:%.1f" % [variant, r]
+
+	if not _skirt_hulls_made.has(key):
+		var made: Array = []
+
+		for points in _skirt_mesh(variant)[1]:
+			var scaled: PackedVector3Array = PackedVector3Array()
+
+			for v in points:
+				scaled.append(v * r)
+
+			var hull: ConvexPolygonShape3D = ConvexPolygonShape3D.new()
+			hull.points = scaled
+			made.append(hull)
+
+		_skirt_hulls_made[key] = made
+
+	return _skirt_hulls_made[key]
 
 
 # The boulder material for a row's "ore": the plain granite for "" (or an ore with no OUTCROP_LOOK), else that ore's own copy, made once.
@@ -3944,7 +4417,8 @@ func _size_boulder(entry: Dictionary) -> void:
 	var scale: float = radius / unit
 	var was: float = float(entry.get("now", -1.0))
 	entry["now"] = radius
-	var lump_at: Vector3 = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	var sizes: Vector3 = Vector3(scale, scale * float(entry.get("tall", 1.0)), scale)
+	var lump_at: Vector3 = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * sizes.y, 0.0)
 	var lump_node: MeshInstance3D = entry["lump"]
 
 	# A blow eases the rock down to its new size over SHRINK_EASE_S (smooth motion; a small rock loses a big share a blow). The first draw sets it.
@@ -3955,11 +4429,11 @@ func _size_boulder(entry: Dictionary) -> void:
 			(entry["shrink"] as Tween).kill()   # a quick second blow starts from where the last ease had got to
 
 		var shrink: Tween = lump_node.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		shrink.tween_property(lump_node, "scale", Vector3.ONE * scale, SHRINK_EASE_S)
+		shrink.tween_property(lump_node, "scale", sizes, SHRINK_EASE_S)
 		shrink.tween_property(lump_node, "position", lump_at, SHRINK_EASE_S)
 		entry["shrink"] = shrink
 	else:
-		lump_node.scale = Vector3.ONE * scale
+		lump_node.scale = sizes
 		lump_node.position = lump_at
 
 	# The collider is the drawn rock's hull at its new size (world audit 23 Nov 2026: a sphere of 0.85 x the radius half a radius up stood 0.65 of a
@@ -3979,7 +4453,7 @@ func _size_boulder(entry: Dictionary) -> void:
 			points.resize(hull.size())
 
 			for k in hull.size():
-				points[k] = hull[k] * scale + lump_at
+				points[k] = hull[k] * sizes + lump_at
 
 			var convex: ConvexPolygonShape3D = entry["shape"].shape as ConvexPolygonShape3D
 
@@ -3989,7 +4463,9 @@ func _size_boulder(entry: Dictionary) -> void:
 				entry["shape"].position = Vector3.ZERO
 
 			convex.points = points
-	lump_node.set_instance_shader_parameter("crack", BoulderWear.crack(int(entry["left"]), int(entry["total"])))   # cracks from the first blow, more and wider as the rock is used up
+	var crack: float = BoulderWear.crack(int(entry["left"]), int(entry["total"]))
+	lump_node.material_overlay = _crack_material() if crack >= 0.01 else null   # the overlay draws nothing under 0.01 (CRACK_SHADER discards): a whole rock skips that second pass
+	lump_node.set_instance_shader_parameter("crack", crack)   # cracks from the first blow, more and wider as the rock is used up
 	lump_node.set_instance_shader_parameter("crack_scale", 1.0 / unit)
 
 
@@ -4040,6 +4516,9 @@ func _crack_material() -> ShaderMaterial:
 # A boulder worked down to its last stones breaks apart where it stood (BugsList entry 3): a few fragments of its rock fly out and shrink away in under a
 # second. Drawing only; the server has already taken the rock out of the world. PLACEHOLDER look: not visually checked.
 func _crumble_boulder(entry: Dictionary) -> void:
+	if entry["node"] == null:
+		return   # only drawn in its cell (never worked here): nothing to break apart
+
 	var lump: MeshInstance3D = entry["lump"]
 	var at: Vector3 = (entry["node"] as Node3D).global_position + Vector3(0.0, float(entry.get("now", 0.3)) * 0.5, 0.0)
 
@@ -4058,8 +4537,12 @@ func _crumble_boulder(entry: Dictionary) -> void:
 		tween.chain().tween_callback(bit.queue_free)
 
 
-# The boulder a strike at this point landed on (0 when none): within its radius and a little.
+# The boulder a strike at this point landed on (0 when none): within its radius and a little; of rocks lying together (scree, rocky ground)
+# the one whose edge is nearest the point, so a blow lands on the rock struck, not on a neighbour listed first.
 func boulder_near(point: Vector3) -> int:
+	var best: int = 0
+	var best_gap: float = INF
+
 	for id in _boulders:
 		var entry: Dictionary = _boulders[id]
 		var flat: float = Vector2(point.x - entry["pos"].x, point.z - entry["pos"].z).length()
@@ -4067,10 +4550,11 @@ func boulder_near(point: Vector3) -> int:
 		var now: float = float(entry.get("now", entry["radius"]))
 
 		# A small copper rock gets a small margin, so a blow at a trunk or the ground beside it is not taken as a blow on the rock.
-		if flat <= now + minf(0.7, 0.2 + now * 2.0) and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]):
-			return id
+		if flat <= now + minf(0.7, 0.2 + now * 2.0) and absf(point.y - entry["pos"].y) < 2.5 + float(entry["radius"]) and flat - now < best_gap:
+			best = id
+			best_gap = flat - now
 
-	return 0
+	return best
 
 
 # Loose items roll a little when walked over (Dave 2026-10-23, keep-item-roll): a few times a second the loose singles within ROLL_TRIGGER_M of a
@@ -4152,7 +4636,8 @@ func _forget(id: int) -> void:
 		if int(gone["left"]) <= maxi(3, int(float(gone["total"]) * 0.03)) and _player_position.is_valid() and (gone["pos"] as Vector3).distance_to(_player_position.call()) < 30.0:
 			_crumble_boulder(gone)   # mined out, not just out of range
 
-		gone["node"].queue_free()
+		_rock_cell_dirty(id)   # its cell draws again without it
+		_rock_unbody(id)
 		_boulders.erase(id)
 		return
 

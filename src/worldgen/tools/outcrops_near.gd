@@ -9,7 +9,10 @@ extends SceneTree
 # before Steve's own-stream fix the boulders shared that random stream. So the tool lays the area out twice, with the cover read as bare
 # and as covered, and says "exact" when both give the same boulders, or warns when they differ.
 #   godot --headless --path . --script res://src/worldgen/tools/outcrops_near.gd -- [--at=53296,68080] [--radius=400] [--ores=tin,copper] [--top=20]
-#        [--world=res://worlds/base_world]
+#        [--world=res://worlds/base_world] [--fields]
+# --fields: also the rocky ground's rocks (boulders.json rock_fields, FIELD_KEY): how many of each kind, the best cells of each kind to picture
+# with the rocks counted round each camera (rocks_count lines: within 60 m, all and of 1 m radius or more) and look_rig lines, and how rocky
+# each kind of ground is over the area (rocks_check lines).
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -31,6 +34,7 @@ func _init() -> void:
 	var radius: float = 400.0
 	var wanted: Dictionary = {}
 	var top: int = 20
+	var fields: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--world="):
@@ -45,6 +49,12 @@ func _init() -> void:
 				wanted[name] = true
 		elif argument.begins_with("--top="):
 			top = int(argument.trim_prefix("--top="))
+		elif argument == "--fields":
+			fields = true
+
+	_tag = "%d" % int(at.x)
+	_at = at
+	_radius = radius
 
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(world + "/world.json", errors)
@@ -93,7 +103,237 @@ func _init() -> void:
 		print("  %-9s at (%.1f, %.1f, %.1f)  %4.0f m  radius %.2f m%s%s" % [str(r["ore"]), p.x, p.y, p.z, float(r["dist"]), float(r["radius"]), "  (cave floor)" if bool(r["cave"]) else "",
 			"  (%s)" % str(r["from"]) if str(r["from"]) != "" else ""])
 
+	if fields:
+		_print_fields(bare, top)
+
 	quit(0)
+
+
+var _tag: String = ""      # the --at spot's x, in the picture names
+var _last_items = null   # the last _boulders layout's ServerItems, wired to the world: its ground and water answer the camera spots
+var _at: Vector2 = Vector2.ZERO
+var _radius: float = 0.0
+
+const COUNT_REACH_M := 60.0   # the coordinator's measure (26 Nov 2026): rocks within 60 m of a camera on rocky ground
+const COUNT_BIG_M := 1.0      # of them, those of 1 m radius or more
+const TARGET_ALL := 40        # the target for high ground and cliff feet: 40 rocks in all, 8 big ones
+const TARGET_BIG := 8
+const EDGE_M := 80.0          # cameras and samples this far inside the laid area, so the 60 m counts see every rock round them
+
+
+# The rocky ground's rocks among `laid` (scatter key -> row), counted by kind: by the key's slot (0..95 a mountain cluster, 96..119 water, 127
+# a lone giant), a mountain rock as a crag when it leans with a steep face, else as high ground at or over the 620 m treeline, else a cliff
+# foot or hilltop. For each kind its best cells to picture, each with a camera 15 m from the cell's biggest rock on open ground, at eye height
+# and facing it, the counts round that camera (rocks within 60 m: all, of 1 m radius or more, cluster cores) and ready look_rig lines. Then
+# how rocky each kind of ground is over the whole area (rocks_check lines): its cells, the share with a rock of its own, and round every
+# third cell's middle the median counts within 60 m and the share that meets the target.
+func _print_fields(laid: Dictionary, top: int) -> void:
+	var kinds: Dictionary = {"high ground": 0, "crag": 0, "cliff foot or hilltop": 0, "water": 0, "lone giant": 0}
+	var by_cell: Dictionary = {}   # kind -> {cell: [rocks, biggest radius, the biggest rock's spot]}
+	var index: Dictionary = {}     # 32 m cell -> [[x, z, radius, a cluster core], ...] of every boulder on the surface (older ones too)
+
+	for kind in kinds:
+		by_cell[kind] = {}
+
+	for key in laid:
+		var row: Dictionary = laid[key]
+
+		if bool(row["cave"]):
+			continue
+
+		var p: Vector3 = row["pos"]
+		var cell: Vector2i = Vector2i(int(floor(p.x / 32.0)), int(floor(p.z / 32.0)))
+		var slot: int = int(key) & 0xff
+		var field: bool = (int(key) & ItemsScript.FIELD_KEY) != 0
+		var core: bool = field and slot < ItemsScript.FIELD_WATER_FIRST and slot % ItemsScript.FIELD_CLUSTER_SLOTS == 0
+
+		if not index.has(cell):
+			index[cell] = []
+
+		(index[cell] as Array).append([p.x, p.z, float(row["radius"]), core])
+
+		if not field:
+			continue
+
+		var kind: String = "lone giant" if slot == ItemsScript.FIELD_ERRATIC_SLOT else ("water" if slot >= ItemsScript.FIELD_WATER_FIRST else ("crag" if bool(row["tilt"]) else ("high ground" if p.y >= 620.0 else "cliff foot or hilltop")))
+		kinds[kind] = int(kinds[kind]) + 1
+		var cells: Dictionary = by_cell[kind]
+
+		if not cells.has(cell):
+			cells[cell] = [0, 0.0, p]
+
+		cells[cell][0] = int(cells[cell][0]) + 1
+
+		if float(row["radius"]) > float(cells[cell][1]):
+			cells[cell][1] = float(row["radius"])
+			cells[cell][2] = p
+
+	print("rock fields: %s" % str(kinds))
+
+	for kind in kinds:
+		var cells: Dictionary = by_cell[kind]
+		var order: Array = cells.keys()
+		order.sort_custom(func(a, b): return int(cells[a][0]) > int(cells[b][0]))
+		var picks: Array = []   # [meets the target, all, big, cores, cell, camera]
+
+		for c in order.slice(0, 60):   # the 60 rockiest cells: a camera for each, the best by the counts round it
+			var rock: Vector3 = cells[c][2]
+
+			if Vector2(rock.x, rock.z).distance_to(_at) > _radius - EDGE_M:
+				continue
+
+			var cam: Array = _camera_at(rock, float(cells[c][1]), 15.0, index)
+
+			if cam.is_empty():
+				continue
+
+			var counts: Array = _count_round(index, cam[0], cam[1])
+			picks.append([int(counts[0]) >= TARGET_ALL and int(counts[1]) >= TARGET_BIG, counts[0], counts[1], counts[2], c, cam, counts])
+
+		picks.sort_custom(func(a, b): return (bool(a[0]) and not bool(b[0])) or (bool(a[0]) == bool(b[0]) and int(a[1]) > int(b[1])))
+		print("rock fields: %s, %d cells; the best to picture (a camera 15 m from the cell's biggest rock, on open ground):" % [kind, cells.size()])
+
+		for n in range(mini(picks.size(), mini(top, 3))):
+			var pick: Array = picks[n]
+			var c: Vector2i = pick[4]
+			var name: String = "rocks_%s_%s_%d" % [_tag, kind.split(" ")[0], n + 1]   # the spot's x in the name: two runs never share a picture name
+			print("  rocks_count %s: within %.0f m of the camera %d rocks, %d of %.0f m radius or more, %d cluster cores (target %d and %d: %s); the cell's %d rocks, biggest radius %.2f m" % [name, COUNT_REACH_M,
+				int(pick[1]), int(pick[2]), COUNT_BIG_M, int(pick[3]), TARGET_ALL, TARGET_BIG, "met" if bool(pick[0]) else "NOT met", int(cells[c][0]), float(cells[c][1])])
+			var sizes: Array = pick[6]
+			print("    sizes %s: %d rocks 2 m across or more, %d of 3.5 m or more, the largest %.1f m across; height to width about %.2f above the ground (rocky-ground mesh 0.6 to 0.78 as tall as wide, drawn %.1f x taller, a fifth set in; more on a slope)" % [name,
+				int(sizes[3]), int(sizes[4]), float(sizes[5]), 0.69 * 1.4 * 0.8, 1.4])
+			print("    %s" % str((pick[5] as Array)[2]).replace("NAME", name))
+			var wide: Array = _camera_at(cells[c][2], float(cells[c][1]), 45.0, index, 6.0)   # 45 m off and 6 m up
+			print("    %s" % (str(wide[2]).replace("NAME", name + "_wide") if not wide.is_empty() else "(no wide camera)"))
+
+	_print_coverage(index)
+
+
+# How rocky each kind of ground is over the laid area (rocks_check lines). Every cell middle EDGE_M inside the area is classed: above the
+# treeline (620 m), bare rock below it (the ground's own material, as the client draws it), or a cliff foot below it (gentle, under ground
+# that rises 15 m within 24 m). For each class: its cells, the share with a rock in the cell, and round every third cell's middle the median
+# rocks within 60 m (all and big) and the share meeting the target.
+func _print_coverage(index: Dictionary) -> void:
+	var ground: Callable = _last_items.ground_height
+	var classes: Dictionary = {"above the treeline": [], "bare rock below the treeline": [], "cliff foot below the treeline": []}
+	var lo: Vector2i = Vector2i(int(floor((_at.x - _radius) / 32.0)), int(floor((_at.y - _radius) / 32.0)))
+	var hi: Vector2i = Vector2i(int(floor((_at.x + _radius) / 32.0)), int(floor((_at.y + _radius) / 32.0)))
+
+	for cz in range(lo.y, hi.y + 1):
+		for cx in range(lo.x, hi.x + 1):
+			var mid: Vector2 = (Vector2(cx, cz) + Vector2(0.5, 0.5)) * 32.0
+
+			if mid.distance_to(_at) > _radius - EDGE_M:
+				continue
+
+			var h: float = float(ground.call(mid.x, mid.y))
+
+			if is_nan(h) or h < 1.0 or bool(_last_items.water_near.call(Vector3(mid.x, h, mid.y), 0.0)):
+				continue
+
+			var kind: String = ""
+
+			if h >= 620.0:
+				kind = "above the treeline"
+			elif bool(_last_items.rock_at.call(mid.x, mid.y)):
+				kind = "bare rock below the treeline"
+			else:
+				var fall: float = Vector2(float(ground.call(mid.x + 1.0, mid.y)) - float(ground.call(mid.x - 1.0, mid.y)), float(ground.call(mid.x, mid.y + 1.0)) - float(ground.call(mid.x, mid.y - 1.0))).length() * 0.5
+				var rise: float = 0.0
+
+				for d in [Vector2(24.0, 0.0), Vector2(-24.0, 0.0), Vector2(0.0, 24.0), Vector2(0.0, -24.0)]:
+					rise = maxf(rise, float(ground.call(mid.x + d.x, mid.y + d.y)) - h)
+
+				kind = "cliff foot below the treeline" if fall < 0.6 and rise >= 15.0 else ""
+
+			if kind != "":
+				(classes[kind] as Array).append(Vector2i(cx, cz))
+
+	for kind in classes:
+		var cells: Array = classes[kind]
+		var with_rock: int = 0
+		var all_n: Array = []
+		var big_n: Array = []
+		var met: int = 0
+
+		for n in range(cells.size()):
+			var c: Vector2i = cells[n]
+			with_rock += 1 if index.has(c) else 0
+
+			if n % 3 == 0:
+				var counts: Array = _count_round(index, (float(c.x) + 0.5) * 32.0, (float(c.y) + 0.5) * 32.0)
+				all_n.append(int(counts[0]))
+				big_n.append(int(counts[1]))
+				met += 1 if int(counts[0]) >= TARGET_ALL and int(counts[1]) >= TARGET_BIG else 0
+
+		all_n.sort()
+		big_n.sort()
+		var sampled: int = all_n.size()
+		print("rocks_check %s: %d cells, %.0f%% with a rock of their own; round every third cell's middle the median is %d rocks within %.0f m, %d of 1 m or more; %.0f%% meet the target (%d and %d)" % [kind, cells.size(),
+			100.0 * float(with_rock) / float(maxi(cells.size(), 1)), int(all_n[sampled >> 1]) if sampled > 0 else 0, COUNT_REACH_M, int(big_n[sampled >> 1]) if sampled > 0 else 0,
+			100.0 * float(met) / float(maxi(sampled, 1)), TARGET_ALL, TARGET_BIG])
+
+
+# [all, big, cores]: the surface boulders within COUNT_REACH_M of (x, z): all of them, those of COUNT_BIG_M radius or more, the cluster cores.
+func _count_round(index: Dictionary, x: float, z: float) -> Array:
+	var all_n: int = 0
+	var big_n: int = 0
+	var cores: int = 0
+	var across_2: int = 0     # 2 m across or more
+	var across_35: int = 0    # 3.5 m across or more
+	var largest: float = 0.0  # across, m
+	var c: Vector2i = Vector2i(int(floor(x / 32.0)), int(floor(z / 32.0)))
+
+	for dx in range(-2, 3):
+		for dz in range(-2, 3):
+			for rock in index.get(c + Vector2i(dx, dz), []):
+				if Vector2(float(rock[0]) - x, float(rock[1]) - z).length() <= COUNT_REACH_M:
+					all_n += 1
+					big_n += 1 if float(rock[2]) >= COUNT_BIG_M else 0
+					cores += 1 if bool(rock[3]) else 0
+					across_2 += 1 if float(rock[2]) >= 1.0 else 0
+					across_35 += 1 if float(rock[2]) >= 1.75 else 0
+					largest = maxf(largest, float(rock[2]) * 2.0)
+
+	return [all_n, big_n, cores, across_2, across_35, largest]
+
+
+# [x, z, a look_rig line named NAME] for a camera `dist` m from `rock` (of `radius`), `agl` m above open ground, facing the rock: of eight
+# directions the dry ones on open ground (above the treeline or on the ground's own bare rock: no tree stands there) and clear of every rock
+# by a metre, lowest ground first (it looks up the slope at the rock). Empty when none.
+func _camera_at(rock: Vector3, radius: float, dist: float, index: Dictionary, agl: float = 1.7) -> Array:
+	var ground: Callable = _last_items.ground_height
+	var spots: Array = []
+
+	for k in range(8):
+		var angle: float = TAU * float(k) / 8.0
+		var at: Vector2 = Vector2(rock.x, rock.z) + Vector2(cos(angle), sin(angle)) * dist
+		var h: float = float(ground.call(at.x, at.y))
+
+		if is_nan(h) or h < 1.0 or bool(_last_items.water_near.call(Vector3(at.x, h, at.y), 4.0)):
+			continue
+
+		if h < 620.0 and not bool(_last_items.rock_at.call(at.x, at.y)):
+			continue   # below the treeline only on bare rock: a camera on grass may stand in a tree
+
+		var clear: bool = true
+
+		for rk in index.get(Vector2i(int(floor(at.x / 32.0)), int(floor(at.y / 32.0))), []):
+			clear = clear and Vector2(float(rk[0]) - at.x, float(rk[1]) - at.y).length() > float(rk[2]) + 1.0
+
+		if clear:
+			spots.append([h, at])
+
+	if spots.is_empty():
+		return []
+
+	spots.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+	var h_cam: float = float(spots[0][0])
+	var cam: Vector2 = spots[0][1]
+	var look: Vector2 = Vector2(rock.x, rock.z) - cam
+	var yaw: float = rad_to_deg(atan2(-look.x, -look.y))   # look_rig --yaw: 0 faces north (-Z), 90 west
+	var pitch: float = rad_to_deg(atan2(rock.y + radius * 0.5 - (h_cam + agl), look.length()))
+	return [cam.x, cam.y, "tools/look_rig.sh --at %.0f,%.0f --agl %.1f --yaw %.0f --pitch %.0f --hour 12 --weather clear --name NAME" % [cam.x, cam.y, agl, yaw, pitch]]
 
 
 # The island resource landscape as the server builds it at start (server_items.start_resources, here on this thread; no known dangers, so
@@ -120,6 +360,7 @@ func _landscape(world: String, settings) -> RefCounted:
 func _boulders(generator, settings, at: Vector2, radius: float, cover: float, context: RefCounted) -> Dictionary:
 	DirAccess.make_dir_recursive_absolute(STORE)
 	var items = ItemsScript.new()
+	_last_items = items
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
@@ -201,7 +442,7 @@ func _boulders(generator, settings, at: Vector2, radius: float, cover: float, co
 
 		if dist <= radius:
 			out[int(it["scatter"])] = {"pos": pos, "ore": str(it["boulder"].get("ore", "")), "radius": float(it["boulder"]["radius"]), "dist": dist,
-				"cave": (int(it["scatter"]) & ItemsScript.CAVE_KEY) != 0,
+				"cave": (int(it["scatter"]) & ItemsScript.CAVE_KEY) != 0, "tilt": (it["boulder"] as Dictionary).has("tilt"),
 				"from": "source" if (it["boulder"] as Dictionary).has("source") else ("seam" if (it["boulder"] as Dictionary).has("seam") else "")}
 
 	return out

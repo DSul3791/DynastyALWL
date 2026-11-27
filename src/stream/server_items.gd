@@ -443,6 +443,15 @@ const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big
 const BOG_PIT_STEP_M := 0.5      # a dig joining a hole deepens its pit only when it strikes within this of the pit's floor (the last dig less its depth and radius)
 const BOG_OPEN_STEP_M := 1.0       # the silting fill is sampled on this grid below the hole; any open point under it leaves the hole open
 const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
+const FIELD_KEY := 1 << 48      # rocky ground (_lay_out_rock_fields): rocks FIELD_KEY | BOULDER_KEY | cell x << 28 | cell y << 8 | slot 0..127, their loose stones FIELD_KEY | the same cell bits | slot 128..255; bit 48 is in no other key
+const FIELD_CLUSTER_TRIES := 8  # a cell's mountain cluster tries (foot of steep ground, above the treeline, hilltops)
+const FIELD_SATELLITE_REACH_M := 9.0  # how far past its core's cell a cluster's satellite can lie (core + satellite + spread x core: 8.7 m at 2.8 m)
+const FIELD_CLUSTER_SLOTS := 12 # each try's slots: its core rock, then up to 11 smaller ones round it (slots 0..95)
+const FIELD_WATER_FIRST := 96   # slots 96..119: rounded rocks in river and lake beds and on their banks
+const FIELD_WATER_TRIES := 24
+const FIELD_ERRATIC_SLOT := 127 # a lone giant boulder on an open valley floor (one try a cell)
+const FIELD_LOOSE_FIRST := 128  # slots 128..191: loose stones to pick up on the same rocky ground
+const FIELD_LOOSE_MAX := 64
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
 const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
@@ -560,6 +569,8 @@ var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading
 var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
 var _cells_done: Dictionary = {}    # Vector2i scatter cell -> true while its items are laid out
+var _scatter_cells: Dictionary = {} # Vector2i scatter cell -> Array of the world ids laid out in it (taken away together when every player is far)
+var _cell_first_id: int = 0         # the first world id of the scatter cell being laid out (its own rocks are the ids from here)
 
 
 func setup(item_table, store_dir: String) -> void:
@@ -3479,6 +3490,7 @@ func reset_world() -> int:
 
 	_taken.clear()
 	_cells_done.clear()
+	_scatter_cells.clear()
 	_boulder_left.clear()
 	_boulder_pending.clear()
 	_bog_left.clear()
@@ -3572,7 +3584,7 @@ func _settled_loose(position: Vector3, near: Array = []) -> Vector3:
 	return Vector3(position.x, top, position.z) if not is_nan(top) and top > rest.y and top < position.y + 0.05 else rest
 
 
-const FLOOR_ROWS_REACH_M := 3.0   # a foundation's or floor's middle is at most this far from a point over it (4 m footprints: half the diagonal 2.83 m; boulders 2 m at most)
+const FLOOR_ROWS_REACH_M := 3.0   # a foundation's or floor's middle is at most this far from a point over it (4 m footprints: half the diagonal 2.83 m; boulders 3 m at most: rock_fields cores and lone giants, test_rock_fields checks)
 const BOULDER_TOP_SHARE := 0.7   # a boulder's drawn top over its spot, as a share of its radius (world_audit --walk measured the hull)
 
 
@@ -3592,6 +3604,7 @@ func _floor_top_below(at: Vector3, near: Array = [], rocks: bool = true) -> floa
 			continue
 
 		if it.has("boulder"):   # a boulder's drawn top (inventory_view _size_boulder: its hull rises BOULDER_TOP_SHARE x its radius over its spot), rounded off to its edge
+			# shortcut: a crag (rock_fields, "tilt") is taken upright here though the client leans it with its steep face; a stack dropped on one may rest a little off its drawn top
 			var r: float = BoulderWear.radius_now(float(it["boulder"].get("radius", 0.0)), int(it["count"]), int(it["boulder"].get("total", it["count"])))
 			var d: float = Vector2(at.x - it["pos"].x, at.z - it["pos"].z).length()
 
@@ -3648,7 +3661,7 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 func settle_loose_near(centre: Vector3, radius: float, fill: bool = false) -> void:
 	var loose: Array = []
 
-	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 2 m), never a walk of every record
+	for id in _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M):   # the records round the edit (a boulder's own radius is at most 3 m), never a walk of every record
 		if not _items.has(id):
 			continue
 
@@ -10189,7 +10202,9 @@ func _scatter_around_players() -> void:
 						_throttle_mark = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path)) if _throttle_path != "" else -1
 
 					var cell_usec: int = Time.get_ticks_usec()
+					var first_id: int = _next_id
 					_lay_out_cell(cell, cell_m, cfg)
+					_scatter_cells[cell] = range(first_id, _next_id)   # ids are given out in order: the cell's items are this run
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
@@ -10206,23 +10221,36 @@ func _scatter_around_players() -> void:
 
 					budget -= 1
 
-	# Take away loose things far from every player (they come back when someone returns).
-	for id in _items.keys():
-		var it: Dictionary = _items[id]
+	# Take away the cells far from every player, with what was laid out in them (they come back from the seed when someone returns). By cell, not by
+	# item: with rocky ground (PR #1988) a world holds tens of thousands of scatter rows, and a look at each row for each player took 71 ms a second
+	# for 32 players (Lane A measure, 26 Nov 2026).
+	var drop_sq: float = SCATTER_DROP_M * SCATTER_DROP_M
 
-		if not it.has("scatter"):
-			continue
-
+	for cell in _scatter_cells.keys():
+		var cx: float = (float(cell.x) + 0.5) * cell_m
+		var cz: float = (float(cell.y) + 0.5) * cell_m
 		var far: bool = true
 
 		for peer in _peer_pos:
-			if _peer_pos[peer].distance_to(it["pos"]) < SCATTER_DROP_M:
+			var off_x: float = _peer_pos[peer].x - cx
+			var off_z: float = _peer_pos[peer].z - cz
+
+			if off_x * off_x + off_z * off_z < drop_sq:
 				far = false
 				break
 
-		if far:
-			_cells_done.erase(Vector2i(int(floor(it["pos"].x / cell_m)), int(floor(it["pos"].z / cell_m))))
-			_items.erase(id)
+		if not far:
+			continue
+
+		for id in _scatter_cells[cell]:
+			if _items.has(id) and _items[id].has("scatter"):
+				_items.erase(id)
+
+				if _still_at.has(id):
+					_still_out(id)   # out of the still grids now, not left for the sync's check round
+
+		_scatter_cells.erase(cell)
+		_cells_done.erase(cell)
 
 
 
@@ -10324,6 +10352,7 @@ static func boosted(base: int, add: int, cap: int) -> int:
 
 
 func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
+	_cell_first_id = _next_id
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(cell.x, cell.y, world_seed))
 	var part_usec: int = Time.get_ticks_usec()
@@ -10395,7 +10424,9 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_sources(cell, cell_m, reads)
 	_lay_out_seams(cell, cell_m, reads)
 	_lay_out_pockets(cell, cell_m)
-	_cell_part("copper, tin and iron rocks and meteorites", part_usec)
+	part_usec = _cell_part("copper, tin and iron rocks and meteorites", part_usec)
+	_lay_out_rock_fields(cell, cell_m, reads)
+	_cell_part("rocky ground", part_usec)
 	var by_ore: PackedStringArray = PackedStringArray()
 
 	for ore in _ore_split:
@@ -10407,7 +10438,7 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	for ore in _ore_split:
 		spent += int(_ore_split[ore])
 
-	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f in %d looks, ground %.1f, water %.1f, settling %.1f, foot %.1f, rest %.1f; %s)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, _ore_usec[5],
+	_cell_parts[-2] += " (reads bound %.1f, ore bodies %.1f in %d looks, ground %.1f, water %.1f, settling %.1f, foot %.1f, rest %.1f; %s)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, _ore_usec[5],
 		float(_ore_usec[6]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0, float(_ore_usec[4]) / 1000.0, float(spent - listed) / 1000.0, ", ".join(by_ore)]
 
 
@@ -10818,6 +10849,391 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 		_next_id += 1
 
 
+# Rocky ground (boulders PLAN.md sections 6 to 8, stages 2 and 3; Dave 26 Nov 2026 "rocks and boulders on and around mountains where they
+# should be"): rocks laid where nature leaves them, over the cell's own boulders and ore rocks, all values in boulders.json rock_fields
+# (PROVISIONAL RF-1, to be tuned in play):
+# - scree and boulder fields on the gentler ground at the foot of cliffs and steep slopes (the ground rises more than scree_rise_m within
+#   relief_reach_m), denser and bigger the higher the wall;
+# - rocky ground above the treeline (the tiles' land types: alpine meadow and bare rock from treeline_m);
+# - crags standing out of the steep mountainsides (most of the ground above the treeline is steeper than a loose rock lies on), tilted to the face;
+# - outcrops on hilltops (the cell's middle stands over all four sides at relief_reach_m by top_drop_m);
+# - rounded rocks in shallow river and lake beds and on their banks, more and bigger up toward the headwaters (the journey);
+# - now and then a lone giant boulder on an open valley floor;
+# - loose stones to pick up on the same rocky ground.
+# A seeded patch noise (patch_m across) makes the mountain kinds come in patches, not an even sprinkle. Every try takes the same draws
+# from the cell's own "rock fields" stream whatever happens to it and its key is its slot, so a rock never moves to another's key; the keys
+# are new (FIELD_KEY), so the cell's older boulders and every worked rock stay as they were. No rock is laid on or beside anything built
+# (any structure: buildings, stations, tilled beds, trodden paths and roads), nor in Edda and Hob's camp or a goblin camp (NpcCamp keep);
+# nothing depends on where spawn is. No count limit on what is drawn; the tries are the layout's own steps.
+func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
+	var cfg: Dictionary = _boulder_cfg.get("rock_fields", {})
+
+	if cfg.is_empty() or not bool(cfg.get("enabled", true)):
+		return
+
+	var ground: Callable = reads["ground"]
+	var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+	var h0: float = float(ground.call(mid.x, mid.y))
+
+	if is_nan(h0) or h0 < 1.0:
+		return
+
+	var density: float = float(cfg.get("density_scale", 1.0))
+	var reach: float = minf(float(cfg.get("relief_reach_m", 24.0)), SCATTER_PAD_M - 4.0)
+	var rise_most: float = 0.0
+	var drop_least: float = INF
+	var across: Array = []   # the ground east, west, south and north of the middle (how steep the cell is, for the crags)
+
+	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var h: float = float(ground.call(mid.x + d.x, mid.y + d.y))
+		across.append(h)
+
+		if not is_nan(h):
+			rise_most = maxf(rise_most, h - h0)
+			drop_least = minf(drop_least, h0 - h)
+
+	var treeline: float = float(cfg.get("treeline_m", 620.0))
+	var rise_m: float = maxf(float(cfg.get("scree_rise_m", 10.0)), 0.1)
+	var patch: float = smoothstep(1.0 - float(cfg.get("patch_share", 0.35)) - 0.1, 1.0 - float(cfg.get("patch_share", 0.35)) + 0.1, _rock_patch(mid, float(cfg.get("patch_m", 96.0))))
+	# Each kind's clusters a cell: scree is worked out per cluster (the wall above its spot), so the cell only asks whether a wall may be near;
+	# above the treeline and on a hilltop the cell's middle decides.
+	var scree_near: bool = rise_most >= rise_m * 0.5
+	var scree_full: float = float(cfg.get("scree_clusters", 2.5)) * lerpf(float(cfg.get("scree_patch_floor", 0.25)), 1.0, patch) * density
+	# The foot band (Dave 27 Nov 2026: "right were it starts to transition from hill to flat ground there should be much bigger boulders. the type
+	# that make the terrain hard to traverse"): scree spots on near-flat ground (foot.flat_max) take foot.clusters, foot-sized cores and more satellites.
+	var foot: Dictionary = cfg.get("foot", {})
+	var foot_full: float = float(foot.get("clusters", 0.0)) * lerpf(float(cfg.get("scree_patch_floor", 0.25)), 1.0, patch) * density
+	var high: float = smoothstep(treeline - float(cfg.get("treeline_fade_m", 60.0)), treeline + float(cfg.get("treeline_full_m", 40.0)), h0)
+	var high_n: float = high * float(cfg.get("high_clusters", 1.6)) * lerpf(float(cfg.get("high_patch_floor", 0.4)), 1.0, patch) * density
+	var top_n: float = (float(cfg.get("top_clusters", 1.0)) * density) if drop_least != INF and drop_least >= float(cfg.get("top_drop_m", 8.0)) else 0.0
+	# Crags: on ground steeper than `steepest` (the mountainsides; the tiles draw it bare rock from 48 degrees) rocks stand out of the face,
+	# tilted to it, by how steep the cell is across relief_reach_m (the four reads above).
+	var crag: Dictionary = cfg.get("crag", {})
+	var crag_n: float = 0.0
+
+	if not crag.is_empty() and h0 >= float(crag.get("min_height_m", 0.0)):
+		var steep: float = Vector2(float(across[0]) - float(across[1]), float(across[2]) - float(across[3])).length() / (2.0 * reach)
+		var fade: Array = crag.get("from", [0.8, 1.1])
+
+		if not is_nan(steep):
+			crag_n = smoothstep(float(fade[0]), float(fade[1]), steep) * float(crag.get("clusters", 1.5)) * lerpf(float(crag.get("patch_floor", 0.6)), 1.0, patch) * density
+
+	var most: float = maxf(maxf(maxf(maxf(scree_full, foot_full) if scree_near else 0.0, high_n), top_n), crag_n)   # the most clusters any spot of the cell can have
+	var rng: RandomNumberGenerator = _layout_rng(cell, "rock fields")
+	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
+	var journey_mid: float = float(resource_context.call("journey_at", mid.x, mid.y)) if resource_context != null else -1.0
+	var built: Array = []   # positions of what stands near the cell (looked up once, and only when it lays something)
+	var taken: Array = []   # [x, z, radius] of the rocks lying near the cell: older boulders and those laid here, so no two overlap
+	var looked: Array = [false]
+	var wet: Callable = reads["water_near"]
+	var depth_at: Callable = reads["water_depth_at"]
+	var lone: Dictionary = cfg.get("erratic", {})
+	var sizes: Dictionary = cfg.get("radius", {})
+	var power: float = float(cfg.get("radius_power", 1.6))
+	var centres: Array = []   # [x, z] of the clusters laid here (the loose stones lie round them)
+
+	# One rock at (x, z): on ground no steeper than steepest (a lone giant: gentle ground), out of deep water, off anything built, a fire, a
+	# player and a camp, overlapping no other; set into a slope by sink_share of the drop across it. True when its ground is its own (laid, or
+	# mined out and kept clear), false when it was refused.
+	var lay_rock: Callable = func(slot: int, x: float, z: float, radius: float, yaw: float, kind: String) -> bool:
+		var y: float = float(ground.call(x, z))
+
+		if is_nan(y) or y < 1.0:
+			return false
+
+		var spot: Vector3 = Vector3(x, y, z)
+		var rise: float = _ground_fall(ground, x, z, 1.0)
+		var foot_field: bool = kind == "foot"   # a rock of the foot band: scree, with the client's boulder field round it (its skirt's 4th value)
+
+		if foot_field:
+			kind = "scree"
+
+		if kind == "crag" and rise <= float(cfg.get("steepest", 1.0)):
+			kind = "scree"   # a crag's satellite on ground gentle enough to hold it is a broken-off rock lying at the crag's foot, not a crag
+
+		var steepest: float = float(crag.get("steepest", 2.5)) if kind == "crag" else float(cfg.get("steepest", 1.0)) * (0.3 if kind == "erratic" else 1.0)
+
+		if not (rise <= steepest):
+			return false   # a loose rock does not sit on a cliff face (a crag stands out of it, up to its own steepest); a giant lies on gentle ground
+
+		if kind != "water" and depth_at.is_valid() and float(depth_at.call(spot)) > float(cfg.get("water_bed_m", 0.6)):
+			return false
+
+		if NpcCamp.within_keep(spot):
+			return false
+
+		if not bool(looked[0]):
+			looked[0] = true
+			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken)
+
+		if not _rock_field_clear(x, z, radius, float(cfg.get("keep_clear_m", 4.0)), built, taken):
+			return false
+
+		var key: int = FIELD_KEY | BOULDER_KEY | cell_bits | slot
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "field": 1}   # "field": the client draws it as rocky-ground rock (world ids do not carry the key)
+		var sink: float = rise * radius * float(cfg.get("sink_share", 0.6))   # its low side meets the ground instead of hanging over it
+
+		if kind == "crag":
+			# A crag leans with the face (the client tilts it to the ground's normal from its fall per metre along x and z), set into it by
+			# crag.sink_share of its radius; it has no apron (nothing loose stays on a face that steep).
+			row["tilt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01)]
+			sink = radius * float(crag.get("sink_share", 0.3))
+		elif kind in ["scree", "high", "top"] and radius >= float(cfg.get("apron_from_m", 0.8)):
+			# The client lays an apron of broken stones round a big mountain rock (look only, inventory_view _skirt_mesh): the ground's fall per
+			# metre along x and z, and how deep the rock is set (the apron lies on the ground, not at the rock's sunk middle).
+			row["skirt"] = [snappedf((float(ground.call(x + 1.0, z)) - float(ground.call(x - 1.0, z))) * 0.5, 0.01), snappedf((float(ground.call(x, z + 1.0)) - float(ground.call(x, z - 1.0))) * 0.5, 0.01), snappedf(sink, 0.01)]
+
+			if foot_field:
+				# Dave 27 Nov 2026 on rocks13: "multiply the boulders numbers by like 30 and make them bigger the lower they go". Thirty times the
+				# rows would cost the world sync thirty times (rocks5: 38 ms at 154 rocks a player), so the boulders between are the client's: a
+				# field of big broken chunks round this rock (inventory_view _skirt_mesh foot variants: look and collision, no rows).
+				row["skirt"].append(1)
+
+		row["ang"] = _rock_shape(journey_mid if journey_mid >= 0.0 else 1.0, kind == "water", key) if kind not in ["scree", "crag"] else _rock_shape(1.0, false, key)   # scree and crags are freshly broken
+		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop where the geology has an ore near, limestone over limestone
+		var left: int = _boulder_left_of(key, row)
+		taken.append([x, z, radius])   # a mined-out rock keeps its ground too, so no other try takes its place when the cell is laid again
+
+		if left > 0:
+			_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot) - Vector3(0.0, sink, 0.0), "left": 1.0e9, "scatter": key, "boulder": row}
+			_next_id += 1
+
+		return true
+
+	# Mountain clusters: a big core rock with smaller ones round it (a fallen block that broke, a frost-split outcrop). Each try takes the same
+	# draws whatever happens to it (6, then 4 for each of its FIELD_CLUSTER_SLOTS - 1 satellites), and its rocks have the try's own slots.
+	var satellites: Array = cfg.get("satellites", [1, 4])
+	var share: Array = cfg.get("satellite_share", [0.25, 0.6])
+	var spread: float = float(cfg.get("satellite_spread", 1.5))
+
+	for attempt in range(FIELD_CLUSTER_TRIES):
+		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var draw: float = rng.randf() * float(FIELD_CLUSTER_TRIES)   # luck-exempt: seeded world layout
+		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
+		var count_draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var around: Array = []
+
+		for k in range(FIELD_CLUSTER_SLOTS - 1):
+			around.append([rng.randf() * TAU, rng.randf(), rng.randf(), rng.randf() * 360.0])   # luck-exempt: seeded world layout
+
+		if draw >= most:
+			continue   # cheap refusals first: most tries end here, no ground read
+
+		var y: float = float(ground.call(x, z))
+
+		if is_nan(y):
+			continue
+
+		var rise: float = _ground_fall(ground, x, z, 1.0)
+		var scree: float = 0.0
+
+		if scree_near and rise <= float(cfg.get("scree_flat_max", 0.6)):
+			scree = clampf((_relief(Vector3(x, y, z), reach, ground) - rise_m) / rise_m, 0.0, 1.0)   # 0 at scree_rise_m within relief_reach_m, 1 at twice it
+
+		var at_foot: bool = scree > 0.0 and not foot.is_empty()   # every scree spot: the band along the whole line where hill meets flat (rocks14: a flat-only band was a few patches)
+		var scree_n: float = scree * (foot_full if at_foot else scree_full)
+		var kind: String = "scree" if scree_n >= high_n and scree_n >= top_n else ("high" if high_n >= top_n else "top")
+		var chance: float = maxf(maxf(scree_n, high_n), top_n)
+
+		if rise > float(cfg.get("steepest", 1.0)):
+			kind = "crag"   # too steep for a loose rock: only a crag stands here
+			chance = crag_n
+
+		if draw >= chance:
+			continue
+
+		if kind == "top" and y < h0 - float(cfg.get("top_near_m", 2.0)):
+			continue   # a hilltop's outcrop lies on its crown, not down its sides
+
+		at_foot = at_foot and kind == "scree"
+		var range_m: Array = sizes.get("foot" if at_foot else kind, [1.0, 2.0])
+		var size: float = pow(size_draw, power)
+
+		if kind == "scree":
+			size = minf(size * lerpf(1.0, float(cfg.get("scree_wall_size", 1.4)), scree), 1.0)   # bigger under a higher wall
+
+		var core: float = lerpf(float(range_m[0]), float(range_m[1]), size)
+
+		if at_foot:
+			core *= lerpf(1.0, float(foot.get("steep_share", 0.6)), smoothstep(float(foot.get("flat_max", 0.3)), float(cfg.get("scree_flat_max", 0.85)), rise))   # the flatter (the lower), the bigger
+
+		var up_hill: Array = cfg.get("up_hill", [])
+
+		if up_hill.size() >= 3 and not at_foot and kind in ["scree", "crag", "high"]:
+			# Smaller the higher up the hill (Dave 27 Nov 2026: "higher up on the hill they should be smaller, the lower they get the bigger they
+			# should be"): how far the ground falls below the spot within relief_reach_m, from up_hill[0] m (full size) to up_hill[1] m (up_hill[2]
+			# of it).
+			var lowest: float = y
+
+			for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+				var below_h: float = float(ground.call(x + d.x, z + d.y))
+
+				if not is_nan(below_h):
+					lowest = minf(lowest, below_h)
+
+			core *= lerpf(1.0, float(up_hill[2]), smoothstep(float(up_hill[0]), float(up_hill[1]), y - lowest))
+		var slot0: int = attempt * FIELD_CLUSTER_SLOTS
+
+		if not bool(lay_rock.call(slot0, x, z, core, yaw, "foot" if at_foot else kind)):
+			continue   # no core, no cluster
+
+		centres.append([x, z])
+		var counts: Array = foot.get("satellites", satellites) if at_foot else satellites
+		var many: int = int(round(lerpf(float(counts[0]), float(counts[1]), count_draw)))
+
+		for k in range(mini(many, FIELD_CLUSTER_SLOTS - 1)):
+			var a: Array = around[k]
+			var small: float = core * lerpf(float(share[0]), float(share[1]), pow(float(a[2]), power))
+			var out: float = minf(core + small + float(a[1]) * core * spread, FIELD_SATELLITE_REACH_M - small)   # within the neighbour lookup's reach
+			var sx: float = x + cos(float(a[0])) * out
+			var sz: float = z + sin(float(a[0])) * out
+
+			if kind == "top" and float(ground.call(sx, sz)) < h0 - float(cfg.get("top_near_m", 2.0)):
+				continue   # a hilltop's rocks stay on its crown
+
+			lay_rock.call(slot0 + 1 + k, sx, sz, small, float(a[3]), "foot" if at_foot else kind)
+
+	# Rivers and lakes: one look whether water is near the cell at all (as the bank stones do), then rounded rocks in the shallows and on the banks.
+	var water_p: float = float(cfg.get("water_rocks", 6.0)) * density
+
+	if water_p > 0.0 and wet.is_valid() and bool(wet.call(Vector3(mid.x, h0, mid.y), float(cfg.get("water_probe_m", 24.0)))):
+		if journey_mid >= 0.0:
+			var by_journey: Array = cfg.get("water_journey", [0.4, 1.6])
+			water_p *= lerpf(float(by_journey[0]), float(by_journey[1]), journey_mid)
+
+		for n in range(FIELD_WATER_TRIES):
+			var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+			var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+			var draw: float = rng.randf()   # luck-exempt: seeded world layout
+			var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
+			var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
+
+			if draw * float(FIELD_WATER_TRIES) >= water_p:
+				continue
+
+			var y: float = float(ground.call(x, z))
+
+			if is_nan(y):
+				continue
+
+			var spot: Vector3 = Vector3(x, y, z)
+			var depth: float = float(depth_at.call(spot)) if depth_at.is_valid() else 0.0
+
+			if depth > float(cfg.get("water_bed_m", 0.6)):
+				continue   # deep water: nobody would find it
+
+			if depth <= 0.0 and (bool(wet.call(spot, 0.0)) or not bool(wet.call(spot, float(cfg.get("water_bank_m", 3.0))))):
+				continue   # neither in the shallows nor on a bank
+
+			var size: float = pow(size_draw, power) * (lerpf(0.5, 1.0, journey_mid) if journey_mid >= 0.0 else 1.0)   # smaller down toward the sea
+			var range_w: Array = sizes.get("water", [0.2, 0.7])
+			lay_rock.call(FIELD_WATER_FIRST + n, x, z, lerpf(float(range_w[0]), float(range_w[1]), size), yaw, "water")
+
+	# A lone giant (an erratic): open, gentle ground below the treeline, away from steep ground and water.
+	if not lone.is_empty() and not scree_near and high <= 0.0 and h0 >= float(lone.get("min_height_m", 0.0)):
+		var lone_draw: float = float(hash([cell.x, cell.y, world_seed, "erratic"]) % 100000) / 100000.0
+
+		if lone_draw < float(lone.get("chance", 0.0)) * density:
+			var along: Callable = func(what: String) -> float: return float(hash([cell.x, cell.y, world_seed, what]) % 1000) / 999.0
+			var gx: float = (float(cell.x) + 0.2 + 0.6 * along.call("erratic x")) * cell_m
+			var gz: float = (float(cell.y) + 0.2 + 0.6 * along.call("erratic z")) * cell_m
+			var gy: float = float(ground.call(gx, gz))
+			var range_g: Array = sizes.get("erratic", [2.5, 3.0])
+
+			if not is_nan(gy) and not (wet.is_valid() and bool(wet.call(Vector3(gx, gy, gz), float(lone.get("water_clear_m", 8.0))))):
+				lay_rock.call(FIELD_ERRATIC_SLOT, gx, gz, lerpf(float(range_g[0]), float(range_g[1]), pow(along.call("erratic size"), power)), along.call("erratic yaw") * 360.0, "erratic")
+
+	# Loose stones round the clusters (drops.json ground_scatter gives every cell a few; a rocky one more).
+	var loose: int = mini(int(round(float(centres.size()) * float(cfg.get("loose_per_cluster", 1.0)))), FIELD_LOOSE_MAX)
+
+	if loose <= 0 or table == null or not table.has_method("number_of"):
+		return
+
+	var stone: int = table.number_of("stone")
+	var loose_rng: RandomNumberGenerator = _layout_rng(cell, "rock field stones")
+
+	for n in range(loose):
+		var angle: float = loose_rng.randf() * TAU   # luck-exempt: seeded world layout
+		var out_m: float = lerpf(2.0, 7.0, loose_rng.randf())   # luck-exempt: seeded world layout
+		var at: Array = centres[n % centres.size()]
+		var x: float = float(at[0]) + cos(angle) * out_m
+		var z: float = float(at[1]) + sin(angle) * out_m
+		var key: int = FIELD_KEY | cell_bits | (FIELD_LOOSE_FIRST + n)
+
+		if _taken.has(key):
+			continue
+
+		var y: float = float(ground.call(x, z))
+
+		if is_nan(y) or y < 1.0 or not (_ground_fall(ground, x, z, SCATTER_SLOPE_M) < 1.0) or (depth_at.is_valid() and float(depth_at.call(Vector3(x, y, z))) > 0.05) or NpcCamp.within_keep(Vector3(x, y, z)):
+			continue   # not on a face steeper than a player stands on (as _scatter_spot), nor in water or a camp
+
+		if not bool(looked[0]):
+			looked[0] = true
+			_rock_field_neighbours(mid, h0, cell_m, cfg, built, taken)
+
+		if not _rock_field_clear(x, z, 0.05, float(cfg.get("keep_clear_m", 4.0)), built, taken):
+			continue   # nor on or beside anything built, nor inside a rock
+
+		_items[_next_id] = {"number": stone, "count": 1, "pos": Vector3(x, y, z), "left": 1.0e9, "scatter": key}
+		_next_id += 1
+
+
+# What lies near a rocky-ground cell, looked up once for it: into `built` the positions of structures, fires and the players standing there now
+# (nothing is laid on or beside a camp, a station, a fire or a player); into `taken` the cell's own boulders as [x, z, radius], read from the ids
+# this cell was given (a rock across the border in the next cell is not looked at: which cell is laid first changes with where players walk).
+func _rock_field_neighbours(mid: Vector2, h0: float, cell_m: float, cfg: Dictionary, built: Array, taken: Array) -> void:
+	var reach: float = cell_m * 0.75 + float(cfg.get("keep_clear_m", 4.0)) + 3.0 + FIELD_SATELLITE_REACH_M   # a satellite lies up to that far past its cell
+
+	for id in _ids_near(Vector3(mid.x, h0, mid.y), reach):   # the last world sync's grid (every second, after the scatter), so a few cells' ids
+		var it: Dictionary = _items.get(id, {})
+
+		if it.has("struct") or it.has("fire"):
+			built.append(it["pos"])
+
+	for peer in _peer_pos:
+		if Vector2(_peer_pos[peer].x - mid.x, _peer_pos[peer].z - mid.y).length() <= reach and absf(_peer_pos[peer].y - h0) < reach:   # not one down a mine below
+			built.append(_peer_pos[peer])
+
+	for id in range(_cell_first_id, _next_id):
+		var it: Dictionary = _items.get(id, {})
+
+		if it.has("boulder") and (int(it.get("scatter", 0)) & CAVE_KEY) == 0 and absf(float(it["pos"].x) - mid.x) < cell_m * 0.5 and absf(float(it["pos"].z) - mid.y) < cell_m * 0.5:
+			taken.append([float(it["pos"].x), float(it["pos"].z), float((it["boulder"] as Dictionary).get("radius", 0.5))])
+
+
+# Whether a rock of `radius` at (x, z) keeps `keep_m` from everything built and does not overlap a rock in `taken`.
+func _rock_field_clear(x: float, z: float, radius: float, keep_m: float, built: Array, taken: Array) -> bool:
+	for at in built:
+		if Vector2((at as Vector3).x - x, (at as Vector3).z - z).length() < radius + keep_m:
+			return false
+
+	for rock in taken:
+		if Vector2(float(rock[0]) - x, float(rock[1]) - z).length() < radius + float(rock[2]):
+			return false
+
+	return true
+
+
+# How steep the ground is at (x, z): rise per metre across `half` metres each way (NAN where the ground is unknown).
+func _ground_fall(ground: Callable, x: float, z: float, half: float) -> float:
+	var fall_x: float = float(ground.call(x + half, z)) - float(ground.call(x - half, z))
+	var fall_z: float = float(ground.call(x, z + half)) - float(ground.call(x, z - half))
+	return Vector2(fall_x, fall_z).length() / (2.0 * half)
+
+
+# A seeded patch value 0..1 at `at` (smooth value noise on a grid `patch_m` across, from the world seed): where rocky ground comes thick.
+func _rock_patch(at: Vector2, patch_m: float) -> float:
+	var g: Vector2 = at / maxf(patch_m, 1.0)
+	var i: Vector2i = Vector2i(int(floor(g.x)), int(floor(g.y)))
+	var f: Vector2 = g - Vector2(i)
+	var u: Vector2 = f * f * (Vector2(3.0, 3.0) - 2.0 * f)
+	var corner: Callable = func(cx: int, cz: int) -> float: return float(hash([cx, cz, world_seed, "rock patch"]) % 10000) / 9999.0
+	return lerpf(lerpf(corner.call(i.x, i.y), corner.call(i.x + 1, i.y), u.x), lerpf(corner.call(i.x, i.y + 1), corner.call(i.x + 1, i.y + 1), u.x), u.y)
+
+
 # How broken and angular a rock looks, 0 (water-worn, round) to 1 (fresh, jagged; boulders.json distribution shape_*): the journey with a
 # little of its own jitter from the key, so the change from shore to headwaters is gradual and never uniform; a rock in or by water is
 # worn (shape_worn). Sent in the row ("ang"); the client picks its mesh by it (inventory_view.gd, ore_rock_look.gd).
@@ -11198,9 +11614,14 @@ func _open_pockets(peer: int, at: Vector3, radius: float) -> void:
 			_say(peer, str(cfg.get("say", "You dig into a pocket of %s.")) % table.name_of(item))
 
 		var cell_m: float = float(_drops.get("ground_scatter", {}).get("cell_m", 32.0))
+		var cell: Vector2i = Vector2i(int(floor(spot.x / cell_m)), int(floor(spot.z / cell_m)))
 
-		if _cells_done.has(Vector2i(int(floor(spot.x / cell_m)), int(floor(spot.z / cell_m)))):
+		if _cells_done.has(cell):
+			var rock_id: int = _next_id
 			_place_pocket(id, p)
+
+			if _next_id > rock_id and _scatter_cells.has(cell):
+				(_scatter_cells[cell] as Array).append(rock_id)   # taken away with its cell
 
 
 # The opened pockets whose rock lies in this cell.
