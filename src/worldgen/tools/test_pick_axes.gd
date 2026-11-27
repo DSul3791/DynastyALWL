@@ -35,7 +35,7 @@ func _init() -> void:
 		_check(mesh.surface_get_material(1) == BasicLook.mesh_for(id).surface_get_material(1), id + ": the metal material is shared, not made per mesh")
 		var turn: Basis = HeldItem.HELD_LOOK_TURN["pick"]
 		_check_frame(id + " held", vertices, turn)
-		_check_frame(id + " third person", vertices, Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_LEAN_DEG)) * turn)
+		_check_frame(id + " third person", vertices, HeldItem.third_hang_turn(0.4) * turn)   # a carried pick hangs head-down (BugsList 181)
 		_check_frame(id + " first person", vertices, Basis(Vector3.RIGHT, deg_to_rad(HeldItem.TOOL_TILT_SLIGHT_DEG)) * Basis(Vector3.RIGHT, deg_to_rad(-90.0)) * turn)
 		_check_frame(id + " ground", vertices, Basis.IDENTITY)
 

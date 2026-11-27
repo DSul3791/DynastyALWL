@@ -6,6 +6,7 @@ extends SceneTree
 # --worn= dresses him in those worn items (data/items/worn.json ids, worn_look.gd), as another player sees them (QA #15, 25 Nov 2026: the chop's sleeves).
 # --move=x,z gives him a velocity in his own frame (m/s, x right, z back: --move=3.2,0 walks right), so his legs turn toward it as in the game (dynasty_leg_turn.gd,
 # foot slide 26 Nov 2026); --hold=<item id> puts that item in his hand as another player sees it (player_view.gd hold_in).
+# --fist=ball draws the old ball fist round a held grip instead of his own hand closed on it (dynasty_grip.gd, BugsList 177: before and after pictures).
 # --turn=deg turns him on the spot after the pose (+ to his left): under 40 degrees the feet stay planted, more and they step round (the still, 7 frames
 # later, catches the step at whatever point it has reached).
 # yaw 180 looks at his front, 0 at his back, 90 at his side. Grid lines on the ground are 0.5 m apart.
@@ -17,6 +18,7 @@ const WornLookScript := preload("res://src/client/worn_look.gd")
 const AvatarDriverScript := preload("res://src/client/character/avatar_driver.gd")
 const PlayerViewScript := preload("res://src/client/player_view.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const GripScript := preload("res://src/client/character/dynasty_grip.gd")
 
 var clip: String = "sit"
 var out: String = "user://pose.png"
@@ -51,6 +53,8 @@ func _init() -> void:
 			hold = a.trim_prefix("--hold=")
 		elif a.begins_with("--turn="):
 			turn_deg = float(a.trim_prefix("--turn="))
+		elif a == "--fist=ball":
+			GripScript.closes = false   # the old ball fist round the grip, for a before picture (BugsList 177)
 
 	root.size = Vector2i(900, 900)
 	var env := WorldEnvironment.new()

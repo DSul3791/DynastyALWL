@@ -890,7 +890,8 @@ static func hold_in(rig: Node3D, number: int, item_table) -> Array:
 	if kind == "spear":
 		aim_spear(model, rig)
 	else:
-		HeldItem.third_hold(model, kind if kind != "bow" else "other", str(item_table.entry(item_table.id_of(number)).get("tool_class", "")))
+		var held_id: String = item_table.id_of(number)
+		HeldItem.third_hold(model, kind if kind != "bow" else "other", HeldItem.third_carry(held_id, str(item_table.entry(held_id).get("tool_class", ""))))
 
 	if kind != "kit" and kind != "bow":
 		var skin: Variant = rig.get("_skin_material")
