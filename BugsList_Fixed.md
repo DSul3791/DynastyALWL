@@ -2,6 +2,10 @@
 
 All Fixed Bugs Go here.
 
+## 187. Skin shows through worn clothes and armour
+
+**Found by:** the picture checker's worn-item sweep on the laptop, 26 Nov 2026 (58 of 79 worn items): shins, knees, feet, hands and the midriff poke out through the rigid worn pieces. **Status: Fixed by PR #2030, merged to dev at 0d37a525.** Dave's body now has one tuck-in shape per group of bones (`dynasty_shapes.gd` COVERS): wherever a worn piece sits on a bone (boots on the shins and feet, trousers on the hips, thighs and shins, gloves on the hands, a shirt on the chest and arms), that skin sits about 2 cm further in, inside the pieces. Headwear, cloaks, packs, belts and sandals leave the skin as it is. Not a garment remodel: clothes still do not bend at the joints (R-CORE-GOOD-ENOUGH). Not yet played.
+
 ## 185. Running water sounded like a windstorm, even when slow
 
 **Found by:** Dave, 26 Nov 2026: "river running sounds shouldnt be so loud if the water isnt running real fast. right now any moving water sounds like a windstorm"; "slow water should have no ripple sounds other than fish jumping or splashing". Priority (R-CORE-GROUND-WATER-FIRST). Brook and river water slower than 0.4 m/s makes no sound, unless the reach is steep. From there the sound rises 18 dB to full at 1 m/s, and faster water adds at most 3 dB. Rivers now play the brook recording instead of the generated steady noise. Fish splashes and lake laps are unchanged. Fixed by PR #2020, merged to dev at 85d3a5b6. Automated: test_water_width on Lane B. Not yet played.

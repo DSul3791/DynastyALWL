@@ -493,6 +493,10 @@ func _init() -> void:
 	_check(_caps(mail, "arm_r") == 1 and _caps(mail, "forearm_r") == 0, "a short mail sleeve joins at the shoulder only (it does not reach the elbow)")
 	_check(_caps(WornLook.parts_of("leggings", 0.0), "shin_r") == 1, "the leggings' own knee ball is not doubled")
 	_check(WornLook.joint_caps(WornLook.parts_of("hood", 0.0)).is_empty() and WornLook.joint_caps(WornLook.parts_of("cloak", 0.0)).is_empty(), "no balls where a garment bends at no joint")
+	# BugsList 188: a pack's chest straps lie on the bare chest, and further out over a shirt (attach `under`).
+	var bare_strap: Vector3 = (WornLook.parts_of("pack", 0.045, false, 0.0).back() as Dictionary)["at"]
+	var shirt_strap: Vector3 = (WornLook.parts_of("pack", 0.045, false, 0.045).back() as Dictionary)["at"]
+	_check(bare_strap.z > -0.12 and shirt_strap.z < bare_strap.z - 0.03, "the pack's chest strap lies on the bare chest (z %.3f) and over a shirt (z %.3f)" % [bare_strap.z, shirt_strap.z])
 
 	# The joint heights are ragdoll_body.gd's bone offsets, and on Dave's body the ball sits on his own joint.
 	var bones: Dictionary = {}

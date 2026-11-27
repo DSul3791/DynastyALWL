@@ -12,6 +12,8 @@ const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const WORN_PATH := "res://data/items/worn.json"
 const LAYER_M := 0.015
 # Builders whose pieces stand off the body (headwear, a cloak, a pack, a belt, sandal straps): the skin under them is not tucked in (attach, BugsList 187).
+# Builders worn on the torso, under a pack's straps (attach `under`).
+const TORSO_BUILDERS := ["tunic", "padded", "mailshirt", "jerkin", "cuirass"]
 const NO_COVER := ["cloak", "hood", "cap", "furhat", "sandals", "pack", "helm", "belt"]
 const BUILDERS := ["cloak", "hood", "cap", "furhat", "boots", "leggings", "mittens", "skirt", "sandals", "pack", "tunic", "trousers", "gloves", "helm", "jerkin", "mailshirt", "cuirass", "padded", "belt"]
 const HUMANOID_NAMES := {
@@ -65,6 +67,13 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 	var count: int = 0
 	var frames: Dictionary = rig.get_meta("worn_frames", {}) if rig.has_meta("worn_frames") else {}
 	var covered: Array = []      # the bone groups (dynasty_shapes.gd COVERS) a worn piece sits on, whose skin a body that can tucks in under it
+	var under: float = 0.0      # how far out the torso garments worn here stand (their layer and one more): the pack's straps lie on them
+
+	for item_id in item_ids:
+		var torso_row: Dictionary = table().get(str(item_id), {})
+
+		if str(torso_row.get("builder", "")) in TORSO_BUILDERS:
+			under = maxf(under, float(int(torso_row.get("layer", 1)) + 1) * LAYER_M)
 
 	for item_id in item_ids:
 		var row: Dictionary = table().get(str(item_id), {})
@@ -78,7 +87,7 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 
 		var out: float = float(int(row.get("layer", 1))) * LAYER_M
 
-		var parts: Array = parts_of(str(row["builder"]), out, bool(row.get("fringe", false)))
+		var parts: Array = parts_of(str(row["builder"]), out, bool(row.get("fringe", false)), under)
 
 		if rig.has_meta("worn_shell"):
 			parts = WornShell.fit_parts(str(row["builder"]), parts)      # fitted to Dave's body, over the layer (worn_shell.gd CHEST_TURN)
@@ -128,7 +137,9 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
 			# A part with "fitted": true was already built from the body's own measures (rig meta "worn_measures"), so it is not scaled again.
 			var fit: Vector3 = Vector3.ONE if bool(part.get("fitted", false)) else (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
-			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
+			# A part with its own "basis" (a strap turned along its length, _strap) is sized in its own axes; Basis.scaled sizes along the bone's axes, which skews a turned box.
+			var shape_basis: Basis = Basis.from_scale(fit) * (part["basis"] as Basis) if part.has("basis") else Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit)
+			node.transform = Transform3D(shape_basis, (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
 
@@ -328,7 +339,8 @@ static func _p(bone: String, shape: String, at: Vector3, size: Vector3, rot: Vec
 
 
 # The parts of one builder, in bone space; `o` is the outward offset of the layer. Sizes are full extents (the shared meshes have radius/edge 0.5).
-static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
+# `under`: how far out the torso garments worn with it stand (attach: 0 on a bare chest), for the pack's straps to lie on them; below 0, the builder's own `o`.
+static func parts_of(builder: String, o: float, fringe: bool = false, under: float = -1.0) -> Array:
 	var out: Array = []
 
 	match builder:
@@ -488,10 +500,29 @@ static func parts_of(builder: String, o: float, fringe: bool = false) -> Array:
 			out.append(_p("chest", "box", Vector3(0.0, 0.26, 0.19 + o), Vector3(0.3, 0.1, 0.17), Vector3.ZERO, false, 0.12))
 			out.append(_p("chest", "box", Vector3(0.0, -0.02, 0.29 + o), Vector3(0.2, 0.2, 0.05), Vector3.ZERO, true, 0.2))
 
+			# Two thin shoulder straps (Dave, 27 Nov 2026: "they dont have straps they have big blocky things pretending to be straps"; BugsList 188): each a flat band
+			# 4 cm wide from the pack's front face up over the top of the shoulder, sloping down onto the chest, and down the front of the chest. They were 26 cm deep
+			# slabs through the body. The front lies on what is worn under it (`under`): on the bare chest, or on a shirt or armour (laptop pictures 27 Nov: a strap
+			# sized for a shirt stood several cm off the bare chest).
+			var front_z: float = -0.105 - (o if under < 0.0 else under)
+
 			for side in [-1.0, 1.0]:
-				out.append(_p("chest", "box", Vector3(0.12 * side, 0.12, 0.0), Vector3(0.05, 0.4, 0.26 + o * 2.0), Vector3.ZERO, true, 0.25))
+				var x: float = 0.1 * side
+				out.append(_strap(Vector3(x, 0.27, 0.13), Vector3(x, 0.3, 0.0)))
+				out.append(_strap(Vector3(x, 0.3, 0.0), Vector3(x, 0.26, front_z)))
+				out.append(_p("chest", "box", Vector3(x, 0.11, front_z), Vector3(0.04, 0.32, 0.012), Vector3.ZERO, true, 0.25))
 
 	return out + joint_caps(out)
+
+
+# A flat strap 4 cm wide on the chest bone from `a` to `b` (both with the same x): a box along its own z, turned about x to run between them, 1 cm longer each
+# way so the pieces of one strap overlap. Its "basis" sizes it in its own axes (attach); laptop pictures 27 Nov: sized after the turn, it stood out as a wing.
+static func _strap(a: Vector3, b: Vector3) -> Dictionary:
+	var d: Vector3 = b - a
+	var size: Vector3 = Vector3(0.04, 0.012, d.length() + 0.02)
+	var part: Dictionary = _p("chest", "box", (a + b) * 0.5, size, Vector3.ZERO, true, 0.25)
+	part["basis"] = Basis(Vector3.RIGHT, atan2(-d.y, d.z)) * Basis.from_scale(size)
+	return part
 
 
 # The joints a garment bends at: [parent bone, child bone, the joint's height on the parent bone (ragdoll_body.gd BONES), the cap's size over the child piece's width].
