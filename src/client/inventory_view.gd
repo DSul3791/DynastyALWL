@@ -5,6 +5,7 @@ const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const CraftStock := preload("res://src/shared/craft_stock.gd")
 const LyingLogs := preload("res://src/shared/lying_logs.gd")
 const BoulderWear := preload("res://src/shared/boulder_wear.gd")
+const BoulderFall := preload("res://src/shared/boulder_fall.gd")   # how long a dug-under rock takes to drop (boulders step 2)
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
@@ -3842,7 +3843,10 @@ func _show_boulder(id: int, row: Array) -> void:
 	if _boulders.has(id):
 		var known: Dictionary = _boulders[id]
 		var was_worked: bool = int(known["left"]) < int(known["total"])
-		var moved: bool = not (known["pos"] as Vector3).is_equal_approx(row[3])
+		var from: Vector3 = known["pos"]
+		var moved: bool = not from.is_equal_approx(row[3])
+		var skirt_now: Array = extra.get("skirt", [])
+		var reskirt: bool = skirt_now != (known["skirt"] as Array)   # the server took a talus field off under a new building, or kept it where it lay as the rock fell
 
 		if moved:
 			_rock_cell_dirty(id)   # the cell it lay in draws again without it
@@ -3850,14 +3854,30 @@ func _show_boulder(id: int, row: Array) -> void:
 		known["left"] = left
 		known["pos"] = row[3]   # a boulder dug under comes down (server settle_loose_near)
 
-		if known["node"] == null and left < int(known["total"]):
-			_rock_body(id)   # first blow on a rock that was only drawn (a blow is struck from near, so this is rare)
+		var had_body: bool = known["node"] != null
+
+		if reskirt:
+			known["skirt"] = skirt_now
+			known["variant"] = int(absi(id)) % SKIRT_VARIANTS + (SKIRT_VARIANTS if skirt_now.size() >= 4 else 0)
+			_rock_unbody(id)   # its body's chunk shapes are made again from the new talus (never changed in the tree)
+
+		# Dug under (boulders step 2, Dave 27 Nov 2026 "if you dig out under them they should fall on your head or in the hole"): it drops into the
+		# hole as a falling rock, never a jump (no teleporting); out of its block's MultiMesh while it falls.
+		var to: Vector3 = row[3]
+		var drop: float = from.y - to.y
+		var falls: bool = moved and drop > 0.05 and Vector2(from.x - to.x, from.z - to.z).length() < 0.3
+
+		if known["node"] == null and (left < int(known["total"]) or falls or (reskirt and had_body)):
+			_rock_body(id)   # first blow on a rock that was only drawn (a blow is struck from near, so this is rare), a rock that falls, a new talus
 		elif known["node"] != null:
 			(known["node"] as Node3D).position = row[3]
 			(known["lump"] as MeshInstance3D).visible = left < int(known["total"])   # a worked rock draws itself, cracks and all
 			_size_boulder(known)
 
-		if moved or was_worked != (left < int(known["total"])):
+		if falls and known["node"] != null:
+			_rock_fall(id, from, drop)
+
+		if moved or reskirt or was_worked != (left < int(known["total"])):
 			_rock_cell_dirty(id)
 			_rock_dirty.erase(_rock_block_of(_rock_cell_of(known)))
 			_rock_refill(_rock_block_of(_rock_cell_of(known)))   # at once: the whole rock of the MultiMesh must not hide the worked one under it
@@ -4062,6 +4082,43 @@ func _rock_body(id: int) -> void:
 	_rock_near[id] = true
 
 
+# A dug-under rock drops from `from` onto its new spot (its node is already there) as a falling body does, in BoulderFall.fall_s.
+func _rock_fall(id: int, from: Vector3, drop: float) -> void:
+	var entry: Dictionary = _boulders[id]
+	var body: Node3D = entry["node"]
+	var to: Vector3 = entry["pos"]
+
+	if entry.get("fall") is Tween and (entry["fall"] as Tween).is_valid():
+		(entry["fall"] as Tween).kill()   # a second dig while it still falls: it drops on from the last spot
+
+	(entry["lump"] as MeshInstance3D).visible = true   # it draws itself while it falls
+	body.position = from
+
+	if not body.is_inside_tree():
+		body.position = to
+		return
+
+	var fall: Tween = body.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	fall.tween_property(body, "position", to, BoulderFall.fall_s(drop))
+	fall.tween_callback(_rock_landed.bind(id))
+	entry["fall"] = fall
+
+
+# The fall is over: a whole rock goes back into its block's MultiMesh.
+func _rock_landed(id: int) -> void:
+	var entry: Dictionary = _boulders.get(id, {})
+
+	if entry.is_empty():
+		return
+
+	entry.erase("fall")
+
+	if entry["lump"] != null:
+		(entry["lump"] as MeshInstance3D).visible = int(entry["left"]) < int(entry["total"])
+
+	_rock_cell_dirty(id)
+
+
 # True when the player's capsule (its middle `player`, about 1 m round it) reaches into a sphere of `reach` round `middle`.
 func _rock_round_player(middle: Vector3, reach: float, player: Vector3) -> bool:
 	return player.is_finite() and player.distance_to(middle) < reach + 1.0
@@ -4080,6 +4137,10 @@ func _rock_unbody(id: int) -> void:
 	entry["lump"] = null
 	entry.erase("now")
 	entry.erase("open")
+
+	if entry.has("fall"):   # freed while it fell (its tween goes with it): drawn by its block again
+		entry.erase("fall")
+		_rock_cell_dirty(id)
 
 
 # Each frame: a few dirty cells drawn again; every ROCK_LOOK_S the rocks round the player get their bodies (at most ROCK_SHAPES_PER_FRAME shapes a frame;
@@ -4114,7 +4175,7 @@ func _rock_tick() -> void:
 
 		if entry.is_empty():
 			_rock_near.erase(id)
-		elif int(entry["left"]) >= int(entry["total"]) and (entry["pos"] as Vector3).distance_to(at) > ROCK_FAR_M:
+		elif int(entry["left"]) >= int(entry["total"]) and not entry.has("fall") and (entry["pos"] as Vector3).distance_to(at) > ROCK_FAR_M:
 			_rock_unbody(id)
 		elif entry.has("open"):
 			var still: Array = []
@@ -4182,7 +4243,7 @@ func _rock_refill(block: Vector2i) -> void:
 					else:
 						_rock_group(groups, skirt[0], _field_rock_material(), false, ROCK_SKIRT_LOW_M if _rock_low else ROCK_SKIRT_DRAW_M).append(skirt_place)
 
-				if int(entry["left"]) >= int(entry["total"]):   # a worked rock draws itself
+				if int(entry["left"]) >= int(entry["total"]) and not entry.has("fall"):   # a worked or falling rock draws itself
 					var place: Transform3D = Transform3D(_rock_basis(entry), entry["pos"]) * _rock_lump_xf(entry)
 					if _rock_low:   # every rock light (Low has no sun shadows anyway); the small ones only near, the big ones as far as ever
 						_rock_group(groups, OreRockLook.low_of(entry["mesh"]), entry["material"], false, ROCK_DRAW_M if float(entry["radius"]) >= ROCK_LOW_SMALL_R else ROCK_FULL_M).append(place)
@@ -4246,8 +4307,8 @@ const SKIRT_CHUNKS := 14   # broken chunks round the rock (Dave 27 Nov 2026: "br
 # the ground plane (y 0). Seeded by `variant`, so every skirt of a variant is the same mesh. [mesh, each chunk's points at unit radius (its convex
 # hull, scaled per rock by _skirt_hulls)]. Two chunks either touch or leave a gap of half a radius or more: a gap a foot could stick in is not made
 # (the physics engines' advice on walking over rubble, boulders/PLAN_big_boulders.md).
-# shortcut: the foot fields reach up to 4.5 radii from their rock, past the server's keep_clear_m round it; a building placed later inside a field
-# keeps the chunks' collision there (only a player standing in a chunk as it is made is left clear). Revisit with step 2 (rocks the server moves).
+# A foot field reaches up to 4.5 radii from its rock, past the server's keep_clear_m round it: a building put up inside one takes that rock's talus
+# off (server_items _bare_skirts_near), and the client draws and builds it again without.
 func _skirt_mesh(variant: int) -> Array:
 	while _skirt_meshes.size() < SKIRT_VARIANTS * 2:
 		var foot: bool = _skirt_meshes.size() >= SKIRT_VARIANTS   # a foot field: FOOT_CHUNKS chunks 0.35 to 0.95 radii, out to 4.5 radii
