@@ -149,6 +149,13 @@ func _init() -> void:
 			check((child as MultiMeshInstance3D).cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "Low draws the rocks without shadows")
 
 	check(low_count == 3, "Low draws each rock once, light, and the talus (%d instances)" % low_count)
+	var reaches: Array = []
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion() and (child as MultiMeshInstance3D).material_override != view._field_rock:
+			reaches.append(snappedf((child as MultiMeshInstance3D).visibility_range_end, 1.0))
+
+	check(reaches.size() == 1 and is_equal_approx(float(reaches[0]), view.ROCK_DRAW_M + view.ROCK_CELL_M * view.ROCK_BLOCK * 0.5), "at Low the big rocks keep their full reach (%s)" % str(reaches))
 	view.set_rock_quality(2)
 	view._rock_tick()
 	standing[0] = Vector3(110.0, 5.0, 100.0)

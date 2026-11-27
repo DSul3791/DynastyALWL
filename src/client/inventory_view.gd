@@ -4226,7 +4226,7 @@ func _rock_refill(block: Vector2i) -> void:
 
 
 func _rock_group(groups: Dictionary, mesh: Mesh, material: Material, shadows: bool, reach: float, from: float = 0.0) -> Array:
-	var key: String = "%d:%d:%s:%.0f" % [mesh.get_instance_id(), material.get_instance_id(), str(shadows), from]
+	var key: String = "%d:%d:%s:%.0f:%.0f" % [mesh.get_instance_id(), material.get_instance_id(), str(shadows), from, reach]   # reach too: at Low small and big rocks share a mesh but not a reach
 
 	if not groups.has(key):
 		groups[key] = [mesh, material, shadows, reach, [], from]
@@ -4246,6 +4246,8 @@ const SKIRT_CHUNKS := 14   # broken chunks round the rock (Dave 27 Nov 2026: "br
 # the ground plane (y 0). Seeded by `variant`, so every skirt of a variant is the same mesh. [mesh, each chunk's points at unit radius (its convex
 # hull, scaled per rock by _skirt_hulls)]. Two chunks either touch or leave a gap of half a radius or more: a gap a foot could stick in is not made
 # (the physics engines' advice on walking over rubble, boulders/PLAN_big_boulders.md).
+# shortcut: the foot fields reach up to 4.5 radii from their rock, past the server's keep_clear_m round it; a building placed later inside a field
+# keeps the chunks' collision there (only a player standing in a chunk as it is made is left clear). Revisit with step 2 (rocks the server moves).
 func _skirt_mesh(variant: int) -> Array:
 	while _skirt_meshes.size() < SKIRT_VARIANTS * 2:
 		var foot: bool = _skirt_meshes.size() >= SKIRT_VARIANTS   # a foot field: FOOT_CHUNKS chunks 0.35 to 0.95 radii, out to 4.5 radii
