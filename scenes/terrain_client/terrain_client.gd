@@ -120,6 +120,7 @@ const GpuProbeScript := preload("res://src/debug/gpu_probe.gd")
 const WeatherLookScript := preload("res://src/client/weather_look.gd")
 const FaintEffectScript := preload("res://src/client/faint_effect.gd")
 const FallMistScript := preload("res://src/client/fall_mist.gd")
+const LookWarm := preload("res://src/client/look_warm.gd")
 const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
@@ -590,6 +591,8 @@ func _ready() -> void:
 	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
 	DynastyBodyScript.clips_on_worker = not DynastyBodyScript.headless()   # in a window the first body's 143 clips are made on a worker thread, not in the join's first-body frame (276 ms, Lane A Low route 26 Nov 2026)
 	OceanMesh.start()   # the sea's 148 thousand vertex grid, on a worker while the client connects (about 400 ms of the welcome's frame on Lane A Low)
+	LookWarm.start(get_tree())   # the mist, rain and snow looks, one a frame while the client waits for the welcome, when the menus did not make them
+	InventoryViewScript.warm_pickups()   # the stone, stick and driftwood models, on loader threads while the client connects (406 ms of the welcome's frame on Lane A Low)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
@@ -1404,6 +1407,7 @@ func _on_join_refused(text: String, title: String = "Update required") -> void:
 
 
 func _on_welcome(info: Dictionary) -> void:
+	Probe.joined()   # the JOIN slow frame lines follow the 30 frames from here
 	var tw: int = Probe.start()
 	_welcome_body(info)
 	Probe.stop("welcome", tw)
@@ -1567,9 +1571,14 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(shore_props)
 	Probe.stop("welcome: shore props", tq_sub1_shoreprops)
 	var tq_sub2_fallmist: int = Probe.start()
-	fall_mist = FallMistScript.new()
-	fall_mist.name = "FallMist"
-	fall_mist.setup(quality)
+	fall_mist = LookWarm.take("fall_mist") as Node3D   # made in the menus or while waiting for the welcome (look_warm.gd)
+
+	if fall_mist != null:
+		fall_mist.set_quality(quality)
+	else:
+		fall_mist = FallMistScript.new()
+		fall_mist.name = "FallMist"
+		fall_mist.setup(quality)
 	root.add_child(fall_mist)
 	Probe.stop("welcome: fall mist", tq_sub2_fallmist)
 	var tq_sub3_fallgrowth: int = Probe.start()

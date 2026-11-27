@@ -17,6 +17,7 @@ One live line per subject. The line here beats any older text anywhere: designs,
 - **R-CORE-RULES-VS-SUGGESTIONS** · 26 Nov 2026 · rule · "Only explicit rules where I say don't do something or lock something in are rules. everything else are suggestions"
 - **R-CORE-PLAYTEST-WINS** · 26 Nov 2026 · rule · "make it correct according to playtesting not according my old rules. its ok if playtesting finds that my rules were not right."
 - **R-CORE-NEWER-WINS** · 23 Nov 2026 · rule · "newer rules override older ideas." 25 Nov: "we need a system that removes old contradictory rules when new rules are established" (the procedure above).
+- **R-CORE-GROUND-WATER-FIRST** · 26 Nov 2026 · rule · "anything that is broken with the ground or water is always a priority"
 - **R-CORE-FOCUS** · 23 Nov 2026 · suggestion · "I want all of your focus on making the game incredibly smooth and comfortable." Basics first: movement, weights and fighting animals before extras like snow.
 - **R-CORE-NIGHT** · 25 Nov 2026 · rule · "I do not agree with a shorter night. I think that’s because they’re spoiled with old video games. I think the night is big part of this game they just haven’t caught on yet."
 

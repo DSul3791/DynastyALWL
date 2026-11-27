@@ -5824,12 +5824,41 @@ const PICKUP_GLOW := Color(0.02, 0.02, 0.02)
 var _pickup_meshes: Dictionary = {}   # group -> Array of Mesh (empty when the files are not there)
 
 
+# The natural pickup models (stones, sticks, driftwood...) start loading on loader threads as the client starts (terrain_client.gd _ready), so the
+# welcome only takes the finished files: Lane A Low (26 Nov 2026) read them on the main thread in the welcome's one frame, 406 ms
+# ("loose prewarm start: pickup models"). Headless loads them on the main thread at the welcome, as before (the dummy renderer's stores
+# are not thread safe, dynasty_body.gd warm).
+static func warm_pickups() -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+
+	for group in PICKUP_FILES:
+		for file in PICKUP_FILES[group]:
+			var path: String = PICKUP_DIR + file + ".glb"
+
+			if ResourceLoader.exists(path) and ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+				ResourceLoader.load_threaded_request(path, "", true)
+
+
+# A pickup file: the loader thread's, when warm_pickups started it (waiting only if it is still loading), else read here.
+static func _pickup_file(path: String) -> Resource:
+	var status: int = ResourceLoader.load_threaded_get_status(path)
+
+	if status == ResourceLoader.THREAD_LOAD_IN_PROGRESS or status == ResourceLoader.THREAD_LOAD_LOADED:
+		var got: Resource = ResourceLoader.load_threaded_get(path)
+
+		if got != null:
+			return got
+
+	return load(path)
+
+
 func _pickup_group(group: String) -> Array:
 	if not _pickup_meshes.has(group):
 		var meshes: Array = []
 
 		for file in PICKUP_FILES[group]:
-			var packed: Variant = load(PICKUP_DIR + file + ".glb") if ResourceLoader.exists(PICKUP_DIR + file + ".glb") else null
+			var packed: Variant = _pickup_file(PICKUP_DIR + file + ".glb") if ResourceLoader.exists(PICKUP_DIR + file + ".glb") else null
 
 			if packed is PackedScene:
 				var instance: Node = packed.instantiate()
