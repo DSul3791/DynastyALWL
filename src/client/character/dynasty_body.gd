@@ -309,6 +309,9 @@ func _bone_dir(bone: String, child: String) -> Vector3:
 # 7 cm put the handle across the wrist, above the hanging hand, so the axe seemed to float by the hip (PC shot 5 Nov, axe_right.png). 11 cm is where the fingers meet the
 # palm; the hand has no finger bones, so it cannot close round the handle, but the handle now runs through it.
 const GRIP_FROM_WRIST_M := 0.11
+# And off the hand's line onto the palm (Dave, 27 Nov 2026: "the tools should be on the inside of the hand on the palm. same orientation"). Read from the glb's skin: the
+# palm faces the hand bone's rest +Z, its skin 3.5 to 4.5 cm off the bone's line at the grip, so a handle (about 1.5 cm thick) centred 5 cm off lies on the palm.
+const GRIP_PALM_M := 0.05
 const GRIP_BONE := Grip.GRIP_BONE   # P + side + this: the bone each hand mount hangs on (dynasty_grip.gd)
 
 
@@ -328,8 +331,10 @@ func _build_mounts() -> void:
 
 	skeleton.force_update_all_bone_transforms()   # the new bones' global rests are read at once (_mount)
 
-	hand_mount_r = _mount("Right" + GRIP_BONE, "HandMount_R", right_dir * GRIP_FROM_WRIST_M, right_dir, front)
-	hand_mount_l = _mount("Left" + GRIP_BONE, "HandMount_L", left_dir * GRIP_FROM_WRIST_M, left_dir, front)
+	var right_palm: Vector3 = skeleton.get_bone_global_rest(skeleton.find_bone(P + "RightHand")).basis.z.normalized()
+	var left_palm: Vector3 = skeleton.get_bone_global_rest(skeleton.find_bone(P + "LeftHand")).basis.z.normalized()
+	hand_mount_r = _mount("Right" + GRIP_BONE, "HandMount_R", right_dir * GRIP_FROM_WRIST_M + right_palm * GRIP_PALM_M, right_dir, front)
+	hand_mount_l = _mount("Left" + GRIP_BONE, "HandMount_L", left_dir * GRIP_FROM_WRIST_M + left_palm * GRIP_PALM_M, left_dir, front)
 	head_mount = _mount("Head", "HeadMount", Vector3(0.0, 0.1, 0.0), Vector3(0.0, -1.0, 0.0), front)
 
 	for marker in [hand_mount_r, hand_mount_l, head_mount]:   # as built, before dynasty_grip.gd or set_proportions turns them
