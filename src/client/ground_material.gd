@@ -215,6 +215,7 @@ void fragment() {
 	// 74; Dave 27 Nov 2026 on the rocky ground pictures: "we should give them a rocky texture"; it began at 58 degrees, so mountainsides
 	// drew as smooth gravel and sand). The loose ground stays on the gentler bare slopes below, where the fallen rocks lie.
 	float face = smoothstep(0.26, 0.36, slope + (cover_noise - 0.5) * 0.12);
+	rock_mask = max(rock_mask, face);   // a face that steep is rock even on stone ground, where rock_mask alone came in only from 0.3 to 0.6
 	float scree = rock_mask * (1.0 - face);
 	float sandy = smoothstep(0.35, 0.65, vnoise(world_pos * 0.017 + 3.0)) * (1.0 - stone * 0.6);
 	for (int k = 0; k < 5; k++) {
