@@ -320,6 +320,7 @@ const CRAFT_QUEUE_ENTRIES := 10
 const CRAFT_QUEUE_MAX_COUNT := 20
 var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
 var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
+var _crawling: Dictionary = {}      # peer -> true while lying and moving (the stealthy crawl, Dave QA #10, 25 Nov 2026): work, not rest (crawling_of)
 var _characters: Dictionary = {}   # player key -> {luck: int 0..100, ...}, luck rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _attr_cfg: Dictionary = {}      # data/items/attributes.json: the 0 to 100 scale and the graded creation roll
@@ -539,6 +540,8 @@ var _taken: Dictionary = {}         # scatter key int -> true: loose items alrea
 var _log_tasks: Array = []           # worker tasks printing log lines (_log_off_main)
 var _slow_parts: Array = []           # this items tick's parts over SLOW_PART_LOG_MS, as "name ms"
 var _slow_prev_usec: int = 0          # when the last part of this items tick ended
+var part_profile: bool = false        # a soak adds up each part's time in part_ms (off in a game: one dictionary add a part)
+var part_ms: Dictionary = {}          # part name -> ms in all, while part_profile is on
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
 var _save_parts: Array = []           # this tick's save files over 10 ms to stringify, as "name ms (KB)" (the slow-tick line)
 var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
@@ -974,6 +977,7 @@ func peer_left(peer: int) -> void:
 	_breath_sent.erase(peer)
 	_speed3.erase(peer)
 	_peer_key.erase(peer)
+	_dress.erase(peer)
 	_peer_pos.erase(peer)
 	_peer_move.erase(peer)
 	_known.erase(peer)
@@ -1010,6 +1014,7 @@ func peer_left(peer: int) -> void:
 	_waking.erase(peer)
 	_body_sent.erase(peer)
 	_moving.erase(peer)
+	_crawling.erase(peer)
 	_last_process.erase(peer)
 
 
@@ -2004,6 +2009,10 @@ func _slow_mark(part: String, _since_usec: int) -> void:
 	var now: int = Time.get_ticks_usec()
 	var ms: float = float(now - _slow_prev_usec) / 1000.0
 	_slow_prev_usec = now
+
+	if part_profile:
+		var key: String = part.get_slice(" ", 0)
+		part_ms[key] = float(part_ms.get(key, 0.0)) + ms   # the soak's ranking of the tick's parts (soak_server.gd --players)
 
 	if ms > SLOW_PART_LOG_MS:
 		_slow_parts.append("%s %.0f" % [part, ms])
@@ -16837,7 +16846,7 @@ func _fit(peer: int, inv, number: int, count: int, item_inst: Dictionary = {}) -
 		return count
 
 	var body: float = _carry_body(peer)
-	var carried: float = CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
+	var carried: float = _pack_kg(inv) + _shoulder_kg(peer) + _worn_bags_kg(peer) + CarryRules.bag_kg(item_inst, table, _carry_cfg)
 	return CarryRules.fit_count(table.id_of(number), count, carried, body, _carry_cfg)
 
 
@@ -16863,12 +16872,43 @@ func carried_kg_of(peer: int) -> float:
 		return float(_kg_cache[peer])
 
 	var inv = inventory_of(peer)
-	var kg: float = (CarryRules.carried_kg(inv, table, _carry_cfg) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
+	var kg: float = (_pack_kg(inv) + _shoulder_kg(peer) + _worn_bags_kg(peer)) if inv != null and not _carry_cfg.is_empty() else 0.0
 
 	if _in_vitals:
 		_kg_cache[peer] = kg   # the carry notice and the load ratio both weigh the pack each tick (load test 23 Nov: 15 ms a second at 32 players)
 
 	return kg
+
+
+# CarryRules.carried_kg with each item number's weight looked up once (weight_of walks the by_suffix list for most items): the same sum in the
+# same order. test_vitals_tick_cost compares the two.
+func _pack_kg(inv) -> float:
+	if not is_same(_unit_kg_cfg, _carry_cfg) or not is_same(_unit_kg_table, table):
+		_unit_kg.clear()
+		_unit_kg_cfg = _carry_cfg
+		_unit_kg_table = table
+
+	var total: float = 0.0
+
+	for slot in range(inv.usable):
+		var number: int = inv.numbers[slot]
+
+		if number == 0:
+			continue
+
+		if not _unit_kg.has(number):
+			var id: String = table.id_of(number)
+			_unit_kg[number] = [CarryRules.weight_of(id, _carry_cfg), int(table.entry(id).get("capacity_ml", 0)) > 0]
+
+		var unit: Array = _unit_kg[number]
+		var kg: float = float(unit[0]) * float(inv.counts[slot])
+
+		if bool(unit[1]):
+			kg += float(inv.wear[slot]) / 1000.0
+
+		total += kg + CarryRules.bag_kg(inv.inst[slot], table, _carry_cfg)
+
+	return total
 
 
 func _worn_bags_kg(peer: int) -> float:
@@ -16980,6 +17020,30 @@ var _load_cache: Dictionary = {}     # peer -> load ratio, valid only during one
 var _in_vitals: bool = false
 var _kg_cache: Dictionary = {}       # peer -> carried kg, valid only during one _vitals_tick
 var _cover_cache: Dictionary = {}    # position -> cover_at, valid only during one _vitals_tick (warmth and soak asked three times per player)
+# Also kept for one _vitals_tick only (soak at 64 players, 26 Nov 2026: vitals 123 ms a second, the largest server part; each look asked
+# these five to eight times a player): the worn numbers and the Rested row (the armour now follows _dress_of). Nothing inside the tick changes what is
+# worn, and the comfort meter's write drops that player's Rested row. A death inside the tick runs outside them (_vitals_tick).
+var _worn_cache: Dictionary = {}     # peer -> worn_of
+var _rested_cache: Dictionary = {}   # peer -> rested_tier
+var vitals_memo: bool = true         # false: the kept readings (these and _dress_of) worked out live each time (test_vitals_tick_cost compares the two)
+var _unit_kg: Dictionary = {}        # item number -> [kilograms of one, holds water]: weight_of walks the suffix list; weights.json does not change
+var _unit_kg_cfg: Dictionary = {}    # the _carry_cfg and table _unit_kg was worked out from (a test may swap either)
+var _unit_kg_table = null
+
+
+func _vitals_caches_clear() -> void:
+	_load_cache.clear()
+	_kg_cache.clear()
+	_cover_cache.clear()
+	_worn_cache.clear()
+	_rested_cache.clear()
+
+
+func _vitals_forget(peer: int) -> void:
+	_load_cache.erase(peer)
+	_kg_cache.erase(peer)
+	_worn_cache.erase(peer)
+	_rested_cache.erase(peer)
 
 
 # cover_at at `pos`, worked out once per position during a _vitals_tick. Nothing that changes cover (building, felling) runs inside it.
@@ -17057,7 +17121,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 		e += float(rec.get("sleep", 12.5)) * hours
 	elif _asleep.has(peer):
 		e += lerpf(float(rec.get("lie", 8.3)), float(rec.get("sleep", 12.5)), clampf(_sleep_quality(peer), 0.0, 1.0)) * hours
-	elif stance == 3:
+	elif stance == 3 and not crawling_of(peer):
 		e += float(rec.get("sleep", 12.5) if on_good_bed(peer) else rec.get("lie", 8.3)) * hours
 	elif stance == 2 and e < float(_energy_cfg.get("sit_cap", 75.0)):
 		e = minf(e + float(rec.get("sit", 9.4)) * hours, float(_energy_cfg.get("sit_cap", 75.0)))
@@ -18044,13 +18108,74 @@ func _armour_kg(peer: int) -> float:
 	if _carry_cfg.is_empty():
 		return total
 
-	for number in worn_of(peer):
+	if vitals_memo:
+		return float(_dress_of(peer)["armour"])
+
+	return _armour_kg_of(worn_of(peer))
+
+
+func _armour_kg_of(worn: Array) -> float:
+	var total: float = 0.0
+
+	for number in worn:
 		var entry: Dictionary = table.entry(table.id_of(number)) if number > 0 else {}
 
 		if entry.has("protect") and int(entry.get("durability", 0)) > 0:
 			total += CarryRules.weight_of(table.id_of(number), _carry_cfg)
 
 	return total
+
+
+# What follows from the worn pieces alone, worked out again only when what is worn changes (vitals cut 2, 26 Nov 2026: insulation, heat
+# load, rain shed, armour, the carry bonus and the comfort meter's dressed points were each walked over every worn piece several times a
+# look, about 7 ms a pass at 64 players). The insulation keeps each slot's [warmth, wet_keep] in worn order, since the soak changes it.
+var _dress: Dictionary = {}          # peer -> {"worn", "armour", "heat" (slot -> values), "shed", "bonus", "dressed", "fine", "slots"}
+var _dress_from: Array = []          # [_warmth_cfg, _carry_cfg, table] the kept rows were worked out with (a test may swap one)
+
+
+func _dress_of(peer: int) -> Dictionary:
+	if _dress_from.size() != 3 or not is_same(_dress_from[0], _warmth_cfg) or not is_same(_dress_from[1], _carry_cfg) or not is_same(_dress_from[2], table):
+		_dress.clear()
+		_dress_from = [_warmth_cfg, _carry_cfg, table]
+
+	var worn: Array = worn_of(peer)
+	var kept: Dictionary = _dress.get(peer, {})
+
+	if not kept.is_empty() and kept["worn"] == worn:
+		return kept
+
+	var slots: Dictionary = {}       # slot -> [[warmth, wet_keep], ...] in worn order, slots in first-worn order (as _layered_worn)
+	var heat_by_slot: Dictionary = {}
+	var covered: Dictionary = {}
+	var fine: bool = true
+	var shed: float = 0.0
+
+	for number in worn:
+		if number <= 0:
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(number))
+		var slot: String = str(entry.get("slot", ""))
+		var fabric: Dictionary = _fabric(entry)
+
+		if not slots.has(slot):
+			slots[slot] = []
+			heat_by_slot[slot] = []
+
+		slots[slot].append([float(entry.get("warmth", 0.0)), float(fabric.get("wet_keep", 1.0))])
+		heat_by_slot[slot].append(float(entry.get("warmth", 0.0)) * (1.0 - float(fabric.get("breath", 1.0))))
+
+		if slot == "body":
+			shed = maxf(shed, float(fabric.get("rain_shed", 0.0)))
+
+		if slot in ["body", "legs", "feet"]:
+			covered[slot] = true
+			fine = fine and str(entry.get("fabric", "")) != "plant"
+
+	kept = {"worn": worn, "armour": _armour_kg_of(worn) if not _carry_cfg.is_empty() else 0.0, "heat": heat_by_slot,
+			"shed": clampf(shed, 0.0, 1.0), "bonus": CarryRules.carry_bonus_kg(worn, table), "dressed": covered.size() == 3, "fine": fine, "slots": slots}
+	_dress[peer] = kept
+	return kept
 
 
 # For the dialogue effects (authored lines only): how many of an item the pack holds, and give or take some.
@@ -18751,13 +18876,27 @@ func _note_motion(peer: int, position: Vector3) -> void:
 
 		if bool(_swimming.get(peer, false)):
 			target = SwimRules.effort(speed)                              # strokes and treading water are work
+
+		# Crawling (lying and moving, Dave QA #10, 25 Nov 2026) is work like walking (exertion.json crawl_effort), and not resting (crawling_of). A crawler's pace is
+		# read from the velocity its client sent with the position (_peer_move), not from the arrival times: two reports bunched by the network would read a 0.4 m/s
+		# crawl as twice that and stand the crawler up (review of PR #1939).
+		var told: Vector3 = _peer_move.get(peer, [Vector3.ZERO])[0]
+		var lying_pace: float = minf(speed, Vector2(told.x, told.z).length())
+		var crawl: bool = int(_stance.get(peer, 0)) == 3 and lying_pace > float(_exertion_cfg.get("crawl_from_mps", 0.15)) and not _asleep.has(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2
+
+		if crawl:
+			target = maxf(target, float(_exertion_cfg.get("crawl_effort", 0.4)))
+			_crawling[peer] = true
+		else:
+			_crawling.erase(peer)
 		_exertion[peer] = lerpf(float(_exertion.get(peer, 0.0)), target, clampf(dt * 0.25, 0.0, 1.0))
 		_moving[peer] = lerpf(float(_moving.get(peer, 0.0)), 1.0 if speed > 0.4 else 0.0, clampf(dt * 1.0, 0.0, 1.0))
 
 		# Walking off stands a sitting or lying player up.
-		if int(_stance.get(peer, 0)) >= 2 and speed > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
+		if int(_stance.get(peer, 0)) >= 2 and (lying_pace if int(_stance.get(peer, 0)) == 3 else speed) > float(_exertion_cfg.get("stand_up_speed_mps", 1.5)) and int(_strain.get(peer, {}).get("state", 0)) < 2 and not _forced_sleep(peer):
 			_stance[peer] = 0
 			_asleep.erase(peer)
+			_crawling.erase(peer)
 			_strain_sent.erase(peer)
 
 	_motion[peer] = [position, now]
@@ -18822,9 +18961,7 @@ func _vitals_tick(spent: float, only: Array = [], spent_of: Dictionary = {}, lit
 	var health_max: float = float(_vitals_cfg.get("health_max", 100))
 	var base_spent: float = spent
 	var game_s: float = spent * GAME_RATE
-	_load_cache.clear()
-	_kg_cache.clear()
-	_cover_cache.clear()
+	_vitals_caches_clear()
 
 	if lit_fresh:
 		_lit_valid = false
@@ -18892,8 +19029,14 @@ func _vitals_tick(spent: float, only: Array = [], spent_of: Dictionary = {}, lit
 		_comfort_meter_tick(peer, v, spent)
 		_breath_tick(peer, v, spent)
 
-		if float(v["health"]) <= 0.0 and kill(peer, str(_death_cause.get(peer, "drowning"))):
-			continue
+		if float(v["health"]) <= 0.0:
+			_in_vitals = false   # a death empties the pack and the comfort meter: kill reads everything live, and this player's kept readings go
+			var died: bool = kill(peer, str(_death_cause.get(peer, "drowning")))
+			_in_vitals = true
+			_vitals_forget(peer)
+
+			if died:
+				continue
 
 		_limp_tick(peer, v, spent)
 		_sync_vitals(peer, false)
@@ -19090,6 +19233,9 @@ func _covers(number: int, place: int) -> Array:
 # The item numbers a character wears, one per worn position; old saves have none. Read straight off the record (slot arrays, or an old bare
 # number): it runs on every position report, carry and warmth check, so it builds no slot arrays.
 func worn_of(peer: int) -> Array:
+	if _in_vitals and vitals_memo and _worn_cache.has(peer):
+		return (_worn_cache[peer] as Array).duplicate()   # a copy, as a fresh list always was: no caller can change the kept one
+
 	var list: Array = _characters.get(_peer_key.get(peer, ""), {}).get("worn", [])
 	var out: Array = []
 
@@ -19097,6 +19243,9 @@ func worn_of(peer: int) -> Array:
 		var raw: Variant = list[i] if i < list.size() else 0
 		var head: Variant = raw[0] if typeof(raw) == TYPE_ARRAY and not (raw as Array).is_empty() else raw
 		out.append(maxi(int(head), 0) if typeof(head) == TYPE_INT or typeof(head) == TYPE_FLOAT else 0)
+
+	if _in_vitals:
+		_worn_cache[peer] = out.duplicate()
 
 	return out
 
@@ -19216,18 +19365,45 @@ func _layered_worn(peer: int, value_of: Callable) -> float:
 # wet_keep as the body is soaked. The `insulation_of` hook, when set, takes over.
 func insulation_worn(peer: int) -> float:
 	var soak: float = clampf(float(_soak.get(peer, 0.0)), 0.0, 1.0)
+
+	if vitals_memo:
+		var slots: Dictionary = _dress_of(peer)["slots"]
+		var total: float = 0.0
+
+		for slot in slots:
+			var values: Array = []
+
+			for piece in slots[slot]:
+				values.append(float(piece[0]) * lerpf(1.0, float(piece[1]), soak))
+
+			total += _layered(values)
+
+		return minf(total, float(_warmth_cfg.get("max_insulation", 0.85)))
+
 	var kept: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * lerpf(1.0, float(_fabric(entry).get("wet_keep", 1.0)), soak)
 	return minf(_layered_worn(peer, kept), float(_warmth_cfg.get("max_insulation", 0.85)))
 
 
 # How much heat the worn pieces trap in warm air, 0..max_insulation: their warmth times (1 - breath), layered the same way (fur hot, linen cool).
 func heat_load(peer: int) -> float:
+	if vitals_memo:   # the kept per-slot values, layered and capped live (layer_keep and max_insulation read now, as without the row)
+		var by_slot: Dictionary = _dress_of(peer)["heat"]
+		var total: float = 0.0
+
+		for slot in by_slot:
+			total += _layered((by_slot[slot] as Array).duplicate())
+
+		return minf(total, float(_warmth_cfg.get("max_insulation", 0.85)))
+
 	var trapped: Callable = func(entry: Dictionary) -> float: return float(entry.get("warmth", 0.0)) * (1.0 - float(_fabric(entry).get("breath", 1.0)))
 	return minf(_layered_worn(peer, trapped), float(_warmth_cfg.get("max_insulation", 0.85)))
 
 
 # The share of falling rain the worn body pieces keep off: the best shedder's rain_shed (an Oilcloth - Cloak), 0 with none.
 func rain_shed(peer: int) -> float:
+	if vitals_memo:
+		return float(_dress_of(peer)["shed"])
+
 	var best: float = 0.0
 
 	for number in worn_of(peer):
@@ -19244,6 +19420,9 @@ func rain_shed(peer: int) -> float:
 # (items.json carry_bonus_kg on the four back packs: Simple 5, Improved 15, Quality 30, Advanced 50 kg; Dave 15 Nov 2026). No back pack has slots of its own (Dave 13 Nov 2026), and
 # the pack's slot count only follows what it holds (protocol 116).
 func _carry_body(peer: int) -> float:
+	if vitals_memo:   # CarryRules.carry_body_kg with the carry bonus kept
+		return float(vitals_of(peer).get("weight", 75.0)) + float(_dress_of(peer)["bonus"]) / maxf(float(_carry_cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
+
 	return CarryRules.carry_body_kg(float(vitals_of(peer).get("weight", 75.0)), worn_of(peer), table, _carry_cfg)
 
 
@@ -19515,6 +19694,9 @@ func fire_protect_m(at: Vector3) -> float:
 
 
 var _lit_valid: bool = false
+var lit_scans: int = 0         # walks of every record for the lit fires (_lit_rows), for the tests
+var _lit_scope: bool = false   # the goals tick keeps one fire list for all its players, as the vitals pass does (soak 26 Nov 2026: the night walk and the hints
+                               # walked every record once a player for the lit fires, 165 ms a second at 64 players)
 var _rain_rng: RandomNumberGenerator = RandomNumberGenerator.new()
 
 
@@ -19523,10 +19705,11 @@ var _lit_cache_rows: Array = []
 
 
 func _lit_rows() -> Array:
-	if _in_vitals and _lit_valid:
+	if (_in_vitals or _lit_scope) and _lit_valid:
 		return _lit_cache_rows
 
 	var found: Array = []
+	lit_scans += 1
 	_coal_cache_rows = []
 	_guard_cache_rows = []
 	_heat_cache_rows = []
@@ -19547,7 +19730,7 @@ func _lit_rows() -> Array:
 			if lit_def.has("heat_tier"):   # a lit Fireplace or brazier warms as a campfire of that size (structures.json note_fire_lights)
 				_heat_cache_rows.append([it["pos"], str(lit_def["heat_tier"])])
 
-	if _in_vitals:
+	if _in_vitals or _lit_scope:
 		_lit_cache_rows = found
 		_lit_valid = true
 
@@ -19576,14 +19759,14 @@ func _heat_rows() -> Array:
 
 
 func _guard_rows() -> Array:
-	if not (_in_vitals and _lit_valid):
+	if not ((_in_vitals or _lit_scope) and _lit_valid):
 		_lit_rows()
 
 	return _guard_cache_rows
 
 
 func _coal_rows() -> Array:
-	if not (_in_vitals and _lit_valid):
+	if not ((_in_vitals or _lit_scope) and _lit_valid):
 		_lit_rows()
 
 	return _coal_cache_rows
@@ -21317,7 +21500,7 @@ func _fish_species(cell: Vector2i, hit: Dictionary = {}, near: Vector3 = Vector3
 		var kind: String = _water_kind_near(near, reach)
 
 		if kind != "" and _fish_schools().has_method("species_for"):   # a test's stand-in school module may not have it
-			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt, as below
+			var by_water: String = _fish_schools().species_for(kind, _season_of(near) if season_now.is_valid() or season_at.is_valid() else "summer", _fate_rng.randf())   # luck-exempt: the fate stream picks the fish species by the water (luck applies to the catch roll)
 
 			if by_water != "":
 				return by_water
@@ -25336,21 +25519,28 @@ func comfort_points(peer: int) -> Array:
 	var sheltered: bool = _vitals_cover(_peer_pos[peer]) > 0.0
 	var food: float = float(v.get("fed", 0.0)) / maxf(float(_vitals_cfg.get("stomach_cap_kcal", 2400)), 1.0)
 	var water: float = float(v.get("wet", 0.0)) / maxf(float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)), 1.0)
-	var covered: Dictionary = {}   # body, legs, feet -> true when worn; -> "plant" when only fibre
+	var dressed: bool = false
 	var fine: bool = true
 
-	for number in worn_of(peer):
-		if number <= 0:
-			continue
+	if vitals_memo:
+		var dress: Dictionary = _dress_of(peer)
+		dressed = bool(dress["dressed"])
+		fine = bool(dress["fine"])
+	else:
+		var covered: Dictionary = {}   # body, legs, feet -> true when worn
 
-		var entry: Dictionary = table.entry(table.id_of(number))
-		var slot: String = str(entry.get("slot", ""))
+		for number in worn_of(peer):
+			if number <= 0:
+				continue
 
-		if slot in ["body", "legs", "feet"]:
-			covered[slot] = true
-			fine = fine and str(entry.get("fabric", "")) != "plant"
+			var entry: Dictionary = table.entry(table.id_of(number))
+			var slot: String = str(entry.get("slot", ""))
 
-	var dressed: bool = covered.size() == 3
+			if slot in ["body", "legs", "feet"]:
+				covered[slot] = true
+				fine = fine and str(entry.get("fabric", "")) != "plant"
+
+		dressed = covered.size() == 3
 	var furniture: int = 0
 	var names: PackedStringArray = PackedStringArray()
 
@@ -25384,7 +25574,13 @@ func comfort_target(peer: int) -> float:
 
 
 func _comfort_resting(peer: int) -> bool:
-	return _asleep.has(peer) or int(_stance.get(peer, 0)) >= 2
+	return _asleep.has(peer) or (int(_stance.get(peer, 0)) >= 2 and not crawling_of(peer))
+
+
+# Lying and moving: the stealthy crawl (Dave, QA #10, 25 Nov 2026), set from the position reports. A crawler is working, not resting: no lying
+# recovery of energy, strain or comfort while it lasts.
+func crawling_of(peer: int) -> bool:
+	return _crawling.has(peer)
 
 
 # The meter moves a little each slow tick: toward the target, slowly; falling faster for running, wet clothes and cold.
@@ -25420,6 +25616,7 @@ func _comfort_meter_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 	var before: int = comfort_level(peer)
 	row["comfort"] = m
+	_rested_cache.erase(peer)   # the Rested row follows the meter
 
 	if comfort_level(peer) != before:
 		_dirty = true   # saved when the whole level changes; the fraction rides along with the next write
@@ -25427,16 +25624,21 @@ func _comfort_meter_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 # The old Rested hooks read the meter: {} at level 0, else the full_bonus multipliers scaled by the level.
 func rested_tier(peer: int) -> Dictionary:
+	if _in_vitals and vitals_memo and _rested_cache.has(peer):
+		return _rested_cache[peer]   # callers only read it
+
 	var level: int = comfort_level(peer)
 	var full: Dictionary = _meter_cfg().get("full_bonus", {})
+	var out: Dictionary = {}
 
-	if level <= 0 or full.is_empty():
-		return {}
+	if level > 0 and not full.is_empty():
+		out = {"name": "Comfort %d" % level, "level": level}
 
-	var out: Dictionary = {"name": "Comfort %d" % level, "level": level}
+		for what in full:
+			out[what] = comfort_bonus(peer, str(what))
 
-	for what in full:
-		out[what] = comfort_bonus(peer, str(what))
+	if _in_vitals:
+		_rested_cache[peer] = out
 
 	return out
 
@@ -26472,6 +26674,8 @@ func _goals_tick(with_goals: bool = true) -> void:
 		return
 
 	var t0: int = Time.get_ticks_usec()
+	_lit_valid = false   # this tick's own fire list, worked out at its first look
+	_lit_scope = true
 	_night_walk_tick()
 	var t1: int = Time.get_ticks_usec()
 	_slowest_hint_usec = 0
@@ -26507,6 +26711,7 @@ func _goals_tick(with_goals: bool = true) -> void:
 	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split). Goals: the spread looks since the last slow tick.
 	_goals_detail = "(night walk %.0f, goals %.0f spread, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
 		float(Time.get_ticks_usec() - th) / 1000.0, _slowest_hint, float(_slowest_hint_usec) / 1000.0]
+	_lit_scope = false
 
 
 # The goal list as the client gets it, in the authored order: [id, title, how-to, reward copper, reward item id ("" none), reward item count, after ids
@@ -28988,7 +29193,7 @@ func _strain_tick(peer: int, spent: float) -> void:
 
 		if diff < 0.0 and stance == 2:
 			rate *= float(cfg.get("sit_fall_mult", 2.0))
-		elif diff < 0.0 and stance == 3:
+		elif diff < 0.0 and stance == 3 and not crawling_of(peer):
 			rate *= float(cfg.get("lie_fall_mult", 3.0)) + (maxf(float(_sleep_cfg.get("strain_mult", 6.0)) - float(cfg.get("lie_fall_mult", 3.0)), 0.0) * sleep_quality if _asleep.has(peer) else 0.0)
 
 		var before: float = strain

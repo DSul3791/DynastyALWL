@@ -227,7 +227,7 @@ func tick(delta: float) -> void:
 		var stance: int = 3 if down else clampi(int(items.stance_of(peer)), 0, 3)   # fainted, or passed out from cold or in water: drawn lying, as it is
 		# a body down in water is not shown treading water (the swim clip wins over lying)
 		var state: int = stance | (SWIM if items.is_swimming(peer) and not down else 0) | (CARRY if items.carries_log(peer) else 0) \
-				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
+				| (ASLEEP if items.sleeping_of(peer) or down else 0) | (int(swing[0]) << SWING_SHIFT)   # fainted or passed out is drawn asleep, not crawling (Dave QA #10)
 		var left: int = int(items.left_hand_number(peer))
 		var more: int = (MORE_LIT if items.torch_burning(peer) else 0) | ((int(items.hand_flags(peer)) & 15) << MORE_HANDS_SHIFT) | (int(_meals.get(peer, 0)) << MORE_MEAL_SHIFT)
 		var cast: int = cast_code(pos, items.fishing_float(peer))

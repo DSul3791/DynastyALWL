@@ -379,6 +379,7 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 	var target: int = -1
 	var throws: int = 0
 	var hit: bool = false
+	var crept: bool = false
 	var hp_was: float = 1.0
 	var said: String = ""
 
@@ -422,8 +423,9 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 			await r._wait(0.5)
 			continue
 
-		if to.length() > throw_m:
-			await r._stance_to(StanceScript.CROUCH)
+		if to.length() > throw_m:   # walked up to 45 m (a standing player sends a deer off at 35 m), crept from there (crouched, 21 m)
+			crept = to.length() < 45.0 or (crept and to.length() < 55.0)   # crouch under 45 m, stand again past 55 m (no flipping at 45 m)
+			await r._stance_to(StanceScript.CROUCH if crept else StanceScript.STAND)
 			r._face(to.normalized())
 			r._key("move_forward", true)
 			await r._wait(0.5)
@@ -448,8 +450,15 @@ func _throw_hunt(sp: int, known: Dictionary) -> int:
 		c.held.mouse_button(MOUSE_BUTTON_LEFT, false)
 		c.held.mouse_button(MOUSE_BUTTON_RIGHT, false)
 		throws += 1
-		await r._wait(1.0)
-		hit = int(r._hits.get(target, 0)) > hits or float(r._hp.get(target, 1.0)) < hp_was or r._fell.has(target)
+		var flew: float = 0.0
+
+		# The spear flies 1.3 s to 30 m and the hit comes back after it (change 16 run: the client heard "spear_hit_flesh" twice and the
+		# robot, which looked after 1.0 s, called both throws misses and let the hurt deer go): up to 3 s for the answer.
+		while flew < 3.0 and not hit:
+			await r._wait(0.25)
+			flew += 0.25
+			hit = int(r._hits.get(target, 0)) > hits or float(r._hp.get(target, 1.0)) < hp_was or r._fell.has(target)
+
 		_line("HUNTTHROW %s %d: throw %d from %.0f m, %s" % [str(r.SPECIES_NAME.get(sp, sp)), target, throws, to.length(), "hit" if hit else "missed"])
 		await _pick_up_spear()
 
@@ -489,23 +498,46 @@ func _drawn_at(id: int, was: Vector3) -> Vector3:
 # The thrown spear lies where it came down (server_items _land_thrown): a player walks over and picks it up with E.
 func _pick_up_spear() -> void:
 	var number: int = c.items.table.number_of("spear")
+	var waited: float = 0.0
 
 	for n in range(3):
 		var best: Vector3 = Vector3.INF
 
+		# The spear flies a second or more and its row comes after it lands (change 15 run: looked at once, found nothing, and the hunt
+		# went on with no spear): up to 6 s for it.
+		while waited < 6.0 and r._slot_of("spear") < 0 and not _spear_on_ground(number):
+			await r._wait(0.5)
+			waited += 0.5
+
 		for w in c.items._world:
 			var row: Dictionary = c.items._world[w]
 
-			if int(row.get("number", 0)) == number and _flat(row["pos"]) < 60.0 and (best == Vector3.INF or _flat(row["pos"]) < _flat(best)):
+			if int(row.get("number", 0)) == number and _flat(row["pos"]) < 90.0 and (best == Vector3.INF or _flat(row["pos"]) < _flat(best)):
 				best = row["pos"]
 
 		if best == Vector3.INF or r._slot_of("spear") >= 0:
+			if best == Vector3.INF and r._slot_of("spear") < 0:
+				_line("HUNTTHROW the thrown spear is not drawn within 90 m of %s" % str(c.body.global_position.round()))
+
 			return
 
 		await r._stance_to(StanceScript.STAND)
 		await r._go_to(best, 30.0, 1.2)
 		await _press_e_at(best)
 		await r._wait(0.8)
+
+
+# A burning fire's state (inventory_view.gd _lit_state: the campfire, survival fire and bonfire tiers).
+func _fire_lit(state: int) -> bool:
+	return state in [1, 40, 41]
+
+
+func _spear_on_ground(number: int) -> bool:
+	for w in c.items._world:
+		if int(c.items._world[w].get("number", 0)) == number and _flat(c.items._world[w]["pos"]) < 90.0:
+			return true
+
+	return false
 
 
 # Hunt a rabbit, then a deer (a new character leaves the wolves alone): seen, crept up on and the spear thrown, stopping at the first kill:
@@ -837,8 +869,23 @@ func _light_own_fire() -> int:
 		await r._wait(0.5)
 
 	c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
-	await r._wait(2.0)
-	return fire
+
+	# Wood laid on glowing coals catches by itself after a while (cooking.json coals.catch_s: sticks 10 s, a log 180 s; ACT_LIGHT does
+	# nothing on coals): a player waits by it (change 15 run: the pot was queued 2 s after the sticks went on, "The fire is out").
+	var waited: float = 0.0
+
+	while waited < 200.0 and Time.get_ticks_msec() < _end_ms - 60000 and c.items._world.has(fire) and not _fire_lit(int(c.items._world[fire]["state"])):
+		await r._wait(2.0)
+		waited += 2.0
+
+		if int(waited) % 20 == 0:
+			if int(c.items._world.get(fire, {}).get("state", -1)) == 8:   # gone to cold ash (rain): sticks on again, which lays it
+				c.net.inventory_action.rpc_id(1, NetScript.ACT_FUEL, fire, 0, 0, Vector3.ZERO)
+				await r._wait(0.5)
+
+			c.net.inventory_action.rpc_id(1, NetScript.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)   # a laid fire or warm ash lights at once
+
+	return fire if c.items._world.has(fire) and _fire_lit(int(c.items._world[fire]["state"])) else -1
 
 
 # A hand recipe (no station) that gives `item`, the first in recipes.json order that is known.
@@ -979,10 +1026,14 @@ func _gather(item: String, n: int) -> String:
 	while _count(item) < n and Time.get_ticks_msec() < until:
 		var spot: Dictionary = _nearest_source(item)
 
-		if spot.is_empty() and item in ["stone", "flint", "copper_ore", "tin_ore", "iron_ore"]:
+		# Many stones wanted (a smoker's 32): a player strikes a boulder, which gives them faster than walking to loose ones (change 16
+		# run: 22 loose stones in 300 s), as the fire goal's hint says.
+		var many: bool = item == "stone" and n - _count(item) >= 10 and (_tool_slot("pick") >= 0 or _tool_slot("axe") >= 0)   # no tool: keep the boulders for later
+
+		if (spot.is_empty() or many) and item in ["stone", "flint", "copper_ore", "tin_ore", "iron_ore"]:
 			var rock: int = _nearest_boulder(item)
 
-			if rock != 0:
+			if rock != 0:   # none near: the loose ones
 				_taken["rock%d" % rock] = true   # tried once, reached or not, so the loop moves on to the next rock
 				var why_rock: String = await _break_rock(rock, item)
 
@@ -2008,8 +2059,27 @@ func _build(structure: String) -> String:
 	var at: Vector3 = Vector3.ZERO
 	var site: int = int(_sites.get(structure, -1)) if c.items._world.has(int(_sites.get(structure, -1))) else -1   # a site placed on an earlier try
 
+	var fire: int = -1
+
+	if site < 0 and structure == "campfire_pot" and _fire_at.is_finite():   # the pot hangs over a small fire: placed on its own (server _snap_to_fire)
+		await r._go_to(_fire_at, 60.0 + _flat(_fire_at) / 2.5, 2.0)
+		fire = _camp_fire()
+
+	if site < 0 and structure == "campfire_pot" and _fire_at.is_finite() and fire < 0:
+		return "no fire of its own within 40 m of where it lit it (%s) to hang the pot over%s" % [str(_fire_at.round()), _said(said)]
+
 	if site >= 0:
 		at = c.items._world[site]["pos"]
+	elif fire >= 0:
+		at = c.items._world[fire]["pos"]
+		c.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
+		await r._wait(3.0)
+
+		for w in c.items._world:
+			if not known.has(w) and Vector2(c.items._world[w]["pos"].x - at.x, c.items._world[w]["pos"].z - at.z).length() < 2.5:
+				site = int(w)
+
+		_sites[structure] = site
 	else:
 		for side in range(12):   # a player turns to open ground when the game says a tree is in the way
 			var heard: int = r._notices.size()
@@ -2037,7 +2107,7 @@ func _build(structure: String) -> String:
 		_sites[structure] = site
 
 	if site < 0:
-		return "placed the %s blueprint on open ground round the robot; no site came%s" % [structure, _said(said)]
+		return ("placed the campfire pot blueprint on its own fire; no site came%s" if fire >= 0 else "placed the %s blueprint on open ground round the robot; no site came%s") % ([_said(said)] if fire >= 0 else [structure, _said(said)])
 
 	await r._go_to(at, 10.0, 1.5)
 

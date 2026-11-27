@@ -18,6 +18,7 @@
 | Sideways swing (trees, upright things) | `ragdoll_body.gd` | `_swing_fp` | |
 | Overhead swing (ground, logs, stumps, rocks) | same | `_swing_fp_down`; chosen by `_aim_at_ground` in `held_item.gd` | |
 | Arms at rest (out of view unless swinging) | `held_item.gd` | `REST_BACK_M`, `REST_DOWN_M`, `REST_PITCH_DEG`, `ARMS_POS` | 22 cm back |
+| First-person bow off the line of sight (to the right) | `held_item.gd` | `BOW_SIGHT_RIGHT_M` | 6 cm (BugsList 180) |
 | Arms spacing | `ragdoll_body.gd` | `ARMS_SPREAD` | 1.3 |
 | Arm skin | `src/client/character/dynasty_arms.gd` | `SKIN_TEXTURE` (the file's texture with dark patches painted out) | |
 
