@@ -292,11 +292,14 @@ def lane_on_c():
 
 
 def alligator():
-    """R-ANIMAL-ALLIGATOR: Dave's alligator model never plays the dog walk ("ignore the dog walk its terrible") and drags its tail in every clip."""
+    """R-ANIMAL-ALLIGATOR: Dave's alligator model never plays the dog walk ("ignore the dog walk its terrible"), drags its tail and sprawls its legs in every clip, and crawls slowly."""
     row = data("data/animals/models.json")["species"]["alligator"]
     clips = [c for look in [row] + row.get("variants", []) for v in look.get("clips", {}).values() for c in (v if isinstance(v, list) else [v])]
     check("R-ANIMAL-ALLIGATOR", "Walking" not in clips, f"no role plays the dog's Walking clip ({sorted(set(clips))})")
     check("R-ANIMAL-ALLIGATOR", len(row.get("tail_drag", [])) >= 2, f"the tail drags on the ground in every clip (tail_drag: {row.get('tail_drag')})")
+    check("R-ANIMAL-ALLIGATOR", len(row.get("leg_sprawl", [])) == 4, "the four legs are held out to the sides, bent (\"bend his legs more like a real alligator\")")
+    walk = float(data("data/animals/animals.json")["species"]["alligator"]["walk_mps"])
+    check("R-ANIMAL-ALLIGATOR", walk <= 0.5, f"it crawls at a real alligator's pace ({walk} m/s, \"slow down his walk\")")
 
 
 def ruling_lines():

@@ -13,6 +13,7 @@ const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the 
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const TailDragScript := preload("res://src/client/tail_drag.gd")         # a tail laid on the ground over every clip (the alligator)
+const LegSprawlScript := preload("res://src/client/leg_sprawl.gd")       # legs held out to the sides over every clip (the alligator)
 const RowParts := preload("res://src/shared/row_parts.gd")   # a batch over one packet comes in parts (protocol 171)
 const HeadLookScript := preload("res://src/client/head_look.gd")       # the head turns to watch a player (docs/design/ANIMAL_GAIT.md "Head tracking")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
@@ -1624,6 +1625,17 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 
 			if not no_bones.is_empty():
 				_model_note(kind, "tail_drag: no bone %s" % ", ".join(no_bones))
+
+	if row.has("leg_sprawl"):
+		var leg_sks: Array = inst.find_children("*", "Skeleton3D", true, false)
+
+		if not leg_sks.is_empty():
+			var sprawl: SkeletonModifier3D = LegSprawlScript.new()
+			var no_legs: PackedStringArray = sprawl.setup(leg_sks[0], row["leg_sprawl"])
+			(leg_sks[0] as Skeleton3D).add_child(sprawl)
+
+			if not no_legs.is_empty():
+				_model_note(kind, "leg_sprawl: no bone %s" % ", ".join(no_legs))
 
 	# The head turns to watch a player (head_look.gd); a row with "head_look": false keeps its clip's head.
 	var head_bone: Array = BreathLook.head_bone_of(inst) if bool(row.get("head_look", true)) else []

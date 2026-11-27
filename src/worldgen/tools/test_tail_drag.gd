@@ -2,10 +2,12 @@ extends SceneTree
 
 # A dragged tail (tail_drag.gd, models.json "tail_drag"; Dave 27 Nov 2026, the alligator: "all the actions need to let the tail drag on
 # the ground"): a tail a clip holds up is laid back on the floor joint by joint, keeps the clip's sideways swing, and follows a body
-# the clip lowers below its rest floor.
+# the clip lowers below its rest floor. Sprawled legs (leg_sprawl.gd; Dave 27 Nov: "bend his legs more like a real alligator"): a leg
+# a clip holds straight down is turned back out to its rest pose's sideways angle, keeping the clip's fore-and-aft swing.
 #   godot --headless --path . --script res://src/worldgen/tools/test_tail_drag.gd
 
 const TailDrag := preload("res://src/client/tail_drag.gd")
+const LegSprawl := preload("res://src/client/leg_sprawl.gd")
 
 var failures: int = 0
 
@@ -78,6 +80,39 @@ func _initialize() -> void:
 	var short = TailDrag.new()
 	check(short.setup(sk, ["t0", "nope"]) == PackedStringArray(["nope"]) and short.chain.is_empty(), "a bone the skeleton lacks is named, and no tail is dragged")
 	short.free()
+	# Legs: each upper bone reaches out 0.15 and down 0.05 at rest (a sprawl), the lower one straight down to the foot.
+	var body: Skeleton3D = Skeleton3D.new()
+	var mid: int = _bone(body, "hips", -1, Vector3(0.0, 0.3, 0.0))
+	var up_l: int = _bone(body, "upr.L", mid, Vector3(0.1, 0.0, 0.0))
+	var low_l: int = _bone(body, "lwr.L", up_l, Vector3(0.15, -0.05, 0.0))
+	_bone(body, "foot.L", low_l, Vector3(0.0, -0.2, 0.0))
+	var up_r: int = _bone(body, "upr.R", mid, Vector3(-0.1, 0.0, 0.0))
+	var low_r: int = _bone(body, "lwr.R", up_r, Vector3(-0.15, -0.05, 0.0))
+	_bone(body, "foot.R", low_r, Vector3(0.0, -0.2, 0.0))
+	root.add_child(body)
+	var sprawl = LegSprawl.new()
+	check(sprawl.setup(body, [["upr.L", "lwr.L", "foot.L"], ["upr.R", "lwr.R", "foot.R"]]).is_empty() and sprawl.legs.size() == 2, "both legs found")
+	body.add_child(sprawl)
+	var rest_side: float = LegSprawl.side_angle(Vector3(0.15, -0.05, 0.0))
+
+	# The clip swings the left upper leg straight down under the body (a cat's leg) and 20 degrees forward.
+	var down: Quaternion = Quaternion(Vector3.BACK, -rest_side)
+	body.set_bone_pose_rotation(up_l, Quaternion(Vector3.RIGHT, deg_to_rad(-20.0)) * down)
+	var before: Vector3 = TailDrag.global_of(body, low_l).origin - TailDrag.global_of(body, up_l).origin
+	sprawl._process_modification()
+	var after: Vector3 = TailDrag.global_of(body, low_l).origin - TailDrag.global_of(body, up_l).origin
+	check(absf(LegSprawl.side_angle(before)) < 0.05, "the clip holds the leg straight down (%.2f rad)" % LegSprawl.side_angle(before))
+	check(absf(LegSprawl.side_angle(after) - rest_side) < 0.01, "turned back out to its rest angle (%.2f, rest %.2f)" % [LegSprawl.side_angle(after), rest_side])
+	check(absf(after.z - before.z) < 0.001, "the clip's fore-and-aft swing is kept (%.3f)" % after.z)
+	var foot_side: float = LegSprawl.side_angle(TailDrag.global_of(body, low_l + 1).origin - TailDrag.global_of(body, low_l).origin)
+	check(absf(foot_side) < 0.01, "the lower leg back to its rest angle, straight down (%.2f)" % foot_side)
+
+	# Rolled onto its side (a death clip): the legs are left as the clip has them.
+	body.set_bone_pose_rotation(mid, Quaternion(Vector3.BACK, deg_to_rad(80.0)))
+	body.set_bone_pose_rotation(up_l, down)
+	sprawl._process_modification()
+	check(body.get_bone_pose_rotation(up_l).is_equal_approx(down), "a body on its side keeps the clip's legs")
+	body.free()
 	ground.free()
 	sk.free()
 	quit(1 if failures > 0 else 0)

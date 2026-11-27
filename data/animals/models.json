@@ -2590,14 +2590,14 @@
 				"tail_07",
 				"tail_08"
 			],
-			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead; stand, alert and warn the fox idle (cat_idle2 is 3.04 times its flat rest height, over TALL_SHARE, so only an idle variant if ever). The lie is its own rest pose, belly and tail flat (gait 19 rest_all; the cat sleep curled it into a ball, Lane A 27 Nov). No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). ground_m and ground_clips come from skinning the file off line with the tail laid down (thread, 27 Nov): tools/ground_check.gd poses the raw clips, whose cat and fox tails dip through the ground, so its lowest points for this model are the tail's, not the feet's.",
+			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead; stand, alert and warn the fox idle (cat_idle2 is 3.04 times its flat rest height, over TALL_SHARE, so only an idle variant if ever). The lie is its own rest pose, belly and tail flat (gait 19 rest_all; the cat sleep curled it into a ball, Lane A 27 Nov). No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). leg_sprawl (src/client/leg_sprawl.gd) holds the legs out to the sides at the rest pose's angle, elbows and knees bent (Dave 27 Nov: \"bend his legs more like a real alligator and slow down his walk so he crawls\"); the server walks it at 0.4 m/s (animals.json), so cat_walk plays at about two thirds of its own pace. ground_m and ground_clips come from skinning the file off line with the tail laid down and the legs sprawled (thread, 27 Nov): tools/ground_check.gd poses the raw clips, whose cat and fox tails dip through the ground, so its lowest points for this model are the tail's, not the feet's.",
 			"length_m": 3.8,
 			"flat_share": 0.3,
-			"ground_m": -0.04,
+			"ground_m": -0.095,
 			"ground_clips": {
-				"gait_19": -0.15,
-				"cat_walk": -0.09,
-				"Running": -0.09
+				"gait_19": -0.1,
+				"cat_walk": -0.1,
+				"Running": -0.11
 			},
 			"gait": {
 				"19": {
@@ -2616,7 +2616,33 @@
 						]
 					}
 				}
-			}
+			},
+			"leg_sprawl": [
+				[
+					"frontUpr.L",
+					"frontLwr.L",
+					"frontHorselink.L",
+					"frontFoot.L"
+				],
+				[
+					"frontUpr.R",
+					"frontLwr.R",
+					"frontHorselink.R",
+					"frontFoot.R"
+				],
+				[
+					"rearLeg.L_01",
+					"rearLwr.L",
+					"rearHorselink.L",
+					"rearLeg.L_04"
+				],
+				[
+					"rearLeg.R_01",
+					"rearLwr.R",
+					"rearHorselink.R",
+					"rearLeg.R_04"
+				]
+			]
 		}
 	}
 }

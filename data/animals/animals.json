@@ -4072,7 +4072,8 @@
 				"threat_m": 4.0,
 				"threat_warn_s": 0.3
 			},
-			"walk_mps": 0.8,
+			"walk_mps": 0.4,
+			"walk_mps_note": "Dave 27 Nov 2026: \"slow down his walk so he crawls like a real alligator\". A real alligator walks at about 0.3 to 0.5 m/s.",
 			"graze_s": [
 				10.0,
 				40.0
