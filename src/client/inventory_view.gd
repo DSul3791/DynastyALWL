@@ -6589,7 +6589,9 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 	if cause == "cave-in survived":
 		return   # dug out alive: the cave-in sequence plays and the server says what happened (death.json stop_at_1)
 
-	if cause != "cave-in":   # the cave-in has its own long sequence (cavein_death.gd)
+	# The cave-in has its own long sequence (cavein_death.gd). Passed out from cold or water: the server's waking stage brings the sight
+	# back (strain state 3, R-CORE-PASS-OUT), so no fade of its own here.
+	if cause != "cave-in" and cause != "passed out":
 		_death_msec = Time.get_ticks_msec()
 
 	if cause != "passed out" and cause != "rescued":   # rescued from a cave's rock (server_items _stuck_rescue), or passed out from cold (server_items.gd _cold_out_tick): the same fade, and the server says where they woke

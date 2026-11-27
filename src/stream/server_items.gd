@@ -20346,7 +20346,10 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
 	_wet_wind_told.erase(peer)
-	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
+	# Not winded (the faint was the cold's, not exertion's), but still lying and out of their hands while the sight comes back (strain state 3,
+	# exertion.json wake_s): Dave 27 Nov 2026, R-CORE-PASS-OUT: "they should lay there. they can only get back up once their vision fully recovers."
+	_strain[peer] = {"s": 0.0, "state": 3, "t": 0.0}
+	_stance[peer] = 3
 	_strain_sent.erase(peer)
 	_peer_pos[peer] = to
 	_resume_to.erase(peer)

@@ -296,7 +296,7 @@ func _init() -> void:
 		ticks += 1
 
 	check(not moved.filter(func(m): return int(m[0]) == 5).is_empty(), "still freezing, he passes out again and is carried to the goblin camp (%d s, %s)" % [ticks, str(moved)])
-	check(not b.passed_out(5) and int(b._strain.get(5, {}).get("state", 0)) == 0, "and wakes, not stuck fainted")
+	check(not b.passed_out(5) and int(b._strain.get(5, {}).get("state", 0)) == 3, "and wakes, lying while the sight comes back, not stuck fainted")
 	check(float(v5["health"]) >= float(cfg["pass_out"]["wake_health"]) - 0.5 and low_hp >= 1.0, "with the wake health (%.1f), never under 1" % float(v5["health"]))
 	check(b.inventory_of(5).count_of(stone) == 5 and worn_ids(b, 5) == dave_worn, "his pack and his clothes are all still his")
 	check((b._peer_pos[4] as Vector3).is_equal_approx(Vector3(6.0, 0.0, 0.0)) and not b.passed_out(4), "Anna stays where she was, awake")
