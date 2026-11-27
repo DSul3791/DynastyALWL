@@ -101,7 +101,7 @@ Not yet played.
 
 ## 188. Backpacks, bags, the bedroll and quivers have blocks instead of straps
 
-**Found by:** Dave, 27 Nov 2026: "backpacks were sitting on the back but they dont have straps they have big blocky things pretending to be straps." (The picture checker's "pack on the chest" was these blocks.) **Status: Open - fix in review; moves to BugsList_Fixed.md when merged.** The pack builder (`worn_look.gd` "pack", all nine pack items) had two 26 cm deep slabs through the chest as straps; it now has two thin 4 cm bands over the shoulders and down the front of the chest. Not yet played.
+**Found by:** Dave, 27 Nov 2026: "backpacks were sitting on the back but they dont have straps they have big blocky things pretending to be straps." (The picture checker's "pack on the chest" was these blocks.) **Status: Open - fix in review; moves to BugsList_Fixed.md when merged.** The pack builder (`worn_look.gd` "pack", all nine pack items) had two 26 cm deep slabs through the chest as straps; it now has two thin 4 cm bands over the shoulders and down the front of the chest, sloping over the shoulder and lying on the bare chest or on the shirt or armour worn under it. Known gap, no work planned: the bedroll and the quivers have no model of their own and draw as the same box pack as a backpack. Not yet played.
 
 ## Rewrite interpretation
 
