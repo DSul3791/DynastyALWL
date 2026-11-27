@@ -145,8 +145,19 @@ func _init() -> void:
 	check(view._boulders[4250]["node"] != null and view._boulders[4251]["node"] != null, "a player coming within 40 m gives them bodies")
 	check(view._boulders[4250]["node"].get_child_count() > 3, "the big rock's talus chunks are solid (%d shapes)" % (view._boulders[4250]["node"].get_child_count() - 1))
 	view._show_boulder(4251, [4251, 0, total - 5, Vector3(104.0, 5.0, 100.0), view.BOULDER_STATE, {"radius": 1.5, "yaw": 20.0, "total": total}])
-	view._rock_tick()
-	check((view._boulders[4251]["lump"] as MeshInstance3D).visible, "a worked rock draws itself")
+	var after: int = 0
+
+	for child in holder.get_children():
+		if child is MultiMeshInstance3D and not child.is_queued_for_deletion():
+			after += (child as MultiMeshInstance3D).multimesh.instance_count
+			var multi: MultiMesh = (child as MultiMeshInstance3D).multimesh
+
+			for n in multi.instance_count:   # the drawn rock stands where its body and lump are
+				if multi.mesh == view._boulders[4250]["mesh"]:
+					var body_xf: Transform3D = (view._boulders[4250]["node"] as Node3D).transform * (view._boulders[4250]["lump"] as Node3D).transform
+					check(multi.get_instance_transform(n).origin.distance_to(body_xf.origin) < 0.01 and multi.get_instance_transform(n).basis.get_scale().distance_to(body_xf.basis.get_scale()) < 0.01, "the drawn rock matches its collider's place and size")
+
+	check((view._boulders[4251]["lump"] as MeshInstance3D).visible and after == 2, "a worked rock draws itself and leaves its cell's drawing at once (%d left)" % after)
 	standing[0] = Vector3(500.0, 0.0, 500.0)
 	view._rock_look_msec = -100000
 	view._rock_tick()

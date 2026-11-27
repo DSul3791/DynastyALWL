@@ -142,7 +142,7 @@ var _skirt_meshes: Array = []        # the rocky ground's talus skirts (_skirt_m
 var _skirt_hulls_made: Dictionary = {}   # their chunks' convex hulls by variant and size (_skirt_hulls)
 var _rock_cells: Dictionary = {}    # 32 m cell -> {"ids": {id: true}, "nodes": [MultiMeshInstance3D]}: the server rocks drawn there (_rock_refill)
 var _rock_dirty: Dictionary = {}    # cells to draw again
-var _rock_near: Dictionary = {}     # ids of the rocks with a body of their own
+var _rock_near: Dictionary = {}     # ids of the rocks with a body of their own (a server boulder without one has node, shape and lump null)
 var _rock_added_frame: int = 0      # bodies made this frame (ROCK_ADD_PER_FRAME)
 var _rock_look_msec: int = 0
 var _rock_look_more: bool = false   # the last look ran out of its frame budget
@@ -3839,18 +3839,26 @@ func _show_boulder(id: int, row: Array) -> void:
 	if _boulders.has(id):
 		var known: Dictionary = _boulders[id]
 		var was_worked: bool = int(known["left"]) < int(known["total"])
-		_rock_cell_dirty(id)   # the cell it lay in draws again (it moved, or was worked and leaves the cell's MultiMesh)
+		var moved: bool = not (known["pos"] as Vector3).is_equal_approx(row[3])
+
+		if moved:
+			_rock_cell_dirty(id)   # the cell it lay in draws again without it
+
 		known["left"] = left
 		known["pos"] = row[3]   # a boulder dug under comes down (server settle_loose_near)
 
-		if known["node"] != null:
+		if known["node"] == null and left < int(known["total"]):
+			_rock_body(id)   # first blow on a rock that was only drawn (a blow is struck from near, so this is rare)
+		elif known["node"] != null:
 			(known["node"] as Node3D).position = row[3]
 			(known["lump"] as MeshInstance3D).visible = left < int(known["total"])   # a worked rock draws itself, cracks and all
 			_size_boulder(known)
-		elif left < int(known["total"]) and not was_worked:
-			_rock_body(id)   # first blow on a rock that was only drawn (a blow is struck from near, so this is rare)
 
-		_rock_cell_dirty(id)
+		if moved or was_worked != (left < int(known["total"])):
+			_rock_cell_dirty(id)
+			_rock_dirty.erase(_rock_cell_of(known))
+			_rock_refill(_rock_cell_of(known))   # at once: the whole rock of the MultiMesh must not hide the worked one under it
+
 		return
 
 	if _boulder_mesh == null:
