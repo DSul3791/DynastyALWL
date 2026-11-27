@@ -82,6 +82,7 @@ func _init() -> void:
 	var crag_bad: int = 0
 	var crag_off_face: int = 0
 	var crag_share: float = float(at_cliff._boulder_cfg["rock_fields"]["crag"].get("sink_share", 0.3))
+	var rest_rise: float = float(at_cliff._boulder_cfg["rock_fields"].get("steepest", 0.7))   # the steepest ground a loose rock rests on (RF-8)
 
 	for id in at_cliff._items:
 		var it: Dictionary = at_cliff._items[id]
@@ -104,13 +105,13 @@ func _init() -> void:
 		crag_off_face += 0 if p.x > -1.0 and p.x < 61.0 else 1
 		var r_c: float = float(it["boulder"]["radius"])
 		var fall_here: float = (float(cliff.call(p.x + 1.0, p.z)) - float(cliff.call(p.x - 1.0, p.z))) * 0.5   # 1.5 on the face, less within a metre of its edges
-		crag_bad += 0 if fall_here > 1.0 and absf(float(tilt[0]) - fall_here) < 0.011 and absf(float(tilt[1])) < 0.02 and not (it["boulder"] as Dictionary).has("skirt") and absf(p.y - (float(cliff.call(p.x, p.z)) - crag_share * r_c)) < 0.02 else 1
+		crag_bad += 0 if fall_here > rest_rise and absf(float(tilt[0]) - fall_here) < 0.011 and absf(float(tilt[1])) < 0.02 and not (it["boulder"] as Dictionary).has("skirt") and absf(p.y - (float(cliff.call(p.x, p.z)) - crag_share * r_c)) < 0.02 else 1
 
 	print("rock_fields: cliff: %d rocks at its foot, %d loose rocks and %d crags on its face, %d out on the valley floor; %.2f ms a cell" % [foot, face, crags, far_out, per_cell_ms])
 	check(foot >= 20, "scree lies along the foot of a cliff (%d rocks in 20 cells)" % foot)
 	check(face == 0, "no loose rock sits on the cliff face (%d)" % face)
 	check(crags >= 20 and crag_off_face == 0, "crags stand out of the face, and only there (%d, %d off it)" % [crags, crag_off_face])
-	check(crag_bad == 0, "each crag stands on ground steeper than 1 a metre, leans with it, is set into it by %.1f of its radius and has no apron (%d not)" % [crag_share, crag_bad])
+	check(crag_bad == 0, "each crag stands on ground steeper than %.1f a metre, leans with it, is set into it by %.1f of its radius and has no apron (%d not)" % [rest_rise, crag_share, crag_bad])
 	check(far_out * 10 <= foot, "the scree thins out away from the wall (%d far out against %d at the foot)" % [far_out, foot])
 	check(per_cell_ms < CELL_BUDGET_MS, "a cell under a cliff lays out in under %.0f ms on average (%.2f)" % [CELL_BUDGET_MS, per_cell_ms])
 	var big_foot: float = 0.0
@@ -364,6 +365,7 @@ func _init() -> void:
 		flat_bad += 0 if absf((r[1] as Vector3).y - 700.0) < 0.02 else 1
 
 	check(flat_bad == 0, "on flat ground a rock lies on the ground (%d not)" % flat_bad)
+	check(rest_rise <= 0.71, "no loose rock is laid on ground steeper than loose rock rests on, about 35 degrees (steepest %.2f; Dave 27 Nov 2026: placed where they have already settled)" % rest_rise)
 
 	# density_scale 0: nothing (the measure job's off switch).
 	var off = make("user://test_rock_fields_off", cliff)
