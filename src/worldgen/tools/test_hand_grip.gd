@@ -86,7 +86,8 @@ func _initialize() -> void:
 	check(open_grip > 0.07 and open_grip < 0.16, "the open grip is about GRIP_FROM_WRIST_M (0.11 m, times the hand slider) from the wrist: %.3f m" % open_grip)
 	var palm: Vector3 = (skeleton.global_basis * skeleton.get_bone_global_pose(skeleton.find_bone("mixamorig_RightHand")).basis).z.normalized()
 	var on_palm: float = (hand_mount.global_position - wrist.global_position).dot(palm)
-	check(on_palm > 0.03 and on_palm < 0.08, "the grip lies on the palm side of the hand (R-PLAYER-HELD-HAND): %.3f m off the hand's line" % on_palm)
+	var big: float = float(avatar.call("hand_scale"))   # this genome's big hands scale the offset too
+	check(on_palm > 0.03 * big and on_palm < 0.07 * big, "the grip lies on the palm side of the hand (R-PLAYER-HELD-HAND): %.3f m off the hand's line, hand scale %.2f" % [on_palm, big])
 	(hand_mount.get_parent() as BoneAttachment3D).on_skeleton_update()
 	var early_open: Vector3 = hand_mount.global_basis.get_scale()   # read before the modifiers, as player_view.gd follow_hand does
 	var tool: Node3D = HeldItem.look_tool_node("stone_knife")
