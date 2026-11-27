@@ -339,7 +339,7 @@ func _init() -> void:
 		var it: Dictionary = items._items[id]
 		bank_copper += 1 if int(it["number"]) == items.table.number_of("copper_ore") or str((it.get("boulder", {}) as Dictionary).get("ore", "")) == "copper" else 0
 
-	check(bank_spots >= 20 and bank_copper >= bank_spots / 4, "copper on river banks outside the copper area: %d rocks in %d cells" % [bank_copper, bank_spots])
+	check(bank_spots >= 20 and bank_copper >= bank_spots / 2, "copper on river banks outside the copper area: %d rocks in %d cells" % [bank_copper, bank_spots])
 	items.water_near = func(_pos, _reach): return false
 
 	# 8. Rock shapes: round, broken, jagged; a row without a shape keeps the photos' shape exactly.
