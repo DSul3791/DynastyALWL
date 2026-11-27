@@ -138,7 +138,8 @@ const BOG_LUMPS := 4                      # ore lumps on a full patch
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
-var _skirt_meshes: Array = []        # the rocky ground's gravel aprons (_skirt_mesh), SKIRT_VARIANTS of them, made once
+var _skirt_meshes: Array = []        # the rocky ground's talus skirts (_skirt_mesh), SKIRT_VARIANTS of them, made once
+var _skirt_shapes: Dictionary = {}   # their collision by variant and size (_skirt_shape)
 var _boulder_rock: ShaderMaterial
 var _boulder_cracks: ShaderMaterial   # the cracks drawn over a worked boulder (BugsList entry 3), one material, its depth per boulder (instance uniforms)
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
@@ -3877,47 +3878,111 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	_root.add_child(body)
 	var skirt: Array = extra.get("skirt", [])
 
-	# The rocky ground's big rocks lie in an apron of their own broken stones (look only: no collision, nothing to pick up, no world rows;
-	# PR #1988), laid on the slope under the rock and as big as the rock was laid. One shared mesh a variant, so the engine draws them together.
+	# The rocky ground's big rocks lie in a talus of their own broken chunks and stones (Dave 27 Nov 2026; no rows, nothing to pick up; PR #1988),
+	# laid on the slope under the rock and as big as the rock was laid. One shared mesh a variant, so the engine draws them together; the chunks
+	# collide (one shared shape a variant and size), so a player climbs over them. Drawn to 160 m.
+	# shortcut: the skirt belongs to its rock's body, so a rock mined right away takes its skirt with it.
 	if skirt.size() >= 3:
+		var variant: int = int(absi(id)) % SKIRT_VARIANTS
+		var radius: float = float(extra.get("radius", 0.5))
 		var gravel: MeshInstance3D = MeshInstance3D.new()
-		gravel.mesh = _skirt_mesh(int(absi(id)) % SKIRT_VARIANTS)
+		gravel.mesh = _skirt_mesh(variant)[0]
 		gravel.material_override = _boulder_rock
 		gravel.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		gravel.visibility_range_end = 160.0
+		gravel.visibility_range_end_margin = 20.0
+		gravel.visibility_range_fade_mode = GeometryInstance3D.VISIBILITY_RANGE_FADE_SELF
 		body.add_child(gravel)
 		var up: Vector3 = Vector3(-float(skirt[0]), 1.0, -float(skirt[1])).normalized()   # the ground's normal from its fall per metre
-		gravel.global_basis = Basis(Quaternion(Vector3.UP, up)) * Basis.from_scale(Vector3.ONE * float(extra.get("radius", 0.5)))
-		gravel.global_position = body.global_position + Vector3(0.0, float(skirt[2]), 0.0)   # the ground under the rock's middle (it is set into the slope)
+		var lie: Basis = Basis(Quaternion(Vector3.UP, up))
+		var under: Vector3 = body.global_position + Vector3(0.0, float(skirt[2]), 0.0)   # the ground under the rock's middle (it is set into the slope)
+		gravel.global_basis = lie * Basis.from_scale(Vector3.ONE * radius)
+		gravel.global_position = under
+		var chunks: CollisionShape3D = CollisionShape3D.new()
+		chunks.shape = _skirt_shape(variant, radius)
+		body.add_child(chunks)
+		chunks.global_transform = Transform3D(lie, under)
 	var entry: Dictionary = {"node": body, "shape": shape, "lump": lump, "pos": row[3], "left": left, "total": maxi(int(extra.get("total", left)), 1), "radius": float(extra.get("radius", 0.5)),
 		"ore": str(extra.get("ore", ""))}   # what its look shows (a copper rock is green): the robot play-tester picks the rock for the ore it needs
 	_boulders[id] = entry
 	_size_boulder(entry)
 
 
-const SKIRT_VARIANTS := 3
-const SKIRT_STONES := 16   # stones in an apron, from SKIRT_NEAR to SKIRT_FAR radii out, SKIRT_SIZE radii across
+const SKIRT_VARIANTS := 4
+const SKIRT_STONES := 16   # small broken stones in a skirt, SKIRT_NEAR to SKIRT_FAR radii out
+const SKIRT_CHUNKS := 9    # broken chunks round the rock (Dave 27 Nov 2026: "broken rocks and smaller 1-3m chunks in between and on the ground around them")
 
 
-# A gravel apron round a rock of radius 1: SKIRT_STONES flattened lumps (grass_view's pebble) in a ring on the ground plane (y 0), denser
-# near the rock, each set a quarter into the ground. Seeded by `variant`, so every apron of a variant is the same mesh.
-func _skirt_mesh(variant: int) -> ArrayMesh:
+# The talus round a big mountain rock of radius 1 (PR #1988): SKIRT_CHUNKS angular chunks 0.22 to 0.6 radii in size, 1.1 to 2.6 radii out, packed
+# against the rock and each other without overlapping, set a third into the ground, with SKIRT_STONES small broken stones between them; all on
+# the ground plane (y 0). Seeded by `variant`, so every skirt of a variant is the same mesh. [mesh, the chunks' faces as a unit-radius triangle
+# list (their collision, scaled per rock by _skirt_shape)].
+func _skirt_mesh(variant: int) -> Array:
 	while _skirt_meshes.size() < SKIRT_VARIANTS:
 		var pebble: ArrayMesh = load("res://src/client/grass_view.gd")._make_pebble()
 		var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 		rng.seed = 9100 + _skirt_meshes.size()
 		var tool: SurfaceTool = SurfaceTool.new()
 		tool.begin(Mesh.PRIMITIVE_TRIANGLES)
+		var faces: PackedVector3Array = PackedVector3Array()
+		var placed: Array = [[0.0, 0.0, 1.0]]   # [x, z, size]: the rock itself, then each chunk
+
+		for n in range(SKIRT_CHUNKS * 4):   # tries: a chunk that would overlap another is left out
+			if placed.size() > SKIRT_CHUNKS:
+				break
+
+			var angle: float = rng.randf() * TAU
+			var size: float = lerpf(0.22, 0.6, pow(rng.randf(), 1.4))
+			var out: float = lerpf(1.1, 2.6, rng.randf()) + size * 0.5
+			var at: Vector2 = Vector2(cos(angle), sin(angle)) * out
+			var clear: bool = true
+
+			for q in placed:
+				clear = clear and at.distance_to(Vector2(float(q[0]), float(q[1]))) > (size + float(q[2])) * 0.85   # touching, a little into each other
+
+			if not clear:
+				continue
+
+			placed.append([at.x, at.y, size])
+			var chunk: ArrayMesh = OreRockLook.mesh_for(rng.randf() * 360.0, 1.0)   # fresh, angular
+			var box: AABB = chunk.get_aabb()
+			var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
+			var place: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).rotated(Vector3(1.0, 0.0, 0.0), rng.randf_range(-0.35, 0.35)).scaled(Vector3.ONE * (size / unit)),
+				Vector3(at.x, -(box.position.y + box.size.y * 0.35) * (size / unit), at.y))   # a third set into the ground
+			tool.append_from(chunk, 0, place)
+			var tris: PackedVector3Array = chunk.get_faces()
+
+			for v in tris:
+				faces.append(place * v)
 
 		for n in range(SKIRT_STONES):
 			var angle: float = rng.randf() * TAU
-			var out: float = lerpf(1.05, 2.3, pow(rng.randf(), 1.6))
-			var size: float = lerpf(0.08, 0.26, rng.randf()) * (1.2 - 0.3 * (out - 1.05))
-			var place: Transform3D = Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(cos(angle) * out, -0.25 * size, sin(angle) * out))
-			tool.append_from(pebble, 0, place)
+			var out: float = lerpf(1.05, 3.0, pow(rng.randf(), 1.3))
+			var size: float = lerpf(0.06, 0.18, rng.randf())
+			tool.append_from(pebble, 0, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(cos(angle) * out, -0.25 * size, sin(angle) * out)))
 
-		_skirt_meshes.append(tool.commit())
+		_skirt_meshes.append([tool.commit(), faces])
 
 	return _skirt_meshes[variant]
+
+
+# The collision of a skirt's chunks at `radius` (a talus field to climb over, not walk through): one shape a variant and size, shared by every
+# rock of that size (to 0.1 m).
+func _skirt_shape(variant: int, radius: float) -> ConcavePolygonShape3D:
+	var key: String = "%d:%.1f" % [variant, radius]
+
+	if not _skirt_shapes.has(key):
+		var faces: PackedVector3Array = (_skirt_mesh(variant)[1] as PackedVector3Array).duplicate()
+		var r: float = snappedf(radius, 0.1)
+
+		for n in range(faces.size()):
+			faces.set(n, faces[n] * r)
+
+		var shape: ConcavePolygonShape3D = ConcavePolygonShape3D.new()
+		shape.set_faces(faces)
+		_skirt_shapes[key] = shape
+
+	return _skirt_shapes[key]
 
 
 # The boulder material for a row's "ore": the plain granite for "" (or an ore with no OUTCROP_LOOK), else that ore's own copy, made once.
