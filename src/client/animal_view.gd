@@ -1619,6 +1619,7 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 		if not tail_sks.is_empty():
 			var drag: SkeletonModifier3D = TailDragScript.new()
 			var no_bones: PackedStringArray = drag.setup(tail_sks[0], row["tail_drag"])
+			drag.ground = root
 			(tail_sks[0] as Skeleton3D).add_child(drag)
 
 			if not no_bones.is_empty():
@@ -2825,6 +2826,18 @@ func _gait_clip(player: AnimationPlayer, rig: Node3D, spec: Dictionary, kind: St
 	var sk_path: String = str(base.get_path_to(sk))
 	var steps: int = 16
 	var missing: PackedStringArray = PackedStringArray()
+
+	# "rest_all": every bone not in "bones" is held at its rest (the alligator lies in its rest pose, belly and tail flat: its only lie
+	# clip curls it up like a sleeping cat, Lane A 27 Nov 2026).
+	if bool(spec.get("rest_all", false)):
+		for bone in sk.get_bone_count():
+			if not (spec.get("bones", {}) as Dictionary).has(sk.get_bone_name(bone)):
+				var held: int = out.add_track(Animation.TYPE_ROTATION_3D)
+				out.track_set_path(held, NodePath("%s:%s" % [sk_path, sk.get_bone_name(bone)]))
+				out.track_insert_key(held, 0.0, sk.get_bone_rest(bone).basis.get_rotation_quaternion())
+				var placed: int = out.add_track(Animation.TYPE_POSITION_3D)
+				out.track_set_path(placed, NodePath("%s:%s" % [sk_path, sk.get_bone_name(bone)]))
+				out.track_insert_key(placed, 0.0, sk.get_bone_rest(bone).origin)
 
 	for bone_name in (spec.get("bones", {}) as Dictionary):
 		var bone: int = sk.find_bone(str(bone_name))

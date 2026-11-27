@@ -1,9 +1,23 @@
 {
 	"about": "Each animal model's clip height shares and skin answers, measured by tools/clip_answers.gd. absent: kind|scene drawn with the code-built body (no file or no mesh here).",
-	"absent": [
-		"alligator|res://assets/animals/alligator/Alligator_Al.glb"
-	],
+	"absent": [],
 	"models": {
+		"alligator|res://assets/animals/alligator/Alligator_Al.glb": {
+			"shares": {
+				"Running": 2.606497862779927,
+				"cat_idle2": 3.0369456326901396,
+				"cat_shuijiao": 1.3104913740662336,
+				"cat_walk": 1.7763693375834408,
+				"fox_mon_xiaohuli_01_idle1": 2.151141997388293,
+				"leopard_dead": 1.8677579385356595,
+				"leopard_skill_feipu": 1.4881418432813425,
+				"leopard_skill_shuaiwei": 2.095964312074685,
+				"gait_19": 1.0
+			},
+			"skins": {
+				"output_unwrapped": false
+			}
+		},
 		"bear|res://assets/animals/bear/SK_Bear.fbx": {
 			"shares": {
 				"RigRoot|Attack_IdleAngry_01_High": 0.8882977987702299,

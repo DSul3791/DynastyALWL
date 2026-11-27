@@ -34,36 +34,50 @@ func _initialize() -> void:
 	var t0: int = _bone(sk, "t0", hips, Vector3(0.0, -0.1, 0.1))
 	var t1: int = _bone(sk, "t1", t0, Vector3(0.0, -0.1, 0.2))
 	var t2: int = _bone(sk, "t2", t1, Vector3(0.0, -0.1, 0.2))
+	root.add_child(sk)      # in the tree, as in the game, so the ground node counts
+	var ground: Node3D = Node3D.new()
+	root.add_child(ground)
 	var drag = TailDrag.new()
 	check(drag.setup(sk, ["t0", "t1", "t2"]).is_empty(), "the tail bones are found")
+	drag.ground = ground
 	sk.add_child(drag)
 
 	# The clip holds the tail up 50 degrees like a cat's and swings it 30 degrees to the side.
 	sk.set_bone_pose_rotation(t0, Quaternion(Vector3.UP, deg_to_rad(30.0)) * Quaternion(Vector3.RIGHT, deg_to_rad(-50.0)))
 	sk.set_bone_pose_rotation(t2, Quaternion(Vector3.RIGHT, deg_to_rad(-40.0)))
-	var held: float = sk.get_bone_global_pose(t2).origin.y
+	var held: float = TailDrag.global_of(sk, t2).origin.y
 	drag._process_modification()
-	var tip: Vector3 = sk.get_bone_global_pose(t2).origin
+	var tip: Vector3 = TailDrag.global_of(sk, t2).origin
 	check(held > 0.2 and absf(tip.y) < 0.01, "a raised tail is laid back on the floor (tip %.3f m up, was %.3f)" % [tip.y, held])
-	check(absf(sk.get_bone_global_pose(t1).origin.y - 0.1) < 0.01, "the middle joint at its rest height above the floor (%.3f)" % sk.get_bone_global_pose(t1).origin.y)
+	check(absf(TailDrag.global_of(sk, t1).origin.y - 0.1) < 0.01, "the middle joint at its rest height above the floor (%.3f)" % TailDrag.global_of(sk, t1).origin.y)
 	check(tip.x > 0.1, "the clip's sideways swing is kept (tip %.2f m to the side)" % tip.x)
 	check(sk.get_bone_pose_rotation(t2).is_equal_approx(Quaternion.IDENTITY), "the tip bone lies on as at rest, not curled up")
 
-	# A clip that lowers the whole body 0.1 below the rest floor (a lie): the tail follows it down.
-	sk.set_bone_pose_position(hips, Vector3(0.0, 0.2, 0.0))
+	# The animal's ground 0.1 lower than the rest floor (a ground_clips lift moves the body up): the tail lies on that ground.
+	ground.position.y = -0.1
 	sk.set_bone_pose_rotation(t0, Quaternion.IDENTITY)
 	drag._process_modification()
-	check(absf(sk.get_bone_global_pose(t2).origin.y + 0.1) < 0.01, "a lowered body: the tail on the lowered floor (%.3f)" % sk.get_bone_global_pose(t2).origin.y)
+	check(absf(TailDrag.global_of(sk, t2).origin.y + 0.1) < 0.01, "the tail lies on the animal's ground (%.3f)" % TailDrag.global_of(sk, t2).origin.y)
+
+	# No ground node: a clip that lowers the whole body 0.1 below the rest floor (a lie) takes the tail down with it.
+	drag.ground = null
+	sk.set_bone_pose_position(hips, Vector3(0.0, 0.2, 0.0))
+	drag._process_modification()
+	check(absf(TailDrag.global_of(sk, t2).origin.y + 0.1) < 0.01, "no ground: the tail on the lowered body's floor (%.3f)" % TailDrag.global_of(sk, t2).origin.y)
 
 	# A body raised high: the tail slopes down no steeper than SLOPE_DEG, then lies on.
+	drag.ground = ground
+	ground.position.y = 0.0
 	sk.set_bone_pose_position(hips, Vector3(0.0, 0.8, 0.0))
 	drag._process_modification()
-	var a: Vector3 = sk.get_bone_global_pose(t0).origin
-	var b: Vector3 = sk.get_bone_global_pose(t1).origin
+	var a: Vector3 = TailDrag.global_of(sk, t0).origin
+	var b: Vector3 = TailDrag.global_of(sk, t1).origin
 	check((a.y - b.y) / a.distance_to(b) <= sin(deg_to_rad(TailDrag.SLOPE_DEG)) + 0.01, "a raised body: the tail slopes down at most %d degrees" % int(TailDrag.SLOPE_DEG))
+	check(TailDrag.global_of(sk, t2).origin.y < 0.8 - 0.3, "a raised body: the tail comes well down toward the ground (tip %.2f)" % TailDrag.global_of(sk, t2).origin.y)
 
 	var short = TailDrag.new()
 	check(short.setup(sk, ["t0", "nope"]) == PackedStringArray(["nope"]) and short.chain.is_empty(), "a bone the skeleton lacks is named, and no tail is dragged")
 	short.free()
+	ground.free()
 	sk.free()
 	quit(1 if failures > 0 else 0)

@@ -2565,13 +2565,12 @@
 			"stride_m": 0.8,
 			"clips": {
 				"0": "fox_mon_xiaohuli_01_idle1",
-				"3": "cat_idle2",
-				"10": "cat_idle2",
+				"3": "fox_mon_xiaohuli_01_idle1",
+				"10": "fox_mon_xiaohuli_01_idle1",
 				"11": "Running",
 				"12": "fox_mon_xiaohuli_01_idle1",
 				"walk": "cat_walk",
 				"run": "Running",
-				"19": "cat_shuijiao",
 				"bite": "leopard_skill_feipu",
 				"strike": "leopard_skill_shuaiwei",
 				"die": "leopard_dead"
@@ -2591,12 +2590,32 @@
 				"tail_07",
 				"tail_08"
 			],
-			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the lie the cat's sleep (cat_shuijiao), the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead. No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). ground_m and the lie's lift were worked out off line from the file's bones and skin (thread, 27 Nov 2026); tools/ground_check.gd on Lane A confirms them.",
+			"note": "Dave's Alligator_Al.glb (27 Nov 2026): its clips are borrowed from cats, a dog, a fox and a leopard. Dave: \"ignore the dog walk its terrible\", so Walking is never used: walk is cat_walk, the run and charge the dog's Running, the bite the leopard's pounce (feipu), the strike its tail swipe (shuaiwei), the death leopard_dead; stand, alert and warn the fox idle (cat_idle2 is 3.04 times its flat rest height, over TALL_SHARE, so only an idle variant if ever). The lie is its own rest pose, belly and tail flat (gait 19 rest_all; the cat sleep curled it into a ball, Lane A 27 Nov). No swim or hit clip: in water it plays its state's clip. tail_drag (src/client/tail_drag.gd) lays the tail on the ground over every clip (Dave: \"all the actions need to let the tail drag on the ground\"). ground_m and ground_clips come from skinning the file off line with the tail laid down (thread, 27 Nov): tools/ground_check.gd poses the raw clips, whose cat and fox tails dip through the ground, so its lowest points for this model are the tail's, not the feet's.",
 			"length_m": 3.8,
 			"flat_share": 0.3,
 			"ground_m": -0.04,
 			"ground_clips": {
-				"cat_shuijiao": 0.3
+				"gait_19": -0.15,
+				"cat_walk": -0.09,
+				"Running": -0.09
+			},
+			"gait": {
+				"19": {
+					"period_s": 4.0,
+					"rest_all": true,
+					"bones": {
+						"neck_01": [
+							0.0,
+							1.5,
+							"x"
+						],
+						"chest": [
+							0.25,
+							0.8,
+							"x"
+						]
+					}
+				}
 			}
 		}
 	}
