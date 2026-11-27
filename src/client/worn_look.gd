@@ -137,7 +137,9 @@ static func attach(rig: Node, item_ids: Array, far: bool = false) -> int:
 			# A generated body carries a per-bone fit (widths and lengths of its own proportions); the old body has none, so nothing changes for it.
 			# A part with "fitted": true was already built from the body's own measures (rig meta "worn_measures"), so it is not scaled again.
 			var fit: Vector3 = Vector3.ONE if bool(part.get("fitted", false)) else (rig.get_meta("worn_fit", {}) as Dictionary).get(bone, Vector3.ONE)
-			node.transform = Transform3D(Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit), (part["at"] as Vector3) * fit)
+			# A part with its own "basis" (a strap turned along its length, _strap) is sized in its own axes; Basis.scaled sizes along the bone's axes, which skews a turned box.
+			var shape_basis: Basis = Basis.from_scale(fit) * (part["basis"] as Basis) if part.has("basis") else Basis.from_euler(part.get("rot", Vector3.ZERO)).scaled((part["size"] as Vector3) * fit)
+			node.transform = Transform3D(shape_basis, (part["at"] as Vector3) * fit)
 			anchors[bone].add_child(node)
 			count += 1
 
@@ -506,17 +508,21 @@ static func parts_of(builder: String, o: float, fringe: bool = false, under: flo
 
 			for side in [-1.0, 1.0]:
 				var x: float = 0.1 * side
-				out.append(_strap(Vector3(x, 0.27, 0.13), Vector3(x, 0.31, 0.0)))
-				out.append(_strap(Vector3(x, 0.31, 0.0), Vector3(x, 0.25, front_z)))
-				out.append(_p("chest", "box", Vector3(x, 0.1, front_z), Vector3(0.04, 0.3, 0.012), Vector3.ZERO, true, 0.25))
+				out.append(_strap(Vector3(x, 0.27, 0.13), Vector3(x, 0.3, 0.0)))
+				out.append(_strap(Vector3(x, 0.3, 0.0), Vector3(x, 0.26, front_z)))
+				out.append(_p("chest", "box", Vector3(x, 0.11, front_z), Vector3(0.04, 0.32, 0.012), Vector3.ZERO, true, 0.25))
 
 	return out + joint_caps(out)
 
 
-# A flat strap 4 cm wide on the chest bone from `a` to `b` (both with the same x): a box along its own z, turned about x to run between them.
+# A flat strap 4 cm wide on the chest bone from `a` to `b` (both with the same x): a box along its own z, turned about x to run between them, 1 cm longer each
+# way so the pieces of one strap overlap. Its "basis" sizes it in its own axes (attach); laptop pictures 27 Nov: sized after the turn, it stood out as a wing.
 static func _strap(a: Vector3, b: Vector3) -> Dictionary:
 	var d: Vector3 = b - a
-	return _p("chest", "box", (a + b) * 0.5, Vector3(0.04, 0.012, d.length() + 0.01), Vector3(atan2(-d.y, d.z), 0.0, 0.0), true, 0.25)
+	var size: Vector3 = Vector3(0.04, 0.012, d.length() + 0.02)
+	var part: Dictionary = _p("chest", "box", (a + b) * 0.5, size, Vector3.ZERO, true, 0.25)
+	part["basis"] = Basis(Vector3.RIGHT, atan2(-d.y, d.z)) * Basis.from_scale(size)
+	return part
 
 
 # The joints a garment bends at: [parent bone, child bone, the joint's height on the parent bone (ragdoll_body.gd BONES), the cap's size over the child piece's width].
