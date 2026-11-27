@@ -2,6 +2,10 @@
 
 All Fixed Bugs Go here.
 
+## 185. Running water sounded like a windstorm, even when slow
+
+**Found by:** Dave, 26 Nov 2026: "river running sounds shouldnt be so loud if the water isnt running real fast. right now any moving water sounds like a windstorm"; "slow water should have no ripple sounds other than fish jumping or splashing". Priority (R-CORE-GROUND-WATER-FIRST). Brook and river water slower than 0.4 m/s makes no sound, unless the reach is steep. From there the sound rises 18 dB to full at 1 m/s, and faster water adds at most 3 dB. Rivers now play the brook recording instead of the generated steady noise. Fish splashes and lake laps are unchanged. Fixed by PR #2020, merged to dev at 85d3a5b6. Automated: test_water_width on Lane B. Not yet played.
+
 ## 49. Shovel name
 
 Dave asked on 16 Nov 2026 for every Spade to be called a Shovel, including icons and internal names. Fixed by PR #1182, merged to dev at bcd02908. Verified in a Dave play test on 19 Nov 2026 ("Yes it is now called shovel in game").
