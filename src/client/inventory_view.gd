@@ -146,7 +146,7 @@ var _rock_dirty: Dictionary = {}    # blocks to draw again
 var _field_rock: ShaderMaterial = null
 var _rock_low: bool = false         # Low quality: lighter rocks (set_rock_quality)
 var _rock_near: Dictionary = {}     # ids of the rocks with a body of their own (a server boulder without one has node, shape and lump null)
-var _rock_added_frame: int = 0      # bodies made this frame (ROCK_ADD_PER_FRAME)
+var _rock_added_frame: int = 0      # collision shapes made this frame (ROCK_SHAPES_PER_FRAME)
 var _rock_look_msec: int = 0
 var _rock_look_more: bool = false   # the last look ran out of its frame budget
 var _boulder_rock: ShaderMaterial
@@ -3903,7 +3903,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 
 	# Drawn in its cell's MultiMesh (_rock_refill); a body of its own only near the player (_rock_tick) or once worked. With no player (a test
 	# scene) every rock gets its body at once, as before.
-	if not _player_position.is_valid() or left < int(entry["total"]) or ((row[3] as Vector3).distance_to(_player_position.call()) < ROCK_NEAR_M and _rock_added_frame < ROCK_ADD_PER_FRAME):
+	if not _player_position.is_valid() or left < int(entry["total"]) or ((row[3] as Vector3).distance_to(_player_position.call()) < ROCK_NEAR_M and _rock_added_frame < ROCK_SHAPES_PER_FRAME):
 		_rock_body(id)
 
 
@@ -3911,7 +3911,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 # is drawn in its ROCK_BLOCK_M block's MultiMeshes, one draw a mesh and material a block (rocks8 at 32 m cells: about 13 meshes a cell, several
 # hundred draws in range, +2.2 ms at Low), refilled only when a rock of the block comes, goes, moves or is first worked (ROCK_REFILL_PER_FRAME
 # blocks a frame); rocks are listed by 32 m cell for the near look; collision only near the player: a rock within ROCK_NEAR_M gets a StaticBody3D of its own (its hull and
-# its talus chunks' convex hulls, made before it enters the tree and never changed in it, at most ROCK_ADD_PER_FRAME a frame), freed again past
+# its talus chunks' convex hulls, made before it enters the tree and never changed in it, at most ROCK_SHAPES_PER_FRAME shapes a frame), freed again past
 # ROCK_FAR_M. A worked rock keeps its body and draws itself (cracks, shrinking). Drawn to ROCK_DRAW_M; past it the ground's rock texture carries
 # the mountain.
 const ROCK_NEAR_M := 40.0
@@ -3925,7 +3925,7 @@ const ROCK_LOW_SMALL_R := 0.8      # Low: rocks smaller than this radius drawn o
 const ROCK_FULL_M := 70.0          # nearer than this (block middle) whole rocks are drawn full (320 faces) with shadows; farther, 80 faces and none
 # (rocks10: +1.5 ms at Low against dev, with every rocky-ground rock at 320 faces and casting shadows to 160 m)
 const FIELD_TALL := 1.4      # a rocky-ground rock stands taller than the flat ore-rock mesh (coordinator on rocks8: "tall not flat")
-const ROCK_ADD_PER_FRAME := 24
+const ROCK_SHAPES_PER_FRAME := 64   # collision shapes made a frame (rocks14: a run into a foot field built up to 6 rocks of 37 shapes a frame, 7 frames over 50 ms)
 const ROCK_REFILL_PER_FRAME := 4
 const ROCK_LOOK_S := 0.25
 
@@ -4008,7 +4008,7 @@ func _rock_body(id: int) -> void:
 	if entry["node"] != null:
 		return
 
-	_rock_added_frame += 1 + (FOOT_CHUNKS / 12 if int(entry["variant"]) >= SKIRT_VARIANTS else 0)   # a foot rock's field is many shapes
+	_rock_added_frame += 1 + ((_skirt_mesh(int(entry["variant"]))[1] as Array).size() if (entry["skirt"] as Array).size() >= 3 else 0)
 	var body: StaticBody3D = StaticBody3D.new()
 	body.set_meta("boulder", true)   # the look label names it (terrain_client _inspect_target: it showed the soil under it, TEST-013)
 	var shape: CollisionShape3D = CollisionShape3D.new()
@@ -4053,7 +4053,7 @@ func _rock_unbody(id: int) -> void:
 	entry.erase("now")
 
 
-# Each frame: a few dirty cells drawn again; every ROCK_LOOK_S the rocks round the player get their bodies (at most ROCK_ADD_PER_FRAME a frame;
+# Each frame: a few dirty cells drawn again; every ROCK_LOOK_S the rocks round the player get their bodies (at most ROCK_SHAPES_PER_FRAME shapes a frame;
 # a full talus round a player arriving at a run takes three frames) and the whole ones gone past ROCK_FAR_M lose theirs. Only the cells within
 # reach of the player and the rocks with bodies are looked at, never every rock.
 func _rock_tick() -> void:
@@ -4099,7 +4099,7 @@ func _rock_tick() -> void:
 				if entry.is_empty() or entry["node"] != null or (entry["pos"] as Vector3).distance_to(at) >= ROCK_NEAR_M:
 					continue
 
-				if _rock_added_frame >= ROCK_ADD_PER_FRAME:
+				if _rock_added_frame >= ROCK_SHAPES_PER_FRAME:
 					_rock_look_more = true   # the rest next frame
 					return
 

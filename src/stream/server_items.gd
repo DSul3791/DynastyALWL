@@ -11032,7 +11032,7 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 		if scree_near and rise <= float(cfg.get("scree_flat_max", 0.6)):
 			scree = clampf((_relief(Vector3(x, y, z), reach, ground) - rise_m) / rise_m, 0.0, 1.0)   # 0 at scree_rise_m within relief_reach_m, 1 at twice it
 
-		var at_foot: bool = scree > 0.0 and not foot.is_empty() and rise <= float(foot.get("flat_max", 0.35))
+		var at_foot: bool = scree > 0.0 and not foot.is_empty()   # every scree spot: the band along the whole line where hill meets flat (rocks14: a flat-only band was a few patches)
 		var scree_n: float = scree * (foot_full if at_foot else scree_full)
 		var kind: String = "scree" if scree_n >= high_n and scree_n >= top_n else ("high" if high_n >= top_n else "top")
 		var chance: float = maxf(maxf(scree_n, high_n), top_n)
@@ -11055,6 +11055,10 @@ func _lay_out_rock_fields(cell: Vector2i, cell_m: float, reads: Dictionary) -> v
 			size = minf(size * lerpf(1.0, float(cfg.get("scree_wall_size", 1.4)), scree), 1.0)   # bigger under a higher wall
 
 		var core: float = lerpf(float(range_m[0]), float(range_m[1]), size)
+
+		if at_foot:
+			core *= lerpf(1.0, float(foot.get("steep_share", 0.6)), smoothstep(float(foot.get("flat_max", 0.3)), float(cfg.get("scree_flat_max", 0.85)), rise))   # the flatter (the lower), the bigger
+
 		var up_hill: Array = cfg.get("up_hill", [])
 
 		if up_hill.size() >= 3 and not at_foot and kind in ["scree", "crag", "high"]:
