@@ -1159,7 +1159,7 @@ func _show_animals(now: int) -> void:
 		view.add_child(node)
 
 		if animal_role in ["dead", "carcass"]:
-			drawn.append("%s %s" % [name_text, "dead body (own model)" if node.name == "DeadBody" else "hand-built body"])
+			drawn.append("%s %s" % [name_text, "dead body (own model)" if node.has_meta("dead_body") else "hand-built body"])
 			middle += node.position
 			count += 1
 			continue

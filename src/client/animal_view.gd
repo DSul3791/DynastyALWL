@@ -576,19 +576,56 @@ func _fall(b: Dictionary) -> Node3D:
 	return _tip_over(node, TIP_S)
 
 
+# How far the body's right side lies from its middle, in its rig's space: the bones in the lower SIDE_BONES_SHARE of its height (body and
+# legs; antlers, horns and a raised head reach far out sideways and held the moose and an elk in the air: Lane A at c2643634), plus
+# SIDE_SKIN_SHARE of its height for the flesh over them. 0.2 with no skeleton; the mesh box's right edge with no bones in it.
+const SIDE_BONES_SHARE := 0.65
+const SIDE_SKIN_SHARE := 0.1
+
+func _side_m(node: Node3D) -> float:
+	var rig: Node3D = node.get_node_or_null("Rig")
+
+	if rig == null:
+		return 0.2
+
+	var skeletons: Array = rig.find_children("*", "Skeleton3D", true, false)
+
+	if skeletons.is_empty():
+		var box: AABB = _model_bounds(rig, rig.find_children("*", "MeshInstance3D", true, false), true)
+		return box.end.x if box.size.x > 0.01 else 0.2
+
+	var sk: Skeleton3D = skeletons[0]
+	var to_rig: Transform3D = _to_ancestor(sk, rig)
+	var points: Array = []
+
+	for i in sk.get_bone_count():
+		points.append(to_rig * sk.get_bone_global_pose(i).origin)
+
+	if points.is_empty():
+		return 0.2
+
+	var low: float = INF
+	var high: float = -INF
+
+	for p in points:
+		low = minf(low, (p as Vector3).y)
+		high = maxf(high, (p as Vector3).y)
+
+	var cut: float = low + (high - low) * SIDE_BONES_SHARE
+	var side: float = 0.0
+
+	for p in points:
+		if (p as Vector3).y <= cut:
+			side = maxf(side, (p as Vector3).x)
+
+	return side + (high - low) * SIDE_SKIN_SHARE
+
+
 # Puts a standing model on its side: a pivot at the right-hand edge of its box on the ground turns it a quarter turn about the line it
 # faces along, so that side ends on the ground and the body never slides. Over `seconds` (a fall that speeds up) or at once (0).
 # Returns the pivot, which takes the body's place under its parent.
 func _tip_over(node: Node3D, seconds: float) -> Node3D:
-	var edge: float = 0.2
-	var rig: Node3D = node.get_node_or_null("Rig")
-
-	if rig != null:
-		var box: AABB = _model_bounds(rig, rig.find_children("*", "MeshInstance3D", true, false), true)
-
-		if box.size.x > 0.01:
-			edge = box.end.x
-
+	var edge: float = _side_m(node)
 	var pivot: Node3D = Node3D.new()
 	pivot.name = "Fallen"
 	pivot.set_meta("model", true)
@@ -617,6 +654,7 @@ func _tip_over(node: Node3D, seconds: float) -> Node3D:
 func dead_body(kind: String, look: int, num: int, at: Vector3) -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.name = "DeadBody"
+	root.set_meta("dead_body", true)   # the name can change when many are added under one parent (shot runner: DeadBody2 ...)
 	var fallen: Node3D = _take_fallen(kind, at)
 
 	if fallen != null:

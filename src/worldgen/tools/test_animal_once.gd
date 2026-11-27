@@ -131,8 +131,45 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	var clip_player: AnimationPlayer = (fresh_clip["node"] as Node3D).get_meta("player")
 	check((fresh_clip["node"] as Node3D).get_parent() == fresh_roots[1] and clip_player.assigned_animation == "Death_Stand_R01_once", "one with a death clip lies in that clip's pose (%s)" % clip_player.assigned_animation)
 
+	# The path the game and the shot runner take (Lane A at c2643634: the rig read the node's name, which repeats as DeadBody2 ...): a real
+	# moose (no death clip) from its model file, where the file is there (not on a lane without the bought models).
+	var moose_scene: String = str((v._model_rows().get("moose", {}) as Dictionary).get("scene", ""))
+	var moose: Node3D = v.dead_body("moose", 5, 4, Vector3.INF)
+	check(moose != null or not ResourceLoader.exists(moose_scene), "a carcass row of a kind with a model file is drawn as that model (%s)" % moose_scene)
+
+	if moose != null:
+		var other: Node3D = v.dead_body("moose", 6, 4, Vector3.INF)
+		v.add_child(moose)
+		v.add_child(other)
+		await process_frame
+		check(moose.has_meta("dead_body") and other.has_meta("dead_body") and moose.name != other.name, "each is marked as a dead body whatever its name (%s, %s)" % [moose.name, other.name])
+		var moose_pivot: Node3D = moose.get_child(0) as Node3D
+		check(moose_pivot != null and moose_pivot.name == "Fallen" and absf(moose_pivot.rotation.z + PI * 0.5) < 0.001, "the moose (no death clip) lies on its side")
+		print("dead moose: side %.2f m" % v._side_m(moose_pivot.get_child(0)))
+		moose.queue_free()
+		other.queue_free()
+
 	for fresh_root in fresh_roots:
 		(fresh_root as Node3D).queue_free()
+
+	# Its side is measured on its body and legs, not its antlers (Lane A at c2643634: the moose lay up in the air on its antlers).
+	var antlered: Node3D = Node3D.new()
+	var antler_rig: Node3D = Node3D.new()
+	antler_rig.name = "Rig"
+	antlered.add_child(antler_rig)
+	var sk: Skeleton3D = Skeleton3D.new()
+	antler_rig.add_child(sk)
+
+	for bone in [["foot", Vector3(0.15, 0.0, 0.0)], ["back", Vector3(0.0, 1.2, 0.0)], ["antler", Vector3(0.9, 2.0, 0.0)]]:
+		var at: int = sk.add_bone(str(bone[0]))
+		sk.set_bone_rest(at, Transform3D(Basis(), bone[1]))
+		sk.set_bone_pose_position(at, bone[1])
+
+	v.add_child(antlered)
+	var side: float = v._side_m(antlered)
+	check(absf(side - (0.15 + 2.0 * AnimalViewScript.SIDE_SKIN_SHARE)) < 0.01, "a body's side is its legs and body plus its flesh, not its antlers (%.2f m)" % side)
+	check(v._side_m(code_built) == 0.2, "a body with no rig: 0.2 m")
+	antlered.queue_free()
 
 	# A fallen body no carcass row takes: kept while the player is far, gone once they are near after DEAD_WAIT_S.
 	v._t += AnimalViewScript.DEAD_WAIT_S + 0.1
