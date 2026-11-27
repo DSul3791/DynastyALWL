@@ -495,6 +495,22 @@ func _stance_to(want: int) -> void:
 		await _wait(0.3)
 
 
+# After a faint or a pass-out the body lies, out of the player's hands, until the sight is back (strain state 3, exertion.json wake_s;
+# R-CORE-PASS-OUT, Dave 27 Nov 2026): wait for that, then stand up as a player would.
+func _up_after_faint() -> void:
+	var t0: int = Time.get_ticks_msec()
+
+	while int(client.items.strain_state) != 0 and Time.get_ticks_msec() - t0 < 30000:
+		await get_tree().process_frame
+
+	if int(client.items.stance_confirmed) != 0:
+		client.items.request_stance(0)
+		t0 = Time.get_ticks_msec()
+
+		while int(client.items.stance_confirmed) != 0 and Time.get_ticks_msec() - t0 < 3000:
+			await get_tree().process_frame
+
+
 # Holds W toward `dir` for `s` seconds; returns the ground distance moved.
 func _walk_for(dir: Vector3, s: float) -> float:
 	_face(dir)
@@ -3342,6 +3358,7 @@ func _cold() -> void:
 	if _pack_counts() != counts:
 		_fail("cold", "pack", "the pack before the cold held %s; after waking %s" % [counts, _pack_counts()])
 
+	await _up_after_faint()
 	var from: Vector3 = client.body.global_position
 	var m: float = await _walk_for(Vector3.FORWARD, 2.0)
 
@@ -4680,7 +4697,7 @@ func _tg_seen() -> void:
 			await get_tree().process_frame
 
 		_write(_share(SERVER_CONTROL), "warm %d" % client.multiplayer.get_unique_id())
-		await _wait(1.0)
+		await _up_after_faint()   # lying until the sight is back, then up
 		_write(_share("tg_woke.txt"), "%s %.1f %.1f %.1f" % [str(_woke_at != null), client.body.global_position.x, client.body.global_position.y, client.body.global_position.z])
 		var _done: String = await _tg_read("tg_seen_done.txt", 30.0)   # stay in the world while Robot 1 looks
 		return

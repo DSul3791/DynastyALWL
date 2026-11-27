@@ -72,7 +72,7 @@ ROBOT_SHARE: `cold <peer>` turns the weather (weather_now and weather_at, which 
 wind and starts that peer at health 6, warmth 15; `warm <peer>` gives the world's own weather back; `health <peer> <value>` sets health
 (at least 1). Each is printed as `AUDIT control`. The robot stands in the frost and must never read health 0 or die, pass out with words,
 be moved to a rescue spot (the client gets died "passed out", no death), wake with the traveler's words and health 10 or more, keep every
-item and walk after. Then, warm again and 60 m out of town at health 1, it fights a goblin for 40 s: at least one blow must land (the
+item, lie with no control until the waking stage is over (R-CORE-PASS-OUT: up only once the sight is back), then stand and walk. Then, warm again and 60 m out of town at health 1, it fights a goblin for 40 s: at least one blow must land (the
 server's `AUDIT enemy_hit`, result "maimed" at low health), health must read 1 and stay there, no death. No goblin, no blow or no server
 log is a FAIL: the floor was not tested.
 
@@ -123,7 +123,7 @@ and the total must be the old one plus what went in. After each step each robot'
 each with part of its cost (exactly 5 lumber and 8 nails must go in), and both use one rustic door at once (it toggles twice and ends as
 it began), then each in turn: both must draw the site and the door the same. Last, Robot 1 watches Robot 2: Robot 2 swings 4 times and
 Robot 1's rows must show its swing count change; then Robot 2 is passed out by the cold (`cold <peer>` to the server control file) and
-Robot 1 must draw it lying (stance 3) and standing again after it wakes. While a robot is passed out its own stance stays standing, so
+Robot 1 must draw it lying (stance 3) and, once its waking stage is over and it stands up, standing again. While a robot is passed out, before the rescue, its own stance stays standing, so
 robot_check does not count it drawn lying in the 20 s before the rescue as a wrong stance; the rescued robot writes `rescued.txt` in
 ROBOT_SHARE so the watcher's jump check takes the rescue's move as deliberate. robot_check also fails a held step when link.log has no
 `LINK hold` line with a client held. robots.sh runs this plan with exactly 2 robots.
