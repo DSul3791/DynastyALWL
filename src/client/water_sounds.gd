@@ -390,7 +390,7 @@ static func kind_for(around: int, flow_mps: float) -> String:
 
 
 # Whether a brook or river square is fast enough to be heard: a current of SILENT_MPS or more, or a steep reach.
-static func flowing(speed_mps: float, drop_m: float) -> bool:
+static func is_flowing(speed_mps: float, drop_m: float) -> bool:
 	return speed_mps >= SILENT_MPS or drop_m >= RAPIDS_DROP_M
 
 
@@ -483,7 +483,7 @@ func _classify_row(j: int) -> void:
 		var at: Vector3 = Vector3(cx + float(i - HALF) * SPACING_M, here, cz + float(j - HALF) * SPACING_M)
 		var distance: float = Vector2(at.x - origin.x, at.z - origin.z).length()
 
-		if kind in ["brook", "river"] and not flowing(flow_mps, drop):
+		if kind in ["brook", "river"] and not is_flowing(flow_mps, drop):
 			continue                                   # slow water is silent (and hides nothing behind a water bed)
 
 		if distance <= float(KINDS[kind]["reach"]):
