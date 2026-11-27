@@ -1030,6 +1030,7 @@ func _set_widths(g: Dictionary) -> void:
 			any = true
 
 	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
+		_widths_later = false      # nothing left to wait for (a cover or width taken off before the shapes were ready)
 		return       # the plain body keeps Dave's own mesh
 
 	if not Shapes.ready():
